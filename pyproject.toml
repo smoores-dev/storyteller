@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "storyteller"
+version = "0.1.0"
+description = ""
+authors = ["SMores <shane@shanemoore.me>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+SpeechRecognition = "^3.8.1"
+pocketsphinx = "^0.1.15"
+EbookLib = "^0.17.1"
+beautifulsoup4 = "^4.9.3"
+nltk = "^3.6.2"
+pydub = "^0.25.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^21.5b1"
+yapf = "^0.31.0"
+pylint = "^2.8.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
