@@ -1,16 +1,20 @@
+import os
+import subprocess
+import shlex
 from speech_recognition import Recognizer, AudioFile
-from pydub import AudioSegment
 
-def split_audio_file(audio_filename: str):
-    full_audio = AudioSegment.from_wav(f'/workspaces/storyteller/assets/audio/raw/{audio_filename}.wav')
-    length = len(full_audio)
-    for start_ms in range(0, length, 60000):
-        end_ms = start_ms + 60000
-        audio_segment = full_audio[start_ms:end_ms]
-        audio_segment.export(f'/workspaces/storyteller/assets/audio/processed/{audio_filename}/section{start_ms / 60000}.wav', format="wav")
+def split_audio_file(book_name: str):
+    print(f'splitting audio file for {book_name}')
+    audio_filepath = f'/workspaces/storyteller/assets/audio/raw/{book_name}.wav'
+    command = shlex.split(f"ffmpeg -i {audio_filepath} -f segment -segment_time 60 -c copy /workspaces/storyteller/assets/audio/processed/{book_name}/section%09d.wav")
+    subprocess.run(command)
+    sections = os.listdir(f'/workspaces/storyteller/assets/audio/processed/{book_name}/')
+    return len(sections)
 
 
-def search_for_sentence(audio_filepath: str, sentence: str):
+def search_for_keyphrase(book_name: str, section: int, keyphrase: str):
+    print(f'searching for phrase "{keyphrase}" in section {section} of {book_name}')
+    audio_filepath = f'/workspaces/storyteller/assets/audio/processed/{book_name}/section{str(section).zfill(9)}.wav'
     recognizer = Recognizer()
 
     audio_file = AudioFile(audio_filepath)
@@ -18,7 +22,7 @@ def search_for_sentence(audio_filepath: str, sentence: str):
         audio = recognizer.record(source)
 
     decoder = recognizer.recognize_sphinx(
-        audio_data=audio, keyword_entries=[(sentence, 1)], show_all=True
+        audio_data=audio, keyword_entries=[(keyphrase, 1)], show_all=True
     )
     for segment in decoder.seg():
         return (segment.start_frame, segment.end_frame, segment.word)
