@@ -16,5 +16,5 @@ cask 'firefox'
 cask 'gpg-suite'
 cask 'signal'
 cask 'slack'
-cask 'visual-studo-code'
+cask 'visual-studio-code'
 
