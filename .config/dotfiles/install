@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-if test ! $(which brew); then
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-
-brew update
-brew tap homebrew/bundle
-brew bundle --file $HOME/.config/dotfiles/Brewfile
+export DEBIAN_FRONTEND=noninteractive
+sudo apt-get update
+sudo apt-get -y install --no-install-recommends software-properties-common
+sudo add-apt-repository 'deb http://deb.debian.org/debian buster-backports main'
+sudo apt-get update
+sudo apt-get -y install -t buster-backports --no-install-recommends git-man git
+sudo apt-get -y install -t buster-backports --no-install-recommends fish
