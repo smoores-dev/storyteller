@@ -20,3 +20,5 @@
 	required = true
 [init]
 	defaultBranch = main
+[alias]
+	graph = log --graph --oneline --color
