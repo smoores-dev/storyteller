@@ -5,4 +5,3 @@ git --git-dir=$HOME/.dotfiles.git/ --work-tree $HOME checkout $DOTFILE_BRANCH
 $HOME/.config/dotfiles/macos
 
 $HOME/.config/dotfiles/install
-
