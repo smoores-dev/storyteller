@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
 
-branchname = $DOTFILE_BRANCH
-
-git --git-dir=$HOME/.dotfiles.git/ --work-tree $HOME checkout $branchname
+git --git-dir=$HOME/.dotfiles.git/ --work-tree $HOME checkout $DOTFILE_BRANCH
 
