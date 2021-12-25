@@ -1,4 +1,4 @@
-tap 'homebrow/cask'
+tap 'homebrew/cask'
 
 brew 'coreutils'
 brew 'fish'

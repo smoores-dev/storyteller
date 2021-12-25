@@ -6,5 +6,5 @@ fi
 
 brew update
 brew tap homebrew/bundle
-brew bundle $HOME/.config/dotfiles/Brewfile
+brew bundle --file $HOME/.config/dotfiles/Brewfile
 
