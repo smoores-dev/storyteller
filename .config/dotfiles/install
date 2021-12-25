@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if test ! $(which brew); then
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+
+brew update
+brew tap homebrew/bundle
+brew bundle $HOME/.config/dotfiles/Brewfile
+

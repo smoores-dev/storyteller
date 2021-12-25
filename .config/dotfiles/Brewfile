@@ -1,0 +1,20 @@
+tap 'homebrow/cask'
+
+brew 'coreutils'
+brew 'fish'
+brew 'git'
+brew 'gnupg'
+brew 'hopenpgp-tools'
+brew 'mas'
+brew 'pinentry-mac'
+brew 'yubikey-personalization'
+brew 'ykman'
+
+cask '1password'
+cask 'docker'
+cask 'firefox'
+cask 'gpg-suite'
+cask 'signal'
+cask 'slack'
+cask 'visual-studo-code'
+

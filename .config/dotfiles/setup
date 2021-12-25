@@ -2,5 +2,7 @@
 
 git --git-dir=$HOME/.dotfiles.git/ --work-tree $HOME checkout $DOTFILE_BRANCH
 
+$HOME/.config/fish/macos.fish
+
 $HOME/.config/dotfiles/install
 
