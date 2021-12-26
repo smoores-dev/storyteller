@@ -1,9 +1,25 @@
 #!/usr/bin/env bash
 
+# Only use sudo if not the root user
+sudo ()
+{
+    [[ $(id -u) -eq 0 ]] || set -- command sudo "$@"
+    "$@"
+}
+
+# Tell APT that we're in a script
 export DEBIAN_FRONTEND=noninteractive
+
 sudo apt-get update
-sudo apt-get -y install --no-install-recommends software-properties-common
-sudo add-apt-repository 'deb http://deb.debian.org/debian buster-backports main'
-sudo apt-get update
-sudo apt-get -y install -t buster-backports --no-install-recommends git-man git
-sudo apt-get -y install -t buster-backports --no-install-recommends fish
+
+# If we're on buster, use backports repo
+if [[ $(lsb_release -rs) -le 10 ]]; then
+  sudo apt-get -y install --no-install-recommends software-properties-common
+  sudo add-apt-repository 'deb http://deb.debian.org/debian buster-backports main'
+  sudo apt-get update
+  sudo apt-get -y install -t buster-backports --no-install-recommends git-man git
+  sudo apt-get -y install -t buster-backports --no-install-recommends fish
+else 
+  sudo apt-get -y install --no-install-recommends git-man git
+  sudo apt-get -y install --no-install-recommends fish
+fi
