@@ -23,3 +23,12 @@ else
   sudo apt-get -y install --no-install-recommends git-man git
   sudo apt-get -y install --no-install-recommends fish
 fi
+
+# Install the latest stable neovim
+# Instructions: https://github.com/neovim/neovim/wiki/Installing-Neovim#install-from-download
+wget https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.deb
+sudo apt-get -y install --no-install-recommends ./nvim-linux64.deb
+
+# Install personal neovim configuration
+git clone https://gitlab.com/smoores/nvim-config ~/.config/nvim
+
