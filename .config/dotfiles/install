@@ -32,3 +32,6 @@ sudo apt-get -y install --no-install-recommends ./nvim-linux64.deb
 # Install personal neovim configuration
 git clone https://gitlab.com/smoores/nvim-config ~/.config/nvim
 
+# Install ripgrep for Telescope
+sudo apt-get -y install --no-install-recommends ripgrep
+
