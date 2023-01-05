@@ -25,9 +25,15 @@ else
 fi
 
 # Install the latest stable neovim
-# Instructions: https://github.com/neovim/neovim/wiki/Installing-Neovim#install-from-download
-wget https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.deb
-sudo apt-get -y install --no-install-recommends ./nvim-linux64.deb
+# Instructions: https://github.com/neovim/neovim/wiki/Installing-Neovim#appimage-universal-linux-package
+curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
+chmod u+x nvim.appimage
+./nvim.appimage --appimage-extract
+
+sudo mv squashfs-root /
+sudo ln -s /squashfs-root/AppRun /usr/bin/nvim
+
+rm -rf ./nvim.appimage
 
 # Install personal neovim configuration
 git clone https://gitlab.com/smoores/nvim-config ~/.config/nvim
