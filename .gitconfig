@@ -5,7 +5,7 @@
 	email = shane@shanemoore.me
 	signingkey = 0xE01BC73472A04BB0
 [core]
-	editor = code --wait
+	editor = nvim
 [commit]
 	gpgsign = true
 [push]
