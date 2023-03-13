@@ -19,13 +19,13 @@ wget -q http://emacs.ganneff.de/apt.key -O- | sudo apt-key add
 
 # If we're on buster, use backports repo
 if [[ $(lsb_release -rs) -le 10 ]]; then
-  sudo add-apt-repository "deb http://emacs.ganneff.de/buster main"
+  sudo add-apt-repository "deb http://emacs.ganneff.de/ buster main"
   sudo add-apt-repository 'deb http://deb.debian.org/debian buster-backports main'
   sudo apt-get update
   sudo apt-get -y install -t buster-backports --no-install-recommends git-man git
   sudo apt-get -y install -t buster-backports --no-install-recommends fish
 else 
-  sudo add-apt-repository "deb http://emacs.ganneff.de/bullseye main"
+  sudo add-apt-repository "deb http://emacs.ganneff.de/ bullseye main"
   sudo apt-get update
   sudo apt-get -y install --no-install-recommends git-man git
   sudo apt-get -y install --no-install-recommends fish
