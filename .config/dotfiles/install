@@ -19,25 +19,17 @@ if [[ $(lsb_release -rs) -le 10 ]]; then
   sudo apt-get update
   sudo apt-get -y install -t buster-backports --no-install-recommends git-man git
   sudo apt-get -y install -t buster-backports --no-install-recommends fish
+  sudo apt-get -y install -t buster-backports --no-install-recommends snapd
 else 
   sudo apt-get -y install --no-install-recommends git-man git
   sudo apt-get -y install --no-install-recommends fish
+  sudo apt-get -y install --no-install-recommends snapd
 fi
 
-# Install the latest stable neovim
-# Instructions: https://github.com/neovim/neovim/wiki/Installing-Neovim#appimage-universal-linux-package
-curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
-chmod u+x nvim.appimage
-./nvim.appimage --appimage-extract
+sudo snap install core
+# Install the latest emacs
+sudo snap install emacs --edge --classic
 
-sudo mv squashfs-root /
-sudo ln -s /squashfs-root/AppRun /usr/bin/nvim
-
-rm -rf ./nvim.appimage
-
-# Install personal neovim configuration
-git clone https://gitlab.com/smoores/nvim-config ~/.config/nvim
-
-# Install ripgrep for Telescope
+# Install ripgrep
 sudo apt-get -y install --no-install-recommends ripgrep
 
