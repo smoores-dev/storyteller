@@ -31,7 +31,7 @@ else
   sudo apt-get -y install --no-install-recommends fish
 fi
 
-sudo apt-get install emacs-snapshot
+sudo apt-get -y install emacs-snapshot
 # sudo update-alternatives --config emacsclient
 
 # Install ripgrep
