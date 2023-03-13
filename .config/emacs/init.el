@@ -14,35 +14,6 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(cua-mode t)
- '(cursor-type 'bar)
- '(custom-enabled-themes '(dracula))
- '(custom-safe-themes
-   '("79730342933b4b15c8c78b6ef92f28ddef9c40b720fcb1fd4ca8396cebe323ca" default))
- '(package-selected-packages
-   '(corfu hotfuzz vertico-mouse savehist orderless use-package vertico marginalia))
- '(safe-local-variable-values
-   '((eval let
-	   ((project-directory
-	     (car
-	      (dir-locals-find-file default-directory))))
-	   (setq lsp-clients-typescript-server-args
-		 `("--tsserver-path" ,(concat project-directory ".yarn/sdks/typescript/bin/tsserver")
-		   "--stdio")))))
- '(tool-bar-mode nil)
- '(visible-bell t))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
-
 (add-to-list 'auto-mode-alist '("\\.[cm]js\\'" . js-mode))
 
 (when (functionp 'straight-use-package) (straight-use-package 'use-package))
@@ -214,3 +185,32 @@
 
 (use-package whitespace-cleanup-mode
   :diminish)
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(cua-mode t)
+ '(cursor-type 'bar)
+ '(custom-enabled-themes '(dracula))
+ '(custom-safe-themes
+   '("79730342933b4b15c8c78b6ef92f28ddef9c40b720fcb1fd4ca8396cebe323ca" default))
+ '(safe-local-variable-values
+   '((eval let
+	   ((project-directory
+	     (car
+	      (dir-locals-find-file default-directory))))
+	   (setq lsp-clients-typescript-server-args
+		 `("--tsserver-path" ,(concat project-directory ".yarn/sdks/typescript/bin/tsserver")
+		   "--stdio")))))
+ '(package-selected-packages
+   '(corfu hotfuzz vertico-mouse savehist orderless use-package vertico marginalia))
+ '(tool-bar-mode nil)
+ '(visible-bell t))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
