@@ -26,6 +26,14 @@
    '("79730342933b4b15c8c78b6ef92f28ddef9c40b720fcb1fd4ca8396cebe323ca" default))
  '(package-selected-packages
    '(corfu hotfuzz vertico-mouse savehist orderless use-package vertico marginalia))
+ '(safe-local-variable-values
+   '((eval let
+	   ((project-directory
+	     (car
+	      (dir-locals-find-file default-directory))))
+	   (setq lsp-clients-typescript-server-args
+		 `("--tsserver-path" ,(concat project-directory ".yarn/sdks/typescript/bin/tsserver")
+		   "--stdio")))))
  '(tool-bar-mode nil)
  '(visible-bell t))
 (custom-set-faces
