@@ -11,24 +11,28 @@ sudo ()
 export DEBIAN_FRONTEND=noninteractive
 
 sudo apt-get update
+sudo apt-get -y install --no-install-recommends software-properties-common
+sudo apt-get update
+
+# get the emacs git snapshot signing key
+wget -q http://emacs.ganneff.de/apt.key -O- | sudo apt-key add
 
 # If we're on buster, use backports repo
 if [[ $(lsb_release -rs) -le 10 ]]; then
-  sudo apt-get -y install --no-install-recommends software-properties-common
+  sudo add-apt-repository "deb http://emacs.ganneff.de/buster main"
   sudo add-apt-repository 'deb http://deb.debian.org/debian buster-backports main'
   sudo apt-get update
   sudo apt-get -y install -t buster-backports --no-install-recommends git-man git
   sudo apt-get -y install -t buster-backports --no-install-recommends fish
-  sudo apt-get -y install -t buster-backports --no-install-recommends snapd
 else 
+  sudo add-apt-repository "deb http://emacs.ganneff.de/bullseye main"
+  sudo apt-get update
   sudo apt-get -y install --no-install-recommends git-man git
   sudo apt-get -y install --no-install-recommends fish
-  sudo apt-get -y install --no-install-recommends snapd
 fi
 
-sudo snap install core
-# Install the latest emacs
-sudo snap install emacs --edge --classic
+sudo apt-get install emacs-snapshot
+# sudo update-alternatives --config emacsclient
 
 # Install ripgrep
 sudo apt-get -y install --no-install-recommends ripgrep
