@@ -1,11 +1,11 @@
 # This is Git's per-user configuration file.
 [user]
 # Please adapt and uncomment the following lines:
-	name = Shane Moore
-	email = shane@shanemoore.me
+	name = Shane Friedman
+	email = smoores-gpg@friedmans.us
 	signingkey = 0xE01BC73472A04BB0
 [core]
-	editor = nvim
+	editor = code -w
 [commit]
 	gpgsign = true
 [push]
@@ -22,3 +22,7 @@
 	defaultBranch = main
 [alias]
 	graph = log --graph --oneline --color
+[credential]
+	helper = "!f() { /home/node/.vscode-server/bin/e344f1f539a80912a0e9357cec841f36ce97a4e2/node /tmp/vscode-remote-containers-ccefe0e3-ae00-407d-aa82-e62bdc9f0019.js git-credential-helper $*; }; f"
+[safe]
+	directory = /workspaces/dv-node
