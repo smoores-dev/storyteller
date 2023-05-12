@@ -5,16 +5,16 @@ from speech_recognition import Recognizer, AudioFile
 
 def split_audio_file(book_name: str):
     print(f'splitting audio file for {book_name}')
-    audio_filepath = f'/workspaces/storyteller/assets/audio/raw/{book_name}.wav'
-    command = shlex.split(f"ffmpeg -i {audio_filepath} -f segment -segment_time 60 -c copy /workspaces/storyteller/assets/audio/processed/{book_name}/section%09d.wav")
+    audio_filepath = f'assets/audio/raw/{book_name}.wav'
+    command = shlex.split(f"ffmpeg -i {audio_filepath} -f segment -segment_time 60 -c copy assets/audio/processed/{book_name}/section%09d.wav")
     subprocess.run(command)
-    sections = os.listdir(f'/workspaces/storyteller/assets/audio/processed/{book_name}/')
+    sections = os.listdir(f'assets/audio/processed/{book_name}/')
     return len(sections)
 
 
 def search_for_keyphrase(book_name: str, section: int, keyphrase: str):
     print(f'searching for phrase "{keyphrase}" in section {section} of {book_name}')
-    audio_filepath = f'/workspaces/storyteller/assets/audio/processed/{book_name}/section{str(section).zfill(9)}.wav'
+    audio_filepath = f'assets/audio/processed/{book_name}/section{str(section).zfill(9)}.wav'
     recognizer = Recognizer()
 
     audio_file = AudioFile(audio_filepath)
