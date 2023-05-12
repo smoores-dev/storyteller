@@ -2,22 +2,34 @@
 name = "storyteller"
 version = "0.1.0"
 description = ""
-authors = ["SMores <shane@shanemoore.me>"]
+authors = ["smoores <smoores-gpg@friedmans.us>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
 SpeechRecognition = "^3.8.1"
 pocketsphinx = "^0.1.15"
-EbookLib = "^0.17.1"
 beautifulsoup4 = "^4.9.3"
 nltk = "^3.6.2"
 pydub = "^0.25.1"
+ebooklib = "^0.18"
+contractions = "^0.1.73"
+marisa-trie = "^0.8.0"
+tinytag = "^1.9.0"
+openai-whisper = {git = "https://github.com/openai/whisper.git"}
+mutagen = "^1.46.0"
+torch = {version = "^2.0.1+cpu", source = "pytorch"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 black = "^21.5b1"
 yapf = "^0.31.0"
 pylint = "^2.8.2"
+
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cpu"
+default = false
+secondary = false
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

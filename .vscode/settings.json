@@ -1,0 +1,11 @@
+{
+  "python.analysis.typeCheckingMode": "basic",
+  "[python]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "mikoz.black-py",
+    "editor.wordBasedSuggestions": false
+  },
+  "editor.tabSize": 4,
+  "editor.indentSize": "tabSize"
+}
