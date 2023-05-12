@@ -13,8 +13,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends swig libpulse-dev libasound2-dev ffmpeg libavcodec-extra
 
 USER vscode
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-ENV PATH "/home/vscode/.poetry/bin:$PATH"
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH "/home/vscode/.local/bin:$PATH"
+
+RUN wget -O /home/vscode/en.txt https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 # [Optional] Uncomment this line to install global node packages.
 # RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm install -g <your-package-here>" 2>&1
