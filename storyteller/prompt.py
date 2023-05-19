@@ -1,5 +1,4 @@
 from nltk.tokenize import word_tokenize
-from storyteller.epub import get_full_text
 import marisa_trie
 import contractions
 

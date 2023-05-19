@@ -1,26 +1,14 @@
 import math
 import re
+from dataclasses import dataclass
 from typing import List, cast
 from fuzzysearch import Match, find_near_matches
 from nltk.tokenize import sent_tokenize
 import ebooklib
 from ebooklib import epub
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString, ResultSet, Tag
 
-def read_chapter(book_name: str, chapter_filename: str):
-    chapter_filepath = f"/workspaces/storyteller/assets/text/{book_name}.epub/OEBPS/xhtml/{chapter_filename}"
-    with open(chapter_filepath) as chapter_descriptor:
-        xhtml = chapter_descriptor.read()
-    return xhtml
-
-
-def parse_chapter(chapter_xhtml: str):
-    soup = BeautifulSoup(chapter_xhtml, "html.parser")
-    tags = soup.find_all("p", attrs={"class", "CO"}) + soup.find_all(
-        "p", attrs={"class", "TX"}
-    )
-    return [sentence for tag in tags for sentence in sent_tokenize(tag.text)]
-
+from .whisperaudio import transcribe_chapter
 
 def get_chapters(book_name: str):
     book = epub.read_epub(f"/workspaces/storyteller/assets/text/{book_name}.epub")
@@ -32,8 +20,19 @@ def get_chapters(book_name: str):
     return chapters
 
 
+endswithletter = re.compile(".*[a-zA-Z]$")
+
+
 def get_chapter_text(chapter: epub.EpubHtml):
     soup = BeautifulSoup(chapter.get_body_content(), "html.parser")
+    # This is goofy, but we want nltk to treat separate textblocks as separate
+    # sentences
+    textblocks: ResultSet[Tag] = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'])
+    for textblock in textblocks:
+        text = textblock.get_text()
+        if endswithletter.match(text.strip()):
+            textblock.append(".")
+        break
     text = soup.get_text(" ")
     return text
 
@@ -46,17 +45,9 @@ def find_timestamps(match: Match, transcription):
         s += 1
     w = 0
     segment = transcription['segments'][s]
-    try:
-        segment['words'][w]['word']
-    except:
-        print(match, position, w, len(segment['words']))
     while position + len(segment['words'][w]['word']) <= match.start:
         position += len(segment['words'][w]['word']) + 1
         w += 1
-        try:
-            segment['words'][w]['word']
-        except:
-            print(match, position, w, len(segment['words']))
 
     start_word = segment['words'][w]
     start = start_word['start']
@@ -76,15 +67,20 @@ def find_timestamps(match: Match, transcription):
     return start, end
 
 
-def get_chapter_timestamps(transcription, chapter: epub.EpubHtml):
-    chapter_text = get_chapter_text(chapter)
-    # TODO: figure out how to strip titles since they're spoken different?
+@dataclass
+class SentenceRange:
+    start: float
+    end: float
+    sentence_number: int
+
+
+def get_chapter_timestamps(transcription, chapter_text: str):
     sentences = cast(List[str], sent_tokenize(chapter_text))
-    sentence_timestamps = []
-    transcription_text = " ".join([segment['text'] for segment in transcription['segments']])
-    for sentence in sentences:
+    sentence_timestamps: List[SentenceRange] = []
+    transcription_text = " ".join([segment['text'].lower() for segment in transcription['segments']])
+    for index, sentence in enumerate(sentences):
         matches = find_near_matches(
-            sentence,
+            sentence.strip().lower(),
             transcription_text,
             max_l_dist=math.floor(0.2 * len(sentence))
         )
@@ -94,12 +90,27 @@ def get_chapter_timestamps(transcription, chapter: epub.EpubHtml):
             continue
         first_match = matches[0]
         start, end = find_timestamps(first_match, transcription)
-        sentence_timestamps.append((sentence, start, end))
+        sentence_timestamps.append(SentenceRange(start, end, index))
     return sentence_timestamps
 
 
+def tag_sentences(chapter: epub.EpubHtml):
+    content = cast(str, chapter.get_content())
+    soup = BeautifulSoup(content, "html.parser")
+    body_soup = soup.find("body")
+    if body_soup is None:
+        return
+    if isinstance(body_soup, NavigableString):
+        return
+    textblocks = body_soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'])
+    # TODO: how the heck are we gonna split up sentences??
+    chapter.set_content(soup.encode(formatter="html"))
 
-def get_full_text(book_name: str) -> str:
-    chapters = get_chapters(book_name)
-    chapter_texts = [get_chapter_text(chapter) for chapter in chapters]
-    return "\n".join(chapter_texts)
+
+def process_chapter(book_name: str, chapter_title: str, chapter: epub.EpubHtml):
+    chapter_text = get_chapter_text(chapter)
+    transcription = transcribe_chapter(book_name, chapter_title, chapter_text)
+    timestamps = get_chapter_timestamps(transcription, chapter_text)
+    print(timestamps)
+    tag_sentences(chapter)
+
