@@ -10,11 +10,10 @@ def read_dict():
     return [word.lower() for word in contents.split("\n")]
 
 
-def find_invented_words(book_name: str):
-    full_text = get_full_text(book_name)
+def find_invented_words(text: str):
     all_words = [
         word.lower()
-        for word in word_tokenize(contractions.fix(full_text))
+        for word in word_tokenize(contractions.fix(text))
         if word.isalpha()
     ]
 
@@ -25,8 +24,8 @@ def find_invented_words(book_name: str):
     return list(set(invented_words))
 
 
-def generate_initial_prompt(book_name: str):
-    invented_words = find_invented_words(book_name)
+def generate_initial_prompt(text: str):
+    invented_words = find_invented_words(text)
     invented_word_str = ', '.join(invented_words[0:-1]) + ", and " + invented_words[-1]
-    initial_prompt = f"The following is a fictional story, containing invented words such as {invented_word_str}"
+    initial_prompt = f"The following is from a fictional story, containing invented words such as {invented_word_str}"
     return initial_prompt
