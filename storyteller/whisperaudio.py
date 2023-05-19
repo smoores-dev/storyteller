@@ -7,7 +7,7 @@ import whisperx.asr
 import os
 from mutagen.mp4 import MP4, Chapter
 
-from storyteller.prompt import generate_initial_prompt
+from .prompt import generate_initial_prompt
 
 
 def get_mp4(book_name: str):
@@ -42,7 +42,8 @@ def split_audiobook(book_name: str):
         subprocess.run(command)
 
 
-def transcribe_chapter(book_name: str, chapter_title: str, initial_prompt: str):
+def transcribe_chapter(book_name: str, chapter_title: str, chapter_text: str):
+    initial_prompt = generate_initial_prompt(chapter_text)
     mp4 = get_mp4(book_name)
     filename = cast(str, mp4.filename)
     model = whisperx.load_model(
@@ -62,42 +63,5 @@ def transcribe_chapter(book_name: str, chapter_title: str, initial_prompt: str):
     )
 
     alignment_model, metadata = whisperx.load_align_model(language_code=unaligned["language"], device="cpu")
-    transcription = whisperx.align(unaligned['segments'], alignment_model, metadata, audio, device="cpu", return_char_alignments=False)
+    transcription = whisperx.align(unaligned['segments'], alignment_model, metadata, audio, device="cpu", return_char_alignments=False) # type: ignore
     return transcription
-
-
-def transcribe_chapters(book_name: str, model: whisperx.asr.WhisperModel, initial_prompt: str):
-    mp4 = get_mp4(book_name)
-    filename = cast(str, mp4.filename)
-    if mp4.chapters is None:
-        return model.transcribe(
-            filename,
-            verbose=False,
-            word_timestamps=True,
-            initial_prompt=initial_prompt,
-            language="en",
-            fp16=False,
-        )
-
-    chapters: List[Chapter] = list(mp4.chapters)
-    # TODO: temp hack to reduce processing time
-    chapters = chapters[0:3]
-
-    return [
-        model.transcribe(
-            get_chapter_filename(filename, chapter.title),
-            verbose=False,
-            word_timestamps=True,
-            initial_prompt=initial_prompt,
-            language="en",
-            fp16=False,
-        )
-        for chapter in chapters
-    ]
-
-
-def get_word_timestamps(book_name: str):
-    model = whisperx.load_model("base.en")
-    initial_prompt = generate_initial_prompt(book_name)
-
-    return transcribe_chapters(book_name, model, initial_prompt)
