@@ -1,7 +1,65 @@
 from typing import Tuple
 import math
+import whisper
+import numpy as np
+from fuzzysearch import find_near_matches
+from nltk.tokenize import word_tokenize
 from storyteller.audio import search_for_keyphrase, split_audio_file
 from storyteller.epub import get_windowed_keyphrases
+from storyteller.text import levenshtein
+from storyteller.whisperaudio import get_chapter_filename
+from storyteller.prompt import generate_initial_prompt
+
+
+SAMPLE_RATE = 16000
+CHUNK_LENGTH = 30
+N_SAMPLES = CHUNK_LENGTH * SAMPLE_RATE  # 480000 samples in a 30-second chunk
+
+
+def pad_or_trim(array: np.ndarray, start: int = 0):
+    axis = -1
+    start_index = start * SAMPLE_RATE
+    if array.shape[-1] > start_index + N_SAMPLES:
+        array = array.take(
+            indices=range(start_index, start_index + N_SAMPLES), axis=axis
+        )
+
+    if array.shape[-1] < start_index + N_SAMPLES:
+        pad_widths = [(0, 0)] * array.ndim
+        pad_widths[axis] = (0, start_index + N_SAMPLES - array.shape[axis])  # type: ignore
+        array = np.pad(array, pad_widths)
+
+    return array
+
+
+def get_sentence_timestamps(model: whisper.Whisper, filename: str, sentence: str):
+    # initial_prompt = generate_initial_prompt(sentence)
+    sentence_tokens = word_tokenize(sentence)
+    audio = whisper.load_audio(filename)
+    audio_length = len(audio) / SAMPLE_RATE
+    seek = 0
+    print(f"The following is a section from a fictional story. It contains the sentence: {sentence}")
+    while seek <= audio_length:
+        # audio_segment = whisper.pad_or_trim(audio, seek)
+        audio_segment = whisper.pad_or_trim(audio)
+        transcription = model.transcribe(
+            audio_segment,
+            verbose=True,
+            word_timestamps=True,
+            initial_prompt=f"The following is a section from a fictional story. It contains the sentence: {sentence}",
+            language="en",
+            fp16=False,
+            condition_on_previous_text=False
+        )
+        matches = find_near_matches(
+            sentence,
+            transcription['text'],
+            max_l_dist=math.floor(0.2 * len(sentence_tokens))
+        )
+        
+        # print(edlib.getNiceAlignment(alignment, sentence_tokens, transcription_tokens))
+        # return sentence_tokens, transcription_tokens, alignment, transcription
+        return matches
 
 
 def interpolate_index(book_name: str):

@@ -1,30 +1,11 @@
+import math
 import re
-from typing import List
+from typing import List, cast
+from fuzzysearch import Match, find_near_matches
 from nltk.tokenize import sent_tokenize
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
-
-
-def window(sentence: str):
-    words = sentence.split(" ")
-    window_start = 1
-    windows = [" ".join(words[0:4])]
-    while window_start + 4 <= len(words):
-        windows.append(" ".join(words[window_start : window_start + 4]))
-        window_start += 1
-    return windows
-
-
-def simplify(sentence: str):
-    return (
-        re.sub("[,“”.?!…;:]", "", sentence.lower())
-        .replace("’", "'")
-        .replace("—", " ")
-        .strip(" ")
-        .replace("  ", " ")
-    )
-
 
 def read_chapter(book_name: str, chapter_filename: str):
     chapter_filepath = f"/workspaces/storyteller/assets/text/{book_name}.epub/OEBPS/xhtml/{chapter_filename}"
@@ -41,12 +22,6 @@ def parse_chapter(chapter_xhtml: str):
     return [sentence for tag in tags for sentence in sent_tokenize(tag.text)]
 
 
-def get_chapter_keyphrases(book_name: str, chapter_filename: str):
-    chapter_xhtml = read_chapter(book_name, chapter_filename)
-    sentences = parse_chapter(chapter_xhtml)
-    return [window(simplify(sentence)) for sentence in sentences]
-
-
 def get_chapters(book_name: str):
     book = epub.read_epub(f"/workspaces/storyteller/assets/text/{book_name}.epub")
     chapters: List[epub.EpubHtml] = [
@@ -56,22 +31,75 @@ def get_chapters(book_name: str):
     ]
     return chapters
 
+
 def get_chapter_text(chapter: epub.EpubHtml):
     soup = BeautifulSoup(chapter.get_body_content(), "html.parser")
     text = soup.get_text(" ")
     return text
 
 
+def find_timestamps(match: Match, transcription):
+    s = 0
+    position = 0
+    while position + len(transcription['segments'][s]['text']) < match.start: # type: ignore
+        position += len(transcription['segments'][s]['text']) + 1 # type: ignore
+        s += 1
+    w = 0
+    segment = transcription['segments'][s]
+    try:
+        segment['words'][w]['word']
+    except:
+        print(match, position, w, len(segment['words']))
+    while position + len(segment['words'][w]['word']) <= match.start:
+        position += len(segment['words'][w]['word']) + 1
+        w += 1
+        try:
+            segment['words'][w]['word']
+        except:
+            print(match, position, w, len(segment['words']))
+
+    start_word = segment['words'][w]
+    start = start_word['start']
+
+    while position + len(transcription['segments'][s]['text']) < match.end: # type: ignore
+        position += len(transcription['segments'][s]['text']) + 1 # type: ignore
+        s += 1
+        w = 0
+
+    segment = transcription['segments'][s]
+    while w + 1 < len(segment['words']) - 1 and position + len(segment['words'][w]['word']) < match.end:
+        position += len(segment['words'][w]['word']) + 1
+        w += 1
+
+    end_word = segment['words'][w]
+    end = end_word['end']
+    return start, end
+
+
+def get_chapter_timestamps(transcription, chapter: epub.EpubHtml):
+    chapter_text = get_chapter_text(chapter)
+    # TODO: figure out how to strip titles since they're spoken different?
+    sentences = cast(List[str], sent_tokenize(chapter_text))
+    sentence_timestamps = []
+    transcription_text = " ".join([segment['text'] for segment in transcription['segments']])
+    for sentence in sentences:
+        matches = find_near_matches(
+            sentence,
+            transcription_text,
+            max_l_dist=math.floor(0.2 * len(sentence))
+        )
+        matches = cast(List[Match], matches)
+        if (len(matches) == 0):
+            print(f"no match for '{sentence}'")
+            continue
+        first_match = matches[0]
+        start, end = find_timestamps(first_match, transcription)
+        sentence_timestamps.append((sentence, start, end))
+    return sentence_timestamps
+
+
+
 def get_full_text(book_name: str) -> str:
     chapters = get_chapters(book_name)
     chapter_texts = [get_chapter_text(chapter) for chapter in chapters]
     return "\n".join(chapter_texts)
-
-
-def get_windowed_keyphrases(book_name: str):
-    chapters = get_chapters(book_name)
-    return [
-        keyphrase
-        for chapter in chapters
-        for keyphrase in get_chapter_keyphrases(book_name, get_chapter_text(chapter))
-    ]
