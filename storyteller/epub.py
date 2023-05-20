@@ -1,7 +1,7 @@
 import math
 import re
 from dataclasses import dataclass
-from typing import List, cast
+from typing import List, cast, Dict
 from fuzzysearch import Match, find_near_matches
 from nltk.tokenize import sent_tokenize
 import ebooklib
@@ -94,6 +94,80 @@ def get_chapter_timestamps(transcription, chapter_text: str):
     return sentence_timestamps
 
 
+@dataclass
+class Mark:
+    tag_name: str
+    attrs: Dict[str, str]
+
+
+@dataclass
+class TextNode:
+    text: str
+    marks: List[Mark]
+
+
+@dataclass
+class SentenceSpan:
+    id: int
+    sentence: str
+    text_nodes: List[TextNode]
+
+
+def get_textblock_spans(start_id: int, textblock: Tag):
+    marks: List[Mark] = list()
+    spans: List[SentenceSpan] = list()
+    sentences = cast(List[str], sent_tokenize(textblock.get_text()))
+    leaf = textblock.contents[0]
+    leaf_index = 0
+    for i, sentence in enumerate(sentences):
+        span = SentenceSpan(i + start_id, sentence, [])
+        spans.append(span)
+        search_index = 0
+        while search_index < len(sentence):
+            while isinstance(leaf, Tag) and len(leaf.contents) > 0:
+                tag_name = leaf.name
+                attrs = leaf.attrs
+                marks.append(Mark(tag_name, attrs))
+                leaf = leaf.contents[0]
+                leaf_index = 0
+            if leaf is None:
+                raise IndexError
+            leaf_text = leaf.get_text()[leaf_index:]
+            remaining_sentence = sentence[search_index:]
+            if len(remaining_sentence) < len(leaf_text):
+                leaf_index += len(remaining_sentence)
+                span.text_nodes.append(TextNode(remaining_sentence, marks[:]))
+                break
+            search_index += len(leaf_text)
+            span.text_nodes.append(TextNode(leaf_text, marks[:]))
+            while not leaf.next_sibling:
+                leaf = leaf.parent
+                if leaf is None:
+                    return spans
+                if isinstance(leaf, Tag):
+                    marks = [mark for mark in marks if not (mark.tag_name == leaf.name and mark.attrs == leaf.attrs)]
+            leaf = leaf.next_sibling
+            leaf_index = 0
+        leaf_index = leaf_index if leaf_index == 0 else leaf_index + 1
+    return spans
+
+
+def serialize_spans(soup: BeautifulSoup, spans: List[SentenceSpan]):
+    tags = []
+    for span in spans:
+        span_tag = soup.new_tag('span', id=f"sentence{span.id}")
+        for text_node in span.text_nodes:
+            text_node_tag = span_tag
+            for mark in text_node.marks:
+                mark_tag = soup.new_tag(mark.tag_name, **mark.attrs)
+                text_node_tag.append(mark_tag)
+                text_node_tag = mark_tag
+            text_node_tag.append(text_node.text)
+        tags.append(span_tag)
+        tags.append(" ")
+    return tags
+
+
 def tag_sentences(chapter: epub.EpubHtml):
     content = cast(str, chapter.get_content())
     soup = BeautifulSoup(content, "html.parser")
@@ -102,8 +176,14 @@ def tag_sentences(chapter: epub.EpubHtml):
         return
     if isinstance(body_soup, NavigableString):
         return
-    textblocks = body_soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'])
-    # TODO: how the heck are we gonna split up sentences??
+    textblocks: List[Tag] = body_soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'])
+    start_id = 0
+    for textblock in textblocks:
+        spans = get_textblock_spans(start_id, textblock)
+        new_content = serialize_spans(soup, spans)
+        textblock.clear()
+        textblock.extend(new_content)
+        start_id += len(spans)
     chapter.set_content(soup.encode(formatter="html"))
 
 
