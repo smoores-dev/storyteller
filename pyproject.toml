@@ -21,17 +21,18 @@ torch = {version = "^2.0.0", source = "pytorch"}
 fuzzysearch = "^0.7.3"
 torchaudio = {version = "2.0.1", source = "pytorch"}
 pyannote-audio = {git = "https://github.com/pyannote/pyannote-audio", rev = "11b56a137a578db9335efc00298f6ec1932e6317"}
+black = "^23.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
-black = "^21.5b1"
+black = "^23.3.0"
 yapf = "^0.31.0"
 pylint = "^2.8.2"
 
 [[tool.poetry.source]]
 name = "pytorch"
 url = "https://download.pytorch.org/whl/cpu"
-secondary = true
+priority = "explicit"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
