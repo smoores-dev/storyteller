@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import cache
 import json
 import math
+import re
 import shlex
 import subprocess
 from typing import Callable, List, Union, cast
@@ -12,6 +13,7 @@ import os
 from mutagen.mp4 import MP4, Chapter
 from pathlib import PurePath
 from fuzzysearch import Match, find_near_matches
+from nltk.tokenize import sent_tokenize
 
 from storyteller.prompt import generate_initial_prompt
 
@@ -105,14 +107,14 @@ def transcribe_chapter(filename: str):
 
 
 def get_transcription_text(transcription: whisperx.types.AlignedTranscriptionResult):
-    return "\uc3a9".join([segment["text"] for segment in transcription["segments"]])
+    return " ".join([segment["text"] for segment in transcription["segments"]])
 
 
-def find_timestamps(match: Match, transcription):
+def find_timestamps(match_start_index, transcription):
     s = 0
     position = 0
     while True:
-        while position + len(transcription["segments"][s]["text"]) < match.start:  # type: ignore
+        while position + len(transcription["segments"][s]["text"]) < match_start_index:  # type: ignore
             position += len(transcription["segments"][s]["text"]) + 1  # type: ignore
             s += 1
 
@@ -120,7 +122,7 @@ def find_timestamps(match: Match, transcription):
         segment = transcription["segments"][s]
         while (
             w < len(segment["words"])
-            and position + len(segment["words"][w]["word"]) <= match.start
+            and position + len(segment["words"][w]["word"]) <= match_start_index
         ):
             position += len(segment["words"][w]["word"]) + 1
             w += 1
@@ -147,67 +149,6 @@ class SentenceRange:
     id: int
 
 
-def clean_up_sentence_ranges(
-    ranges: List[SentenceRange], duration: float, num_sentences: int
-) -> List[SentenceRange]:
-    sorted_ranges = sorted(ranges, key=lambda r: r.start)
-
-    runs: List[List[SentenceRange]] = [[]]
-    for sentence_range in sorted_ranges:
-        if len(runs[-1]) == 0:
-            runs[-1].append(sentence_range)
-            continue
-
-        if 0 < sentence_range.id - runs[-1][-1].id <= 2:
-            runs[-1].append(sentence_range)
-            continue
-
-        runs.extend([[sentence_range], []])
-
-    valid_ranges = [
-        sentence_range
-        for run in runs
-        if len(run) > 1
-        for sentence_range in run
-        if sentence_range.id != 0
-    ]
-
-    final_ranges: List[Union[SentenceRange, None]] = [None] * num_sentences
-
-    for sentence_range in valid_ranges:
-        final_ranges[sentence_range.id] = sentence_range
-
-    final_ranges[0] = SentenceRange(0, 0, 0)
-
-    for current_range in valid_ranges:
-        index = current_range.id
-        next_range_index = index + 1
-        while (
-            next_range_index < len(final_ranges)
-            and final_ranges[next_range_index] is None
-        ):
-            next_range_index += 1
-
-        next_range: SentenceRange = (
-            final_ranges[next_range_index]
-            if next_range_index < len(final_ranges)
-            else SentenceRange(duration, duration, next_range_index)
-        )  # type: ignore
-
-        gap = next_range.id - current_range.id
-        start_diff = next_range.start - current_range.start
-        for i in range(1, gap):
-            start = current_range.start + start_diff * i / gap
-            final_ranges[index + i] = SentenceRange(start, start, current_range.id + i)
-
-        current_range.end = (
-            final_ranges[index + 1].start if index + 1 < len(final_ranges) else duration   # type: ignore
-        )
-        index += 1
-
-    return cast(List[SentenceRange], final_ranges)
-
-
 def get_chapter_timestamps(
     transcription: whisperx.types.AlignedTranscriptionResult,
     sentences: List[str],
@@ -215,23 +156,56 @@ def get_chapter_timestamps(
 ):
     sentence_ranges: List[SentenceRange] = []
     transcription_text = get_transcription_text(transcription).lower()
-    for index, sentence in enumerate(sentences):
+    transcription_sentences = sent_tokenize(transcription_text)
+    transcription_window_index = 0
+    last_good_transcription_window = 0
+    not_found = 0
+
+    sentence_index = 0
+    while sentence_index < len(sentences):
+        sentence = sentences[sentence_index]
+        transcription_window = " ".join(
+            transcription_sentences[
+                transcription_window_index : transcription_window_index + 4
+            ]
+        )
+
         matches = find_near_matches(
             sentence.strip().lower(),
-            transcription_text,
+            transcription_window,
             max_l_dist=math.floor(0.25 * len(sentence)),
         )
         matches = cast(List[Match], matches)
+
         if len(matches) == 0:
+            sentence_index += 1
+            not_found += 1
+            if not_found == 3:
+                not_found = 0
+                transcription_window_index += 1
+                if transcription_window_index == len(transcription_sentences):
+                    transcription_window_index = last_good_transcription_window
+                    continue
+                sentence_index -= 3
             continue
+
+        not_found = 0
+        last_good_transcription_window = transcription_window_index
         first_match = matches[0]
-        if first_match.matched.startswith("\uc3a9"):
-            first_match = Match(
-                first_match.start + 1, first_match.end, first_match.dist, matched=first_match.matched[1:]  # type: ignore
-            )
-        start = find_timestamps(first_match, transcription)
-        sentence_ranges.append(SentenceRange(start, start, index))
 
-    cleaned_sentence_ranges = clean_up_sentence_ranges(sentence_ranges, duration, len(sentences))
+        transcription_offset = len(
+            " ".join(transcription_sentences[:transcription_window_index])
+        )
+        start = find_timestamps(first_match.start + transcription_offset + 1, transcription)
 
-    return cleaned_sentence_ranges
+        if len(sentence_ranges) > 0:
+            sentence_ranges[-1].end = start
+
+        sentence_ranges.append(SentenceRange(start, start, sentence_index))
+        sentence_index += 1
+
+    if len(sentence_ranges) > 0:
+        sentence_ranges[0].start = 0
+        sentence_ranges[-1].end = duration
+
+    return sentence_ranges
