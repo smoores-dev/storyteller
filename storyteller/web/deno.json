@@ -1,0 +1,13 @@
+{
+  "lock": false,
+  "tasks": {
+    "start": "deno run -A --watch=./static,./routes dev.ts",
+    "client:gen": "deno run -A npm:openapi-typescript-codegen@latest/openapi --input http://localhost:8000/openapi.json --name ApiClient --output ./apiClient && deno task client:fix",
+    "client:fix": "./scripts/fix-client.sh"
+  },
+  "importMap": "./import_map.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
+  }
+}

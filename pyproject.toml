@@ -5,31 +5,26 @@ description = ""
 authors = ["smoores <smoores-gpg@friedmans.us>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
+
 SpeechRecognition = "^3.8.1" 
-pocketsphinx = "^0.1.15" 
 beautifulsoup4 = "^4.9.3" 
 nltk = "^3.6.2" 
-pydub = "^0.25.1" 
 ebooklib = "^0.18" 
 contractions = "^0.1.73" 
 marisa-trie = "^0.8.0" 
-openai-whisper = {git = "https://github.com/openai/whisper.git#248b6cb124225dd263bb9bd32d060b6517e067f8"}
 whisperx = {git = "https://github.com/m-bain/whisperx.git"}
 mutagen = "^1.46.0"
 torch = {version = "^2.0.0", source = "pytorch"}
 fuzzysearch = "^0.7.3"
 torchaudio = {version = "2.0.1", source = "pytorch"}
 pyannote-audio = {git = "https://github.com/pyannote/pyannote-audio", rev = "11b56a137a578db9335efc00298f6ec1932e6317"}
-black = "^23.3.0"
-updateable-zip-file = {git = "https://github.com/michaelvanstraten/updateable-zip-file"}
 thefuzz = "^0.19.0"
 python-levenshtein = "^0.21.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 black = "^23.3.0"
-yapf = "^0.31.0"
 pylint = "^2.8.2"
 
 [[tool.poetry.source]]
