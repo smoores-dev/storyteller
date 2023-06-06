@@ -3,3 +3,5 @@ __pycache__
 /assets/
 /indices/
 /cache/
+
+storyteller.db

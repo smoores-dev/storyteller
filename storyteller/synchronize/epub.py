@@ -1,25 +1,29 @@
-import math
-import os
 import re
-import whisperx.types
 from dataclasses import dataclass
-from typing import Callable, List, cast, Dict
+from typing import Callable, List, Tuple, TypedDict, cast, Dict
 
-# from fuzzysearch import Match
 from nltk.tokenize import sent_tokenize as _sent_tokenize
 from functools import cache
 from ebooklib import epub, ITEM_DOCUMENT
 from bs4 import BeautifulSoup, NavigableString, ResultSet, Tag
-from mutagen.mp4 import MP4
-
-from storyteller.audio import SentenceRange, get_chapter_timestamps
 
 
 sent_tokenize: Callable[[str], List[str]] = cache(_sent_tokenize)
 
 
+@dataclass
+class SentenceRange:
+    start: float
+    end: float
+    id: int
+
+
+def get_epub_filepath(book_name: str):
+    return f"assets/text/{book_name}/original/{book_name}.epub"
+
+
 def read_epub(book_name: str):
-    book = epub.read_epub(f"assets/text/{book_name}/original/{book_name}.epub")
+    book = epub.read_epub(get_epub_filepath(book_name))
     for item in book.get_items_of_type(ITEM_DOCUMENT):
         if not item.is_chapter():
             continue
@@ -33,6 +37,32 @@ def read_epub(book_name: str):
                     href=link["href"], rel=" ".join(link["rel"]), type=link["type"]
                 )
     return book
+
+
+@dataclass
+class EpubAuthor:
+    name: str
+    file_as: str
+    role: str | None
+
+
+def parse_author_metadata(metadata: Tuple[str, Dict[str, str]]):
+    name = metadata[0]
+    file_as = name
+    role = None
+
+    for key, value in metadata[1].items():
+        if key.endswith("file-as"):
+            file_as = value
+        if key.endswith("role"):
+            role = value
+
+    return EpubAuthor(name, file_as, role)
+
+
+def get_authors(book: epub.EpubBook) -> List[EpubAuthor]:
+    metadata = book.get_metadata("DC", "creator")
+    return [parse_author_metadata(md) for md in metadata]
 
 
 def get_chapters(book: epub.EpubBook) -> List[epub.EpubHtml]:
@@ -84,10 +114,31 @@ class SentenceSpan:
     text_nodes: List[TextNode]
 
 
+def get_textblock_sentences_with_offsets(textblock: Tag):
+    textblock_text_content = textblock.get_text()
+    sentences = sent_tokenize(textblock_text_content)
+    sentences_with_offsets = []
+    last_sentence_end = 0
+    for sentence in sentences:
+        sentence_start = textblock_text_content.find(sentence, last_sentence_end)
+        if sentence_start > last_sentence_end:
+            sentences_with_offsets.append(
+                textblock_text_content[last_sentence_end:sentence_start]
+            )
+
+        sentences_with_offsets.append(sentence)
+        last_sentence_end = sentence_start + len(sentence)
+
+    if len(textblock_text_content) > last_sentence_end:
+        sentences_with_offsets.append(textblock_text_content[last_sentence_end:])
+
+    return sentences_with_offsets
+
+
 def get_textblock_spans(start_id: int, textblock: Tag):
     marks: List[Mark] = list()
     spans: List[SentenceSpan] = list()
-    sentences = sent_tokenize(textblock.get_text())
+    sentences = get_textblock_sentences_with_offsets(textblock)
     leaf = textblock.contents[0]
     leaf_index = 0
     for i, sentence in enumerate(sentences):
@@ -105,6 +156,9 @@ def get_textblock_spans(start_id: int, textblock: Tag):
                 raise IndexError
             leaf_text = leaf.get_text()[leaf_index:]
             remaining_sentence = sentence[search_index:]
+            print(
+                f"leaf_text: '{leaf_text}', remaining_sentence: '{remaining_sentence}', marks: {marks}"
+            )
             if len(remaining_sentence) < len(leaf_text):
                 leaf_index += len(remaining_sentence)
                 span.text_nodes.append(TextNode(remaining_sentence, marks[:]))
@@ -123,7 +177,6 @@ def get_textblock_spans(start_id: int, textblock: Tag):
                     ]
             leaf = leaf.next_sibling
             leaf_index = 0
-        leaf_index = leaf_index if leaf_index == 0 else leaf_index + 1
     return spans
 
 
@@ -155,13 +208,13 @@ def tag_sentences(chapter: epub.EpubHtml):
         ["h1", "h2", "h3", "h4", "h5", "h6", "p"]
     )
     start_id = 0
-    for textblock in textblocks:
-        spans = get_textblock_spans(start_id, textblock)
+    for i, textblock in enumerate(textblocks):
+        spans = get_textblock_spans(start_id, textblocks[17])
         new_content = serialize_spans(soup, spans)
         textblock.clear()
         textblock.extend(new_content)
         start_id += len(spans)
-    chapter.set_content(soup.encode(formatter="html"))
+        chapter.set_content(soup.encode(formatter="html"))
     return start_id
 
 
@@ -200,102 +253,3 @@ def create_media_overlay(
         par.append(audio)
         seq.append(par)
     return soup.encode(formatter="minimal")
-
-
-@dataclass
-class SyncedChapter:
-    chapter: epub.EpubHtml
-    audio: epub.EpubItem
-    media_overlay: epub.EpubSMIL
-    duration: float
-
-
-def sync_chapter(
-    mp4: MP4,
-    transcription: whisperx.types.AlignedTranscriptionResult,
-    chapter: epub.EpubHtml,
-):
-    chapter_sentences = get_chapter_sentences(chapter)
-    timestamps = get_chapter_timestamps(
-        transcription, chapter_sentences, mp4.info.length
-    )
-    tag_sentences(chapter)
-    chapter_filepath_length = len(chapter.file_name.split(os.path.sep)) - 1
-    relative_ups = "../" * chapter_filepath_length
-    chapter.add_link(
-        rel="stylesheet",
-        href=f"{relative_ups}Styles/storyteller-readaloud.css",
-        type="text/css",
-    )
-    base_filename, _ = os.path.splitext(os.path.basename(chapter.file_name))
-    _, audio_ext = os.path.splitext(mp4.filename)  # type: ignore
-    audio_item = epub.EpubItem(
-        uid=f"{base_filename}_audio",
-        file_name=f"Audio/{base_filename}{audio_ext}",
-        content=open(mp4.filename, "rb").read(),  # type: ignore
-        media_type="audio/mpeg",
-    )
-    media_overlay_item = epub.EpubSMIL(
-        uid=f"{base_filename}_overlay",
-        file_name=f"MediaOverlays/{base_filename}.smil",
-        content=create_media_overlay(
-            base_filename, chapter.file_name, audio_item.file_name, timestamps
-        ),
-    )
-    chapter.media_overlay = media_overlay_item.id
-    return SyncedChapter(
-        chapter=chapter,
-        audio=audio_item,
-        media_overlay=media_overlay_item,
-        duration=timestamps[-1].end if len(timestamps) else 0,
-    )
-
-
-def format_duration(duration: float):
-    hours = math.floor(duration / 3600)
-    minutes = math.floor(duration / 60 - hours * 3600)
-    seconds = duration - minutes * 60 - hours * 3600
-    return f"{str(hours).zfill(2)}:{str(minutes).zfill(2)}:{round(seconds, 3)}"
-
-
-def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
-    book.add_metadata(
-        None,
-        "meta",
-        format_duration(synced.duration),
-        {"property": "media:duration", "refines": f"#{synced.media_overlay.id}"},
-    )
-
-    book.add_item(synced.audio)
-    book.add_item(synced.media_overlay)
-
-
-# if __name__ == "__main__":
-# book = read_epub("tress")
-# chapter_one: epub.EpubHtml = list(book.get_items())[9]
-# synced = sync_chapter(
-#     "assets/audio/tress/chapters/tress-Chapter 01 - The Girl.mp4", chapter_one
-# )
-# book.add_metadata(
-#     None, "meta", format_duration(synced.duration), {"property": "media:duration"}
-# )
-# book.add_metadata(
-#     None,
-#     "meta",
-#     format_duration(synced.duration),
-#     {"property": "media:duration", "refines": f"#{synced.media_overlay.id}"},
-# )
-# book.add_metadata(
-#     None, "meta", "-epub-media-overlay-active", {"property": "media:active-class"}
-# )
-# book.add_item(
-#     epub.EpubItem(
-#         uid="storyteller_readaloud_styles",
-#         file_name="Styles/storyteller-readaloud.css",
-#         media_type="text/css",
-#         content=".-epub-media-overlay-active { background-color: #ffb; }".encode(),
-#     )
-# )
-# book.add_item(synced.audio)
-# book.add_item(synced.media_overlay)
-# epub.write_epub("assets/text/tress-test1.epub", book)
