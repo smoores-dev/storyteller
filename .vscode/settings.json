@@ -1,11 +1,25 @@
 {
   "python.analysis.typeCheckingMode": "basic",
+  "editor.formatOnSave": true,
   "[python]": {
     "diffEditor.ignoreTrimWhitespace": false,
-    "editor.formatOnType": true,
-    "editor.defaultFormatter": "mikoz.black-py",
-    "editor.wordBasedSuggestions": false
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.wordBasedSuggestions": false,
+    "editor.tabSize": 4,
+    "editor.indentSize": "tabSize"
   },
-  "editor.tabSize": 4,
-  "editor.indentSize": "tabSize"
+  "deno.enable": true,
+  "deno.lint": true,
+  "deno.config": "./storyteller/web/deno.json",
+  "deno.importMap": "./storyteller/web/import_map.json",
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.tabSize": 2,
+    "editor.indentSize": "tabSize"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.tabSize": 2,
+    "editor.indentSize": "tabSize"
+  },
 }
