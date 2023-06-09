@@ -11,9 +11,7 @@ from .processing import start_processing
 
 app = FastAPI()
 
-origins = [
-    os.getenv("STORYTELLER_ALLOWED_ORIGINS", "").split(","),
-]
+origins = os.getenv("STORYTELLER_ALLOWED_ORIGINS", "").split(",")
 
 app.add_middleware(
     CORSMiddleware,
