@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 # Install whisperx dependencies
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-  && apt-get -y install --no-install-recommends swig libpulse-dev libasound2-dev ffmpeg libavcodec-extra
+  && apt-get -y install --no-install-recommends wget swig libpulse-dev libasound2-dev ffmpeg libavcodec-extra
 
 ENV PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
