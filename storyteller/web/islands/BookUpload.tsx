@@ -2,10 +2,10 @@ import { useRef, useState } from "preact/hooks";
 import axios from "axios";
 
 type Props = {
-  serverHost: string;
+  apiHost: string;
 };
 
-export default function BookUpload({ serverHost }: Props) {
+export default function BookUpload({ apiHost }: Props) {
   const epubInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
   const [epubUploadProgress, setEpubUploadProgress] = useState<number | null>(
@@ -28,7 +28,7 @@ export default function BookUpload({ serverHost }: Props) {
           console.log(epubInputRef.current.files[0]);
 
           axios.postForm(
-            `${serverHost}/books/epub`,
+            `${apiHost}/books/epub`,
             { file: epubInputRef.current.files[0] },
             {
               onUploadProgress({ progress }) {
@@ -63,7 +63,7 @@ export default function BookUpload({ serverHost }: Props) {
           if (!audioInputRef.current?.files?.[0]) return;
 
           axios.postForm(
-            `${serverHost}/books/${bookId}/audio`,
+            `${apiHost}/books/${bookId}/audio`,
             { file: audioInputRef.current.files[0] },
             {
               onUploadProgress({ progress }) {
@@ -90,7 +90,7 @@ export default function BookUpload({ serverHost }: Props) {
         <button
           type="button"
           onClick={() => {
-            axios.post(`${serverHost}/books/${bookId}/process`);
+            axios.post(`${apiHost}/books/${bookId}/process`);
           }}
         >
           Start processing!
