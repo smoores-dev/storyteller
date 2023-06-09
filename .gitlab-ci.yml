@@ -2,10 +2,10 @@ stages: # List of stages for jobs, and their order of execution
   - publish
 
 publish-api:
-  image: docker:stable
+  image: docker:dind
   stage: publish
   services:
-    - docker:stable-dind
+    - docker:dind
   variables:
     # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
     DOCKER_HOST: tcp://docker:2376
@@ -18,10 +18,10 @@ publish-api:
     - docker push $CI_REGISTRY_IMAGE/api:latest
 
 publish-web:
-  image: docker:stable
+  image: docker:dind
   stage: publish
   services:
-    - docker:stable-dind
+    - docker:dind
   variables:
     # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
     DOCKER_HOST: tcp://docker:2376
