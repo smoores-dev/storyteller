@@ -25,9 +25,9 @@ RUN mkdir -p assets/dict && \
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry config virtualenvs.create false && \
-  poetry install
+RUN poetry install --no-interaction --no-ansi
 
-COPY storyteller/server storyteller/synchronize ./storyteller/
+COPY storyteller/server ./storyteller/server
+COPY storyteller/synchronize ./storyteller/synchronize
 
-ENTRYPOINT uvicorn storyteller.server:app
+ENTRYPOINT poetry run uvicorn storyteller.server:app --host 0.0.0.0
