@@ -9,4 +9,7 @@ import "$std/dotenv/load.ts";
 import { start } from "$fresh/server.ts";
 import manifest from "./fresh.gen.ts";
 
-await start(manifest, { port: 8000, hostname: "0.0.0.0" });
+await start(manifest, {
+  port: parseInt(Deno.env.get("PORT") ?? "8001", 10),
+  hostname: Deno.env.get("HOST"),
+});

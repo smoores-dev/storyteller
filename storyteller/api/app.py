@@ -12,8 +12,7 @@ from .processing import start_processing
 app = FastAPI()
 
 origins = [
-    "http://localhost:8001",
-    ",".split(os.getenv("STORYTELLER_ALLOWED_ORIGINS", "")),
+    os.getenv("STORYTELLER_ALLOWED_ORIGINS", "").split(","),
 ]
 
 app.add_middleware(
