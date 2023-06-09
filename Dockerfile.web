@@ -6,4 +6,4 @@ COPY . .
 
 RUN deno cache main.ts
 
-CMD ["run", "-A", "main.ts", "--host", "0.0.0.0"]
+CMD ["run", "-A", "main.ts"]
