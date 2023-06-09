@@ -13,6 +13,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:8001",
+    ",".split(os.getenv("STORYTELLER_ALLOWED_ORIGINS", "")),
 ]
 
 app.add_middleware(
