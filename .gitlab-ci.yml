@@ -7,17 +7,29 @@ publish-api:
   stage: publish
   services:
     - docker:dind
-  script:
+  variables:
+    # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -f Dockerfile.api -t $CI_REGISTRY/smoores/storyteller/api:latest .
-    - docker push $CI_REGISTRY/smoores/storyteller/api:latest
+  script:
+    - docker pull $CI_REGISTRY_IMAGE/api:latest || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE/api:latest --tag $CI_REGISTRY_IMAGE/api:latest .
+    - docker push $CI_REGISTRY_IMAGE/api:latest
 
 publish-web:
   image: docker:dind
   stage: publish
   services:
     - docker:dind
-  script:
+  variables:
+    # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -f Dockerfile.web -t $CI_REGISTRY/smoores/storyteller/web:latest ./storyteller/web
-    - docker push $CI_REGISTRY/smoores/storyteller/web:latest
+  script:
+    - docker pull $CI_REGISTRY_IMAGE/web:latest || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE/web:latest --tag $CI_REGISTRY_IMAGE/web:latest .
+    - docker push $CI_REGISTRY_IMAGE/web:latest
