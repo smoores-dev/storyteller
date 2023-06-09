@@ -15,7 +15,7 @@ publish-api:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - docker pull $CI_REGISTRY_IMAGE/api:latest || true
-    - docker build --cache-from $CI_REGISTRY_IMAGE/api:latest --tag $CI_REGISTRY_IMAGE/api:latest .
+    - docker build -f Dockerfile.api --cache-from $CI_REGISTRY_IMAGE/api:latest --tag $CI_REGISTRY_IMAGE/api:latest .
     - docker push $CI_REGISTRY_IMAGE/api:latest
 
 publish-web:
@@ -31,5 +31,5 @@ publish-web:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - docker pull $CI_REGISTRY_IMAGE/web:latest || true
-    - docker build --cache-from $CI_REGISTRY_IMAGE/web:latest --tag $CI_REGISTRY_IMAGE/web:latest .
+    - docker build -f Dockerfile.web --cache-from $CI_REGISTRY_IMAGE/web:latest --tag $CI_REGISTRY_IMAGE/web:latest .
     - docker push $CI_REGISTRY_IMAGE/web:latest
