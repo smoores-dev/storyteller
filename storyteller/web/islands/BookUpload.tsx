@@ -9,12 +9,12 @@ export default function BookUpload({ apiHost }: Props) {
   const epubInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
   const [epubUploadProgress, setEpubUploadProgress] = useState<number | null>(
-    1,
+    null,
   );
   const [audioUploadProgress, setAudioUploadProgress] = useState<number | null>(
-    1,
+    null,
   );
-  const [bookId, setBookId] = useState<number | null>(1);
+  const [bookId, setBookId] = useState<number | null>(null);
 
   return (
     <>
