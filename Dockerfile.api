@@ -25,7 +25,8 @@ RUN mkdir -p assets/dict && \
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry install --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi && \
+  poetry run python -m nltk.downloader punkt
 
 COPY storyteller/api ./storyteller/api
 COPY storyteller/synchronize ./storyteller/synchronize
