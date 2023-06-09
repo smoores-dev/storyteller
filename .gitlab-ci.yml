@@ -2,15 +2,15 @@
 stages: # List of stages for jobs, and their order of execution
   - publish
 
-publish-server:
+publish-api:
   image: docker:dind
   stage: publish
   services:
     - docker:dind
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -f Dockerfile.server -t $CI_REGISTRY/smoores/storyteller/server:latest .
-    - docker push $CI_REGISTRY/smoores/storyteller/server:latest
+    - docker build -f Dockerfile.api -t $CI_REGISTRY/smoores/storyteller/api:latest .
+    - docker push $CI_REGISTRY/smoores/storyteller/api:latest
 
 publish-web:
   image: docker:dind
