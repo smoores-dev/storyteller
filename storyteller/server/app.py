@@ -7,6 +7,7 @@ from storyteller.synchronize.epub import get_authors, read_epub
 
 from .assets import persist_epub, persist_audio
 from .database import create_book as create_book_db, add_audiofile
+from .processing import start_processing
 
 app = FastAPI()
 
@@ -47,3 +48,8 @@ async def upload_audio(book_id: int, file: UploadFile):
     original_filename, _ = os.path.splitext(file.filename)
     persist_audio(original_filename, file.file)
     add_audiofile(book_id, original_filename)
+
+
+@app.post("/books/{book_id}/process")
+async def process_book(book_id: int):
+    start_processing(book_id)

@@ -2,14 +2,13 @@ import { useRef, useState } from "preact/hooks";
 import axios from "axios";
 
 export default function BookUpload() {
-  console.log("wtf");
   const epubInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
   const [epubUploadProgress, setEpubUploadProgress] = useState<number | null>(
-    null,
+    1,
   );
   const [audioUploadProgress, setAudioUploadProgress] = useState<number | null>(
-    null,
+    1,
   );
   const [bookId, setBookId] = useState<number | null>(1);
 
@@ -48,7 +47,9 @@ export default function BookUpload() {
         <button type="submit">Submit</button>
       </form>
       <div>
-        <p>Uploading... {epubUploadProgress}</p>
+        {epubUploadProgress !== null && (
+          <p>Uploading... {epubUploadProgress * 100}</p>
+        )}
       </div>
       <h2>Upload audio file</h2>
       <form
@@ -77,8 +78,20 @@ export default function BookUpload() {
         <button type="submit">Submit</button>
       </form>
       <div>
-        <p>Uploading... {audioUploadProgress}</p>
+        {audioUploadProgress !== null && (
+          <p>Uploading... {audioUploadProgress * 100}</p>
+        )}
       </div>
+      {epubUploadProgress !== null && audioUploadProgress !== null && (
+        <button
+          type="button"
+          onClick={() => {
+            axios.post(`http://localhost:8000/books/${bookId}/process`);
+          }}
+        >
+          Start processing!
+        </button>
+      )}
     </>
   );
 }

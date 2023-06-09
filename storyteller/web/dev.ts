@@ -2,6 +2,6 @@
 
 import dev from "$fresh/dev.ts";
 
-const baseUrl = new URL('../../', import.meta.url)
+const baseUrl = new URL(".", import.meta.url);
 
-await dev(baseUrl.toString(), "./storyteller/web/main.ts");
+await dev(baseUrl.toString(), "./main.ts");

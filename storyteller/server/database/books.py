@@ -1,8 +1,17 @@
+from dataclasses import dataclass
 from typing import List, cast
 
 from storyteller.synchronize.epub import EpubAuthor
 
 from .connection import connection
+
+
+@dataclass
+class Book:
+    id: int
+    title: str
+    epub_filename: str
+    audio_filename: str | None
 
 
 def create_book(title: str, authors: List[EpubAuthor], epub_filename: str) -> int:
@@ -49,3 +58,18 @@ def add_audiofile(book_id: int, audio_filename: str):
     )
 
     connection.commit()
+
+
+def get_book(book_id: int):
+    cursor = connection.execute(
+        """
+        SELECT id, title, epub_filename, audio_filename
+        FROM book
+        WHERE id = :book_id
+        """,
+        {"book_id": book_id},
+    )
+
+    id, title, epub_filename, audio_filename = cursor.fetchone()
+
+    return Book(id, title, epub_filename, audio_filename)

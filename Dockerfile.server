@@ -1,0 +1,11 @@
+FROM python:3.10
+
+WORKDIR /usr/app/src
+
+COPY pyproject.toml poetry.lock ./
+
+RUN poetry install
+
+COPY storyteller/server storyteller/synchronize ./storyteller/
+
+ENTRYPOINT poetry run uvicorn storyteller.server:app
