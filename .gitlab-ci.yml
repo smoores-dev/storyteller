@@ -13,7 +13,6 @@ publish-api:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    # - docker pull $CI_REGISTRY_IMAGE/api:latest || true
     - docker build -f Dockerfile.api --cache-from $CI_REGISTRY_IMAGE/api:latest --tag $CI_REGISTRY_IMAGE/api:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
     - docker push $CI_REGISTRY_IMAGE/api:latest
 
@@ -29,6 +28,5 @@ publish-web:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    # - docker pull $CI_REGISTRY_IMAGE/web:latest || true
     - docker build -f Dockerfile.web --cache-from $CI_REGISTRY_IMAGE/web:latest --tag $CI_REGISTRY_IMAGE/web:latest --build-arg BUILDKIT_INLINE_CACHE=1 storyteller/web
     - docker push $CI_REGISTRY_IMAGE/web:latest
