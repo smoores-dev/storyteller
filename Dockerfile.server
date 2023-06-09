@@ -20,7 +20,7 @@ WORKDIR /usr/app/src
 RUN mkdir -p assets/dict && \
   mkdir -p assets/audio && \
   mkdir -p assets/text && \
-  mkdir -p cache \
+  mkdir -p cache && \
   wget -O assets/dict/en.txt https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 COPY pyproject.toml poetry.lock ./
