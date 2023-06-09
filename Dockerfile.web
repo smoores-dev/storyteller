@@ -1,0 +1,9 @@
+FROM denoland/deno
+
+WORKDIR /usr/app/src
+
+COPY . .
+
+RUN deno cache main.ts
+
+CMD ["run", "-A", "main.ts"]

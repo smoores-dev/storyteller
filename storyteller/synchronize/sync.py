@@ -11,7 +11,10 @@ import sys
 import whisperx.types
 from nltk.tokenize import sent_tokenize
 
-from .audio import split_audiobook, transcribe_chapter
+from .audio import (
+    get_audio_chapter_filenames,
+    get_transcriptions,
+)
 from .epub import (
     SentenceRange,
     create_media_overlay,
@@ -58,7 +61,6 @@ def find_best_match(
                 return extracted
         i += 3
     return None
-
 
 
 def get_transcription_text(transcription: whisperx.types.AlignedTranscriptionResult):
@@ -144,7 +146,9 @@ def get_chapter_timestamps(
         transcription_offset = len(
             " ".join(transcription_sentences[:transcription_window_index])
         )
-        start = find_timestamps(first_match.start + transcription_offset + 1, transcription)
+        start = find_timestamps(
+            first_match.start + transcription_offset + 1, transcription
+        )
 
         if len(sentence_ranges) > 0:
             sentence_ranges[-1].end = start
@@ -227,33 +231,27 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
     book.add_item(synced.media_overlay)
 
 
-
-def sync_book(book_name: str):
-    with NullIO():
-        audio_chapter_filenames = split_audiobook(book_name)
-    print(f"Split audiobook into {len(audio_chapter_filenames)} chapters")
-    book = read_epub(book_name)
+def sync_book(ebook_name: str, audiobook_name: str):
+    book = read_epub(ebook_name)
     epub_chapters = get_chapters(book)
-    print(f"Found {len(epub_chapters)} chapters in the ebook")
-    with NullIO():
-        transcriptions = [transcribe_chapter(f) for f in audio_chapter_filenames]
-    print("Transcribed audiobook chapters")
+    # print(f"Found {len(epub_chapters)} chapters in the ebook")
+    audio_chapter_filenames = get_audio_chapter_filenames(audiobook_name)
+    transcriptions = get_transcriptions(audiobook_name)
     transcription_texts = [
         get_transcription_text(transcription) for transcription in transcriptions
     ]
     book_cache: Dict[str, Any] = {}
-    if os.path.exists(f"cache/{book_name}.json"):
-        with open(f"cache/{book_name}.json", "r") as cache_file:
+    if os.path.exists(f"cache/{ebook_name}.json"):
+        with open(f"cache/{ebook_name}.json", "r") as cache_file:
             book_cache = json.load(cache_file)
     if "chapter_index" not in book_cache:
         book_cache["chapter_index"] = {}
     total_duration = 0
     last_transcription_index = 0
     for index, chapter in enumerate(epub_chapters):
-        print()
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
-        print(f"Syncing chapter #{index} ({epub_intro}...)")
+        # print(f"Syncing chapter #{index} ({epub_intro}...)")
         try:
             transcription_index = book_cache["chapter_index"][str(index)]
             score = None
@@ -266,29 +264,29 @@ def sync_book(book_name: str):
                 last_transcription_index + 1,
             )
             if extracted is None:
-                print(f"Couldn't find matching transcription for chapter #{index}")
+                # print(f"Couldn't find matching transcription for chapter #{index}")
                 book_cache["chapter_index"][str(index)] = None
-                with open(f"cache/{book_name}.json", "w") as cache_file:
+                with open(f"cache/{ebook_name}.json", "w") as cache_file:
                     json.dump(book_cache, cache_file)
                 continue
             extracted_transcription, score = extracted
             transcription_index = transcription_texts.index(extracted_transcription)
 
-        print(
-            f"Chapter #{index} best matches transcription #{transcription_index} ({'cached' if score is None else score})"
-        )
+        # print(
+        #     f"Chapter #{index} best matches transcription #{transcription_index} ({'cached' if score is None else score})"
+        # )
 
         book_cache["chapter_index"][str(index)] = transcription_index
-        with open(f"cache/{book_name}.json", "w") as cache_file:
+        with open(f"cache/{ebook_name}.json", "w") as cache_file:
             json.dump(book_cache, cache_file)
         transcription = transcriptions[transcription_index]
         audio_filename = audio_chapter_filenames[transcription_index]
-        print(f"Syncing with audio file {audio_filename}")
+        # print(f"Syncing with audio file {audio_filename}")
         synced = sync_chapter(MP4(audio_filename), transcription, chapter)
         update_synced_chapter(book, synced)
         last_transcription_index = transcription_index
         total_duration += synced.duration
-        print(f"New total duration is {total_duration}s")
+        # print(f"New total duration is {total_duration}s")
 
     book.add_metadata(
         None, "meta", format_duration(total_duration), {"property": "media:duration"}
@@ -304,4 +302,4 @@ def sync_book(book_name: str):
             content=".-epub-media-overlay-active { background-color: #ffb; }".encode(),
         )
     )
-    epub.write_epub(f"assets/text/{book_name}/synced/{book_name}.epub", book)
+    epub.write_epub(f"assets/text/{ebook_name}/synced/{ebook_name}.epub", book)
