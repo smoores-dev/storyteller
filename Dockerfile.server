@@ -1,11 +1,33 @@
 FROM python:3.10
 
+# Install whisperx dependencies
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+  && apt-get -y install --no-install-recommends swig libpulse-dev libasound2-dev ffmpeg libavcodec-extra
+
+ENV PYTHONFAULTHANDLER=1 \
+  PYTHONUNBUFFERED=1 \
+  PYTHONHASHSEED=random \
+  PIP_NO_CACHE_DIR=off \
+  PIP_DISABLE_PIP_VERSION_CHECK=on \
+  PIP_DEFAULT_TIMEOUT=100 \
+  POETRY_VERSION=1.5.0
+
+# System deps:
+RUN pip install "poetry==$POETRY_VERSION"
+
 WORKDIR /usr/app/src
+
+RUN mkdir -p assets/dict && \
+  mkdir -p assets/audio && \
+  mkdir -p assets/text && \
+  mkdir -p cache \
+  wget -O assets/dict/en.txt https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry install
+RUN poetry config virtualenvs.create false && \
+  poetry install
 
 COPY storyteller/server storyteller/synchronize ./storyteller/
 
-ENTRYPOINT poetry run uvicorn storyteller.server:app
+ENTRYPOINT uvicorn storyteller.server:app
