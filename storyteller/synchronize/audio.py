@@ -1,14 +1,20 @@
-from dataclasses import dataclass
 import json
+import logging
+import os
 import shlex
 import subprocess
-from typing import List, cast
 import whisperx
-import whisperx.types
 import whisperx.asr
-import os
+import whisperx.types
+
+from dataclasses import dataclass
 from mutagen.mp4 import MP4, Chapter
-from pathlib import PurePath
+from pathlib import Path, PurePath
+from typing import List, cast
+
+
+logging.basicConfig(filename="storyteller.log", encoding="utf-8")
+logger = logging.getLogger(__name__)
 
 
 def get_audio_filepath(book_name: str):
@@ -26,20 +32,34 @@ class ChapterRange:
     end: int | float
 
 
+def get_chapters_path(book_filename: str):
+    path, _ = os.path.split(book_filename)
+    return PurePath(path, "..", "chapters")
+
+
+def get_transcriptions_path(book_filename: str):
+    path, _ = os.path.split(book_filename)
+    return PurePath(path, "..", "transcriptions")
+
+
 def get_chapter_filename(book_filename: str, chapter_title: str):
-    path, basename = os.path.split(book_filename)
+    _, basename = os.path.split(book_filename)
     filename, ext = os.path.splitext(basename)
-    chapters_path = PurePath(path, "..", "chapters")
+    chapters_path = get_chapters_path(book_filename)
     return f"{chapters_path}/{filename}-{chapter_title}{ext}"
 
 
 def split_audiobook(book_name: str) -> List[str]:
+    print("WTF")
     mp4 = get_mp4(book_name)
     filename = cast(str, mp4.filename)
     if mp4.chapters is None:
         return []
 
+    print(f"Splitting audiobook chapters for {filename}")
+
     chapters: List[Chapter] = list(mp4.chapters)
+    print(f"Found {len(chapters)} chapters")
     chapter_ranges: List[ChapterRange] = []
     for i, chapter in enumerate(chapters):
         next_chapter_start = (
@@ -47,25 +67,34 @@ def split_audiobook(book_name: str) -> List[str]:
         )
         chapter_ranges.append(ChapterRange(chapter, chapter.start, next_chapter_start))
 
+    chapters_path = get_chapters_path(filename)
+
+    Path(chapters_path).mkdir(parents=True, exist_ok=True)
+
     chapter_filenames: List[str] = []
     for range in chapter_ranges:
         chapter_filename = get_chapter_filename(filename, range.chapter.title)
+        if os.path.exists(chapter_filename):
+            continue
+        print(f"Splitting chapter {chapter_filename}")
         chapter_filenames.append(chapter_filename)
         command = shlex.split(
             f'ffmpeg -nostdin -ss {range.start} -to {range.end} -i "{mp4.filename}" -c copy -map 0 -map_chapters -1 "{chapter_filename}"'
         )
         devnull = open(os.devnull, "w")
-        subprocess.run(command, stdout=devnull, stderr=devnull)
+        subprocess.run(command, stdout=devnull, stderr=devnull).check_returncode()
 
     return chapter_filenames
 
 
-def transcribe_chapter(filename: str):
-    chapter_path, chapter_basename = os.path.split(filename)
+def get_transcription_filename(chapter_filename: str):
+    chapter_path, chapter_basename = os.path.split(chapter_filename)
     chapter_name, _ = os.path.splitext(chapter_basename)
-    transcription_filename = PurePath(
-        chapter_path, "..", "transcriptions", f"{chapter_name}.json"
-    )
+    return PurePath(chapter_path, "..", "transcriptions", f"{chapter_name}.json")
+
+
+def transcribe_chapter(filename: str):
+    transcription_filename = get_transcription_filename(filename)
 
     if os.path.exists(transcription_filename):
         with open(transcription_filename, mode="r") as transcription_file:
@@ -101,3 +130,34 @@ def transcribe_chapter(filename: str):
         json.dump(transcription, transcription_file)
 
     return transcription
+
+
+def get_audio_chapter_filenames(book_name: str):
+    audio_filepath = get_audio_filepath(book_name)
+    dirname = get_chapters_path(audio_filepath)
+    return [str(Path(dirname, filename)) for filename in os.listdir(dirname)]
+
+
+def get_transcriptions(book_name: str):
+    audio_chapter_filenames = get_audio_chapter_filenames(book_name)
+    transcription_filenames = [
+        get_transcription_filename(chapter_filename)
+        for chapter_filename in audio_chapter_filenames
+    ]
+    transcriptions: List[whisperx.types.AlignedTranscriptionResult] = []
+
+    for transcription_filename in transcription_filenames:
+        with open(transcription_filename, mode="r") as transcription_file:
+            transcription = json.load(transcription_file)
+            transcriptions.append(transcription)
+
+    return transcriptions
+
+
+def transcribe_book(book_name: str):
+    audio_filepath = get_audio_filepath(book_name)
+    transcriptions_path = get_transcriptions_path(audio_filepath)
+    Path(transcriptions_path).mkdir(parents=True, exist_ok=True)
+    audio_chapter_filenames = get_audio_chapter_filenames(book_name)
+    for f in audio_chapter_filenames:
+        transcribe_chapter(f)

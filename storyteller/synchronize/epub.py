@@ -1,3 +1,4 @@
+import logging
 import re
 from dataclasses import dataclass
 from typing import Callable, List, Tuple, TypedDict, cast, Dict
@@ -156,9 +157,6 @@ def get_textblock_spans(start_id: int, textblock: Tag):
                 raise IndexError
             leaf_text = leaf.get_text()[leaf_index:]
             remaining_sentence = sentence[search_index:]
-            print(
-                f"leaf_text: '{leaf_text}', remaining_sentence: '{remaining_sentence}', marks: {marks}"
-            )
             if len(remaining_sentence) < len(leaf_text):
                 leaf_index += len(remaining_sentence)
                 span.text_nodes.append(TextNode(remaining_sentence, marks[:]))

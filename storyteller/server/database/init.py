@@ -42,6 +42,7 @@ def init_db():
             id INTEGER PRIMARY KEY,
             type TEXT NOT NULL,
             book_id INTEGER NOT NULL,
+            status TEXT NOT NULL,
             FOREIGN KEY(book_id) REFERENCES book(id)
         )
         """

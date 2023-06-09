@@ -1,11 +1,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { BaseHttpRequest } from './core/BaseHttpRequest.ts';
-import type { OpenAPIConfig } from './core/OpenAPI.ts';
-import { FetchHttpRequest } from './core/FetchHttpRequest.ts';
+import type { BaseHttpRequest } from './core/BaseHttpRequest.ts.ts';
+import type { OpenAPIConfig } from './core/OpenAPI.ts.ts';
+import { FetchHttpRequest } from './core/FetchHttpRequest.ts.ts';
 
-import { DefaultService } from './services/DefaultService.ts';
+import { DefaultService } from './services/DefaultService.ts.ts';
 
 type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
 
