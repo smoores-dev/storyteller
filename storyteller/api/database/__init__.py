@@ -1,5 +1,5 @@
 from .init import init_db
-from .books import create_book, add_audiofile, get_book
+from .books import create_book, add_audiofile, get_book, Book
 from .processing_tasks import (
     create_processing_task,
     ProcessingTaskType,
@@ -22,4 +22,5 @@ __all__ = [
     "get_processing_tasks_for_book",
     "processing_tasks_order",
     "update_task_status",
+    "Book",
 ]
