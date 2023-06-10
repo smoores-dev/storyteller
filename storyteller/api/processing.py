@@ -24,7 +24,7 @@ def determine_remaining_tasks(
 ) -> List[ProcessingTask]:
     if len(processing_tasks) == 0:
         return [
-            ProcessingTask(None, type, ProcessingTaskStatus.STARTED, book_id, None)
+            ProcessingTask(None, type, ProcessingTaskStatus.STARTED, book_id)
             for type in processing_tasks_order
         ]
 
@@ -35,12 +35,12 @@ def determine_remaining_tasks(
             return []
 
         return [
-            ProcessingTask(None, task, ProcessingTaskStatus.STARTED, book_id, None)
+            ProcessingTask(None, task, ProcessingTaskStatus.STARTED, book_id)
             for task in processing_tasks_order[next_task_type_index:]
         ]
 
     return [
-        ProcessingTask(None, task, ProcessingTaskStatus.STARTED, book_id, None)
+        ProcessingTask(None, task, ProcessingTaskStatus.STARTED, book_id)
         for task in processing_tasks_order[len(processing_tasks) :]
     ]
 
