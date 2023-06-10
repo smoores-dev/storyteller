@@ -40,7 +40,9 @@ def determine_remaining_tasks(
         ]
 
     completed_tasks = [
-        task for task in processing_tasks if task.type == ProcessingTaskStatus.COMPLETED
+        task
+        for task in processing_tasks
+        if task.status == ProcessingTaskStatus.COMPLETED
     ]
 
     return processing_tasks[len(completed_tasks) :] + [
