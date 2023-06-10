@@ -39,7 +39,11 @@ def determine_remaining_tasks(
             for task in processing_tasks_order[next_task_type_index:]
         ]
 
-    return [
+    completed_tasks = [
+        task for task in processing_tasks if task.type == ProcessingTaskStatus.COMPLETED
+    ]
+
+    return processing_tasks[len(completed_tasks) :] + [
         ProcessingTask(None, task, ProcessingTaskStatus.STARTED, book_id)
         for task in processing_tasks_order[len(processing_tasks) :]
     ]
@@ -83,6 +87,8 @@ def start_processing(book_id: int):
         raise KeyError("Book does not have an audio_filename")
 
     processing_tasks = get_processing_tasks_for_book(book_id)
+    processing_tasks.sort(key=lambda t: processing_tasks_order.index(t.type))
+
     remaining_tasks = determine_remaining_tasks(book_id, processing_tasks)
 
     print(f"Found {len(remaining_tasks)} remaining processing tasks for book {book_id}")
