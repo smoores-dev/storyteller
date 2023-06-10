@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import shlex
 import subprocess
@@ -11,10 +10,6 @@ from dataclasses import dataclass
 from mutagen.mp4 import MP4, Chapter
 from pathlib import Path, PurePath
 from typing import List, cast
-
-
-logging.basicConfig(filename="storyteller.log", encoding="utf-8")
-logger = logging.getLogger(__name__)
 
 
 def get_audio_filepath(book_name: str):
@@ -50,7 +45,6 @@ def get_chapter_filename(book_filename: str, chapter_title: str):
 
 
 def split_audiobook(book_name: str) -> List[str]:
-    print("WTF")
     mp4 = get_mp4(book_name)
     filename = cast(str, mp4.filename)
     if mp4.chapters is None:
@@ -94,13 +88,16 @@ def get_transcription_filename(chapter_filename: str):
 
 
 def transcribe_chapter(filename: str):
+    print(f"Transcribing audio file {filename}")
     transcription_filename = get_transcription_filename(filename)
 
     if os.path.exists(transcription_filename):
+        print("Found existing transcription")
         with open(transcription_filename, mode="r") as transcription_file:
             transcription = json.load(transcription_file)
             return cast(whisperx.types.AlignedTranscriptionResult, transcription)
 
+    print("Loading whisperx model")
     # initial_prompt = generate_initial_prompt(chapter_text)
     model = whisperx.load_model(
         "base.en",
@@ -112,11 +109,13 @@ def transcribe_chapter(filename: str):
 
     audio = whisperx.load_audio(filename)
 
+    print("Transcribing audio")
     unaligned = model.transcribe(audio, batch_size=16)
 
     alignment_model, metadata = whisperx.load_align_model(
         language_code=unaligned["language"], device="cpu"
     )
+    print("Aligning transcription")
     transcription = whisperx.align(
         unaligned["segments"],  # type: ignore
         alignment_model,
