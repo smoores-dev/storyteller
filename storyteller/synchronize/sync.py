@@ -234,7 +234,7 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
 def sync_book(ebook_name: str, audiobook_name: str):
     book = read_epub(ebook_name)
     epub_chapters = get_chapters(book)
-    # print(f"Found {len(epub_chapters)} chapters in the ebook")
+    print(f"Found {len(epub_chapters)} chapters in the ebook")
     audio_chapter_filenames = get_audio_chapter_filenames(audiobook_name)
     transcriptions = get_transcriptions(audiobook_name)
     transcription_texts = [
@@ -251,7 +251,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
     for index, chapter in enumerate(epub_chapters):
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
-        # print(f"Syncing chapter #{index} ({epub_intro}...)")
+        print(f"Syncing chapter #{index} ({epub_intro}...)")
         try:
             transcription_index = book_cache["chapter_index"][str(index)]
             score = None
@@ -264,7 +264,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
                 last_transcription_index + 1,
             )
             if extracted is None:
-                # print(f"Couldn't find matching transcription for chapter #{index}")
+                print(f"Couldn't find matching transcription for chapter #{index}")
                 book_cache["chapter_index"][str(index)] = None
                 with open(f"cache/{ebook_name}.json", "w") as cache_file:
                     json.dump(book_cache, cache_file)
@@ -272,21 +272,21 @@ def sync_book(ebook_name: str, audiobook_name: str):
             extracted_transcription, score = extracted
             transcription_index = transcription_texts.index(extracted_transcription)
 
-        # print(
-        #     f"Chapter #{index} best matches transcription #{transcription_index} ({'cached' if score is None else score})"
-        # )
+        print(
+            f"Chapter #{index} best matches transcription #{transcription_index} ({'cached' if score is None else score})"
+        )
 
         book_cache["chapter_index"][str(index)] = transcription_index
         with open(f"cache/{ebook_name}.json", "w") as cache_file:
             json.dump(book_cache, cache_file)
         transcription = transcriptions[transcription_index]
         audio_filename = audio_chapter_filenames[transcription_index]
-        # print(f"Syncing with audio file {audio_filename}")
+        print(f"Syncing with audio file {audio_filename}")
         synced = sync_chapter(MP4(audio_filename), transcription, chapter)
         update_synced_chapter(book, synced)
         last_transcription_index = transcription_index
         total_duration += synced.duration
-        # print(f"New total duration is {total_duration}s")
+        print(f"New total duration is {total_duration}s")
 
     book.add_metadata(
         None, "meta", format_duration(total_duration), {"property": "media:duration"}
