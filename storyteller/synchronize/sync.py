@@ -364,7 +364,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
         )
     )
 
-    synced_epub_path = Path(f"assets/text/{ebook_name}/synced/{ebook_name}.epub")
+    synced_epub_path = Path(f"assets/text/{ebook_name}/synced")
     synced_epub_path.mkdir(parents=True, exist_ok=True)
 
-    epub.write_epub(synced_epub_path, book)
+    epub.write_epub(Path(synced_epub_path, f"{ebook_name}.epub"), book)
