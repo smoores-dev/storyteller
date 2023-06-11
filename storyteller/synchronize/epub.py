@@ -207,8 +207,8 @@ def tag_sentences(chapter: epub.EpubHtml):
         ["h1", "h2", "h3", "h4", "h5", "h6", "p"]
     )
     start_id = 0
-    for i, textblock in enumerate(textblocks):
-        spans = get_textblock_spans(start_id, textblocks[17])
+    for textblock in textblocks:
+        spans = get_textblock_spans(start_id, textblock)
         new_content = serialize_spans(soup, spans)
         textblock.clear()
         textblock.extend(new_content)
