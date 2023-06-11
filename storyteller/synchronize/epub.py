@@ -141,6 +141,10 @@ def get_textblock_spans(start_id: int, textblock: Tag):
     marks: List[Mark] = list()
     spans: List[SentenceSpan] = list()
     sentences = get_textblock_sentences_with_offsets(textblock)
+
+    if len(textblock.contents) == 0:
+        return spans
+
     leaf = textblock.contents[0]
     leaf_index = 0
     for i, sentence in enumerate(sentences):
