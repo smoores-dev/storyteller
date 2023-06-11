@@ -9,7 +9,7 @@ import whisperx.types
 from dataclasses import dataclass
 from mutagen.mp4 import MP4, Chapter
 from pathlib import Path, PurePath
-from typing import List, cast
+from typing import List, Union, cast
 
 
 def get_audio_filepath(book_name: str):
@@ -23,8 +23,8 @@ def get_mp4(book_name: str):
 @dataclass
 class ChapterRange:
     chapter: Chapter
-    start: int | float
-    end: int | float
+    start: Union[int, float]
+    end: Union[int, float]
 
 
 def get_chapters_path(book_filename: str):
