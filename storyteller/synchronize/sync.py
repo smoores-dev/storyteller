@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-from functools import cache
 import json
 import math
 from typing import Any, Dict, List, TypedDict, Union, cast
 from fuzzysearch import Match, find_near_matches
-from thefuzz import process
 from ebooklib import epub
 from mutagen.mp4 import MP4
 import os
@@ -96,7 +94,6 @@ def concat_transcriptions(
     return result
 
 
-@cache
 def get_transcription_text(transcription: StorytellerTranscription):
     return " ".join([segment["text"] for segment in transcription["segments"]])
 
