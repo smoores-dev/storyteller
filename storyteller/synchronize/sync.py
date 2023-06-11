@@ -283,7 +283,7 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
     # )
 
     for audio_item in synced.audio:
-        if book.get_item_with_id(audio_item.id) is not None:
+        if book.get_item_with_id(audio_item.id) is None:
             book.add_item(audio_item)
 
     book.add_item(synced.media_overlay)
@@ -306,7 +306,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
     total_duration = 0
     last_transcription_offset = 0
     last_synced: Union[SyncedChapter, None] = None
-    for index, chapter in enumerate(epub_chapters):
+    for index, chapter in enumerate(epub_chapters[:6]):
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
         print(f"Syncing chapter #{index} ({epub_intro}...)")
