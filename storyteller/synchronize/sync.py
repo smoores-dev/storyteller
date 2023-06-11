@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import json
 import math
+from pathlib import Path
 from typing import Any, Dict, List, TypedDict, Union, cast
 from fuzzysearch import Match, find_near_matches
 from ebooklib import epub
@@ -44,9 +45,10 @@ def find_best_offset(epub_text: str, transcription_text: str, last_match_offset:
     search_string = epub_text[
         :1000
     ]  # speed up search by only using the first few hundred words
+
     i = 0
     while i < len(transcription_text):
-        start_index = (last_match_offset + (i * 1000)) % len(transcription_text)
+        start_index = (last_match_offset + i) % len(transcription_text)
         # print(f'Searching at "{transcription_text[start_index:start_index + 500]}"')
         end_index = (start_index + 3000) % len(transcription_text)
         if end_index > start_index:
@@ -55,17 +57,19 @@ def find_best_offset(epub_text: str, transcription_text: str, last_match_offset:
             transcription_text_slice = (
                 transcription_text[start_index:] + transcription_text[:end_index]
             )
+
         with NullIO():
             matches = find_near_matches(
                 search_string,
                 transcription_text_slice,
                 max_l_dist=math.floor(0.10 * len(search_string)),
             )
+
         matches = cast(List[Match], matches)
         if len(matches) > 0:
             return matches[0].start + start_index
 
-        i += 1
+        i += 1000
     return None
 
 
@@ -323,7 +327,9 @@ def sync_book(ebook_name: str, audiobook_name: str):
                     json.dump(book_cache, cache_file)
                 continue
 
-        print(f"Chapter #{index} best matches transcription at #{transcription_offset}")
+        print(
+            f"Chapter #{index} best matches transcription at offset {transcription_offset}"
+        )
 
         book_cache["chapter_index"][str(index)] = transcription_offset
         with open(f"cache/{ebook_name}.json", "w") as cache_file:
@@ -357,4 +363,8 @@ def sync_book(ebook_name: str, audiobook_name: str):
             content=".-epub-media-overlay-active { background-color: #ffb; }".encode(),
         )
     )
-    epub.write_epub(f"assets/text/{ebook_name}/synced/{ebook_name}.epub", book)
+
+    synced_epub_path = Path(f"assets/text/{ebook_name}/synced/{ebook_name}.epub")
+    synced_epub_path.mkdir(parents=True, exist_ok=True)
+
+    epub.write_epub(synced_epub_path, book)
