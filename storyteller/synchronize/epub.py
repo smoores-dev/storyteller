@@ -1,6 +1,7 @@
+import os
 import re
 from dataclasses import dataclass
-from typing import Callable, List, Tuple, TypedDict, cast, Dict
+from typing import Callable, List, Tuple, TypedDict, Union, cast, Dict
 
 from nltk.tokenize import sent_tokenize as _sent_tokenize
 from functools import cache
@@ -13,9 +14,10 @@ sent_tokenize: Callable[[str], List[str]] = cache(_sent_tokenize)
 
 @dataclass
 class SentenceRange:
+    id: int
     start: float
     end: float
-    id: int
+    audiofile: str
 
 
 def get_epub_filepath(book_name: str):
@@ -29,7 +31,7 @@ def read_epub(book_name: str):
             continue
         soup = BeautifulSoup(item.content)
 
-        head: Tag | None = soup.find("head")  # type: ignore
+        head: Union[Tag, None] = soup.find("head")  # type: ignore
         if head is not None:
             links = head.find_all("link")
             for link in links:
@@ -43,7 +45,7 @@ def read_epub(book_name: str):
 class EpubAuthor:
     name: str
     file_as: str
-    role: str | None
+    role: Union[str, None]
 
 
 def parse_author_metadata(metadata: Tuple[str, Dict[str, str]]):
@@ -215,11 +217,14 @@ def tag_sentences(chapter: epub.EpubHtml):
     return start_id
 
 
+def get_epub_audio_filename(audio_filename: str) -> str:
+    return f"Audio/{os.path.basename(audio_filename)}"
+
+
 def create_media_overlay(
     base_filename: str,
     chapter_filename: str,
-    audio_filename: str,
-    timestamps: List[SentenceRange],
+    sentence_ranges: List[SentenceRange],
 ):
     soup = BeautifulSoup(
         """
@@ -235,14 +240,14 @@ def create_media_overlay(
     seq["epub:textref"] = f"../{chapter_filename}"
     seq["epub:type"] = "chapter"
     soup.body.append(seq)  # type: ignore
-    for sentence_range in timestamps:
+    for sentence_range in sentence_ranges:
         par = soup.new_tag("par", id=f"sentence{sentence_range.id}")
         text = soup.new_tag(
             "text", src=f"../{chapter_filename}#sentence{sentence_range.id}"
         )
         audio = soup.new_tag(
             "audio",
-            src=f"../{audio_filename}",
+            src=f"../{get_epub_audio_filename(sentence_range.audiofile)}",
             clipBegin=f"{sentence_range.start}s",
             clipEnd=f"{sentence_range.end}s",
         )

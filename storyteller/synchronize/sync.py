@@ -1,7 +1,8 @@
 from dataclasses import dataclass
+from functools import cache
 import json
 import math
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, TypedDict, Union, cast
 from fuzzysearch import Match, find_near_matches
 from thefuzz import process
 from ebooklib import epub
@@ -20,6 +21,7 @@ from .epub import (
     create_media_overlay,
     get_chapter_sentences,
     get_chapter_text,
+    get_epub_audio_filename,
     read_epub,
     get_chapters,
     tag_sentences,
@@ -40,34 +42,66 @@ class NullIO:
         sys.stderr = self._original_stderr
 
 
-def find_best_match(
-    epub_text: str, transcription_texts: List[str], last_match_index: int
-):
+def find_best_offset(epub_text: str, transcription_text: str, last_match_offset: int):
+    search_string = epub_text[
+        :1000
+    ]  # speed up search by only using the first few hundred words
     i = 0
-    while i < len(transcription_texts):
-        start_index = (last_match_index + i) % len(transcription_texts)
-        end_index = (start_index + 3) % len(transcription_texts)
+    while i < len(transcription_text):
+        start_index = (last_match_offset + (i * 1000)) % len(transcription_text)
+        # print(f'Searching at "{transcription_text[start_index:start_index + 500]}"')
+        end_index = (start_index + 3000) % len(transcription_text)
         if end_index > start_index:
-            transcription_texts_slice = transcription_texts[start_index:end_index]
+            transcription_text_slice = transcription_text[start_index:end_index]
         else:
-            transcription_texts_slice = (
-                transcription_texts[start_index:] + transcription_texts[:end_index]
+            transcription_text_slice = (
+                transcription_text[start_index:] + transcription_text[:end_index]
             )
         with NullIO():
-            extracted = process.extractOne(
-                epub_text, transcription_texts_slice, score_cutoff=90
+            matches = find_near_matches(
+                search_string,
+                transcription_text_slice,
+                max_l_dist=math.floor(0.10 * len(search_string)),
             )
-            if extracted:
-                return extracted
-        i += 3
+        matches = cast(List[Match], matches)
+        if len(matches) > 0:
+            return matches[0].start + start_index
+
+        i += 1
     return None
 
 
-def get_transcription_text(transcription: whisperx.types.AlignedTranscriptionResult):
+class StorytellerTranscriptionSegment(whisperx.types.SingleAlignedSegment):
+    audiofile: str
+
+
+class StorytellerTranscription(TypedDict):
+    segments: List[StorytellerTranscriptionSegment]
+    word_segments: List[whisperx.types.SingleWordSegment]
+
+
+def concat_transcriptions(
+    transcriptions: List[whisperx.types.AlignedTranscriptionResult],
+    audiofiles: List[str],
+):
+    result = StorytellerTranscription(segments=[], word_segments=[])
+    for transcription, audiofile in zip(transcriptions, audiofiles):
+        result["word_segments"].extend(transcription["word_segments"])
+        result["segments"].extend(
+            [
+                StorytellerTranscriptionSegment(**segment, audiofile=audiofile)
+                for segment in transcription["segments"]
+            ]
+        )
+    return result
+
+
+@cache
+def get_transcription_text(transcription: StorytellerTranscription):
     return " ".join([segment["text"] for segment in transcription["segments"]])
 
 
-def find_timestamps(match_start_index, transcription):
+def find_timestamps(match_start_index: int, transcription: StorytellerTranscription):
     s = 0
     position = 0
     while True:
@@ -94,18 +128,19 @@ def find_timestamps(match_start_index, transcription):
     # If a segment only has one word, the start and
     # end timestamps are only placed on the segment
     if "start" in start_word:
-        return start_word["start"]
+        return start_word["start"], segment["audiofile"]
 
-    return segment["start"]
+    return segment["start"], segment["audiofile"]
 
 
 def get_chapter_timestamps(
-    transcription: whisperx.types.AlignedTranscriptionResult,
+    transcription: StorytellerTranscription,
     sentences: List[str],
-    duration: float,
+    chapter_offset: int,
+    last_sentence_range: Union[SentenceRange, None],
 ):
     sentence_ranges: List[SentenceRange] = []
-    transcription_text = get_transcription_text(transcription).lower()
+    transcription_text = get_transcription_text(transcription).lower()[chapter_offset:]
     transcription_sentences = sent_tokenize(transcription_text)
     transcription_window_index = 0
     last_good_transcription_window = 0
@@ -143,22 +178,33 @@ def get_chapter_timestamps(
         last_good_transcription_window = transcription_window_index
         first_match = matches[0]
 
-        transcription_offset = len(
-            " ".join(transcription_sentences[:transcription_window_index])
+        transcription_offset = (
+            len(" ".join(transcription_sentences[:transcription_window_index])) + 1
         )
-        start = find_timestamps(
-            first_match.start + transcription_offset + 1, transcription
+        start, audiofile = find_timestamps(
+            first_match.start + transcription_offset + chapter_offset, transcription
         )
 
         if len(sentence_ranges) > 0:
-            sentence_ranges[-1].end = start
+            last_audiofile = sentence_ranges[-1].audiofile
+            if audiofile == last_audiofile:
+                sentence_ranges[-1].end = start
+            else:
+                last_mp4 = MP4(last_audiofile)
+                sentence_ranges[-1].end = last_mp4.info.length
+                start = 0
+        elif last_sentence_range is not None:
+            if audiofile == last_sentence_range.audiofile:
+                last_sentence_range.end = start
+            else:
+                last_mp4 = MP4(last_sentence_range.audiofile)
+                last_sentence_range.end = last_mp4.info.length
+                start = 0
+        else:
+            start = 0
 
-        sentence_ranges.append(SentenceRange(start, start, sentence_index))
+        sentence_ranges.append(SentenceRange(sentence_index, start, start, audiofile))
         sentence_index += 1
-
-    if len(sentence_ranges) > 0:
-        sentence_ranges[0].start = 0
-        sentence_ranges[-1].end = duration
 
     return sentence_ranges
 
@@ -166,21 +212,23 @@ def get_chapter_timestamps(
 @dataclass
 class SyncedChapter:
     chapter: epub.EpubHtml
-    audio: epub.EpubItem
+    sentence_ranges: List[SentenceRange]
+    audio: List[epub.EpubItem]
     media_overlay: epub.EpubSMIL
-    duration: float
 
 
 def sync_chapter(
-    mp4: MP4,
-    transcription: whisperx.types.AlignedTranscriptionResult,
+    transcription: StorytellerTranscription,
     chapter: epub.EpubHtml,
+    transcription_offset: int,
+    last_sentence_range: Union[SentenceRange, None],
 ):
     chapter_sentences = get_chapter_sentences(chapter)
-    timestamps = get_chapter_timestamps(
-        transcription, chapter_sentences, mp4.info.length
+    sentence_ranges = get_chapter_timestamps(
+        transcription, chapter_sentences, transcription_offset, last_sentence_range
     )
     tag_sentences(chapter)
+
     chapter_filepath_length = len(chapter.file_name.split(os.path.sep)) - 1
     relative_ups = "../" * chapter_filepath_length
     chapter.add_link(
@@ -188,27 +236,32 @@ def sync_chapter(
         href=f"{relative_ups}Styles/storyteller-readaloud.css",
         type="text/css",
     )
+
     base_filename, _ = os.path.splitext(os.path.basename(chapter.file_name))
-    _, audio_ext = os.path.splitext(mp4.filename)  # type: ignore
-    audio_item = epub.EpubItem(
-        uid=f"{base_filename}_audio",
-        file_name=f"Audio/{base_filename}{audio_ext}",
-        content=open(mp4.filename, "rb").read(),  # type: ignore
-        media_type="audio/mpeg",
-    )
+
+    audiofiles = set([sentence_range.audiofile for sentence_range in sentence_ranges])
+    audio_items = []
+    for audiofile in audiofiles:
+        audio_item = epub.EpubItem(
+            uid=f"{base_filename}_audio",
+            file_name=get_epub_audio_filename(audiofile),
+            content=open(audiofile, "rb").read(),  # type: ignore
+            media_type="audio/mpeg",
+        )
+        audio_items.append(audio_item)
+
     media_overlay_item = epub.EpubSMIL(
         uid=f"{base_filename}_overlay",
         file_name=f"MediaOverlays/{base_filename}.smil",
-        content=create_media_overlay(
-            base_filename, chapter.file_name, audio_item.file_name, timestamps
-        ),
+        content=create_media_overlay(base_filename, chapter.file_name, sentence_ranges),
     )
     chapter.media_overlay = media_overlay_item.id
+
     return SyncedChapter(
         chapter=chapter,
-        audio=audio_item,
+        sentence_ranges=sentence_ranges,
+        audio=audio_items,
         media_overlay=media_overlay_item,
-        duration=timestamps[-1].end if len(timestamps) else 0,
     )
 
 
@@ -220,14 +273,18 @@ def format_duration(duration: float):
 
 
 def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
-    book.add_metadata(
-        None,
-        "meta",
-        format_duration(synced.duration),
-        {"property": "media:duration", "refines": f"#{synced.media_overlay.id}"},
-    )
+    # TODO: Figure out how to compute per-chapter durations
+    # book.add_metadata(
+    #     None,
+    #     "meta",
+    #     format_duration(synced.duration),
+    #     {"property": "media:duration", "refines": f"#{synced.media_overlay.id}"},
+    # )
 
-    book.add_item(synced.audio)
+    for audio_item in synced.audio:
+        if book.get_item_with_id(audio_item.id) is not None:
+            book.add_item(audio_item)
+
     book.add_item(synced.media_overlay)
 
 
@@ -237,9 +294,8 @@ def sync_book(ebook_name: str, audiobook_name: str):
     print(f"Found {len(epub_chapters)} chapters in the ebook")
     audio_chapter_filenames = get_audio_chapter_filenames(audiobook_name)
     transcriptions = get_transcriptions(audiobook_name)
-    transcription_texts = [
-        get_transcription_text(transcription) for transcription in transcriptions
-    ]
+    transcription = concat_transcriptions(transcriptions, audio_chapter_filenames)
+    transcription_text = get_transcription_text(transcription)
     book_cache: Dict[str, Any] = {}
     if os.path.exists(f"cache/{ebook_name}.json"):
         with open(f"cache/{ebook_name}.json", "r") as cache_file:
@@ -247,50 +303,52 @@ def sync_book(ebook_name: str, audiobook_name: str):
     if "chapter_index" not in book_cache:
         book_cache["chapter_index"] = {}
     total_duration = 0
-    last_transcription_index = 0
+    last_transcription_offset = 0
+    last_synced: Union[SyncedChapter, None] = None
     for index, chapter in enumerate(epub_chapters):
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
         print(f"Syncing chapter #{index} ({epub_intro}...)")
         try:
-            transcription_index = book_cache["chapter_index"][str(index)]
-            score = None
-            if transcription_index is None:
+            transcription_offset = book_cache["chapter_index"][str(index)]
+            if transcription_offset is None:
                 continue
         except:
-            extracted = find_best_match(
+            transcription_offset = find_best_offset(
                 epub_text,
-                transcription_texts,
-                last_transcription_index + 1,
+                transcription_text,
+                last_transcription_offset,
             )
-            if extracted is None:
+            if transcription_offset is None:
                 print(f"Couldn't find matching transcription for chapter #{index}")
                 book_cache["chapter_index"][str(index)] = None
                 with open(f"cache/{ebook_name}.json", "w") as cache_file:
                     json.dump(book_cache, cache_file)
                 continue
-            extracted_transcription, score = extracted
-            transcription_index = transcription_texts.index(extracted_transcription)
 
-        print(
-            f"Chapter #{index} best matches transcription #{transcription_index} ({'cached' if score is None else score})"
-        )
+        print(f"Chapter #{index} best matches transcription at #{transcription_offset}")
 
-        book_cache["chapter_index"][str(index)] = transcription_index
+        book_cache["chapter_index"][str(index)] = transcription_offset
         with open(f"cache/{ebook_name}.json", "w") as cache_file:
             json.dump(book_cache, cache_file)
-        transcription = transcriptions[transcription_index]
-        audio_filename = audio_chapter_filenames[transcription_index]
-        print(f"Syncing with audio file {audio_filename}")
-        synced = sync_chapter(MP4(audio_filename), transcription, chapter)
+        # print(f"Syncing with audio file {audio_filename}")
+        synced = sync_chapter(
+            transcription,
+            chapter,
+            transcription_offset,
+            last_synced.sentence_ranges[-1]
+            if last_synced is not None and len(last_synced.sentence_ranges) > 0
+            else None,
+        )
         update_synced_chapter(book, synced)
-        last_transcription_index = transcription_index
-        total_duration += synced.duration
-        print(f"New total duration is {total_duration}s")
+        last_transcription_offset = transcription_offset
+        # TODO: Figure out how to compute per-chapter durations
+        # total_duration += synced.duration
+        # print(f"New total duration is {total_duration}s")
 
-    book.add_metadata(
-        None, "meta", format_duration(total_duration), {"property": "media:duration"}
-    )
+    # book.add_metadata(
+    #     None, "meta", format_duration(total_duration), {"property": "media:duration"}
+    # )
     book.add_metadata(
         None, "meta", "-epub-media-overlay-active", {"property": "media:active-class"}
     )
