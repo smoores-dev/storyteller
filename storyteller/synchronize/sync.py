@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from itertools import groupby
 import json
 import math
 from pathlib import Path
@@ -210,12 +211,21 @@ def get_chapter_timestamps(
     return sentence_ranges
 
 
+def get_chapter_duration(sentence_ranges: List[SentenceRange]):
+    duration = 0
+    for _, file_group in groupby(sentence_ranges, key=lambda r: r.audiofile):
+        file_group_list = list(file_group)
+        duration += file_group_list[-1].end - file_group_list[0].start
+    return duration
+
+
 @dataclass
 class SyncedChapter:
     chapter: epub.EpubHtml
     sentence_ranges: List[SentenceRange]
     audio: List[epub.EpubItem]
     media_overlay: epub.EpubSMIL
+    duration: float
 
 
 def sync_chapter(
@@ -258,11 +268,14 @@ def sync_chapter(
     )
     chapter.media_overlay = media_overlay_item.id
 
+    duration = get_chapter_duration(sentence_ranges)
+
     return SyncedChapter(
         chapter=chapter,
         sentence_ranges=sentence_ranges,
         audio=audio_items,
         media_overlay=media_overlay_item,
+        duration=duration,
     )
 
 
@@ -274,13 +287,12 @@ def format_duration(duration: float):
 
 
 def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
-    # TODO: Figure out how to compute per-chapter durations
-    # book.add_metadata(
-    #     None,
-    #     "meta",
-    #     format_duration(synced.duration),
-    #     {"property": "media:duration", "refines": f"#{synced.media_overlay.id}"},
-    # )
+    book.add_metadata(
+        None,
+        "meta",
+        format_duration(synced.duration),
+        {"property": "media:duration", "refines": f"#{synced.media_overlay.id}"},
+    )
 
     for audio_item in synced.audio:
         if book.get_item_with_id(audio_item.id) is None:
@@ -345,13 +357,12 @@ def sync_book(ebook_name: str, audiobook_name: str):
         )
         update_synced_chapter(book, synced)
         last_transcription_offset = transcription_offset
-        # TODO: Figure out how to compute per-chapter durations
-        # total_duration += synced.duration
-        # print(f"New total duration is {total_duration}s")
+        total_duration += synced.duration
+        print(f"New total duration is {total_duration}s")
 
-    # book.add_metadata(
-    #     None, "meta", format_duration(total_duration), {"property": "media:duration"}
-    # )
+    book.add_metadata(
+        None, "meta", format_duration(total_duration), {"property": "media:duration"}
+    )
     book.add_metadata(
         None, "meta", "-epub-media-overlay-active", {"property": "media:active-class"}
     )
