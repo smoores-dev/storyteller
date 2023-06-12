@@ -135,7 +135,7 @@ def find_timestamps(match_start_index: int, transcription: StorytellerTranscript
     return segment["start"], segment["audiofile"]
 
 
-def get_chapter_timestamps(
+def get_sentence_ranges(
     transcription: StorytellerTranscription,
     sentences: List[str],
     chapter_offset: int,
@@ -167,7 +167,7 @@ def get_chapter_timestamps(
         if len(matches) == 0:
             sentence_index += 1
             not_found += 1
-            if not_found == 3:
+            if not_found == 3 or sentence_index == len(sentences) - 1:
                 not_found = 0
                 transcription_window_index += 1
                 if transcription_window_index == len(transcription_sentences):
@@ -235,7 +235,7 @@ def sync_chapter(
     last_sentence_range: Union[SentenceRange, None],
 ):
     chapter_sentences = get_chapter_sentences(chapter)
-    sentence_ranges = get_chapter_timestamps(
+    sentence_ranges = get_sentence_ranges(
         transcription, chapter_sentences, transcription_offset, last_sentence_range
     )
     tag_sentences(chapter)
@@ -319,7 +319,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
     total_duration = 0
     last_transcription_offset = 0
     last_synced: Union[SyncedChapter, None] = None
-    for index, chapter in enumerate(epub_chapters):
+    for index, chapter in enumerate(epub_chapters[16:18]):
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
         print(f"Syncing chapter #{index} ({epub_intro}...)")
