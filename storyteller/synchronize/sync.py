@@ -253,9 +253,10 @@ def sync_chapter(
     audiofiles = set([sentence_range.audiofile for sentence_range in sentence_ranges])
     audio_items = []
     for audiofile in audiofiles:
+        epub_audio_filename = get_epub_audio_filename(audiofile)
         audio_item = epub.EpubItem(
-            uid=f"{base_filename}_audio",
-            file_name=get_epub_audio_filename(audiofile),
+            uid=epub_audio_filename,
+            file_name=epub_audio_filename,
             content=open(audiofile, "rb").read(),  # type: ignore
             media_type="audio/mpeg",
         )
@@ -357,6 +358,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
         )
         update_synced_chapter(book, synced)
         last_transcription_offset = transcription_offset
+        last_synced = synced
         total_duration += synced.duration
         print(f"New total duration is {total_duration}s")
 

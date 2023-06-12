@@ -111,9 +111,10 @@ class TextNode:
 
 @dataclass
 class SentenceSpan:
-    id: int
+    id: Union[int, None]
     sentence: str
     text_nodes: List[TextNode]
+    is_offset: bool
 
 
 def get_textblock_sentences_with_offsets(textblock: Tag):
@@ -147,8 +148,14 @@ def get_textblock_spans(start_id: int, textblock: Tag):
 
     leaf = textblock.contents[0]
     leaf_index = 0
-    for i, sentence in enumerate(sentences):
-        span = SentenceSpan(i + start_id, sentence, [])
+    sentence_id = 0
+    for sentence in sentences:
+        if sentence.isspace():
+            span = SentenceSpan(None, sentence, [], True)
+        else:
+            span = SentenceSpan(sentence_id + start_id, sentence, [], False)
+            sentence_id += 1
+
         spans.append(span)
         search_index = 0
         while search_index < len(sentence):
@@ -186,7 +193,9 @@ def get_textblock_spans(start_id: int, textblock: Tag):
 def serialize_spans(soup: BeautifulSoup, spans: List[SentenceSpan]):
     tags = []
     for span in spans:
-        span_tag = soup.new_tag("span", id=f"sentence{span.id}")
+        span_tag = soup.new_tag("span")
+        if not span.is_offset:
+            span_tag["id"] = f"sentence{span.id}"
         for text_node in span.text_nodes:
             text_node_tag = span_tag
             for mark in text_node.marks:
@@ -195,7 +204,6 @@ def serialize_spans(soup: BeautifulSoup, spans: List[SentenceSpan]):
                 text_node_tag = mark_tag
             text_node_tag.append(text_node.text)
         tags.append(span_tag)
-        tags.append(" ")
     return tags
 
 
