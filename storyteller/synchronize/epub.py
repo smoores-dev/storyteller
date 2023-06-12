@@ -207,6 +207,10 @@ def serialize_spans(soup: BeautifulSoup, spans: List[SentenceSpan]):
     return tags
 
 
+def get_last_span_id(spans: List[SentenceSpan]) -> int:
+    return cast(int, next(filter(lambda s: not s.is_offset, reversed(spans))).id)
+
+
 def tag_sentences(chapter: epub.EpubHtml):
     content = cast(str, chapter.get_content())
     soup = BeautifulSoup(content, "html.parser")
@@ -224,9 +228,11 @@ def tag_sentences(chapter: epub.EpubHtml):
         new_content = serialize_spans(soup, spans)
         textblock.clear()
         textblock.extend(new_content)
-        start_id += len(spans)
+
+        if len(spans) > 0:
+            start_id = get_last_span_id(spans) + 1
+
         chapter.set_content(soup.encode(formatter="html"))
-    return start_id
 
 
 def get_epub_audio_filename(audio_filename: str) -> str:
