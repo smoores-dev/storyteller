@@ -11,6 +11,9 @@ from mutagen.mp4 import MP4, Chapter
 from pathlib import Path, PurePath
 from typing import List, Union, cast
 
+from .epub import get_chapters, get_chapter_text, read_epub
+from .prompt import generate_initial_prompt
+
 
 def get_audio_filepath(book_name: str):
     return f"assets/audio/{book_name}/original/{book_name}.mp4"
@@ -87,7 +90,7 @@ def get_transcription_filename(chapter_filename: str):
     return PurePath(chapter_path, "..", "transcriptions", f"{chapter_name}.json")
 
 
-def transcribe_chapter(filename: str):
+def transcribe_chapter(filename: str, initial_prompt: str):
     print(f"Transcribing audio file {filename}")
     transcription_filename = get_transcription_filename(filename)
 
@@ -98,13 +101,14 @@ def transcribe_chapter(filename: str):
             return cast(whisperx.types.AlignedTranscriptionResult, transcription)
 
     print("Loading whisperx model")
-    # initial_prompt = generate_initial_prompt(chapter_text)
     model = whisperx.load_model(
         "base.en",
         device="cpu",
         compute_type="int8",
-        asr_options={"word_timestamps": True},
-        # asr_options={"word_timestamps": True, "initial_prompt": initial_prompt},
+        asr_options={
+            "word_timestamps": True,
+            "initial_prompt": initial_prompt,
+        },
     )
 
     audio = whisperx.load_audio(filename)
@@ -153,10 +157,17 @@ def get_transcriptions(book_name: str):
     return transcriptions
 
 
-def transcribe_book(book_name: str):
-    audio_filepath = get_audio_filepath(book_name)
+def transcribe_book(audio_book_name: str, epub_book_name: str):
+    audio_filepath = get_audio_filepath(audio_book_name)
     transcriptions_path = get_transcriptions_path(audio_filepath)
     Path(transcriptions_path).mkdir(parents=True, exist_ok=True)
-    audio_chapter_filenames = get_audio_chapter_filenames(book_name)
+    audio_chapter_filenames = get_audio_chapter_filenames(audio_book_name)
+    full_book_text = " ".join(
+        [
+            get_chapter_text(chapter)
+            for chapter in get_chapters(read_epub(epub_book_name))
+        ]
+    )
+    initial_prompt = generate_initial_prompt(full_book_text)
     for f in audio_chapter_filenames:
-        transcribe_chapter(f)
+        transcribe_chapter(f, initial_prompt)
