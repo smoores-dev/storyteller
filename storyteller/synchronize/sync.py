@@ -269,8 +269,6 @@ class SyncedChapter:
     chapter: epub.EpubHtml
     sentence_ranges: List[SentenceRange]
     audio: List[epub.EpubItem]
-    media_overlay: epub.EpubSMIL
-    duration: float
 
 
 def sync_chapter(
@@ -294,8 +292,6 @@ def sync_chapter(
         type="text/css",
     )
 
-    base_filename, _ = os.path.splitext(os.path.basename(chapter.file_name))
-
     audiofiles = set([sentence_range.audiofile for sentence_range in sentence_ranges])
     audio_items = []
     for audiofile in audiofiles:
@@ -308,21 +304,10 @@ def sync_chapter(
         )
         audio_items.append(audio_item)
 
-    media_overlay_item = epub.EpubSMIL(
-        uid=f"{base_filename}_overlay",
-        file_name=f"MediaOverlays/{base_filename}.smil",
-        content=create_media_overlay(base_filename, chapter.file_name, sentence_ranges),
-    )
-    chapter.media_overlay = media_overlay_item.id
-
-    duration = get_chapter_duration(sentence_ranges)
-
     return SyncedChapter(
         chapter=chapter,
         sentence_ranges=sentence_ranges,
         audio=audio_items,
-        media_overlay=media_overlay_item,
-        duration=duration,
     )
 
 
@@ -334,18 +319,33 @@ def format_duration(duration: float):
 
 
 def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
+    base_filename, _ = os.path.splitext(os.path.basename(synced.chapter.file_name))
+
+    media_overlay_item = epub.EpubSMIL(
+        uid=f"{base_filename}_overlay",
+        file_name=f"MediaOverlays/{base_filename}.smil",
+        content=create_media_overlay(
+            base_filename, synced.chapter.file_name, synced.sentence_ranges
+        ),
+    )
+    synced.chapter.media_overlay = media_overlay_item.id
+
+    duration = get_chapter_duration(synced.sentence_ranges)
+
     book.add_metadata(
         None,
         "meta",
-        format_duration(synced.duration),
-        {"property": "media:duration", "refines": f"#{synced.media_overlay.id}"},
+        format_duration(duration),
+        {"property": "media:duration", "refines": f"#{media_overlay_item.id}"},
     )
 
     for audio_item in synced.audio:
         if book.get_item_with_id(audio_item.id) is None:
             book.add_item(audio_item)
 
-    book.add_item(synced.media_overlay)
+    book.add_item(media_overlay_item)
+
+    return duration
 
 
 def sync_book(ebook_name: str, audiobook_name: str):
@@ -364,7 +364,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
         book_cache["chapter_index"] = {}
     total_duration = 0
     last_transcription_offset = 0
-    last_synced: Union[SyncedChapter, None] = None
+    synced_chapters: List[SyncedChapter] = []
     for index, chapter in enumerate(epub_chapters):
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
@@ -393,20 +393,21 @@ def sync_book(ebook_name: str, audiobook_name: str):
         book_cache["chapter_index"][str(index)] = transcription_offset
         with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
             json.dump(book_cache, cache_file)
-        # print(f"Syncing with audio file {audio_filename}")
+
         synced = sync_chapter(
             transcription,
             chapter,
             transcription_offset,
-            last_synced.sentence_ranges[-1]
-            if last_synced is not None and len(last_synced.sentence_ranges) > 0
+            synced_chapters[-1].sentence_ranges[-1]
+            if len(synced_chapters) > 0 and len(synced_chapters[-1].sentence_ranges) > 0
             else None,
         )
-        update_synced_chapter(book, synced)
+
+        synced_chapters.append(synced)
         last_transcription_offset = transcription_offset
-        last_synced = synced
-        total_duration += synced.duration
-        print(f"New total duration is {total_duration}s")
+
+    for synced in synced_chapters:
+        total_duration += update_synced_chapter(book, synced)
 
     book.add_metadata(
         None, "meta", format_duration(total_duration), {"property": "media:duration"}
@@ -427,3 +428,4 @@ def sync_book(ebook_name: str, audiobook_name: str):
     synced_epub_path.mkdir(parents=True, exist_ok=True)
 
     epub.write_epub(Path(synced_epub_path, f"{ebook_name}.epub"), book)
+    print(f"Synced EPUB written to {synced_epub_path}")
