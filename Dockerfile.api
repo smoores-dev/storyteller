@@ -17,11 +17,8 @@ RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /usr/app/src
 
-RUN mkdir -p assets/dict && \
-  mkdir -p assets/audio && \
-  mkdir -p assets/text && \
-  mkdir -p cache && \
-  wget -O assets/dict/en.txt https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
+RUN mkdir dict && \
+  wget -O dict/en.txt https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 COPY pyproject.toml poetry.lock ./
 

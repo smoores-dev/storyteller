@@ -83,6 +83,7 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
             update_task_status(processing_task.id, ProcessingTaskStatus.COMPLETED)
         else:
             update_task_status(processing_task.id, ProcessingTaskStatus.IN_ERROR)
+            return
 
 
 def start_processing(book_id: int):
