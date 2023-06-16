@@ -170,7 +170,7 @@ def get_sentence_ranges(
             if not_found == 3 or sentence_index == len(sentences) - 1:
                 not_found = 0
                 transcription_window_index += 1
-                if transcription_window_index == len(transcription_sentences):
+                if transcription_window_index == last_good_transcription_window + 10:
                     transcription_window_index = last_good_transcription_window
                     continue
                 sentence_index -= 3
