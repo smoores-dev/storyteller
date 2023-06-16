@@ -211,6 +211,34 @@ def get_sentence_ranges(
     return sentence_ranges
 
 
+def interpolate_sentence_ranges(
+    sentence_ranges: List[SentenceRange],
+) -> List[SentenceRange]:
+    interpolated: List[SentenceRange] = []
+    for sentence_range in sentence_ranges:
+        if len(interpolated) == 0:
+            interpolated.append(sentence_range)
+
+        last_sentence_range = interpolated[-1]
+
+        count = sentence_range.id - last_sentence_range.id
+        diff = last_sentence_range.end - last_sentence_range.start
+        interpolated_length = diff / count
+
+        for i in range(1, count):
+            interpolated_sentence_range = SentenceRange(
+                last_sentence_range.id + i,
+                last_sentence_range.start + interpolated_length * i,
+                last_sentence_range.start + interpolated_length * (i + 1),
+                last_sentence_range.audiofile,
+            )
+            interpolated.append(interpolated_sentence_range)
+
+        interpolated.append(sentence_range)
+
+    return interpolated
+
+
 def get_chapter_duration(sentence_ranges: List[SentenceRange]):
     duration = 0
     for _, file_group in groupby(sentence_ranges, key=lambda r: r.audiofile):
@@ -238,6 +266,7 @@ def sync_chapter(
     sentence_ranges = get_sentence_ranges(
         transcription, chapter_sentences, transcription_offset, last_sentence_range
     )
+    sentence_ranges = interpolate_sentence_ranges(sentence_ranges)
     tag_sentences(chapter)
 
     chapter_filepath_length = len(chapter.file_name.split(os.path.sep)) - 1
