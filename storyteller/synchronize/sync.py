@@ -10,7 +10,8 @@ from mutagen.mp4 import MP4
 import os
 import sys
 import whisperx.types
-from nltk.tokenize import sent_tokenize
+
+from .files import CACHE_DIR, TEXT_DIR
 
 from .audio import (
     get_audio_chapter_filenames,
@@ -356,8 +357,8 @@ def sync_book(ebook_name: str, audiobook_name: str):
     transcription = concat_transcriptions(transcriptions, audio_chapter_filenames)
     transcription_text = get_transcription_text(transcription)
     book_cache: Dict[str, Any] = {}
-    if os.path.exists(f"cache/{ebook_name}.json"):
-        with open(f"cache/{ebook_name}.json", "r") as cache_file:
+    if os.path.exists(f"{CACHE_DIR}/{ebook_name}.json"):
+        with open(f"{CACHE_DIR}/{ebook_name}.json", "r") as cache_file:
             book_cache = json.load(cache_file)
     if "chapter_index" not in book_cache:
         book_cache["chapter_index"] = {}
@@ -381,7 +382,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
             if transcription_offset is None:
                 print(f"Couldn't find matching transcription for chapter #{index}")
                 book_cache["chapter_index"][str(index)] = None
-                with open(f"cache/{ebook_name}.json", "w") as cache_file:
+                with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
                     json.dump(book_cache, cache_file)
                 continue
 
@@ -390,7 +391,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
         )
 
         book_cache["chapter_index"][str(index)] = transcription_offset
-        with open(f"cache/{ebook_name}.json", "w") as cache_file:
+        with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
             json.dump(book_cache, cache_file)
         # print(f"Syncing with audio file {audio_filename}")
         synced = sync_chapter(
@@ -422,7 +423,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
         )
     )
 
-    synced_epub_path = Path(f"assets/text/{ebook_name}/synced")
+    synced_epub_path = Path(f"{TEXT_DIR}/{ebook_name}/synced")
     synced_epub_path.mkdir(parents=True, exist_ok=True)
 
     epub.write_epub(Path(synced_epub_path, f"{ebook_name}.epub"), book)
