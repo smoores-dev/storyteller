@@ -161,7 +161,7 @@ def get_sentence_ranges(
     while sentence_index < len(sentences):
         sentence = sentences[sentence_index]
         transcription_window_list = transcription_sentences[
-            transcription_window_index : transcription_window_index + 6
+            transcription_window_index : transcription_window_index + 10
         ]
         transcription_window = "".join(transcription_window_list)
 
@@ -176,12 +176,13 @@ def get_sentence_ranges(
             sentence_index += 1
             not_found += 1
             if not_found == 3 or sentence_index == len(sentences) - 1:
-                not_found = 0
                 transcription_window_index += 1
-                if transcription_window_index == last_good_transcription_window + 10:
+                if transcription_window_index == last_good_transcription_window + 30:
                     transcription_window_index = last_good_transcription_window
+                    not_found = 0
                     continue
-                sentence_index -= 3
+                sentence_index -= not_found
+                not_found = 0
             continue
 
         first_match = matches[0]
