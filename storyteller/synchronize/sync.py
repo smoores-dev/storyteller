@@ -363,7 +363,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
     total_duration = 0
     last_transcription_offset = 0
     last_synced: Union[SyncedChapter, None] = None
-    for index, chapter in enumerate(epub_chapters[5:6]):
+    for index, chapter in enumerate(epub_chapters):
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
         print(f"Syncing chapter #{index} ({epub_intro}...)")
