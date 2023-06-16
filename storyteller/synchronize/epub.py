@@ -117,23 +117,20 @@ class SentenceSpan:
     is_offset: bool
 
 
-def get_textblock_sentences_with_offsets(textblock: Tag):
-    textblock_text_content = textblock.get_text()
-    sentences = sent_tokenize(textblock_text_content)
+def get_sentences_with_offsets(text: str):
+    sentences = sent_tokenize(text)
     sentences_with_offsets = []
     last_sentence_end = 0
     for sentence in sentences:
-        sentence_start = textblock_text_content.find(sentence, last_sentence_end)
+        sentence_start = text.find(sentence, last_sentence_end)
         if sentence_start > last_sentence_end:
-            sentences_with_offsets.append(
-                textblock_text_content[last_sentence_end:sentence_start]
-            )
+            sentences_with_offsets.append(text[last_sentence_end:sentence_start])
 
         sentences_with_offsets.append(sentence)
         last_sentence_end = sentence_start + len(sentence)
 
-    if len(textblock_text_content) > last_sentence_end:
-        sentences_with_offsets.append(textblock_text_content[last_sentence_end:])
+    if len(text) > last_sentence_end:
+        sentences_with_offsets.append(text[last_sentence_end:])
 
     return sentences_with_offsets
 
@@ -141,7 +138,7 @@ def get_textblock_sentences_with_offsets(textblock: Tag):
 def get_textblock_spans(start_id: int, textblock: Tag):
     marks: List[Mark] = list()
     spans: List[SentenceSpan] = list()
-    sentences = get_textblock_sentences_with_offsets(textblock)
+    sentences = get_sentences_with_offsets(textblock.get_text())
 
     if len(textblock.contents) == 0:
         return spans

@@ -22,6 +22,7 @@ from .epub import (
     get_chapter_sentences,
     get_chapter_text,
     get_epub_audio_filename,
+    get_sentences_with_offsets,
     read_epub,
     get_chapters,
     tag_sentences,
@@ -135,6 +136,14 @@ def find_timestamps(match_start_index: int, transcription: StorytellerTranscript
     return segment["start"], segment["audiofile"]
 
 
+def get_window_index_from_offset(window: List[str], offset: int):
+    index = 0
+    while offset >= len(window[index]):
+        offset -= len(window[index])
+        index += 1
+    return index
+
+
 def get_sentence_ranges(
     transcription: StorytellerTranscription,
     sentences: List[str],
@@ -143,7 +152,7 @@ def get_sentence_ranges(
 ):
     sentence_ranges: List[SentenceRange] = []
     transcription_text = get_transcription_text(transcription).lower()[chapter_offset:]
-    transcription_sentences = sent_tokenize(transcription_text)
+    transcription_sentences = get_sentences_with_offsets(transcription_text)
     transcription_window_index = 0
     last_good_transcription_window = 0
     not_found = 0
@@ -151,11 +160,10 @@ def get_sentence_ranges(
     sentence_index = 0
     while sentence_index < len(sentences):
         sentence = sentences[sentence_index]
-        transcription_window = " ".join(
-            transcription_sentences[
-                transcription_window_index : transcription_window_index + 4
-            ]
-        )
+        transcription_window_list = transcription_sentences[
+            transcription_window_index : transcription_window_index + 6
+        ]
+        transcription_window = "".join(transcription_window_list)
 
         matches = find_near_matches(
             sentence.strip().lower(),
@@ -176,12 +184,10 @@ def get_sentence_ranges(
                 sentence_index -= 3
             continue
 
-        not_found = 0
-        last_good_transcription_window = transcription_window_index
         first_match = matches[0]
 
         transcription_offset = (
-            len(" ".join(transcription_sentences[:transcription_window_index])) + 1
+            len("".join(transcription_sentences[:transcription_window_index])) + 1
         )
         start, audiofile = find_timestamps(
             first_match.start + transcription_offset + chapter_offset, transcription
@@ -206,6 +212,14 @@ def get_sentence_ranges(
             start = 0
 
         sentence_ranges.append(SentenceRange(sentence_index, start, start, audiofile))
+
+        not_found = 0
+        transcription_window_index = (
+            get_window_index_from_offset(transcription_window_list, first_match.start)
+            + transcription_window_index
+        )
+
+        last_good_transcription_window = transcription_window_index
         sentence_index += 1
 
     return sentence_ranges
@@ -218,6 +232,7 @@ def interpolate_sentence_ranges(
     for sentence_range in sentence_ranges:
         if len(interpolated) == 0:
             interpolated.append(sentence_range)
+            continue
 
         last_sentence_range = interpolated[-1]
 
@@ -348,7 +363,7 @@ def sync_book(ebook_name: str, audiobook_name: str):
     total_duration = 0
     last_transcription_offset = 0
     last_synced: Union[SyncedChapter, None] = None
-    for index, chapter in enumerate(epub_chapters):
+    for index, chapter in enumerate(epub_chapters[5:6]):
         epub_text = get_chapter_text(chapter)
         epub_intro = epub_text[:60].replace("\n", " ")
         print(f"Syncing chapter #{index} ({epub_intro}...)")
