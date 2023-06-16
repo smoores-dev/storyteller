@@ -63,7 +63,9 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
         if processing_task.type == ProcessingTaskType.SPLIT_CHAPTERS:
             p = Process(target=split_audiobook, args=[book.audio_filename])
         elif processing_task.type == ProcessingTaskType.TRANSCRIBE_CHAPTERS:
-            p = Process(target=transcribe_book, args=[book.audio_filename])
+            p = Process(
+                target=transcribe_book, args=[book.audio_filename, book.epub_filename]
+            )
         elif processing_task.type == ProcessingTaskType.SYNC_CHAPTERS:
             p = Process(
                 target=sync_book, args=[book.epub_filename, book.audio_filename]
