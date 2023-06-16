@@ -11,12 +11,13 @@ from mutagen.mp4 import MP4, Chapter
 from pathlib import Path, PurePath
 from typing import List, Union, cast
 
+from .files import AUDIO_DIR
 from .epub import get_chapters, get_chapter_text, read_epub
 from .prompt import generate_initial_prompt
 
 
 def get_audio_filepath(book_name: str):
-    return f"assets/audio/{book_name}/original/{book_name}.mp4"
+    return f"{AUDIO_DIR}/{book_name}/original/{book_name}.mp4"
 
 
 def get_mp4(book_name: str):

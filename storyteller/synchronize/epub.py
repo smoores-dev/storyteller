@@ -8,6 +8,8 @@ from functools import cache
 from ebooklib import epub, ITEM_DOCUMENT
 from bs4 import BeautifulSoup, NavigableString, ResultSet, Tag
 
+from .files import TEXT_DIR
+
 
 sent_tokenize: Callable[[str], List[str]] = cache(_sent_tokenize)
 
@@ -21,7 +23,7 @@ class SentenceRange:
 
 
 def get_epub_filepath(book_name: str):
-    return f"assets/text/{book_name}/original/{book_name}.epub"
+    return f"{TEXT_DIR}/{book_name}/original/{book_name}.epub"
 
 
 def read_epub(book_name: str):
