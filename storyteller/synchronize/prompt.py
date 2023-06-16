@@ -4,7 +4,7 @@ import contractions
 
 
 def read_dict():
-    with open("assets/dict/en.txt") as f:
+    with open("dict/en.txt") as f:
         contents = f.read()
     return [word.lower() for word in contents.split("\n")]
 
