@@ -12,7 +12,8 @@ publish-api:
     DOCKER_TLS_CERTDIR: "/certs"
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker buildx create --use --driver=docker-container
+    - docker context create gitlab-ci
+    - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/api:latest .
 
@@ -27,6 +28,7 @@ publish-web:
     DOCKER_TLS_CERTDIR: "/certs"
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker buildx create --use --driver=docker-container
+    - docker context create gitlab-ci
+    - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f Dockerfile.web --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/web:latest storyteller/web
