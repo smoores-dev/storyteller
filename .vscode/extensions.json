@@ -1,5 +1,11 @@
 {
   "recommendations": [
-    "denoland.vscode-deno"
+    "arcanis.vscode-zipfs",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-azuretools.vscode-docker",
+    "ms-python.black-formatter"
   ]
 }
