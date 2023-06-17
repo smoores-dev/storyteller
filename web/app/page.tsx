@@ -10,7 +10,7 @@ export default async function Home() {
       <h2>Your books</h2>
       <AddBookModal apiHost={apiHost} />
       <ul>
-        {books.map((book) => (
+        {books.map((book: any) => (
           <li key={book.id}>
             <div>{book.title}</div>
             <div>by {book.authors[0].name}</div>
