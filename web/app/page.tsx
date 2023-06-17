@@ -1,6 +1,8 @@
 import styles from "./page.module.css"
 import { AddBookModal } from "./components/AddBookModal"
 
+export const dynamic = "force-dynamic"
+
 export default async function Home() {
   const apiHost = process.env["STORYTELLER_API_HOST"] ?? ""
   const booksResponse = await fetch(`${apiHost}/books`)
