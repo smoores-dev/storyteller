@@ -1,7 +1,9 @@
-Dockerfile
 .dockerignore
 node_modules
 .yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+.pnp.*
 npm-debug.log
 README.md
 .next
