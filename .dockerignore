@@ -1,1 +1,3 @@
 __pycache__
+Dockerfile.api
+.dockerignore
