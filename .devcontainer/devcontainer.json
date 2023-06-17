@@ -9,7 +9,7 @@
       // Update 'VARIANT' to pick a Python version: 3, 3.6, 3.7, 3.8, 3.9
       "VARIANT": "3.10",
       // Options
-      "INSTALL_NODE": "false",
+      "INSTALL_NODE": "true",
       "NODE_VERSION": "lts/*"
     }
   },
@@ -21,7 +21,6 @@
 		"ms-python.python",
 		"ms-python.vscode-pylance",
 		"ms-azuretools.vscode-docker",
-		"denoland.vscode-deno",
 		"ms-python.black-formatter"
 	]
     }

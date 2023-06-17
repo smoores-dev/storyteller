@@ -1,4 +1,5 @@
 import os
+from typing import List
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,7 +7,7 @@ from pydantic import BaseModel
 from storyteller.synchronize.epub import get_authors, read_epub
 
 from .assets import persist_epub, persist_audio
-from .database import create_book as create_book_db, add_audiofile
+from .database import create_book as create_book_db, add_audiofile, get_book_details, BookDetail
 from .processing import start_processing
 
 app = FastAPI()
@@ -29,6 +30,12 @@ def index():
 
 class UploadEpubResponse(BaseModel):
     bookId: int
+
+
+@app.get("/books")
+async def list_books() -> List[BookDetail]:
+    books = get_book_details()
+    return books
 
 
 @app.post("/books/epub")
