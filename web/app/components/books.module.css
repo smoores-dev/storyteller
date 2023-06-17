@@ -1,0 +1,25 @@
+.add-book-modal {
+  position: absolute;
+  top: 10%;
+  left: 20%;
+  width: 60%;
+  border: double 0.25rem transparent;
+  border-radius: 0.5rem;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-image: linear-gradient(rgb(var(--tile-start-rgb)), rgb(var(--tile-start-rgb))), var(--tile-border);
+  padding: 2rem;
+}
+
+.add-book-modal-heading {
+  margin-bottom: 2rem;
+}
+
+.add-book-modal-dismiss {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.book-upload-heading {
+  margin: 1rem 0;
+}

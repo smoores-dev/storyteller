@@ -1,0 +1,8 @@
+Dockerfile
+.dockerignore
+node_modules
+.yarn/cache
+npm-debug.log
+README.md
+.next
+.git
