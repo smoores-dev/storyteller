@@ -15,7 +15,8 @@ RUN yarn
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/.yarn/cache ./.yarn/cache
+COPY --from=deps /app/.yarn ./.yarn
+COPY --from=deps /app/.pnp.cjs ./
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED 1
