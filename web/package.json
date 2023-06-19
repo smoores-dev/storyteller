@@ -6,7 +6,8 @@
     "dev": "PORT=8001 next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "client:gen": "openapi --input http://localhost:8000/openapi.json --output ./apiClient --name ApiClient"
   },
   "dependencies": {
     "@ariakit/react": "^0.2.9",
@@ -17,6 +18,7 @@
     "debug": "^4.3.4",
     "eslint": "8.43.0",
     "eslint-config-next": "13.4.6",
+    "form-data": "^4.0.0",
     "next": "13.4.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.1",
     "eslint-config-prettier": "^8.8.0",
+    "openapi-typescript-codegen": "^0.24.0",
     "prettier": "^2.8.8",
     "typescript-plugin-css-modules": "^5.0.1"
   }

@@ -1,52 +1,17 @@
-from dataclasses import dataclass
-from typing import Dict, List, Set, cast
+from typing import Dict, List, cast
 from storyteller.api.database.processing_tasks import (
     ProcessingTaskStatus,
 )
+from ..models import Book, BookAuthor, BookDetail, ProcessingStatus
 
 from storyteller.synchronize.epub import EpubAuthor
 
 from .connection import connection
 
 
-@dataclass
-class Book:
-    id: int
-    title: str
-    epub_filename: str
-    audio_filename: str | None
-
-
-@dataclass
-class Author:
-    id: int
-    name: str
-    file_as: str
-
-
-@dataclass
-class BookAuthor:
-    id: int
-    name: str
-    file_as: str
-    role: str
-
-
-@dataclass
-class ProcessingStatus:
-    current_task: str
-    progress: float
-
-
-@dataclass
-class BookDetail:
-    id: int
-    title: str
-    authors: List[BookAuthor]
-    processing_status: ProcessingStatus | None
-
-
-def create_book(title: str, authors: List[EpubAuthor], epub_filename: str) -> int:
+def create_book(
+    title: str, authors: List[EpubAuthor], epub_filename: str
+) -> BookDetail:
     cursor = connection.cursor()
 
     cursor.execute(
@@ -56,7 +21,8 @@ def create_book(title: str, authors: List[EpubAuthor], epub_filename: str) -> in
         {"title": title, "epub_filename": epub_filename},
     )
 
-    book_id = cursor.lastrowid
+    book_id = cast(int, cursor.lastrowid)
+    book = BookDetail(id=book_id, title=title, authors=[], processing_status=None)
 
     for author in authors:
         cursor.execute(
@@ -66,7 +32,7 @@ def create_book(title: str, authors: List[EpubAuthor], epub_filename: str) -> in
             {"name": author.name, "file_as": author.file_as},
         )
 
-        author_id = cursor.lastrowid
+        author_id = cast(int, cursor.lastrowid)
 
         cursor.execute(
             """
@@ -75,10 +41,16 @@ def create_book(title: str, authors: List[EpubAuthor], epub_filename: str) -> in
             {"book_id": book_id, "author_id": author_id, "role": author.role},
         )
 
+        book.authors.append(
+            BookAuthor(
+                id=author_id, name=author.name, file_as=author.file_as, role=author.role
+            )
+        )
+
     cursor.close()
     connection.commit()
 
-    return cast(int, book_id)
+    return book
 
 
 def add_audiofile(book_id: int, audio_filename: str):
@@ -104,7 +76,9 @@ def get_book(book_id: int):
 
     id, title, epub_filename, audio_filename = cursor.fetchone()
 
-    return Book(id, title, epub_filename, audio_filename)
+    return Book(
+        id=id, title=title, epub_filename=epub_filename, audio_filename=audio_filename
+    )
 
 
 def get_books():
@@ -116,7 +90,12 @@ def get_books():
     )
 
     return [
-        Book(id, title, epub_filename, audio_filename)
+        Book(
+            id=id,
+            title=title,
+            epub_filename=epub_filename,
+            audio_filename=audio_filename,
+        )
         for id, title, epub_filename, audio_filename in cursor.fetchall()
     ]
 
@@ -149,30 +128,47 @@ def get_book_details():
         ) = row
 
         if book_id not in books:
-            author = BookAuthor(author_id, author_name, author_file_as, author_role)
+            author = BookAuthor(
+                id=author_id, name=author_name, file_as=author_file_as, role=author_role
+            )
 
             book = BookDetail(
-                book_id,
-                book_title,
-                [author],
-                None
-                if processing_task_status != ProcessingTaskStatus.COMPLETED
-                else ProcessingStatus(processing_task_type, 0),
+                id=book_id,
+                title=book_title,
+                authors=[author],
+                processing_status=None
+                if processing_task_status == ProcessingTaskStatus.COMPLETED
+                else ProcessingStatus(
+                    current_task=processing_task_type,
+                    progress=0,
+                    in_error=processing_task_status == ProcessingTaskStatus.IN_ERROR,
+                ),
             )
 
             books[book_id] = book
-        
+
         else:
             book = books[book_id]
 
             author = next(filter(lambda a: a.id == author_id, book.authors), None)
 
             if author is None:
-                author = BookAuthor(author_id, author_name, author_file_as, author_role)
+                author = BookAuthor(
+                    id=author_id,
+                    name=author_name,
+                    file_as=author_file_as,
+                    role=author_role,
+                )
                 book.authors.append(author)
 
-            if book.processing_status is None and processing_task_status == ProcessingTaskStatus.COMPLETED:
-                book.processing_status = ProcessingStatus(processing_task_type, 0)
-            
-    return list(books.values())
+            if (
+                book.processing_status is None
+                and processing_task_status != ProcessingTaskStatus.COMPLETED
+            ):
+                book.processing_status = ProcessingStatus(
+                    current_task=processing_task_type,
+                    progress=0,
+                    in_error=processing_task_status == ProcessingTaskStatus.IN_ERROR,
+                )
 
+    return list(books.values())
