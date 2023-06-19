@@ -8,6 +8,7 @@ from storyteller.synchronize.epub import get_authors, read_epub
 from .assets import persist_epub, persist_audio, get_synced_book_path
 from .database import (
     create_book as create_book_db,
+    get_book,
     add_audiofile,
     get_book_details,
     BookDetail,
@@ -62,6 +63,9 @@ async def process_book(book_id: int):
 
 @app.get("/books/{book_id}/synced")
 async def get_synced_book(book_id):
-    response = FileResponse(get_synced_book_path(book_id))
-    response.headers["Content-Disposition"] = "attachment"
+    book = get_book(book_id)
+    response = FileResponse(get_synced_book_path(book))
+    response.headers[
+        "Content-Disposition"
+    ] = f'attachment; filename="{book.title}.epub"'
     return response
