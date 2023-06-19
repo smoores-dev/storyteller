@@ -1,12 +1,11 @@
 import os
-from typing import List
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import FileResponse
 
 from storyteller.synchronize.epub import get_authors, read_epub
 
-from .assets import persist_epub, persist_audio
+from .assets import persist_epub, persist_audio, get_synced_book_path
 from .database import create_book as create_book_db, add_audiofile, get_book_details, BookDetail
 from .processing import start_processing
 
@@ -28,33 +27,35 @@ def index():
     return {"Hello": "World"}
 
 
-class UploadEpubResponse(BaseModel):
-    bookId: int
-
-
-@app.get("/books")
-async def list_books() -> List[BookDetail]:
+@app.get("/books", response_model=list[BookDetail])
+async def list_books():
     books = get_book_details()
     return books
 
 
-@app.post("/books/epub")
-async def upload_epub(file: UploadFile) -> UploadEpubResponse:
+@app.post("/books/epub", response_model=BookDetail)
+async def upload_epub(file: UploadFile):
     original_filename, _ = os.path.splitext(file.filename)
     persist_epub(original_filename, file.file)
     book = read_epub(original_filename)
     authors = get_authors(book)
-    book_id = create_book_db(book.title, authors, original_filename)
-    return UploadEpubResponse(bookId=book_id)
+    book_detail = create_book_db(book.title, authors, original_filename)
+    return book_detail
 
 
-@app.post("/books/{book_id}/audio")
+@app.post("/books/{book_id}/audio", response_model=None)
 async def upload_audio(book_id: int, file: UploadFile):
     original_filename, _ = os.path.splitext(file.filename)
     persist_audio(original_filename, file.file)
     add_audiofile(book_id, original_filename)
 
 
-@app.post("/books/{book_id}/process")
+@app.post("/books/{book_id}/process", response_model=None)
 async def process_book(book_id: int):
     start_processing(book_id)
+
+@app.get("books/{book_id}/synced")
+async def get_synced_book(book_id):
+    response = FileResponse(get_synced_book_path(book_id))
+    response.headers['Content-Disposition'] = 'attachment'
+    return response
