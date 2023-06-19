@@ -1,7 +1,6 @@
 from storyteller.synchronize.files import TEXT_DIR
-from ..database import get_book
+from ..database import Book
 
 
-def get_synced_book_path(book_id: int):
-    book = get_book(book_id)
+def get_synced_book_path(book: Book):
     return f"{TEXT_DIR}/{book.epub_filename}/synced/{book.epub_filename}.epub"
