@@ -6,7 +6,12 @@ from fastapi.responses import FileResponse
 from storyteller.synchronize.epub import get_authors, read_epub
 
 from .assets import persist_epub, persist_audio, get_synced_book_path
-from .database import create_book as create_book_db, add_audiofile, get_book_details, BookDetail
+from .database import (
+    create_book as create_book_db,
+    add_audiofile,
+    get_book_details,
+    BookDetail,
+)
 from .processing import start_processing
 
 app = FastAPI()
@@ -54,8 +59,9 @@ async def upload_audio(book_id: int, file: UploadFile):
 async def process_book(book_id: int):
     start_processing(book_id)
 
-@app.get("books/{book_id}/synced")
+
+@app.get("/books/{book_id}/synced")
 async def get_synced_book(book_id):
     response = FileResponse(get_synced_book_path(book_id))
-    response.headers['Content-Disposition'] = 'attachment'
+    response.headers["Content-Disposition"] = "attachment"
     return response
