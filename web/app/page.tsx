@@ -25,9 +25,7 @@ export default async function Home() {
               </div>
             )}
             <div>
-              <a download href={`${apiHost}/books/${book.id}/synced`}>
-                Download
-              </a>
+              <a href={`${apiHost}/books/${book.id}/synced`}>Download</a>
             </div>
           </li>
         ))}
