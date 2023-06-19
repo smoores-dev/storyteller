@@ -33,17 +33,33 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Standalone doesn't really support PnP, so we have to manually
+# copy over some additional files from the builder
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.pnp.cjs ./
+COPY --from=builder --chown=nextjs:nodejs /app/.yarnrc.yml ./
+COPY --from=builder --chown=nextjs:nodejs /app/yarn.lock ./
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/releases ./.yarn/releases
+
+# Not all node modules are interned by Next.js; some still need
+# to be made available.
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/@next-env-npm-13.4.6-7f66004fe9-65d6cfb68a.zip ./.yarn/cache/
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/client-only-npm-0.0.1-07d3e9505c-0c16bf660d.zip ./.yarn/cache/
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/styled-jsx-npm-5.1.1-2557a209ba-523a33b386.zip ./.yarn/cache/
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/@swc-helpers-npm-0.5.1-424376f311-71e0e27234.zip ./.yarn/cache/
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/next-npm-13.4.6-c2942e4eb7-1d28d4be18.zip ./.yarn/cache/
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/zod-npm-3.21.4-9f570b215c-f185ba8734.zip ./.yarn/cache/
 
 USER nextjs
 
 EXPOSE 8001
 
 ENV PORT 8001
+ENV HOST 0.0.0.0
 
-CMD ["node", "server.js"]
+CMD ["yarn", "node", "server.js"]
