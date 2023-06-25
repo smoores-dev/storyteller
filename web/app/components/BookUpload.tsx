@@ -76,7 +76,7 @@ export default function BookUpload({ apiHost }: Props) {
           if (!audioInputRef.current?.files?.[0]) return
 
           axios.postForm(
-            `${apiHost}/books/${book}/audio`,
+            `${apiHost}/books/${book?.id}/audio`,
             { file: audioInputRef.current.files[0] },
             {
               onUploadProgress({ progress }) {
@@ -111,7 +111,7 @@ export default function BookUpload({ apiHost }: Props) {
         type="button"
         disabled={epubUploadProgress !== 1 && audioUploadProgress !== 1}
         onClick={() => {
-          axios.post(`${apiHost}/books/${book}/process`)
+          axios.post(`${apiHost}/books/${book?.id}/process`)
         }}
       >
         Start processing!
