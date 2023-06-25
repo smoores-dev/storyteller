@@ -26,7 +26,7 @@ export default function BookUpload({ apiHost }: Props) {
     <>
       {book && (
         <p>
-          Adding "{book.title}" by {book.authors[0]?.name}
+          Adding &ldquo;{book.title}&rdquo; by {book.authors[0]?.name}
         </p>
       )}
       <h2 className={styles["book-upload-heading"]}>Upload epub file</h2>

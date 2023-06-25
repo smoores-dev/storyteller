@@ -17,7 +17,7 @@
   },
   "eslint.nodePath": "web/.yarn/sdks",
   "eslint.options": {
-    "configFile": "web/.eslintrc.json"
+    "overrideConfigFile": "web/.eslintrc.json"
   },
   "prettier.prettierPath": "web/.yarn/sdks/prettier/index.js",
   "prettier.configPath": "web/.prettierrc.json",
