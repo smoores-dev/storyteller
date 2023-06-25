@@ -5,6 +5,7 @@ import axios from "axios"
 
 import styles from "./books.module.css"
 import { Button } from "@ariakit/react"
+import { BookDetail } from "@/apiClient"
 
 type Props = {
   apiHost: string
@@ -19,21 +20,24 @@ export default function BookUpload({ apiHost }: Props) {
   const [audioUploadProgress, setAudioUploadProgress] = useState<number | null>(
     null
   )
-  const [bookId, setBookId] = useState<number | null>(null)
+  const [book, setBook] = useState<BookDetail | null>(null)
 
   return (
     <>
+      {book && (
+        <p>
+          Adding "{book.title}" by {book.authors[0]?.name}
+        </p>
+      )}
       <h2 className={styles["book-upload-heading"]}>Upload epub file</h2>
       <form
         id="epub-upload"
         onSubmit={(event) => {
           event.preventDefault()
-          console.log(event.defaultPrevented)
           if (!epubInputRef.current?.files?.[0]) return
-          console.log(epubInputRef.current.files[0])
 
           axios
-            .postForm(
+            .postForm<BookDetail>(
               `${apiHost}/books/epub`,
               { file: epubInputRef.current.files[0] },
               {
@@ -42,10 +46,8 @@ export default function BookUpload({ apiHost }: Props) {
                 },
               }
             )
-            .then(({ data }) => {
-              const { bookId } = data
-
-              setBookId(bookId)
+            .then(({ data: book }) => {
+              setBook(book)
             })
         }}
       >
@@ -74,7 +76,7 @@ export default function BookUpload({ apiHost }: Props) {
           if (!audioInputRef.current?.files?.[0]) return
 
           axios.postForm(
-            `${apiHost}/books/${bookId}/audio`,
+            `${apiHost}/books/${book}/audio`,
             { file: audioInputRef.current.files[0] },
             {
               onUploadProgress({ progress }) {
@@ -109,7 +111,7 @@ export default function BookUpload({ apiHost }: Props) {
         type="button"
         disabled={epubUploadProgress !== 1 && audioUploadProgress !== 1}
         onClick={() => {
-          axios.post(`${apiHost}/books/${bookId}/process`)
+          axios.post(`${apiHost}/books/${book}/process`)
         }}
       >
         Start processing!
