@@ -228,8 +228,10 @@ def tag_sentences(chapter: epub.EpubHtml):
         textblock.clear()
         textblock.extend(new_content)
 
-        if len(spans) > 0:
+        try:
             start_id = get_last_span_id(spans) + 1
+        except StopIteration:
+            pass
 
         chapter.set_content(soup.encode(formatter="html"))
 
