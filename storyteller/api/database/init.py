@@ -43,7 +43,19 @@ def init_db():
             type TEXT NOT NULL,
             book_id INTEGER NOT NULL,
             status TEXT NOT NULL,
+            progress REAL NOT NULL DEFAULT 0,
             FOREIGN KEY(book_id) REFERENCES book(id)
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user(
+            username TEXT PRIMARY KEY,
+            email TEXT NOT NULL,
+            full_name TEXT,
+            hashed_password TEXT NOT NULL
         )
         """
     )

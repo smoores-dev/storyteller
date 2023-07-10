@@ -1,5 +1,10 @@
 from .init import init_db
-from .books import create_book, get_book_details, add_audiofile, get_book, Book, BookDetail
+from .books import (
+    create_book,
+    get_book_details,
+    add_audiofile,
+    get_book,
+)
 from .processing_tasks import (
     create_processing_task,
     ProcessingTaskType,
@@ -7,8 +12,10 @@ from .processing_tasks import (
     ProcessingTaskStatus,
     get_processing_tasks_for_book,
     processing_tasks_order,
+    update_task_progress,
     update_task_status,
 )
+from .user import get_user
 
 __all__ = [
     "init_db",
@@ -16,13 +23,13 @@ __all__ = [
     "create_processing_task",
     "get_book",
     "get_book_details",
+    "get_user",
     "ProcessingTaskType",
     "add_audiofile",
     "ProcessingTask",
     "ProcessingTaskStatus",
     "get_processing_tasks_for_book",
     "processing_tasks_order",
+    "update_task_progress",
     "update_task_status",
-    "Book",
-    "BookDetail"
 ]

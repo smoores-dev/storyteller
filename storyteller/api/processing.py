@@ -1,5 +1,5 @@
-import signal
-from typing import Dict, List
+import functools
+from typing import Dict, List, cast
 from multiprocessing import Process
 from threading import Thread
 
@@ -14,9 +14,11 @@ from .database import (
     create_processing_task,
     get_processing_tasks_for_book,
     processing_tasks_order,
+    update_task_progress,
     update_task_status,
-    Book,
 )
+
+from .models import Book
 
 
 def determine_remaining_tasks(
@@ -24,7 +26,7 @@ def determine_remaining_tasks(
 ) -> List[ProcessingTask]:
     if len(processing_tasks) == 0:
         return [
-            ProcessingTask(None, type, ProcessingTaskStatus.STARTED, book_id)
+            ProcessingTask(None, type, ProcessingTaskStatus.STARTED, 0, book_id)
             for type in processing_tasks_order
         ]
 
@@ -35,7 +37,7 @@ def determine_remaining_tasks(
             return []
 
         return [
-            ProcessingTask(None, task, ProcessingTaskStatus.STARTED, book_id)
+            ProcessingTask(None, task, ProcessingTaskStatus.STARTED, 0, book_id)
             for task in processing_tasks_order[next_task_type_index:]
         ]
 
@@ -46,7 +48,7 @@ def determine_remaining_tasks(
     ]
 
     return processing_tasks[len(completed_tasks) :] + [
-        ProcessingTask(None, task, ProcessingTaskStatus.STARTED, book_id)
+        ProcessingTask(None, task, ProcessingTaskStatus.STARTED, 0, book_id)
         for task in processing_tasks_order[len(processing_tasks) :]
     ]
 
@@ -59,16 +61,24 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
                 processing_task.status,
                 processing_task.book_id,
             )
+        if processing_task.status != ProcessingTaskStatus.STARTED:
+            update_task_status(processing_task.id, ProcessingTaskStatus.STARTED)
+
+        on_progress = functools.partial(
+            update_task_progress, cast(int, processing_task.id)
+        )
 
         if processing_task.type == ProcessingTaskType.SPLIT_CHAPTERS:
-            p = Process(target=split_audiobook, args=[book.audio_filename])
+            p = Process(target=split_audiobook, args=[book.audio_filename, on_progress])
         elif processing_task.type == ProcessingTaskType.TRANSCRIBE_CHAPTERS:
             p = Process(
-                target=transcribe_book, args=[book.audio_filename, book.epub_filename]
+                target=transcribe_book,
+                args=[book.audio_filename, book.epub_filename, on_progress],
             )
         elif processing_task.type == ProcessingTaskType.SYNC_CHAPTERS:
             p = Process(
-                target=sync_book, args=[book.epub_filename, book.audio_filename]
+                target=sync_book,
+                args=[book.epub_filename, book.audio_filename, on_progress],
             )
         else:
             raise KeyError(

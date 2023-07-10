@@ -9,7 +9,7 @@ import whisperx.types
 from dataclasses import dataclass
 from mutagen.mp4 import MP4, Chapter
 from pathlib import Path, PurePath
-from typing import List, Union, cast
+from typing import Callable, List, Union, cast
 
 from .files import AUDIO_DIR
 from .epub import get_chapters, get_chapter_text, read_epub
@@ -48,7 +48,9 @@ def get_chapter_filename(book_filename: str, chapter_title: str):
     return f"{chapters_path}/{filename}-{chapter_title}{ext}"
 
 
-def split_audiobook(book_name: str) -> List[str]:
+def split_audiobook(
+    book_name: str, on_progress: Callable[[float], None] | None = None
+) -> List[str]:
     mp4 = get_mp4(book_name)
     filename = cast(str, mp4.filename)
     if mp4.chapters is None:
@@ -70,7 +72,7 @@ def split_audiobook(book_name: str) -> List[str]:
     Path(chapters_path).mkdir(parents=True, exist_ok=True)
 
     chapter_filenames: List[str] = []
-    for range in chapter_ranges:
+    for i, range in enumerate(chapter_ranges):
         chapter_filename = get_chapter_filename(filename, range.chapter.title)
         if os.path.exists(chapter_filename):
             continue
@@ -81,6 +83,8 @@ def split_audiobook(book_name: str) -> List[str]:
         )
         devnull = open(os.devnull, "w")
         subprocess.run(command, stdout=devnull, stderr=devnull).check_returncode()
+        if on_progress is not None:
+            on_progress((i + 1) / len(chapter_ranges))
 
     return chapter_filenames
 
@@ -158,7 +162,11 @@ def get_transcriptions(book_name: str):
     return transcriptions
 
 
-def transcribe_book(audio_book_name: str, epub_book_name: str):
+def transcribe_book(
+    audio_book_name: str,
+    epub_book_name: str,
+    on_progress: Callable[[float], None] | None = None,
+):
     audio_filepath = get_audio_filepath(audio_book_name)
     transcriptions_path = get_transcriptions_path(audio_filepath)
     Path(transcriptions_path).mkdir(parents=True, exist_ok=True)
@@ -170,5 +178,7 @@ def transcribe_book(audio_book_name: str, epub_book_name: str):
         ]
     )
     initial_prompt = generate_initial_prompt(full_book_text)
-    for f in audio_chapter_filenames:
+    for i, f in enumerate(audio_chapter_filenames):
         transcribe_chapter(f, initial_prompt)
+        if on_progress is not None:
+            on_progress((i + 1) / len(audio_chapter_filenames))

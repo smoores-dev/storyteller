@@ -3,7 +3,7 @@ from itertools import groupby
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, List, TypedDict, Union, cast
+from typing import Any, Callable, Dict, List, TypedDict, Union, cast
 from fuzzysearch import Match, find_near_matches
 from ebooklib import epub
 from mutagen.mp4 import MP4
@@ -348,7 +348,11 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
     return duration
 
 
-def sync_book(ebook_name: str, audiobook_name: str):
+def sync_book(
+    ebook_name: str,
+    audiobook_name: str,
+    on_progress: Callable[[float], None] | None = None,
+):
     book = read_epub(ebook_name)
     epub_chapters = get_chapters(book)
     print(f"Found {len(epub_chapters)} chapters in the ebook")
@@ -405,6 +409,8 @@ def sync_book(ebook_name: str, audiobook_name: str):
 
         synced_chapters.append(synced)
         last_transcription_offset = transcription_offset
+        if on_progress is not None:
+            on_progress((index + 1) / len(epub_chapters))
 
     for synced in synced_chapters:
         total_duration += update_synced_chapter(book, synced)
