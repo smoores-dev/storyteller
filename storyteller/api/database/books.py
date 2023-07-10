@@ -100,18 +100,23 @@ def get_books():
     ]
 
 
-def get_book_details():
+def get_book_details(ids: list[int] | None = None):
+    if ids is None:
+        ids = []
+
     cursor = connection.execute(
-        """
+        f"""
         SELECT book.id, book.title,
                author.id, author.name, author.file_as,
                author_to_book.role,
-               processing_task.type, processing_task.status
+               processing_task.type, processing_task.status, processing_task.progress
         FROM book
         JOIN author_to_book ON book.id = author_to_book.book_id
         JOIN author on author_to_book.author_id = author.id
         JOIN processing_task ON book.id = processing_task.book_id
-        """
+        {f"WHERE book.id IN ({','.join('?' * len(ids))})" if len(ids) > 0 else ""}
+        """,
+        ids,
     )
 
     books: Dict[int, BookDetail] = {}
@@ -125,6 +130,7 @@ def get_book_details():
             author_role,
             processing_task_type,
             processing_task_status,
+            processing_task_progress,
         ) = row
 
         if book_id not in books:
@@ -140,7 +146,7 @@ def get_book_details():
                 if processing_task_status == ProcessingTaskStatus.COMPLETED
                 else ProcessingStatus(
                     current_task=processing_task_type,
-                    progress=0,
+                    progress=processing_task_progress,
                     in_error=processing_task_status == ProcessingTaskStatus.IN_ERROR,
                 ),
             )
@@ -167,7 +173,7 @@ def get_book_details():
             ):
                 book.processing_status = ProcessingStatus(
                     current_task=processing_task_type,
-                    progress=0,
+                    progress=processing_task_progress,
                     in_error=processing_task_status == ProcessingTaskStatus.IN_ERROR,
                 )
 

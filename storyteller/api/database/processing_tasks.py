@@ -27,6 +27,7 @@ class ProcessingTask:
     id: int | None
     type: str
     status: str
+    progress: float
     book_id: int
 
 
@@ -46,7 +47,7 @@ def create_processing_task(type: str, status: str, book_id: int):
 def get_processing_tasks_for_book(book_id: int):
     cursor = connection.execute(
         """
-        SELECT id, type, status, book_id
+        SELECT id, type, status, progress, book_id
         FROM processing_task
         WHERE book_id = :book_id
         """,
@@ -55,9 +56,22 @@ def get_processing_tasks_for_book(book_id: int):
 
     connection.commit()
     return [
-        ProcessingTask(id, type, status, book_id)
-        for id, type, status, book_id in cursor
+        ProcessingTask(id, type, status, progress, book_id)
+        for id, type, status, progress, book_id in cursor
     ]
+
+
+def update_task_progress(task_id: int, progress: float):
+    connection.execute(
+        """
+        UPDATE processing_task
+        SET progress = :progress
+        WHERE id = :task_id
+        """,
+        {"task_id": task_id, "progress": progress},
+    )
+
+    connection.commit()
 
 
 def update_task_status(task_id: int, status: str):

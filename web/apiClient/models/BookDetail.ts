@@ -9,6 +9,6 @@ export type BookDetail = {
     id: number;
     title: string;
     authors: Array<BookAuthor>;
-    processing_status?: ProcessingStatus;
+    processing_status: (ProcessingStatus | null);
 };
 

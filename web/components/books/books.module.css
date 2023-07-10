@@ -1,3 +1,17 @@
+.book-status {
+  margin: 2rem 0;
+  list-style: none;
+}
+
+.add-book-button {
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: solid 2px rgb(var(--card-border-rgb));
+  border-radius: var(--border-radius);
+  display: block;
+  margin: 2rem;
+}
+
 .add-book-modal {
   position: absolute;
   top: 10%;
@@ -22,4 +36,14 @@
 
 .book-upload-heading {
   margin: 1rem 0;
+}
+
+.book-title {
+  font-weight: 500;
+  text-decoration: underline;
+  margin-bottom: 0.5rem;
+}
+
+.download-wrapper, .status {
+  margin-top: 1rem;
 }

@@ -25,6 +25,8 @@ uvicorn = "^0.22.0"
 transformers = "4.29.2"
 ffmpeg-python = "0.2.0"
 faster-whisper = "0.6.0"
+llvmlite = ">=0.40.0"
+numba = ">=0.57.0"                                                                                                        # Pick a real vesrion
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

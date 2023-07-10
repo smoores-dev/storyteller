@@ -1,4 +1,3 @@
-
 from typing import List
 from pydantic import BaseModel
 
@@ -34,3 +33,22 @@ class BookDetail(BaseModel):
     title: str
     authors: List[BookAuthor]
     processing_status: ProcessingStatus | None
+
+
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+
+
+class DBUser(User):
+    hashed_password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str

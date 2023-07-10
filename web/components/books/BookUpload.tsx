@@ -6,12 +6,16 @@ import axios from "axios"
 import styles from "./books.module.css"
 import { Button } from "@ariakit/react"
 import { BookDetail } from "@/apiClient"
+import { useApiClient } from "@/hooks/useApiClient"
 
 type Props = {
   apiHost: string
+  onSubmit: (book: BookDetail) => void
 }
 
-export default function BookUpload({ apiHost }: Props) {
+export default function BookUpload({ apiHost, onSubmit }: Props) {
+  const client = useApiClient(apiHost)
+
   const epubInputRef = useRef<HTMLInputElement | null>(null)
   const audioInputRef = useRef<HTMLInputElement | null>(null)
   const [epubUploadProgress, setEpubUploadProgress] = useState<number | null>(
@@ -22,11 +26,15 @@ export default function BookUpload({ apiHost }: Props) {
   )
   const [book, setBook] = useState<BookDetail | null>(null)
 
+  const bookTitle = book?.title
+  const bookAuthorName = book?.authors[0]?.name
+
   return (
     <>
-      {book && (
+      {bookTitle && (
         <p>
-          Adding &ldquo;{book.title}&rdquo; by {book.authors[0]?.name}
+          Adding &ldquo;{book.title}&rdquo;{" "}
+          {bookAuthorName && `by ${bookAuthorName}`}
         </p>
       )}
       <h2 className={styles["book-upload-heading"]}>Upload epub file</h2>
@@ -109,9 +117,13 @@ export default function BookUpload({ apiHost }: Props) {
       </div>
       <Button
         type="button"
-        disabled={epubUploadProgress !== 1 && audioUploadProgress !== 1}
+        disabled={epubUploadProgress !== 1 || audioUploadProgress !== 1}
         onClick={() => {
-          axios.post(`${apiHost}/books/${book?.id}/process`)
+          if (!book) return
+
+          client.default
+            .processBookBooksBookIdProcessPost(book.id)
+            .then(() => onSubmit(book))
         }}
       >
         Start processing!
