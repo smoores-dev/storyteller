@@ -1,5 +1,5 @@
 from storyteller.synchronize.files import TEXT_DIR
-from ..database import Book
+from ..models import Book
 
 
 def get_synced_book_path(book: Book):

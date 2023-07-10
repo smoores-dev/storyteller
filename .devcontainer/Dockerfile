@@ -12,7 +12,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/python:0-${VARIANT}
 RUN . /usr/local/share/nvm/nvm.sh && nvm install node
 
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends swig libpulse-dev libasound2-dev ffmpeg libavcodec-extra
+    && apt-get -y install --no-install-recommends swig libpulse-dev libasound2-dev ffmpeg libavcodec-extra sqlite3
 
 USER vscode
 RUN curl -sSL https://install.python-poetry.org | python3 -

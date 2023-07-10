@@ -6,6 +6,6 @@ export type BookAuthor = {
     id: number;
     name: string;
     file_as: string;
-    role?: string;
+    role: (string | null);
 };
 

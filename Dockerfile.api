@@ -2,7 +2,14 @@ FROM python:3.10-slim
 
 # Install whisperx dependencies
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-  && apt-get -y install --no-install-recommends wget swig libpulse-dev libasound2-dev ffmpeg libavcodec-extra
+  && apt-get -y install --no-install-recommends \
+  wget \
+  swig \
+  libpulse-dev \
+  libasound2-dev \
+  ffmpeg \
+  libavcodec-extra \
+  llvm-9
 
 ENV PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
@@ -10,7 +17,8 @@ ENV PYTHONFAULTHANDLER=1 \
   PIP_NO_CACHE_DIR=off \
   PIP_DISABLE_PIP_VERSION_CHECK=on \
   PIP_DEFAULT_TIMEOUT=100 \
-  POETRY_VERSION=1.5.0
+  POETRY_VERSION=1.5.0 \
+  LLVM_CONFIG=/usr/bin/llvm-config-9
 
 # System deps:
 RUN pip install "poetry==$POETRY_VERSION"
