@@ -233,7 +233,7 @@ def tag_sentences(chapter: epub.EpubHtml):
         except StopIteration:
             pass
 
-        chapter.set_content(soup.encode(formatter="html"))
+    chapter.set_content(soup.encode())
 
 
 def get_epub_audio_filename(audio_filename: str) -> str:
