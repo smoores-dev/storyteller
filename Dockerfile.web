@@ -37,13 +37,16 @@ RUN adduser --system --uid 1001 nextjs
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Copy over node modules
+# Copying the entire yarn cache because of an issue with next / @vercel/nft
+# https://github.com/vercel/next.js/discussions/34600
+RUN rm -rf ./.yarn/cache
 COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache ./.yarn/cache
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/unplugged ./.yarn/unplugged
 
 # Standalone doesn't really support PnP, so we have to manually
 # copy over some additional files from the builder
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.pnp.cjs ./
 COPY --from=builder --chown=nextjs:nodejs /app/.yarnrc.yml ./
 COPY --from=builder --chown=nextjs:nodejs /app/yarn.lock ./
