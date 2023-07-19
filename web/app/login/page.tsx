@@ -1,7 +1,16 @@
 import { ApiClient } from "@/apiClient"
 import styles from "@/app/page.module.css"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
+
+function getCookieDomain(origin: string | null) {
+  if (origin === null) {
+    return undefined
+  }
+  const url = new URL(origin)
+  console.log(url.host, url.hostname)
+  return url.hostname
+}
 
 export default function Login() {
   async function login(data: FormData) {
@@ -16,12 +25,18 @@ export default function Login() {
       BASE: apiHost,
     })
 
+    const origin = headers().get("Origin")
+    const domain = getCookieDomain(origin)
+
     const token = await client.default.loginTokenPost({ username, password })
+
     const cookieStore = cookies()
     cookieStore.set(
       "st_token",
-      Buffer.from(JSON.stringify(token)).toString("base64")
+      Buffer.from(JSON.stringify(token)).toString("base64"),
+      { secure: true, domain: domain, sameSite: "lax" }
     )
+
     redirect("/")
   }
 
