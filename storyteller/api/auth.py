@@ -1,11 +1,15 @@
+import base64
 from datetime import timedelta, datetime
+import json
 import os
-from typing import Annotated, cast
+from typing import Annotated, Optional, cast
 
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, Header, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, OAuthFlowPassword
 from passlib.context import CryptContext
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 from .models import TokenData
 
@@ -15,7 +19,45 @@ SECRET_KEY = os.getenv("STORYTELLER_SECRET_KEY", "<notsosecret>")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 10
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
+    async def __call__(self, request: Request) -> Optional[str]:
+        header_param = None
+        try:
+            header_param = await super().__call__(request)
+        except HTTPException:
+            pass
+        if header_param is not None:
+            return header_param
+
+        auth_cookie = request.cookies.get("st_token")
+        if not auth_cookie:
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            else:
+                return None
+
+        auth_token = json.loads(base64.decodebytes(auth_cookie.encode()).decode())
+        access_token = auth_token["access_token"]
+
+        if not access_token:
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            else:
+                return None
+
+        return access_token
+
+
+oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="token")
 
 password_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
