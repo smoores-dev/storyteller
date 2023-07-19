@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import styles from "./books.module.css"
 import { Button } from "@ariakit/react"
 import { useApiClient } from "@/hooks/useApiClient"
+import { useApiToken } from "@/hooks/useApiToken"
 
 type Props = {
   apiHost: string
@@ -18,7 +19,8 @@ const ProcessingTaskTypes = {
 }
 
 export function BookStatus({ apiHost, book: initialBook }: Props) {
-  const client = useApiClient(apiHost)
+  const token = useApiToken()
+  const client = useApiClient(apiHost, token)
   const [latestBook, setLatestBook] = useState(initialBook)
 
   useEffect(() => {
