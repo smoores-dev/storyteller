@@ -33,6 +33,7 @@ RUN poetry install --no-interaction --no-ansi && \
 
 ENV STORYTELLER_DATA_DIR=/data
 
+COPY migrations ./migrations
 COPY storyteller/api ./storyteller/api
 COPY storyteller/synchronize ./storyteller/synchronize
 
