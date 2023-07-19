@@ -215,11 +215,14 @@ export const sendRequest = async (
 ): Promise<Response> => {
   const controller = new AbortController()
 
-  const request: RequestInit = {
+  const request: RequestInit & {
+    cache: ApiRequestOptions["cache"] | undefined
+  } = {
     headers,
     body: body ?? formData,
     method: options.method,
     signal: controller.signal,
+    cache: options.cache ?? "force-cache",
   }
 
   if (config.WITH_CREDENTIALS) {
