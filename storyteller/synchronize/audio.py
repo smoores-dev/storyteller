@@ -2,6 +2,7 @@ import json
 import os
 import shlex
 import subprocess
+import transformers.models.wav2vec2
 import whisperx
 import whisperx.asr
 import whisperx.types
@@ -95,7 +96,12 @@ def get_transcription_filename(chapter_filename: str):
     return PurePath(chapter_path, "..", "transcriptions", f"{chapter_name}.json")
 
 
-def transcribe_chapter(filename: str, initial_prompt: str):
+def transcribe_chapter(
+    filename: str,
+    transcribe_model: whisperx.asr.FasterWhisperPipeline,
+    align_model: transformers.models.wav2vec2.Wav2Vec2ForCTC,
+    align_metadata: dict,
+):
     print(f"Transcribing audio file {filename}")
     transcription_filename = get_transcription_filename(filename)
 
@@ -106,29 +112,17 @@ def transcribe_chapter(filename: str, initial_prompt: str):
             return cast(whisperx.types.AlignedTranscriptionResult, transcription)
 
     print("Loading whisperx model")
-    model = whisperx.load_model(
-        "base.en",
-        device="cpu",
-        compute_type="int8",
-        asr_options={
-            "word_timestamps": True,
-            "initial_prompt": initial_prompt,
-        },
-    )
 
     audio = whisperx.load_audio(filename)
 
     print("Transcribing audio")
-    unaligned = model.transcribe(audio, batch_size=16)
+    unaligned = transcribe_model.transcribe(audio, batch_size=16)
 
-    alignment_model, metadata = whisperx.load_align_model(
-        language_code=unaligned["language"], device="cpu"
-    )
     print("Aligning transcription")
     transcription = whisperx.align(
         unaligned["segments"],  # type: ignore
-        alignment_model,
-        metadata,
+        align_model,
+        align_metadata,
         audio,
         device="cpu",
         return_char_alignments=False,
@@ -177,8 +171,22 @@ def transcribe_book(
             for chapter in get_chapters(read_epub(epub_book_name))
         ]
     )
+
     initial_prompt = generate_initial_prompt(full_book_text)
+
+    model = whisperx.load_model(
+        "base.en",
+        device="cpu",
+        compute_type="int8",
+        asr_options={
+            "word_timestamps": True,
+            "initial_prompt": initial_prompt,
+        },
+    )
+
+    align_model, metadata = whisperx.load_align_model(language_code="en", device="cpu")
+
     for i, f in enumerate(audio_chapter_filenames):
-        transcribe_chapter(f, initial_prompt)
+        transcribe_chapter(f, model, align_model, metadata)
         if on_progress is not None:
             on_progress((i + 1) / len(audio_chapter_filenames))
