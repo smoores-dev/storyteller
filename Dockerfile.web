@@ -53,6 +53,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/client-only-npm-0.0.1
 COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/styled-jsx-npm-5.1.1-2557a209ba-523a33b386.zip ./.yarn/cache/
 COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/@swc-helpers-npm-0.5.1-424376f311-71e0e27234.zip ./.yarn/cache/
 COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/zod-npm-3.21.4-9f570b215c-f185ba8734.zip ./.yarn/cache/
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/busboy-npm-1.6.0-ebb5cbb04b-32801e2c01.zip ./.yarn/cache/
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/streamsearch-npm-1.1.0-fc3ad6536d-1cce16cea8.zip ./.yarn/cache/
 
 USER nextjs
 
