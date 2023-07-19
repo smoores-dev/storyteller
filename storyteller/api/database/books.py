@@ -1,11 +1,10 @@
 from typing import Dict, List, cast
-from storyteller.api.database.processing_tasks import (
-    ProcessingTaskStatus,
-)
-from ..models import Book, BookAuthor, BookDetail, ProcessingStatus
 
 from storyteller.synchronize.epub import EpubAuthor
 
+from ..models import Book, BookAuthor, BookDetail, ProcessingStatus
+
+from .processing_tasks import ProcessingTaskStatus, processing_tasks_order
 from .connection import connection
 
 
@@ -142,9 +141,7 @@ def get_book_details(ids: list[int] | None = None):
                 id=book_id,
                 title=book_title,
                 authors=[author],
-                processing_status=None
-                if processing_task_status == ProcessingTaskStatus.COMPLETED
-                else ProcessingStatus(
+                processing_status=ProcessingStatus(
                     current_task=processing_task_type,
                     progress=processing_task_progress,
                     in_error=processing_task_status == ProcessingTaskStatus.IN_ERROR,
@@ -167,10 +164,9 @@ def get_book_details(ids: list[int] | None = None):
                 )
                 book.authors.append(author)
 
-            if (
-                book.processing_status is None
-                and processing_task_status != ProcessingTaskStatus.COMPLETED
-            ):
+            if book.processing_status is None or processing_tasks_order.index(
+                book.processing_status.current_task
+            ) < processing_tasks_order.index(processing_task_type):
                 book.processing_status = ProcessingStatus(
                     current_task=processing_task_type,
                     progress=processing_task_progress,
