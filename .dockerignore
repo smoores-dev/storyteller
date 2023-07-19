@@ -1,3 +1,4 @@
 __pycache__
 Dockerfile.api
+Dockerfile.web
 .dockerignore
