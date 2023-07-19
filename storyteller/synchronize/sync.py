@@ -376,6 +376,8 @@ def sync_book(
         try:
             transcription_offset = book_cache["chapter_index"][str(index)]
             if transcription_offset is None:
+                if on_progress is not None:
+                    on_progress((index + 1) / len(epub_chapters))
                 continue
         except:
             transcription_offset = find_best_offset(
@@ -388,6 +390,8 @@ def sync_book(
                 book_cache["chapter_index"][str(index)] = None
                 with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
                     json.dump(book_cache, cache_file)
+                if on_progress is not None:
+                    on_progress((index + 1) / len(epub_chapters))
                 continue
 
         print(
