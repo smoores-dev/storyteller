@@ -7,6 +7,7 @@ import styles from "./books.module.css"
 import { Button } from "@ariakit/react"
 import { BookDetail } from "@/apiClient"
 import { useApiClient } from "@/hooks/useApiClient"
+import { useApiToken } from "@/hooks/useApiToken"
 
 type Props = {
   apiHost: string
@@ -14,7 +15,8 @@ type Props = {
 }
 
 export default function BookUpload({ apiHost, onSubmit }: Props) {
-  const client = useApiClient(apiHost)
+  const token = useApiToken()
+  const client = useApiClient(apiHost, token)
 
   const epubInputRef = useRef<HTMLInputElement | null>(null)
   const audioInputRef = useRef<HTMLInputElement | null>(null)
@@ -49,6 +51,9 @@ export default function BookUpload({ apiHost, onSubmit }: Props) {
               `${apiHost}/books/epub`,
               { file: epubInputRef.current.files[0] },
               {
+                headers: {
+                  Authorization: `Bearer ${token?.access_token}`,
+                },
                 onUploadProgress({ progress }) {
                   setEpubUploadProgress(progress ?? null)
                 },
@@ -87,6 +92,9 @@ export default function BookUpload({ apiHost, onSubmit }: Props) {
             `${apiHost}/books/${book?.id}/audio`,
             { file: audioInputRef.current.files[0] },
             {
+              headers: {
+                Authorization: `Bearer ${token?.access_token}`,
+              },
               onUploadProgress({ progress }) {
                 setAudioUploadProgress(progress ?? null)
               },
