@@ -4,6 +4,16 @@ from .connection import connection
 def init_db():
     connection.execute(
         """
+        CREATE TABLE IF NOT EXISTS migration(
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            hash TEXT NOT NULL
+        )
+        """
+    )
+
+    connection.execute(
+        """
         CREATE TABLE IF NOT EXISTS book(
             id INTEGER PRIMARY KEY,
             title TEXT NOT NULL,

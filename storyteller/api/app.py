@@ -14,6 +14,7 @@ from .database import (
     get_book,
     add_audiofile,
     get_book_details as get_book_details_db,
+    migrate,
 )
 
 from .models import Token, User, BookDetail
@@ -37,6 +38,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    print("Running database migrations")
+    migrate()
 
 
 @app.get("/")
