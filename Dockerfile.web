@@ -33,10 +33,8 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy over node modules
+COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache ./.yarn/cache
 
 # Standalone doesn't really support PnP, so we have to manually
 # copy over some additional files from the builder
@@ -46,15 +44,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.yarnrc.yml ./
 COPY --from=builder --chown=nextjs:nodejs /app/yarn.lock ./
 COPY --from=builder --chown=nextjs:nodejs /app/.yarn/releases ./.yarn/releases
 
-# Not all node modules are interned by Next.js; some still need
-# to be made available.
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/@next-env-npm-13.4.6-7f66004fe9-65d6cfb68a.zip ./.yarn/cache/
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/client-only-npm-0.0.1-07d3e9505c-0c16bf660d.zip ./.yarn/cache/
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/styled-jsx-npm-5.1.1-2557a209ba-523a33b386.zip ./.yarn/cache/
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/@swc-helpers-npm-0.5.1-424376f311-71e0e27234.zip ./.yarn/cache/
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/zod-npm-3.21.4-9f570b215c-f185ba8734.zip ./.yarn/cache/
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/busboy-npm-1.6.0-ebb5cbb04b-32801e2c01.zip ./.yarn/cache/
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache/streamsearch-npm-1.1.0-fc3ad6536d-1cce16cea8.zip ./.yarn/cache/
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
