@@ -15,7 +15,8 @@ from .processing_tasks import (
     update_task_progress,
     update_task_status,
 )
-from .user import get_user
+from .users import get_user
+from .migrations import migrate
 
 __all__ = [
     "init_db",
@@ -24,6 +25,7 @@ __all__ = [
     "get_book",
     "get_book_details",
     "get_user",
+    "migrate",
     "ProcessingTaskType",
     "add_audiofile",
     "ProcessingTask",

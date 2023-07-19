@@ -1,0 +1,1 @@
+ALTER TABLE processing_task ADD COLUMN progress REAL NOT NULL DEFAULT 0;
