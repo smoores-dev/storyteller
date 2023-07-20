@@ -60,7 +60,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
             detail="Incorrect username or password",
         )
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_DAYS)
+    access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
