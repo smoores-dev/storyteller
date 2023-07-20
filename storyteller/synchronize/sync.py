@@ -52,7 +52,6 @@ def find_best_offset(epub_text: str, transcription_text: str, last_match_offset:
     i = 0
     while i < len(transcription_text):
         start_index = (last_match_offset + i) % len(transcription_text)
-        # print(f'Searching at "{transcription_text[start_index:start_index + 500]}"')
         end_index = (start_index + 3000) % len(transcription_text)
         if end_index > start_index:
             transcription_text_slice = transcription_text[start_index:end_index]
@@ -65,7 +64,7 @@ def find_best_offset(epub_text: str, transcription_text: str, last_match_offset:
             matches = find_near_matches(
                 search_string,
                 transcription_text_slice,
-                max_l_dist=math.floor(0.10 * len(search_string)),
+                max_l_dist=160,
             )
 
         matches = cast(List[Match], matches)
