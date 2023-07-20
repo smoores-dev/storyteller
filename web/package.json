@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "client:gen": "openapi --input http://localhost:8000/openapi.json --output ./apiClient --name ApiClient"
+    "client:gen": "openapi --input http://localhost:8000/openapi.json --output ./apiModels"
   },
   "dependencies": {
     "@ariakit/react": "^0.2.9",

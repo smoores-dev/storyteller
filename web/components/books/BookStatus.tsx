@@ -1,13 +1,12 @@
 "use client"
 
-import { BookDetail } from "@/apiClient"
+import { BookDetail } from "@/apiModels"
 import { useEffect, useState } from "react"
 import styles from "./books.module.css"
 import { Button } from "@ariakit/react"
 import { useApiClient } from "@/hooks/useApiClient"
 
 type Props = {
-  apiHost: string
   book: BookDetail
 }
 
@@ -17,18 +16,16 @@ const ProcessingTaskTypes = {
   TRANSCRIBE_CHAPTERS: "Transcribing chapters",
 }
 
-export function BookStatus({ apiHost, book: initialBook }: Props) {
-  const client = useApiClient(apiHost)
+export function BookStatus({ book: initialBook }: Props) {
+  const client = useApiClient()
   const [latestBook, setLatestBook] = useState(initialBook)
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      client.default
-        .getBookDetailsBooksBookIdGet(latestBook.id)
-        .then((book) => setLatestBook(book))
+      client.getBookDetails(latestBook.id).then((book) => setLatestBook(book))
     }, 20000)
     return () => clearInterval(intervalId)
-  }, [client.default, latestBook.id])
+  }, [client, latestBook.id])
 
   const synchronized =
     latestBook.processing_status?.current_task === "SYNC_CHAPTERS" &&
@@ -47,7 +44,11 @@ export function BookStatus({ apiHost, book: initialBook }: Props) {
       {latestBook.authors[0] && <div>by {latestBook.authors[0].name}</div>}
       {synchronized ? (
         <div className={styles["download-wrapper"]}>
-          <a href={`${apiHost}/books/${latestBook.id}/synced`}>Download</a>
+          <a
+            href={`${process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]}/books/${latestBook.id}/synced`}
+          >
+            Download
+          </a>
         </div>
       ) : (
         latestBook.processing_status && (
@@ -60,11 +61,11 @@ export function BookStatus({ apiHost, book: initialBook }: Props) {
                 <div>
                   <Button
                     onClick={() => {
-                      client.default
-                        .processBookBooksBookIdProcessPost(latestBook.id)
+                      client
+                        .processBook(latestBook.id)
                         .then(() =>
-                          client.default
-                            .getBookDetailsBooksBookIdGet(latestBook.id)
+                          client
+                            .getBookDetails(latestBook.id)
                             .then((book) => setLatestBook(book))
                         )
                     }}

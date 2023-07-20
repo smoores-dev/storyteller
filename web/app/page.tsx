@@ -1,13 +1,13 @@
 import styles from "./page.module.css"
-import { ApiClient, ApiError, BookDetail, Token } from "@/apiClient"
 import { BookList } from "@/components/books/BookList"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
+import { ApiClient, ApiClientError } from "@/apiClient"
+import { BookDetail, Token } from "@/apiModels"
 
 export const dynamic = "force-dynamic"
 
 export default async function Home() {
-  const apiHost = process.env["STORYTELLER_API_HOST"] ?? ""
   const cookieStore = cookies()
   const authTokenCookie = cookieStore.get("st_token")
   if (!authTokenCookie) {
@@ -15,15 +15,14 @@ export default async function Home() {
   }
 
   const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const client = new ApiClient({
-    BASE: apiHost,
-    TOKEN: token.access_token,
-  })
+  const client = new ApiClient(token.access_token)
+
   let books: BookDetail[] = []
+
   try {
-    books = await client.default.listBooksBooksGet()
+    books = await client.listBooks()
   } catch (e) {
-    if (e instanceof ApiError && e.status === 401) {
+    if (e instanceof ApiClientError && e.statusCode === 401) {
       return redirect("/login")
     }
     console.error(e)
@@ -31,7 +30,7 @@ export default async function Home() {
   return (
     <main className={styles["main"]}>
       <h2>Your books</h2>
-      <BookList apiHost={apiHost} books={books} />
+      <BookList books={books} />
     </main>
   )
 }
