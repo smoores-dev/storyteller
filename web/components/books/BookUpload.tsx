@@ -1,20 +1,18 @@
 "use client"
 
 import { useRef, useState } from "react"
-import axios from "axios"
 
 import styles from "./books.module.css"
 import { Button } from "@ariakit/react"
-import { BookDetail } from "@/apiClient"
+import { BookDetail } from "@/apiModels"
 import { useApiClient } from "@/hooks/useApiClient"
 
 type Props = {
-  apiHost: string
   onSubmit: (book: BookDetail) => void
 }
 
-export default function BookUpload({ apiHost, onSubmit }: Props) {
-  const client = useApiClient(apiHost)
+export default function BookUpload({ onSubmit }: Props) {
+  const client = useApiClient()
 
   const epubInputRef = useRef<HTMLInputElement | null>(null)
   const audioInputRef = useRef<HTMLInputElement | null>(null)
@@ -44,20 +42,11 @@ export default function BookUpload({ apiHost, onSubmit }: Props) {
           event.preventDefault()
           if (!epubInputRef.current?.files?.[0]) return
 
-          axios
-            .postForm<BookDetail>(
-              `${apiHost}/books/epub`,
-              { file: epubInputRef.current.files[0] },
-              {
-                withCredentials: true,
-                onUploadProgress({ progress }) {
-                  setEpubUploadProgress(progress ?? null)
-                },
-              }
-            )
-            .then(({ data: book }) => {
-              setBook(book)
+          client
+            .uploadBookEpub(epubInputRef.current.files[0], ({ progress }) => {
+              setEpubUploadProgress(progress ?? null)
             })
+            .then(setBook)
         }}
       >
         <div>
@@ -82,16 +71,13 @@ export default function BookUpload({ apiHost, onSubmit }: Props) {
         id="audio-upload"
         onSubmit={(event) => {
           event.preventDefault()
-          if (!audioInputRef.current?.files?.[0]) return
+          if (!audioInputRef.current?.files?.[0] || !book) return
 
-          axios.postForm(
-            `${apiHost}/books/${book?.id}/audio`,
-            { file: audioInputRef.current.files[0] },
-            {
-              withCredentials: true,
-              onUploadProgress({ progress }) {
-                setAudioUploadProgress(progress ?? null)
-              },
+          client.uploadBookAudio(
+            book.id,
+            audioInputRef.current.files[0],
+            ({ progress }) => {
+              setAudioUploadProgress(progress ?? null)
             }
           )
         }}
@@ -123,9 +109,7 @@ export default function BookUpload({ apiHost, onSubmit }: Props) {
         onClick={() => {
           if (!book) return
 
-          client.default
-            .processBookBooksBookIdProcessPost(book.id)
-            .then(() => onSubmit(book))
+          client.processBook(book.id).then(() => onSubmit(book))
         }}
       >
         Start processing!

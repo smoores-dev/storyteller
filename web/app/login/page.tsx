@@ -20,15 +20,11 @@ export default function Login() {
     const password = data.get("password")?.valueOf() as string | undefined
     if (!username || !password) return
 
-    const apiHost = process.env["STORYTELLER_API_HOST"] ?? ""
-    const client = new ApiClient({
-      BASE: apiHost,
-    })
-
     const origin = headers().get("Origin")
     const domain = getCookieDomain(origin)
 
-    const token = await client.default.loginTokenPost({ username, password })
+    const client = new ApiClient()
+    const token = await client.login({ username, password })
 
     const cookieStore = cookies()
     cookieStore.set(

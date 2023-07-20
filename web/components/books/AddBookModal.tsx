@@ -10,14 +10,13 @@ import {
 
 import BookUpload from "./BookUpload"
 import styles from "./books.module.css"
-import { BookDetail } from "@/apiClient"
+import { BookDetail } from "@/apiModels"
 
 type Props = {
-  apiHost: string
   onSubmit: (book: BookDetail) => void
 }
 
-export function AddBookModal({ apiHost, onSubmit }: Props) {
+export function AddBookModal({ onSubmit }: Props) {
   const dialogStore = useDialogStore()
   return (
     <>
@@ -29,7 +28,6 @@ export function AddBookModal({ apiHost, onSubmit }: Props) {
           Add book
         </DialogHeading>
         <BookUpload
-          apiHost={apiHost}
           onSubmit={(book) => {
             dialogStore.hide()
             onSubmit(book)
