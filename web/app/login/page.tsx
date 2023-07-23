@@ -2,13 +2,14 @@ import { ApiClient } from "@/apiClient"
 import styles from "@/app/page.module.css"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { apiHost } from "../apiHost"
 
 function getCookieDomain(origin: string | null) {
   if (origin === null) {
     return undefined
   }
+
   const url = new URL(origin)
-  console.log(url.host, url.hostname)
   return url.hostname
 }
 
@@ -23,7 +24,7 @@ export default function Login() {
     const origin = headers().get("Origin")
     const domain = getCookieDomain(origin)
 
-    const client = new ApiClient()
+    const client = new ApiClient(apiHost)
     const token = await client.login({ username, password })
 
     const cookieStore = cookies()

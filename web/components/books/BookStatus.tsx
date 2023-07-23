@@ -44,11 +44,7 @@ export function BookStatus({ book: initialBook }: Props) {
       {latestBook.authors[0] && <div>by {latestBook.authors[0].name}</div>}
       {synchronized ? (
         <div className={styles["download-wrapper"]}>
-          <a
-            href={`${process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]}/books/${latestBook.id}/synced`}
-          >
-            Download
-          </a>
+          <a href={client.getSyncedDownloadUrl()}>Download</a>
         </div>
       ) : (
         latestBook.processing_status && (
