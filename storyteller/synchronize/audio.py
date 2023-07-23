@@ -174,7 +174,7 @@ def transcribe_book(
     initial_prompt = generate_initial_prompt(full_book_text)
 
     model = whisperx.load_model(
-        "small.en",
+        "base.en",
         device="cpu",
         compute_type="int8",
         asr_options={
