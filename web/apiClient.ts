@@ -18,8 +18,8 @@ export class ApiClient {
       : { Authorization: `Bearer ${this.accessToken}` }
   }
 
-  getSyncedDownloadUrl() {
-    const url = new URL("/token", this.apiHost)
+  getSyncedDownloadUrl(bookId: number) {
+    const url = new URL(`/books/${bookId}/synced`, this.apiHost)
 
     return url.toString()
   }
