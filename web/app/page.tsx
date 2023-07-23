@@ -32,7 +32,7 @@ export default async function Home() {
     return (
       <main className={styles["main"]}>
         <h2>API is down</h2>
-        <p>Storyteller couldn't connect to the Storyteller API</p>
+        <p>Storyteller couldn&apos;t connect to the Storyteller API</p>
       </main>
     )
   }
