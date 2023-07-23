@@ -1,4 +1,5 @@
 from datetime import timedelta
+from functools import lru_cache
 import os
 from typing import Annotated
 from fastapi import FastAPI, HTTPException, UploadFile, Depends, status
@@ -17,19 +18,25 @@ from .database import (
     migrate,
 )
 
-from .models import Token, User, BookDetail
+from .models import Token, BookDetail
 from .processing import start_processing
 from .auth import (
     ACCESS_TOKEN_EXPIRE_DAYS,
     authenticate_user,
     create_access_token,
-    get_current_user,
     verify_token,
 )
+from .config import Settings
+
+
+@lru_cache()
+def get_settings():
+    return Settings()
+
 
 app = FastAPI()
 
-origins = os.getenv("STORYTELLER_ALLOWED_ORIGINS", "").split(",")
+origins = get_settings().allowed_origins.split(",")
 
 app.add_middleware(
     CORSMiddleware,

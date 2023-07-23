@@ -26,8 +26,17 @@ export default async function Home() {
     if (e instanceof ApiClientError && e.statusCode === 401) {
       return redirect("/login")
     }
+
     console.error(e)
+
+    return (
+      <main className={styles["main"]}>
+        <h2>API is down</h2>
+        <p>Storyteller couldn't connect to the Storyteller API</p>
+      </main>
+    )
   }
+
   return (
     <main className={styles["main"]}>
       <h2>Your books</h2>
