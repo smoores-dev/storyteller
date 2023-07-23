@@ -4,7 +4,7 @@ import styles from "./header.module.css"
 export function Header() {
   return (
     <header>
-      <h1 className={styles.heading}>
+      <h1 className={styles["heading"]}>
         <Image
           height={80}
           width={80}
