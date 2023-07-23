@@ -2,6 +2,7 @@ import { ApiHostContextProvider } from "@/contexts/ApiHostContext"
 import "./globals.css"
 import { Inter } from "next/font/google"
 import { apiHost } from "./apiHost"
+import { Header } from "@/components/layout/Header"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -18,9 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <header>
-          <h1>Storyteller</h1>
-        </header>
+        <Header />
         <ApiHostContextProvider value={apiHost}>
           {children}
         </ApiHostContextProvider>
