@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { ApiClient, ApiClientError } from "@/apiClient"
 import { BookDetail, Token } from "@/apiModels"
+import { apiHost } from "./apiHost"
 
 export const dynamic = "force-dynamic"
 
@@ -15,7 +16,7 @@ export default async function Home() {
   }
 
   const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const client = new ApiClient(token.access_token)
+  const client = new ApiClient(apiHost, token.access_token)
 
   let books: BookDetail[] = []
 

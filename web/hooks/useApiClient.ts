@@ -1,6 +1,9 @@
 import { ApiClient } from "@/apiClient"
-import { useRef } from "react"
+import { ApiHostContext } from "@/contexts/ApiHostContext"
+import { useContext, useRef } from "react"
 
 export function useApiClient() {
-  return useRef(new ApiClient()).current
+  const apiHost = useContext(ApiHostContext)
+
+  return useRef(new ApiClient(apiHost)).current
 }
