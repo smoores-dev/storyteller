@@ -1,5 +1,5 @@
 import { ApiClient } from "@/apiClient"
-import styles from "@/app/page.module.css"
+import styles from "./login.module.css"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { apiHost } from "../apiHost"
@@ -42,18 +42,12 @@ export default function Login() {
       <header>
         <h2>Login</h2>
       </header>
-      <form action={login}>
-        <div>
-          <label htmlFor="username">username</label>
-          <input id="username" name="username" type="text" />
-        </div>
-        <div>
-          <label htmlFor="password">password</label>
-          <input id="password" name="password" type="password" />
-        </div>
-        <div>
-          <button type="submit">Login</button>
-        </div>
+      <form className={styles["form"]} action={login}>
+        <label htmlFor="username">username</label>
+        <input id="username" name="username" type="text" />
+        <label htmlFor="password">password</label>
+        <input id="password" name="password" type="password" />
+        <button type="submit">Login</button>
       </form>
     </main>
   )
