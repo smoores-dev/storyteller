@@ -29,13 +29,16 @@
       devShells = forAllSystems ({ pkgs, pkgs-unstable }: {
         default =
           let
+            # Make libstdc++.so.6 available to pytorch
+            libstdcpp = pkgs.stdenv.cc.cc.lib;
             # Use Python 3.10
             python = pkgs.python310;
             node = pkgs.nodejs_20;
             yarn = pkgs.yarn;
             # Use latest Poetry
             poetry = pkgs-unstable.poetry;
-            libstdcpp = pkgs.stdenv.cc.cc.lib;
+            # sqlite for debugging
+            sqlite = pkgs.sqlite;
           in
           pkgs.mkShell {
             # The Nix packages provided in the environment
@@ -49,6 +52,8 @@
               # Node
               node
               yarn
+              # sqlite
+              sqlite
             ];
             LD_LIBRARY_PATH = "${libstdcpp}/lib/";
           };
