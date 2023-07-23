@@ -10,7 +10,7 @@ export class ApiClientError extends Error {
 }
 
 export class ApiClient {
-  constructor(private accessToken?: string) {}
+  constructor(private apiHost: string, private accessToken?: string) {}
 
   getHeaders() {
     return this.accessToken === undefined
@@ -18,15 +18,18 @@ export class ApiClient {
       : { Authorization: `Bearer ${this.accessToken}` }
   }
 
+  getSyncedDownloadUrl() {
+    const url = new URL("/token", this.apiHost)
+
+    return url.toString()
+  }
+
   async login(creds: Body_login_token_post): Promise<Token> {
     const formData = new FormData()
     formData.set("username", creds.username)
     formData.set("password", creds.password)
 
-    const url = new URL(
-      "/token",
-      process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]
-    )
+    const url = new URL("/token", this.apiHost)
 
     const response = await fetch(url.toString(), {
       method: "POST",
@@ -45,10 +48,7 @@ export class ApiClient {
   }
 
   async listBooks(): Promise<BookDetail[]> {
-    const url = new URL(
-      "/books",
-      process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]
-    )
+    const url = new URL("/books", this.apiHost)
 
     const response = await fetch(url.toString(), {
       method: "GET",
@@ -68,10 +68,7 @@ export class ApiClient {
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void
   ): Promise<BookDetail> {
-    const url = new URL(
-      "/books/epub",
-      process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]
-    )
+    const url = new URL("/books/epub", this.apiHost)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -92,10 +89,7 @@ export class ApiClient {
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void
   ): Promise<void> {
-    const url = new URL(
-      `/books/${bookId}/audio`,
-      process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]
-    )
+    const url = new URL(`/books/${bookId}/audio`, this.apiHost)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -109,10 +103,7 @@ export class ApiClient {
   }
 
   async processBook(bookId: number): Promise<void> {
-    const url = new URL(
-      `/books/${bookId}/process`,
-      process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]
-    )
+    const url = new URL(`/books/${bookId}/process`, this.apiHost)
 
     const response = await fetch(url.toString(), {
       method: "POST",
@@ -126,10 +117,7 @@ export class ApiClient {
   }
 
   async getBookDetails(bookId: number): Promise<BookDetail> {
-    const url = new URL(
-      `/books/${bookId}`,
-      process.env["NEXT_PUBLIC_STORYTELLER_API_HOST"]
-    )
+    const url = new URL(`/books/${bookId}`, this.apiHost)
 
     const response = await fetch(url.toString(), {
       method: "GET",
