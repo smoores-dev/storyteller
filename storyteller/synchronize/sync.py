@@ -45,14 +45,14 @@ class NullIO:
 
 
 def find_best_offset(epub_text: str, transcription_text: str, last_match_offset: int):
-    search_string = epub_text[
+    query_string = epub_text[
         :1000
     ]  # speed up search by only using the first few hundred words
 
     i = 0
     while i < len(transcription_text):
         start_index = (last_match_offset + i) % len(transcription_text)
-        end_index = (start_index + 3000) % len(transcription_text)
+        end_index = (start_index + len(query_string) * 2) % len(transcription_text)
         if end_index > start_index:
             transcription_text_slice = transcription_text[start_index:end_index]
         else:
@@ -62,16 +62,16 @@ def find_best_offset(epub_text: str, transcription_text: str, last_match_offset:
 
         with NullIO():
             matches = find_near_matches(
-                search_string,
+                query_string,
                 transcription_text_slice,
-                max_l_dist=160,
+                max_l_dist=110,
             )
 
         matches = cast(List[Match], matches)
         if len(matches) > 0:
             return matches[0].start + start_index
 
-        i += 1000
+        i += len(query_string)
     return None
 
 
