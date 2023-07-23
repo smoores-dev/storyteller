@@ -111,8 +111,7 @@ def transcribe_chapter(
             transcription = json.load(transcription_file)
             return cast(whisperx.types.AlignedTranscriptionResult, transcription)
 
-    print("Loading whisperx model")
-
+    print("Loading audio")
     audio = whisperx.load_audio(filename)
 
     print("Transcribing audio")
