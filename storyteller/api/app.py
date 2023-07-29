@@ -77,7 +77,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 
 @app.get(
     "/books",
-    dependencies=[Depends(verify_token), Depends(has_permission("book_list"))],
+    dependencies=[Depends(has_permission("book_list"))],
     response_model=list[BookDetail],
 )
 async def list_books():
@@ -87,7 +87,7 @@ async def list_books():
 
 @app.post(
     "/books/epub",
-    dependencies=[Depends(verify_token), Depends(has_permission("book_create"))],
+    dependencies=[Depends(has_permission("book_create"))],
     response_model=BookDetail,
 )
 async def upload_epub(file: UploadFile):
@@ -101,7 +101,7 @@ async def upload_epub(file: UploadFile):
 
 @app.post(
     "/books/{book_id}/audio",
-    dependencies=[Depends(verify_token), Depends(has_permission("book_create"))],
+    dependencies=[Depends(has_permission("book_create"))],
     response_model=None,
 )
 async def upload_audio(book_id: int, file: UploadFile):
@@ -112,7 +112,7 @@ async def upload_audio(book_id: int, file: UploadFile):
 
 @app.post(
     "/books/{book_id}/process",
-    dependencies=[Depends(verify_token), Depends(has_permission("book_process"))],
+    dependencies=[Depends(has_permission("book_process"))],
     response_model=None,
 )
 async def process_book(book_id: int):
@@ -121,7 +121,7 @@ async def process_book(book_id: int):
 
 @app.get(
     "/books/{book_id}",
-    dependencies=[Depends(verify_token), Depends(has_permission("book_read"))],
+    dependencies=[Depends(has_permission("book_read"))],
     response_model=BookDetail,
 )
 async def get_book_details(book_id: int):
@@ -131,7 +131,7 @@ async def get_book_details(book_id: int):
 
 @app.get(
     "/books/{book_id}/synced",
-    dependencies=[Depends(verify_token), Depends(has_permission("book_download"))],
+    dependencies=[Depends(has_permission("book_download"))],
 )
 async def get_synced_book(book_id):
     book = get_book(book_id)
