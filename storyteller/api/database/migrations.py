@@ -52,6 +52,15 @@ def migrate():
             migration_contents = migration_handle.read()
             hash = sha256(migration_contents.encode("utf-8")).hexdigest()
             if get_migration(hash) is None:
-                connection.execute(migration_contents)
+                migration_statements = [
+                    statement
+                    for statement in migration_contents.split(";")
+                    if len(statement.strip())
+                ]
+
+                for statement in migration_statements:
+                    print(statement)
+                    connection.execute(statement)
+
                 create_migration(hash, migration_file)
                 connection.commit()

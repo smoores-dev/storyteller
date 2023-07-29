@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS user_permission(
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  book_create BOOLEAN NOT NULL DEFAULT 0,
+  book_read BOOLEAN NOT NULL DEFAULT 0,
+  book_process BOOLEAN NOT NULL DEFAULT 0,
+  book_download BOOLEAN NOT NULL DEFAULT 0,
+  book_list BOOLEAN NOT NULL DEFAULT 0,
+  user_create BOOLEAN NOT NULL DEFAULT 0,
+
+  FOREIGN KEY(user_id) REFERENCES user(id)
+);
