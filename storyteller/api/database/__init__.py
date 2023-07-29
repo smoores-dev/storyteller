@@ -15,7 +15,7 @@ from .processing_tasks import (
     update_task_progress,
     update_task_status,
 )
-from .users import get_user
+from .users import get_user, user_has_permission
 from .migrations import migrate
 
 __all__ = [
@@ -34,4 +34,5 @@ __all__ = [
     "processing_tasks_order",
     "update_task_progress",
     "update_task_status",
+    "user_has_permission",
 ]
