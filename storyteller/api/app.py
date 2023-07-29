@@ -1,7 +1,7 @@
 from datetime import timedelta
 from functools import lru_cache
 import os
-from typing import Annotated
+from typing import Annotated, cast
 from fastapi import FastAPI, HTTPException, UploadFile, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +24,7 @@ from .auth import (
     ACCESS_TOKEN_EXPIRE_DAYS,
     authenticate_user,
     create_access_token,
+    has_permission,
     verify_token,
 )
 from .config import Settings
@@ -75,7 +76,9 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 
 
 @app.get(
-    "/books", dependencies=[Depends(verify_token)], response_model=list[BookDetail]
+    "/books",
+    dependencies=[Depends(verify_token), Depends(has_permission("book_list"))],
+    response_model=list[BookDetail],
 )
 async def list_books():
     books = get_book_details_db()
@@ -83,10 +86,12 @@ async def list_books():
 
 
 @app.post(
-    "/books/epub", dependencies=[Depends(verify_token)], response_model=BookDetail
+    "/books/epub",
+    dependencies=[Depends(verify_token), Depends(has_permission("book_create"))],
+    response_model=BookDetail,
 )
 async def upload_epub(file: UploadFile):
-    original_filename, _ = os.path.splitext(file.filename)
+    original_filename, _ = os.path.splitext(cast(str, file.filename))
     persist_epub(original_filename, file.file)
     book = read_epub(original_filename)
     authors = get_authors(book)
@@ -95,17 +100,19 @@ async def upload_epub(file: UploadFile):
 
 
 @app.post(
-    "/books/{book_id}/audio", dependencies=[Depends(verify_token)], response_model=None
+    "/books/{book_id}/audio",
+    dependencies=[Depends(verify_token), Depends(has_permission("book_create"))],
+    response_model=None,
 )
 async def upload_audio(book_id: int, file: UploadFile):
-    original_filename, _ = os.path.splitext(file.filename)
+    original_filename, _ = os.path.splitext(cast(str, file.filename))
     persist_audio(original_filename, file.file)
     add_audiofile(book_id, original_filename)
 
 
 @app.post(
     "/books/{book_id}/process",
-    dependencies=[Depends(verify_token)],
+    dependencies=[Depends(verify_token), Depends(has_permission("book_process"))],
     response_model=None,
 )
 async def process_book(book_id: int):
@@ -113,14 +120,19 @@ async def process_book(book_id: int):
 
 
 @app.get(
-    "/books/{book_id}", dependencies=[Depends(verify_token)], response_model=BookDetail
+    "/books/{book_id}",
+    dependencies=[Depends(verify_token), Depends(has_permission("book_read"))],
+    response_model=BookDetail,
 )
 async def get_book_details(book_id: int):
     (book,) = get_book_details_db([book_id])
     return book
 
 
-@app.get("/books/{book_id}/synced", dependencies=[Depends(verify_token)])
+@app.get(
+    "/books/{book_id}/synced",
+    dependencies=[Depends(verify_token), Depends(has_permission("book_download"))],
+)
 async def get_synced_book(book_id):
     book = get_book(book_id)
     response = FileResponse(get_synced_book_path(book))

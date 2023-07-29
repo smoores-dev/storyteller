@@ -7,13 +7,12 @@ from typing import Annotated, Optional, cast
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, OAuthFlowPassword
 from passlib.context import CryptContext
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from .models import TokenData
 
-from .database import get_user
+from .database import get_user, user_has_permission
 
 SECRET_KEY = os.getenv("STORYTELLER_SECRET_KEY", "<notsosecret>")
 ALGORITHM = "HS256"
@@ -94,28 +93,45 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-credentials_exception = HTTPException(
+unauthorized = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Invalid authentication credentials",
     headers={"WWW-Authenticate": "Bearer"},
 )
 
 
-async def verify_token(token: Annotated[str, Depends(oauth2_scheme)]):
+def verify_token(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str | None = cast(str | None, payload.get("sub"))
         if username is None:
-            raise credentials_exception
+            raise unauthorized
         token_data = TokenData(username=username)
     except JWTError:
-        raise credentials_exception
+        raise unauthorized
     return token_data
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    token_data = await verify_token(token)
+    token_data = verify_token(token)
     user = get_user(token_data.username)
     if user is None:
-        raise credentials_exception
+        raise unauthorized
     return user
+
+
+forbidden = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Forbidden",
+)
+
+
+class has_permission:
+    def __init__(self, permission: str):
+        self.permission = permission
+
+    def __call__(self, token: Annotated[str, Depends(oauth2_scheme)]):
+        token_data = verify_token(token)
+        if not user_has_permission(token_data.username, self.permission):
+            raise forbidden
+        return True
