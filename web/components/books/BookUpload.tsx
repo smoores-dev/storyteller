@@ -109,7 +109,10 @@ export default function BookUpload({ onSubmit }: Props) {
         onClick={() => {
           if (!book) return
 
-          client.processBook(book.id).then(() => onSubmit(book))
+          client
+            .processBook(book.id)
+            .then(() => client.getBookDetails(book.id))
+            .then((bookDetail) => onSubmit(bookDetail))
         }}
       >
         Start processing!

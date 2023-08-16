@@ -82,7 +82,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 )
 async def list_books():
     books = get_book_details_db()
-    return books
+    return reversed(books)
 
 
 @app.post(
