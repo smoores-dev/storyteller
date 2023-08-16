@@ -1,7 +1,7 @@
 "use client"
 
 import { BookDetail } from "@/apiModels"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import styles from "./books.module.css"
 import { Button } from "@ariakit/react"
 import { useApiClient } from "@/hooks/useApiClient"
@@ -19,13 +19,6 @@ const ProcessingTaskTypes = {
 export function BookStatus({ book: initialBook }: Props) {
   const client = useApiClient()
   const [latestBook, setLatestBook] = useState(initialBook)
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      client.getBookDetails(latestBook.id).then((book) => setLatestBook(book))
-    }, 20000)
-    return () => clearInterval(intervalId)
-  }, [client, latestBook.id])
 
   const synchronized =
     latestBook.processing_status?.current_task === "SYNC_CHAPTERS" &&
