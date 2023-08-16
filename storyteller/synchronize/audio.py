@@ -2,6 +2,7 @@ import json
 import os
 import shlex
 import subprocess
+from zipfile import ZipFile
 import transformers.models.wav2vec2
 import whisperx
 import whisperx.asr
@@ -17,12 +18,16 @@ from .epub import get_chapters, get_chapter_text, read_epub
 from .prompt import generate_initial_prompt
 
 
-def get_audio_filepath(book_name: str):
-    return f"{AUDIO_DIR}/{book_name}/original/{book_name}.mp4"
+def get_audio_directory(book_name: str):
+    return f"{AUDIO_DIR}/{book_name}/"
 
 
-def get_mp4(book_name: str):
-    return MP4(get_audio_filepath(book_name))
+def get_audio_filepath(book_name: str, filetype: str):
+    return f"{get_audio_directory(book_name)}/original/{book_name}.{filetype}"
+
+
+def get_mp4(book_name: str, filetype: str):
+    return MP4(get_audio_filepath(book_name, filetype))
 
 
 @dataclass
@@ -32,27 +37,32 @@ class ChapterRange:
     end: Union[int, float]
 
 
-def get_chapters_path(book_filename: str):
-    path, _ = os.path.split(book_filename)
-    return PurePath(path, "..", "chapters")
+def get_chapters_path(book_dir: str):
+    return PurePath(book_dir, "chapters")
 
 
-def get_transcriptions_path(book_filename: str):
-    path, _ = os.path.split(book_filename)
-    return PurePath(path, "..", "transcriptions")
+def get_transcriptions_path(book_dir: str):
+    return PurePath(book_dir, "transcriptions")
 
 
-def get_chapter_filename(book_filename: str, chapter_title: str):
-    _, basename = os.path.split(book_filename)
-    filename, ext = os.path.splitext(basename)
-    chapters_path = get_chapters_path(book_filename)
-    return f"{chapters_path}/{filename}-{chapter_title}{ext}"
+def get_chapter_filename(
+    chapters_dir: Path, book_name: str, chapter_title: str, ext: str
+):
+    return f"{chapters_dir}/{book_name}-{chapter_title}{ext}"
 
 
 def split_audiobook(
-    book_name: str, on_progress: Callable[[float], None] | None = None
+    book_name: str, filetype: str, on_progress: Callable[[float], None] | None = None
 ) -> List[str]:
-    mp4 = get_mp4(book_name)
+    book_dir = get_audio_directory(book_name)
+
+    if filetype == "zip":
+        with ZipFile(get_audio_filepath(book_name, filetype)) as zf:
+            filepaths = [f.filename for f in zf.filelist]
+            zf.extractall(get_chapters_path(book_dir))
+        return filepaths
+
+    mp4 = get_mp4(book_name, filetype)
     filename = cast(str, mp4.filename)
     if mp4.chapters is None:
         return []
@@ -68,13 +78,15 @@ def split_audiobook(
         )
         chapter_ranges.append(ChapterRange(chapter, chapter.start, next_chapter_start))
 
-    chapters_path = get_chapters_path(filename)
+    chapters_path = get_chapters_path(book_dir)
 
     Path(chapters_path).mkdir(parents=True, exist_ok=True)
 
     chapter_filenames: List[str] = []
     for i, range in enumerate(chapter_ranges):
-        chapter_filename = get_chapter_filename(filename, range.chapter.title)
+        chapter_filename = get_chapter_filename(
+            Path(chapters_path), book_name, range.chapter.title, filetype
+        )
         if os.path.exists(chapter_filename):
             continue
         print(f"Splitting chapter {chapter_filename}")
@@ -134,8 +146,8 @@ def transcribe_chapter(
 
 
 def get_audio_chapter_filenames(book_name: str):
-    audio_filepath = get_audio_filepath(book_name)
-    dirname = get_chapters_path(audio_filepath)
+    book_dir = get_audio_directory(book_name)
+    dirname = get_chapters_path(book_dir)
     return [str(Path(dirname, filename)) for filename in os.listdir(dirname)]
 
 
@@ -160,8 +172,8 @@ def transcribe_book(
     epub_book_name: str,
     on_progress: Callable[[float], None] | None = None,
 ):
-    audio_filepath = get_audio_filepath(audio_book_name)
-    transcriptions_path = get_transcriptions_path(audio_filepath)
+    book_dir = get_audio_directory(audio_book_name)
+    transcriptions_path = get_transcriptions_path(book_dir)
     Path(transcriptions_path).mkdir(parents=True, exist_ok=True)
     audio_chapter_filenames = get_audio_chapter_filenames(audio_book_name)
     full_book_text = " ".join(
