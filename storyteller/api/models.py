@@ -7,6 +7,7 @@ class Book(BaseModel):
     title: str
     epub_filename: str
     audio_filename: str | None
+    audio_filetype: str | None
 
 
 class Author(BaseModel):
