@@ -19,5 +19,5 @@ def persist_epub(book_name: str, fsrc: BinaryIO):
     persist_to_disk(fsrc, get_epub_filepath(book_name))
 
 
-def persist_audio(book_name: str, fsrc: BinaryIO):
-    persist_to_disk(fsrc, get_audio_filepath(book_name))
+def persist_audio(book_name: str, filetype: str, fsrc: BinaryIO):
+    persist_to_disk(fsrc, get_audio_filepath(book_name, filetype))

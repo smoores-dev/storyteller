@@ -105,9 +105,19 @@ async def upload_epub(file: UploadFile):
     response_model=None,
 )
 async def upload_audio(book_id: int, file: UploadFile):
-    original_filename, _ = os.path.splitext(cast(str, file.filename))
-    persist_audio(original_filename, file.file)
-    add_audiofile(book_id, original_filename)
+    print(file.filename)
+    original_filename, extension = os.path.splitext(cast(str, file.filename))
+    extension = extension[1:]
+    if extension in ["m4b", "m4a"]:
+        extension = "mp4"
+    if extension not in ["zip", "mp4"]:
+        print(f"Received unsupported media type {extension}")
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Please upload an mp4 (file extension mp4, m4a, or m4b) or zip of mp3 files",
+        )
+    persist_audio(original_filename, extension, file.file)
+    add_audiofile(book_id, original_filename, extension)
 
 
 @app.post(

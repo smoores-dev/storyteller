@@ -69,7 +69,10 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
         )
 
         if processing_task.type == ProcessingTaskType.SPLIT_CHAPTERS:
-            p = Process(target=split_audiobook, args=[book.audio_filename, on_progress])
+            p = Process(
+                target=split_audiobook,
+                args=[book.audio_filename, book.audio_filetype, on_progress],
+            )
         elif processing_task.type == ProcessingTaskType.TRANSCRIBE_CHAPTERS:
             p = Process(
                 target=transcribe_book,

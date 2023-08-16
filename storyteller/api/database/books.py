@@ -52,12 +52,19 @@ def create_book(
     return book
 
 
-def add_audiofile(book_id: int, audio_filename: str):
+def add_audiofile(book_id: int, audio_filename: str, audio_filetype: str):
     connection.execute(
         """
-        UPDATE book SET audio_filename = :audio_filename where id = :book_id
+        UPDATE book
+        SET audio_filename = :audio_filename,
+            audio_filetype = :audio_filetype
+        WHERE id = :book_id
         """,
-        {"book_id": book_id, "audio_filename": audio_filename},
+        {
+            "book_id": book_id,
+            "audio_filename": audio_filename,
+            "audio_filetype": audio_filetype,
+        },
     )
 
     connection.commit()
@@ -66,24 +73,28 @@ def add_audiofile(book_id: int, audio_filename: str):
 def get_book(book_id: int):
     cursor = connection.execute(
         """
-        SELECT id, title, epub_filename, audio_filename
+        SELECT id, title, epub_filename, audio_filename, audio_filetype
         FROM book
         WHERE id = :book_id
         """,
         {"book_id": book_id},
     )
 
-    id, title, epub_filename, audio_filename = cursor.fetchone()
+    id, title, epub_filename, audio_filename, audio_filetype = cursor.fetchone()
 
     return Book(
-        id=id, title=title, epub_filename=epub_filename, audio_filename=audio_filename
+        id=id,
+        title=title,
+        epub_filename=epub_filename,
+        audio_filename=audio_filename,
+        audio_filetype=audio_filetype,
     )
 
 
 def get_books():
     cursor = connection.execute(
         """
-        SELECT id, title, epub_filename, audio_filename
+        SELECT id, title, epub_filename, audio_filename, audio_filetype
         FROM book
         """
     )
@@ -94,8 +105,9 @@ def get_books():
             title=title,
             epub_filename=epub_filename,
             audio_filename=audio_filename,
+            audio_filetype=audio_filetype,
         )
-        for id, title, epub_filename, audio_filename in cursor.fetchall()
+        for id, title, epub_filename, audio_filename, audio_filetype in cursor.fetchall()
     ]
 
 

@@ -40,7 +40,7 @@ export default async function Home() {
   return (
     <main className={styles["main"]}>
       <h2>Your books</h2>
-      <BookList books={books} />
+      <BookList books={books.reverse()} />
     </main>
   )
 }
