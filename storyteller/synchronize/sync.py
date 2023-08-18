@@ -47,35 +47,43 @@ class NullIO:
 OFFSET_SEARCH_WINDOW_SIZE = 5000
 
 
-def find_best_offset(epub_text: str, transcription_text: str, last_match_offset: int):
-    query_string = epub_text[
-        :500
-    ]  # speed up search by only using the first hundred words or so
-
+def find_best_offset(
+    epub_sentences: list[str], transcription_text: str, last_match_offset: int
+):
     i = 0
     while i < len(transcription_text):
-        start_index = (last_match_offset + i) % len(transcription_text)
-        end_index = (start_index + OFFSET_SEARCH_WINDOW_SIZE) % len(transcription_text)
-        if end_index > start_index:
-            transcription_text_slice = transcription_text[start_index:end_index]
-        else:
-            transcription_text_slice = (
-                transcription_text[start_index:] + transcription_text[:end_index]
+        start_sentence = 0
+
+        while start_sentence + 6 < len(epub_sentences):
+            query_string = " ".join(epub_sentences[start_sentence : start_sentence + 6])
+
+            start_index = (last_match_offset + i) % len(transcription_text)
+            end_index = (start_index + OFFSET_SEARCH_WINDOW_SIZE) % len(
+                transcription_text
             )
+            if end_index > start_index:
+                transcription_text_slice = transcription_text[start_index:end_index]
+            else:
+                transcription_text_slice = (
+                    transcription_text[start_index:] + transcription_text[:end_index]
+                )
 
-        with NullIO():
-            matches = find_near_matches(
-                query_string.lower(),
-                transcription_text_slice.lower(),
-                max_l_dist=math.floor(0.1 * len(query_string)),
-            )
+            with NullIO():
+                matches = find_near_matches(
+                    query_string.lower(),
+                    transcription_text_slice.lower(),
+                    max_l_dist=math.floor(0.1 * len(query_string)),
+                )
 
-        matches = cast(List[Match], matches)
-        if len(matches) > 0:
-            return matches[0].start + start_index
+            matches = cast(List[Match], matches)
+            if len(matches) > 0:
+                return (start_sentence, matches[0].start + start_index)
 
-        i += OFFSET_SEARCH_WINDOW_SIZE // 2
-    return None
+            start_sentence += 3
+
+        i += OFFSET_SEARCH_WINDOW_SIZE - 500
+
+    return (0, None)
 
 
 class StorytellerTranscriptionSegment(whisperx.types.SingleAlignedSegment):
@@ -148,6 +156,7 @@ def get_window_index_from_offset(window: List[str], offset: int):
 
 
 def get_sentence_ranges(
+    start_sentence: int,
     transcription: StorytellerTranscription,
     sentences: List[str],
     chapter_offset: int,
@@ -160,7 +169,7 @@ def get_sentence_ranges(
     last_good_transcription_window = 0
     not_found = 0
 
-    sentence_index = 0
+    sentence_index = start_sentence
     while sentence_index < len(sentences):
         sentence = sentences[sentence_index]
         transcription_window_list = transcription_sentences[
@@ -274,6 +283,7 @@ class SyncedChapter:
 
 
 def sync_chapter(
+    start_sentence: int,
     transcription: StorytellerTranscription,
     chapter: epub.EpubHtml,
     transcription_offset: int,
@@ -281,7 +291,11 @@ def sync_chapter(
 ):
     chapter_sentences = get_chapter_sentences(chapter)
     sentence_ranges = get_sentence_ranges(
-        transcription, chapter_sentences, transcription_offset, last_sentence_range
+        start_sentence,
+        transcription,
+        chapter_sentences,
+        transcription_offset,
+        last_sentence_range,
     )
     sentence_ranges = interpolate_sentence_ranges(sentence_ranges)
     tag_sentences(chapter)
@@ -372,24 +386,31 @@ def sync_book(
     last_transcription_offset = 0
     synced_chapters: List[SyncedChapter] = []
     for index, chapter in enumerate(epub_chapters):
-        epub_text = get_chapter_text(chapter)
-        epub_intro = epub_text[:60].replace("\n", " ")
+        epub_sentences = get_chapter_sentences(chapter)
+        epub_intro = " ".join(epub_sentences)[:60].replace("\n", " ")
         print(f"Syncing chapter #{index} ({epub_intro}...)")
         try:
-            transcription_offset = book_cache["chapter_index"][str(index)]
+            cached = book_cache["chapter_index"][str(index)]
+            start_sentence = 0 if isinstance(cached, int) else cached["start_sentence"]
+            transcription_offset = (
+                cached if isinstance(cached, int) else cached["transcription_offset"]
+            )
             if transcription_offset is None:
                 if on_progress is not None:
                     on_progress((index + 1) / len(epub_chapters))
                 continue
         except:
-            transcription_offset = find_best_offset(
-                epub_text,
+            (start_sentence, transcription_offset) = find_best_offset(
+                epub_sentences,
                 transcription_text,
                 last_transcription_offset,
             )
             if transcription_offset is None:
                 print(f"Couldn't find matching transcription for chapter #{index}")
-                book_cache["chapter_index"][str(index)] = None
+                book_cache["chapter_index"][str(index)] = {
+                    "start_sentence": 0,
+                    "transcription_offset": None,
+                }
                 with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
                     json.dump(book_cache, cache_file)
                 if on_progress is not None:
@@ -397,14 +418,18 @@ def sync_book(
                 continue
 
         print(
-            f"Chapter #{index} best matches transcription at offset {transcription_offset}"
+            f"Chapter #{index} best matches transcription at offset {transcription_offset}, starting at sentence {start_sentence}"
         )
 
-        book_cache["chapter_index"][str(index)] = transcription_offset
+        book_cache["chapter_index"][str(index)] = {
+            "start_sentence": start_sentence,
+            "transcription_offset": transcription_offset,
+        }
         with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
             json.dump(book_cache, cache_file)
 
         synced = sync_chapter(
+            start_sentence,
             transcription,
             chapter,
             transcription_offset,

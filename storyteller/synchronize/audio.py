@@ -152,7 +152,7 @@ def get_audio_chapter_filenames(book_name: str):
 
 
 def get_transcriptions(book_name: str):
-    audio_chapter_filenames = get_audio_chapter_filenames(book_name)
+    audio_chapter_filenames = get_audio_chapter_filenames(book_name)[0:6]
     transcription_filenames = [
         get_transcription_filename(chapter_filename)
         for chapter_filename in audio_chapter_filenames
