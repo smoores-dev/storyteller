@@ -54,19 +54,17 @@ def find_best_offset(
     while i < len(transcription_text):
         start_sentence = 0
 
-        while start_sentence + 6 < len(epub_sentences):
-            query_string = " ".join(epub_sentences[start_sentence : start_sentence + 6])
-
-            start_index = (last_match_offset + i) % len(transcription_text)
-            end_index = (start_index + OFFSET_SEARCH_WINDOW_SIZE) % len(
-                transcription_text
+        start_index = (last_match_offset + i) % len(transcription_text)
+        end_index = (start_index + OFFSET_SEARCH_WINDOW_SIZE) % len(transcription_text)
+        if end_index > start_index:
+            transcription_text_slice = transcription_text[start_index:end_index]
+        else:
+            transcription_text_slice = (
+                transcription_text[start_index:] + transcription_text[:end_index]
             )
-            if end_index > start_index:
-                transcription_text_slice = transcription_text[start_index:end_index]
-            else:
-                transcription_text_slice = (
-                    transcription_text[start_index:] + transcription_text[:end_index]
-                )
+
+        while start_sentence < len(epub_sentences):
+            query_string = " ".join(epub_sentences[start_sentence : start_sentence + 6])
 
             with NullIO():
                 matches = find_near_matches(
@@ -81,7 +79,7 @@ def find_best_offset(
 
             start_sentence += 3
 
-        i += OFFSET_SEARCH_WINDOW_SIZE - 500
+        i += OFFSET_SEARCH_WINDOW_SIZE // 2
 
     return (0, None)
 
