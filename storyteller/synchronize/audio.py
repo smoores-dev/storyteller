@@ -48,7 +48,7 @@ def get_transcriptions_path(book_dir: str):
 def get_chapter_filename(
     chapters_dir: Path, book_name: str, chapter_title: str, ext: str
 ):
-    return f"{chapters_dir}/{book_name}-{chapter_title}{ext}"
+    return f"{chapters_dir}/{book_name}-{chapter_title}.{ext}"
 
 
 def split_audiobook(
@@ -88,14 +88,17 @@ def split_audiobook(
             Path(chapters_path), book_name, range.chapter.title, filetype
         )
         if os.path.exists(chapter_filename):
-            continue
+            os.remove(chapter_filename)
+
         print(f"Splitting chapter {chapter_filename}")
         chapter_filenames.append(chapter_filename)
+
         command = shlex.split(
             f'ffmpeg -nostdin -ss {range.start} -to {range.end} -i "{mp4.filename}" -c copy -map 0 -map_chapters -1 "{chapter_filename}"'
         )
         devnull = open(os.devnull, "w")
-        subprocess.run(command, stdout=devnull, stderr=devnull).check_returncode()
+        # subprocess.run(command, stdout=devnull, stderr=devnull).check_returncode()
+        subprocess.run(command).check_returncode()
         if on_progress is not None:
             on_progress((i + 1) / len(chapter_ranges))
 

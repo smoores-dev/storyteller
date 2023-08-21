@@ -102,8 +102,11 @@ export class ApiClient {
     }
   }
 
-  async processBook(bookId: number): Promise<void> {
+  async processBook(bookId: number, restart?: boolean): Promise<void> {
     const url = new URL(`/books/${bookId}/process`, this.apiHost)
+    if (restart) {
+      url.search = new URLSearchParams({ restart: "true" }).toString()
+    }
 
     const response = await fetch(url.toString(), {
       method: "POST",
