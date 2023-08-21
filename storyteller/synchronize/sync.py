@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, TypedDict, Union, cast
 from fuzzysearch import Match, find_near_matches
 from ebooklib import epub
 from mutagen.mp4 import MP4
+from mutagen.mp3 import MP3
 import os
 import sys
 import whisperx.types
@@ -216,7 +217,11 @@ def get_sentence_ranges(
             if audiofile == last_sentence_range.audiofile:
                 last_sentence_range.end = start
             else:
-                last_mp4 = MP4(last_sentence_range.audiofile)
+                last_mp4 = (
+                    MP4(last_sentence_range.audiofile)
+                    if last_sentence_range.audiofile.endswith(".mp4")
+                    else MP3(last_sentence_range.audiofile)
+                )
                 last_sentence_range.end = last_mp4.info.length
                 start = 0
         else:
