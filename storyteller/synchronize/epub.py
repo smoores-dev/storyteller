@@ -112,16 +112,23 @@ class TextNode:
 
 
 @dataclass
+class Atom:
+    tag_name: str
+    attrs: Dict[str, str]
+    marks: List[Mark]
+
+
+@dataclass
 class SentenceSpan:
     id: Union[int, None]
     sentence: str
-    text_nodes: List[TextNode]
+    nodes: List[TextNode | Atom]
     is_offset: bool
 
 
 def get_sentences_with_offsets(text: str):
     sentences = sent_tokenize(text)
-    sentences_with_offsets = []
+    sentences_with_offsets: list[str] = []
     last_sentence_end = 0
     for sentence in sentences:
         sentence_start = text.find(sentence, last_sentence_end)
@@ -166,15 +173,21 @@ def get_textblock_spans(start_id: int, textblock: Tag):
                 leaf_index = 0
             if leaf is None:
                 raise IndexError
+            # If we still have a tag, it's an atom
+            if isinstance(leaf, Tag):
+                span.nodes.append(Atom(leaf.name, leaf.attrs, marks[:]))
+                leaf = leaf.next_sibling
+                leaf_index = 0
+                continue
             leaf_text = leaf.get_text()[leaf_index:]
             remaining_sentence = sentence[search_index:]
             if len(remaining_sentence) < len(leaf_text):
                 leaf_index += len(remaining_sentence)
-                span.text_nodes.append(TextNode(remaining_sentence, marks[:]))
+                span.nodes.append(TextNode(remaining_sentence, marks[:]))
                 break
             search_index += len(leaf_text)
-            span.text_nodes.append(TextNode(leaf_text, marks[:]))
-            while not leaf.next_sibling:
+            span.nodes.append(TextNode(leaf_text, marks[:]))
+            while not leaf.next_sibling and leaf.parent is not textblock:
                 leaf = leaf.parent
                 if leaf is None:
                     return spans
@@ -186,23 +199,49 @@ def get_textblock_spans(start_id: int, textblock: Tag):
                     ]
             leaf = leaf.next_sibling
             leaf_index = 0
+
+    while leaf:
+        span = SentenceSpan(None, "", [], True)
+        spans.append(span)
+
+        while isinstance(leaf, Tag) and len(leaf.contents) > 0:
+            tag_name = leaf.name
+            attrs = leaf.attrs
+            marks.append(Mark(tag_name, attrs))
+            leaf = leaf.contents[0]
+            leaf_index = 0
+        if leaf is None:
+            raise IndexError
+        # If we still have a tag, it's an atom
+        if isinstance(leaf, Tag):
+            span.nodes.append(Atom(leaf.name, leaf.attrs, marks[:]))
+
+        leaf = leaf.next_sibling
+        leaf_index = 0
+
     return spans
 
 
 def serialize_spans(soup: BeautifulSoup, spans: List[SentenceSpan]):
     tags = []
     for span in spans:
-        span_tag = soup.new_tag("span")
-        if not span.is_offset:
-            span_tag["id"] = f"sentence{span.id}"
-        for text_node in span.text_nodes:
-            text_node_tag = span_tag
-            for mark in text_node.marks:
+        if span.is_offset:
+            parent = tags
+        else:
+            parent = soup.new_tag("span", id=f"sentence{span.id}")
+            tags.append(parent)
+        for node in span.nodes:
+            text_node_tag = parent
+            for mark in node.marks:
                 mark_tag = soup.new_tag(mark.tag_name, **mark.attrs)
                 text_node_tag.append(mark_tag)
                 text_node_tag = mark_tag
-            text_node_tag.append(text_node.text)
-        tags.append(span_tag)
+            text_node_tag.append(
+                soup.new_tag(node.tag_name, **node.attrs)
+                if isinstance(node, Atom)
+                else node.text
+            )
+
     return tags
 
 
@@ -218,11 +257,12 @@ def tag_sentences(chapter: epub.EpubHtml):
         return
     if isinstance(body_soup, NavigableString):
         return
-    textblocks: List[Tag] = body_soup.find_all(
-        ["h1", "h2", "h3", "h4", "h5", "h6", "p"]
-    )
+    textblocks = body_soup.contents
     start_id = 0
     for textblock in textblocks:
+        if not isinstance(textblock, Tag):
+            continue
+
         spans = get_textblock_spans(start_id, textblock)
         new_content = serialize_spans(soup, spans)
         textblock.clear()
@@ -271,6 +311,9 @@ def create_media_overlay(
             clipEnd=f"{sentence_range.end}s",
         )
         par.append(text)
+        par.append("\n")
         par.append(audio)
+        par.append("\n")
         seq.append(par)
+        seq.append("\n")
     return soup.encode(formatter="minimal")
