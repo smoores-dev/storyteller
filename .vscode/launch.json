@@ -9,9 +9,7 @@
       "type": "python",
       "request": "launch",
       "module": "uvicorn",
-      "args": [
-        "storyteller.api:app"
-      ],
+      "args": ["--host", "::1", "--reload", "storyteller.api:app"],
       "justMyCode": false
     }
   ]
