@@ -61,6 +61,19 @@ def get_processing_tasks_for_book(book_id: int):
     ]
 
 
+def reset_processing_tasks_for_book(book_id: int):
+    connection.execute(
+        """
+        UPDATE processing_task
+        SET progress = 0.0, status = 'STARTED'
+        WHERE book_id = :book_id
+        """,
+        {"book_id": book_id},
+    )
+
+    connection.commit()
+
+
 def update_task_progress(task_id: int, progress: float):
     connection.execute(
         """

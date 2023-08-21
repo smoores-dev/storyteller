@@ -13,6 +13,7 @@ from .database import (
     ProcessingTaskType,
     create_processing_task,
     get_processing_tasks_for_book,
+    reset_processing_tasks_for_book,
     processing_tasks_order,
     update_task_progress,
     update_task_status,
@@ -99,10 +100,13 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
             return
 
 
-def start_processing(book_id: int):
+def start_processing(book_id: int, restart: bool):
     book = get_book(book_id)
     if book.audio_filename is None:
         raise KeyError("Book does not have an audio_filename")
+
+    if restart:
+        reset_processing_tasks_for_book(book_id)
 
     processing_tasks = get_processing_tasks_for_book(book_id)
     processing_tasks.sort(key=lambda t: processing_tasks_order.index(t.type))
