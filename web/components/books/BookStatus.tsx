@@ -57,10 +57,10 @@ export function BookStatus({ book, onUpdate }: Props) {
                 </div>
               </>
             )}
-            <BookOptions book={book} onUpdate={onUpdate} />
           </div>
         )
       )}
+      <BookOptions book={book} onUpdate={onUpdate} />
     </>
   )
 }
