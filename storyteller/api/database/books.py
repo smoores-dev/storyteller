@@ -4,7 +4,11 @@ from storyteller.synchronize.epub import EpubAuthor
 
 from ..models import Book, BookAuthor, BookDetail, ProcessingStatus
 
-from .processing_tasks import ProcessingTaskStatus, processing_tasks_order
+from .processing_tasks import (
+    ProcessingTask,
+    ProcessingTaskStatus,
+    processing_tasks_order,
+)
 from .connection import connection
 
 
@@ -117,14 +121,8 @@ def get_book_details(ids: list[int] | None = None):
 
     cursor = connection.execute(
         f"""
-        SELECT book.id, book.title,
-               author.id, author.name, author.file_as,
-               author_to_book.role,
-               processing_task.type, processing_task.status, processing_task.progress
+        SELECT book.id, book.title
         FROM book
-        JOIN author_to_book ON book.id = author_to_book.book_id
-        JOIN author on author_to_book.author_id = author.id
-        JOIN processing_task ON book.id = processing_task.book_id
         {f"WHERE book.id IN ({','.join('?' * len(ids))})" if len(ids) > 0 else ""}
         """,
         ids,
@@ -132,57 +130,86 @@ def get_book_details(ids: list[int] | None = None):
 
     books: Dict[int, BookDetail] = {}
     for row in cursor:
+        book_id, book_title = row
+
+        books[book_id] = BookDetail(
+            id=book_id, title=book_title, authors=[], processing_status=None
+        )
+
+    cursor = connection.execute(
+        f"""
+        SELECT author.id, author.name, author.file_as,
+               author_to_book.role, author_to_book.book_id
+        FROM author
+        JOIN author_to_book on author_to_book.author_id = author.id
+        {f"WHERE author_to_book.book_id IN ({','.join('?' * len(ids))})" if len(ids) > 0 else ""}
+        """,
+        ids,
+    )
+
+    for row in cursor:
+        author_id, author_name, author_file_as, author_role, book_id = row
+
+        if book_id not in books:
+            continue
+
+        books[book_id].authors.append(
+            BookAuthor(
+                id=author_id, name=author_name, file_as=author_file_as, role=author_role
+            )
+        )
+
+    cursor = connection.execute(
+        f"""
+        SELECT id, type, status, progress, book_id
+        FROM processing_task
+        {f"WHERE book_id IN ({','.join('?' * len(ids))})" if len(ids) > 0 else ""}
+        """,
+        ids,
+    )
+
+    processing_tasks: dict[int, list[ProcessingTask]] = {}
+    for row in cursor:
         (
-            book_id,
-            book_title,
-            author_id,
-            author_name,
-            author_file_as,
-            author_role,
+            processing_task_id,
             processing_task_type,
             processing_task_status,
             processing_task_progress,
+            book_id,
         ) = row
 
-        if book_id not in books:
-            author = BookAuthor(
-                id=author_id, name=author_name, file_as=author_file_as, role=author_role
+        if book_id not in processing_tasks:
+            processing_tasks[book_id] = []
+
+        processing_tasks[book_id].append(
+            ProcessingTask(
+                id=processing_task_id,
+                type=processing_task_type,
+                status=processing_task_status,
+                progress=processing_task_progress,
+                book_id=book_id,
             )
+        )
 
-            book = BookDetail(
-                id=book_id,
-                title=book_title,
-                authors=[author],
-                processing_status=ProcessingStatus(
-                    current_task=processing_task_type,
-                    progress=processing_task_progress,
-                    in_error=processing_task_status == ProcessingTaskStatus.IN_ERROR,
-                ),
+    for book_id, tasks in processing_tasks.items():
+        sorted_tasks = sorted(tasks, key=lambda t: processing_tasks_order.index(t.type))
+
+        try:
+            current_task = next(
+                task
+                for task in sorted_tasks
+                if task.status != ProcessingTaskStatus.COMPLETED
             )
+        except StopIteration:
+            current_task = sorted_tasks[-1]
 
-            books[book_id] = book
+        if not current_task:
+            continue
 
-        else:
-            book = books[book_id]
-
-            author = next(filter(lambda a: a.id == author_id, book.authors), None)
-
-            if author is None:
-                author = BookAuthor(
-                    id=author_id,
-                    name=author_name,
-                    file_as=author_file_as,
-                    role=author_role,
-                )
-                book.authors.append(author)
-
-            if book.processing_status is None or processing_tasks_order.index(
-                book.processing_status.current_task
-            ) < processing_tasks_order.index(processing_task_type):
-                book.processing_status = ProcessingStatus(
-                    current_task=processing_task_type,
-                    progress=processing_task_progress,
-                    in_error=processing_task_status == ProcessingTaskStatus.IN_ERROR,
-                )
+        books[book_id].processing_status = ProcessingStatus(
+            current_task=current_task.type,
+            progress=current_task.progress,
+            in_error=current_task.status == ProcessingTaskStatus.IN_ERROR,
+        )
 
     return list(books.values())

@@ -125,8 +125,8 @@ async def upload_audio(book_id: int, file: UploadFile):
     dependencies=[Depends(has_permission("book_process"))],
     response_model=None,
 )
-async def process_book(book_id: int):
-    start_processing(book_id)
+async def process_book(book_id: int, restart=False):
+    start_processing(book_id, restart)
 
 
 @app.get(
