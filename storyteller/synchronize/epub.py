@@ -88,9 +88,7 @@ def get_chapter_text(chapter: epub.EpubHtml):
 @cache
 def get_chapter_sentences(chapter: epub.EpubHtml):
     soup = BeautifulSoup(chapter.get_body_content(), "html.parser")
-    textblocks: ResultSet[Tag] = soup.find_all(
-        ["h1", "h2", "h3", "h4", "h5", "h6", "p"]
-    )
+    textblocks: ResultSet[Tag] = soup.find("body").contents
 
     return [
         re.sub(consecutivenewlines, " ", sentence)
