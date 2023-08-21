@@ -88,11 +88,12 @@ def get_chapter_text(chapter: epub.EpubHtml):
 @cache
 def get_chapter_sentences(chapter: epub.EpubHtml):
     soup = BeautifulSoup(chapter.get_body_content(), "html.parser")
-    textblocks: ResultSet[Tag] = soup.find("body").contents
+    textblocks = soup.contents
 
     return [
         re.sub(consecutivenewlines, " ", sentence)
         for textblock in textblocks
+        if isinstance(textblock, Tag)
         for sentence in sent_tokenize(textblock.get_text())
     ]
 

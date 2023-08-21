@@ -210,7 +210,11 @@ def get_sentence_ranges(
             if audiofile == last_audiofile:
                 sentence_ranges[-1].end = start
             else:
-                last_mp4 = MP4(last_audiofile)
+                last_mp4 = (
+                    MP4(last_audiofile)
+                    if last_audiofile.endswith(".mp4")
+                    else MP3(last_audiofile)
+                )
                 sentence_ranges[-1].end = last_mp4.info.length
                 start = 0
         elif last_sentence_range is not None:
