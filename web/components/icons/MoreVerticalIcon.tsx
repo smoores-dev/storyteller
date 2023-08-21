@@ -1,5 +1,5 @@
 type Props = {
-  className?: string
+  className?: string | undefined
 }
 
 export function MoreVerticalIcon({ className }: Props) {
