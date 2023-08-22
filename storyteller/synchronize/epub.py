@@ -88,7 +88,9 @@ def get_chapter_text(chapter: epub.EpubHtml):
 @cache
 def get_chapter_sentences(chapter: epub.EpubHtml):
     soup = BeautifulSoup(chapter.get_body_content(), "html.parser")
-    textblocks = soup.contents
+    textblocks = soup.find_all(
+        ["p", "li", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6"]
+    )
 
     return [
         re.sub(consecutivenewlines, " ", sentence)
@@ -256,7 +258,9 @@ def tag_sentences(chapter: epub.EpubHtml):
         return
     if isinstance(body_soup, NavigableString):
         return
-    textblocks = body_soup.contents
+    textblocks = body_soup.find_all(
+        ["p", "li", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6"]
+    )
     start_id = 0
     for textblock in textblocks:
         if not isinstance(textblock, Tag):
