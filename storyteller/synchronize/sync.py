@@ -393,10 +393,6 @@ def sync_book(
     last_transcription_offset = 0
     synced_chapters: List[SyncedChapter] = []
     for index, chapter in enumerate(epub_chapters):
-        if index < 14:
-            continue
-        if index > 14:
-            break
         epub_sentences = get_chapter_sentences(chapter)
         epub_intro = " ".join(epub_sentences)[:60].replace("\n", " ")
         print(f"Syncing chapter #{index} ({epub_intro}...)")
@@ -477,4 +473,3 @@ def sync_book(
 
     epub.write_epub(Path(synced_epub_path, f"{ebook_name}.epub"), book)
     print(f"Synced EPUB written to {synced_epub_path}")
-    raise IndexError
