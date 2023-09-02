@@ -75,6 +75,11 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+@app.get("/validate", dependencies=[Depends(verify_token)], response_model=str)
+async def validate_token():
+    return "ok"
+
+
 @app.get(
     "/books",
     dependencies=[Depends(has_permission("book_list"))],

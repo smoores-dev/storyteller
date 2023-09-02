@@ -16,7 +16,7 @@
 
 .form input {
   display: block;
-  height: 3rem;
+  padding: 1rem;
 }
 
 .form button {
