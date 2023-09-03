@@ -5,9 +5,9 @@ from typing import Annotated, cast
 from fastapi import FastAPI, HTTPException, UploadFile, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
-from storyteller.synchronize.epub import get_authors, read_epub
+from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
 
 from .assets import persist_epub, persist_audio, get_synced_book_path
 from .database import (
@@ -154,4 +154,15 @@ async def get_synced_book(book_id):
     response.headers[
         "Content-Disposition"
     ] = f'attachment; filename="{book.title}.epub"'
+    return response
+
+
+@app.get("/books/{book_id}/cover", dependencies=[Depends(has_permission("book_read"))])
+async def get_book_cover(book_id):
+    book = get_book(book_id)
+    cover, ext = get_cover_image(book.epub_filename)
+    response = Response(cover)
+    response.headers[
+        "Content-Disposition"
+    ] = f'attachment; filename="{book.title} Cover.{ext}"'
     return response
