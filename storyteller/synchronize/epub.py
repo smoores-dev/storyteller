@@ -6,6 +6,7 @@ from typing import Callable, List, Tuple, TypedDict, Union, cast, Dict
 from nltk.tokenize import sent_tokenize as _sent_tokenize
 from functools import cache
 from ebooklib import epub, ITEM_DOCUMENT
+from ebooklib.epub import EpubImage
 from bs4 import BeautifulSoup, NavigableString, ResultSet, Tag
 
 from .files import TEXT_DIR
@@ -320,3 +321,14 @@ def create_media_overlay(
         seq.append(par)
         seq.append("\n")
     return soup.encode(formatter="minimal")
+
+
+def get_cover_image(book_name: str):
+    epub = read_epub(book_name)
+    [(_, cover_image_meta)] = epub.get_metadata("OPF", "cover")
+    cover_image_item_id = cover_image_meta["content"]
+    cover_image = cast(EpubImage, epub.get_item_with_id(cover_image_item_id))
+    cover_image_filename = cover_image.file_name
+    _, cover_image_extension = os.path.splitext(cover_image_filename)
+
+    return cover_image.get_content(), cover_image_extension[1:]
