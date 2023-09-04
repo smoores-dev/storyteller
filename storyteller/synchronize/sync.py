@@ -336,7 +336,7 @@ def sync_chapter(
 
 def format_duration(duration: float):
     hours = math.floor(duration / 3600)
-    minutes = math.floor(duration / 60 - hours * 3600)
+    minutes = math.floor(duration / 60 - hours * 60)
     seconds = duration - minutes * 60 - hours * 3600
     return f"{str(hours).zfill(2)}:{str(minutes).zfill(2)}:{round(seconds, 3)}"
 
