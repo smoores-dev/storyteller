@@ -178,17 +178,16 @@ def get_textblock_spans(start_id: int, textblock: Tag):
             # If we still have a tag, it's an atom
             if isinstance(leaf, Tag):
                 span.nodes.append(Atom(leaf.name, leaf.attrs, marks[:]))
-                leaf = leaf.next_sibling
-                leaf_index = 0
-                continue
-            leaf_text = leaf.get_text()[leaf_index:]
-            remaining_sentence = sentence[search_index:]
-            if len(remaining_sentence) < len(leaf_text):
-                leaf_index += len(remaining_sentence)
-                span.nodes.append(TextNode(remaining_sentence, marks[:]))
-                break
-            search_index += len(leaf_text)
-            span.nodes.append(TextNode(leaf_text, marks[:]))
+            else:
+                leaf_text = leaf.get_text()[leaf_index:]
+                remaining_sentence = sentence[search_index:]
+                if len(remaining_sentence) < len(leaf_text):
+                    leaf_index += len(remaining_sentence)
+                    span.nodes.append(TextNode(remaining_sentence, marks[:]))
+                    break
+                search_index += len(leaf_text)
+                span.nodes.append(TextNode(leaf_text, marks[:]))
+
             while not leaf.next_sibling and leaf.parent is not textblock:
                 leaf = leaf.parent
                 if leaf is None:
