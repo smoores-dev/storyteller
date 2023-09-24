@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 
 from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
+from storyteller.synchronize.audio import get_audio_cover_image
 
 from .assets import persist_epub, persist_audio, get_synced_book_path
 from .database import (
@@ -18,7 +19,7 @@ from .database import (
     migrate,
 )
 
-from .models import Token, BookDetail
+from .models import Book, Token, BookDetail
 from .processing import start_processing
 from .auth import (
     ACCESS_TOKEN_EXPIRE_DAYS,
@@ -157,12 +158,27 @@ async def get_synced_book(book_id):
     return response
 
 
+def get_epub_book_cover(book: Book):
+    return get_cover_image(book.epub_filename)
+
+
+def get_audio_book_cover(book: Book):
+    if book.audio_filename is None or book.audio_filetype is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    cover = get_audio_cover_image(book.audio_filename, book.audio_filetype)
+    if cover is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    return cover
+
+
 @app.get("/books/{book_id}/cover", dependencies=[Depends(has_permission("book_read"))])
-async def get_book_cover(book_id):
+async def get_book_cover(book_id, audio=False):
     book = get_book(book_id)
-    cover, ext = get_cover_image(book.epub_filename)
+    cover, ext = get_audio_book_cover(book) if audio else get_epub_book_cover(book)
     response = Response(cover)
     response.headers[
         "Content-Disposition"
-    ] = f'attachment; filename="{book.title} Cover.{ext}"'
+    ] = f'attachment; filename="{book.title} {"Audio " if audio else ""}Cover.{ext}"'
     return response
