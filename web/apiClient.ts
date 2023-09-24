@@ -102,6 +102,24 @@ export class ApiClient {
     }
   }
 
+  async uploadBookCover(
+    bookId: number,
+    file: File,
+    onUploadProgress: (progressEvent: AxiosProgressEvent) => void
+  ): Promise<void> {
+    const url = new URL(`/books/${bookId}/cover`, this.apiHost)
+
+    const response = await axios.postForm<BookDetail>(
+      url.toString(),
+      { file },
+      { withCredentials: true, onUploadProgress }
+    )
+
+    if (response.status > 299) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
   async processBook(bookId: number, restart?: boolean): Promise<void> {
     const url = new URL(`/books/${bookId}/process`, this.apiHost)
     if (restart) {
