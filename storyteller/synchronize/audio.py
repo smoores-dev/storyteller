@@ -9,7 +9,7 @@ import whisperx.asr
 import whisperx.types
 
 from dataclasses import dataclass
-from mutagen.mp4 import MP4, Chapter
+from mutagen.mp4 import MP4, Chapter, MP4Cover
 from pathlib import Path, PurePath
 from typing import Callable, List, Union, cast
 
@@ -28,6 +28,25 @@ def get_audio_filepath(book_name: str, filetype: str):
 
 def get_mp4(book_name: str, filetype: str):
     return MP4(get_audio_filepath(book_name, filetype))
+
+
+def get_audio_cover_image(book_name: str, filetype: str):
+    if filetype == "mp4":
+        mp4 = get_mp4(book_name, filetype)
+        tags = mp4.tags
+        if tags is None:
+            return None
+
+        covers = cast(list[MP4Cover], tags.get("covr"))
+
+        if len(covers) == 0:
+            return None
+
+        cover = covers[0]
+
+        return cover, "jpg" if cover.imageformat == MP4Cover.FORMAT_JPEG else "png"
+
+    return None
 
 
 @dataclass
@@ -96,7 +115,7 @@ def split_audiobook(
         command = shlex.split(
             f'ffmpeg -nostdin -ss {range.start} -to {range.end} -i "{mp4.filename}" -c copy -map 0 -map_chapters -1 "{chapter_filename}"'
         )
-        devnull = open(os.devnull, "w")
+        # devnull = open(os.devnull, "w")
         # subprocess.run(command, stdout=devnull, stderr=devnull).check_returncode()
         subprocess.run(command).check_returncode()
         if on_progress is not None:
