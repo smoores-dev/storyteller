@@ -3,7 +3,10 @@ from pathlib import Path
 import shutil
 from typing import BinaryIO
 
-from storyteller.synchronize.audio import get_audio_filepath
+from storyteller.synchronize.audio import (
+    get_audio_filepath,
+    get_custom_audio_cover_filepath,
+)
 from storyteller.synchronize.epub import get_epub_filepath
 
 
@@ -21,3 +24,7 @@ def persist_epub(book_name: str, fsrc: BinaryIO):
 
 def persist_audio(book_name: str, filetype: str, fsrc: BinaryIO):
     persist_to_disk(fsrc, get_audio_filepath(book_name, filetype))
+
+
+def persist_audio_cover(book_name: str, filetype: str, fsrc: BinaryIO):
+    persist_to_disk(fsrc, get_custom_audio_cover_filepath(book_name, filetype))

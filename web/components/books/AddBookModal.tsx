@@ -18,6 +18,7 @@ type Props = {
 
 export function AddBookModal({ onSubmit }: Props) {
   const dialogStore = useDialogStore()
+
   return (
     <>
       <Button className={styles["add-book-button"]} onClick={dialogStore.show}>

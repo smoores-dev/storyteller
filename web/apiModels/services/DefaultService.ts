@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type { Body_login_token_post } from "../models/Body_login_token_post"
 import type { Body_upload_audio_books__book_id__audio_post } from "../models/Body_upload_audio_books__book_id__audio_post"
+import type { Body_upload_book_cover_books__book_id__cover_post } from "../models/Body_upload_book_cover_books__book_id__cover_post"
 import type { Body_upload_epub_books_epub_post } from "../models/Body_upload_epub_books_epub_post"
 import type { BookDetail } from "../models/BookDetail"
 import type { Token } from "../models/Token"
@@ -41,6 +42,18 @@ export class DefaultService {
       errors: {
         422: `Validation Error`,
       },
+    })
+  }
+
+  /**
+   * Validate Token
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static validateTokenValidateGet(): CancelablePromise<string> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/validate",
     })
   }
 
@@ -163,6 +176,57 @@ export class DefaultService {
       path: {
         book_id: bookId,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Get Book Cover
+   * @param bookId
+   * @param audio
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static getBookCoverBooksBookIdCoverGet(
+    bookId: any,
+    audio?: any
+  ): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/books/{book_id}/cover",
+      path: {
+        book_id: bookId,
+      },
+      query: {
+        audio: audio,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Upload Book Cover
+   * @param bookId
+   * @param formData
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static uploadBookCoverBooksBookIdCoverPost(
+    bookId: number,
+    formData: Body_upload_book_cover_books__book_id__cover_post
+  ): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/books/{book_id}/cover",
+      path: {
+        book_id: bookId,
+      },
+      formData: formData,
+      mediaType: "multipart/form-data",
       errors: {
         422: `Validation Error`,
       },

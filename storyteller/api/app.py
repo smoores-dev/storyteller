@@ -10,7 +10,12 @@ from fastapi.responses import FileResponse, Response
 from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
 from storyteller.synchronize.audio import get_audio_cover_image
 
-from .assets import persist_epub, persist_audio, get_synced_book_path
+from .assets import (
+    persist_epub,
+    persist_audio,
+    persist_audio_cover,
+    get_synced_book_path,
+)
 from .database import (
     create_book as create_book_db,
     get_book,
@@ -111,7 +116,6 @@ async def upload_epub(file: UploadFile):
     response_model=None,
 )
 async def upload_audio(book_id: int, file: UploadFile):
-    print(file.filename)
     original_filename, extension = os.path.splitext(cast(str, file.filename))
     extension = extension[1:]
     if extension in ["m4b", "m4a"]:
@@ -182,3 +186,19 @@ async def get_book_cover(book_id, audio=False):
         "Content-Disposition"
     ] = f'attachment; filename="{book.title} {"Audio " if audio else ""}Cover.{ext}"'
     return response
+
+
+@app.post(
+    "/books/{book_id}/cover", dependencies=[Depends(has_permission("book_create"))]
+)
+async def upload_book_cover(book_id: int, file: UploadFile):
+    book = get_book(book_id)
+    _, extension = os.path.splitext(cast(str, file.filename))
+    extension = extension[1:]
+    if book.audio_filename is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Book is missing audio file. Upload audio file before custom cover art.",
+        )
+
+    persist_audio_cover(book.audio_filename, extension, file.file)

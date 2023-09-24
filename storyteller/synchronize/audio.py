@@ -26,11 +26,35 @@ def get_audio_filepath(book_name: str, filetype: str):
     return f"{get_audio_directory(book_name)}/original/{book_name}.{filetype}"
 
 
+def get_custom_audio_cover_filepath(book_name: str, filetype: str):
+    return f"{get_chapters_path(get_audio_directory(book_name))}/cover.{filetype}"
+
+
 def get_mp4(book_name: str, filetype: str):
     return MP4(get_audio_filepath(book_name, filetype))
 
 
-def get_audio_cover_image(book_name: str, filetype: str):
+def get_custom_audio_cover(book_name: str):
+    cover_dir = f"{get_chapters_path(get_audio_directory(book_name))}"
+    cover_path = next(
+        (path for path in os.listdir(cover_dir) if path.startswith("cover.")), None
+    )
+    if cover_path is None:
+        return None
+
+    _, extension = os.path.splitext(cover_path)
+    extension = extension[1:]
+
+    with open(PurePath(cover_dir, cover_path), "rb") as cover_file:
+        return cover_file.read(), extension
+
+
+def get_audio_cover_image(book_name: str, filetype: str) -> tuple[bytes, str] | None:
+    custom_audio_cover = get_custom_audio_cover(book_name)
+
+    if custom_audio_cover is not None:
+        return custom_audio_cover
+
     if filetype == "mp4":
         mp4 = get_mp4(book_name, filetype)
         tags = mp4.tags
