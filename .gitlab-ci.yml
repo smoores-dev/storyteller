@@ -1,6 +1,17 @@
 stages: # List of stages for jobs, and their order of execution
   - publish
 
+pages:
+  image: node:18-alpine
+  stage: publish
+  script:
+    - cd docs
+    - yarn
+    - yarn build
+  artifacts:
+    paths:
+      - pages
+
 publish-api:
   image: docker:dind
   stage: publish

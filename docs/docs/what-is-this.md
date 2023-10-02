@@ -28,7 +28,7 @@ own your content and your data, and it will always be available to you!
 ## How do I use it?
 
 If you're looking to host your own Storyteller instance, take a look at the
-[Getting started](/docs/getting-started.md) guide. If you or someone you know
+[Getting started](/docs/getting-started) guide. If you or someone you know
 has already created a Storyteller instance and invited you to it, and you'd just
 like to read the books they've shared with you, take a look at the
-[Reading your books](/docs/reading-your-books.md) documentation.
+[Reading your books](/docs/category/reading-your-books) documentation.
