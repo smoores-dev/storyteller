@@ -10,7 +10,7 @@ pages:
     - yarn build
   artifacts:
     paths:
-      - pages
+      - public
 
 publish-api:
   image: docker:dind
