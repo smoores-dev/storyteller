@@ -28,7 +28,7 @@ const FeatureList: FeatureItem[] = [
         Storyteller produces EPUB 3 compliant ebook files. You can read them
         with any ebook reader (software or hardware!) that supports EPUB Media
         Overlays, or you can use the dedicated{" "}
-        <Link to="/docs/category/reading-your-books/storyteller-apps">
+        <Link to="/docs/reading-your-books/storyteller-apps">
           Storyteller mobile apps
         </Link>
         .
