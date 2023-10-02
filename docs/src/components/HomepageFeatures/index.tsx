@@ -26,7 +26,7 @@ const FeatureList: FeatureItem[] = [
       <>
         Storyteller produces EPUB 3 compliant ebook files. You can read them with any
         ebook reader (software or hardware!) that supports EPUB Media Overlays, or you
-        can use the dedicated <Link to="/docs/mobile-apps">Storyteller mobile apps</Link>.
+        can use the dedicated <Link to="/docs/reading-your-books/storyteller-apps">Storyteller mobile apps</Link>.
       </>
     ),
   },
@@ -35,7 +35,7 @@ const FeatureList: FeatureItem[] = [
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Storyteller is completely <Link to="/docs/self-hosting">self-hosted</Link>.
+        Storyteller is completely <Link to="/docs/getting-started">self-hosted</Link>.
         All of your books stay on your hardware, and you're free to move, copy, and
         back them up as needed.
       </>
