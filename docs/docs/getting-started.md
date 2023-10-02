@@ -63,3 +63,9 @@ connected to your local API server:
 ```shell
 docker run -e STORYTELLER_API_HOST=http://localhost:8000 -p 8001:8001 registry.gitlab.com/smoores/storyteller/web:latest
 ```
+
+## Now what?
+
+Now that your service is up and running, you can start
+[syncing books](/docs/syncing-books) and
+[reading them](/docs/reading-your-books)!
