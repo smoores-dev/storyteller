@@ -5,5 +5,7 @@ __pycache__
 /indices/
 /cache/
 
+/public/
+
 .env.local
 storyteller.db
