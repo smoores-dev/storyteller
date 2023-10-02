@@ -68,4 +68,4 @@ docker run -e STORYTELLER_API_HOST=http://localhost:8000 -p 8001:8001 registry.g
 
 Now that your service is up and running, you can start
 [syncing books](/docs/syncing-books) and
-[reading them](/docs/reading-your-books)!
+[reading them](/docs/category/reading-your-books)!
