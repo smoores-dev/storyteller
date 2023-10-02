@@ -42,7 +42,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://gitlab.com/smoores/storyteller/tree/main/public/',
+            'https://gitlab.com/smoores/storyteller/-/tree/main/docs/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
