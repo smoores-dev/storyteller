@@ -28,9 +28,7 @@ export function BookList({ books: initialBooks }: Props) {
 
   return (
     <>
-      <AddBookModal
-        onSubmit={(book) => setBooks((books) => [book, ...books])}
-      />
+      <AddBookModal />
       <ul>
         {books.map((book) => (
           <li key={book.id} className={styles["book-status"]}>

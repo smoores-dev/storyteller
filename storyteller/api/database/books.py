@@ -115,7 +115,7 @@ def get_books():
     ]
 
 
-def get_book_details(ids: list[int] | None = None):
+def get_book_details(ids: list[int] | None = None, synced_only=False):
     if ids is None:
         ids = []
 
@@ -129,12 +129,14 @@ def get_book_details(ids: list[int] | None = None):
     )
 
     books: Dict[int, BookDetail] = {}
+    selected_book_ids: list[int] = []
     for row in cursor:
         book_id, book_title = row
 
         books[book_id] = BookDetail(
             id=book_id, title=book_title, authors=[], processing_status=None
         )
+        selected_book_ids.append(book_id)
 
     cursor = connection.execute(
         f"""
@@ -142,9 +144,9 @@ def get_book_details(ids: list[int] | None = None):
                author_to_book.role, author_to_book.book_id
         FROM author
         JOIN author_to_book on author_to_book.author_id = author.id
-        {f"WHERE author_to_book.book_id IN ({','.join('?' * len(ids))})" if len(ids) > 0 else ""}
+        {f"WHERE author_to_book.book_id IN ({','.join('?' * len(selected_book_ids))})"}
         """,
-        ids,
+        selected_book_ids,
     )
 
     for row in cursor:
@@ -163,9 +165,9 @@ def get_book_details(ids: list[int] | None = None):
         f"""
         SELECT id, type, status, progress, book_id
         FROM processing_task
-        {f"WHERE book_id IN ({','.join('?' * len(ids))})" if len(ids) > 0 else ""}
+        {f"WHERE book_id IN ({','.join('?' * len(selected_book_ids))})"}
         """,
-        ids,
+        selected_book_ids,
     )
 
     processing_tasks: dict[int, list[ProcessingTask]] = {}
@@ -211,5 +213,14 @@ def get_book_details(ids: list[int] | None = None):
             progress=current_task.progress,
             in_error=current_task.status == ProcessingTaskStatus.IN_ERROR,
         )
+
+    all_books_list = books.values()
+
+    if synced_only:
+        return [
+            book
+            for book in all_books_list
+            if book.processing_status == ProcessingTaskStatus.COMPLETED
+        ]
 
     return list(books.values())
