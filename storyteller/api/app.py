@@ -91,8 +91,8 @@ async def validate_token():
     dependencies=[Depends(has_permission("book_list"))],
     response_model=list[BookDetail],
 )
-async def list_books():
-    books = get_book_details_db()
+async def list_books(synced=False):
+    books = get_book_details_db(synced_only=synced)
     return reversed(books)
 
 
