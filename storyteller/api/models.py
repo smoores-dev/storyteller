@@ -53,3 +53,29 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str
+
+
+class InviteRequest(BaseModel):
+    email: str
+    book_create: bool
+    book_read: bool
+    book_process: bool
+    book_download: bool
+    book_list: bool
+    user_create: bool
+    user_list: bool
+    user_read: bool
+    user_delete: bool
+
+
+class Invite(BaseModel):
+    email: str
+    key: str
+
+
+class InviteAccept(BaseModel):
+    username: str
+    full_name: str
+    email: str
+    password: str
+    invite_key: str

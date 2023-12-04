@@ -3,7 +3,7 @@ import styles from "./header.module.css"
 
 export function Header() {
   return (
-    <header>
+    <header className={styles["header"]}>
       <h1 className={styles["heading"]}>
         <Image
           height={80}
@@ -14,6 +14,16 @@ export function Header() {
         />
         Storyteller
       </h1>
+      <nav>
+        <ol className={styles["nav-list"]}>
+          <li>
+            <a href="/">Books</a>
+          </li>
+          <li>
+            <a href="/users">Users</a>
+          </li>
+        </ol>
+      </nav>
     </header>
   )
 }

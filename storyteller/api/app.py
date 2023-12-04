@@ -1,6 +1,7 @@
 from datetime import timedelta
 from functools import lru_cache
 import os
+import secrets
 from typing import Annotated, cast
 from fastapi import FastAPI, HTTPException, UploadFile, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -10,6 +11,7 @@ from fastapi.responses import FileResponse, Response
 from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
 from storyteller.synchronize.audio import get_audio_cover_image
 
+from .invites import send_invite
 from .assets import (
     persist_epub,
     persist_audio,
@@ -18,19 +20,33 @@ from .assets import (
 )
 from .database import (
     create_book as create_book_db,
+    create_invite as create_invite_db,
     get_book,
+    get_invite as get_invite_db,
+    get_users,
+    create_user as create_user_db,
     add_audiofile,
     get_book_details as get_book_details_db,
     migrate,
 )
 
-from .models import Book, Token, BookDetail
+from .models import (
+    Book,
+    Invite,
+    InviteAccept,
+    InviteRequest,
+    Token,
+    BookDetail,
+    User,
+)
 from .processing import start_processing
 from .auth import (
     ACCESS_TOKEN_EXPIRE_DAYS,
     authenticate_user,
     create_access_token,
+    get_password_hash,
     has_permission,
+    verify_invite,
     verify_token,
 )
 from .config import Settings
@@ -84,6 +100,62 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 @app.get("/validate", dependencies=[Depends(verify_token)], response_model=str)
 async def validate_token():
     return "ok"
+
+
+@app.get(
+    "/users",
+    dependencies=[Depends(has_permission("user_list"))],
+    response_model=list[User],
+)
+async def list_users():
+    users = get_users()
+    return users
+
+
+@app.post(
+    "/invites",
+    dependencies=[Depends(has_permission("user_create"))],
+    response_model=Invite,
+)
+async def create_invite(invite: InviteRequest):
+    key = secrets.randbits(48).to_bytes(6, "big").hex()
+    create_invite_db(
+        invite.email,
+        key,
+        invite.book_create,
+        invite.book_read,
+        invite.book_process,
+        invite.book_download,
+        invite.book_list,
+        invite.user_create,
+        invite.user_list,
+        invite.user_read,
+        invite.user_delete,
+    )
+    send_invite(invite.email, key)
+    return Invite(email=invite.email, key=key)
+
+
+@app.get("/invites/{invite_key}", response_model=Invite)
+async def get_invite(invite_key: str):
+    return get_invite_db(invite_key)
+
+
+@app.post("/users", dependencies=[Depends(verify_invite)], response_model=Token)
+async def accept_invite(invite: InviteAccept):
+    hashed_password = get_password_hash(invite.password)
+    create_user_db(
+        invite.username,
+        invite.full_name,
+        invite.email,
+        hashed_password,
+        invite.invite_key,
+    )
+    access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    access_token = create_access_token(
+        data={"sub": invite.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.get(

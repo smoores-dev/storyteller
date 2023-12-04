@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS settings(
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  value TEXT
+);

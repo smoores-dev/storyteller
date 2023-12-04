@@ -16,16 +16,23 @@ from .processing_tasks import (
     update_task_progress,
     update_task_status,
 )
-from .users import get_user, user_has_permission
+from .users import get_user, get_users, create_user, user_has_permission
 from .migrations import migrate
+from .invites import create_invite, verify_invite, get_invite
+from .settings import get_setting
 
 __all__ = [
     "init_db",
     "create_book",
     "create_processing_task",
+    "create_invite",
+    "create_user",
     "get_book",
     "get_book_details",
+    "get_invite",
+    "get_setting",
     "get_user",
+    "get_users",
     "migrate",
     "ProcessingTaskType",
     "add_audiofile",
@@ -34,6 +41,7 @@ __all__ = [
     "get_processing_tasks_for_book",
     "reset_processing_tasks_for_book",
     "processing_tasks_order",
+    "verify_invite",
     "update_task_progress",
     "update_task_status",
     "user_has_permission",
