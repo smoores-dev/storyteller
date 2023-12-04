@@ -3,15 +3,7 @@ import styles from "./login.module.css"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { apiHost } from "../apiHost"
-
-function getCookieDomain(origin: string | null) {
-  if (origin === null) {
-    return undefined
-  }
-
-  const url = new URL(origin)
-  return url.hostname
-}
+import { getCookieDomain } from "@/cookies"
 
 export default function Login() {
   async function login(data: FormData) {

@@ -1,5 +1,11 @@
 import axios, { AxiosProgressEvent } from "axios"
-import { Body_login_token_post, BookDetail, Token } from "./apiModels"
+import {
+  Body_login_token_post,
+  BookDetail,
+  Invite,
+  InviteAccept,
+  Token,
+} from "./apiModels"
 
 export class ApiClientError extends Error {
   constructor(public statusCode: number, public statusMessage: string) {
@@ -37,6 +43,38 @@ export class ApiClient {
       credentials: "include",
       cache: "no-store",
       body: formData,
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const token = (await response.json()) as Token
+    return token
+  }
+
+  async getInvite(inviteKey: string): Promise<Invite> {
+    const url = new URL(`/invites/${inviteKey}`, this.apiHost)
+
+    const response = await fetch(url.toString())
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const invite = (await response.json()) as Invite
+    return invite
+  }
+
+  async acceptInvite(inviteAccept: InviteAccept): Promise<Token> {
+    const url = new URL("/users", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(inviteAccept),
     })
 
     if (!response.ok) {

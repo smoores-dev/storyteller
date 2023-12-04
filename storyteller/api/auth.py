@@ -5,14 +5,14 @@ import os
 from typing import Annotated, Optional, cast
 
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Body, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from .models import TokenData
+from .models import InviteAccept, TokenData
 
-from .database import get_user, user_has_permission
+from .database import get_user, user_has_permission, verify_invite as verify_invite_db
 
 SECRET_KEY = os.getenv("STORYTELLER_SECRET_KEY", "<notsosecret>")
 ALGORITHM = "HS256"
@@ -40,7 +40,7 @@ class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
             else:
                 return None
 
-        auth_token = json.loads(base64.decodebytes(auth_cookie.encode()).decode())
+        auth_token = json.loads(auth_cookie.encode().decode())
         access_token = auth_token["access_token"]
 
         if not access_token:
@@ -110,6 +110,11 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]):
     except JWTError:
         raise unauthorized
     return token_data
+
+
+def verify_invite(invite: Annotated[InviteAccept, Body()]):
+    if verify_invite_db(invite.email, invite.invite_key):
+        raise unauthorized
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):

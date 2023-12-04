@@ -12,9 +12,14 @@ export type { Body_upload_book_cover_books__book_id__cover_post } from './models
 export type { Body_upload_epub_books_epub_post } from './models/Body_upload_epub_books_epub_post';
 export type { BookAuthor } from './models/BookAuthor';
 export type { BookDetail } from './models/BookDetail';
+export type { GetInviteRequest } from './models/GetInviteRequest';
 export type { HTTPValidationError } from './models/HTTPValidationError';
+export type { Invite } from './models/Invite';
+export type { InviteAccept } from './models/InviteAccept';
+export type { InviteRequest } from './models/InviteRequest';
 export type { ProcessingStatus } from './models/ProcessingStatus';
 export type { Token } from './models/Token';
+export type { User } from './models/User';
 export type { ValidationError } from './models/ValidationError';
 
 export { DefaultService } from './services/DefaultService';
