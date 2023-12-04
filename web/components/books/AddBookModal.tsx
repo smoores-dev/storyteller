@@ -10,13 +10,8 @@ import {
 
 import BookUpload from "./BookUpload"
 import styles from "./books.module.css"
-import { BookDetail } from "@/apiModels"
 
-type Props = {
-  onSubmit: (book: BookDetail) => void
-}
-
-export function AddBookModal({ onSubmit }: Props) {
+export function AddBookModal() {
   const dialogStore = useDialogStore()
 
   return (
@@ -29,9 +24,8 @@ export function AddBookModal({ onSubmit }: Props) {
           Add book
         </DialogHeading>
         <BookUpload
-          onSubmit={(book) => {
+          onSubmit={() => {
             dialogStore.hide()
-            onSubmit(book)
           }}
         />
         <div className={styles["add-book-modal-dismiss"]}>
