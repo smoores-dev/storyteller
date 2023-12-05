@@ -220,7 +220,10 @@ def get_book_details(ids: list[int] | None = None, synced_only=False):
         return [
             book
             for book in all_books_list
-            if book.processing_status == ProcessingTaskStatus.COMPLETED
+            if book.processing_status is not None
+            and book.processing_status.current_task == "SYNC_CHAPTERS"
+            and book.processing_status.progress == 1
+            and not book.processing_status.in_error
         ]
 
     return list(books.values())
