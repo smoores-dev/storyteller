@@ -2,12 +2,12 @@
   "python.analysis.typeCheckingMode": "basic",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll": true
+    "source.fixAll": "explicit"
   },
   "[python]": {
     "diffEditor.ignoreTrimWhitespace": false,
     "editor.defaultFormatter": "ms-python.black-formatter",
-    "editor.wordBasedSuggestions": false,
+    "editor.wordBasedSuggestions": "off",
     "editor.tabSize": 4,
     "editor.indentSize": "tabSize"
   },
