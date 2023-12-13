@@ -33,8 +33,8 @@
             libstdcpp = pkgs.stdenv.cc.cc.lib;
             # Use Python 3.10
             python = pkgs.python310;
-            node = pkgs.nodejs_20;
-            yarn = pkgs.yarn;
+            nodejs = pkgs.nodejs_20;
+            yarn = pkgs.yarn.override { inherit nodejs; };
             # Use latest Poetry
             poetry = pkgs-unstable.poetry;
             # sqlite for debugging
@@ -50,7 +50,7 @@
               ]))
               poetry
               # Node
-              node
+              nodejs
               yarn
               # sqlite
               sqlite
