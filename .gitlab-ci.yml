@@ -18,13 +18,13 @@ pages:
       - public
 
 publish-api:
-  image: docker:24.0.7
+  image: docker:20.10.16
   stage: publish-api
   needs: []
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   services:
-    - name: docker:24.0.7-dind
+    - name: docker:20.10.16-dind
       alias: docker
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -34,13 +34,13 @@ publish-api:
     - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/api:latest .
 
 publish-web:
-  image: docker:24.0.7
+  image: docker:20.10.16
   stage: publish-web
   needs: []
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   services:
-    - name: docker:24.0.7-dind
+    - name: docker:20.10.16-dind
       alias: docker
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
