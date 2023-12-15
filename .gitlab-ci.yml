@@ -4,6 +4,8 @@ stages: # List of stages for jobs, and their order of execution
 pages:
   image: node:18-alpine
   stage: publish
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
     - cd docs
     - yarn
@@ -15,6 +17,8 @@ pages:
 publish-api:
   image: docker:dind
   stage: publish
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   services:
     - docker:dind
   variables:
@@ -31,6 +35,8 @@ publish-api:
 publish-web:
   image: docker:dind
   stage: publish
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   services:
     - docker:dind
   variables:
