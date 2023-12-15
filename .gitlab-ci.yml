@@ -1,9 +1,12 @@
 stages: # List of stages for jobs, and their order of execution
-  - publish
+  - publish-docs
+  - publish-api
+  - publish-web
 
 pages:
   image: node:18-alpine
-  stage: publish
+  stage: publish-docs
+  needs: []
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
@@ -16,15 +19,13 @@ pages:
 
 publish-api:
   image: docker:dind
-  stage: publish
+  stage: publish-api
+  needs: []
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   services:
-    - docker:dind
-  variables:
-    # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: "/certs"
+    - name: docker:dind
+      alias: docker
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker context create gitlab-ci
@@ -34,15 +35,13 @@ publish-api:
 
 publish-web:
   image: docker:dind
-  stage: publish
+  stage: publish-web
+  needs: []
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   services:
-    - docker:dind
-  variables:
-    # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: "/certs"
+    - name: docker:dind
+      alias: docker
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker context create gitlab-ci
