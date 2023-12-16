@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 import json
 import os
 from typing import Annotated, Optional, cast
+from urllib.parse import unquote
 
 from jose import JWTError, jwt
 from fastapi import Body, Depends, HTTPException, Request, status
@@ -41,7 +42,7 @@ class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
             else:
                 return None
 
-        auth_token = json.loads(base64.b64decode(auth_cookie))
+        auth_token = json.loads(base64.urlsafe_b64decode(unquote(auth_cookie)))
         access_token = auth_token["access_token"]
 
         if not access_token:
