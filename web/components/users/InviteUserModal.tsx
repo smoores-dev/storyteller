@@ -11,6 +11,7 @@ import {
 import styles from "./inviteusermodal.module.css"
 import { useApiClient } from "@/hooks/useApiClient"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export function InviteUserModal() {
   const [email, setEmail] = useState("")
@@ -24,6 +25,8 @@ export function InviteUserModal() {
   const [userRead, setUserRead] = useState(false)
   const [userDelete, setUserDelete] = useState(false)
   const [settingsUpdate, setSettingsUpdate] = useState(false)
+
+  const router = useRouter()
 
   const client = useApiClient()
   const dialogStore = useDialogStore()
@@ -58,6 +61,8 @@ export function InviteUserModal() {
               user_delete: userDelete,
               settings_update: settingsUpdate,
             })
+
+            router.refresh()
           }}
         >
           <label id="email-label" htmlFor="email">
@@ -234,7 +239,7 @@ export function InviteUserModal() {
           </fieldset>
         </form>
         <div className={styles["invite-user-modal-dismiss"]}>
-          <Button>Invite</Button>
+          <Button type="submit">Invite</Button>
           <DialogDismiss>Cancel</DialogDismiss>
         </div>
       </Dialog>
