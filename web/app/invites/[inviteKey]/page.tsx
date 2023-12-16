@@ -64,7 +64,13 @@ export default async function InvitePage(props: Props) {
         <label htmlFor="full_name">full name</label>
         <input id="full_name" name="full_name" type="text" />
         <label htmlFor="username">username</label>
-        <input id="username" name="username" type="text" />
+        <input
+          id="username"
+          name="username"
+          type="text"
+          autoCapitalize="off"
+          autoCorrect="off"
+        />
         <label htmlFor="password">password</label>
         <input id="password" name="password" type="password" />
         <button type="submit">Accept</button>
