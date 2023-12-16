@@ -31,7 +31,7 @@ export default async function Home() {
       return (
         <main className={styles["main"]}>
           <h2>Forbidden</h2>
-          <p>You don't have permission to see this page</p>
+          <p>You don&apos;t have permission to see this page</p>
         </main>
       )
     }
