@@ -22,7 +22,7 @@ You've been invited to the {library_name} Storyteller library.
 
 You can accept your invite by following this link:
 
-{web_url}/invite/{key}
+{web_url}/invites/{key}
 """
     )
 
