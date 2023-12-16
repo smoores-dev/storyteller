@@ -36,7 +36,13 @@ export default function Login() {
       </header>
       <form className={styles["form"]} action={login}>
         <label htmlFor="username">username</label>
-        <input id="username" name="username" type="text" />
+        <input
+          id="username"
+          name="username"
+          type="text"
+          autoCapitalize="off"
+          autoCorrect="off"
+        />
         <label htmlFor="password">password</label>
         <input id="password" name="password" type="password" />
         <button type="submit">Login</button>
