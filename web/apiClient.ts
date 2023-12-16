@@ -4,7 +4,10 @@ import {
   BookDetail,
   Invite,
   InviteAccept,
+  InviteRequest,
+  Settings,
   Token,
+  User,
 } from "./apiModels"
 
 export class ApiClientError extends Error {
@@ -53,6 +56,24 @@ export class ApiClient {
     return token
   }
 
+  async createInvite(inviteRequest: InviteRequest): Promise<Invite> {
+    const url = new URL("/invites", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: { ...this.getHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(inviteRequest),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const invite = (await response.json()) as Invite
+    return invite
+  }
+
   async getInvite(inviteKey: string): Promise<Invite> {
     const url = new URL(`/invites/${inviteKey}`, this.apiHost)
 
@@ -83,6 +104,72 @@ export class ApiClient {
 
     const token = (await response.json()) as Token
     return token
+  }
+
+  async listUsers(): Promise<User[]> {
+    const url = new URL("/users", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const users = (await response.json()) as User[]
+    return users
+  }
+
+  async getCurrentUser(): Promise<User> {
+    const url = new URL("/user", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const user = (await response.json()) as User
+    return user
+  }
+
+  async getSettings(): Promise<Settings> {
+    const url = new URL("/settings", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const settings = (await response.json()) as Settings
+    return settings
+  }
+
+  async updateSettings(settings: Settings) {
+    const url = new URL("/settings", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "PUT",
+      headers: { ...this.getHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
   }
 
   async listBooks(): Promise<BookDetail[]> {

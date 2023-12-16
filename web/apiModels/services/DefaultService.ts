@@ -6,10 +6,10 @@ import type { Body_upload_audio_books__book_id__audio_post } from '../models/Bod
 import type { Body_upload_book_cover_books__book_id__cover_post } from '../models/Body_upload_book_cover_books__book_id__cover_post';
 import type { Body_upload_epub_books_epub_post } from '../models/Body_upload_epub_books_epub_post';
 import type { BookDetail } from '../models/BookDetail';
-import type { GetInviteRequest } from '../models/GetInviteRequest';
 import type { Invite } from '../models/Invite';
 import type { InviteAccept } from '../models/InviteAccept';
 import type { InviteRequest } from '../models/InviteRequest';
+import type { Settings } from '../models/Settings';
 import type { Token } from '../models/Token';
 import type { User } from '../models/User';
 
@@ -96,26 +96,6 @@ export class DefaultService {
     }
 
     /**
-     * Get Invite
-     * @param requestBody
-     * @returns Invite Successful Response
-     * @throws ApiError
-     */
-    public static getInviteInvitesGet(
-        requestBody: GetInviteRequest,
-    ): CancelablePromise<Invite> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/invites',
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-
-    /**
      * Create Invite
      * @param requestBody
      * @returns Invite Successful Response
@@ -136,14 +116,88 @@ export class DefaultService {
     }
 
     /**
+     * Get Invite
+     * @param inviteKey
+     * @returns Invite Successful Response
+     * @throws ApiError
+     */
+    public static getInviteInvitesInviteKeyGet(
+        inviteKey: string,
+    ): CancelablePromise<Invite> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/invites/{invite_key}',
+            path: {
+                'invite_key': inviteKey,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+
+    /**
+     * Get Current User
+     * @returns User Successful Response
+     * @throws ApiError
+     */
+    public static getCurrentUserUserGet(): CancelablePromise<User> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/user',
+        });
+    }
+
+    /**
+     * Get Settings
+     * @returns Settings Successful Response
+     * @throws ApiError
+     */
+    public static getSettingsSettingsGet(): CancelablePromise<Settings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/settings',
+        });
+    }
+
+    /**
+     * Update Settings
+     * @param requestBody
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static updateSettingsSettingsPut(
+        requestBody: Settings,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/settings',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+
+    /**
      * List Books
+     * @param synced
      * @returns BookDetail Successful Response
      * @throws ApiError
      */
-    public static listBooksBooksGet(): CancelablePromise<Array<BookDetail>> {
+    public static listBooksBooksGet(
+        synced?: any,
+    ): CancelablePromise<Array<BookDetail>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/books',
+            query: {
+                'synced': synced,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
         });
     }
 

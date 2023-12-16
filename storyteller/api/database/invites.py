@@ -16,6 +16,7 @@ def create_invite(
     user_list: bool,
     user_read: bool,
     user_delete: bool,
+    settings_update: bool,
 ):
     cursor = connection.cursor()
 
@@ -30,7 +31,8 @@ def create_invite(
             user_create,
             user_list,
             user_read,
-            user_delete
+            user_delete,
+            settings_update
         ) VALUES (
             :book_create,
             :book_read,
@@ -40,7 +42,8 @@ def create_invite(
             :user_create,
             :user_list,
             :user_read,
-            :user_delete
+            :user_delete,
+            :settings_update
         )
         """,
         {
@@ -53,6 +56,7 @@ def create_invite(
             "user_list": user_list,
             "user_read": user_read,
             "user_delete": user_delete,
+            "settings_update": settings_update,
         },
     )
 

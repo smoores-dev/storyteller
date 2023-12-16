@@ -19,7 +19,7 @@ from .processing_tasks import (
 from .users import get_user, get_users, create_user, user_has_permission
 from .migrations import migrate
 from .invites import create_invite, verify_invite, get_invite
-from .settings import get_setting
+from .settings import get_setting, get_settings, update_settings
 
 __all__ = [
     "init_db",
@@ -31,6 +31,8 @@ __all__ = [
     "get_book_details",
     "get_invite",
     "get_setting",
+    "get_settings",
+    "update_settings",
     "get_user",
     "get_users",
     "migrate",

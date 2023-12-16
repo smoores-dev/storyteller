@@ -1,15 +1,16 @@
-import styles from "./page.module.css"
-import { BookList } from "@/components/books/BookList"
-import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
 import { ApiClient, ApiClientError } from "@/apiClient"
-import { BookDetail, Token } from "@/apiModels"
-import { apiHost } from "./apiHost"
+import { Token, User } from "@/apiModels"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
+import { apiHost } from "../apiHost"
+import styles from "./page.module.css"
+import { InviteUserModal } from "@/components/users/InviteUserModal"
 
 export const dynamic = "force-dynamic"
 
-export default async function Home() {
+export default async function UsersPage() {
   const cookieStore = cookies()
+
   const authTokenCookie = cookieStore.get("st_token")
   if (!authTokenCookie) {
     return redirect("/login")
@@ -18,10 +19,10 @@ export default async function Home() {
   const token = JSON.parse(atob(authTokenCookie.value)) as Token
   const client = new ApiClient(apiHost, token.access_token)
 
-  let books: BookDetail[] = []
+  let users: User[] = []
 
   try {
-    books = await client.listBooks()
+    users = await client.listUsers()
   } catch (e) {
     if (e instanceof ApiClientError && e.statusCode === 401) {
       return redirect("/login")
@@ -48,8 +49,11 @@ export default async function Home() {
 
   return (
     <main className={styles["main"]}>
-      <h2>Your books</h2>
-      <BookList books={books} />
+      <h2>Your users</h2>
+      {users.map((user) => (
+        <p key={user.username}>{user.full_name}</p>
+      ))}
+      <InviteUserModal />
     </main>
   )
 }
