@@ -1,23 +1,66 @@
-from ..models import DBUser, User
+from ..models import DBUser, User, UserPermissions
 from .connection import connection
 
 
 def get_user(username: str):
     cursor = connection.execute(
         """
-        SELECT username, full_name, email, hashed_password
+        SELECT
+            username,
+            full_name,
+            email,
+            hashed_password,
+            book_create,
+            book_read,
+            book_process,
+            book_download,
+            book_list,
+            user_create,
+            user_list,
+            user_read,
+            user_delete,
+            settings_update
         FROM user
+        JOIN user_permission
+            ON user.user_permission_id = user_permission.id
         WHERE username = :username
         """,
         {"username": username},
     )
 
-    username, full_name, email, hashed_password = cursor.fetchone()
+    (
+        username,
+        full_name,
+        email,
+        hashed_password,
+        book_create,
+        book_read,
+        book_process,
+        book_download,
+        book_list,
+        user_create,
+        user_list,
+        user_read,
+        user_delete,
+        settings_update,
+    ) = cursor.fetchone()
 
     return DBUser(
         username=username,
         full_name=full_name,
         email=email,
+        permissions=UserPermissions(
+            book_create=book_create,
+            book_read=book_read,
+            book_process=book_process,
+            book_download=book_download,
+            book_list=book_list,
+            user_create=user_create,
+            user_list=user_list,
+            user_read=user_read,
+            user_delete=user_delete,
+            settings_update=settings_update,
+        ),
         hashed_password=hashed_password,
     )
 
@@ -25,14 +68,62 @@ def get_user(username: str):
 def get_users():
     cursor = connection.execute(
         """
-        SELECT username, full_name, email
+        SELECT
+            username,
+            full_name,
+            email,
+            hashed_password,
+            book_create,
+            book_read,
+            book_process,
+            book_download,
+            book_list,
+            user_create,
+            user_list,
+            user_read,
+            user_delete,
+            settings_update
         FROM user
+        JOIN user_permission
+            ON user.user_permission_id = user_permission.id
         """,
     )
 
     return [
-        User(username=username, full_name=full_name, email=email)
-        for username, full_name, email in cursor.fetchall()
+        DBUser(
+            username=username,
+            full_name=full_name,
+            email=email,
+            permissions=UserPermissions(
+                book_create=book_create,
+                book_read=book_read,
+                book_process=book_process,
+                book_download=book_download,
+                book_list=book_list,
+                user_create=user_create,
+                user_list=user_list,
+                user_read=user_read,
+                user_delete=user_delete,
+                settings_update=settings_update,
+            ),
+            hashed_password=hashed_password,
+        )
+        for (
+            username,
+            full_name,
+            email,
+            hashed_password,
+            book_create,
+            book_read,
+            book_process,
+            book_download,
+            book_list,
+            user_create,
+            user_list,
+            user_read,
+            user_delete,
+            settings_update,
+        ) in cursor.fetchall()
     ]
 
 

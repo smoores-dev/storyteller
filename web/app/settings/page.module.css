@@ -1,0 +1,17 @@
+.main {
+  composes: main from "../page.module.css";
+}
+
+.settings-form {
+  composes: form from "../login/login.module.css";
+}
+
+.settings-form input {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  min-width: 400px;
+}
+
+.settings-form fieldset {
+  margin: 2rem 0;
+}

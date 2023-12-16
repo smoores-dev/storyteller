@@ -27,6 +27,15 @@ export default async function Home() {
       return redirect("/login")
     }
 
+    if (e instanceof ApiClientError && e.statusCode === 403) {
+      return (
+        <main className={styles["main"]}>
+          <h2>Forbidden</h2>
+          <p>You don't have permission to see this page</p>
+        </main>
+      )
+    }
+
     console.error(e)
 
     return (

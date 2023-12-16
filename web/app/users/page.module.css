@@ -1,0 +1,3 @@
+.main {
+  composes: main from "../page.module.css";
+}
