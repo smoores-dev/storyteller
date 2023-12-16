@@ -104,3 +104,5 @@ def update_settings(settings: Settings):
         """,
         {"value": json.dumps(settings.library_name)},
     )
+
+    connection.commit()
