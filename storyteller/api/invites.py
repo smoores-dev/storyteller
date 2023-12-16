@@ -6,7 +6,7 @@ from .database import get_setting
 
 def send_invite(email: str, key: str):
     library_name = get_setting("library_name")
-    web_host = get_setting("web_host")
+    web_url = get_setting("web_url")
     smtp_from = get_setting("smtp_from")
     smtp_host = get_setting("smtp_host")
     smtp_port = get_setting("smtp_port")
@@ -22,7 +22,7 @@ You've been invited to the {library_name} Storyteller library.
 
 You can accept your invite by following this link:
 
-{web_host}/invite/{key}
+{web_url}/invite/{key}
 """
     )
 
