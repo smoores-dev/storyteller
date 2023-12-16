@@ -30,6 +30,7 @@ class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
             return header_param
 
         auth_cookie = request.cookies.get("st_token")
+
         if not auth_cookie:
             if self.auto_error:
                 raise HTTPException(
@@ -40,7 +41,7 @@ class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
             else:
                 return None
 
-        auth_token = json.loads(auth_cookie.encode().decode())
+        auth_token = json.loads(base64.b64decode(auth_cookie))
         access_token = auth_token["access_token"]
 
         if not access_token:
