@@ -46,6 +46,7 @@ export function InviteUserModal() {
         <form
           className={styles["invite-user-form"]}
           onSubmit={async (event) => {
+            console.log(event)
             event.preventDefault()
 
             await client.createInvite({
@@ -237,11 +238,11 @@ export function InviteUserModal() {
               Manage library settings
             </label>
           </fieldset>
+          <div className={styles["invite-user-modal-dismiss"]}>
+            <Button type="submit">Invite</Button>
+            <DialogDismiss>Cancel</DialogDismiss>
+          </div>
         </form>
-        <div className={styles["invite-user-modal-dismiss"]}>
-          <Button type="submit">Invite</Button>
-          <DialogDismiss>Cancel</DialogDismiss>
-        </div>
       </Dialog>
     </>
   )
