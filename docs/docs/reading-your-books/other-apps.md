@@ -24,4 +24,4 @@ downloaded Storyteller book from your Downloads folder.
 
 If anyone finds any apps that have better support for EPUB Media Overlays and
 allow users to supply their own book files, please let us know on
-[Gitter](/docs/come-chat)!
+[Gitter](/docs/say-hi)!
