@@ -1,3 +1,7 @@
+---
+sidebar_position: 5
+---
+
 # Need help? Have some ideas? Come chat!
 
 We have a room on Gitter for discussion of Storyteller. If you need help, or
