@@ -10,6 +10,6 @@ Individial API instances, which are owned and run by users, store information ab
 
 The mobile applications store book data and reading progress, as well as securely storing credentials and server locations. This data is stored locally on the user's device, and is only ever transmitted to Storyteller server instances that the user has explicitly connected to.
 
-## Bug Rporting & Voluntary User Data Submission
+## Bug Reporting & Voluntary User Data Submission
 
 Users can report issues with Storyteller on [GitLab](https://gitlab.com/smoores/storyteller/-/issues) or [GitHub](https://github.com/smoores-dev/storyteller/issues). Information submitted on these systems is public, and is subject to GitLab and GitHub's respective privacy policies.
