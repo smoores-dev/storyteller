@@ -1,18 +1,18 @@
-import React from "react"
-import clsx from "clsx"
-import styles from "./styles.module.css"
-import Link from "@docusaurus/Link"
+import React from "react";
+import clsx from "clsx";
+import styles from "./styles.module.css";
+import Link from "@docusaurus/Link";
 
 type FeatureItem = {
-  title: string
-  Svg: React.ComponentType<React.ComponentProps<"svg">>
-  description: JSX.Element
-}
+  title: string;
+  Svg: React.ComponentType<React.ComponentProps<"svg">>;
+  description: JSX.Element;
+};
 
 const FeatureList: FeatureItem[] = [
   {
     title: "Sync your audiobooks and ebooks",
-    Svg: require("@site/static/img/undraw_docusaurus_mountain.svg").default,
+    Svg: require("@site/static/img/ebook-audiobook-sync.svg").default,
     description: (
       <>
         Storyteller is a platform for automatically syncing audiobooks and
@@ -22,7 +22,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "Read or listen however you choose",
-    Svg: require("@site/static/img/undraw_docusaurus_tree.svg").default,
+    Svg: require("@site/static/img/devices.svg").default,
     description: (
       <>
         Storyteller produces EPUB 3 compliant ebook files. You can read them
@@ -37,7 +37,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "Own your books",
-    Svg: require("@site/static/img/undraw_docusaurus_react.svg").default,
+    Svg: require("@site/static/img/library.svg").default,
     description: (
       <>
         Storyteller is completely{" "}
@@ -47,7 +47,7 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
   },
-]
+];
 
 function Feature({ title, Svg, description }: FeatureItem) {
   return (
@@ -60,7 +60,7 @@ function Feature({ title, Svg, description }: FeatureItem) {
         <p>{description}</p>
       </div>
     </div>
-  )
+  );
 }
 
 export default function HomepageFeatures(): JSX.Element {
@@ -74,5 +74,5 @@ export default function HomepageFeatures(): JSX.Element {
         </div>
       </div>
     </section>
-  )
+  );
 }
