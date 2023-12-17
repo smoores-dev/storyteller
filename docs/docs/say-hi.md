@@ -1,8 +1,8 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 ---
 
-# Need help? Have some ideas? Come chat!
+# Say hi!
 
 We have a room on Gitter for discussion of Storyteller. If you need help, or
 you've got some ideas to share, we'd love to chat with you!
