@@ -44,6 +44,9 @@ export default function Home(): JSX.Element {
       <main>
         <HomepageFeatures />
       </main>
+      <a href="https://www.vecteezy.com/free-vector/ebook">
+        Ebook Vectors by Vecteezy
+      </a>
     </Layout>
   );
 }

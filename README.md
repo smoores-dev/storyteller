@@ -1,5 +1,7 @@
 # Storyteller
 
+[![Join the chat at https://gitter.im/smoores/storyteller](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/smoores/storyteller?utm_source=badge&utm_medium=badge&utm_content=badge)
+
 A self-hostable system for producing ebooks with synced audio. Storyteller
 allows you to automatically align your audiobooks with their accompanying
 ebooks, producing a new ebook with

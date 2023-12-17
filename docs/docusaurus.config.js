@@ -7,7 +7,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Storyteller',
-  // tagline: 'Dinosaurs are cool',
+  tagline: 'A self-hosted platform for automatically syncing ebooks and audiobooks.',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
@@ -55,12 +55,12 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
+      image: 'img/Storyteller_Logo.jpg',
       navbar: {
         title: 'Storyteller',
         logo: {
           alt: 'Storyteller Logo',
-          src: 'img/logo.svg',
+          src: 'img/Storyteller_Logo.png',
         },
         items: [
           {
