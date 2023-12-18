@@ -1,40 +1,29 @@
-import { redirect } from "next/navigation"
-import { apiHost } from "../../apiHost"
 import { ApiClient } from "@/apiClient"
-import styles from "../../login/page.module.css"
-import { cookies, headers } from "next/headers"
 import { getCookieDomain } from "@/cookies"
+import { headers, cookies } from "next/headers"
+import { redirect } from "next/navigation"
+import { apiHost } from "../apiHost"
+import styles from "./page.module.css"
 
-export const dynamic = "force-dynamic"
-
-type Props = {
-  params: {
-    inviteKey: string
-  }
-}
-
-export default async function InvitePage(props: Props) {
-  const client = new ApiClient(apiHost)
-  const invite = await client.getInvite(props.params.inviteKey)
-
-  async function acceptInvite(data: FormData) {
+export default function InitPage() {
+  async function init(data: FormData) {
     "use server"
 
+    const email = data.get("email")?.valueOf() as string | undefined
     const fullName = data.get("full_name")?.valueOf() as string | undefined
     const username = data.get("username")?.valueOf() as string | undefined
     const password = data.get("password")?.valueOf() as string | undefined
-    if (!fullName || !username || !password) return
+    if (!fullName || !username || !password || !email) return
 
     const origin = headers().get("Origin")
     const domain = getCookieDomain(origin)
 
     const client = new ApiClient(apiHost)
-    const token = await client.acceptInvite({
-      email: invite.email,
+    const token = await client.createAdminUser({
+      email: email,
       full_name: fullName,
       username,
       password,
-      invite_key: props.params.inviteKey,
     })
 
     const cookieStore = cookies()
@@ -50,19 +39,13 @@ export default async function InvitePage(props: Props) {
   return (
     <main className={styles["main"]}>
       <header>
-        <h2>Accept Invite</h2>
+        <h2>Set up the admin user</h2>
       </header>
-      <form className={styles["form"]} action={acceptInvite}>
+      <form className={styles["init-form"]} action={init}>
         <label htmlFor="email">email</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          defaultValue={invite.email}
-          disabled
-        />
+        <input id="email" name="email" type="email" required />
         <label htmlFor="full_name">full name</label>
-        <input id="full_name" name="full_name" type="text" />
+        <input id="full_name" name="full_name" type="text" required />
         <label htmlFor="username">username</label>
         <input
           id="username"
@@ -70,9 +53,10 @@ export default async function InvitePage(props: Props) {
           type="text"
           autoCapitalize="none"
           autoCorrect="off"
+          required
         />
         <label htmlFor="password">password</label>
-        <input id="password" name="password" type="password" />
+        <input id="password" name="password" type="password" required />
         <button type="submit">Accept</button>
       </form>
     </main>

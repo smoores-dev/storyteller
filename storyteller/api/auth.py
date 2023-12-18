@@ -121,7 +121,10 @@ def verify_invite(invite: Annotated[InviteAccept, Body()]):
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     token_data = verify_token(token)
-    user = get_user(token_data.username)
+    try:
+        user = get_user(token_data.username)
+    except:
+        raise unauthorized
     if user is None:
         raise unauthorized
     return user

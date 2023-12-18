@@ -50,7 +50,6 @@ def create_book(
             )
         )
 
-    cursor.close()
     connection.commit()
 
     return book

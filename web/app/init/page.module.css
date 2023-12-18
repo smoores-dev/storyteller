@@ -1,0 +1,7 @@
+.main {
+  composes: main from "../login/page.module.css";
+}
+
+.init-form {
+  composes: form from "../login/page.module.css";
+}

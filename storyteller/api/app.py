@@ -74,6 +74,15 @@ def index():
     return {"Hello": "World"}
 
 
+@app.get("/needs-init")
+def needs_init():
+    count = db.get_user_count()
+    if count > 0:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+    return True
+
+
 @app.post("/token", response_model=models.Token)
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = auth.authenticate_user(form_data.username, form_data.password)
@@ -150,6 +159,22 @@ async def accept_invite(invite: models.InviteAccept):
     access_token_expires = timedelta(days=auth.ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = auth.create_access_token(
         data={"sub": invite.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.post("/users/admin", response_model=models.Token)
+async def create_admin(user_request: Annotated[models.UserRequest, Body()]):
+    hashed_password = auth.get_password_hash(user_request.password)
+    db.create_admin_user(
+        user_request.username,
+        user_request.full_name,
+        user_request.email,
+        hashed_password,
+    )
+    access_token_expires = timedelta(days=auth.ACCESS_TOKEN_EXPIRE_DAYS)
+    access_token = auth.create_access_token(
+        data={"sub": user_request.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

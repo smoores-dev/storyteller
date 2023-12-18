@@ -69,7 +69,6 @@ def create_invite(
         {"email": email, "key": key, "user_permission_id": user_permission_id},
     )
 
-    cursor.close()
     connection.commit()
 
 
