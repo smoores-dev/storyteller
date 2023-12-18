@@ -3,7 +3,7 @@
 }
 
 .settings-form {
-  composes: form from "../login/login.module.css";
+  composes: form from "../login/page.module.css";
 }
 
 .settings-form input {

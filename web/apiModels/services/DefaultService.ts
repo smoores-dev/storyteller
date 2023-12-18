@@ -12,6 +12,7 @@ import type { InviteRequest } from '../models/InviteRequest';
 import type { Settings } from '../models/Settings';
 import type { Token } from '../models/Token';
 import type { User } from '../models/User';
+import type { UserRequest } from '../models/UserRequest';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -28,6 +29,18 @@ export class DefaultService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/',
+        });
+    }
+
+    /**
+     * Needs Init
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static needsInitNeedsInitGet(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/needs-init',
         });
     }
 
@@ -130,6 +143,26 @@ export class DefaultService {
             path: {
                 'invite_key': inviteKey,
             },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+
+    /**
+     * Create Admin
+     * @param requestBody
+     * @returns Token Successful Response
+     * @throws ApiError
+     */
+    public static createAdminUsersAdminPost(
+        requestBody: UserRequest,
+    ): CancelablePromise<Token> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/users/admin',
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: `Validation Error`,
             },

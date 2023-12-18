@@ -56,6 +56,13 @@ class User(BaseModel):
     permissions: UserPermissions
 
 
+class UserRequest(BaseModel):
+    username: str
+    email: str
+    full_name: str
+    password: str
+
+
 class DBUser(User):
     hashed_password: str
 

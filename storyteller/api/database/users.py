@@ -65,6 +65,19 @@ def get_user(username: str):
     )
 
 
+def get_user_count():
+    cursor = connection.execute(
+        """
+        SELECT count(id) as count
+        FROM user;
+        """
+    )
+
+    (count,) = cursor.fetchone()
+
+    return count
+
+
 def get_users():
     cursor = connection.execute(
         """
@@ -127,8 +140,72 @@ def get_users():
     ]
 
 
+def create_admin_user(
+    username: str,
+    full_name: str,
+    email: str,
+    hashed_password: str,
+):
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO user_permission (
+            book_create,
+            book_read,
+            book_process,
+            book_download,
+            book_list,
+            user_create,
+            user_list,
+            user_read,
+            user_delete,
+            settings_update
+        ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        WHERE NOT EXISTS (
+            SELECT id
+            FROM user_permission
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        INSERT INTO user (
+            username,
+            full_name,
+            email,
+            hashed_password,
+            user_permission_id
+        ) SELECT
+            :username,
+            :full_name,
+            :email,
+            :hashed_password,
+            :user_permission_id
+        WHERE NOT EXISTS (
+            SELECT id
+            FROM user
+        )
+        """,
+        {
+            "username": username,
+            "full_name": full_name,
+            "email": email,
+            "hashed_password": hashed_password,
+            "user_permission_id": cursor.lastrowid,
+        },
+    )
+
+    connection.commit()
+
+
 def create_user(
-    username: str, full_name: str, email: str, hashed_password: str, invite_key: str
+    username: str,
+    full_name: str,
+    email: str,
+    hashed_password: str,
+    invite_key: str | None = None,
 ):
     cursor = connection.cursor()
 
@@ -160,8 +237,6 @@ def create_user(
             "invite_key": invite_key,
         },
     )
-
-    cursor.close()
 
     connection.commit()
 

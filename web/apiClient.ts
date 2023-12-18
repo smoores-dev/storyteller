@@ -8,6 +8,7 @@ import {
   Settings,
   Token,
   User,
+  UserRequest,
 } from "./apiModels"
 
 export class ApiClientError extends Error {
@@ -31,6 +32,22 @@ export class ApiClient {
     const url = new URL(`/books/${bookId}/synced`, this.apiHost)
 
     return url.toString()
+  }
+
+  async needsInit(): Promise<boolean> {
+    const url = new URL("/needs-init", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    return await response.json()
   }
 
   async login(creds: Body_login_token_post): Promise<Token> {
@@ -121,6 +138,24 @@ export class ApiClient {
 
     const users = (await response.json()) as User[]
     return users
+  }
+
+  async createAdminUser(userRequest: UserRequest): Promise<Token> {
+    const url = new URL("/users/admin", this.apiHost)
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: { ...this.getHeaders(), "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(userRequest),
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const token = (await response.json()) as Token
+    return token
   }
 
   async getCurrentUser(): Promise<User> {
