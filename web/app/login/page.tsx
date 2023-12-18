@@ -1,5 +1,5 @@
 import { ApiClient } from "@/apiClient"
-import styles from "./login.module.css"
+import styles from "./page.module.css"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { apiHost } from "../apiHost"

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { apiHost } from "../../apiHost"
 import { ApiClient } from "@/apiClient"
-import styles from "../../login/login.module.css"
+import styles from "../../login/page.module.css"
 import { cookies, headers } from "next/headers"
 import { getCookieDomain } from "@/cookies"
 
@@ -68,7 +68,7 @@ export default async function InvitePage(props: Props) {
           id="username"
           name="username"
           type="text"
-          autoCapitalize="off"
+          autoCapitalize="none"
           autoCorrect="off"
         />
         <label htmlFor="password">password</label>

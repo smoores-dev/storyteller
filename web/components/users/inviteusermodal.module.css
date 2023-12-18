@@ -15,7 +15,7 @@
 }
 
 .invite-user-form {
-  composes: form from "../../app/login/login.module.css";
+  composes: form from "../../app/login/page.module.css";
 }
 
 .invite-user-form input[type="email"] {

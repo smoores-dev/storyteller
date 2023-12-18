@@ -16,7 +16,14 @@ from .processing_tasks import (
     update_task_progress,
     update_task_status,
 )
-from .users import get_user, get_users, create_user, user_has_permission
+from .users import (
+    get_user,
+    get_users,
+    get_user_count,
+    create_user,
+    create_admin_user,
+    user_has_permission,
+)
 from .migrations import migrate
 from .invites import create_invite, verify_invite, get_invite
 from .settings import get_setting, get_settings, update_settings
@@ -26,6 +33,7 @@ __all__ = [
     "create_book",
     "create_processing_task",
     "create_invite",
+    "create_admin_user",
     "create_user",
     "get_book",
     "get_book_details",
@@ -35,6 +43,7 @@ __all__ = [
     "update_settings",
     "get_user",
     "get_users",
+    "get_user_count",
     "migrate",
     "ProcessingTaskType",
     "add_audiofile",

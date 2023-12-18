@@ -21,6 +21,7 @@ export type { Settings } from './models/Settings';
 export type { Token } from './models/Token';
 export type { User } from './models/User';
 export type { UserPermissions } from './models/UserPermissions';
+export type { UserRequest } from './models/UserRequest';
 export type { ValidationError } from './models/ValidationError';
 
 export { DefaultService } from './services/DefaultService';
