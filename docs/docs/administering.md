@@ -7,6 +7,12 @@ sidebar_position: 4
 Congrats, you're now a server admin! Luckily, the Storyteller backend is pretty
 straightforward to administer, but there are a few things worth keeping in mind.
 
+## Setting up the admin user
+
+When you first run the Storyteller backend, the web interface will prompt you to
+create an admin user. This user will be saved in the database and given all
+permissions in the system.
+
 ## Inviting users
 
 You may wish to invite additional users, such as family members, to your server.
