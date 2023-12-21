@@ -89,9 +89,9 @@ def get_transcriptions_path(book_dir: str):
 
 
 def get_chapter_filename(
-    chapters_dir: Path, book_name: str, chapter_title: str, ext: str
+    chapters_dir: Path, book_name: str, chapter_index: int, chapter_title: str, ext: str
 ):
-    return f"{chapters_dir}/{book_name}-{chapter_title}.{ext}"
+    return f"{chapters_dir}/{book_name}-{chapter_index + 1:05d}-{chapter_title}.{ext}"
 
 
 def split_audiobook(
@@ -128,7 +128,7 @@ def split_audiobook(
     chapter_filenames: List[str] = []
     for i, range in enumerate(chapter_ranges):
         chapter_filename = get_chapter_filename(
-            Path(chapters_path), book_name, range.chapter.title, filetype
+            Path(chapters_path), book_name, i, range.chapter.title, filetype
         )
         if os.path.exists(chapter_filename):
             os.remove(chapter_filename)
@@ -194,7 +194,7 @@ def transcribe_chapter(
 def get_audio_chapter_filenames(book_name: str):
     book_dir = get_audio_directory(book_name)
     dirname = get_chapters_path(book_dir)
-    return [str(Path(dirname, filename)) for filename in os.listdir(dirname)]
+    return sorted([str(Path(dirname, filename)) for filename in os.listdir(dirname)])
 
 
 def get_transcriptions(book_name: str):
