@@ -31,6 +31,7 @@
           let
             # Make libstdc++.so.6 available to pytorch
             libstdcpp = pkgs.stdenv.cc.cc.lib;
+            ffmpeg = pkgs.ffmpeg;
             # Use Python 3.10
             python = pkgs.python310;
             nodejs = pkgs.nodejs_20;
@@ -49,6 +50,7 @@
                 pip # The pip installer
               ]))
               poetry
+              ffmpeg
               # Node
               nodejs
               yarn
