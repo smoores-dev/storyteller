@@ -19,8 +19,8 @@ Check out the docs to learn more about [how Storyteller's forced alignment algor
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://gitlab.com/smoores"><img src="https://gitlab.com/uploads/-/system/user/avatar/2464265/avatar.png?width=192" width="100" height="100" style="border-radius: 50%;" alt="Shane Friedman's digital avatar"/><br /><sub><b>Shane Friedman</b></sub></a><br /><sub>Engineer</sub></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://www.sarahmitrano.com/"><img src="https://images.squarespace-cdn.com/content/v1/62ddc746cfb05a0f524d7c81/1f40c614-1add-4d15-bc35-14aea24de298/JHO_3350-Edit.jpg" width="100" height="100" style="object-fit: cover; object-position: 0 0; border-radius: 50%" alt="Sarah Mitrano's headshot"/><br /><sub><b>Sarah Mitrano</b></sub></a><br /><sub>Designer</sub></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://gitlab.com/smoores"><img src="https://gitlab.com/uploads/-/system/user/avatar/2464265/avatar.png?width=192" width="100" height="100" alt="Shane Friedman's digital avatar"/><br /><sub><b>Shane Friedman</b></sub></a><br /><sub>Engineer</sub></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.sarahmitrano.com/"><img src="readme-assets/sarah-headshot.png" width="100" height="100" alt="Sarah Mitrano's headshot"/><br /><sub><b>Sarah Mitrano</b></sub></a><br /><sub>Designer</sub></td>
     </tr>
   </tbody>
 </table>
