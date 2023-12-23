@@ -65,7 +65,16 @@ if get_config_settings().debug_requests:
         async for chunk in response.body_iterator:
             res_body += chunk
 
-        task = BackgroundTask(print, dict(request.headers), req_body)
+        def print_logs(
+            req_headers: dict[str, str], req_body: bytes, res_headers: dict[str, str]
+        ):
+            print(f"Request headers: {req_headers}")
+            print(f"Request body: {req_body}")
+            print(f"Response headers: {res_headers}")
+
+        task = BackgroundTask(
+            print_logs, dict(request.headers), req_body, dict(response.headers)
+        )
         return Response(
             content=res_body,
             status_code=response.status_code,
@@ -322,7 +331,7 @@ def get_synced_book(
     with open(filepath, mode="rb") as f:
         f.seek(start)
         return Response(
-            content=f.read(end),
+            content=f.read(end - start),
             status_code=206 if partial_response else 200,
             headers={
                 "Content-Disposition": f'attachment; filename="{book.title}.epub"',
