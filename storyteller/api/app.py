@@ -1,14 +1,26 @@
 from datetime import timedelta
+from email.utils import formatdate
 from functools import lru_cache
 import os
 import secrets
 from typing import Annotated, cast
-from fastapi import Body, FastAPI, HTTPException, Request, UploadFile, Depends, status
+from fastapi import (
+    Body,
+    FastAPI,
+    HTTPException,
+    Header,
+    Request,
+    UploadFile,
+    Depends,
+    status,
+)
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import Response, FileResponse, StreamingResponse
+
 from starlette.types import Message
 from starlette.background import BackgroundTask
+from starlette._compat import md5_hexdigest
 
 from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
 from storyteller.synchronize.audio import get_audio_cover_image
@@ -53,7 +65,7 @@ if get_config_settings().debug_requests:
         async for chunk in response.body_iterator:
             res_body += chunk
 
-        task = BackgroundTask(print, dict(response.headers), req_body, res_body)
+        task = BackgroundTask(print, dict(request.headers), req_body)
         return Response(
             content=res_body,
             status_code=response.status_code,
@@ -271,13 +283,56 @@ async def get_book_details(book_id: int):
     "/books/{book_id}/synced",
     dependencies=[Depends(auth.has_permission("book_download"))],
 )
-async def get_synced_book(book_id):
+def get_synced_book(
+    book_id,
+    range: Annotated[str | None, Header()] = None,
+    if_range: Annotated[str | None, Header()] = None,
+):
     book = db.get_book(book_id)
-    response = FileResponse(assets.get_synced_book_path(book))
-    response.headers[
-        "Content-Disposition"
-    ] = f'attachment; filename="{book.title}.epub"'
-    return response
+    filepath = assets.get_synced_book_path(book)
+
+    stat_result = os.stat(filepath)
+    last_modified = formatdate(stat_result.st_mtime, usegmt=True)
+    etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
+    etag = f'"{md5_hexdigest(etag_base.encode(), usedforsecurity=False)}"'
+
+    start = 0
+    end = stat_result.st_size
+
+    partial_response = (
+        range is not None
+        and range.startswith("bytes=")
+        and (if_range == etag or if_range == last_modified)
+    )
+    if partial_response:
+        ranges_str = cast(str, range).replace("bytes=", "")
+        range_strs = ranges_str.split(",")
+        ranges = [range_str.strip().split("-") for range_str in range_strs]
+        # TODO: handle multiple ranges?
+        [[start_str, end_str]] = ranges
+        try:
+            start = int(start_str.strip())
+        except:
+            pass
+        try:
+            end = int(end_str.strip())
+        except:
+            pass
+
+    with open(filepath, mode="rb") as f:
+        f.seek(start)
+        return Response(
+            content=f.read(end),
+            status_code=206 if partial_response else 200,
+            headers={
+                "Content-Disposition": f'attachment; filename="{book.title}.epub"',
+                "Content-Type": "application/epub+zip",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(end - start),
+                "Last-Modified": last_modified,
+                "Etag": etag,
+            },
+        )
 
 
 def get_epub_book_cover(book: models.Book):
