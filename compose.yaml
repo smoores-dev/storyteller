@@ -1,0 +1,32 @@
+# Example compose config for Storyteller
+
+services:
+  api:
+    image: registry.gitlab.com/smoores/storyteller/api:latest
+    volumes:
+      # This can be whatever you like; you can even use a
+      # named volume rather than a bind mount, though it's easier
+      # to inspect the files with a mount.
+      # If you're running on macOS or Windows, you may want to
+      # consider using a named volume, which will considerably
+      # improve performance.
+      - ~/Documents/Storyteller:/data:rw
+    environment:
+      # Modify as needed. This needs to match the URL that you
+      # access the web UI with in the browser.
+      - STORYTELLER_ALLOWED_ORIGINS=http://localhost:8001
+    ports:
+      - "8000:8000"
+
+  web:
+    image: registry.gitlab.com/smoores/storyteller/web:latest
+    environment:
+      # If you have your API behind a reverse proxy, or can otherwise
+      # access it with a domain name, you don't need both of these;
+      # just STORYTELLER_API_HOST will do.
+      # PUBLIC_STORYTELLER_API_HOST is only necessary when the address
+      # for STORYTELLER_API_HOST is unreachable from the client/browser.
+      - STORYTELLER_API_HOST=http://api:8000
+      - PUBLIC_STORYTELLER_API_HOST=http://localhost:8000
+    ports:
+      - "8001:8001"
