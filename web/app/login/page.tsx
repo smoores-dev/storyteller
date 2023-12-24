@@ -3,7 +3,7 @@ import styles from "./page.module.css"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { apiHost } from "../apiHost"
-import { getCookieDomain } from "@/cookies"
+import { getCookieDomain, getCookieSecure } from "@/cookies"
 
 export default function Login() {
   async function login(data: FormData) {
@@ -14,6 +14,8 @@ export default function Login() {
     if (!username || !password) return
 
     const origin = headers().get("Origin")
+
+    const secure = getCookieSecure(origin)
     const domain = getCookieDomain(origin)
 
     const client = new ApiClient(apiHost)
@@ -23,7 +25,7 @@ export default function Login() {
     cookieStore.set(
       "st_token",
       Buffer.from(JSON.stringify(token)).toString("base64"),
-      { secure: true, domain: domain, sameSite: "lax" }
+      { secure, domain: domain, sameSite: "lax", httpOnly: true }
     )
 
     redirect("/")
