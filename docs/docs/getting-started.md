@@ -59,9 +59,9 @@ services:
       - "8001:8001"
 ```
 
-To run, simply create a file named `compose.yaml` in the current directory, and
-run `docker compose up`. Once the services have started, you can start
-[syncing books](/docs/syncing-books) and
+To run, simply create a file named `compose.yaml` in the current directory with
+the above contents (modified as needed), and run `docker compose up`. Once the
+services have started, you can start [syncing books](/docs/syncing-books) and
 [reading them](/docs/category/reading-your-books)!
 
 ## Manual docker commands
