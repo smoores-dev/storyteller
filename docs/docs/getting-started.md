@@ -20,7 +20,53 @@ As an instance administrator, you'll need to run the Storyteller API server and
 web interface. You and your users can connect to your instance from the mobile
 apps, or download the synced books from the web interface.
 
-## Making a network
+## Docker compose
+
+There's a compose file in the project repository, embedded here for ease of use:
+
+```yaml
+# Example compose config for Storyteller
+
+services:
+  api:
+    image: registry.gitlab.com/smoores/storyteller/api:latest
+    volumes:
+      # This can be whatever you like; you can even use a
+      # named volume rather than a bind mount, though it's easier
+      # to inspect the files with a mount.
+      # If you're running on macOS or Windows, you may want to
+      # consider using a named volume, which will considerably
+      # improve performance.
+      - ~/Documents/Storyteller:/data:rw
+    environment:
+      # Modify as needed. This needs to match the URL that you
+      # access the web UI with in the browser.
+      - STORYTELLER_ALLOWED_ORIGINS=http://localhost:8001
+    ports:
+      - "8000:8000"
+
+  web:
+    image: registry.gitlab.com/smoores/storyteller/web:latest
+    environment:
+      # If you have your API behind a reverse proxy, or can otherwise
+      # access it with a domain name, you don't need both of these;
+      # just STORYTELLER_API_HOST will do.
+      # PUBLIC_STORYTELLER_API_HOST is only necessary when the address
+      # for STORYTELLER_API_HOST is unreachable from the client/browser.
+      - STORYTELLER_API_HOST=http://api:8000
+      - PUBLIC_STORYTELLER_API_HOST=http://localhost:8000
+    ports:
+      - "8001:8001"
+```
+
+To run, simply create a file named `compose.yaml` in the current directory, and
+run `docker compose up`. Once the services have started, you can start
+[syncing books](/docs/syncing-books) and
+[reading them](/docs/category/reading-your-books)!
+
+## Manual docker commands
+
+### Making a network
 
 The two backend services, the API and the web interface server, need to be able
 to communicate with each other, so we need to place them both on the same Docker
@@ -30,7 +76,7 @@ network.
 docker network create -d bridge storyteller
 ```
 
-## Running the API server
+### Running the API server
 
 The Storyteller API server and web interface are both distributed as Docker
 images, available on the GitLab Container Registry. The API server is available
@@ -55,7 +101,7 @@ process in the background:
 docker run \
    -it \
    -v ~/Documents/Storyteller:/data \
-   -e STORYTELLER_ALLOWED_ORIGINS=localhost:8000
+   -e STORYTELLER_ALLOWED_ORIGINS=http://localhost:8001
    -p 8000:8000 \
    --name storyteller-api \
    --network storyteller \
@@ -67,7 +113,7 @@ To test that the API is up and running, you can use
 `http://localhost:8000/`. If the API has successfully started, you should see
 the response `{ "Hello": "World" }`.
 
-## Running the web interface
+### Running the web interface
 
 The web interface image is available at
 `registry.gitlab.com/smoores/storyteller/web`.
