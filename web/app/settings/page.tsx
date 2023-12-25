@@ -1,8 +1,8 @@
 import { ApiClient, ApiClientError } from "@/apiClient"
 import { Settings, Token } from "@/apiModels"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost } from "../apiHost"
+import { rootPath } from "../apiHost"
 import styles from "./page.module.css"
 import { revalidatePath } from "next/cache"
 
@@ -17,7 +17,8 @@ export default async function SettingsPage() {
   }
 
   const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const client = new ApiClient(apiHost, token.access_token)
+  const origin = headers().get("x-storyteller-origin")!
+  const client = new ApiClient(origin, rootPath, token.access_token)
 
   let settings: Settings
 
@@ -67,7 +68,8 @@ export default async function SettingsPage() {
     }
 
     const token = JSON.parse(atob(authTokenCookie.value)) as Token
-    const client = new ApiClient(apiHost, token.access_token)
+    const origin = headers().get("x-storyteller-origin")!
+    const client = new ApiClient(origin, rootPath, token.access_token)
 
     await client.updateSettings({
       library_name: libraryName,
