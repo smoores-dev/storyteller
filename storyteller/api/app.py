@@ -28,14 +28,9 @@ from storyteller.synchronize.audio import get_audio_cover_image
 from . import assets, auth, config, database as db, invites, models, processing
 
 
-@lru_cache()
-def get_config_settings():
-    return config.Settings()
-
-
 app = FastAPI()
 
-origins = get_config_settings().allowed_origins.split(",")
+origins = config.config.allowed_origins.split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,7 +48,7 @@ async def set_body(request: Request, body: bytes):
     request._receive = receive
 
 
-if get_config_settings().debug_requests:
+if config.config.debug_requests:
 
     @app.middleware("http")
     async def debug_log_middleware(request: Request, call_next):
