@@ -19,6 +19,8 @@ from .database import (
     update_task_status,
 )
 
+from .config import config
+
 from .models import Book
 
 
@@ -77,7 +79,12 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
         elif processing_task.type == ProcessingTaskType.TRANSCRIBE_CHAPTERS:
             p = Process(
                 target=transcribe_book,
-                args=[book.audio_filename, book.epub_filename, on_progress],
+                args=[
+                    book.audio_filename,
+                    book.epub_filename,
+                    config.device,
+                    on_progress,
+                ],
             )
         elif processing_task.type == ProcessingTaskType.SYNC_CHAPTERS:
             p = Process(

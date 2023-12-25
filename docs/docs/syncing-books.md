@@ -34,6 +34,11 @@ CPU cores, or a CUDA-capable GPU, but it's expected that the entire
 synchronization process will take around 1-4 hours for most books on most
 relatively modern hardware.
 
+**Note**: If you have a CUDA-capable GPU, and would like to use that rather than
+your CPU for transcription, make sure to run the API container with the
+environment variable `STORYTELLER_DEVICE` set to `cuda`. Otherwise you will use
+the default, which is `cpu`.
+
 Please note that the transcription task will, by default, use as many CPU cores
 and as much RAM as is available, and Docker, by default, will give it access to
 all of the resources on your system. Given how long the transcription task can
