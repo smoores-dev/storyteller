@@ -379,16 +379,22 @@ def sync_book(
     book = read_epub(ebook_name)
     epub_chapters = get_chapters(book)
     print(f"Found {len(epub_chapters)} chapters in the ebook")
+
     audio_chapter_filenames = get_audio_chapter_filenames(audiobook_name)
     transcriptions = get_transcriptions(audiobook_name)
     transcription = concat_transcriptions(transcriptions, audio_chapter_filenames)
     transcription_text = get_transcription_text(transcription)
     book_cache: Dict[str, Any] = {}
+
+    Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
+
     if os.path.exists(f"{CACHE_DIR}/{ebook_name}.json"):
         with open(f"{CACHE_DIR}/{ebook_name}.json", "r") as cache_file:
             book_cache = json.load(cache_file)
+
     if "chapter_index" not in book_cache:
         book_cache["chapter_index"] = {}
+
     total_duration = 0
     last_transcription_offset = 0
     synced_chapters: List[SyncedChapter] = []
