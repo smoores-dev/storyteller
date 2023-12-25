@@ -2,7 +2,7 @@ import { ApiClient } from "@/apiClient"
 import styles from "./page.module.css"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost } from "../apiHost"
+import { rootPath } from "../apiHost"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
 
 export default function Login() {
@@ -13,12 +13,13 @@ export default function Login() {
     const password = data.get("password")?.valueOf() as string | undefined
     if (!username || !password) return
 
-    const origin = headers().get("Origin")
+    const cookieOrigin = headers().get("Origin")
 
-    const secure = getCookieSecure(origin)
-    const domain = getCookieDomain(origin)
+    const secure = getCookieSecure(cookieOrigin)
+    const domain = getCookieDomain(cookieOrigin)
 
-    const client = new ApiClient(apiHost)
+    const origin = headers().get("x-storyteller-origin")!
+    const client = new ApiClient(origin, rootPath)
     const token = await client.login({ username, password })
 
     const cookieStore = cookies()

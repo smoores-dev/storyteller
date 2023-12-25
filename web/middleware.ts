@@ -1,12 +1,25 @@
 import { ApiClient, ApiClientError } from "@/apiClient"
 import { NextRequest, NextResponse } from "next/server"
-import { apiHost } from "./app/apiHost"
+import { rootPath } from "./app/apiHost"
 
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
   const isInitPage = request.nextUrl.pathname.startsWith("/init")
 
-  const client = new ApiClient(apiHost)
+  const origin = request.nextUrl.origin
+  const client = new ApiClient(origin, rootPath)
+
+  // Set a custom header so that server components
+  // can more easily read the request origin
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-storyteller-origin", origin)
+
+  const next = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
+
   try {
     const needsInit = await client.needsInit()
     if (needsInit && !isInitPage) {
@@ -17,13 +30,13 @@ export async function middleware(request: NextRequest) {
       if (isInitPage) {
         return NextResponse.redirect(new URL("/", request.url))
       }
-      return
+      return next
     }
 
     console.error(e)
   }
 
-  return
+  return next
 }
 
 export const config = {
