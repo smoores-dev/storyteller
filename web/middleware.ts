@@ -1,13 +1,34 @@
 import { ApiClient, ApiClientError } from "@/apiClient"
 import { NextRequest, NextResponse } from "next/server"
-import { rootPath } from "./app/apiHost"
+import { apiHost } from "./app/apiHost"
 
-// This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
+  // Proxy all requests to `/api` to the actual API server
+  if (request.nextUrl.pathname.startsWith("/api")) {
+    const destinationPathname = request.nextUrl.pathname.replace("/api", "")
+    const response = await fetch(new URL(destinationPathname, apiHost), {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+      credentials: request.credentials,
+      cache: request.cache,
+      integrity: request.integrity,
+      mode: request.mode,
+      redirect: request.redirect,
+      referrer: request.referrer,
+      referrerPolicy: request.referrerPolicy,
+      keepalive: request.keepalive,
+    })
+    return response
+  }
+
   const isInitPage = request.nextUrl.pathname.startsWith("/init")
 
   const origin = request.nextUrl.origin
-  const client = new ApiClient(origin, rootPath)
+  const client = new ApiClient(
+    apiHost,
+    process.env["STORYTELLER_ROOT_PATH"] ?? ""
+  )
 
   // Set a custom header so that server components
   // can more easily read the request origin
@@ -40,5 +61,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/invites/:path", "/settings", "/users", "/init"],
+  matcher: [
+    "/",
+    "/api/:path*",
+    "/login",
+    "/invites/:path",
+    "/settings",
+    "/users",
+    "/init",
+  ],
 }
