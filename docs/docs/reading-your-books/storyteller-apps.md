@@ -4,8 +4,9 @@ sidebar_position: 0
 
 # Storyteller apps
 
-There is a Storyteller Reader app on the iOS App Store. An Android app is in the
-works!
+There is a
+[Storyteller Reader app on the iOS App Store](https://apps.apple.com/us/app/storyteller-reader/id6474467720).
+An Android app is in the works!
 
 When you first install the Storyteller mobile app, you will need to configure
 your server URL in the app settings. This should be set to the base URL for your
