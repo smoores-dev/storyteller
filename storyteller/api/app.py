@@ -28,7 +28,7 @@ from storyteller.synchronize.audio import get_audio_cover_image
 from . import assets, auth, config, database as db, invites, models, processing
 
 
-app = FastAPI()
+app = FastAPI(root_path=f"{config.config.root_path}/api")
 
 origins = config.config.allowed_origins.split(",")
 

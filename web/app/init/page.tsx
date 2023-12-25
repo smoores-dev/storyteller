@@ -2,7 +2,7 @@ import { ApiClient } from "@/apiClient"
 import { getCookieDomain } from "@/cookies"
 import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost } from "../apiHost"
+import { rootPath } from "../apiHost"
 import styles from "./page.module.css"
 
 export default function InitPage() {
@@ -15,10 +15,11 @@ export default function InitPage() {
     const password = data.get("password")?.valueOf() as string | undefined
     if (!fullName || !username || !password || !email) return
 
-    const origin = headers().get("Origin")
-    const domain = getCookieDomain(origin)
+    const cookieOrigin = headers().get("Origin")
+    const domain = getCookieDomain(cookieOrigin)
 
-    const client = new ApiClient(apiHost)
+    const origin = headers().get("x-storyteller-origin")!
+    const client = new ApiClient(origin, rootPath)
     const token = await client.createAdminUser({
       email: email,
       full_name: fullName,
