@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { apiHost } from "../../apiHost"
+import { rootPath } from "../../apiHost"
 import { ApiClient } from "@/apiClient"
 import styles from "../../login/page.module.css"
 import { cookies, headers } from "next/headers"
@@ -14,7 +14,8 @@ type Props = {
 }
 
 export default async function InvitePage(props: Props) {
-  const client = new ApiClient(apiHost)
+  const origin = headers().get("x-storyteller-origin")!
+  const client = new ApiClient(origin, rootPath)
   const invite = await client.getInvite(props.params.inviteKey)
 
   async function acceptInvite(data: FormData) {
@@ -25,10 +26,11 @@ export default async function InvitePage(props: Props) {
     const password = data.get("password")?.valueOf() as string | undefined
     if (!fullName || !username || !password) return
 
-    const origin = headers().get("Origin")
-    const domain = getCookieDomain(origin)
+    const cookieOrigin = headers().get("Origin")
+    const domain = getCookieDomain(cookieOrigin)
 
-    const client = new ApiClient(apiHost)
+    const origin = headers().get("x-storyteller-origin")!
+    const client = new ApiClient(origin, rootPath)
     const token = await client.acceptInvite({
       email: invite.email,
       full_name: fullName,

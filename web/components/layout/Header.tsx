@@ -1,8 +1,8 @@
 import Image from "next/image"
 import styles from "./header.module.css"
 import { ApiClient, ApiClientError } from "@/apiClient"
-import { apiHost } from "@/app/apiHost"
-import { cookies } from "next/headers"
+import { rootPath } from "@/app/apiHost"
+import { cookies, headers } from "next/headers"
 import { Token } from "@/apiModels"
 
 export const dynamice = "force-dynamic"
@@ -17,7 +17,8 @@ export async function Header() {
   const authTokenCookie = cookieStore.get("st_token")
   if (authTokenCookie) {
     const token = JSON.parse(atob(authTokenCookie.value)) as Token
-    const client = new ApiClient(apiHost, token.access_token)
+    const origin = headers().get("x-storyteller-origin")!
+    const client = new ApiClient(origin, rootPath, token.access_token)
 
     try {
       const user = await client.getCurrentUser()
