@@ -156,6 +156,7 @@ def get_transcription_filename(chapter_filename: str):
 
 def transcribe_chapter(
     filename: str,
+    device: str,
     transcribe_model: whisperx.asr.FasterWhisperPipeline,
     align_model: transformers.models.wav2vec2.Wav2Vec2ForCTC,
     align_metadata: dict,
@@ -181,7 +182,7 @@ def transcribe_chapter(
         align_model,
         align_metadata,
         audio,
-        device="cpu",
+        device=device,
         return_char_alignments=False,
     )
 
@@ -216,6 +217,7 @@ def get_transcriptions(book_name: str):
 def transcribe_book(
     audio_book_name: str,
     epub_book_name: str,
+    device: str = "cpu",
     on_progress: Callable[[float], None] | None = None,
 ):
     book_dir = get_audio_directory(audio_book_name)
@@ -233,7 +235,7 @@ def transcribe_book(
 
     model = whisperx.load_model(
         "base.en",
-        device="cpu",
+        device=device,
         compute_type="int8",
         asr_options={
             "word_timestamps": True,
@@ -244,6 +246,6 @@ def transcribe_book(
     align_model, metadata = whisperx.load_align_model(language_code="en", device="cpu")
 
     for i, f in enumerate(audio_chapter_filenames):
-        transcribe_chapter(f, model, align_model, metadata)
+        transcribe_chapter(f, device, model, align_model, metadata)
         if on_progress is not None:
             on_progress((i + 1) / len(audio_chapter_filenames))
