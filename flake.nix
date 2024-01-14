@@ -33,8 +33,8 @@
             libstdcpp = pkgs.stdenv.cc.cc.lib;
             ffmpeg = pkgs.ffmpeg;
             # Use Python 3.10
-            python3 = pkgs.python310;
-            nodejs = pkgs.nodejs_20;
+            python3 = pkgs.python311;
+            nodejs = pkgs.nodejs_18;
             yarn = pkgs.yarn.override { inherit nodejs; };
             # Use latest Poetry
             poetry = pkgs-unstable.poetry.override { inherit python3; };
