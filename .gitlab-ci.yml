@@ -22,7 +22,7 @@ publish-api:
   stage: publish-api
   needs: []
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "arm"
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -38,7 +38,7 @@ publish-web:
   stage: publish-web
   needs: []
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "arm"
   services:
     - name: docker:20.10.16-dind
       alias: docker
