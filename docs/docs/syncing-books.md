@@ -62,8 +62,9 @@ For audiobooks, try [Libro.fm](https://libro.fm/). They're an online platform
 for audiobooks that sell only DRM-free audiobook files, and they share revenue
 from your purchase with your local book store. Without a monthly membership,
 their prices for some books can be very high, but they have a massive selection
-of books; I have yet to be unable to find what I'm looking for there.  Downpour.com
-also sells DRM free audiobooks that can be downloaded as .m4b or .mp3 files.
+of books; I have yet to be unable to find what I'm looking for there.
+[Downpour.com](https://www.downpour.com/) also sells DRM free audiobooks that
+can be downloaded as .m4b or .mp3 files.
 
 For ebooks, the alternatives are a little less promising. Some publishers, like
 Tor and Dragonsteel (Brandon Sanderson's publishing company) simply provide
