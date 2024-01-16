@@ -35,9 +35,8 @@ synchronization process will take around 1-4 hours for most books on most
 relatively modern hardware.
 
 **Note**: If you have a CUDA-capable GPU, and would like to use that rather than
-your CPU for transcription, make sure to run the API container with the
-environment variable `STORYTELLER_DEVICE` set to `cuda`. Otherwise you will use
-the default, which is `cpu`.
+your CPU for transcription, check out the
+[instructions below](#using-cuda-for-gpu-accelerated-transcription).
 
 Please note that the transcription task will, by default, use as many CPU cores
 and as much RAM as is available, and Docker, by default, will give it access to
@@ -73,3 +72,22 @@ straightforward to actually access the book files directly. I personally
 purchase ebooks through [Rakuten kobo](https://www.kobo.com/); it's easy to
 download book files from your purchased books, and books that are sold without
 DRM can be downloaded as EPUB files.
+
+## Using CUDA for GPU accelerated transcription
+
+The transcription phase can be fairly slow on a CPU, but it can be sped up
+quite dramatically with a CUDA-enabled GPU. There are a few steps you'll need
+to follow to do so.
+
+1. Install and configure the
+   [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+   Make sure to follow the
+   ["Configuration Docker"](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker)
+   section as well.
+2. Update your `compose.yaml` file or docker CLI commands:
+   a. Replace the `api:latest` image tag with `api:cuda` (note that this image
+   is _much_ larger and may take a while to download)
+   b. Add `runtime: nvidia` to the `api` service stanza. You can add it right
+   below the `image` property
+   c. Set the environment variable `STORYTELLER_DEVICE=cuda` in the environment
+   stanza for the `api` service.

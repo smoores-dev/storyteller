@@ -2,7 +2,11 @@
 
 services:
   api:
+    # Swap in the commented out image line below to enable CUDA
+    # image: registry.gitlab.com/smoores/storyteller/api:cuda
     image: registry.gitlab.com/smoores/storyteller/api:latest
+    # Uncomment for CUDA
+    # runtime: nvidia
     volumes:
       # This can be whatever you like; you can even use a
       # named volume rather than a bind mount, though it's easier
@@ -12,6 +16,8 @@ services:
       # improve performance.
       - ~/Documents/Storyteller:/data:rw
     environment:
+      # Uncomment for CUDA
+      # - STORYTELLER_DEVICE=cuda
       # Modify as needed. This needs to match the URL that you
       # access the web UI with in the browser.
       - STORYTELLER_ALLOWED_ORIGINS=http://localhost:8001
