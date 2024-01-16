@@ -22,6 +22,22 @@ publish-api:
   stage: publish-api
   needs: []
   rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  services:
+    - name: docker:20.10.16-dind
+      alias: docker
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker context create gitlab-ci
+    - docker buildx create --use --driver=docker-container gitlab-ci
+  script:
+    - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/api:latest .
+
+publish-cuda-api:
+  image: docker:20.10.16
+  stage: publish-api
+  needs: []
+  rules:
     - if: $CI_COMMIT_BRANCH == "cuda"
   services:
     - name: docker:20.10.16-dind
@@ -38,7 +54,7 @@ publish-web:
   stage: publish-web
   needs: []
   rules:
-    - if: $CI_COMMIT_BRANCH == "cuda"
+    - if: $CI_COMMIT_BRANCH == "main"
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -47,4 +63,4 @@ publish-web:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.web --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:cuda --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:cuda,mode=max --tag $CI_REGISTRY_IMAGE/web:cuda web
+    - docker buildx build --push -f Dockerfile.web --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/web:latest web

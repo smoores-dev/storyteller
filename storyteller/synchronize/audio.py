@@ -243,7 +243,7 @@ def transcribe_book(
         },
     )
 
-    align_model, metadata = whisperx.load_align_model(language_code="en", device="cpu")
+    align_model, metadata = whisperx.load_align_model(language_code="en", device=device)
 
     for i, f in enumerate(audio_chapter_filenames):
         transcribe_chapter(f, device, model, align_model, metadata)
