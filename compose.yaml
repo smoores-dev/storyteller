@@ -18,6 +18,7 @@ services:
     environment:
       # Uncomment for CUDA
       # - STORYTELLER_DEVICE=cuda
+      # - NVIDIA_VISIBLE_DEVICES=all
       # Modify as needed. This needs to match the URL that you
       # access the web UI with in the browser.
       - STORYTELLER_ALLOWED_ORIGINS=http://localhost:8001
