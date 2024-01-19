@@ -89,5 +89,5 @@ to follow to do so.
    is _much_ larger and may take a while to download)
    b. Add `runtime: nvidia` to the `api` service stanza. You can add it right
    below the `image` property
-   c. Set the environment variable `STORYTELLER_DEVICE=cuda` in the environment
+   c. Set the environment variables `STORYTELLER_DEVICE=cuda` and `NVIDIA_VISIBLE_DEVICES=all` in the environment
    stanza for the `api` service.
