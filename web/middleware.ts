@@ -2,11 +2,45 @@ import { ApiClient, ApiClientError } from "@/apiClient"
 import { NextRequest, NextResponse } from "next/server"
 import { apiHost } from "./app/apiHost"
 
-// This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
+  // Proxy all requests to `/api` to the actual API server
+  if (request.nextUrl.pathname.startsWith("/api")) {
+    const destinationPathname = request.nextUrl.pathname.replace("/api", "")
+    const response = await fetch(new URL(destinationPathname, apiHost), {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+      credentials: request.credentials,
+      cache: request.cache,
+      integrity: request.integrity,
+      mode: request.mode,
+      redirect: request.redirect,
+      referrer: request.referrer,
+      referrerPolicy: request.referrerPolicy,
+      keepalive: request.keepalive,
+    })
+    return response
+  }
+
   const isInitPage = request.nextUrl.pathname.startsWith("/init")
 
-  const client = new ApiClient(apiHost)
+  const origin = request.nextUrl.origin
+  const client = new ApiClient(
+    apiHost,
+    process.env["STORYTELLER_ROOT_PATH"] ?? ""
+  )
+
+  // Set a custom header so that server components
+  // can more easily read the request origin
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-storyteller-origin", origin)
+
+  const next = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
+
   try {
     const needsInit = await client.needsInit()
     if (needsInit && !isInitPage) {
@@ -17,15 +51,23 @@ export async function middleware(request: NextRequest) {
       if (isInitPage) {
         return NextResponse.redirect(new URL("/", request.url))
       }
-      return
+      return next
     }
 
     console.error(e)
   }
 
-  return
+  return next
 }
 
 export const config = {
-  matcher: ["/", "/login", "/invites/:path", "/settings", "/users", "/init"],
+  matcher: [
+    "/",
+    "/api/:path*",
+    "/login",
+    "/invites/:path",
+    "/settings",
+    "/users",
+    "/init",
+  ],
 }

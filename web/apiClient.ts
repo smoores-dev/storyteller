@@ -20,7 +20,11 @@ export class ApiClientError extends Error {
 }
 
 export class ApiClient {
-  constructor(private apiHost: string, private accessToken?: string) {}
+  constructor(
+    private origin: string,
+    private rootPath: string,
+    private accessToken?: string
+  ) {}
 
   getHeaders() {
     return this.accessToken === undefined
@@ -29,15 +33,15 @@ export class ApiClient {
   }
 
   getSyncedDownloadUrl(bookId: number) {
-    const url = new URL(`/books/${bookId}/synced`, this.apiHost)
+    const url = new URL(`${this.rootPath}/books/${bookId}/synced`, this.origin)
 
     return url.toString()
   }
 
   async needsInit(): Promise<boolean> {
-    const url = new URL("/needs-init", this.apiHost)
+    const url = new URL(`${this.rootPath}/needs-init`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -55,9 +59,9 @@ export class ApiClient {
     formData.set("username", creds.username)
     formData.set("password", creds.password)
 
-    const url = new URL("/token", this.apiHost)
+    const url = new URL(`${this.rootPath}/token`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -74,9 +78,9 @@ export class ApiClient {
   }
 
   async createInvite(inviteRequest: InviteRequest): Promise<Invite> {
-    const url = new URL("/invites", this.apiHost)
+    const url = new URL(`${this.rootPath}/invites`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "POST",
       headers: { ...this.getHeaders(), "Content-Type": "application/json" },
       body: JSON.stringify(inviteRequest),
@@ -92,9 +96,9 @@ export class ApiClient {
   }
 
   async getInvite(inviteKey: string): Promise<Invite> {
-    const url = new URL(`/invites/${inviteKey}`, this.apiHost)
+    const url = new URL(`${this.rootPath}/invites/${inviteKey}`, this.origin)
 
-    const response = await fetch(url.toString())
+    const response = await fetch(url)
 
     if (!response.ok) {
       throw new ApiClientError(response.status, response.statusText)
@@ -105,9 +109,9 @@ export class ApiClient {
   }
 
   async acceptInvite(inviteAccept: InviteAccept): Promise<Token> {
-    const url = new URL("/users", this.apiHost)
+    const url = new URL(`${this.rootPath}/users`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -124,9 +128,9 @@ export class ApiClient {
   }
 
   async listUsers(): Promise<User[]> {
-    const url = new URL("/users", this.apiHost)
+    const url = new URL(`${this.rootPath}/users`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -141,9 +145,9 @@ export class ApiClient {
   }
 
   async createAdminUser(userRequest: UserRequest): Promise<Token> {
-    const url = new URL("/users/admin", this.apiHost)
+    const url = new URL(`${this.rootPath}/users/admin`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "POST",
       headers: { ...this.getHeaders(), "Content-Type": "application/json" },
       credentials: "include",
@@ -159,9 +163,9 @@ export class ApiClient {
   }
 
   async getCurrentUser(): Promise<User> {
-    const url = new URL("/user", this.apiHost)
+    const url = new URL(`${this.rootPath}/user`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -176,9 +180,9 @@ export class ApiClient {
   }
 
   async getSettings(): Promise<Settings> {
-    const url = new URL("/settings", this.apiHost)
+    const url = new URL(`${this.rootPath}/settings`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -193,9 +197,9 @@ export class ApiClient {
   }
 
   async updateSettings(settings: Settings) {
-    const url = new URL("/settings", this.apiHost)
+    const url = new URL(`${this.rootPath}/settings`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "PUT",
       headers: { ...this.getHeaders(), "Content-Type": "application/json" },
       body: JSON.stringify(settings),
@@ -208,9 +212,9 @@ export class ApiClient {
   }
 
   async listBooks(): Promise<BookDetail[]> {
-    const url = new URL("/books", this.apiHost)
+    const url = new URL(`${this.rootPath}/books`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -228,7 +232,7 @@ export class ApiClient {
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void
   ): Promise<BookDetail> {
-    const url = new URL("/books/epub", this.apiHost)
+    const url = new URL(`${this.rootPath}/books/epub`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -249,7 +253,7 @@ export class ApiClient {
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void
   ): Promise<void> {
-    const url = new URL(`/books/${bookId}/audio`, this.apiHost)
+    const url = new URL(`${this.rootPath}/books/${bookId}/audio`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -267,7 +271,7 @@ export class ApiClient {
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void
   ): Promise<void> {
-    const url = new URL(`/books/${bookId}/cover`, this.apiHost)
+    const url = new URL(`${this.rootPath}/books/${bookId}/cover`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -281,12 +285,12 @@ export class ApiClient {
   }
 
   async processBook(bookId: number, restart?: boolean): Promise<void> {
-    const url = new URL(`/books/${bookId}/process`, this.apiHost)
+    const url = new URL(`${this.rootPath}/books/${bookId}/process`, this.origin)
     if (restart) {
       url.search = new URLSearchParams({ restart: "true" }).toString()
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -298,9 +302,9 @@ export class ApiClient {
   }
 
   async getBookDetails(bookId: number): Promise<BookDetail> {
-    const url = new URL(`/books/${bookId}`, this.apiHost)
+    const url = new URL(`${this.rootPath}/books/${bookId}`, this.origin)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",

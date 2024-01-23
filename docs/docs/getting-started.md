@@ -38,23 +38,11 @@ services:
       # consider using a named volume, which will considerably
       # improve performance.
       - ~/Documents/Storyteller:/data:rw
-    environment:
-      # Modify as needed. This needs to match the URL that you
-      # access the web UI with in the browser.
-      - STORYTELLER_ALLOWED_ORIGINS=http://localhost:8001
-    ports:
-      - "8000:8000"
 
   web:
     image: registry.gitlab.com/smoores/storyteller/web:latest
     environment:
-      # If you have your API behind a reverse proxy, or can otherwise
-      # access it with a domain name, you don't need both of these;
-      # just STORYTELLER_API_HOST will do.
-      # PUBLIC_STORYTELLER_API_HOST is only necessary when the address
-      # for STORYTELLER_API_HOST is unreachable from the client/browser.
       - STORYTELLER_API_HOST=http://api:8000
-      - PUBLIC_STORYTELLER_API_HOST=http://localhost:8000
     ports:
       - "8001:8001"
 ```
@@ -87,31 +75,19 @@ have over 1GB of data for a single book. It's important to mount a volume at the
 `/data` directory in the container so that your content isn't lost when you
 restart or update your container.
 
-The server listens on port 8000 by default, and this can be configured with the
-`UVICORN_PORT` environment variable.
-
-The following will run the API server on port 8000, saving Storyteller caches
-and synced books to the user's Documents directory, and allowing requests from
-the web interface, assuming that it's running on `localhost:8000` (see the next
-section for how to run the web interface). The `-it` flags will allow you to
-kill the process with Ctrl+C; you can alternatively use the `-d` flag to run the
+The following will run the API server, saving Storyteller caches and synced
+books to the user's Documents directory. The `-it` flags will allow you to kill
+the process with Ctrl+C; you can alternatively use the `-d` flag to run the
 process in the background:
 
 ```shell
 docker run \
    -it \
    -v ~/Documents/Storyteller:/data \
-   -e STORYTELLER_ALLOWED_ORIGINS=http://localhost:8001
-   -p 8000:8000 \
    --name storyteller-api \
    --network storyteller \
    registry.gitlab.com/smoores/storyteller/api:latest
 ```
-
-To test that the API is up and running, you can use
-[curl](https://curl.se/docs/tutorial.html) or a web browser to access
-`http://localhost:8000/`. If the API has successfully started, you should see
-the response `{ "Hello": "World" }`.
 
 ### Running the web interface
 
@@ -121,33 +97,28 @@ The web interface image is available at
 The web interface listens on port 8001 by default, and this can be configured
 with the `PORT` environment variable.
 
-You'll also need to instruct the web interface on where to find your API server.
-You can do this with the `STORYTELLER_API_HOST` and
-`PUBLIC_STORYTELLER_API_HOST` environment variables. The former will instruct
-the web interface backend on how to reach the server (this uses the docker
-network we set up earlier), while the latter instructs the web UI frontend on
-how to reach the server (this uses the exposed port on the host).
-`PUBLIC_STORYTELLER_API_HOST` is only required in a setup like the one we've
-used here; if you have a reverse proxy in front of your API or are otherwise
-using a non-localhost address to access the services on your machine, you likely
-don't need it.
+You'll also need to instruct the web interface on where to find your API server,
+which you can do with the `STORYTELLER_API_HOST` environment variable. Since
+we're running the API server on our custom Docker network in this example, we
+can use the container name as its host name, as shown below.
 
-If you've followed the above instructions, and are running the API server
-locally on port 8000, then the following command will run the web interface on
-port 8001, connected to your local API server. Note that the storyteller API
-port should always be 8000 in the environment variable, even if you've exposed
-it as a different port on your host machine:
+The following command will run the web interface on port 8001, connected to your
+local API server:
 
 ```shell
 docker run \
    -it \
    -e STORYTELLER_API_HOST=http://storyteller-api:8000 \
-   -e PUBLIC_STORYTELLER_API_HOST=http://localhost:8000 \
    -p 8001:8001 \
    --name storyteller-web \
    --network storyteller \
    registry.gitlab.com/smoores/storyteller/web:latest
 ```
+
+To test that the API is up and running, you can use
+[curl](https://curl.se/docs/tutorial.html) or a web browser to access
+`http://localhost:8001/api/`. If the API has successfully started, you should
+see the response `{ "Hello": "World" }`.
 
 ## Now what?
 

@@ -1,10 +1,10 @@
 import styles from "./page.module.css"
 import { BookList } from "@/components/books/BookList"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { ApiClient, ApiClientError } from "@/apiClient"
 import { BookDetail, Token } from "@/apiModels"
-import { apiHost } from "./apiHost"
+import { rootPath } from "./apiHost"
 
 export const dynamic = "force-dynamic"
 
@@ -16,7 +16,8 @@ export default async function Home() {
   }
 
   const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const client = new ApiClient(apiHost, token.access_token)
+  const origin = headers().get("x-storyteller-origin")!
+  const client = new ApiClient(origin, rootPath, token.access_token)
 
   let books: BookDetail[] = []
 
@@ -50,6 +51,14 @@ export default async function Home() {
     <main className={styles["main"]}>
       <h2>Your books</h2>
       <BookList books={books} />
+      <p>
+        You&apos;re running Storyteller v2! There are no breaking changes, but
+        if you haven&apos;t yet,{" "}
+        <a href="https://smoores.gitlab.io/storyteller/docs/migrations/from-v1-to-v2">
+          take a look at the docs
+        </a>{" "}
+        to see how you can simplify your Storyteller setup.
+      </p>
     </main>
   )
 }

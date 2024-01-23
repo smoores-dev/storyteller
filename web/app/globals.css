@@ -95,9 +95,13 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-a {
+header a {
   color: inherit;
   text-decoration: none;
+}
+
+a {
+  color: #b74c0f;
 }
 
 @media (prefers-color-scheme: dark) {
