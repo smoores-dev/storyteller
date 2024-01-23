@@ -1,0 +1,8 @@
+{
+  "label": "Migrations",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "When updating across major versions, you may need to make changes to your server configuration. These docs outline the necessary changes for each major version."
+  }
+}
