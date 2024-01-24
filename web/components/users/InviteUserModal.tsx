@@ -46,7 +46,6 @@ export function InviteUserModal() {
         <form
           className={styles["invite-user-form"]}
           onSubmit={async (event) => {
-            console.log(event)
             event.preventDefault()
 
             await client.createInvite({

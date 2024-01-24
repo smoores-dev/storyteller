@@ -2,7 +2,7 @@ import { ApiClient } from "@/apiClient"
 import { getCookieDomain } from "@/cookies"
 import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { rootPath } from "../apiHost"
+import { apiHost, rootPath } from "../apiHost"
 import styles from "./page.module.css"
 
 export default function InitPage() {
@@ -18,8 +18,7 @@ export default function InitPage() {
     const cookieOrigin = headers().get("Origin")
     const domain = getCookieDomain(cookieOrigin)
 
-    const origin = headers().get("x-storyteller-origin")!
-    const client = new ApiClient(origin, rootPath)
+    const client = new ApiClient(apiHost, rootPath)
     const token = await client.createAdminUser({
       email: email,
       full_name: fullName,

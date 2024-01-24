@@ -1,10 +1,10 @@
 import styles from "./page.module.css"
 import { BookList } from "@/components/books/BookList"
 import { redirect } from "next/navigation"
-import { cookies, headers } from "next/headers"
+import { cookies } from "next/headers"
 import { ApiClient, ApiClientError } from "@/apiClient"
 import { BookDetail, Token } from "@/apiModels"
-import { rootPath } from "./apiHost"
+import { apiHost, rootPath } from "./apiHost"
 
 export const dynamic = "force-dynamic"
 
@@ -16,8 +16,7 @@ export default async function Home() {
   }
 
   const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const origin = headers().get("x-storyteller-origin")!
-  const client = new ApiClient(origin, rootPath, token.access_token)
+  const client = new ApiClient(apiHost, rootPath, token.access_token)
 
   let books: BookDetail[] = []
 

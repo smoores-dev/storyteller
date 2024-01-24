@@ -3,7 +3,8 @@ import { ApiHostContext } from "@/contexts/ApiHostContext"
 import { useContext, useRef } from "react"
 
 export function useApiClient() {
-  const { origin, rootPath } = useContext(ApiHostContext)
+  const { rootPath } = useContext(ApiHostContext)
+  const origin = window.location.origin
 
   return useRef(new ApiClient(origin, rootPath)).current
 }
