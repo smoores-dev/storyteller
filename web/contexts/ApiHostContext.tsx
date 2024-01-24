@@ -2,10 +2,10 @@
 
 import { ReactNode, createContext } from "react"
 
-export const ApiHostContext = createContext({ origin: "", rootPath: "" })
+export const ApiHostContext = createContext({ rootPath: "" })
 
 type Props = {
-  value: { origin: string; rootPath: string }
+  value: { rootPath: string }
   children: ReactNode
 }
 
