@@ -153,7 +153,6 @@ def get_transcription_filename(chapter_filename: str):
     chapter_name, _ = os.path.splitext(chapter_basename)
     return PurePath(chapter_path, "..", "transcriptions", f"{chapter_name}.json")
 
-
 def transcribe_chapter(
     filename: str,
     device: str,
@@ -161,6 +160,7 @@ def transcribe_chapter(
     align_model: transformers.models.wav2vec2.Wav2Vec2ForCTC,
     align_metadata: dict,
 ):
+
     print(f"Transcribing audio file {filename}")
     transcription_filename = get_transcription_filename(filename)
 
@@ -174,7 +174,7 @@ def transcribe_chapter(
     audio = whisperx.load_audio(filename)
 
     print("Transcribing audio")
-    unaligned = transcribe_model.transcribe(audio, batch_size=16)
+    unaligned = transcribe_model.transcribe(audio, batch_size=batch_size)
 
     print("Aligning transcription")
     transcription = whisperx.align(
@@ -236,7 +236,7 @@ def transcribe_book(
     model = whisperx.load_model(
         "base.en",
         device=device,
-        compute_type="int8",
+        compute_type=compute_type,
         asr_options={
             "word_timestamps": True,
             "initial_prompt": initial_prompt,
