@@ -42,10 +42,11 @@ publish-cuda-api:
   services:
     - name: docker:20.10.16-dind
       alias: docker
+  tags: [cuda]
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker context create gitlab-ci
-    - docker buildx create --use --driver=docker-container gitlab-ci
+    - docker buildx create --use --driver=kubernetes gitlab-ci
   script:
     - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda,mode=max --tag $CI_REGISTRY_IMAGE/api:cuda .
 
