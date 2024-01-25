@@ -33,9 +33,7 @@ export class ApiClient {
   }
 
   getSyncedDownloadUrl(bookId: number) {
-    const url = new URL(`${this.rootPath}/books/${bookId}/synced`, this.origin)
-
-    return url.toString()
+    return `${this.rootPath}/books/${bookId}/synced`
   }
 
   async needsInit(): Promise<boolean> {
