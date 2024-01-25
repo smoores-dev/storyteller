@@ -75,7 +75,7 @@ DRM can be downloaded as EPUB files.
 
 ## Using CUDA for GPU accelerated transcription
 
-> Note: The mininum supported CUDA version is 11.8.
+> Note: The minimum supported CUDA version is 11.8.
 
 The transcription phase can be fairly slow on a CPU, but it can be sped up
 quite dramatically with a CUDA-enabled GPU. There are a few steps you'll need
