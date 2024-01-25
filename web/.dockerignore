@@ -1,6 +1,5 @@
 .dockerignore
 node_modules
-.yarn/cache
 .yarn/unplugged
 .yarn/install-state.gz
 .pnp.*
