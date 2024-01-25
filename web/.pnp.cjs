@@ -469,7 +469,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@swc-helpers-npm-0.5.2-f81ca286ad-51d7e3d8bd.zip/node_modules/@swc/helpers/",\
           "packageDependencies": [\
             ["@swc/helpers", "npm:0.5.2"],\
-            ["tslib", "npm:2.5.3"]\
+            ["tslib", "npm:2.6.2"]\
           ],\
           "linkType": "HARD"\
         }]\
@@ -4027,14 +4027,14 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
       ]],\
       ["next", [\
         ["npm:14.1.0", {\
-          "packageLocation": "./.yarn/cache/next-npm-14.1.0-a62036d298-86da657864.zip/node_modules/next/",\
+          "packageLocation": "./.yarn/cache/next-npm-14.1.0-a62036d298-077fd76a6f.zip/node_modules/next/",\
           "packageDependencies": [\
             ["next", "npm:14.1.0"]\
           ],\
           "linkType": "SOFT"\
         }],\
         ["virtual:5f667c73984ed00ed0af2d2ee5bb7487501bcb7981faa0f3174f6b4e10779d128272858d90e1bd616db7bd20b70e6922af9582ba35aeace0a368e003ee8b65c2#npm:14.1.0", {\
-          "packageLocation": "./.yarn/__virtual__/next-virtual-4f6d33ade6/0/cache/next-npm-14.1.0-a62036d298-86da657864.zip/node_modules/next/",\
+          "packageLocation": "./.yarn/__virtual__/next-virtual-4f6d33ade6/0/cache/next-npm-14.1.0-a62036d298-077fd76a6f.zip/node_modules/next/",\
           "packageDependencies": [\
             ["next", "virtual:5f667c73984ed00ed0af2d2ee5bb7487501bcb7981faa0f3174f6b4e10779d128272858d90e1bd616db7bd20b70e6922af9582ba35aeace0a368e003ee8b65c2#npm:14.1.0"],\
             ["@next/env", "npm:14.1.0"],\
@@ -5567,6 +5567,13 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/tslib-npm-2.5.3-7756051e02-88902b309a.zip/node_modules/tslib/",\
           "packageDependencies": [\
             ["tslib", "npm:2.5.3"]\
+          ],\
+          "linkType": "HARD"\
+        }],\
+        ["npm:2.6.2", {\
+          "packageLocation": "./.yarn/cache/tslib-npm-2.6.2-4fc8c068d9-329ea56123.zip/node_modules/tslib/",\
+          "packageDependencies": [\
+            ["tslib", "npm:2.6.2"]\
           ],\
           "linkType": "HARD"\
         }]\
