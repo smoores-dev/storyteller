@@ -19,6 +19,18 @@ export async function middleware(request: NextRequest) {
       referrerPolicy: request.referrerPolicy,
       keepalive: request.keepalive,
     })
+    // HACK - Next.js neither preserves nor sets content-length for responses returned
+    // from middleware. We have MODIFIED our copy of Next.js in this repo to inspect
+    // body.length to determine content-length, because it is required for downloads.
+    //
+    // Note: Do not update Next.js version without reinstating this hack.
+    // Set resHeaders['content-length'] = middlewareRes.body?.length in
+    // next/dist/server/lib/router-utils/resolve-routes.js
+    const contentLength = response.headers.get("content-length")
+    if (response.body && contentLength) {
+      ;(response.body as any).length = contentLength
+    }
+    // ENDHACK
     return response
   }
 
