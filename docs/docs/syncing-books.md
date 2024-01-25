@@ -75,6 +75,8 @@ DRM can be downloaded as EPUB files.
 
 ## Using CUDA for GPU accelerated transcription
 
+> Note: The minimum supported CUDA version is 11.8.
+
 The transcription phase can be fairly slow on a CPU, but it can be sped up
 quite dramatically with a CUDA-enabled GPU. There are a few steps you'll need
 to follow to do so.
@@ -85,9 +87,18 @@ to follow to do so.
    ["Configuration Docker"](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker)
    section as well.
 2. Update your `compose.yaml` file or docker CLI commands:
-   a. Replace the `api:latest` image tag with `api:cuda` (note that this image
-   is _much_ larger and may take a while to download)
-   b. Add `runtime: nvidia` to the `api` service stanza. You can add it right
-   below the `image` property
-   c. Set the environment variables `STORYTELLER_DEVICE=cuda` and `NVIDIA_VISIBLE_DEVICES=all` in the environment
-   stanza for the `api` service.
+   
+    a. Replace the `api:latest` image tag with `api:cuda` (note that this image
+    is _much_ larger and may take a while to download)
+
+    b. Add `runtime: nvidia` to the `api` service stanza. You can add it right
+    below the `image` property
+
+### CUDA Environment Variables
+
+| Parameter | Description | Default | CUDA Options |
+| ------ | ------ | ------ | ------ |
+|STORYTELLER_DEVICE (required)|The device Storyteller will use to process files.|`cpu`| `gpu` |
+|NVIDIA_VISIBLE_DEVICES (required)|Expose NVIDIA GPU to container.|`none`| `all`|
+|STORYTELLER_BATCH_SIZE (optional)|Number of audio chunks being processed at a single time. Decrease this value if you are running into out of memory errors.|`16`|minumum value of `1`|
+|STORYTELLER_COMPUTE_TYPE (optional)|Helps with reducing the model size and accelerate its execution. Increasing this value may impact quality.|`int8`|[See CTranslate2 documentation.](https://opennmt.net/CTranslate2/quantization.html#implicit-type-conversion-on-load)|
