@@ -17,6 +17,8 @@ from .files import AUDIO_DIR
 from .epub import get_chapters, get_chapter_text, read_epub
 from .prompt import generate_initial_prompt
 
+from ..api import config
+
 
 def get_audio_directory(book_name: str):
     return f"{AUDIO_DIR}/{book_name}/"
@@ -153,14 +155,15 @@ def get_transcription_filename(chapter_filename: str):
     chapter_name, _ = os.path.splitext(chapter_basename)
     return PurePath(chapter_path, "..", "transcriptions", f"{chapter_name}.json")
 
+
 def transcribe_chapter(
     filename: str,
     device: str,
     transcribe_model: whisperx.asr.FasterWhisperPipeline,
     align_model: transformers.models.wav2vec2.Wav2Vec2ForCTC,
     align_metadata: dict,
+    batch_size: int,
 ):
-
     print(f"Transcribing audio file {filename}")
     transcription_filename = get_transcription_filename(filename)
 
@@ -218,6 +221,8 @@ def transcribe_book(
     audio_book_name: str,
     epub_book_name: str,
     device: str = "cpu",
+    batch_size: int = 16,
+    compute_type: str = "int8",
     on_progress: Callable[[float], None] | None = None,
 ):
     book_dir = get_audio_directory(audio_book_name)
@@ -246,6 +251,6 @@ def transcribe_book(
     align_model, metadata = whisperx.load_align_model(language_code="en", device=device)
 
     for i, f in enumerate(audio_chapter_filenames):
-        transcribe_chapter(f, device, model, align_model, metadata)
+        transcribe_chapter(f, device, model, align_model, metadata, batch_size)
         if on_progress is not None:
             on_progress((i + 1) / len(audio_chapter_filenames))
