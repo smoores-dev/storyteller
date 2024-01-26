@@ -83,6 +83,8 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
                     book.audio_filename,
                     book.epub_filename,
                     config.device,
+                    config.batch_size,
+                    config.compute_type,
                     on_progress,
                 ],
             )
