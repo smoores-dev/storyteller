@@ -39,7 +39,9 @@ def read_epub(book_name: str):
             links = head.find_all("link")
             for link in links:
                 item.add_link(
-                    href=link["href"], rel=" ".join(link["rel"]), type=link["type"]
+                    href=link["href"],
+                    rel=" ".join(link.get("rel", [])),
+                    type=link["type"],
                 )
     return book
 
