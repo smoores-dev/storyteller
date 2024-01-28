@@ -1,18 +1,21 @@
-import React from "react";
-import clsx from "clsx";
-import styles from "./styles.module.css";
-import Link from "@docusaurus/Link";
+import React from "react"
+import clsx from "clsx"
+import styles from "./styles.module.css"
+import Link from "@docusaurus/Link"
+import SyncSvg from "@site/static/img/ebook-audiobook-sync.svg"
+import DevicesSvg from "@site/static/img/devices.svg"
+import LibrarySvg from "@site/static/img/library.svg"
 
 type FeatureItem = {
-  title: string;
-  Svg: React.ComponentType<React.ComponentProps<"svg">>;
-  description: JSX.Element;
-};
+  title: string
+  Svg: React.ComponentType<React.ComponentProps<"svg">>
+  description: JSX.Element
+}
 
 const FeatureList: FeatureItem[] = [
   {
     title: "Sync your audiobooks and ebooks",
-    Svg: require("@site/static/img/ebook-audiobook-sync.svg").default,
+    Svg: SyncSvg,
     description: (
       <>
         Storyteller is a platform for automatically syncing audiobooks and
@@ -22,7 +25,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "Read or listen however you choose",
-    Svg: require("@site/static/img/devices.svg").default,
+    Svg: DevicesSvg,
     description: (
       <>
         Storyteller produces EPUB 3 compliant ebook files. You can read them
@@ -37,17 +40,17 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "Own your books",
-    Svg: require("@site/static/img/library.svg").default,
+    Svg: LibrarySvg,
     description: (
       <>
         Storyteller is completely{" "}
         <Link to="/docs/getting-started">self-hosted</Link>. All of your books
-        stay on your hardware, and you're free to move, copy, and back them up
-        as needed.
+        stay on your hardware, and you&apos;re free to move, copy, and back them
+        up as needed.
       </>
     ),
   },
-];
+]
 
 function Feature({ title, Svg, description }: FeatureItem) {
   return (
@@ -60,7 +63,7 @@ function Feature({ title, Svg, description }: FeatureItem) {
         <p>{description}</p>
       </div>
     </div>
-  );
+  )
 }
 
 export default function HomepageFeatures(): JSX.Element {
@@ -74,5 +77,5 @@ export default function HomepageFeatures(): JSX.Element {
         </div>
       </div>
     </section>
-  );
+  )
 }

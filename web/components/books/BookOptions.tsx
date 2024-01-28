@@ -65,7 +65,7 @@ export function BookOptions({ book, onUpdate }: Props) {
               inputRef.current.files[0],
               ({ progress }) => {
                 setUploadProgress(progress ?? null)
-              }
+              },
             )
           }}
         >

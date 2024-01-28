@@ -17,10 +17,10 @@ export default function BookUpload({ onSubmit }: Props) {
   const epubInputRef = useRef<HTMLInputElement | null>(null)
   const audioInputRef = useRef<HTMLInputElement | null>(null)
   const [epubUploadProgress, setEpubUploadProgress] = useState<number | null>(
-    null
+    null,
   )
   const [audioUploadProgress, setAudioUploadProgress] = useState<number | null>(
-    null
+    null,
   )
   const [book, setBook] = useState<BookDetail | null>(null)
 
@@ -78,7 +78,7 @@ export default function BookUpload({ onSubmit }: Props) {
             audioInputRef.current.files[0],
             ({ progress }) => {
               setAudioUploadProgress(progress ?? null)
-            }
+            },
           )
         }}
       >

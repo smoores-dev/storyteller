@@ -31,7 +31,10 @@ publish-api:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/api:latest .
+    - docker buildx build --push -f Dockerfile.api --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE/api:latest .
 
 publish-cuda-api:
   image: docker:20.10.16
@@ -48,7 +51,10 @@ publish-cuda-api:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda,mode=max --tag $CI_REGISTRY_IMAGE/api:cuda .
+    - docker buildx build --push -f Dockerfile.api --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda,mode=max --tag
+      $CI_REGISTRY_IMAGE/api:cuda .
 
 publish-web:
   image: docker:20.10.16
@@ -64,4 +70,7 @@ publish-web:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.web --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/web:latest web
+    - docker buildx build --push -f Dockerfile.web --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE/web:latest web
