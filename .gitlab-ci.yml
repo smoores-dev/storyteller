@@ -18,12 +18,12 @@ check-api:
   needs: []
   script:
     - export DEBIAN_FRONTEND=noninteractive PYTHONFAULTHANDLER=1
-      PYTHONUNBUFFERED=1 PYTHONHASHSEED=random
-    - apt-get update
-    - apt-get -y install --no-install-recommends wget swig libpulse-dev
-      libasound2-dev ffmpeg libavcodec-extra PIP_NO_CACHE_DIR=off
+      PYTHONUNBUFFERED=1 PYTHONHASHSEED=random PIP_NO_CACHE_DIR=off
       PIP_DISABLE_PIP_VERSION_CHECK=on PIP_DEFAULT_TIMEOUT=100
       POETRY_VERSION=1.7.1
+    - apt-get update
+    - apt-get -y install --no-install-recommends wget swig libpulse-dev
+      libasound2-dev ffmpeg libavcodec-extra
     - pip install "poetry==$POETRY_VERSION"
     - poetry install --no-interaction --no-ansi
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
