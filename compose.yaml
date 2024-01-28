@@ -16,9 +16,9 @@ services:
       # improve performance.
       - ~/Documents/Storyteller:/data:rw
     # environment:
-      # Uncomment for CUDA
-      # - STORYTELLER_DEVICE=cuda
-      # - NVIDIA_VISIBLE_DEVICES=all
+    # Uncomment for CUDA
+    # - STORYTELLER_DEVICE=cuda
+    # - NVIDIA_VISIBLE_DEVICES=all
 
   web:
     image: registry.gitlab.com/smoores/storyteller/web:latest

@@ -15,13 +15,7 @@
     "**/.yarn": true,
     "**/.pnp.*": true
   },
-  "eslint.nodePath": "web/.yarn/sdks",
-  "eslint.options": {
-    "overrideConfigFile": "web/.eslintrc.json"
-  },
-  "prettier.prettierPath": "web/.yarn/sdks/prettier/index.js",
-  "prettier.configPath": "web/.prettierrc.json",
-  "typescript.tsdk": "web/.yarn/sdks/typescript/lib",
+  "eslint.experimental.useFlatConfig": true,
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

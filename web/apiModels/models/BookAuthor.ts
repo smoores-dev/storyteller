@@ -3,9 +3,8 @@
 /* eslint-disable */
 
 export type BookAuthor = {
-    id: number;
-    name: string;
-    file_as: string;
-    role: (string | null);
-};
-
+  id: number
+  name: string
+  file_as: string
+  role: string | null
+}

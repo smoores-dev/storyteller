@@ -41,7 +41,7 @@ export default async function InvitePage(props: Props) {
     cookieStore.set(
       "st_token",
       Buffer.from(JSON.stringify(token)).toString("base64"),
-      { secure: true, domain, sameSite: "lax" }
+      { secure: true, domain, sameSite: "lax" },
     )
 
     redirect("/")

@@ -12,7 +12,10 @@ import {
 } from "./apiModels"
 
 export class ApiClientError extends Error {
-  constructor(public statusCode: number, public statusMessage: string) {
+  constructor(
+    public statusCode: number,
+    public statusMessage: string,
+  ) {
     const message = `${statusCode}: ${statusMessage}`
     super(message)
     this.name = "ApiClientError"
@@ -23,7 +26,7 @@ export class ApiClient {
   constructor(
     private origin: string,
     private rootPath: string,
-    private accessToken?: string
+    private accessToken?: string,
   ) {}
 
   getHeaders() {
@@ -228,14 +231,14 @@ export class ApiClient {
 
   async uploadBookEpub(
     file: File,
-    onUploadProgress: (progressEvent: AxiosProgressEvent) => void
+    onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<BookDetail> {
     const url = new URL(`${this.rootPath}/books/epub`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
       { file },
-      { withCredentials: true, onUploadProgress }
+      { withCredentials: true, onUploadProgress },
     )
 
     if (response.status > 299) {
@@ -249,14 +252,14 @@ export class ApiClient {
   async uploadBookAudio(
     bookId: number,
     file: File,
-    onUploadProgress: (progressEvent: AxiosProgressEvent) => void
+    onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<void> {
     const url = new URL(`${this.rootPath}/books/${bookId}/audio`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
       { file },
-      { withCredentials: true, onUploadProgress }
+      { withCredentials: true, onUploadProgress },
     )
 
     if (response.status > 299) {
@@ -267,14 +270,14 @@ export class ApiClient {
   async uploadBookCover(
     bookId: number,
     file: File,
-    onUploadProgress: (progressEvent: AxiosProgressEvent) => void
+    onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<void> {
     const url = new URL(`${this.rootPath}/books/${bookId}/cover`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
       { file },
-      { withCredentials: true, onUploadProgress }
+      { withCredentials: true, onUploadProgress },
     )
 
     if (response.status > 299) {

@@ -25,7 +25,7 @@ export default function Login() {
     cookieStore.set(
       "st_token",
       Buffer.from(JSON.stringify(token)).toString("base64"),
-      { secure, domain: domain, sameSite: "lax", httpOnly: true }
+      { secure, domain: domain, sameSite: "lax", httpOnly: true },
     )
 
     redirect("/")
