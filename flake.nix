@@ -32,7 +32,7 @@
             # Make libstdc++.so.6 available to pytorch
             libstdcpp = pkgs.stdenv.cc.cc.lib;
             ffmpeg = pkgs.ffmpeg;
-            # Use Python 3.10
+            # Use Python 3.11
             python3 = pkgs.python311;
             nodejs = pkgs.nodejs_18;
             yarn = pkgs.yarn.override { inherit nodejs; };
