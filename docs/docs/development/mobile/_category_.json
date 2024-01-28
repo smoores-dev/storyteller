@@ -1,0 +1,8 @@
+{
+  "label": "Mobile Development",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "This section details the process for developing the Storyteller mobile apps locally."
+  }
+}
