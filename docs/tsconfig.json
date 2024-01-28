@@ -4,5 +4,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "module": "Node16",
+    "incremental": true,
   },
 }
