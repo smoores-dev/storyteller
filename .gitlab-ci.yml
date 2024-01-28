@@ -29,6 +29,7 @@ check-api:
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     - apt-get install -y --no-install-recommends nodejs
     - corepack enable
+    - yarn workspaces focus storyteller
     - ./scripts/check.sh
 
 pages:
