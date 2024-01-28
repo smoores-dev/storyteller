@@ -21,7 +21,8 @@
     "dev:web": "yarn workspace @storyteller/web dev",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint --cache --fix .",
-    "fix": "concurrently -P 'npm:fix:*'"
+    "fix": "concurrently -P 'npm:fix:*'",
+    "postinstall": "husky"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.0.0",
@@ -37,11 +38,16 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^9.0.6",
+    "lint-staged": "^15.2.0",
     "next": "^14.1.0",
     "prettier": "^3.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.3.3",
     "typescript-plugin-css-modules": "^5.0.2"
+  },
+  "dependencies": {
+    "@types/lint-staged": "^13.3.0"
   }
 }
