@@ -10,19 +10,19 @@ WORKDIR /app
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
 COPY .yarn/cache ./.yarn/cache
-RUN yarn
-
+COPY web/package.json ./web/package.json
+RUN yarn workspaces focus @storyteller/web
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/.yarn ./.yarn
-COPY --from=deps /app/.pnp.cjs ./
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN yarn build
+RUN yarn build:web
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -36,22 +36,9 @@ RUN adduser --system --uid 1001 nextjs
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-
-# Copying the entire yarn cache because of an issue with next / @vercel/nft
-# https://github.com/vercel/next.js/discussions/34600
-RUN rm -rf ./.yarn/cache
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/cache ./.yarn/cache
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/unplugged ./.yarn/unplugged
-
-# Standalone doesn't really support PnP, so we have to manually
-# copy over some additional files from the builder
-COPY --from=builder --chown=nextjs:nodejs /app/.pnp.cjs ./
-COPY --from=builder --chown=nextjs:nodejs /app/.yarnrc.yml ./
-COPY --from=builder --chown=nextjs:nodejs /app/yarn.lock ./
-COPY --from=builder --chown=nextjs:nodejs /app/.yarn/releases ./.yarn/releases
+COPY --from=builder --chown=nextjs:nodejs /app/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/web/.next/static ./web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/web/public ./web/public
 
 USER nextjs
 
@@ -59,5 +46,6 @@ EXPOSE 8001
 
 ENV PORT 8001
 ENV HOST 0.0.0.0
+ENV NEXT_SHARP_PATH /app/node_modules/sharp
 
-CMD ["yarn", "node", "server.js"]
+CMD ["node", "web/server.js"]
