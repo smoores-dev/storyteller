@@ -42,6 +42,7 @@
     "lint-staged": "^15.2.0",
     "next": "^14.1.0",
     "prettier": "^3.2.4",
+    "pyright": "^1.1.348",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.3.3",
