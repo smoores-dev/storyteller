@@ -13,7 +13,7 @@ check-web:
     - yarn check
 
 check-api:
-  image: python:3-11-slim
+  image: python:3.11-slim
   stage: check
   needs: []
   script:
