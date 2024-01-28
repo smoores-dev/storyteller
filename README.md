@@ -2,17 +2,26 @@
 
 [![Join the chat at https://gitter.im/smoores/storyteller](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/smoores/storyteller?utm_source=badge&utm_medium=badge&utm_content=badge)
 
-Want to get started? [Head over to the documentation site](https://smoores.gitlab.io/storyteller/)!
+Want to get started?
+[Head over to the documentation site](https://smoores.gitlab.io/storyteller/)!
 
-Storyteller is a self-hosted platform for creating and reading ebooks with synced narration. It's made of of three components: the API server, the web interface, and the mobile apps. Together, these components allow you to take audiobooks and ebooks that you already own and automatically synchronize them, as well as read or listen to (or both!) the resulting synced books.
+Storyteller is a self-hosted platform for creating and reading ebooks with
+synced narration. It's made of of three components: the API server, the web
+interface, and the mobile apps. Together, these components allow you to take
+audiobooks and ebooks that you already own and automatically synchronize them,
+as well as read or listen to (or both!) the resulting synced books.
 
 ## Status
 
-This project is in **public beta**. If it looks interesting to you, please, give it a whirl! Just know that there may still be some bugs. If you run into one of them, don't hesitate to [open an issue on GitLab](https://gitlab.com/smoores/storyteller/-/issues/)!
+This project is in **public beta**. If it looks interesting to you, please, give
+it a whirl! Just know that there may still be some bugs. If you run into one of
+them, don't hesitate to
+[open an issue on GitLab](https://gitlab.com/smoores/storyteller/-/issues/)!
 
 ## How it works
 
-Check out the docs to learn more about [how Storyteller's forced alignment algorithm works](https://smoores.gitlab.io/storyteller/docs/how-it-works/the-algorithm).
+Check out the docs to learn more about
+[how Storyteller's forced alignment algorithm works](https://smoores.gitlab.io/storyteller/docs/how-it-works/the-algorithm).
 
 ## Contributors
 

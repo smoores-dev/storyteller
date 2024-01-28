@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
 
   const client = new ApiClient(
     apiHost,
-    process.env["STORYTELLER_ROOT_PATH"] ?? ""
+    process.env["STORYTELLER_ROOT_PATH"] ?? "",
   )
 
   try {
