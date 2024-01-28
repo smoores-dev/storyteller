@@ -17,8 +17,6 @@ from .files import AUDIO_DIR
 from .epub import get_chapters, get_chapter_text, read_epub
 from .prompt import generate_initial_prompt
 
-from ..api import config
-
 
 def get_audio_directory(book_name: str):
     return f"{AUDIO_DIR}/{book_name}/"

@@ -1,5 +1,6 @@
 {
   "python.analysis.typeCheckingMode": "basic",
+  "python.languageServer": "Pylance",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit"
