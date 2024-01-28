@@ -22,7 +22,7 @@ check-api:
       PIP_DISABLE_PIP_VERSION_CHECK=on PIP_DEFAULT_TIMEOUT=100
       POETRY_VERSION=1.7.1
     - apt-get update
-    - apt-get -y install --no-install-recommends wget swig libpulse-dev
+    - apt-get -y install --no-install-recommends curl wget swig libpulse-dev
       libasound2-dev ffmpeg libavcodec-extra
     - pip install "poetry==$POETRY_VERSION"
     - poetry install --no-interaction --no-ansi
