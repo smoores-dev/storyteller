@@ -7,10 +7,10 @@
     "context": "..",
     "args": {
       // Update 'VARIANT' to pick a Python version: 3, 3.6, 3.7, 3.8, 3.9
-      "VARIANT": "3.10",
+      "VARIANT": "3.11",
       // Options
       "INSTALL_NODE": "true",
-      "NODE_VERSION": "lts/*",
+      "NODE_VERSION": "18",
     },
   },
 
@@ -22,6 +22,8 @@
         "ms-python.vscode-pylance",
         "ms-azuretools.vscode-docker",
         "ms-python.black-formatter",
+        "arcanis.vscode-zipfs",
+        "esbenp.prettier-vscode",
       ],
     },
   },
