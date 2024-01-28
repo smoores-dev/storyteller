@@ -9,6 +9,7 @@ check-web:
   stage: check
   needs: []
   script:
+    - yarn
     - yarn check
 
 pages:
@@ -19,6 +20,7 @@ pages:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
+    - yarn workspaces focus @storyteller/docs
     - yarn build:docs
   artifacts:
     paths:
