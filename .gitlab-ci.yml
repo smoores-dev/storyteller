@@ -1,18 +1,25 @@
 stages: # List of stages for jobs, and their order of execution
+  - check
   - publish-docs
   - publish-api
   - publish-web
 
+check-web:
+  image: node:18-alpine
+  stage: check
+  needs: []
+  script:
+    - yarn check
+
 pages:
   image: node:18-alpine
   stage: publish-docs
-  needs: []
+  needs:
+    - check-web
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
-    - cd docs
-    - yarn
-    - yarn build
+    - yarn build:docs
   artifacts:
     paths:
       - public
@@ -31,7 +38,7 @@ publish-api:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.api --cache-from
+    - docker buildx build --push -f docker/api.Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag
       $CI_REGISTRY_IMAGE/api:latest .
@@ -51,7 +58,7 @@ publish-cuda-api:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.api --cache-from
+    - docker buildx build --push -f docker/api.Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda,mode=max --tag
       $CI_REGISTRY_IMAGE/api:cuda .
@@ -59,7 +66,8 @@ publish-cuda-api:
 publish-web:
   image: docker:20.10.16
   stage: publish-web
-  needs: []
+  needs:
+    - check-web
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   services:
@@ -70,7 +78,7 @@ publish-web:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.web --cache-from
+    - docker buildx build --push -f docker/web.Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE/web:latest web
+      $CI_REGISTRY_IMAGE/web:latest .

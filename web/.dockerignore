@@ -1,9 +1,0 @@
-.dockerignore
-node_modules
-.yarn/unplugged
-.yarn/install-state.gz
-.pnp.*
-npm-debug.log
-README.md
-.next
-.env.local

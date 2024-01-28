@@ -1,0 +1,10 @@
+*
+!/package.json
+!/yarn.lock
+!/.yarnrc.yml
+!/.yarn
+!/web
+/web/.next
+/web/node_modules
+
+/docker
