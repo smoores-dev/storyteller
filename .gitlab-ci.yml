@@ -17,15 +17,17 @@ check-api:
   stage: check
   needs: []
   script:
-    - apt-get update && export DEBIAN_FRONTEND=noninteractive
+    - export DEBIAN_FRONTEND=noninteractive PYTHONFAULTHANDLER=1
+      PYTHONUNBUFFERED=1 PYTHONHASHSEED=random
+    - apt-get update
     - apt-get -y install --no-install-recommends wget swig libpulse-dev
-      libasound2-dev ffmpeg libavcodec-extra
-    - export PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 PYTHONHASHSEED=random
-      PIP_NO_CACHE_DIR=off PIP_DISABLE_PIP_VERSION_CHECK=on
-      PIP_DEFAULT_TIMEOUT=100 POETRY_VERSION=1.7.1
+      libasound2-dev ffmpeg libavcodec-extra PIP_NO_CACHE_DIR=off
+      PIP_DISABLE_PIP_VERSION_CHECK=on PIP_DEFAULT_TIMEOUT=100
+      POETRY_VERSION=1.7.1
     - pip install "poetry==$POETRY_VERSION"
     - poetry install --no-interaction --no-ansi
-    - apt install node
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y --no-install-recommends nodejs
     - corepack enable
     - ./scripts/check.sh
 
