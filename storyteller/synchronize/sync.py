@@ -371,6 +371,10 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
     return duration
 
 
+def get_sync_cache_path(book_name: str):
+    return f"{CACHE_DIR}/{book_name}.json"
+
+
 def sync_book(
     ebook_name: str,
     audiobook_name: str,
@@ -388,8 +392,9 @@ def sync_book(
 
     Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
-    if os.path.exists(f"{CACHE_DIR}/{ebook_name}.json"):
-        with open(f"{CACHE_DIR}/{ebook_name}.json", "r") as cache_file:
+    sync_cache_path = get_sync_cache_path(ebook_name)
+    if os.path.exists(sync_cache_path):
+        with open(sync_cache_path, "r") as cache_file:
             book_cache = json.load(cache_file)
 
     if "chapter_index" not in book_cache:
@@ -424,7 +429,7 @@ def sync_book(
                     "start_sentence": 0,
                     "transcription_offset": None,
                 }
-                with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
+                with open(sync_cache_path, "w") as cache_file:
                     json.dump(book_cache, cache_file)
                 if on_progress is not None:
                     on_progress((index + 1) / len(epub_chapters))
@@ -438,7 +443,7 @@ def sync_book(
             "start_sentence": start_sentence,
             "transcription_offset": transcription_offset,
         }
-        with open(f"{CACHE_DIR}/{ebook_name}.json", "w") as cache_file:
+        with open(sync_cache_path, "w") as cache_file:
             json.dump(book_cache, cache_file)
 
         synced = sync_chapter(

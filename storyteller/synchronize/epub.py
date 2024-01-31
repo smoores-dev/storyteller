@@ -23,8 +23,12 @@ class SentenceRange:
     audiofile: str
 
 
+def get_epub_directory(book_name: str):
+    return f"{TEXT_DIR}/{book_name}/"
+
+
 def get_epub_filepath(book_name: str):
-    return f"{TEXT_DIR}/{book_name}/original/{book_name}.epub"
+    return f"{get_epub_directory(book_name)}/original/{book_name}.epub"
 
 
 def read_epub(book_name: str):

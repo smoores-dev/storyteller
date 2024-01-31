@@ -3,8 +3,9 @@
 /* eslint-disable */
 
 export type UserRequest = {
-  username: string
-  email: string
-  full_name: string
-  password: string
-}
+    username: string;
+    email: string;
+    full_name: string;
+    password: string;
+};
+

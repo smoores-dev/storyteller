@@ -3,14 +3,15 @@
 /* eslint-disable */
 
 export type UserPermissions = {
-  book_create: boolean
-  book_read: boolean
-  book_process: boolean
-  book_download: boolean
-  book_list: boolean
-  user_create: boolean
-  user_list: boolean
-  user_read: boolean
-  user_delete: boolean
-  settings_update: boolean
-}
+    book_create: boolean;
+    book_read: boolean;
+    book_process: boolean;
+    book_download: boolean;
+    book_list: boolean;
+    user_create: boolean;
+    user_list: boolean;
+    user_read: boolean;
+    user_delete: boolean;
+    settings_update: boolean;
+};
+

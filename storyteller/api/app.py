@@ -283,6 +283,15 @@ async def get_book_details(book_id: int):
     return book
 
 
+@app.delete(
+    "/books/{book_id}", dependencies=[Depends(auth.has_permission("book_delete"))]
+)
+async def delete_book(book_id: int):
+    book = db.get_book(book_id)
+    assets.delete_assets(book.epub_filename, book.audio_filename)
+    db.delete_book(book_id)
+
+
 @app.get(
     "/books/{book_id}/synced",
     dependencies=[Depends(auth.has_permission("book_download"))],
