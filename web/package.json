@@ -6,7 +6,7 @@
     "dev": "PORT=8001 next dev",
     "build": "next build",
     "start": "next start",
-    "client:gen": "openapi --input http://localhost:8000/openapi.json --output ./apiModels"
+    "client:gen": "openapi --input http://127.0.01:8000/openapi.json --output ./apiModels"
   },
   "dependencies": {
     "@ariakit/react": "^0.2.16",

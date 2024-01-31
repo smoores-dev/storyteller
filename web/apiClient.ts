@@ -212,6 +212,20 @@ export class ApiClient {
     }
   }
 
+  async deleteBook(bookId: number): Promise<void> {
+    const url = new URL(`${this.rootPath}/books/${bookId}`, this.origin)
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
   async listBooks(): Promise<BookDetail[]> {
     const url = new URL(`${this.rootPath}/books`, this.origin)
 

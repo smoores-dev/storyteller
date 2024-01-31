@@ -4,6 +4,7 @@ from .books import (
     get_book_details,
     add_audiofile,
     get_book,
+    delete_book,
 )
 from .processing_tasks import (
     create_processing_task,
@@ -35,6 +36,7 @@ __all__ = [
     "create_invite",
     "create_admin_user",
     "create_user",
+    "delete_book",
     "get_book",
     "get_book_details",
     "get_invite",
