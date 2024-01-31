@@ -14,18 +14,18 @@
     "incremental": true,
     "plugins": [
       {
-        "name": "next"
+        "name": "next",
       },
       {
-        "name": "typescript-plugin-css-modules"
-      }
+        "name": "typescript-plugin-css-modules",
+      },
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
     },
-    "allowJs": true
+    "allowJs": true,
   },
   "extends": ["@tsconfig/strictest"],
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
 }

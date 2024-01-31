@@ -1,18 +1,47 @@
 stages: # List of stages for jobs, and their order of execution
+  - check
   - publish-docs
   - publish-api
   - publish-web
 
+check-web:
+  image: node:18-alpine
+  stage: check
+  needs: []
+  script:
+    - yarn
+    - yarn check
+
+check-api:
+  image: python:3.11-slim
+  stage: check
+  needs: []
+  script:
+    - export DEBIAN_FRONTEND=noninteractive PYTHONFAULTHANDLER=1
+      PYTHONUNBUFFERED=1 PYTHONHASHSEED=random PIP_NO_CACHE_DIR=off
+      PIP_DISABLE_PIP_VERSION_CHECK=on PIP_DEFAULT_TIMEOUT=100
+      POETRY_VERSION=1.7.1
+    - apt-get update
+    - apt-get -y install --no-install-recommends curl wget swig libpulse-dev
+      libasound2-dev ffmpeg libavcodec-extra
+    - pip install "poetry==$POETRY_VERSION"
+    - poetry install --no-interaction --no-ansi
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y --no-install-recommends nodejs
+    - corepack enable
+    - yarn workspaces focus storyteller
+    - ./scripts/check.sh
+
 pages:
   image: node:18-alpine
   stage: publish-docs
-  needs: []
+  needs:
+    - check-web
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
-    - cd docs
-    - yarn
-    - yarn build
+    - yarn workspaces focus @storyteller/docs
+    - yarn build:docs
   artifacts:
     paths:
       - public
@@ -20,7 +49,8 @@ pages:
 publish-api:
   image: docker:20.10.16
   stage: publish-api
-  needs: []
+  needs:
+    - check-api
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   services:
@@ -31,12 +61,16 @@ publish-api:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/api:latest .
+    - docker buildx build --push -f docker/api.Dockerfile --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE/api:latest .
 
 publish-cuda-api:
   image: docker:20.10.16
   stage: publish-api
-  needs: []
+  needs:
+    - check-api
   rules:
     - if: $CI_COMMIT_BRANCH == "cuda"
   services:
@@ -48,12 +82,16 @@ publish-cuda-api:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.api --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda,mode=max --tag $CI_REGISTRY_IMAGE/api:cuda .
+    - docker buildx build --push -f docker/api.Dockerfile --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda,mode=max --tag
+      $CI_REGISTRY_IMAGE/api:cuda .
 
 publish-web:
   image: docker:20.10.16
   stage: publish-web
-  needs: []
+  needs:
+    - check-web
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   services:
@@ -64,4 +102,7 @@ publish-web:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f Dockerfile.web --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag $CI_REGISTRY_IMAGE/web:latest web
+    - docker buildx build --push -f docker/web.Dockerfile --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE/web:latest .

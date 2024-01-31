@@ -1,0 +1,11 @@
+.yarn
+
+storyteller
+
+/assets
+/cache
+
+/web/.next
+node_modules
+
+/docs/.docusaurus

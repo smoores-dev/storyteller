@@ -1,0 +1,54 @@
+{
+  "name": "storyteller",
+  "private": true,
+  "type": "module",
+  "packageManager": "yarn@4.0.2",
+  "workspaces": [
+    "web/",
+    "docs/"
+  ],
+  "scripts": {
+    "build:docs": "yarn workspace @storyteller/docs build",
+    "build:web": "yarn workspace @storyteller/web build",
+    "build": "concurrently -P 'npm:build:*'",
+    "check:format": "prettier --check .",
+    "check:lint": "eslint --cache .",
+    "types:docs": "tsc -p docs",
+    "types:web": "tsc -p web",
+    "check:types": "concurrently -P 'npm:types:*'",
+    "check": "concurrently -P 'npm:check:*'",
+    "dev:docs": "yarn workspace @storyteller/docs start",
+    "dev:web": "yarn workspace @storyteller/web dev",
+    "fix:format": "prettier --write .",
+    "fix:lint": "eslint --cache --fix .",
+    "fix": "concurrently -P 'npm:fix:*'",
+    "postinstall": "husky"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.0.0",
+    "@next/eslint-plugin-next": "^14.1.0",
+    "@types/eslint": "^8.56.2",
+    "@types/eslint__eslintrc": "^2.1.1",
+    "@types/node": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.1.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^9.0.6",
+    "lint-staged": "^15.2.0",
+    "next": "^14.1.0",
+    "prettier": "^3.2.4",
+    "pyright": "^1.1.348",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.3.3",
+    "typescript-plugin-css-modules": "^5.0.2"
+  },
+  "dependencies": {
+    "@types/lint-staged": "^13.3.0"
+  }
+}

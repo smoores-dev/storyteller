@@ -1,0 +1,11 @@
+{
+  "include": ["eslint.config.js", "lint-staged.config.js"],
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "lib": ["ESNext"],
+    "noEmit": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+  },
+}

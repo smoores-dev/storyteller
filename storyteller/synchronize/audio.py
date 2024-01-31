@@ -17,8 +17,6 @@ from .files import AUDIO_DIR
 from .epub import get_chapters, get_chapter_text, read_epub
 from .prompt import generate_initial_prompt
 
-from ..api import config
-
 
 def get_audio_directory(book_name: str):
     return f"{AUDIO_DIR}/{book_name}/"
@@ -93,7 +91,11 @@ def get_transcriptions_path(book_dir: str):
 def get_chapter_filename(
     chapters_dir: Path, book_name: str, chapter_index: int, chapter_title: str, ext: str
 ):
-    return f"{chapters_dir}/{book_name}-{chapter_index + 1:05d}-{chapter_title}.{ext}"
+    # Most file systems have a max filename length of 255 characters. We leave five
+    # characters for the extension (the dot + three or four characters for the
+    # actual extension).
+    filename = f"{book_name}-{chapter_index + 1:05d}-{chapter_title}"[0:250]
+    return f"{chapters_dir}/{filename}.{ext}"
 
 
 def split_audiobook(

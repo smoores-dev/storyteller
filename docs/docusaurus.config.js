@@ -1,51 +1,51 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+const lightCodeTheme = require("prism-react-renderer/themes/github")
+const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Storyteller',
-  tagline: 'A self-hosted platform for automatically syncing ebooks and audiobooks.',
-  favicon: 'img/favicon.ico',
+  title: "Storyteller",
+  tagline:
+    "A self-hosted platform for automatically syncing ebooks and audiobooks.",
+  favicon: "img/favicon.ico",
 
   // Set the production url of your site here
-  url: 'https://smoores.gitlab.com.io/',
+  url: "https://smoores.gitlab.com.io/",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/storyteller/',
+  baseUrl: "/storyteller/",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   // organizationName: 'facebook', // Usually your GitHub org/user name.
   // projectName: 'docusaurus', // Usually your repo name.
 
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: "throw",
+  onBrokenMarkdownLinks: "warn",
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
   // to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: "en",
+    locales: ["en"],
   },
 
   presets: [
     [
-      'classic',
+      "classic",
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://gitlab.com/smoores/storyteller/-/tree/main/docs/',
+          editUrl: "https://gitlab.com/smoores/storyteller/-/tree/main/docs/",
         },
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: require.resolve("./src/css/custom.css"),
         },
       }),
     ],
@@ -55,36 +55,36 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
-      image: 'img/Storyteller_Logo.jpg',
+      image: "img/Storyteller_Logo.jpg",
       navbar: {
-        title: 'Storyteller',
+        title: "Storyteller",
         logo: {
-          alt: 'Storyteller Logo',
-          src: 'img/Storyteller_Logo.png',
+          alt: "Storyteller Logo",
+          src: "img/Storyteller_Logo.png",
         },
         items: [
           {
-            type: 'docSidebar',
-            sidebarId: 'sidebar',
-            position: 'left',
-            label: 'Docs',
+            type: "docSidebar",
+            sidebarId: "sidebar",
+            position: "left",
+            label: "Docs",
           },
           {
-            href: 'https://gitlab.com/smoores/storyteller',
-            label: 'GitLab',
-            position: 'right',
+            href: "https://gitlab.com/smoores/storyteller",
+            label: "GitLab",
+            position: "right",
           },
         ],
       },
       footer: {
-        style: 'dark',
+        style: "dark",
         links: [
           {
-            title: 'Docs',
+            title: "Docs",
             items: [
               {
-                label: 'Get started',
-                to: '/docs/getting-started',
+                label: "Get started",
+                to: "/docs/getting-started",
               },
             ],
           },
@@ -126,6 +126,6 @@ const config = {
         darkTheme: darkCodeTheme,
       },
     }),
-};
+}
 
-module.exports = config;
+module.exports = config

@@ -49,6 +49,14 @@ export function BookOptions({ book, onUpdate }: Props) {
         >
           Re-process
         </MenuItem>
+        <MenuItem
+          className={styles["menu-item"]}
+          onClick={() => {
+            client.deleteBook(book.id).then(() => onUpdate())
+          }}
+        >
+          Delete
+        </MenuItem>
       </Menu>
       <Dialog store={dialogStore} className={styles["modal"]}>
         <DialogHeading className={styles["modal-heading"]}>
@@ -65,7 +73,7 @@ export function BookOptions({ book, onUpdate }: Props) {
               inputRef.current.files[0],
               ({ progress }) => {
                 setUploadProgress(progress ?? null)
-              }
+              },
             )
           }}
         >

@@ -7,23 +7,25 @@
     "context": "..",
     "args": {
       // Update 'VARIANT' to pick a Python version: 3, 3.6, 3.7, 3.8, 3.9
-      "VARIANT": "3.10",
+      "VARIANT": "3.11",
       // Options
       "INSTALL_NODE": "true",
-      "NODE_VERSION": "lts/*"
-    }
+      "NODE_VERSION": "18",
+    },
   },
 
   // Set *default* container specific settings.json values on container create.
   "customizations": {
     "vscode": {
       "extensions": [
-		"ms-python.python",
-		"ms-python.vscode-pylance",
-		"ms-azuretools.vscode-docker",
-		"ms-python.black-formatter"
-	]
-    }
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "ms-python.black-formatter",
+        "arcanis.vscode-zipfs",
+        "esbenp.prettier-vscode",
+      ],
+    },
   },
 
   // Add the IDs of extensions you want installed when the container is created.
@@ -35,5 +37,5 @@
   // "postCreateCommand": "poetry install && poetry run python -m nltk.downloader punkt",
 
   // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
 }

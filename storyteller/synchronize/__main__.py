@@ -8,7 +8,8 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument("book_name")
+parser.add_argument("audiobook_name")
 
 args = parser.parse_args()
 
-sync_book(args.book_name)
+sync_book(args.book_name, args.audiobook_name)

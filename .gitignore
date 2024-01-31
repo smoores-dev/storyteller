@@ -9,3 +9,14 @@ __pycache__
 
 .env.local
 storyteller.db
+node_modules
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+.eslintcache
+tsconfig.tsbuildinfo

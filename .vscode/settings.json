@@ -1,5 +1,6 @@
 {
   "python.analysis.typeCheckingMode": "basic",
+  "python.languageServer": "Pylance",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit"
@@ -15,13 +16,28 @@
     "**/.yarn": true,
     "**/.pnp.*": true
   },
-  "eslint.nodePath": "web/.yarn/sdks",
-  "eslint.options": {
-    "overrideConfigFile": "web/.eslintrc.json"
-  },
-  "prettier.prettierPath": "web/.yarn/sdks/prettier/index.js",
-  "prettier.configPath": "web/.prettierrc.json",
-  "typescript.tsdk": "web/.yarn/sdks/typescript/lib",
+  "eslint.experimental.useFlatConfig": true,
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
