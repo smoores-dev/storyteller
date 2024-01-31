@@ -226,3 +226,42 @@ def get_book_details(ids: list[int] | None = None, synced_only=False):
         ]
 
     return list(books.values())
+
+
+def delete_book(id: int):
+    connection.execute(
+        """
+        DELETE FROM processing_task
+        WHERE book_id = :book_id
+        """,
+        {"book_id": id},
+    )
+
+    connection.execute(
+        """
+        DELETE FROM author_to_book
+        WHERE book_id = :book_id
+        """,
+        {"book_id": id},
+    )
+
+    connection.execute(
+        """
+        DELETE FROM author
+        WHERE author.id
+        NOT IN (
+            SELECT author_id
+            FROM author_to_book
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        DELETE FROM book
+        WHERE id = :book_id
+        """,
+        {"book_id": id},
+    )
+
+    connection.commit()
