@@ -93,8 +93,8 @@ def get_chapter_filename(
 ):
     # Most file systems have a max filename length of 255 characters. We leave five
     # characters for the extension (the dot + three or four characters for the
-    # actual extension).
-    filename = f"{book_name}-{chapter_index + 1:05d}-{chapter_title}"[0:250]
+    # actual extension), and then two more because... ???
+    filename = f"{book_name}-{chapter_index + 1:05d}-{chapter_title}"[0:248]
     return f"{chapters_dir}/{filename}.{ext}"
 
 
