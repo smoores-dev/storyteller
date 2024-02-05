@@ -75,7 +75,7 @@ export default function BookUpload({ onSubmit }: Props) {
 
           client.uploadBookAudio(
             book.uuid,
-            audioInputRef.current.files[0],
+            audioInputRef.current.files,
             ({ progress }) => {
               setAudioUploadProgress(progress ?? null)
             },
@@ -88,6 +88,7 @@ export default function BookUpload({ onSubmit }: Props) {
             name="audio-file"
             ref={audioInputRef}
             type="file"
+            multiple
             disabled={epubUploadProgress === null}
           />
         </div>

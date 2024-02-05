@@ -2,7 +2,10 @@ from datetime import timedelta
 from email.utils import formatdate
 import os
 import secrets
+import tempfile
 from typing import Annotated, cast
+from ebooklib import epub
+
 from fastapi import (
     Body,
     FastAPI,
@@ -15,11 +18,12 @@ from fastapi import (
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, FileResponse, StreamingResponse
+from fastapi.responses import Response
 
 from starlette.types import Message
 from starlette.background import BackgroundTask
 from starlette._compat import md5_hexdigest
+from storyteller.api.assets.delete import delete_processed
 
 from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
 from storyteller.synchronize.audio import get_audio_cover_image
@@ -235,12 +239,16 @@ async def list_books(synced=False):
     response_model=models.BookDetail,
 )
 async def upload_epub(file: UploadFile):
-    original_filename, _ = os.path.splitext(cast(str, file.filename))
-    assets.persist_epub(original_filename, file.file)
-    book = read_epub(original_filename)
-    authors = get_authors(book)
-    book_detail = db.create_book(book.title, authors, original_filename)
-    return book_detail
+    with tempfile.NamedTemporaryFile() as tmpf:
+        tmpf.write(file.file.read())
+
+        book = epub.read_epub(tmpf.name)
+        authors = get_authors(book)
+        book_detail = db.create_book(book.title, authors)
+
+        file.file.seek(0)
+        assets.persist_epub(book_detail.uuid, file.file)
+        return book_detail
 
 
 @app.post(
@@ -248,20 +256,16 @@ async def upload_epub(file: UploadFile):
     dependencies=[Depends(auth.has_permission("book_create"))],
     response_model=None,
 )
-async def upload_audio(book_id: str, file: UploadFile):
+async def upload_audio(book_id: str, files: list[UploadFile]):
     book_uuid = db.get_book_uuid(book_id)
-    original_filename, extension = os.path.splitext(cast(str, file.filename))
-    extension = extension[1:]
-    if extension in ["m4b", "m4a"]:
-        extension = "mp4"
-    if extension not in ["zip", "mp4"]:
-        print(f"Received unsupported media type {extension}")
+    try:
+        assets.persist_audio(book_uuid, files)
+    except assets.UnsupportedMediaTypeError as e:
+        print(f"Received unsupported media type {e.media_type}")
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="Please upload an mp4 (file extension mp4, m4a, or m4b) or zip of mp3 files",
         )
-    assets.persist_audio(original_filename, extension, file.file)
-    db.add_audiofile(book_uuid, original_filename, extension)
 
 
 @app.post(
@@ -269,8 +273,12 @@ async def upload_audio(book_id: str, file: UploadFile):
     dependencies=[Depends(auth.has_permission("book_process"))],
     response_model=None,
 )
-async def process_book(book_id: str, restart=False):
+async def process_book(book_id: str, restart: bool = False):
     book_uuid = db.get_book_uuid(book_id)
+
+    if restart:
+        delete_processed(book_uuid)
+
     processing.start_processing(book_uuid, restart)
 
 
@@ -291,7 +299,7 @@ async def get_book_details(book_id: str):
 async def delete_book(book_id: str):
     book_uuid = db.get_book_uuid(book_id)
     book = db.get_book(book_uuid)
-    assets.delete_assets(book.epub_filename, book.audio_filename)
+    assets.delete_assets(book.uuid)
     db.delete_book(book_uuid)
 
 
@@ -342,7 +350,7 @@ def get_synced_book(
             content=f.read(end - start),
             status_code=206 if partial_response else 200,
             headers={
-                "Content-Disposition": f'attachment; filename="{book.title}.epub"',
+                "Content-Disposition": f'attachment; filename="{book.title.encode().decode("latin-1")}.epub"',
                 "Content-Type": "application/epub+zip",
                 "Accept-Ranges": "bytes",
                 "Content-Length": str(end - start),
@@ -353,14 +361,11 @@ def get_synced_book(
 
 
 def get_epub_book_cover(book: models.Book):
-    return get_cover_image(book.epub_filename)
+    return get_cover_image(book.uuid)
 
 
 def get_audio_book_cover(book: models.Book):
-    if book.audio_filename is None or book.audio_filetype is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    cover = get_audio_cover_image(book.audio_filename, book.audio_filetype)
+    cover = get_audio_cover_image(book.uuid)
     if cover is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
@@ -370,14 +375,14 @@ def get_audio_book_cover(book: models.Book):
 @app.get(
     "/books/{book_id}/cover", dependencies=[Depends(auth.has_permission("book_read"))]
 )
-async def get_book_cover(book_id, audio=False):
+async def get_book_cover(book_id, audio: bool = False):
     book_uuid = db.get_book_uuid(book_id)
     book = db.get_book(book_uuid)
     cover, ext = get_audio_book_cover(book) if audio else get_epub_book_cover(book)
     response = Response(cover)
     response.headers[
         "Content-Disposition"
-    ] = f'attachment; filename="{book.title} {"Audio " if audio else ""}Cover.{ext}"'
+    ] = f'attachment; filename="{book.title.encode().decode("latin-1")} {"Audio " if audio else ""}Cover.{ext}"'
     return response
 
 
@@ -389,10 +394,5 @@ async def upload_book_cover(book_id: str, file: UploadFile):
     book = db.get_book(book_uuid)
     _, extension = os.path.splitext(cast(str, file.filename))
     extension = extension[1:]
-    if book.audio_filename is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Book is missing audio file. Upload audio file before custom cover art.",
-        )
 
-    assets.persist_audio_cover(book.audio_filename, extension, file.file)
+    assets.persist_audio_cover(book.uuid, extension, file.file)

@@ -1,13 +1,14 @@
 import os
+from pathlib import Path
 import re
 from dataclasses import dataclass
-from typing import Callable, List, Tuple, TypedDict, Union, cast, Dict
+from typing import Callable, List, Tuple, Union, cast, Dict
 
 from nltk.tokenize import sent_tokenize as _sent_tokenize
 from functools import cache
 from ebooklib import epub, ITEM_DOCUMENT
 from ebooklib.epub import EpubImage
-from bs4 import BeautifulSoup, NavigableString, ResultSet, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 from .files import TEXT_DIR
 
@@ -23,16 +24,20 @@ class SentenceRange:
     audiofile: str
 
 
-def get_epub_directory(book_name: str):
-    return f"{TEXT_DIR}/{book_name}/"
+def get_epub_directory(book_uuid: str):
+    return Path(TEXT_DIR, book_uuid)
 
 
-def get_epub_filepath(book_name: str):
-    return f"{get_epub_directory(book_name)}/original/{book_name}.epub"
+def get_epub_synced_directory(book_uuid: str):
+    return Path(get_epub_directory(book_uuid), "synced")
 
 
-def read_epub(book_name: str):
-    book = epub.read_epub(get_epub_filepath(book_name))
+def get_epub_filepath(book_uuid: str):
+    return Path(get_epub_directory(book_uuid), "original", f"{book_uuid}.epub")
+
+
+def read_epub(book_uuid: str):
+    book = epub.read_epub(get_epub_filepath(book_uuid))
     for item in book.get_items_of_type(ITEM_DOCUMENT):
         if not item.is_chapter():
             continue
@@ -45,7 +50,7 @@ def read_epub(book_name: str):
                 item.add_link(
                     href=link["href"],
                     rel=" ".join(link.get("rel", [])),
-                    type=link["type"],
+                    type=link.get("type"),
                 )
     return book
 
@@ -328,8 +333,8 @@ def create_media_overlay(
     return soup.encode(formatter="minimal")
 
 
-def get_cover_image(book_name: str):
-    epub = read_epub(book_name)
+def get_cover_image(book_uuid: str):
+    epub = read_epub(book_uuid)
     [(_, cover_image_meta)] = epub.get_metadata("OPF", "cover")
     cover_image_item_id = cover_image_meta["content"]
     cover_image = cast(EpubImage, epub.get_item_with_id(cover_image_item_id))

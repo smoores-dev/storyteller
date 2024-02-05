@@ -3,7 +3,7 @@ from typing import Dict, List, cast
 from multiprocessing import Process
 from threading import Thread
 
-from storyteller.synchronize.audio import split_audiobook, transcribe_book
+from storyteller.synchronize.audio import process_audiobook, transcribe_book
 from storyteller.synchronize.sync import sync_book
 
 from .database import (
@@ -73,15 +73,14 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
 
         if processing_task.type == ProcessingTaskType.SPLIT_CHAPTERS:
             p = Process(
-                target=split_audiobook,
-                args=[book.audio_filename, book.audio_filetype, on_progress],
+                target=process_audiobook,
+                args=[book.uuid, on_progress],
             )
         elif processing_task.type == ProcessingTaskType.TRANSCRIBE_CHAPTERS:
             p = Process(
                 target=transcribe_book,
                 args=[
-                    book.audio_filename,
-                    book.epub_filename,
+                    book.uuid,
                     config.device,
                     config.batch_size,
                     config.compute_type,
@@ -91,7 +90,7 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
         elif processing_task.type == ProcessingTaskType.SYNC_CHAPTERS:
             p = Process(
                 target=sync_book,
-                args=[book.epub_filename, book.audio_filename, on_progress],
+                args=[book.uuid, on_progress],
             )
         else:
             raise KeyError(
@@ -111,8 +110,6 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
 
 def start_processing(book_uuid: str, restart: bool):
     book = get_book(book_uuid)
-    if book.audio_filename is None:
-        raise KeyError("Book does not have an audio_filename")
 
     if restart:
         reset_processing_tasks_for_book(book_uuid)

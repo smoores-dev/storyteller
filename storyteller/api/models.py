@@ -6,9 +6,6 @@ class Book(BaseModel):
     uuid: str
     id: int | None
     title: str
-    epub_filename: str
-    audio_filename: str | None
-    audio_filetype: str | None
 
 
 class Author(BaseModel):

@@ -6,7 +6,10 @@ export async function middleware(request: NextRequest) {
   // Proxy all requests to `/api` to the actual API server
   if (request.nextUrl.pathname.startsWith("/api")) {
     const destinationPathname = request.nextUrl.pathname.replace("/api", "")
-    return NextResponse.rewrite(new URL(destinationPathname, apiHost))
+    const destinationSearch = request.nextUrl.search
+    const destinationUrl = new URL(destinationPathname, apiHost)
+    destinationUrl.search = destinationSearch
+    return NextResponse.rewrite(destinationUrl)
   }
 
   const isInitPage = request.nextUrl.pathname.startsWith("/init")

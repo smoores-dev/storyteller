@@ -39,17 +39,15 @@ def get_book_uuid(book_id_or_uuid: str) -> str:
     return book_uuid
 
 
-def create_book(
-    title: str, authors: List[EpubAuthor], epub_filename: str
-) -> BookDetail:
+def create_book(title: str, authors: List[EpubAuthor]) -> BookDetail:
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        INSERT INTO book (title, epub_filename) VALUES (:title, :epub_filename)
+        INSERT INTO book (title) VALUES (:title)
         RETURNING uuid
         """,
-        {"title": title, "epub_filename": epub_filename},
+        {"title": title},
     )
 
     (book_uuid,) = cursor.fetchone()
@@ -110,29 +108,26 @@ def add_audiofile(book_uuid: str, audio_filename: str, audio_filetype: str):
 def get_book(book_uuid: str):
     cursor = connection.execute(
         """
-        SELECT uuid, id, title, epub_filename, audio_filename, audio_filetype
+        SELECT uuid, id, title
         FROM book
         WHERE uuid = :book_uuid
         """,
         {"book_uuid": book_uuid},
     )
 
-    uuid, id, title, epub_filename, audio_filename, audio_filetype = cursor.fetchone()
+    uuid, id, title = cursor.fetchone()
 
     return Book(
         uuid=uuid,
         id=id,
         title=title,
-        epub_filename=epub_filename,
-        audio_filename=audio_filename,
-        audio_filetype=audio_filetype,
     )
 
 
 def get_books():
     cursor = connection.execute(
         """
-        SELECT uuid, id, title, epub_filename, audio_filename, audio_filetype
+        SELECT uuid, id, title
         FROM book
         """
     )
@@ -142,11 +137,8 @@ def get_books():
             uuid=uuid,
             id=id,
             title=title,
-            epub_filename=epub_filename,
-            audio_filename=audio_filename,
-            audio_filetype=audio_filetype,
         )
-        for uuid, id, title, epub_filename, audio_filename, audio_filetype in cursor.fetchall()
+        for uuid, id, title in cursor.fetchall()
     ]
 
 

@@ -265,15 +265,19 @@ export class ApiClient {
 
   async uploadBookAudio(
     bookUuid: string,
-    file: File,
+    files: FileList,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<void> {
     const url = new URL(`${this.rootPath}/books/${bookUuid}/audio`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
-      { file },
-      { withCredentials: true, onUploadProgress },
+      { files },
+      {
+        formSerializer: { indexes: null },
+        withCredentials: true,
+        onUploadProgress,
+      },
     )
 
     if (response.status > 299) {

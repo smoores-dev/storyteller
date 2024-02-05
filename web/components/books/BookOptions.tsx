@@ -44,10 +44,18 @@ export function BookOptions({ book, onUpdate }: Props) {
         <MenuItem
           className={styles["menu-item"]}
           onClick={() =>
-            client.processBook(book.uuid, true).then(() => onUpdate())
+            client.processBook(book.uuid, false).then(() => onUpdate())
           }
         >
           Re-process
+        </MenuItem>
+        <MenuItem
+          className={styles["menu-item"]}
+          onClick={() =>
+            client.processBook(book.uuid, true).then(() => onUpdate())
+          }
+        >
+          Re-process (from scratch)
         </MenuItem>
         <MenuItem
           className={styles["menu-item"]}

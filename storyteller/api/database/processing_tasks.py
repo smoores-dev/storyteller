@@ -41,8 +41,9 @@ def create_processing_task(type: str, status: str, book_uuid: str):
         {"type": type, "status": status, "book_uuid": book_uuid},
     )
 
+    (processing_task_uuid,) = cursor.fetchone()
     connection.commit()
-    return cast(str, cursor.fetchone()[0])
+    return cast(str, processing_task_uuid)
 
 
 def get_processing_tasks_for_book(book_uuid: str):

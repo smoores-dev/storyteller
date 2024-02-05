@@ -152,6 +152,7 @@ def create_admin_user(
         """
         INSERT INTO user_permission (
             book_create,
+            book_delete,
             book_read,
             book_process,
             book_download,
@@ -161,11 +162,12 @@ def create_admin_user(
             user_read,
             user_delete,
             settings_update
-        ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
         WHERE NOT EXISTS (
             SELECT uuid
             FROM user_permission
         )
+        RETURNING uuid
         """
     )
 
