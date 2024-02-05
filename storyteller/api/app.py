@@ -1,6 +1,5 @@
 from datetime import timedelta
 from email.utils import formatdate
-from functools import lru_cache
 import os
 import secrets
 from typing import Annotated, cast
@@ -249,7 +248,8 @@ async def upload_epub(file: UploadFile):
     dependencies=[Depends(auth.has_permission("book_create"))],
     response_model=None,
 )
-async def upload_audio(book_id: int, file: UploadFile):
+async def upload_audio(book_id: str, file: UploadFile):
+    book_uuid = db.get_book_uuid(book_id)
     original_filename, extension = os.path.splitext(cast(str, file.filename))
     extension = extension[1:]
     if extension in ["m4b", "m4a"]:
@@ -261,7 +261,7 @@ async def upload_audio(book_id: int, file: UploadFile):
             detail="Please upload an mp4 (file extension mp4, m4a, or m4b) or zip of mp3 files",
         )
     assets.persist_audio(original_filename, extension, file.file)
-    db.add_audiofile(book_id, original_filename, extension)
+    db.add_audiofile(book_uuid, original_filename, extension)
 
 
 @app.post(
@@ -269,8 +269,9 @@ async def upload_audio(book_id: int, file: UploadFile):
     dependencies=[Depends(auth.has_permission("book_process"))],
     response_model=None,
 )
-async def process_book(book_id: int, restart=False):
-    processing.start_processing(book_id, restart)
+async def process_book(book_id: str, restart=False):
+    book_uuid = db.get_book_uuid(book_id)
+    processing.start_processing(book_uuid, restart)
 
 
 @app.get(
@@ -278,18 +279,20 @@ async def process_book(book_id: int, restart=False):
     dependencies=[Depends(auth.has_permission("book_read"))],
     response_model=models.BookDetail,
 )
-async def get_book_details(book_id: int):
-    (book,) = db.get_book_details([book_id])
+async def get_book_details(book_id: str):
+    book_uuid = db.get_book_uuid(book_id)
+    (book,) = db.get_book_details([book_uuid])
     return book
 
 
 @app.delete(
     "/books/{book_id}", dependencies=[Depends(auth.has_permission("book_delete"))]
 )
-async def delete_book(book_id: int):
-    book = db.get_book(book_id)
+async def delete_book(book_id: str):
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
     assets.delete_assets(book.epub_filename, book.audio_filename)
-    db.delete_book(book_id)
+    db.delete_book(book_uuid)
 
 
 @app.get(
@@ -297,11 +300,12 @@ async def delete_book(book_id: int):
     dependencies=[Depends(auth.has_permission("book_download"))],
 )
 def get_synced_book(
-    book_id,
+    book_id: str,
     range: Annotated[str | None, Header()] = None,
     if_range: Annotated[str | None, Header()] = None,
 ):
-    book = db.get_book(book_id)
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
     filepath = assets.get_synced_book_path(book)
 
     stat_result = os.stat(filepath)
@@ -367,7 +371,8 @@ def get_audio_book_cover(book: models.Book):
     "/books/{book_id}/cover", dependencies=[Depends(auth.has_permission("book_read"))]
 )
 async def get_book_cover(book_id, audio=False):
-    book = db.get_book(book_id)
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
     cover, ext = get_audio_book_cover(book) if audio else get_epub_book_cover(book)
     response = Response(cover)
     response.headers[
@@ -379,8 +384,9 @@ async def get_book_cover(book_id, audio=False):
 @app.post(
     "/books/{book_id}/cover", dependencies=[Depends(auth.has_permission("book_create"))]
 )
-async def upload_book_cover(book_id: int, file: UploadFile):
-    book = db.get_book(book_id)
+async def upload_book_cover(book_id: str, file: UploadFile):
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
     _, extension = os.path.splitext(cast(str, file.filename))
     extension = extension[1:]
     if book.audio_filename is None:

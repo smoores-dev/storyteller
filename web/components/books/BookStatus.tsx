@@ -36,7 +36,7 @@ export function BookStatus({ book, onUpdate }: Props) {
       {book.authors[0] && <div>by {book.authors[0].name}</div>}
       {synchronized ? (
         <div className={styles["download-wrapper"]}>
-          <a href={client.getSyncedDownloadUrl(book.id)}>Download</a>
+          <a href={client.getSyncedDownloadUrl(book.uuid)}>Download</a>
         </div>
       ) : (
         book.processing_status && (
@@ -49,7 +49,7 @@ export function BookStatus({ book, onUpdate }: Props) {
                 <div>
                   <Button
                     onClick={() => {
-                      client.processBook(book.id).then(() => onUpdate())
+                      client.processBook(book.uuid).then(() => onUpdate())
                     }}
                   >
                     Retry

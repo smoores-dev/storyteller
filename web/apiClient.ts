@@ -35,8 +35,8 @@ export class ApiClient {
       : { Authorization: `Bearer ${this.accessToken}` }
   }
 
-  getSyncedDownloadUrl(bookId: number) {
-    return `${this.rootPath}/books/${bookId}/synced`
+  getSyncedDownloadUrl(bookUuid: string) {
+    return `${this.rootPath}/books/${bookUuid}/synced`
   }
 
   async needsInit(): Promise<boolean> {
@@ -212,8 +212,8 @@ export class ApiClient {
     }
   }
 
-  async deleteBook(bookId: number): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}`, this.origin)
+  async deleteBook(bookUuid: string): Promise<void> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "DELETE",
@@ -264,11 +264,11 @@ export class ApiClient {
   }
 
   async uploadBookAudio(
-    bookId: number,
+    bookUuid: string,
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}/audio`, this.origin)
+    const url = new URL(`${this.rootPath}/books/${bookUuid}/audio`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -282,11 +282,11 @@ export class ApiClient {
   }
 
   async uploadBookCover(
-    bookId: number,
+    bookUuid: string,
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}/cover`, this.origin)
+    const url = new URL(`${this.rootPath}/books/${bookUuid}/cover`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -299,8 +299,11 @@ export class ApiClient {
     }
   }
 
-  async processBook(bookId: number, restart?: boolean): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}/process`, this.origin)
+  async processBook(bookUuid: string, restart?: boolean): Promise<void> {
+    const url = new URL(
+      `${this.rootPath}/books/${bookUuid}/process`,
+      this.origin,
+    )
     if (restart) {
       url.search = new URLSearchParams({ restart: "true" }).toString()
     }
@@ -316,8 +319,8 @@ export class ApiClient {
     }
   }
 
-  async getBookDetails(bookId: number): Promise<BookDetail> {
-    const url = new URL(`${this.rootPath}/books/${bookId}`, this.origin)
+  async getBookDetails(bookUuid: string): Promise<BookDetail> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",

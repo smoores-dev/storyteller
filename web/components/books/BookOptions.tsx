@@ -44,7 +44,7 @@ export function BookOptions({ book, onUpdate }: Props) {
         <MenuItem
           className={styles["menu-item"]}
           onClick={() =>
-            client.processBook(book.id, true).then(() => onUpdate())
+            client.processBook(book.uuid, true).then(() => onUpdate())
           }
         >
           Re-process
@@ -52,7 +52,7 @@ export function BookOptions({ book, onUpdate }: Props) {
         <MenuItem
           className={styles["menu-item"]}
           onClick={() => {
-            client.deleteBook(book.id).then(() => onUpdate())
+            client.deleteBook(book.uuid).then(() => onUpdate())
           }}
         >
           Delete
@@ -69,7 +69,7 @@ export function BookOptions({ book, onUpdate }: Props) {
             if (!inputRef.current?.files?.[0]) return
 
             client.uploadBookCover(
-              book.id,
+              book.uuid,
               inputRef.current.files[0],
               ({ progress }) => {
                 setUploadProgress(progress ?? null)

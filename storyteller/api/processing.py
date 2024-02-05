@@ -25,11 +25,11 @@ from .models import Book
 
 
 def determine_remaining_tasks(
-    book_id: int, processing_tasks: List[ProcessingTask]
+    book_uuid: str, processing_tasks: List[ProcessingTask]
 ) -> List[ProcessingTask]:
     if len(processing_tasks) == 0:
         return [
-            ProcessingTask(None, type, ProcessingTaskStatus.STARTED, 0, book_id)
+            ProcessingTask(None, type, ProcessingTaskStatus.STARTED, 0, book_uuid)
             for type in processing_tasks_order
         ]
 
@@ -40,7 +40,7 @@ def determine_remaining_tasks(
             return []
 
         return [
-            ProcessingTask(None, task, ProcessingTaskStatus.STARTED, 0, book_id)
+            ProcessingTask(None, task, ProcessingTaskStatus.STARTED, 0, book_uuid)
             for task in processing_tasks_order[next_task_type_index:]
         ]
 
@@ -51,24 +51,24 @@ def determine_remaining_tasks(
     ]
 
     return processing_tasks[len(completed_tasks) :] + [
-        ProcessingTask(None, task, ProcessingTaskStatus.STARTED, 0, book_id)
+        ProcessingTask(None, task, ProcessingTaskStatus.STARTED, 0, book_uuid)
         for task in processing_tasks_order[len(processing_tasks) :]
     ]
 
 
 def process(book: Book, processing_tasks: List[ProcessingTask]):
     for processing_task in processing_tasks:
-        if processing_task.id is None:
-            processing_task.id = create_processing_task(
+        if processing_task.uuid is None:
+            processing_task.uuid = create_processing_task(
                 processing_task.type,
                 processing_task.status,
-                processing_task.book_id,
+                processing_task.book_uuid,
             )
         if processing_task.status != ProcessingTaskStatus.STARTED:
-            update_task_status(processing_task.id, ProcessingTaskStatus.STARTED)
+            update_task_status(processing_task.uuid, ProcessingTaskStatus.STARTED)
 
         on_progress = functools.partial(
-            update_task_progress, cast(int, processing_task.id)
+            update_task_progress, cast(int, processing_task.uuid)
         )
 
         if processing_task.type == ProcessingTaskType.SPLIT_CHAPTERS:
@@ -103,26 +103,28 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
 
         # TODO: Would be good to handle sigint/sigterm/sigkill somehow
         if p.exitcode == 0:
-            update_task_status(processing_task.id, ProcessingTaskStatus.COMPLETED)
+            update_task_status(processing_task.uuid, ProcessingTaskStatus.COMPLETED)
         else:
-            update_task_status(processing_task.id, ProcessingTaskStatus.IN_ERROR)
+            update_task_status(processing_task.uuid, ProcessingTaskStatus.IN_ERROR)
             return
 
 
-def start_processing(book_id: int, restart: bool):
-    book = get_book(book_id)
+def start_processing(book_uuid: str, restart: bool):
+    book = get_book(book_uuid)
     if book.audio_filename is None:
         raise KeyError("Book does not have an audio_filename")
 
     if restart:
-        reset_processing_tasks_for_book(book_id)
+        reset_processing_tasks_for_book(book_uuid)
 
-    processing_tasks = get_processing_tasks_for_book(book_id)
+    processing_tasks = get_processing_tasks_for_book(book_uuid)
     processing_tasks.sort(key=lambda t: processing_tasks_order.index(t.type))
 
-    remaining_tasks = determine_remaining_tasks(book_id, processing_tasks)
+    remaining_tasks = determine_remaining_tasks(book_uuid, processing_tasks)
 
-    print(f"Found {len(remaining_tasks)} remaining processing tasks for book {book_id}")
+    print(
+        f"Found {len(remaining_tasks)} remaining processing tasks for book {book_uuid}"
+    )
 
     thread = Thread(target=process, args=[book, remaining_tasks])
     thread.start()

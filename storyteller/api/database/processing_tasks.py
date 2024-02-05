@@ -24,77 +24,78 @@ processing_tasks_order = [
 
 @dataclass
 class ProcessingTask:
-    id: int | None
+    uuid: str | None
     type: str
     status: str
     progress: float
-    book_id: int
+    book_uuid: str
 
 
-def create_processing_task(type: str, status: str, book_id: int):
+def create_processing_task(type: str, status: str, book_uuid: str):
     cursor = connection.execute(
         """
-        INSERT INTO processing_task (type, status, book_id)
-        VALUES (:type, :status, :book_id)
+        INSERT INTO processing_task (type, status, book_uuid)
+        VALUES (:type, :status, :book_uuid)
+        RETURNING uuid
         """,
-        {"type": type, "status": status, "book_id": book_id},
+        {"type": type, "status": status, "book_uuid": book_uuid},
     )
 
     connection.commit()
-    return cast(int, cursor.lastrowid)
+    return cast(str, cursor.fetchone()[0])
 
 
-def get_processing_tasks_for_book(book_id: int):
+def get_processing_tasks_for_book(book_uuid: str):
     cursor = connection.execute(
         """
-        SELECT id, type, status, progress, book_id
+        SELECT uuid, type, status, progress, book_uuid
         FROM processing_task
-        WHERE book_id = :book_id
+        WHERE book_uuid = :book_uuid
         """,
-        {"book_id": book_id},
+        {"book_uuid": book_uuid},
     )
 
     connection.commit()
     return [
-        ProcessingTask(id, type, status, progress, book_id)
-        for id, type, status, progress, book_id in cursor
+        ProcessingTask(uuid, type, status, progress, book_uuid)
+        for uuid, type, status, progress, book_uuid in cursor
     ]
 
 
-def reset_processing_tasks_for_book(book_id: int):
+def reset_processing_tasks_for_book(book_uuid: str):
     connection.execute(
         """
         UPDATE processing_task
         SET progress = 0.0, status = 'STARTED'
-        WHERE book_id = :book_id
+        WHERE book_uuid = :book_uuid
         """,
-        {"book_id": book_id},
+        {"book_uuid": book_uuid},
     )
 
     connection.commit()
 
 
-def update_task_progress(task_id: int, progress: float):
+def update_task_progress(task_uuid: int, progress: float):
     connection.execute(
         """
         UPDATE processing_task
         SET progress = :progress
-        WHERE id = :task_id
+        WHERE uuid = :task_uuid
         """,
-        {"task_id": task_id, "progress": progress},
+        {"task_uuid": task_uuid, "progress": progress},
     )
 
     connection.commit()
 
 
-def update_task_status(task_id: int, status: str):
+def update_task_status(task_uuid: str, status: str):
     connection.execute(
         """
         UPDATE processing_task
         SET status = :status
-        WHERE id = :task_id
+        WHERE uuid = :task_uuid
         """,
-        {"task_id": task_id, "status": status},
+        {"task_uuid": task_uuid, "status": status},
     )
 
     connection.commit()

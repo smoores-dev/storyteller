@@ -3,7 +3,8 @@ from pydantic import BaseModel
 
 
 class Book(BaseModel):
-    id: int
+    uuid: str
+    id: int | None
     title: str
     epub_filename: str
     audio_filename: str | None
@@ -11,13 +12,13 @@ class Book(BaseModel):
 
 
 class Author(BaseModel):
-    id: int
+    uuid: str
     name: str
     file_as: str
 
 
 class BookAuthor(BaseModel):
-    id: int
+    uuid: str
     name: str
     file_as: str
     role: str | None
@@ -30,7 +31,8 @@ class ProcessingStatus(BaseModel):
 
 
 class BookDetail(BaseModel):
-    id: int
+    uuid: str
+    id: int | None
     title: str
     authors: List[BookAuthor]
     processing_status: ProcessingStatus | None

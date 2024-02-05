@@ -311,7 +311,7 @@ export class DefaultService {
    * @throws ApiError
    */
   public static getBookDetailsBooksBookIdGet(
-    bookId: number,
+    bookId: string,
   ): CancelablePromise<BookDetail> {
     return __request(OpenAPI, {
       method: "GET",
@@ -332,7 +332,7 @@ export class DefaultService {
    * @throws ApiError
    */
   public static deleteBookBooksBookIdDelete(
-    bookId: number,
+    bookId: string,
   ): CancelablePromise<any> {
     return __request(OpenAPI, {
       method: "DELETE",
@@ -409,7 +409,7 @@ export class DefaultService {
    * @throws ApiError
    */
   public static uploadBookCoverBooksBookIdCoverPost(
-    bookId: number,
+    bookId: string,
     formData: Body_upload_book_cover_books__book_id__cover_post,
   ): CancelablePromise<any> {
     return __request(OpenAPI, {

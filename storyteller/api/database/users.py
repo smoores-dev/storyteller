@@ -22,7 +22,7 @@ def get_user(username: str):
             settings_update
         FROM user
         JOIN user_permission
-            ON user.user_permission_id = user_permission.id
+            ON user.user_permission_uuid = user_permission.uuid
         WHERE username = :username
         """,
         {"username": username},
@@ -68,7 +68,7 @@ def get_user(username: str):
 def get_user_count():
     cursor = connection.execute(
         """
-        SELECT count(id) as count
+        SELECT count(uuid) as count
         FROM user;
         """
     )
@@ -98,7 +98,7 @@ def get_users():
             settings_update
         FROM user
         JOIN user_permission
-            ON user.user_permission_id = user_permission.id
+            ON user.user_permission_uuid = user_permission.uuid
         """,
     )
 
@@ -163,7 +163,7 @@ def create_admin_user(
             settings_update
         ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
         WHERE NOT EXISTS (
-            SELECT id
+            SELECT uuid
             FROM user_permission
         )
         """
@@ -176,15 +176,15 @@ def create_admin_user(
             full_name,
             email,
             hashed_password,
-            user_permission_id
+            user_permission_uuid
         ) SELECT
             :username,
             :full_name,
             :email,
             :hashed_password,
-            :user_permission_id
+            :user_permission_uuid
         WHERE NOT EXISTS (
-            SELECT id
+            SELECT uuid
             FROM user
         )
         """,
@@ -193,7 +193,7 @@ def create_admin_user(
             "full_name": full_name,
             "email": email,
             "hashed_password": hashed_password,
-            "user_permission_id": cursor.lastrowid,
+            "user_permission_uuid": cursor.fetchone()[0],
         },
     )
 
@@ -216,14 +216,14 @@ def create_user(
             full_name,
             email,
             hashed_password,
-            user_permission_id
+            user_permission_uuid
         ) VALUES (
             :username,
             :full_name,
             :email,
             :hashed_password,
             (
-                SELECT user_permission_id
+                SELECT user_permission_uuid
                 FROM invite
                 WHERE invite.key = :invite_key
             )
@@ -238,6 +238,14 @@ def create_user(
         },
     )
 
+    cursor.execute(
+        """
+        DELETE FROM invite
+        WHERE key = :invite_key
+        """,
+        {"invite_key": invite_key},
+    )
+
     connection.commit()
 
 
@@ -247,7 +255,7 @@ def user_has_permission(username: str, permission: str):
         SELECT {permission}
         FROM user_permission
         JOIN user
-        ON user.user_permission_id = user_permission.id
+        ON user.user_permission_uuid = user_permission.uuid
         WHERE user.username = :username
         """,
         {"username": username, "permission": permission},

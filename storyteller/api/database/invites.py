@@ -45,6 +45,7 @@ def create_invite(
             :user_delete,
             :settings_update
         )
+        RETURNING uuid
         """,
         {
             "book_create": book_create,
@@ -60,13 +61,13 @@ def create_invite(
         },
     )
 
-    user_permission_id = cast(int, cursor.lastrowid)
+    (user_permission_uuid,) = cursor.fetchone()
 
     cursor.execute(
         """
-        INSERT INTO invite (email, key, user_permission_id) VALUES (:email, :key, :user_permission_id)
+        INSERT INTO invite (email, key, user_permission_uuid) VALUES (:email, :key, :user_permission_uuid)
         """,
-        {"email": email, "key": key, "user_permission_id": user_permission_id},
+        {"email": email, "key": key, "user_permission_uuid": user_permission_uuid},
     )
 
     connection.commit()
@@ -89,7 +90,7 @@ def get_invite(key: str):
 def verify_invite(email: str, key: str):
     cursor = connection.execute(
         """
-        SELECT id
+        SELECT uuid
         FROM invite
         WHERE email=:email
             AND key=:key

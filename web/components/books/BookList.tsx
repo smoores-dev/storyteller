@@ -31,7 +31,7 @@ export function BookList({ books: initialBooks }: Props) {
       <AddBookModal />
       <ul>
         {books.map((book) => (
-          <li key={book.id} className={styles["book-status"]}>
+          <li key={book.uuid} className={styles["book-status"]}>
             <BookStatus book={book} onUpdate={refreshBooks} />
           </li>
         ))}
