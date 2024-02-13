@@ -12,10 +12,9 @@ import os
 import sys
 import whisperx.types
 
-from .files import CACHE_DIR, TEXT_DIR
+from .files import CACHE_DIR, TEXT_DIR, StrPath
 
 from .audio import (
-    StrPath,
     get_processed_audio_filepath,
     get_processed_files,
     get_transcriptions,
@@ -372,8 +371,8 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
     return duration
 
 
-def get_sync_cache_path(book_name: str):
-    return f"{CACHE_DIR}/{book_name}.json"
+def get_sync_cache_path(book_uuid: str):
+    return os.path.join(CACHE_DIR, f"{book_uuid}.json")
 
 
 def sync_book(

@@ -86,6 +86,7 @@ if config.config.debug_requests:
 async def startup_event():
     print("Running database migrations")
     db.migrate()
+    assets.migrate_to_uuids()
 
 
 @app.get("/")

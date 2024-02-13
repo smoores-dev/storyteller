@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict, List, cast
 
 from storyteller.synchronize.epub import EpubAuthor
@@ -122,6 +123,54 @@ def get_book(book_uuid: str):
         id=id,
         title=title,
     )
+
+
+@dataclass
+class LegacyBook:
+    uuid: str
+    id: int
+    title: str
+    epub_filename: str | None
+    audio_filename: str | None
+    audio_filetype: str | None
+
+
+def get_books_legacy_():
+    cursor = connection.execute(
+        """
+        SELECT uuid, id, title, epub_filename, audio_filename, audio_filetype
+        FROM book
+        WHERE epub_filename != NULL OR audio_filename != NULL
+        """
+    )
+
+    return [
+        LegacyBook(
+            uuid=uuid,
+            id=id,
+            title=title,
+            epub_filename=epub_filename,
+            audio_filename=audio_filename,
+            audio_filetype=audio_filetype,
+        )
+        for uuid, id, title, epub_filename, audio_filename, audio_filetype in cursor.fetchall()
+    ]
+
+
+def clear_filename_columns(book_uuid: str):
+    connection.execute(
+        """
+        UPDATE book
+        SET
+            epub_filename=null,
+            audio_filename=null
+        WHERE
+            book.uuid = :book_uuid
+        """,
+        {"book_uuid": book_uuid},
+    )
+
+    connection.commit()
 
 
 def get_books():

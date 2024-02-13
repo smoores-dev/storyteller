@@ -4,6 +4,8 @@ from .books import (
     get_book_details,
     add_audiofile,
     get_book,
+    get_books_legacy_,
+    clear_filename_columns,
     delete_book,
     get_book_uuid,
 )
@@ -32,6 +34,7 @@ from .settings import get_setting, get_settings, update_settings
 
 __all__ = [
     "init_db",
+    "clear_filename_columns",
     "create_book",
     "create_processing_task",
     "create_invite",
@@ -40,6 +43,7 @@ __all__ = [
     "delete_book",
     "get_book",
     "get_book_uuid",
+    "get_books_legacy_",
     "get_book_details",
     "get_invite",
     "get_setting",

@@ -14,14 +14,11 @@ import urllib.parse
 from dataclasses import asdict, dataclass
 from mutagen.mp4 import MP4, Chapter, MP4Cover
 from pathlib import Path
-from typing import Callable, List, TypeAlias, Union, cast
+from typing import Callable, List, Union, cast
 
-from .files import AUDIO_DIR
+from .files import AUDIO_DIR, StrPath
 from .epub import get_chapters, get_chapter_text, read_epub
 from .prompt import generate_initial_prompt
-
-
-StrPath: TypeAlias = str | os.PathLike[str]  # stable
 
 
 def get_audio_directory(book_uuid: str):
@@ -202,9 +199,14 @@ def process_mpeg4_file(
 
 
 def persist_processed_files_list(book_uuid: str, audio_files: list[AudioFile]):
-    contents = {"processed_files": [asdict(f) for f in audio_files]}
-    with open(get_audio_index_path(book_uuid), "x") as f:
-        json.dump(contents, f)
+    try:
+        index = get_audio_index(book_uuid)
+    except:
+        index = {"processed_files": []}
+    index["processed_files"] = [asdict(f) for f in audio_files]
+
+    with open(get_audio_index_path(book_uuid), "w") as f:
+        json.dump(index, f)
 
 
 def process_audiobook(
@@ -234,31 +236,35 @@ def process_audiobook(
     return audio_files
 
 
-def get_transcription_filename(chapter_filename: StrPath):
-    chapter_path, chapter_basename = os.path.split(chapter_filename)
-    chapter_name, _ = os.path.splitext(chapter_basename)
-    return Path(chapter_path, "..", "transcriptions", f"{chapter_name}.json")
+def get_transcription_filepath(book_uuid: str, bare_filename: str | None):
+    return Path(
+        get_audio_directory(book_uuid),
+        "transcriptions",
+        "" if bare_filename is None else f"{bare_filename}.json",
+    )
 
 
 def transcribe_chapter(
-    filename: StrPath,
+    book_uuid: str,
+    filepath: StrPath,
+    transcription_name: str,
     device: str,
     transcribe_model: whisperx.asr.FasterWhisperPipeline,
     align_model: transformers.models.wav2vec2.Wav2Vec2ForCTC,
     align_metadata: dict,
     batch_size: int,
 ):
-    print(f"Transcribing audio file {filename}")
-    transcription_filename = get_transcription_filename(filename)
+    print(f"Transcribing audio file {filepath}")
+    transcription_filepath = get_transcription_filepath(book_uuid, transcription_name)
 
-    if os.path.exists(transcription_filename):
+    if os.path.exists(transcription_filepath):
         print("Found existing transcription")
-        with open(transcription_filename, mode="r") as transcription_file:
+        with open(transcription_filepath, mode="r") as transcription_file:
             transcription = json.load(transcription_file)
             return cast(whisperx.types.AlignedTranscriptionResult, transcription)
 
     print("Loading audio")
-    audio = whisperx.load_audio(str(filename))
+    audio = whisperx.load_audio(str(filepath))
 
     print("Transcribing audio")
     unaligned = transcribe_model.transcribe(audio, batch_size=batch_size)
@@ -273,7 +279,7 @@ def transcribe_chapter(
         return_char_alignments=False,
     )
 
-    with open(transcription_filename, mode="w") as transcription_file:
+    with open(transcription_filepath, mode="w") as transcription_file:
         json.dump(transcription, transcription_file)
 
     return transcription
@@ -282,9 +288,7 @@ def transcribe_chapter(
 def get_transcriptions(book_uuid: str):
     audio_files = get_processed_files(book_uuid)
     transcription_filenames = [
-        get_transcription_filename(
-            get_processed_audio_filepath(book_uuid, audio_file.filename)
-        )
+        get_transcription_filepath(book_uuid, audio_file.bare_filename)
         for audio_file in audio_files
     ]
     transcriptions: List[whisperx.types.AlignedTranscriptionResult] = []
@@ -327,6 +331,15 @@ def transcribe_book(
 
     for i, audio_file in enumerate(audio_files):
         filepath = get_processed_audio_filepath(book_uuid, audio_file.filename)
-        transcribe_chapter(filepath, device, model, align_model, metadata, batch_size)
+        transcribe_chapter(
+            book_uuid,
+            filepath,
+            audio_file.bare_filename,
+            device,
+            model,
+            align_model,
+            metadata,
+            batch_size,
+        )
         if on_progress is not None:
             on_progress((i + 1) / len(audio_files))
