@@ -26,20 +26,20 @@ def get_audio_directory(book_uuid: str):
 
 
 def get_audio_index_path(book_uuid: str):
-    return Path(get_audio_directory(book_uuid), "index.json")
+    return get_audio_directory(book_uuid).joinpath("index.json")
 
 
 def get_audio_index(book_uuid: str):
-    with open(get_audio_index_path(book_uuid), "r") as index_file:
+    with get_audio_index_path(book_uuid).open() as index_file:
         return json.load(index_file)
 
 
 def get_original_audio_filepath(book_uuid: str, filename: str = ""):
-    return Path(get_audio_directory(book_uuid), "original", filename)
+    return get_audio_directory(book_uuid).joinpath("original", filename)
 
 
 def get_processed_audio_filepath(book_uuid: str, filename: str = ""):
-    return Path(get_audio_directory(book_uuid), "processed", filename)
+    return get_audio_directory(book_uuid).joinpath("processed", filename)
 
 
 def get_custom_audio_cover_filepath(book_uuid: str, filetype: str = ""):
@@ -78,7 +78,7 @@ class ChapterRange:
 
 
 def get_transcriptions_path(book_uuid: str):
-    return Path(get_audio_directory(book_uuid), "transcriptions")
+    return get_audio_directory(book_uuid).joinpath("transcriptions")
 
 
 def get_chapter_filename(chapter_index: int, chapter_title: str, ext: str):

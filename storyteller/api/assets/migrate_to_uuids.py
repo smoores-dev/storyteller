@@ -13,14 +13,17 @@ def migrate_epub_to_uuids(uuid: str, epub_bare_filename: str | None):
     old_epub_filename = f"{epub_bare_filename}.epub"
 
     old_epub_directory = Path(TEXT_DIR, epub_bare_filename)
-    old_original_epub_filepath = Path(old_epub_directory, "original", old_epub_filename)
-    old_synced_epub_filepath = Path(old_epub_directory, "synced", old_epub_filename)
+    old_original_epub_filepath = old_epub_directory.joinpath(
+        "original", old_epub_filename
+    )
+    old_synced_epub_filepath = old_epub_directory.joinpath("synced", old_epub_filename)
 
     new_original_epub_filepath = epub.get_epub_filepath(uuid)
     new_original_epub_filepath.parent.mkdir(parents=True, exist_ok=True)
-    new_synced_epub_filepath = Path(
-        epub.get_epub_synced_directory(uuid), f"{uuid}.epub"
+    new_synced_epub_filepath = epub.get_epub_synced_directory(uuid).joinpath(
+        f"{uuid}.epub"
     )
+
     new_synced_epub_filepath.parent.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -33,6 +36,8 @@ def migrate_epub_to_uuids(uuid: str, epub_bare_filename: str | None):
     except:
         pass
 
+    shutil.rmtree(old_epub_directory)
+
 
 def migrate_audio_to_uuids(
     uuid: str, audio_bare_filename: str | None, audio_filetype: str | None
@@ -42,11 +47,11 @@ def migrate_audio_to_uuids(
 
     old_audio_filename = f"{audio_bare_filename}.{audio_filetype}"
     old_audio_directory = Path(AUDIO_DIR, audio_bare_filename)
-    old_original_audio_filepath = Path(
-        old_audio_directory, "original", old_audio_filename
+    old_original_audio_filepath = old_audio_directory.joinpath(
+        "original", old_audio_filename
     )
-    old_chapters_audio_directory = Path(old_audio_directory, "chapters")
-    old_transcriptions_audio_directory = Path(old_audio_directory, "transcriptions")
+    old_chapters_audio_directory = old_audio_directory.joinpath("chapters")
+    old_transcriptions_audio_directory = old_audio_directory.joinpath("transcriptions")
 
     new_original_audio_filepath = audio.get_original_audio_filepath(
         uuid, old_audio_filename
@@ -65,7 +70,7 @@ def migrate_audio_to_uuids(
         chapters_filenames = []
 
     for filename in chapters_filenames:
-        old_chapter_filepath = Path(old_chapters_audio_directory, filename)
+        old_chapter_filepath = old_chapters_audio_directory.joinpath(filename)
         new_processed_filepath = audio.get_processed_audio_filepath(uuid, filename)
         new_processed_filepath.parent.mkdir(parents=True, exist_ok=True)
         try:
@@ -89,7 +94,9 @@ def migrate_audio_to_uuids(
         transcriptions_filenames = []
 
     for filename in transcriptions_filenames:
-        old_transcription_filepath = Path(old_transcriptions_audio_directory, filename)
+        old_transcription_filepath = old_transcriptions_audio_directory.joinpath(
+            filename
+        )
         new_transcription_filepath = audio.get_transcription_filepath(
             uuid,
             # Trim off the .json extension
@@ -100,6 +107,8 @@ def migrate_audio_to_uuids(
             shutil.move(old_transcription_filepath, new_transcription_filepath)
         except:
             pass
+
+    shutil.rmtree(old_audio_directory)
 
 
 def migrate_sync_cache_to_uuids(uuid: str, epub_bare_filename: str | None):

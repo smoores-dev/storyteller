@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import re
 from dataclasses import dataclass
@@ -29,11 +28,11 @@ def get_epub_directory(book_uuid: str):
 
 
 def get_epub_synced_directory(book_uuid: str):
-    return Path(get_epub_directory(book_uuid), "synced")
+    return get_epub_directory(book_uuid).joinpath("synced")
 
 
 def get_epub_filepath(book_uuid: str):
-    return Path(get_epub_directory(book_uuid), "original", f"{book_uuid}.epub")
+    return get_epub_directory(book_uuid).joinpath("original", f"{book_uuid}.epub")
 
 
 def read_epub(book_uuid: str):
