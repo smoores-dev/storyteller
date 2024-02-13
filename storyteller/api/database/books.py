@@ -45,7 +45,7 @@ def create_book(title: str, authors: List[EpubAuthor]) -> BookDetail:
 
     cursor.execute(
         """
-        INSERT INTO book (title) VALUES (:title)
+        INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9223372036854775806 + 1, :title)
         RETURNING uuid
         """,
         {"title": title},
