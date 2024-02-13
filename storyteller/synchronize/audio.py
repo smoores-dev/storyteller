@@ -55,7 +55,7 @@ def get_processed_files(book_uuid: str):
 
 
 def get_custom_audio_cover(cover_path: str):
-    _, extension = os.path.splitext(cover_path)
+    extension = Path(cover_path).suffix
     extension = extension[1:]
 
     with open(cover_path, "rb") as cover_file:
@@ -109,8 +109,10 @@ def process_file(
 ):
     audio_files: list[AudioFile] = []
 
-    filename = os.path.basename(filepath)
-    bare_filename, ext = os.path.splitext(filename)
+    filename = Path(filepath).name
+    path = Path(filename)
+    bare_filename = path.stem
+    ext = path.suffix
 
     if ext in PLAIN_AUDIO_FILE_EXTENSIONS:
         audio_files.append(
@@ -131,7 +133,7 @@ def process_file(
             for i, zinfo in enumerate(zf.filelist):
                 if zinfo.is_dir():
                     continue
-                _, zext = os.path.splitext(zinfo.filename)
+                zext = Path(zinfo.filename).suffix
                 if zext in PLAIN_AUDIO_FILE_EXTENSIONS or zext in MPEG4_FILE_EXTENSIONS:
 
                     def on_intermediate_progress(progress: float):
@@ -153,11 +155,16 @@ def process_mpeg4_file(
 ):
     if mp4.chapters is None:
         if mp4.filename is None:
-            return []
+            return cast(list[AudioFile], [])
 
         print(f"Found no chapters; copying MPEG-4 file as is.")
         shutil.copy(mp4.filename, out_dir)
-        return [os.path.basename(mp4.filename)]
+        path = Path(mp4.filename)
+        return [
+            AudioFile(
+                filename=path.name, bare_filename=path.stem, extension=path.suffix
+            )
+        ]
 
     chapters: List[Chapter] = list(mp4.chapters)
     print(f"Found {len(chapters)} chapters")
@@ -174,7 +181,7 @@ def process_mpeg4_file(
 
         chapter_filepath = Path(out_dir, chapter_filename)
 
-        if os.path.exists(chapter_filepath):
+        if chapter_filepath.exists():
             os.remove(chapter_filepath)
 
         print(f"Splitting chapter {chapter_filepath}")
@@ -257,7 +264,7 @@ def transcribe_chapter(
     print(f"Transcribing audio file {filepath}")
     transcription_filepath = get_transcription_filepath(book_uuid, transcription_name)
 
-    if os.path.exists(transcription_filepath):
+    if transcription_filepath.exists():
         print("Found existing transcription")
         with open(transcription_filepath, mode="r") as transcription_file:
             transcription = json.load(transcription_file)

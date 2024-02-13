@@ -291,7 +291,7 @@ def tag_sentences(chapter: epub.EpubHtml):
 
 
 def get_epub_audio_filename(audio_filename: str) -> str:
-    return f"Audio/{os.path.basename(audio_filename)}"
+    return f"Audio/{Path(audio_filename).name}"
 
 
 def create_media_overlay(
@@ -339,6 +339,6 @@ def get_cover_image(book_uuid: str):
     cover_image_item_id = cover_image_meta["content"]
     cover_image = cast(EpubImage, epub.get_item_with_id(cover_image_item_id))
     cover_image_filename = cover_image.file_name
-    _, cover_image_extension = os.path.splitext(cover_image_filename)
+    cover_image_extension = Path(cover_image_filename).suffix
 
     return cover_image.get_content(), cover_image_extension[1:]

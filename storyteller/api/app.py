@@ -1,6 +1,7 @@
 from datetime import timedelta
 from email.utils import formatdate
 import os
+from pathlib import Path
 import secrets
 import tempfile
 from typing import Annotated, cast
@@ -393,7 +394,7 @@ async def get_book_cover(book_id, audio: bool = False):
 async def upload_book_cover(book_id: str, file: UploadFile):
     book_uuid = db.get_book_uuid(book_id)
     book = db.get_book(book_uuid)
-    _, extension = os.path.splitext(cast(str, file.filename))
-    extension = extension[1:]
+    filename = cast(str, file.filename)
+    extension = Path(filename).suffix[1:]
 
     assets.persist_audio_cover(book.uuid, extension, file.file)

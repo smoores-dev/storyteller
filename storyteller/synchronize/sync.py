@@ -307,7 +307,7 @@ def sync_chapter(
     sentence_ranges = interpolate_sentence_ranges(sentence_ranges)
     tag_sentences(chapter)
 
-    chapter_filepath_length = len(chapter.file_name.split(os.path.sep)) - 1
+    chapter_filepath_length = len(Path(chapter.file_name).parts) - 1
     relative_ups = "../" * chapter_filepath_length
     chapter.add_link(
         rel="stylesheet",
@@ -342,7 +342,7 @@ def format_duration(duration: float):
 
 
 def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
-    base_filename, _ = os.path.splitext(os.path.basename(synced.chapter.file_name))
+    base_filename = Path(synced.chapter.file_name).stem
 
     media_overlay_item = epub.EpubSMIL(
         uid=f"{base_filename}_overlay",
@@ -372,7 +372,7 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
 
 
 def get_sync_cache_path(book_uuid: str):
-    return os.path.join(CACHE_DIR, f"{book_uuid}.json")
+    return Path(CACHE_DIR, f"{book_uuid}.json")
 
 
 def sync_book(
@@ -396,7 +396,7 @@ def sync_book(
     Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
     sync_cache_path = get_sync_cache_path(book_uuid)
-    if os.path.exists(sync_cache_path):
+    if sync_cache_path.exists():
         with open(sync_cache_path, "r") as cache_file:
             book_cache = json.load(cache_file)
 

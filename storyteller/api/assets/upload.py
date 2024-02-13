@@ -1,18 +1,16 @@
 from dataclasses import dataclass
-import os
-from pathlib import Path, PurePath
+from pathlib import Path
 import shutil
 from typing import BinaryIO, cast
-from zipfile import ZipFile
 
 from fastapi import UploadFile
 
 from storyteller.synchronize.audio import (
-    get_audio_directory,
     get_original_audio_filepath,
     get_custom_audio_cover_filepath,
 )
 from storyteller.synchronize.epub import get_epub_filepath
+from storyteller.synchronize.files import StrPath
 
 
 class UnsupportedMediaTypeError(Exception):
@@ -20,9 +18,8 @@ class UnsupportedMediaTypeError(Exception):
         self.media_type = media_type
 
 
-def persist_to_disk(fsrc: BinaryIO, filepath: PurePath | str):
-    dirname = os.path.dirname(filepath)
-    Path(dirname).mkdir(parents=True, exist_ok=True)
+def persist_to_disk(fsrc: BinaryIO, filepath: StrPath | str):
+    Path(filepath).parent.mkdir(parents=True, exist_ok=True)
 
     with open(filepath, mode="w+b") as fdst:
         shutil.copyfileobj(fsrc, fdst)
