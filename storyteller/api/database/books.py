@@ -140,7 +140,7 @@ def get_books_legacy_():
         """
         SELECT uuid, id, title, epub_filename, audio_filename, audio_filetype
         FROM book
-        WHERE epub_filename != NULL OR audio_filename != NULL
+        WHERE epub_filename is not null OR audio_filename is not null
         """
     )
 
