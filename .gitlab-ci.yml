@@ -52,7 +52,7 @@ publish-api:
   needs:
     - check-api
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "any-audio"
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -62,9 +62,9 @@ publish-api:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f docker/api.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE/api:latest .
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:next --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:next,mode=max --tag
+      $CI_REGISTRY_IMAGE/api:next .
 
 publish-cuda-api:
   image: docker:20.10.16
@@ -93,7 +93,7 @@ publish-web:
   needs:
     - check-web
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "any-audio"
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -103,6 +103,6 @@ publish-web:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f docker/web.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE/web:latest .
+      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:next --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:next,mode=max --tag
+      $CI_REGISTRY_IMAGE/web:next .
