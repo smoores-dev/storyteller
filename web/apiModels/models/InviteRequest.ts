@@ -5,6 +5,7 @@
 export type InviteRequest = {
   email: string
   book_create: boolean
+  book_delete: boolean
   book_read: boolean
   book_process: boolean
   book_download: boolean

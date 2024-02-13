@@ -78,6 +78,7 @@ class TokenData(BaseModel):
 class InviteRequest(BaseModel):
     email: str
     book_create: bool
+    book_delete: bool
     book_read: bool
     book_process: bool
     book_download: bool

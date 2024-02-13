@@ -8,6 +8,7 @@ def create_invite(
     email: str,
     key: str,
     book_create: bool,
+    book_delete: bool,
     book_read: bool,
     book_process: bool,
     book_download: bool,
@@ -24,6 +25,7 @@ def create_invite(
         """
         INSERT INTO user_permission (
             book_create,
+            book_delete,
             book_read,
             book_process,
             book_download,
@@ -35,6 +37,7 @@ def create_invite(
             settings_update
         ) VALUES (
             :book_create,
+            :book_delete,
             :book_read,
             :book_process,
             :book_download,
@@ -49,6 +52,7 @@ def create_invite(
         """,
         {
             "book_create": book_create,
+            "book_delete": book_delete,
             "book_read": book_read,
             "book_process": book_process,
             "book_download": book_download,

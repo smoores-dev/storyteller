@@ -146,6 +146,7 @@ async def create_invite(invite: models.InviteRequest):
         invite.email,
         key,
         invite.book_create,
+        invite.book_delete,
         invite.book_read,
         invite.book_process,
         invite.book_download,

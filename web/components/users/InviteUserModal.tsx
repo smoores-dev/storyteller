@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 export function InviteUserModal() {
   const [email, setEmail] = useState("")
   const [bookCreate, setBookCreate] = useState(false)
+  const [bookDelete, setBookDelete] = useState(false)
   const [bookRead, setBookRead] = useState(true)
   const [bookProcess, setBookProcess] = useState(false)
   const [bookDownload, setBookDownload] = useState(true)
@@ -51,6 +52,7 @@ export function InviteUserModal() {
             await client.createInvite({
               email,
               book_create: bookCreate,
+              book_delete: bookDelete,
               book_read: bookRead,
               book_process: bookProcess,
               book_download: bookDownload,
@@ -83,6 +85,7 @@ export function InviteUserModal() {
               type="button"
               onClick={() => {
                 setBookCreate(false)
+                setBookDelete(false)
                 setBookRead(true)
                 setBookProcess(false)
                 setBookDownload(true)
@@ -100,6 +103,7 @@ export function InviteUserModal() {
               type="button"
               onClick={() => {
                 setBookCreate(true)
+                setBookDelete(true)
                 setBookRead(true)
                 setBookProcess(true)
                 setBookDownload(true)
@@ -127,6 +131,18 @@ export function InviteUserModal() {
                 }}
               />
               Create new books
+            </label>
+            <label id="book-delete-label" htmlFor="book-delete">
+              <input
+                id="book-delete"
+                name="book-delete"
+                type="checkbox"
+                checked={bookDelete}
+                onChange={(event) => {
+                  setBookDelete(event.target.checked)
+                }}
+              />
+              Delete books
             </label>
             <label id="book-read-label" htmlFor="book-read">
               <input
