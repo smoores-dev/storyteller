@@ -43,9 +43,11 @@ def get_book_uuid(book_id_or_uuid: str) -> str:
 def create_book(title: str, authors: List[EpubAuthor]) -> BookDetail:
     cursor = connection.cursor()
 
+    # The max id size here is the max size supported by Javascript, which is
+    # 2^53 - 1.
     cursor.execute(
         """
-        INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9223372036854775806 + 1, :title)
+        INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, :title)
         RETURNING uuid
         """,
         {"title": title},
