@@ -76,7 +76,7 @@ def reset_processing_tasks_for_book(book_uuid: str):
     connection.commit()
 
 
-def update_task_progress(task_uuid: int, progress: float):
+def update_task_progress(task_uuid: str, progress: float):
     connection.execute(
         """
         UPDATE processing_task

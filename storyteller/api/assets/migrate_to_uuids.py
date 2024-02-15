@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import shutil
+from mutagen.mp4 import MP4
 from .. import database as db
 from storyteller.synchronize.files import AUDIO_DIR, TEXT_DIR, CACHE_DIR, StrPath
 from storyteller.synchronize import epub, audio, sync
@@ -36,7 +37,16 @@ def migrate_epub_to_uuids(uuid: str, epub_bare_filename: str | None):
     except:
         pass
 
-    shutil.rmtree(old_epub_directory)
+    try:
+        shutil.rmtree(old_epub_directory)
+    except:
+        pass
+
+    # Make sure to split out epub covers
+    try:
+        epub.process_epub(uuid)
+    except:
+        pass
 
 
 def migrate_audio_to_uuids(
@@ -61,6 +71,13 @@ def migrate_audio_to_uuids(
         shutil.move(old_original_audio_filepath, new_original_audio_filepath)
     except:
         pass
+
+    if new_original_audio_filepath.suffix in audio.MPEG4_FILE_EXTENSIONS:
+        mp4 = MP4(new_original_audio_filepath)
+        try:
+            audio.extract_mpeg4_cover(uuid, mp4)
+        except:
+            pass
 
     audio_files: list[audio.AudioFile] = []
 
@@ -108,7 +125,10 @@ def migrate_audio_to_uuids(
         except:
             pass
 
-    shutil.rmtree(old_audio_directory)
+    try:
+        shutil.rmtree(old_audio_directory)
+    except:
+        pass
 
 
 def migrate_sync_cache_to_uuids(uuid: str, epub_bare_filename: str | None):

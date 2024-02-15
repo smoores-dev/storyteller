@@ -13,10 +13,11 @@ import urllib.parse
 
 from dataclasses import asdict, dataclass
 from mutagen.mp4 import MP4, Chapter, MP4Cover
+from mutagen.mp3 import MP3
 from pathlib import Path
 from typing import Callable, List, Union, cast
 
-from .files import AUDIO_DIR, StrPath
+from .files import AUDIO_DIR, IMAGE_DIR, StrPath
 from .epub import get_chapters, get_chapter_text, read_epub
 from .prompt import generate_initial_prompt
 
@@ -42,8 +43,16 @@ def get_processed_audio_filepath(book_uuid: str, filename: str = ""):
     return get_audio_directory(book_uuid).joinpath("processed", filename)
 
 
-def get_custom_audio_cover_filepath(book_uuid: str, filetype: str = ""):
-    return get_processed_audio_filepath(book_uuid, f"cover.{filetype}")
+def get_audio_cover_filepath(book_uuid: str):
+    try:
+        index = get_audio_index(book_uuid)
+    except:
+        return None
+
+    if "cover" not in index:
+        return None
+
+    return get_audio_directory(book_uuid).joinpath(index["cover"])
 
 
 def get_processed_files(book_uuid: str):
@@ -52,22 +61,6 @@ def get_processed_files(book_uuid: str):
         [AudioFile(**file_info) for file_info in index["processed_files"]],
         key=lambda a: a.filename,
     )
-
-
-def get_custom_audio_cover(cover_path: str):
-    extension = Path(cover_path).suffix
-    extension = extension[1:]
-
-    with open(cover_path, "rb") as cover_file:
-        return cover_file.read(), extension
-
-
-def get_audio_cover_image(book_uuid: str) -> tuple[bytes, str] | None:
-    index = get_audio_index(book_uuid)
-    if "cover" not in index:
-        return None
-
-    return get_custom_audio_cover(index["cover"])
 
 
 @dataclass
@@ -91,6 +84,7 @@ def get_chapter_filename(chapter_index: int, chapter_title: str, ext: str):
     return f"{filename}{ext}"
 
 
+COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 PLAIN_AUDIO_FILE_EXTENSIONS = [".mp3"]
 MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
 
@@ -102,19 +96,53 @@ class AudioFile:
     extension: str
 
 
+def extract_mpeg4_cover(book_uuid: str, mp4: MP4):
+    tags = mp4.tags
+    if tags is None:
+        return
+
+    covers = cast(list[MP4Cover], tags.get("covr"))
+
+    if len(covers) == 0:
+        return
+
+    (cover,) = covers
+
+    suffix = ".jpg" if cover.imageformat == MP4Cover.FORMAT_JPEG else ".png"
+
+    cover_filename = f"Audio Cover{suffix}"
+    cover_filepath = get_audio_directory(book_uuid).joinpath(cover_filename)
+    cover_filepath.write_bytes(cover)
+    persist_cover(book_uuid, cover_filename)
+
+
+def extract_mp3_cover(book_uuid: str, mp3: MP3):
+    # TODO: Figure out how to implement this
+    pass
+
+
 def process_file(
-    filepath: StrPath,
+    book_uuid: str,
+    filepath: Path,
     out_dir: StrPath,
     on_progress: Callable[[float], None] | None = None,
 ):
     audio_files: list[AudioFile] = []
 
-    filename = Path(filepath).name
+    filename = filepath.name
     path = Path(filename)
     bare_filename = path.stem
     ext = path.suffix
 
+    if ext in COVER_IMAGE_FILE_EXTENSIONS and path.stem.lower() == "cover":
+        cover_filepath = get_audio_directory(book_uuid).joinpath(filename)
+        shutil.copy(filepath, cover_filepath)
+        persist_cover(book_uuid, filename)
+
     if ext in PLAIN_AUDIO_FILE_EXTENSIONS:
+        if get_audio_cover_filepath(book_uuid) is None:
+            mp3 = MP3(filepath)
+            extract_mp3_cover(book_uuid, mp3)
         audio_files.append(
             AudioFile(
                 filename=filename,
@@ -126,6 +154,8 @@ def process_file(
 
     if ext in MPEG4_FILE_EXTENSIONS:
         mp4 = MP4(filepath)
+        if get_audio_cover_filepath(book_uuid) is None:
+            extract_mpeg4_cover(book_uuid, mp4)
         audio_files.extend(process_mpeg4_file(mp4, out_dir, on_progress))
 
     if ext == ".zip":
@@ -144,7 +174,12 @@ def process_file(
 
                     tmp_filepath = zf.extract(zinfo, tmp)
                     audio_files.extend(
-                        process_file(tmp_filepath, out_dir, on_intermediate_progress)
+                        process_file(
+                            book_uuid,
+                            Path(tmp_filepath),
+                            out_dir,
+                            on_intermediate_progress,
+                        )
                     )
 
     return audio_files
@@ -216,6 +251,17 @@ def persist_processed_files_list(book_uuid: str, audio_files: list[AudioFile]):
         json.dump(index, f)
 
 
+def persist_cover(book_uuid: str, cover_filename: str):
+    try:
+        index = get_audio_index(book_uuid)
+    except:
+        index = {}
+    index["cover"] = cover_filename
+
+    with open(get_audio_index_path(book_uuid), "w") as f:
+        json.dump(index, f)
+
+
 def process_audiobook(
     book_uuid: str, on_progress: Callable[[float], None] | None = None
 ) -> List[AudioFile]:
@@ -236,7 +282,9 @@ def process_audiobook(
 
         filepath = get_original_audio_filepath(book_uuid, filename)
         audio_files.extend(
-            process_file(filepath, processed_audio_directory, on_intermediate_progress)
+            process_file(
+                book_uuid, filepath, processed_audio_directory, on_intermediate_progress
+            )
         )
 
     persist_processed_files_list(book_uuid, audio_files)

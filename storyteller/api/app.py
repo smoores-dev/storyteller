@@ -19,15 +19,19 @@ from fastapi import (
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 
 from starlette.types import Message
 from starlette.background import BackgroundTask
 from starlette._compat import md5_hexdigest
 from storyteller.api.assets.delete import delete_processed
+from storyteller.synchronize.audio import get_audio_cover_filepath
 
-from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
-from storyteller.synchronize.audio import get_audio_cover_image
+from storyteller.synchronize.epub import (
+    get_authors,
+    get_epub_cover_filepath,
+    process_epub,
+)
 
 from . import assets, auth, config, database as db, invites, models, processing
 
@@ -364,15 +368,19 @@ def get_synced_book(
 
 
 def get_epub_book_cover(book: models.Book):
-    return get_cover_image(book.uuid)
+    cover_filepath = get_epub_cover_filepath(book.uuid)
+    if cover_filepath is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    return cover_filepath
 
 
 def get_audio_book_cover(book: models.Book):
-    cover = get_audio_cover_image(book.uuid)
-    if cover is None:
+    cover_filepath = get_audio_cover_filepath(book.uuid)
+    if cover_filepath is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    return cover
+    return cover_filepath
 
 
 @app.get(
@@ -381,11 +389,21 @@ def get_audio_book_cover(book: models.Book):
 async def get_book_cover(book_id, audio: bool = False):
     book_uuid = db.get_book_uuid(book_id)
     book = db.get_book(book_uuid)
-    cover, ext = get_audio_book_cover(book) if audio else get_epub_book_cover(book)
-    response = Response(cover)
+
+    header_safe_title = book.title.encode().decode("latin-1")
+
+    cover_filepath = get_audio_book_cover(book) if audio else get_epub_book_cover(book)
+    cover_filename = cover_filepath.name
+    cover_filename_path = Path(cover_filename)
+    response_filename = cover_filename_path.with_stem(
+        f"{header_safe_title} {cover_filename_path.stem}"
+    )
+
+    response = FileResponse(cover_filepath)
     response.headers[
         "Content-Disposition"
-    ] = f'attachment; filename="{book.title.encode().decode("latin-1")} {"Audio " if audio else ""}Cover.{ext}"'
+    ] = f'attachment; filename="{response_filename}"'
+
     return response
 
 
@@ -396,6 +414,5 @@ async def upload_book_cover(book_id: str, file: UploadFile):
     book_uuid = db.get_book_uuid(book_id)
     book = db.get_book(book_uuid)
     filename = cast(str, file.filename)
-    extension = Path(filename).suffix[1:]
 
-    assets.persist_audio_cover(book.uuid, extension, file.file)
+    assets.persist_audio_cover(book.uuid, filename, file.file)

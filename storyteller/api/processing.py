@@ -1,5 +1,5 @@
 import functools
-from typing import Dict, List, cast
+from typing import List, cast
 from multiprocessing import Process
 from threading import Thread
 
@@ -67,9 +67,7 @@ def process(book: Book, processing_tasks: List[ProcessingTask]):
         if processing_task.status != ProcessingTaskStatus.STARTED:
             update_task_status(processing_task.uuid, ProcessingTaskStatus.STARTED)
 
-        on_progress = functools.partial(
-            update_task_progress, cast(int, processing_task.uuid)
-        )
+        on_progress = functools.partial(update_task_progress, processing_task.uuid)
 
         if processing_task.type == ProcessingTaskType.SPLIT_CHAPTERS:
             p = Process(

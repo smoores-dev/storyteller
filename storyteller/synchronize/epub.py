@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import re
 from dataclasses import dataclass
@@ -33,6 +34,38 @@ def get_epub_synced_directory(book_uuid: str):
 
 def get_epub_filepath(book_uuid: str):
     return get_epub_directory(book_uuid).joinpath("original", f"{book_uuid}.epub")
+
+
+def get_epub_index_path(book_uuid: str):
+    return get_epub_directory(book_uuid).joinpath("index.json")
+
+
+def get_epub_index(book_uuid: str):
+    with get_epub_index_path(book_uuid).open() as index_file:
+        return json.load(index_file)
+
+
+def get_epub_cover_filepath(book_uuid: str):
+    try:
+        index = get_epub_index(book_uuid)
+    except:
+        return None
+
+    if "cover" not in index:
+        return None
+
+    return get_epub_directory(book_uuid).joinpath(index["cover"])
+
+
+def persist_cover(book_uuid: str, cover_filename: str):
+    try:
+        index = get_epub_index(book_uuid)
+    except:
+        index = {}
+    index["cover"] = cover_filename
+
+    with open(get_epub_index_path(book_uuid), "w") as f:
+        json.dump(index, f)
 
 
 def read_epub(book_uuid: str):
@@ -332,12 +365,15 @@ def create_media_overlay(
     return soup.encode(formatter="minimal")
 
 
-def get_cover_image(book_uuid: str):
+def process_epub(book_uuid: str):
     epub = read_epub(book_uuid)
+
     [(_, cover_image_meta)] = epub.get_metadata("OPF", "cover")
     cover_image_item_id = cover_image_meta["content"]
     cover_image = cast(EpubImage, epub.get_item_with_id(cover_image_item_id))
-    cover_image_filename = cover_image.file_name
-    cover_image_extension = Path(cover_image_filename).suffix
+    cover_image_filename = Path(cover_image.file_name).name
 
-    return cover_image.get_content(), cover_image_extension[1:]
+    cover_image_filepath = get_epub_directory(book_uuid).joinpath(cover_image_filename)
+    cover_image_filepath.write_bytes(cover_image.get_content())
+
+    persist_cover(book_uuid, cover_image_filename)

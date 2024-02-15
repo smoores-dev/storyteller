@@ -6,10 +6,10 @@ from typing import BinaryIO, cast
 from fastapi import UploadFile
 
 from storyteller.synchronize.audio import (
+    get_audio_directory,
     get_original_audio_filepath,
-    get_custom_audio_cover_filepath,
 )
-from storyteller.synchronize.epub import get_epub_filepath
+from storyteller.synchronize.epub import get_epub_filepath, process_epub
 from storyteller.synchronize.files import StrPath
 
 
@@ -27,6 +27,7 @@ def persist_to_disk(fsrc: BinaryIO, filepath: StrPath | str):
 
 def persist_epub(book_uuid: str, fsrc: BinaryIO):
     persist_to_disk(fsrc, get_epub_filepath(book_uuid))
+    process_epub(book_uuid)
 
 
 def persist_audio(book_uuid: str, files: list[UploadFile]):
@@ -36,5 +37,5 @@ def persist_audio(book_uuid: str, files: list[UploadFile]):
         persist_to_disk(file.file, filepath)
 
 
-def persist_audio_cover(book_uuid: str, filetype: str, fsrc: BinaryIO):
-    persist_to_disk(fsrc, get_custom_audio_cover_filepath(book_uuid, filetype))
+def persist_audio_cover(book_uuid: str, filename: str, fsrc: BinaryIO):
+    persist_to_disk(fsrc, get_audio_directory(book_uuid).joinpath(filename))
