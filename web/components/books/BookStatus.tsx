@@ -3,10 +3,10 @@
 import Image from "next/image"
 import { BookDetail } from "@/apiModels"
 import styles from "./bookstatus.module.css"
-import { Button } from "@ariakit/react"
 import { useApiClient } from "@/hooks/useApiClient"
 import { BookOptions } from "./BookOptions"
 import { ProgressBar } from "./ProgressBar"
+import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
 
 type Props = {
   book: BookDetail
@@ -33,7 +33,7 @@ export function BookStatus({ book, onUpdate }: Props) {
     ]
 
   return (
-    <div className={styles.container}>
+    <div className={styles["container"]}>
       <Image
         height={150}
         width={98}
@@ -41,7 +41,7 @@ export function BookStatus({ book, onUpdate }: Props) {
         aria-hidden
         src={client.getCoverUrl(book.uuid)}
       />
-      <div className={styles.content}>
+      <div className={styles["content"]}>
         <div>
           <h3 className={styles["book-title"]}>{book.title}</h3>
           {book.authors[0] && <div>{book.authors[0].name}</div>}
@@ -54,6 +54,7 @@ export function BookStatus({ book, onUpdate }: Props) {
           book.processing_status && (
             <div className={styles["status"]}>
               {userFriendlyTaskType}
+              {book.processing_status.in_error && <ProcessingFailedMessage />}
               <ProgressBar
                 progress={Math.floor(book.processing_status.progress * 100)}
               />
@@ -61,7 +62,7 @@ export function BookStatus({ book, onUpdate }: Props) {
           )
         )}
       </div>
-      <div className={styles.actions}>
+      <div className={styles["actions"]}>
         <BookOptions book={book} onUpdate={onUpdate} />
       </div>
     </div>

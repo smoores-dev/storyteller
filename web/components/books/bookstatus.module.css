@@ -4,6 +4,12 @@
   gap: 1rem;
 }
 
+@media screen and (max-width: 700px) {
+  .container {
+    width: 100%;
+  }
+}
+
 .content {
   display: flex;
   flex-direction: column;
@@ -22,9 +28,14 @@
   margin-top: 1rem;
 }
 
+.status {
+  font-weight: bold;
+}
+
 .actions {
   display: flex;
   flex-direction: column;
+  align-items: center;
   width: 40px;
   flex-shrink: 0;
 }

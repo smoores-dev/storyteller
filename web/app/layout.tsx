@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ApiHostContextProvider value={{ rootPath: proxyRootPath }}>
-          <div className={styles.container}>
+          <div className={styles["container"]}>
             {/* <Header /> */}
             <Sidebar />
             {children}

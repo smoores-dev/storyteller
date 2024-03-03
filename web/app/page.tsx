@@ -48,7 +48,7 @@ export default async function Home() {
 
   return (
     <main>
-      <h2 className={styles.heading}>Books</h2>
+      <h2 className={styles["heading"]}>Books</h2>
       <div className={styles["main"]}>
         <BookList books={books} />
         <p>

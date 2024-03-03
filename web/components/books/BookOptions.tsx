@@ -32,7 +32,7 @@ export function BookOptions({ book, onUpdate }: Props) {
   const dialogStore = useDialogStore()
 
   return (
-    <Menubar>
+    <Menubar className={styles["menu"]}>
       <MenuProvider>
         <MenuItem
           className={styles["menu-item"]}
@@ -74,7 +74,7 @@ export function BookOptions({ book, onUpdate }: Props) {
           </TooltipProvider>
         </MenuItem>
         <MenuItem
-          className={styles["menu-item"]}
+          className={`${styles["menu-item"]} ${styles["delete"]}`}
           onClick={() => {
             client.deleteBook(book.uuid).then(() => onUpdate())
           }}

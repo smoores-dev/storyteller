@@ -4,8 +4,8 @@ import Link from "next/link"
 
 export function Sidebar() {
   return (
-    <aside className={styles.aside}>
-      <h1 className={styles.heading}>
+    <aside className={styles["aside"]}>
+      <h1 className={styles["heading"]}>
         <Image
           height={80}
           width={80}
@@ -31,9 +31,9 @@ export function Sidebar() {
           </div>
         </div>
       </section>
-      <nav className={styles.nav}>
+      <nav className={styles["nav"]}>
         <ol>
-          <li className={styles.active}>
+          <li className={styles["active"]}>
             <Link href="/">Books</Link>
           </li>
           <li>

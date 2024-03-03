@@ -1,7 +1,6 @@
 "use client"
 
 import { BookDetail } from "@/apiModels"
-import { AddBookModal } from "./AddBookModal"
 import { BookStatus } from "./BookStatus"
 import styles from "./books.module.css"
 import { useCallback, useEffect, useState } from "react"
@@ -29,7 +28,7 @@ export function BookList({ books: initialBooks }: Props) {
   return (
     <>
       {/* <AddBookModal /> */}
-      <ul>
+      <ul className={styles["book-list"]}>
         {books.map((book) => (
           <li key={book.uuid} className={styles["book-status"]}>
             <BookStatus book={book} onUpdate={refreshBooks} />
