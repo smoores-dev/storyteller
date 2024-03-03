@@ -39,6 +39,14 @@ export class ApiClient {
     return `${this.rootPath}/books/${bookUuid}/synced`
   }
 
+  getCoverUrl(bookUuid: string, audio = false) {
+    const searchParams = new URLSearchParams()
+    if (audio) {
+      searchParams.append("audio", "true")
+    }
+    return `${this.rootPath}/books/${bookUuid}/cover${searchParams.toString()}`
+  }
+
   async needsInit(): Promise<boolean> {
     const url = new URL(`${this.rootPath}/needs-init`, this.origin)
 

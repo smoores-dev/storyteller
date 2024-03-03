@@ -1,9 +1,13 @@
 .main {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: start;
   padding: 3rem;
   min-height: 100vh;
+}
+
+.heading {
+  margin: 1rem;
 }
 
 .description {

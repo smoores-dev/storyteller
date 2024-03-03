@@ -6,14 +6,19 @@ import {
   Dialog,
   DialogDismiss,
   DialogHeading,
-  Menu,
-  MenuButton,
   MenuItem,
+  MenuProvider,
+  Menubar,
+  Tooltip,
+  TooltipAnchor,
+  TooltipProvider,
   useDialogStore,
-  useMenuStore,
 } from "@ariakit/react"
-import { MoreVerticalIcon } from "../icons/MoreVerticalIcon"
 import { useRef, useState } from "react"
+import { HardRestartIcon } from "../icons/HardRestartIcon"
+import { SoftRestartIcon } from "../icons/SoftRestartIcon"
+import { EditIcon } from "../icons/EditIcon"
+import { DeleteIcon } from "../icons/DeleteIcon"
 
 type Props = {
   book: BookDetail
@@ -24,22 +29,23 @@ export function BookOptions({ book, onUpdate }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const client = useApiClient()
-  const menuStore = useMenuStore()
   const dialogStore = useDialogStore()
 
   return (
-    <>
-      <MenuButton store={menuStore} className={styles["button"]}>
-        <MoreVerticalIcon className={styles["icon"]} />
-      </MenuButton>
-      <Menu store={menuStore} gutter={8} className={styles["menu"]}>
+    <Menubar>
+      <MenuProvider>
         <MenuItem
           className={styles["menu-item"]}
           onClick={() => {
             dialogStore.setOpen(true)
           }}
         >
-          Upload audio art
+          <TooltipProvider placement="right">
+            <TooltipAnchor>
+              <EditIcon ariaLabel="Edit" />
+            </TooltipAnchor>
+            <Tooltip>Edit</Tooltip>
+          </TooltipProvider>
         </MenuItem>
         <MenuItem
           className={styles["menu-item"]}
@@ -47,7 +53,12 @@ export function BookOptions({ book, onUpdate }: Props) {
             client.processBook(book.uuid, false).then(() => onUpdate())
           }
         >
-          Re-process
+          <TooltipProvider placement="right">
+            <TooltipAnchor>
+              <SoftRestartIcon ariaLabel="Re-process" />
+            </TooltipAnchor>
+            <Tooltip>Re-process</Tooltip>
+          </TooltipProvider>
         </MenuItem>
         <MenuItem
           className={styles["menu-item"]}
@@ -55,7 +66,12 @@ export function BookOptions({ book, onUpdate }: Props) {
             client.processBook(book.uuid, true).then(() => onUpdate())
           }
         >
-          Re-process (from scratch)
+          <TooltipProvider placement="right">
+            <TooltipAnchor>
+              <HardRestartIcon ariaLabel="Force re-process" />
+            </TooltipAnchor>
+            <Tooltip>Force re-process</Tooltip>
+          </TooltipProvider>
         </MenuItem>
         <MenuItem
           className={styles["menu-item"]}
@@ -63,9 +79,14 @@ export function BookOptions({ book, onUpdate }: Props) {
             client.deleteBook(book.uuid).then(() => onUpdate())
           }}
         >
-          Delete
+          <TooltipProvider placement="right">
+            <TooltipAnchor>
+              <DeleteIcon ariaLabel="Delete" />
+            </TooltipAnchor>
+            <Tooltip>Delete</Tooltip>
+          </TooltipProvider>
         </MenuItem>
-      </Menu>
+      </MenuProvider>
       <Dialog store={dialogStore} className={styles["modal"]}>
         <DialogHeading className={styles["modal-heading"]}>
           Upload audio art
@@ -104,6 +125,6 @@ export function BookOptions({ book, onUpdate }: Props) {
           <DialogDismiss>Done</DialogDismiss>
         </div>
       </Dialog>
-    </>
+    </Menubar>
   )
 }

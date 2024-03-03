@@ -223,36 +223,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ariakit/core@npm:0.2.9":
-  version: 0.2.9
-  resolution: "@ariakit/core@npm:0.2.9"
-  checksum: c4860c09fd0350d6f87c9e651469aefdc8eecb7b15c7233b2bfb1a4325550594b5fbe27a4622fa74b7b158d631fd0bad8cb0fc2913543f804654915cc68322f6
+"@ariakit/core@npm:0.4.1":
+  version: 0.4.1
+  resolution: "@ariakit/core@npm:0.4.1"
+  checksum: 2402e054f888d67b44bed81e80757a915ea0f943c3ac76e65f3a1f96973eaa291a344fb6edeeee09f007ede372ef745e43a058e1404ee745d2caf55b7290a8b8
   languageName: node
   linkType: hard
 
-"@ariakit/react-core@npm:0.2.17":
-  version: 0.2.17
-  resolution: "@ariakit/react-core@npm:0.2.17"
+"@ariakit/react-core@npm:0.4.1":
+  version: 0.4.1
+  resolution: "@ariakit/react-core@npm:0.4.1"
   dependencies:
-    "@ariakit/core": "npm:0.2.9"
+    "@ariakit/core": "npm:0.4.1"
     "@floating-ui/dom": "npm:^1.0.0"
     use-sync-external-store: "npm:^1.2.0"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0
     react-dom: ^17.0.0 || ^18.0.0
-  checksum: 5e1203c62e9116efeb474332c2e070cb12824d32da89b855126994f794924073b309e82d06800986037dd6c97fada5d264b545f340014e27af47d795805cf91c
+  checksum: a6388f8c46dd49f0a117639950261fdf7d38c0b395b5e2d87edd1cf9aa479ea0cab338b716a915b7d13142e88ad0430b85a95c9558dbc892c9a7b51bbc702092
   languageName: node
   linkType: hard
 
-"@ariakit/react@npm:^0.2.16":
-  version: 0.2.17
-  resolution: "@ariakit/react@npm:0.2.17"
+"@ariakit/react@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@ariakit/react@npm:0.4.1"
   dependencies:
-    "@ariakit/react-core": "npm:0.2.17"
+    "@ariakit/react-core": "npm:0.4.1"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0
     react-dom: ^17.0.0 || ^18.0.0
-  checksum: 74fa2b432fdfd8c607b4b9afe2f9ea53157c3bcec98a47ab216ab9b36ed975584cb15ec59d1ce21c3190ad53c74d80fa865e2c239fc83600902e9262480eb6cc
+  checksum: 31a2a8f63a8e3ab5037445669da4005ab61d5f7957c39780b32ef3ac77db478ac39b940a16a252c24f2babf95c44d363fc904667b7ddf86bb30332845080cddc
   languageName: node
   linkType: hard
 
@@ -3012,7 +3012,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@storyteller/web@workspace:web"
   dependencies:
-    "@ariakit/react": "npm:^0.2.16"
+    "@ariakit/react": "npm:^0.4.1"
     "@tsconfig/strictest": "npm:^2.0.1"
     "@types/http-proxy": "npm:^1.17.14"
     "@types/node": "npm:20.3.1"

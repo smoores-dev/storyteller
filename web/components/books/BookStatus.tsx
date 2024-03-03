@@ -1,10 +1,12 @@
 "use client"
 
+import Image from "next/image"
 import { BookDetail } from "@/apiModels"
-import styles from "./books.module.css"
+import styles from "./bookstatus.module.css"
 import { Button } from "@ariakit/react"
 import { useApiClient } from "@/hooks/useApiClient"
 import { BookOptions } from "./BookOptions"
+import { ProgressBar } from "./ProgressBar"
 
 type Props = {
   book: BookDetail
@@ -13,8 +15,8 @@ type Props = {
 
 const ProcessingTaskTypes = {
   SYNC_CHAPTERS: "Synchronizing chapters",
-  SPLIT_CHAPTERS: "Splitting audiobook chapters",
-  TRANSCRIBE_CHAPTERS: "Transcribing chapters",
+  SPLIT_CHAPTERS: "Pre-processing audio",
+  TRANSCRIBE_CHAPTERS: "Transcribing tracks",
 }
 
 export function BookStatus({ book, onUpdate }: Props) {
@@ -31,36 +33,37 @@ export function BookStatus({ book, onUpdate }: Props) {
     ]
 
   return (
-    <>
-      <h3 className={styles["book-title"]}>{book.title}</h3>
-      {book.authors[0] && <div>by {book.authors[0].name}</div>}
-      {synchronized ? (
-        <div className={styles["download-wrapper"]}>
-          <a href={client.getSyncedDownloadUrl(book.uuid)}>Download</a>
+    <div className={styles.container}>
+      <Image
+        height={150}
+        width={98}
+        alt=""
+        aria-hidden
+        src={client.getCoverUrl(book.uuid)}
+      />
+      <div className={styles.content}>
+        <div>
+          <h3 className={styles["book-title"]}>{book.title}</h3>
+          {book.authors[0] && <div>{book.authors[0].name}</div>}
         </div>
-      ) : (
-        book.processing_status && (
-          <div className={styles["status"]}>
-            {userFriendlyTaskType} -{" "}
-            {Math.floor(book.processing_status.progress * 100)}%{" "}
-            {book.processing_status.in_error && (
-              <>
-                Failed
-                <div>
-                  <Button
-                    onClick={() => {
-                      client.processBook(book.uuid).then(() => onUpdate())
-                    }}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              </>
-            )}
+        {synchronized ? (
+          <div className={styles["download-wrapper"]}>
+            <a href={client.getSyncedDownloadUrl(book.uuid)}>Download</a>
           </div>
-        )
-      )}
-      <BookOptions book={book} onUpdate={onUpdate} />
-    </>
+        ) : (
+          book.processing_status && (
+            <div className={styles["status"]}>
+              {userFriendlyTaskType}
+              <ProgressBar
+                progress={Math.floor(book.processing_status.progress * 100)}
+              />
+            </div>
+          )
+        )}
+      </div>
+      <div className={styles.actions}>
+        <BookOptions book={book} onUpdate={onUpdate} />
+      </div>
+    </div>
   )
 }

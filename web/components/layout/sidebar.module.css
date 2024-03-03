@@ -1,0 +1,69 @@
+.aside {
+  flex-shrink: 0;
+  width: 320px;
+  border-right: solid thin #cdcdcd;
+}
+
+.heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0;
+  font-size: 2rem;
+}
+
+.in-progress {
+  display: flex;
+  padding: 1rem;
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.in-progress-details {
+  display: flex;
+  flex-direction: column;
+  margin-left: 1rem;
+}
+
+.in-progress-status {
+  display: flex;
+}
+
+.in-progress-title {
+  border: solid thin white;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius);
+  margin: 0;
+}
+
+.nav ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav li {
+  margin: 0.5rem;
+  border-radius: var(--border-radius);
+}
+
+.nav a {
+  display: block;
+  padding: 1rem 2rem;
+  border-radius: var(--border-radius);
+
+  text-decoration: none;
+}
+
+.nav a:visited {
+  color: black;
+}
+
+.nav .active {
+  background-color: #f8e8e8;
+}
+
+.nav a:hover {
+  background-color: var(--primary-color);
+  color: white;
+}

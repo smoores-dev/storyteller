@@ -28,7 +28,7 @@ export function BookList({ books: initialBooks }: Props) {
 
   return (
     <>
-      <AddBookModal />
+      {/* <AddBookModal /> */}
       <ul>
         {books.map((book) => (
           <li key={book.uuid} className={styles["book-status"]}>

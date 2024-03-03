@@ -1,10 +1,9 @@
 import { ApiHostContextProvider } from "@/contexts/ApiHostContext"
 import "./globals.css"
-import { Inter } from "next/font/google"
 import { proxyRootPath } from "./apiHost"
-import { Header } from "@/components/layout/Header"
-
-const inter = Inter({ subsets: ["latin"] })
+// import { Header } from "@/components/layout/Header"
+import styles from "./layout.module.css"
+import { Sidebar } from "@/components/layout/Sidebar"
 
 export const metadata = {
   title: "Storyteller",
@@ -18,10 +17,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <Header />
+      <body>
         <ApiHostContextProvider value={{ rootPath: proxyRootPath }}>
-          {children}
+          <div className={styles.container}>
+            {/* <Header /> */}
+            <Sidebar />
+            {children}
+          </div>
         </ApiHostContextProvider>
       </body>
     </html>
