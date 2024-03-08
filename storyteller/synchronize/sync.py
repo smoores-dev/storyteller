@@ -76,7 +76,10 @@ def find_best_offset(
 
             matches = cast(List[Match], matches)
             if len(matches) > 0:
-                return (start_sentence, matches[0].start + start_index)
+                return (
+                    start_sentence,
+                    (matches[0].start + start_index) % len(transcription_text),
+                )
 
             start_sentence += 3
 
@@ -451,9 +454,12 @@ def sync_book(
             transcription,
             chapter,
             transcription_offset,
-            synced_chapters[-1].sentence_ranges[-1]
-            if len(synced_chapters) > 0 and len(synced_chapters[-1].sentence_ranges) > 0
-            else None,
+            (
+                synced_chapters[-1].sentence_ranges[-1]
+                if len(synced_chapters) > 0
+                and len(synced_chapters[-1].sentence_ranges) > 0
+                else None
+            ),
         )
 
         synced_chapters.append(synced)
