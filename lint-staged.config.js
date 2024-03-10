@@ -7,6 +7,7 @@ const config = {
   ],
   "*.{md,yaml,yml,json}": "yarn prettier --write",
   "*.py": ["poetry run black", () => "poetry run yarn pyright"],
+  "migrations/*.sql": "sqlite3 storyteller.db .schema > schema.sql",
 }
 
 export default config

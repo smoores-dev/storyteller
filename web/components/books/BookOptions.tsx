@@ -19,6 +19,7 @@ import { HardRestartIcon } from "../icons/HardRestartIcon"
 import { SoftRestartIcon } from "../icons/SoftRestartIcon"
 import { EditIcon } from "../icons/EditIcon"
 import { DeleteIcon } from "../icons/DeleteIcon"
+import { useRouter } from "next/navigation"
 
 type Props = {
   book: BookDetail
@@ -30,6 +31,7 @@ export function BookOptions({ book, onUpdate }: Props) {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const client = useApiClient()
   const dialogStore = useDialogStore()
+  const router = useRouter()
 
   return (
     <Menubar className={styles["menu"]}>
@@ -37,7 +39,7 @@ export function BookOptions({ book, onUpdate }: Props) {
         <MenuItem
           className={styles["menu-item"]}
           onClick={() => {
-            dialogStore.setOpen(true)
+            router.push(`/books/${book.uuid}`)
           }}
         >
           <TooltipProvider placement="right">

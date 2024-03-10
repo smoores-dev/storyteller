@@ -49,7 +49,7 @@ export default async function Home() {
   return (
     <main>
       <h2 className={styles["heading"]}>Books</h2>
-      <div className={styles["main"]}>
+      <div className={styles["content"]}>
         <BookList books={books} />
         <p>
           You&apos;re running Storyteller v2! There are no breaking changes, but
