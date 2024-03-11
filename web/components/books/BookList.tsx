@@ -5,6 +5,7 @@ import { BookStatus } from "./BookStatus"
 import styles from "./books.module.css"
 import { useCallback, useEffect, useState } from "react"
 import { useApiClient } from "@/hooks/useApiClient"
+import { AddBookForm } from "./AddBookForm"
 
 type Props = {
   books: BookDetail[]
@@ -21,12 +22,13 @@ export function BookList({ books: initialBooks }: Props) {
   useEffect(() => {
     const intervalId = setInterval(() => {
       refreshBooks()
-    }, 20000)
+    }, 5000)
     return () => clearInterval(intervalId)
   }, [refreshBooks])
 
   return (
     <>
+      <AddBookForm onAdded={refreshBooks} />
       {/* <AddBookModal /> */}
       <ul className={styles["book-list"]}>
         {books.map((book) => (

@@ -1,12 +1,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { Body_create_book_books_post } from "../models/Body_create_book_books_post"
 import type { Body_login_token_post } from "../models/Body_login_token_post"
-import type { Body_upload_audio_books__book_id__audio_post } from "../models/Body_upload_audio_books__book_id__audio_post"
+import type { Body_update_book_books__book_id__put } from "../models/Body_update_book_books__book_id__put"
 import type { Body_upload_book_cover_books__book_id__cover_post } from "../models/Body_upload_book_cover_books__book_id__cover_post"
-import type { Body_upload_epub_books_epub_post } from "../models/Body_upload_epub_books_epub_post"
 import type { BookDetail } from "../models/BookDetail"
-import type { BookUpdate } from "../models/BookUpdate"
 import type { Invite } from "../models/Invite"
 import type { InviteAccept } from "../models/InviteAccept"
 import type { InviteRequest } from "../models/InviteRequest"
@@ -247,17 +246,17 @@ export class DefaultService {
   }
 
   /**
-   * Upload Epub
+   * Create Book
    * @param formData
    * @returns BookDetail Successful Response
    * @throws ApiError
    */
-  public static uploadEpubBooksEpubPost(
-    formData: Body_upload_epub_books_epub_post,
+  public static createBookBooksPost(
+    formData: Body_create_book_books_post,
   ): CancelablePromise<BookDetail> {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/books/epub",
+      url: "/books",
       formData: formData,
       mediaType: "multipart/form-data",
       errors: {
@@ -269,73 +268,22 @@ export class DefaultService {
   /**
    * Update Book
    * @param bookId
-   * @param requestBody
+   * @param formData
    * @returns BookDetail Successful Response
    * @throws ApiError
    */
-  public static updateBookBooksBookIdEpubPut(
+  public static updateBookBooksBookIdPut(
     bookId: string,
-    requestBody: BookUpdate,
+    formData: Body_update_book_books__book_id__put,
   ): CancelablePromise<BookDetail> {
     return __request(OpenAPI, {
       method: "PUT",
-      url: "/books/{book_id}/epub",
-      path: {
-        book_id: bookId,
-      },
-      body: requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: `Validation Error`,
-      },
-    })
-  }
-
-  /**
-   * Upload Audio
-   * @param bookId
-   * @param formData
-   * @returns any Successful Response
-   * @throws ApiError
-   */
-  public static uploadAudioBooksBookIdAudioPost(
-    bookId: string,
-    formData: Body_upload_audio_books__book_id__audio_post,
-  ): CancelablePromise<any> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/books/{book_id}/audio",
+      url: "/books/{book_id}",
       path: {
         book_id: bookId,
       },
       formData: formData,
       mediaType: "multipart/form-data",
-      errors: {
-        422: `Validation Error`,
-      },
-    })
-  }
-
-  /**
-   * Process Book
-   * @param bookId
-   * @param restart
-   * @returns any Successful Response
-   * @throws ApiError
-   */
-  public static processBookBooksBookIdProcessPost(
-    bookId: string,
-    restart: boolean = false,
-  ): CancelablePromise<any> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/books/{book_id}/process",
-      path: {
-        book_id: bookId,
-      },
-      query: {
-        restart: restart,
-      },
       errors: {
         422: `Validation Error`,
       },
@@ -377,6 +325,32 @@ export class DefaultService {
       url: "/books/{book_id}",
       path: {
         book_id: bookId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Process Book
+   * @param bookId
+   * @param restart
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static processBookBooksBookIdProcessPost(
+    bookId: string,
+    restart: boolean = false,
+  ): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/books/{book_id}/process",
+      path: {
+        book_id: bookId,
+      },
+      query: {
+        restart: restart,
       },
       errors: {
         422: `Validation Error`,

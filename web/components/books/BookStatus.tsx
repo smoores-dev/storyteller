@@ -7,6 +7,7 @@ import { useApiClient } from "@/hooks/useApiClient"
 import { BookOptions } from "./BookOptions"
 import { ProgressBar } from "./ProgressBar"
 import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
+import { Button } from "@ariakit/react"
 
 type Props = {
   book: BookDetail
@@ -50,16 +51,24 @@ export function BookStatus({ book, onUpdate }: Props) {
           <div className={styles["download-wrapper"]}>
             <a href={client.getSyncedDownloadUrl(book.uuid)}>Download</a>
           </div>
+        ) : book.processing_status ? (
+          <div className={styles["status"]}>
+            {userFriendlyTaskType}
+            {book.processing_status.in_error && <ProcessingFailedMessage />}
+            <ProgressBar
+              progress={Math.floor(book.processing_status.progress * 100)}
+            />
+          </div>
         ) : (
-          book.processing_status && (
-            <div className={styles["status"]}>
-              {userFriendlyTaskType}
-              {book.processing_status.in_error && <ProcessingFailedMessage />}
-              <ProgressBar
-                progress={Math.floor(book.processing_status.progress * 100)}
-              />
-            </div>
-          )
+          <Button
+            className={styles["button"]}
+            onClick={async () => {
+              await client.processBook(book.uuid)
+              onUpdate()
+            }}
+          >
+            Start processing
+          </Button>
         )}
       </div>
       <div className={styles["actions"]}>

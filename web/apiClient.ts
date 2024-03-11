@@ -1,8 +1,8 @@
 import axios, { AxiosProgressEvent } from "axios"
 import {
   Body_login_token_post,
+  BookAuthor,
   BookDetail,
-  BookUpdate,
   Invite,
   InviteAccept,
   InviteRequest,
@@ -288,6 +288,33 @@ export class ApiClient {
     return book
   }
 
+  async createBook(
+    epubFile: File,
+    audioFiles: FileList,
+    onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
+  ): Promise<BookDetail> {
+    const url = new URL(`${this.rootPath}/books/`, this.origin)
+
+    const response = await axios.postForm<BookDetail>(
+      url.toString(),
+      {
+        epub_file: epubFile,
+        audio_files: audioFiles,
+      },
+      {
+        formSerializer: { indexes: null },
+        withCredentials: true,
+        onUploadProgress,
+      },
+    )
+
+    if (response.status > 299) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    return response.data
+  }
+
   async uploadBookAudio(
     bookUuid: string,
     files: FileList,
@@ -365,13 +392,19 @@ export class ApiClient {
     return book
   }
 
-  async updateBook(bookUuid: string, update: BookUpdate): Promise<BookDetail> {
+  async updateBook(
+    bookUuid: string,
+    title: string,
+    authors: BookAuthor[],
+    textCover: File | null,
+    audioCover: File | null,
+  ): Promise<BookDetail> {
     const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
     // const url = new URL(`http://localhost:8000/books/${bookUuid}`)
 
     const body = new FormData()
-    body.append("title", update.title)
-    for (const author of update.authors) {
+    body.append("title", title)
+    for (const author of authors) {
       body.append("authors", JSON.stringify(author))
       // body.append("authors[][uuid]", author.uuid)
       // body.append("authors[][name]", author.name)
@@ -381,12 +414,12 @@ export class ApiClient {
       // body.append("authors[][file_as]", author.file_as)
     }
 
-    if (update.text_cover !== null) {
-      body.append("text_cover", update.text_cover)
+    if (textCover !== null) {
+      body.append("text_cover", textCover)
     }
 
-    if (update.audio_cover !== null) {
-      body.append("audio_cover", update.audio_cover)
+    if (audioCover !== null) {
+      body.append("audio_cover", audioCover)
     }
 
     const response = await fetch(url, {

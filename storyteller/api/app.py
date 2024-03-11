@@ -256,24 +256,32 @@ async def list_books(synced=False):
 
 
 @app.post(
-    "/books/epub",
+    "/books",
     dependencies=[Depends(auth.has_permission("book_create"))],
     response_model=models.BookDetail,
 )
-async def upload_epub(file: UploadFile):
+async def create_book(epub_file: UploadFile, audio_files: list[UploadFile]):
     with tempfile.NamedTemporaryFile() as tmpf:
-        tmpf.write(file.file.read())
+        tmpf.write(epub_file.file.read())
 
         book = epub.read_epub(tmpf.name)
         authors = get_authors(book)
         book_detail = db.create_book(book.title, authors)
 
-        file.file.seek(0)
-        assets.persist_epub(book_detail.uuid, file.file)
-        return book_detail
+        epub_file.file.seek(0)
+        assets.persist_epub(book_detail.uuid, epub_file.file)
+
+    assets.persist_audio(book_detail.uuid, audio_files)
+
+    return book_detail
 
 
 class FormDataBookAuthor(models.BookAuthor):
+    """
+    Parses a JSON-encoded book author from a
+    multipart/form-data-encoded request
+    """
+
     @model_validator(mode="before")  # type: ignore
     @classmethod
     def validate_to_json(cls, __value):
@@ -323,23 +331,6 @@ async def update_book(
         )
 
     return updated
-
-
-@app.post(
-    "/books/{book_id}/audio",
-    dependencies=[Depends(auth.has_permission("book_create"))],
-    response_model=None,
-)
-async def upload_audio(book_id: str, files: list[UploadFile]):
-    book_uuid = db.get_book_uuid(book_id)
-    try:
-        assets.persist_audio(book_uuid, files)
-    except assets.UnsupportedMediaTypeError as e:
-        print(f"Received unsupported media type {e.media_type}")
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Please upload an mp4 (file extension mp4, m4a, or m4b) or zip of mp3 files",
-        )
 
 
 @app.post(

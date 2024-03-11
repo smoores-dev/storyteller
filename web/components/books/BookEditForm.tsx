@@ -128,12 +128,13 @@ export function BookEditForm({ book }: Props) {
 
               setSavedState(SaveState.LOADING)
               try {
-                await client.updateBook(book.uuid, {
+                await client.updateBook(
+                  book.uuid,
                   title,
                   authors,
-                  text_cover: textCover,
-                  audio_cover: audioCover,
-                })
+                  textCover,
+                  audioCover,
+                )
               } catch (_) {
                 setSavedState(SaveState.ERROR)
                 return
