@@ -6,6 +6,7 @@ import styles from "./books.module.css"
 import { useCallback, useEffect, useState } from "react"
 import { useApiClient } from "@/hooks/useApiClient"
 import { AddBookForm } from "./AddBookForm"
+import { usePermission } from "@/contexts/UserPermissions"
 
 type Props = {
   books: BookDetail[]
@@ -13,6 +14,8 @@ type Props = {
 
 export function BookList({ books: initialBooks }: Props) {
   const client = useApiClient()
+  const canListBooks = usePermission("book_list")
+
   const [books, setBooks] = useState(initialBooks)
 
   const refreshBooks = useCallback(() => {
@@ -25,6 +28,8 @@ export function BookList({ books: initialBooks }: Props) {
     }, 5000)
     return () => clearInterval(intervalId)
   }, [refreshBooks])
+
+  if (!canListBooks) return null
 
   return (
     <>

@@ -5,6 +5,7 @@ import { useCallback, useState, MouseEvent } from "react"
 import styles from "./addbookform.module.css"
 import { useApiClient } from "@/hooks/useApiClient"
 import { ProgressBar } from "./ProgressBar"
+import { usePermission } from "@/contexts/UserPermissions"
 
 function round(n: number, r: number) {
   return Math.round(n * Math.pow(10, r)) / Math.pow(10, r)
@@ -52,6 +53,10 @@ export function AddBookForm({ onAdded }: Props) {
   }, [])
 
   const client = useApiClient()
+
+  const canAddBook = usePermission("book_create")
+
+  if (!canAddBook) return null
 
   return (
     <div className={styles["container"]}>

@@ -5,9 +5,11 @@ import styles from "./sidebar.module.css"
 import Link from "next/link"
 import cx from "classnames"
 import { usePathname } from "next/navigation"
+import { usePermissions } from "@/contexts/UserPermissions"
 
 export function Sidebar() {
   const pathname = usePathname()
+  const permissions = usePermissions()
 
   return (
     <aside className={styles["aside"]}>
@@ -39,21 +41,29 @@ export function Sidebar() {
       </section>
       <nav className={styles["nav"]}>
         <ol>
-          <li className={cx({ [styles["active"]!]: pathname === "/" })}>
-            <Link className={styles["nav-link"]} href="/">
-              Books
-            </Link>
-          </li>
-          <li className={cx({ [styles["active"]!]: pathname === "/users" })}>
-            <Link className={styles["nav-link"]} href="/users">
-              Users
-            </Link>
-          </li>
-          <li className={cx({ [styles["active"]!]: pathname === "/settings" })}>
-            <Link className={styles["nav-link"]} href="/settings">
-              Settings
-            </Link>
-          </li>
+          {(permissions.book_list || permissions.book_create) && (
+            <li className={cx({ [styles["active"]!]: pathname === "/" })}>
+              <Link className={styles["nav-link"]} href="/">
+                Books
+              </Link>
+            </li>
+          )}
+          {(permissions.user_create || permissions.user_list) && (
+            <li className={cx({ [styles["active"]!]: pathname === "/users" })}>
+              <Link className={styles["nav-link"]} href="/users">
+                Users
+              </Link>
+            </li>
+          )}
+          {permissions.settings_update && (
+            <li
+              className={cx({ [styles["active"]!]: pathname === "/settings" })}
+            >
+              <Link className={styles["nav-link"]} href="/settings">
+                Settings
+              </Link>
+            </li>
+          )}
           <li className={cx({ [styles["active"]!]: pathname === "/logout" })}>
             <Link className={styles["nav-link"]} href="/logout">
               Logout

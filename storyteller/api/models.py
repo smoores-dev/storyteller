@@ -49,6 +49,8 @@ class UserPermissions(BaseModel):
     book_process: bool
     book_download: bool
     book_list: bool
+    book_delete: bool
+    book_update: bool
     user_create: bool
     user_list: bool
     user_read: bool

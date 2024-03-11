@@ -1,4 +1,4 @@
-from ..models import DBUser, User, UserPermissions
+from ..models import DBUser, UserPermissions
 from .connection import connection
 
 
@@ -14,6 +14,8 @@ def get_user(username: str):
             book_read,
             book_process,
             book_download,
+            book_delete,
+            book_update,
             book_list,
             user_create,
             user_list,
@@ -37,6 +39,8 @@ def get_user(username: str):
         book_read,
         book_process,
         book_download,
+        book_delete,
+        book_update,
         book_list,
         user_create,
         user_list,
@@ -54,6 +58,8 @@ def get_user(username: str):
             book_read=book_read,
             book_process=book_process,
             book_download=book_download,
+            book_delete=book_delete,
+            book_update=book_update,
             book_list=book_list,
             user_create=user_create,
             user_list=user_list,
@@ -90,6 +96,8 @@ def get_users():
             book_read,
             book_process,
             book_download,
+            book_delete,
+            book_update,
             book_list,
             user_create,
             user_list,
@@ -112,6 +120,8 @@ def get_users():
                 book_read=book_read,
                 book_process=book_process,
                 book_download=book_download,
+                book_delete=book_delete,
+                book_update=book_update,
                 book_list=book_list,
                 user_create=user_create,
                 user_list=user_list,
@@ -130,6 +140,8 @@ def get_users():
             book_read,
             book_process,
             book_download,
+            book_delete,
+            book_update,
             book_list,
             user_create,
             user_list,

@@ -38,9 +38,11 @@ export default async function UsersPage() {
     )
   }
 
+  console.log(users)
+
   return (
     <main className={styles["main"]}>
-      <h2>Your users</h2>
+      <h2>Users</h2>
       {users.map((user) => (
         <p key={user.username}>{user.full_name}</p>
       ))}
