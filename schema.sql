@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS "user_permission"(
   user_delete BOOLEAN NOT NULL DEFAULT 0,
   settings_update BOOLEAN NOT NULL DEFAULT 0,
   book_delete BOOLEAN NOT NULL DEFAULT 0
-);
+, book_update BOOLEAN NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS "invite"(
   uuid TEXT PRIMARY KEY DEFAULT (uuid()),
   id INTEGER,
@@ -75,4 +75,7 @@ CREATE TABLE IF NOT EXISTS "settings"(
   id INTEGER,
   name TEXT NOT NULL,
   value TEXT
+);
+CREATE TABLE token_revokation(
+  token TEXT PRIMARY KEY
 );

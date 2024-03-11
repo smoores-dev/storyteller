@@ -1,23 +1,14 @@
-import { ApiClient, ApiClientError } from "@/apiClient"
-import { Token, User } from "@/apiModels"
-import { cookies } from "next/headers"
+import { ApiClientError } from "@/apiClient"
+import { User } from "@/apiModels"
 import { redirect } from "next/navigation"
-import { apiHost, rootPath } from "../apiHost"
 import styles from "./page.module.css"
 import { InviteUserModal } from "@/components/users/InviteUserModal"
+import { createAuthedApiClient } from "@/authedApiClient"
 
 export const dynamic = "force-dynamic"
 
 export default async function UsersPage() {
-  const cookieStore = cookies()
-
-  const authTokenCookie = cookieStore.get("st_token")
-  if (!authTokenCookie) {
-    return redirect("/login")
-  }
-
-  const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const client = new ApiClient(apiHost, rootPath, token.access_token)
+  const client = createAuthedApiClient()
 
   let users: User[] = []
 

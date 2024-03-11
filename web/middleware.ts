@@ -1,6 +1,7 @@
-import { ApiClient, ApiClientError } from "@/apiClient"
+import { ApiClient } from "@/apiClient"
 import { NextRequest, NextResponse } from "next/server"
 import { apiHost } from "./app/apiHost"
+import { cookies } from "next/headers"
 
 export async function middleware(request: NextRequest) {
   // Proxy all requests to `/api` to the actual API server
@@ -19,20 +20,19 @@ export async function middleware(request: NextRequest) {
     process.env["STORYTELLER_ROOT_PATH"] ?? "",
   )
 
-  try {
-    const needsInit = await client.needsInit()
-    if (needsInit && !isInitPage) {
-      return NextResponse.redirect(new URL("/init", request.url))
-    }
-  } catch (e) {
-    if (e instanceof ApiClientError && e.statusCode === 403) {
-      if (isInitPage) {
-        return NextResponse.redirect(new URL("/", request.url))
-      }
-      return NextResponse.next()
-    }
+  const needsInit = await client.needsInit()
+  if (needsInit && !isInitPage) {
+    return NextResponse.redirect(new URL("/init", request.url))
+  }
 
-    console.error(e)
+  if (isInitPage) {
+    return NextResponse.redirect(new URL("/", request.url))
+  }
+
+  const cookieStore = cookies()
+  const authTokenCookie = cookieStore.get("st_token")
+  if (!authTokenCookie) {
+    return NextResponse.redirect(new URL("/login", request.url))
   }
 
   return NextResponse.next()

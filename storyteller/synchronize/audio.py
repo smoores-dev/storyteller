@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass
 from mutagen.mp4 import MP4, Chapter, MP4Cover
 from mutagen.mp3 import MP3
 from pathlib import Path
-from typing import Callable, List, Union, cast
+from typing import BinaryIO, Callable, List, Union, cast
 
 from .files import AUDIO_DIR, IMAGE_DIR, StrPath
 from .epub import get_chapters, get_chapter_text, read_epub
@@ -114,6 +114,13 @@ def extract_mpeg4_cover(book_uuid: str, mp4: MP4):
     cover_filepath = get_audio_directory(book_uuid).joinpath(cover_filename)
     cover_filepath.write_bytes(cover)
     persist_cover(book_uuid, cover_filename)
+
+
+def persist_custom_cover(book_uuid: str, filename: str, cover: BinaryIO):
+    cover_filepath = get_audio_directory(book_uuid).joinpath(filename)
+    with open(cover_filepath, mode="w+b") as fdst:
+        shutil.copyfileobj(cover, fdst)
+    persist_cover(book_uuid, filename)
 
 
 def extract_mp3_cover(book_uuid: str, mp3: MP3):

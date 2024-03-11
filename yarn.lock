@@ -4968,6 +4968,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"classnames@npm:^2.5.1":
+  version: 2.5.1
+  resolution: "classnames@npm:2.5.1"
+  checksum: afff4f77e62cea2d79c39962980bf316bacb0d7c49e13a21adaadb9221e1c6b9d3cdb829d8bb1b23c406f4e740507f37e1dcf506f7e3b7113d17c5bab787aa69
+  languageName: node
+  linkType: hard
+
 "clean-css@npm:^5.2.2, clean-css@npm:^5.3.0":
   version: 5.3.3
   resolution: "clean-css@npm:5.3.3"
@@ -12559,6 +12566,7 @@ __metadata:
     "@types/node": "npm:^18.0.0"
     "@typescript-eslint/eslint-plugin": "npm:^6.19.1"
     "@typescript-eslint/parser": "npm:^6.19.1"
+    classnames: "npm:^2.5.1"
     concurrently: "npm:^8.2.2"
     eslint: "npm:^8.56.0"
     eslint-config-next: "npm:^14.1.0"

@@ -6,6 +6,7 @@ import type { Body_upload_audio_books__book_id__audio_post } from "../models/Bod
 import type { Body_upload_book_cover_books__book_id__cover_post } from "../models/Body_upload_book_cover_books__book_id__cover_post"
 import type { Body_upload_epub_books_epub_post } from "../models/Body_upload_epub_books_epub_post"
 import type { BookDetail } from "../models/BookDetail"
+import type { BookUpdate } from "../models/BookUpdate"
 import type { Invite } from "../models/Invite"
 import type { InviteAccept } from "../models/InviteAccept"
 import type { InviteRequest } from "../models/InviteRequest"
@@ -60,6 +61,18 @@ export class DefaultService {
       errors: {
         422: `Validation Error`,
       },
+    })
+  }
+
+  /**
+   * Logout
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static logoutLogoutPost(): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/logout",
     })
   }
 
@@ -254,6 +267,31 @@ export class DefaultService {
   }
 
   /**
+   * Update Book
+   * @param bookId
+   * @param requestBody
+   * @returns BookDetail Successful Response
+   * @throws ApiError
+   */
+  public static updateBookBooksBookIdEpubPut(
+    bookId: string,
+    requestBody: BookUpdate,
+  ): CancelablePromise<BookDetail> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/books/{book_id}/epub",
+      path: {
+        book_id: bookId,
+      },
+      body: requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
    * Upload Audio
    * @param bookId
    * @param formData
@@ -261,7 +299,7 @@ export class DefaultService {
    * @throws ApiError
    */
   public static uploadAudioBooksBookIdAudioPost(
-    bookId: number,
+    bookId: string,
     formData: Body_upload_audio_books__book_id__audio_post,
   ): CancelablePromise<any> {
     return __request(OpenAPI, {
@@ -286,8 +324,8 @@ export class DefaultService {
    * @throws ApiError
    */
   public static processBookBooksBookIdProcessPost(
-    bookId: number,
-    restart?: any,
+    bookId: string,
+    restart: boolean = false,
   ): CancelablePromise<any> {
     return __request(OpenAPI, {
       method: "POST",
@@ -355,7 +393,7 @@ export class DefaultService {
    * @throws ApiError
    */
   public static getSyncedBookBooksBookIdSyncedGet(
-    bookId: any,
+    bookId: string,
     range?: string | null,
     ifRange?: string | null,
   ): CancelablePromise<any> {
@@ -384,7 +422,7 @@ export class DefaultService {
    */
   public static getBookCoverBooksBookIdCoverGet(
     bookId: any,
-    audio?: any,
+    audio: boolean = false,
   ): CancelablePromise<any> {
     return __request(OpenAPI, {
       method: "GET",

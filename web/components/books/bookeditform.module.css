@@ -1,0 +1,128 @@
+.icon-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  height: 4rem;
+  width: 4rem;
+}
+
+.icon-button:hover {
+  background-color: #d9d9d9;
+}
+
+.delete-button {
+  composes: icon-button;
+  color: var(--error-color);
+}
+
+.form {
+  margin-top: 2rem;
+  display: flex;
+  width: 100%;
+}
+
+.text-inputs {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  flex-grow: 1;
+}
+
+.label {
+  display: block;
+  padding: 0 0.125rem;
+  width: calc(100% - 2rem);
+}
+
+.input {
+  display: block;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  border: thin solid #d9d9d9;
+  width: calc(100% - 2rem);
+  margin: 0.5rem 0 1.5rem;
+}
+
+.authors-input {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.fieldset {
+  border: none;
+  padding: 0;
+  width: calc(100% - 2rem);
+}
+
+.button {
+  color: white;
+  background-color: var(--primary-color);
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  border: thin solid #d9d9d9;
+}
+
+.cover-art {
+  border-radius: var(--border-radius);
+  background-color: #efecec;
+}
+
+.cover-art-label {
+  position: relative;
+}
+
+.cover-art-text {
+  display: inline-block;
+  position: absolute;
+  bottom: 1rem;
+  width: 100%;
+  text-align: center;
+  padding: 0.5rem 0;
+  left: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.cover-art-input {
+  display: none;
+}
+
+.cover-art-wrapper {
+  display: flex;
+  flex-direction: column;
+  background-color: lightslategray;
+  border-radius: var(--border-radius);
+  background-color: #f8e8e8;
+}
+
+.cover-art-tab-list {
+  display: flex;
+  justify-content: space-around;
+}
+
+.cover-art-tab {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem 1rem;
+  margin-bottom: -0.5rem;
+  flex-grow: 1;
+}
+
+.text-cover-art-tab {
+  composes: cover-art-tab;
+  border-top-left-radius: var(--border-radius);
+}
+
+.audio-cover-art-tab {
+  composes: cover-art-tab;
+  border-top-right-radius: var(--border-radius);
+}
+
+.cover-art-tab[aria-selected="true"] {
+  background-color: var(--primary-color);
+  color: white;
+}

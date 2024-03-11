@@ -53,7 +53,7 @@
   border-radius: var(--border-radius);
 }
 
-.nav a {
+.nav-link {
   display: block;
   padding: 1rem 2rem;
   border-radius: var(--border-radius);
@@ -61,7 +61,7 @@
   text-decoration: none;
 }
 
-.nav a:visited {
+.nav-link:visited {
   color: black;
 }
 
@@ -69,7 +69,16 @@
   background-color: #f8e8e8;
 }
 
-.nav a:hover {
+.nav-link:hover {
   background-color: var(--primary-color);
   color: white;
+}
+
+.logout {
+  composes: nav-link;
+  background: none;
+  border: none;
+  font: inherit;
+  width: 100%;
+  text-align: left;
 }

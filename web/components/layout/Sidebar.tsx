@@ -1,8 +1,14 @@
+"use client"
+
 import Image from "next/image"
 import styles from "./sidebar.module.css"
 import Link from "next/link"
+import cx from "classnames"
+import { usePathname } from "next/navigation"
 
 export function Sidebar() {
+  const pathname = usePathname()
+
   return (
     <aside className={styles["aside"]}>
       <h1 className={styles["heading"]}>
@@ -33,14 +39,25 @@ export function Sidebar() {
       </section>
       <nav className={styles["nav"]}>
         <ol>
-          <li className={styles["active"]}>
-            <Link href="/">Books</Link>
+          <li className={cx({ [styles["active"]!]: pathname === "/" })}>
+            <Link className={styles["nav-link"]} href="/">
+              Books
+            </Link>
           </li>
-          <li>
-            <Link href="/users">Users</Link>
+          <li className={cx({ [styles["active"]!]: pathname === "/users" })}>
+            <Link className={styles["nav-link"]} href="/users">
+              Users
+            </Link>
           </li>
-          <li>
-            <Link href="/settings">Settings</Link>
+          <li className={cx({ [styles["active"]!]: pathname === "/settings" })}>
+            <Link className={styles["nav-link"]} href="/settings">
+              Settings
+            </Link>
+          </li>
+          <li className={cx({ [styles["active"]!]: pathname === "/logout" })}>
+            <Link className={styles["nav-link"]} href="/logout">
+              Logout
+            </Link>
           </li>
         </ol>
       </nav>

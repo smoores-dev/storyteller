@@ -12,6 +12,7 @@ export type { Body_upload_book_cover_books__book_id__cover_post } from "./models
 export type { Body_upload_epub_books_epub_post } from "./models/Body_upload_epub_books_epub_post"
 export type { BookAuthor } from "./models/BookAuthor"
 export type { BookDetail } from "./models/BookDetail"
+export type { BookUpdate } from "./models/BookUpdate"
 export type { HTTPValidationError } from "./models/HTTPValidationError"
 export type { Invite } from "./models/Invite"
 export type { InviteAccept } from "./models/InviteAccept"

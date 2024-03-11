@@ -2,6 +2,7 @@ import axios, { AxiosProgressEvent } from "axios"
 import {
   Body_login_token_post,
   BookDetail,
+  BookUpdate,
   Invite,
   InviteAccept,
   InviteRequest,
@@ -44,7 +45,7 @@ export class ApiClient {
     if (audio) {
       searchParams.append("audio", "true")
     }
-    return `${this.rootPath}/books/${bookUuid}/cover${searchParams.toString()}`
+    return `${this.rootPath}/books/${bookUuid}/cover?${searchParams.toString()}`
   }
 
   async needsInit(): Promise<boolean> {
@@ -57,6 +58,8 @@ export class ApiClient {
     })
 
     if (!response.ok) {
+      if (response.status === 403) return false
+
       throw new ApiClientError(response.status, response.statusText)
     }
 
@@ -84,6 +87,20 @@ export class ApiClient {
 
     const token = (await response.json()) as Token
     return token
+  }
+
+  async logout(): Promise<void> {
+    const url = new URL(`${this.rootPath}/logout`, this.origin)
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
   }
 
   async createInvite(inviteRequest: InviteRequest): Promise<Invite> {
@@ -341,6 +358,46 @@ export class ApiClient {
     })
 
     if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const book = (await response.json()) as BookDetail
+    return book
+  }
+
+  async updateBook(bookUuid: string, update: BookUpdate): Promise<BookDetail> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
+    // const url = new URL(`http://localhost:8000/books/${bookUuid}`)
+
+    const body = new FormData()
+    body.append("title", update.title)
+    for (const author of update.authors) {
+      body.append("authors", JSON.stringify(author))
+      // body.append("authors[][uuid]", author.uuid)
+      // body.append("authors[][name]", author.name)
+      // if (author.role !== null) {
+      //   body.append("authors[][role]", author.role)
+      // }
+      // body.append("authors[][file_as]", author.file_as)
+    }
+
+    if (update.text_cover !== null) {
+      body.append("text_cover", update.text_cover)
+    }
+
+    if (update.audio_cover !== null) {
+      body.append("audio_cover", update.audio_cover)
+    }
+
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: { ...this.getHeaders() },
+      credentials: "include",
+      body,
+    })
+
+    if (!response.ok) {
+      console.error(await response.json())
       throw new ApiClientError(response.status, response.statusText)
     }
 

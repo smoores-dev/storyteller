@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, cast
+from typing import Dict, List, Sequence, cast
 
 from storyteller.synchronize.epub import EpubAuthor
 
@@ -351,3 +351,67 @@ def delete_book(uuid: str):
     )
 
     connection.commit()
+
+
+def update_book(uuid: str, title: str, authors: Sequence[BookAuthor]):
+    cursor = connection.cursor()
+
+    # The max id size here is the max size supported by Javascript, which is
+    # 2^53 - 1.
+    cursor.execute(
+        """
+        UPDATE book
+        SET title = :title
+        WHERE uuid = :uuid
+        """,
+        {"title": title, "uuid": uuid},
+    )
+
+    book = BookDetail(
+        uuid=uuid, id=None, title=title, authors=[], processing_status=None
+    )
+
+    for author in authors:
+        if author.uuid == "":
+            cursor.execute(
+                """
+                INSERT INTO author (name, file_as) VALUES (:name, :file_as)
+                RETURNING uuid
+                """,
+                {"name": author.name, "file_as": author.file_as},
+            )
+
+            (author.uuid,) = cursor.fetchone()
+
+            cursor.execute(
+                """
+                INSERT INTO author_to_book (book_uuid, author_uuid, role) VALUES (:book_uuid, :author_uuid, :role)
+                """,
+                {
+                    "book_uuid": uuid,
+                    "author_uuid": author.uuid,
+                    "role": author.role,
+                },
+            )
+        else:
+            cursor.execute(
+                """
+                UPDATE author
+                SET name = :name
+                WHERE uuid = :uuid
+                """,
+                {"name": author.name, "uuid": author.uuid},
+            )
+
+        book.authors.append(
+            BookAuthor(
+                uuid=author.uuid,
+                name=author.name,
+                file_as=author.file_as,
+                role=author.role,
+            )
+        )
+
+    connection.commit()
+
+    return book

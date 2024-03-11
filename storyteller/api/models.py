@@ -1,4 +1,5 @@
 from typing import List
+from fastapi import File, UploadFile
 from pydantic import BaseModel
 
 
@@ -33,6 +34,13 @@ class BookDetail(BaseModel):
     title: str
     authors: List[BookAuthor]
     processing_status: ProcessingStatus | None
+
+
+class BookUpdate(BaseModel):
+    title: str
+    # authors: List[BookAuthor]
+    text_cover: UploadFile | None
+    audio_cover: UploadFile | None
 
 
 class UserPermissions(BaseModel):

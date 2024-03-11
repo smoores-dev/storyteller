@@ -2,7 +2,8 @@ import json
 from pathlib import Path
 import re
 from dataclasses import dataclass
-from typing import Callable, List, Tuple, Union, cast, Dict
+import shutil
+from typing import BinaryIO, Callable, List, Tuple, Union, cast, Dict
 
 from nltk.tokenize import sent_tokenize as _sent_tokenize
 from functools import cache
@@ -66,6 +67,13 @@ def persist_cover(book_uuid: str, cover_filename: str):
 
     with open(get_epub_index_path(book_uuid), "w") as f:
         json.dump(index, f)
+
+
+def persist_custom_cover(book_uuid: str, filename: str, cover: BinaryIO):
+    cover_filepath = get_epub_directory(book_uuid).joinpath(filename)
+    with open(cover_filepath, mode="w+b") as fdst:
+        shutil.copyfileobj(cover, fdst)
+    persist_cover(book_uuid, filename)
 
 
 def read_epub(book_uuid: str):

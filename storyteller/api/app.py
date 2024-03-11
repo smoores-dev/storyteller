@@ -1,15 +1,18 @@
 from datetime import timedelta
 from email.utils import formatdate
+import json
 import os
 from pathlib import Path
 import secrets
 import tempfile
-from typing import Annotated, cast
+from typing import Annotated, Sequence, cast
 from ebooklib import epub
 
 from fastapi import (
     Body,
     FastAPI,
+    File,
+    Form,
     HTTPException,
     Header,
     Request,
@@ -20,17 +23,22 @@ from fastapi import (
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel, model_validator
 
 from starlette.types import Message
 from starlette.background import BackgroundTask
 from starlette._compat import md5_hexdigest
 from storyteller.api.assets.delete import delete_processed
-from storyteller.synchronize.audio import get_audio_cover_filepath
+from storyteller.synchronize.audio import (
+    get_audio_cover_filepath,
+    persist_custom_cover as persist_custom_audio_cover,
+)
 
 from storyteller.synchronize.epub import (
     get_authors,
     get_epub_cover_filepath,
     process_epub,
+    persist_custom_cover as persist_custom_text_cover,
 )
 
 from . import assets, auth, config, database as db, invites, models, processing
@@ -122,6 +130,13 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.post("/logout", dependencies=[Depends(auth.verify_token)])
+async def logout(
+    token: Annotated[str, Depends(auth.oauth2_scheme)], response: Response
+):
+    db.revoke_token(token)
 
 
 @app.get("/validate", dependencies=[Depends(auth.verify_token)], response_model=str)
@@ -256,6 +271,58 @@ async def upload_epub(file: UploadFile):
         file.file.seek(0)
         assets.persist_epub(book_detail.uuid, file.file)
         return book_detail
+
+
+class FormDataBookAuthor(models.BookAuthor):
+    @model_validator(mode="before")  # type: ignore
+    @classmethod
+    def validate_to_json(cls, __value):
+        if isinstance(__value, str):
+            return cls(**json.loads(__value))
+        return __value
+
+
+@app.put(
+    "/books/{book_id}",
+    dependencies=[Depends(auth.has_permission("book_update"))],
+    response_model=models.BookDetail,
+)
+async def update_book(
+    book_id: str,
+    title: Annotated[str, Form()],
+    authors: Annotated[Sequence[FormDataBookAuthor], Form()],
+    text_cover: Annotated[UploadFile | None, File()] = None,
+    audio_cover: Annotated[UploadFile | None, File()] = None,
+):
+    book_uuid = db.get_book_uuid(book_id)
+    updated = db.update_book(book_uuid, title, authors)
+    if text_cover is not None:
+        filename = text_cover.filename
+        if filename is None:
+            content_type = text_cover.content_type
+            suffix = (
+                ".jpg" if content_type is None or "jpeg" in content_type else ".png"
+            )
+            filename = f"Audio Cover{suffix}"
+
+        persist_custom_text_cover(
+            book_uuid, text_cover.filename or "Audio", text_cover.file
+        )
+
+    if audio_cover is not None:
+        filename = audio_cover.filename
+        if filename is None:
+            content_type = audio_cover.content_type
+            suffix = (
+                ".jpg" if content_type is None or "jpeg" in content_type else ".png"
+            )
+            filename = f"Audio Cover{suffix}"
+
+        persist_custom_audio_cover(
+            book_uuid, audio_cover.filename or "Audio", audio_cover.file
+        )
+
+    return updated
 
 
 @app.post(

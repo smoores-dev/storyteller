@@ -8,6 +8,7 @@ from .books import (
     clear_filename_columns,
     delete_book,
     get_book_uuid,
+    update_book,
 )
 from .processing_tasks import (
     create_processing_task,
@@ -31,6 +32,7 @@ from .users import (
 from .migrations import migrate
 from .invites import create_invite, verify_invite, get_invite
 from .settings import get_setting, get_settings, update_settings
+from .token_revokations import revoke_token, is_token_revoked
 
 __all__ = [
     "init_db",
@@ -59,9 +61,12 @@ __all__ = [
     "ProcessingTaskStatus",
     "get_processing_tasks_for_book",
     "reset_processing_tasks_for_book",
+    "revoke_token",
+    "is_token_revoked",
     "processing_tasks_order",
     "verify_invite",
     "update_task_progress",
     "update_task_status",
     "user_has_permission",
+    "update_book",
 ]

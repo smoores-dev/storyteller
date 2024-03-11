@@ -1,22 +1,14 @@
 import styles from "./page.module.css"
 import { BookList } from "@/components/books/BookList"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
-import { ApiClient, ApiClientError } from "@/apiClient"
-import { BookDetail, Token } from "@/apiModels"
-import { apiHost, rootPath } from "./apiHost"
+import { ApiClientError } from "@/apiClient"
+import { BookDetail } from "@/apiModels"
+import { createAuthedApiClient } from "@/authedApiClient"
 
 export const dynamic = "force-dynamic"
 
 export default async function Home() {
-  const cookieStore = cookies()
-  const authTokenCookie = cookieStore.get("st_token")
-  if (!authTokenCookie) {
-    return redirect("/login")
-  }
-
-  const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const client = new ApiClient(apiHost, rootPath, token.access_token)
+  const client = createAuthedApiClient()
 
   let books: BookDetail[] = []
 
