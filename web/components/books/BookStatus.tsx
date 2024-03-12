@@ -1,24 +1,30 @@
 "use client"
 
+import Image from "next/image"
 import { BookDetail } from "@/apiModels"
-import styles from "./books.module.css"
-import { Button } from "@ariakit/react"
+import styles from "./bookstatus.module.css"
 import { useApiClient } from "@/hooks/useApiClient"
 import { BookOptions } from "./BookOptions"
+import { ProgressBar } from "./ProgressBar"
+import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
+import { Button } from "@ariakit/react"
+import { usePermissions } from "@/contexts/UserPermissions"
 
 type Props = {
   book: BookDetail
   onUpdate: () => void
 }
 
-const ProcessingTaskTypes = {
+export const ProcessingTaskTypes = {
   SYNC_CHAPTERS: "Synchronizing chapters",
-  SPLIT_CHAPTERS: "Splitting audiobook chapters",
-  TRANSCRIBE_CHAPTERS: "Transcribing chapters",
+  SPLIT_CHAPTERS: "Pre-processing audio",
+  TRANSCRIBE_CHAPTERS: "Transcribing tracks",
 }
 
 export function BookStatus({ book, onUpdate }: Props) {
   const client = useApiClient()
+
+  const permissions = usePermissions()
 
   const synchronized =
     book.processing_status?.current_task === "SYNC_CHAPTERS" &&
@@ -30,37 +36,53 @@ export function BookStatus({ book, onUpdate }: Props) {
       book.processing_status.current_task as keyof typeof ProcessingTaskTypes
     ]
 
+  if (!permissions.book_read) return null
+
   return (
-    <>
-      <h3 className={styles["book-title"]}>{book.title}</h3>
-      {book.authors[0] && <div>by {book.authors[0].name}</div>}
-      {synchronized ? (
-        <div className={styles["download-wrapper"]}>
-          <a href={client.getSyncedDownloadUrl(book.id)}>Download</a>
+    <div className={styles["container"]}>
+      <Image
+        height={150}
+        width={98}
+        alt=""
+        aria-hidden
+        src={client.getCoverUrl(book.uuid)}
+      />
+      <div className={styles["content"]}>
+        <div>
+          <h3 className={styles["book-title"]}>{book.title}</h3>
+          {book.authors[0] && <div>{book.authors[0].name}</div>}
         </div>
-      ) : (
-        book.processing_status && (
+        {synchronized ? (
+          permissions.book_download && (
+            <div className={styles["download-wrapper"]}>
+              <a href={client.getSyncedDownloadUrl(book.uuid)}>Download</a>
+            </div>
+          )
+        ) : book.processing_status ? (
           <div className={styles["status"]}>
-            {userFriendlyTaskType} -{" "}
-            {Math.floor(book.processing_status.progress * 100)}%{" "}
-            {book.processing_status.in_error && (
-              <>
-                Failed
-                <div>
-                  <Button
-                    onClick={() => {
-                      client.processBook(book.id).then(() => onUpdate())
-                    }}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              </>
-            )}
+            {userFriendlyTaskType}
+            {book.processing_status.in_error && <ProcessingFailedMessage />}
+            <ProgressBar
+              progress={Math.floor(book.processing_status.progress * 100)}
+            />
           </div>
-        )
-      )}
-      <BookOptions book={book} onUpdate={onUpdate} />
-    </>
+        ) : permissions.book_process ? (
+          <Button
+            className={styles["button"]}
+            onClick={async () => {
+              await client.processBook(book.uuid)
+              onUpdate()
+            }}
+          >
+            Start processing
+          </Button>
+        ) : (
+          <div className={styles["status"]}>Unprocessed</div>
+        )}
+      </div>
+      <div className={styles["actions"]}>
+        <BookOptions book={book} onUpdate={onUpdate} />
+      </div>
+    </div>
   )
 }

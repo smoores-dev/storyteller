@@ -58,25 +58,9 @@
 }
 
 .menu {
-  position: relative;
-  z-index: 50;
   display: flex;
-  max-height: var(--popover-available-height);
-  min-width: 180px;
   flex-direction: column;
-  overflow: auto;
-  overscroll-behavior: contain;
-  border-radius: 0.5rem;
-  border-width: 1px;
-  border-style: solid;
-  border-color: hsl(204 20% 88%);
-  background-color: hsl(204 20% 100%);
-  padding: 0.5rem;
-  color: hsl(204 10% 10%);
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 0.1),
-    0 4px 6px -4px rgb(0 0 0 / 0.1);
-  outline: none !important;
+  gap: 0.25rem;
 }
 
 :is(.dark .menu) {
@@ -93,24 +77,28 @@
   cursor: default;
   scroll-margin: 0.5rem;
   align-items: center;
-  gap: 0.5rem;
-  border-radius: 0.25rem;
-  padding: 0.5rem;
+  border-radius: 50%;
+  height: 2rem;
+  width: 2rem;
   outline: none !important;
+}
+
+.delete {
+  color: var(--error-color);
+}
+
+.menu-item > div {
+  height: 1.5rem;
+  width: 1.5rem;
+  padding: 0.25rem;
 }
 
 .menu-item[aria-disabled="true"] {
   opacity: 0.25;
 }
 
-.menu-item[data-active-item] {
-  background-color: hsl(204 100% 40%);
-  color: hsl(204 20% 100%);
-}
-
-.menu-item:active,
-.menu-item[data-active] {
-  background-color: hsl(204 100% 32%);
+.menu-item:hover {
+  background-color: #d9d9d9;
 }
 
 .modal {

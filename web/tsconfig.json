@@ -18,6 +18,9 @@
       },
       {
         "name": "typescript-plugin-css-modules",
+        "options": {
+          "noUncheckedIndexedAccess": true,
+        },
       },
     ],
     "paths": {

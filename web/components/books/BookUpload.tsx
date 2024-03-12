@@ -74,8 +74,8 @@ export default function BookUpload({ onSubmit }: Props) {
           if (!audioInputRef.current?.files?.[0] || !book) return
 
           client.uploadBookAudio(
-            book.id,
-            audioInputRef.current.files[0],
+            book.uuid,
+            audioInputRef.current.files,
             ({ progress }) => {
               setAudioUploadProgress(progress ?? null)
             },
@@ -88,6 +88,7 @@ export default function BookUpload({ onSubmit }: Props) {
             name="audio-file"
             ref={audioInputRef}
             type="file"
+            multiple
             disabled={epubUploadProgress === null}
           />
         </div>
@@ -110,8 +111,8 @@ export default function BookUpload({ onSubmit }: Props) {
           if (!book) return
 
           client
-            .processBook(book.id)
-            .then(() => client.getBookDetails(book.id))
+            .processBook(book.uuid)
+            .then(() => client.getBookDetails(book.uuid))
             .then((bookDetail) => onSubmit(bookDetail))
         }}
       >

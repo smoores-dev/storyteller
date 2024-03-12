@@ -1,23 +1,22 @@
 from typing import List
+from fastapi import File, UploadFile
 from pydantic import BaseModel
 
 
 class Book(BaseModel):
-    id: int
+    uuid: str
+    id: int | None
     title: str
-    epub_filename: str
-    audio_filename: str | None
-    audio_filetype: str | None
 
 
 class Author(BaseModel):
-    id: int
+    uuid: str
     name: str
     file_as: str
 
 
 class BookAuthor(BaseModel):
-    id: int
+    uuid: str
     name: str
     file_as: str
     role: str | None
@@ -30,10 +29,18 @@ class ProcessingStatus(BaseModel):
 
 
 class BookDetail(BaseModel):
-    id: int
+    uuid: str
+    id: int | None
     title: str
     authors: List[BookAuthor]
     processing_status: ProcessingStatus | None
+
+
+class BookUpdate(BaseModel):
+    title: str
+    # authors: List[BookAuthor]
+    text_cover: UploadFile | None
+    audio_cover: UploadFile | None
 
 
 class UserPermissions(BaseModel):
@@ -42,6 +49,10 @@ class UserPermissions(BaseModel):
     book_process: bool
     book_download: bool
     book_list: bool
+    book_delete: bool
+    book_update: bool
+    invite_list: bool
+    invite_delete: bool
     user_create: bool
     user_list: bool
     user_read: bool
@@ -50,6 +61,7 @@ class UserPermissions(BaseModel):
 
 
 class User(BaseModel):
+    uuid: str
     username: str
     email: str | None = None
     full_name: str | None = None
@@ -79,10 +91,14 @@ class TokenData(BaseModel):
 class InviteRequest(BaseModel):
     email: str
     book_create: bool
+    book_delete: bool
     book_read: bool
     book_process: bool
     book_download: bool
+    book_update: bool
     book_list: bool
+    invite_list: bool
+    invite_delete: bool
     user_create: bool
     user_list: bool
     user_read: bool

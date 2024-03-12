@@ -1,6 +1,7 @@
 import axios, { AxiosProgressEvent } from "axios"
 import {
   Body_login_token_post,
+  BookAuthor,
   BookDetail,
   Invite,
   InviteAccept,
@@ -35,8 +36,16 @@ export class ApiClient {
       : { Authorization: `Bearer ${this.accessToken}` }
   }
 
-  getSyncedDownloadUrl(bookId: number) {
-    return `${this.rootPath}/books/${bookId}/synced`
+  getSyncedDownloadUrl(bookUuid: string) {
+    return `${this.rootPath}/books/${bookUuid}/synced`
+  }
+
+  getCoverUrl(bookUuid: string, audio = false) {
+    const searchParams = new URLSearchParams()
+    if (audio) {
+      searchParams.append("audio", "true")
+    }
+    return `${this.rootPath}/books/${bookUuid}/cover?${searchParams.toString()}`
   }
 
   async needsInit(): Promise<boolean> {
@@ -49,6 +58,8 @@ export class ApiClient {
     })
 
     if (!response.ok) {
+      if (response.status === 403) return false
+
       throw new ApiClientError(response.status, response.statusText)
     }
 
@@ -76,6 +87,20 @@ export class ApiClient {
 
     const token = (await response.json()) as Token
     return token
+  }
+
+  async logout(): Promise<void> {
+    const url = new URL(`${this.rootPath}/logout`, this.origin)
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
   }
 
   async createInvite(inviteRequest: InviteRequest): Promise<Invite> {
@@ -107,6 +132,36 @@ export class ApiClient {
 
     const invite = (await response.json()) as Invite
     return invite
+  }
+
+  async deleteInvite(inviteKey: string): Promise<void> {
+    const url = new URL(`${this.rootPath}/invites/${inviteKey}`, this.origin)
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
+  async listInvites(): Promise<Invite[]> {
+    const url = new URL(`${this.rootPath}/invites`, this.origin)
+
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const invites = (await response.json()) as Invite[]
+    return invites
   }
 
   async acceptInvite(inviteAccept: InviteAccept): Promise<Token> {
@@ -163,6 +218,20 @@ export class ApiClient {
     return token
   }
 
+  async deleteUser(uuid: string): Promise<void> {
+    const url = new URL(`${this.rootPath}/users/${uuid}`, this.origin)
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
   async getCurrentUser(): Promise<User> {
     const url = new URL(`${this.rootPath}/user`, this.origin)
 
@@ -212,8 +281,8 @@ export class ApiClient {
     }
   }
 
-  async deleteBook(bookId: number): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}`, this.origin)
+  async deleteBook(bookUuid: string): Promise<void> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "DELETE",
@@ -263,17 +332,48 @@ export class ApiClient {
     return book
   }
 
-  async uploadBookAudio(
-    bookId: number,
-    file: File,
+  async createBook(
+    epubFile: File,
+    audioFiles: FileList,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
-  ): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}/audio`, this.origin)
+  ): Promise<BookDetail> {
+    const url = new URL(`${this.rootPath}/books/`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
-      { file },
-      { withCredentials: true, onUploadProgress },
+      {
+        epub_file: epubFile,
+        audio_files: audioFiles,
+      },
+      {
+        formSerializer: { indexes: null },
+        withCredentials: true,
+        onUploadProgress,
+      },
+    )
+
+    if (response.status > 299) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    return response.data
+  }
+
+  async uploadBookAudio(
+    bookUuid: string,
+    files: FileList,
+    onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
+  ): Promise<void> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}/audio`, this.origin)
+
+    const response = await axios.postForm<BookDetail>(
+      url.toString(),
+      { files },
+      {
+        formSerializer: { indexes: null },
+        withCredentials: true,
+        onUploadProgress,
+      },
     )
 
     if (response.status > 299) {
@@ -282,11 +382,11 @@ export class ApiClient {
   }
 
   async uploadBookCover(
-    bookId: number,
+    bookUuid: string,
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}/cover`, this.origin)
+    const url = new URL(`${this.rootPath}/books/${bookUuid}/cover`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -299,8 +399,11 @@ export class ApiClient {
     }
   }
 
-  async processBook(bookId: number, restart?: boolean): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookId}/process`, this.origin)
+  async processBook(bookUuid: string, restart?: boolean): Promise<void> {
+    const url = new URL(
+      `${this.rootPath}/books/${bookUuid}/process`,
+      this.origin,
+    )
     if (restart) {
       url.search = new URLSearchParams({ restart: "true" }).toString()
     }
@@ -316,8 +419,8 @@ export class ApiClient {
     }
   }
 
-  async getBookDetails(bookId: number): Promise<BookDetail> {
-    const url = new URL(`${this.rootPath}/books/${bookId}`, this.origin)
+  async getBookDetails(bookUuid: string): Promise<BookDetail> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",
@@ -326,6 +429,52 @@ export class ApiClient {
     })
 
     if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const book = (await response.json()) as BookDetail
+    return book
+  }
+
+  async updateBook(
+    bookUuid: string,
+    title: string,
+    authors: BookAuthor[],
+    textCover: File | null,
+    audioCover: File | null,
+  ): Promise<BookDetail> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
+    // const url = new URL(`http://localhost:8000/books/${bookUuid}`)
+
+    const body = new FormData()
+    body.append("title", title)
+    for (const author of authors) {
+      body.append("authors", JSON.stringify(author))
+      // body.append("authors[][uuid]", author.uuid)
+      // body.append("authors[][name]", author.name)
+      // if (author.role !== null) {
+      //   body.append("authors[][role]", author.role)
+      // }
+      // body.append("authors[][file_as]", author.file_as)
+    }
+
+    if (textCover !== null) {
+      body.append("text_cover", textCover)
+    }
+
+    if (audioCover !== null) {
+      body.append("audio_cover", audioCover)
+    }
+
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: { ...this.getHeaders() },
+      credentials: "include",
+      body,
+    })
+
+    if (!response.ok) {
+      console.error(await response.json())
       throw new ApiClientError(response.status, response.statusText)
     }
 

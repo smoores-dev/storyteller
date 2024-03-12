@@ -2,18 +2,20 @@ import styles from "./bookoptions.module.css"
 import { BookDetail } from "@/apiModels"
 import { useApiClient } from "@/hooks/useApiClient"
 import {
-  Button,
-  Dialog,
-  DialogDismiss,
-  DialogHeading,
-  Menu,
-  MenuButton,
   MenuItem,
-  useDialogStore,
-  useMenuStore,
+  MenuProvider,
+  Menubar,
+  Tooltip,
+  TooltipAnchor,
+  TooltipProvider,
 } from "@ariakit/react"
-import { MoreVerticalIcon } from "../icons/MoreVerticalIcon"
-import { useRef, useState } from "react"
+import cx from "classnames"
+import { HardRestartIcon } from "../icons/HardRestartIcon"
+import { SoftRestartIcon } from "../icons/SoftRestartIcon"
+import { EditIcon } from "../icons/EditIcon"
+import { DeleteIcon } from "../icons/DeleteIcon"
+import { useRouter } from "next/navigation"
+import { usePermissions } from "@/contexts/UserPermissions"
 
 type Props = {
   book: BookDetail
@@ -21,81 +23,75 @@ type Props = {
 }
 
 export function BookOptions({ book, onUpdate }: Props) {
-  const inputRef = useRef<HTMLInputElement | null>(null)
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const client = useApiClient()
-  const menuStore = useMenuStore()
-  const dialogStore = useDialogStore()
+  const router = useRouter()
+
+  const permissions = usePermissions()
 
   return (
-    <>
-      <MenuButton store={menuStore} className={styles["button"]}>
-        <MoreVerticalIcon className={styles["icon"]} />
-      </MenuButton>
-      <Menu store={menuStore} gutter={8} className={styles["menu"]}>
-        <MenuItem
-          className={styles["menu-item"]}
-          onClick={() => {
-            dialogStore.setOpen(true)
-          }}
-        >
-          Upload audio art
-        </MenuItem>
-        <MenuItem
-          className={styles["menu-item"]}
-          onClick={() =>
-            client.processBook(book.id, true).then(() => onUpdate())
-          }
-        >
-          Re-process
-        </MenuItem>
-        <MenuItem
-          className={styles["menu-item"]}
-          onClick={() => {
-            client.deleteBook(book.id).then(() => onUpdate())
-          }}
-        >
-          Delete
-        </MenuItem>
-      </Menu>
-      <Dialog store={dialogStore} className={styles["modal"]}>
-        <DialogHeading className={styles["modal-heading"]}>
-          Upload audio art
-        </DialogHeading>
-        <form
-          id="audio-art-upload"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!inputRef.current?.files?.[0]) return
-
-            client.uploadBookCover(
-              book.id,
-              inputRef.current.files[0],
-              ({ progress }) => {
-                setUploadProgress(progress ?? null)
-              },
-            )
-          }}
-        >
-          <div>
-            <input
-              id="audio-art-file"
-              name="audio-art-file"
-              ref={inputRef}
-              type="file"
-            />
-          </div>
-          <Button type="submit">Upload</Button>
-        </form>
-        <div>
-          {uploadProgress !== null && (
-            <p>Uploading... {Math.floor(uploadProgress * 100)}%</p>
-          )}
-        </div>
-        <div className={styles["modal-dismiss"]}>
-          <DialogDismiss>Done</DialogDismiss>
-        </div>
-      </Dialog>
-    </>
+    <Menubar className={styles["menu"]}>
+      <MenuProvider>
+        {permissions.book_update && (
+          <MenuItem
+            className={styles["menu-item"]}
+            onClick={() => {
+              router.push(`/books/${book.uuid}`)
+            }}
+          >
+            <TooltipProvider placement="right">
+              <TooltipAnchor>
+                <EditIcon ariaLabel="Edit" />
+              </TooltipAnchor>
+              <Tooltip>Edit</Tooltip>
+            </TooltipProvider>
+          </MenuItem>
+        )}
+        {permissions.book_process && (
+          <MenuItem
+            className={styles["menu-item"]}
+            onClick={() =>
+              client.processBook(book.uuid, false).then(() => onUpdate())
+            }
+          >
+            <TooltipProvider placement="right">
+              <TooltipAnchor>
+                <SoftRestartIcon ariaLabel="Re-process" />
+              </TooltipAnchor>
+              <Tooltip>Re-process</Tooltip>
+            </TooltipProvider>
+          </MenuItem>
+        )}
+        {permissions.book_process && (
+          <MenuItem
+            className={styles["menu-item"]}
+            onClick={() =>
+              client.processBook(book.uuid, true).then(() => onUpdate())
+            }
+          >
+            <TooltipProvider placement="right">
+              <TooltipAnchor>
+                <HardRestartIcon ariaLabel="Force re-process" />
+              </TooltipAnchor>
+              <Tooltip>Force re-process</Tooltip>
+            </TooltipProvider>
+          </MenuItem>
+        )}
+        {permissions.book_delete && (
+          <MenuItem
+            className={cx(styles["menu-item"], styles["delete"])}
+            onClick={() => {
+              client.deleteBook(book.uuid).then(() => onUpdate())
+            }}
+          >
+            <TooltipProvider placement="right">
+              <TooltipAnchor>
+                <DeleteIcon ariaLabel="Delete" />
+              </TooltipAnchor>
+              <Tooltip>Delete</Tooltip>
+            </TooltipProvider>
+          </MenuItem>
+        )}
+      </MenuProvider>
+    </Menubar>
   )
 }

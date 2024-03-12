@@ -4,7 +4,11 @@ from .books import (
     get_book_details,
     add_audiofile,
     get_book,
+    get_books_legacy_,
+    clear_filename_columns,
     delete_book,
+    get_book_uuid,
+    update_book,
 )
 from .processing_tasks import (
     create_processing_task,
@@ -24,13 +28,22 @@ from .users import (
     create_user,
     create_admin_user,
     user_has_permission,
+    delete_user,
 )
 from .migrations import migrate
-from .invites import create_invite, verify_invite, get_invite
+from .invites import (
+    create_invite,
+    verify_invite,
+    get_invite,
+    get_invites,
+    delete_invite,
+)
 from .settings import get_setting, get_settings, update_settings
+from .token_revokations import revoke_token, is_token_revoked
 
 __all__ = [
     "init_db",
+    "clear_filename_columns",
     "create_book",
     "create_processing_task",
     "create_invite",
@@ -38,14 +51,19 @@ __all__ = [
     "create_user",
     "delete_book",
     "get_book",
+    "get_book_uuid",
+    "get_books_legacy_",
     "get_book_details",
     "get_invite",
+    "get_invites",
+    "delete_invite",
     "get_setting",
     "get_settings",
     "update_settings",
     "get_user",
     "get_users",
     "get_user_count",
+    "delete_user",
     "migrate",
     "ProcessingTaskType",
     "add_audiofile",
@@ -53,9 +71,12 @@ __all__ = [
     "ProcessingTaskStatus",
     "get_processing_tasks_for_book",
     "reset_processing_tasks_for_book",
+    "revoke_token",
+    "is_token_revoked",
     "processing_tasks_order",
     "verify_invite",
     "update_task_progress",
     "update_task_status",
     "user_has_permission",
+    "update_book",
 ]
