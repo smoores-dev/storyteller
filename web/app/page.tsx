@@ -21,7 +21,7 @@ export default async function Home() {
 
     if (e instanceof ApiClientError && e.statusCode === 403) {
       return (
-        <main className={styles["main"]}>
+        <main className={styles["content"]}>
           <h2>Forbidden</h2>
           <p>You don&apos;t have permission to see this page</p>
         </main>
@@ -31,7 +31,7 @@ export default async function Home() {
     console.error(e)
 
     return (
-      <main className={styles["main"]}>
+      <main className={styles["content"]}>
         <h2>API is down</h2>
         <p>Storyteller couldn&apos;t connect to the Storyteller API</p>
       </main>

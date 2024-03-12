@@ -4,12 +4,6 @@
   border-right: solid thin #cdcdcd;
 }
 
-@media (max-width: 700px) {
-  .aside {
-    display: none;
-  }
-}
-
 .heading {
   display: flex;
   flex-direction: row;

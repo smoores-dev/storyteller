@@ -10,6 +10,7 @@ import {
 } from "@/contexts/UserPermissions"
 import { createAuthedApiClient } from "@/authedApiClient"
 import { User } from "@/apiModels"
+import { Header } from "@/components/layout/Header"
 
 export const metadata = {
   title: "Storyteller",
@@ -29,8 +30,6 @@ export default async function RootLayout({
     console.error(e)
   }
 
-  console.log(currentUser?.permissions)
-
   return (
     <html lang="en">
       <body>
@@ -38,9 +37,9 @@ export default async function RootLayout({
           <UserPermissionsProvider
             value={currentUser?.permissions ?? EMPTY_PERMISSIONS}
           >
+            <Header />
             <div className={styles["container"]}>
-              {/* <Header /> */}
-              <Sidebar />
+              <Sidebar className={styles["sidebar"]} />
               {children}
             </div>
           </UserPermissionsProvider>

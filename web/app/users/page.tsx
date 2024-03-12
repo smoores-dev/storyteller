@@ -40,8 +40,6 @@ export default async function UsersPage() {
     )
   }
 
-  console.log(users)
-
   return (
     <main>
       <h2 className={styles["heading"]}>Users &amp; Invites</h2>

@@ -12,7 +12,11 @@ import { useEffect, useState } from "react"
 import { BookDetail } from "@/apiModels"
 import { ProcessingTaskTypes } from "../books/BookStatus"
 
-export function Sidebar() {
+type Props = {
+  className?: string | undefined
+}
+
+export function Sidebar({ className }: Props) {
   const client = useApiClient()
 
   const pathname = usePathname()
@@ -49,7 +53,7 @@ export function Sidebar() {
   }, [client])
 
   return (
-    <aside className={styles["aside"]}>
+    <aside className={cx(styles["aside"], className)}>
       <h1 className={styles["heading"]}>
         <Image
           height={80}

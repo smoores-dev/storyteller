@@ -5,6 +5,12 @@
   border-radius: var(--border-radius);
 }
 
+@media screen and (max-width: 700px) {
+  .container {
+    width: calc(100%);
+  }
+}
+
 .button {
   background-color: var(--primary-color);
   color: white;
