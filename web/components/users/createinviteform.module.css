@@ -1,0 +1,87 @@
+.container {
+  composes: container from "../books/addbookform.module.css";
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fields {
+  composes: fields from "../books/addbookform.module.css";
+  padding: 1rem;
+  width: calc(100% - 2rem);
+  gap: 1rem;
+}
+
+.fields > * {
+  flex-grow: 1;
+}
+
+.input {
+  composes: input from "../books/bookeditform.module.css";
+  margin-top: 2rem;
+}
+
+.text-button {
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+}
+
+.text-button:hover {
+  background-color: #f8e8e8;
+}
+
+.button {
+  composes: button from "../books/addbookform.module.css";
+}
+
+.select-button {
+  composes: button;
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1.5rem;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.select-popover {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: var(--border-radius);
+  z-index: 100;
+}
+
+.select-item {
+  display: flex;
+  border-radius: calc(var(--border-radius) / 2);
+  align-items: center;
+  gap: 0.5rem;
+  /* justify-content: space-around; */
+  padding: 0.5rem;
+}
+
+.select-item[data-active-item] {
+  background-color: #f8e8e8;
+  color: black;
+}
+
+.add-button {
+  composes: add-button from "../books/addbookform.module.css";
+}
+
+.submit-button {
+  composes: button;
+  align-self: flex-end;
+  margin: 0 1rem 1rem 0;
+}
+
+.results {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 1rem 1rem;
+  width: calc(100% - 2rem);
+  align-items: baseline;
+}

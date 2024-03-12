@@ -23,7 +23,7 @@ check-api:
       POETRY_VERSION=1.7.1
     - apt-get update
     - apt-get -y install --no-install-recommends curl wget swig libpulse-dev
-      libasound2-dev ffmpeg libavcodec-extra
+      libasound2-dev ffmpeg libavcodec-extra gcc libsqlite3-dev
     - pip install "poetry==$POETRY_VERSION"
     - poetry install --no-interaction --no-ansi
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -

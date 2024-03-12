@@ -1,27 +1,48 @@
 import { ApiHostContextProvider } from "@/contexts/ApiHostContext"
 import "./globals.css"
-import { Inter } from "next/font/google"
 import { proxyRootPath } from "./apiHost"
+// import { Header } from "@/components/layout/Header"
+import styles from "./layout.module.css"
+import { Sidebar } from "@/components/layout/Sidebar"
+import {
+  EMPTY_PERMISSIONS as EMPTY_PERMISSIONS,
+  UserPermissionsProvider,
+} from "@/contexts/UserPermissions"
+import { createAuthedApiClient } from "@/authedApiClient"
+import { User } from "@/apiModels"
 import { Header } from "@/components/layout/Header"
-
-const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
   title: "Storyteller",
   description: "A simple tool for syncing audiobooks and ebooks",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const client = createAuthedApiClient()
+  let currentUser: User | undefined = undefined
+  try {
+    currentUser = await client.getCurrentUser()
+  } catch (e) {
+    console.error(e)
+  }
+
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <Header />
+      <body>
         <ApiHostContextProvider value={{ rootPath: proxyRootPath }}>
-          {children}
+          <UserPermissionsProvider
+            value={currentUser?.permissions ?? EMPTY_PERMISSIONS}
+          >
+            <Header />
+            <div className={styles["container"]}>
+              <Sidebar className={styles["sidebar"]} />
+              {children}
+            </div>
+          </UserPermissionsProvider>
         </ApiHostContextProvider>
       </body>
     </html>

@@ -6,7 +6,8 @@ import type { BookAuthor } from "./BookAuthor"
 import type { ProcessingStatus } from "./ProcessingStatus"
 
 export type BookDetail = {
-  id: number
+  uuid: string
+  id: number | null
   title: string
   authors: Array<BookAuthor>
   processing_status: ProcessingStatus | null

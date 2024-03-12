@@ -1,13 +1,15 @@
-import os
+import json
+from pathlib import Path
 import re
 from dataclasses import dataclass
-from typing import Callable, List, Tuple, TypedDict, Union, cast, Dict
+import shutil
+from typing import BinaryIO, Callable, List, Tuple, Union, cast, Dict
 
 from nltk.tokenize import sent_tokenize as _sent_tokenize
 from functools import cache
 from ebooklib import epub, ITEM_DOCUMENT
 from ebooklib.epub import EpubImage
-from bs4 import BeautifulSoup, NavigableString, ResultSet, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 from .files import TEXT_DIR
 
@@ -23,16 +25,59 @@ class SentenceRange:
     audiofile: str
 
 
-def get_epub_directory(book_name: str):
-    return f"{TEXT_DIR}/{book_name}/"
+def get_epub_directory(book_uuid: str):
+    return Path(TEXT_DIR, book_uuid)
 
 
-def get_epub_filepath(book_name: str):
-    return f"{get_epub_directory(book_name)}/original/{book_name}.epub"
+def get_epub_synced_directory(book_uuid: str):
+    return get_epub_directory(book_uuid).joinpath("synced")
 
 
-def read_epub(book_name: str):
-    book = epub.read_epub(get_epub_filepath(book_name))
+def get_epub_filepath(book_uuid: str):
+    return get_epub_directory(book_uuid).joinpath("original", f"{book_uuid}.epub")
+
+
+def get_epub_index_path(book_uuid: str):
+    return get_epub_directory(book_uuid).joinpath("index.json")
+
+
+def get_epub_index(book_uuid: str):
+    with get_epub_index_path(book_uuid).open() as index_file:
+        return json.load(index_file)
+
+
+def get_epub_cover_filepath(book_uuid: str):
+    try:
+        index = get_epub_index(book_uuid)
+    except:
+        return None
+
+    if "cover" not in index:
+        return None
+
+    return get_epub_directory(book_uuid).joinpath(index["cover"])
+
+
+def persist_cover(book_uuid: str, cover_filename: str):
+    try:
+        index = get_epub_index(book_uuid)
+    except:
+        index = {}
+    index["cover"] = cover_filename
+
+    with open(get_epub_index_path(book_uuid), "w") as f:
+        json.dump(index, f)
+
+
+def persist_custom_cover(book_uuid: str, filename: str, cover: BinaryIO):
+    cover_filepath = get_epub_directory(book_uuid).joinpath(filename)
+    with open(cover_filepath, mode="w+b") as fdst:
+        shutil.copyfileobj(cover, fdst)
+    persist_cover(book_uuid, filename)
+
+
+def read_epub(book_uuid: str):
+    book = epub.read_epub(get_epub_filepath(book_uuid))
     for item in book.get_items_of_type(ITEM_DOCUMENT):
         if not item.is_chapter():
             continue
@@ -45,7 +90,7 @@ def read_epub(book_name: str):
                 item.add_link(
                     href=link["href"],
                     rel=" ".join(link.get("rel", [])),
-                    type=link["type"],
+                    type=link.get("type"),
                 )
     return book
 
@@ -286,7 +331,7 @@ def tag_sentences(chapter: epub.EpubHtml):
 
 
 def get_epub_audio_filename(audio_filename: str) -> str:
-    return f"Audio/{os.path.basename(audio_filename)}"
+    return f"Audio/{Path(audio_filename).name}"
 
 
 def create_media_overlay(
@@ -328,12 +373,15 @@ def create_media_overlay(
     return soup.encode(formatter="minimal")
 
 
-def get_cover_image(book_name: str):
-    epub = read_epub(book_name)
+def process_epub(book_uuid: str):
+    epub = read_epub(book_uuid)
+
     [(_, cover_image_meta)] = epub.get_metadata("OPF", "cover")
     cover_image_item_id = cover_image_meta["content"]
     cover_image = cast(EpubImage, epub.get_item_with_id(cover_image_item_id))
-    cover_image_filename = cover_image.file_name
-    _, cover_image_extension = os.path.splitext(cover_image_filename)
+    cover_image_filename = Path(cover_image.file_name).name
 
-    return cover_image.get_content(), cover_image_extension[1:]
+    cover_image_filepath = get_epub_directory(book_uuid).joinpath(cover_image_filename)
+    cover_image_filepath.write_bytes(cover_image.get_content())
+
+    persist_cover(book_uuid, cover_image_filename)
