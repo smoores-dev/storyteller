@@ -35,7 +35,8 @@ export async function middleware(request: NextRequest) {
 
   const cookieStore = cookies()
   const authTokenCookie = cookieStore.get("st_token")
-  if (!authTokenCookie) {
+  const isLoginPage = request.nextUrl.pathname.startsWith("/login")
+  if (!authTokenCookie && !isLoginPage) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
