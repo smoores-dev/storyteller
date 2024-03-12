@@ -1,0 +1,11 @@
+.menu {
+  composes: menu from "../books/bookoptions.module.css";
+}
+
+.menu-item {
+  composes: menu-item from "../books/bookoptions.module.css";
+}
+
+.delete {
+  composes: delete from "../books/bookoptions.module.css";
+}

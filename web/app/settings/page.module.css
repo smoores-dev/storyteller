@@ -12,6 +12,12 @@
   min-width: 400px;
 }
 
+@media screen and (max-width: 700px) {
+  .settings-form input {
+    min-width: calc(100vw - 6rem);
+  }
+}
+
 .settings-form fieldset {
   margin: 2rem 0;
 }

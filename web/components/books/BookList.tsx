@@ -1,11 +1,12 @@
 "use client"
 
 import { BookDetail } from "@/apiModels"
-import { AddBookModal } from "./AddBookModal"
 import { BookStatus } from "./BookStatus"
 import styles from "./books.module.css"
 import { useCallback, useEffect, useState } from "react"
 import { useApiClient } from "@/hooks/useApiClient"
+import { AddBookForm } from "./AddBookForm"
+import { usePermission } from "@/contexts/UserPermissions"
 
 type Props = {
   books: BookDetail[]
@@ -13,6 +14,8 @@ type Props = {
 
 export function BookList({ books: initialBooks }: Props) {
   const client = useApiClient()
+  const canListBooks = usePermission("book_list")
+
   const [books, setBooks] = useState(initialBooks)
 
   const refreshBooks = useCallback(() => {
@@ -22,20 +25,22 @@ export function BookList({ books: initialBooks }: Props) {
   useEffect(() => {
     const intervalId = setInterval(() => {
       refreshBooks()
-    }, 20000)
+    }, 5000)
     return () => clearInterval(intervalId)
   }, [refreshBooks])
 
   return (
     <>
-      <AddBookModal />
-      <ul>
-        {books.map((book) => (
-          <li key={book.id} className={styles["book-status"]}>
-            <BookStatus book={book} onUpdate={refreshBooks} />
-          </li>
-        ))}
-      </ul>
+      <AddBookForm onAdded={refreshBooks} />
+      {canListBooks && (
+        <ul className={styles["book-list"]}>
+          {books.map((book) => (
+            <li key={book.uuid} className={styles["book-status"]}>
+              <BookStatus book={book} onUpdate={refreshBooks} />
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   )
 }
