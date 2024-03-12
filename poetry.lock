@@ -4411,6 +4411,16 @@ pymysql = ["pymysql"]
 sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
+name = "sqlite-uuid"
+version = "0.9.1"
+description = "Loadable uuid extension for sqlite"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "sqlite-uuid-0.9.1.tar.gz", hash = "sha256:f024fe853204be598e6fc5e4440e716bf1e6d1f8557db2b020d9c53aae69326c"},
+]
+
+[[package]]
 name = "starlette"
 version = "0.35.1"
 description = "The little ASGI library that shines."
@@ -5171,4 +5181,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "03895d59daeda9c2450e6557c851e475d35c8ec162765ba8cb81cde38597b95c"
+content-hash = "7c18a5ba9e1161aea1e58b35620035403bade04c4c0d006918f2964efdb068ba"

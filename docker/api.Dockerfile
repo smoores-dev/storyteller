@@ -8,7 +8,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   libpulse-dev \
   libasound2-dev \
   ffmpeg \
-  libavcodec-extra
+  libavcodec-extra \
+  gcc \
+  libsqlite3-dev
 
 ENV PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \

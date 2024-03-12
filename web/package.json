@@ -9,16 +9,18 @@
     "client:gen": "openapi --input http://127.0.01:8000/openapi.json --output ./apiModels"
   },
   "dependencies": {
-    "@ariakit/react": "^0.2.16",
+    "@ariakit/react": "^0.4.1",
     "@types/node": "20.3.1",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
     "axios": "^1.4.0",
+    "classnames": "^2.5.1",
     "debug": "^4.3.4",
     "form-data": "^4.0.0",
     "http-proxy": "^1.18.1",
     "next": "^14.1.0",
     "react": "^18.2.0",
+    "react-circular-progressbar": "^2.1.0",
     "react-dom": "^18.2.0",
     "sharp": "^0.33.2",
     "typescript": "5.1.3"

@@ -1,23 +1,14 @@
-import { ApiClient, ApiClientError } from "@/apiClient"
-import { Settings, Token } from "@/apiModels"
-import { cookies } from "next/headers"
+import { ApiClientError } from "@/apiClient"
+import { Settings } from "@/apiModels"
 import { redirect } from "next/navigation"
-import { apiHost, rootPath } from "../apiHost"
 import styles from "./page.module.css"
 import { revalidatePath } from "next/cache"
+import { createAuthedApiClient } from "@/authedApiClient"
 
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  const cookieStore = cookies()
-
-  const authTokenCookie = cookieStore.get("st_token")
-  if (!authTokenCookie) {
-    return redirect("/login")
-  }
-
-  const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  const client = new ApiClient(apiHost, rootPath, token.access_token)
+  const client = createAuthedApiClient()
 
   let settings: Settings
 
@@ -59,15 +50,7 @@ export default async function SettingsPage() {
     const smtpUsername = data.get("smtp-username")?.valueOf() as string
     const smtpPassword = data.get("smtp-password")?.valueOf() as string
 
-    const cookieStore = cookies()
-
-    const authTokenCookie = cookieStore.get("st_token")
-    if (!authTokenCookie) {
-      return redirect("/login")
-    }
-
-    const token = JSON.parse(atob(authTokenCookie.value)) as Token
-    const client = new ApiClient(apiHost, rootPath, token.access_token)
+    const client = createAuthedApiClient()
 
     await client.updateSettings({
       library_name: libraryName,
