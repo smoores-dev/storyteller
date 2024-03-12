@@ -20,6 +20,10 @@ As an instance administrator, you'll need to run the Storyteller API server and
 web interface. You and your users can connect to your instance from the mobile
 apps, or download the synced books from the web interface.
 
+**Note:** Before going further, take a moment to read the documentation on
+[minimum necessary resources](/docs/resources) and make sure that you have a
+machine that will be able to run Storyteller!
+
 ## Docker compose
 
 There's a compose file in the project repository, embedded here for ease of use:
