@@ -22,9 +22,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const client = createAuthedApiClient()
   let currentUser: User | undefined = undefined
   try {
+    const client = createAuthedApiClient()
     currentUser = await client.getCurrentUser()
   } catch (e) {
     console.error(e)
