@@ -122,9 +122,9 @@ export function Sidebar({ className }: Props) {
             </li>
           )}
           <li className={cx({ [styles["active"]!]: pathname === "/logout" })}>
-            <Link className={styles["nav-link"]} href="/logout">
+            <a className={styles["nav-link"]} href="/logout">
               Logout
-            </Link>
+            </a>
           </li>
         </ol>
       </nav>
