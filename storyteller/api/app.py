@@ -1,12 +1,18 @@
 from datetime import timedelta
 from email.utils import formatdate
-from functools import lru_cache
+import json
 import os
+from pathlib import Path
 import secrets
-from typing import Annotated, cast
+import tempfile
+from typing import Annotated, Sequence, cast
+from ebooklib import epub
+
 from fastapi import (
     Body,
     FastAPI,
+    File,
+    Form,
     HTTPException,
     Header,
     Request,
@@ -16,14 +22,24 @@ from fastapi import (
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel, model_validator
 
 from starlette.types import Message
 from starlette.background import BackgroundTask
 from starlette._compat import md5_hexdigest
+from storyteller.api.assets.delete import delete_processed
+from storyteller.synchronize.audio import (
+    get_audio_cover_filepath,
+    persist_custom_cover as persist_custom_audio_cover,
+)
 
-from storyteller.synchronize.epub import get_authors, read_epub, get_cover_image
-from storyteller.synchronize.audio import get_audio_cover_image
+from storyteller.synchronize.epub import (
+    get_authors,
+    get_epub_cover_filepath,
+    process_epub,
+    persist_custom_cover as persist_custom_text_cover,
+)
 
 from . import assets, auth, config, database as db, invites, models, processing
 
@@ -83,6 +99,7 @@ if config.config.debug_requests:
 async def startup_event():
     print("Running database migrations")
     db.migrate()
+    assets.migrate_to_uuids()
 
 
 @app.get("/")
@@ -115,6 +132,13 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+@app.post("/logout", dependencies=[Depends(auth.verify_token)])
+async def logout(
+    token: Annotated[str, Depends(auth.oauth2_scheme)], response: Response
+):
+    db.revoke_token(token)
+
+
 @app.get("/validate", dependencies=[Depends(auth.verify_token)], response_model=str)
 async def validate_token():
     return "ok"
@@ -141,23 +165,43 @@ async def create_invite(invite: models.InviteRequest):
         invite.email,
         key,
         invite.book_create,
+        invite.book_delete,
         invite.book_read,
         invite.book_process,
         invite.book_download,
+        invite.book_update,
         invite.book_list,
+        invite.invite_list,
+        invite.invite_delete,
         invite.user_create,
         invite.user_list,
         invite.user_read,
         invite.user_delete,
         invite.settings_update,
     )
-    invites.send_invite(invite.email, key)
+
+    try:
+        invites.send_invite(invite.email, key)
+    except Exception as e:
+        print("Failed to send invite")
+        print(e)
+
     return models.Invite(email=invite.email, key=key)
 
 
 @app.get("/invites/{invite_key}", response_model=models.Invite)
 async def get_invite(invite_key: str):
     return db.get_invite(invite_key)
+
+
+@app.get("/invites", response_model=list[models.Invite])
+async def get_invites():
+    return db.get_invites()
+
+
+@app.delete("/invites/{invite_key}")
+async def delete_invite(invite_key: str):
+    db.delete_invite(invite_key)
 
 
 @app.post(
@@ -193,6 +237,11 @@ async def create_admin(user_request: Annotated[models.UserRequest, Body()]):
         data={"sub": user_request.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.delete("/users/{user_uuid}")
+async def delete_user(user_uuid: str):
+    db.delete_user(user_uuid)
 
 
 @app.get("/user", response_model=models.User)
@@ -231,37 +280,81 @@ async def list_books(synced=False):
 
 
 @app.post(
-    "/books/epub",
+    "/books",
     dependencies=[Depends(auth.has_permission("book_create"))],
     response_model=models.BookDetail,
 )
-async def upload_epub(file: UploadFile):
-    original_filename, _ = os.path.splitext(cast(str, file.filename))
-    assets.persist_epub(original_filename, file.file)
-    book = read_epub(original_filename)
-    authors = get_authors(book)
-    book_detail = db.create_book(book.title, authors, original_filename)
+async def create_book(epub_file: UploadFile, audio_files: list[UploadFile]):
+    with tempfile.NamedTemporaryFile() as tmpf:
+        tmpf.write(epub_file.file.read())
+
+        book = epub.read_epub(tmpf.name)
+        authors = get_authors(book)
+        book_detail = db.create_book(book.title, authors)
+
+        epub_file.file.seek(0)
+        assets.persist_epub(book_detail.uuid, epub_file.file)
+
+    assets.persist_audio(book_detail.uuid, audio_files)
+
     return book_detail
 
 
-@app.post(
-    "/books/{book_id}/audio",
-    dependencies=[Depends(auth.has_permission("book_create"))],
-    response_model=None,
+class FormDataBookAuthor(models.BookAuthor):
+    """
+    Parses a JSON-encoded book author from a
+    multipart/form-data-encoded request
+    """
+
+    @model_validator(mode="before")  # type: ignore
+    @classmethod
+    def validate_to_json(cls, __value):
+        if isinstance(__value, str):
+            return cls(**json.loads(__value))
+        return __value
+
+
+@app.put(
+    "/books/{book_id}",
+    dependencies=[Depends(auth.has_permission("book_update"))],
+    response_model=models.BookDetail,
 )
-async def upload_audio(book_id: int, file: UploadFile):
-    original_filename, extension = os.path.splitext(cast(str, file.filename))
-    extension = extension[1:]
-    if extension in ["m4b", "m4a"]:
-        extension = "mp4"
-    if extension not in ["zip", "mp4"]:
-        print(f"Received unsupported media type {extension}")
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Please upload an mp4 (file extension mp4, m4a, or m4b) or zip of mp3 files",
+async def update_book(
+    book_id: str,
+    title: Annotated[str, Form()],
+    authors: Annotated[Sequence[FormDataBookAuthor], Form()],
+    text_cover: Annotated[UploadFile | None, File()] = None,
+    audio_cover: Annotated[UploadFile | None, File()] = None,
+):
+    book_uuid = db.get_book_uuid(book_id)
+    updated = db.update_book(book_uuid, title, authors)
+    if text_cover is not None:
+        filename = text_cover.filename
+        if filename is None:
+            content_type = text_cover.content_type
+            suffix = (
+                ".jpg" if content_type is None or "jpeg" in content_type else ".png"
+            )
+            filename = f"Audio Cover{suffix}"
+
+        persist_custom_text_cover(
+            book_uuid, text_cover.filename or "Audio", text_cover.file
         )
-    assets.persist_audio(original_filename, extension, file.file)
-    db.add_audiofile(book_id, original_filename, extension)
+
+    if audio_cover is not None:
+        filename = audio_cover.filename
+        if filename is None:
+            content_type = audio_cover.content_type
+            suffix = (
+                ".jpg" if content_type is None or "jpeg" in content_type else ".png"
+            )
+            filename = f"Audio Cover{suffix}"
+
+        persist_custom_audio_cover(
+            book_uuid, audio_cover.filename or "Audio", audio_cover.file
+        )
+
+    return updated
 
 
 @app.post(
@@ -269,8 +362,13 @@ async def upload_audio(book_id: int, file: UploadFile):
     dependencies=[Depends(auth.has_permission("book_process"))],
     response_model=None,
 )
-async def process_book(book_id: int, restart=False):
-    processing.start_processing(book_id, restart)
+async def process_book(book_id: str, restart: bool = False):
+    book_uuid = db.get_book_uuid(book_id)
+
+    if restart:
+        delete_processed(book_uuid)
+
+    processing.start_processing(book_uuid, restart)
 
 
 @app.get(
@@ -278,18 +376,20 @@ async def process_book(book_id: int, restart=False):
     dependencies=[Depends(auth.has_permission("book_read"))],
     response_model=models.BookDetail,
 )
-async def get_book_details(book_id: int):
-    (book,) = db.get_book_details([book_id])
+async def get_book_details(book_id: str):
+    book_uuid = db.get_book_uuid(book_id)
+    (book,) = db.get_book_details([book_uuid])
     return book
 
 
 @app.delete(
     "/books/{book_id}", dependencies=[Depends(auth.has_permission("book_delete"))]
 )
-async def delete_book(book_id: int):
-    book = db.get_book(book_id)
-    assets.delete_assets(book.epub_filename, book.audio_filename)
-    db.delete_book(book_id)
+async def delete_book(book_id: str):
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
+    assets.delete_assets(book.uuid)
+    db.delete_book(book_uuid)
 
 
 @app.get(
@@ -297,11 +397,12 @@ async def delete_book(book_id: int):
     dependencies=[Depends(auth.has_permission("book_download"))],
 )
 def get_synced_book(
-    book_id,
+    book_id: str,
     range: Annotated[str | None, Header()] = None,
     if_range: Annotated[str | None, Header()] = None,
 ):
-    book = db.get_book(book_id)
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
     filepath = assets.get_synced_book_path(book)
 
     stat_result = os.stat(filepath)
@@ -338,7 +439,7 @@ def get_synced_book(
             content=f.read(end - start),
             status_code=206 if partial_response else 200,
             headers={
-                "Content-Disposition": f'attachment; filename="{book.title}.epub"',
+                "Content-Disposition": f'attachment; filename="{book.title.encode().decode("latin-1")}.epub"',
                 "Content-Type": "application/epub+zip",
                 "Accept-Ranges": "bytes",
                 "Content-Length": str(end - start),
@@ -349,44 +450,51 @@ def get_synced_book(
 
 
 def get_epub_book_cover(book: models.Book):
-    return get_cover_image(book.epub_filename)
+    cover_filepath = get_epub_cover_filepath(book.uuid)
+    if cover_filepath is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    return cover_filepath
 
 
 def get_audio_book_cover(book: models.Book):
-    if book.audio_filename is None or book.audio_filetype is None:
+    cover_filepath = get_audio_cover_filepath(book.uuid)
+    if cover_filepath is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    cover = get_audio_cover_image(book.audio_filename, book.audio_filetype)
-    if cover is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    return cover
+    return cover_filepath
 
 
 @app.get(
     "/books/{book_id}/cover", dependencies=[Depends(auth.has_permission("book_read"))]
 )
-async def get_book_cover(book_id, audio=False):
-    book = db.get_book(book_id)
-    cover, ext = get_audio_book_cover(book) if audio else get_epub_book_cover(book)
-    response = Response(cover)
+async def get_book_cover(book_id, audio: bool = False):
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
+
+    header_safe_title = book.title.encode().decode("latin-1")
+
+    cover_filepath = get_audio_book_cover(book) if audio else get_epub_book_cover(book)
+    cover_filename = cover_filepath.name
+    cover_filename_path = Path(cover_filename)
+    response_filename = cover_filename_path.with_stem(
+        f"{header_safe_title} {cover_filename_path.stem}"
+    )
+
+    response = FileResponse(cover_filepath)
     response.headers[
         "Content-Disposition"
-    ] = f'attachment; filename="{book.title} {"Audio " if audio else ""}Cover.{ext}"'
+    ] = f'attachment; filename="{response_filename}"'
+
     return response
 
 
 @app.post(
     "/books/{book_id}/cover", dependencies=[Depends(auth.has_permission("book_create"))]
 )
-async def upload_book_cover(book_id: int, file: UploadFile):
-    book = db.get_book(book_id)
-    _, extension = os.path.splitext(cast(str, file.filename))
-    extension = extension[1:]
-    if book.audio_filename is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Book is missing audio file. Upload audio file before custom cover art.",
-        )
+async def upload_book_cover(book_id: str, file: UploadFile):
+    book_uuid = db.get_book_uuid(book_id)
+    book = db.get_book(book_uuid)
+    filename = cast(str, file.filename)
 
-    assets.persist_audio_cover(book.audio_filename, extension, file.file)
+    assets.persist_audio_cover(book.uuid, filename, file.file)

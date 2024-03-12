@@ -1,75 +1,56 @@
+"use client"
+
 import Image from "next/image"
 import styles from "./header.module.css"
-import { ApiClient, ApiClientError } from "@/apiClient"
-import { apiHost, rootPath } from "@/app/apiHost"
-import { cookies } from "next/headers"
-import { Token } from "@/apiModels"
+import { useEffect, useRef, useState } from "react"
+import { Sidebar } from "./Sidebar"
+import { Button } from "@ariakit/react"
+import { MenuIcon } from "../icons/MenuIcon"
 
-export const dynamice = "force-dynamic"
+export function Header() {
+  const [showSidebar, setShowSidebar] = useState(false)
+  const headerRef = useRef<HTMLHeadingElement | null>(null)
 
-export async function Header() {
-  let canListBooks = false
-  let canListUsers = false
-  let canUpdateSettings = false
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (!headerRef.current) return
 
-  const cookieStore = cookies()
+      const styles = getComputedStyle(headerRef.current)
+      if (styles.display === "none") return
 
-  const authTokenCookie = cookieStore.get("st_token")
-  if (authTokenCookie) {
-    const token = JSON.parse(atob(authTokenCookie.value)) as Token
-    const client = new ApiClient(apiHost, rootPath, token.access_token)
+      if (e.target instanceof Node && headerRef.current.contains(e.target))
+        return
 
-    try {
-      const user = await client.getCurrentUser()
-      if (user.permissions.book_list) {
-        canListBooks = true
-      }
-      if (user.permissions.user_list) {
-        canListUsers = true
-      }
-      if (user.permissions.settings_update) {
-        canUpdateSettings = true
-      }
-    } catch (e) {
-      if (e instanceof ApiClientError && e.statusCode === 401) {
-        // pass
-      } else {
-        console.error(e)
-      }
+      setShowSidebar(false)
     }
-  }
+
+    document.addEventListener("click", onClick)
+    return () => {
+      document.removeEventListener("click", onClick)
+    }
+  }, [])
 
   return (
-    <header className={styles["header"]}>
-      <h1 className={styles["heading"]}>
-        <Image
-          height={80}
-          width={80}
-          src="/Storyteller_Logo.png"
-          alt=""
-          aria-hidden={true}
-        />
-        Storyteller
+    <>
+      <h1 ref={headerRef} className={styles["heading"]}>
+        <span className={styles["storyteller"]}>
+          <Image
+            height={80}
+            width={80}
+            src="/Storyteller_Logo.png"
+            alt=""
+            aria-hidden
+          />
+          Storyteller
+        </span>
+        <Button
+          className={styles["menu-button"]}
+          onClick={() => setShowSidebar(true)}
+        >
+          <MenuIcon />
+        </Button>
       </h1>
-      <nav>
-        <ol className={styles["nav-list"]}>
-          {canListBooks && (
-            <li>
-              <a href="/">Books</a>
-            </li>
-          )}
-          {canListUsers && (
-            <li>
-              <a href="/users">Users</a>
-            </li>
-          )}
-          {canUpdateSettings && (
-            <li>
-              <a href="/settings">Settings</a>
-            </li>
-          )}
-        </ol>
-      </nav>
-    </header>
+      {showSidebar && <Sidebar className={styles["sidebar"]} />}
+    </>
   )
 }

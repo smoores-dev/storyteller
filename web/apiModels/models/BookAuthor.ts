@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 export type BookAuthor = {
-  id: number
+  uuid: string
   name: string
   file_as: string
   role: string | null
