@@ -15,7 +15,7 @@ type Props = {
   onUpdate: () => void
 }
 
-const ProcessingTaskTypes = {
+export const ProcessingTaskTypes = {
   SYNC_CHAPTERS: "Synchronizing chapters",
   SPLIT_CHAPTERS: "Pre-processing audio",
   TRANSCRIBE_CHAPTERS: "Transcribing tracks",

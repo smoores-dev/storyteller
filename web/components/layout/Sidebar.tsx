@@ -1,15 +1,52 @@
 "use client"
 
 import Image from "next/image"
+import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
 import styles from "./sidebar.module.css"
 import Link from "next/link"
 import cx from "classnames"
 import { usePathname } from "next/navigation"
 import { usePermissions } from "@/contexts/UserPermissions"
+import { useApiClient } from "@/hooks/useApiClient"
+import { useEffect, useState } from "react"
+import { BookDetail } from "@/apiModels"
+import { ProcessingTaskTypes } from "../books/BookStatus"
 
 export function Sidebar() {
+  const client = useApiClient()
+
   const pathname = usePathname()
   const permissions = usePermissions()
+
+  const [currentBook, setCurrentBook] = useState<BookDetail | null>(null)
+
+  const userFriendlyTaskType =
+    currentBook?.processing_status &&
+    ProcessingTaskTypes[
+      currentBook.processing_status
+        .current_task as keyof typeof ProcessingTaskTypes
+    ]
+
+  useEffect(() => {
+    async function findCurrentBook() {
+      const books = await client.listBooks()
+
+      const currentBook =
+        books.find(
+          (book) =>
+            book.processing_status?.current_task &&
+            book.processing_status.progress !== 1 &&
+            !book.processing_status.in_error,
+        ) ?? null
+
+      setCurrentBook(currentBook)
+    }
+
+    findCurrentBook()
+    setInterval(() => {
+      findCurrentBook()
+    }, 5000)
+  }, [client])
 
   return (
     <aside className={styles["aside"]}>
@@ -24,20 +61,36 @@ export function Sidebar() {
         Storyteller
       </h1>
       <section className={styles["in-progress"]}>
-        <Image
-          height={98}
-          width={64}
-          src="/api/books/8ca5dac3-e3f2-4e8b-b77d-dcf53bf5f135/cover"
-          alt=""
-          aria-hidden
-        />
-        <div className={styles["in-progress-details"]}>
-          <h3 className={styles["in-progress-title"]}>The Sunlit Man</h3>
-          <div className={styles["in-progress-status"]}>
-            <p>0</p>
-            <p>Transcribing</p>
-          </div>
-        </div>
+        {currentBook ? (
+          <>
+            <Image
+              height={98}
+              width={64}
+              src={client.getCoverUrl(currentBook.uuid)}
+              alt=""
+              aria-hidden
+            />
+            <div className={styles["in-progress-details"]}>
+              <h3 className={styles["in-progress-title"]}>
+                {currentBook.title}
+              </h3>
+              <div className={styles["in-progress-status"]}>
+                <CircularProgressbar
+                  className={styles["progress-bar"]}
+                  value={currentBook.processing_status!.progress}
+                  maxValue={1}
+                  styles={buildStyles({
+                    pathColor: "white",
+                    trailColor: "#855",
+                  })}
+                />
+                <p>{userFriendlyTaskType}</p>
+              </div>
+            </div>
+          </>
+        ) : (
+          "All synced!"
+        )}
       </section>
       <nav className={styles["nav"]}>
         <ol>

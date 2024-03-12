@@ -33,6 +33,7 @@
 
 .in-progress-status {
   display: flex;
+  gap: 0.5rem;
 }
 
 .in-progress-title {
@@ -81,4 +82,8 @@
   font: inherit;
   width: 100%;
   text-align: left;
+}
+
+.progress-bar {
+  width: 1.5rem;
 }
