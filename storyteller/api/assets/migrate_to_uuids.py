@@ -105,6 +105,18 @@ def migrate_audio_to_uuids(
 
     audio.persist_processed_files_list(uuid, audio_files)
 
+    # Attempt to split out existing mp4 covers
+    try:
+        first_audio_file = audio_files[0]
+        if first_audio_file.extension == ".mp4":
+            filepath = audio.get_processed_audio_filepath(
+                uuid, first_audio_file.filename
+            )
+            mp4 = MP4(filepath)
+            audio.extract_mpeg4_cover(uuid, mp4)
+    except:
+        pass
+
     try:
         transcriptions_filenames = os.listdir(old_transcriptions_audio_directory)
     except:
