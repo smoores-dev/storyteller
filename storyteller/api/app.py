@@ -169,20 +169,39 @@ async def create_invite(invite: models.InviteRequest):
         invite.book_read,
         invite.book_process,
         invite.book_download,
+        invite.book_update,
         invite.book_list,
+        invite.invite_list,
+        invite.invite_delete,
         invite.user_create,
         invite.user_list,
         invite.user_read,
         invite.user_delete,
         invite.settings_update,
     )
-    invites.send_invite(invite.email, key)
+
+    try:
+        invites.send_invite(invite.email, key)
+    except Exception as e:
+        print("Failed to send invite")
+        print(e)
+
     return models.Invite(email=invite.email, key=key)
 
 
 @app.get("/invites/{invite_key}", response_model=models.Invite)
 async def get_invite(invite_key: str):
     return db.get_invite(invite_key)
+
+
+@app.get("/invites", response_model=list[models.Invite])
+async def get_invites():
+    return db.get_invites()
+
+
+@app.delete("/invites/{invite_key}")
+async def delete_invite(invite_key: str):
+    db.delete_invite(invite_key)
 
 
 @app.post(
@@ -218,6 +237,11 @@ async def create_admin(user_request: Annotated[models.UserRequest, Body()]):
         data={"sub": user_request.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.delete("/users/{user_uuid}")
+async def delete_user(user_uuid: str):
+    db.delete_user(user_uuid)
 
 
 @app.get("/user", response_model=models.User)

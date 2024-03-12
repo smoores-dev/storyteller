@@ -134,6 +134,36 @@ export class ApiClient {
     return invite
   }
 
+  async deleteInvite(inviteKey: string): Promise<void> {
+    const url = new URL(`${this.rootPath}/invites/${inviteKey}`, this.origin)
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
+  async listInvites(): Promise<Invite[]> {
+    const url = new URL(`${this.rootPath}/invites`, this.origin)
+
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const invites = (await response.json()) as Invite[]
+    return invites
+  }
+
   async acceptInvite(inviteAccept: InviteAccept): Promise<Token> {
     const url = new URL(`${this.rootPath}/users`, this.origin)
 
@@ -186,6 +216,20 @@ export class ApiClient {
 
     const token = (await response.json()) as Token
     return token
+  }
+
+  async deleteUser(uuid: string): Promise<void> {
+    const url = new URL(`${this.rootPath}/users/${uuid}`, this.origin)
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
   }
 
   async getCurrentUser(): Promise<User> {

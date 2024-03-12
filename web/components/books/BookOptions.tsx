@@ -9,6 +9,7 @@ import {
   TooltipAnchor,
   TooltipProvider,
 } from "@ariakit/react"
+import cx from "classnames"
 import { HardRestartIcon } from "../icons/HardRestartIcon"
 import { SoftRestartIcon } from "../icons/SoftRestartIcon"
 import { EditIcon } from "../icons/EditIcon"
@@ -77,7 +78,7 @@ export function BookOptions({ book, onUpdate }: Props) {
         )}
         {permissions.book_delete && (
           <MenuItem
-            className={`${styles["menu-item"]} ${styles["delete"]}`}
+            className={cx(styles["menu-item"], styles["delete"])}
             onClick={() => {
               client.deleteBook(book.uuid).then(() => onUpdate())
             }}

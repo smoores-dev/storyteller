@@ -120,6 +120,18 @@ export class DefaultService {
   }
 
   /**
+   * Get Invites
+   * @returns Invite Successful Response
+   * @throws ApiError
+   */
+  public static getInvitesInvitesGet(): CancelablePromise<Array<Invite>> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/invites",
+    })
+  }
+
+  /**
    * Create Invite
    * @param requestBody
    * @returns Invite Successful Response
@@ -174,6 +186,27 @@ export class DefaultService {
       url: "/users/admin",
       body: requestBody,
       mediaType: "application/json",
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Delete User
+   * @param userUuid
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static deleteUserUsersUserUuidDelete(
+    userUuid: string,
+  ): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/users/{user_uuid}",
+      path: {
+        user_uuid: userUuid,
+      },
       errors: {
         422: `Validation Error`,
       },

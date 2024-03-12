@@ -6,6 +6,7 @@ def get_user(username: str):
     cursor = connection.execute(
         """
         SELECT
+            user.uuid,
             username,
             full_name,
             email,
@@ -17,6 +18,8 @@ def get_user(username: str):
             book_delete,
             book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
@@ -31,6 +34,7 @@ def get_user(username: str):
     )
 
     (
+        uuid,
         username,
         full_name,
         email,
@@ -42,6 +46,8 @@ def get_user(username: str):
         book_delete,
         book_update,
         book_list,
+        invite_list,
+        invite_delete,
         user_create,
         user_list,
         user_read,
@@ -50,6 +56,7 @@ def get_user(username: str):
     ) = cursor.fetchone()
 
     return DBUser(
+        uuid=uuid,
         username=username,
         full_name=full_name,
         email=email,
@@ -61,6 +68,8 @@ def get_user(username: str):
             book_delete=book_delete,
             book_update=book_update,
             book_list=book_list,
+            invite_list=invite_list,
+            invite_delete=invite_delete,
             user_create=user_create,
             user_list=user_list,
             user_read=user_read,
@@ -88,6 +97,7 @@ def get_users():
     cursor = connection.execute(
         """
         SELECT
+            user.uuid,
             username,
             full_name,
             email,
@@ -99,6 +109,8 @@ def get_users():
             book_delete,
             book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
@@ -112,6 +124,7 @@ def get_users():
 
     return [
         DBUser(
+            uuid=uuid,
             username=username,
             full_name=full_name,
             email=email,
@@ -123,6 +136,8 @@ def get_users():
                 book_delete=book_delete,
                 book_update=book_update,
                 book_list=book_list,
+                invite_list=invite_list,
+                invite_delete=invite_delete,
                 user_create=user_create,
                 user_list=user_list,
                 user_read=user_read,
@@ -132,6 +147,7 @@ def get_users():
             hashed_password=hashed_password,
         )
         for (
+            uuid,
             username,
             full_name,
             email,
@@ -143,6 +159,8 @@ def get_users():
             book_delete,
             book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
@@ -170,12 +188,14 @@ def create_admin_user(
             book_download,
             book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
             user_delete,
             settings_update
-        ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
         WHERE NOT EXISTS (
             SELECT uuid
             FROM user_permission
@@ -210,6 +230,46 @@ def create_admin_user(
             "hashed_password": hashed_password,
             "user_permission_uuid": cursor.fetchone()[0],
         },
+    )
+
+    connection.commit()
+
+
+def delete_user(user_uuid: str):
+    cursor = connection.cursor()
+    cursor.execute(
+        """
+        SELECT user_permission_uuid
+        FROM user
+        WHERE uuid = :uuid
+        """,
+        {"uuid": user_uuid},
+    )
+
+    (user_permission_uuid,) = cursor.fetchone()
+
+    cursor.execute(
+        """
+        DELETE FROM user
+        WHERE uuid = :uuid
+        """,
+        {"uuid": user_uuid},
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM invite
+        WHERE user_permission_uuid = :user_permission_uuid
+        """,
+        {"user_permission_uuid": user_permission_uuid},
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM user_permission
+        WHERE uuid = :uuid
+        """,
+        {"uuid": user_permission_uuid},
     )
 
     connection.commit()

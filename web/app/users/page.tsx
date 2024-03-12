@@ -1,9 +1,9 @@
 import { ApiClientError } from "@/apiClient"
-import { User } from "@/apiModels"
+import { Invite, User } from "@/apiModels"
 import { redirect } from "next/navigation"
 import styles from "./page.module.css"
-import { InviteUserModal } from "@/components/users/InviteUserModal"
 import { createAuthedApiClient } from "@/authedApiClient"
+import { UsersList } from "@/components/users/UsersList"
 
 export const dynamic = "force-dynamic"
 
@@ -11,9 +11,11 @@ export default async function UsersPage() {
   const client = createAuthedApiClient()
 
   let users: User[] = []
+  let invites: Invite[] = []
 
   try {
     users = await client.listUsers()
+    invites = await client.listInvites()
   } catch (e) {
     if (e instanceof ApiClientError && e.statusCode === 401) {
       return redirect("/login")
@@ -21,7 +23,7 @@ export default async function UsersPage() {
 
     if (e instanceof ApiClientError && e.statusCode === 403) {
       return (
-        <main className={styles["main"]}>
+        <main className={styles["content"]}>
           <h2>Forbidden</h2>
           <p>You don&apos;t have permission to see this page</p>
         </main>
@@ -31,7 +33,7 @@ export default async function UsersPage() {
     console.error(e)
 
     return (
-      <main className={styles["main"]}>
+      <main className={styles["content"]}>
         <h2>API is down</h2>
         <p>Storyteller couldn&apos;t connect to the Storyteller API</p>
       </main>
@@ -41,12 +43,11 @@ export default async function UsersPage() {
   console.log(users)
 
   return (
-    <main className={styles["main"]}>
-      <h2>Users</h2>
-      {users.map((user) => (
-        <p key={user.username}>{user.full_name}</p>
-      ))}
-      <InviteUserModal />
+    <main>
+      <h2 className={styles["heading"]}>Users &amp; Invites</h2>
+      <section className={styles["content"]}>
+        <UsersList users={users} invites={invites} />
+      </section>
     </main>
   )
 }

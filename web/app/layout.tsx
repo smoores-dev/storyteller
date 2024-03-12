@@ -5,7 +5,7 @@ import { proxyRootPath } from "./apiHost"
 import styles from "./layout.module.css"
 import { Sidebar } from "@/components/layout/Sidebar"
 import {
-  emptyPermissions as EMPTY_PERMISSIONS,
+  EMPTY_PERMISSIONS as EMPTY_PERMISSIONS,
   UserPermissionsProvider,
 } from "@/contexts/UserPermissions"
 import { createAuthedApiClient } from "@/authedApiClient"

@@ -51,6 +51,8 @@ class UserPermissions(BaseModel):
     book_list: bool
     book_delete: bool
     book_update: bool
+    invite_list: bool
+    invite_delete: bool
     user_create: bool
     user_list: bool
     user_read: bool
@@ -59,6 +61,7 @@ class UserPermissions(BaseModel):
 
 
 class User(BaseModel):
+    uuid: str
     username: str
     email: str | None = None
     full_name: str | None = None
@@ -92,7 +95,10 @@ class InviteRequest(BaseModel):
     book_read: bool
     book_process: bool
     book_download: bool
+    book_update: bool
     book_list: bool
+    invite_list: bool
+    invite_delete: bool
     user_create: bool
     user_list: bool
     user_read: bool

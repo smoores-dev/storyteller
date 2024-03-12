@@ -25,8 +25,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/init", request.url))
   }
 
-  if (isInitPage) {
+  if (!needsInit && isInitPage) {
     return NextResponse.redirect(new URL("/", request.url))
+  }
+
+  if (needsInit && isInitPage) {
+    return NextResponse.next()
   }
 
   const cookieStore = cookies()

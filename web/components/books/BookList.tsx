@@ -29,19 +29,18 @@ export function BookList({ books: initialBooks }: Props) {
     return () => clearInterval(intervalId)
   }, [refreshBooks])
 
-  if (!canListBooks) return null
-
   return (
     <>
       <AddBookForm onAdded={refreshBooks} />
-      {/* <AddBookModal /> */}
-      <ul className={styles["book-list"]}>
-        {books.map((book) => (
-          <li key={book.uuid} className={styles["book-status"]}>
-            <BookStatus book={book} onUpdate={refreshBooks} />
-          </li>
-        ))}
-      </ul>
+      {canListBooks && (
+        <ul className={styles["book-list"]}>
+          {books.map((book) => (
+            <li key={book.uuid} className={styles["book-status"]}>
+              <BookStatus book={book} onUpdate={refreshBooks} />
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   )
 }

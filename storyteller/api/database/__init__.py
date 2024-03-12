@@ -28,9 +28,16 @@ from .users import (
     create_user,
     create_admin_user,
     user_has_permission,
+    delete_user,
 )
 from .migrations import migrate
-from .invites import create_invite, verify_invite, get_invite
+from .invites import (
+    create_invite,
+    verify_invite,
+    get_invite,
+    get_invites,
+    delete_invite,
+)
 from .settings import get_setting, get_settings, update_settings
 from .token_revokations import revoke_token, is_token_revoked
 
@@ -48,12 +55,15 @@ __all__ = [
     "get_books_legacy_",
     "get_book_details",
     "get_invite",
+    "get_invites",
+    "delete_invite",
     "get_setting",
     "get_settings",
     "update_settings",
     "get_user",
     "get_users",
     "get_user_count",
+    "delete_user",
     "migrate",
     "ProcessingTaskType",
     "add_audiofile",
