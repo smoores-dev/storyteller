@@ -1,4 +1,4 @@
-from ..models import DBUser, User, UserPermissions
+from ..models import DBUser, UserPermissions
 from .connection import connection
 
 
@@ -6,6 +6,7 @@ def get_user(username: str):
     cursor = connection.execute(
         """
         SELECT
+            user.uuid,
             username,
             full_name,
             email,
@@ -14,7 +15,11 @@ def get_user(username: str):
             book_read,
             book_process,
             book_download,
+            book_delete,
+            book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
@@ -22,13 +27,14 @@ def get_user(username: str):
             settings_update
         FROM user
         JOIN user_permission
-            ON user.user_permission_id = user_permission.id
+            ON user.user_permission_uuid = user_permission.uuid
         WHERE username = :username
         """,
         {"username": username},
     )
 
     (
+        uuid,
         username,
         full_name,
         email,
@@ -37,7 +43,11 @@ def get_user(username: str):
         book_read,
         book_process,
         book_download,
+        book_delete,
+        book_update,
         book_list,
+        invite_list,
+        invite_delete,
         user_create,
         user_list,
         user_read,
@@ -46,6 +56,7 @@ def get_user(username: str):
     ) = cursor.fetchone()
 
     return DBUser(
+        uuid=uuid,
         username=username,
         full_name=full_name,
         email=email,
@@ -54,7 +65,11 @@ def get_user(username: str):
             book_read=book_read,
             book_process=book_process,
             book_download=book_download,
+            book_delete=book_delete,
+            book_update=book_update,
             book_list=book_list,
+            invite_list=invite_list,
+            invite_delete=invite_delete,
             user_create=user_create,
             user_list=user_list,
             user_read=user_read,
@@ -68,7 +83,7 @@ def get_user(username: str):
 def get_user_count():
     cursor = connection.execute(
         """
-        SELECT count(id) as count
+        SELECT count(uuid) as count
         FROM user;
         """
     )
@@ -82,6 +97,7 @@ def get_users():
     cursor = connection.execute(
         """
         SELECT
+            user.uuid,
             username,
             full_name,
             email,
@@ -90,7 +106,11 @@ def get_users():
             book_read,
             book_process,
             book_download,
+            book_delete,
+            book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
@@ -98,12 +118,13 @@ def get_users():
             settings_update
         FROM user
         JOIN user_permission
-            ON user.user_permission_id = user_permission.id
+            ON user.user_permission_uuid = user_permission.uuid
         """,
     )
 
     return [
         DBUser(
+            uuid=uuid,
             username=username,
             full_name=full_name,
             email=email,
@@ -112,7 +133,11 @@ def get_users():
                 book_read=book_read,
                 book_process=book_process,
                 book_download=book_download,
+                book_delete=book_delete,
+                book_update=book_update,
                 book_list=book_list,
+                invite_list=invite_list,
+                invite_delete=invite_delete,
                 user_create=user_create,
                 user_list=user_list,
                 user_read=user_read,
@@ -122,6 +147,7 @@ def get_users():
             hashed_password=hashed_password,
         )
         for (
+            uuid,
             username,
             full_name,
             email,
@@ -130,7 +156,11 @@ def get_users():
             book_read,
             book_process,
             book_download,
+            book_delete,
+            book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
@@ -152,20 +182,25 @@ def create_admin_user(
         """
         INSERT INTO user_permission (
             book_create,
+            book_delete,
             book_read,
             book_process,
             book_download,
+            book_update,
             book_list,
+            invite_list,
+            invite_delete,
             user_create,
             user_list,
             user_read,
             user_delete,
             settings_update
-        ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
         WHERE NOT EXISTS (
-            SELECT id
+            SELECT uuid
             FROM user_permission
         )
+        RETURNING uuid
         """
     )
 
@@ -176,15 +211,15 @@ def create_admin_user(
             full_name,
             email,
             hashed_password,
-            user_permission_id
+            user_permission_uuid
         ) SELECT
             :username,
             :full_name,
             :email,
             :hashed_password,
-            :user_permission_id
+            :user_permission_uuid
         WHERE NOT EXISTS (
-            SELECT id
+            SELECT uuid
             FROM user
         )
         """,
@@ -193,8 +228,48 @@ def create_admin_user(
             "full_name": full_name,
             "email": email,
             "hashed_password": hashed_password,
-            "user_permission_id": cursor.lastrowid,
+            "user_permission_uuid": cursor.fetchone()[0],
         },
+    )
+
+    connection.commit()
+
+
+def delete_user(user_uuid: str):
+    cursor = connection.cursor()
+    cursor.execute(
+        """
+        SELECT user_permission_uuid
+        FROM user
+        WHERE uuid = :uuid
+        """,
+        {"uuid": user_uuid},
+    )
+
+    (user_permission_uuid,) = cursor.fetchone()
+
+    cursor.execute(
+        """
+        DELETE FROM user
+        WHERE uuid = :uuid
+        """,
+        {"uuid": user_uuid},
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM invite
+        WHERE user_permission_uuid = :user_permission_uuid
+        """,
+        {"user_permission_uuid": user_permission_uuid},
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM user_permission
+        WHERE uuid = :uuid
+        """,
+        {"uuid": user_permission_uuid},
     )
 
     connection.commit()
@@ -216,14 +291,14 @@ def create_user(
             full_name,
             email,
             hashed_password,
-            user_permission_id
+            user_permission_uuid
         ) VALUES (
             :username,
             :full_name,
             :email,
             :hashed_password,
             (
-                SELECT user_permission_id
+                SELECT user_permission_uuid
                 FROM invite
                 WHERE invite.key = :invite_key
             )
@@ -238,6 +313,14 @@ def create_user(
         },
     )
 
+    cursor.execute(
+        """
+        DELETE FROM invite
+        WHERE key = :invite_key
+        """,
+        {"invite_key": invite_key},
+    )
+
     connection.commit()
 
 
@@ -247,7 +330,7 @@ def user_has_permission(username: str, permission: str):
         SELECT {permission}
         FROM user_permission
         JOIN user
-        ON user.user_permission_id = user_permission.id
+        ON user.user_permission_uuid = user_permission.uuid
         WHERE user.username = :username
         """,
         {"username": username, "permission": permission},

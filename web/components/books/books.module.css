@@ -1,3 +1,7 @@
+.book-list {
+  padding: 0;
+}
+
 .book-status {
   position: relative;
   margin: 2rem 0;
@@ -55,16 +59,4 @@
 
 .book-upload-heading {
   margin: 1rem 0;
-}
-
-.book-title {
-  font-weight: 500;
-  text-decoration: underline;
-  margin-bottom: 0.5rem;
-  padding-right: 3rem;
-}
-
-.download-wrapper,
-.status {
-  margin-top: 1rem;
 }

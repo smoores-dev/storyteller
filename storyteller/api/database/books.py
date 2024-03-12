@@ -1,4 +1,5 @@
-from typing import Dict, List, cast
+from dataclasses import dataclass
+from typing import Dict, List, Sequence, cast
 
 from storyteller.synchronize.epub import EpubAuthor
 
@@ -12,41 +13,75 @@ from .processing_tasks import (
 from .connection import connection
 
 
-def create_book(
-    title: str, authors: List[EpubAuthor], epub_filename: str
-) -> BookDetail:
-    cursor = connection.cursor()
+def get_book_uuid(book_id_or_uuid: str) -> str:
+    """
+    This function only exists to support old clients that haven't
+    started using UUIDs yet. It's not particularly efficient and should
+    be removed after we feel confident that all clients (specifically,
+    mobile apps) have likely been updated.
+    """
 
-    cursor.execute(
+    if "-" in book_id_or_uuid:
+        # This is already a UUID, so just return it
+        return book_id_or_uuid
+
+    # Otherwise, parse into an int and fetch the UUID from the db
+    book_id = int(book_id_or_uuid)
+    cursor = connection.execute(
         """
-        INSERT INTO book (title, epub_filename) VALUES (:title, :epub_filename)
+        SELECT uuid
+        FROM book
+        WHERE id = :book_id
         """,
-        {"title": title, "epub_filename": epub_filename},
+        {"book_id": book_id},
     )
 
-    book_id = cast(int, cursor.lastrowid)
-    book = BookDetail(id=book_id, title=title, authors=[], processing_status=None)
+    (book_uuid,) = cursor.fetchone()
+    return book_uuid
+
+
+def create_book(title: str, authors: List[EpubAuthor]) -> BookDetail:
+    cursor = connection.cursor()
+
+    # The max id size here is the max size supported by Javascript, which is
+    # 2^53 - 1.
+    cursor.execute(
+        """
+        INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, :title)
+        RETURNING uuid
+        """,
+        {"title": title},
+    )
+
+    (book_uuid,) = cursor.fetchone()
+    book = BookDetail(
+        uuid=book_uuid, id=None, title=title, authors=[], processing_status=None
+    )
 
     for author in authors:
         cursor.execute(
             """
             INSERT INTO author (name, file_as) VALUES (:name, :file_as)
+            RETURNING uuid
             """,
             {"name": author.name, "file_as": author.file_as},
         )
 
-        author_id = cast(int, cursor.lastrowid)
+        (author_uuid,) = cursor.fetchone()
 
         cursor.execute(
             """
-            INSERT INTO author_to_book (book_id, author_id, role) VALUES (:book_id, :author_id, :role)
+            INSERT INTO author_to_book (book_uuid, author_uuid, role) VALUES (:book_uuid, :author_uuid, :role)
             """,
-            {"book_id": book_id, "author_id": author_id, "role": author.role},
+            {"book_uuid": book_uuid, "author_uuid": author_uuid, "role": author.role},
         )
 
         book.authors.append(
             BookAuthor(
-                id=author_id, name=author.name, file_as=author.file_as, role=author.role
+                uuid=author_uuid,
+                name=author.name,
+                file_as=author.file_as,
+                role=author.role,
             )
         )
 
@@ -55,16 +90,16 @@ def create_book(
     return book
 
 
-def add_audiofile(book_id: int, audio_filename: str, audio_filetype: str):
+def add_audiofile(book_uuid: str, audio_filename: str, audio_filetype: str):
     connection.execute(
         """
         UPDATE book
         SET audio_filename = :audio_filename,
             audio_filetype = :audio_filetype
-        WHERE id = :book_id
+        WHERE uuid = :book_uuid
         """,
         {
-            "book_id": book_id,
+            "book_uuid": book_uuid,
             "audio_filename": audio_filename,
             "audio_filetype": audio_filetype,
         },
@@ -73,126 +108,177 @@ def add_audiofile(book_id: int, audio_filename: str, audio_filetype: str):
     connection.commit()
 
 
-def get_book(book_id: int):
+def get_book(book_uuid: str):
     cursor = connection.execute(
         """
-        SELECT id, title, epub_filename, audio_filename, audio_filetype
+        SELECT uuid, id, title
         FROM book
-        WHERE id = :book_id
+        WHERE uuid = :book_uuid
         """,
-        {"book_id": book_id},
+        {"book_uuid": book_uuid},
     )
 
-    id, title, epub_filename, audio_filename, audio_filetype = cursor.fetchone()
+    uuid, id, title = cursor.fetchone()
 
     return Book(
+        uuid=uuid,
         id=id,
         title=title,
-        epub_filename=epub_filename,
-        audio_filename=audio_filename,
-        audio_filetype=audio_filetype,
     )
 
 
-def get_books():
+@dataclass
+class LegacyBook:
+    uuid: str
+    id: int
+    title: str
+    epub_filename: str | None
+    audio_filename: str | None
+    audio_filetype: str | None
+
+
+def get_books_legacy_():
     cursor = connection.execute(
         """
-        SELECT id, title, epub_filename, audio_filename, audio_filetype
+        SELECT uuid, id, title, epub_filename, audio_filename, audio_filetype
         FROM book
+        WHERE epub_filename is not null OR audio_filename is not null
         """
     )
 
     return [
-        Book(
+        LegacyBook(
+            uuid=uuid,
             id=id,
             title=title,
             epub_filename=epub_filename,
             audio_filename=audio_filename,
             audio_filetype=audio_filetype,
         )
-        for id, title, epub_filename, audio_filename, audio_filetype in cursor.fetchall()
+        for uuid, id, title, epub_filename, audio_filename, audio_filetype in cursor.fetchall()
     ]
 
 
-def get_book_details(ids: list[int] | None = None, synced_only=False):
-    if ids is None:
-        ids = []
+def clear_filename_columns(book_uuid: str):
+    connection.execute(
+        """
+        UPDATE book
+        SET
+            epub_filename=null,
+            audio_filename=null
+        WHERE
+            book.uuid = :book_uuid
+        """,
+        {"book_uuid": book_uuid},
+    )
+
+    connection.commit()
+
+
+def get_books():
+    cursor = connection.execute(
+        """
+        SELECT uuid, id, title
+        FROM book
+        """
+    )
+
+    return [
+        Book(
+            uuid=uuid,
+            id=id,
+            title=title,
+        )
+        for uuid, id, title in cursor.fetchall()
+    ]
+
+
+def get_book_details(uuids: list[str] | None = None, synced_only=False):
+    if uuids is None:
+        uuids = []
 
     cursor = connection.execute(
         f"""
-        SELECT book.id, book.title
+        SELECT book.uuid, book.id, book.title
         FROM book
-        {f"WHERE book.id IN ({','.join('?' * len(ids))})" if len(ids) > 0 else ""}
+        {f"WHERE book.uuid IN ({','.join('?' * len(uuids))})" if len(uuids) > 0 else ""}
         """,
-        ids,
+        uuids,
     )
 
     books: Dict[int, BookDetail] = {}
-    selected_book_ids: list[int] = []
+    selected_book_uuids: list[str] = []
     for row in cursor:
-        book_id, book_title = row
+        book_uuid, book_id, book_title = row
 
-        books[book_id] = BookDetail(
-            id=book_id, title=book_title, authors=[], processing_status=None
+        books[book_uuid] = BookDetail(
+            uuid=book_uuid,
+            id=book_id,
+            title=book_title,
+            authors=[],
+            processing_status=None,
         )
-        selected_book_ids.append(book_id)
+        selected_book_uuids.append(book_uuid)
 
     cursor = connection.execute(
         f"""
-        SELECT author.id, author.name, author.file_as,
-               author_to_book.role, author_to_book.book_id
+        SELECT author.uuid, author.name, author.file_as,
+               author_to_book.role, author_to_book.book_uuid
         FROM author
-        JOIN author_to_book on author_to_book.author_id = author.id
-        {f"WHERE author_to_book.book_id IN ({','.join('?' * len(selected_book_ids))})"}
+        JOIN author_to_book on author_to_book.author_uuid = author.uuid
+        {f"WHERE author_to_book.book_uuid IN ({','.join('?' * len(selected_book_uuids))})"}
         """,
-        selected_book_ids,
+        selected_book_uuids,
     )
 
     for row in cursor:
-        author_id, author_name, author_file_as, author_role, book_id = row
+        author_uuid, author_name, author_file_as, author_role, book_uuid = row
 
-        if book_id not in books:
+        if book_uuid not in books:
             continue
 
-        books[book_id].authors.append(
+        books[book_uuid].authors.append(
             BookAuthor(
-                id=author_id, name=author_name, file_as=author_file_as, role=author_role
+                uuid=author_uuid,
+                name=author_name,
+                file_as=author_file_as,
+                role=author_role,
             )
         )
 
     cursor = connection.execute(
         f"""
-        SELECT id, type, status, progress, book_id
+        SELECT uuid, type, status, progress, book_uuid
         FROM processing_task
-        {f"WHERE book_id IN ({','.join('?' * len(selected_book_ids))})"}
+        {f"WHERE book_uuid IN ({','.join('?' * len(selected_book_uuids))})"}
         """,
-        selected_book_ids,
+        selected_book_uuids,
     )
 
     processing_tasks: dict[int, list[ProcessingTask]] = {}
     for row in cursor:
         (
-            processing_task_id,
+            processing_task_uuid,
             processing_task_type,
             processing_task_status,
             processing_task_progress,
-            book_id,
+            book_uuid,
         ) = row
 
-        if book_id not in processing_tasks:
-            processing_tasks[book_id] = []
+        if book_uuid not in processing_tasks:
+            processing_tasks[book_uuid] = []
 
-        processing_tasks[book_id].append(
+        processing_tasks[book_uuid].append(
             ProcessingTask(
-                id=processing_task_id,
+                uuid=processing_task_uuid,
                 type=processing_task_type,
                 status=processing_task_status,
                 progress=processing_task_progress,
-                book_id=book_id,
+                book_uuid=book_uuid,
             )
         )
 
-    for book_id, tasks in processing_tasks.items():
+    for book_uuid, tasks in processing_tasks.items():
         sorted_tasks = sorted(tasks, key=lambda t: processing_tasks_order.index(t.type))
 
         try:
@@ -207,7 +293,7 @@ def get_book_details(ids: list[int] | None = None, synced_only=False):
         if not current_task:
             continue
 
-        books[book_id].processing_status = ProcessingStatus(
+        books[book_uuid].processing_status = ProcessingStatus(
             current_task=current_task.type,
             progress=current_task.progress,
             in_error=current_task.status == ProcessingTaskStatus.IN_ERROR,
@@ -228,29 +314,29 @@ def get_book_details(ids: list[int] | None = None, synced_only=False):
     return list(books.values())
 
 
-def delete_book(id: int):
+def delete_book(uuid: str):
     connection.execute(
         """
         DELETE FROM processing_task
-        WHERE book_id = :book_id
+        WHERE book_uuid = :book_uuid
         """,
-        {"book_id": id},
+        {"book_uuid": uuid},
     )
 
     connection.execute(
         """
         DELETE FROM author_to_book
-        WHERE book_id = :book_id
+        WHERE book_uuid = :book_uuid
         """,
-        {"book_id": id},
+        {"book_uuid": uuid},
     )
 
     connection.execute(
         """
         DELETE FROM author
-        WHERE author.id
+        WHERE author.uuid
         NOT IN (
-            SELECT author_id
+            SELECT author_uuid
             FROM author_to_book
         )
         """
@@ -259,9 +345,73 @@ def delete_book(id: int):
     connection.execute(
         """
         DELETE FROM book
-        WHERE id = :book_id
+        WHERE uuid = :book_uuid
         """,
-        {"book_id": id},
+        {"book_uuid": uuid},
     )
 
     connection.commit()
+
+
+def update_book(uuid: str, title: str, authors: Sequence[BookAuthor]):
+    cursor = connection.cursor()
+
+    # The max id size here is the max size supported by Javascript, which is
+    # 2^53 - 1.
+    cursor.execute(
+        """
+        UPDATE book
+        SET title = :title
+        WHERE uuid = :uuid
+        """,
+        {"title": title, "uuid": uuid},
+    )
+
+    book = BookDetail(
+        uuid=uuid, id=None, title=title, authors=[], processing_status=None
+    )
+
+    for author in authors:
+        if author.uuid == "":
+            cursor.execute(
+                """
+                INSERT INTO author (name, file_as) VALUES (:name, :file_as)
+                RETURNING uuid
+                """,
+                {"name": author.name, "file_as": author.file_as},
+            )
+
+            (author.uuid,) = cursor.fetchone()
+
+            cursor.execute(
+                """
+                INSERT INTO author_to_book (book_uuid, author_uuid, role) VALUES (:book_uuid, :author_uuid, :role)
+                """,
+                {
+                    "book_uuid": uuid,
+                    "author_uuid": author.uuid,
+                    "role": author.role,
+                },
+            )
+        else:
+            cursor.execute(
+                """
+                UPDATE author
+                SET name = :name
+                WHERE uuid = :uuid
+                """,
+                {"name": author.name, "uuid": author.uuid},
+            )
+
+        book.authors.append(
+            BookAuthor(
+                uuid=author.uuid,
+                name=author.name,
+                file_as=author.file_as,
+                role=author.role,
+            )
+        )
+
+    connection.commit()
+
+    return book

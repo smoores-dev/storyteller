@@ -1,0 +1,11 @@
+.container {
+  composes: container from "./userstatus.module.css";
+}
+
+.content {
+  composes: content from "./userstatus.module.css";
+}
+
+.actions {
+  composes: actions from "./userstatus.module.css";
+}

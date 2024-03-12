@@ -3,7 +3,7 @@ from itertools import groupby
 import json
 import math
 from pathlib import Path
-from typing import Any, Callable, Dict, List, TypedDict, Union, cast
+from typing import Any, Callable, Dict, List, Sequence, TypedDict, Union, cast
 from fuzzysearch import Match, find_near_matches
 from ebooklib import epub
 from mutagen.mp4 import MP4
@@ -12,17 +12,17 @@ import os
 import sys
 import whisperx.types
 
-from .files import CACHE_DIR, TEXT_DIR
+from .files import CACHE_DIR, TEXT_DIR, StrPath
 
 from .audio import (
-    get_audio_chapter_filenames,
+    get_processed_audio_filepath,
+    get_processed_files,
     get_transcriptions,
 )
 from .epub import (
     SentenceRange,
     create_media_overlay,
     get_chapter_sentences,
-    get_chapter_text,
     get_epub_audio_filename,
     get_sentences_with_offsets,
     read_epub,
@@ -99,14 +99,14 @@ class StorytellerTranscription(TypedDict):
 
 def concat_transcriptions(
     transcriptions: List[whisperx.types.AlignedTranscriptionResult],
-    audiofiles: List[str],
+    audiofiles: Sequence[StrPath],
 ):
     result = StorytellerTranscription(segments=[], word_segments=[])
     for transcription, audiofile in zip(transcriptions, audiofiles):
         result["word_segments"].extend(transcription["word_segments"])
         result["segments"].extend(
             [
-                StorytellerTranscriptionSegment(**segment, audiofile=audiofile)
+                StorytellerTranscriptionSegment(**segment, audiofile=str(audiofile))
                 for segment in transcription["segments"]
             ]
         )
@@ -310,7 +310,7 @@ def sync_chapter(
     sentence_ranges = interpolate_sentence_ranges(sentence_ranges)
     tag_sentences(chapter)
 
-    chapter_filepath_length = len(chapter.file_name.split(os.path.sep)) - 1
+    chapter_filepath_length = len(Path(chapter.file_name).parts) - 1
     relative_ups = "../" * chapter_filepath_length
     chapter.add_link(
         rel="stylesheet",
@@ -345,7 +345,7 @@ def format_duration(duration: float):
 
 
 def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
-    base_filename, _ = os.path.splitext(os.path.basename(synced.chapter.file_name))
+    base_filename = Path(synced.chapter.file_name).stem
 
     media_overlay_item = epub.EpubSMIL(
         uid=f"{base_filename}_overlay",
@@ -374,29 +374,32 @@ def update_synced_chapter(book: epub.EpubBook, synced: SyncedChapter):
     return duration
 
 
-def get_sync_cache_path(book_name: str):
-    return f"{CACHE_DIR}/{book_name}.json"
+def get_sync_cache_path(book_uuid: str):
+    return Path(CACHE_DIR, f"{book_uuid}.json")
 
 
 def sync_book(
-    ebook_name: str,
-    audiobook_name: str,
+    book_uuid: str,
     on_progress: Callable[[float], None] | None = None,
 ):
-    book = read_epub(ebook_name)
+    book = read_epub(book_uuid)
     epub_chapters = get_chapters(book)
     print(f"Found {len(epub_chapters)} chapters in the ebook")
 
-    audio_chapter_filenames = get_audio_chapter_filenames(audiobook_name)
-    transcriptions = get_transcriptions(audiobook_name)
-    transcription = concat_transcriptions(transcriptions, audio_chapter_filenames)
+    audio_files = get_processed_files(book_uuid)
+    processed_filepaths = [
+        get_processed_audio_filepath(book_uuid, audio_file.filename)
+        for audio_file in audio_files
+    ]
+    transcriptions = get_transcriptions(book_uuid)
+    transcription = concat_transcriptions(transcriptions, processed_filepaths)
     transcription_text = get_transcription_text(transcription)
     book_cache: Dict[str, Any] = {}
 
     Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
-    sync_cache_path = get_sync_cache_path(ebook_name)
-    if os.path.exists(sync_cache_path):
+    sync_cache_path = get_sync_cache_path(book_uuid)
+    if sync_cache_path.exists():
         with open(sync_cache_path, "r") as cache_file:
             book_cache = json.load(cache_file)
 
@@ -485,8 +488,8 @@ def sync_book(
         )
     )
 
-    synced_epub_path = Path(f"{TEXT_DIR}/{ebook_name}/synced")
+    synced_epub_path = Path(f"{TEXT_DIR}/{book_uuid}/synced")
     synced_epub_path.mkdir(parents=True, exist_ok=True)
 
-    epub.write_epub(Path(synced_epub_path, f"{ebook_name}.epub"), book)
+    epub.write_epub(Path(synced_epub_path, f"{book_uuid}.epub"), book)
     print(f"Synced EPUB written to {synced_epub_path}")

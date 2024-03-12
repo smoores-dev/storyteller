@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from hashlib import sha256
 import os
-from pathlib import PurePath
+from pathlib import Path
 
 from .connection import connection
 
@@ -45,10 +45,10 @@ def create_migration(hash: str, name: str):
 
 
 def migrate():
-    migrations_dir = PurePath(".", "migrations")
+    migrations_dir = Path(".", "migrations")
     migration_files = sorted(os.listdir(migrations_dir))
     for migration_file in migration_files:
-        with open(PurePath(migrations_dir, migration_file)) as migration_handle:
+        with open(Path(migrations_dir, migration_file)) as migration_handle:
             migration_contents = migration_handle.read()
             hash = sha256(migration_contents.encode("utf-8")).hexdigest()
             if get_migration(hash) is None:

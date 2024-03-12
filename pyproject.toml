@@ -33,6 +33,7 @@ python-dotenv = "^1.0.0"
 pydantic-settings = "^2.0.2"
 fastapi = "^0.109.0"
 python-multipart = "^0.0.6"
+sqlite-uuid = "^0.9.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
