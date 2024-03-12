@@ -13,7 +13,7 @@ from starlette.status import HTTP_401_UNAUTHORIZED
 
 from .models import InviteAccept, TokenData
 
-from .database import get_user, user_has_permission, verify_invite as verify_invite_db
+from . import database as db
 
 SECRET_KEY = os.getenv("STORYTELLER_SECRET_KEY", "<notsosecret>")
 ALGORITHM = "HS256"
@@ -73,7 +73,7 @@ def get_password_hash(password: str):
 
 def authenticate_user(username: str, password: str):
     try:
-        user = get_user(username)
+        user = db.get_user(username)
     except:
         return None
 
@@ -104,10 +104,15 @@ unauthorized = HTTPException(
 
 def verify_token(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
+        is_revoked = db.is_token_revoked(token)
+        if is_revoked:
+            raise unauthorized
+
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str | None = cast(str | None, payload.get("sub"))
         if username is None:
             raise unauthorized
+
         token_data = TokenData(username=username)
     except JWTError:
         raise unauthorized
@@ -115,14 +120,14 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]):
 
 
 def verify_invite(invite: Annotated[InviteAccept, Body()]):
-    if verify_invite_db(invite.email, invite.invite_key):
+    if db.verify_invite(invite.email, invite.invite_key):
         raise unauthorized
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     token_data = verify_token(token)
     try:
-        user = get_user(token_data.username)
+        user = db.get_user(token_data.username)
     except:
         raise unauthorized
     if user is None:
@@ -142,6 +147,6 @@ class has_permission:
 
     def __call__(self, token: Annotated[str, Depends(oauth2_scheme)]):
         token_data = verify_token(token)
-        if not user_has_permission(token_data.username, self.permission):
+        if not db.user_has_permission(token_data.username, self.permission):
             raise forbidden
         return True

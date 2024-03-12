@@ -49,6 +49,8 @@
     "typescript-plugin-css-modules": "^5.0.2"
   },
   "dependencies": {
-    "@types/lint-staged": "^13.3.0"
+    "@types/lint-staged": "^13.3.0",
+    "classnames": "^2.5.1",
+    "react-circular-progressbar": "^2.1.0"
   }
 }

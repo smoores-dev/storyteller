@@ -1,3 +1,7 @@
-.main {
-  composes: main from "../page.module.css";
+.heading {
+  composes: heading from "../page.module.css";
+}
+
+.content {
+  composes: content from "../page.module.css";
 }

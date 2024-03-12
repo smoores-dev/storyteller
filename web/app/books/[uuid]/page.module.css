@@ -1,0 +1,7 @@
+.heading {
+  composes: heading from "../../page.module.css";
+}
+
+.section {
+  composes: content from "../../page.module.css";
+}
