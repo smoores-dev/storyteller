@@ -31,6 +31,7 @@ check-api:
     - corepack enable
     - yarn workspaces focus storyteller
     - ./scripts/check.sh
+    - ./scripts/test.sh
 
 pages:
   image: node:18-alpine
