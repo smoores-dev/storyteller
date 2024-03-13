@@ -259,11 +259,14 @@ def interpolate_sentence_ranges(
 
         last_sentence_range = interpolated[-1]
 
-        count = sentence_range.id - last_sentence_range.id
-        diff = last_sentence_range.end - last_sentence_range.start
+        count = sentence_range.id - last_sentence_range.id - 1
+        if count == 0:
+            continue
+
+        diff = sentence_range.start - last_sentence_range.end
         interpolated_length = diff / count
 
-        for i in range(1, count):
+        for i in range(1, count + 1):
             interpolated_sentence_range = SentenceRange(
                 last_sentence_range.id + i,
                 last_sentence_range.start + interpolated_length * i,
