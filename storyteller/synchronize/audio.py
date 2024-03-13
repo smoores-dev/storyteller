@@ -101,9 +101,9 @@ def extract_mpeg4_cover(book_uuid: str, mp4: MP4):
     if tags is None:
         return
 
-    covers = cast(list[MP4Cover], tags.get("covr"))
+    covers = cast(list[MP4Cover] | None, tags.get("covr"))
 
-    if len(covers) == 0:
+    if covers is None or len(covers) == 0:
         return
 
     (cover,) = covers
