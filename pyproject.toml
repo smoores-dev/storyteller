@@ -24,6 +24,7 @@ python-levenshtein = "^0.21.0"
 uvicorn = "^0.22.0"
 transformers = "4.36.2"
 ffmpeg-python = "0.2.0"
+faster-whisper = "0.10.0"
 llvmlite = ">=0.40.0"
 numba = ">=0.57.0"
 python-jose = { extras = ["cryptography"], version = "^3.3.0" }
@@ -33,10 +34,9 @@ pydantic-settings = "^2.0.2"
 fastapi = "^0.109.0"
 python-multipart = "^0.0.6"
 sqlite-uuid = "^0.9.1"
-faster-whisper = "v0.10.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^8.1.1"
+pytest = "^5.2"
 black = "^23.3.0"
 pylint = "^2.8.2"
 
@@ -44,11 +44,6 @@ pylint = "^2.8.2"
 name = "pytorch"
 url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore",
-]
 
 [build-system]
 requires = ["poetry-core>=1.7.1"]
