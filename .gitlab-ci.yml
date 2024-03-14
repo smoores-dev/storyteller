@@ -53,7 +53,7 @@ publish-api:
   needs:
     - check-api
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "leave-gaps-for-interpolation"
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -63,9 +63,8 @@ publish-api:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f docker/api.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE/api:latest .
+      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --tag
+      $CI_REGISTRY_IMAGE/api:75bddaed .
 
 publish-cuda-api:
   image: docker:20.10.16
