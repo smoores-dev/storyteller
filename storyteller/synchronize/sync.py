@@ -221,7 +221,13 @@ def get_sentence_ranges(
                 sentence_ranges[-1].end = last_mp4.info.length
                 start = 0
         elif last_sentence_range is not None:
-            if audiofile == last_sentence_range.audiofile:
+            # Fill in any gaps between consecutive sentences,
+            # but leave gaps between missing sentences. Those
+            # will be interpolated later.
+            if (
+                audiofile == last_sentence_range.audiofile
+                and last_sentence_range.id == sentence_index - 1
+            ):
                 last_sentence_range.end = start
             else:
                 last_mp4 = (
