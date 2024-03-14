@@ -261,16 +261,17 @@ def interpolate_sentence_ranges(
 
         count = sentence_range.id - last_sentence_range.id - 1
         if count == 0:
+            interpolated.append(sentence_range)
             continue
 
         diff = sentence_range.start - last_sentence_range.end
         interpolated_length = diff / count
 
-        for i in range(1, count + 1):
+        for i in range(count):
             interpolated_sentence_range = SentenceRange(
-                last_sentence_range.id + i,
-                last_sentence_range.start + interpolated_length * i,
-                last_sentence_range.start + interpolated_length * (i + 1),
+                last_sentence_range.id + i + 1,
+                last_sentence_range.end + interpolated_length * i,
+                last_sentence_range.end + interpolated_length * (i + 1),
                 last_sentence_range.audiofile,
             )
             interpolated.append(interpolated_sentence_range)
