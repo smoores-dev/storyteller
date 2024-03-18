@@ -106,7 +106,7 @@ def extract_mpeg4_cover(book_uuid: str, mp4: MP4):
     if covers is None or len(covers) == 0:
         return
 
-    (cover,) = covers
+    cover = covers[0]
 
     suffix = ".jpg" if cover.imageformat == MP4Cover.FORMAT_JPEG else ".png"
 
