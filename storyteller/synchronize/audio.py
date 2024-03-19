@@ -74,16 +74,6 @@ def get_transcriptions_path(book_uuid: str):
     return get_audio_directory(book_uuid).joinpath("transcriptions")
 
 
-def get_chapter_filename(chapter_index: int, chapter_title: str, ext: str):
-    # Most file systems have a max filename length of 255 characters. We leave five
-    # characters for the extension (the dot + three or four characters for the
-    # actual extension), and then two more because... ???
-    filename = urllib.parse.quote_plus(f"{chapter_index + 1:05d}-{chapter_title}")[
-        0:248
-    ]
-    return f"{filename}{ext}"
-
-
 COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 PLAIN_AUDIO_FILE_EXTENSIONS = [".mp3"]
 MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
@@ -131,7 +121,7 @@ def extract_mp3_cover(book_uuid: str, mp3: MP3):
 def process_file(
     book_uuid: str,
     filepath: Path,
-    out_dir: StrPath,
+    out_dir: Path,
     on_progress: Callable[[float], None] | None = None,
 ):
     audio_files: list[AudioFile] = []
@@ -193,18 +183,18 @@ def process_file(
 
 
 def process_mpeg4_file(
-    mp4: MP4, out_dir: StrPath, on_progress: Callable[[float], None] | None = None
+    mp4: MP4, out_dir: Path, on_progress: Callable[[float], None] | None = None
 ):
     if mp4.chapters is None:
         if mp4.filename is None:
             return cast(list[AudioFile], [])
 
         print(f"Found no chapters; copying MPEG-4 file as is.")
-        shutil.copy(mp4.filename, out_dir)
-        path = Path(mp4.filename)
+        target = out_dir.joinpath("00001.mp4")
+        shutil.copy(mp4.filename, target)
         return [
             AudioFile(
-                filename=path.name, bare_filename=path.stem, extension=path.suffix
+                filename=target.name, bare_filename=target.stem, extension=target.suffix
             )
         ]
 
@@ -219,7 +209,7 @@ def process_mpeg4_file(
 
     audio_files: list[AudioFile] = []
     for i, range in enumerate(chapter_ranges):
-        chapter_filename = get_chapter_filename(i, range.chapter.title, ".mp4")
+        chapter_filename = f"{i + 1:05d}.mp4"
 
         chapter_filepath = Path(out_dir, chapter_filename)
 

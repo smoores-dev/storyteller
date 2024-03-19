@@ -5,6 +5,7 @@ from storyteller.synchronize.audio import (
     get_audio_directory,
     get_processed_audio_filepath,
     get_audio_index_path,
+    get_transcriptions_path,
 )
 from storyteller.synchronize.epub import get_epub_directory, get_epub_synced_directory
 from storyteller.synchronize.sync import get_sync_cache_path
@@ -24,6 +25,10 @@ def delete_audio(book_uuid: str):
 
 def delete_processed_audio(book_uuid: str):
     shutil.rmtree(get_processed_audio_filepath(book_uuid))
+
+
+def delete_transcriptions(book_uuid: str):
+    shutil.rmtree(get_transcriptions_path(book_uuid))
 
 
 def delete_sync_cache(book_uuid: str):
@@ -49,5 +54,6 @@ def delete_assets(book_uuid: str):
 def delete_processed(book_uuid: str):
     delete_synced_epub(book_uuid)
     delete_processed_audio(book_uuid)
+    delete_transcriptions(book_uuid)
     delete_processed_files_cache(book_uuid)
     delete_sync_cache(book_uuid)
