@@ -117,7 +117,9 @@ def get_transcription_text(transcription: StorytellerTranscription):
     return " ".join([segment["text"] for segment in transcription["segments"]])
 
 
-def find_timestamps(match_start_index: int, transcription: StorytellerTranscription):
+def find_start_timestamp(
+    match_start_index: int, transcription: StorytellerTranscription
+):
     s = 0
     position = 0
     while True:
@@ -147,6 +149,39 @@ def find_timestamps(match_start_index: int, transcription: StorytellerTranscript
         return start_word["start"], segment["audiofile"]
 
     return segment["start"], segment["audiofile"]
+
+
+def find_end_timestamp(
+    match_end_index: int,
+    transcription: StorytellerTranscription,
+    transcription_len: int,
+):
+    s = len(transcription["segments"]) - 1
+    position = transcription_len - 1
+    while True:
+        while position - len(transcription["segments"][s]["text"]) >= match_end_index:  # type: ignore
+            position -= len(transcription["segments"][s]["text"]) + 1  # type: ignore
+            s -= 1
+
+        w = len(transcription["segments"][s]["words"]) - 1
+        segment = transcription["segments"][s]
+        while w >= 0 and position - len(segment["words"][w]["word"]) >= match_end_index:
+            position -= len(segment["words"][w]["word"]) + 1
+            w -= 1
+        if w < 0:
+            s -= 1
+            continue
+
+        break
+
+    end_word = segment["words"][w]
+
+    # If a segment only has one word, the start and
+    # end timestamps are only placed on the segment
+    if "end" in end_word:
+        return end_word["end"]
+
+    return segment["end"]
 
 
 def get_window_index_from_offset(window: List[str], offset: int):
@@ -201,17 +236,25 @@ def get_sentence_ranges(
 
         first_match = matches[0]
 
-        transcription_offset = (
-            len("".join(transcription_sentences[:transcription_window_index])) + 1
+        transcription_offset = len(
+            "".join(transcription_sentences[:transcription_window_index])
         )
-        start, audiofile = find_timestamps(
+        start, audiofile = find_start_timestamp(
             first_match.start + transcription_offset + chapter_offset, transcription
+        )
+        end = find_end_timestamp(
+            first_match.end + transcription_offset + chapter_offset,
+            transcription,
+            len(transcription_text),
         )
 
         if len(sentence_ranges) > 0:
             last_audiofile = sentence_ranges[-1].audiofile
+
             if audiofile == last_audiofile:
-                sentence_ranges[-1].end = start
+                if sentence_ranges[-1].id == sentence_index - 1:
+                    sentence_ranges[-1].end = start
+
             else:
                 last_mp4 = (
                     MP4(last_audiofile)
@@ -220,9 +263,12 @@ def get_sentence_ranges(
                 )
                 sentence_ranges[-1].end = last_mp4.info.length
                 start = 0
+
         elif last_sentence_range is not None:
             if audiofile == last_sentence_range.audiofile:
-                last_sentence_range.end = start
+                if last_sentence_range.id == sentence_index - 1:
+                    last_sentence_range.end = start
+
             else:
                 last_mp4 = (
                     MP4(last_sentence_range.audiofile)
@@ -231,10 +277,11 @@ def get_sentence_ranges(
                 )
                 last_sentence_range.end = last_mp4.info.length
                 start = 0
+
         else:
             start = 0
 
-        sentence_ranges.append(SentenceRange(sentence_index, start, start, audiofile))
+        sentence_ranges.append(SentenceRange(sentence_index, start, end, audiofile))
 
         not_found = 0
         transcription_window_index = (

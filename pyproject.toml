@@ -13,12 +13,10 @@ nltk = "^3.6.2"
 ebooklib = "^0.18"
 contractions = "^0.1.73"
 marisa-trie = "^0.8.0"
-whisperx = { git = "https://github.com/m-bain/whisperx.git", rev = "8227807" }
 mutagen = "^1.46.0"
 torch = { version = "2.1.1", source = "pytorch" }
 fuzzysearch = "^0.7.3"
 torchaudio = { version = "2.1.1", source = "pytorch" }
-pyannote-audio = { git = "https://github.com/pyannote/pyannote-audio", rev = "11b56a137a578db9335efc00298f6ec1932e6317" }
 thefuzz = "^0.19.0"
 python-levenshtein = "^0.21.0"
 uvicorn = "^0.22.0"
@@ -33,12 +31,13 @@ pydantic-settings = "^2.0.2"
 fastapi = "^0.109.0"
 python-multipart = "^0.0.6"
 sqlite-uuid = "^0.9.1"
-faster-whisper = "v0.10.0"
+whisperx = {git = "https://github.com/m-bain/whisperx.git"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.1.1"
 black = "^23.3.0"
 pylint = "^2.8.2"
+pytest-watch = "^4.2.0"
 
 [[tool.poetry.source]]
 name = "pytorch"
@@ -46,9 +45,7 @@ url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
 
 [tool.pytest.ini_options]
-filterwarnings = [
-    "ignore",
-]
+filterwarnings = ["ignore"]
 
 [build-system]
 requires = ["poetry-core>=1.7.1"]

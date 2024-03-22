@@ -26,6 +26,7 @@ check-api:
       libasound2-dev ffmpeg libavcodec-extra gcc libsqlite3-dev
     - pip install "poetry==$POETRY_VERSION"
     - poetry install --no-interaction --no-ansi
+    - poetry run python -m nltk.downloader punkt
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     - apt-get install -y --no-install-recommends nodejs
     - corepack enable
