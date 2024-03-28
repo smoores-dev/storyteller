@@ -5,6 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Epub tests",
+      "request": "launch",
+      "runtimeArgs": [
+        "workspace",
+        "@storyteller/web",
+        "tsx",
+        "--test-only",
+        "synchronize/__tests__/epub.test.ts"
+      ],
+      "runtimeExecutable": "yarn",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
+    {
       "name": "Python: FastAPI",
       "type": "debugpy",
       "request": "launch",
