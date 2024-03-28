@@ -5,8 +5,7 @@
   "packageManager": "yarn@4.0.2",
   "workspaces": [
     "web/",
-    "docs/",
-    "writeum/"
+    "docs/"
   ],
   "scripts": {
     "build:docs": "yarn workspace @storyteller/docs build",
