@@ -9,22 +9,28 @@ import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import { readFile, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
 
-type XmlElement = Record<string, ParsedXml> & {
-  ":@": Record<string, string>
+export type XmlNode = Record<string, ParsedXml> & {
+  ":@"?: Record<string, string>
   "#text"?: string
 }
 
-type ParsedXml = Array<XmlElement>
+export type ParsedXml = Array<XmlNode>
 
-function findByName<Name extends string>(
-  name: Name,
-  xml: ParsedXml,
-): (XmlElement & { [x in Name]: ParsedXml }) | undefined {
-  const element = xml.find((e) => name in e)
-  return element as (XmlElement & { [x in Name]: ParsedXml }) | undefined
+export function isTextNode(
+  node: XmlNode,
+): node is XmlNode & { "#text": string } {
+  return "#text" in node
 }
 
-function getElementName(element: XmlElement): string {
+export function findByName<Name extends string>(
+  name: Name,
+  xml: ParsedXml,
+): (XmlNode & { [x in Name]: ParsedXml }) | undefined {
+  const element = xml.find((e) => name in e)
+  return element as (XmlNode & { [x in Name]: ParsedXml }) | undefined
+}
+
+export function getElementName(element: XmlNode): string {
   const keys = Object.keys(element)
   const elementName = keys.find((key) => key !== ":@" && key !== "#text")
   if (!elementName)
@@ -37,7 +43,7 @@ function getElementName(element: XmlElement): string {
 export function textContent(xml: ParsedXml): string {
   let text = ""
   for (const child of xml) {
-    if ("#text" in child) {
+    if (isTextNode(child)) {
       text += child["#text"]
       continue
     }
@@ -210,10 +216,10 @@ export class Epub {
     const rootfile = rootfiles["rootfiles"]!.find(
       (element) =>
         "rootfile" in element &&
-        element[":@"]["@_media-type"] === "application/oebps-package+xml",
+        element[":@"]?.["@_media-type"] === "application/oebps-package+xml",
     )
 
-    if (!rootfile?.[":@"]["@_full-path"])
+    if (!rootfile?.[":@"]?.["@_full-path"])
       throw new Error(
         "Failed to parse EPUB container.xml: Found no rootfile element",
       )
@@ -261,13 +267,13 @@ export class Epub {
     this.manifest = manifest["manifest"].reduce<Record<string, ManifestItem>>(
       (acc, item) => ({
         ...acc,
-        [item[":@"]["@_id"]!]: {
-          id: item[":@"]["@_id"]!,
-          href: item[":@"]["@_href"]!,
-          mediaType: item[":@"]["@_media-type"]!,
-          mediaOverlay: item[":@"]["@_media-overlay"],
-          fallback: item[":@"]["@_fallback"],
-          properties: item[":@"]["@_properties"]?.split(" "),
+        [item[":@"]!["@_id"]!]: {
+          id: item[":@"]!["@_id"]!,
+          href: item[":@"]!["@_href"]!,
+          mediaType: item[":@"]!["@_media-type"]!,
+          mediaOverlay: item[":@"]!["@_media-overlay"],
+          fallback: item[":@"]!["@_fallback"],
+          properties: item[":@"]!["@_properties"]?.split(" "),
         },
       }),
       {},
@@ -295,7 +301,7 @@ export class Epub {
         "Failed to parse EPUB: Found no spine element in package document",
       )
 
-    this.spine = spine["spine"].map((itemref) => itemref[":@"]["@_idref"]!)
+    this.spine = spine["spine"].map((itemref) => itemref[":@"]!["@_idref"]!)
 
     return this.spine
   }
@@ -460,7 +466,7 @@ export class Epub {
         ...(item.mediaOverlay && { "@_media-overlay": item.mediaOverlay }),
         ...(item.properties && { "@_properties": item.properties.join(" ") }),
       },
-    } as unknown as XmlElement)
+    } as unknown as XmlNode)
 
     const updatedPackageDocument = (await this.xmlBuilder.build(
       packageDocument,

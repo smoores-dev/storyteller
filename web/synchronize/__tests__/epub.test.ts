@@ -64,7 +64,7 @@ describe("Epub", () => {
     const chapterOneData = await epub.readXhtmlItemContents(spineItems[1]!.id)
     assert.ok(chapterOneData[1]!["html"]![1]!["head"]![1]!["meta"])
     assert.strictEqual(
-      chapterOneData[1]!["html"]![1]!["head"]![1]![":@"]["@_charset"],
+      chapterOneData[1]!["html"]![1]!["head"]![1]![":@"]!["@_charset"],
       "utf-8",
     )
   })
