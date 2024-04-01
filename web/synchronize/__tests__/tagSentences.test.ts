@@ -178,7 +178,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it.skip("can tag sentences with formatting marks that overlap sentence boundaries", () => {
+  it("can tag sentences with formatting marks that overlap sentence boundaries", () => {
     const input = xmlParser.parse(`
 <?xml version="1.0" encoding="UTF-8"?>
 
