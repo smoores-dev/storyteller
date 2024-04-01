@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "PORT=8001 next dev",
     "test": "tsx --test synchronize/**/*.test.ts",
+    "test:watch": "tsx --test --watch synchronize/**/*.test.ts",
     "build": "next build",
     "start": "next start",
     "client:gen": "openapi --input http://127.0.01:8000/openapi.json --output ./apiModels"
@@ -23,7 +24,7 @@
     "http-proxy": "^1.18.1",
     "memoize": "^10.0.0",
     "next": "^14.1.0",
-    "pymport": "^1.5.0",
+    "pymport": "1.5.0",
     "react": "^18.2.0",
     "react-circular-progressbar": "^2.1.0",
     "react-dom": "^18.2.0",

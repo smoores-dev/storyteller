@@ -1,7 +1,7 @@
 import { pymport } from "pymport"
-import { Module } from "./fuzzysearch"
+import { FuzzySearch } from "./fuzzysearch"
 
-const fuzzysearch = pymport("fuzzysearch") as Module
+const fuzzysearch = pymport("fuzzysearch") as FuzzySearch
 
 export function findNearestMatch(
   needle: string,
