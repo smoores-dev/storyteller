@@ -6,10 +6,7 @@ import {
   isTextNode,
   textContent,
 } from "./epub"
-import wink from "wink-nlp"
-import model from "wink-eng-lite-web-model"
-
-const nlp = wink(model)
+import { tokenizeSentences } from "./nlp"
 
 const CONTENT_SECTIONING = [
   "address",
@@ -259,13 +256,7 @@ export function tagSentences(xml: ParsedXml) {
 
   const text = textContent(body["body"])
 
-  const nlpDoc = nlp.readDoc(text)
-  const sentences = nlpDoc
-    .sentences()
-    .out()
-    // Strip out any zero-length "sentences", usually the result of newlines
-    .filter((s) => !!s)
-
+  const sentences = tokenizeSentences(text)
   const outerXml = copyOuterXml(xml)
   const taggedHtml = findByName("html", xml)!
 

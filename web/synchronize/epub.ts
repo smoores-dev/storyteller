@@ -6,6 +6,7 @@ import {
   ZipWriter,
 } from "@zip.js/zip.js"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
+import memoize, { memoizeClear } from "memoize"
 import { readFile, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
 
@@ -63,6 +64,34 @@ export function getBody(xml: ParsedXml): ParsedXml {
   if (!body) throw new Error("Invalid XHTML document: No body element")
 
   return body["body"]!
+}
+
+export function addLink(
+  xml: ParsedXml,
+  link: { rel: string; href: string; type: string },
+) {
+  const html = findByName("html", xml)
+  if (!html) throw new Error("Invalid XHTML document: no html element")
+
+  const head = findByName("head", html.html)
+  if (!head) throw new Error("Invalid XHTML document: no head element")
+
+  head["head"].push({
+    link: [],
+    ":@": {
+      "@_rel": link.rel,
+      "@_href": link.href,
+      "@_type": link.type,
+    },
+  } as unknown as XmlNode)
+}
+
+export function formatDuration(duration: number) {
+  const hours = Math.floor(duration / 3600)
+  const minutes = Math.floor(duration / 60 - hours * 60)
+  const secondsAndMillis = (duration - minutes * 60 - hours) & 3600
+  const [seconds, millis] = secondsAndMillis.toFixed(2).split(".")
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds?.padStart(2, "0")}.${millis}`
 }
 
 type ManifestItem = {
@@ -153,6 +182,8 @@ export class Epub {
     this.zipReader = new ZipReader(dataReader)
     this.dataWriter = new Uint8ArrayWriter()
     this.zipWriter = new ZipWriter(this.dataWriter)
+
+    this.readXhtmlItemContents = memoize(this.readXhtmlItemContents)
   }
 
   static async from(path: string) {
@@ -394,6 +425,7 @@ export class Epub {
     if (!manifestItem)
       throw new Error(`Could not find item with id "${id}" in manifest`)
 
+    memoizeClear(this.readXhtmlItemContents)
     const href = await this.resolveHref(manifestItem.href)
     if (encoding === "utf-8") {
       await this.writeEntryContents(href, contents as string, encoding)
@@ -427,36 +459,37 @@ export class Epub {
 
   async addManifestItem(
     item: ManifestItem,
+    contents: ParsedXml,
+    encoding: "xml",
+  ): Promise<void>
+  async addManifestItem(
+    item: ManifestItem,
     contents: string,
     encoding: "utf-8",
   ): Promise<void>
   async addManifestItem(item: ManifestItem, contents: Uint8Array): Promise<void>
   async addManifestItem(
     item: ManifestItem,
-    contents: string | Uint8Array,
-    encoding?: "utf-8",
+    contents: string | Uint8Array | ParsedXml,
+    encoding?: "utf-8" | "xml",
   ): Promise<void> {
     const packageDocument = await this.getPackageDocument()
 
-    const packageElement = packageDocument.find(
-      (element) => "package" in element,
-    )
+    const packageElement = findByName("package", packageDocument)
 
     if (!packageElement)
       throw new Error(
         "Failed to parse EPUB: Found no package element in package document",
       )
 
-    const manifest = packageElement["package"]!.find(
-      (element) => "manifest" in element,
-    )
+    const manifest = findByName("manifest", packageElement["package"]!)
 
     if (!manifest)
       throw new Error(
         "Failed to parse EPUB: Found no manifest element in package document",
       )
 
-    manifest["manifest"]!.push({
+    manifest["manifest"].push({
       item: [],
       ":@": {
         "@_id": item.id,
@@ -483,11 +516,98 @@ export class Epub {
     const filename = await this.resolveHref(item.href)
 
     const data =
-      encoding === "utf-8"
-        ? new TextEncoder().encode(contents as string)
+      encoding === "utf-8" || encoding === "xml"
+        ? new TextEncoder().encode(
+            encoding === "utf-8"
+              ? (contents as string)
+              : await this.xmlBuilder.build(contents as ParsedXml),
+          )
         : (contents as Uint8Array)
 
     this.entries.push(new ZipEntry({ filename, data }))
+  }
+
+  async updateManifestItem(id: string, newItem: Omit<ManifestItem, "id">) {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = findByName("package", packageDocument)
+
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no package element in package document",
+      )
+
+    const manifest = findByName("manifest", packageElement["package"])
+
+    if (!manifest)
+      throw new Error(
+        "Failed to parse EPUB: Found no manifest element in package document",
+      )
+
+    const itemIndex = manifest["manifest"].findIndex(
+      (item) => item[":@"]?.["@_id"] === id,
+    )
+
+    manifest["manifest"].splice(itemIndex, 1, {
+      item: [],
+      ":@": {
+        "@_id": id,
+        "@_href": newItem.href,
+        "@_media-type": newItem.mediaType,
+        ...(newItem.fallback && { "@_fallback": newItem.fallback }),
+        ...(newItem.mediaOverlay && {
+          "@_media-overlay": newItem.mediaOverlay,
+        }),
+        ...(newItem.properties && {
+          "@_properties": newItem.properties.join(" "),
+        }),
+      },
+    } as unknown as XmlNode)
+
+    const updatedPackageDocument = (await this.xmlBuilder.build(
+      packageDocument,
+    )) as string
+
+    const rootfile = await this.getRootfile()
+
+    await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
+
+    // Reset the cached manifest, so that it will be read from
+    // the updated XML next time
+    this.manifest = null
+  }
+
+  async addMetadata(
+    name: string,
+    attributes: Record<string, string>,
+    value?: string,
+  ) {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = findByName("package", packageDocument)
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: found no package element in package document",
+      )
+
+    const metadata = findByName("metadata", packageElement.package)
+    if (!metadata)
+      throw new Error(
+        "Failed to parse EPUB: fonud no metadata element in package document",
+      )
+
+    metadata.metadata.push({
+      ":@": attributes,
+      [name]: value !== undefined ? [{ "#text": value }] : [],
+    } as unknown as XmlNode)
+
+    const updatedPackageDocument = (await this.xmlBuilder.build(
+      packageDocument,
+    )) as string
+
+    const rootfile = await this.getRootfile()
+
+    await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
   }
 
   async writeToFile(path: string) {
