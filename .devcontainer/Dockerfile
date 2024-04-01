@@ -1,42 +1,58 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.177.0/containers/python-3/.devcontainer/base.Dockerfile
+FROM node:20 
 
-# [Choice] Python version: 3, 3.9, 3.8, 3.7, 3.6
-ARG VARIANT="3.11"
-FROM mcr.microsoft.com/vscode/devcontainers/python:0-${VARIANT}
-
-# [Optional] If your pip requirements rarely change, uncomment this section to add them to the image.
-# COPY requirements.txt /tmp/pip-tmp/
-# RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
-#    && rm -rf /tmp/pip-tmp
-
-RUN . /usr/local/share/nvm/nvm.sh && nvm install node
-
-# Install whisperx dependencies
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-  && apt-get -y install --no-install-recommends \
-  wget \
-  swig \
-  libpulse-dev \
-  libasound2-dev \
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
   ffmpeg \
-  libavcodec-extra
+  sudo \
+  wget \
+  build-essential \
+  checkinstall \
+  libncursesw5-dev \
+  libssl-dev \
+  libsqlite3-dev \
+  tk-dev \
+  libgdbm-dev \
+  libc6-dev \
+  libbz2-dev \
+  libffi-dev \
+  zlib1g-dev
 
-ENV PYTHONFAULTHANDLER=1 \
-  PYTHONUNBUFFERED=1 \
-  PYTHONHASHSEED=random \
-  PIP_NO_CACHE_DIR=off \
-  PIP_DISABLE_PIP_VERSION_CHECK=on \
-  PIP_DEFAULT_TIMEOUT=100 \
-  POETRY_VERSION=1.5.0
+RUN mkdir -p /home/node/.local
 
-USER vscode
+RUN wget https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tar.xz -O /tmp/python.tar.xz \
+  && tar -xf /tmp/python.tar.xz -C /tmp \
+  && cd /tmp/Python-3.12.2 \
+  && ./configure --enable-optimizations --prefix=/home/node/.local \
+  && make -j $(nproc) \
+  && make install \
+  && cd \
+  && rm -r /tmp/Python-3.12.2 \
+  && rm /tmp/python.tar.xz
 
-# System deps:
-RUN pip install "poetry==$POETRY_VERSION"
+RUN chown -R node:node /home/node
+RUN passwd -d node
+RUN adduser node sudo
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-ENV PATH "/home/vscode/.local/bin:$PATH"
+USER node
 
-RUN wget -O /home/vscode/en.txt https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
+ENV PATH=/home/node/.local/bin:$PATH
 
-# [Optional] Uncomment this line to install global node packages.
-# RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm install -g <your-package-here>" 2>&1
+RUN pip3 install -U pip setuptools
+RUN pip3 install fuzzysearch
+RUN pip3 install torch==2.2.1+cpu torchaudio==2.2.1+cpu --index-url https://download.pytorch.org/whl/cpu
+RUN pip3 install git+https://github.com/m-bain/whisperx.git
+
+ARG GET_PYTHONPATH="python3 -c \"import sys; print(':'.join([p for p in sys.path if p]))\""
+
+ENV NEXT_TELEMETRY_DISABLED 1
+
+EXPOSE 8001
+
+ENV PORT 8001
+ENV HOST 0.0.0.0
+ENV GET_PYTHONPATH=${GET_PYTHONPATH}
+# ENV NEXT_SHARP_PATH /app/node_modules/sharp
+
+CMD PYTHONPATH=$(eval "$GET_PYTHONPATH") yarn workspace @storyteller/web start
