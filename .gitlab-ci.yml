@@ -11,6 +11,7 @@ check-web:
   script:
     - yarn
     - yarn check
+    - yarn test
 
 check-api:
   image: python:3.11-slim

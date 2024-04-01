@@ -22,7 +22,9 @@
     "fix:format": "prettier --write .",
     "fix:lint": "eslint --cache --fix .",
     "fix": "concurrently -P 'npm:fix:*'",
-    "postinstall": "husky"
+    "postinstall": "husky",
+    "test:web": "yarn workspace @storyteller/web test",
+    "test": "concurrently -P 'npm:test:*'"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.0.0",
