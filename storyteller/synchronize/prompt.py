@@ -1,5 +1,6 @@
 from nltk.tokenize import word_tokenize
-import marisa_trie
+
+# import marisa_trie
 import contractions
 
 
@@ -15,9 +16,10 @@ def find_invented_words(text: str):
     ]
 
     dict_word_list = read_dict()
-    trie = marisa_trie.Trie(dict_word_list)
+    words = set(dict_word_list)
+    # trie = marisa_trie.Trie(dict_word_list)
 
-    invented_words = [word for word in all_words if word.lower() not in trie]
+    invented_words = [word for word in all_words if word.lower() not in words]
     return list(set(invented_words))
 
 
