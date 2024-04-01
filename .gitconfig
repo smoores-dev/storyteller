@@ -3,7 +3,7 @@
 # Please adapt and uncomment the following lines:
 	name = Shane Friedman
 	email = smoores-gpg@friedmans.us
-	signingkey = 0xE01BC73472A04BB0
+  signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC5AmzlUekeabPh/2LB9OwFGRGkZ6cZGO4tShCZEbXUy
 [core]
 	editor = code -w
 [commit]
@@ -24,5 +24,9 @@
 	graph = log --graph --oneline --color
 [credential]
 	helper = "!f() { /home/node/.vscode-server/bin/e344f1f539a80912a0e9357cec841f36ce97a4e2/node /tmp/vscode-remote-containers-ccefe0e3-ae00-407d-aa82-e62bdc9f0019.js git-credential-helper $*; }; f"
-[safe]
-	directory = /workspaces/dv-node
+[gpg]
+  format = ssh
+[maintenance]
+	repo = /home/smoores/code/storyteller-mobile
+	repo = /home/smoores/code/storyteller
+
