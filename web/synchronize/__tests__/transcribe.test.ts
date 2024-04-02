@@ -11,11 +11,14 @@ describe("transcribe", () => {
   // This test is quite slow, and mostly just testing
   // that the integration with whisperx works. It should
   // only be run manually.
-  it.skip("can transcribe a track", () => {
+  it("can transcribe a track", () => {
     const trackPath = join(
-      "synchronize",
-      "__fixtures__",
-      "mobydick_001_002_melville.mp3",
+      "..",
+      "assets",
+      "audio",
+      "8ca5dac3-e3f2-4e8b-b77d-dcf53bf5f135",
+      "original",
+      "The_Frugal_Wizard_s_Handbook_for_Surviving_Medieval_England_by_Brandon_Sanderson.mp4",
     )
     const transcribeModel = getTranscribeModel(
       "cpu",

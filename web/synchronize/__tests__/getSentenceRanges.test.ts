@@ -7,8 +7,8 @@ import {
 } from "../getSentenceRanges"
 import { join } from "node:path"
 
-import transcription from "../__fixtures__/mobydick_001_002_melville.json"
-import expected from "../__fixtures__/mobydickch1_2sentenceranges.json"
+import transcription from "../../__fixtures__/mobydick_001_002_melville.json"
+import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
 import { Epub } from "../epub"
 import { tokenizeSentences } from "../nlp"
 import assert from "node:assert"
@@ -26,9 +26,7 @@ const stTranscription: StorytellerTranscription = {
 
 describe("getSentenceRanges", () => {
   it("accurately find sentences ranges", async () => {
-    const epub = await Epub.from(
-      join("synchronize", "__fixtures__", "moby-dick.epub"),
-    )
+    const epub = await Epub.from(join("__fixtures__", "moby-dick.epub"))
     const spine = await epub.getSpineItems()
     const chapterOneText = await epub.readXhtmlItemContents(
       spine[1]!.id,
@@ -45,6 +43,7 @@ describe("getSentenceRanges", () => {
     )
 
     assert.deepStrictEqual(output, expected)
+    await epub.close()
   })
 })
 

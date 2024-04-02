@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "PORT=8001 next dev",
-    "test": "tsx --test synchronize/**/*.test.ts",
-    "test:watch": "tsx --test --watch synchronize/**/*.test.ts",
+    "test": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test",
+    "test:watch": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test --watch",
+    "test:all": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test **/*.test.ts",
     "build": "next build",
     "start": "next start",
     "client:gen": "openapi --input http://127.0.01:8000/openapi.json --output ./apiModels"
@@ -23,6 +24,8 @@
     "form-data": "^4.0.0",
     "http-proxy": "^1.18.1",
     "memoize": "^10.0.0",
+    "mime-types": "^2.1.35",
+    "music-metadata": "^7.14.0",
     "next": "^14.1.0",
     "pymport": "1.5.0",
     "react": "^18.2.0",
@@ -37,6 +40,7 @@
     "@mmomtchev/ffmpeg": "^1.0.0",
     "@tsconfig/strictest": "^2.0.1",
     "@types/http-proxy": "^1.17.14",
+    "@types/mime-types": "^2",
     "@types/node": "^20.11.30",
     "openapi-typescript-codegen": "^0.24.0",
     "tsx": "^4.7.1",
