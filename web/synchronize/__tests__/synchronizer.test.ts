@@ -2,7 +2,7 @@ import { describe, it } from "node:test"
 import { Epub } from "../epub"
 import { join } from "node:path"
 import { Synchronizer } from "../synchronizer"
-import transcription from "../__fixtures__/mobydick_001_002_melville.json"
+import transcription from "../../__fixtures__/mobydick_001_002_melville.json"
 import { StorytellerTranscription } from "../getSentenceRanges"
 import assert from "node:assert"
 
@@ -19,12 +19,8 @@ const stTranscription: StorytellerTranscription = {
 
 describe("Synchronizer", () => {
   it("synchronizes an epub", async () => {
-    const epub = await Epub.from(
-      join("synchronize", "__fixtures__", "moby-dick-small.epub"),
-    )
-    const audiofiles = [
-      join("synchronize", "__fixtures__", "mobydick_001_002_melville.mp3"),
-    ]
+    const epub = await Epub.from(join("__fixtures__", "moby-dick-small.epub"))
+    const audiofiles = [join("__fixtures__", "mobydick_001_002_melville.mp3")]
     const synchronizer = new Synchronizer(epub, {}, audiofiles, [
       stTranscription,
     ])
@@ -46,5 +42,6 @@ describe("Synchronizer", () => {
     )
     assert.strictEqual(firstPar["par"]![1]![":@"]!["@_clipBegin"], "0s")
     assert.strictEqual(firstPar["par"]![1]![":@"]!["@_clipEnd"], "21.383s")
+    await epub.close()
   })
 })

@@ -23,7 +23,7 @@
     "fix:lint": "eslint --cache --fix .",
     "fix": "concurrently -P 'npm:fix:*'",
     "postinstall": "husky",
-    "test:web": "yarn workspace @storyteller/web test",
+    "test:web": "yarn workspace @storyteller/web test:all",
     "test": "concurrently -P 'npm:test:*'"
   },
   "devDependencies": {
