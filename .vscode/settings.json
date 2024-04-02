@@ -16,7 +16,7 @@
     "**/.yarn": true,
     "**/.pnp.*": true
   },
-  "eslint.experimental.useFlatConfig": true,
+  // "eslint.experimental.useFlatConfig": true,
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[javascript]": {

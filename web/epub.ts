@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
   Entry,
   Uint8ArrayReader,
@@ -123,8 +124,6 @@ export class ZipEntry {
     this.data = data
   }
 
-  constructor(info: { filename: string; data: Uint8Array })
-  constructor(entry: Entry)
   constructor(entry: Entry | { filename: string; data: Uint8Array }) {
     this.filename = entry.filename
     if ("data" in entry) {
@@ -763,5 +762,9 @@ export class Epub {
       )
 
     await writeFile(path, data)
+
+    // Reset the ZipWriter to allow further modification
+    this.dataWriter = new Uint8ArrayWriter()
+    this.zipWriter = new ZipWriter(this.dataWriter)
   }
 }

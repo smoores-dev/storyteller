@@ -15,16 +15,13 @@ import {
 import { basename, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
-import {
-  getTrackChapters,
-  getTrackDuration,
-  splitTrack,
-} from "@/synchronize/audio"
+import { getTrackChapters, getTrackDuration, splitTrack } from "@/audio"
 import {
   getAlignModel,
   getTranscribeModel,
   transcribeTrack,
-} from "@/synchronize/transcribe"
+  TranscriptionResult,
+} from "@/transcribe"
 
 export function getAudioDirectory(bookUuid: UUID) {
   return join(AUDIO_DIR, bookUuid)
@@ -152,6 +149,7 @@ export async function processMpeg4File(
 
   const audioFiles: AudioFile[] = []
   for (let i = 0; i < chapterRanges.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const chapterRange = chapterRanges[i]!
     const chapterFilename = `${(i + 1).toString().padStart(5, "0")}.mp4`
     const chapterFilepath = join(outDir, chapterFilename)
@@ -225,6 +223,7 @@ export async function processFile(
     try {
       const entries = await zipReader.getEntries()
       for (let i = 0; i < entries.length; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const entry = entries[i]!
         if (entry.directory) continue
 
@@ -236,6 +235,7 @@ export async function processFile(
           const tempFilepath = join(tempDir, entry.filename)
           await writeFile(
             tempFilepath,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             await entry.getData!(new Uint8ArrayWriter()),
           )
           const processed = await processFile(
@@ -283,6 +283,7 @@ export async function processAudiobook(
   const audioFiles: AudioFile[] = []
 
   for (let i = 0; i < filenames.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const filename = filenames[i]!
     const filepath = getOriginalAudioFilepath(bookUuid, filename)
 
@@ -298,6 +299,30 @@ export async function processAudiobook(
 
   await persistProcessedFilesList(bookUuid, audioFiles)
   return audioFiles
+}
+
+function getTranscriptionFilename(audoFile: AudioFile) {
+  return `${audoFile.bare_filename}.json`
+}
+
+export async function getTranscriptions(bookUuid: UUID) {
+  const audioFiles = await getProcessedFiles(bookUuid)
+  if (!audioFiles)
+    throw new Error(
+      "Could not retrieve transcriptions: found no processed audio files",
+    )
+  const transcriptionFilepaths = audioFiles.map((audioFile) =>
+    getTranscriptionsFilepath(bookUuid, getTranscriptionFilename(audioFile)),
+  )
+  const transcriptions = await Promise.all(
+    transcriptionFilepaths.map(async (filepath) => {
+      const transcriptionContents = await readFile(filepath, {
+        encoding: "utf-8",
+      })
+      return JSON.parse(transcriptionContents) as TranscriptionResult
+    }),
+  )
+  return transcriptions
 }
 
 export async function transcribeBook(
@@ -319,6 +344,7 @@ export async function transcribeBook(
   const { alignModel, alignMetadata } = getAlignModel(device)
 
   for (let i = 0; i < audioFiles.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const audioFile = audioFiles[i]!
     const filepath = getProcessedAudioFilepath(bookUuid, audioFile.filename)
     const transcription = transcribeTrack(
@@ -329,10 +355,9 @@ export async function transcribeBook(
       alignMetadata,
       batchSize,
     )
-    const transcriptionFilename = `${audioFile.bare_filename}.json`
     const transcriptionFilepath = getTranscriptionsFilepath(
       bookUuid,
-      transcriptionFilename,
+      getTranscriptionFilename(audioFile),
     )
     await writeFile(transcriptionFilepath, JSON.stringify(transcription))
     onProgress?.((i + 1) / audioFiles.length)

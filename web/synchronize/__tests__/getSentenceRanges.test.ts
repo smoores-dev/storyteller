@@ -9,7 +9,7 @@ import { join } from "node:path"
 
 import transcription from "../../__fixtures__/mobydick_001_002_melville.json"
 import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
-import { Epub } from "../epub"
+import { Epub } from "../../epub"
 import { tokenizeSentences } from "../nlp"
 import assert from "node:assert"
 

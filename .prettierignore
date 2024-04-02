@@ -7,5 +7,6 @@ storyteller
 
 /web/.next
 node_modules
+tsbuild
 
 /docs/.docusaurus

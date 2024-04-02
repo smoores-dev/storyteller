@@ -1,35 +1,47 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "module": "esnext",
+    "composite": true,
+    "allowJs": true,
+    "emitDeclarationOnly": true,
+    "module": "ESNext",
+    "target": "ES2022",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "preserveSymlinks": true,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "strict": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
     "incremental": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"
-      },
-      {
-        "name": "typescript-plugin-css-modules",
-        "options": {
-          "noUncheckedIndexedAccess": true
-        }
       }
+      // {
+      //   "name": "typescript-plugin-css-modules",
+      //   "options": {
+      //     "noUncheckedIndexedAccess": true
+      //   }
+      // }
     ],
     "paths": {
       "@/*": ["./*"]
     },
-    "allowJs": true
+    "outDir": "tsbuild"
   },
   "extends": ["@tsconfig/strictest"],
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next"]
+  "include": ["next-env.d.ts", "**/*.js", "**/*.json", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", ".next", "tsbuild"]
 }
