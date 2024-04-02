@@ -135,6 +135,17 @@ export class ZipEntry {
   }
 }
 
+export type EpubMetadata = {
+  title?: string | undefined
+  identifier?: string | undefined
+  language?: string | undefined
+  date?: Date | undefined
+  creators?: string[] | undefined
+  contributors?: string[] | undefined
+  subjects?: string[] | undefined
+  cover?: string | undefined
+}
+
 export class Epub {
   private xmlParser = new XMLParser({
     allowBooleanAttributes: true,
@@ -186,6 +197,11 @@ export class Epub {
     this.readXhtmlItemContents = memoize(this.readXhtmlItemContents)
   }
 
+  async close() {
+    await this.zipReader.close()
+    await this.zipWriter.close()
+  }
+
   static async from(path: string) {
     const file = await readFile(path)
     const epub = new Epub(new Uint8Array(file.buffer))
@@ -199,15 +215,20 @@ export class Epub {
     return entries.find((entry) => entry.filename === path)
   }
 
-  private async getFileData(path: string): Promise<Uint8Array | undefined>
+  private async getFileData(path: string): Promise<Uint8Array>
   private async getFileData(path: string, encoding: "utf-8"): Promise<string>
   private async getFileData(
     path: string,
     encoding?: "utf-8" | undefined,
-  ): Promise<string | Uint8Array | undefined> {
+  ): Promise<string | Uint8Array> {
     const containerEntry = this.getEntry(path)
 
-    const containerContents = await containerEntry?.getData()
+    if (!containerEntry)
+      throw new Error(
+        `Could not get file data for entry ${path}: entry not found`,
+      )
+
+    const containerContents = await containerEntry.getData()
 
     return encoding === "utf-8"
       ? new TextDecoder("utf-8").decode(containerContents)
@@ -313,6 +334,123 @@ export class Epub {
     return this.manifest
   }
 
+  async getMetadata() {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = findByName("package", packageDocument)
+
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no package element in package document",
+      )
+
+    const metadataElement = findByName("metadata", packageElement.package)
+
+    if (!metadataElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no metadata element in package document",
+      )
+
+    const metadata = metadataElement.metadata.reduce<EpubMetadata>(
+      (acc, item) => {
+        const elementName = getElementName(item)
+        switch (elementName) {
+          case "dc:identifier": {
+            const identifier = item[elementName]![0]?.["#text"]
+            return {
+              ...acc,
+              identifier,
+            }
+          }
+          case "dc:title": {
+            const title = item[elementName]![0]?.["#text"]
+            return {
+              ...acc,
+              title,
+            }
+          }
+          case "dc:language": {
+            const language = item[elementName]![0]?.["#text"]
+            return {
+              ...acc,
+              language,
+            }
+          }
+          case "dc:date": {
+            const date = item[elementName]![0]?.["#text"]
+            return {
+              ...acc,
+              date: date === undefined ? date : new Date(date),
+            }
+          }
+          case "dc:creator": {
+            const creator = item[elementName]![0]?.["#text"]
+            return {
+              ...acc,
+              ...(creator && {
+                creators: [...(acc["creators"] ?? []), creator],
+              }),
+            }
+          }
+          case "dc:contributor": {
+            const contributor = item[elementName]![0]?.["#text"]
+            return {
+              ...acc,
+              ...(contributor && {
+                contributors: [...(acc["contributors"] ?? []), contributor],
+              }),
+            }
+          }
+          case "dc:subject": {
+            const subject = item[elementName]![0]?.["#text"]
+            return {
+              ...acc,
+              ...(subject && {
+                subjects: [...(acc["subjects"] ?? []), subject],
+              }),
+            }
+          }
+          case "link": {
+            return acc
+          }
+          case "meta": {
+            const name = item[":@"]?.["@_name"]
+            if (name === "cover") {
+              return {
+                ...acc,
+                cover: item[":@"]?.["@_content"],
+              }
+            }
+            return acc
+          }
+          default: {
+            if (elementName.startsWith("dc:")) {
+              return {
+                ...acc,
+                [elementName.slice(3)]: item[elementName]![0]?.["#text"],
+              }
+            }
+            return acc
+          }
+        }
+      },
+      {},
+    )
+
+    return metadata
+  }
+
+  async getCoverImage() {
+    const manifest = await this.getManifest()
+    const coverImage = Object.values(manifest).find((item) =>
+      item.properties?.includes("cover-image"),
+    )
+    if (coverImage) return coverImage
+    const metadata = await this.getMetadata()
+    if (!metadata.cover) return null
+    return manifest[metadata.cover] ?? null
+  }
+
   private async getSpine() {
     if (this.spine !== null) return this.spine
 
@@ -353,12 +491,12 @@ export class Epub {
     return [rootDir, href].join("/")
   }
 
-  async readItemContents(id: string): Promise<Uint8Array | undefined>
+  async readItemContents(id: string): Promise<Uint8Array>
   async readItemContents(id: string, encoding: "utf-8"): Promise<string>
   async readItemContents(
     id: string,
     encoding?: "utf-8",
-  ): Promise<string | Uint8Array | undefined> {
+  ): Promise<string | Uint8Array> {
     const manifest = await this.getManifest()
     const manifestItem = manifest[id]
 

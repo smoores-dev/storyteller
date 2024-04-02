@@ -29,6 +29,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
-# epub tests
-synchronize/__fixtures__/__output__/*
-!synchronize/__fixtures__/__output__/.keep
+# test fixtures
+__fixtures__/__output__/*
+!__fixtures__/__output__/.keep

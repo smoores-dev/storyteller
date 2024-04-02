@@ -1,8 +1,8 @@
-import util from "node:util"
+import { promisify } from "node:util"
 import { exec as execCallback } from "node:child_process"
 import memoize from "memoize"
 
-const exec = util.promisify(execCallback)
+const exec = promisify(execCallback)
 
 type FfmpegTrackFormat = {
   format: {
@@ -56,7 +56,7 @@ type TrackInfo = {
   }
 }
 
-function trackFormatToInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
+function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
   return {
     filename: format.filename,
     nbStreams: format.nb_streams,
@@ -91,10 +91,70 @@ export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
     throw new Error(stderr)
   }
   const info = JSON.parse(stdout)
-  return trackFormatToInfo(info["format"])
+  return parseTrackInfo(info["format"])
 })
 
 export async function getTrackDuration(path: string) {
   const info = await getTrackInfo(path)
   return info["duration"]
+}
+
+type FfmpegChapters = {
+  chapters: FfmpegChapterInfo[]
+}
+
+type FfmpegChapterInfo = {
+  id: number
+  time_base: string
+  start: number
+  start_time: string
+  end: number
+  end_time: string
+  tags: {
+    title: string
+  }
+}
+
+export type ChapterInfo = {
+  id: number
+  startTime: number
+  endTime: number
+  title: string
+}
+
+function parseChapterInfo(ffmpegChapterInfo: FfmpegChapterInfo): ChapterInfo {
+  return {
+    id: ffmpegChapterInfo.id,
+    startTime: parseFloat(ffmpegChapterInfo.start_time),
+    endTime: parseFloat(ffmpegChapterInfo.end_time),
+    title: ffmpegChapterInfo.tags.title,
+  }
+}
+
+export const getTrackChapters = memoize(async function getTrackChapters(
+  path: string,
+) {
+  const { stdout, stderr } = await exec(
+    `ffprobe -i ${path} -show_chapters -v quiet -of json`,
+  )
+  if (stderr) {
+    throw new Error(stderr)
+  }
+  const { chapters } = JSON.parse(stdout) as FfmpegChapters
+  return chapters.map((chapter) => parseChapterInfo(chapter))
+})
+
+export async function splitTrack(
+  path: string,
+  from: number,
+  to: number,
+  destination: string,
+) {
+  const { stderr } = await exec(
+    `ffmpeg -nostdin -ss ${from} -to ${to} -i "${path}" -c copy -map 0 -map_chapters -1 -v quiet "${destination}"`,
+  )
+
+  if (stderr) {
+    throw new Error(stderr)
+  }
 }

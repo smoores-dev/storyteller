@@ -6,20 +6,22 @@ import { stat } from "node:fs/promises"
 
 describe("Epub", () => {
   it("can read from an archived .epub file", async () => {
-    const filepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     assert.ok(epub instanceof Epub)
+    await epub.close()
   })
 
   it("can parse the spine correctly", async () => {
-    const filepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     assert.strictEqual(spineItems.length, 12)
+    await epub.close()
   })
 
   it("can locate spine items", async () => {
-    const filepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readItemContents(
@@ -27,10 +29,11 @@ describe("Epub", () => {
       "utf-8",
     )
     assert.ok(coverPageData.startsWith("\n<!DOCTYPE html>"))
+    await epub.close()
   })
 
   it("can parse xhtml spine items", async () => {
-    const filepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readXhtmlItemContents(spineItems[0]!.id)
@@ -40,10 +43,11 @@ describe("Epub", () => {
       coverPageData[0]!["html"]![1]!["head"]![1]!["title"]![0]!["#text"],
       '"Cover"',
     )
+    await epub.close()
   })
 
   it("can produce text content for xhtml items", async () => {
-    const filepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const chapterOneData = await epub.readXhtmlItemContents(
@@ -55,10 +59,11 @@ describe("Epub", () => {
         "The Project Gutenberg eBook of Moby Dick; Or, The Whale",
       ),
     )
+    await epub.close()
   })
 
   it("can parse void xhtml tags", async () => {
-    const filepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const chapterOneData = await epub.readXhtmlItemContents(spineItems[1]!.id)
@@ -67,10 +72,11 @@ describe("Epub", () => {
       chapterOneData[1]!["html"]![1]!["head"]![1]![":@"]!["@_charset"],
       "utf-8",
     )
+    await epub.close()
   })
 
   it("can write the epub to a file", async () => {
-    const inputFilepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(inputFilepath)
 
     const outputFilepath = join(
@@ -83,10 +89,11 @@ describe("Epub", () => {
     await epub.writeToFile(outputFilepath)
     const info = await stat(outputFilepath)
     assert.ok(info.isFile)
+    await epub.close()
   })
 
   it("can modify an xhtml item", async () => {
-    const inputFilepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(inputFilepath)
 
     const spineItems = await epub.getSpineItems()
@@ -109,6 +116,7 @@ describe("Epub", () => {
     )
 
     await epub.writeToFile(outputFilepath)
+    await epub.close()
 
     const updatedEpub = await Epub.from(outputFilepath)
 
@@ -121,10 +129,11 @@ describe("Epub", () => {
       updatedCoverPageData[0]!["html"]![1]!["head"]![1]!["title"]![0]!["#text"],
       "Test title",
     )
+    await updatedEpub.close()
   })
 
   it("can add a new manifest item", async () => {
-    const filepath = join("synchronize", "__fixtures__", "moby-dick.epub")
+    const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const newItem = {
       id: "testitem",
@@ -157,5 +166,6 @@ describe("Epub", () => {
     const testData = await epub.readXhtmlItemContents("testitem", "xhtml")
 
     assert.strictEqual(textContent(getBody(testData)).trim(), "Test contents")
+    await epub.close()
   })
 })
