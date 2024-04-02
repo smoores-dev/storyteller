@@ -1,5 +1,9 @@
-import { pymport } from "pymport"
-import { TranscribeModel, WhisperX } from "./whisperx"
+import { JsObject, pymport } from "pymport"
+import {
+  TranscribeModel,
+  WhisperX,
+  TranscriptionResult as WhisperXTranscriptionResult,
+} from "./synchronize/whisperx"
 
 const whisperx = pymport("whisperx") as WhisperX
 
@@ -22,6 +26,8 @@ export function getAlignModel(device: string) {
   return { alignModel: result.item(0), alignMetadata: result.item(1) }
 }
 
+export type TranscriptionResult = JsObject<WhisperXTranscriptionResult>
+
 export function transcribeTrack(
   trackPath: string,
   device: string,
@@ -29,7 +35,7 @@ export function transcribeTrack(
   alignModel: unknown,
   alignMetadata: unknown,
   batchSize: number,
-) {
+): TranscriptionResult {
   console.log(`Transcribing audio file ${trackPath}`)
 
   console.log("Loading audio")

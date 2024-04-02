@@ -1,4 +1,6 @@
+import { readFile } from "node:fs/promises"
 import { basename, parse } from "node:path/posix"
+import memoize from "memoize"
 import {
   Epub,
   ParsedXml,
@@ -6,7 +8,9 @@ import {
   formatDuration,
   getBody,
   textContent,
-} from "./epub"
+} from "@/epub"
+import { getTrackDuration } from "@/audio"
+import { TranscriptionResult } from "@/transcribe"
 import {
   SentenceRange,
   StorytellerTranscription,
@@ -16,10 +20,7 @@ import {
 } from "./getSentenceRanges"
 import { tokenizeSentences } from "./nlp"
 import { tagSentences } from "./tagSentences"
-import { readFile } from "node:fs/promises"
-import { getTrackDuration } from "./audio"
 import { findBestOffset } from "./findChapterOffset"
-import memoize from "memoize"
 
 function createMediaOverlay(
   fileStem: string,
@@ -87,7 +88,7 @@ export class Synchronizer {
       { startSentence: number; transcriptionOffset: number | null }
     >,
     audiofiles: string[],
-    transcriptions: StorytellerTranscription[],
+    transcriptions: TranscriptionResult[],
   ) {
     this.transcription = transcriptions.reduce<StorytellerTranscription>(
       (acc, transcription, index) => ({
@@ -95,6 +96,7 @@ export class Synchronizer {
           ...acc.segments,
           ...transcription.segments.map((segment) => ({
             ...segment,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             audiofile: audiofiles[index]!,
           })),
         ],
@@ -123,7 +125,11 @@ export class Synchronizer {
     lastSentenceRange: SentenceRange | null,
   ) {
     const manifest = await this.epub.getManifest()
-    const chapter = manifest[chapterId]!
+    const chapter = manifest[chapterId]
+    if (!chapter)
+      throw new Error(
+        `Failed to sync chapter: could not find chapter with it ${chapterId} in manifest`,
+      )
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
     const chapterSentences = await this.getChapterSentences(chapterId)
@@ -220,6 +226,7 @@ export class Synchronizer {
     let lastSentenceRange: null | SentenceRange = null
 
     for (let index = 0; index < spine.length; index++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const spineItem = spine[index]!
       console.log(`Syncing chapter #${index}`)
 

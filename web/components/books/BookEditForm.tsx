@@ -175,7 +175,9 @@ export function BookEditForm({ book }: Props) {
                   onChange={(e) => {
                     const value = e.target.value
                     const newAuthors = [...authors]
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                     newAuthors[i]!.name = value
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                     newAuthors[i]!.file_as = value
                     setAuthors(newAuthors)
                   }}

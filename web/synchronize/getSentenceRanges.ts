@@ -1,4 +1,4 @@
-import { getTrackDuration } from "./audio"
+import { getTrackDuration } from "@/audio"
 import { findNearestMatch } from "./fuzzy"
 import { tokenizeSentences } from "./nlp"
 
@@ -53,6 +53,7 @@ function getSentencesWithOffsets(text: string) {
   return sentencesWithOffsets
 }
 
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 function findStartTimestamp(
   matchStartIndex: number,
   transcription: StorytellerTranscription,
@@ -61,6 +62,7 @@ function findStartTimestamp(
   let position = 0
   let segment = transcription.segments[s]!
   let w = 0
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     while (
       position + transcription.segments[s]!.text.length <
@@ -106,6 +108,7 @@ function findEndTimestamp(
   let w = transcription.segments[s]!.words.length - 1
   let segment = transcription.segments[s]!
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     while (position - transcription.segments[s]!.text.length >= matchEndIndex) {
       position -= transcription.segments[s]!.text.length + 1
@@ -147,6 +150,7 @@ function getWindowIndexFromOffset(window: string[], offset: number) {
   }
   return index
 }
+/* eslint-enable @typescript-eslint/no-non-null-assertion */
 
 export async function getSentenceRanges(
   startSentence: number,
@@ -168,6 +172,7 @@ export async function getSentenceRanges(
   let sentenceIndex = startSentence
 
   while (sentenceIndex < sentences.length) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const sentence = sentences[sentenceIndex]!
     const transcriptionWindowList = transcriptionSentences.slice(
       transcriptionWindowIndex,
@@ -217,6 +222,7 @@ export async function getSentenceRanges(
     )
 
     if (sentenceRanges.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const previousSentenceRange = sentenceRanges[sentenceRanges.length - 1]!
       const previousAudiofile = previousSentenceRange.audiofile
 
@@ -273,6 +279,7 @@ export function interpolateSentenceRanges(sentenceRanges: SentenceRange[]) {
       continue
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const lastSentenceRange = interpolated[interpolated.length - 1]!
 
     const count = sentenceRange.id - lastSentenceRange.id - 1
@@ -306,6 +313,7 @@ export function getChapterDuration(sentenceRanges: SentenceRange[]) {
   let start = 0
   let end = 0
   while (i < sentenceRanges.length) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const sentenceRange = sentenceRanges[i]!
     if (sentenceRange.audiofile !== audiofile) {
       duration += end - start

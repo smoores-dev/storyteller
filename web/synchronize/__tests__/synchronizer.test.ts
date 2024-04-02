@@ -1,5 +1,5 @@
 import { describe, it } from "node:test"
-import { Epub } from "../epub"
+import { Epub } from "../../epub"
 import { join } from "node:path"
 import { Synchronizer } from "../synchronizer"
 import transcription from "../../__fixtures__/mobydick_001_002_melville.json"
@@ -9,11 +9,7 @@ import assert from "node:assert"
 const stTranscription: StorytellerTranscription = {
   segments: transcription.segments.map((segment) => ({
     ...segment,
-    audiofile: join(
-      "synchronize",
-      "__fixtures__",
-      "mobydick_001_002_melville.mp3",
-    ),
+    audiofile: join("__fixtures__", "mobydick_001_002_melville.mp3"),
   })),
 }
 

@@ -5,6 +5,7 @@ import { Token } from "./apiModels"
 
 export function createAuthedApiClient() {
   const cookieStore = cookies()
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const authTokenCookie = cookieStore.get("st_token")!
 
   const token = JSON.parse(atob(authTokenCookie.value)) as Token
