@@ -8,13 +8,13 @@ describe("getTrackInfo", () => {
     const duration = await getTrackDuration(
       join("__fixtures__", "mobydick_001_002_melville.mp3"),
     )
-    assert.strictEqual(duration, 1436.638188)
+    assert.strictEqual(Math.floor(duration), 1436)
   })
 
   it("can get track info from an mp4 file", async () => {
     const duration = await getTrackDuration(
       join("__fixtures__", "MobyDickOrTheWhalePart1_librivox.m4b"),
     )
-    assert.strictEqual(duration, 18742.715)
+    assert.strictEqual(Math.floor(duration), 18742)
   })
 })

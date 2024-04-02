@@ -2,7 +2,7 @@ import { TEXT_DIR } from "@/directories"
 import { UUID } from "@/uuid"
 import { readFile, stat, writeFile } from "node:fs/promises"
 import { extname, join } from "node:path"
-import { Epub } from "@/synchronize/epub"
+import { Epub } from "@/epub"
 
 export function getEpubDirectory(bookUuid: UUID) {
   return join(TEXT_DIR, bookUuid)

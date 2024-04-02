@@ -81,6 +81,7 @@ export function Sidebar({ className }: Props) {
               <div className={styles["in-progress-status"]}>
                 <CircularProgressbar
                   className={styles["progress-bar"]}
+                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                   value={currentBook.processing_status!.progress}
                   maxValue={1}
                   styles={buildStyles({
@@ -99,6 +100,7 @@ export function Sidebar({ className }: Props) {
       <nav className={styles["nav"]}>
         <ol>
           {(permissions.book_list || permissions.book_create) && (
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             <li className={cx({ [styles["active"]!]: pathname === "/" })}>
               <Link className={styles["nav-link"]} href="/">
                 Books
@@ -106,6 +108,7 @@ export function Sidebar({ className }: Props) {
             </li>
           )}
           {(permissions.user_create || permissions.user_list) && (
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             <li className={cx({ [styles["active"]!]: pathname === "/users" })}>
               <Link className={styles["nav-link"]} href="/users">
                 Users
@@ -114,6 +117,7 @@ export function Sidebar({ className }: Props) {
           )}
           {permissions.settings_update && (
             <li
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               className={cx({ [styles["active"]!]: pathname === "/settings" })}
             >
               <Link className={styles["nav-link"]} href="/settings">
@@ -121,6 +125,7 @@ export function Sidebar({ className }: Props) {
               </Link>
             </li>
           )}
+          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
           <li className={cx({ [styles["active"]!]: pathname === "/logout" })}>
             <a className={styles["nav-link"]} href="/logout">
               Logout

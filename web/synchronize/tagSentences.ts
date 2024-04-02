@@ -5,7 +5,7 @@ import {
   getElementName,
   isTextNode,
   textContent,
-} from "./epub"
+} from "@/epub"
 import { tokenizeSentences } from "./nlp"
 
 const CONTENT_SECTIONING = [
@@ -93,7 +93,7 @@ export function appendLeafNode(
     lastNode[":@"]["@_id"] === taggedNode[":@"]?.["@_id"]
   ) {
     const tagName = getElementName(lastNode)
-    lastNode[tagName]!.push(markedNode)
+    lastNode[tagName]?.push(markedNode)
     return
   }
 
@@ -116,10 +116,12 @@ function tagSentencesInXml(
   taggedXml: ParsedXml,
 ): TagState {
   if (isTextNode(currentNode)) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const remainingSentence = sentences[currentSentenceIndex]!.slice(
       currentSentenceProgress,
     )
     const remainingNodeText = currentNode["#text"].slice(currentNodeProgress)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const index = remainingNodeText.indexOf(remainingSentence[0]!)
     if (index === -1) {
       appendTextNode(taggedXml, remainingNodeText, marks)
@@ -173,6 +175,7 @@ function tagSentencesInXml(
     currentSentenceProgress,
     currentNodeProgress,
   }
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const children = currentNode[tagName]!
   for (const child of children) {
     if (state.currentSentenceIndex > sentences.length - 1) {
@@ -190,7 +193,7 @@ function tagSentencesInXml(
         TEXT_CONTENT.includes(childTagName.toLowerCase()) ||
         CONTENT_SECTIONING.includes(childTagName.toLowerCase())
 
-      if (child[childTagName]!.length === 0) {
+      if (child[childTagName]?.length === 0) {
         appendLeafNode(
           taggedXml,
           child,
@@ -206,6 +209,7 @@ function tagSentencesInXml(
           ":@": child[":@"],
         } as unknown as XmlNode
         nextTaggedXml.push(block)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         nextTaggedXml = block[childTagName]!
       } else {
         nextMarks.push({
@@ -238,7 +242,9 @@ function copyOuterXml(xml: ParsedXml) {
   if (!html) throw new Error("Invalid XHTML: Found no html element")
 
   const bodyIndex = html["html"].findIndex((element) => "body" in element)
-  const body = html["html"][bodyIndex]!
+  const body = html["html"][bodyIndex]
+  if (!body) throw new Error("Invalid XHTML: Found no body element")
+
   html["html"].splice(bodyIndex, 1, {
     ...body,
     body: [],
@@ -258,8 +264,10 @@ export function tagSentences(xml: ParsedXml) {
 
   const sentences = tokenizeSentences(text)
   const outerXml = copyOuterXml(xml)
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const taggedHtml = findByName("html", xml)!
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const taggedBody = findByName("body", taggedHtml["html"])!
   taggedBody["body"] = []
 

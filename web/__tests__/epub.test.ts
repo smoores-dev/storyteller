@@ -80,7 +80,6 @@ describe("Epub", () => {
     const epub = await Epub.from(inputFilepath)
 
     const outputFilepath = join(
-      "synchronize",
       "__fixtures__",
       "__output__",
       "moby-dick-write-to-file.epub",
@@ -109,7 +108,6 @@ describe("Epub", () => {
     await epub.writeXhtmlItemContents(spineItems[0]!.id, coverPageData, "xhtml")
 
     const outputFilepath = join(
-      "synchronize",
       "__fixtures__",
       "__output__",
       "moby-dick-modify-xhtml-item.epub",

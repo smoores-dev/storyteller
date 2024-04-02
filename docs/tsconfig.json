@@ -5,5 +5,11 @@
     "baseUrl": ".",
     "module": "Node16",
     "incremental": true,
+    "composite": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "tsbuild"
   },
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js"],
+  "exclude": ["tsbuild"]
 }
