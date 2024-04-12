@@ -4,20 +4,22 @@ stages: # List of stages for jobs, and their order of execution
   - publish-web
 
 check-web:
-  image: node:18-alpine
+  image: node:20
   stage: check
   needs: []
   script:
     - DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y
-      --no-install-recommends git-lfs ffmpeg sudo wget build-essential
-      checkinstall libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev
-      libc6-dev libbz2-dev libffi-dev sqlite3 zlib1g-dev
+      --no-install-recommends git-lfs ffmpeg wget build-essential checkinstall
+      libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev
+      libbz2-dev libffi-dev sqlite3 zlib1g-dev
 
     - wget https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tar.xz -O
       /tmp/python.tar.xz && tar -xf /tmp/python.tar.xz -C /tmp && cd
       /tmp/Python-3.12.2 && ./configure --enable-optimizations
-      --prefix=/home/node/.local && make -j $(nproc) && make install && cd && rm
-      -r /tmp/Python-3.12.2 && rm /tmp/python.tar.xz
+      --prefix=$HOME/.local && make -j $(nproc) && make install && cd && rm -r
+      /tmp/Python-3.12.2 && rm /tmp/python.tar.xz
+
+    - export PATH=$HOME/.local/bin:$PATH
 
     - pip3 install -U pip setuptools
     - pip3 install fuzzysearch
@@ -25,8 +27,8 @@ check-web:
       https://download.pytorch.org/whl/cpu
     - pip3 install git+https://github.com/m-bain/whisperx.git
 
-    - export PYTHONPATH = $(eval "python3 -c \"import sys; print(':'.join([p for
-      p in sys.path if p]))\"")
+    - export PYTHONPATH=$(eval "python3 -c \"import sys; print(':'.join([p for p
+      in sys.path if p]))\"")
 
     - yarn
     - yarn check
