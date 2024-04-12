@@ -17,6 +17,7 @@ RUN apt-get update \
   libc6-dev \
   libbz2-dev \
   libffi-dev \
+  sqlite3 \
   zlib1g-dev
 
 RUN mkdir -p /home/node/.local
@@ -54,6 +55,3 @@ EXPOSE 8001
 ENV PORT 8001
 ENV HOST 0.0.0.0
 ENV GET_PYTHONPATH=${GET_PYTHONPATH}
-# ENV NEXT_SHARP_PATH /app/node_modules/sharp
-
-CMD PYTHONPATH=$(eval "$GET_PYTHONPATH") yarn workspace @storyteller/web start

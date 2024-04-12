@@ -9,6 +9,10 @@ import { ProgressBar } from "./ProgressBar"
 import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
 import { Button } from "@ariakit/react"
 import { usePermissions } from "@/contexts/UserPermissions"
+import {
+  ProcessingTaskStatus,
+  ProcessingTaskType,
+} from "@/apiModels/models/ProcessingStatus"
 
 type Props = {
   book: BookDetail
@@ -27,8 +31,8 @@ export function BookStatus({ book, onUpdate }: Props) {
   const permissions = usePermissions()
 
   const synchronized =
-    book.processing_status?.current_task === "SYNC_CHAPTERS" &&
-    book.processing_status?.progress === 1
+    book.processing_status?.current_task === ProcessingTaskType.SYNC_CHAPTERS &&
+    book.processing_status?.status === ProcessingTaskStatus.COMPLETED
 
   const userFriendlyTaskType =
     book.processing_status &&
@@ -61,7 +65,8 @@ export function BookStatus({ book, onUpdate }: Props) {
         ) : book.processing_status ? (
           <div className={styles["status"]}>
             {userFriendlyTaskType}
-            {book.processing_status.in_error && <ProcessingFailedMessage />}
+            {book.processing_status.status ===
+              ProcessingTaskStatus.IN_ERROR && <ProcessingFailedMessage />}
             <ProgressBar
               progress={Math.floor(book.processing_status.progress * 100)}
             />

@@ -7,7 +7,11 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ["pymport", "@mapbox/node-pre-gyp"],
+    serverComponentsExternalPackages: [
+      "piscina",
+      "pymport",
+      "@mapbox/node-pre-gyp",
+    ],
   },
 }
 

@@ -10,6 +10,7 @@
   "scripts": {
     "build:docs": "yarn workspace @storyteller/docs build",
     "build:web": "yarn workspace @storyteller/web build",
+    "build:web:worker": "yarn workspace @storyteller/web build:worker",
     "build": "concurrently -P 'npm:build:*'",
     "check:format": "prettier --check .",
     "check:lint": "eslint --cache .",

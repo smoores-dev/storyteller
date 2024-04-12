@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { apiHost, rootPath } from "../../apiHost"
+import { apiHost, proxyRootPath } from "../../apiHost"
 import { ApiClient } from "@/apiClient"
 import styles from "../../login/page.module.css"
 import { cookies, headers } from "next/headers"
@@ -14,7 +14,7 @@ type Props = {
 }
 
 export default async function InvitePage(props: Props) {
-  const client = new ApiClient(apiHost, rootPath)
+  const client = new ApiClient(apiHost, proxyRootPath)
   const invite = await client.getInvite(props.params.inviteKey)
 
   async function acceptInvite(data: FormData) {
@@ -28,7 +28,7 @@ export default async function InvitePage(props: Props) {
     const cookieOrigin = headers().get("Origin")
     const domain = getCookieDomain(cookieOrigin)
 
-    const client = new ApiClient(apiHost, rootPath)
+    const client = new ApiClient(apiHost, proxyRootPath)
     const token = await client.acceptInvite({
       email: invite.email,
       full_name: fullName,

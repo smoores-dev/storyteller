@@ -1,13 +1,11 @@
 import { cookies } from "next/headers"
 import { ApiClient } from "./apiClient"
-import { apiHost, rootPath } from "./app/apiHost"
-import { Token } from "./apiModels"
+import { apiHost, proxyRootPath } from "./app/apiHost"
 
 export function createAuthedApiClient() {
   const cookieStore = cookies()
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const authTokenCookie = cookieStore.get("st_token")!
 
-  const token = JSON.parse(atob(authTokenCookie.value)) as Token
-  return new ApiClient(apiHost, rootPath, token.access_token)
+  return new ApiClient(apiHost, proxyRootPath, authTokenCookie.value)
 }

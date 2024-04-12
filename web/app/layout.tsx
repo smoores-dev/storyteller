@@ -11,6 +11,7 @@ import {
 import { createAuthedApiClient } from "@/authedApiClient"
 import { User } from "@/apiModels"
 import { Header } from "@/components/layout/Header"
+import { ApiClientError } from "@/apiClient"
 
 export const metadata = {
   title: "Storyteller",
@@ -27,7 +28,7 @@ export default async function RootLayout({
     const client = createAuthedApiClient()
     currentUser = await client.getCurrentUser()
   } catch (e) {
-    console.error(e)
+    if (e instanceof ApiClientError && e.statusCode >= 500) console.error(e)
   }
 
   return (

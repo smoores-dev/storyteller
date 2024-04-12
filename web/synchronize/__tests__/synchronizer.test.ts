@@ -5,6 +5,7 @@ import { Synchronizer } from "../synchronizer"
 import transcription from "../../__fixtures__/mobydick_001_002_melville.json"
 import { StorytellerTranscription } from "../getSentenceRanges"
 import assert from "node:assert"
+import { SyncCache } from "../syncCache"
 
 const stTranscription: StorytellerTranscription = {
   segments: transcription.segments.map((segment) => ({
@@ -17,7 +18,10 @@ describe("Synchronizer", () => {
   it("synchronizes an epub", async () => {
     const epub = await Epub.from(join("__fixtures__", "moby-dick-small.epub"))
     const audiofiles = [join("__fixtures__", "mobydick_001_002_melville.mp3")]
-    const synchronizer = new Synchronizer(epub, {}, audiofiles, [
+    const syncCache = await SyncCache.init(
+      join("__fixtures__", "__output__", "moby-dick-cache.json"),
+    )
+    const synchronizer = new Synchronizer(epub, syncCache, audiofiles, [
       stTranscription,
     ])
     await synchronizer.syncBook()

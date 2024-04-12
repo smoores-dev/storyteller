@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
   Entry,
+  Reader,
   Uint8ArrayReader,
   Uint8ArrayWriter,
   ZipReader,
@@ -187,8 +188,7 @@ export class Epub {
 
   private spine: string[] | null = null
 
-  private constructor(data: Uint8Array) {
-    const dataReader = new Uint8ArrayReader(data)
+  constructor(dataReader: Reader<unknown>) {
     this.zipReader = new ZipReader(dataReader)
     this.dataWriter = new Uint8ArrayWriter()
     this.zipWriter = new ZipWriter(this.dataWriter)
@@ -203,7 +203,8 @@ export class Epub {
 
   static async from(path: string) {
     const file = await readFile(path)
-    const epub = new Epub(new Uint8Array(file.buffer))
+    const dataReader = new Uint8ArrayReader(new Uint8Array(file.buffer))
+    const epub = new Epub(dataReader)
     const entries = await epub.zipReader.getEntries()
     epub.entries = entries.map((entry) => new ZipEntry(entry))
     return epub
