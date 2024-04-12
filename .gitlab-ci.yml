@@ -4,7 +4,7 @@ stages: # List of stages for jobs, and their order of execution
   - publish-web
 
 check-web:
-  image: registry.gitlab.com/smoores/storyteller-base:a0725828
+  image: registry.gitlab.com/smoores/storyteller-base:latest
   stage: check
   needs: []
   script:
@@ -45,7 +45,6 @@ publish-web:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f docker/web.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE:next --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE:next,mode=max --tag
-      $CI_REGISTRY_IMAGE:next .
-    - docker push --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:next --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:next,mode=max --tag
+      $CI_REGISTRY_IMAGE:next --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
