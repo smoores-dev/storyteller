@@ -7,7 +7,7 @@ COPY --chown=node web/package.json ./web/package.json
 
 RUN yarn workspaces focus @storyteller/web
 # While using async/await fork:
-RUN npm run rebuild --build-from-source sqlite3
+RUN npm rebuild --build-from-source sqlite3
 
 COPY --chown=node . .
 
