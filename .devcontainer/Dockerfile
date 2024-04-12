@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/smoores/storyteller-base:latest
+FROM registry.gitlab.com/smoores/storyteller-base:a0725828
 
 ENV NEXT_TELEMETRY_DISABLED 1
 

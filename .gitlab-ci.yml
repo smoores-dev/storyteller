@@ -4,7 +4,7 @@ stages: # List of stages for jobs, and their order of execution
   - publish-web
 
 check-web:
-  image: registry.gitlab.com/smoores/storyteller-base:latest
+  image: registry.gitlab.com/smoores/storyteller-base:a0725828
   stage: check
   needs: []
   script:
