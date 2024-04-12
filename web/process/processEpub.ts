@@ -12,6 +12,10 @@ export function getEpubSyncedDirectory(bookUuid: UUID) {
   return join(getEpubDirectory(bookUuid), "synced")
 }
 
+export function getEpubSyncedFilepath(bookUuid: UUID) {
+  return join(getEpubSyncedDirectory(bookUuid), `${bookUuid}.epub`)
+}
+
 export function getEpubFilepath(bookUuid: UUID) {
   return join(getEpubDirectory(bookUuid), "original", `${bookUuid}.epub`)
 }
@@ -68,9 +72,12 @@ export async function readEpub(bookUuid: UUID) {
   return Epub.from(getEpubFilepath(bookUuid))
 }
 
-export async function getAuthors(book: Epub) {
-  const metadata = await book.getMetadata()
-  return metadata.creators
+export async function getFullText(epub: Epub) {
+  const spine = await epub.getSpineItems()
+  const chapterTexts = await Promise.all(
+    spine.map((item) => epub.readXhtmlItemContents(item.id, "text")),
+  )
+  return chapterTexts.join("\n")
 }
 
 export async function processEpub(bookUuid: UUID) {
@@ -78,20 +85,18 @@ export async function processEpub(bookUuid: UUID) {
 
   try {
     const coverImageItem = await epub.getCoverImage()
-    console.log(
-      `Could not find cover image while processing EPUB file for book ${bookUuid}`,
-    )
-    if (!coverImageItem) return
+    if (!coverImageItem) {
+      console.log(
+        `Could not find cover image while processing EPUB file for book ${bookUuid}`,
+      )
+      return
+    }
 
     const fileExtension = extname(coverImageItem.href)
 
-    const destinationPath = join(
-      getEpubDirectory(bookUuid),
-      `Cover${fileExtension}`,
-    )
     const coverImage = await epub.readItemContents(coverImageItem.id)
 
-    persistCustomCover(bookUuid, destinationPath, coverImage)
+    persistCustomCover(bookUuid, `Cover${fileExtension}`, coverImage)
   } finally {
     await epub.close()
   }

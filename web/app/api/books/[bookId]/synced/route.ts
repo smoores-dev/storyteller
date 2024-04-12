@@ -1,0 +1,75 @@
+import { withHasPermission } from "@/auth"
+import { getBookUuid } from "@/database/books"
+import { getEpubSyncedFilepath } from "@/process/processEpub"
+import { UUID } from "@/uuid"
+import { FileHandle, open } from "node:fs/promises"
+import { NextResponse } from "next/server"
+import { basename } from "node:path"
+import { createHash } from "node:crypto"
+
+export const dynamic = "force-dynamic"
+
+type Params = {
+  bookId: UUID | string
+}
+
+export const GET = withHasPermission<Params>("book_download")(async (
+  request,
+  context,
+) => {
+  const bookUuid = await getBookUuid(context.params.bookId)
+  const range = request.headers.get("Range")?.valueOf()
+  const ifRange = request.headers.get("If-Range")?.valueOf()
+  const filepath = getEpubSyncedFilepath(bookUuid)
+
+  let file: FileHandle
+  try {
+    file = await open(filepath)
+  } catch (_) {
+    return NextResponse.json(
+      { message: `Could not find book with id ${context.params.bookId}` },
+      { status: 404 },
+    )
+  }
+
+  const stat = await file.stat()
+  const lastModified = new Date(stat.mtime).toISOString()
+  const etagBase = `${stat.mtime}-${stat.size}`
+  const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
+
+  let start = 0
+  let end = stat.size
+
+  const partialResponse =
+    range?.startsWith("bytes=") &&
+    (!ifRange || ifRange === etag || ifRange === lastModified)
+
+  if (partialResponse) {
+    // partialResponse is only true if the range exists
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const rangesString = range!.replace("bytes=", "")
+    const rangeStrings = rangesString.split(",")
+    const ranges = rangeStrings.map((rangeString) =>
+      rangeString.trim().split("-"),
+    )
+    try {
+      const [[startString, endString]] = ranges as [[string, string]]
+      start = parseInt(startString.trim(), 10)
+      end = parseInt(endString.trim(), 10)
+    } catch (_) {
+      // If the ranges weren't valid, then leave the defaults
+    }
+  }
+
+  // @ts-expect-error NextResponse handle Node.js ReadStreams just fine
+  return new NextResponse(file.createReadStream({ start, end: end - 1 }), {
+    headers: {
+      "Content-Disposition": `attachment; filename="${basename(filepath)}"`,
+      "Content-Type": "application/epub+zip",
+      "Accept-Ranges": "bytes",
+      "Content-Length": `${end - start}`,
+      "Last-Modified": new Date(stat.mtime).toISOString(),
+      Etag: etag,
+    },
+  })
+})

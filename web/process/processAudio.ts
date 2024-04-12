@@ -16,12 +16,7 @@ import { basename, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import { getTrackChapters, getTrackDuration, splitTrack } from "@/audio"
-import {
-  getAlignModel,
-  getTranscribeModel,
-  transcribeTrack,
-  TranscriptionResult,
-} from "@/transcribe"
+import { TranscriptionResult } from "@/transcribe"
 
 export function getAudioDirectory(bookUuid: UUID) {
   return join(AUDIO_DIR, bookUuid)
@@ -301,7 +296,7 @@ export async function processAudiobook(
   return audioFiles
 }
 
-function getTranscriptionFilename(audoFile: AudioFile) {
+export function getTranscriptionFilename(audoFile: AudioFile) {
   return `${audoFile.bare_filename}.json`
 }
 
@@ -323,43 +318,4 @@ export async function getTranscriptions(bookUuid: UUID) {
     }),
   )
   return transcriptions
-}
-
-export async function transcribeBook(
-  bookUuid: UUID,
-  initialPrompt: string,
-  device = "cpu",
-  batchSize = 16,
-  computeType = "int8",
-  onProgress?: (progress: number) => void,
-) {
-  const transcriptionsPath = getTranscriptionsFilepath(bookUuid)
-  await mkdir(transcriptionsPath, { recursive: true })
-  const audioFiles = await getProcessedFiles(bookUuid)
-  if (!audioFiles) {
-    throw new Error("Failed to transcribe book: found no processed audio files")
-  }
-
-  const transcribeModel = getTranscribeModel(device, computeType, initialPrompt)
-  const { alignModel, alignMetadata } = getAlignModel(device)
-
-  for (let i = 0; i < audioFiles.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const audioFile = audioFiles[i]!
-    const filepath = getProcessedAudioFilepath(bookUuid, audioFile.filename)
-    const transcription = transcribeTrack(
-      filepath,
-      device,
-      transcribeModel,
-      alignModel,
-      alignMetadata,
-      batchSize,
-    )
-    const transcriptionFilepath = getTranscriptionsFilepath(
-      bookUuid,
-      getTranscriptionFilename(audioFile),
-    )
-    await writeFile(transcriptionFilepath, JSON.stringify(transcription))
-    onProgress?.((i + 1) / audioFiles.length)
-  }
 }

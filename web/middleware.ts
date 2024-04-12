@@ -1,24 +1,12 @@
 import { ApiClient } from "@/apiClient"
 import { NextRequest, NextResponse } from "next/server"
-import { apiHost } from "./app/apiHost"
+import { apiHost, proxyRootPath } from "./app/apiHost"
 import { cookies } from "next/headers"
 
 export async function middleware(request: NextRequest) {
-  // Proxy all requests to `/api` to the actual API server
-  if (request.nextUrl.pathname.startsWith("/api")) {
-    const destinationPathname = request.nextUrl.pathname.replace("/api", "")
-    const destinationSearch = request.nextUrl.search
-    const destinationUrl = new URL(destinationPathname, apiHost)
-    destinationUrl.search = destinationSearch
-    return NextResponse.rewrite(destinationUrl)
-  }
-
   const isInitPage = request.nextUrl.pathname.startsWith("/init")
 
-  const client = new ApiClient(
-    apiHost,
-    process.env["STORYTELLER_ROOT_PATH"] ?? "",
-  )
+  const client = new ApiClient(apiHost, proxyRootPath)
 
   const needsInit = await client.needsInit()
   if (needsInit && !isInitPage) {
@@ -44,13 +32,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/api/:path*",
-    "/login",
-    "/invites/:path",
-    "/settings",
-    "/users",
-    "/init",
-  ],
+  matcher: ["/", "/login", "/invites/:path", "/settings", "/users", "/init"],
 }

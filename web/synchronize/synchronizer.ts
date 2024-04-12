@@ -21,6 +21,7 @@ import {
 import { tokenizeSentences } from "./nlp"
 import { tagSentences } from "./tagSentences"
 import { findBestOffset } from "./findChapterOffset"
+import { SyncCache } from "./syncCache"
 
 function createMediaOverlay(
   fileStem: string,
@@ -83,10 +84,7 @@ export class Synchronizer {
 
   constructor(
     public epub: Epub,
-    public chapterOffsetCache: Record<
-      string,
-      { startSentence: number; transcriptionOffset: number | null }
-    >,
+    private syncCache: SyncCache,
     audiofiles: string[],
     transcriptions: TranscriptionResult[],
   ) {
@@ -218,7 +216,7 @@ export class Synchronizer {
     return interpolated[interpolated.length - 1] ?? null
   }
 
-  async syncBook() {
+  async syncBook(onProgress?: (progress: number) => void) {
     const spine = await this.epub.getSpineItems()
     const transcriptionText = getTranscriptionText(this.transcription)
 
@@ -233,7 +231,7 @@ export class Synchronizer {
       const chapterId = spineItem.id
       const chapterSentences = await this.getChapterSentences(chapterId)
       const { startSentence, transcriptionOffset } =
-        this.chapterOffsetCache[index] ??
+        this.syncCache.getChapterIndex(index) ??
         findBestOffset(
           chapterSentences,
           transcriptionText,
@@ -244,10 +242,10 @@ export class Synchronizer {
         console.log(
           `Couldn't find matching transcription for chapter #${index}`,
         )
-        this.chapterOffsetCache[index] = {
+        await this.syncCache.setChapterIndex(index, {
           startSentence: 0,
           transcriptionOffset: null,
-        }
+        })
         continue
       }
 
@@ -255,10 +253,12 @@ export class Synchronizer {
         `Chapter #${index} best matches transcription at offset ${transcriptionOffset}, starting at sentence ${startSentence}`,
       )
 
-      this.chapterOffsetCache[index] = {
+      await this.syncCache.setChapterIndex(index, {
         startSentence,
         transcriptionOffset,
-      }
+      })
+
+      console.log("Syncing chapter...")
 
       lastSentenceRange = await this.syncChapter(
         startSentence,
@@ -268,6 +268,7 @@ export class Synchronizer {
       )
 
       lastTranscriptionOffset = transcriptionOffset
+      onProgress?.(index / spine.length)
     }
 
     await this.epub.addMetadata(
