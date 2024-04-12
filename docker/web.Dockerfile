@@ -1,7 +1,5 @@
 FROM registry.gitlab.com/smoores/storyteller-base:latest
 
-RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
-
 COPY --chown=node package.json yarn.lock .yarnrc.yml ./
 COPY --chown=node .yarn/releases ./.yarn/releases
 COPY --chown=node .yarn/cache ./.yarn/cache
@@ -12,6 +10,8 @@ RUN yarn workspaces focus @storyteller/web
 RUN npm run rebuild --build-from-source sqlite3
 
 COPY --chown=node . .
+
+RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
 ENV NEXT_TELEMETRY_DISABLED 1
 
