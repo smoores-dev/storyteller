@@ -3604,7 +3604,7 @@ __metadata:
     react-circular-progressbar: "npm:^2.1.0"
     react-dom: "npm:^18.2.0"
     sharp: "npm:^0.33.2"
-    sqlite3: "git+ssh://git@github.com:smoores-dev/node-sqlite3.git#async-await"
+    sqlite3: "git+https://github.com/smoores-dev/node-sqlite3.git#async-await"
     tsx: "npm:^4.7.1"
     typescript: "npm:^5.4.3"
     typescript-plugin-css-modules: "npm:^5.0.1"
@@ -14318,9 +14318,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sqlite3@git+ssh://git@github.com:smoores-dev/node-sqlite3.git#async-await":
+"sqlite3@git+https://github.com/smoores-dev/node-sqlite3.git#async-await":
   version: 5.1.7
-  resolution: "sqlite3@git+ssh://git@github.com:smoores-dev/node-sqlite3.git#commit=0eb62ca00a57ac2af19d620d41304b59a19eca4b"
+  resolution: "sqlite3@https://github.com/smoores-dev/node-sqlite3.git#commit=7f8090546c4a58e67413b8cea705f49ec753dbf9"
   dependencies:
     bindings: "npm:^1.5.0"
     node-addon-api: "npm:^7.0.0"
@@ -14335,7 +14335,7 @@ __metadata:
   peerDependenciesMeta:
     node-gyp:
       optional: true
-  checksum: 10c0/f19f72b46f6710b5878db8b972bb0410c4592dbb074e4050fed54424ba1ea436e16fee68ead30ba618e482ac4eee9fe7acf0b441c44968ccb17f25d6ec3f13fc
+  checksum: 10c0/f5c50ddc8b0949b34725b69588b1133e148941cd9a1f5e13c8add0dd61cc35e85dccb46b8301d32af057d3c4fb4badbe38427929abcbe975a00232cae6616095
   languageName: node
   linkType: hard
 

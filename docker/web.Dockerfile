@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/smoores/storyteller-base:a0725828
+FROM registry.gitlab.com/smoores/storyteller-base:latest
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
