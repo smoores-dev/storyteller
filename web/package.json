@@ -38,7 +38,7 @@
     "react-circular-progressbar": "^2.1.0",
     "react-dom": "^18.2.0",
     "sharp": "^0.33.2",
-    "sqlite3": "git+ssh://git@github.com:smoores-dev/node-sqlite3.git#async-await",
+    "sqlite3": "git+https://github.com/smoores-dev/node-sqlite3.git#async-await",
     "wink-eng-lite-web-model": "^1.5.2",
     "wink-nlp": "^2.1.0"
   },
