@@ -2,7 +2,7 @@ import { ApiClient } from "@/apiClient"
 import styles from "./page.module.css"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost, rootPath } from "../apiHost"
+import { apiHost, proxyRootPath } from "../apiHost"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
 
 export default function Login() {
@@ -18,15 +18,17 @@ export default function Login() {
     const secure = getCookieSecure(cookieOrigin)
     const domain = getCookieDomain(cookieOrigin)
 
-    const client = new ApiClient(apiHost, rootPath)
+    const client = new ApiClient(apiHost, proxyRootPath)
     const token = await client.login({ username, password })
+    console.log(token.access_token)
 
     const cookieStore = cookies()
-    cookieStore.set(
-      "st_token",
-      Buffer.from(JSON.stringify(token)).toString("base64"),
-      { secure, domain: domain, sameSite: "lax", httpOnly: true },
-    )
+    cookieStore.set("st_token", token.access_token, {
+      secure,
+      domain: domain,
+      sameSite: "lax",
+      httpOnly: true,
+    })
 
     redirect("/")
   }

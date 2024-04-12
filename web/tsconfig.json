@@ -9,19 +9,15 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "preserveSymlinks": true,
-
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-
     "strict": true,
     "isolatedModules": true,
-
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-
     "incremental": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "preserve",
@@ -42,6 +38,13 @@
     "outDir": "tsbuild"
   },
   "extends": ["@tsconfig/strictest"],
-  "include": ["next-env.d.ts", "**/*.js", "**/*.json", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", ".next", "tsbuild"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.js",
+    "**/*.json",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next", "tsbuild", "work-dist"]
 }

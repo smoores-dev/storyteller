@@ -2,7 +2,7 @@ import { ApiClient } from "@/apiClient"
 import { getCookieDomain } from "@/cookies"
 import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost, rootPath } from "../apiHost"
+import { apiHost, proxyRootPath } from "../apiHost"
 import styles from "./page.module.css"
 
 export default function InitPage() {
@@ -18,7 +18,7 @@ export default function InitPage() {
     const cookieOrigin = headers().get("Origin")
     const domain = getCookieDomain(cookieOrigin)
 
-    const client = new ApiClient(apiHost, rootPath)
+    const client = new ApiClient(apiHost, proxyRootPath)
     const token = await client.createAdminUser({
       email: email,
       full_name: fullName,

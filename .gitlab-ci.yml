@@ -1,7 +1,6 @@
 stages: # List of stages for jobs, and their order of execution
   - check
   - publish-docs
-  - publish-api
   - publish-web
 
 check-web:
@@ -9,31 +8,29 @@ check-web:
   stage: check
   needs: []
   script:
+    - DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y
+      --no-install-recommends git-lfs ffmpeg sudo wget build-essential
+      checkinstall libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev
+      libc6-dev libbz2-dev libffi-dev sqlite3 zlib1g-dev
+
+    - wget https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tar.xz -O
+      /tmp/python.tar.xz && tar -xf /tmp/python.tar.xz -C /tmp && cd
+      /tmp/Python-3.12.2 && ./configure --enable-optimizations
+      --prefix=/home/node/.local && make -j $(nproc) && make install && cd && rm
+      -r /tmp/Python-3.12.2 && rm /tmp/python.tar.xz
+
+    - pip3 install -U pip setuptools
+    - pip3 install fuzzysearch
+    - pip3 install torch==2.2.1+cpu torchaudio==2.2.1+cpu --index-url
+      https://download.pytorch.org/whl/cpu
+    - pip3 install git+https://github.com/m-bain/whisperx.git
+
+    - export PYTHONPATH = $(eval "python3 -c \"import sys; print(':'.join([p for
+      p in sys.path if p]))\"")
+
     - yarn
     - yarn check
     - yarn test
-
-check-api:
-  image: python:3.11-slim
-  stage: check
-  needs: []
-  script:
-    - export DEBIAN_FRONTEND=noninteractive PYTHONFAULTHANDLER=1
-      PYTHONUNBUFFERED=1 PYTHONHASHSEED=random PIP_NO_CACHE_DIR=off
-      PIP_DISABLE_PIP_VERSION_CHECK=on PIP_DEFAULT_TIMEOUT=100
-      POETRY_VERSION=1.7.1
-    - apt-get update
-    - apt-get -y install --no-install-recommends curl wget swig libpulse-dev
-      libasound2-dev ffmpeg libavcodec-extra gcc libsqlite3-dev
-    - pip install "poetry==$POETRY_VERSION"
-    - poetry install --no-interaction --no-ansi
-    - poetry run python -m nltk.downloader punkt
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y --no-install-recommends nodejs
-    - corepack enable
-    - yarn workspaces focus storyteller
-    - ./scripts/check.sh
-    - ./scripts/test.sh
 
 pages:
   image: node:18-alpine
@@ -49,54 +46,13 @@ pages:
     paths:
       - public
 
-publish-api:
-  image: docker:20.10.16
-  stage: publish-api
-  needs:
-    - check-api
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-  services:
-    - name: docker:20.10.16-dind
-      alias: docker
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker context create gitlab-ci
-    - docker buildx create --use --driver=docker-container gitlab-ci
-  script:
-    - docker buildx build --push -f docker/api.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE/api:latest .
-
-publish-cuda-api:
-  image: docker:20.10.16
-  stage: publish-api
-  needs:
-    - check-api
-  rules:
-    - if: $CI_COMMIT_BRANCH == "cuda"
-  services:
-    - name: docker:20.10.16-dind
-      alias: docker
-  tags: [cuda]
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker context create gitlab-ci
-    - docker buildx create --use --driver=docker-container gitlab-ci
-  script:
-    - docker buildx build --push -f docker/api.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/api-cache:cuda,mode=max --tag
-      $CI_REGISTRY_IMAGE/api:cuda .
-
 publish-web:
   image: docker:20.10.16
   stage: publish-web
   needs:
     - check-web
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "al-js"
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -106,6 +62,6 @@ publish-web:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f docker/web.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/web-cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE/web:latest .
+      type=registry,ref=$CI_REGISTRY_IMAGE:next --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE:next,mode=max --tag
+      $CI_REGISTRY_IMAGE:next .

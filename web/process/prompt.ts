@@ -1,25 +1,23 @@
 import { bagOfWords } from "@/synchronize/nlp"
-import { readFile } from "fs/promises"
 
-async function readDict(path: string) {
-  const dict = await readFile(path, { encoding: "utf-8" })
+async function readDict() {
+  const response = await fetch(
+    "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt",
+  )
+  const dict = await response.text()
   const dictWords = dict.split("\n").map((word) => word.toLowerCase())
   return new Set(dictWords)
 }
 
-async function findInventedWords(fullText: string, dictPath: string) {
+async function findInventedWords(fullText: string) {
   const allWords = bagOfWords(fullText)
-  const dict = await readDict(dictPath)
+  const dict = await readDict()
 
   return allWords.filter((word) => !dict.has(word))
 }
 
-export async function getInitialPrompt(
-  title: string,
-  fullText: string,
-  dictPath: string,
-) {
-  const inventedWords = await findInventedWords(fullText, dictPath)
+export async function getInitialPrompt(title: string, fullText: string) {
+  const inventedWords = await findInventedWords(fullText)
   const invintedWordString =
     inventedWords.length < 2
       ? inventedWords

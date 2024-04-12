@@ -32,3 +32,8 @@ yarn-error.log*
 # test fixtures
 __fixtures__/__output__/*
 !__fixtures__/__output__/.keep
+
+# e.g. uuid.c.so sqlite extension
+*.so
+
+work-dist

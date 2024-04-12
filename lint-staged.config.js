@@ -3,7 +3,6 @@ const config = {
   "*.{js,jsx,ts,tsx}": "yarn eslint --cache --fix",
   "*.{js,jsx,ts,tsx,json}": ["yarn prettier --write", () => "yarn check:types"],
   "*.{md,yaml,yml,json}": "yarn prettier --write",
-  "*.py": ["poetry run black", () => "poetry run yarn pyright"],
   "migrations/*.sql": "./scripts/dump-schema.sh",
 }
 

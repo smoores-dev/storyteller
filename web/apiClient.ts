@@ -63,7 +63,7 @@ export class ApiClient {
       throw new ApiClientError(response.status, response.statusText)
     }
 
-    return await response.json()
+    return true
   }
 
   async login(creds: Body_login_token_post): Promise<Token> {
@@ -374,24 +374,6 @@ export class ApiClient {
         withCredentials: true,
         onUploadProgress,
       },
-    )
-
-    if (response.status > 299) {
-      throw new ApiClientError(response.status, response.statusText)
-    }
-  }
-
-  async uploadBookCover(
-    bookUuid: string,
-    file: File,
-    onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
-  ): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookUuid}/cover`, this.origin)
-
-    const response = await axios.postForm<BookDetail>(
-      url.toString(),
-      { file },
-      { withCredentials: true, onUploadProgress },
     )
 
     if (response.status > 299) {

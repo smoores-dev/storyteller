@@ -31,11 +31,10 @@ RUN wget https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tar.xz -O /tmp/p
 
 RUN mkdir /app
 
-WORKDIR /app
-
 RUN chown -R node:node /home/node
 RUN chown -R node:node /app
 
+WORKDIR /app
 USER node
 
 ENV PATH=/home/node/.local/bin:$PATH
@@ -47,12 +46,16 @@ RUN pip3 install git+https://github.com/m-bain/whisperx.git
 
 ARG PYTHONPATH="python3 -c \"import sys; print(':'.join([p for p in sys.path if p]))\""
 
+RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
+
 COPY --chown=node package.json yarn.lock .yarnrc.yml ./
 COPY --chown=node .yarn/releases ./.yarn/releases
 COPY --chown=node .yarn/cache ./.yarn/cache
 COPY --chown=node web/package.json ./web/package.json
 
 RUN yarn workspaces focus @storyteller/web
+# While using async/await fork:
+RUN npm run rebuild --build-from-source sqlite3
 
 COPY --chown=node . .
 

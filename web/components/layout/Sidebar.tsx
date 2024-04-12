@@ -11,6 +11,7 @@ import { useApiClient } from "@/hooks/useApiClient"
 import { useEffect, useState } from "react"
 import { BookDetail } from "@/apiModels"
 import { ProcessingTaskTypes } from "../books/BookStatus"
+import { ProcessingTaskStatus } from "@/apiModels/models/ProcessingStatus"
 
 type Props = {
   className?: string | undefined
@@ -40,7 +41,7 @@ export function Sidebar({ className }: Props) {
           (book) =>
             book.processing_status?.current_task &&
             book.processing_status.progress !== 1 &&
-            !book.processing_status.in_error,
+            book.processing_status.status !== ProcessingTaskStatus.IN_ERROR,
         ) ?? null
 
       setCurrentBook(currentBook)
