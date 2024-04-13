@@ -104,6 +104,7 @@ type TagState = {
   currentSentenceIndex: number
   currentSentenceProgress: number
   currentNodeProgress: number
+  skip: boolean
 }
 
 function tagSentencesInXml(
@@ -112,6 +113,7 @@ function tagSentencesInXml(
   sentences: string[],
   currentNode: XmlNode,
   currentNodeProgress: number,
+  skip: boolean,
   marks: Mark[],
   taggedXml: ParsedXml,
 ): TagState {
@@ -129,6 +131,7 @@ function tagSentencesInXml(
         currentSentenceIndex,
         currentSentenceProgress,
         currentNodeProgress: -1,
+        skip,
       }
     }
     if (remainingNodeText.slice(index).length < remainingSentence.length) {
@@ -137,17 +140,23 @@ function tagSentencesInXml(
         taggedXml,
         remainingNodeText.slice(index),
         marks,
-        currentSentenceIndex,
+        skip ? undefined : currentSentenceIndex,
       )
       return {
         currentSentenceIndex,
         currentSentenceProgress:
           currentSentenceProgress + remainingNodeText.length - index,
         currentNodeProgress: -1,
+        skip,
       }
     } else {
       appendTextNode(taggedXml, remainingNodeText.slice(0, index), marks)
-      appendTextNode(taggedXml, remainingSentence, marks, currentSentenceIndex)
+      appendTextNode(
+        taggedXml,
+        remainingSentence,
+        marks,
+        skip ? undefined : currentSentenceIndex,
+      )
 
       // If we've just appended the very last sentence, make sure that we also
       // add back the remainder of this text node (which should be whitespace).
@@ -164,6 +173,7 @@ function tagSentencesInXml(
         currentSentenceProgress: 0,
         currentNodeProgress:
           currentNodeProgress + remainingSentence.length + index,
+        skip: false,
       }
     }
   }
@@ -174,6 +184,7 @@ function tagSentencesInXml(
     currentSentenceIndex,
     currentSentenceProgress,
     currentNodeProgress,
+    skip,
   }
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const children = currentNode[tagName]!
@@ -198,7 +209,9 @@ function tagSentencesInXml(
           taggedXml,
           child,
           nextMarks,
-          isTextContent ? undefined : state.currentSentenceIndex,
+          isTextContent || state.currentSentenceProgress === 0
+            ? undefined
+            : state.currentSentenceIndex,
         )
         continue
       }
@@ -228,11 +241,30 @@ function tagSentencesInXml(
         sentences,
         child,
         state.currentNodeProgress,
+        state.skip,
         nextMarks,
         nextTaggedXml,
       )
     }
   }
+
+  const isTextContent =
+    TEXT_CONTENT.includes(tagName.toLowerCase()) ||
+    CONTENT_SECTIONING.includes(tagName.toLowerCase())
+
+  state.skip =
+    isTextContent &&
+    state.currentSentenceProgress > 0 &&
+    state.currentSentenceProgress <
+      (sentences[state.currentSentenceIndex]?.length ?? 0)
+
+  if (state.skip) {
+    console.log(tagName, "is text content")
+    console.log('sentence: "', sentences[state.currentSentenceIndex], '"')
+    console.log("progress:", state.currentSentenceProgress)
+  }
+
+  state.currentNodeProgress = -1
   return state
 }
 
@@ -271,7 +303,7 @@ export function tagSentences(xml: ParsedXml) {
   const taggedBody = findByName("body", taggedHtml["html"])!
   taggedBody["body"] = []
 
-  tagSentencesInXml(0, 0, sentences, body, 0, [], taggedBody["body"])
+  tagSentencesInXml(0, 0, sentences, body, 0, false, [], taggedBody["body"])
 
   return outerXml
 }
