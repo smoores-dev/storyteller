@@ -303,4 +303,113 @@ describe("tagSentences", () => {
 </html>`,
     )
   })
+
+  it("can tag sentences in nested textblocks", () => {
+    const input = xmlParser.parse(`
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"
+      epub:prefix="z3998: http://www.daisy.org/z3998/2012/vocab/structure/#" lang="en" xml:lang="en">
+    
+  <head>
+    <link href="../styles/9781534431010.css" rel="stylesheet" type="text/css" />
+    <link href="../styles/SS_global.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../../Styles/storyteller-readaloud.css" type="text/css" />
+  </head>
+    
+  <body>
+    <blockquote class="blockquotelet">
+      <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak" /></p>
+      <p class="blockno">Look on my works, ye mighty, and despair!</p>
+      <p class="blockno1">A little joke.</p>
+      <p class="blockno1"> </p>
+      <p class="blockno1">Trust that I have accounted for all variables of irony.</p>
+      <p class="blockno1"> </p>
+      <p class="blockno1">Though I suppose if you’re unfamiliar with overanthologized works of the early Strand 6
+        nineteenth century, the joke’s on me.</p>
+      <p class="blockin">I hoped you’d come.</p>
+    </blockquote>
+  </body>
+    
+</html>
+    `)
+
+    const output = tagSentences(input)
+
+    assert.strictEqual(
+      xmlBuilder.build(output),
+      `
+<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="z3998: http://www.daisy.org/z3998/2012/vocab/structure/#" lang="en" xml:lang="en">
+    
+  <head>
+    <link href="../styles/9781534431010.css" rel="stylesheet" type="text/css"></link>
+    <link href="../styles/SS_global.css" rel="stylesheet" type="text/css"></link>
+    <link rel="stylesheet" href="../../Styles/storyteller-readaloud.css" type="text/css"></link>
+  </head>
+    
+  <body>
+    <blockquote class="blockquotelet">
+      <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak"></span></p>
+      <p class="blockno"><span id="sentence0">Look on my works, ye mighty, and despair!</span></p>
+      <p class="blockno1"><span id="sentence1">A little joke.</span></p>
+      <p class="blockno1"> </p>
+      <p class="blockno1"><span id="sentence2">Trust that I have accounted for all variables of irony.</span></p>
+      <p class="blockno1"> </p>
+      <p class="blockno1"><span id="sentence3">Though I suppose if you’re unfamiliar with overanthologized works of the early Strand 6
+        nineteenth century, the joke’s on me.</span></p>
+      <p class="blockin"><span id="sentence4">I hoped you’d come.</span></p>
+    </blockquote>
+  </body>
+    
+</html>`,
+    )
+  })
+
+  it("can tag sentences that cross textblock boundaries", () => {
+    const input = xmlParser.parse(`
+<?xml version="1.0" encoding="UTF-8"?>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>The Project Gutenberg eBook of Moby Dick; Or the Whale, by Herman Melville</title>
+  </head>
+  <body>
+    <p>
+        Call me Ishmael. Some years ago—never mind how long precisely—having
+        little or no money in my purse, and nothing particular to interest me on
+        shore,
+    </p>
+    <p>
+        I thought I would sail about a little and see the watery part of
+        the world.
+    </p>
+  </body>
+</html>
+    `)
+
+    const output = tagSentences(input)
+
+    assert.strictEqual(
+      xmlBuilder.build(output),
+      `
+<?xml version="1.0" encoding="UTF-8"?><html>
+  <head>
+    <meta charset="utf-8"></meta>
+    <title>The Project Gutenberg eBook of Moby Dick; Or the Whale, by Herman Melville</title>
+  </head>
+  <body>
+    <p>
+        <span id="sentence0">Call me Ishmael.</span> <span id="sentence1">Some years ago—never mind how long precisely—having
+        little or no money in my purse, and nothing particular to interest me on
+        shore,
+    </span></p>
+    <p>
+        I thought I would sail about a little and see the watery part of
+        the world.
+    </p>
+  </body>
+</html>`,
+    )
+  })
 })

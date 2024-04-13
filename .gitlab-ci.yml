@@ -1,26 +1,25 @@
 stages: # List of stages for jobs, and their order of execution
-  # - check
+  - check
   - publish-docs
   - publish-web
 
-# check-web:
-#   image: registry.gitlab.com/smoores/storyteller-base:latest
-#   stage: check
-#   needs: []
-#   script:
-#     - export PYTHONPATH=$(eval "python3 -c \"import sys; print(':'.join([p for p
-#       in sys.path if p]))\"")
+check-web:
+  image: registry.gitlab.com/smoores/storyteller-base:latest
+  stage: check
+  needs: []
+  script:
+    - export PYTHONPATH=$(eval "python3 -c \"import sys; print(':'.join([p for p
+      in sys.path if p]))\"")
 
-#     - yarn
-#     - yarn check
-#     - yarn test
+    - yarn
+    - yarn check
+    - yarn test
 
 pages:
   image: node:18-alpine
   stage: publish-docs
   needs:
-    # Skip for testing
-    # - check-web
+    - check-web
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
@@ -34,8 +33,7 @@ publish-web:
   image: docker:20.10.16
   stage: publish-web
   needs:
-    # Skip for testing
-    # - check-web
+    - check-web
   rules:
     - if: $CI_COMMIT_BRANCH == "all-js"
   services:
