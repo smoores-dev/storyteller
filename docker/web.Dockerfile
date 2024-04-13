@@ -26,5 +26,6 @@ EXPOSE 8001
 ENV PORT 8001
 ENV HOST 0.0.0.0
 # ENV NEXT_SHARP_PATH /app/node_modules/sharp
+ENV STORYTELLER_DATA_DIR /data
 
 CMD PYTHONPATH=$(eval "$GET_PYTHONPATH") yarn workspace @storyteller/web start

@@ -54,8 +54,14 @@ export const GET = withHasPermission<Params>("book_download")(async (
     )
     try {
       const [[startString, endString]] = ranges as [[string, string]]
-      start = parseInt(startString.trim(), 10)
-      end = parseInt(endString.trim(), 10)
+      const parsedStart = parseInt(startString.trim(), 10)
+      if (!Number.isNaN(parsedStart)) {
+        start = parsedStart
+      }
+      const parsedEnd = parseInt(endString.trim(), 10)
+      if (!Number.isNaN(parsedEnd)) {
+        end = parsedEnd
+      }
     } catch (_) {
       // If the ranges weren't valid, then leave the defaults
     }
