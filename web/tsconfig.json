@@ -35,7 +35,8 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "outDir": "tsbuild"
+    "outDir": "tsbuild",
+    "noEmit": false
   },
   "extends": ["@tsconfig/strictest"],
   "include": [
