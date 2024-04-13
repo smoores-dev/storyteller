@@ -69,6 +69,7 @@ export const GET = withHasPermission<Params>("book_download")(async (
 
   // @ts-expect-error NextResponse handle Node.js ReadStreams just fine
   return new NextResponse(file.createReadStream({ start, end: end - 1 }), {
+    status: partialResponse ? 206 : 200,
     headers: {
       "Content-Disposition": `attachment; filename="${basename(filepath)}"`,
       "Content-Type": "application/epub+zip",

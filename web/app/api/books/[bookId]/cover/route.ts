@@ -33,8 +33,8 @@ export const GET = withHasPermission<Params>("book_read")(async (
 
   const file = await open(coverFilepath)
 
-  // @ts-expect-error NextResponse handles Node's Web Streams just fine
-  return new NextResponse(file.readableWebStream(), {
+  // @ts-expect-error NextResponse handles Node Streams just fine
+  return new NextResponse(file.createReadStream(), {
     headers: {
       "Content-Disposition": `attachment; filename="${basename(coverFilepath)}"`,
     },
