@@ -10,6 +10,6 @@ const piscina = new Piscina({
   maxThreads: 1,
 })
 
-export async function startProcessing(bookUuid: UUID, restart = false) {
-  await piscina.run({ bookUuid, restart })
+export async function startProcessing(bookUuid: UUID) {
+  await piscina.run({ bookUuid })
 }

@@ -22,7 +22,7 @@ export const POST = withHasPermission<Params>("book_process")(async (
     await deleteProcessed(bookUuid)
   }
 
-  startProcessing(bookUuid, restart)
+  startProcessing(bookUuid)
 
   return new Response(null, { status: 204 })
 })
