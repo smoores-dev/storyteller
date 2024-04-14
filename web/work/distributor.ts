@@ -11,6 +11,5 @@ const piscina = new Piscina({
 })
 
 export async function startProcessing(bookUuid: UUID, restart = false) {
-  const r = await piscina.run({ bookUuid, restart })
-  console.error(r)
+  await piscina.run({ bookUuid, restart })
 }
