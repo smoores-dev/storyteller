@@ -275,6 +275,9 @@ export async function processAudiobook(
 
   const filenames = await readdir(originalAudioDirectory)
 
+  const processedFilenames = await readdir(processedAudioDirectory)
+  if (processedFilenames.length) return
+
   const audioFiles: AudioFile[] = []
 
   for (let i = 0; i < filenames.length; i++) {

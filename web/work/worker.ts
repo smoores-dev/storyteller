@@ -134,26 +134,14 @@ export function determineRemainingTasks(
 
 export default async function processBook({
   bookUuid,
-  restart,
 }: {
   bookUuid: UUID
   restart: boolean
 }) {
-  if (restart) {
-    await resetProcessingTasksForBook(bookUuid)
-  }
+  await resetProcessingTasksForBook(bookUuid)
 
   const currentTasks = await getProcessingTasksForBook(bookUuid)
   const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
-
-  await Promise.all(
-    remainingTasks.map(async (task) => {
-      if (task.uuid) {
-        await updateTaskStatus(task.uuid, ProcessingTaskStatus.STARTED)
-        await updateTaskProgress(task.uuid, 0)
-      }
-    }),
-  )
 
   console.log(
     `Found ${remainingTasks.length} remaining tasks for book ${bookUuid}`,
