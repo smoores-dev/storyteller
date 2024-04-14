@@ -135,16 +135,14 @@ export class ZipEntry {
   }
 }
 
-export type EpubMetadata = {
-  title?: string | undefined
-  identifier?: string | undefined
-  language?: string | undefined
-  date?: Date | undefined
-  creators?: string[] | undefined
-  contributors?: string[] | undefined
-  subjects?: string[] | undefined
-  cover?: string | undefined
+export type MetadataEntry = {
+  id: string | undefined
+  type: string
+  properties: Record<string, string>
+  value: string | undefined
 }
+
+export type EpubMetadata = MetadataEntry[]
 
 export class Epub {
   private xmlParser = new XMLParser({
@@ -188,7 +186,7 @@ export class Epub {
 
   private spine: string[] | null = null
 
-  constructor(dataReader: Reader<unknown>) {
+  private constructor(dataReader: Reader<unknown>) {
     this.zipReader = new ZipReader(dataReader)
     this.dataWriter = new Uint8ArrayWriter()
     this.zipWriter = new ZipWriter(this.dataWriter)
@@ -201,9 +199,11 @@ export class Epub {
     await this.zipWriter.close()
   }
 
-  static async from(path: string) {
-    const file = await readFile(path)
-    const dataReader = new Uint8ArrayReader(new Uint8Array(file.buffer))
+  static async from(input: string | Reader<unknown>): Promise<Epub> {
+    const dataReader =
+      typeof input === "string"
+        ? new Uint8ArrayReader(new Uint8Array((await readFile(input)).buffer))
+        : input
     const epub = new Epub(dataReader)
     const entries = await epub.zipReader.getEntries()
     epub.entries = entries.map((entry) => new ZipEntry(entry))
@@ -351,91 +351,24 @@ export class Epub {
         "Failed to parse EPUB: Found no metadata element in package document",
       )
 
-    const metadata = metadataElement.metadata.reduce<EpubMetadata>(
-      (acc, item) => {
-        const elementName = getElementName(item)
-        switch (elementName) {
-          case "dc:identifier": {
-            const identifier = item[elementName]![0]?.["#text"]
-            return {
-              ...acc,
-              identifier,
-            }
-          }
-          case "dc:title": {
-            const title = item[elementName]![0]?.["#text"]
-            return {
-              ...acc,
-              title,
-            }
-          }
-          case "dc:language": {
-            const language = item[elementName]![0]?.["#text"]
-            return {
-              ...acc,
-              language,
-            }
-          }
-          case "dc:date": {
-            const date = item[elementName]![0]?.["#text"]
-            return {
-              ...acc,
-              date: date === undefined ? date : new Date(date),
-            }
-          }
-          case "dc:creator": {
-            const creator = item[elementName]![0]?.["#text"]
-            return {
-              ...acc,
-              ...(creator && {
-                creators: [...(acc["creators"] ?? []), creator],
-              }),
-            }
-          }
-          case "dc:contributor": {
-            const contributor = item[elementName]![0]?.["#text"]
-            return {
-              ...acc,
-              ...(contributor && {
-                contributors: [...(acc["contributors"] ?? []), contributor],
-              }),
-            }
-          }
-          case "dc:subject": {
-            const subject = item[elementName]![0]?.["#text"]
-            return {
-              ...acc,
-              ...(subject && {
-                subjects: [...(acc["subjects"] ?? []), subject],
-              }),
-            }
-          }
-          case "link": {
-            return acc
-          }
-          case "meta": {
-            const name = item[":@"]?.["@_name"]
-            if (name === "cover") {
-              return {
-                ...acc,
-                cover: item[":@"]?.["@_content"],
-              }
-            }
-            return acc
-          }
-          default: {
-            if (elementName.startsWith("dc:")) {
-              return {
-                ...acc,
-                [elementName.slice(3)]: item[elementName]![0]?.["#text"],
-              }
-            }
-            return acc
-          }
-        }
-      },
-      {},
-    )
+    const metadata: EpubMetadata = metadataElement.metadata.map((item) => {
+      const elementName = getElementName(item)
+      const id = item[":@"]?.["@_id"]
+      const value = item[elementName]![0]?.["#text"]
+      const attributes = item[":@"]
+      const properties = Object.fromEntries(
+        Object.entries(attributes ?? {}).map(([attrName, value]) => [
+          attrName.slice(2),
+          value,
+        ]),
+      )
+      return {
+        id,
+        type: elementName,
+        properties,
+        value,
+      }
+    })
 
     return metadata
   }
@@ -447,8 +380,112 @@ export class Epub {
     )
     if (coverImage) return coverImage
     const metadata = await this.getMetadata()
-    if (!metadata.cover) return null
-    return manifest[metadata.cover] ?? null
+    const coverEntry = metadata.find(
+      (entry) => entry.properties["name"] === "cover",
+    )
+    if (!coverEntry?.value) return null
+    return manifest[coverEntry.value] ?? null
+  }
+
+  async getTitle(short = false) {
+    const metadata = await this.getMetadata()
+    const titleEntries = metadata.filter((entry) => entry.type === "dc:title")
+    if (titleEntries.length === 1 || short) return titleEntries[0]?.value
+
+    const titleRefinements = metadata.filter(
+      (entry) =>
+        entry.type === "meta" &&
+        entry.properties["refines"] &&
+        (entry.properties["property"] === "title-type" ||
+          entry.properties["property"] === "display-seq"),
+    )
+
+    const expandedTitle = titleEntries.find((titleEntry) => {
+      if (!titleEntry.id) return false
+
+      const refinement = titleRefinements.find(
+        (refinement) =>
+          refinement.properties["property"] === "title-type" &&
+          refinement.properties["refines"]?.slice(1) === titleEntry.id,
+      )
+
+      return refinement?.value === "expanded"
+    })
+
+    if (expandedTitle) return expandedTitle.value
+
+    const sortedTitleParts = titleEntries
+      .filter(
+        (titleEntry) =>
+          titleEntry.id &&
+          titleRefinements.some(
+            (entry) =>
+              entry.properties["refines"]?.slice(1) === titleEntry.id &&
+              entry.properties["property"] === "display-seq" &&
+              !Number.isNaN(parseInt(entry.value!, 10)),
+          ),
+      )
+      .sort((a, b) => {
+        const refinementA = titleRefinements.find(
+          (entry) =>
+            entry.properties["property"] === "display-seq" &&
+            entry.properties["refines"]!.slice(1) === a.id,
+        )!
+        const refinementB = titleRefinements.find(
+          (entry) =>
+            entry.properties["property"] === "display-seq" &&
+            entry.properties["refines"]!.slice(1) === b.id,
+        )!
+        const sortA = parseInt(refinementA.value!, 10)
+        const sortB = parseInt(refinementB.value!, 10)
+        return sortA - sortB
+      })
+
+    return (sortedTitleParts.length === 0 ? titleEntries : sortedTitleParts)
+      .map((entry) => entry.value)
+      .join(", ")
+  }
+
+  async getAuthors(): Promise<
+    {
+      name: string
+      role: string | null
+      fileAs: string | null
+    }[]
+  > {
+    const metadata = await this.getMetadata()
+    const creatorEntries = metadata.filter(
+      (entry) => entry.type === "dc:creator" && entry.value,
+    )
+    const creatorRefinements = metadata.filter(
+      (entry) =>
+        entry.type === "meta" &&
+        entry.properties["refines"] &&
+        (entry.properties["property"] === "role" ||
+          entry.properties["property"] === "file-as"),
+    )
+
+    return creatorEntries.map((creatorEntry) => {
+      if (!creatorEntry.id)
+        return { name: creatorEntry.value!, fileAs: null, role: null }
+
+      const roleEntry = creatorRefinements.find(
+        (entry) =>
+          entry.properties["property"] === "role" &&
+          entry.properties["refines"]?.slice(1) === creatorEntry.id,
+      )
+      const fileAsEntry = creatorRefinements.find(
+        (entry) =>
+          entry.properties["property"] === "file-as" &&
+          entry.properties["refines"]?.slice(1) === creatorEntry.id,
+      )
+
+      return {
+        name: creatorEntry.value!,
+        role: roleEntry?.value ?? null,
+        fileAs: fileAsEntry?.value ?? null,
+      }
+    })
   }
 
   private async getSpine() {

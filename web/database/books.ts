@@ -37,8 +37,8 @@ export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
 export type Author = {
   uuid: UUID
   name: string
-  fileAs: string
-  role: string
+  fileAs?: string | null
+  role?: string | null
 }
 
 export type ProcessingStatus = {
@@ -58,8 +58,8 @@ export type Book = {
 export type AuthorInput = {
   uuid: UUID | ""
   name: string
-  fileAs: string
-  role: string
+  fileAs: string | null
+  role: string | null
 }
 
 export async function createBook(title: string, authors: AuthorInput[]) {
@@ -67,9 +67,10 @@ export async function createBook(title: string, authors: AuthorInput[]) {
 
   const { uuid: bookUuid, id } = await db.get<{ uuid: UUID; id: number }>(
     `
-    INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, :title)
+    INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, $title)
     RETURNING uuid, id
     `,
+    { $title: title },
   )
 
   const book: Book = {

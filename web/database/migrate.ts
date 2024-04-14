@@ -54,7 +54,6 @@ async function migrateFile(path: string) {
       .filter((statement) => !!statement.length)
 
     for (const statement of statements) {
-      console.log(statement)
       await db.run(statement)
     }
 

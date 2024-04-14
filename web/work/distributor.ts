@@ -5,7 +5,6 @@ import { cwd } from "node:process"
 
 const filename = join(cwd(), "work-dist", "worker.js")
 
-console.log(__dirname)
 const piscina = new Piscina({
   filename,
   maxThreads: 1,

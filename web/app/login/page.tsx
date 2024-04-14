@@ -20,7 +20,6 @@ export default function Login() {
 
     const client = new ApiClient(apiHost, proxyRootPath)
     const token = await client.login({ username, password })
-    console.log(token.access_token)
 
     const cookieStore = cookies()
     cookieStore.set("st_token", token.access_token, {
