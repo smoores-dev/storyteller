@@ -58,8 +58,6 @@ export const POST = withHasPermission("book_create")(async (request) => {
   const title = await epub.getTitle()
   const authors = await epub.getAuthors()
 
-  console.log(title, authors)
-
   const book = await createBook(
     title ?? epubFile.name.replace(".epub", ""),
     authors.map((author) => ({ ...author, uuid: "" })),
