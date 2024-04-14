@@ -136,9 +136,7 @@ export default async function processBook({
   }
 
   const currentTasks = await getProcessingTasksForBook(bookUuid)
-  console.log("currentTasks", currentTasks)
   const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
-  console.log(remainingTasks)
   console.log(
     `Found ${remainingTasks.length} remaining tasks for book ${bookUuid}`,
   )
@@ -168,12 +166,9 @@ export default async function processBook({
       if (task.type === ProcessingTaskType.TRANSCRIBE_CHAPTERS) {
         console.log("Transcribing...")
         const epub = await readEpub(bookUuid)
-        const metadata = await epub.getMetadata()
+        const title = await epub.getTitle()
         const fullText = await getFullText(epub)
-        const initialPrompt = await getInitialPrompt(
-          metadata.title ?? "",
-          fullText,
-        )
+        const initialPrompt = await getInitialPrompt(title ?? "", fullText)
         await transcribeBook(
           bookUuid,
           initialPrompt,
