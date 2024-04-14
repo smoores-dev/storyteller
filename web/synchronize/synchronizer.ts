@@ -171,7 +171,7 @@ export class Synchronizer {
         this.totalDuration += duration
 
         const audio = await readFile(audiofile)
-        this.epub.addManifestItem(
+        await this.epub.addManifestItem(
           {
             id,
             href: epubAudioFilename,
