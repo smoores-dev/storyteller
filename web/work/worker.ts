@@ -35,7 +35,7 @@ import {
   transcribeTrack,
 } from "@/transcribe"
 import { UUID } from "@/uuid"
-import { mkdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 
 const DEVICE = process.env["STORYTELLER_DEVICE"]
 const BATCH_SIZE = parseInt(process.env["STORYTELLER_BATCH_SIZE"] ?? "16", 10)
@@ -63,21 +63,29 @@ export async function transcribeBook(
   for (let i = 0; i < audioFiles.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const audioFile = audioFiles[i]!
-    const filepath = getProcessedAudioFilepath(bookUuid, audioFile.filename)
-    const transcription = transcribeTrack(
-      filepath,
-      device,
-      transcribeModel,
-      alignModel,
-      alignMetadata,
-      batchSize,
-    )
-    transcriptions.push(transcription)
     const transcriptionFilepath = getTranscriptionsFilepath(
       bookUuid,
       getTranscriptionFilename(audioFile),
     )
-    await writeFile(transcriptionFilepath, JSON.stringify(transcription))
+    const filepath = getProcessedAudioFilepath(bookUuid, audioFile.filename)
+    try {
+      const existingTranscription = await readFile(transcriptionFilepath, {
+        encoding: "utf-8",
+      })
+      console.log(`Found existing transcription for ${filepath}`)
+      transcriptions.push(JSON.parse(existingTranscription))
+    } catch (_) {
+      const transcription = transcribeTrack(
+        filepath,
+        device,
+        transcribeModel,
+        alignModel,
+        alignMetadata,
+        batchSize,
+      )
+      transcriptions.push(transcription)
+      await writeFile(transcriptionFilepath, JSON.stringify(transcription))
+    }
     onProgress?.((i + 1) / audioFiles.length)
   }
   return transcriptions
@@ -105,7 +113,7 @@ export function determineRemainingTasks(
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const lastCompletedTaskIndex =
-    sortedTasks.findIndex(
+    sortedTasks.findLastIndex(
       (task) => task.status === ProcessingTaskStatus.COMPLETED,
     ) ?? -1
 
@@ -114,7 +122,7 @@ export function determineRemainingTasks(
     .concat(
       Object.entries(PROCESSING_TASK_ORDER)
         .sort(([, orderA], [, orderB]) => orderA - orderB)
-        .slice(sortedTasks.length - lastCompletedTaskIndex)
+        .slice(sortedTasks.length)
         .map(([type]) => ({
           type: type as ProcessingTaskType,
           status: ProcessingTaskStatus.STARTED,
@@ -137,6 +145,16 @@ export default async function processBook({
 
   const currentTasks = await getProcessingTasksForBook(bookUuid)
   const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
+
+  await Promise.all(
+    remainingTasks.map(async (task) => {
+      if (task.uuid) {
+        await updateTaskStatus(task.uuid, ProcessingTaskStatus.STARTED)
+        await updateTaskProgress(task.uuid, 0)
+      }
+    }),
+  )
+
   console.log(
     `Found ${remainingTasks.length} remaining tasks for book ${bookUuid}`,
   )
@@ -144,10 +162,6 @@ export default async function processBook({
     const taskUuid =
       task.uuid ??
       (await createProcessingTask(task.type, task.status, bookUuid))
-
-    if (!task.uuid) {
-      await updateTaskProgress(taskUuid, 0)
-    }
 
     if (task.status !== ProcessingTaskStatus.STARTED) {
       await updateTaskStatus(taskUuid, ProcessingTaskStatus.STARTED)
