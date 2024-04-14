@@ -99,4 +99,36 @@ describe("determineRemainingTasks", () => {
 
     assert.deepStrictEqual(output, [input[1], input[2]])
   })
+
+  it("only produces errored tasks after a failure", () => {
+    const uuid = randomUUID()
+
+    const input: ProcessingTask[] = [
+      {
+        uuid: randomUUID(),
+        type: ProcessingTaskType.SPLIT_CHAPTERS,
+        status: ProcessingTaskStatus.COMPLETED,
+        progress: 0,
+        bookUuid: uuid,
+      },
+      {
+        uuid: randomUUID(),
+        type: ProcessingTaskType.TRANSCRIBE_CHAPTERS,
+        status: ProcessingTaskStatus.COMPLETED,
+        progress: 0,
+        bookUuid: uuid,
+      },
+      {
+        uuid: randomUUID(),
+        type: ProcessingTaskType.SYNC_CHAPTERS,
+        status: ProcessingTaskStatus.IN_ERROR,
+        progress: 0,
+        bookUuid: uuid,
+      },
+    ]
+
+    const output = determineRemainingTasks(uuid, input)
+
+    assert.deepStrictEqual(output, [input[2]])
+  })
 })
