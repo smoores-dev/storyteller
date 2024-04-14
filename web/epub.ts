@@ -9,7 +9,7 @@ import {
 } from "@zip.js/zip.js"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize, { memoizeClear } from "memoize"
-import { readFile, writeFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
 
 export type XmlNode = Record<string, ParsedXml> & {
@@ -802,6 +802,7 @@ export class Epub {
         "Failed to write zip archive to file; writer returned no data",
       )
 
+    await mkdir(dirname(path), { recursive: true })
     await writeFile(path, data)
 
     // Reset the ZipWriter to allow further modification
