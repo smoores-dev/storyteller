@@ -53,11 +53,17 @@ export const POST = withHasPermission("book_create")(async (request) => {
 
   const dataReader = new BlobReader(epubFile)
 
-  const epub = new Epub(dataReader)
+  const epub = await Epub.from(dataReader)
 
-  const { title } = await epub.getMetadata()
+  const title = await epub.getTitle()
+  const authors = await epub.getAuthors()
 
-  const book = await createBook(title ?? epubFile.name.replace(".epub", ""), [])
+  console.log(title, authors)
+
+  const book = await createBook(
+    title ?? epubFile.name.replace(".epub", ""),
+    authors.map((author) => ({ ...author, uuid: "" })),
+  )
   await persistEpub(book.uuid, epubFile)
   await persistAudio(book.uuid, audioFiles)
 
