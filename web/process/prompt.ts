@@ -22,7 +22,7 @@ export async function getInitialPrompt(title: string, fullText: string) {
     inventedWords.length < 2
       ? inventedWords
       : inventedWords.slice(0, -1).join(", ") +
-        ", and" +
+        ", and " +
         inventedWords[inventedWords.length - 1]
   const initialPrompt = `The following is a chapter from the book "${title}". It may contain words that are not in the English dictionary, such as ${invintedWordString}. Please try to transcribe it accurately.`
   return initialPrompt
