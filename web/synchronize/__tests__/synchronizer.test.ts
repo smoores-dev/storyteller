@@ -26,6 +26,8 @@ describe("Synchronizer", () => {
     ])
     await synchronizer.syncBook()
 
+    const manifest = await epub.getManifest()
+
     const spine = await epub.getSpineItems()
     const mediaOverlay = await epub.readXhtmlItemContents(
       spine[1]!.mediaOverlay!,
@@ -42,6 +44,8 @@ describe("Synchronizer", () => {
     )
     assert.strictEqual(firstPar["par"]![1]![":@"]!["@_clipBegin"], "0s")
     assert.strictEqual(firstPar["par"]![1]![":@"]!["@_clipEnd"], "21.383s")
+
+    assert.ok(manifest["audio_mobydick_001_002_melville"])
     await epub.close()
   })
 })
