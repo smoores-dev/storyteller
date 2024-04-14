@@ -487,6 +487,9 @@ export class Epub {
 
     const rootfile = await this.getRootfile()
     const rootDir = dirname(rootfile)
+    if (rootDir === ".") {
+      return href
+    }
     // TODO: This doesn't account for .. or . segments
     return [rootDir, href].join("/")
   }
