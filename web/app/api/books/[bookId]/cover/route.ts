@@ -31,7 +31,6 @@ export const GET = withHasPermission<Params>("book_read")(async (
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const file = await open(coverFilepath!)
 
-    console.log("file exists")
     // @ts-expect-error NextResponse handles Node Streams just fine
     return new NextResponse(file.createReadStream(), {
       headers: {
