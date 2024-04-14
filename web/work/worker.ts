@@ -83,7 +83,7 @@ export async function transcribeBook(
   return transcriptions
 }
 
-function determineRemainingTasks(
+export function determineRemainingTasks(
   bookUuid: UUID,
   processingTasks: ProcessingTask[],
 ): Array<Omit<ProcessingTask, "uuid"> & { uuid?: UUID }> {
@@ -104,42 +104,24 @@ function determineRemainingTasks(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const lastTask = sortedTasks[sortedTasks.length - 1]!
-  console.log("lastTask", lastTask)
-  if (lastTask.status === ProcessingTaskStatus.COMPLETED) {
-    const nextTaskTypeIndex = PROCESSING_TASK_ORDER[lastTask.type] + 1
+  const lastCompletedTaskIndex =
+    sortedTasks.findIndex(
+      (task) => task.status === ProcessingTaskStatus.COMPLETED,
+    ) ?? -1
 
-    if (
-      !Object.values(PROCESSING_TASK_ORDER).some(
-        (order) => order === nextTaskTypeIndex,
-      )
+  return (sortedTasks as Omit<ProcessingTask, "uuid">[])
+    .slice(lastCompletedTaskIndex + 1)
+    .concat(
+      Object.entries(PROCESSING_TASK_ORDER)
+        .sort(([, orderA], [, orderB]) => orderA - orderB)
+        .slice(sortedTasks.length - lastCompletedTaskIndex)
+        .map(([type]) => ({
+          type: type as ProcessingTaskType,
+          status: ProcessingTaskStatus.STARTED,
+          progress: 0,
+          bookUuid,
+        })),
     )
-      return []
-
-    return Object.entries(PROCESSING_TASK_ORDER)
-      .sort(([, orderA], [, orderB]) => orderA - orderB)
-      .slice(nextTaskTypeIndex)
-      .map(([type]) => ({
-        type: type as ProcessingTaskType,
-        status: ProcessingTaskStatus.STARTED,
-        progress: 0,
-        bookUuid,
-      }))
-  }
-
-  return (
-    sortedTasks as Array<Omit<ProcessingTask, "uuid"> & { uuid?: UUID }>
-  ).concat(
-    Object.entries(PROCESSING_TASK_ORDER)
-      .sort(([, orderA], [, orderB]) => orderA - orderB)
-      .slice(sortedTasks.length)
-      .map(([type]) => ({
-        type: type as ProcessingTaskType,
-        status: ProcessingTaskStatus.STARTED,
-        progress: 0,
-        bookUuid,
-      })),
-  )
 }
 
 export default async function processBook({
