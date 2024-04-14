@@ -65,7 +65,7 @@ describe("appendTextNode", () => {
 
 describe("tagSentences", () => {
   it("can tag sentences", () => {
-    const input = xmlParser.parse(`
+    const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
 <html>
@@ -103,7 +103,7 @@ describe("tagSentences", () => {
 
     assert.deepStrictEqual(
       xmlBuilder.build(output),
-      `
+      /* xml */ `
 <?xml version="1.0" encoding="UTF-8"?><html>
   <head>
     <meta charset="utf-8"></meta>
@@ -137,7 +137,7 @@ describe("tagSentences", () => {
   })
 
   it("can tag sentences with formatting marks", () => {
-    const input = xmlParser.parse(`
+    const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
 <html>
@@ -160,7 +160,7 @@ describe("tagSentences", () => {
 
     assert.deepStrictEqual(
       xmlBuilder.build(output),
-      `
+      /* xml */ `
 <?xml version="1.0" encoding="UTF-8"?><html>
   <head>
     <meta charset="utf-8"></meta>
@@ -179,7 +179,7 @@ describe("tagSentences", () => {
   })
 
   it("can tag sentences with formatting marks that overlap sentence boundaries", () => {
-    const input = xmlParser.parse(`
+    const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
 <html>
@@ -202,7 +202,7 @@ describe("tagSentences", () => {
 
     assert.deepStrictEqual(
       xmlBuilder.build(output),
-      `
+      /* xml */ `
 <?xml version="1.0" encoding="UTF-8"?><html>
   <head>
     <meta charset="utf-8"></meta>
@@ -221,7 +221,7 @@ describe("tagSentences", () => {
   })
 
   it("can tag sentences with nested formatting marks", () => {
-    const input = xmlParser.parse(`
+    const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
 <html>
@@ -244,7 +244,7 @@ describe("tagSentences", () => {
 
     assert.deepStrictEqual(
       xmlBuilder.build(output),
-      `
+      /* xml */ `
 <?xml version="1.0" encoding="UTF-8"?><html>
   <head>
     <meta charset="utf-8"></meta>
@@ -263,7 +263,7 @@ describe("tagSentences", () => {
   })
 
   it("can tag sentences with atoms", () => {
-    const input = xmlParser.parse(`
+    const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
 <html>
@@ -286,7 +286,7 @@ describe("tagSentences", () => {
 
     assert.deepStrictEqual(
       xmlBuilder.build(output),
-      `
+      /* xml */ `
 <?xml version="1.0" encoding="UTF-8"?><html>
   <head>
     <meta charset="utf-8"></meta>
@@ -305,7 +305,7 @@ describe("tagSentences", () => {
   })
 
   it("can tag sentences in nested textblocks", () => {
-    const input = xmlParser.parse(`
+    const input = xmlParser.parse(/* xml */ `
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"
@@ -338,7 +338,7 @@ describe("tagSentences", () => {
 
     assert.strictEqual(
       xmlBuilder.build(output),
-      `
+      /* xml */ `
 <?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="z3998: http://www.daisy.org/z3998/2012/vocab/structure/#" lang="en" xml:lang="en">
     
   <head>
@@ -366,7 +366,7 @@ describe("tagSentences", () => {
   })
 
   it("can tag sentences that cross textblock boundaries", () => {
-    const input = xmlParser.parse(`
+    const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
 <html>
@@ -392,7 +392,7 @@ describe("tagSentences", () => {
 
     assert.strictEqual(
       xmlBuilder.build(output),
-      `
+      /* xml */ `
 <?xml version="1.0" encoding="UTF-8"?><html>
   <head>
     <meta charset="utf-8"></meta>
@@ -408,6 +408,70 @@ describe("tagSentences", () => {
         I thought I would sail about a little and see the watery part of
         the world.
     </p>
+  </body>
+</html>`,
+    )
+  })
+
+  it("can handle soft page breaks", () => {
+    const input = xmlParser.parse(/* xml */ `
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
+  <head>
+    <title>Chapter 1, Black Powder War</title>
+    <meta charset="utf-8"/>
+    <link href="../css/prh_resets.css" rel="stylesheet" type="text/css"/>
+    <link href="../css/rh_static.css" rel="stylesheet" type="text/css"/>
+    <link href="../css/9780345493439_style.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:52698e83-e600-48be-b763-c64bde1e3e0c" name="Adept.expected.resource"/>
+  </head>
+  <body>
+    <a id="d1-d2s6d3s2"/>
+    <div class="page_top_padding">
+      <span epub:type="pagebreak" id="page_9" role="doc-pagebreak" title="9"/>
+      <h1 class="para-cn-chap-pg trajan-pro-3">CHAPTER 1</h1>
+      <div class="para-orn">
+        <span class="figure figure_dingbat">
+        <img alt="" class="height_1em" role="presentation" src="../images/Novi_9780345493439_epub3_001_r1.jpg"/></span></div>
+      <p class="para-pf dropcaps3line char-dropcap-DC trajan-pro-3-dc" style="text-indent:0;">The hot wind blowing into Macao was sluggish and unrefreshing, only stirring up the rotting salt smell of the harbor, the fish-corpses and great knots of black-red seaweed, the effluvia of human and dragon wastes. Even so the sailors were sitting crowded along the rails of the <i class="char-i">Allegiance</i> for a breath of the moving air, leaning against one another to get a little room. A little scuffling broke out amongst them from time to time, a dull exchange of shoving back and forth, but these quarrels died almost at once in the punishing heat.</p>
+      <p class="para-p">Temeraire lay disconsolately upon the dragondeck, gazing towards the white haze of the open ocean, the aviators on duty lying half-asleep in his great shadow. Laurence himself had sacrificed dignity so far as to take off his coat, as he was sitting in the crook of Temeraire’s foreleg and so concealed from view.</p>
+      <p class="para-p">“I am sure I could pull the ship out of the harbor,” Temeraire said, not for the first time in the past week; and sighed when this amiable plan was again refused: in a calm he might indeed have been able to tow even the enormous dragon transport, but against a direct headwind he could only exhaust himself to no purpose.</p>
+      <span epub:type="pagebreak" id="page_10" role="doc-pagebreak" title="10"/>
+      <p class="para-p">“Even in a calm you could scarcely pull her any great distance,” Laurence added consolingly. “A few miles may be of some use out in the open ocean, but at present we may as well stay in harbor, and be a little more comfortable; we would make very little speed even if we could get her out.”</p>
+      <p class="para-p">“It seems a great pity to me that we must always be waiting on the wind, when everything else is ready and we are also,” Temeraire said. “I would so like to be home <i class="char-i">soon:</i> there is so very much to be done.” His tail thumped hollowly upon the boards, for emphasis.</p>
+      <p class="para-p">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now. “You must be prepared to endure some delays; at home as much as here.”</p>
+    </div>
+  </body>
+</html>`)
+
+    const output = tagSentences(input)
+
+    assert.strictEqual(
+      xmlBuilder.build(output),
+      /* xml */ `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
+  <head>
+    <title>Chapter 1, Black Powder War</title>
+    <meta charset="utf-8"></meta>
+    <link href="../css/prh_resets.css" rel="stylesheet" type="text/css"></link>
+    <link href="../css/rh_static.css" rel="stylesheet" type="text/css"></link>
+    <link href="../css/9780345493439_style.css" rel="stylesheet" type="text/css"></link>
+<meta content="urn:uuid:52698e83-e600-48be-b763-c64bde1e3e0c" name="Adept.expected.resource"></meta>
+  </head>
+  <body>
+    <a id="d1-d2s6d3s2"></a>
+    <div class="page_top_padding">
+      <span epub:type="pagebreak" id="page_9" role="doc-pagebreak" title="9"></span>
+      <h1 class="para-cn-chap-pg trajan-pro-3"><span id="sentence0">CHAPTER 1</span></h1>
+      <div class="para-orn">
+        <span class="figure figure_dingbat">
+        </span><span class="figure figure_dingbat"><img alt="" class="height_1em" role="presentation" src="../images/Novi_9780345493439_epub3_001_r1.jpg"></img></span></div>
+      <p class="para-pf dropcaps3line char-dropcap-DC trajan-pro-3-dc" style="text-indent:0;">The hot wind blowing into Macao was sluggish and unrefreshing, only stirring up the rotting salt smell of the harbor, the fish-corpses and great knots of black-red seaweed, the effluvia of human and dragon wastes. <span id="sentence1">Even so the sailors were sitting crowded along the rails of the <i class="char-i">Allegiance</i> for a breath of the moving air, leaning against one another to get a little room.</span> <span id="sentence2">A little scuffling broke out amongst them from time to time, a dull exchange of shoving back and forth, but these quarrels died almost at once in the punishing heat.</span></p>
+      <p class="para-p"><span id="sentence3">Temeraire lay disconsolately upon the dragondeck, gazing towards the white haze of the open ocean, the aviators on duty lying half-asleep in his great shadow.</span> <span id="sentence4">Laurence himself had sacrificed dignity so far as to take off his coat, as he was sitting in the crook of Temeraire’s foreleg and so concealed from view.</span></p>
+      <p class="para-p"><span id="sentence5">“I am sure I could pull the ship out of the harbor,” Temeraire said, not for the first time in the past week; and sighed when this amiable plan was again refused: in a calm he might indeed have been able to tow even the enormous dragon transport, but against a direct headwind he could only exhaust himself to no purpose.</span></p>
+      <span epub:type="pagebreak" id="page_10" role="doc-pagebreak" title="10"></span>
+      <p class="para-p"><span id="sentence6">“Even in a calm you could scarcely pull her any great distance,” Laurence added consolingly.</span> <span id="sentence7">“A few miles may be of some use out in the open ocean, but at present we may as well stay in harbor, and be a little more comfortable; we would make very little speed even if we could get her out.”</span></p>
+      <p class="para-p"><span id="sentence8">“It seems a great pity to me that we must always be waiting on the wind, when everything else is ready and we are also,” Temeraire said.</span> <span id="sentence9">“I would so like to be home <i class="char-i">soon:</i> there is so very much to be done.”</span> <span id="sentence10">His tail thumped hollowly upon the boards, for emphasis.</span></p>
+      <p class="para-p"><span id="sentence11">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now.</span> <span id="sentence12">“You must be prepared to endure some delays; at home as much as here.”</span></p>
+    </div>
   </body>
 </html>`,
     )
