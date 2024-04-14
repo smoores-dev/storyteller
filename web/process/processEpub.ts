@@ -81,6 +81,9 @@ export async function getFullText(epub: Epub) {
 }
 
 export async function processEpub(bookUuid: UUID) {
+  const coverFilepath = await getEpubCoverFilepath(bookUuid)
+  if (coverFilepath) return
+
   const epub = await readEpub(bookUuid)
 
   try {
