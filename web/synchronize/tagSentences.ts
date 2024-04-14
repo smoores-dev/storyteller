@@ -209,7 +209,7 @@ function tagSentencesInXml(
           taggedXml,
           child,
           nextMarks,
-          isTextContent || state.currentSentenceProgress === 0
+          skip || isTextContent || state.currentSentenceProgress === 0
             ? undefined
             : state.currentSentenceIndex,
         )
@@ -257,12 +257,6 @@ function tagSentencesInXml(
     state.currentSentenceProgress > 0 &&
     state.currentSentenceProgress <
       (sentences[state.currentSentenceIndex]?.length ?? 0)
-
-  if (state.skip) {
-    console.log(tagName, "is text content")
-    console.log('sentence: "', sentences[state.currentSentenceIndex], '"')
-    console.log("progress:", state.currentSentenceProgress)
-  }
 
   state.currentNodeProgress = -1
   return state
