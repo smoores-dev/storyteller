@@ -47,9 +47,9 @@ export function Sidebar({ className }: Props) {
       setCurrentBook(currentBook)
     }
 
-    findCurrentBook()
+    void findCurrentBook()
     setInterval(() => {
-      findCurrentBook()
+      void findCurrentBook()
     }, 5000)
   }, [client])
 

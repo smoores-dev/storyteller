@@ -28,17 +28,14 @@ export async function authenticateUser(
 
   if (!user) return null
 
-  if (!verifyPassword(user.hashedPassword, password)) {
+  if (!(await verifyPassword(user.hashedPassword, password))) {
     return null
   }
 
   return user
 }
 
-export async function createAccessToken(
-  data: Record<string, string>,
-  expires: Date,
-) {
+export function createAccessToken(data: Record<string, string>, expires: Date) {
   const payload = {
     ...data,
     exp: expires.valueOf(),
@@ -121,7 +118,7 @@ export function withVerifyToken<
     context: { params: Params },
     token: string,
     tokenData: { username: string },
-  ) => Promise<Response>,
+  ) => Response | Promise<Response>,
 ) {
   return withToken<Params>(async function (request, context, token) {
     const tokenData = await verifyToken(token)

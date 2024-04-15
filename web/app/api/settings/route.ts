@@ -20,7 +20,7 @@ type SettingsRequest = {
 }
 
 export const PUT = withHasPermission("settings_update")(async (request) => {
-  const settings: SettingsRequest = await request.json()
+  const settings = (await request.json()) as SettingsRequest
 
   await updateSettings({
     smtpHost: settings.smtp_host,

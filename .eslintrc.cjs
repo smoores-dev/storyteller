@@ -31,12 +31,26 @@ module.exports = {
       },
     },
     {
-      files: ["**/*.ts", "**/*.tsx"],
-      extends: ["plugin:@typescript-eslint/strict"],
+      files: ["web/**/*.ts", "web/**/*.tsx"],
+      extends: ["plugin:@typescript-eslint/strict-type-checked"],
       parser: "@typescript-eslint/parser",
       parserOptions: {
         project: true,
         tsconfigRootDir: __dirname,
+      },
+      rules: {
+        "@typescript-eslint/restrict-template-expressions": [
+          "error",
+          {
+            allowNumber: true,
+          },
+        ],
+        "@typescript-eslint/no-misused-promises": [
+          "error",
+          {
+            checksVoidReturn: false,
+          },
+        ],
       },
     },
     {

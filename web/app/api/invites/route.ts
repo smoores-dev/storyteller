@@ -25,7 +25,7 @@ export type InviteRequest = {
 }
 
 export const POST = withHasPermission("user_create")(async (request) => {
-  const { email, ...permissionsInput }: InviteRequest = await request.json()
+  const { email, ...permissionsInput } = (await request.json()) as InviteRequest
 
   const key = randomBytes(6).toString("hex")
 

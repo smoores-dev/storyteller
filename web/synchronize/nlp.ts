@@ -19,6 +19,8 @@ export function bagOfWords(text: string) {
   const nlpDoc = nlp.readDoc(text)
   const words = nlpDoc
     .tokens()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     .filter((token) => token.out(its.type) === "word")
-  return words.out(its.normal, as.unique) as string[]
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  return words.out(its.normal, as.unique)
 }

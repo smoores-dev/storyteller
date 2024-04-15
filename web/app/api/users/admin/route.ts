@@ -16,7 +16,7 @@ type UserRequest = {
 }
 
 export async function POST(request: NextRequest) {
-  const user: UserRequest = await request.json()
+  const user = (await request.json()) as UserRequest
   const hashedPassword = await hashPassword(user.password)
 
   await createAdminUser(
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   )
 
   const accessTokenExpires = getAccessTokenExpireDate()
-  const accessToken = await createAccessToken(
+  const accessToken = createAccessToken(
     { sub: user.username },
     accessTokenExpires,
   )

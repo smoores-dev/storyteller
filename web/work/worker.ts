@@ -73,7 +73,9 @@ export async function transcribeBook(
         encoding: "utf-8",
       })
       console.log(`Found existing transcription for ${filepath}`)
-      transcriptions.push(JSON.parse(existingTranscription))
+      transcriptions.push(
+        JSON.parse(existingTranscription) as TranscriptionResult,
+      )
     } catch (_) {
       const transcription = transcribeTrack(
         filepath,
@@ -112,10 +114,9 @@ export function determineRemainingTasks(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const lastCompletedTaskIndex =
-    sortedTasks.findLastIndex(
-      (task) => task.status === ProcessingTaskStatus.COMPLETED,
-    ) ?? -1
+  const lastCompletedTaskIndex = sortedTasks.findLastIndex(
+    (task) => task.status === ProcessingTaskStatus.COMPLETED,
+  )
 
   return (sortedTasks as Omit<ProcessingTask, "uuid">[])
     .slice(lastCompletedTaskIndex + 1)

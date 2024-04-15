@@ -1,13 +1,12 @@
 import { deleteProcessed } from "@/assets"
 import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
-import { UUID } from "@/uuid"
 import { startProcessing } from "@/work/distributor"
 
 export const dynamic = "force-dynamic"
 
 type Params = {
-  bookId: UUID | string
+  bookId: string
 }
 
 export const POST = withHasPermission<Params>("book_process")(async (
@@ -22,7 +21,7 @@ export const POST = withHasPermission<Params>("book_process")(async (
     await deleteProcessed(bookUuid)
   }
 
-  startProcessing(bookUuid)
+  void startProcessing(bookUuid)
 
   return new Response(null, { status: 204 })
 })

@@ -1,16 +1,21 @@
 import { deleteAssets } from "@/assets"
 import { withHasPermission } from "@/auth"
-import { deleteBook, getBookUuid, getBooks, updateBook } from "@/database/books"
+import {
+  AuthorInput,
+  deleteBook,
+  getBookUuid,
+  getBooks,
+  updateBook,
+} from "@/database/books"
 import { persistCustomCover as persistCustomAudioCover } from "@/process/processAudio"
 import { persistCustomCover as persistCustomTextCover } from "@/process/processEpub"
-import { UUID } from "@/uuid"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
 type Params = {
-  bookId: UUID | string
+  bookId: string
 }
 
 export const PUT = withHasPermission<Params>("book_update")(async (
@@ -26,9 +31,10 @@ export const PUT = withHasPermission<Params>("book_update")(async (
       { status: 405 },
     )
   }
-  const authorStrings = formData.getAll("authors") ?? []
-  const authors = authorStrings.map((authorString) =>
-    JSON.parse(authorString.valueOf() as string),
+  const authorStrings = formData.getAll("authors")
+  const authors = authorStrings.map(
+    (authorString) =>
+      JSON.parse(authorString.valueOf() as string) as AuthorInput,
   )
   const updated = await updateBook(bookUuid, title, authors)
 

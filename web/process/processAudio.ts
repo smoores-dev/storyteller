@@ -51,7 +51,7 @@ export async function getAudioIndex(
   const indexFile = await readFile(path, {
     encoding: "utf-8",
   })
-  return JSON.parse(indexFile)
+  return JSON.parse(indexFile) as AudioIndex
 }
 
 export function getOriginalAudioFilepath(bookUuid: UUID, filename = "") {
@@ -119,7 +119,7 @@ export async function extractCover(bookUuid: UUID, trackPath: string) {
     )
 
   const coverFilename = `Audio Cover.${ext}`
-  persistCustomCover(bookUuid, coverFilename, coverImage.data)
+  await persistCustomCover(bookUuid, coverFilename, coverImage.data)
 }
 
 export async function processMpeg4File(

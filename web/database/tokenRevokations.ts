@@ -17,7 +17,7 @@ export async function revokeToken(token: string) {
 export async function isTokenRevoked(token: string) {
   const db = await getDatabase()
 
-  const row = await db.get<{ token: string }>(
+  const row = await db.get<{ token: string } | null>(
     `
     SELECT token
     FROM token_revokation

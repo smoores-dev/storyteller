@@ -85,12 +85,12 @@ function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
 
 export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
   const { stdout, stderr } = await exec(
-    `ffprobe -i ${path} -show_format -v quiet -of json`,
+    `ffprobe -i "${path}" -show_format -v quiet -of json`,
   )
   if (stderr) {
     throw new Error(stderr)
   }
-  const info = JSON.parse(stdout)
+  const info = JSON.parse(stdout) as FfmpegTrackFormat
   return parseTrackInfo(info["format"])
 })
 

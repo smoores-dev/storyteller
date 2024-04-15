@@ -1,7 +1,6 @@
 import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
 import { getEpubSyncedFilepath } from "@/process/processEpub"
-import { UUID } from "@/uuid"
 import { FileHandle, open } from "node:fs/promises"
 import { NextResponse } from "next/server"
 import { basename } from "node:path"
@@ -10,7 +9,7 @@ import { createHash } from "node:crypto"
 export const dynamic = "force-dynamic"
 
 type Params = {
-  bookId: UUID | string
+  bookId: string
 }
 
 export const GET = withHasPermission<Params>("book_download")(async (
@@ -34,7 +33,7 @@ export const GET = withHasPermission<Params>("book_download")(async (
 
   const stat = await file.stat()
   const lastModified = new Date(stat.mtime).toISOString()
-  const etagBase = `${stat.mtime}-${stat.size}`
+  const etagBase = `${stat.mtime.valueOf()}-${stat.size}`
   const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
 
   let start = 0

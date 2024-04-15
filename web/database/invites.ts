@@ -116,7 +116,7 @@ export async function getInvites(): Promise<Invite[]> {
 export async function verifyInvite(email: string, key: string) {
   const db = await getDatabase()
 
-  return !db.get(
+  return !(await db.get(
     `
     SELECT uuid
     FROM invite
@@ -127,7 +127,7 @@ export async function verifyInvite(email: string, key: string) {
       $email: email,
       $key: key,
     },
-  )
+  ))
 }
 
 export async function deleteInvite(key: string) {

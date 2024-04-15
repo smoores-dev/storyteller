@@ -32,7 +32,7 @@ export function BookStatus({ book, onUpdate }: Props) {
 
   const synchronized =
     book.processing_status?.current_task === ProcessingTaskType.SYNC_CHAPTERS &&
-    book.processing_status?.status === ProcessingTaskStatus.COMPLETED
+    book.processing_status.status === ProcessingTaskStatus.COMPLETED
 
   const userFriendlyTaskType =
     book.processing_status &&
