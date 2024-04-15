@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   const accessTokenExpires = getAccessTokenExpireDate()
 
-  const accessToken = await createAccessToken(
+  const accessToken = createAccessToken(
     { sub: user.username },
     accessTokenExpires,
   )

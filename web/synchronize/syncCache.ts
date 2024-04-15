@@ -32,7 +32,7 @@ export class SyncCache {
     } catch (_) {
       contents = '{"chapter_index": {}}'
     }
-    const data = JSON.parse(contents)
+    const data = JSON.parse(contents) as SerializedCache
     return new SyncCache(filepath, data)
   }
 

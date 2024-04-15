@@ -123,10 +123,10 @@ export async function getBooks(
     id: number
     title: string
     role: string
-    author_uuid: UUID
+    author_uuid: UUID | null
     name: string
     file_as: string
-    processing_task_uuid: UUID
+    processing_task_uuid: UUID | null
     type: ProcessingTaskType
     status: ProcessingTaskStatus
     progress: number
@@ -149,94 +149,90 @@ export async function getBooks(
     bookUuids ?? undefined,
   )
 
-  const booksRecord = bookRows.reduce(
-    (acc, row) => {
-      const book = acc[row.book_uuid]
-      if (!book) {
-        return {
-          ...acc,
-          [row.book_uuid]: {
-            uuid: row.book_uuid,
-            id: row.id,
-            title: row.title,
-            authors:
-              row.author_uuid !== null
-                ? {
-                    [row.author_uuid]: {
-                      uuid: row.author_uuid,
-                      name: row.name,
-                      fileAs: row.file_as,
-                      role: row.role,
-                    },
-                  }
-                : {},
-            ...(row.processing_task_uuid !== null && {
-              processingStatus: {
-                currentTask: row.type,
-                progress: row.progress,
-                status: row.status,
-              },
-            }),
-          },
-        }
-      }
-
-      const author = book.authors[row.author_uuid]
-
-      if (!author && row.author_uuid !== null) {
-        return {
-          ...acc,
-          [book.uuid]: {
-            ...book,
-            authors: {
-              ...book.authors,
-              [row.author_uuid]: {
-                uuid: row.author_uuid,
-                name: row.name,
-                fileAs: row.file_as,
-                role: row.role,
-              },
-            },
-            ...(row.processing_task_uuid !== null && {
-              processingStatus: {
-                currentTask: row.type,
-                progress: row.progress,
-                status: row.status,
-              },
-            }),
-          },
-        }
-      }
-
-      const processingStatus = book.processingStatus
-
-      if (
-        row.processing_task_uuid !== null &&
-        (!processingStatus ||
-          (PROCESSING_TASK_ORDER[row.type] >
-            PROCESSING_TASK_ORDER[processingStatus.currentTask] &&
-            processingStatus.status === ProcessingTaskStatus.COMPLETED))
-      ) {
-        return {
-          ...acc,
-          [book.uuid]: {
-            ...book,
+  const booksRecord = bookRows.reduce<
+    Record<UUID, Omit<Book, "authors"> & { authors: Record<UUID, Author> }>
+  >((acc, row) => {
+    const book = acc[row.book_uuid]
+    if (!book) {
+      return {
+        ...acc,
+        [row.book_uuid]: {
+          uuid: row.book_uuid,
+          id: row.id,
+          title: row.title,
+          authors:
+            row.author_uuid !== null
+              ? {
+                  [row.author_uuid]: {
+                    uuid: row.author_uuid,
+                    name: row.name,
+                    fileAs: row.file_as,
+                    role: row.role,
+                  },
+                }
+              : {},
+          ...(row.processing_task_uuid !== null && {
             processingStatus: {
               currentTask: row.type,
               progress: row.progress,
               status: row.status,
             },
-          },
-        }
+          }),
+        },
       }
+    }
 
-      return acc
-    },
-    {} as Record<
-      UUID,
-      Omit<Book, "authors"> & { authors: Record<UUID, Author> }
-    >,
-  )
+    const author = row.author_uuid && book.authors[row.author_uuid]
+
+    if (!author && row.author_uuid !== null) {
+      return {
+        ...acc,
+        [book.uuid]: {
+          ...book,
+          authors: {
+            ...book.authors,
+            [row.author_uuid]: {
+              uuid: row.author_uuid,
+              name: row.name,
+              fileAs: row.file_as,
+              role: row.role,
+            },
+          },
+          ...(row.processing_task_uuid !== null && {
+            processingStatus: {
+              currentTask: row.type,
+              progress: row.progress,
+              status: row.status,
+            },
+          }),
+        },
+      }
+    }
+
+    const processingStatus = book.processingStatus
+
+    if (
+      row.processing_task_uuid !== null &&
+      (!processingStatus ||
+        (PROCESSING_TASK_ORDER[row.type] >
+          PROCESSING_TASK_ORDER[processingStatus.currentTask] &&
+          processingStatus.status === ProcessingTaskStatus.COMPLETED))
+    ) {
+      return {
+        ...acc,
+        [book.uuid]: {
+          ...book,
+          processingStatus: {
+            currentTask: row.type,
+            progress: row.progress,
+            status: row.status,
+          },
+        },
+      }
+    }
+
+    return acc
+  }, {})
 
   const books = Object.values(booksRecord).map((book) => ({
     ...book,

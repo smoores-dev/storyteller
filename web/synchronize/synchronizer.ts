@@ -57,7 +57,7 @@ function createMediaOverlay(
                   },
                   {
                     ":@": {
-                      "@_src": `../${`Audio/${basename(sentenceRange.audiofile)}`}`,
+                      "@_src": `../Audio/${basename(sentenceRange.audiofile)}`,
                       "@_clipBegin": `${sentenceRange.start}s`,
                       "@_clipEnd": `${sentenceRange.end}s`,
                     },
@@ -102,7 +102,7 @@ export class Synchronizer {
       { segments: [] },
     )
 
-    this.getChapterSentences = memoize(this.getChapterSentences)
+    this.getChapterSentences = memoize(this.getChapterSentences.bind(this))
   }
 
   private async getChapterSentences(chapterId: string) {
@@ -163,7 +163,7 @@ export class Synchronizer {
 
         // Make sure this file hasn't already been added
         // from a previous chapter
-        const manifest = this.epub.getManifest()
+        const manifest = await this.epub.getManifest()
         if (id in manifest) return
 
         const epubAudioFilename = `/Audio/${base}`

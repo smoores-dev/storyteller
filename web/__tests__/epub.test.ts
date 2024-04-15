@@ -4,15 +4,15 @@ import { Epub, getBody, textContent } from "../epub"
 import assert from "node:assert"
 import { stat } from "node:fs/promises"
 
-describe("Epub", () => {
-  it("can read from an archived .epub file", async () => {
+void describe("Epub", () => {
+  void it("can read from an archived .epub file", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     assert.ok(epub instanceof Epub)
     await epub.close()
   })
 
-  it("can parse the spine correctly", async () => {
+  void it("can parse the spine correctly", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -20,7 +20,7 @@ describe("Epub", () => {
     await epub.close()
   })
 
-  it("can locate spine items", async () => {
+  void it("can locate spine items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -32,21 +32,21 @@ describe("Epub", () => {
     await epub.close()
   })
 
-  it("can parse xhtml spine items", async () => {
+  void it("can parse xhtml spine items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readXhtmlItemContents(spineItems[0]!.id)
     assert.ok(coverPageData[0]!["html"])
-    assert.ok(coverPageData[0]!["html"]![1]!["head"]![0])
+    assert.ok(coverPageData[0]!["html"][1]!["head"]![0])
     assert.strictEqual(
-      coverPageData[0]!["html"]![1]!["head"]![1]!["title"]![0]!["#text"],
+      coverPageData[0]!["html"][1]!["head"]![1]!["title"]![0]!["#text"],
       '"Cover"',
     )
     await epub.close()
   })
 
-  it("can produce text content for xhtml items", async () => {
+  void it("can produce text content for xhtml items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -62,7 +62,7 @@ describe("Epub", () => {
     await epub.close()
   })
 
-  it("can parse void xhtml tags", async () => {
+  void it("can parse void xhtml tags", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -75,7 +75,7 @@ describe("Epub", () => {
     await epub.close()
   })
 
-  it("can write the epub to a file", async () => {
+  void it("can write the epub to a file", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(inputFilepath)
 
@@ -87,11 +87,12 @@ describe("Epub", () => {
 
     await epub.writeToFile(outputFilepath)
     const info = await stat(outputFilepath)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     assert.ok(info.isFile)
     await epub.close()
   })
 
-  it("can modify an xhtml item", async () => {
+  void it("can modify an xhtml item", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(inputFilepath)
 
@@ -130,7 +131,7 @@ describe("Epub", () => {
     await updatedEpub.close()
   })
 
-  it("can add a new manifest item", async () => {
+  void it("can add a new manifest item", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
     const newItem = {

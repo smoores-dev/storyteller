@@ -20,7 +20,9 @@ const SETTINGS_COLUMN_NAMES = {
   web_url: "webUrl",
 } as const
 
-export async function getSetting(name: string) {
+export async function getSetting<
+  Name extends keyof typeof SETTINGS_COLUMN_NAMES,
+>(name: Name) {
   const db = await getDatabase()
 
   const { value: valueJson } = await db.get<{ value: string }>(
@@ -32,7 +34,7 @@ export async function getSetting(name: string) {
     { $name: name },
   )
 
-  return JSON.parse(valueJson)
+  return JSON.parse(valueJson) as Settings[(typeof SETTINGS_COLUMN_NAMES)[Name]]
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -51,7 +53,9 @@ export async function getSettings(): Promise<Settings> {
   return rows.reduce(
     (acc, row) => ({
       ...acc,
-      [SETTINGS_COLUMN_NAMES[row.name]]: JSON.parse(row.value),
+      [SETTINGS_COLUMN_NAMES[row.name]]: JSON.parse(row.value) as
+        | string
+        | number,
     }),
     {},
   ) as Settings

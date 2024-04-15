@@ -45,7 +45,9 @@ export function Header() {
         </span>
         <Button
           className={styles["menu-button"]}
-          onClick={() => setShowSidebar(true)}
+          onClick={() => {
+            setShowSidebar(true)
+          }}
         >
           <MenuIcon />
         </Button>

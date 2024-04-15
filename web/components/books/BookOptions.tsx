@@ -50,7 +50,9 @@ export function BookOptions({ book, onUpdate }: Props) {
           <MenuItem
             className={styles["menu-item"]}
             onClick={() =>
-              client.processBook(book.uuid, false).then(() => onUpdate())
+              client.processBook(book.uuid, false).then(() => {
+                onUpdate()
+              })
             }
           >
             <TooltipProvider placement="right">
@@ -65,7 +67,9 @@ export function BookOptions({ book, onUpdate }: Props) {
           <MenuItem
             className={styles["menu-item"]}
             onClick={() =>
-              client.processBook(book.uuid, true).then(() => onUpdate())
+              client.processBook(book.uuid, true).then(() => {
+                onUpdate()
+              })
             }
           >
             <TooltipProvider placement="right">
@@ -80,7 +84,9 @@ export function BookOptions({ book, onUpdate }: Props) {
           <MenuItem
             className={cx(styles["menu-item"], styles["delete"])}
             onClick={() => {
-              client.deleteBook(book.uuid).then(() => onUpdate())
+              void client.deleteBook(book.uuid).then(() => {
+                onUpdate()
+              })
             }}
           >
             <TooltipProvider placement="right">

@@ -8,8 +8,8 @@ import {
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 
-describe("determineRemainingTasks", () => {
-  it("produces all tasks when none exist", () => {
+void describe("determineRemainingTasks", () => {
+  void it("produces all tasks when none exist", () => {
     const input: ProcessingTask[] = []
 
     const uuid = randomUUID()
@@ -37,7 +37,7 @@ describe("determineRemainingTasks", () => {
     ])
   })
 
-  it("only produces non-completed tasks when some are completed", () => {
+  void it("only produces non-completed tasks when some are completed", () => {
     const uuid = randomUUID()
 
     const input: ProcessingTask[] = [
@@ -68,7 +68,7 @@ describe("determineRemainingTasks", () => {
     ])
   })
 
-  it("only produces non-completed tasks when some are completed and some are not", () => {
+  void it("only produces non-completed tasks when some are completed and some are not", () => {
     const uuid = randomUUID()
 
     const input: ProcessingTask[] = [
@@ -100,7 +100,7 @@ describe("determineRemainingTasks", () => {
     assert.deepStrictEqual(output, [input[1], input[2]])
   })
 
-  it("only produces errored tasks after a failure", () => {
+  void it("only produces errored tasks after a failure", () => {
     const uuid = randomUUID()
 
     const input: ProcessingTask[] = [

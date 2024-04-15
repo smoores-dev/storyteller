@@ -24,11 +24,15 @@ export function UsersList({
   const [invites, setInvites] = useState(initialInvites)
 
   const refreshUsers = useCallback(() => {
-    client.listUsers().then((users) => setUsers(users))
+    void client.listUsers().then((users) => {
+      setUsers(users)
+    })
   }, [client])
 
   const refreshInvites = useCallback(() => {
-    client.listInvites().then((invites) => setInvites(invites))
+    void client.listInvites().then((invites) => {
+      setInvites(invites)
+    })
   }, [client])
 
   return (

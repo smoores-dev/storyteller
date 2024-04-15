@@ -24,8 +24,8 @@ const stTranscription: StorytellerTranscription = {
   })),
 }
 
-describe("getSentenceRanges", () => {
-  it("accurately find sentences ranges", async () => {
+void describe("getSentenceRanges", () => {
+  void it("accurately find sentences ranges", async () => {
     const epub = await Epub.from(join("__fixtures__", "moby-dick.epub"))
     const spine = await epub.getSpineItems()
     const chapterOneText = await epub.readXhtmlItemContents(
@@ -47,8 +47,8 @@ describe("getSentenceRanges", () => {
   })
 })
 
-describe("getChapterDuration", () => {
-  it("can find the total duration of a chapter", () => {
+void describe("getChapterDuration", () => {
+  void it("can find the total duration of a chapter", () => {
     const input: SentenceRange[] = [
       {
         id: 0,
@@ -81,7 +81,7 @@ describe("getChapterDuration", () => {
     assert.strictEqual(output, 20)
   })
 
-  it("can find durations across multiple audio files", () => {
+  void it("can find durations across multiple audio files", () => {
     const input: SentenceRange[] = [
       {
         id: 0,

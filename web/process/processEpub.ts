@@ -37,7 +37,7 @@ export async function getEpubIndex(
   const indexFile = await readFile(path, {
     encoding: "utf-8",
   })
-  return JSON.parse(indexFile)
+  return JSON.parse(indexFile) as { cover?: string }
 }
 
 export async function getEpubCoverFilepath(bookUuid: UUID) {
@@ -99,7 +99,7 @@ export async function processEpub(bookUuid: UUID) {
 
     const coverImage = await epub.readItemContents(coverImageItem.id)
 
-    persistCustomCover(bookUuid, `Cover${fileExtension}`, coverImage)
+    await persistCustomCover(bookUuid, `Cover${fileExtension}`, coverImage)
   } finally {
     await epub.close()
   }

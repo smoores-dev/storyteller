@@ -62,7 +62,7 @@ function findStartTimestamp(
   let position = 0
   let segment = transcription.segments[s]!
   let w = 0
-  // eslint-disable-next-line no-constant-condition
+  // eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition
   while (true) {
     while (
       position + transcription.segments[s]!.text.length <
@@ -108,7 +108,7 @@ function findEndTimestamp(
   let w = transcription.segments[s]!.words.length - 1
   let segment = transcription.segments[s]!
 
-  // eslint-disable-next-line no-constant-condition
+  // eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition
   while (true) {
     while (position - transcription.segments[s]!.text.length >= matchEndIndex) {
       position -= transcription.segments[s]!.text.length + 1
