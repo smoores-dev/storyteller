@@ -32,18 +32,19 @@ void describe("Synchronizer", () => {
     const mediaOverlay = await epub.readXhtmlItemContents(
       spine[1]!.mediaOverlay!,
     )
-    const firstPar = mediaOverlay[0]!["smil"]![0]!["body"]![0]!["seq"]![0]!
+    // console.log(JSON.stringify(mediaOverlay, null, 2))
+    const firstPar = mediaOverlay[0]!["smil"]![1]!["body"]![1]!["seq"]![1]!
     assert.strictEqual(firstPar[":@"]!["@_id"], "sentence1")
     assert.strictEqual(
-      firstPar["par"]![0]![":@"]!["@_src"],
+      firstPar["par"]![1]![":@"]!["@_src"],
       "../3484760691463238453_2701-h-0.htm.xhtml#sentence1",
     )
     assert.strictEqual(
-      firstPar["par"]![1]![":@"]!["@_src"],
+      firstPar["par"]![3]![":@"]!["@_src"],
       "../Audio/mobydick_001_002_melville.mp3",
     )
-    assert.strictEqual(firstPar["par"]![1]![":@"]!["@_clipBegin"], "0s")
-    assert.strictEqual(firstPar["par"]![1]![":@"]!["@_clipEnd"], "21.383s")
+    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipBegin"], "0s")
+    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipEnd"], "21.383s")
 
     assert.ok(manifest["audio_mobydick_001_002_melville"])
     await epub.close()

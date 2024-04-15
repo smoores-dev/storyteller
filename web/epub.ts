@@ -163,13 +163,16 @@ export class Epub {
 
   private xmlBuilder = new XMLBuilder({
     preserveOrder: true,
+    format: true,
     ignoreAttributes: false,
+    suppressEmptyNode: true,
   })
 
   private xhtmlBuilder = new XMLBuilder({
     preserveOrder: true,
     ignoreAttributes: false,
     stopNodes: ["*.pre", "*.script"],
+    suppressEmptyNode: true,
   })
 
   private zipWriter: ZipWriter<Uint8Array>
