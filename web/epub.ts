@@ -10,7 +10,7 @@ import {
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize, { memoizeClear } from "memoize"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { dirname } from "node:path"
+import { dirname, resolve } from "node:path/posix"
 
 export type XmlNode = Record<string, ParsedXml> & {
   ":@"?: Record<string, string>
@@ -522,16 +522,16 @@ export class Epub {
     return spine.map((itemref) => manifest[itemref]!)
   }
 
-  private async resolveHref(href: string) {
-    if (href.startsWith("/")) return href.slice(1)
+  /**
+   * Returns a Zip Entry path for an HREF
+   */
+  private resolveHref(from: string, href: string) {
+    const startPath = dirname(from)
+    const absoluteStartPath = startPath.startsWith("/")
+      ? startPath
+      : `/${startPath}`
 
-    const rootfile = await this.getRootfile()
-    const rootDir = dirname(rootfile)
-    if (rootDir === ".") {
-      return href
-    }
-    // TODO: This doesn't account for .. or . segments
-    return [rootDir, href].join("/")
+    return resolve(absoluteStartPath, href)
   }
 
   async readItemContents(id: string): Promise<Uint8Array>
@@ -540,13 +540,14 @@ export class Epub {
     id: string,
     encoding?: "utf-8",
   ): Promise<string | Uint8Array> {
+    const rootfile = await this.getRootfile()
     const manifest = await this.getManifest()
     const manifestItem = manifest[id]
 
     if (!manifestItem)
       throw new Error(`Could not find item with id "${id}" in manifest`)
 
-    const path = await this.resolveHref(manifestItem.href)
+    const path = this.resolveHref(rootfile, manifestItem.href)
     const itemEntry = encoding
       ? await this.getFileData(path, encoding)
       : await this.getFileData(path)
@@ -597,6 +598,7 @@ export class Epub {
     contents: Uint8Array | string,
     encoding?: "utf-8",
   ): Promise<void> {
+    const rootfile = await this.getRootfile()
     const manifest = await this.getManifest()
     const manifestItem = manifest[id]
     if (!manifestItem)
@@ -605,7 +607,7 @@ export class Epub {
     // readXhtmlItemContents is already explicitly bound in the constructor
     // eslint-disable-next-line @typescript-eslint/unbound-method
     memoizeClear(this.readXhtmlItemContents)
-    const href = await this.resolveHref(manifestItem.href)
+    const href = this.resolveHref(rootfile, manifestItem.href)
     if (encoding === "utf-8") {
       this.writeEntryContents(href, contents as string, encoding)
     } else {
@@ -692,7 +694,7 @@ export class Epub {
     // the updated XML next time
     this.manifest = null
 
-    const filename = await this.resolveHref(item.href)
+    const filename = this.resolveHref(rootfile, item.href)
 
     const data =
       encoding === "utf-8" || encoding === "xml"

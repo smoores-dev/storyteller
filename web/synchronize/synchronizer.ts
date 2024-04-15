@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises"
-import { basename, parse } from "node:path/posix"
+import { basename, parse, relative } from "node:path/posix"
 import memoize from "memoize"
 import {
   Epub,
@@ -142,8 +142,10 @@ export class Synchronizer {
     const interpolated = interpolateSentenceRanges(sentenceRanges)
     const tagged = tagSentences(chapterXml)
 
-    // TODO: Need to make this relative
-    const storytellerStylesheetUrl = "Styles/storyteller-readaloud.css"
+    const storytellerStylesheetUrl = relative(
+      chapter.href,
+      "Styles/storyteller-readaloud.css",
+    )
 
     addLink(tagged, {
       rel: "stylesheet",
@@ -284,7 +286,7 @@ export class Synchronizer {
     await this.epub.addManifestItem(
       {
         id: "storyteller_readaloud_styles",
-        href: "Styles/storyteller_readaloud.css",
+        href: "Styles/storyteller-readaloud.css",
         mediaType: "text/css",
       },
       `
