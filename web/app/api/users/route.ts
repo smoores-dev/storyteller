@@ -24,7 +24,7 @@ type InviteAccept = {
 }
 
 export async function POST(request: NextRequest) {
-  const invite: InviteAccept = await request.json()
+  const invite = (await request.json()) as InviteAccept
   const verified = await verifyInvite(invite.email, invite.invite_key)
   if (!verified) {
     return NextResponse.json(

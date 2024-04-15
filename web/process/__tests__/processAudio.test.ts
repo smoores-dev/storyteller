@@ -9,8 +9,8 @@ import {
 import { mkdir, readdir } from "node:fs/promises"
 import assert from "node:assert"
 
-describe("processFile", () => {
-  it("can process mpeg4 files", async () => {
+void describe("processFile", () => {
+  void it("can process mpeg4 files", async () => {
     const input = join("__fixtures__", "MobyDickOrTheWhalePart1_librivox.m4b")
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
@@ -34,7 +34,7 @@ describe("processFile", () => {
     assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
 
-  it("can process zip files", async () => {
+  void it("can process zip files", async () => {
     const input = join("__fixtures__", "moby-dick-1-7-audio.zip")
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)

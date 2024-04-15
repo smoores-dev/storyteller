@@ -20,10 +20,11 @@ export async function getInitialPrompt(title: string, fullText: string) {
   const inventedWords = await findInventedWords(fullText)
   const invintedWordString =
     inventedWords.length < 2
-      ? inventedWords
+      ? inventedWords[0]
       : inventedWords.slice(0, -1).join(", ") +
         ", and " +
-        inventedWords[inventedWords.length - 1]
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        inventedWords[inventedWords.length - 1]!
   const initialPrompt = `The following is a chapter from the book "${title}". It may contain words that are not in the English dictionary, such as ${invintedWordString}. Please try to transcribe it accurately.`
   return initialPrompt
 }

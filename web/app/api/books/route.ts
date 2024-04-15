@@ -39,7 +39,7 @@ export const POST = withHasPermission("book_create")(async (request) => {
 
   if (
     !epubFile ||
-    !audioFiles ||
+    !audioFiles.length ||
     typeof epubFile === "string" ||
     !entriesAreFiles(audioFiles)
   ) {

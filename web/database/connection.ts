@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { cwd } from "node:process"
 import { Database } from "sqlite3"
 
-let db: Database
+let db: Database | undefined
 
 const DATABASE_URL = join(DATA_DIR, "storyteller.db")
 

@@ -1,2 +1,11 @@
 assets
 tsbuild
+
+work-dist
+
+.next
+
+node_modules
+
+assets
+cache

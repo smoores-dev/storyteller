@@ -2,7 +2,6 @@ import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
 import { getAudioCoverFilepath } from "@/process/processAudio"
 import { getEpubCoverFilepath, getEpubFilepath } from "@/process/processEpub"
-import { UUID } from "@/uuid"
 import { open } from "node:fs/promises"
 import { NextResponse } from "next/server"
 import { basename } from "node:path"
@@ -11,7 +10,7 @@ import { Epub } from "@/epub"
 export const dynamic = "force-dynamic"
 
 type Params = {
-  bookId: UUID | string
+  bookId: string
 }
 
 export const GET = withHasPermission<Params>("book_read")(async (

@@ -178,7 +178,9 @@ export function AddBookForm({ onAdded }: Props) {
       ) : (
         <Button
           className={styles["add-button"]}
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setShowForm(true)
+          }}
         >
           + Add book
         </Button>

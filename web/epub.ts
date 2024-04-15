@@ -65,7 +65,7 @@ export function getBody(xml: ParsedXml): ParsedXml {
   const body = findByName("body", html["html"])
   if (!body) throw new Error("Invalid XHTML document: No body element")
 
-  return body["body"]!
+  return body["body"]
 }
 
 export function addLink(
@@ -93,7 +93,7 @@ export function formatDuration(duration: number) {
   const minutes = Math.floor(duration / 60 - hours * 60)
   const secondsAndMillis = (duration - minutes * 60 - hours) & 3600
   const [seconds, millis] = secondsAndMillis.toFixed(2).split(".")
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds?.padStart(2, "0")}.${millis}`
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds!.padStart(2, "0")}.${millis ?? "0"}`
 }
 
 type ManifestItem = {
@@ -121,7 +121,7 @@ export class ZipEntry {
     return this.data
   }
 
-  async setData(data: Uint8Array) {
+  setData(data: Uint8Array) {
     this.data = data
   }
 
@@ -191,7 +191,7 @@ export class Epub {
     this.dataWriter = new Uint8ArrayWriter()
     this.zipWriter = new ZipWriter(this.dataWriter)
 
-    this.readXhtmlItemContents = memoize(this.readXhtmlItemContents)
+    this.readXhtmlItemContents = memoize(this.readXhtmlItemContents.bind(this))
   }
 
   async close() {
@@ -450,7 +450,7 @@ export class Epub {
     {
       name: string
       role: string | null
-      fileAs: string | null
+      fileAs: string
     }[]
   > {
     const metadata = await this.getMetadata()
@@ -466,8 +466,8 @@ export class Epub {
     )
 
     return creatorEntries.map((creatorEntry) => {
-      if (!creatorEntry.id)
-        return { name: creatorEntry.value!, fileAs: null, role: null }
+      const name = creatorEntry.value!
+      if (!creatorEntry.id) return { name, fileAs: name, role: null }
 
       const roleEntry = creatorRefinements.find(
         (entry) =>
@@ -481,9 +481,9 @@ export class Epub {
       )
 
       return {
-        name: creatorEntry.value!,
+        name: name,
         role: roleEntry?.value ?? null,
-        fileAs: fileAsEntry?.value ?? null,
+        fileAs: fileAsEntry?.value ?? name,
       }
     })
   }
@@ -564,17 +564,13 @@ export class Epub {
     return textContent(body)
   }
 
-  async writeEntryContents(path: string, contents: Uint8Array): Promise<void>
-  async writeEntryContents(
-    path: string,
-    contents: string,
-    encoding: "utf-8",
-  ): Promise<void>
-  async writeEntryContents(
+  writeEntryContents(path: string, contents: Uint8Array): void
+  writeEntryContents(path: string, contents: string, encoding: "utf-8"): void
+  writeEntryContents(
     path: string,
     contents: Uint8Array | string,
     encoding?: "utf-8",
-  ): Promise<void> {
+  ): void {
     const data =
       encoding === "utf-8"
         ? new TextEncoder().encode(contents as string)
@@ -584,7 +580,7 @@ export class Epub {
 
     if (!entry) throw new Error(`Could not find file at ${path} in EPUB`)
 
-    entry?.setData(data)
+    entry.setData(data)
   }
 
   async writeItemContents(id: string, contents: Uint8Array): Promise<void>
@@ -603,12 +599,14 @@ export class Epub {
     if (!manifestItem)
       throw new Error(`Could not find item with id "${id}" in manifest`)
 
+    // readXhtmlItemContents is already explicitly bound in the constructor
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     memoizeClear(this.readXhtmlItemContents)
     const href = await this.resolveHref(manifestItem.href)
     if (encoding === "utf-8") {
-      await this.writeEntryContents(href, contents as string, encoding)
+      this.writeEntryContents(href, contents as string, encoding)
     } else {
-      await this.writeEntryContents(href, contents as Uint8Array)
+      this.writeEntryContents(href, contents as Uint8Array)
     }
   }
 
@@ -660,7 +658,7 @@ export class Epub {
         "Failed to parse EPUB: Found no package element in package document",
       )
 
-    const manifest = findByName("manifest", packageElement["package"]!)
+    const manifest = findByName("manifest", packageElement["package"])
 
     if (!manifest)
       throw new Error(
@@ -685,7 +683,7 @@ export class Epub {
 
     const rootfile = await this.getRootfile()
 
-    await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
+    this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
 
     // Reset the cached manifest, so that it will be read from
     // the updated XML next time
@@ -698,7 +696,9 @@ export class Epub {
         ? new TextEncoder().encode(
             encoding === "utf-8"
               ? (contents as string)
-              : await this.xmlBuilder.build(contents as ParsedXml),
+              : ((await this.xmlBuilder.build(
+                  contents as ParsedXml,
+                )) as string),
           )
         : (contents as Uint8Array)
 
@@ -748,7 +748,7 @@ export class Epub {
 
     const rootfile = await this.getRootfile()
 
-    await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
+    this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
 
     // Reset the cached manifest, so that it will be read from
     // the updated XML next time
@@ -785,7 +785,7 @@ export class Epub {
 
     const rootfile = await this.getRootfile()
 
-    await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
+    this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
   }
 
   async writeToFile(path: string) {
@@ -796,8 +796,8 @@ export class Epub {
       }),
     )
 
-    const data = await this.zipWriter?.close()
-    if (!data)
+    const data = await this.zipWriter.close()
+    if (!data.length)
       throw new Error(
         "Failed to write zip archive to file; writer returned no data",
       )

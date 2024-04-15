@@ -19,14 +19,18 @@ export function BookList({ books: initialBooks }: Props) {
   const [books, setBooks] = useState(initialBooks)
 
   const refreshBooks = useCallback(() => {
-    client.listBooks().then((books) => setBooks(books))
+    void client.listBooks().then((books) => {
+      setBooks(books)
+    })
   }, [client])
 
   useEffect(() => {
     const intervalId = setInterval(() => {
       refreshBooks()
     }, 5000)
-    return () => clearInterval(intervalId)
+    return () => {
+      clearInterval(intervalId)
+    }
   }, [refreshBooks])
 
   return (

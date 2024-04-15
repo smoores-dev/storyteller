@@ -120,7 +120,9 @@ export function CreateInviteForm({ onUpdate }: Props) {
                 id="email"
                 name="email"
                 type="email"
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                }}
                 value={email}
               />
             </label>
@@ -138,13 +140,17 @@ export function CreateInviteForm({ onUpdate }: Props) {
                 <SelectLabel>Role</SelectLabel>
                 <Button
                   className={styles["text-button"]}
-                  onClick={() => setPermissions(ADMIN_PERMISSIONS)}
+                  onClick={() => {
+                    setPermissions(ADMIN_PERMISSIONS)
+                  }}
                 >
                   Admin
                 </Button>
                 <Button
                   className={styles["text-button"]}
-                  onClick={() => setPermissions(BASIC_PERMISSIONS)}
+                  onClick={() => {
+                    setPermissions(BASIC_PERMISSIONS)
+                  }}
                 >
                   Basic
                 </Button>
@@ -225,7 +231,9 @@ export function CreateInviteForm({ onUpdate }: Props) {
       ) : (
         <Button
           className={styles["add-button"]}
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setShowForm(true)
+          }}
         >
           Invite user
         </Button>

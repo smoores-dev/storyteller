@@ -21,14 +21,14 @@ const xmlBuilder = new XMLBuilder({
   stopNodes: ["*.pre", "*.script"],
 })
 
-describe("appendTextNode", () => {
-  it("can append text nodes to empty parents", () => {
+void describe("appendTextNode", () => {
+  void it("can append text nodes to empty parents", () => {
     const input: ParsedXml = []
     appendTextNode(input, "test", [])
     assert.deepStrictEqual(input, [{ "#text": "test" }])
   })
 
-  it("can append text nodes with marks", () => {
+  void it("can append text nodes with marks", () => {
     const input: ParsedXml = []
     appendTextNode(input, "test", [
       { elementName: "a", attributes: { "@_href": "#" } },
@@ -38,7 +38,7 @@ describe("appendTextNode", () => {
     ])
   })
 
-  it("can wrap text nodes with sentence spans", () => {
+  void it("can wrap text nodes with sentence spans", () => {
     const input: ParsedXml = []
     appendTextNode(input, "test", [], 0)
     assert.deepStrictEqual(input, [
@@ -46,7 +46,7 @@ describe("appendTextNode", () => {
     ])
   })
 
-  it("can join text nodes with the same sentence ids", () => {
+  void it("can join text nodes with the same sentence ids", () => {
     const input: ParsedXml = [
       {
         span: [{ "#text": "test" } as unknown as XmlNode],
@@ -63,8 +63,8 @@ describe("appendTextNode", () => {
   })
 })
 
-describe("tagSentences", () => {
-  it("can tag sentences", () => {
+void describe("tagSentences", () => {
+  void it("can tag sentences", () => {
     const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -97,7 +97,7 @@ describe("tagSentences", () => {
     </p>
   </body>
 </html>
-`)
+`) as ParsedXml
 
     const output = tagSentences(input)
 
@@ -136,7 +136,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it("can tag sentences with formatting marks", () => {
+  void it("can tag sentences with formatting marks", () => {
     const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -154,7 +154,7 @@ describe("tagSentences", () => {
     </p>
   </body>
 </html>
-`)
+`) as ParsedXml
 
     const output = tagSentences(input)
 
@@ -178,7 +178,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it("can tag sentences with formatting marks that overlap sentence boundaries", () => {
+  void it("can tag sentences with formatting marks that overlap sentence boundaries", () => {
     const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -196,7 +196,7 @@ describe("tagSentences", () => {
     </p>
   </body>
 </html>
-`)
+`) as ParsedXml
 
     const output = tagSentences(input)
 
@@ -220,7 +220,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it("can tag sentences with nested formatting marks", () => {
+  void it("can tag sentences with nested formatting marks", () => {
     const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -238,7 +238,7 @@ describe("tagSentences", () => {
     </p>
   </body>
 </html>
-`)
+`) as ParsedXml
 
     const output = tagSentences(input)
 
@@ -262,7 +262,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it("can tag sentences with atoms", () => {
+  void it("can tag sentences with atoms", () => {
     const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -280,7 +280,7 @@ describe("tagSentences", () => {
     </p>
   </body>
 </html>
-`)
+`) as ParsedXml
 
     const output = tagSentences(input)
 
@@ -304,7 +304,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it("can tag sentences in nested textblocks", () => {
+  void it("can tag sentences in nested textblocks", () => {
     const input = xmlParser.parse(/* xml */ `
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE html>
@@ -332,7 +332,7 @@ describe("tagSentences", () => {
   </body>
     
 </html>
-    `)
+    `) as ParsedXml
 
     const output = tagSentences(input)
 
@@ -365,7 +365,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it("can tag sentences that cross textblock boundaries", () => {
+  void it("can tag sentences that cross textblock boundaries", () => {
     const input = xmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -386,7 +386,7 @@ describe("tagSentences", () => {
     </p>
   </body>
 </html>
-    `)
+    `) as ParsedXml
 
     const output = tagSentences(input)
 
@@ -413,7 +413,7 @@ describe("tagSentences", () => {
     )
   })
 
-  it("can handle soft page breaks", () => {
+  void it("can handle soft page breaks", () => {
     const input = xmlParser.parse(/* xml */ `
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
   <head>
@@ -441,7 +441,7 @@ describe("tagSentences", () => {
       <p class="para-p">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now. “You must be prepared to endure some delays; at home as much as here.”</p>
     </div>
   </body>
-</html>`)
+</html>`) as ParsedXml
 
     const output = tagSentences(input)
 

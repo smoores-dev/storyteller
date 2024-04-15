@@ -7,11 +7,11 @@ import {
 } from "@/transcribe"
 import assert from "assert"
 
-describe("transcribe", () => {
+void describe("transcribe", () => {
   // This test is quite slow, and mostly just testing
   // that the integration with whisperx works. It should
   // only be run manually.
-  it.skip("can transcribe a track", () => {
+  void it.skip("can transcribe a track", () => {
     const trackPath = join("__fixtures__", "mobydick_001_002_melville.mp3")
     const transcribeModel = getTranscribeModel(
       "cpu",
