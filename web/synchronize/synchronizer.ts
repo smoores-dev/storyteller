@@ -166,7 +166,7 @@ export class Synchronizer {
         const manifest = await this.epub.getManifest()
         if (id in manifest) return
 
-        const epubAudioFilename = `/Audio/${base}`
+        const epubAudioFilename = `Audio/${base}`
         const duration = await getTrackDuration(audiofile)
         this.totalDuration += duration
 
@@ -188,7 +188,7 @@ export class Synchronizer {
     await this.epub.addManifestItem(
       {
         id: mediaOverlayId,
-        href: `/MediaOverlays/${chapterStem}.smil`,
+        href: `MediaOverlays/${chapterStem}.smil`,
         mediaType: "application/smil+xml",
       },
       createMediaOverlay(chapterStem, chapter.href, interpolated),
