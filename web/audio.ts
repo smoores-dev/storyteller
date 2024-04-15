@@ -85,7 +85,7 @@ function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
 
 export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
   const { stdout, stderr } = await exec(
-    `ffprobe -i "${path}" -show_format -v quiet -of json`,
+    `ffprobe -i ${path.replaceAll(/ /g, "\\ ")} -show_format -v quiet -of json`,
   )
   if (stderr) {
     throw new Error(stderr)
@@ -135,7 +135,7 @@ export const getTrackChapters = memoize(async function getTrackChapters(
   path: string,
 ) {
   const { stdout, stderr } = await exec(
-    `ffprobe -i ${path} -show_chapters -v quiet -of json`,
+    `ffprobe -i "${path}" -show_chapters -v quiet -of json`,
   )
   if (stderr) {
     throw new Error(stderr)
