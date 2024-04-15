@@ -531,7 +531,7 @@ export class Epub {
       ? startPath
       : `/${startPath}`
 
-    return resolve(absoluteStartPath, href)
+    return resolve(absoluteStartPath, href).slice(1)
   }
 
   async readItemContents(id: string): Promise<Uint8Array>
