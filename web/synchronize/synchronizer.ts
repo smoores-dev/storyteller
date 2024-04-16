@@ -3,6 +3,7 @@ import { basename, parse, relative } from "node:path/posix"
 import memoize from "memoize"
 import {
   Epub,
+  ManifestItem,
   ParsedXml,
   addLink,
   formatDuration,
@@ -77,10 +78,18 @@ function getTranscriptionText(transcription: StorytellerTranscription) {
   return transcription.segments.map((segment) => segment.text).join(" ")
 }
 
+type SyncedChapter = {
+  chapter: ManifestItem
+  xml: ParsedXml
+  sentenceRanges: SentenceRange[]
+}
+
 export class Synchronizer {
   private transcription: StorytellerTranscription
 
   private totalDuration = 0
+
+  private syncedChapters: SyncedChapter[] = []
 
   constructor(
     public epub: Epub,
@@ -114,6 +123,72 @@ export class Synchronizer {
       sentence.replaceAll(/\s+/g, " "),
     )
     return cleanSentences
+  }
+
+  private async writeSyncedChapter(syncedChapter: SyncedChapter) {
+    const { chapter, sentenceRanges, xml } = syncedChapter
+
+    const audiofiles = Array.from(
+      new Set(sentenceRanges.map(({ audiofile }) => audiofile)),
+    )
+
+    await Promise.all(
+      audiofiles.map(async (audiofile) => {
+        const { name, base } = parse(audiofile)
+
+        const id = `audio_${name}`
+
+        // Make sure this file hasn't already been added
+        // from a previous chapter
+        const manifest = await this.epub.getManifest()
+        if (id in manifest) return
+
+        const epubAudioFilename = `Audio/${base}`
+        const duration = await getTrackDuration(audiofile)
+        this.totalDuration += duration
+
+        const audio = await readFile(audiofile)
+        await this.epub.addManifestItem(
+          {
+            id,
+            href: epubAudioFilename,
+            mediaType: "audio/mpeg",
+          },
+          audio,
+        )
+      }),
+    )
+
+    const { name: chapterStem } = parse(chapter.href)
+
+    const mediaOverlayId = `${chapterStem}_overlay`
+    await this.epub.addManifestItem(
+      {
+        id: mediaOverlayId,
+        href: `MediaOverlays/${chapterStem}.smil`,
+        mediaType: "application/smil+xml",
+      },
+      createMediaOverlay(chapterStem, chapter.href, sentenceRanges),
+      "xml",
+    )
+
+    await this.epub.updateManifestItem(chapter.id, {
+      ...chapter,
+      mediaOverlay: mediaOverlayId,
+    })
+
+    await this.epub.writeXhtmlItemContents(chapter.id, xml)
+
+    const chapterDuration = getChapterDuration(sentenceRanges)
+
+    await this.epub.addMetadata(
+      "meta",
+      {
+        "@_property": "media:duration",
+        "@_refines": `#${mediaOverlayId}`,
+      },
+      formatDuration(chapterDuration),
+    )
   }
 
   private async syncChapter(
@@ -153,67 +228,11 @@ export class Synchronizer {
       type: "text/css",
     })
 
-    const audiofiles = Array.from(
-      new Set(interpolated.map(({ audiofile }) => audiofile)),
-    )
-
-    await Promise.all(
-      audiofiles.map(async (audiofile) => {
-        const { name, base } = parse(audiofile)
-
-        const id = `audio_${name}`
-
-        // Make sure this file hasn't already been added
-        // from a previous chapter
-        const manifest = await this.epub.getManifest()
-        if (id in manifest) return
-
-        const epubAudioFilename = `Audio/${base}`
-        const duration = await getTrackDuration(audiofile)
-        this.totalDuration += duration
-
-        const audio = await readFile(audiofile)
-        await this.epub.addManifestItem(
-          {
-            id,
-            href: epubAudioFilename,
-            mediaType: "audio/mpeg",
-          },
-          audio,
-        )
-      }),
-    )
-
-    const { name: chapterStem } = parse(chapter.href)
-
-    const mediaOverlayId = `${chapterStem}_overlay`
-    await this.epub.addManifestItem(
-      {
-        id: mediaOverlayId,
-        href: `MediaOverlays/${chapterStem}.smil`,
-        mediaType: "application/smil+xml",
-      },
-      createMediaOverlay(chapterStem, chapter.href, interpolated),
-      "xml",
-    )
-
-    await this.epub.updateManifestItem(chapter.id, {
-      ...chapter,
-      mediaOverlay: mediaOverlayId,
+    this.syncedChapters.push({
+      chapter,
+      xml: tagged,
+      sentenceRanges: interpolated,
     })
-
-    await this.epub.writeXhtmlItemContents(chapter.id, tagged)
-
-    const chapterDuration = getChapterDuration(interpolated)
-
-    await this.epub.addMetadata(
-      "meta",
-      {
-        "@_property": "media:duration",
-        "@_refines": `#${mediaOverlayId}`,
-      },
-      formatDuration(chapterDuration),
-    )
 
     return interpolated[interpolated.length - 1] ?? null
   }
@@ -271,6 +290,16 @@ export class Synchronizer {
 
       lastTranscriptionOffset = transcriptionOffset
       onProgress?.(index / spine.length)
+    }
+
+    if (lastSentenceRange) {
+      lastSentenceRange.end = await getTrackDuration(
+        lastSentenceRange.audiofile,
+      )
+    }
+
+    for (const syncedChapter of this.syncedChapters) {
+      await this.writeSyncedChapter(syncedChapter)
     }
 
     await this.epub.addMetadata(

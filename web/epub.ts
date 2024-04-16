@@ -96,7 +96,7 @@ export function formatDuration(duration: number) {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds!.padStart(2, "0")}.${millis ?? "0"}`
 }
 
-type ManifestItem = {
+export type ManifestItem = {
   id: string
   href: string
   mediaType: string
@@ -776,11 +776,16 @@ export class Epub {
     const metadata = findByName("metadata", packageElement.package)
     if (!metadata)
       throw new Error(
-        "Failed to parse EPUB: fonud no metadata element in package document",
+        "Failed to parse EPUB: found no metadata element in package document",
       )
 
     metadata.metadata.push({
-      ":@": attributes,
+      ":@": Object.fromEntries(
+        Object.entries(attributes).map(([property, value]) => [
+          `@_${property}`,
+          value,
+        ]),
+      ),
       [name]: value !== undefined ? [{ "#text": value }] : [],
     } as unknown as XmlNode)
 
