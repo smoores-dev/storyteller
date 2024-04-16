@@ -241,12 +241,8 @@ export async function getSentenceRanges(
           lastSentenceRange.end = start
         }
       } else {
-        console.log(`Sentence begins in a new audio file: ${audiofile}`)
         const lastTrackDuration = await getTrackDuration(
           lastSentenceRange.audiofile,
-        )
-        console.log(
-          `Sentence from previous chapter was in ${lastSentenceRange.audiofile}. Setting end to ${lastTrackDuration}`,
         )
         lastSentenceRange.end = lastTrackDuration
         start = 0
