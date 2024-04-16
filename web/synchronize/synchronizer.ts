@@ -184,8 +184,8 @@ export class Synchronizer {
     await this.epub.addMetadata(
       "meta",
       {
-        "@_property": "media:duration",
-        "@_refines": `#${mediaOverlayId}`,
+        property: "media:duration",
+        refines: `#${mediaOverlayId}`,
       },
       formatDuration(chapterDuration),
     )
