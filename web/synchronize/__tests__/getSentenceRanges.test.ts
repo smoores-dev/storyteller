@@ -33,7 +33,7 @@ void describe("getSentenceRanges", () => {
         ),
       })),
     }
-    const output = await getSentenceRanges(
+    const { sentenceRanges: output } = await getSentenceRanges(
       0,
       stTranscription,
       sentences,
