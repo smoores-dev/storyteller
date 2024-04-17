@@ -91,7 +91,7 @@ export function addLink(
 export function formatDuration(duration: number) {
   const hours = Math.floor(duration / 3600)
   const minutes = Math.floor(duration / 60 - hours * 60)
-  const secondsAndMillis = (duration - minutes * 60 - hours) & 3600
+  const secondsAndMillis = duration - minutes * 60 - hours * 3600
   const [seconds, millis] = secondsAndMillis.toFixed(2).split(".")
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds!.padStart(2, "0")}.${millis ?? "0"}`
 }
@@ -145,13 +145,13 @@ export type MetadataEntry = {
 export type EpubMetadata = MetadataEntry[]
 
 export class Epub {
-  private xmlParser = new XMLParser({
+  static xmlParser = new XMLParser({
     allowBooleanAttributes: true,
     preserveOrder: true,
     ignoreAttributes: false,
   })
 
-  private xhtmlParser = new XMLParser({
+  static xhtmlParser = new XMLParser({
     allowBooleanAttributes: true,
     alwaysCreateTextNode: true,
     preserveOrder: true,
@@ -161,14 +161,14 @@ export class Epub {
     stopNodes: ["*.pre", "*.script"],
   })
 
-  private xmlBuilder = new XMLBuilder({
+  static xmlBuilder = new XMLBuilder({
     preserveOrder: true,
     format: true,
     ignoreAttributes: false,
     suppressEmptyNode: true,
   })
 
-  private xhtmlBuilder = new XMLBuilder({
+  static xhtmlBuilder = new XMLBuilder({
     preserveOrder: true,
     ignoreAttributes: false,
     stopNodes: ["*.pre", "*.script"],
@@ -249,7 +249,7 @@ export class Epub {
     if (!containerString)
       throw new Error("Failed to parse EPUB: Missing META-INF/container.xml")
 
-    const containerDocument = this.xmlParser.parse(containerString) as ParsedXml
+    const containerDocument = Epub.xmlParser.parse(containerString) as ParsedXml
     const container = containerDocument.find(
       (element) => "container" in element,
     )
@@ -293,7 +293,7 @@ export class Epub {
         `Failed to parse EPUB: could not find package document at ${rootfile}`,
       )
 
-    const packageDocument = this.xmlParser.parse(
+    const packageDocument = Epub.xmlParser.parse(
       packageDocumentString,
     ) as ParsedXml
 
@@ -561,7 +561,7 @@ export class Epub {
     as: "xhtml" | "text" = "xhtml",
   ): Promise<ParsedXml | string> {
     const contents = await this.readItemContents(id, "utf-8")
-    const xml = this.xhtmlParser.parse(contents) as ParsedXml
+    const xml = Epub.xhtmlParser.parse(contents) as ParsedXml
     if (as === "xhtml") return xml
 
     const body = getBody(xml)
@@ -633,7 +633,7 @@ export class Epub {
     const stringContents =
       as === "text"
         ? (contents as string)
-        : (this.xhtmlBuilder.build(contents) as string)
+        : (Epub.xhtmlBuilder.build(contents) as string)
 
     await this.writeItemContents(id, stringContents, "utf-8")
   }
@@ -682,7 +682,7 @@ export class Epub {
       },
     } as unknown as XmlNode)
 
-    const updatedPackageDocument = (await this.xmlBuilder.build(
+    const updatedPackageDocument = (await Epub.xmlBuilder.build(
       packageDocument,
     )) as string
 
@@ -701,7 +701,7 @@ export class Epub {
         ? new TextEncoder().encode(
             encoding === "utf-8"
               ? (contents as string)
-              : ((await this.xmlBuilder.build(
+              : ((await Epub.xmlBuilder.build(
                   contents as ParsedXml,
                 )) as string),
           )
@@ -747,7 +747,7 @@ export class Epub {
       },
     } as unknown as XmlNode)
 
-    const updatedPackageDocument = (await this.xmlBuilder.build(
+    const updatedPackageDocument = (await Epub.xmlBuilder.build(
       packageDocument,
     )) as string
 
@@ -789,7 +789,7 @@ export class Epub {
       [name]: value !== undefined ? [{ "#text": value }] : [],
     } as unknown as XmlNode)
 
-    const updatedPackageDocument = (await this.xmlBuilder.build(
+    const updatedPackageDocument = (await Epub.xmlBuilder.build(
       packageDocument,
     )) as string
 
@@ -799,6 +799,7 @@ export class Epub {
   }
 
   async writeToFile(path: string) {
+    // TODO: write mimetype first, without compression
     await Promise.all(
       this.entries.map(async (entry) => {
         const reader = new Uint8ArrayReader(await entry.getData())

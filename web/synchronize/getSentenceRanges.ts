@@ -68,7 +68,6 @@ function findStartTimestamp(
       position + transcription.segments[s]!.text.length <
       matchStartIndex
     ) {
-      // TODO: Is this +1 here just a bad guess?
       position += transcription.segments[s]!.text.length + 1
       s += 1
     }
@@ -98,7 +97,7 @@ function findStartTimestamp(
   return { start: segment.start, audiofile: segment.audiofile }
 }
 
-function findEndTimestamp(
+export function findEndTimestamp(
   matchEndIndex: number,
   transcription: StorytellerTranscription,
   transcriptionLength: number,
@@ -144,11 +143,11 @@ function findEndTimestamp(
 
 function getWindowIndexFromOffset(window: string[], offset: number) {
   let index = 0
-  while (offset >= window[index]!.length) {
+  while (index < window.length - 1 && offset >= window[index]!.length) {
     offset -= window[index]!.length
     index += 1
   }
-  return index
+  return { index, offset }
 }
 /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
@@ -160,16 +159,18 @@ export async function getSentenceRanges(
   lastSentenceRange: SentenceRange | null,
 ) {
   const sentenceRanges: SentenceRange[] = []
-  const transcriptionText =
-    getTranscriptionText(transcription).slice(chapterOffset)
+  const fullTranscriptionText = getTranscriptionText(transcription)
+  const transcriptionText = fullTranscriptionText.slice(chapterOffset)
   const transcriptionSentences = getSentencesWithOffsets(transcriptionText).map(
     (sentence) => sentence.toLowerCase(),
   )
 
   let transcriptionWindowIndex = 0
+  let transcriptionWindowOffset = 0
   let lastGoodTranscriptionWindow = 0
   let notFound = 0
   let sentenceIndex = startSentence
+  let lastMatchEnd = chapterOffset
 
   while (sentenceIndex < sentences.length) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -178,7 +179,9 @@ export async function getSentenceRanges(
       transcriptionWindowIndex,
       transcriptionWindowIndex + 10,
     )
-    const transcriptionWindow = transcriptionWindowList.join("")
+    const transcriptionWindow = transcriptionWindowList
+      .join("")
+      .slice(transcriptionWindowOffset)
 
     const firstMatch = findNearestMatch(
       sentence.trim().toLowerCase(),
@@ -209,16 +212,22 @@ export async function getSentenceRanges(
       .join("").length
 
     const startResult = findStartTimestamp(
-      firstMatch.start + transcriptionOffset + chapterOffset,
+      firstMatch.start +
+        transcriptionOffset +
+        transcriptionWindowOffset +
+        chapterOffset,
       transcription,
     )
     let start = startResult.start
     const audiofile = startResult.audiofile
 
     const end = findEndTimestamp(
-      firstMatch.end + transcriptionOffset + chapterOffset,
+      firstMatch.end +
+        transcriptionOffset +
+        transcriptionWindowOffset +
+        chapterOffset,
       transcription,
-      transcriptionText.length,
+      fullTranscriptionText.length,
     )
 
     if (sentenceRanges.length > 0) {
@@ -237,9 +246,7 @@ export async function getSentenceRanges(
       }
     } else if (lastSentenceRange !== null) {
       if (audiofile === lastSentenceRange.audiofile) {
-        if (lastSentenceRange.id === sentenceIndex - 1) {
-          lastSentenceRange.end = start
-        }
+        lastSentenceRange.end = start
       } else {
         const lastTrackDuration = await getTrackDuration(
           lastSentenceRange.audiofile,
@@ -259,16 +266,28 @@ export async function getSentenceRanges(
     })
 
     notFound = 0
-    transcriptionWindowIndex += getWindowIndexFromOffset(
+    lastMatchEnd =
+      firstMatch.end +
+      transcriptionOffset +
+      transcriptionWindowOffset +
+      chapterOffset
+
+    const windowIndexResult = getWindowIndexFromOffset(
       transcriptionWindowList,
-      firstMatch.start,
+      firstMatch.end + transcriptionWindowOffset,
     )
+
+    transcriptionWindowIndex += windowIndexResult.index
+    transcriptionWindowOffset = windowIndexResult.offset
 
     lastGoodTranscriptionWindow = transcriptionWindowIndex
     sentenceIndex += 1
   }
 
-  return sentenceRanges
+  return {
+    sentenceRanges,
+    transcriptionOffset: lastMatchEnd,
+  }
 }
 
 export function interpolateSentenceRanges(sentenceRanges: SentenceRange[]) {

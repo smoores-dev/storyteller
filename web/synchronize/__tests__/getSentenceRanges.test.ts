@@ -7,22 +7,11 @@ import {
 } from "../getSentenceRanges"
 import { join } from "node:path"
 
-import transcription from "../../__fixtures__/mobydick_001_002_melville.json"
+import mobyDickTranscription from "../../__fixtures__/mobydick_001_002_melville.json"
 import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
 import { Epub } from "../../epub"
 import { tokenizeSentences } from "../nlp"
 import assert from "node:assert"
-
-const stTranscription: StorytellerTranscription = {
-  segments: transcription.segments.map((segment) => ({
-    ...segment,
-    audiofile: join(
-      "synchronize",
-      "__fixtures__",
-      "mobydick_001_002_melville.mp3",
-    ),
-  })),
-}
 
 void describe("getSentenceRanges", () => {
   void it("accurately find sentences ranges", async () => {
@@ -34,6 +23,16 @@ void describe("getSentenceRanges", () => {
     )
     const sentences = tokenizeSentences(chapterOneText.slice(30888))
 
+    const stTranscription: StorytellerTranscription = {
+      segments: mobyDickTranscription.segments.map((segment) => ({
+        ...segment,
+        audiofile: join(
+          "synchronize",
+          "__fixtures__",
+          "mobydick_001_002_melville.mp3",
+        ),
+      })),
+    }
     const output = await getSentenceRanges(
       0,
       stTranscription,
