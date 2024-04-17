@@ -25,15 +25,18 @@ const xmlBuilder = new XMLBuilder({
 void describe("appendTextNode", () => {
   void it("can append text nodes to empty parents", () => {
     const input: ParsedXml = []
-    appendTextNode(input, "test", [])
+    appendTextNode(input, "test", [], new Set())
     assert.deepStrictEqual(input, [{ "#text": "test" }])
   })
 
   void it("can append text nodes with marks", () => {
     const input: ParsedXml = []
-    appendTextNode(input, "test", [
-      { elementName: "a", attributes: { "@_href": "#" } },
-    ])
+    appendTextNode(
+      input,
+      "test",
+      [{ elementName: "a", attributes: { "@_href": "#" } }],
+      new Set(),
+    )
     assert.deepStrictEqual(input, [
       { a: [{ "#text": "test" }], ":@": { "@_href": "#" } },
     ])
@@ -41,7 +44,7 @@ void describe("appendTextNode", () => {
 
   void it("can wrap text nodes with sentence spans", () => {
     const input: ParsedXml = []
-    appendTextNode(input, "test", [], 0)
+    appendTextNode(input, "test", [], new Set(), 0)
     assert.deepStrictEqual(input, [
       { span: [{ "#text": "test" }], ":@": { "@_id": "sentence0" } },
     ])
@@ -54,7 +57,7 @@ void describe("appendTextNode", () => {
         ":@": { "@_id": "sentence0" },
       } as unknown as XmlNode,
     ]
-    appendTextNode(input, "test", [], 0)
+    appendTextNode(input, "test", [], new Set(), 0)
     assert.deepStrictEqual(input, [
       {
         span: [{ "#text": "test" }, { "#text": "test" }],
