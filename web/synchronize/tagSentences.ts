@@ -53,21 +53,26 @@ export function appendTextNode(
   xml: ParsedXml,
   text: string,
   marks: Mark[],
+  taggedSentences: Set<number>,
   sentenceId?: number,
 ) {
   if (text.length === 0) return
 
   const textNode = { "#text": text } as unknown as XmlNode
 
-  appendLeafNode(xml, textNode, marks, sentenceId)
+  appendLeafNode(xml, textNode, marks, taggedSentences, sentenceId)
 }
 
 export function appendLeafNode(
   xml: ParsedXml,
   node: XmlNode,
   marks: Mark[],
+  taggedSentences: Set<number>,
   sentenceId?: number,
 ) {
+  if (sentenceId !== undefined) console.log(`Tagging sentence ${sentenceId}`)
+  const tagId = `sentence${sentenceId}`
+
   const markedNode = [...marks].reverse().reduce<XmlNode>(
     (acc, mark) =>
       ({
@@ -77,26 +82,33 @@ export function appendLeafNode(
     node,
   )
 
-  const taggedNode =
-    sentenceId !== undefined
-      ? ({
-          span: [markedNode],
-          ":@": { "@_id": `sentence${sentenceId}` },
-        } as unknown as XmlNode)
-      : markedNode
-
   const lastNode = xml[xml.length - 1]
   if (
     lastNode &&
     !isTextNode(lastNode) &&
     lastNode[":@"]?.["@_id"] &&
-    lastNode[":@"]["@_id"] === taggedNode[":@"]?.["@_id"]
+    lastNode[":@"]["@_id"] === tagId
   ) {
+    if (sentenceId !== undefined) console.log(`Shunting into previous node`)
     const tagName = getElementName(lastNode)
     lastNode[tagName]?.push(markedNode)
     return
   }
 
+  if (sentenceId === undefined || taggedSentences.has(sentenceId)) {
+    if (sentenceId !== undefined)
+      console.log(`Sentence ID has already been used, just adding untagged`)
+    xml.push(markedNode)
+    return
+  }
+
+  const taggedNode = {
+    span: [markedNode],
+    ":@": { "@_id": tagId },
+  } as unknown as XmlNode
+
+  console.log(`First use, tagging`)
+  taggedSentences.add(sentenceId)
   xml.push(taggedNode)
 }
 
@@ -104,7 +116,6 @@ type TagState = {
   currentSentenceIndex: number
   currentSentenceProgress: number
   currentNodeProgress: number
-  skip: boolean
 }
 
 function tagSentencesInXml(
@@ -113,7 +124,7 @@ function tagSentencesInXml(
   sentences: string[],
   currentNode: XmlNode,
   currentNodeProgress: number,
-  skip: boolean,
+  taggedSentences: Set<number>,
   marks: Mark[],
   taggedXml: ParsedXml,
 ): TagState {
@@ -126,36 +137,46 @@ function tagSentencesInXml(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const index = remainingNodeText.indexOf(remainingSentence[0]!)
     if (index === -1) {
-      appendTextNode(taggedXml, remainingNodeText, marks)
+      appendTextNode(taggedXml, remainingNodeText, marks, taggedSentences)
       return {
         currentSentenceIndex,
         currentSentenceProgress,
         currentNodeProgress: -1,
-        skip,
       }
     }
     if (remainingNodeText.slice(index).length < remainingSentence.length) {
-      appendTextNode(taggedXml, remainingNodeText.slice(0, index), marks)
+      appendTextNode(
+        taggedXml,
+        remainingNodeText.slice(0, index),
+        marks,
+        taggedSentences,
+      )
       appendTextNode(
         taggedXml,
         remainingNodeText.slice(index),
         marks,
-        skip ? undefined : currentSentenceIndex,
+        taggedSentences,
+        currentSentenceIndex,
       )
       return {
         currentSentenceIndex,
         currentSentenceProgress:
           currentSentenceProgress + remainingNodeText.length - index,
         currentNodeProgress: -1,
-        skip,
       }
     } else {
-      appendTextNode(taggedXml, remainingNodeText.slice(0, index), marks)
+      appendTextNode(
+        taggedXml,
+        remainingNodeText.slice(0, index),
+        marks,
+        taggedSentences,
+      )
       appendTextNode(
         taggedXml,
         remainingSentence,
         marks,
-        skip ? undefined : currentSentenceIndex,
+        taggedSentences,
+        currentSentenceIndex,
       )
 
       // If we've just appended the very last sentence, make sure that we also
@@ -165,6 +186,7 @@ function tagSentencesInXml(
           taggedXml,
           remainingNodeText.slice(index + remainingSentence.length),
           marks,
+          taggedSentences,
         )
       }
 
@@ -173,7 +195,6 @@ function tagSentencesInXml(
         currentSentenceProgress: 0,
         currentNodeProgress:
           currentNodeProgress + remainingSentence.length + index,
-        skip: false,
       }
     }
   }
@@ -184,7 +205,6 @@ function tagSentencesInXml(
     currentSentenceIndex,
     currentSentenceProgress,
     currentNodeProgress,
-    skip,
   }
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const children = currentNode[tagName]!
@@ -209,7 +229,8 @@ function tagSentencesInXml(
           taggedXml,
           child,
           nextMarks,
-          skip || isTextContent || state.currentSentenceProgress === 0
+          taggedSentences,
+          isTextContent || state.currentSentenceProgress === 0
             ? undefined
             : state.currentSentenceIndex,
         )
@@ -241,22 +262,12 @@ function tagSentencesInXml(
         sentences,
         child,
         state.currentNodeProgress,
-        state.skip,
+        taggedSentences,
         nextMarks,
         nextTaggedXml,
       )
     }
   }
-
-  const isTextContent =
-    TEXT_CONTENT.includes(tagName.toLowerCase()) ||
-    CONTENT_SECTIONING.includes(tagName.toLowerCase())
-
-  state.skip =
-    isTextContent &&
-    state.currentSentenceProgress > 0 &&
-    state.currentSentenceProgress <
-      (sentences[state.currentSentenceIndex]?.length ?? 0)
 
   state.currentNodeProgress = -1
   return state
@@ -297,7 +308,7 @@ export function tagSentences(xml: ParsedXml) {
   const taggedBody = findByName("body", taggedHtml["html"])!
   taggedBody["body"] = []
 
-  tagSentencesInXml(0, 0, sentences, body, 0, false, [], taggedBody["body"])
+  tagSentencesInXml(0, 0, sentences, body, 0, new Set(), [], taggedBody["body"])
 
   return outerXml
 }

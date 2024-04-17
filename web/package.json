@@ -53,7 +53,7 @@
     "@types/nodemailer": "^6",
     "esbuild": "^0.20.2",
     "openapi-typescript-codegen": "^0.24.0",
-    "tsx": "^4.7.1",
+    "tsx": "^4.7.2",
     "typescript": "^5.4.3",
     "typescript-plugin-css-modules": "^5.0.1"
   }
