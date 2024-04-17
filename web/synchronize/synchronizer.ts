@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises"
-import { basename, parse, relative } from "node:path/posix"
+import { basename, dirname, parse, relative } from "node:path/posix"
 import memoize from "memoize"
 import {
   Epub,
@@ -207,18 +207,19 @@ export class Synchronizer {
 
     const chapterSentences = await this.getChapterSentences(chapterId)
 
-    const sentenceRanges = await getSentenceRanges(
-      startSentence,
-      this.transcription,
-      chapterSentences,
-      transcriptionOffset,
-      lastSentenceRange,
-    )
+    const { sentenceRanges, transcriptionOffset: endTranscriptionOffset } =
+      await getSentenceRanges(
+        startSentence,
+        this.transcription,
+        chapterSentences,
+        transcriptionOffset,
+        lastSentenceRange,
+      )
     const interpolated = interpolateSentenceRanges(sentenceRanges)
     const tagged = tagSentences(chapterXml)
 
     const storytellerStylesheetUrl = relative(
-      chapter.href,
+      dirname(chapter.href),
       "Styles/storyteller-readaloud.css",
     )
 
@@ -234,7 +235,10 @@ export class Synchronizer {
       sentenceRanges: interpolated,
     })
 
-    return interpolated[interpolated.length - 1] ?? null
+    return {
+      lastSentenceRange: interpolated[interpolated.length - 1] ?? null,
+      endTranscriptionOffset,
+    }
   }
 
   async syncBook(onProgress?: (progress: number) => void) {
@@ -280,15 +284,14 @@ export class Synchronizer {
       })
 
       console.log("Syncing chapter...")
+      ;({ lastSentenceRange, endTranscriptionOffset: lastTranscriptionOffset } =
+        await this.syncChapter(
+          startSentence,
+          chapterId,
+          transcriptionOffset,
+          lastSentenceRange,
+        ))
 
-      lastSentenceRange = await this.syncChapter(
-        startSentence,
-        chapterId,
-        transcriptionOffset,
-        lastSentenceRange,
-      )
-
-      lastTranscriptionOffset = transcriptionOffset
       onProgress?.(index / spine.length)
     }
 
