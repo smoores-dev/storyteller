@@ -70,7 +70,6 @@ export function appendLeafNode(
   taggedSentences: Set<number>,
   sentenceId?: number,
 ) {
-  if (sentenceId !== undefined) console.log(`Tagging sentence ${sentenceId}`)
   const tagId = `sentence${sentenceId}`
 
   const markedNode = [...marks].reverse().reduce<XmlNode>(
@@ -89,15 +88,12 @@ export function appendLeafNode(
     lastNode[":@"]?.["@_id"] &&
     lastNode[":@"]["@_id"] === tagId
   ) {
-    if (sentenceId !== undefined) console.log(`Shunting into previous node`)
     const tagName = getElementName(lastNode)
     lastNode[tagName]?.push(markedNode)
     return
   }
 
   if (sentenceId === undefined || taggedSentences.has(sentenceId)) {
-    if (sentenceId !== undefined)
-      console.log(`Sentence ID has already been used, just adding untagged`)
     xml.push(markedNode)
     return
   }
@@ -107,7 +103,6 @@ export function appendLeafNode(
     ":@": { "@_id": tagId },
   } as unknown as XmlNode
 
-  console.log(`First use, tagging`)
   taggedSentences.add(sentenceId)
   xml.push(taggedNode)
 }
