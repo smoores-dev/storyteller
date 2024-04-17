@@ -799,9 +799,21 @@ export class Epub {
   }
 
   async writeToFile(path: string) {
-    // TODO: write mimetype first, without compression
+    let mimetypeEntry = this.getEntry("mimetype")
+    if (!mimetypeEntry) {
+      this.writeEntryContents("mimetype", "application/epub+zip", "utf-8")
+      mimetypeEntry = this.getEntry("mimetype")!
+    }
+
+    const mimetypeReader = new Uint8ArrayReader(await mimetypeEntry.getData())
+    await this.zipWriter.add(mimetypeEntry.filename, mimetypeReader, {
+      level: 0,
+      extendedTimestamp: false,
+    })
+
     await Promise.all(
       this.entries.map(async (entry) => {
+        if (entry.filename === "mimetype") return
         const reader = new Uint8ArrayReader(await entry.getData())
         return this.zipWriter.add(entry.filename, reader)
       }),
