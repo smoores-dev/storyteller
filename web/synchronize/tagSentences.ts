@@ -4,45 +4,9 @@ import {
   findByName,
   getElementName,
   isTextNode,
-  textContent,
 } from "@/epub"
-import { tokenizeSentences } from "./nlp"
-
-const CONTENT_SECTIONING = [
-  "address",
-  "article",
-  "aside",
-  "footer",
-  "header",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "hgroup",
-  "main",
-  "nav",
-  "section",
-  "search",
-]
-
-const TEXT_CONTENT = [
-  "blockquote",
-  "dd",
-  "div",
-  "dl",
-  "dt",
-  "figcaption",
-  "figure",
-  "hr",
-  "li",
-  "menu",
-  "ol",
-  "p",
-  "pre",
-  "ul",
-]
+import { BLOCKS } from "./semantics"
+import { getXHtmlSentences } from "./getXhtmlSentences"
 
 type Mark = {
   elementName: string
@@ -215,9 +179,7 @@ function tagSentencesInXml(
     if (!isTextNode(child)) {
       const childTagName = getElementName(child)
 
-      const isTextContent =
-        TEXT_CONTENT.includes(childTagName.toLowerCase()) ||
-        CONTENT_SECTIONING.includes(childTagName.toLowerCase())
+      const isTextContent = BLOCKS.includes(childTagName.toLowerCase())
 
       if (child[childTagName]?.length === 0) {
         appendLeafNode(
@@ -292,9 +254,7 @@ export function tagSentences(xml: ParsedXml) {
   const body = findByName("body", html["html"])
   if (!body) throw new Error("Invalid XHTML document: No body element")
 
-  const text = textContent(body["body"])
-
-  const sentences = tokenizeSentences(text)
+  const sentences = getXHtmlSentences(body["body"])
   const outerXml = copyOuterXml(xml)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const taggedHtml = findByName("html", xml)!
