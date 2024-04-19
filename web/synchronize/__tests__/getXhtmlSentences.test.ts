@@ -90,7 +90,7 @@ void describe.only("getXhtmlSentences", () => {
       "It has multiple sentences.",
       "Well, three, at least.",
       "Maybe, even, four?",
-      "This sentence... ",
+      "This sentence...",
       "will be broken up, since it crosses multiple blocks.",
     ])
   })

@@ -44,7 +44,7 @@ void describe("Synchronizer", () => {
       "../Audio/mobydick_001_002_melville.mp3",
     )
     assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipBegin"], "0s")
-    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipEnd"], "10.6915s")
+    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipEnd"], "10.261s")
 
     assert.ok(manifest["audio_mobydick_001_002_melville"])
     await epub.close()
