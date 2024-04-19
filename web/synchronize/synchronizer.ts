@@ -282,8 +282,6 @@ export class Synchronizer {
         startSentence,
         transcriptionOffset,
       })
-
-      console.log("Syncing chapter...")
       ;({ lastSentenceRange, endTranscriptionOffset: lastTranscriptionOffset } =
         await this.syncChapter(
           startSentence,
