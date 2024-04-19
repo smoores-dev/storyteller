@@ -40,8 +40,7 @@ export function Sidebar({ className }: Props) {
         books.find(
           (book) =>
             book.processing_status?.current_task &&
-            book.processing_status.progress !== 1 &&
-            book.processing_status.status !== ProcessingTaskStatus.IN_ERROR,
+            book.processing_status.status === ProcessingTaskStatus.STARTED,
         ) ?? null
 
       setCurrentBook(currentBook)
