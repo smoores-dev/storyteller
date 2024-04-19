@@ -308,7 +308,25 @@ export async function getSentenceRanges(
 
 export function interpolateSentenceRanges(sentenceRanges: SentenceRange[]) {
   const interpolated: SentenceRange[] = []
-  for (const sentenceRange of sentenceRanges) {
+  const [first, ...rest] = sentenceRanges
+  if (!first) return interpolated
+  if (first.id !== 0) {
+    const count = first.id + 1
+    const diff = first.end
+    const interpolatedLength = diff / count
+
+    for (let i = 0; i < count; i++) {
+      interpolated.push({
+        id: i,
+        start: first.start + interpolatedLength * i,
+        end: first.start + interpolatedLength * (i + 1),
+        audiofile: first.audiofile,
+      })
+    }
+  } else {
+    rest.unshift(first)
+  }
+  for (const sentenceRange of rest) {
     if (interpolated.length === 0) {
       interpolated.push(sentenceRange)
       continue
