@@ -1,13 +1,15 @@
 import { getDatabase } from "./connection"
 
 export type Settings = {
-  smtpHost: string
-  smtpPort: number
-  smtpUsername: string
-  smtpPassword: string
-  smtpFrom: string
-  libraryName: string
-  webUrl: string
+  smtpHost?: string
+  smtpPort?: number
+  smtpUsername?: string
+  smtpPassword?: string
+  smtpFrom?: string
+  smtpSsl?: boolean
+  smtpRejectUnauthorized?: boolean
+  libraryName?: string
+  webUrl?: string
 }
 
 const SETTINGS_COLUMN_NAMES = {
@@ -16,6 +18,8 @@ const SETTINGS_COLUMN_NAMES = {
   smtp_username: "smtpUsername",
   smtp_password: "smtpPassword",
   smtp_from: "smtpFrom",
+  smtp_ssl: "smtpSsl",
+  smtp_reject_unauthorized: "smtpRejectUnauthorized",
   library_name: "libraryName",
   web_url: "webUrl",
 } as const
@@ -73,12 +77,33 @@ export async function updateSettings(settings: Settings) {
   )
 
   await Promise.all([
-    statement.run({ $name: "smtp_from", $value: settings.smtpFrom }),
-    statement.run({ $name: "smtp_host", $value: settings.smtpHost }),
-    statement.run({ $name: "smtp_port", $value: settings.smtpPort }),
-    statement.run({ $name: "smtp_username", $value: settings.smtpUsername }),
-    statement.run({ $name: "smtp_password", $value: settings.smtpPassword }),
-    statement.run({ $name: "web_url", $value: settings.webUrl }),
-    statement.run({ $name: "library_name", $value: settings.libraryName }),
+    statement.run({
+      $name: "smtp_from",
+      $value: JSON.stringify(settings.smtpFrom),
+    }),
+    statement.run({
+      $name: "smtp_host",
+      $value: JSON.stringify(settings.smtpHost),
+    }),
+    statement.run({
+      $name: "smtp_port",
+      $value: JSON.stringify(settings.smtpPort),
+    }),
+    statement.run({
+      $name: "smtp_username",
+      $value: JSON.stringify(settings.smtpUsername),
+    }),
+    statement.run({
+      $name: "smtp_password",
+      $value: JSON.stringify(settings.smtpPassword),
+    }),
+    statement.run({
+      $name: "web_url",
+      $value: JSON.stringify(settings.webUrl),
+    }),
+    statement.run({
+      $name: "library_name",
+      $value: JSON.stringify(settings.libraryName),
+    }),
   ])
 }

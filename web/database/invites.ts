@@ -116,7 +116,7 @@ export async function getInvites(): Promise<Invite[]> {
 export async function verifyInvite(email: string, key: string) {
   const db = await getDatabase()
 
-  return !(await db.get(
+  return !!(await db.get(
     `
     SELECT uuid
     FROM invite

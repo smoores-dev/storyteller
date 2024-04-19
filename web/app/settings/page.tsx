@@ -49,6 +49,10 @@ export default async function SettingsPage() {
     const smtpPort = data.get("smtp-port")?.valueOf() as string
     const smtpUsername = data.get("smtp-username")?.valueOf() as string
     const smtpPassword = data.get("smtp-password")?.valueOf() as string
+    const smtpSsl = data.get("smtp-ssl")?.valueOf() as boolean
+    const smtpRejectUnauthorized = data
+      .get("smtp-reject-unauthorized")
+      ?.valueOf() as boolean
 
     const client = createAuthedApiClient()
 
@@ -60,6 +64,8 @@ export default async function SettingsPage() {
       smtp_port: parseInt(smtpPort, 10),
       smtp_username: smtpUsername,
       smtp_password: smtpPassword,
+      smtp_ssl: smtpSsl,
+      smtp_reject_unauthorized: smtpRejectUnauthorized,
     })
     revalidatePath("/settings")
   }
@@ -130,6 +136,32 @@ export default async function SettingsPage() {
               defaultValue={settings.smtp_password}
             />
           </label>
+          <label id="smtp-ssl-label" htmlFor="smtp-ssl">
+            SMTP - Enable SSL?
+            <input
+              id="smtp-ssl"
+              name="smtp-ssl"
+              type="checkbox"
+              defaultChecked={settings.smtp_ssl}
+            />
+          </label>
+          <label
+            id="smtp-reject-unauthorized-label"
+            htmlFor="smtp-reject-unauthorized"
+          >
+            SMTP - Reject self-signed TLS certs?
+            <input
+              id="smtp-reject-unauthorized"
+              name="smtp-reject-unauthorized"
+              type="checkbox"
+              defaultChecked={settings.smtp_reject_unauthorized}
+            />
+          </label>
+          <p>
+            <strong>Note:</strong>Only disable SSL and self-signed cert
+            rejection if you use a locally hosted SMTP server. If you need to
+            connect over the internet, keep SSL enabled!
+          </p>
         </fieldset>
         <button type="submit">Update</button>
       </form>

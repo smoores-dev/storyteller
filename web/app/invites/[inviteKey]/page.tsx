@@ -38,11 +38,11 @@ export default async function InvitePage(props: Props) {
     })
 
     const cookieStore = cookies()
-    cookieStore.set(
-      "st_token",
-      Buffer.from(JSON.stringify(token)).toString("base64"),
-      { secure: true, domain, sameSite: "lax" },
-    )
+    cookieStore.set("st_token", token.access_token, {
+      secure: true,
+      domain,
+      sameSite: "lax",
+    })
 
     redirect("/")
   }

@@ -4,6 +4,7 @@
 
 .settings-form {
   composes: form from "../login/page.module.css";
+  max-width: 500px;
 }
 
 .settings-form input {
