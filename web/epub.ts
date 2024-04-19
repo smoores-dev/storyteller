@@ -159,6 +159,11 @@ export class Epub {
     htmlEntities: true,
     trimValues: false,
     stopNodes: ["*.pre", "*.script"],
+    numberParseOptions: {
+      hex: false,
+      leadingZeros: false,
+      skipLike: /.*/,
+    },
   })
 
   static xmlBuilder = new XMLBuilder({
