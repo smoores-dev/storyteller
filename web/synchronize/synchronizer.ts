@@ -8,7 +8,6 @@ import {
   addLink,
   formatDuration,
   getBody,
-  textContent,
 } from "@/epub"
 import { getTrackDuration } from "@/audio"
 import { TranscriptionResult } from "@/transcribe"
@@ -19,10 +18,10 @@ import {
   getSentenceRanges,
   interpolateSentenceRanges,
 } from "./getSentenceRanges"
-import { tokenizeSentences } from "./nlp"
 import { tagSentences } from "./tagSentences"
 import { findBestOffset } from "./findChapterOffset"
 import { SyncCache } from "./syncCache"
+import { getXHtmlSentences } from "./getXhtmlSentences"
 
 function createMediaOverlay(
   chapter: ManifestItem,
@@ -115,9 +114,8 @@ export class Synchronizer {
 
   private async getChapterSentences(chapterId: string) {
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
-    const text = textContent(getBody(chapterXml))
 
-    const sentences = tokenizeSentences(text)
+    const sentences = getXHtmlSentences(getBody(chapterXml))
     const cleanSentences = sentences.map((sentence) =>
       sentence.replaceAll(/\s+/g, " "),
     )

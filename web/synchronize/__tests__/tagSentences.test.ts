@@ -406,11 +406,11 @@ void describe("tagSentences", () => {
     <p>
         <span id="sentence0">Call me Ishmael.</span> <span id="sentence1">Some years ago—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
-        shore,
-    </span></p>
+        shore,</span>
+    </p>
     <p>
-        I thought I would sail about a little and see the watery part of
-        the world.
+        <span id="sentence2">I thought I would sail about a little and see the watery part of
+        the world.</span>
     </p>
   </body>
 </html>`,
@@ -468,13 +468,13 @@ void describe("tagSentences", () => {
       <div class="para-orn">
         <span class="figure figure_dingbat">
         </span><span class="figure figure_dingbat"><img alt="" class="height_1em" role="presentation" src="../images/Novi_9780345493439_epub3_001_r1.jpg"/></span></div>
-      <p class="para-pf dropcaps3line char-dropcap-DC trajan-pro-3-dc" style="text-indent:0;">The hot wind blowing into Macao was sluggish and unrefreshing, only stirring up the rotting salt smell of the harbor, the fish-corpses and great knots of black-red seaweed, the effluvia of human and dragon wastes. <span id="sentence1">Even so the sailors were sitting crowded along the rails of the <i class="char-i">Allegiance</i> for a breath of the moving air, leaning against one another to get a little room.</span> <span id="sentence2">A little scuffling broke out amongst them from time to time, a dull exchange of shoving back and forth, but these quarrels died almost at once in the punishing heat.</span></p>
-      <p class="para-p"><span id="sentence3">Temeraire lay disconsolately upon the dragondeck, gazing towards the white haze of the open ocean, the aviators on duty lying half-asleep in his great shadow.</span> <span id="sentence4">Laurence himself had sacrificed dignity so far as to take off his coat, as he was sitting in the crook of Temeraire’s foreleg and so concealed from view.</span></p>
-      <p class="para-p"><span id="sentence5">“I am sure I could pull the ship out of the harbor,” Temeraire said, not for the first time in the past week; and sighed when this amiable plan was again refused: in a calm he might indeed have been able to tow even the enormous dragon transport, but against a direct headwind he could only exhaust himself to no purpose.</span></p>
+      <p class="para-pf dropcaps3line char-dropcap-DC trajan-pro-3-dc" style="text-indent:0;"><span id="sentence1">The hot wind blowing into Macao was sluggish and unrefreshing, only stirring up the rotting salt smell of the harbor, the fish-corpses and great knots of black-red seaweed, the effluvia of human and dragon wastes.</span> <span id="sentence2">Even so the sailors were sitting crowded along the rails of the <i class="char-i">Allegiance</i> for a breath of the moving air, leaning against one another to get a little room.</span> <span id="sentence3">A little scuffling broke out amongst them from time to time, a dull exchange of shoving back and forth, but these quarrels died almost at once in the punishing heat.</span></p>
+      <p class="para-p"><span id="sentence4">Temeraire lay disconsolately upon the dragondeck, gazing towards the white haze of the open ocean, the aviators on duty lying half-asleep in his great shadow.</span> <span id="sentence5">Laurence himself had sacrificed dignity so far as to take off his coat, as he was sitting in the crook of Temeraire’s foreleg and so concealed from view.</span></p>
+      <p class="para-p"><span id="sentence6">“I am sure I could pull the ship out of the harbor,” Temeraire said, not for the first time in the past week; and sighed when this amiable plan was again refused: in a calm he might indeed have been able to tow even the enormous dragon transport, but against a direct headwind he could only exhaust himself to no purpose.</span></p>
       <span epub:type="pagebreak" id="page_10" role="doc-pagebreak" title="10"/>
-      <p class="para-p"><span id="sentence6">“Even in a calm you could scarcely pull her any great distance,” Laurence added consolingly.</span> <span id="sentence7">“A few miles may be of some use out in the open ocean, but at present we may as well stay in harbor, and be a little more comfortable; we would make very little speed even if we could get her out.”</span></p>
-      <p class="para-p"><span id="sentence8">“It seems a great pity to me that we must always be waiting on the wind, when everything else is ready and we are also,” Temeraire said.</span> <span id="sentence9">“I would so like to be home <i class="char-i">soon:</i> there is so very much to be done.”</span> <span id="sentence10">His tail thumped hollowly upon the boards, for emphasis.</span></p>
-      <p class="para-p"><span id="sentence11">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now.</span> <span id="sentence12">“You must be prepared to endure some delays; at home as much as here.”</span></p>
+      <p class="para-p"><span id="sentence7">“Even in a calm you could scarcely pull her any great distance,” Laurence added consolingly.</span> <span id="sentence8">“A few miles may be of some use out in the open ocean, but at present we may as well stay in harbor, and be a little more comfortable; we would make very little speed even if we could get her out.”</span></p>
+      <p class="para-p"><span id="sentence9">“It seems a great pity to me that we must always be waiting on the wind, when everything else is ready and we are also,” Temeraire said.</span> <span id="sentence10">“I would so like to be home <i class="char-i">soon:</i> there is so very much to be done.”</span> <span id="sentence11">His tail thumped hollowly upon the boards, for emphasis.</span></p>
+      <p class="para-p"><span id="sentence12">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now.</span> <span id="sentence13">“You must be prepared to endure some delays; at home as much as here.”</span></p>
     </div>
   </body>
 </html>`,
