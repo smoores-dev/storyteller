@@ -1,5 +1,6 @@
 import { UUID } from "@/uuid"
 import { getDatabase } from "./connection"
+import { mapValues } from "@/objects"
 
 export type UserPermissions = {
   bookCreate: boolean
@@ -43,10 +44,15 @@ export type User = {
   permissions: UserPermissions
 }
 
+// sqlite doesn't really have booleans, so it returns numbers here
+type SqliteUserPermissions = { [K in keyof UserPermissions]: 0 | 1 }
+
 export async function getUser(username: string): Promise<User | null> {
   const db = await getDatabase()
 
-  const row = await db.get<null | (Omit<User, "username"> & UserPermissions)>(
+  const row = await db.get<
+    null | (Omit<User, "username"> & SqliteUserPermissions)
+  >(
     `
     SELECT
       user.uuid,
@@ -73,7 +79,7 @@ export async function getUser(username: string): Promise<User | null> {
     WHERE username = $username
     `,
     {
-      $username: username,
+      $username: username.toLowerCase(),
     },
   )
 
@@ -87,7 +93,7 @@ export async function getUser(username: string): Promise<User | null> {
     fullName,
     email,
     hashedPassword,
-    permissions,
+    permissions: mapValues(permissions, (v) => v === 1),
   }
 }
 
@@ -107,7 +113,7 @@ export async function getUserCount() {
 export async function getUsers() {
   const db = await getDatabase()
 
-  const rows = await db.all<User & UserPermissions>(
+  const rows = await db.all<User & SqliteUserPermissions>(
     `
     SELECT
       user.uuid,
@@ -145,7 +151,7 @@ export async function getUsers() {
       fullName,
       email,
       hashedPassword,
-      permissions,
+      permissions: mapValues(permissions, (v) => v === 1),
     }
   })
 }
@@ -286,7 +292,7 @@ export async function createUser(
     ) 
     `,
     {
-      $username: username,
+      $username: username.toLowerCase(),
       $fullName: fullName,
       $email: email,
       $hashedPassword: hashedPassword,
@@ -312,7 +318,7 @@ export async function userHasPermission(
   const db = await getDatabase()
 
   const { [permission]: hasPermission } = await db.get<{
-    [K in Permission]: boolean
+    [K in Permission]: 0 | 1
   }>(
     `
     SELECT ${permission}
@@ -322,9 +328,9 @@ export async function userHasPermission(
     WHERE user.username = $username
     `,
     {
-      $username: username,
+      $username: username.toLowerCase(),
     },
   )
 
-  return hasPermission
+  return hasPermission === 1
 }

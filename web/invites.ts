@@ -11,12 +11,17 @@ export async function sendInvite(email: string, key: string) {
     smtpPassword,
     smtpPort,
     smtpUsername,
+    smtpSsl,
+    smtpRejectUnauthorized,
   } = settings
 
   const transporter = createTransport({
     host: smtpHost,
     port: smtpPort,
-    secure: false,
+    secure: smtpSsl ?? true,
+    tls: {
+      rejectUnauthorized: smtpRejectUnauthorized ?? true,
+    },
     auth: {
       user: smtpUsername,
       pass: smtpPassword,
