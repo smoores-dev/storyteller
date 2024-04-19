@@ -25,8 +25,7 @@ import { findBestOffset } from "./findChapterOffset"
 import { SyncCache } from "./syncCache"
 
 function createMediaOverlay(
-  fileStem: string,
-  chapterHref: string,
+  chapter: ManifestItem,
   sentenceRanges: SentenceRange[],
 ) {
   return [
@@ -41,8 +40,8 @@ function createMediaOverlay(
           body: [
             {
               ":@": {
-                "@_id": `${fileStem}_overlay`,
-                "@_epub:textref": `../${chapterHref}`,
+                "@_id": `${chapter.id}_overlay`,
+                "@_epub:textref": `../${chapter.href}`,
                 "@_epub:type": "chapter",
               },
               seq: sentenceRanges.map((sentenceRange) => ({
@@ -52,7 +51,7 @@ function createMediaOverlay(
                 par: [
                   {
                     ":@": {
-                      "@_src": `../${chapterHref}#sentence${sentenceRange.id}`,
+                      "@_src": `../${chapter.href}#sentence${sentenceRange.id}`,
                     },
                     text: [],
                   },
@@ -161,14 +160,14 @@ export class Synchronizer {
 
     const { name: chapterStem } = parse(chapter.href)
 
-    const mediaOverlayId = `${chapterStem}_overlay`
+    const mediaOverlayId = `${chapter.id}_overlay`
     await this.epub.addManifestItem(
       {
         id: mediaOverlayId,
         href: `MediaOverlays/${chapterStem}.smil`,
         mediaType: "application/smil+xml",
       },
-      createMediaOverlay(chapterStem, chapter.href, sentenceRanges),
+      createMediaOverlay(chapter, sentenceRanges),
       "xml",
     )
 
@@ -255,6 +254,18 @@ export class Synchronizer {
 
       const chapterId = spineItem.id
       const chapterSentences = await this.getChapterSentences(chapterId)
+      if (chapterSentences.length === 0) {
+        console.log(`Chapter #${index} has no text; skipping`)
+        continue
+      }
+      if (
+        chapterSentences.length < 2 &&
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        chapterSentences[0]!.split(" ").length < 4
+      ) {
+        console.log(`Chapter #${index} is fewer than four words; skipping`)
+        continue
+      }
       const { startSentence, transcriptionOffset } =
         this.syncCache.getChapterIndex(index) ??
         findBestOffset(

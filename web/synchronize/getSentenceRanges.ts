@@ -88,13 +88,25 @@ function findStartTimestamp(
     break
   }
 
-  const startWord = segment.words[w]!
+  if (w === 0 && !("start" in segment.words[w]!))
+    return { start: segment.start, audiofile: segment.audiofile }
 
-  if ("start" in startWord) {
-    return { start: startWord.start, audiofile: segment.audiofile }
+  while (w < segment.words.length && !("start" in segment.words[w]!)) w += 1
+
+  if (w >= segment.words.length) {
+    if (s < transcription.segments.length) {
+      return {
+        start: transcription.segments[s + 1]!.start,
+        audiofile: transcription.segments[s + 1]!.audiofile,
+      }
+    }
+    return null
   }
 
-  return { start: segment.start, audiofile: segment.audiofile }
+  const startWord = segment.words[w]!
+
+  // We've already made sure that we have a word with a start timestamp
+  return { start: startWord.start!, audiofile: segment.audiofile }
 }
 
 export function findEndTimestamp(
@@ -218,6 +230,10 @@ export async function getSentenceRanges(
         chapterOffset,
       transcription,
     )
+    if (!startResult) {
+      sentenceIndex += 1
+      continue
+    }
     let start = startResult.start
     const audiofile = startResult.audiofile
 
@@ -307,7 +323,13 @@ export function interpolateSentenceRanges(sentenceRanges: SentenceRange[]) {
       continue
     }
 
-    const diff = sentenceRange.start - lastSentenceRange.end
+    let diff = sentenceRange.start - lastSentenceRange.end
+    // Sometimes the transcription may entirely miss a short sentence.
+    // If it does, allocate a quarter second for it and continue
+    if (diff <= 0) {
+      lastSentenceRange.end = sentenceRange.start - 0.25
+      diff = 0.25
+    }
     const interpolatedLength = diff / count
 
     for (let i = 0; i < count; i++) {
