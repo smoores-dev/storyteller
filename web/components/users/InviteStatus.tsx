@@ -1,5 +1,3 @@
-"use client"
-
 import { Invite } from "@/apiModels"
 import styles from "./invitestatus.module.css"
 import { InviteActions } from "./InviteActions"

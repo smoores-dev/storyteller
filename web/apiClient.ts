@@ -121,10 +121,30 @@ export class ApiClient {
     return invite
   }
 
+  async resendInvite(inviteKey: string): Promise<void> {
+    const url = new URL(
+      `${this.rootPath}/invites/${inviteKey}/send`,
+      this.origin,
+    )
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
   async getInvite(inviteKey: string): Promise<Invite> {
     const url = new URL(`${this.rootPath}/invites/${inviteKey}`, this.origin)
 
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
 
     if (!response.ok) {
       throw new ApiClientError(response.status, response.statusText)

@@ -12,6 +12,12 @@ export type Settings = {
   webUrl?: string
 }
 
+// Sqlite doesn't have real booleans; these are stored as bits
+type SqliteSettings = Omit<Settings, "smtpSsl" | "smtpRejectUnauthorized"> & {
+  smtpSsl: 0 | 1
+  smtpRejectUnauthorized: 0 | 1
+}
+
 const SETTINGS_COLUMN_NAMES = {
   smtp_host: "smtpHost",
   smtp_port: "smtpPort",
@@ -54,15 +60,22 @@ export async function getSettings(): Promise<Settings> {
     `,
   )
 
-  return rows.reduce(
+  const result = rows.reduce(
     (acc, row) => ({
       ...acc,
       [SETTINGS_COLUMN_NAMES[row.name]]: JSON.parse(row.value) as
         | string
-        | number,
+        | number
+        | boolean,
     }),
     {},
-  ) as Settings
+  ) as SqliteSettings
+
+  return {
+    ...result,
+    smtpSsl: result.smtpSsl === 1,
+    smtpRejectUnauthorized: result.smtpRejectUnauthorized === 1,
+  }
 }
 
 export async function updateSettings(settings: Settings) {

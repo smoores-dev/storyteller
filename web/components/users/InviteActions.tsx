@@ -1,5 +1,3 @@
-"use client"
-
 import cx from "classnames"
 import { Invite } from "@/apiModels"
 import { usePermissions } from "@/contexts/UserPermissions"
@@ -14,6 +12,7 @@ import {
 } from "@ariakit/react"
 import styles from "./useractions.module.css"
 import { DeleteIcon } from "../icons/DeleteIcon"
+import { HardRestartIcon } from "../icons/HardRestartIcon"
 
 type Props = {
   invite: Invite
@@ -28,8 +27,13 @@ export function InviteActions({ invite, onUpdate }: Props) {
   return (
     <Menubar className={styles["menu"]}>
       <MenuProvider>
-        {/* {permissions.user_create && (
-          <MenuItem className={styles["menu-item"]}>
+        {permissions.user_create && (
+          <MenuItem
+            className={styles["menu-item"]}
+            onClick={() => {
+              void client.resendInvite(invite.key)
+            }}
+          >
             <TooltipProvider placement="right">
               <TooltipAnchor>
                 <HardRestartIcon ariaLabel="Re-send" />
@@ -37,7 +41,7 @@ export function InviteActions({ invite, onUpdate }: Props) {
               <Tooltip>Re-send</Tooltip>
             </TooltipProvider>
           </MenuItem>
-        )} */}
+        )}
         {permissions.invite_delete && (
           <MenuItem
             className={cx(styles["menu-item"], styles["delete"])}
