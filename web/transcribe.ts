@@ -1,35 +1,35 @@
-import { TranscriptionResult as WhisperXTranscriptionResult } from "./synchronize/whisperx"
-import { promisify } from "node:util"
-import { exec as execCallback } from "node:child_process"
 import { JsObject } from "pymport"
+import nodecallspython from "node-calls-python"
+import { TranscriptionResult as WhisperXTranscriptionResult } from "./synchronize/whisperx"
+import { cwd } from "process"
 
-const exec = promisify(execCallback)
+const py = nodecallspython.interpreter
+
+py.addImportPath("/home/node/.local/venv")
+py.addImportPath(cwd())
+
+const whisperx = py.importSync("transcribe", false)
 
 export type TranscriptionResult = JsObject<WhisperXTranscriptionResult>
 
 export async function transcribeTrack(
   trackPath: string,
-  initialPrompt: string,
   device: string,
   computeType: string,
   batchSize: number,
+  initialPrompt: string,
 ): Promise<TranscriptionResult> {
   console.log(`Transcribing audio file ${trackPath}`)
 
-  const { stdout } = await exec(
-    `python3 transcribe.py "${trackPath.replaceAll(/"/g, '\\"')}" "${device}" "${computeType}" "${batchSize}" "${initialPrompt.replaceAll(/"/g, '\\"')}"`,
+  const transcription = await py.call(
+    whisperx,
+    "transcribe",
+    trackPath,
+    device,
+    computeType,
+    batchSize,
+    initialPrompt,
   )
 
-  const result = stdout
-    .split("\n")
-    .find((line) => line.startsWith("ST_RESULT:"))
-    ?.replace("ST_RESULT:", "")
-
-  if (!result) {
-    throw new Error(
-      `Failed to parse transcription result for track ${trackPath}`,
-    )
-  }
-
-  return JSON.parse(result) as TranscriptionResult
+  return transcription as TranscriptionResult
 }

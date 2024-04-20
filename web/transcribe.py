@@ -1,12 +1,7 @@
-import json
-import sys
 import whisperx
 
-if __name__ == "__main__":
-    args = sys.argv
 
-    _, track_path, device, compute_type, batch_size, initial_prompt = args
-
+def transcribe(track_path, device, compute_type, batch_size, initial_prompt):
     transcribe_model = whisperx.load_model(
         "base.en",
         device=device,
@@ -29,4 +24,4 @@ if __name__ == "__main__":
         return_char_alignments=False,
     )
 
-    print(f"ST_RESULT:{json.dumps(transcription)}")
+    return transcription

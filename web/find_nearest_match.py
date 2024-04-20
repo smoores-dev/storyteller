@@ -1,12 +1,11 @@
-import json
-import sys
 import fuzzysearch
 
-if __name__ == "__main__":
-    args = sys.argv
-    _, needle, haystack, max_l_dist = args
+def find_nearest_match(needle: str, haystack: str, max_l_dist: int):
     result = fuzzysearch.find_near_matches(needle, haystack, max_l_dist=int(max_l_dist))
     if len(result) == 0:
-        print("null")
+        return None
     else:
-        print(json.dumps({"start": result[0].start, "end": result[0].end}))
+        return {
+            "start": result[0].start,
+            "end": result[0].end
+        }

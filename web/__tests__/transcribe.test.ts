@@ -11,10 +11,10 @@ void describe("transcribe", () => {
     const trackPath = join("__fixtures__", "mobydick_001_002_melville.mp3")
     const transcription = await transcribeTrack(
       trackPath,
-      "The following is a transcription of Moby Dick by Herman Melville. Please transcribe it.",
       "cpu",
       "int8",
       16,
+      "The following is a transcription of Moby Dick by Herman Melville. Please transcribe it.",
     )
     assert.deepStrictEqual(transcription.segments[0]!.start, 2.25)
     assert.deepStrictEqual(transcription.segments[0]!.end, 3.871)
