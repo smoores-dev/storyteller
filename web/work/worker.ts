@@ -72,10 +72,10 @@ export async function transcribeBook(
     } catch (_) {
       const transcription = await transcribeTrack(
         filepath,
-        initialPrompt,
         device,
         computeType,
         batchSize,
+        initialPrompt,
       )
       transcriptions.push(transcription)
       await writeFile(transcriptionFilepath, JSON.stringify(transcription))
