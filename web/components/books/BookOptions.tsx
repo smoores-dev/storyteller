@@ -10,13 +10,11 @@ import {
   TooltipProvider,
 } from "@ariakit/react"
 import cx from "classnames"
-import { HardRestartIcon } from "../icons/HardRestartIcon"
-import { SoftRestartIcon } from "../icons/SoftRestartIcon"
 import { EditIcon } from "../icons/EditIcon"
 import { DeleteIcon } from "../icons/DeleteIcon"
 import { useRouter } from "next/navigation"
 import { usePermissions } from "@/contexts/UserPermissions"
-import { StopIcon } from "../icons/StopIcon"
+import { ProcessingItems } from "./ProcessingItems"
 
 type Props = {
   book: BookDetail
@@ -46,46 +44,7 @@ export function BookOptions({ book }: Props) {
             </TooltipProvider>
           </MenuItem>
         )}
-        {permissions.book_process &&
-          (book.processing_status?.is_processing ||
-          book.processing_status?.is_queued ? (
-            <MenuItem
-              className={cx(styles["menu-item"], styles["delete"])}
-              onClick={() => client.cancelProcessing(book.uuid)}
-            >
-              <TooltipProvider placement="right">
-                <TooltipAnchor>
-                  <StopIcon ariaLabel="Stop processing" />
-                </TooltipAnchor>
-                <Tooltip>Stop processing</Tooltip>
-              </TooltipProvider>
-            </MenuItem>
-          ) : (
-            <>
-              <MenuItem
-                className={styles["menu-item"]}
-                onClick={() => client.processBook(book.uuid, false)}
-              >
-                <TooltipProvider placement="right">
-                  <TooltipAnchor>
-                    <SoftRestartIcon ariaLabel="Re-process" />
-                  </TooltipAnchor>
-                  <Tooltip>Re-process</Tooltip>
-                </TooltipProvider>
-              </MenuItem>
-              <MenuItem
-                className={styles["menu-item"]}
-                onClick={() => client.processBook(book.uuid, true)}
-              >
-                <TooltipProvider placement="right">
-                  <TooltipAnchor>
-                    <HardRestartIcon ariaLabel="Force re-process" />
-                  </TooltipAnchor>
-                  <Tooltip>Force re-process</Tooltip>
-                </TooltipProvider>
-              </MenuItem>
-            </>
-          ))}
+        {permissions.book_process && <ProcessingItems book={book} />}
         {permissions.book_delete && (
           <MenuItem
             className={cx(styles["menu-item"], styles["delete"])}
