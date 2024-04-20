@@ -16,7 +16,6 @@ import {
 
 type Props = {
   book: BookDetail
-  onUpdate: () => void
 }
 
 export const ProcessingTaskTypes = {
@@ -25,7 +24,7 @@ export const ProcessingTaskTypes = {
   TRANSCRIBE_CHAPTERS: "Transcribing tracks",
 }
 
-export function BookStatus({ book, onUpdate }: Props) {
+export function BookStatus({ book }: Props) {
   const client = useApiClient()
 
   const permissions = usePermissions()
@@ -63,20 +62,24 @@ export function BookStatus({ book, onUpdate }: Props) {
             </div>
           )
         ) : book.processing_status ? (
-          <div className={styles["status"]}>
-            {userFriendlyTaskType}
-            {book.processing_status.status ===
-              ProcessingTaskStatus.IN_ERROR && <ProcessingFailedMessage />}
-            <ProgressBar
-              progress={Math.floor(book.processing_status.progress * 100)}
-            />
-          </div>
+          book.processing_status.is_queued ? (
+            "Queued"
+          ) : (
+            <div className={styles["status"]}>
+              {userFriendlyTaskType}
+              {book.processing_status.is_processing ? "" : " (stopped)"}
+              {book.processing_status.status ===
+                ProcessingTaskStatus.IN_ERROR && <ProcessingFailedMessage />}
+              <ProgressBar
+                progress={Math.floor(book.processing_status.progress * 100)}
+              />
+            </div>
+          )
         ) : permissions.book_process ? (
           <Button
             className={styles["button"]}
-            onClick={async () => {
-              await client.processBook(book.uuid)
-              onUpdate()
+            onClick={() => {
+              void client.processBook(book.uuid)
             }}
           >
             Start processing
@@ -86,7 +89,7 @@ export function BookStatus({ book, onUpdate }: Props) {
         )}
       </div>
       <div className={styles["actions"]}>
-        <BookOptions book={book} onUpdate={onUpdate} />
+        <BookOptions book={book} />
       </div>
     </div>
   )

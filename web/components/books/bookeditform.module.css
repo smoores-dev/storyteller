@@ -67,6 +67,14 @@
   border: thin solid #d9d9d9;
 }
 
+.button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.button:active {
+  background-color: var(--active-primary-color);
+}
+
 .cover-art {
   border-radius: var(--border-radius);
   background-color: #efecec;

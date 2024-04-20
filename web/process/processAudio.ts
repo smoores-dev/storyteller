@@ -16,7 +16,7 @@ import { basename, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import { getTrackChapters, getTrackDuration, splitTrack } from "@/audio"
-import { TranscriptionResult } from "@/transcribe"
+import { type TranscriptionResult } from "@/transcribe"
 
 export function getAudioDirectory(bookUuid: UUID) {
   return join(AUDIO_DIR, bookUuid)
@@ -238,7 +238,9 @@ export async function processFile(
             tempFilepath,
             outDir,
             (progress: number) =>
-              onProgress?.(i / entries.length + progress + 1 / entries.length),
+              onProgress?.(
+                i / entries.length + progress * (1 / entries.length),
+              ),
           )
           audioFiles.push(...processed)
         }
@@ -290,7 +292,7 @@ export async function processAudiobook(
       filepath,
       processedAudioDirectory,
       (progress: number) =>
-        onProgress?.(i / filenames.length + progress + 1 / filenames.length),
+        onProgress?.(i / filenames.length + progress * (1 / filenames.length)),
     )
     audioFiles.push(...processed)
   }

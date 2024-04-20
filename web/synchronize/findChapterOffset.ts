@@ -2,7 +2,7 @@ import { findNearestMatch } from "./fuzzy"
 
 const OFFSET_SEARCH_WINDOW_SIZE = 5000
 
-export function findBestOffset(
+export async function findBestOffset(
   epubSentences: string[],
   transcriptionText: string,
   lastMatchOffset: number,
@@ -26,7 +26,7 @@ export function findBestOffset(
         .slice(startSentence, startSentence + 6)
         .join(" ")
 
-      const firstMatch = findNearestMatch(
+      const firstMatch = await findNearestMatch(
         queryString.toLowerCase(),
         transcriptionTextSlice.toLowerCase(),
         {
