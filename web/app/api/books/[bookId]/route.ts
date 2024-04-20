@@ -9,6 +9,7 @@ import {
 } from "@/database/books"
 import { persistCustomCover as persistCustomAudioCover } from "@/process/processAudio"
 import { persistCustomCover as persistCustomTextCover } from "@/process/processEpub"
+import { isProcessing } from "@/work/distributor"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
 
@@ -86,6 +87,7 @@ export const GET = withHasPermission<Params>("book_read")(async (
       processing_status: {
         ...book.processingStatus,
         current_task: book.processingStatus.currentTask,
+        is_processing: isProcessing(book.uuid),
       },
     }),
   })

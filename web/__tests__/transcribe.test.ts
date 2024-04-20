@@ -1,30 +1,19 @@
 import { describe, it } from "node:test"
 import { join } from "path"
-import {
-  getAlignModel,
-  getTranscribeModel,
-  transcribeTrack,
-} from "@/transcribe"
+import { transcribeTrack } from "@/transcribe"
 import assert from "assert"
 
 void describe("transcribe", () => {
   // This test is quite slow, and mostly just testing
   // that the integration with whisperx works. It should
   // only be run manually.
-  void it.skip("can transcribe a track", () => {
+  void it.skip("can transcribe a track", async () => {
     const trackPath = join("__fixtures__", "mobydick_001_002_melville.mp3")
-    const transcribeModel = getTranscribeModel(
+    const transcription = await transcribeTrack(
+      trackPath,
+      "The following is a transcription of Moby Dick by Herman Melville. Please transcribe it.",
       "cpu",
       "int8",
-      "The following is a transcription of Moby Dick by Herman Melville. Please transcribe it.",
-    )
-    const { alignModel, alignMetadata } = getAlignModel("cpu")
-    const transcription = transcribeTrack(
-      trackPath,
-      "cpu",
-      transcribeModel,
-      alignModel,
-      alignMetadata,
       16,
     )
     assert.deepStrictEqual(transcription.segments[0]!.start, 2.25)

@@ -12,7 +12,8 @@ export function getXHtmlSentences(xml: ParsedXml): string[] {
     }
     const childName = getElementName(child)
     if (!BLOCKS.includes(childName)) {
-      stagedText += textContent([child])
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      stagedText += textContent(child[childName]!)
       continue
     }
     sentences.push(...tokenizeSentences(stagedText))

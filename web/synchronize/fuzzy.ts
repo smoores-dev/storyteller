@@ -1,20 +1,15 @@
-import { pymport } from "pymport"
-import { FuzzySearch } from "./fuzzysearch"
+import { promisify } from "node:util"
+import { exec as execCallback } from "node:child_process"
 
-const fuzzysearch = pymport("fuzzysearch") as FuzzySearch
+const exec = promisify(execCallback)
 
-export function findNearestMatch(
+export async function findNearestMatch(
   needle: string,
   haystack: string,
   options: { max_l_dist?: number },
 ) {
-  const matches = fuzzysearch
-    .get("find_near_matches")
-    .call(needle, haystack, options)
-  const firstMatch = matches.item(0)
-  if (!firstMatch) return firstMatch
-  return {
-    start: firstMatch.get("start").toJS(),
-    end: firstMatch.get("end").toJS(),
-  }
+  const { stdout } = await exec(
+    `python3 find_nearest_match.py "${needle.replaceAll(/"/g, '\\"')}" "${haystack.replaceAll(/"/g, '\\"')}" ${options.max_l_dist}`,
+  )
+  return JSON.parse(stdout) as { start: number; end: number } | null
 }

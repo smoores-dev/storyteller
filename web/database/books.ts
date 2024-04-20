@@ -5,6 +5,8 @@ import {
   ProcessingTaskType,
   ProcessingTaskStatus,
 } from "@/apiModels/models/ProcessingStatus"
+import { BookEvents } from "@/events"
+import { BookDetail } from "@/apiModels"
 
 /**
  * This function only exists to support old clients that haven't
@@ -108,6 +110,12 @@ export async function createBook(title: string, authors: AuthorInput[]) {
       role: author.role,
     })
   }
+
+  BookEvents.emit("message", {
+    type: "bookCreated",
+    bookUuid: book.uuid,
+    payload: book as BookDetail,
+  })
 
   return book
 }
@@ -328,6 +336,12 @@ export async function deleteBook(bookUuid: UUID) {
       $book_uuid: bookUuid,
     },
   )
+
+  BookEvents.emit("message", {
+    type: "bookDeleted",
+    bookUuid,
+    payload: undefined,
+  })
 }
 
 export async function updateBook(
@@ -387,6 +401,21 @@ export async function updateBook(
   }
 
   const [book] = await getBooks([uuid])
+
+  BookEvents.emit("message", {
+    type: "bookUpdated",
+    bookUuid: uuid,
+    payload: {
+      title,
+      authors:
+        book?.authors.map((author) => ({
+          ...author,
+          file_as: author.fileAs ?? author.name,
+          role: author.role ?? "aut",
+        })) ?? [],
+    },
+  })
+
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return book!
 }

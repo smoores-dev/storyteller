@@ -28,11 +28,7 @@ enum UploadState {
   ERROR = "ERROR",
 }
 
-type Props = {
-  onAdded: () => void
-}
-
-export function AddBookForm({ onAdded }: Props) {
+export function AddBookForm() {
   const [showForm, setShowForm] = useState(false)
   const [epubFile, setEpubFile] = useState<File | null>(null)
   const [audioFiles, setAudioFiles] = useState<FileList | null>(null)
@@ -161,12 +157,10 @@ export function AddBookForm({ onAdded }: Props) {
                       })
                     } catch (_) {
                       setUploadState(UploadState.ERROR)
-                      onAdded()
                       return
                     }
 
                     setUploadState(UploadState.SUCCESS)
-                    onAdded()
                   }}
                 >
                   Create

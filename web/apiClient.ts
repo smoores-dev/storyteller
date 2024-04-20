@@ -421,6 +421,23 @@ export class ApiClient {
     }
   }
 
+  async cancelProcessing(bookUuid: string): Promise<void> {
+    const url = new URL(
+      `${this.rootPath}/books/${bookUuid}/process`,
+      this.origin,
+    )
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
   async getBookDetails(bookUuid: string): Promise<BookDetail> {
     const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
 

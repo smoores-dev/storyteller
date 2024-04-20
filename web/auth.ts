@@ -147,7 +147,7 @@ export function withHasPermission<
       context: { params: Params },
       token: string,
       tokenData: { username: string },
-    ) => Promise<Response>,
+    ) => Promise<Response> | Response,
   ) {
     return withVerifyToken<Params>(
       async (request, context, token, tokenData) => {

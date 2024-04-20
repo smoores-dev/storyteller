@@ -16,13 +16,13 @@ import { EditIcon } from "../icons/EditIcon"
 import { DeleteIcon } from "../icons/DeleteIcon"
 import { useRouter } from "next/navigation"
 import { usePermissions } from "@/contexts/UserPermissions"
+import { StopIcon } from "../icons/StopIcon"
 
 type Props = {
   book: BookDetail
-  onUpdate: () => void
 }
 
-export function BookOptions({ book, onUpdate }: Props) {
+export function BookOptions({ book }: Props) {
   const client = useApiClient()
   const router = useRouter()
 
@@ -46,47 +46,51 @@ export function BookOptions({ book, onUpdate }: Props) {
             </TooltipProvider>
           </MenuItem>
         )}
-        {permissions.book_process && (
-          <MenuItem
-            className={styles["menu-item"]}
-            onClick={() =>
-              client.processBook(book.uuid, false).then(() => {
-                onUpdate()
-              })
-            }
-          >
-            <TooltipProvider placement="right">
-              <TooltipAnchor>
-                <SoftRestartIcon ariaLabel="Re-process" />
-              </TooltipAnchor>
-              <Tooltip>Re-process</Tooltip>
-            </TooltipProvider>
-          </MenuItem>
-        )}
-        {permissions.book_process && (
-          <MenuItem
-            className={styles["menu-item"]}
-            onClick={() =>
-              client.processBook(book.uuid, true).then(() => {
-                onUpdate()
-              })
-            }
-          >
-            <TooltipProvider placement="right">
-              <TooltipAnchor>
-                <HardRestartIcon ariaLabel="Force re-process" />
-              </TooltipAnchor>
-              <Tooltip>Force re-process</Tooltip>
-            </TooltipProvider>
-          </MenuItem>
-        )}
+        {permissions.book_process &&
+          (book.processing_status?.is_processing ||
+          book.processing_status?.is_queued ? (
+            <MenuItem
+              className={cx(styles["menu-item"], styles["delete"])}
+              onClick={() => client.cancelProcessing(book.uuid)}
+            >
+              <TooltipProvider placement="right">
+                <TooltipAnchor>
+                  <StopIcon ariaLabel="Stop processing" />
+                </TooltipAnchor>
+                <Tooltip>Stop processing</Tooltip>
+              </TooltipProvider>
+            </MenuItem>
+          ) : (
+            <>
+              <MenuItem
+                className={styles["menu-item"]}
+                onClick={() => client.processBook(book.uuid, false)}
+              >
+                <TooltipProvider placement="right">
+                  <TooltipAnchor>
+                    <SoftRestartIcon ariaLabel="Re-process" />
+                  </TooltipAnchor>
+                  <Tooltip>Re-process</Tooltip>
+                </TooltipProvider>
+              </MenuItem>
+              <MenuItem
+                className={styles["menu-item"]}
+                onClick={() => client.processBook(book.uuid, true)}
+              >
+                <TooltipProvider placement="right">
+                  <TooltipAnchor>
+                    <HardRestartIcon ariaLabel="Force re-process" />
+                  </TooltipAnchor>
+                  <Tooltip>Force re-process</Tooltip>
+                </TooltipProvider>
+              </MenuItem>
+            </>
+          ))}
         {permissions.book_delete && (
           <MenuItem
             className={cx(styles["menu-item"], styles["delete"])}
             onClick={() => {
-              void client.deleteBook(book.uuid).then(() => {
-                onUpdate()
-              })
+              void client.deleteBook(book.uuid)
             }}
           >
             <TooltipProvider placement="right">

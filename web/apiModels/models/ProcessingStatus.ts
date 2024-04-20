@@ -18,4 +18,6 @@ export type ProcessingStatus = {
   current_task: ProcessingTaskType
   progress: number
   status: ProcessingTaskStatus
+  is_processing: boolean
+  is_queued: boolean
 }

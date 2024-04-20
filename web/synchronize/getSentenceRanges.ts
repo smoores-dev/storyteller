@@ -195,7 +195,7 @@ export async function getSentenceRanges(
       .join("")
       .slice(transcriptionWindowOffset)
 
-    const firstMatch = findNearestMatch(
+    const firstMatch = await findNearestMatch(
       sentence.trim().toLowerCase(),
       transcriptionWindow,
       {
