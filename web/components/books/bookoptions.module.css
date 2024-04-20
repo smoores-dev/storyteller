@@ -45,7 +45,8 @@
   color: var(--error-color);
 }
 
-.menu-item > div {
+.menu-item > div,
+.menu-item > svg {
   height: 1.5rem;
   width: 1.5rem;
   padding: 0.25rem;
@@ -55,7 +56,7 @@
   opacity: 0.25;
 }
 
-.menu-item:hover {
+.menu-item:not([aria-disabled="true"]):hover {
   background-color: #d9d9d9;
 }
 
