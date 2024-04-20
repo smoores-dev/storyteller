@@ -46,8 +46,5 @@ RUN pip3 install fuzzysearch
 RUN pip3 install torch==2.2.1+cpu torchaudio==2.2.1+cpu --index-url https://download.pytorch.org/whl/cpu
 RUN pip3 install git+https://github.com/m-bain/whisperx.git
 
-ARG GET_PYTHONPATH="python3 -c \"import sys; print(':'.join([p for p in sys.path if p]))\""
-
 ENV NEXT_TELEMETRY_DISABLED 1
 
-ENV GET_PYTHONPATH=${GET_PYTHONPATH}
