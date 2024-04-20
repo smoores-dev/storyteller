@@ -8,7 +8,7 @@
     "test:watch": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test --watch",
     "test:all": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test **/*.test.ts",
     "build": "yarn build:worker && next build",
-    "build:worker": "esbuild work/worker.ts --bundle --platform=node --external:pymport --external:@mapbox/node-pre-gyp --external:sqlite3 --outdir=work-dist/",
+    "build:worker": "esbuild work/worker.ts --bundle --platform=node --external:node-calls-python --external:@mapbox/node-pre-gyp --external:sqlite3 --outdir=work-dist/",
     "start": "tsx database/migrate.ts && next start",
     "client:gen": "openapi --input http://127.0.01:8000/openapi.json --output ./apiModels"
   },

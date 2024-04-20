@@ -13,8 +13,6 @@ COPY --chown=node . .
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
-ENV NEXT_TELEMETRY_DISABLED 1
-
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
