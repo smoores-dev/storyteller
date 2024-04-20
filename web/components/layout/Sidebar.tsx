@@ -11,7 +11,11 @@ import { useApiClient } from "@/hooks/useApiClient"
 import { useEffect, useState } from "react"
 import { BookDetail } from "@/apiModels"
 import { ProcessingTaskTypes } from "../books/BookStatus"
-import { ProcessingTaskStatus } from "@/apiModels/models/ProcessingStatus"
+import {
+  ProcessingTaskStatus,
+  ProcessingTaskType,
+} from "@/apiModels/models/ProcessingStatus"
+import { BookEvent } from "@/events"
 
 type Props = {
   className?: string | undefined
@@ -33,24 +37,72 @@ export function Sidebar({ className }: Props) {
     ]
 
   useEffect(() => {
-    async function findCurrentBook() {
-      const books = await client.listBooks()
+    void client.listBooks().then((books) => {
+      const currentBook = books.find(
+        (book) => book.processing_status?.is_processing,
+      )
+      if (currentBook) setCurrentBook(currentBook)
+    })
 
-      const currentBook =
-        books.find(
-          (book) =>
-            book.processing_status?.current_task &&
-            book.processing_status.status === ProcessingTaskStatus.STARTED,
-        ) ?? null
+    const eventSource = new EventSource("/api/books/events")
 
-      setCurrentBook(currentBook)
+    eventSource.addEventListener("message", (event: MessageEvent<string>) => {
+      const data = JSON.parse(event.data) as BookEvent
+      switch (data.type) {
+        case "taskCompleted":
+        case "taskFailed":
+        case "taskStopped": {
+          setCurrentBook(null)
+          break
+        }
+        case "taskProgressUpdated": {
+          setCurrentBook(
+            (book) =>
+              book && {
+                ...book,
+                processing_status: {
+                  is_processing: true,
+                  is_queued: false,
+                  current_task:
+                    book.processing_status?.current_task ??
+                    ProcessingTaskType.SPLIT_CHAPTERS,
+                  progress: data.payload.progress,
+                  status: ProcessingTaskStatus.STARTED,
+                },
+              },
+          )
+          break
+        }
+        case "taskTypeUpdated": {
+          setCurrentBook(
+            (book) =>
+              book && {
+                ...book,
+                processing_status: {
+                  is_processing: true,
+                  is_queued: false,
+                  current_task: data.payload.taskType,
+                  progress: 0,
+                  status: ProcessingTaskStatus.STARTED,
+                },
+              },
+          )
+          break
+        }
+        case "taskStarted": {
+          void client.getBookDetails(data.bookUuid).then((book) => {
+            if (book.processing_status?.is_processing) {
+              setCurrentBook(book)
+            }
+          })
+        }
+      }
+    })
+
+    return () => {
+      eventSource.close()
     }
-
-    void findCurrentBook()
-    setInterval(() => {
-      void findCurrentBook()
-    }, 5000)
-  }, [client])
+  }, [])
 
   return (
     <aside className={cx(styles["aside"], className)}>

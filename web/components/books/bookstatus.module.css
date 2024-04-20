@@ -48,3 +48,11 @@
   width: max-content;
   color: white;
 }
+
+.button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.button:active {
+  background-color: var(--active-primary-color);
+}

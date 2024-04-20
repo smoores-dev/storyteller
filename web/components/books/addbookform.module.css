@@ -28,6 +28,10 @@
   opacity: 0.9;
 }
 
+.button:active {
+  background-color: var(--active-primary-color);
+}
+
 .add-button {
   composes: button;
   margin: calc(80px - 1.5rem) auto;

@@ -15,8 +15,6 @@ RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN PYTHONPATH=$(eval "$GET_PYTHONPATH") yarn build:web
-
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
@@ -28,4 +26,4 @@ ENV HOST 0.0.0.0
 # ENV NEXT_SHARP_PATH /app/node_modules/sharp
 ENV STORYTELLER_DATA_DIR /data
 
-CMD PYTHONPATH=$(eval "$GET_PYTHONPATH") yarn workspace @storyteller/web start
+CMD yarn workspace @storyteller/web start

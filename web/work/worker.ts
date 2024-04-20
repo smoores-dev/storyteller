@@ -28,14 +28,10 @@ import {
 import { getInitialPrompt } from "@/process/prompt"
 import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
-import {
-  getTranscribeModel,
-  getAlignModel,
-  TranscriptionResult,
-  transcribeTrack,
-} from "@/transcribe"
+import { TranscriptionResult, transcribeTrack } from "@/transcribe"
 import { UUID } from "@/uuid"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { parentPort } from "node:worker_threads"
 
 const DEVICE = process.env["STORYTELLER_DEVICE"]
 const BATCH_SIZE = parseInt(process.env["STORYTELLER_BATCH_SIZE"] ?? "16", 10)
@@ -56,9 +52,6 @@ export async function transcribeBook(
     throw new Error("Failed to transcribe book: found no processed audio files")
   }
 
-  const transcribeModel = getTranscribeModel(device, computeType, initialPrompt)
-  const { alignModel, alignMetadata } = getAlignModel(device)
-
   const transcriptions: TranscriptionResult[] = []
   for (let i = 0; i < audioFiles.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -77,12 +70,11 @@ export async function transcribeBook(
         JSON.parse(existingTranscription) as TranscriptionResult,
       )
     } catch (_) {
-      const transcription = transcribeTrack(
+      const transcription = await transcribeTrack(
         filepath,
+        initialPrompt,
         device,
-        transcribeModel,
-        alignModel,
-        alignMetadata,
+        computeType,
         batchSize,
       )
       transcriptions.push(transcription)
@@ -139,6 +131,7 @@ export default async function processBook({
   bookUuid: UUID
   restart: boolean
 }) {
+  parentPort?.postMessage({ type: "taskStarted", bookUuid })
   await resetProcessingTasksForBook(bookUuid)
 
   const currentTasks = await getProcessingTasksForBook(bookUuid)
@@ -156,8 +149,20 @@ export default async function processBook({
       await updateTaskStatus(taskUuid, ProcessingTaskStatus.STARTED)
     }
 
-    const onProgress = (progress: number) =>
-      updateTaskProgress(taskUuid, progress)
+    const onProgress = (progress: number) => {
+      parentPort?.postMessage({
+        type: "taskProgressUpdated",
+        bookUuid,
+        payload: { progress },
+      })
+      void updateTaskProgress(taskUuid, progress)
+    }
+
+    parentPort?.postMessage({
+      type: "taskTypeUpdated",
+      bookUuid,
+      payload: { taskType: task.type },
+    })
 
     try {
       if (task.type === ProcessingTaskType.SPLIT_CHAPTERS) {
@@ -211,6 +216,9 @@ export default async function processBook({
       )
       console.error(e)
       await updateTaskStatus(taskUuid, ProcessingTaskStatus.IN_ERROR)
+      parentPort?.postMessage({ type: "taskFailed", bookUuid })
+      return
     }
   }
+  parentPort?.postMessage({ type: "taskCompleted", bookUuid })
 }

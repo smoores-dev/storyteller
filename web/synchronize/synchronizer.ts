@@ -246,6 +246,8 @@ export class Synchronizer {
     let lastSentenceRange: null | SentenceRange = null
 
     for (let index = 0; index < spine.length; index++) {
+      onProgress?.(index / spine.length)
+
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const spineItem = spine[index]!
       console.log(`Syncing chapter #${index}`)
@@ -266,11 +268,11 @@ export class Synchronizer {
       }
       const { startSentence, transcriptionOffset } =
         this.syncCache.getChapterIndex(index) ??
-        findBestOffset(
+        (await findBestOffset(
           chapterSentences,
           transcriptionText,
           lastTranscriptionOffset,
-        )
+        ))
 
       if (transcriptionOffset === null) {
         console.log(
@@ -298,8 +300,6 @@ export class Synchronizer {
           transcriptionOffset,
           lastSentenceRange,
         ))
-
-      onProgress?.(index / spine.length)
     }
 
     if (lastSentenceRange) {

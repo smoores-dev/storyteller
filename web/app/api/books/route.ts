@@ -2,6 +2,7 @@ import { persistAudio, persistEpub } from "@/assets"
 import { withHasPermission } from "@/auth"
 import { createBook, getBooks } from "@/database/books"
 import { Epub } from "@/epub"
+import { isProcessing, isQueued } from "@/work/distributor"
 import { BlobReader } from "@zip.js/zip.js"
 import { NextResponse } from "next/server"
 
@@ -20,6 +21,8 @@ export const GET = withHasPermission("book_list")(async (request) => {
         processing_status: {
           ...book.processingStatus,
           current_task: book.processingStatus.currentTask,
+          is_processing: isProcessing(book.uuid),
+          is_queued: isQueued(book.uuid),
         },
       }),
     })),

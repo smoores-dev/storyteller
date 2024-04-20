@@ -1,6 +1,7 @@
 :root {
   --border-radius: 0.5rem;
   --primary-color: #b74c0f;
+  --active-primary-color: #5f2808;
   --error-color: #a20634;
 }
 
