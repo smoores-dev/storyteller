@@ -1,15 +1,25 @@
-import { promisify } from "node:util"
-import { exec as execCallback } from "node:child_process"
+import nodecallspython from "node-calls-python"
+import { cwd } from "process"
 
-const exec = promisify(execCallback)
+const py = nodecallspython.interpreter
+
+py.addImportPath("/home/node/.local/venv")
+py.addImportPath(cwd())
+
+const fuzzysearch = py.importSync("find_nearest_match", false)
 
 export async function findNearestMatch(
   needle: string,
   haystack: string,
   options: { max_l_dist?: number },
 ) {
-  const { stdout } = await exec(
-    `python3 find_nearest_match.py "${needle.replaceAll(/"/g, '\\"')}" "${haystack.replaceAll(/"/g, '\\"')}" ${options.max_l_dist}`,
+  const match = await py.call(
+    fuzzysearch,
+    "find_nearest_match",
+    needle,
+    haystack,
+    { __kwargs: true, max_l_dist: options.max_l_dist },
   )
-  return JSON.parse(stdout) as { start: number; end: number } | null
+
+  return (match ?? null) as { start: number; end: number } | null
 }
