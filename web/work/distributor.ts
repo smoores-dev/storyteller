@@ -1,9 +1,20 @@
 import { UUID } from "@/uuid"
 import { join } from "node:path"
 import Piscina from "piscina"
+import { MessageChannel } from "node:worker_threads"
 import { cwd } from "node:process"
-import { ProcessingTaskType } from "@/apiModels/models/ProcessingStatus"
+import {
+  ProcessingTaskStatus,
+  ProcessingTaskType,
+} from "@/apiModels/models/ProcessingStatus"
 import { BaseEvent, BookEvents } from "@/events"
+import {
+  createProcessingTask,
+  getProcessingTasksForBook,
+  resetProcessingTasksForBook,
+  updateTaskProgress,
+  updateTaskStatus,
+} from "@/database/processingTasks"
 
 const controllers: Map<UUID, AbortController> = new Map()
 const queue: UUID[] = []
@@ -13,15 +24,6 @@ const filename = join(cwd(), "work-dist", "worker.js")
 const piscina = new Piscina({
   filename,
   maxThreads: 1,
-})
-
-piscina.on("message", (event: BookProcessingEvent) => {
-  BookEvents.emit("message", event)
-
-  if (event.type === "taskStarted") {
-    const index = queue.indexOf(event.bookUuid)
-    queue.splice(index, 1)
-  }
 })
 
 export function cancelProcessing(bookUuid: UUID) {
@@ -34,12 +36,57 @@ export function cancelProcessing(bookUuid: UUID) {
   }
 
   abortController.abort()
+  if (controllers.has(bookUuid)) controllers.delete(bookUuid)
 }
 
 export function startProcessing(bookUuid: UUID) {
+  if (controllers.has(bookUuid)) return
+
+  const { port1, port2 } = new MessageChannel()
+
+  port2.on("message", async (event: BookProcessingEvent) => {
+    BookEvents.emit("message", event)
+
+    if (event.type === "processingStarted") {
+      const index = queue.indexOf(event.bookUuid)
+      queue.splice(index, 1)
+      await resetProcessingTasksForBook(event.bookUuid)
+      const currentTasks = await getProcessingTasksForBook(event.bookUuid)
+      console.log("emitting current tasks back")
+      port2.postMessage(currentTasks)
+    }
+    if (event.type === "taskTypeUpdated") {
+      const { taskUuid, taskType, taskStatus } = event.payload
+      const returnUuid =
+        taskUuid ??
+        (await createProcessingTask(
+          taskType,
+          ProcessingTaskStatus.STARTED,
+          event.bookUuid,
+        ))
+
+      if (taskStatus !== ProcessingTaskStatus.STARTED) {
+        await updateTaskStatus(returnUuid, ProcessingTaskStatus.STARTED)
+      }
+      port2.postMessage(returnUuid)
+    }
+    if (event.type === "taskProgressUpdated") {
+      const { progress, taskUuid } = event.payload
+      void updateTaskProgress(taskUuid, progress)
+    }
+    if (event.type === "taskCompleted") {
+      const { taskUuid } = event.payload
+      void updateTaskStatus(taskUuid, ProcessingTaskStatus.COMPLETED)
+    }
+    if (event.type === "processingFailed") {
+      const { taskUuid } = event.payload
+      await updateTaskStatus(taskUuid, ProcessingTaskStatus.IN_ERROR)
+    }
+  })
+
   queue.push(bookUuid)
   BookEvents.emit("message", {
-    type: "taskQueued",
+    type: "processingQueued",
     bookUuid,
     payload: undefined,
   })
@@ -47,12 +94,15 @@ export function startProcessing(bookUuid: UUID) {
   const abortController = new AbortController()
   controllers.set(bookUuid, abortController)
   void piscina
-    .run({ bookUuid }, { signal: abortController.signal })
+    .run(
+      { bookUuid, port: port1 },
+      { transferList: [port1], signal: abortController.signal },
+    )
     .catch((err: unknown) => {
       if (err instanceof Error && err.name === "AbortError") {
         console.log(`Processing for book ${bookUuid} aborted by user`)
         BookEvents.emit("message", {
-          type: "taskStopped",
+          type: "processingStopped",
           bookUuid,
           payload: undefined,
         })
@@ -63,7 +113,7 @@ export function startProcessing(bookUuid: UUID) {
       console.error(err)
     })
     .finally(() => {
-      controllers.delete(bookUuid)
+      if (controllers.has(bookUuid)) controllers.delete(bookUuid)
     })
 }
 
@@ -76,10 +126,18 @@ export function isQueued(bookUuid: UUID) {
 }
 
 export type BookProcessingEvent =
-  | BaseEvent<"taskQueued">
-  | BaseEvent<"taskStopped">
-  | BaseEvent<"taskStarted">
-  | BaseEvent<"taskCompleted">
-  | BaseEvent<"taskFailed">
-  | BaseEvent<"taskProgressUpdated", { progress: number }>
-  | BaseEvent<"taskTypeUpdated", { taskType: ProcessingTaskType }>
+  | BaseEvent<"processingQueued">
+  | BaseEvent<"processingStopped">
+  | BaseEvent<"processingStarted">
+  | BaseEvent<"processingCompleted">
+  | BaseEvent<"taskCompleted", { taskUuid: UUID }>
+  | BaseEvent<"processingFailed", { taskUuid: UUID }>
+  | BaseEvent<"taskProgressUpdated", { taskUuid: UUID; progress: number }>
+  | BaseEvent<
+      "taskTypeUpdated",
+      {
+        taskUuid: UUID | undefined
+        taskType: ProcessingTaskType
+        taskStatus: ProcessingTaskStatus
+      }
+    >

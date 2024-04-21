@@ -1,0 +1,9 @@
+--- a/node_modules/pymport/src/pymport.h
++++ b/node_modules/pymport/src/pymport.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#define NODE_API_SWALLOW_UNTHROWABLE_EXCEPTIONS
+ #include <map>
+ #include <list>
+ #include <set>
