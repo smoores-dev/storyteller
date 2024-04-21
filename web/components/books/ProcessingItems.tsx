@@ -1,6 +1,5 @@
 import styles from "./bookoptions.module.css"
 import { BookDetail } from "@/apiModels"
-import { ProcessingTaskType } from "@/apiModels/models/ProcessingStatus"
 import cx from "classnames"
 
 import {
@@ -53,47 +52,18 @@ export function ProcessingItems({ book }: Props) {
     )
   }
 
-  if (
-    !book.processing_status.is_processing ||
-    book.processing_status.current_task !==
-      ProcessingTaskType.TRANSCRIBE_CHAPTERS
-  ) {
-    return (
-      <MenuItem
-        className={cx(styles["menu-item"], styles["delete"])}
-        onClick={() => client.cancelProcessing(book.uuid)}
-      >
-        <TooltipProvider placement="right">
-          <TooltipAnchor>
-            <StopIcon
-              ariaLabel={
-                book.processing_status.is_queued
-                  ? "Remove from queue"
-                  : "Stop processing"
-              }
-            />
-          </TooltipAnchor>
-          <Tooltip>
-            {book.processing_status.is_queued
-              ? "Remove from queue"
-              : "Stop processing"}
-          </Tooltip>
-        </TooltipProvider>
-      </MenuItem>
-    )
-  }
-
+  // if (
+  //   !book.processing_status.is_processing ||
+  //   book.processing_status.current_task !==
+  //     ProcessingTaskType.TRANSCRIBE_CHAPTERS
+  // ) {
   return (
-    <TooltipProvider placement="right">
-      <Tooltip>
-        It&apos;s unsafe to stop processing during transcription (sorry!)
-      </Tooltip>
-      <TooltipAnchor>
-        <MenuItem
-          disabled
-          className={cx(styles["menu-item"], styles["delete"])}
-          onClick={() => client.cancelProcessing(book.uuid)}
-        >
+    <MenuItem
+      className={cx(styles["menu-item"], styles["delete"])}
+      onClick={() => client.cancelProcessing(book.uuid)}
+    >
+      <TooltipProvider placement="right">
+        <TooltipAnchor>
           <StopIcon
             ariaLabel={
               book.processing_status.is_queued
@@ -101,8 +71,37 @@ export function ProcessingItems({ book }: Props) {
                 : "Stop processing"
             }
           />
-        </MenuItem>
-      </TooltipAnchor>
-    </TooltipProvider>
+        </TooltipAnchor>
+        <Tooltip>
+          {book.processing_status.is_queued
+            ? "Remove from queue"
+            : "Stop processing"}
+        </Tooltip>
+      </TooltipProvider>
+    </MenuItem>
   )
+  // }
+
+  // return (
+  //   <TooltipProvider placement="right">
+  //     <Tooltip>
+  //       It&apos;s unsafe to stop processing during transcription (sorry!)
+  //     </Tooltip>
+  //     <TooltipAnchor>
+  //       <MenuItem
+  //         disabled
+  //         className={cx(styles["menu-item"], styles["delete"])}
+  //         onClick={() => client.cancelProcessing(book.uuid)}
+  //       >
+  //         <StopIcon
+  //           ariaLabel={
+  //             book.processing_status.is_queued
+  //               ? "Remove from queue"
+  //               : "Stop processing"
+  //           }
+  //         />
+  //       </MenuItem>
+  //     </TooltipAnchor>
+  //   </TooltipProvider>
+  // )
 }

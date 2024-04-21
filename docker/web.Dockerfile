@@ -9,6 +9,14 @@ RUN yarn workspaces focus @storyteller/web
 # While using async/await fork:
 RUN npm rebuild --build-from-source sqlite3
 
+# When a user cancels a processing worker, if pymport is running,
+# it will return to a now-unavailable environment.
+
+# We manually patch it to swallow this flavor of error
+COPY --chown=node web/pymport-swallow-unthrowable.patch ./web/pymport-swallow-unthrowable.patch
+RUN patch -p1 node_modules/pymport/src/pymport.h web/pymport-swallow-unthrowable.patch
+RUN npm rebuild --build-from-source pymport
+
 COPY --chown=node . .
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so

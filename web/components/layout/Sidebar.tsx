@@ -49,9 +49,9 @@ export function Sidebar({ className }: Props) {
     eventSource.addEventListener("message", (event: MessageEvent<string>) => {
       const data = JSON.parse(event.data) as BookEvent
       switch (data.type) {
-        case "taskCompleted":
-        case "taskFailed":
-        case "taskStopped": {
+        case "processingCompleted":
+        case "processingFailed":
+        case "processingStopped": {
           setCurrentBook(null)
           break
         }
@@ -89,7 +89,7 @@ export function Sidebar({ className }: Props) {
           )
           break
         }
-        case "taskStarted": {
+        case "processingStarted": {
           void client.getBookDetails(data.bookUuid).then((book) => {
             if (book.processing_status?.is_processing) {
               setCurrentBook(book)
@@ -102,7 +102,7 @@ export function Sidebar({ className }: Props) {
     return () => {
       eventSource.close()
     }
-  }, [])
+  }, [client])
 
   return (
     <aside className={cx(styles["aside"], className)}>
