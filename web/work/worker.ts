@@ -4,11 +4,6 @@ import {
 } from "@/apiModels/models/ProcessingStatus"
 import {
   PROCESSING_TASK_ORDER,
-  createProcessingTask,
-  getProcessingTasksForBook,
-  resetProcessingTasksForBook,
-  updateTaskProgress,
-  updateTaskStatus,
   type ProcessingTask,
 } from "@/database/processingTasks"
 import {
@@ -28,10 +23,15 @@ import {
 import { getInitialPrompt } from "@/process/prompt"
 import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
-import { TranscriptionResult, transcribeTrack } from "@/transcribe"
+import {
+  TranscriptionResult,
+  getAlignModel,
+  getTranscribeModel,
+  transcribeTrack,
+} from "@/transcribe"
 import { UUID } from "@/uuid"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { parentPort } from "node:worker_threads"
+import { MessagePort } from "node:worker_threads"
 
 const DEVICE = process.env["STORYTELLER_DEVICE"]
 const BATCH_SIZE = parseInt(process.env["STORYTELLER_BATCH_SIZE"] ?? "16", 10)
@@ -52,6 +52,9 @@ export async function transcribeBook(
     throw new Error("Failed to transcribe book: found no processed audio files")
   }
 
+  const transcribeModel = getTranscribeModel(device, computeType, initialPrompt)
+  const { alignModel, alignMetadata } = getAlignModel(device)
+
   const transcriptions: TranscriptionResult[] = []
   for (let i = 0; i < audioFiles.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -70,12 +73,13 @@ export async function transcribeBook(
         JSON.parse(existingTranscription) as TranscriptionResult,
       )
     } catch (_) {
-      const transcription = await transcribeTrack(
+      const transcription = transcribeTrack(
         filepath,
         device,
-        computeType,
+        transcribeModel,
+        alignModel,
+        alignMetadata,
         batchSize,
-        initialPrompt,
       )
       transcriptions.push(transcription)
       await writeFile(transcriptionFilepath, JSON.stringify(transcription))
@@ -127,42 +131,45 @@ export function determineRemainingTasks(
 
 export default async function processBook({
   bookUuid,
+  port,
 }: {
   bookUuid: UUID
-  restart: boolean
+  port: MessagePort
 }) {
-  parentPort?.postMessage({ type: "taskStarted", bookUuid })
-  await resetProcessingTasksForBook(bookUuid)
+  port.postMessage({ type: "processingStarted", bookUuid })
 
-  const currentTasks = await getProcessingTasksForBook(bookUuid)
+  const currentTasks: ProcessingTask[] = await new Promise((resolve) => {
+    port.once("message", resolve)
+  })
+
+  // const currentTasks = await getProcessingTasksForBook(bookUuid)
   const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
 
   console.log(
     `Found ${remainingTasks.length} remaining tasks for book ${bookUuid}`,
   )
   for (const task of remainingTasks) {
-    const taskUuid =
-      task.uuid ??
-      (await createProcessingTask(task.type, task.status, bookUuid))
-
-    if (task.status !== ProcessingTaskStatus.STARTED) {
-      await updateTaskStatus(taskUuid, ProcessingTaskStatus.STARTED)
-    }
-
-    const onProgress = (progress: number) => {
-      parentPort?.postMessage({
-        type: "taskProgressUpdated",
-        bookUuid,
-        payload: { progress },
-      })
-      void updateTaskProgress(taskUuid, progress)
-    }
-
-    parentPort?.postMessage({
+    port.postMessage({
       type: "taskTypeUpdated",
       bookUuid,
-      payload: { taskType: task.type },
+      payload: {
+        taskUuid: task.uuid,
+        taskType: task.type,
+        taskStatus: task.status,
+      },
     })
+
+    const taskUuid: UUID = await new Promise((resolve) => {
+      port.once("message", resolve)
+    })
+
+    const onProgress = (progress: number) => {
+      port.postMessage({
+        type: "taskProgressUpdated",
+        bookUuid,
+        payload: { taskUuid, progress },
+      })
+    }
 
     try {
       if (task.type === ProcessingTaskType.SPLIT_CHAPTERS) {
@@ -209,16 +216,23 @@ export default async function processBook({
         await epub.close()
       }
 
-      await updateTaskStatus(taskUuid, ProcessingTaskStatus.COMPLETED)
+      port.postMessage({
+        type: "taskCompleted",
+        bookUuid,
+        payload: { taskUuid },
+      })
     } catch (e) {
       console.error(
         `Encountered error while running task "${task.type}" for book ${bookUuid}`,
       )
       console.error(e)
-      await updateTaskStatus(taskUuid, ProcessingTaskStatus.IN_ERROR)
-      parentPort?.postMessage({ type: "taskFailed", bookUuid })
+      port.postMessage({
+        type: "processingFailed",
+        bookUuid,
+        payload: { taskUuid },
+      })
       return
     }
   }
-  parentPort?.postMessage({ type: "taskCompleted", bookUuid })
+  port.postMessage({ type: "processingCompleted", bookUuid })
 }

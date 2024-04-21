@@ -268,11 +268,11 @@ export class Synchronizer {
       }
       const { startSentence, transcriptionOffset } =
         this.syncCache.getChapterIndex(index) ??
-        (await findBestOffset(
+        findBestOffset(
           chapterSentences,
           transcriptionText,
           lastTranscriptionOffset,
-        ))
+        )
 
       if (transcriptionOffset === null) {
         console.log(

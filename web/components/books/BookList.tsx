@@ -42,7 +42,7 @@ export function BookList({ books: initialBooks }: Props) {
             case "bookUpdated": {
               return { ...book, ...data.payload }
             }
-            case "taskQueued": {
+            case "processingQueued": {
               return {
                 ...book,
                 processing_status: {
@@ -54,7 +54,7 @@ export function BookList({ books: initialBooks }: Props) {
                 },
               }
             }
-            case "taskCompleted": {
+            case "processingCompleted": {
               return {
                 ...book,
                 processing_status: {
@@ -66,7 +66,7 @@ export function BookList({ books: initialBooks }: Props) {
                 },
               }
             }
-            case "taskStopped": {
+            case "processingStopped": {
               return {
                 ...book,
                 processing_status: {
@@ -80,7 +80,7 @@ export function BookList({ books: initialBooks }: Props) {
                 },
               }
             }
-            case "taskFailed": {
+            case "processingFailed": {
               return {
                 ...book,
                 processing_status: {
@@ -92,7 +92,7 @@ export function BookList({ books: initialBooks }: Props) {
                 },
               }
             }
-            case "taskStarted": {
+            case "processingStarted": {
               return {
                 ...book,
                 processing_status: {
@@ -129,6 +129,9 @@ export function BookList({ books: initialBooks }: Props) {
                   status: ProcessingTaskStatus.STARTED,
                 },
               }
+            }
+            default: {
+              return book
             }
           }
         })

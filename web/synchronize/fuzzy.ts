@@ -1,25 +1,20 @@
-import nodecallspython from "node-calls-python"
-import { cwd } from "process"
+import { pymport } from "pymport"
+import { FuzzySearch } from "./fuzzysearch"
 
-const py = nodecallspython.interpreter
+const fuzzysearch = pymport("fuzzysearch") as FuzzySearch
 
-py.addImportPath("/home/node/.local/venv")
-py.addImportPath(cwd())
-
-const fuzzysearch = py.importSync("find_nearest_match", false)
-
-export async function findNearestMatch(
+export function findNearestMatch(
   needle: string,
   haystack: string,
   options: { max_l_dist?: number },
 ) {
-  const match = await py.call(
-    fuzzysearch,
-    "find_nearest_match",
-    needle,
-    haystack,
-    { __kwargs: true, max_l_dist: options.max_l_dist },
-  )
-
-  return (match ?? null) as { start: number; end: number } | null
+  const matches = fuzzysearch
+    .get("find_near_matches")
+    .call(needle, haystack, options)
+  const firstMatch = matches.item(0)
+  if (!firstMatch) return firstMatch
+  return {
+    start: firstMatch.get("start").toJS(),
+    end: firstMatch.get("end").toJS(),
+  }
 }
