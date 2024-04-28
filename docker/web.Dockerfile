@@ -1,4 +1,5 @@
-FROM registry.gitlab.com/smoores/storyteller-base:latest
+ARG BASE_TAG=latest
+FROM registry.gitlab.com/smoores/storyteller-base:${BASE_TAG}
 
 COPY --chown=node package.json yarn.lock .yarnrc.yml ./
 COPY --chown=node .yarn/releases ./.yarn/releases
