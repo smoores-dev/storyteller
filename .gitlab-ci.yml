@@ -9,6 +9,9 @@ check-web:
   needs: []
   script:
     - yarn
+    - patch -p1 node_modules/pymport/src/pymport.h
+      web/pymport-swallow-unthrowable.patch
+    - npm rebuild --build-from-source pymport
     - yarn check
     - yarn test
 
