@@ -64,7 +64,8 @@ publish-cuda:
     - docker context create gitlab-ci
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
-    - docker buildx build --push -f docker/web.Dockerfile --cache-from
+    - docker buildx build --push -f docker/web.Dockerfile --build-arg
+      BASE_TAG=cuda --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-next --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-next,mode=max --tag
       $CI_REGISTRY_IMAGE:cuda-next --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
