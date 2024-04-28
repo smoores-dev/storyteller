@@ -92,7 +92,8 @@ function tagSentencesInXml(
     const remainingSentence = sentences[currentSentenceIndex]!.slice(
       currentSentenceProgress,
     )
-    const remainingNodeText = currentNode["#text"].slice(currentNodeProgress)
+    const text = currentNode["#text"].toString()
+    const remainingNodeText = text.slice(currentNodeProgress)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const index = remainingNodeText.indexOf(remainingSentence[0]!)
     if (index === -1) {
