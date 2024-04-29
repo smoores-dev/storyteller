@@ -1,10 +1,10 @@
 ARG BASE_TAG=latest
 FROM registry.gitlab.com/smoores/storyteller-base:${BASE_TAG}
 
-COPY --chown=node package.json yarn.lock .yarnrc.yml ./
-COPY --chown=node .yarn/releases ./.yarn/releases
-COPY --chown=node .yarn/cache ./.yarn/cache
-COPY --chown=node web/package.json ./web/package.json
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn/releases ./.yarn/releases
+COPY .yarn/cache ./.yarn/cache
+COPY web/package.json ./web/package.json
 
 RUN yarn workspaces focus @storyteller/web
 # While using async/await fork:
@@ -14,11 +14,11 @@ RUN npm rebuild --build-from-source sqlite3
 # it will return to a now-unavailable environment.
 
 # We manually patch it to swallow this flavor of error
-COPY --chown=node web/pymport-swallow-unthrowable.patch ./web/pymport-swallow-unthrowable.patch
+COPY web/pymport-swallow-unthrowable.patch ./web/pymport-swallow-unthrowable.patch
 RUN patch -p1 node_modules/pymport/src/pymport.h web/pymport-swallow-unthrowable.patch
 RUN npm rebuild --build-from-source pymport
 
-COPY --chown=node . .
+COPY . .
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
