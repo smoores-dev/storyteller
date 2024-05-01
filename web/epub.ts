@@ -381,18 +381,44 @@ export class Epub {
     return metadata
   }
 
+  async getEpub2CoverImage() {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = findByName("package", packageDocument)
+
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no package element in package document",
+      )
+
+    const metadataElement = findByName("metadata", packageElement.package)
+
+    if (!metadataElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no metadata element in package document",
+      )
+
+    const coverImageElement = metadataElement.metadata.find(
+      (element) => element[":@"]?.["@_name"] === "cover",
+    )
+
+    const manifestItemId = coverImageElement?.[":@"]?.["@_content"]
+    if (!manifestItemId) return null
+
+    const manifest = await this.getManifest()
+    return (
+      Object.values(manifest).find((item) => item.id === manifestItemId) ?? null
+    )
+  }
+
   async getCoverImage() {
     const manifest = await this.getManifest()
     const coverImage = Object.values(manifest).find((item) =>
       item.properties?.includes("cover-image"),
     )
     if (coverImage) return coverImage
-    const metadata = await this.getMetadata()
-    const coverEntry = metadata.find(
-      (entry) => entry.properties["name"] === "cover",
-    )
-    if (!coverEntry?.value) return null
-    return manifest[coverEntry.value] ?? null
+
+    return this.getEpub2CoverImage()
   }
 
   async getTitle(short = false) {
