@@ -6,6 +6,7 @@ import {
   PROCESSING_TASK_ORDER,
   type ProcessingTask,
 } from "@/database/processingTasks"
+import { Settings } from "@/database/settings"
 import {
   getProcessedAudioFilepath,
   getProcessedFiles,
@@ -131,9 +132,11 @@ export function determineRemainingTasks(
 
 export default async function processBook({
   bookUuid,
+  settings,
   port,
 }: {
   bookUuid: UUID
+  settings: Settings
   port: MessagePort
 }) {
   port.postMessage({ type: "processingStarted", bookUuid })
@@ -175,7 +178,12 @@ export default async function processBook({
       if (task.type === ProcessingTaskType.SPLIT_CHAPTERS) {
         console.log("Pre-processing...")
         await processEpub(bookUuid)
-        await processAudiobook(bookUuid, onProgress)
+        await processAudiobook(
+          bookUuid,
+          settings.codec ?? null,
+          settings.bitrate ?? null,
+          onProgress,
+        )
       }
 
       if (task.type === ProcessingTaskType.TRANSCRIBE_CHAPTERS) {

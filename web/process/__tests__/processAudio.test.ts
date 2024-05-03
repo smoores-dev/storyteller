@@ -15,20 +15,44 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir)
+    await processFile(uuid, input, outDir, "00000-", null, null)
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
-      "00001.mp4",
-      "00002.mp4",
-      "00003.mp4",
-      "00004.mp4",
-      "00005.mp4",
-      "00006.mp4",
-      "00007.mp4",
-      "00008.mp4",
-      "00009.mp4",
-      "00010.mp4",
-      "00011.mp4",
+      "00000-00001.mp4",
+      "00000-00002.mp4",
+      "00000-00003.mp4",
+      "00000-00004.mp4",
+      "00000-00005.mp4",
+      "00000-00006.mp4",
+      "00000-00007.mp4",
+      "00000-00008.mp4",
+      "00000-00009.mp4",
+      "00000-00010.mp4",
+      "00000-00011.mp4",
+    ])
+    const audioCover = await getAudioCoverFilepath(uuid)
+    assert.ok(audioCover!.endsWith("Audio Cover.png"))
+  })
+
+  void it("can process mp3 files", async () => {
+    const input = join("__fixtures__", "MobyDickOrTheWhalePart1_librivox.mp3")
+    const uuid = randomUUID()
+    const outDir = getProcessedAudioFilepath(uuid)
+    await mkdir(outDir, { recursive: true })
+    await processFile(uuid, input, outDir, "00000-", null, null)
+    const outFiles = await readdir(outDir)
+    assert.deepStrictEqual(outFiles, [
+      "00000-00001.mp4",
+      "00000-00002.mp4",
+      "00000-00003.mp4",
+      "00000-00004.mp4",
+      "00000-00005.mp4",
+      "00000-00006.mp4",
+      "00000-00007.mp4",
+      "00000-00008.mp4",
+      "00000-00009.mp4",
+      "00000-00010.mp4",
+      "00000-00011.mp4",
     ])
     const audioCover = await getAudioCoverFilepath(uuid)
     assert.ok(audioCover!.endsWith("Audio Cover.png"))
@@ -39,12 +63,12 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir)
+    await processFile(uuid, input, outDir, "00000-", null, null)
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
-      "mobydick_001_002_melville.mp3",
-      "mobydick_003_melville.mp3",
-      "mobydick_004_007_melville.mp3",
+      "00000-00000-00001.mp4",
+      "00000-00001-00001.mp4",
+      "00000-00002-00001.mp4",
     ])
   })
 })

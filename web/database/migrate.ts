@@ -48,6 +48,8 @@ async function migrateFile(path: string) {
 
   const existingMigration = await getMigration(hash)
   if (!existingMigration) {
+    console.log(`Running migration: "${basename(path, ".sql")}"\n`)
+    console.log(contents)
     const statements = contents
       .split(";")
       .map((statement) => statement.trim())
@@ -65,6 +67,7 @@ async function migrate() {
   const migrationsDir = join(cwd(), "migrations")
   const migrationFiles = await readdir(migrationsDir)
   migrationFiles.sort()
+  console.log(migrationFiles)
 
   // We have to special case the "zero-th" migration,
   // because we goofed and didn't add it as a migration

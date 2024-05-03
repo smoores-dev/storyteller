@@ -10,6 +10,8 @@ export type Settings = {
   smtpRejectUnauthorized?: boolean
   libraryName?: string
   webUrl?: string
+  codec?: string | null
+  bitrate?: string | null
 }
 
 // Sqlite doesn't have real booleans; these are stored as bits
@@ -28,6 +30,8 @@ const SETTINGS_COLUMN_NAMES = {
   smtp_reject_unauthorized: "smtpRejectUnauthorized",
   library_name: "libraryName",
   web_url: "webUrl",
+  codec: "codec",
+  bitrate: "bitrate",
 } as const
 
 export async function getSetting<
@@ -117,6 +121,14 @@ export async function updateSettings(settings: Settings) {
     statement.run({
       $name: "library_name",
       $value: JSON.stringify(settings.libraryName),
+    }),
+    statement.run({
+      $name: "codec",
+      $value: JSON.stringify(settings.codec),
+    }),
+    statement.run({
+      $name: "bitrate",
+      $value: JSON.stringify(settings.bitrate),
     }),
   ])
 }
