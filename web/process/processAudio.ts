@@ -15,7 +15,12 @@ import {
 import { basename, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
-import { getTrackChapters, getTrackDuration, splitTrack } from "@/audio"
+import {
+  getTrackChapters,
+  getTrackDuration,
+  splitTrack,
+  transcodeTrack,
+} from "@/audio"
 import { type TranscriptionResult } from "@/transcribe"
 
 export function getAudioDirectory(bookUuid: UUID) {
@@ -85,8 +90,9 @@ export function getTranscriptionsFilepath(bookUuid: UUID, filename = "") {
 }
 
 const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
-const PLAIN_AUDIO_FILE_EXTENSIONS = [".mp3"]
+const MP3_FILE_EXTENSIONS = [".mp3"]
 const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
+const AUDIO_FILE_EXTENSIONS = [...MP3_FILE_EXTENSIONS, ...MPEG4_FILE_EXTENSIONS]
 
 export async function persistCover(bookUuid: UUID, coverFilename: string) {
   const index = (await getAudioIndex(bookUuid)) ?? {}
@@ -122,18 +128,25 @@ export async function extractCover(bookUuid: UUID, trackPath: string) {
   await persistCustomCover(bookUuid, coverFilename, coverImage.data)
 }
 
-export async function processMpeg4File(
+export async function processAudioFile(
   filepath: string,
   outDir: string,
+  prefix: string,
+  codec: string | null,
+  bitrate: string | null,
   onProgress?: (progress: number) => void,
 ): Promise<AudioFile[]> {
   const duration = await getTrackDuration(filepath)
   const chapters = await getTrackChapters(filepath)
   if (!chapters.length) {
-    const destination = join(outDir, "00001.mp4")
-    await copyFile(filepath, destination)
+    const destination = join(outDir, `${prefix}00001.mp4`)
+    await transcodeTrack(filepath, destination, codec, bitrate)
     return [
-      { filename: "00001.mp4", bare_filename: "00001", extension: ".mp4" },
+      {
+        filename: `${prefix}00001.mp4`,
+        bare_filename: `${prefix}00001`,
+        extension: ".mp4",
+      },
     ]
   }
 
@@ -146,7 +159,7 @@ export async function processMpeg4File(
   for (let i = 0; i < chapterRanges.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const chapterRange = chapterRanges[i]!
-    const chapterFilename = `${(i + 1).toString().padStart(5, "0")}.mp4`
+    const chapterFilename = `${prefix}${(i + 1).toString().padStart(5, "0")}.mp4`
     const chapterFilepath = join(outDir, chapterFilename)
     await rm(chapterFilepath, { force: true })
 
@@ -162,6 +175,8 @@ export async function processMpeg4File(
       chapterRange.start,
       chapterRange.end,
       chapterFilepath,
+      codec,
+      bitrate,
     )
     onProgress?.((i + 1) / chapterRanges.length)
   }
@@ -173,6 +188,9 @@ export async function processFile(
   bookUuid: UUID,
   filepath: string,
   outDir: string,
+  prefix: string,
+  codec: string | null,
+  bitrate: string | null,
   onProgress?: (progress: number) => void,
 ) {
   const audioFiles: AudioFile[] = []
@@ -190,23 +208,18 @@ export async function processFile(
     await persistCover(bookUuid, filename)
   }
 
-  if (PLAIN_AUDIO_FILE_EXTENSIONS.includes(ext)) {
+  if (AUDIO_FILE_EXTENSIONS.includes(ext)) {
     if ((await getAudioCoverFilepath(bookUuid)) === null) {
       await extractCover(bookUuid, filepath)
     }
-    audioFiles.push({
-      filename,
-      bare_filename: bareFilename,
-      extension: ext,
-    })
-    await copyFile(filepath, join(outDir, filename))
-  }
-
-  if (MPEG4_FILE_EXTENSIONS.includes(ext)) {
-    if ((await getAudioCoverFilepath(bookUuid)) === null) {
-      await extractCover(bookUuid, filepath)
-    }
-    const processed = await processMpeg4File(filepath, outDir, onProgress)
+    const processed = await processAudioFile(
+      filepath,
+      outDir,
+      prefix,
+      codec,
+      bitrate,
+      onProgress,
+    )
     audioFiles.push(...processed)
   }
 
@@ -224,7 +237,7 @@ export async function processFile(
 
         const zext = extname(entry.filename)
         if (
-          PLAIN_AUDIO_FILE_EXTENSIONS.includes(zext) ||
+          MP3_FILE_EXTENSIONS.includes(zext) ||
           MPEG4_FILE_EXTENSIONS.includes(zext)
         ) {
           const tempFilepath = join(tempDir, entry.filename)
@@ -237,6 +250,9 @@ export async function processFile(
             bookUuid,
             tempFilepath,
             outDir,
+            `${prefix}${i.toString().padStart(5, "0")}-`,
+            codec,
+            bitrate,
             (progress: number) =>
               onProgress?.(
                 i / entries.length + progress * (1 / entries.length),
@@ -268,6 +284,8 @@ export async function persistProcessedFilesList(
 
 export async function processAudiobook(
   bookUuid: UUID,
+  codec: string | null,
+  bitrate: string | null,
   onProgress?: (progress: number) => void,
 ) {
   const originalAudioDirectory = getOriginalAudioFilepath(bookUuid)
@@ -291,6 +309,9 @@ export async function processAudiobook(
       bookUuid,
       filepath,
       processedAudioDirectory,
+      `${i.toString().padStart(5, "0")}-`,
+      codec,
+      bitrate,
       (progress: number) =>
         onProgress?.(i / filenames.length + progress * (1 / filenames.length)),
     )

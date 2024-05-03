@@ -12,4 +12,6 @@ export type Settings = {
   smtp_reject_unauthorized: boolean
   library_name: string
   web_url: string
+  codec?: string | undefined
+  bitrate?: string | undefined
 }
