@@ -15,6 +15,7 @@ import {
   updateTaskProgress,
   updateTaskStatus,
 } from "@/database/processingTasks"
+import { getSettings } from "@/database/settings"
 
 const controllers: Map<UUID, AbortController> = new Map()
 const queue: UUID[] = []
@@ -39,8 +40,10 @@ export function cancelProcessing(bookUuid: UUID) {
   if (controllers.has(bookUuid)) controllers.delete(bookUuid)
 }
 
-export function startProcessing(bookUuid: UUID) {
+export async function startProcessing(bookUuid: UUID) {
   if (controllers.has(bookUuid)) return
+
+  const settings = await getSettings()
 
   const { port1, port2 } = new MessageChannel()
 
@@ -93,28 +96,28 @@ export function startProcessing(bookUuid: UUID) {
 
   const abortController = new AbortController()
   controllers.set(bookUuid, abortController)
-  void piscina
-    .run(
-      { bookUuid, port: port1 },
+
+  try {
+    await piscina.run(
+      { bookUuid, settings, port: port1 },
       { transferList: [port1], signal: abortController.signal },
     )
-    .catch((err: unknown) => {
-      if (err instanceof Error && err.name === "AbortError") {
-        console.log(`Processing for book ${bookUuid} aborted by user`)
-        BookEvents.emit("message", {
-          type: "processingStopped",
-          bookUuid,
-          payload: undefined,
-        })
-        return
-      }
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      console.log(`Processing for book ${bookUuid} aborted by user`)
+      BookEvents.emit("message", {
+        type: "processingStopped",
+        bookUuid,
+        payload: undefined,
+      })
+      return
+    }
 
-      console.error(`Processing for book ${bookUuid} failed unexpectedly`)
-      console.error(err)
-    })
-    .finally(() => {
-      if (controllers.has(bookUuid)) controllers.delete(bookUuid)
-    })
+    console.error(`Processing for book ${bookUuid} failed unexpectedly`)
+    console.error(err)
+  } finally {
+    if (controllers.has(bookUuid)) controllers.delete(bookUuid)
+  }
 }
 
 export function isProcessing(bookUuid: UUID) {

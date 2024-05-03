@@ -144,15 +144,68 @@ export const getTrackChapters = memoize(async function getTrackChapters(
   return chapters.map((chapter) => parseChapterInfo(chapter))
 })
 
+export async function transcodeTrack(
+  path: string,
+  destination: string,
+  codec: string | null,
+  bitrate: string | null,
+) {
+  const command = "ffmpeg"
+  const args = [
+    "-nostdin",
+    "-i",
+    `"${path.replaceAll(/"/g, '\\"')}"`,
+    ...(typeof codec === "string"
+      ? ["-c:v", "copy", "-c:a", codec, "-b:a", bitrate ?? "32K"]
+      : ["-c", "copy"]),
+    "-map",
+    "0",
+    "-map_chapters",
+    "-1",
+    "-v",
+    "quiet",
+    `"${destination}"`,
+  ]
+
+  const { stderr } = await exec(`${command} ${args.join(" ")}`)
+
+  if (stderr) {
+    throw new Error(stderr)
+  }
+}
+
 export async function splitTrack(
   path: string,
   from: number,
   to: number,
   destination: string,
+  codec: string | null,
+  bitrate: string | null,
 ) {
-  const { stderr } = await exec(
-    `ffmpeg -nostdin -ss ${from} -to ${to} -i "${path.replaceAll(/"/g, '\\"')}" -c copy -map 0 -map_chapters -1 -v quiet "${destination}"`,
-  )
+  if (from === to) return
+
+  const command = "ffmpeg"
+  const args = [
+    "-nostdin",
+    "-ss",
+    from,
+    "-to",
+    to,
+    "-i",
+    `"${path.replaceAll(/"/g, '\\"')}"`,
+    ...(typeof codec === "string"
+      ? ["-c:v", "copy", "-c:a", codec, "-b:a", bitrate ?? "32K"]
+      : ["-c", "copy"]),
+    "-map",
+    "0",
+    "-map_chapters",
+    "-1",
+    "-v",
+    "quiet",
+    `"${destination}"`,
+  ]
+
+  const { stderr } = await exec(`${command} ${args.join(" ")}`)
 
   if (stderr) {
     throw new Error(stderr)

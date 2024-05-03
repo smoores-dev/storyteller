@@ -17,6 +17,8 @@ export const GET = withHasPermission("settings_update")(async () => {
     smtp_reject_unauthorized: settings.smtpRejectUnauthorized ?? true,
     library_name: settings.libraryName,
     web_url: settings.webUrl,
+    codec: settings.codec,
+    bitrate: settings.bitrate,
   })
 })
 
@@ -30,11 +32,14 @@ type SettingsRequest = {
   smtp_reject_unauthorized: boolean
   library_name: string
   web_url: string
+  codec: string | null
+  bitrate: string | null
 }
 
 export const PUT = withHasPermission("settings_update")(async (request) => {
   const settings = (await request.json()) as SettingsRequest
 
+  console.log("route", settings)
   await updateSettings({
     smtpHost: settings.smtp_host,
     smtpPort: settings.smtp_port,
@@ -45,6 +50,8 @@ export const PUT = withHasPermission("settings_update")(async (request) => {
     smtpRejectUnauthorized: settings.smtp_reject_unauthorized,
     libraryName: settings.library_name,
     webUrl: settings.web_url,
+    codec: settings.codec,
+    bitrate: settings.bitrate,
   })
 
   return new Response(null, { status: 204 })

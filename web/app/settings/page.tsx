@@ -44,6 +44,11 @@ export default async function SettingsPage() {
     const libraryName = data.get("library-name")?.valueOf() as string
     const webUrl = data.get("web-url")?.valueOf() as string
 
+    const codecString = data.get("codec")?.valueOf() as string
+    const codec = codecString === "" ? undefined : codecString
+    const bitrateString = data.get("bitrate")?.valueOf() as string
+    const bitrate = bitrateString === "" ? undefined : bitrateString
+
     const smtpFrom = data.get("smtp-from")?.valueOf() as string
     const smtpHost = data.get("smtp-host")?.valueOf() as string
     const smtpPort = data.get("smtp-port")?.valueOf() as string
@@ -66,9 +71,13 @@ export default async function SettingsPage() {
       smtp_password: smtpPassword,
       smtp_ssl: smtpSsl,
       smtp_reject_unauthorized: smtpRejectUnauthorized,
+      codec,
+      bitrate,
     })
     revalidatePath("/settings")
   }
+
+  console.log(settings)
 
   return (
     <main className={styles["main"]}>
@@ -91,6 +100,31 @@ export default async function SettingsPage() {
               name="web-url"
               defaultValue={settings.web_url}
             />
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Audio settings</legend>
+          <label id="codec-label" htmlFor="codec">
+            Preferred audio codec
+            <select id="codec" name="codec" defaultValue={settings.codec ?? ""}>
+              <option value="">Default</option>
+              <option value="libopus">OPUS</option>
+            </select>
+          </label>
+          <label id="bitrate-label" htmlFor="bitrate">
+            Preferred audio bitrate
+            <select
+              id="bitrate"
+              name="bitrate"
+              defaultValue={settings.bitrate ?? ""}
+            >
+              <option value="">Default</option>
+              <option value="16K">16 Kb/s</option>
+              <option value="24K">24 Kb/s</option>
+              <option value="32K">32 Kb/s</option>
+              <option value="64K">64 Kb/s</option>
+              <option value="96K">96 Kb/s</option>
+            </select>
           </label>
         </fieldset>
         <fieldset>
@@ -158,7 +192,7 @@ export default async function SettingsPage() {
             />
           </label>
           <p>
-            <strong>Note:</strong>Only disable SSL and self-signed cert
+            <strong>Note:</strong> Only disable SSL and self-signed cert
             rejection if you use a locally hosted SMTP server. If you need to
             connect over the internet, keep SSL enabled!
           </p>

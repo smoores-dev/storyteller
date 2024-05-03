@@ -287,6 +287,7 @@ export class ApiClient {
   }
 
   async updateSettings(settings: Settings) {
+    console.log("apiClient", settings)
     const url = new URL(`${this.rootPath}/settings`, this.origin)
 
     const response = await fetch(url, {
