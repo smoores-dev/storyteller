@@ -42,7 +42,7 @@
     "wink-eng-lite-web-model": "^1.5.2",
     "wink-nlp": "^2.1.0"
   },
-  "packageManager": "yarn@3.6.0",
+  "packageManager": "yarn@4.1.1",
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
     "@types/http-proxy": "^1.17.14",
