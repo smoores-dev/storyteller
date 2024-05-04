@@ -10,3 +10,6 @@ node_modules
 tsbuild
 
 /docs/.docusaurus
+
+__fixtures__
+web/work-dist
