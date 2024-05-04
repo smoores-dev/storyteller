@@ -35,7 +35,7 @@ publish-web:
   needs:
     - check-web
   rules:
-    - if: $CI_COMMIT_BRANCH == "all-js"
+    - if: $CI_COMMIT_BRANCH == "main"
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -45,28 +45,27 @@ publish-web:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f docker/web.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:next --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:next,mode=max --tag
-      $CI_REGISTRY_IMAGE:next --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
-
-publish-cuda:
-  image: docker:20.10.16
-  stage: publish-web
-  needs:
-    - check-web
-  rules:
-    - if: $CI_COMMIT_BRANCH == "all-js"
-  services:
-    - name: docker:20.10.16-dind
-      alias: docker
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker context create gitlab-ci
-    - docker buildx create --use --driver=docker-container gitlab-ci
-  script:
-    - docker buildx build --push -f docker/web.Dockerfile --build-arg
-      BASE_TAG=cuda-latest --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-next --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-next,mode=max --tag
-      $CI_REGISTRY_IMAGE:cuda-next --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-      .
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:main --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:main,mode=max --tag
+      $CI_REGISTRY_IMAGE:main --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+# publish-cuda:
+#   image: docker:20.10.16
+#   stage: publish-web
+#   needs:
+#     - check-web
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "main"
+#   services:
+#     - name: docker:20.10.16-dind
+#       alias: docker
+#   before_script:
+#     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+#     - docker context create gitlab-ci
+#     - docker buildx create --use --driver=docker-container gitlab-ci
+#   script:
+#     - docker buildx build --push -f docker/web.Dockerfile --build-arg
+#       BASE_TAG=cuda-latest --cache-from
+#       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest --cache-to
+#       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest,mode=max --tag
+#       $CI_REGISTRY_IMAGE:cuda-latest --tag
+#       $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
