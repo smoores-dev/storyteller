@@ -12,9 +12,9 @@ Unfortunately, the Media Overlay specification for EPUB is relatively new, and
 has not been implemented by very many e-readers to date. The app
 [BookFusion](https://www.bookfusion.com/) has been tested with
 Storyteller-produced ebooks, but it has less robust audiobook features than the
-[Storyteller mobile apps](/docs/reading-your-books/storyteller-apps), and it can
-often fail to find your place correctly in the text after a long listening
-session.
+[Storyteller mobile apps](/docs/reading-your-books/storyteller-apps). On the
+other hand, it has far more robust library management, sharing, and ebook
+features.
 
 To add a Storyteller book to BookFusion, navigate to your Storyteller web
 interface on your mobile device and download the book files that you wish to

@@ -5,11 +5,11 @@ sidebar_position: 1
 # The Algorithm
 
 At the core of the Storyteller system is its
-[synchronization algorithm](https://gitlab.com/smoores/storyteller/-/blob/main/storyteller/synchronize/sync.py?ref_type=heads).
-This algorithm is responsible for taking an audiobook (either as an m4b/mp4
-file, or as a zip of mp3 files) and an ebook (as an epub file) and producing a
-new epub file with synced narration support. This process is known as forced
-alignment.
+[synchronization algorithm](https://gitlab.com/smoores/storyteller/-/blob/main/web/synchronize/synchronizer.ts?ref_type=heads).
+This algorithm is responsible for taking an audiobook (as any number of mp4,
+m4a, m4b, or mp3 files, or zip archives of those file types) and an ebook (as an
+epub file) and producing a new epub file with synced narration support. This
+process is known as forced alignment.
 
 ## Background: EPUB and Media Overlays
 
@@ -39,7 +39,7 @@ The goal of the Storyteller synchronization algorithm is to produce modified
 EPUB documents that include per-sentence tags that are associated with the
 correct length of audio in the provided audiobook.
 
-## Step 1: Split chapters
+## Step 1: Audio pre-processing
 
 The first step of the algorithm is somewhat trivial: split chapters into
 individual audio files. Note that in this scenario, we are referring to
@@ -52,8 +52,14 @@ means that if processing fails or is interrupted, it can restart without losing
 much work.
 
 For a ZIP of audio files, we simply unzip the archive to obtain the individual
-tracks. For an m4b/mp4 file, we utilize the file metadata to identify the tracks
-within the file and manually split them into individual files.
+tracks, and then recursively process each audio file in the archive. For an
+m4b/m4a/mp4/mp3 file, we utilize the file metadata to identify the tracks within
+the file and manually split them into individual files.
+
+Additionally, users may choose to enable OPUS transcoding in their admin
+settings. If this is enabled, as part of this step, Storyteller will transcode
+the audio streams using the OPUS codec, which can result in dramatically reduced
+file size.
 
 ## Step 2: Transcribe the audio
 

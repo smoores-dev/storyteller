@@ -43,14 +43,6 @@ export default async function Home() {
       <h2 className={styles["heading"]}>Books</h2>
       <div className={styles["content"]}>
         <BookList books={books} />
-        <p>
-          You&apos;re running Storyteller v2! There are no breaking changes, but
-          if you haven&apos;t yet,{" "}
-          <a href="https://smoores.gitlab.io/storyteller/docs/migrations/from-v1-to-v2">
-            take a look at the docs
-          </a>{" "}
-          to see how you can simplify your Storyteller setup.
-        </p>
       </div>
     </main>
   )
