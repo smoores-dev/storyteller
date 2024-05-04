@@ -27,11 +27,16 @@ the capability to add and synchronize new books, but not to invite new users).
 In the future, Storyteller will support "Collections" of books, so that
 administrators can more selectively share their library with users.
 
+### Manually sharing invite links
+
+The easiest way to invite users is to simply copy the invite link that
+Storyteller provides for you and share it with your intended user.
+
 ### Setting up email
 
-In order to invite new users to your server, Storyteller requires access to an
-SMTP server. This will allow Storyteller to send emails on your behalf, so that
-your users can receive unique invitation links to set up their accounts.
+If you'd like, you can connect Storyteller to an SMTP server. This will allow
+Storyteller to send emails on your behalf, so that your users can receive unique
+invitation links to set up their accounts.
 
 The SMTP configuration lives on the "Settings" page of the web interface. You'll
 need to provide the host, port, credentials, and "From" address, as well as the
@@ -41,3 +46,19 @@ interface is accessible at) in order for Storyteller to send user invite emails.
 If your email provider supports SMTP, you can simply follow their instructions
 for configuring email in Storyteller. Otherwise, you can use a free SMTP relay
 service, such as Sendgrid.
+
+## Audio settings
+
+As part of its audio pre-processing step, Storyteller can transcode your audio
+files using the [OPUS codec](https://opus-codec.org/). This encoding is
+particularly efficient at compressing human speech, and can result in
+significantly smaller output files.
+
+If you'd like to enable OPUS transcoding, go to the Settings page of your
+Storyteller instance and set "Preferred audio codec" to "OPUS", and then choose
+a bitrate. The default will be 32 Kb/s, which is a nice balance of storage
+savings and audio quality, but you can choose a higher bitrate for less
+compression, or a lower one for more.
+
+Please note that enabling OPUS transcoding will significantly slow down the
+Pre-processing step!
