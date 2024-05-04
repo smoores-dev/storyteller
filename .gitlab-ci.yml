@@ -45,7 +45,7 @@ publish-web:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --push -f docker/web.Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:main --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max --tag
       $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
 # publish-cuda:
@@ -68,4 +68,4 @@ publish-web:
 #       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest --cache-to
 #       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest,mode=max --tag
 #       $CI_REGISTRY_IMAGE:cuda-latest --tag
-#       $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+#       $CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA .
