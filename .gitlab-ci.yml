@@ -46,8 +46,8 @@ publish-web:
   script:
     - docker buildx build --push -f docker/web.Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:main --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:main,mode=max --tag
-      $CI_REGISTRY_IMAGE:main --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
 # publish-cuda:
 #   image: docker:20.10.16
 #   stage: publish-web
