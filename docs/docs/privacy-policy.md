@@ -5,9 +5,8 @@ sidebar_position: 6
 # Privacy policy
 
 The Storyteller team does not collect any data whatsoever about Storyteller
-users via the Storyteller platform. None of the three components of the platform
-(the API, the admin website, or the mobile applications) collect or transmit
-analytics or telemetry.
+users via the Storyteller platform. Neither the backend service nor the mobile
+applications collect or transmit analytics or telemetry, or any user data.
 
 Individial API instances, which are owned and run by users, store information
 about books, collections, and users on those API instances. This data is stored

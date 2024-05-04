@@ -12,19 +12,19 @@ things:
    stores will provide EPUB files for their books, though many unfortunately
    still use DRM. Storyteller _cannot_ work with books that are locked with DRM.
    ACSM files, or EPUB files with Readium's LCP, will not work with Storyteller.
-2. An audiobook. This can either be formatted as a single MP4 file (it may have
-   a `.mp4`, `.m4a`, or `.m4b` file extension) or a ZIP archive of MP3 files. In
-   the future, Storyteller may support other audiobook formats; for now, it only
-   supports these common formats. Again, these files must not be protected by
-   DRM; Storyteller cannot process or strip DRM-protected files.
+2. An audiobook. This can either be provided as any number of MP4, M4A, M4B, or
+   MP3 files, or any number of ZIP archives of files of those types. If
+   providing multiple files, it's best to ensure that they're alphanumerically
+   ordered. Again, these files must not be protected by DRM; Storyteller cannot
+   process or strip DRM-protected files.
 
 ## Uploading a book
 
-Once you have your two book files, you can upload them to your Storyteller
-server. Navigate to your web interface and click the "Add book" button, which
-will open a dialogue where you can upload each file, first the EPUB, and then
-the audiobook. After your file uploads have completed, you can click the "Start
-processing" button, which will begin the automated syncing process.
+Once you have your book files, you can upload them to your Storyteller server.
+Navigate to your web interface and click the "Add book" button, which will open
+a dialogue where you can upload each file, first the EPUB, and then the
+audiobook files. After your file uploads have completed, you can click the
+"Start processing" button, which will begin the automated syncing process.
 
 Storyteller runs entirely on your hardware, which means the length of the
 syncing process will vary depending on your hardware. Most of the processing
@@ -48,7 +48,7 @@ the API service container. For example, the following will run the container
 with access to 24GB of memory and 8 CPU cores:
 
 ```shell
-docker run -v ~/Documents/Storyteller:/data -p 8000:8000 --memory=24g --cpus=8 registry.gitlab.com/smoores/storyteller/api:latest
+docker run -v ~/Documents/Storyteller:/data -p 8001:8001 --memory=24g --cpus=8 registry.gitlab.com/smoores/storyteller:latest
 ```
 
 ## Where do I get DRM-free books?
@@ -88,17 +88,16 @@ follow to do so.
    section as well.
 2. Update your `compose.yaml` file or docker CLI commands:
 
-   a. Replace the `api:latest` image tag with `api:cuda` (note that this image
-   is _much_ larger and may take a while to download)
+   a. Replace the `:latest` image tag with `:cuda-latest` (note that this image
+   is much larger and may take a while to download)
 
-   b. Add `runtime: nvidia` to the `api` service stanza. You can add it right
-   below the `image` property
+   b. Add `runtime: nvidia` to the service stanza. You can add it right below
+   the `image` property
 
 ### CUDA Environment Variables
 
 | Parameter                           | Description                                                                                                                | Default | CUDA Options                                                                                                         |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
 | STORYTELLER_DEVICE (required)       | The device Storyteller will use to process files.                                                                          | `cpu`   | `cuda`                                                                                                               |
-| NVIDIA_VISIBLE_DEVICES (required)   | Expose NVIDIA GPU to container.                                                                                            | `none`  | `all`                                                                                                                |
 | STORYTELLER_BATCH_SIZE (optional)   | Number of audio chunks being processed at a single time. Decrease this value if you are running into out of memory errors. | `16`    | minumum value of `1`                                                                                                 |
 | STORYTELLER_COMPUTE_TYPE (optional) | Helps with reducing the model size and accelerate its execution. Increasing this value may impact quality.                 | `int8`  | [See CTranslate2 documentation.](https://opennmt.net/CTranslate2/quantization.html#implicit-type-conversion-on-load) |
