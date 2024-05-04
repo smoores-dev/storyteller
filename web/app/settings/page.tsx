@@ -77,8 +77,6 @@ export default async function SettingsPage() {
     revalidatePath("/settings")
   }
 
-  console.log(settings)
-
   return (
     <main className={styles["main"]}>
       <h2>Settings</h2>
