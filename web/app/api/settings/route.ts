@@ -39,7 +39,6 @@ type SettingsRequest = {
 export const PUT = withHasPermission("settings_update")(async (request) => {
   const settings = (await request.json()) as SettingsRequest
 
-  console.log("route", settings)
   await updateSettings({
     smtpHost: settings.smtp_host,
     smtpPort: settings.smtp_port,
