@@ -15,6 +15,7 @@ check-web:
     - npm rebuild --build-from-source pymport
     - yarn check
     - yarn test
+    - git fetch origin main --depth 1
     - ./scripts/if-no-version-change.sh yarn version check
 
 pages:
