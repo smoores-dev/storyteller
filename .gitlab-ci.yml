@@ -28,10 +28,10 @@ check-version:
   script:
     - cd web
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
+    - ../scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
     - cd ../docs
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
+    - ../scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
     - cd ..
     - git push --tags
 
