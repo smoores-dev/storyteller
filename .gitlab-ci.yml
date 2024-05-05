@@ -71,28 +71,31 @@ publish-web:
     - docker buildx build --push -f docker/web.Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
-# publish-cuda:
-#   image: docker:20.10.16
-#   stage: publish-web
-#   needs:
-#     - check-web
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "main"
-#   services:
-#     - name: docker:20.10.16-dind
-#       alias: docker
-#   before_script:
-#     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-#     - docker context create gitlab-ci
-#     - docker buildx create --use --driver=docker-container gitlab-ci
-#   script:
-#     - docker buildx build --push -f docker/web.Dockerfile --build-arg
-#       BASE_TAG=cuda-latest --cache-from
-#       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest --cache-to
-#       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest,mode=max --tag
-#       $CI_REGISTRY_IMAGE:cuda-latest --tag
-#       $CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA .
+      $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
+
+publish-cuda:
+  image: docker:20.10.16
+  stage: publish-web
+  needs:
+    - check-web
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
+  services:
+    - name: docker:20.10.16-dind
+      alias: docker
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker context create gitlab-ci
+    - docker buildx create --use --driver=docker-container gitlab-ci
+  script:
+    - docker buildx build --push -f docker/web.Dockerfile --build-arg
+      BASE_TAG=cuda-latest --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest,mode=max --tag
+      $CI_REGISTRY_IMAGE:cuda-latest --tag
+      $CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA --tag
+      $CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_TAG .
 
 prerelease-web:
   tags:
@@ -129,5 +132,7 @@ release-web:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "Container Image $CI_COMMIT_TAG"
-          url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+        - name: "CPU-only build for $CI_COMMIT_TAG"
+          url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+        - name: "CUDA-enabled build for $CI_COMMIT_TAG"
+          url: "https://$CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA"
