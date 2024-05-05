@@ -1,7 +1,8 @@
 stages: # List of stages for jobs, and their order of execution
   - check
-  - publish-docs
-  - publish-web
+  - publish
+  - prerelease
+  - release
 
 check-web:
   image: registry.gitlab.com/smoores/storyteller-base:latest
@@ -14,14 +15,15 @@ check-web:
     - npm rebuild --build-from-source pymport
     - yarn check
     - yarn test
+    - ./scripts/if-no-version-change.sh yarn version check
 
 pages:
   image: node:18-alpine
-  stage: publish-docs
+  stage: publish
   needs:
     - check-web
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: '$CI_COMMIT_TAG =~ /^docs-v?\d+\.\d+\.\d+$/'
   script:
     - yarn workspaces focus @storyteller/docs
     - yarn build:docs
@@ -31,11 +33,11 @@ pages:
 
 publish-web:
   image: docker:20.10.16
-  stage: publish-web
+  stage: publish
   needs:
     - check-web
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
   services:
     - name: docker:20.10.16-dind
       alias: docker
@@ -69,3 +71,52 @@ publish-web:
 #       type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-latest,mode=max --tag
 #       $CI_REGISTRY_IMAGE:cuda-latest --tag
 #       $CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA .
+
+check-version:
+  stage: prerelease
+  image: node:20
+  rules:
+    if: $CI_COMMIT_BRANCH = "main"
+  script:
+    - cd web
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
+    - cd ../docs
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
+    - cd ..
+    - git push --tags
+
+prerelease-web:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
+  script:
+    - apk add curl jq
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=$CI_COMMIT_TAG"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-web:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prepare_job
+      artifacts: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "Container Image $CI_COMMIT_TAG"
+          url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
