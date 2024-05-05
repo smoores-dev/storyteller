@@ -76,7 +76,7 @@ check-version:
   stage: prerelease
   image: node:20
   rules:
-    if: $CI_COMMIT_BRANCH = "main"
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
     - cd web
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
