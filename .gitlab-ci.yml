@@ -76,7 +76,7 @@ publish-web:
 
 publish-cuda:
   image: docker:20.10.16
-  stage: publish-web
+  stage: publish
   needs:
     - check-web
   rules:
