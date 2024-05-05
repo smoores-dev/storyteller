@@ -18,7 +18,26 @@ check-web:
     - git fetch origin main --depth 1
     - ./scripts/if-no-version-change.sh yarn version check
 
+check-version:
+  tags:
+    - self-managed
+  stage: prerelease
+  image: node:20
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - cd web
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
+    - cd ../docs
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
+    - cd ..
+    - git push --tags
+
 pages:
+  tags:
+    - self-managed
   image: node:18-alpine
   stage: publish
   needs:
@@ -33,6 +52,8 @@ pages:
       - public
 
 publish-web:
+  tags:
+    - self-managed
   image: docker:20.10.16
   stage: publish
   needs:
@@ -73,22 +94,9 @@ publish-web:
 #       $CI_REGISTRY_IMAGE:cuda-latest --tag
 #       $CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA .
 
-check-version:
-  stage: prerelease
-  image: node:20
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-  script:
-    - cd web
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
-    - cd ../docs
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ./scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
-    - cd ..
-    - git push --tags
-
 prerelease-web:
+  tags:
+    - self-managed
   stage: prerelease
   image: alpine:latest
   rules:
@@ -103,6 +111,8 @@ prerelease-web:
       - release_notes.md
 
 release-web:
+  tags:
+    - self-managed
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
