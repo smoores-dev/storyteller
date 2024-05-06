@@ -16,11 +16,9 @@ check-web:
     - yarn check
     - yarn test
     - git fetch origin main --depth 1
-    - ./scripts/if-no-version-change.sh yarn version check
+    - ./scripts/check-versions.sh
 
 check-version:
-  tags:
-    - self-managed
   stage: prerelease
   image: node:20
   rules:
