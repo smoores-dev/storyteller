@@ -37,7 +37,7 @@ check-version:
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
     - ../scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
     - cd ..
-    - sudo apt update && apt install git-lfs
+    - apt update && apt install -y --no-install-recommends git-lfs
     - git remote set-url origin
       https://ci-push-tag-token:${CI_PUSH_TAG_TOKEN}@gitlab.com/smoores/storyteller.git
     - git push --tags
