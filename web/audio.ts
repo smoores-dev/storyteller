@@ -155,6 +155,7 @@ export async function transcodeTrack(
     "-nostdin",
     "-i",
     `"${path.replaceAll(/"/g, '\\"')}"`,
+    "-vn",
     ...(typeof codec === "string"
       ? // Note: there seem to be issues with attempting to copy cover art
         // for some mp3s while splitting.
@@ -197,6 +198,7 @@ export async function splitTrack(
     to,
     "-i",
     `"${path.replaceAll(/"/g, '\\"')}"`,
+    "-vn",
     ...(typeof codec === "string"
       ? // Note: there seem to be issues with attempting to copy cover art
         // for some mp3s while splitting.
