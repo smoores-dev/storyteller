@@ -38,7 +38,7 @@ check-version:
     - ../scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
     - cd ..
     - git remote set-url origin
-      https://CI_PUSH_TAG_TOKEN:${CI_PUSH_TAG_TOKEN}@gitlab.com/smoores/storyteller.git
+      https://ci-push-tag:${CI_PUSH_TAG_TOKEN}@gitlab.com/smoores/storyteller.git
     - git push --tags
 
 pages:
