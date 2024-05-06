@@ -78,6 +78,8 @@ publish-web:
       --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
 
 publish-cuda:
+  tags:
+    - self-managed
   image: docker:20.10.16
   stage: publish
   rules:
