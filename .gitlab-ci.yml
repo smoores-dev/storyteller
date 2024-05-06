@@ -20,7 +20,6 @@ check-web:
       changes:
         - "**/*.ts"
         - "**/*.tsx"
-        - "**/*.json"
         - yarn.lock
   script:
     - yarn
