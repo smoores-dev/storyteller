@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "scripts": {
     "dev": "PORT=8001 next dev",
