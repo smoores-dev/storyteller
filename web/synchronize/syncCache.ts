@@ -1,7 +1,7 @@
 import { CACHE_DIR } from "@/directories"
 import { UUID } from "@/uuid"
-import { readFile, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { dirname, join } from "node:path"
 
 export function getSyncCachePath(bookUuid: UUID) {
   return join(CACHE_DIR, `${bookUuid}.json`)
@@ -9,6 +9,7 @@ export function getSyncCachePath(bookUuid: UUID) {
 
 export async function getSyncCache(bookUuid: UUID) {
   const filepath = getSyncCachePath(bookUuid)
+  await mkdir(dirname(filepath), { recursive: true })
   return SyncCache.init(filepath)
 }
 
