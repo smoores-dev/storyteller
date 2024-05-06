@@ -13,8 +13,6 @@ check-web:
         - "**/*.ts"
         - "**/*.json"
         - yarn.lock
-        - Dockerfile
-        - .dockerignore
   script:
     - yarn
     - patch -p1 node_modules/pymport/src/pymport.h
@@ -30,10 +28,6 @@ check-version:
   image: node:20
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-  before_script:
-    - project_url=$(echo $CI_PROJECT_URL | sed 's/https:\/\///')
-    - git remote set-url origin
-      https://oauth2:${CI_PUSH_TAG_TOKEN}@${project_url}
   script:
     - cd web
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
@@ -42,6 +36,8 @@ check-version:
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
     - ../scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
     - cd ..
+    - git remote set-url origin
+      https://gitlab-ci-token:${CI_PUSH_TAG_TOKEN}@gitlab.com/smoores/storyteller.git
     - git push --tags
 
 pages:
