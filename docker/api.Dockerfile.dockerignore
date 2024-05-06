@@ -1,8 +1,0 @@
-*
-!/storyteller
-!/migrations
-!/poetry.lock
-!/pyproject.toml
-
-__pycache__
-/docker
