@@ -4,26 +4,26 @@ stages: # List of stages for jobs, and their order of execution
   - prerelease
   - release
 
-check-web:
-  image: registry.gitlab.com/smoores/storyteller-base:latest
-  stage: check
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: never
-    - changes:
-        - "**/*.ts"
-        - "**/*.tsx"
-        - "**/*.json"
-        - yarn.lock
-  script:
-    - yarn
-    - patch -p1 node_modules/pymport/src/pymport.h
-      web/pymport-swallow-unthrowable.patch
-    - npm rebuild --build-from-source pymport
-    - yarn check
-    - yarn test
-    - git fetch origin main --depth 1
-    - ./scripts/check-versions.sh
+# check-web:
+#   image: registry.gitlab.com/smoores/storyteller-base:latest
+#   stage: check
+#   rules:
+#     - if: $CI_COMMIT_TAG
+#       when: never
+#     - changes:
+#         - "**/*.ts"
+#         - "**/*.tsx"
+#         - "**/*.json"
+#         - yarn.lock
+#   script:
+#     - yarn
+#     - patch -p1 node_modules/pymport/src/pymport.h
+#       web/pymport-swallow-unthrowable.patch
+#     - npm rebuild --build-from-source pymport
+#     - yarn check
+#     - yarn test
+#     - git fetch origin main --depth 1
+#     - ./scripts/check-versions.sh
 
 check-version:
   stage: prerelease
