@@ -7,6 +7,8 @@ stages: # List of stages for jobs, and their order of execution
 always-yes:
   image: alpine:latest
   stage: check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
     - echo "Done!"
 
@@ -14,7 +16,8 @@ check-web:
   image: registry.gitlab.com/smoores/storyteller-base:latest
   stage: check
   rules:
-    - changes:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
         - "**/*.ts"
         - "**/*.tsx"
         - "**/*.json"
