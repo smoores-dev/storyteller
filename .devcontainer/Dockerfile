@@ -20,8 +20,16 @@ RUN apt-get update \
   python3-dev \
   python3-full \
   python3-pip \
+  ruby \
+  ruby-dev \
   sqlite3 \
   zlib1g-dev
+
+RUN wget https://github.com/facebook/watchman/releases/download/v2023.10.09.00/watchman_ubuntu22.04_v2023.10.09.00.deb \
+  && dpkg -i watchman_ubuntu22.04_v2023.10.09.00.deb || true \
+  && apt-get -f install -y --no-install-recommends
+
+RUN gem install cocoapods
 
 RUN mkdir -p /home/node/.local
 

@@ -6,6 +6,9 @@
     },
     {
       "path": "web"
+    },
+    {
+      "path": "mobile"
     }
   ]
 }

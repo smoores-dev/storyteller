@@ -9,3 +9,6 @@ node_modules
 
 assets
 cache
+
+mobile/ios
+mobile/android
