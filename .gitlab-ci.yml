@@ -12,7 +12,7 @@ always-yes:
   script:
     - echo "Done!"
 
-check-web:
+check:
   image: registry.gitlab.com/smoores/storyteller-base:latest
   stage: check
   rules:
@@ -27,9 +27,11 @@ check-web:
       web/pymport-swallow-unthrowable.patch
     - npm rebuild --build-from-source pymport
     - yarn check
-    - yarn test
     - git fetch origin main --depth 1
     - ./scripts/check-versions.sh
+    # At the moment, we only have tests for the web package,
+    # so there's no need to run them if that hasn't changed.
+    - if [ "$(git diff HEAD -- web)" ]; then yarn test; fi
 
 check-version:
   stage: prerelease
@@ -43,6 +45,9 @@ check-version:
     - cd ../docs
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
     - ../scripts/if-version-change.sh git tag docs-v${PACKAGE_VERSION}
+    - cd ../mobile
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag mobile-v${PACKAGE_VERSION}
     - cd ..
     - apt update && apt install -y --no-install-recommends git-lfs
     - git remote set-url origin
