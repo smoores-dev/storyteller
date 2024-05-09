@@ -33,7 +33,7 @@
 
   "mounts": [
     {
-      "source": "/home/smoores/Android/sdk",
+      "source": "${localEnv:HOME}/Android/sdk",
       "target": "/home/node/Android/sdk",
       "type": "bind"
     }
