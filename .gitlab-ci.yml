@@ -31,7 +31,7 @@ check:
     - ./scripts/check-versions.sh
     # At the moment, we only have tests for the web package,
     # so there's no need to run them if that hasn't changed.
-    - if [ "$(git diff HEAD -- web)" ]; then yarn test; fi
+    - if [ "$(git diff origin/main -- web)" ]; then yarn test; fi
 
 check-version:
   stage: prerelease
