@@ -17,7 +17,8 @@
         "ms-python.black-formatter",
         "arcanis.vscode-zipfs",
         "esbenp.prettier-vscode",
-        "GitLab.gitlab-workflow"
+        "GitLab.gitlab-workflow",
+        "redhat.vscode-yaml"
       ]
     }
   },
@@ -30,6 +31,13 @@
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": "gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so",
 
+  "mounts": [
+    {
+      "source": "/home/smoores/Android/sdk",
+      "target": "/home/node/Android/sdk",
+      "type": "bind"
+    }
+  ],
   // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "node"
 }

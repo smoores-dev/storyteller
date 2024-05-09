@@ -13,3 +13,9 @@ tsbuild
 
 __fixtures__
 web/work-dist
+
+mobile/android
+mobile/ios
+mobile/dist
+mobile/modules/*/android/build
+mobile/modules/*/ios/.build
