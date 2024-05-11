@@ -16,7 +16,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.ExperimentalDecorator
+import org.readium.r2.navigator.VisualNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.util.EdgeTapNavigation
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
 
@@ -47,24 +49,23 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
 
         val listener = this
+        val epubFragment = EpubFragment(locator, publication, isPlaying, listener)
+
         activity?.supportFragmentManager?.commitNow {
             setReorderingAllowed(true)
-            add(EpubFragment(locator, publication, isPlaying, listener), fragmentTag)
+            add(epubFragment, fragmentTag)
         }
 
-        val fragment =
-            activity?.supportFragmentManager?.findFragmentByTag(fragmentTag) as? EpubFragment
-        addView(fragment?.view)
+        addView(epubFragment.view)
 
-        navigator = fragment?.navigator
+        navigator = epubFragment.navigator
         activity?.lifecycleScope?.launch {
-            activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            activity?.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 navigator?.currentLocator?.collect {
                     onLocatorChanged(it)
                 }
             }
         }
-
     }
 
     fun go() {
@@ -76,7 +77,6 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             highlightSelection()
         }
     }
-
 
     fun highlightSelection() {
         val locator = this.locator ?: return
@@ -98,16 +98,20 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     override fun onTap(point: PointF): Boolean {
-        if (point.x < width * 0.2) {
-            navigator?.goBackward(animated = true)
-            return true
+        val navigated = edgeTapNavigation.onTap(point, this)
+
+        if (!navigated) {
+            onMiddleTouch(mapOf())
         }
-        if (point.x > width * 0.8) {
-            navigator?.goForward(animated = true)
-            return true
-        }
-        onMiddleTouch(mapOf())
-        return false
+        return true
+    }
+
+    private val edgeTapNavigation by lazy {
+        EdgeTapNavigation(
+            navigator = navigator as VisualNavigator,
+            animatedTransition = true,
+            edgeThresholdPercent = 0.2
+        )
     }
 
     private suspend fun onLocatorChanged(locator: Locator) {
