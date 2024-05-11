@@ -1,0 +1,13 @@
+build:
+  name: Internal development build
+  steps:
+    - eas/checkout
+    - run:
+        name: Focus install
+        run: yarn workspaces focus @storyteller/mobile
+    - eas/resolve_build_config
+    - eas/prebuild
+    - eas/inject_android_credentials
+    - eas/configure_android_version
+    - eas/run_gradle
+    - eas/find_and_upload_build_artifacts

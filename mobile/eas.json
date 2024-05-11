@@ -5,6 +5,12 @@
   },
   "build": {
     "development": {
+      "android": {
+        "config": "android-development.yml"
+      },
+      "ios": {
+        "config": "ios-development.yml"
+      },
       "developmentClient": true,
       "distribution": "internal",
       "env": {
