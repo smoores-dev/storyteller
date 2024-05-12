@@ -12,11 +12,12 @@ import {
 } from "../modules/readium/src/Readium.types"
 import { ChevronLeftIcon } from "../icons/ChevronLeftIcon"
 import { UIText } from "./UIText"
-import { TableOfContentsIcon } from "../icons/TableOfContentsIcon"
 import { TableOfContents } from "./TableOfContents"
 import { PlayPause } from "./PlayPause"
 import { MiniPlayer } from "./MiniPlayer"
 import { useAudioBook } from "../hooks/useAudioBook"
+import { Toolbar } from "./Toolbar"
+import { ToolbarDialogs } from "./ToolbarDialogs"
 
 type Props = {
   book: BookshelfBook
@@ -55,6 +56,7 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
       }}
     >
       <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+      <ToolbarDialogs />
       <View
         style={[
           {
@@ -106,18 +108,12 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
             right: 12,
             top: insets.top + 12,
             bottom: dimensions.height - insets.top - 20,
-            left: dimensions.width - 50,
+            left: 50,
             zIndex: 3,
+            alignItems: "flex-end",
           }}
         >
-          <Pressable
-            onPress={() => {
-              setShowToc((p) => !p)
-            }}
-            hitSlop={40}
-          >
-            <TableOfContentsIcon />
-          </Pressable>
+          <Toolbar mode="text" />
         </View>
       )}
       {showToc && (

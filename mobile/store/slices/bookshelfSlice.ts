@@ -89,6 +89,14 @@ export const bookshelfSlice = createSlice({
       state.entities[book.id] = book
       state.locators[book.id] = locator
     },
+    navItemTapped(
+      state,
+      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+    ) {
+      const { bookId, locator } = action.payload
+
+      state.locators[bookId] = locator
+    },
     bookRelocated(
       state,
       action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,

@@ -542,6 +542,7 @@ export function* persistLocatorSaga() {
   yield takeLeadingWithQueue(
     [
       bookshelfSlice.actions.bookRelocated,
+      bookshelfSlice.actions.navItemTapped,
       bookshelfSlice.actions.playerPositionUpdateCompleted,
       bookshelfSlice.actions.bookDownloadCompleted,
     ],
@@ -631,35 +632,43 @@ export function* loadTrackPlayerSaga() {
 }
 
 export function* seekToLocatorSaga() {
-  yield takeEvery(bookshelfSlice.actions.bookRelocated, function* (action) {
-    const { bookId } = action.payload
+  yield takeEvery(
+    [
+      bookshelfSlice.actions.bookRelocated,
+      bookshelfSlice.actions.navItemTapped,
+    ],
+    function* (action) {
+      const { bookId } = action.payload
 
-    const book = (yield select(getBookshelfBook, bookId)) as ReturnType<
-      typeof getBookshelfBook
-    >
+      const book = (yield select(getBookshelfBook, bookId)) as ReturnType<
+        typeof getBookshelfBook
+      >
 
-    if (!book) return
+      if (!book) return
 
-    const clip = (yield call(getCurrentClip, book)) as Generated<
-      ReturnType<typeof getCurrentClip>
-    >
+      const clip = (yield call(getCurrentClip, book)) as Generated<
+        ReturnType<typeof getCurrentClip>
+      >
 
-    if (!clip) {
-      logger.error(`Could not find clip for book ${bookId} at current position`)
-      return
-    }
-    logger.debug(clip)
+      if (!clip) {
+        logger.error(
+          `Could not find clip for book ${bookId} at current position`,
+        )
+        return
+      }
+      logger.debug(clip)
 
-    const tracks = (yield call(TrackPlayer.getQueue)) as BookshelfTrack[]
+      const tracks = (yield call(TrackPlayer.getQueue)) as BookshelfTrack[]
 
-    const trackIndex = tracks.findIndex(
-      (track) => track.relativeUrl === clip.relativeUrl,
-    )
+      const trackIndex = tracks.findIndex(
+        (track) => track.relativeUrl === clip.relativeUrl,
+      )
 
-    if (trackIndex !== -1) {
-      yield call(TrackPlayer.skip, trackIndex, clip.start)
-    }
-  })
+      if (trackIndex !== -1) {
+        yield call(TrackPlayer.skip, trackIndex, clip.start)
+      }
+    },
+  )
 }
 
 export function* relocateToTrackPositionSaga() {

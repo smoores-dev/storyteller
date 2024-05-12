@@ -1,8 +1,7 @@
 import { Link, router } from "expo-router"
 import { Image, Platform, Pressable, StyleSheet, View } from "react-native"
 import { ChevronDownIcon } from "../../icons/ChevronDownIcon"
-import { BookOpenOutlineIcon } from "../../icons/BookOpenOutlineIcon"
-import { useAppDispatch, useAppSelector } from "../../store/appState"
+import { useAppSelector } from "../../store/appState"
 import { UIText } from "../../components/UIText"
 import { HeaderText } from "../../components/HeaderText"
 import { useEffect, useMemo, useState } from "react"
@@ -22,13 +21,9 @@ import {
   getLocator,
 } from "../../store/selectors/bookshelfSelectors"
 import { getLocalAudioBookCoverUrl } from "../../store/persistence/files"
-import { TableOfContents } from "../../components/TableOfContents"
-import { locateLink } from "../../modules/readium"
-import { bookshelfSlice } from "../../store/slices/bookshelfSlice"
-import { TableOfContentsIcon } from "../../icons/TableOfContentsIcon"
 import { LoadingView } from "../../components/LoadingView"
-import { SpedometerIcon } from "../../icons/SpedometerIcon"
-import { SpeedMenu } from "../../components/SpeedMenu"
+import { Toolbar } from "../../components/Toolbar"
+import { ToolbarDialogs } from "../../components/ToolbarDialogs"
 
 const events = [Event.PlaybackState, Event.PlaybackTrackChanged]
 
@@ -37,10 +32,6 @@ export default function PlayerScreen() {
   const locator = useAppSelector((state) => book && getLocator(state, book.id))
   const [currentTrack, setCurrentTrack] = useState(1)
   const [trackCount, setTrackCount] = useState(1)
-  const [showToc, setShowToc] = useState(false)
-  const [showSpeedMenu, setShowSpeedMenu] = useState(false)
-
-  const dispatch = useAppDispatch()
 
   const {
     isLoading,
@@ -96,37 +87,7 @@ export default function PlayerScreen() {
       {/* Native modals have dark backgrounds on iOS, set the status bar to light content. */}
       {/* <StatusBar style="light" /> */}
       {isLoading && <LoadingView />}
-      {showToc && (
-        <TableOfContents
-          locator={locator}
-          navItems={book.manifest.toc}
-          onNavItemTap={async (item) => {
-            const link = book.manifest.readingOrder.find(
-              ({ href }) => href === item.href,
-            )
-            if (!link) return
-
-            const locator = await locateLink(book.id, link)
-            dispatch(
-              bookshelfSlice.actions.bookRelocated({
-                bookId: book.id,
-                locator,
-              }),
-            )
-            setShowToc(false)
-          }}
-          onOutsideTap={() => {
-            setShowToc(false)
-          }}
-        />
-      )}
-      {showSpeedMenu && (
-        <SpeedMenu
-          onOutsideTap={() => {
-            setShowSpeedMenu(false)
-          }}
-        />
-      )}
+      <ToolbarDialogs />
       <View style={styles.topbar}>
         {isPresented ? (
           <Pressable
@@ -142,31 +103,7 @@ export default function PlayerScreen() {
             <ChevronDownIcon />
           </Link>
         )}
-        <View style={styles.toolbar}>
-          <Pressable
-            style={styles.toolbarButton}
-            hitSlop={20}
-            onPress={() => {
-              setShowSpeedMenu((p) => !p)
-            }}
-          >
-            <SpedometerIcon />
-          </Pressable>
-          <Link
-            style={[styles.toolbarButton, styles.bookLink]}
-            href={{ pathname: "/book/[id]", params: { id: book.id } }}
-          >
-            <BookOpenOutlineIcon />
-          </Link>
-          <Pressable
-            style={styles.toolbarButton}
-            onPress={() => {
-              setShowToc((p) => !p)
-            }}
-          >
-            <TableOfContentsIcon />
-          </Pressable>
-        </View>
+        <Toolbar mode="audio" />
       </View>
       <Image
         style={styles.cover}
@@ -256,9 +193,6 @@ const styles = StyleSheet.create({
     height: 324,
     borderRadius: 4,
   },
-  toolbar: {
-    flexDirection: "row",
-  },
   details: {
     width: "100%",
     padding: 24,
@@ -299,11 +233,5 @@ const styles = StyleSheet.create({
   remainingProgressTime: {
     width: 60,
     textAlign: "right",
-  },
-  toolbarButton: {
-    marginHorizontal: 8,
-  },
-  bookLink: {
-    marginTop: 2,
   },
 })
