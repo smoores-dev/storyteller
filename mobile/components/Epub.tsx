@@ -5,14 +5,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Link, Tabs } from "expo-router"
 import { useKeepAwake } from "expo-keep-awake"
 import { BookshelfBook } from "../store/slices/bookshelfSlice"
-import { EPUBView, locateLink } from "../modules/readium"
+import { EPUBView } from "../modules/readium"
 import {
   EPUBViewRef,
   ReadiumLocator,
 } from "../modules/readium/src/Readium.types"
 import { ChevronLeftIcon } from "../icons/ChevronLeftIcon"
 import { UIText } from "./UIText"
-import { TableOfContents } from "./TableOfContents"
 import { PlayPause } from "./PlayPause"
 import { MiniPlayer } from "./MiniPlayer"
 import { useAudioBook } from "../hooks/useAudioBook"
@@ -34,7 +33,6 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
 
   const [showInterface, setShowInterface] = useState(true)
   const epubViewRef = useRef<EPUBViewRef | null>(null)
-  const [showToc, setShowToc] = useState(false)
 
   const {
     percentComplete,
@@ -115,20 +113,6 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
         >
           <Toolbar mode="text" />
         </View>
-      )}
-      {showToc && (
-        <TableOfContents
-          locator={locator}
-          navItems={book.manifest.toc}
-          onNavItemTap={async (item) => {
-            const locator = await locateLink(book.id, item)
-            onLocatorChange(locator)
-            setShowToc(false)
-          }}
-          onOutsideTap={() => {
-            setShowToc(false)
-          }}
-        />
       )}
       {!showInterface ? (
         <View

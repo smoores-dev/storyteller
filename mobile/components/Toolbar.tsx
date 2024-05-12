@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
 import { PlayIcon } from "../icons/PlayIcon"
+import { BookmarkIcon } from "../icons/BookmarkIcon"
 
 type Props = {
   mode: "audio" | "text"
@@ -36,6 +37,10 @@ export function Toolbar({ mode }: Props) {
           <SpedometerIcon />
         </Pressable>
 
+        <Pressable>
+          <BookmarkIcon />
+        </Pressable>
+
         <Pressable
           style={styles.toolbarButton}
           onPress={() => {
@@ -57,14 +62,7 @@ export function Toolbar({ mode }: Props) {
           </Link>
         ) : (
           <Link style={[styles.toolbarButton]} href={{ pathname: "/player" }}>
-            <PlayIcon
-              fill="black"
-              style={[
-                {
-                  backgroundColor: "transparent",
-                },
-              ]}
-            />
+            <PlayIcon />
           </Link>
         )}
       </View>

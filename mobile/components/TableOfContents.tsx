@@ -1,12 +1,13 @@
-import { ScrollView, View, Pressable, TouchableOpacity } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { ScrollView, View, Pressable } from "react-native"
 import { UIText } from "./UIText"
-import { ReadiumManifest } from "../modules/readium"
-import {
-  ReadiumLink,
-  ReadiumLocator,
-} from "../modules/readium/src/Readium.types"
+import { locateLink } from "../modules/readium"
 import { useEffect, useRef, useState } from "react"
+import { useAppSelector, useAppDispatch } from "../store/appState"
+import {
+  getCurrentlyPlayingBook,
+  getLocator,
+} from "../store/selectors/bookshelfSelectors"
+import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 
 function extractPath(href: string) {
   const url = new URL(href, "http://storyteller.local")
@@ -17,19 +18,7 @@ function isSameChapter(href1: string, href2: string) {
   return extractPath(href1) === extractPath(href2)
 }
 
-type Props = {
-  locator: ReadiumLocator | null
-  navItems: ReadiumManifest["toc"]
-  onNavItemTap: (item: ReadiumLink) => void
-  onOutsideTap?: () => void
-}
-
-export function TableOfContents({
-  locator,
-  navItems,
-  onNavItemTap,
-  onOutsideTap,
-}: Props) {
+export function TableOfContents() {
   const ref = useRef<null | ScrollView>(null)
   const [parentCoords, setParentCoords] = useState<{
     x: number
@@ -39,7 +28,11 @@ export function TableOfContents({
     x: number
     y: number
   }>(null)
-  const insets = useSafeAreaInsets()
+
+  const book = useAppSelector(getCurrentlyPlayingBook)
+  const locator = useAppSelector((state) => book && getLocator(state, book.id))
+
+  const dispatch = useAppDispatch()
 
   useEffect(() => {
     if (scrollCoords) {
@@ -51,39 +44,12 @@ export function TableOfContents({
     }
   }, [parentCoords.x, parentCoords.y, scrollCoords])
 
-  if (!navItems) return
+  if (!book?.manifest.toc) return
 
   return (
     <>
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 2,
-        }}
-        onPress={onOutsideTap}
-      />
-      <ScrollView
-        ref={ref}
-        style={{
-          position: "absolute",
-          right: 32,
-          left: 106,
-          top: insets.top + 56,
-          // paddingHorizontal: 32,
-          paddingVertical: 16,
-          borderRadius: 8,
-          borderWidth: 1,
-          borderColor: "black",
-          bottom: 300,
-          zIndex: 3,
-          backgroundColor: "white",
-        }}
-      >
-        {navItems.map((item) => (
+      <ScrollView ref={ref}>
+        {book.manifest.toc.map((item) => (
           <View
             key={item.href}
             {...(isSameChapter(item.href, locator?.href ?? "") && {
@@ -109,7 +75,16 @@ export function TableOfContents({
             style={{ paddingHorizontal: 8 }}
           >
             <Pressable
-              onPress={() => onNavItemTap(item)}
+              onPress={async () => {
+                const locator = await locateLink(book.id, item)
+
+                dispatch(
+                  bookshelfSlice.actions.navItemTapped({
+                    bookId: book.id,
+                    locator,
+                  }),
+                )
+              }}
               style={{
                 borderBottomWidth: 1,
                 borderBottomColor: "#CCC",
@@ -151,7 +126,16 @@ export function TableOfContents({
                     backgroundColor: "#EEE",
                   }),
                 }}
-                onPress={() => onNavItemTap(child)}
+                onPress={async () => {
+                  const locator = await locateLink(book.id, child)
+
+                  dispatch(
+                    bookshelfSlice.actions.navItemTapped({
+                      bookId: book.id,
+                      locator,
+                    }),
+                  )
+                }}
               >
                 <UIText
                   style={{
