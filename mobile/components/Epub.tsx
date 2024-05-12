@@ -122,6 +122,7 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
       )}
       {showToc && (
         <TableOfContents
+          locator={locator}
           navItems={book.manifest.toc}
           onNavItemTap={async (item) => {
             const link = book.manifest.readingOrder.find(

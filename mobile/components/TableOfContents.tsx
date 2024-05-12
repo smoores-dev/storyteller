@@ -2,20 +2,46 @@ import { ScrollView, View, Pressable, TouchableOpacity } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { UIText } from "./UIText"
 import { ReadiumManifest } from "../modules/readium"
-import { ReadiumLink } from "../modules/readium/src/Readium.types"
+import {
+  ReadiumLink,
+  ReadiumLocator,
+} from "../modules/readium/src/Readium.types"
+import { useEffect, useRef, useState } from "react"
 
 type Props = {
+  locator: ReadiumLocator | null
   navItems: ReadiumManifest["toc"]
   onNavItemTap: (item: ReadiumLink) => void
   onOutsideTap?: () => void
 }
 
 export function TableOfContents({
+  locator,
   navItems,
   onNavItemTap,
   onOutsideTap,
 }: Props) {
+  const ref = useRef<null | ScrollView>(null)
+  const [parentCoords, setParentCoords] = useState<{
+    x: number
+    y: number
+  }>({ x: 0, y: 0 })
+  const [scrollCoords, setScrollCoords] = useState<null | {
+    x: number
+    y: number
+  }>(null)
   const insets = useSafeAreaInsets()
+
+  useEffect(() => {
+    if (scrollCoords) {
+      console.log("hi")
+      ref.current?.scrollTo({
+        x: parentCoords.x + scrollCoords.x,
+        y: parentCoords.y + scrollCoords.y - 40,
+        animated: true,
+      })
+    }
+  }, [parentCoords.x, parentCoords.y, scrollCoords])
 
   if (!navItems) return
 
@@ -33,6 +59,7 @@ export function TableOfContents({
         onPress={onOutsideTap}
       />
       <ScrollView
+        ref={ref}
         style={{
           position: "absolute",
           right: 32,
@@ -49,7 +76,28 @@ export function TableOfContents({
         }}
       >
         {navItems.map((item) => (
-          <View key={item.href} style={{ paddingHorizontal: 8 }}>
+          <View
+            key={item.href}
+            {...(item.href === locator?.href && {
+              ref: (element) => {
+                element?.measure((x, y) =>
+                  setScrollCoords((prev) =>
+                    prev?.x === x && prev.y === y ? prev : { x, y },
+                  ),
+                )
+              },
+            })}
+            {...(item.children?.some(({ href }) => href === locator?.href) && {
+              ref: (element) => {
+                element?.measure((x, y) =>
+                  setParentCoords((prev) =>
+                    prev?.x === x && prev.y === y ? prev : { x, y },
+                  ),
+                )
+              },
+            })}
+            style={{ paddingHorizontal: 8 }}
+          >
             <Pressable
               onPress={() => onNavItemTap(item)}
               style={{
@@ -57,6 +105,7 @@ export function TableOfContents({
                 borderBottomColor: "#CCC",
                 paddingVertical: 16,
                 paddingHorizontal: 16,
+                ...(item.href === locator?.href && { backgroundColor: "#EEE" }),
               }}
             >
               <UIText
@@ -68,24 +117,36 @@ export function TableOfContents({
                 {item.title}
               </UIText>
             </Pressable>
-            {item.children?.map((item) => (
+            {item.children?.map((child) => (
               <Pressable
-                key={item.href}
+                key={child.href}
+                {...(child.href === locator?.href && {
+                  ref: (element) => {
+                    element?.measure((x, y) =>
+                      setScrollCoords((prev) =>
+                        prev?.x === x && prev.y === y ? prev : { x, y },
+                      ),
+                    )
+                  },
+                })}
                 style={{
                   borderBottomWidth: 1,
                   borderBottomColor: "#CCC",
                   paddingVertical: 16,
                   paddingHorizontal: 16,
                   paddingLeft: 24,
+                  ...(child.href === locator?.href && {
+                    backgroundColor: "#EEE",
+                  }),
                 }}
-                onPress={() => onNavItemTap(item)}
+                onPress={() => onNavItemTap(child)}
               >
                 <UIText
                   style={{
                     fontSize: 14,
                   }}
                 >
-                  {item.title}
+                  {child.title}
                 </UIText>
               </Pressable>
             ))}

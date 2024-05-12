@@ -98,6 +98,7 @@ export default function PlayerScreen() {
       {isLoading && <LoadingView />}
       {showToc && (
         <TableOfContents
+          locator={locator}
           navItems={book.manifest.toc}
           onNavItemTap={async (item) => {
             const link = book.manifest.readingOrder.find(
