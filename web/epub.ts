@@ -159,16 +159,27 @@ export class Epub {
     htmlEntities: true,
     trimValues: false,
     stopNodes: ["*.pre", "*.script"],
-    numberParseOptions: {
-      hex: false,
-      leadingZeros: false,
-      skipLike: /.*/,
+    parseTagValue: false,
+    // numberParseOptions: {
+    //   hex: false,
+    //   leadingZeros: false,
+    //   skipLike: /.*/,
+    // },
+    updateTag(_tagName, _jPath, attrs) {
+      // There's never an attribute called "/";
+      // this erroneously happens sometimes when parsing
+      // self-closing stop nodes with ignoreAttributes: false
+      // and allowBooleanAttributes: true.
+      if ("@_/" in attrs) {
+        delete attrs["@_/"]
+      }
+      return true
     },
   })
 
   static xmlBuilder = new XMLBuilder({
-    preserveOrder: true,
-    format: true,
+    // preserveOrder: true,
+    // format: true,
     ignoreAttributes: false,
     suppressEmptyNode: true,
   })

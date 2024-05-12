@@ -3,7 +3,7 @@ import { describe, it } from "node:test"
 import { getXHtmlSentences } from "../getXhtmlSentences"
 import { strict as assert } from "node:assert/strict"
 
-void describe.only("getXhtmlSentences", () => {
+void describe("getXhtmlSentences", () => {
   void it("gets sentences from a text node", () => {
     const input = [
       {
@@ -54,7 +54,7 @@ void describe.only("getXhtmlSentences", () => {
     ])
   })
 
-  void it.only("gets sentences from nested elements", () => {
+  void it("gets sentences from nested elements", () => {
     const input: ParsedXml = [
       {
         p: [
