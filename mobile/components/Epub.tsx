@@ -125,12 +125,7 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
           locator={locator}
           navItems={book.manifest.toc}
           onNavItemTap={async (item) => {
-            const link = book.manifest.readingOrder.find(
-              ({ href }) => href === item.href,
-            )
-            if (!link) return
-
-            const locator = await locateLink(book.id, link)
+            const locator = await locateLink(book.id, item)
             onLocatorChange(locator)
             setShowToc(false)
           }}

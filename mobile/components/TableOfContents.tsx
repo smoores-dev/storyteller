@@ -8,6 +8,15 @@ import {
 } from "../modules/readium/src/Readium.types"
 import { useEffect, useRef, useState } from "react"
 
+function extractPath(href: string) {
+  const url = new URL(href, "http://storyteller.local")
+  return url.pathname
+}
+
+function isSameChapter(href1: string, href2: string) {
+  return extractPath(href1) === extractPath(href2)
+}
+
 type Props = {
   locator: ReadiumLocator | null
   navItems: ReadiumManifest["toc"]
@@ -34,7 +43,6 @@ export function TableOfContents({
 
   useEffect(() => {
     if (scrollCoords) {
-      console.log("hi")
       ref.current?.scrollTo({
         x: parentCoords.x + scrollCoords.x,
         y: parentCoords.y + scrollCoords.y - 40,
@@ -78,7 +86,7 @@ export function TableOfContents({
         {navItems.map((item) => (
           <View
             key={item.href}
-            {...(item.href === locator?.href && {
+            {...(isSameChapter(item.href, locator?.href ?? "") && {
               ref: (element) => {
                 element?.measure((x, y) =>
                   setScrollCoords((prev) =>
@@ -87,7 +95,9 @@ export function TableOfContents({
                 )
               },
             })}
-            {...(item.children?.some(({ href }) => href === locator?.href) && {
+            {...(item.children?.some(({ href }) =>
+              isSameChapter(href, locator?.href ?? ""),
+            ) && {
               ref: (element) => {
                 element?.measure((x, y) =>
                   setParentCoords((prev) =>
@@ -105,7 +115,9 @@ export function TableOfContents({
                 borderBottomColor: "#CCC",
                 paddingVertical: 16,
                 paddingHorizontal: 16,
-                ...(item.href === locator?.href && { backgroundColor: "#EEE" }),
+                ...(isSameChapter(item.href, locator?.href ?? "") && {
+                  backgroundColor: "#EEE",
+                }),
               }}
             >
               <UIText
@@ -120,7 +132,7 @@ export function TableOfContents({
             {item.children?.map((child) => (
               <Pressable
                 key={child.href}
-                {...(child.href === locator?.href && {
+                {...(isSameChapter(child.href, locator?.href ?? "") && {
                   ref: (element) => {
                     element?.measure((x, y) =>
                       setScrollCoords((prev) =>
@@ -135,7 +147,7 @@ export function TableOfContents({
                   paddingVertical: 16,
                   paddingHorizontal: 16,
                   paddingLeft: 24,
-                  ...(child.href === locator?.href && {
+                  ...(isSameChapter(child.href, locator?.href ?? "") && {
                     backgroundColor: "#EEE",
                   }),
                 }}
