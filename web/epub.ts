@@ -177,8 +177,8 @@ export class Epub {
   })
 
   static xmlBuilder = new XMLBuilder({
-    // preserveOrder: true,
-    // format: true,
+    preserveOrder: true,
+    format: true,
     ignoreAttributes: false,
     suppressEmptyNode: true,
   })
