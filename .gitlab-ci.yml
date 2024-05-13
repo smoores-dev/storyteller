@@ -120,6 +120,11 @@ prerelease-web:
       "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r ".[] |
       select(.tag_name | startswith(\"$package\")) | .commit.short_id")'
     - to_sha=$CI_COMMIT_SHORT_SHA
+    - echo $version
+    - echo $package
+    - echo $from_sha
+    - echo
+      $CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}
     - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
       "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}"
       | jq -r .notes > release_notes.md'
