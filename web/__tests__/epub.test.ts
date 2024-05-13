@@ -1,8 +1,20 @@
 import { join } from "node:path"
 import { describe, it } from "node:test"
-import { Epub, getBody, textContent } from "../epub"
+import { Epub, ParsedXml, getBody, textContent } from "../epub"
 import assert from "node:assert"
 import { stat } from "node:fs/promises"
+
+void describe("xhtml parsing", () => {
+  void it("can handle self-closing stop nodes", () => {
+    const xmlString = `<script src="script.js"/>`
+    const parsed = Epub.xhtmlParser.parse(xmlString) as ParsedXml
+
+    console.log(parsed)
+    const built = Epub.xhtmlBuilder.build(parsed) as string
+
+    assert.strictEqual(built, xmlString)
+  })
+})
 
 void describe("Epub", () => {
   void it("can read from an archived .epub file", async () => {

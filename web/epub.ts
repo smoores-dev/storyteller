@@ -159,10 +159,20 @@ export class Epub {
     htmlEntities: true,
     trimValues: false,
     stopNodes: ["*.pre", "*.script"],
-    numberParseOptions: {
-      hex: false,
-      leadingZeros: false,
-      skipLike: /.*/,
+    parseTagValue: false,
+    updateTag(_tagName, _jPath, attrs) {
+      // There's never an attribute called "/";
+      // this erroneously happens sometimes when parsing
+      // self-closing stop nodes with ignoreAttributes: false
+      // and allowBooleanAttributes: true.
+      //
+      // Also attrs is undefined if there are no attrs;
+      // the types are wrong.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (attrs && "@_/" in attrs) {
+        delete attrs["@_/"]
+      }
+      return true
     },
   })
 
