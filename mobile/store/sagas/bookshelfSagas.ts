@@ -42,6 +42,7 @@ import { Audio } from "expo-av"
 import {
   deleteBook,
   readBookIds,
+  readBookmarks,
   readLocators,
   writeBook,
   writeLocator,
@@ -373,6 +374,8 @@ export function* downloadBookSaga() {
         firstLink,
       )) as Awaited<ReturnType<typeof locateLink>>
 
+      yield call(writeLocator, bookId, firstLocator)
+
       yield put(
         bookshelfSlice.actions.bookDownloadCompleted({
           book: {
@@ -380,6 +383,7 @@ export function* downloadBookSaga() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
+            bookmarks: [],
           },
           locator: firstLocator,
         }),
@@ -492,11 +496,16 @@ export function* hydrateBookshelf() {
       })
     }
 
+    const bookmarks = (yield call(readBookmarks, bookId)) as Awaited<
+      ReturnType<typeof readBookmarks>
+    >
+
     books.push({
       id: bookId,
       title: parseLocalizedString(manifest.metadata.title),
       authors: readiumToStorytellerAuthors(manifest.metadata.author),
       manifest,
+      bookmarks,
     })
   }
 

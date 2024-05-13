@@ -23,6 +23,7 @@ export type BookshelfBook = {
   title: string
   authors: Array<BookAuthor>
   manifest: ReadiumManifest
+  bookmarks: ReadiumLocator[]
 }
 
 export type BookshelfState = {

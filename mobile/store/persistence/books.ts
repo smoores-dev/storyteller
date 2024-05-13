@@ -155,12 +155,6 @@ export async function writeBook(bookId: number): Promise<void> {
   await writeBookIds([...(bookIds ?? []), bookId])
 }
 
-// Leaving this in here for now because before we roll this out
-// we'll want to find a way to migrate from cfis to locators, probably?
-export async function writeLocation(bookId: number, cfi: string) {
-  return AsyncStorage.setItem(`books.${bookId}.location`, JSON.stringify(cfi))
-}
-
 export async function writeLocator(bookId: number, locator: ReadiumLocator) {
   return AsyncStorage.setItem(
     `books.${bookId}.locator`,
@@ -168,8 +162,26 @@ export async function writeLocator(bookId: number, locator: ReadiumLocator) {
   )
 }
 
+export async function readBookmarks(bookId: number) {
+  const entry = await AsyncStorage.getItem(`books.${bookId}.bookmarks`)
+  if (entry === null) return []
+  return JSON.parse(entry) as ReadiumLocator[]
+}
+
+export async function writeBookmark(bookId: number, bookmark: ReadiumLocator) {
+  const bookmarks = await readBookmarks(bookId)
+  return AsyncStorage.setItem(
+    `books.${bookId}.bookmarks`,
+    JSON.stringify([...bookmarks, bookmark]),
+  )
+}
+
 export async function deleteBook(bookId: number) {
-  await AsyncStorage.multiRemove([`books.${bookId}`, `books.${bookId}.locator`])
+  await AsyncStorage.multiRemove([
+    `books.${bookId}`,
+    `books.${bookId}.locator`,
+    `books.${bookId}.bookmarks`,
+  ])
   const bookIds = await readBookIds()
   if (!bookIds) return
 
