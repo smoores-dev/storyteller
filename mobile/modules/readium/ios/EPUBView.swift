@@ -109,7 +109,56 @@ class EPUBView: ExpoView {
         }
         
         navigatorView.frame = bounds
-      }
+    }
+
+    func findOnPage(locators: [Locator], promise: Promise) {
+        guard let epubNav = navigator as? EPUBNavigatorViewController else {
+            return
+        }
+
+        let currentProgression = locator.progression else {
+            return
+        }
+
+        let joinedProgressions = locators
+            .compactMap(\.progression)
+            .map { "\($0)" }
+            .joined(separator: ",")
+
+        let jsProgressionsArray = "[\(joinedProgressions)]"
+
+        epubNav.evaluateJavaScript("""
+            const maxScreenX = window.orientation === 0 || window.orientation == 180
+                    ? screen.width
+                    : screen.height;
+
+            function snapOffset(offset) {
+                const value = offset + 1;
+                
+                return value - (value % maxScreenX);
+            }
+
+            const documentWidth = document.scrollingElement.scrollWidth;
+            const currentPageStart = snapOffset(documentWidth * \(currentProgression));
+            const currentPageEnd = currentPageStart + maxScreenX;
+            return \(jsProgressionsArray).filter((progression) =>
+                progression * documentWidth > currentPageStart &&
+                progression * documentWidth < currentPageEnd
+            );
+        """) {
+            switch $0 {
+            case .failure(_):
+                self.onLocatorChange(locator.json)
+            case .success(let anyValue):
+                guard let value = anyValue as? [Double] else {
+                    promise.resolve([])
+                }
+                
+                let found = locations.filter { value.contains($0.progression) }
+                promise.resolve(found.map(\.json))
+            }
+        }
+    }
 }
 
 extension EPUBView: UIGestureRecognizerDelegate {
@@ -159,29 +208,27 @@ extension EPUBView: EPUBNavigatorDelegate {
         let jsFragmentsArray = "[\(joinedFragments)]"
         
         epubNav.evaluateJavaScript("""
-            (function() {
-              function isOnScreen(element) {
+            function isOnScreen(element) {
                 const rect = element.getBoundingClientRect();
                 const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
                 const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
                 return isVerticallyWithin && isHorizontallyWithin;
-              }
-              debugger;
-              for (const fragment of \(jsFragmentsArray)) {
+            }
+
+            for (const fragment of \(jsFragmentsArray)) {
                 const element = document.getElementById(fragment);
                 if (isOnScreen(element)) {
-                  return fragment;
+                    return fragment;
                 }
-              }
-        
-              return null;
-            })();
+            }
+
+            return null;
         """) {
             switch $0 {
             case .failure(_):
                 self.onLocatorChange(locator.json)
             case .success(let anyValue):
-                guard let value = anyValue as? String else {
+                guard let value = anyValue as? [Double] else {
                     self.onLocatorChange(locator.json)
                     return
                 }

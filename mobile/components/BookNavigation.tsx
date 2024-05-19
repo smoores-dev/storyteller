@@ -3,6 +3,7 @@ import { TableOfContents } from "./TableOfContents"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useState } from "react"
 import { UIText } from "./UIText"
+import { Bookmarks } from "./Bookmarks"
 
 type Props = {
   onOutsideTap: () => void
@@ -60,7 +61,9 @@ export function BookNavigation({ onOutsideTap }: Props) {
         </View>
         {selectedTab === BookNavTab.TABLE_OF_CONTENTS ? (
           <TableOfContents />
-        ) : selectedTab === BookNavTab.BOOKMARKS ? null : null}
+        ) : selectedTab === BookNavTab.BOOKMARKS ? (
+          <Bookmarks />
+        ) : null}
       </View>
     </>
   )

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Platform, Pressable, View, useWindowDimensions } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -26,6 +26,7 @@ type Props = {
 
 export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
   useKeepAwake()
+  const [activeBookmarks, setActiveBookmarks] = useState<ReadiumLocator[]>([])
 
   const insets = useSafeAreaInsets()
 
@@ -43,6 +44,12 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
     startPosition,
     endPosition,
   } = useAudioBook()
+
+  useEffect(() => {
+    epubViewRef.current
+      ?.findOnPage(book.bookmarks)
+      .then((found) => setActiveBookmarks(found))
+  }, [book.bookmarks])
 
   return (
     <View
@@ -111,7 +118,7 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
             alignItems: "flex-end",
           }}
         >
-          <Toolbar mode="text" />
+          <Toolbar mode="text" activeBookmarks={activeBookmarks} />
         </View>
       )}
       {!showInterface ? (

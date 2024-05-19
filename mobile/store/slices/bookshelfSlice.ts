@@ -5,6 +5,7 @@ import {
   ReadiumLocator,
   ReadiumManifest,
 } from "../../modules/readium/src/Readium.types"
+import { areLocatorsEqual } from "../../modules/readium"
 
 export type BookshelfTrack = {
   bookId: number
@@ -98,6 +99,14 @@ export const bookshelfSlice = createSlice({
 
       state.locators[bookId] = locator
     },
+    bookmarkTapped(
+      state,
+      action: PayloadAction<{ bookId: number; bookmark: ReadiumLocator }>,
+    ) {
+      const { bookId, bookmark } = action.payload
+
+      state.locators[bookId] = bookmark
+    },
     bookRelocated(
       state,
       action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
@@ -140,6 +149,30 @@ export const bookshelfSlice = createSlice({
         state.currentPlayingBookId = null
         state.isAudioLoading = false
       }
+    },
+    bookmarkAdded(
+      state,
+      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+    ) {
+      const { bookId, locator } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.bookmarks.push(locator)
+    },
+    bookmarksRemoved(
+      state,
+      action: PayloadAction<{ bookId: number; locators: ReadiumLocator[] }>,
+    ) {
+      const { bookId, locators } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.bookmarks = book.bookmarks.filter((bookmark) =>
+        locators.some((locator) => areLocatorsEqual(bookmark, locator)),
+      )
     },
   },
 })

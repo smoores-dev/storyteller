@@ -60,6 +60,7 @@ public class ReadiumModule: Module {
                 view.bookId = prop
                 view.initializeNavigator()
             }
+
             Prop("locator") { (view: EPUBView, prop: [String : Any]) in
                 guard let locator = try? Locator(json: prop) else {
                     return
@@ -75,6 +76,7 @@ public class ReadiumModule: Module {
                 view.locator = locator
                 view.go()
             }
+
             Prop("isPlaying") { (view: EPUBView, prop: Bool?) in
                 let isPlaying = prop ?? false
                 view.isPlaying = isPlaying
@@ -83,6 +85,11 @@ public class ReadiumModule: Module {
                 } else {
                     view.clearHighlights()
                 }
+            }
+
+            Prop("findLocatorsOnPage") { (view: EPUBView, locatorJsons: [[String : Any]], promise: Promise) in
+                let locators = locatorJsons.map { try Locator(json: $0) }
+                view.findOnPage(locators: locators, promise)
             }
         }
     }

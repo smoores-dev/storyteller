@@ -24,12 +24,22 @@ import { getLocalAudioBookCoverUrl } from "../../store/persistence/files"
 import { LoadingView } from "../../components/LoadingView"
 import { Toolbar } from "../../components/Toolbar"
 import { ToolbarDialogs } from "../../components/ToolbarDialogs"
+import { areLocatorsEqual } from "../../modules/readium"
 
 const events = [Event.PlaybackState, Event.PlaybackTrackChanged]
 
 export default function PlayerScreen() {
   const book = useAppSelector(getCurrentlyPlayingBook)
   const locator = useAppSelector((state) => book && getLocator(state, book.id))
+  const activeBookmarks = useMemo(
+    () =>
+      locator && book
+        ? book.bookmarks.filter((bookmark) =>
+            areLocatorsEqual(bookmark, locator),
+          )
+        : [],
+    [book, locator],
+  )
   const [currentTrack, setCurrentTrack] = useState(1)
   const [trackCount, setTrackCount] = useState(1)
 
@@ -103,7 +113,7 @@ export default function PlayerScreen() {
             <ChevronDownIcon />
           </Link>
         )}
-        <Toolbar mode="audio" />
+        <Toolbar mode="audio" activeBookmarks={activeBookmarks} />
       </View>
       <Image
         style={styles.cover}

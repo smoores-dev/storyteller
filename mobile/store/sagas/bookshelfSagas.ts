@@ -41,10 +41,12 @@ import * as FileSystem from "expo-file-system"
 import { Audio } from "expo-av"
 import {
   deleteBook,
+  deleteBookmark,
   readBookIds,
   readBookmarks,
   readLocators,
   writeBook,
+  writeBookmark,
   writeLocator,
 } from "../persistence/books"
 import TrackPlayer, {
@@ -729,5 +731,23 @@ export function* deleteBookSaga() {
 
     yield call(deleteBook, bookId)
     yield call(deleteLocalBookFiles, bookId)
+  })
+}
+
+export function* deleteBookmarkSaga() {
+  yield takeEvery(bookshelfSlice.actions.bookmarksRemoved, function* (action) {
+    const { bookId, locators } = action.payload
+
+    for (const locator of locators) {
+      yield call(deleteBookmark, bookId, locator)
+    }
+  })
+}
+
+export function* writeBookmarkSaga() {
+  yield takeEvery(bookshelfSlice.actions.bookmarkAdded, function* (action) {
+    const { bookId, locator } = action.payload
+
+    yield call(writeBookmark, bookId, locator)
   })
 }

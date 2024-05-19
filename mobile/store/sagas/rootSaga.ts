@@ -5,6 +5,7 @@ import { requestLibrarySaga } from "./librarySagas"
 import {
   deactivateKeepAwakeSaga,
   deleteBookSaga,
+  deleteBookmarkSaga,
   downloadBookSaga,
   loadTrackPlayerSaga,
   persistLocatorSaga,
@@ -32,6 +33,7 @@ export function* rootSaga() {
     call(seekToLocatorSaga),
     call(relocateToTrackPositionSaga),
     call(deleteBookSaga),
+    call(deleteBookmarkSaga),
     call(clearServerSaga),
     call(logoutSaga),
     call(syncDebug),

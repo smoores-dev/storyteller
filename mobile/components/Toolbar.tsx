@@ -4,17 +4,26 @@ import { BookOpenOutlineIcon } from "../icons/BookOpenOutlineIcon"
 import { SpedometerIcon } from "../icons/SpedometerIcon"
 import { TableOfContentsIcon } from "../icons/TableOfContentsIcon"
 import { useAppDispatch, useAppSelector } from "../store/appState"
-import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
+import {
+  getCurrentlyPlayingBook,
+  getLocator,
+} from "../store/selectors/bookshelfSelectors"
 import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
 import { PlayIcon } from "../icons/PlayIcon"
 import { BookmarkIcon } from "../icons/BookmarkIcon"
+import { bookshelfSlice } from "../store/slices/bookshelfSlice"
+import { ReadiumLocator } from "../modules/readium/src/Readium.types"
 
 type Props = {
   mode: "audio" | "text"
+  activeBookmarks: ReadiumLocator[]
 }
 
-export function Toolbar({ mode }: Props) {
+export function Toolbar({ mode, activeBookmarks }: Props) {
   const book = useAppSelector(getCurrentlyPlayingBook)
+  const currentLocator = useAppSelector(
+    (state) => book && getLocator(state, book.id),
+  )
 
   const dispatch = useAppDispatch()
 
@@ -37,7 +46,27 @@ export function Toolbar({ mode }: Props) {
           <SpedometerIcon />
         </Pressable>
 
-        <Pressable>
+        <Pressable
+          hitSlop={20}
+          disabled={!currentLocator}
+          onPress={() => {
+            if (activeBookmarks.length) {
+              dispatch(
+                bookshelfSlice.actions.bookmarksRemoved({
+                  bookId: book.id,
+                  locators: activeBookmarks,
+                }),
+              )
+            } else if (currentLocator) {
+              dispatch(
+                bookshelfSlice.actions.bookmarkAdded({
+                  bookId: book.id,
+                  locator: currentLocator,
+                }),
+              )
+            }
+          }}
+        >
           <BookmarkIcon />
         </Pressable>
 

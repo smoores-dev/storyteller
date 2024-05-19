@@ -27,3 +27,9 @@ export function getIsBookInBookshelf(state: RootState, bookId: number) {
 export function getBookshelfBookIds(state: RootState) {
   return state.bookshelf.index
 }
+
+export function getBookmarks(state: RootState, bookId: number) {
+  const book = getBookshelfBook(state, bookId)
+  if (!book) return book
+  return book.bookmarks
+}

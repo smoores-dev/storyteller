@@ -5,7 +5,11 @@ import { ReadiumLocator } from "../../modules/readium/src/Readium.types"
 import { BookshelfBook } from "../slices/bookshelfSlice"
 import { EpubCFI } from "epubjs"
 import { EpubCFIStep } from "epubjs/types/epubcfi"
-import { getResource, locateLink } from "../../modules/readium"
+import {
+  areLocatorsEqual,
+  getResource,
+  locateLink,
+} from "../../modules/readium"
 import { logger } from "../../logger"
 
 export type Book = BookDetail & { downloaded?: boolean }
@@ -173,6 +177,14 @@ export async function writeBookmark(bookId: number, bookmark: ReadiumLocator) {
   return AsyncStorage.setItem(
     `books.${bookId}.bookmarks`,
     JSON.stringify([...bookmarks, bookmark]),
+  )
+}
+
+export async function deleteBookmark(bookId: number, bookmark: ReadiumLocator) {
+  const bookmarks = await readBookmarks(bookId)
+  return AsyncStorage.setItem(
+    `books.${bookId}.bookmarks`,
+    JSON.stringify([bookmarks.filter((b) => areLocatorsEqual(b, bookmark))]),
   )
 }
 

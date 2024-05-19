@@ -233,4 +233,5 @@ export type EPUBViewProps = {
 export type EPUBViewRef = {
   next: () => Promise<ReadiumLocator>
   prev: () => Promise<ReadiumLocator>
+  findOnPage: (locators: ReadiumLocator[]) => Promise<ReadiumLocator[]>
 }
