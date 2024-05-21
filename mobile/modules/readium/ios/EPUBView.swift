@@ -178,6 +178,7 @@ extension EPUBView: UIGestureRecognizerDelegate {
 }
 
 extension EPUBView: EPUBNavigatorDelegate {
+
     func navigator(_ navigator: R2Navigator.Navigator, presentError error: R2Navigator.NavigatorError) {
         // pass
     }
