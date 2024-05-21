@@ -1,6 +1,7 @@
 import { promisify } from "node:util"
 import { exec as execCallback } from "node:child_process"
 import memoize from "memoize"
+import { quotePath } from "./shell"
 
 const exec = promisify(execCallback)
 
@@ -16,7 +17,7 @@ type FfmpegTrackFormat = {
     size: string
     bit_rate: string
     probe_score: number
-    tags: {
+    tags?: {
       major_brand: string
       minor_version: string
       compatible_brands: string
@@ -42,7 +43,7 @@ type TrackInfo = {
   size: number
   bitRate: number
   probeScore: number
-  tags: {
+  tags?: {
     majorBrand: string
     minorVersion: string
     compatibleBrands: string
@@ -68,30 +69,42 @@ function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
     size: parseInt(format.size, 10),
     bitRate: parseInt(format.bit_rate, 10),
     probeScore: format.probe_score,
-    tags: {
-      majorBrand: format.tags.major_brand,
-      minorVersion: format.tags.minor_version,
-      compatibleBrands: format.tags.compatible_brands,
-      title: format.tags.title,
-      track: format.tags.track,
-      album: format.tags.album,
-      genre: format.tags.genre,
-      artist: format.tags.artist,
-      encoder: format.tags.encoder,
-      mediaType: format.tags.media_type,
-    },
+    ...(format.tags && {
+      tags: {
+        majorBrand: format.tags.major_brand,
+        minorVersion: format.tags.minor_version,
+        compatibleBrands: format.tags.compatible_brands,
+        title: format.tags.title,
+        track: format.tags.track,
+        album: format.tags.album,
+        genre: format.tags.genre,
+        artist: format.tags.artist,
+        encoder: format.tags.encoder,
+        mediaType: format.tags.media_type,
+      },
+    }),
   }
 }
 
 export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
-  const { stdout, stderr } = await exec(
-    `ffprobe -i "${path.replaceAll(/"/g, '\\"')}" -show_format -v quiet -of json`,
-  )
-  if (stderr) {
-    throw new Error(stderr)
+  let stdout: string
+  try {
+    const out = await exec(
+      `ffprobe -i ${quotePath(path)} -show_format -v quiet -of json`,
+    )
+    if (out.stderr) throw new Error(out.stderr)
+    stdout = out.stdout
+  } catch {
+    // Run again to get detailed ffprobe output
+    const { stdout, stderr } = await exec(
+      `ffprobe -i ${quotePath(path)} -show_format -of json`,
+    )
+    console.log(stdout)
+    console.error(stderr)
+    throw new Error(`Failed to parse track info from "${path}"`)
   }
   const info = JSON.parse(stdout) as FfmpegTrackFormat
-  return parseTrackInfo(info["format"])
+  return parseTrackInfo(info.format)
 })
 
 export async function getTrackDuration(path: string) {
@@ -134,12 +147,23 @@ function parseChapterInfo(ffmpegChapterInfo: FfmpegChapterInfo): ChapterInfo {
 export const getTrackChapters = memoize(async function getTrackChapters(
   path: string,
 ) {
-  const { stdout, stderr } = await exec(
-    `ffprobe -i "${path.replaceAll(/"/g, '\\"')}" -show_chapters -v quiet -of json`,
-  )
-  if (stderr) {
-    throw new Error(stderr)
+  let stdout: string
+  try {
+    const out = await exec(
+      `ffprobe -i ${quotePath(path)} -show_chapters -v quiet -of json`,
+    )
+    if (out.stderr) throw new Error(out.stderr)
+    stdout = out.stdout
+  } catch {
+    // Run again to get detailed ffprobe output
+    const { stdout, stderr } = await exec(
+      `ffprobe -i ${quotePath(path)} -show_chapters -of json`,
+    )
+    console.log(stdout)
+    console.error(stderr)
+    throw new Error(`Failed to parse track info from "${path}"`)
   }
+
   const { chapters } = JSON.parse(stdout) as FfmpegChapters
   return chapters.map((chapter) => parseChapterInfo(chapter))
 })
@@ -154,7 +178,7 @@ export async function transcodeTrack(
   const args = [
     "-nostdin",
     "-i",
-    `"${path.replaceAll(/"/g, '\\"')}"`,
+    quotePath(path),
     "-vn",
     ...(typeof codec === "string"
       ? // Note: there seem to be issues with attempting to copy cover art
@@ -197,7 +221,7 @@ export async function splitTrack(
     "-to",
     to,
     "-i",
-    `"${path.replaceAll(/"/g, '\\"')}"`,
+    quotePath(path),
     "-vn",
     ...(typeof codec === "string"
       ? // Note: there seem to be issues with attempting to copy cover art
