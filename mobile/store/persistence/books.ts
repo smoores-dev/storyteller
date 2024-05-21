@@ -184,7 +184,7 @@ export async function deleteBookmark(bookId: number, bookmark: ReadiumLocator) {
   const bookmarks = await readBookmarks(bookId)
   return AsyncStorage.setItem(
     `books.${bookId}.bookmarks`,
-    JSON.stringify([bookmarks.filter((b) => areLocatorsEqual(b, bookmark))]),
+    JSON.stringify(bookmarks.filter((b) => !areLocatorsEqual(b, bookmark))),
   )
 }
 

@@ -10,6 +10,7 @@ export function Bookmarks() {
 
   if (!book) return null
 
+  console.log(book.bookmarks)
   return (
     <ScrollView>
       {book.bookmarks.map((bookmark) => (
@@ -38,6 +39,15 @@ export function Bookmarks() {
             >
               {bookmark.title}
             </UIText>
+            {bookmark.locations?.position && (
+              <UIText
+                style={{
+                  fontSize: 13,
+                }}
+              >
+                Page {bookmark.locations?.position}
+              </UIText>
+            )}
           </Pressable>
         </View>
       ))}

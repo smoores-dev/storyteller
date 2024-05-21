@@ -171,7 +171,7 @@ export const bookshelfSlice = createSlice({
       if (!book) return
 
       book.bookmarks = book.bookmarks.filter((bookmark) =>
-        locators.some((locator) => areLocatorsEqual(bookmark, locator)),
+        locators.some((locator) => !areLocatorsEqual(bookmark, locator)),
       )
     },
   },

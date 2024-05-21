@@ -29,5 +29,8 @@ export const toolbarSlice = createSlice({
     builder.addCase(bookshelfSlice.actions.navItemTapped, (state) => {
       state.openDialog = null
     })
+    builder.addCase(bookshelfSlice.actions.bookmarkTapped, (state) => {
+      state.openDialog = null
+    })
   },
 })

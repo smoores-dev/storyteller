@@ -11,6 +11,7 @@ import {
   persistLocatorSaga,
   relocateToTrackPositionSaga,
   seekToLocatorSaga,
+  writeBookmarkSaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -34,6 +35,7 @@ export function* rootSaga() {
     call(relocateToTrackPositionSaga),
     call(deleteBookSaga),
     call(deleteBookmarkSaga),
+    call(writeBookmarkSaga),
     call(clearServerSaga),
     call(logoutSaga),
     call(syncDebug),
