@@ -21,7 +21,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-build-properties",
         {
-          ios: { deploymentTarget: "14.0" },
+          ios: { deploymentTarget: "15.5" },
           android: {
             compileSdkVersion: 34,
             buildToolsVersion: "34.0.0",
@@ -76,7 +76,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
     },
     android: {
-      package: "dev.smoores.Storyteller",
+      package: IS_DEV
+        ? "dev.smoores.Storyteller.dev"
+        : "dev.smoores.Storyteller",
       versionCode: 15,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
