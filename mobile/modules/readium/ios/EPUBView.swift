@@ -112,49 +112,59 @@ class EPUBView: ExpoView {
     }
 
     func findOnPage(locators: [Locator], promise: Promise) {
-        guard let epubNav = navigator as? EPUBNavigatorViewController else {
+        guard let epubNav = navigator else {
             return
         }
 
-        let currentProgression = locator.progression else {
+        guard let currentProgression = epubNav.currentLocation?.locations.progression else {
             return
         }
 
         let joinedProgressions = locators
-            .compactMap(\.progression)
+            .compactMap(\.locations.progression)
             .map { "\($0)" }
             .joined(separator: ",")
 
         let jsProgressionsArray = "[\(joinedProgressions)]"
 
         epubNav.evaluateJavaScript("""
-            const maxScreenX = window.orientation === 0 || window.orientation == 180
-                    ? screen.width
-                    : screen.height;
+            (function() {
+                const maxScreenX = window.orientation === 0 || window.orientation == 180
+                        ? screen.width
+                        : screen.height;
 
-            function snapOffset(offset) {
-                const value = offset + 1;
-                
-                return value - (value % maxScreenX);
-            }
+                function snapOffset(offset) {
+                    const value = offset + 1;
+                    
+                    return value - (value % maxScreenX);
+                }
 
-            const documentWidth = document.scrollingElement.scrollWidth;
-            const currentPageStart = snapOffset(documentWidth * \(currentProgression));
-            const currentPageEnd = currentPageStart + maxScreenX;
-            return \(jsProgressionsArray).filter((progression) =>
-                progression * documentWidth > currentPageStart &&
-                progression * documentWidth < currentPageEnd
-            );
+                const documentWidth = document.scrollingElement.scrollWidth;
+                const currentPageStart = snapOffset(documentWidth * \(currentProgression));
+                const currentPageEnd = currentPageStart + maxScreenX;
+                return \(jsProgressionsArray).filter((progression) =>
+                    progression * documentWidth >= currentPageStart &&
+                    progression * documentWidth < currentPageEnd
+                );
+            })();
         """) {
             switch $0 {
-            case .failure(_):
-                self.onLocatorChange(locator.json)
+            case .failure(let e):
+                print(e)
+                promise.resolve([])
             case .success(let anyValue):
                 guard let value = anyValue as? [Double] else {
                     promise.resolve([])
+                    return
                 }
                 
-                let found = locations.filter { value.contains($0.progression) }
+                let found = locators.filter {
+                    guard let progression = $0.locations.progression else {
+                        return false
+                    }
+                    return value.contains(progression)
+                }
+                
                 promise.resolve(found.map(\.json))
             }
         }
@@ -208,21 +218,23 @@ extension EPUBView: EPUBNavigatorDelegate {
         let jsFragmentsArray = "[\(joinedFragments)]"
         
         epubNav.evaluateJavaScript("""
-            function isOnScreen(element) {
-                const rect = element.getBoundingClientRect();
-                const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
-                const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
-                return isVerticallyWithin && isHorizontallyWithin;
-            }
-
-            for (const fragment of \(jsFragmentsArray)) {
-                const element = document.getElementById(fragment);
-                if (isOnScreen(element)) {
-                    return fragment;
+            (function() {
+                function isOnScreen(element) {
+                    const rect = element.getBoundingClientRect();
+                    const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
+                    const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
+                    return isVerticallyWithin && isHorizontallyWithin;
                 }
-            }
 
-            return null;
+                for (const fragment of \(jsFragmentsArray)) {
+                    const element = document.getElementById(fragment);
+                    if (isOnScreen(element)) {
+                        return fragment;
+                    }
+                }
+
+                return null;
+            })();
         """) {
             switch $0 {
             case .failure(_):

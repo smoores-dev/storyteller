@@ -17,6 +17,8 @@ import { MiniPlayer } from "./MiniPlayer"
 import { useAudioBook } from "../hooks/useAudioBook"
 import { Toolbar } from "./Toolbar"
 import { ToolbarDialogs } from "./ToolbarDialogs"
+import { useAppSelector } from "../store/appState"
+import { getLocator } from "../store/selectors/bookshelfSelectors"
 
 type Props = {
   book: BookshelfBook
@@ -31,6 +33,8 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
   const insets = useSafeAreaInsets()
 
   const dimensions = useWindowDimensions()
+
+  const currentLocator = useAppSelector((state) => getLocator(state, book.id))
 
   const [showInterface, setShowInterface] = useState(true)
   const epubViewRef = useRef<EPUBViewRef | null>(null)
@@ -47,9 +51,9 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
 
   useEffect(() => {
     epubViewRef.current
-      ?.findOnPage(book.bookmarks)
+      ?.findLocatorsOnPage(book.bookmarks)
       .then((found) => setActiveBookmarks(found))
-  }, [book.bookmarks])
+  }, [currentLocator?.locations?.progression, book.bookmarks])
 
   return (
     <View

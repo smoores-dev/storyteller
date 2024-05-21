@@ -27,6 +27,8 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
 
   const dispatch = useAppDispatch()
 
+  console.log(activeBookmarks)
+
   if (!book) return null
 
   return (
@@ -67,7 +69,7 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             }
           }}
         >
-          <BookmarkIcon />
+          <BookmarkIcon filled={!!activeBookmarks.length} />
         </Pressable>
 
         <Pressable

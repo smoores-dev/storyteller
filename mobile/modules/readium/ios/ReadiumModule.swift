@@ -87,9 +87,9 @@ public class ReadiumModule: Module {
                 }
             }
 
-            Prop("findLocatorsOnPage") { (view: EPUBView, locatorJsons: [[String : Any]], promise: Promise) in
-                let locators = locatorJsons.map { try Locator(json: $0) }
-                view.findOnPage(locators: locators, promise)
+            AsyncFunction("findLocatorsOnPage") { (view: EPUBView, locatorJsons: [[String : Any]], promise: Promise) in
+                let locators = locatorJsons.compactMap { try! Locator(json: $0) }
+                view.findOnPage(locators: locators, promise: promise)
             }
         }
     }
