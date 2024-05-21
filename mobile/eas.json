@@ -5,6 +5,12 @@
   },
   "build": {
     "development": {
+      "android": {
+        "config": "android-build.yml"
+      },
+      "ios": {
+        "config": "ios-build.yml"
+      },
       "developmentClient": true,
       "distribution": "internal",
       "env": {
@@ -12,12 +18,24 @@
       }
     },
     "preview": {
+      "android": {
+        "config": "android-build.yml"
+      },
+      "ios": {
+        "config": "ios-build.yml"
+      },
       "distribution": "internal",
       "env": {
         "APP_VARIANT": "preview"
       }
     },
     "production": {
+      "android": {
+        "config": "android-build.yml"
+      },
+      "ios": {
+        "config": "ios-build.yml"
+      },
       "env": {
         "APP_VARIANT": "production"
       }
