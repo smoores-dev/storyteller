@@ -240,7 +240,7 @@ extension EPUBView: EPUBNavigatorDelegate {
             case .failure(_):
                 self.onLocatorChange(locator.json)
             case .success(let anyValue):
-                guard let value = anyValue as? [Double] else {
+                guard let value = anyValue as? String else {
                     self.onLocatorChange(locator.json)
                     return
                 }
