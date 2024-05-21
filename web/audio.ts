@@ -87,10 +87,14 @@ function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
 }
 
 export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
-  const { stdout, stderr } = await exec(
-    `ffprobe -i ${quotePath(path)} -show_format -v quiet -of json`,
-  )
-  if (stderr) {
+  let stdout: string
+  try {
+    const out = await exec(
+      `ffprobe -i ${quotePath(path)} -show_format -v quiet -of json`,
+    )
+    if (out.stderr) throw new Error(out.stderr)
+    stdout = out.stdout
+  } catch {
     // Run again to get detailed ffprobe output
     const { stdout, stderr } = await exec(
       `ffprobe -i ${quotePath(path)} -show_format -of json`,
@@ -143,17 +147,21 @@ function parseChapterInfo(ffmpegChapterInfo: FfmpegChapterInfo): ChapterInfo {
 export const getTrackChapters = memoize(async function getTrackChapters(
   path: string,
 ) {
-  const { stdout, stderr } = await exec(
-    `ffprobe -i ${quotePath(path)} -show_chapters -v quiet -of json`,
-  )
-  if (stderr) {
+  let stdout: string
+  try {
+    const out = await exec(
+      `ffprobe -i ${quotePath(path)} -show_chapters -v quiet -of json`,
+    )
+    if (out.stderr) throw new Error(out.stderr)
+    stdout = out.stdout
+  } catch {
     // Run again to get detailed ffprobe output
     const { stdout, stderr } = await exec(
       `ffprobe -i ${quotePath(path)} -show_chapters -of json`,
     )
     console.log(stdout)
     console.error(stderr)
-    throw new Error(`Failed to parse chapter info from "${path}"`)
+    throw new Error(`Failed to parse track info from "${path}"`)
   }
 
   const { chapters } = JSON.parse(stdout) as FfmpegChapters
