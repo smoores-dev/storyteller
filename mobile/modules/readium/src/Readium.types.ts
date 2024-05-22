@@ -227,6 +227,21 @@ export type EPUBViewProps = {
   locator: ReadiumLocator
   onLocatorChange?: (event: NativeSyntheticEvent<ReadiumLocator>) => void
   onMiddleTouch?: (event: NativeSyntheticEvent<void>) => void
+  onSelection?: (
+    event: NativeSyntheticEvent<{
+      x: number
+      y: number
+      locator: ReadiumLocator
+    }>,
+  ) => void
+  onDoubleTouch?: (event: NativeSyntheticEvent<ReadiumLocator>) => void
+  onError?: (
+    event: NativeSyntheticEvent<{
+      errorDescription: string
+      failureReason: string
+      recoverySuggestion: string
+    }>,
+  ) => void
   isPlaying?: boolean
 }
 

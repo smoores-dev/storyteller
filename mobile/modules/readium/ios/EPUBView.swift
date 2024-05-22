@@ -9,11 +9,16 @@ class EPUBView: ExpoView {
     private let templates = HTMLDecorationTemplate.defaultTemplates()
     let onLocatorChange = EventDispatcher()
     let onMiddleTouch = EventDispatcher()
+    let onDoubleTouch = EventDispatcher()
+    let onSelection = EventDispatcher()
+    let onError = EventDispatcher()
     
     public var bookId: Int?
     public var locator: Locator?
     public var isPlaying: Bool = false
     public var navigator: EPUBNavigatorViewController?
+    
+    private var didTapWork: DispatchWorkItem?
     
     func initializeNavigator() {
         if self.navigator != nil {
@@ -177,27 +182,109 @@ extension EPUBView: UIGestureRecognizerDelegate {
     }
 }
 
-extension EPUBView: EPUBNavigatorDelegate {
-
-    func navigator(_ navigator: R2Navigator.Navigator, presentError error: R2Navigator.NavigatorError) {
-        // pass
-    }
-    
-    func navigator(_ navigator: VisualNavigator, didTapAt point: CGPoint) {
-        guard let navigator = self.navigator else {
+extension EPUBView: WKScriptMessageHandler {
+    /// Handles incoming calls from JS.
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name != "storytellerDoubleClick" {
+            return
+        }
+        guard let fragment = message.body as? String else {
+            return
+        }
+        guard let bookId = self.bookId else {
+            return
+        }
+        guard let currentLocator = self.navigator?.currentLocation else {
             return
         }
         
-        if point.x < bounds.maxX * 0.2 {
+        guard let locator = try? BookService.instance.getLocatorFor(bookId: bookId, href: currentLocator.href, fragment: fragment) else {
+            return
+        }
+        
+        self.onDoubleTouch(locator.json)
+    }
+}
+
+extension EPUBView: EPUBNavigatorDelegate {
+    func navigator(_ navigator: any SelectableNavigator, shouldShowMenuForSelection selection: Selection) -> Bool {
+        onSelection(["x": selection.frame?.midX as Any, "y": selection.frame?.maxY as Any, "locator": selection.locator.json])
+        return false
+    }
+    
+    func navigator(_ navigator: EPUBNavigatorViewController, setupUserScripts userContentController: WKUserContentController) {
+        guard let bookId = self.bookId else {
+            return
+        }
+        
+        guard let locator = self.locator else {
+            return
+        }
+        
+        let fragments = BookService.instance.getFragments(for: bookId, locator: locator)
+        
+        let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
+        let jsFragmentsArray = "[\(joinedFragments)]"
+        
+        let scriptSource = """
+            globalThis.storytellerFragments = \(jsFragmentsArray);
+        
+            let storytellerDoubleClickTimeout = null;
+            let storytellerTouchMoved = false;
+            for (const fragment of globalThis.storytellerFragments) {
+                const element = document.getElementById(fragment);
+                if (!element) continue;
+                element.addEventListener('touchstart', (event) => {
+                    storytellerTouchMoved = false;
+                });
+                element.addEventListener('touchmove', (event) => {
+                    storytellerTouchMoved = true;
+                });
+                element.addEventListener('touchend', (event) => {
+                    if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
+        
+                    event.bubbles = true
+                    event.clientX = event.changedTouches[0].clientX
+                    event.clientY = event.changedTouches[0].clientY
+                    const clone = new MouseEvent('click', event);
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+
+                    if (storytellerDoubleClickTimeout) {
+                        clearTimeout(storytellerDoubleClickTimeout);
+                        storytellerDoubleClickTimeout = null;
+                        window.webkit.messageHandlers.storytellerDoubleClick.postMessage(fragment);
+                        return
+                    }
+
+                    storytellerDoubleClickTimeout = setTimeout(() => {
+                        storytellerDoubleClickTimeout = null;
+                        element.parentElement.dispatchEvent(clone);
+                    }, 350);
+                })
+            }
+        """
+        
+        userContentController.addUserScript(WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        userContentController.add(self, name: "storytellerDoubleClick")
+    }
+
+    func navigator(_ navigator: R2Navigator.Navigator, presentError error: R2Navigator.NavigatorError) {
+        self.onError(["errorDescription": error.errorDescription as Any, "failureReason": error.failureReason as Any, "recoverySuggestion": error.recoverySuggestion as Any])
+    }
+    
+    func navigator(_ navigator: VisualNavigator, didTapAt point: CGPoint) {
+        self.didTapWork = nil
+        if point.x < self.bounds.maxX * 0.2 {
             _ = navigator.goBackward(animated: true) {}
             return
         }
-        if point.x > bounds.maxX * 0.8 {
+        if point.x > self.bounds.maxX * 0.8 {
             _ = navigator.goForward(animated: true) {}
             return
         }
         
-        onMiddleTouch()
+        self.onMiddleTouch()
     }
     
     func navigator(_ navigator: Navigator, locationDidChange locator: Locator) {
@@ -209,15 +296,6 @@ extension EPUBView: EPUBNavigatorDelegate {
             return
         }
         
-        guard let bookId = self.bookId else {
-            return
-        }
-        
-        let fragments = BookService.instance.getFragments(for: bookId, locator: locator)
-        
-        let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
-        let jsFragmentsArray = "[\(joinedFragments)]"
-        
         epubNav.evaluateJavaScript("""
             (function() {
                 function isOnScreen(element) {
@@ -227,8 +305,9 @@ extension EPUBView: EPUBNavigatorDelegate {
                     return isVerticallyWithin && isHorizontallyWithin;
                 }
 
-                for (const fragment of \(jsFragmentsArray)) {
+                for (const fragment of globalThis.storytellerFragments) {
                     const element = document.getElementById(fragment);
+                    if (!element) continue;
                     if (isOnScreen(element)) {
                         return fragment;
                     }

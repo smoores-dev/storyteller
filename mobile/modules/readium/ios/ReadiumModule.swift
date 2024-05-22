@@ -54,7 +54,7 @@ public class ReadiumModule: Module {
         }
 
         View(EPUBView.self) {
-            Events("onLocatorChange", "onMiddleTouch")
+            Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError")
             
             Prop("bookId") { (view: EPUBView, prop: Int) in
                 view.bookId = prop

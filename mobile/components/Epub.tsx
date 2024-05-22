@@ -90,6 +90,12 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
           onMiddleTouch={() => {
             setShowInterface((p) => !p)
           }}
+          onDoubleTouch={(e) => {
+            console.log(e.nativeEvent)
+          }}
+          onSelection={(e) => {
+            console.log(e.nativeEvent)
+          }}
           isPlaying={isPlaying}
         />
       </View>
