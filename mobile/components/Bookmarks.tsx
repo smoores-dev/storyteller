@@ -10,7 +10,6 @@ export function Bookmarks() {
 
   if (!book) return null
 
-  console.log(book.bookmarks)
   return (
     <ScrollView>
       {book.bookmarks.map((bookmark) => (

@@ -10,7 +10,7 @@ import { useAppSelector } from "../store/appState"
 import { getIsAudioLoading } from "../store/selectors/bookshelfSelectors"
 import { BookshelfTrack } from "../store/slices/bookshelfSlice"
 
-const events = [Event.PlaybackState, Event.PlaybackTrackChanged]
+const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 
 export function useAudioBook() {
   const isLoading = useAppSelector(getIsAudioLoading)

@@ -587,6 +587,12 @@ function* getCurrentClip(book: BookshelfBook) {
   return clip
 }
 
+export function* ensureTrackPlaySaga() {
+  yield takeEvery(bookshelfSlice.actions.bookDoubleTapped, function* () {
+    yield call(TrackPlayer.play)
+  })
+}
+
 export function* loadTrackPlayerSaga() {
   yield takeLatest(
     [
@@ -647,6 +653,7 @@ export function* seekToLocatorSaga() {
     [
       bookshelfSlice.actions.bookRelocated,
       bookshelfSlice.actions.navItemTapped,
+      bookshelfSlice.actions.bookDoubleTapped,
     ],
     function* (action) {
       const { bookId } = action.payload

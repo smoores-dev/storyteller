@@ -121,6 +121,16 @@ export const bookshelfSlice = createSlice({
       state.isAudioLoading = state.currentPlayingBookId !== bookId
       state.currentPlayingBookId = bookId
     },
+    bookDoubleTapped(
+      state,
+      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+    ) {
+      const { bookId, locator } = action.payload
+
+      state.isAudioLoading = state.currentPlayingBookId !== bookId
+      state.currentPlayingBookId = bookId
+      state.locators[bookId] = locator
+    },
     playerOpenPressed(state, action: PayloadAction<{ bookId: number }>) {
       const { bookId } = action.payload
 

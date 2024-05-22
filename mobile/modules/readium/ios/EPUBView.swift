@@ -185,24 +185,39 @@ extension EPUBView: UIGestureRecognizerDelegate {
 extension EPUBView: WKScriptMessageHandler {
     /// Handles incoming calls from JS.
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        if message.name != "storytellerDoubleClick" {
-            return
+        switch message.name {
+            case "storytellerDoubleClick":
+                guard let fragment = message.body as? String else {
+                    return
+                }
+                guard let bookId = self.bookId else {
+                    return
+                }
+                guard let currentLocator = self.navigator?.currentLocation else {
+                    return
+                }
+                
+                guard let locator = try? BookService.instance.getLocatorFor(bookId: bookId, href: currentLocator.href, fragment: fragment) else {
+                    return
+                }
+                
+                self.onDoubleTouch(locator.json)
+            case "selectionChanged":
+                guard
+                    let selection = body as? [String: Any],
+                    let href = selection["href"] as? String,
+                    let text = try? Locator.Text(json: selection["text"]),
+                    var frame = CGRect(json: selection["rect"])
+                else {
+                    onSelection(nil)
+                    return
+                }
+
+                frame.origin = convertPointToNavigatorSpace(frame.origin)
+                onSelection(["text": text, "frame": frame.dictionaryRepresentation])
+            default:
+                return
         }
-        guard let fragment = message.body as? String else {
-            return
-        }
-        guard let bookId = self.bookId else {
-            return
-        }
-        guard let currentLocator = self.navigator?.currentLocation else {
-            return
-        }
-        
-        guard let locator = try? BookService.instance.getLocatorFor(bookId: bookId, href: currentLocator.href, fragment: fragment) else {
-            return
-        }
-        
-        self.onDoubleTouch(locator.json)
     }
 }
 
@@ -267,6 +282,7 @@ extension EPUBView: EPUBNavigatorDelegate {
         
         userContentController.addUserScript(WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         userContentController.add(self, name: "storytellerDoubleClick")
+        userContentController.add(self, name: "selectionChanged")
     }
 
     func navigator(_ navigator: R2Navigator.Navigator, presentError error: R2Navigator.NavigatorError) {
