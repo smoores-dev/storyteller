@@ -85,7 +85,6 @@ export function Epub({ book, locator }: Props) {
           x={selection.x}
           y={selection.y}
           locator={selection.locator}
-          onOutsideTap={() => setSelection(null)}
         />
       )}
       <View
@@ -121,7 +120,11 @@ export function Epub({ book, locator }: Props) {
             )
           }}
           onSelection={(event) => {
-            setSelection(event.nativeEvent)
+            if ("cleared" in event.nativeEvent) {
+              setSelection(null)
+            } else {
+              setSelection(event.nativeEvent)
+            }
           }}
           isPlaying={isPlaying}
         />

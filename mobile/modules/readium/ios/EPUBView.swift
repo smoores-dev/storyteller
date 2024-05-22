@@ -202,19 +202,8 @@ extension EPUBView: WKScriptMessageHandler {
                 }
                 
                 self.onDoubleTouch(locator.json)
-            case "selectionChanged":
-                guard
-                    let selection = body as? [String: Any],
-                    let href = selection["href"] as? String,
-                    let text = try? Locator.Text(json: selection["text"]),
-                    var frame = CGRect(json: selection["rect"])
-                else {
-                    onSelection(nil)
-                    return
-                }
-
-                frame.origin = convertPointToNavigatorSpace(frame.origin)
-                onSelection(["text": text, "frame": frame.dictionaryRepresentation])
+            case "storytellerSelectionCleared":
+                onSelection(["cleared": true])
             default:
                 return
         }
@@ -278,11 +267,17 @@ extension EPUBView: EPUBNavigatorDelegate {
                     }, 350);
                 })
             }
+        
+            document.addEventListener('selectionchange', () => {
+                if (document.getSelection().isCollapsed) {
+                    window.webkit.messageHandlers.storytellerSelectionCleared.postMessage(null);
+                }
+            });
         """
         
         userContentController.addUserScript(WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         userContentController.add(self, name: "storytellerDoubleClick")
-        userContentController.add(self, name: "selectionChanged")
+        userContentController.add(self, name: "storytellerSelectionCleared")
     }
 
     func navigator(_ navigator: R2Navigator.Navigator, presentError error: R2Navigator.NavigatorError) {

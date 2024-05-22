@@ -172,10 +172,6 @@ final class BookService {
     }
     
     func getFragment(for bookId: Int, clipUrl: URL, position: Double) throws -> TextFragment? {
-        guard let publication = getPublication(for: bookId) else {
-            throw BookServiceError.unopenedPublication(bookId)
-        }
-        
         guard let mediaOverlayStore = self.mediaOverlays[bookId] else {
             return nil
         }
