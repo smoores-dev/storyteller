@@ -5,6 +5,8 @@ import {
   ReadiumLocator,
   ReadiumManifest,
 } from "../../modules/readium/src/Readium.types"
+import { areLocatorsEqual } from "../../modules/readium"
+import type { UUID } from "crypto"
 
 export type BookshelfTrack = {
   bookId: number
@@ -18,11 +20,24 @@ export type BookshelfTrack = {
   pitchAlgorithm: PitchAlgorithm
 }
 
+export type Highlight = {
+  id: UUID
+  color: "yellow" | "red" | "green" | "blue" | "magenta"
+  locator: ReadiumLocator
+}
+
+export const playerSpeeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.5] as const
+
+export type PlayerSpeed = (typeof playerSpeeds)[number]
+
 export type BookshelfBook = {
   id: number
   title: string
   authors: Array<BookAuthor>
   manifest: ReadiumManifest
+  bookmarks: ReadiumLocator[]
+  highlights: Highlight[]
+  playerSpeed: PlayerSpeed
 }
 
 export type BookshelfState = {
@@ -56,6 +71,20 @@ export const localBookImported = createAction(
 
 export const playerPaused = createAction("bookshelf/playerPaused")
 
+function compareLocators(a: ReadiumLocator, b: ReadiumLocator) {
+  if (a.locations?.totalProgression === undefined) {
+    return -1
+  }
+  if (b.locations?.totalProgression === undefined) {
+    return 1
+  }
+  const totalComp = a.locations.totalProgression - b.locations.totalProgression
+  if (totalComp !== 0) {
+    return totalComp
+  }
+  return (a.locations.progression ?? 0) - (b.locations.progression ?? 0)
+}
+
 export const bookshelfSlice = createSlice({
   name: "bookshelf",
   initialState,
@@ -70,6 +99,8 @@ export const bookshelfSlice = createSlice({
       const { books, locators } = action.payload
 
       for (const book of books) {
+        book.bookmarks.sort((a, b) => compareLocators(a, b))
+        book.highlights.sort((a, b) => compareLocators(a.locator, b.locator))
         state.index.push(book.id)
         state.entities[book.id] = book
       }
@@ -89,6 +120,22 @@ export const bookshelfSlice = createSlice({
       state.entities[book.id] = book
       state.locators[book.id] = locator
     },
+    navItemTapped(
+      state,
+      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+    ) {
+      const { bookId, locator } = action.payload
+
+      state.locators[bookId] = locator
+    },
+    bookmarkTapped(
+      state,
+      action: PayloadAction<{ bookId: number; bookmark: ReadiumLocator }>,
+    ) {
+      const { bookId, bookmark } = action.payload
+
+      state.locators[bookId] = bookmark
+    },
     bookRelocated(
       state,
       action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
@@ -102,6 +149,16 @@ export const bookshelfSlice = createSlice({
 
       state.isAudioLoading = state.currentPlayingBookId !== bookId
       state.currentPlayingBookId = bookId
+    },
+    bookDoubleTapped(
+      state,
+      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+    ) {
+      const { bookId, locator } = action.payload
+
+      state.isAudioLoading = state.currentPlayingBookId !== bookId
+      state.currentPlayingBookId = bookId
+      state.locators[bookId] = locator
     },
     playerOpenPressed(state, action: PayloadAction<{ bookId: number }>) {
       const { bookId } = action.payload
@@ -131,6 +188,83 @@ export const bookshelfSlice = createSlice({
         state.currentPlayingBookId = null
         state.isAudioLoading = false
       }
+    },
+    bookmarkAdded(
+      state,
+      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+    ) {
+      const { bookId, locator } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.bookmarks.push(locator)
+      book.bookmarks.sort((a, b) => compareLocators(a, b))
+    },
+    bookmarksRemoved(
+      state,
+      action: PayloadAction<{ bookId: number; locators: ReadiumLocator[] }>,
+    ) {
+      const { bookId, locators } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.bookmarks = book.bookmarks.filter((bookmark) =>
+        locators.some((locator) => !areLocatorsEqual(bookmark, locator)),
+      )
+    },
+    highlightCreated(
+      state,
+      action: PayloadAction<{ bookId: number; highlight: Highlight }>,
+    ) {
+      const { bookId, highlight } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.highlights.push(highlight)
+      book.highlights.sort((a, b) => compareLocators(a.locator, b.locator))
+    },
+    highlightRemoved(
+      state,
+      action: PayloadAction<{ bookId: number; highlightId: UUID }>,
+    ) {
+      const { bookId, highlightId } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.highlights = book.highlights.filter(({ id }) => id !== highlightId)
+    },
+    highlightColorChanged(
+      state,
+      action: PayloadAction<{
+        bookId: number
+        highlightId: UUID
+        color: Highlight["color"]
+      }>,
+    ) {
+      const { bookId, highlightId, color } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      const highlight = book.highlights.find((h) => h.id === highlightId)
+      if (!highlight) return
+
+      highlight.color = color
+    },
+    playerSpeedChanged(
+      state,
+      action: PayloadAction<{ bookId: number; speed: PlayerSpeed }>,
+    ) {
+      const { bookId, speed } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.playerSpeed = speed
     },
   },
 })

@@ -1,12 +1,11 @@
 import { useLocalSearchParams } from "expo-router"
 
 import { Epub } from "../../../../components/Epub"
-import { useAppDispatch, useAppSelector } from "../../../../store/appState"
+import { useAppSelector } from "../../../../store/appState"
 import {
   getBookshelfBook,
   getLocator,
 } from "../../../../store/selectors/bookshelfSelectors"
-import { bookshelfSlice } from "../../../../store/slices/bookshelfSlice"
 import { useIsFocused } from "../../../../hooks/useIsFocused"
 import { Platform } from "react-native"
 
@@ -17,8 +16,6 @@ export default function BookScreen() {
 
   const book = useAppSelector((state) => getBookshelfBook(state, bookId))
   const locator = useAppSelector((state) => getLocator(state, bookId))
-
-  const dispatch = useAppDispatch()
 
   const isFocused = useIsFocused()
 
@@ -32,14 +29,6 @@ export default function BookScreen() {
         key={Platform.OS === "android" ? locator.href : book.id}
         book={book}
         locator={locator}
-        onLocatorChange={(newLocator) =>
-          dispatch(
-            bookshelfSlice.actions.bookRelocated({
-              bookId,
-              locator: newLocator,
-            }),
-          )
-        }
       />
     )
   )

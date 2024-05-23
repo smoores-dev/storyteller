@@ -125,11 +125,53 @@ final class BookService {
         return textFragments.filter { $0.href == locator.href }
     }
     
-    func getFragment(for bookId: Int, clipUrl: URL, position: Double) throws -> TextFragment? {
+    func getLocatorFor(bookId: Int, href: String, fragment: String) throws -> Locator? {
         guard let publication = getPublication(for: bookId) else {
             throw BookServiceError.unopenedPublication(bookId)
         }
         
+        guard let link = publication.link(withHREF: href) else {
+            return nil
+        }
+        
+        let resource = publication.get(link)
+        let htmlContent = try resource.readAsString().get()
+        if #available(iOS 16.0, *) {
+            let fragmentRegex = try Regex("id=\"\(fragment)\"")
+            if let startOfFragment = htmlContent.firstMatch(of: fragmentRegex)?.range.lowerBound {
+                let fragmentPosition = htmlContent.distance(from: htmlContent.startIndex, to: startOfFragment)
+                let progression = Double(fragmentPosition) / Double(htmlContent.distance(from: htmlContent.startIndex, to: htmlContent.endIndex))
+                guard let startOfChapterProgression = try locateFromPositions(for: bookId, link: link).locations.totalProgression else {
+                    return nil
+                }
+                guard let chapterIndex = publication.readingOrder.firstIndex(withHREF: link.href) else {
+                    return nil
+                }
+                let nextChapterIndex = publication.readingOrder.index(after: chapterIndex)
+                let nextChapterLink = publication.readingOrder[nextChapterIndex]
+                let startOfNextChapterProgression = try locateFromPositions(for: bookId, link: nextChapterLink).locations.totalProgression ?? 1
+                let totalProgression = startOfChapterProgression + (progression * (startOfNextChapterProgression - startOfChapterProgression))
+                return Locator(
+                    href: href,
+                    type: "application/xhtml+xml",
+                    locations: Locator.Locations(
+                        fragments: [fragment],
+                        progression: progression,
+                        totalProgression: totalProgression
+                    )
+                )
+            }
+            
+            return nil
+        }
+        
+        return Locator(
+            href: href,
+            type: "application/xhtml+xml"
+        )
+    }
+    
+    func getFragment(for bookId: Int, clipUrl: URL, position: Double) throws -> TextFragment? {
         guard let mediaOverlayStore = self.mediaOverlays[bookId] else {
             return nil
         }
@@ -146,44 +188,8 @@ final class BookService {
             return nil
         }
         
-        guard let link = publication.link(withHREF: fragment.href) else {
-            return nil
-        }
-        
-        let resource = publication.get(link)
-        let htmlContent = try resource.readAsString().get()
-        if #available(iOS 16.0, *) {
-            let fragmentRegex = try Regex("id=\"\(fragment.fragment)\"")
-            if let startOfFragment = htmlContent.firstMatch(of: fragmentRegex)?.range.lowerBound {
-                let fragmentPosition = htmlContent.distance(from: htmlContent.startIndex, to: startOfFragment)
-                let progression = Double(fragmentPosition) / Double(htmlContent.distance(from: htmlContent.startIndex, to: htmlContent.endIndex))
-                guard let startOfChapterProgression = try locateFromPositions(for: bookId, link: link).locations.totalProgression else {
-                    return nil
-                }
-                guard let chapterIndex = publication.readingOrder.firstIndex(withHREF: link.href) else {
-                    return nil
-                }
-                let nextChapterIndex = publication.readingOrder.index(after: chapterIndex)
-                let nextChapterLink = publication.readingOrder[nextChapterIndex]
-                let startOfNextChapterProgression = try locateFromPositions(for: bookId, link: nextChapterLink).locations.totalProgression ?? 1
-                let totalProgression = startOfChapterProgression + (progression * (startOfNextChapterProgression - startOfChapterProgression))
-                fragment.locator = Locator(
-                    href: fragment.href,
-                    type: "application/xhtml+xml",
-                    locations: Locator.Locations(
-                        fragments: [fragment.fragment],
-                        progression: progression,
-                        totalProgression: totalProgression
-                    )
-                )
-            }
-            
-        } else {
-            fragment.locator = Locator(
-                href: fragment.href,
-                type: "application/xhtml+xml"
-            )
-        }
+        let locator = try getLocatorFor(bookId: bookId, href: fragment.href, fragment: fragment.fragment)
+        fragment.locator = locator
         
         return fragment
     }

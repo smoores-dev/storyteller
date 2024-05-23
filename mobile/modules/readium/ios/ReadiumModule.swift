@@ -54,12 +54,13 @@ public class ReadiumModule: Module {
         }
 
         View(EPUBView.self) {
-            Events("onLocatorChange", "onMiddleTouch")
+            Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
             
             Prop("bookId") { (view: EPUBView, prop: Int) in
                 view.bookId = prop
                 view.initializeNavigator()
             }
+
             Prop("locator") { (view: EPUBView, prop: [String : Any]) in
                 guard let locator = try? Locator(json: prop) else {
                     return
@@ -75,13 +76,60 @@ public class ReadiumModule: Module {
                 view.locator = locator
                 view.go()
             }
+
             Prop("isPlaying") { (view: EPUBView, prop: Bool?) in
                 let isPlaying = prop ?? false
                 view.isPlaying = isPlaying
-                if view.isPlaying {
-                    view.highlightSelection()
+                if view.isPlaying, let locator = view.locator {
+                    view.highlightFragment(locator: locator)
                 } else {
-                    view.clearHighlights()
+                    view.clearHighlightedFragment()
+                }
+            }
+
+            Prop("highlights") { (view: EPUBView, prop: [[String: Any]]) in
+                let highlights = prop.compactMap { (highlightDict: [String: Any]) -> Highlight? in
+                    guard let id = highlightDict["id"] as? String else {
+                        return nil
+                    }
+                    guard let color = highlightDict["color"] as? String else {
+                        return nil
+                    }
+                    guard let locatorDict = highlightDict["locator"] as? [String: Any] else {
+                        return nil
+                    }
+                    guard let locator = try? Locator(json: locatorDict) else {
+                        return nil
+                    }
+                    let mappedColor = switch color {
+                    case "yellow":
+                        UIColor.yellow
+                    case "red":
+                        UIColor.red
+                    case "blue":
+                        UIColor.blue
+                    case "green":
+                        UIColor.green
+                    case "magenta":
+                        UIColor.magenta
+                    default:
+                        UIColor.yellow
+                    }
+                    return Highlight(id: id, color: mappedColor, locator: locator)
+                }
+
+                view.highlights = highlights
+                view.decorateHighlights()
+            }
+            
+            Prop("bookmarks") { (view: EPUBView, prop: [[String: Any]]) in
+                let bookmarks = prop.compactMap { (locatorJson: [String : Any]) -> Locator? in
+                    return try? Locator(json: locatorJson)
+                }
+                
+                view.bookmarks = bookmarks
+                if let currentLocator = view.navigator?.currentLocation {
+                    view.findOnPage(locator: currentLocator)
                 }
             }
         }

@@ -14,6 +14,7 @@ import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.ExperimentalDecorator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -97,6 +98,54 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         }
     }
 
+    fun findOnPage(locators: List<Locator>, promise: Promise) {
+        val epubNav = navigator ?: return
+
+        val currentProgression = epubNav.currentLocation?.locations.progression ?: return
+
+        val joinedProgressions = locators
+            .compactMap { it.locations.progression }
+            .map { "${$0}" }
+            .joined(separator: ",")
+
+        val jsProgressionsArray = "[${joinedProgressions}]"
+
+        val result = epubNav.evaluateJavaScript("""
+            (function() {
+                const maxScreenX = window.orientation === 0 || window.orientation == 180
+                        ? screen.width
+                        : screen.height;
+
+                function snapOffset(offset) {
+                    const value = offset + 1;
+                    
+                    return value - (value % maxScreenX);
+                }
+
+                const documentWidth = document.scrollingElement.scrollWidth;
+                const currentPageStart = snapOffset(documentWidth * ${currentProgression});
+                const currentPageEnd = currentPageStart + maxScreenX;
+                return ${jsProgressionsArray}.filter((progression) =>
+                    progression * documentWidth >= currentPageStart &&
+                    progression * documentWidth < currentPageEnd
+                );
+            })();
+        """.trimIndent())
+
+        if (result == null) {
+            promise.resolve([])
+            return
+        }
+
+        val progressions = Json.decodeFromString<List<Double>>(result)
+        val found = locators.filter {
+            val progression = it.locations.progression ?: return false
+            return progressions.contains(progression)
+        }
+
+        promise.resolve(found.map { it.toJSON().toMap() })
+    }
+
     override fun onTap(point: PointF): Boolean {
         if (point.x < width * 0.2) {
             navigator?.goBackward(animated = true)
@@ -145,12 +194,11 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             })();
         """.trimIndent()
         )
-        Log.d("EpubView", "result: $result")
         if (result == null || result == "null") {
             return onLocatorChange(locator.toJSON().toMap())
         }
         val fragmentsLocator =
-            locator.copy(locations = locator.locations.copy(fragments = listOf(result.drop(1).dropLast(1))))
+            locator.copy(locations = locator.locations.copy(fragments = listOf(Json.decodeFromString<String>(result))))
         onLocatorChange(fragmentsLocator.toJSON().toMap())
     }
 }

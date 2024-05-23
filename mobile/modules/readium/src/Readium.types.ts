@@ -1,4 +1,6 @@
 import { NativeSyntheticEvent, StyleProp, ViewStyle } from "react-native"
+import { Highlight } from "../../../store/slices/bookshelfSlice"
+import type { UUID } from "crypto"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -225,8 +227,34 @@ export type EPUBViewProps = {
   style: StyleProp<ViewStyle>
   bookId: number
   locator: ReadiumLocator
+  bookmarks: ReadiumLocator[]
+  highlights: Highlight[]
+  onHighlightTap?: (
+    event: NativeSyntheticEvent<{ decoration: UUID; x: number; y: number }>,
+  ) => void
+  onBookmarksActivate?: (
+    event: NativeSyntheticEvent<{ activeBookmarks: ReadiumLocator[] }>,
+  ) => void
   onLocatorChange?: (event: NativeSyntheticEvent<ReadiumLocator>) => void
   onMiddleTouch?: (event: NativeSyntheticEvent<void>) => void
+  onSelection?: (
+    event: NativeSyntheticEvent<
+      | {
+          x: number
+          y: number
+          locator: ReadiumLocator
+        }
+      | { cleared: true }
+    >,
+  ) => void
+  onDoubleTouch?: (event: NativeSyntheticEvent<ReadiumLocator>) => void
+  onError?: (
+    event: NativeSyntheticEvent<{
+      errorDescription: string
+      failureReason: string
+      recoverySuggestion: string
+    }>,
+  ) => void
   isPlaying?: boolean
 }
 
