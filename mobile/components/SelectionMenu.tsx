@@ -1,7 +1,6 @@
 import {
   Pressable,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
@@ -49,6 +48,7 @@ export function SelectionMenu({
           Object.keys(highlightTints) as Array<keyof typeof highlightTints>
         ).map((color) => (
           <Pressable
+            key={color}
             onPress={() => {
               if (existingHighlight) {
                 dispatch(
