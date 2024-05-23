@@ -44,6 +44,7 @@ import {
   deleteBookmark,
   readBookIds,
   readBookmarks,
+  readHighlights,
   readLocators,
   writeBook,
   writeBookmark,
@@ -385,6 +386,7 @@ export function* downloadBookSaga() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
+            highlights: [],
             bookmarks: [],
           },
           locator: firstLocator,
@@ -502,11 +504,16 @@ export function* hydrateBookshelf() {
       ReturnType<typeof readBookmarks>
     >
 
+    const highlights = (yield call(readHighlights, bookId)) as Awaited<
+      ReturnType<typeof readHighlights>
+    >
+
     books.push({
       id: bookId,
       title: parseLocalizedString(manifest.metadata.title),
       authors: readiumToStorytellerAuthors(manifest.metadata.author),
       manifest,
+      highlights,
       bookmarks,
     })
   }

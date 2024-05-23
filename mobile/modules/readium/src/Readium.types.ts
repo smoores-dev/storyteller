@@ -1,4 +1,5 @@
 import { NativeSyntheticEvent, StyleProp, ViewStyle } from "react-native"
+import { Highlight } from "../../../store/slices/bookshelfSlice"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -225,6 +226,7 @@ export type EPUBViewProps = {
   style: StyleProp<ViewStyle>
   bookId: number
   locator: ReadiumLocator
+  highlights: Highlight[]
   onLocatorChange?: (event: NativeSyntheticEvent<ReadiumLocator>) => void
   onMiddleTouch?: (event: NativeSyntheticEvent<void>) => void
   onSelection?: (

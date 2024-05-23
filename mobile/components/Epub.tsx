@@ -24,7 +24,7 @@ import { useAudioBook } from "../hooks/useAudioBook"
 import { Toolbar } from "./Toolbar"
 import { ToolbarDialogs } from "./ToolbarDialogs"
 import { useAppDispatch, useAppSelector } from "../store/appState"
-import { getLocator } from "../store/selectors/bookshelfSelectors"
+import { getHighlights } from "../store/selectors/bookshelfSelectors"
 import { SelectionMenu } from "./SelectionMenu"
 
 type Props = {
@@ -47,7 +47,7 @@ export function Epub({ book, locator }: Props) {
 
   const dimensions = useWindowDimensions()
 
-  const currentLocator = useAppSelector((state) => getLocator(state, book.id))
+  const highlights = useAppSelector((state) => getHighlights(state, book.id))
 
   const [showInterface, setShowInterface] = useState(true)
   const epubViewRef = useRef<EPUBViewRef | null>(null)
@@ -66,7 +66,7 @@ export function Epub({ book, locator }: Props) {
     epubViewRef.current
       ?.findLocatorsOnPage(book.bookmarks)
       .then((found) => setActiveBookmarks(found))
-  }, [currentLocator?.locations?.progression, book.bookmarks])
+  }, [locator?.locations?.progression, book.bookmarks])
 
   return (
     <View
@@ -100,6 +100,7 @@ export function Epub({ book, locator }: Props) {
           style={styles.epub}
           bookId={book.id}
           locator={locator}
+          highlights={highlights}
           onLocatorChange={(event) =>
             dispatch(
               bookshelfSlice.actions.bookRelocated({

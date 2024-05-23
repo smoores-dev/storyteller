@@ -3,6 +3,12 @@ import R2Shared
 import R2Navigator
 import ReadiumAdapterGCDWebServer
 
+struct Highlight {
+    id: String
+    color: UIColor
+    locator: Locator
+}
+
 // This view will be used as a native component. Make sure to inherit from `ExpoView`
 // to apply the proper styling (e.g. border radius and shadows).
 class EPUBView: ExpoView {
@@ -12,11 +18,13 @@ class EPUBView: ExpoView {
     let onDoubleTouch = EventDispatcher()
     let onSelection = EventDispatcher()
     let onError = EventDispatcher()
+    let onHighlightTap = EventDispatcher()
     
     public var bookId: Int?
     public var locator: Locator?
     public var isPlaying: Bool = false
     public var navigator: EPUBNavigatorViewController?
+    public var highlights: [Highlight]
     
     private var didTapWork: DispatchWorkItem?
     
@@ -70,6 +78,9 @@ class EPUBView: ExpoView {
         navigator.delegate = self
         addSubview(navigator.view)
         self.navigator = navigator
+        self.navigator.observeDecorationInteractions(inGroup: "highlights", [weak self] event in {
+            self.onHighlightTap(["decoration": event.decoration.id, "x": event.rect.midX, "y": event.rect.maxY])
+        })
     }
     
     func go() {
@@ -84,13 +95,25 @@ class EPUBView: ExpoView {
         
         _ = navigator.go(to: locator, animated: true) {
             if self.isPlaying {
-                self.highlightSelection()
+                self.highlightFragment(locator: locator)
             }
         }
     }
+
+    func decorateHighlights() {
+        decorations = highlights.map { highlight in
+            let style = Decoration.Style.highlight(tint: highlight.color, isActive: true)
+            return Decoration(
+                id: highlight.id,
+                locator: highlight.locator,
+                style: overlayHighlight
+            )
+        }
+        navigator?.apply(decorations: decorations, in: "highlights")
+    }
     
-    func highlightSelection() {
-        guard let locator = self.locator, let id = locator.locations.fragments.first else {
+    func highlightFragment(locator: Locator) {
+        guard let id = locator.locations.fragments.first else {
             return
         }
         
@@ -103,7 +126,7 @@ class EPUBView: ExpoView {
         navigator?.apply(decorations: [decoration], in: "overlay")
     }
     
-    func clearHighlights() {
+    func clearHighlightedFragment() {
         navigator?.apply(decorations: [], in: "overlay")
     }
     

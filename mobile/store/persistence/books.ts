@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { exists } from "../../exists"
 import { BookDetail } from "../../apiModels"
 import { ReadiumLocator } from "../../modules/readium/src/Readium.types"
-import { BookshelfBook } from "../slices/bookshelfSlice"
+import { BookshelfBook, Highlight } from "../slices/bookshelfSlice"
 import { EpubCFI } from "epubjs"
 import { EpubCFIStep } from "epubjs/types/epubcfi"
 import {
@@ -11,6 +11,7 @@ import {
   locateLink,
 } from "../../modules/readium"
 import { logger } from "../../logger"
+import type { UUID } from "crypto"
 
 export type Book = BookDetail & { downloaded?: boolean }
 
@@ -185,6 +186,31 @@ export async function deleteBookmark(bookId: number, bookmark: ReadiumLocator) {
   return AsyncStorage.setItem(
     `books.${bookId}.bookmarks`,
     JSON.stringify(bookmarks.filter((b) => !areLocatorsEqual(b, bookmark))),
+  )
+}
+
+export async function readHighlights(bookId: number) {
+  const entry = await AsyncStorage.getItem(`books.${bookId}.highlights`)
+  if (entry === null) return []
+  return JSON.parse(entry) as Highlight[]
+}
+
+export async function writeHighlight(
+  bookId: number,
+  highlight: ReadiumLocator,
+) {
+  const highlights = await readHighlights(bookId)
+  return AsyncStorage.setItem(
+    `books.${bookId}.highlights`,
+    JSON.stringify([...highlights, highlight]),
+  )
+}
+
+export async function deleteHighlight(bookId: number, highlightId: UUID) {
+  const highlights = await readHighlights(bookId)
+  return AsyncStorage.setItem(
+    `books.${bookId}.highlights`,
+    JSON.stringify(highlights.filter((h) => h.id !== highlightId)),
   )
 }
 

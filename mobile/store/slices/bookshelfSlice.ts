@@ -6,6 +6,7 @@ import {
   ReadiumManifest,
 } from "../../modules/readium/src/Readium.types"
 import { areLocatorsEqual } from "../../modules/readium"
+import type { UUID } from "crypto"
 
 export type BookshelfTrack = {
   bookId: number
@@ -19,12 +20,19 @@ export type BookshelfTrack = {
   pitchAlgorithm: PitchAlgorithm
 }
 
+export type Highlight = {
+  id: UUID
+  color: "yellow"
+  locator: ReadiumLocator
+}
+
 export type BookshelfBook = {
   id: number
   title: string
   authors: Array<BookAuthor>
   manifest: ReadiumManifest
   bookmarks: ReadiumLocator[]
+  highlights: Highlight[]
 }
 
 export type BookshelfState = {
@@ -183,6 +191,28 @@ export const bookshelfSlice = createSlice({
       book.bookmarks = book.bookmarks.filter((bookmark) =>
         locators.some((locator) => !areLocatorsEqual(bookmark, locator)),
       )
+    },
+    highlightCreated(
+      state,
+      action: PayloadAction<{ bookId: number; highlight: Highlight }>,
+    ) {
+      const { bookId, highlight } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.highlights.push(highlight)
+    },
+    highlightRemoved(
+      state,
+      action: PayloadAction<{ bookId: number; highlightId: UUID }>,
+    ) {
+      const { bookId, highlightId } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.highlights = book.highlights.filter(({ id }) => id !== highlightId)
     },
   },
 })

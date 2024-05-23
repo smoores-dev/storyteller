@@ -61,6 +61,9 @@ export async function getFragment(
 export function areLocatorsEqual(a: ReadiumLocator, b: ReadiumLocator) {
   if (a.href !== b.href) return false
   if (a.locations?.progression !== b.locations?.progression) return false
+  if ((a.text || b.text) && a.text?.highlight !== b.text?.highlight)
+    return false
+
   return true
 }
 

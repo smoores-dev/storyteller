@@ -1,4 +1,5 @@
 import { RootState } from "../appState"
+import { Highlight } from "../slices/bookshelfSlice"
 
 export function getBookshelfBook(state: RootState, bookId: number) {
   return state.bookshelf.entities[bookId] ?? null
@@ -32,4 +33,11 @@ export function getBookmarks(state: RootState, bookId: number) {
   const book = getBookshelfBook(state, bookId)
   if (!book) return book
   return book.bookmarks
+}
+
+const EMPTY_HIGHLIGHTS: Highlight[] = []
+
+export function getHighlights(state: RootState, bookId: number) {
+  const book = getBookshelfBook(state, bookId)
+  return book?.highlights ?? EMPTY_HIGHLIGHTS
 }

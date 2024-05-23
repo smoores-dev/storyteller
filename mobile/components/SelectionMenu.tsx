@@ -16,9 +16,6 @@ export function SelectionMenu({ x, y }: Props) {
       <Pressable>
         <Text>Blue</Text>
       </Pressable>
-      <Pressable>
-        <Text>Add note</Text>
-      </Pressable>
     </View>
   )
 }

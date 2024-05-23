@@ -54,7 +54,7 @@ public class ReadiumModule: Module {
         }
 
         View(EPUBView.self) {
-            Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError")
+            Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap")
             
             Prop("bookId") { (view: EPUBView, prop: Int) in
                 view.bookId = prop
@@ -80,11 +80,29 @@ public class ReadiumModule: Module {
             Prop("isPlaying") { (view: EPUBView, prop: Bool?) in
                 let isPlaying = prop ?? false
                 view.isPlaying = isPlaying
-                if view.isPlaying {
-                    view.highlightSelection()
+                if view.isPlaying && view.locator {
+                    view.highlightFragment(view.locator)
                 } else {
-                    view.clearHighlights()
+                    view.clearHighlightedFragment()
                 }
+            }
+
+            Prop("highlights") { (view: EPUBView, prop: [[String: Any]]) in
+                let highlights = prop.compactMap { highlightDict in
+                    guard let id = highlightDict["id"] as? String else {
+                        return nil
+                    }
+                    guard let locatorDict = highlightDict["locator"] as? [String: Any] else {
+                        return nil
+                    }
+                    guard let locator = try? Locator(json: locatorDict) else {
+                        return nil
+                    }
+                    return Highlight(id: id, color: .yellow, locator: locator)
+                }
+
+                view.highlights = highlights
+                view.decorateHighlights()
             }
 
             AsyncFunction("findLocatorsOnPage") { (view: EPUBView, locatorJsons: [[String : Any]], promise: Promise) in

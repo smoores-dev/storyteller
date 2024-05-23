@@ -92,6 +92,7 @@ export function* hydrateExistingDownloads() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
+            highlights: [],
             bookmarks: [],
           },
           locator: firstLocator,
