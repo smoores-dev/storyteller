@@ -42,13 +42,17 @@ import { Audio } from "expo-av"
 import {
   deleteBook,
   deleteBookmark,
+  deleteHighlight,
   readBookIds,
   readBookmarks,
   readHighlights,
   readLocators,
+  readPlayerSpeed,
   writeBook,
   writeBookmark,
+  writeHighlight,
   writeLocator,
+  writePlayerSpeed,
 } from "../persistence/books"
 import TrackPlayer, {
   AddTrack,
@@ -386,6 +390,7 @@ export function* downloadBookSaga() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
+            playerSpeed: 1.0,
             highlights: [],
             bookmarks: [],
           },
@@ -508,6 +513,10 @@ export function* hydrateBookshelf() {
       ReturnType<typeof readHighlights>
     >
 
+    const playerSpeed = (yield call(readPlayerSpeed, bookId)) as Awaited<
+      ReturnType<typeof readPlayerSpeed>
+    >
+
     books.push({
       id: bookId,
       title: parseLocalizedString(manifest.metadata.title),
@@ -515,6 +524,7 @@ export function* hydrateBookshelf() {
       manifest,
       highlights,
       bookmarks,
+      playerSpeed,
     })
   }
 
@@ -637,6 +647,7 @@ export function* loadTrackPlayerSaga() {
       >
 
       yield call(TrackPlayer.reset)
+      yield call(TrackPlayer.setRate, book.playerSpeed)
       // @ts-expect-error Not sure what's up here, but this is the correct type
       yield call(TrackPlayer.add, tracks as AddTrack[])
 
@@ -660,6 +671,7 @@ export function* seekToLocatorSaga() {
     [
       bookshelfSlice.actions.bookRelocated,
       bookshelfSlice.actions.navItemTapped,
+      bookshelfSlice.actions.bookmarkTapped,
       bookshelfSlice.actions.bookDoubleTapped,
     ],
     function* (action) {
@@ -764,4 +776,32 @@ export function* writeBookmarkSaga() {
 
     yield call(writeBookmark, bookId, locator)
   })
+}
+
+export function* deleteHighlightSaga() {
+  yield takeEvery(bookshelfSlice.actions.highlightRemoved, function* (action) {
+    const { bookId, highlightId } = action.payload
+
+    yield call(deleteHighlight, bookId, highlightId)
+  })
+}
+
+export function* writeHighlightSaga() {
+  yield takeEvery(bookshelfSlice.actions.highlightCreated, function* (action) {
+    const { bookId, highlight } = action.payload
+
+    yield call(writeHighlight, bookId, highlight)
+  })
+}
+
+export function* writePlayerSpeedSaga() {
+  yield takeEvery(
+    bookshelfSlice.actions.playerSpeedChanged,
+    function* (action) {
+      const { bookId, speed } = action.payload
+
+      yield call(TrackPlayer.setRate, speed)
+      yield call(writePlayerSpeed, bookId, speed)
+    },
+  )
 }

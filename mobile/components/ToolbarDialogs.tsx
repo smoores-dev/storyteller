@@ -25,6 +25,7 @@ export function ToolbarDialogs() {
 
       {openDialog === ToolbarDialog.SPEED && (
         <SpeedMenu
+          bookId={book.id}
           onOutsideTap={() => {
             dispatch(toolbarSlice.actions.dialogClosed())
           }}

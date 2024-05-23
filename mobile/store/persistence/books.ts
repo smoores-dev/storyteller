@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { exists } from "../../exists"
 import { BookDetail } from "../../apiModels"
 import { ReadiumLocator } from "../../modules/readium/src/Readium.types"
-import { BookshelfBook, Highlight } from "../slices/bookshelfSlice"
+import { BookshelfBook, Highlight, PlayerSpeed } from "../slices/bookshelfSlice"
 import { EpubCFI } from "epubjs"
 import { EpubCFIStep } from "epubjs/types/epubcfi"
 import {
@@ -195,10 +195,7 @@ export async function readHighlights(bookId: number) {
   return JSON.parse(entry) as Highlight[]
 }
 
-export async function writeHighlight(
-  bookId: number,
-  highlight: ReadiumLocator,
-) {
+export async function writeHighlight(bookId: number, highlight: Highlight) {
   const highlights = await readHighlights(bookId)
   return AsyncStorage.setItem(
     `books.${bookId}.highlights`,
@@ -212,6 +209,16 @@ export async function deleteHighlight(bookId: number, highlightId: UUID) {
     `books.${bookId}.highlights`,
     JSON.stringify(highlights.filter((h) => h.id !== highlightId)),
   )
+}
+
+export async function readPlayerSpeed(bookId: number) {
+  const entry = await AsyncStorage.getItem(`books.${bookId}.speed`)
+  if (entry === null) return 1.0
+  return JSON.parse(entry) as PlayerSpeed
+}
+
+export async function writePlayerSpeed(bookId: number, speed: PlayerSpeed) {
+  return AsyncStorage.setItem(`books.${bookId}.speed`, JSON.stringify(speed))
 }
 
 export async function deleteBook(bookId: number) {

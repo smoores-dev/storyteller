@@ -4,9 +4,9 @@ import R2Navigator
 import ReadiumAdapterGCDWebServer
 
 struct Highlight {
-    id: String
-    color: UIColor
-    locator: Locator
+    var id: String
+    var color: UIColor
+    var locator: Locator
 }
 
 // This view will be used as a native component. Make sure to inherit from `ExpoView`
@@ -19,12 +19,14 @@ class EPUBView: ExpoView {
     let onSelection = EventDispatcher()
     let onError = EventDispatcher()
     let onHighlightTap = EventDispatcher()
+    let onBookmarksActivate = EventDispatcher()
     
     public var bookId: Int?
     public var locator: Locator?
     public var isPlaying: Bool = false
     public var navigator: EPUBNavigatorViewController?
-    public var highlights: [Highlight]
+    public var highlights: [Highlight] = []
+    public var bookmarks: [Locator] = []
     
     private var didTapWork: DispatchWorkItem?
     
@@ -78,9 +80,13 @@ class EPUBView: ExpoView {
         navigator.delegate = self
         addSubview(navigator.view)
         self.navigator = navigator
-        self.navigator.observeDecorationInteractions(inGroup: "highlights", [weak self] event in {
-            self.onHighlightTap(["decoration": event.decoration.id, "x": event.rect.midX, "y": event.rect.maxY])
-        })
+        self.decorateHighlights()
+        self.navigator?.observeDecorationInteractions(inGroup: "highlights") { [weak self] event in
+            guard let rect = event.rect else {
+                return
+            }
+            self?.onHighlightTap(["decoration": event.decoration.id, "x": rect.midX, "y": rect.minY])
+        }
     }
     
     func go() {
@@ -101,12 +107,12 @@ class EPUBView: ExpoView {
     }
 
     func decorateHighlights() {
-        decorations = highlights.map { highlight in
+        let decorations = highlights.map { highlight in
             let style = Decoration.Style.highlight(tint: highlight.color, isActive: true)
             return Decoration(
                 id: highlight.id,
                 locator: highlight.locator,
-                style: overlayHighlight
+                style: style
             )
         }
         navigator?.apply(decorations: decorations, in: "highlights")
@@ -139,16 +145,16 @@ class EPUBView: ExpoView {
         navigatorView.frame = bounds
     }
 
-    func findOnPage(locators: [Locator], promise: Promise) {
+    func findOnPage(locator: Locator) {
         guard let epubNav = navigator else {
             return
         }
 
-        guard let currentProgression = epubNav.currentLocation?.locations.progression else {
+        guard let currentProgression = locator.locations.progression else {
             return
         }
 
-        let joinedProgressions = locators
+        let joinedProgressions = bookmarks
             .compactMap(\.locations.progression)
             .map { "\($0)" }
             .joined(separator: ",")
@@ -179,21 +185,21 @@ class EPUBView: ExpoView {
             switch $0 {
             case .failure(let e):
                 print(e)
-                promise.resolve([])
+                self.onBookmarksActivate(["activeBookmarks": []])
             case .success(let anyValue):
                 guard let value = anyValue as? [Double] else {
-                    promise.resolve([])
+                    self.onBookmarksActivate(["activeBookmarks": []])
                     return
                 }
                 
-                let found = locators.filter {
+                let found = self.bookmarks.filter {
                     guard let progression = $0.locations.progression else {
                         return false
                     }
                     return value.contains(progression)
                 }
-                
-                promise.resolve(found.map(\.json))
+
+                self.onBookmarksActivate(["activeBookmarks": found.map(\.json)])
             }
         }
     }
@@ -235,7 +241,7 @@ extension EPUBView: WKScriptMessageHandler {
 
 extension EPUBView: EPUBNavigatorDelegate {
     func navigator(_ navigator: any SelectableNavigator, shouldShowMenuForSelection selection: Selection) -> Bool {
-        onSelection(["x": selection.frame?.midX as Any, "y": selection.frame?.maxY as Any, "locator": selection.locator.json])
+        onSelection(["x": selection.frame?.midX as Any, "y": selection.frame?.minY as Any, "locator": selection.locator.json])
         return false
     }
     
@@ -330,6 +336,8 @@ extension EPUBView: EPUBNavigatorDelegate {
             return
         }
         
+        findOnPage(locator: locator)
+        
         epubNav.evaluateJavaScript("""
             (function() {
                 function isOnScreen(element) {
@@ -358,7 +366,7 @@ extension EPUBView: EPUBNavigatorDelegate {
                     self.onLocatorChange(locator.json)
                     return
                 }
-                
+
                 self.onLocatorChange(
                     locator.copy(
                         locations: {

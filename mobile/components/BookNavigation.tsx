@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useState } from "react"
 import { UIText } from "./UIText"
 import { Bookmarks } from "./Bookmarks"
+import { Highlights } from "./Highlights"
 
 type Props = {
   onOutsideTap: () => void
@@ -25,45 +26,54 @@ export function BookNavigation({ onOutsideTap }: Props) {
       <View style={{ ...styles.dialog, top: insets.top + styles.dialog.top }}>
         <View style={styles.tabs}>
           <Pressable
-            style={[
-              styles.tab,
-              selectedTab === BookNavTab.TABLE_OF_CONTENTS &&
-                styles.selectedTab,
-            ]}
+            style={styles.tab}
             onPress={() => {
               setSelectedTab(BookNavTab.TABLE_OF_CONTENTS)
             }}
           >
-            <UIText>Contents</UIText>
+            <UIText
+              style={
+                selectedTab === BookNavTab.TABLE_OF_CONTENTS &&
+                styles.selectedTab
+              }
+            >
+              Contents
+            </UIText>
           </Pressable>
           <Pressable
-            style={[
-              styles.tab,
-              selectedTab === BookNavTab.BOOKMARKS && styles.selectedTab,
-            ]}
+            style={styles.tab}
             onPress={() => {
               setSelectedTab(BookNavTab.BOOKMARKS)
             }}
           >
-            <UIText>Bookmarks</UIText>
+            <UIText
+              style={selectedTab === BookNavTab.BOOKMARKS && styles.selectedTab}
+            >
+              Bookmarks
+            </UIText>
           </Pressable>
           <Pressable
-            style={[
-              styles.tab,
-              selectedTab === BookNavTab.HIGHLIGHTS && styles.selectedTab,
-            ]}
+            style={styles.tab}
             onPress={() => {
               setSelectedTab(BookNavTab.HIGHLIGHTS)
             }}
           >
-            <UIText>Highlights</UIText>
+            <UIText
+              style={
+                selectedTab === BookNavTab.HIGHLIGHTS && styles.selectedTab
+              }
+            >
+              Highlights
+            </UIText>
           </Pressable>
         </View>
         {selectedTab === BookNavTab.TABLE_OF_CONTENTS ? (
           <TableOfContents />
         ) : selectedTab === BookNavTab.BOOKMARKS ? (
           <Bookmarks />
-        ) : null}
+        ) : (
+          <Highlights />
+        )}
       </View>
     </>
   )
@@ -74,7 +84,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     borderBottomWidth: 1,
-    borderBottomColor: "black",
+    borderBottomColor: "#AAA",
   },
   backdrop: {
     position: "absolute",
@@ -92,13 +102,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "black",
+    borderColor: "#AAA",
+    shadowRadius: 4,
+    shadowOpacity: 0.3,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowColor: "black",
     bottom: 300,
     zIndex: 3,
     backgroundColor: "white",
   },
   selectedTab: {
-    backgroundColor: "#EEE",
+    fontWeight: "bold",
   },
   tab: {
     margin: 0,

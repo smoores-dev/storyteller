@@ -3,8 +3,9 @@ import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { UIText } from "./UIText"
+import { highlightTints } from "../colors"
 
-export function Bookmarks() {
+export function Highlights() {
   const book = useAppSelector(getCurrentlyPlayingBook)
   const dispatch = useAppDispatch()
 
@@ -12,14 +13,14 @@ export function Bookmarks() {
 
   return (
     <ScrollView>
-      {book.bookmarks.map((bookmark) => (
-        <View key={JSON.stringify(bookmark)} style={{ paddingHorizontal: 8 }}>
+      {book.highlights.map((highlight) => (
+        <View key={highlight.id} style={{ paddingHorizontal: 8 }}>
           <Pressable
             onPress={async () => {
               dispatch(
                 bookshelfSlice.actions.bookmarkTapped({
                   bookId: book.id,
-                  bookmark,
+                  bookmark: highlight.locator,
                 }),
               )
             }}
@@ -36,16 +37,27 @@ export function Bookmarks() {
                 fontWeight: "bold",
               }}
             >
-              {bookmark.title}
+              {highlight.locator.title}
             </UIText>
-            {bookmark.locations?.position && (
+            {highlight.locator.locations?.position && (
               <UIText
                 style={{
                   fontSize: 13,
-                  marginTop: 8,
+                  marginVertical: 8,
                 }}
               >
-                Page {bookmark.locations?.position}
+                Page {highlight.locator.locations.position}
+              </UIText>
+            )}
+            {highlight.locator.text?.highlight && (
+              <UIText
+                style={{
+                  fontSize: 13,
+                  fontFamily: "Bookerly",
+                  backgroundColor: highlightTints[highlight.color],
+                }}
+              >
+                {highlight.locator.text.highlight}
               </UIText>
             )}
           </Pressable>

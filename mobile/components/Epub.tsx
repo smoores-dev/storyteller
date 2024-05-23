@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import {
   Platform,
   Pressable,
@@ -10,7 +10,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Link, Tabs } from "expo-router"
 import { useKeepAwake } from "expo-keep-awake"
-import { BookshelfBook, bookshelfSlice } from "../store/slices/bookshelfSlice"
+import {
+  BookshelfBook,
+  Highlight,
+  bookshelfSlice,
+} from "../store/slices/bookshelfSlice"
 import { EPUBView } from "../modules/readium"
 import {
   EPUBViewRef,
@@ -23,8 +27,7 @@ import { MiniPlayer } from "./MiniPlayer"
 import { useAudioBook } from "../hooks/useAudioBook"
 import { Toolbar } from "./Toolbar"
 import { ToolbarDialogs } from "./ToolbarDialogs"
-import { useAppDispatch, useAppSelector } from "../store/appState"
-import { getHighlights } from "../store/selectors/bookshelfSelectors"
+import { useAppDispatch } from "../store/appState"
 import { SelectionMenu } from "./SelectionMenu"
 
 type Props = {
@@ -35,6 +38,8 @@ type Props = {
 export function Epub({ book, locator }: Props) {
   useKeepAwake()
   const [activeBookmarks, setActiveBookmarks] = useState<ReadiumLocator[]>([])
+  const [activeHighlight, setActiveHighlight] = useState<Highlight | null>(null)
+
   const [selection, setSelection] = useState<{
     x: number
     y: number
@@ -46,8 +51,6 @@ export function Epub({ book, locator }: Props) {
   const insets = useSafeAreaInsets()
 
   const dimensions = useWindowDimensions()
-
-  const highlights = useAppSelector((state) => getHighlights(state, book.id))
 
   const [showInterface, setShowInterface] = useState(true)
   const epubViewRef = useRef<EPUBViewRef | null>(null)
@@ -61,12 +64,6 @@ export function Epub({ book, locator }: Props) {
     startPosition,
     endPosition,
   } = useAudioBook()
-
-  useEffect(() => {
-    epubViewRef.current
-      ?.findLocatorsOnPage(book.bookmarks)
-      .then((found) => setActiveBookmarks(found))
-  }, [locator?.locations?.progression, book.bookmarks])
 
   return (
     <View
@@ -82,9 +79,15 @@ export function Epub({ book, locator }: Props) {
       <ToolbarDialogs />
       {selection && (
         <SelectionMenu
+          bookId={book.id}
           x={selection.x}
           y={selection.y}
           locator={selection.locator}
+          existingHighlight={activeHighlight}
+          onClose={() => {
+            setSelection(null)
+            setActiveHighlight(null)
+          }}
         />
       )}
       <View
@@ -100,7 +103,23 @@ export function Epub({ book, locator }: Props) {
           style={styles.epub}
           bookId={book.id}
           locator={locator}
-          highlights={highlights}
+          highlights={book.highlights}
+          bookmarks={book.bookmarks}
+          onHighlightTap={(event) => {
+            setSelection({
+              x: event.nativeEvent.x,
+              y: event.nativeEvent.y,
+              locator: locator,
+            })
+            setActiveHighlight(
+              book.highlights.find(
+                (highlight) => highlight.id === event.nativeEvent.decoration,
+              ) ?? null,
+            )
+          }}
+          onBookmarksActivate={(event) => {
+            setActiveBookmarks(event.nativeEvent.activeBookmarks)
+          }}
           onLocatorChange={(event) =>
             dispatch(
               bookshelfSlice.actions.bookRelocated({

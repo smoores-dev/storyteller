@@ -1,26 +1,20 @@
-import { useEffect, useState } from "react"
 import { Pressable, ScrollView, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import TrackPlayer from "react-native-track-player"
 import { UIText } from "./UIText"
-
-const availableSpeeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.5]
+import { bookshelfSlice, playerSpeeds } from "../store/slices/bookshelfSlice"
+import { useAppDispatch, useAppSelector } from "../store/appState"
+import { getPlayerSpeed } from "../store/selectors/bookshelfSelectors"
 
 type Props = {
+  bookId: number
   onOutsideTap?: () => void
 }
 
-export function SpeedMenu({ onOutsideTap }: Props) {
+export function SpeedMenu({ bookId, onOutsideTap }: Props) {
   const insets = useSafeAreaInsets()
-  const [currentSpeed, setCurrentSpeed] = useState<number | null>(null)
 
-  useEffect(() => {
-    async function loadSpeed() {
-      const speed = await TrackPlayer.getRate()
-      setCurrentSpeed(speed)
-    }
-    loadSpeed()
-  })
+  const dispatch = useAppDispatch()
+  const currentSpeed = useAppSelector((state) => getPlayerSpeed(state, bookId))
 
   return (
     <>
@@ -51,11 +45,13 @@ export function SpeedMenu({ onOutsideTap }: Props) {
           backgroundColor: "white",
         }}
       >
-        {availableSpeeds.map((speed) => (
+        {playerSpeeds.map((speed) => (
           <View key={speed} style={{ paddingHorizontal: 8 }}>
             <Pressable
               onPress={() => {
-                TrackPlayer.setRate(speed)
+                dispatch(
+                  bookshelfSlice.actions.playerSpeedChanged({ bookId, speed }),
+                )
                 onOutsideTap?.()
               }}
               style={{

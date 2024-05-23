@@ -22,9 +22,13 @@ export type BookshelfTrack = {
 
 export type Highlight = {
   id: UUID
-  color: "yellow"
+  color: "yellow" | "red" | "green" | "blue" | "magenta"
   locator: ReadiumLocator
 }
+
+export const playerSpeeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.5] as const
+
+export type PlayerSpeed = (typeof playerSpeeds)[number]
 
 export type BookshelfBook = {
   id: number
@@ -33,6 +37,7 @@ export type BookshelfBook = {
   manifest: ReadiumManifest
   bookmarks: ReadiumLocator[]
   highlights: Highlight[]
+  playerSpeed: PlayerSpeed
 }
 
 export type BookshelfState = {
@@ -66,6 +71,20 @@ export const localBookImported = createAction(
 
 export const playerPaused = createAction("bookshelf/playerPaused")
 
+function compareLocators(a: ReadiumLocator, b: ReadiumLocator) {
+  if (a.locations?.totalProgression === undefined) {
+    return -1
+  }
+  if (b.locations?.totalProgression === undefined) {
+    return 1
+  }
+  const totalComp = a.locations.totalProgression - b.locations.totalProgression
+  if (totalComp !== 0) {
+    return totalComp
+  }
+  return (a.locations.progression ?? 0) - (b.locations.progression ?? 0)
+}
+
 export const bookshelfSlice = createSlice({
   name: "bookshelf",
   initialState,
@@ -80,6 +99,8 @@ export const bookshelfSlice = createSlice({
       const { books, locators } = action.payload
 
       for (const book of books) {
+        book.bookmarks.sort((a, b) => compareLocators(a, b))
+        book.highlights.sort((a, b) => compareLocators(a.locator, b.locator))
         state.index.push(book.id)
         state.entities[book.id] = book
       }
@@ -178,6 +199,7 @@ export const bookshelfSlice = createSlice({
       if (!book) return
 
       book.bookmarks.push(locator)
+      book.bookmarks.sort((a, b) => compareLocators(a, b))
     },
     bookmarksRemoved(
       state,
@@ -202,6 +224,7 @@ export const bookshelfSlice = createSlice({
       if (!book) return
 
       book.highlights.push(highlight)
+      book.highlights.sort((a, b) => compareLocators(a.locator, b.locator))
     },
     highlightRemoved(
       state,
@@ -213,6 +236,35 @@ export const bookshelfSlice = createSlice({
       if (!book) return
 
       book.highlights = book.highlights.filter(({ id }) => id !== highlightId)
+    },
+    highlightColorChanged(
+      state,
+      action: PayloadAction<{
+        bookId: number
+        highlightId: UUID
+        color: Highlight["color"]
+      }>,
+    ) {
+      const { bookId, highlightId, color } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      const highlight = book.highlights.find((h) => h.id === highlightId)
+      if (!highlight) return
+
+      highlight.color = color
+    },
+    playerSpeedChanged(
+      state,
+      action: PayloadAction<{ bookId: number; speed: PlayerSpeed }>,
+    ) {
+      const { bookId, speed } = action.payload
+
+      const book = state.entities[bookId]
+      if (!book) return
+
+      book.playerSpeed = speed
     },
   },
 })

@@ -34,7 +34,6 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
       <View style={styles.toolbar}>
         <Pressable
           style={styles.toolbarButton}
-          hitSlop={20}
           onPress={() => {
             dispatch(
               toolbarSlice.actions.dialogToggled({
@@ -47,7 +46,6 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
         </Pressable>
 
         <Pressable
-          hitSlop={20}
           disabled={!currentLocator}
           onPress={() => {
             if (activeBookmarks.length) {

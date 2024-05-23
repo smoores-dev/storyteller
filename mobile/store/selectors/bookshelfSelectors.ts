@@ -41,3 +41,8 @@ export function getHighlights(state: RootState, bookId: number) {
   const book = getBookshelfBook(state, bookId)
   return book?.highlights ?? EMPTY_HIGHLIGHTS
 }
+
+export function getPlayerSpeed(state: RootState, bookId: number) {
+  const book = getBookshelfBook(state, bookId)
+  return book?.playerSpeed ?? 1.0
+}

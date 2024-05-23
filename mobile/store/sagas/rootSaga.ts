@@ -6,6 +6,7 @@ import {
   deactivateKeepAwakeSaga,
   deleteBookSaga,
   deleteBookmarkSaga,
+  deleteHighlightSaga,
   downloadBookSaga,
   ensureTrackPlaySaga,
   loadTrackPlayerSaga,
@@ -13,6 +14,8 @@ import {
   relocateToTrackPositionSaga,
   seekToLocatorSaga,
   writeBookmarkSaga,
+  writeHighlightSaga,
+  writePlayerSpeedSaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -38,6 +41,9 @@ export function* rootSaga() {
     call(deleteBookSaga),
     call(deleteBookmarkSaga),
     call(writeBookmarkSaga),
+    call(deleteHighlightSaga),
+    call(writeHighlightSaga),
+    call(writePlayerSpeedSaga),
     call(clearServerSaga),
     call(logoutSaga),
     call(syncDebug),
