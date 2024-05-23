@@ -1,5 +1,0 @@
-releases:
-  "@storyteller/mobile": minor
-
-declined:
-  - "@storyteller/docs"
