@@ -1,3 +1,4 @@
+import "react-native-random-uuid"
 import { Slot, SplashScreen } from "expo-router"
 import {
   SafeAreaProvider,

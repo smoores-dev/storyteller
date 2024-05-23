@@ -1,4 +1,5 @@
 import { RootState } from "../appState"
+import { Highlight } from "../slices/bookshelfSlice"
 
 export function getBookshelfBook(state: RootState, bookId: number) {
   return state.bookshelf.entities[bookId] ?? null
@@ -26,4 +27,22 @@ export function getIsBookInBookshelf(state: RootState, bookId: number) {
 
 export function getBookshelfBookIds(state: RootState) {
   return state.bookshelf.index
+}
+
+export function getBookmarks(state: RootState, bookId: number) {
+  const book = getBookshelfBook(state, bookId)
+  if (!book) return book
+  return book.bookmarks
+}
+
+const EMPTY_HIGHLIGHTS: Highlight[] = []
+
+export function getHighlights(state: RootState, bookId: number) {
+  const book = getBookshelfBook(state, bookId)
+  return book?.highlights ?? EMPTY_HIGHLIGHTS
+}
+
+export function getPlayerSpeed(state: RootState, bookId: number) {
+  const book = getBookshelfBook(state, bookId)
+  return book?.playerSpeed ?? 1.0
 }

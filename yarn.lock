@@ -5633,7 +5633,7 @@ __metadata:
     "@tsconfig/docusaurus": "npm:^1.0.5"
     "@types/node": "npm:^18.0.0"
     clsx: "npm:^1.2.1"
-    prettier: "npm:^3.0.3"
+    prettier: "npm:^3.2.5"
     prism-react-renderer: "npm:^1.3.5"
     react: "npm:^17.0.2"
     react-dom: "npm:^17.0.2"
@@ -5696,7 +5696,7 @@ __metadata:
     jszip: "npm:^3.10.1"
     jszip-utils: "npm:^0.1.0"
     path-normalize: "npm:^6.0.12"
-    prettier: "npm:^2.8.8"
+    prettier: "npm:^3.2.5"
     query-selector: "npm:^2.0.0"
     react: "npm:18.2.0"
     react-dom: "npm:18.2.0"
@@ -5705,6 +5705,7 @@ __metadata:
     react-native-circular-progress: "npm:^1.3.9"
     react-native-context-menu-view: "npm:^1.12.0"
     react-native-logs: "npm:^5.0.1"
+    react-native-random-uuid: "npm:^0.1.4"
     react-native-reanimated: "npm:~3.6.0"
     react-native-safe-area-context: "npm:4.8.2"
     react-native-screens: "npm:~3.29.0"
@@ -11836,6 +11837,13 @@ __metadata:
   version: 3.0.2
   resolution: "extend@npm:3.0.2"
   checksum: 10c0/73bf6e27406e80aa3e85b0d1c4fd987261e628064e170ca781125c0b635a3dabad5e05adbf07595ea0cf1e6c5396cacb214af933da7cbaf24fe75ff14818e8f9
+  languageName: node
+  linkType: hard
+
+"fast-base64-decode@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "fast-base64-decode@npm:1.0.0"
+  checksum: 10c0/6d8feab513222a463d1cb58d24e04d2e04b0791ac6559861f99543daaa590e2636d040d611b40a50799bfb5c5304265d05e3658b5adf6b841a50ef6bf833d821
   languageName: node
   linkType: hard
 
@@ -18298,16 +18306,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^2.8.8":
-  version: 2.8.8
-  resolution: "prettier@npm:2.8.8"
-  bin:
-    prettier: bin-prettier.js
-  checksum: 10c0/463ea8f9a0946cd5b828d8cf27bd8b567345cf02f56562d5ecde198b91f47a76b7ac9eae0facd247ace70e927143af6135e8cf411986b8cb8478784a4d6d724a
-  languageName: node
-  linkType: hard
-
-"prettier@npm:^3.0.3, prettier@npm:^3.2.4":
+"prettier@npm:^3.2.5":
   version: 3.2.5
   resolution: "prettier@npm:3.2.5"
   bin:
@@ -18958,6 +18957,17 @@ __metadata:
   version: 5.1.0
   resolution: "react-native-logs@npm:5.1.0"
   checksum: 10c0/1a47f25ae8c37fc7cb746ac0608d3e1a95abcf488ed5b7c587ce7c1a2d4ce6cf458657da93bad716eda17e8841dc24b4d0cf53d373133a2fd33632739c93807f
+  languageName: node
+  linkType: hard
+
+"react-native-random-uuid@npm:^0.1.4":
+  version: 0.1.4
+  resolution: "react-native-random-uuid@npm:0.1.4"
+  dependencies:
+    fast-base64-decode: "npm:^1.0.0"
+  peerDependencies:
+    react-native: ">=0.64"
+  checksum: 10c0/535e7ee5dd033b468d43add7fdd3188aa7f9d51ad6be0b023bd0d9b482d4a7ad42677bffd69eb3cdcfc854526654877cd7dc9fbcec5cb18e78e500f91bb8b154
   languageName: node
   linkType: hard
 
@@ -20959,7 +20969,7 @@ __metadata:
     husky: "npm:^9.0.6"
     lint-staged: "npm:^15.2.0"
     next: "npm:^14.1.0"
-    prettier: "npm:^3.2.4"
+    prettier: "npm:^3.2.5"
     pyright: "npm:^1.1.348"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"

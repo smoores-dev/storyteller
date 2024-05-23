@@ -17,5 +17,6 @@ web/work-dist
 mobile/android
 mobile/ios
 mobile/dist
+mobile/.expo
 mobile/modules/*/android/build
 mobile/modules/*/ios/.build
