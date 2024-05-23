@@ -10,6 +10,7 @@ import { logger } from "../logger"
 import { loggingMiddleware } from "./middleware/logging"
 import { crashReportingMiddleware } from "./middleware/crashReporting"
 import { loggingSlice } from "./slices/loggingSlice"
+import { toolbarSlice } from "./slices/toolbarSlice"
 
 const sagaMiddleware = createSagaMiddleware({
   onError(error, errorInfo) {
@@ -30,6 +31,7 @@ export const store = configureStore({
     api: apiSlice.reducer,
     startup: startupSlice.reducer,
     logging: loggingSlice.reducer,
+    toolbar: toolbarSlice.reducer,
   },
   middleware: (getDefaultMiddleware) => [
     crashReportingMiddleware,

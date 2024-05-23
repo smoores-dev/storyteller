@@ -1,97 +1,152 @@
-import { ScrollView, View, Pressable, TouchableOpacity } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { ScrollView, View, Pressable } from "react-native"
 import { UIText } from "./UIText"
-import { ReadiumManifest } from "../modules/readium"
-import { ReadiumLink } from "../modules/readium/src/Readium.types"
+import { locateLink } from "../modules/readium"
+import { useEffect, useRef, useState } from "react"
+import { useAppSelector, useAppDispatch } from "../store/appState"
+import {
+  getCurrentlyPlayingBook,
+  getLocator,
+} from "../store/selectors/bookshelfSelectors"
+import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 
-type Props = {
-  navItems: ReadiumManifest["toc"]
-  onNavItemTap: (item: ReadiumLink) => void
-  onOutsideTap?: () => void
+function extractPath(href: string) {
+  const url = new URL(href, "http://storyteller.local")
+  return url.pathname
 }
 
-export function TableOfContents({
-  navItems,
-  onNavItemTap,
-  onOutsideTap,
-}: Props) {
-  const insets = useSafeAreaInsets()
+function isSameChapter(href1: string, href2: string) {
+  return extractPath(href1) === extractPath(href2)
+}
 
-  if (!navItems) return
+export function TableOfContents() {
+  const ref = useRef<null | ScrollView>(null)
+  const [parentCoords, setParentCoords] = useState<{
+    x: number
+    y: number
+  }>({ x: 0, y: 0 })
+  const [scrollCoords, setScrollCoords] = useState<null | {
+    x: number
+    y: number
+  }>(null)
+
+  const book = useAppSelector(getCurrentlyPlayingBook)
+  const locator = useAppSelector((state) => book && getLocator(state, book.id))
+
+  const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    if (scrollCoords) {
+      ref.current?.scrollTo({
+        x: parentCoords.x + scrollCoords.x,
+        y: parentCoords.y + scrollCoords.y - 40,
+        animated: true,
+      })
+    }
+  }, [parentCoords.x, parentCoords.y, scrollCoords])
+
+  if (!book?.manifest.toc) return
 
   return (
-    <>
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 2,
-        }}
-        onPress={onOutsideTap}
-      />
-      <ScrollView
-        style={{
-          position: "absolute",
-          right: 32,
-          left: 106,
-          top: insets.top + 56,
-          // paddingHorizontal: 32,
-          paddingVertical: 16,
-          borderRadius: 8,
-          borderWidth: 1,
-          borderColor: "black",
-          bottom: 300,
-          zIndex: 3,
-          backgroundColor: "white",
-        }}
-      >
-        {navItems.map((item) => (
-          <View key={item.href} style={{ paddingHorizontal: 8 }}>
+    <ScrollView ref={ref}>
+      {book.manifest.toc.map((item) => (
+        <View
+          key={item.href}
+          {...(isSameChapter(item.href, locator?.href ?? "") && {
+            ref: (element) => {
+              element?.measure((x, y) =>
+                setScrollCoords((prev) =>
+                  prev?.x === x && prev.y === y ? prev : { x, y },
+                ),
+              )
+            },
+          })}
+          {...(item.children?.some(({ href }) =>
+            isSameChapter(href, locator?.href ?? ""),
+          ) && {
+            ref: (element) => {
+              element?.measure((x, y) =>
+                setParentCoords((prev) =>
+                  prev?.x === x && prev.y === y ? prev : { x, y },
+                ),
+              )
+            },
+          })}
+          style={{ paddingHorizontal: 8 }}
+        >
+          <Pressable
+            onPress={async () => {
+              const locator = await locateLink(book.id, item)
+
+              dispatch(
+                bookshelfSlice.actions.navItemTapped({
+                  bookId: book.id,
+                  locator,
+                }),
+              )
+            }}
+            style={{
+              borderBottomWidth: 1,
+              borderBottomColor: "#CCC",
+              paddingVertical: 16,
+              paddingHorizontal: 16,
+              ...(isSameChapter(item.href, locator?.href ?? "") && {
+                backgroundColor: "#EEE",
+              }),
+            }}
+          >
+            <UIText
+              style={{
+                fontSize: 14,
+                fontWeight: "bold",
+              }}
+            >
+              {item.title}
+            </UIText>
+          </Pressable>
+          {item.children?.map((child) => (
             <Pressable
-              onPress={() => onNavItemTap(item)}
+              key={child.href}
+              {...(isSameChapter(child.href, locator?.href ?? "") && {
+                ref: (element) => {
+                  element?.measure((x, y) =>
+                    setScrollCoords((prev) =>
+                      prev?.x === x && prev.y === y ? prev : { x, y },
+                    ),
+                  )
+                },
+              })}
               style={{
                 borderBottomWidth: 1,
                 borderBottomColor: "#CCC",
                 paddingVertical: 16,
                 paddingHorizontal: 16,
+                paddingLeft: 24,
+                ...(isSameChapter(child.href, locator?.href ?? "") && {
+                  backgroundColor: "#EEE",
+                }),
+              }}
+              onPress={async () => {
+                const locator = await locateLink(book.id, child)
+
+                dispatch(
+                  bookshelfSlice.actions.navItemTapped({
+                    bookId: book.id,
+                    locator,
+                  }),
+                )
               }}
             >
               <UIText
                 style={{
                   fontSize: 14,
-                  fontWeight: "bold",
                 }}
               >
-                {item.title}
+                {child.title}
               </UIText>
             </Pressable>
-            {item.children?.map((item) => (
-              <Pressable
-                key={item.href}
-                style={{
-                  borderBottomWidth: 1,
-                  borderBottomColor: "#CCC",
-                  paddingVertical: 16,
-                  paddingHorizontal: 16,
-                  paddingLeft: 24,
-                }}
-                onPress={() => onNavItemTap(item)}
-              >
-                <UIText
-                  style={{
-                    fontSize: 14,
-                  }}
-                >
-                  {item.title}
-                </UIText>
-              </Pressable>
-            ))}
-          </View>
-        ))}
-      </ScrollView>
-    </>
+          ))}
+        </View>
+      ))}
+    </ScrollView>
   )
 }

@@ -108,6 +108,11 @@ class ReadiumModule : Module() {
                     view.clearHighlights()
                 }
             }
+
+            AsyncFunction("findLocatorsOnPage") Coroutine { view: EpubView, locatorJsons: List<Map<String, Any>>, promise: Promise ->
+                val locators = locatorJsons.compactMap { Locator.fromJSON(JSONObject(it)) }
+                view.findOnPage(locators, promise)
+            }
         }
     }
 }

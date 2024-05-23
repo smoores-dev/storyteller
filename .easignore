@@ -32,3 +32,6 @@ dist
 
 /mobile/ios
 /mobile/android
+
+storyteller.db
+.env.local

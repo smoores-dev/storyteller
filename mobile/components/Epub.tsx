@@ -1,31 +1,52 @@
 import { useRef, useState } from "react"
-import { Platform, Pressable, View, useWindowDimensions } from "react-native"
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Link, Tabs } from "expo-router"
 import { useKeepAwake } from "expo-keep-awake"
-import { BookshelfBook } from "../store/slices/bookshelfSlice"
-import { EPUBView, locateLink } from "../modules/readium"
+import {
+  BookshelfBook,
+  Highlight,
+  bookshelfSlice,
+} from "../store/slices/bookshelfSlice"
+import { EPUBView } from "../modules/readium"
 import {
   EPUBViewRef,
   ReadiumLocator,
 } from "../modules/readium/src/Readium.types"
 import { ChevronLeftIcon } from "../icons/ChevronLeftIcon"
 import { UIText } from "./UIText"
-import { TableOfContentsIcon } from "../icons/TableOfContentsIcon"
-import { TableOfContents } from "./TableOfContents"
 import { PlayPause } from "./PlayPause"
 import { MiniPlayer } from "./MiniPlayer"
 import { useAudioBook } from "../hooks/useAudioBook"
+import { Toolbar } from "./Toolbar"
+import { ToolbarDialogs } from "./ToolbarDialogs"
+import { useAppDispatch } from "../store/appState"
+import { SelectionMenu } from "./SelectionMenu"
 
 type Props = {
   book: BookshelfBook
   locator: ReadiumLocator
-  onLocatorChange: (locator: ReadiumLocator) => void
 }
 
-export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
+export function Epub({ book, locator }: Props) {
   useKeepAwake()
+  const [activeBookmarks, setActiveBookmarks] = useState<ReadiumLocator[]>([])
+  const [activeHighlight, setActiveHighlight] = useState<Highlight | null>(null)
+
+  const [selection, setSelection] = useState<{
+    x: number
+    y: number
+    locator: ReadiumLocator
+  } | null>(null)
+
+  const dispatch = useAppDispatch()
 
   const insets = useSafeAreaInsets()
 
@@ -33,7 +54,6 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
 
   const [showInterface, setShowInterface] = useState(true)
   const epubViewRef = useRef<EPUBViewRef | null>(null)
-  const [showToc, setShowToc] = useState(false)
 
   const {
     percentComplete,
@@ -47,51 +67,90 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
 
   return (
     <View
-      style={{
-        flex: 1,
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-        backgroundColor: "white",
-      }}
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
     >
       <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+      <ToolbarDialogs />
+      {selection && (
+        <SelectionMenu
+          bookId={book.id}
+          x={selection.x}
+          y={selection.y}
+          locator={selection.locator}
+          existingHighlight={activeHighlight}
+          onClose={() => {
+            setSelection(null)
+            setActiveHighlight(null)
+          }}
+        />
+      )}
       <View
         style={[
+          styles.epubWrapper,
           {
-            position: "absolute",
             top: insets.top + 12,
-            bottom: 80,
-            left: 0,
-            right: 0,
-            zIndex: 1,
-            ...(Platform.OS === "android" && { paddingVertical: 36 }),
           },
         ]}
       >
         <EPUBView
           ref={epubViewRef}
-          style={{ flex: 1 }}
+          style={styles.epub}
           bookId={book.id}
           locator={locator}
-          onLocatorChange={(event) => {
-            onLocatorChange(event.nativeEvent)
+          highlights={book.highlights}
+          bookmarks={book.bookmarks}
+          onHighlightTap={(event) => {
+            setSelection({
+              x: event.nativeEvent.x,
+              y: event.nativeEvent.y,
+              locator: locator,
+            })
+            setActiveHighlight(
+              book.highlights.find(
+                (highlight) => highlight.id === event.nativeEvent.decoration,
+              ) ?? null,
+            )
           }}
+          onBookmarksActivate={(event) => {
+            setActiveBookmarks(event.nativeEvent.activeBookmarks)
+          }}
+          onLocatorChange={(event) =>
+            dispatch(
+              bookshelfSlice.actions.bookRelocated({
+                bookId: book.id,
+                locator: event.nativeEvent,
+              }),
+            )
+          }
           onMiddleTouch={() => {
             setShowInterface((p) => !p)
+          }}
+          onDoubleTouch={(event) => {
+            dispatch(
+              bookshelfSlice.actions.bookDoubleTapped({
+                bookId: book.id,
+                locator: event.nativeEvent,
+              }),
+            )
+          }}
+          onSelection={(event) => {
+            if ("cleared" in event.nativeEvent) {
+              setSelection(null)
+            } else {
+              setSelection(event.nativeEvent)
+            }
           }}
           isPlaying={isPlaying}
         />
       </View>
       {showInterface && (
-        <View
-          style={{
-            position: "absolute",
-            top: insets.top,
-            flexDirection: "row",
-            alignItems: "center",
-            zIndex: 3,
-          }}
-        >
+        <View style={[styles.backButton, { top: insets.top }]}>
           <Link href="/" asChild>
             <Pressable hitSlop={20}>
               <ChevronLeftIcon />
@@ -101,58 +160,19 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
       )}
       {showInterface && (
         <View
-          style={{
-            position: "absolute",
-            right: 12,
-            top: insets.top + 12,
-            bottom: dimensions.height - insets.top - 20,
-            left: dimensions.width - 50,
-            zIndex: 3,
-          }}
+          style={[
+            styles.toolbarWrapper,
+            {
+              top: insets.top + 12,
+              bottom: dimensions.height - insets.top - 20,
+            },
+          ]}
         >
-          <Pressable
-            onPress={() => {
-              setShowToc((p) => !p)
-            }}
-            hitSlop={40}
-          >
-            <TableOfContentsIcon />
-          </Pressable>
+          <Toolbar mode="text" activeBookmarks={activeBookmarks} />
         </View>
       )}
-      {showToc && (
-        <TableOfContents
-          navItems={book.manifest.toc}
-          onNavItemTap={async (item) => {
-            const link = book.manifest.readingOrder.find(
-              ({ href }) => href === item.href,
-            )
-            if (!link) return
-
-            const locator = await locateLink(book.id, link)
-            onLocatorChange(locator)
-            setShowToc(false)
-          }}
-          onOutsideTap={() => {
-            setShowToc(false)
-          }}
-        />
-      )}
       {!showInterface ? (
-        <View
-          style={{
-            position: "absolute",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 12,
-            paddingVertical: 24,
-            bottom: 27,
-            left: 12,
-            right: 16,
-            zIndex: 3,
-          }}
-        >
+        <View style={styles.playerStatus}>
           <UIText>
             {percentComplete}% - {remainingTime} left
           </UIText>
@@ -166,15 +186,57 @@ export const Epub = function Epub({ book, locator, onLocatorChange }: Props) {
           isPlaying={isPlaying}
           isLoading={isLoading}
           endPosition={endPosition}
-          style={{
-            position: "absolute",
-            left: 12,
-            right: 12,
-            bottom: 32,
-            zIndex: 3,
-          }}
+          style={styles.miniPlayer}
         />
       )}
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  epubWrapper: {
+    position: "absolute",
+    bottom: 80,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    ...(Platform.OS === "android" && { paddingVertical: 36 }),
+  },
+  epub: { flex: 1 },
+  backButton: {
+    position: "absolute",
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 3,
+  },
+  toolbarWrapper: {
+    position: "absolute",
+    right: 12,
+    left: 50,
+    zIndex: 3,
+    alignItems: "flex-end",
+  },
+  playerStatus: {
+    position: "absolute",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 24,
+    bottom: 27,
+    left: 12,
+    right: 16,
+    zIndex: 3,
+  },
+  miniPlayer: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 32,
+    zIndex: 3,
+  },
+})

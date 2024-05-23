@@ -83,7 +83,7 @@ public class STMediaOverlays : Loggable {
                 continue
             }
             
-            if clip.relativeUrl == clipUrl && start <= position && end >= position {
+            if clip.relativeUrl == clipUrl && start <= position && end > position {
                 return node
             }
         }

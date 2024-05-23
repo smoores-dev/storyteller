@@ -41,10 +41,18 @@ import * as FileSystem from "expo-file-system"
 import { Audio } from "expo-av"
 import {
   deleteBook,
+  deleteBookmark,
+  deleteHighlight,
   readBookIds,
+  readBookmarks,
+  readHighlights,
   readLocators,
+  readPlayerSpeed,
   writeBook,
+  writeBookmark,
+  writeHighlight,
   writeLocator,
+  writePlayerSpeed,
 } from "../persistence/books"
 import TrackPlayer, {
   AddTrack,
@@ -373,6 +381,8 @@ export function* downloadBookSaga() {
         firstLink,
       )) as Awaited<ReturnType<typeof locateLink>>
 
+      yield call(writeLocator, bookId, firstLocator)
+
       yield put(
         bookshelfSlice.actions.bookDownloadCompleted({
           book: {
@@ -380,6 +390,9 @@ export function* downloadBookSaga() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
+            playerSpeed: 1.0,
+            highlights: [],
+            bookmarks: [],
           },
           locator: firstLocator,
         }),
@@ -492,11 +505,26 @@ export function* hydrateBookshelf() {
       })
     }
 
+    const bookmarks = (yield call(readBookmarks, bookId)) as Awaited<
+      ReturnType<typeof readBookmarks>
+    >
+
+    const highlights = (yield call(readHighlights, bookId)) as Awaited<
+      ReturnType<typeof readHighlights>
+    >
+
+    const playerSpeed = (yield call(readPlayerSpeed, bookId)) as Awaited<
+      ReturnType<typeof readPlayerSpeed>
+    >
+
     books.push({
       id: bookId,
       title: parseLocalizedString(manifest.metadata.title),
       authors: readiumToStorytellerAuthors(manifest.metadata.author),
       manifest,
+      highlights,
+      bookmarks,
+      playerSpeed,
     })
   }
 
@@ -542,6 +570,7 @@ export function* persistLocatorSaga() {
   yield takeLeadingWithQueue(
     [
       bookshelfSlice.actions.bookRelocated,
+      bookshelfSlice.actions.navItemTapped,
       bookshelfSlice.actions.playerPositionUpdateCompleted,
       bookshelfSlice.actions.bookDownloadCompleted,
     ],
@@ -573,6 +602,12 @@ function* getCurrentClip(book: BookshelfBook) {
     ReturnType<typeof getClip>
   >
   return clip
+}
+
+export function* ensureTrackPlaySaga() {
+  yield takeEvery(bookshelfSlice.actions.bookDoubleTapped, function* () {
+    yield call(TrackPlayer.play)
+  })
 }
 
 export function* loadTrackPlayerSaga() {
@@ -612,6 +647,7 @@ export function* loadTrackPlayerSaga() {
       >
 
       yield call(TrackPlayer.reset)
+      yield call(TrackPlayer.setRate, book.playerSpeed)
       // @ts-expect-error Not sure what's up here, but this is the correct type
       yield call(TrackPlayer.add, tracks as AddTrack[])
 
@@ -631,35 +667,45 @@ export function* loadTrackPlayerSaga() {
 }
 
 export function* seekToLocatorSaga() {
-  yield takeEvery(bookshelfSlice.actions.bookRelocated, function* (action) {
-    const { bookId } = action.payload
+  yield takeEvery(
+    [
+      bookshelfSlice.actions.bookRelocated,
+      bookshelfSlice.actions.navItemTapped,
+      bookshelfSlice.actions.bookmarkTapped,
+      bookshelfSlice.actions.bookDoubleTapped,
+    ],
+    function* (action) {
+      const { bookId } = action.payload
 
-    const book = (yield select(getBookshelfBook, bookId)) as ReturnType<
-      typeof getBookshelfBook
-    >
+      const book = (yield select(getBookshelfBook, bookId)) as ReturnType<
+        typeof getBookshelfBook
+      >
 
-    if (!book) return
+      if (!book) return
 
-    const clip = (yield call(getCurrentClip, book)) as Generated<
-      ReturnType<typeof getCurrentClip>
-    >
+      const clip = (yield call(getCurrentClip, book)) as Generated<
+        ReturnType<typeof getCurrentClip>
+      >
 
-    if (!clip) {
-      logger.error(`Could not find clip for book ${bookId} at current position`)
-      return
-    }
-    logger.debug(clip)
+      if (!clip) {
+        logger.error(
+          `Could not find clip for book ${bookId} at current position`,
+        )
+        return
+      }
+      logger.debug(clip)
 
-    const tracks = (yield call(TrackPlayer.getQueue)) as BookshelfTrack[]
+      const tracks = (yield call(TrackPlayer.getQueue)) as BookshelfTrack[]
 
-    const trackIndex = tracks.findIndex(
-      (track) => track.relativeUrl === clip.relativeUrl,
-    )
+      const trackIndex = tracks.findIndex(
+        (track) => track.relativeUrl === clip.relativeUrl,
+      )
 
-    if (trackIndex !== -1) {
-      yield call(TrackPlayer.skip, trackIndex, clip.start)
-    }
-  })
+      if (trackIndex !== -1) {
+        yield call(TrackPlayer.skip, trackIndex, clip.start)
+      }
+    },
+  )
 }
 
 export function* relocateToTrackPositionSaga() {
@@ -712,4 +758,50 @@ export function* deleteBookSaga() {
     yield call(deleteBook, bookId)
     yield call(deleteLocalBookFiles, bookId)
   })
+}
+
+export function* deleteBookmarkSaga() {
+  yield takeEvery(bookshelfSlice.actions.bookmarksRemoved, function* (action) {
+    const { bookId, locators } = action.payload
+
+    for (const locator of locators) {
+      yield call(deleteBookmark, bookId, locator)
+    }
+  })
+}
+
+export function* writeBookmarkSaga() {
+  yield takeEvery(bookshelfSlice.actions.bookmarkAdded, function* (action) {
+    const { bookId, locator } = action.payload
+
+    yield call(writeBookmark, bookId, locator)
+  })
+}
+
+export function* deleteHighlightSaga() {
+  yield takeEvery(bookshelfSlice.actions.highlightRemoved, function* (action) {
+    const { bookId, highlightId } = action.payload
+
+    yield call(deleteHighlight, bookId, highlightId)
+  })
+}
+
+export function* writeHighlightSaga() {
+  yield takeEvery(bookshelfSlice.actions.highlightCreated, function* (action) {
+    const { bookId, highlight } = action.payload
+
+    yield call(writeHighlight, bookId, highlight)
+  })
+}
+
+export function* writePlayerSpeedSaga() {
+  yield takeEvery(
+    bookshelfSlice.actions.playerSpeedChanged,
+    function* (action) {
+      const { bookId, speed } = action.payload
+
+      yield call(TrackPlayer.setRate, speed)
+      yield call(writePlayerSpeed, bookId, speed)
+    },
+  )
 }
