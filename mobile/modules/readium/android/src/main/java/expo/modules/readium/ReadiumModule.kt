@@ -1,8 +1,11 @@
 package expo.modules.readium
 
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Link
@@ -72,7 +75,7 @@ class ReadiumModule : Module() {
         // part of
         // the view definition: Prop, Events.
         View(EpubView::class) {
-            Events("onLocatorChange", "onMiddleTouch")
+            Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
 
             Prop("bookId") { view: EpubView, prop: Long ->
                 if (view.bookService == null) {
@@ -102,16 +105,46 @@ class ReadiumModule : Module() {
                 val isPlaying = prop ?: false
                 view.isPlaying = isPlaying
 
-                if (view.isPlaying) {
-                    view.highlightSelection()
+                val locator = view.locator
+                if (view.isPlaying && locator != null) {
+                    view.highlightFragment(locator)
                 } else {
-                    view.clearHighlights()
+                    view.clearHighlightFragment()
                 }
             }
 
-            AsyncFunction("findLocatorsOnPage") Coroutine { view: EpubView, locatorJsons: List<Map<String, Any>>, promise: Promise ->
-                val locators = locatorJsons.compactMap { Locator.fromJSON(JSONObject(it)) }
-                view.findOnPage(locators, promise)
+            Prop("highlights") { view: EpubView, prop: List<Map<String, Any>> ->
+                val highlights = prop.mapNotNull {
+                    val id = it["id"] as String
+                    val color = when (it["color"] as String) {
+                        "yellow" -> 0xffffff00.toInt()
+                        "red" -> 0xffff0000.toInt()
+                        "green" -> 0xff00ff00.toInt()
+                        "blue" -> 0xff0000ff.toInt()
+                        "magenta" -> 0xffff00ff.toInt()
+                        else -> 0xffffff00.toInt()
+                    }
+                    val locatorJson = JSONObject(it["locator"] as Map<String, Any>)
+                    val locator = Locator.fromJSON(locatorJson) ?: return@mapNotNull null
+                    return@mapNotNull Highlight(id, color, locator)
+                }
+
+                view.highlights = highlights
+                view.decorateHighlights()
+            }
+
+            Prop("bookmarks") { view: EpubView, prop: List<Map<String, Any>> ->
+                val bookmarks = prop.mapNotNull {
+                    Locator.fromJSON(JSONObject(it))
+                }
+
+                view.bookmarks = bookmarks
+                val currentLocator = view.navigator?.currentLocator?.value ?: return@Prop
+
+                val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
+                activity?.lifecycleScope?.launch {
+                    view.findOnPage(currentLocator)
+                }
             }
         }
     }

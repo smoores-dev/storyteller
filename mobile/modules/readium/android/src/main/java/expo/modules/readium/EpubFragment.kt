@@ -2,11 +2,20 @@ package expo.modules.readium
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.DisplayMetrics
+import android.util.TypedValue
+import android.util.TypedValue.COMPLEX_UNIT_DIP
+import android.view.ActionMode
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentContainerView
 import androidx.fragment.app.commitNow
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.ExperimentalDecorator
@@ -18,14 +27,43 @@ import org.readium.r2.navigator.epub.css.FontStyle
 import org.readium.r2.navigator.epub.css.FontWeight
 import org.readium.r2.navigator.html.HtmlDecorationTemplates
 import org.readium.r2.navigator.preferences.FontFamily
+import org.readium.r2.navigator.util.BaseActionModeCallback
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.html.cssSelector
+import kotlin.math.ceil
+
+class SelectionActionModeCallback(private val epubView: EpubView) : BaseActionModeCallback() {
+    override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+        val activity: FragmentActivity? = epubView.appContext.currentActivity as FragmentActivity?
+        activity?.lifecycleScope?.launch {
+            val selection = epubView.navigator?.currentSelection() ?: return@launch
+            selection.rect?.let {
+                val x = ceil(it.centerX() / epubView.resources.displayMetrics.density).toInt()
+                val y = ceil(it.top / epubView.resources.displayMetrics.density).toInt() - 16
+                epubView.onSelection(
+                    mapOf(
+                        "locator" to selection.locator.toJSON().toMap(),
+                        "x" to x,
+                        "y" to y
+                    )
+                )
+            }
+        }
+
+        return true
+    }
+}
 
 @SuppressLint("ViewConstructor")
-@OptIn(ExperimentalDecorator::class, ExperimentalReadiumApi::class)
-class EpubFragment(var locator: Locator, val publication: Publication, var isPlaying: Boolean, val listener: EpubNavigatorFragment.Listener) : Fragment() {
+@OptIn(ExperimentalReadiumApi::class)
+class EpubFragment(
+    private var locator: Locator,
+    private val publication: Publication,
+    private val listener: EpubView
+) : Fragment(R.layout.fragment_reader) {
     var navigator: EpubNavigatorFragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +89,12 @@ class EpubFragment(var locator: Locator, val publication: Publication, var isPla
                         setFontWeight(FontWeight.NORMAL)
                     }
                 }
+
+                selectionActionModeCallback = SelectionActionModeCallback(listener)
+
+                registerJavascriptInterface("storyteller") {
+                    listener.setupUserScript()
+                }
             },
             initialPreferences = EpubPreferences(
                 fontFamily = FontFamily("Bookerly"),
@@ -62,11 +106,9 @@ class EpubFragment(var locator: Locator, val publication: Publication, var isPla
         super.onCreate(savedInstanceState)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         val navigatorFragmentTag = getString(R.string.epub_navigator_tag)
 
         if (savedInstanceState == null) {
@@ -82,6 +124,5 @@ class EpubFragment(var locator: Locator, val publication: Publication, var isPla
         }
         navigator =
             childFragmentManager.findFragmentByTag(navigatorFragmentTag) as EpubNavigatorFragment
-        return inflater.inflate(R.layout.fragment_reader, container, false)
     }
 }
