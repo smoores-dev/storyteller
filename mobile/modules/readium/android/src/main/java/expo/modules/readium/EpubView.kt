@@ -20,6 +20,9 @@ import kotlinx.coroutines.runBlocking
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.ExperimentalDecorator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.preferences.Color
+import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
 
@@ -43,6 +46,11 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     var navigator: EpubNavigatorFragment? = null
     var highlights: List<Highlight> = listOf()
     var bookmarks: List<Locator> = listOf()
+    var preferences: EpubPreferences = EpubPreferences(
+        fontFamily = FontFamily("Bookerly"),
+        lineHeight = 1.4,
+        paragraphSpacing = 0.5
+    )
 
     fun initializeNavigator() {
         if (this.navigator != null) {
@@ -85,6 +93,10 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         if (isPlaying) {
             highlightFragment(locator)
         }
+    }
+
+    fun updatePreferences() {
+        navigator?.submitPreferences(preferences)
     }
 
     fun decorateHighlights() {

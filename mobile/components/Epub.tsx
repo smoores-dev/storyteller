@@ -29,6 +29,7 @@ import { Toolbar } from "./Toolbar"
 import { ToolbarDialogs } from "./ToolbarDialogs"
 import { useAppDispatch } from "../store/appState"
 import { SelectionMenu } from "./SelectionMenu"
+import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {
   book: BookshelfBook
@@ -37,6 +38,7 @@ type Props = {
 
 export function Epub({ book, locator }: Props) {
   useKeepAwake()
+  const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<ReadiumLocator[]>([])
   const [activeHighlight, setActiveHighlight] = useState<Highlight | null>(null)
 
@@ -69,6 +71,7 @@ export function Epub({ book, locator }: Props) {
     <View
       style={[
         styles.container,
+        { backgroundColor: background },
         {
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
@@ -105,6 +108,7 @@ export function Epub({ book, locator }: Props) {
           locator={locator}
           highlights={book.highlights}
           bookmarks={book.bookmarks}
+          colorTheme={{ foreground, background }}
           onHighlightTap={(event) => {
             setSelection({
               x: event.nativeEvent.x,

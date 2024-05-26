@@ -1,5 +1,6 @@
 package expo.modules.readium
 
+import android.graphics.Color
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import expo.modules.kotlin.functions.Coroutine
@@ -7,6 +8,8 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -71,9 +74,6 @@ class ReadiumModule : Module() {
             return@AsyncFunction locator?.toJSON()?.toMap()
         }
 
-        // Enables the module to be used as a native view. Definition components that are accepted as
-        // part of
-        // the view definition: Prop, Events.
         View(EpubView::class) {
             Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
 
@@ -145,6 +145,19 @@ class ReadiumModule : Module() {
                 activity?.lifecycleScope?.launch {
                     view.findOnPage(currentLocator)
                 }
+            }
+
+            Prop("colorTheme") { view: EpubView, prop: Map<String, String> ->
+                val foregroundHex = prop["foreground"] ?: "#000000"
+                val backgroundHex = prop["background"] ?: "#FFFFFF"
+                val foreground = Color.parseColor(foregroundHex)
+                val background = Color.parseColor(backgroundHex)
+
+                view.preferences = view.preferences.copy(
+                    textColor = org.readium.r2.navigator.preferences.Color(foreground),
+                    backgroundColor = org.readium.r2.navigator.preferences.Color(background)
+                )
+                view.updatePreferences()
             }
         }
     }

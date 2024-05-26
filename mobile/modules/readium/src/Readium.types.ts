@@ -229,6 +229,7 @@ export type EPUBViewProps = {
   locator: ReadiumLocator
   bookmarks: ReadiumLocator[]
   highlights: Highlight[]
+  colorTheme: { foreground: string; background: string }
   onHighlightTap?: (
     event: NativeSyntheticEvent<{ decoration: UUID; x: number; y: number }>,
   ) => void

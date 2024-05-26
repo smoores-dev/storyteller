@@ -14,7 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     version: "1.4.0",
     orientation: "portrait",
     icon: "./assets/Storyteller_Logo.png",
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "automatic",
     scheme: "storyteller",
     plugins: [
       "expo-router",

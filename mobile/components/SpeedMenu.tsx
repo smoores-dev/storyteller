@@ -4,6 +4,7 @@ import { UIText } from "./UIText"
 import { bookshelfSlice, playerSpeeds } from "../store/slices/bookshelfSlice"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getPlayerSpeed } from "../store/selectors/bookshelfSelectors"
+import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {
   bookId: number
@@ -11,6 +12,8 @@ type Props = {
 }
 
 export function SpeedMenu({ bookId, onOutsideTap }: Props) {
+  const { background } = useColorTheme()
+
   const insets = useSafeAreaInsets()
 
   const dispatch = useAppDispatch()
@@ -42,7 +45,7 @@ export function SpeedMenu({ bookId, onOutsideTap }: Props) {
           borderColor: "black",
           bottom: 300,
           zIndex: 3,
-          backgroundColor: "white",
+          backgroundColor: background,
         }}
       >
         {playerSpeeds.map((speed) => (

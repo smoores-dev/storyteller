@@ -630,13 +630,19 @@ export function* loadTrackPlayerSaga() {
       const currentTracks = (yield call(
         TrackPlayer.getQueue,
       )) as BookshelfTrack[]
-      if (currentTracks[0]?.bookId === bookId) return
+      if (currentTracks[0]?.bookId === bookId) {
+        yield put(bookshelfSlice.actions.playerQueued())
+        return
+      }
 
       const book = (yield select(getBookshelfBook, bookId)) as ReturnType<
         typeof getBookshelfBook
       >
 
-      if (!book) return
+      if (!book) {
+        yield put(bookshelfSlice.actions.playerQueued())
+        return
+      }
 
       const tracks = (yield call(generateTracks, book)) as Generated<
         ReturnType<typeof generateTracks>

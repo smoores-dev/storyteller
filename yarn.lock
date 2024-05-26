@@ -5655,6 +5655,7 @@ __metadata:
     "@expo/webpack-config": "npm:~19.0.1"
     "@react-native-async-storage/async-storage": "npm:1.21.0"
     "@react-native-community/slider": "npm:4.4.2"
+    "@react-navigation/native": "npm:~6.1.6"
     "@reduxjs/toolkit": "npm:^1.9.5"
     "@tsconfig/strictest": "npm:^2.0.1"
     "@types/base-64": "npm:^1.0.0"
@@ -5705,6 +5706,7 @@ __metadata:
     react-native-circular-progress: "npm:^1.3.9"
     react-native-context-menu-view: "npm:^1.12.0"
     react-native-logs: "npm:^5.0.1"
+    react-native-radio-buttons-group: "npm:^3.1.0"
     react-native-random-uuid: "npm:^0.1.4"
     react-native-reanimated: "npm:~3.6.0"
     react-native-safe-area-context: "npm:4.8.2"
@@ -18957,6 +18959,13 @@ __metadata:
   version: 5.1.0
   resolution: "react-native-logs@npm:5.1.0"
   checksum: 10c0/1a47f25ae8c37fc7cb746ac0608d3e1a95abcf488ed5b7c587ce7c1a2d4ce6cf458657da93bad716eda17e8841dc24b4d0cf53d373133a2fd33632739c93807f
+  languageName: node
+  linkType: hard
+
+"react-native-radio-buttons-group@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "react-native-radio-buttons-group@npm:3.1.0"
+  checksum: 10c0/2e51b69a67b6c9e82985d67ea8ce4512d39dfe06eb5fccd723fbb97db36c3c585d96af7cd4cb15d41fa92d17c281be00ef26f0f0aea666d9f1c46a06586590da
   languageName: node
   linkType: hard
 
