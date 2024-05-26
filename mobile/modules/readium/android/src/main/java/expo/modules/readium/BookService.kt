@@ -105,20 +105,20 @@ class BookService(private val context: Context) {
         return publication.positionsByReadingOrder()[readingOrderIndex].first()
     }
 
-    private suspend fun buildFragmentLocator(bookId: Long, fragment: TextFragment): Locator {
+    suspend fun buildFragmentLocator(bookId: Long, href: String, fragment: String): Locator {
         val publication = getPublication(bookId)
             ?: throw Exception("Publication for book $bookId is unopened.")
 
         val defaultLocator = Locator(
-            href = fragment.href,
+            href = href,
             type = "application/xhtml+xml"
         )
 
-        val link = publication.linkWithHref(fragment.href) ?: return defaultLocator
+        val link = publication.linkWithHref(href) ?: return defaultLocator
 
         val resource = publication.get(link)
         val htmlContent = resource.readAsString().getOrThrow()
-        val fragmentRegex = Regex("id=\"${fragment.fragment}\"")
+        val fragmentRegex = Regex("id=\"${fragment}\"")
         val startOfFragment = fragmentRegex.find(htmlContent)?.range?.start ?: return defaultLocator
         val progression = startOfFragment.toDouble() / htmlContent.length.toDouble()
         val startOfChapterProgression = locateFromPositions(bookId, link).locations.totalProgression
@@ -133,10 +133,10 @@ class BookService(private val context: Context) {
         val totalProgression = startOfChapterProgression + (progression * (startOfNextChapterProgression - startOfChapterProgression))
 
         return Locator(
-            href = fragment.href,
+            href = href,
             type = "application/xhtml+xml",
             locations = Locator.Locations(
-                fragments = listOf(fragment.fragment),
+                fragments = listOf(fragment),
                 progression = progression,
                 totalProgression = totalProgression
             )
@@ -161,7 +161,7 @@ class BookService(private val context: Context) {
         }
 
         val fragment = maybeFragment ?: return null
-        fragment.locator = buildFragmentLocator(bookId, fragment)
+        fragment.locator = buildFragmentLocator(bookId, fragment.href, fragment.fragment)
 
         return fragment
     }

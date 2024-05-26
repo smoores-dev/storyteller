@@ -67,7 +67,7 @@ android {
 
   namespace "expo.modules.readium"
   defaultConfig {
-    minSdkVersion safeExtGet("minSdkVersion", 21)
+    minSdkVersion safeExtGet("minSdkVersion", 26)
     targetSdkVersion safeExtGet("targetSdkVersion", 33)
     versionCode 1
     versionName "0.2.0"
@@ -95,6 +95,7 @@ dependencies {
   implementation "org.readium.kotlin-toolkit:readium-navigator:$readium_version"
   implementation "org.readium.kotlin-toolkit:readium-opds:$readium_version"
   implementation "org.readium.kotlin-toolkit:readium-lcp:$readium_version"
+  implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3'
   implementation 'androidx.fragment:fragment-ktx:1.6.2'
   implementation 'androidx.compose.ui:ui-android:1.5.4'
   implementation 'org.jsoup:jsoup:1.15.3'
