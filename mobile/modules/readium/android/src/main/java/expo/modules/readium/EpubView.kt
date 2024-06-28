@@ -271,17 +271,20 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val result = navigator?.evaluateJavascript(
             """
             (function() {
-                function isOnScreen(element) {
-                    const rect = element.getBoundingClientRect();
-                    const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
-                    const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
-                    return isVerticallyWithin && isHorizontallyWithin;
+                function isEntirelyOnScreen(element) {
+                    const rects = element.getClientRects();
+                    console.log(element.id, rects);
+                    return Array.from(rects).every((rect) => {
+                        const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
+                        const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
+                        return isVerticallyWithin && isHorizontallyWithin;
+                    });
                 }
 
                 for (const fragment of globalThis.storytellerFragments) {
                     const element = document.getElementById(fragment);
                     if (!element) continue;
-                    if (isOnScreen(element)) {
+                    if (isEntirelyOnScreen(element)) {
                         return fragment;
                     }
                 }
