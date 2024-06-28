@@ -2,17 +2,21 @@ import { Tabs } from "expo-router"
 import { BookshelfIcon } from "../../../icons/BookshelfIcon"
 import { BrowseIcon } from "../../../icons/BrowseIcon"
 import { SettingsIcon } from "../../../icons/SettingsIcon"
+import { useColorTheme } from "../../../hooks/useColorTheme"
 
 export default function TabLayout() {
+  const { foreground } = useColorTheme()
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "black",
-        tabBarInactiveTintColor: "black",
+        tabBarActiveTintColor: foreground,
+        tabBarInactiveTintColor: foreground,
         tabBarStyle: {
-          height: 95,
+          height: 84,
           paddingTop: 12,
+          paddingBottom: 16,
         },
       }}
     >

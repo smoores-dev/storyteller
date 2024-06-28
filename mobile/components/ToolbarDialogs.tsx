@@ -4,6 +4,7 @@ import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { getOpenDialog } from "../store/selectors/toolbarSelectors"
 import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
 import { BookNavigation } from "./BookNavigation"
+import { BookSettingsMenu } from "./BookSettingsMenu"
 
 export function ToolbarDialogs() {
   const book = useAppSelector(getCurrentlyPlayingBook)
@@ -30,6 +31,10 @@ export function ToolbarDialogs() {
             dispatch(toolbarSlice.actions.dialogClosed())
           }}
         />
+      )}
+
+      {openDialog === ToolbarDialog.SETTINGS && (
+        <BookSettingsMenu bookId={book.id} />
       )}
     </>
   )

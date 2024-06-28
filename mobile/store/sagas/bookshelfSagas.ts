@@ -47,12 +47,10 @@ import {
   readBookmarks,
   readHighlights,
   readLocators,
-  readPlayerSpeed,
   writeBook,
   writeBookmark,
   writeHighlight,
   writeLocator,
-  writePlayerSpeed,
 } from "../persistence/books"
 import TrackPlayer, {
   AddTrack,
@@ -86,6 +84,8 @@ import {
   ReadiumLocalizedString,
 } from "../../modules/readium/src/Readium.types"
 import { BookAuthor } from "../../apiModels"
+import { preferencesSlice } from "../slices/preferencesSlice"
+import { getBookPlayerSpeed } from "../selectors/preferencesSelectors"
 
 export function createDownloadChannel(
   pauseState: FileSystem.DownloadPauseState,
@@ -390,7 +390,6 @@ export function* downloadBookSaga() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
-            playerSpeed: 1.0,
             highlights: [],
             bookmarks: [],
           },
@@ -513,10 +512,6 @@ export function* hydrateBookshelf() {
       ReturnType<typeof readHighlights>
     >
 
-    const playerSpeed = (yield call(readPlayerSpeed, bookId)) as Awaited<
-      ReturnType<typeof readPlayerSpeed>
-    >
-
     books.push({
       id: bookId,
       title: parseLocalizedString(manifest.metadata.title),
@@ -524,7 +519,6 @@ export function* hydrateBookshelf() {
       manifest,
       highlights,
       bookmarks,
-      playerSpeed,
     })
   }
 
@@ -630,13 +624,19 @@ export function* loadTrackPlayerSaga() {
       const currentTracks = (yield call(
         TrackPlayer.getQueue,
       )) as BookshelfTrack[]
-      if (currentTracks[0]?.bookId === bookId) return
+      if (currentTracks[0]?.bookId === bookId) {
+        yield put(bookshelfSlice.actions.playerQueued())
+        return
+      }
 
       const book = (yield select(getBookshelfBook, bookId)) as ReturnType<
         typeof getBookshelfBook
       >
 
-      if (!book) return
+      if (!book) {
+        yield put(bookshelfSlice.actions.playerQueued())
+        return
+      }
 
       const tracks = (yield call(generateTracks, book)) as Generated<
         ReturnType<typeof generateTracks>
@@ -646,8 +646,13 @@ export function* loadTrackPlayerSaga() {
         ReturnType<typeof getCurrentClip>
       >
 
+      const playerSpeed = (yield select(
+        getBookPlayerSpeed,
+        bookId,
+      )) as ReturnType<typeof getBookPlayerSpeed>
+
       yield call(TrackPlayer.reset)
-      yield call(TrackPlayer.setRate, book.playerSpeed)
+      yield call(TrackPlayer.setRate, playerSpeed)
       // @ts-expect-error Not sure what's up here, but this is the correct type
       yield call(TrackPlayer.add, tracks as AddTrack[])
 
@@ -794,14 +799,13 @@ export function* writeHighlightSaga() {
   })
 }
 
-export function* writePlayerSpeedSaga() {
+export function* updatePlayerSpeedSaga() {
   yield takeEvery(
-    bookshelfSlice.actions.playerSpeedChanged,
+    preferencesSlice.actions.playerSpeedChanged,
     function* (action) {
-      const { bookId, speed } = action.payload
+      const { speed } = action.payload
 
       yield call(TrackPlayer.setRate, speed)
-      yield call(writePlayerSpeed, bookId, speed)
     },
   )
 }

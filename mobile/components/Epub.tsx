@@ -1,11 +1,5 @@
 import { useRef, useState } from "react"
-import {
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from "react-native"
+import { Platform, Pressable, StyleSheet, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Link, Tabs } from "expo-router"
@@ -27,8 +21,10 @@ import { MiniPlayer } from "./MiniPlayer"
 import { useAudioBook } from "../hooks/useAudioBook"
 import { Toolbar } from "./Toolbar"
 import { ToolbarDialogs } from "./ToolbarDialogs"
-import { useAppDispatch } from "../store/appState"
+import { useAppDispatch, useAppSelector } from "../store/appState"
 import { SelectionMenu } from "./SelectionMenu"
+import { useColorTheme } from "../hooks/useColorTheme"
+import { getFilledBookPreferences } from "../store/selectors/preferencesSelectors"
 
 type Props = {
   book: BookshelfBook
@@ -37,8 +33,12 @@ type Props = {
 
 export function Epub({ book, locator }: Props) {
   useKeepAwake()
+  const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<ReadiumLocator[]>([])
   const [activeHighlight, setActiveHighlight] = useState<Highlight | null>(null)
+  const preferences = useAppSelector((state) =>
+    getFilledBookPreferences(state, book.id),
+  )
 
   const [selection, setSelection] = useState<{
     x: number
@@ -49,8 +49,6 @@ export function Epub({ book, locator }: Props) {
   const dispatch = useAppDispatch()
 
   const insets = useSafeAreaInsets()
-
-  const dimensions = useWindowDimensions()
 
   const [showInterface, setShowInterface] = useState(true)
   const epubViewRef = useRef<EPUBViewRef | null>(null)
@@ -69,6 +67,7 @@ export function Epub({ book, locator }: Props) {
     <View
       style={[
         styles.container,
+        { backgroundColor: background },
         {
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
@@ -105,6 +104,12 @@ export function Epub({ book, locator }: Props) {
           locator={locator}
           highlights={book.highlights}
           bookmarks={book.bookmarks}
+          fontScale={preferences.typography.scale}
+          lineHeight={preferences.typography.lineHeight}
+          textAlign={preferences.typography.alignment}
+          fontFamily={preferences.typography.fontFamily}
+          readaloudColor={preferences.readaloudColor}
+          colorTheme={{ foreground, background }}
           onHighlightTap={(event) => {
             setSelection({
               x: event.nativeEvent.x,
@@ -163,8 +168,7 @@ export function Epub({ book, locator }: Props) {
           style={[
             styles.toolbarWrapper,
             {
-              top: insets.top + 12,
-              bottom: dimensions.height - insets.top - 20,
+              top: insets.top + 6,
             },
           ]}
         >
@@ -214,9 +218,9 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   toolbarWrapper: {
+    flexDirection: "row",
     position: "absolute",
     right: 12,
-    left: 50,
     zIndex: 3,
     alignItems: "flex-end",
   },

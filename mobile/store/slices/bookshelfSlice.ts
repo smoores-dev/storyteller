@@ -7,6 +7,7 @@ import {
 } from "../../modules/readium/src/Readium.types"
 import { areLocatorsEqual } from "../../modules/readium"
 import type { UUID } from "crypto"
+import { HighlightTint } from "../../colors"
 
 export type BookshelfTrack = {
   bookId: number
@@ -22,13 +23,9 @@ export type BookshelfTrack = {
 
 export type Highlight = {
   id: UUID
-  color: "yellow" | "red" | "green" | "blue" | "magenta"
+  color: HighlightTint
   locator: ReadiumLocator
 }
-
-export const playerSpeeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.5] as const
-
-export type PlayerSpeed = (typeof playerSpeeds)[number]
 
 export type BookshelfBook = {
   id: number
@@ -37,7 +34,6 @@ export type BookshelfBook = {
   manifest: ReadiumManifest
   bookmarks: ReadiumLocator[]
   highlights: Highlight[]
-  playerSpeed: PlayerSpeed
 }
 
 export type BookshelfState = {
@@ -254,17 +250,6 @@ export const bookshelfSlice = createSlice({
       if (!highlight) return
 
       highlight.color = color
-    },
-    playerSpeedChanged(
-      state,
-      action: PayloadAction<{ bookId: number; speed: PlayerSpeed }>,
-    ) {
-      const { bookId, speed } = action.payload
-
-      const book = state.entities[bookId]
-      if (!book) return
-
-      book.playerSpeed = speed
     },
   },
 })

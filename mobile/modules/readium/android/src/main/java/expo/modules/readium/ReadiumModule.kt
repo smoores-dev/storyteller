@@ -1,5 +1,6 @@
 package expo.modules.readium
 
+import android.graphics.Color
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import expo.modules.kotlin.functions.Coroutine
@@ -7,6 +8,10 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.preferences.FontFamily
+import org.readium.r2.navigator.preferences.TextAlign
+import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -17,6 +22,7 @@ class ReadiumModule : Module() {
     // Each module class must implement the definition function. The definition consists of components
     // that describes the module's functionality and behavior.
     // See https://docs.expo.dev/modules/module-api for more details about available components.
+    @OptIn(ExperimentalReadiumApi::class)
     override fun definition() = ModuleDefinition {
         val bookService: BookService = BookService(appContext.reactContext!!)
 
@@ -71,9 +77,6 @@ class ReadiumModule : Module() {
             return@AsyncFunction locator?.toJSON()?.toMap()
         }
 
-        // Enables the module to be used as a native view. Definition components that are accepted as
-        // part of
-        // the view definition: Prop, Events.
         View(EpubView::class) {
             Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
 
@@ -145,6 +148,71 @@ class ReadiumModule : Module() {
                 activity?.lifecycleScope?.launch {
                     view.findOnPage(currentLocator)
                 }
+            }
+
+            Prop("colorTheme") { view: EpubView, prop: Map<String, String> ->
+                val foregroundHex = prop["foreground"] ?: "#000000"
+                val backgroundHex = prop["background"] ?: "#FFFFFF"
+                val foreground = Color.parseColor(foregroundHex)
+                val background = Color.parseColor(backgroundHex)
+
+                view.preferences = view.preferences.copy(
+                    textColor = org.readium.r2.navigator.preferences.Color(foreground),
+                    backgroundColor = org.readium.r2.navigator.preferences.Color(background)
+                )
+                view.updatePreferences()
+            }
+
+            Prop("readaloudColor") { view: EpubView, prop: String ->
+                val color = when (prop) {
+                    "yellow" -> 0xffffff00.toInt()
+                    "red" -> 0xffff0000.toInt()
+                    "green" -> 0xff00ff00.toInt()
+                    "blue" -> 0xff0000ff.toInt()
+                    "magenta" -> 0xffff00ff.toInt()
+                    else -> 0xffffff00.toInt()
+                }
+
+                view.readaloudColor = color
+
+                if (view.isPlaying) {
+                    view.clearHighlightFragment()
+                    view.navigator?.let {
+                        view.highlightFragment(it.currentLocator.value)
+                    }
+                }
+            }
+
+            Prop("fontScale") { view: EpubView, prop: Double ->
+                view.preferences = view.preferences.copy(
+                    fontSize = prop
+                )
+                view.updatePreferences()
+            }
+
+            Prop("lineHeight") { view: EpubView, prop: Double ->
+                view.preferences = view.preferences.copy(
+                    lineHeight = prop
+                )
+                view.updatePreferences()
+            }
+
+            Prop("textAlign") { view: EpubView, prop: String ->
+                val textAlign = when (prop) {
+                    "left" -> TextAlign.LEFT
+                    else -> TextAlign.JUSTIFY
+                }
+                view.preferences = view.preferences.copy(
+                    textAlign = textAlign
+                )
+                view.updatePreferences()
+            }
+
+            Prop("fontFamily") { view: EpubView, prop: String ->
+                view.preferences = view.preferences.copy(
+                    fontFamily = FontFamily(prop)
+                )
+                view.updatePreferences()
             }
         }
     }
