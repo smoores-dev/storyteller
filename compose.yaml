@@ -2,7 +2,7 @@
 
 services:
   web:
-    image: registry.gitlab.com/smoores/storyteller:next
+    image: registry.gitlab.com/smoores/storyteller:latest # For CUDA, use registry.gitlab.com/smoores/storyteller:cuda-latest
     # Uncomment for CUDA
     # runtime: nvidia
     volumes:
@@ -11,16 +11,22 @@ services:
       # to inspect the files with a mount.
       # If you're running on macOS or Windows, you may want to
       # consider using a named volume, which will considerably
-      # improve performance.
+      # improve filesystem I/O performance. See these VS Code
+      # docs for more information:
+      # https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-targeted-named-volume
       - ~/Documents/Storyteller:/data:rw
     environment:
       # Generate a cryptopgraphically secure random string,
       # e.g. with:
       #  openssl rand -base64 32
-      - STORYTELLER_SECRET_KEY=<some random value>
-    # Uncomment for CUDA
-    # - STORYTELLER_DEVICE=cuda
-    # - NVIDIA_VISIBLE_DEVICES=all
-
+      - STORYTELLER_SECRET_KEY=/run/secrets/secret_key
+      # Uncomment for CUDA
+      # - STORYTELLER_DEVICE=cuda
     ports:
       - "8001:8001"
+    secrets:
+      - secret_key
+
+secrets:
+  secret_key:
+    file: ./STORYTELLER_SECRET_KEY.txt

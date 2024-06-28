@@ -15,7 +15,7 @@ import {
   seekToLocatorSaga,
   writeBookmarkSaga,
   writeHighlightSaga,
-  writePlayerSpeedSaga,
+  updatePlayerSpeedSaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -23,6 +23,10 @@ import {
   serverUpdatedSaga,
 } from "./apiSagas"
 import { syncDebug } from "./loggingSagas"
+import {
+  writeBookPreferencesSaga,
+  writeGlobalPreferencesSaga,
+} from "./preferencesSagas"
 
 export function* rootSaga() {
   yield fork(serverUpdatedSaga)
@@ -43,7 +47,9 @@ export function* rootSaga() {
     call(writeBookmarkSaga),
     call(deleteHighlightSaga),
     call(writeHighlightSaga),
-    call(writePlayerSpeedSaga),
+    call(updatePlayerSpeedSaga),
+    call(writeBookPreferencesSaga),
+    call(writeGlobalPreferencesSaga),
     call(clearServerSaga),
     call(logoutSaga),
     call(syncDebug),

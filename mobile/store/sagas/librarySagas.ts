@@ -94,7 +94,6 @@ export function* hydrateExistingDownloads() {
             manifest,
             highlights: [],
             bookmarks: [],
-            playerSpeed: 1.0,
           },
           locator: firstLocator,
         }),

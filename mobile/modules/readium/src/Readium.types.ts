@@ -1,6 +1,7 @@
 import { NativeSyntheticEvent, StyleProp, ViewStyle } from "react-native"
 import { Highlight } from "../../../store/slices/bookshelfSlice"
 import type { UUID } from "crypto"
+import { HighlightTint } from "../../../colors"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -229,6 +230,12 @@ export type EPUBViewProps = {
   locator: ReadiumLocator
   bookmarks: ReadiumLocator[]
   highlights: Highlight[]
+  colorTheme: { foreground: string; background: string }
+  fontScale?: number
+  lineHeight?: number
+  textAlign?: "justify" | "left"
+  fontFamily?: string
+  readaloudColor?: HighlightTint
   onHighlightTap?: (
     event: NativeSyntheticEvent<{ decoration: UUID; x: number; y: number }>,
   ) => void

@@ -1,9 +1,10 @@
 import { Pressable, ScrollView, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { UIText } from "./UIText"
-import { bookshelfSlice, playerSpeeds } from "../store/slices/bookshelfSlice"
 import { useAppDispatch, useAppSelector } from "../store/appState"
-import { getPlayerSpeed } from "../store/selectors/bookshelfSelectors"
+import { useColorTheme } from "../hooks/useColorTheme"
+import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
+import { preferencesSlice } from "../store/slices/preferencesSlice"
 
 type Props = {
   bookId: number
@@ -11,10 +12,14 @@ type Props = {
 }
 
 export function SpeedMenu({ bookId, onOutsideTap }: Props) {
+  const { background } = useColorTheme()
+
   const insets = useSafeAreaInsets()
 
   const dispatch = useAppDispatch()
-  const currentSpeed = useAppSelector((state) => getPlayerSpeed(state, bookId))
+  const currentSpeed = useAppSelector((state) =>
+    getBookPlayerSpeed(state, bookId),
+  )
 
   return (
     <>
@@ -42,15 +47,18 @@ export function SpeedMenu({ bookId, onOutsideTap }: Props) {
           borderColor: "black",
           bottom: 300,
           zIndex: 3,
-          backgroundColor: "white",
+          backgroundColor: background,
         }}
       >
-        {playerSpeeds.map((speed) => (
+        {[0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.5].map((speed) => (
           <View key={speed} style={{ paddingHorizontal: 8 }}>
             <Pressable
               onPress={() => {
                 dispatch(
-                  bookshelfSlice.actions.playerSpeedChanged({ bookId, speed }),
+                  preferencesSlice.actions.playerSpeedChanged({
+                    bookId,
+                    speed,
+                  }),
                 )
                 onOutsideTap?.()
               }}

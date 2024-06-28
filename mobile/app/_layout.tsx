@@ -1,4 +1,5 @@
 import "react-native-random-uuid"
+import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { Slot, SplashScreen } from "expo-router"
 import {
   SafeAreaProvider,
@@ -96,7 +97,9 @@ export default function Layout() {
     <Provider store={store}>
       <StorytellerProvider>
         <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          <Slot />
+          <GestureHandlerRootView>
+            <Slot />
+          </GestureHandlerRootView>
         </SafeAreaProvider>
       </StorytellerProvider>
     </Provider>

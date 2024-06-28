@@ -23,8 +23,10 @@ import org.readium.r2.navigator.epub.EpubDefaults
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.epub.css.Color
 import org.readium.r2.navigator.epub.css.FontStyle
 import org.readium.r2.navigator.epub.css.FontWeight
+import org.readium.r2.navigator.epub.css.RsProperties
 import org.readium.r2.navigator.html.HtmlDecorationTemplates
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.util.BaseActionModeCallback
@@ -96,11 +98,7 @@ class EpubFragment(
                     listener.setupUserScript()
                 }
             },
-            initialPreferences = EpubPreferences(
-                fontFamily = FontFamily("Bookerly"),
-                lineHeight = 1.4,
-                paragraphSpacing = 0.5
-            ),
+            initialPreferences = listener.preferences,
         )
 
         super.onCreate(savedInstanceState)

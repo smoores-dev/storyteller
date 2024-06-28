@@ -97,7 +97,7 @@ export function TableOfContents() {
                 paddingHorizontal: 16,
                 paddingLeft: 24,
                 ...(isSameChapter(child.href, locator?.href ?? "") && {
-                  backgroundColor: "#EEE",
+                  backgroundColor: "#88888888",
                 }),
               }}
               onPress={async () => {

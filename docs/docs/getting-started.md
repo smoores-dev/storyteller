@@ -27,7 +27,8 @@ There's a compose file in the project repository, embedded here for ease of use.
 Storyteller user accounts _are not meaningfully secure_. You can do so with your
 password manager, the `openssl` command as recommended in the compose file
 below, or use
-[1Password's online random password generator](https://1password.com/password-generator/). Store the generated secret key in a text file in the current directory.
+[1Password's online random password generator](https://1password.com/password-generator/).
+Store the generated secret key in a text file in the current directory.
 
 ```yaml
 # Example compose config for Storyteller
@@ -45,7 +46,7 @@ services:
       # consider using a named volume, which will considerably
       # improve filesystem I/O performance. See these VS Code
       # docs for more information:
-      # https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-targeted-named-volume 
+      # https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-targeted-named-volume
       - ~/Documents/Storyteller:/data:rw
     environment:
       # Generate a cryptopgraphically secure random string,
@@ -57,7 +58,7 @@ services:
     ports:
       - "8001:8001"
     secrets:
-      - secret_key 
+      - secret_key
 
 secrets:
   secret_key:

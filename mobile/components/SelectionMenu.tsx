@@ -8,8 +8,9 @@ import {
 import { ReadiumLocator } from "../modules/readium/src/Readium.types"
 import { useAppDispatch } from "../store/appState"
 import { Highlight, bookshelfSlice } from "../store/slices/bookshelfSlice"
-import { highlightTints } from "../colors"
 import { TrashIcon } from "../icons/TrashIcon"
+import { HighlightColorPicker } from "./HighlightColorPicker"
+import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {
   bookId: number
@@ -29,6 +30,7 @@ export function SelectionMenu({
   onClose,
 }: Props) {
   const dimensions = useWindowDimensions()
+  const { background } = useColorTheme()
   const dispatch = useAppDispatch()
 
   const menuWidth = existingHighlight ? 200 : 168
@@ -43,45 +45,35 @@ export function SelectionMenu({
 
   return (
     <>
-      <View style={[styles.menu, { top: y + 16, left: leftAdjsted }]}>
-        {(
-          Object.keys(highlightTints) as Array<keyof typeof highlightTints>
-        ).map((color) => (
-          <Pressable
-            key={color}
-            onPress={() => {
-              if (existingHighlight) {
-                dispatch(
-                  bookshelfSlice.actions.highlightColorChanged({
-                    bookId,
-                    highlightId: existingHighlight.id,
-                    color,
-                  }),
-                )
-                onClose()
-                return
-              }
+      <View
+        style={[
+          styles.menu,
+          { backgroundColor: background, top: y + 16, left: leftAdjsted },
+        ]}
+      >
+        <HighlightColorPicker
+          value={existingHighlight?.color}
+          onChange={(color) => {
+            if (existingHighlight) {
               dispatch(
-                bookshelfSlice.actions.highlightCreated({
+                bookshelfSlice.actions.highlightColorChanged({
                   bookId,
-                  highlight: { id: crypto.randomUUID(), color, locator },
+                  highlightId: existingHighlight.id,
+                  color,
                 }),
               )
               onClose()
-            }}
-          >
-            <View
-              style={[
-                styles.button,
-                { backgroundColor: highlightTints[color] },
-                existingHighlight?.color === color && {
-                  borderWidth: 2,
-                  borderColor: "black",
-                },
-              ]}
-            ></View>
-          </Pressable>
-        ))}
+              return
+            }
+            dispatch(
+              bookshelfSlice.actions.highlightCreated({
+                bookId,
+                highlight: { id: crypto.randomUUID(), color, locator },
+              }),
+            )
+            onClose()
+          }}
+        />
         {existingHighlight && (
           <Pressable
             style={styles.trashButton}
@@ -109,7 +101,6 @@ export function SelectionMenu({
 const styles = StyleSheet.create({
   menu: {
     position: "absolute",
-    backgroundColor: "white",
     zIndex: 1000,
     flexDirection: "row",
     borderRadius: 8,

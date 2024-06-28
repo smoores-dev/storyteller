@@ -5,7 +5,7 @@ build:
 
     - run:
         name: Focus install
-        run: yarn workspaces focus @storyteller/mobile
+        command: yarn workspaces focus @storyteller/mobile
 
     - eas/resolve_build_config
 

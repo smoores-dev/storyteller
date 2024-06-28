@@ -13,6 +13,7 @@ import { PlayIcon } from "../icons/PlayIcon"
 import { BookmarkIcon } from "../icons/BookmarkIcon"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { ReadiumLocator } from "../modules/readium/src/Readium.types"
+import { UIText } from "./UIText"
 
 type Props = {
   mode: "audio" | "text"
@@ -32,6 +33,19 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
   return (
     <>
       <View style={styles.toolbar}>
+        <Pressable
+          style={styles.toolbarButton}
+          onPress={() => {
+            dispatch(
+              toolbarSlice.actions.dialogToggled({
+                dialog: ToolbarDialog.SETTINGS,
+              }),
+            )
+          }}
+        >
+          <UIText style={{ fontSize: 20 }}>Aa</UIText>
+        </Pressable>
+
         <Pressable
           style={styles.toolbarButton}
           onPress={() => {
@@ -100,6 +114,7 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
 const styles = StyleSheet.create({
   toolbar: {
     flexDirection: "row",
+    alignItems: "center",
   },
   toolbarButton: {
     marginHorizontal: 8,
