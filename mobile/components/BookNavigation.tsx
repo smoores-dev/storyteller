@@ -5,6 +5,7 @@ import { useState } from "react"
 import { UIText } from "./UIText"
 import { Bookmarks } from "./Bookmarks"
 import { Highlights } from "./Highlights"
+import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {
   onOutsideTap: () => void
@@ -17,13 +18,20 @@ enum BookNavTab {
 }
 
 export function BookNavigation({ onOutsideTap }: Props) {
+  const { background, foreground } = useColorTheme()
   const [selectedTab, setSelectedTab] = useState(BookNavTab.TABLE_OF_CONTENTS)
   const insets = useSafeAreaInsets()
 
   return (
     <>
       <TouchableOpacity style={styles.backdrop} onPress={onOutsideTap} />
-      <View style={{ ...styles.dialog, top: insets.top + styles.dialog.top }}>
+      <View
+        style={[
+          styles.dialog,
+          { top: insets.top + styles.dialog.top },
+          { backgroundColor: background, shadowColor: foreground },
+        ]}
+      >
         <View style={styles.tabs}>
           <Pressable
             style={styles.tab}
@@ -109,10 +117,9 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowColor: "black",
     bottom: 300,
     zIndex: 3,
-    backgroundColor: "white",
+    elevation: 3,
   },
   selectedTab: {
     fontWeight: "bold",

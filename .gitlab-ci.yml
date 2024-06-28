@@ -18,7 +18,11 @@ check:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
+        - "docs/docs/**/*"
+        - "docs/src/**/*"
         - "**/*.ts"
+        - "**/*.js"
+        - "**/*.json"
         - "**/*.tsx"
         - yarn.lock
   script:

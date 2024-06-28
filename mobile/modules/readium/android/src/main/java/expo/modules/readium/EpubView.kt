@@ -17,24 +17,30 @@ import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.ExperimentalDecorator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.preferences.Color
+import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
+import kotlin.math.ceil
 
 data class Highlight(val id: String, @ColorInt val color: Int, val locator: Locator)
 
 @SuppressLint("ViewConstructor", "ResourceType")
 @OptIn(ExperimentalDecorator::class)
 class EpubView(context: Context, appContext: AppContext) : ExpoView(context, appContext),
-    EpubNavigatorFragment.Listener {
+    EpubNavigatorFragment.Listener, DecorableNavigator.Listener {
 
     val onLocatorChange by EventDispatcher()
     val onMiddleTouch by EventDispatcher()
     val onBookmarksActivate by EventDispatcher()
     val onDoubleTouch by EventDispatcher()
     val onSelection by EventDispatcher()
+    val onHighlightTap by EventDispatcher()
 
     var bookService: BookService? = null
     var bookId: Long? = null
@@ -43,6 +49,12 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     var navigator: EpubNavigatorFragment? = null
     var highlights: List<Highlight> = listOf()
     var bookmarks: List<Locator> = listOf()
+    var readaloudColor = 0xffffff00.toInt()
+    var preferences: EpubPreferences = EpubPreferences(
+        fontFamily = FontFamily("Bookerly"),
+        lineHeight = 1.4,
+        paragraphSpacing = 0.5
+    )
 
     fun initializeNavigator() {
         if (this.navigator != null) {
@@ -70,6 +82,8 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         decorateHighlights()
 
+        navigator?.addDecorationListener("highlights", this)
+
         activity?.lifecycleScope?.launch {
             navigator?.currentLocator?.collect {
                 onLocatorChanged(it)
@@ -85,6 +99,18 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         if (isPlaying) {
             highlightFragment(locator)
         }
+    }
+
+    fun updatePreferences() {
+        navigator?.submitPreferences(preferences)
+    }
+
+    override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
+        val rect = event.rect ?: return false
+        val x = ceil(rect.centerX() / this.resources.displayMetrics.density).toInt()
+        val y = ceil(rect.top / this.resources.displayMetrics.density).toInt() - 16
+        this.onHighlightTap(mapOf("decoration" to event.decoration.id, "x" to x, "y" to y))
+        return true
     }
 
     fun decorateHighlights() {
@@ -106,7 +132,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     fun highlightFragment(locator: Locator) {
         val id = locator.locations.fragments.first()
 
-        val overlayHighlight = Decoration.Style.Highlight(0xffffff00.toInt(), isActive = true)
+        val overlayHighlight = Decoration.Style.Highlight(readaloudColor, isActive = true)
         val decoration = Decoration(id, locator, overlayHighlight)
 
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?

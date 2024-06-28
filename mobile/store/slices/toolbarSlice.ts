@@ -4,6 +4,7 @@ import { bookshelfSlice } from "./bookshelfSlice"
 export enum ToolbarDialog {
   TABLE_OF_CONTENTS = "TABLE_OF_CONTENTS",
   SPEED = "SPEED",
+  SETTINGS = "SETTINGS",
 }
 
 type ToolbarState = {

@@ -10,6 +10,7 @@ import {
 import { getApiClient } from "../store/selectors/apiSelectors"
 import { librarySlice } from "../store/slices/librarySlice"
 import { DownloadingIndicator } from "./DownloadingIndicator"
+import { ThemeOverrideProvider } from "./ThemeOverrideProvider"
 
 type Props = {
   bookId: number
@@ -48,15 +49,17 @@ export function BookDownload({ bookId }: Props) {
           {isDownloading ? (
             <DownloadingIndicator bookId={bookId} />
           ) : (
-            <Pressable
-              style={styles.downloadButton}
-              onPress={() => {
-                dispatch(librarySlice.actions.bookDownloadPressed({ bookId }))
-              }}
-            >
-              <DownloadIcon />
-              <UIText style={styles.downloadButtonText}>Download</UIText>
-            </Pressable>
+            <ThemeOverrideProvider foreground="white">
+              <Pressable
+                style={styles.downloadButton}
+                onPress={() => {
+                  dispatch(librarySlice.actions.bookDownloadPressed({ bookId }))
+                }}
+              >
+                <DownloadIcon />
+                <UIText style={styles.downloadButtonText}>Download</UIText>
+              </Pressable>
+            </ThemeOverrideProvider>
           )}
         </View>
       </View>

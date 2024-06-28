@@ -4,9 +4,11 @@ import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { UIText } from "./UIText"
 import { highlightTints } from "../colors"
+import { useColorTheme } from "../hooks/useColorTheme"
 
 export function Highlights() {
   const book = useAppSelector(getCurrentlyPlayingBook)
+  const { dark } = useColorTheme()
   const dispatch = useAppDispatch()
 
   if (!book) return null
@@ -54,7 +56,8 @@ export function Highlights() {
                 style={{
                   fontSize: 13,
                   fontFamily: "Bookerly",
-                  backgroundColor: highlightTints[highlight.color],
+                  backgroundColor:
+                    highlightTints[dark ? "dark" : "light"][highlight.color],
                 }}
               >
                 {highlight.locator.text.highlight}
