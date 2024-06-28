@@ -27,7 +27,7 @@ There's a compose file in the project repository, embedded here for ease of use.
 Storyteller user accounts _are not meaningfully secure_. You can do so with your
 password manager, the `openssl` command as recommended in the compose file
 below, or use
-[1Password's online random password generator](https://1password.com/password-generator/).
+[1Password's online random password generator](https://1password.com/password-generator/). Store the generated secret key in a text file in the current directory.
 
 ```yaml
 # Example compose config for Storyteller
@@ -45,18 +45,23 @@ services:
       # consider using a named volume, which will considerably
       # improve filesystem I/O performance. See these VS Code
       # docs for more information:
-      # https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-targeted-named-volume
+      # https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-targeted-named-volume 
       - ~/Documents/Storyteller:/data:rw
     environment:
       # Generate a cryptopgraphically secure random string,
       # e.g. with:
       #  openssl rand -base64 32
-      - STORYTELLER_SECRET_KEY=<some random value>
+      - STORYTELLER_SECRET_KEY=/run/secrets/secret_key
       # Uncomment for CUDA
       # - STORYTELLER_DEVICE=cuda
-
     ports:
       - "8001:8001"
+    secrets:
+      - secret_key 
+
+secrets:
+  secret_key:
+    file: ./STORYTELLER_SECRET_KEY.txt
 ```
 
 To run, simply create a file named `compose.yaml` in the current directory with
