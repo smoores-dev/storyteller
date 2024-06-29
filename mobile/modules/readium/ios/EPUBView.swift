@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import WebKit
 import R2Shared
 import R2Navigator
 import ReadiumAdapterGCDWebServer
