@@ -1,3 +1,2 @@
 releases:
-  "@storyteller/docs": patch
   "@storyteller/mobile": minor
