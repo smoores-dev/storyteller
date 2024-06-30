@@ -1,5 +1,6 @@
 import ExpoModulesCore
 import R2Shared
+import R2Navigator
 
 public class ReadiumModule: Module {
     public func definition() -> ModuleDefinition {
@@ -102,18 +103,12 @@ public class ReadiumModule: Module {
                         return nil
                     }
                     let mappedColor = switch color {
-                    case "yellow":
-                        UIColor.yellow
-                    case "red":
-                        UIColor.red
-                    case "blue":
-                        UIColor.blue
-                    case "green":
-                        UIColor.green
-                    case "magenta":
-                        UIColor.magenta
-                    default:
-                        UIColor.yellow
+                        case "yellow": UIColor.yellow
+                        case "red": UIColor.red
+                        case "blue": UIColor.blue
+                        case "green": UIColor.green
+                        case "magenta": UIColor.magenta
+                        default: UIColor.yellow
                     }
                     return Highlight(id: id, color: mappedColor, locator: locator)
                 }
@@ -131,6 +126,73 @@ public class ReadiumModule: Module {
                 if let currentLocator = view.navigator?.currentLocation {
                     view.findOnPage(locator: currentLocator)
                 }
+            }
+            
+            Prop("colorTheme") { (view: EPUBView, prop: [String: String]) in
+                let foregroundHex = prop["foreground"] ?? "#111111"
+                let backgroundHex = prop["background"] ?? "#FFFFFF"
+                
+                view.preferences = view.preferences.merging(EPUBPreferences(
+                    backgroundColor: Color(hex: backgroundHex),
+                    textColor: Color(hex: foregroundHex)
+                ))
+                view.updatePreferences()
+            }
+            
+            Prop("readaloudColor") { (view: EPUBView, prop: String) in
+                let mappedColor = switch prop {
+                    case "yellow": UIColor.yellow
+                    case "red": UIColor.red
+                    case "blue": UIColor.blue
+                    case "green": UIColor.green
+                    case "magenta": UIColor.magenta
+                    default: UIColor.yellow
+                }
+                
+                view.readaloudColor = mappedColor
+                
+                if (view.isPlaying) {
+                    view.clearHighlightedFragment()
+                    guard let currentLocator = view.navigator?.currentLocation else {
+                        return
+                    }
+                    view.highlightFragment(locator: currentLocator)
+                }
+            }
+            
+            Prop("fontScale") { (view: EPUBView, prop: Double) in
+                view.preferences = view.preferences.merging(EPUBPreferences(
+                    fontSize: prop
+                ))
+                
+                view.updatePreferences()
+            }
+            
+            Prop("lineHeight") { (view: EPUBView, prop: Double) in
+                view.preferences = view.preferences.merging(EPUBPreferences(
+                    lineHeight: prop
+                ))
+                
+                view.updatePreferences()
+            }
+            
+            Prop("textAlign") { (view: EPUBView, prop: String) in
+                let textAlign = switch prop {
+                    case "left": TextAlignment.left
+                    default: TextAlignment.justify
+                }
+                
+                view.preferences = view.preferences.merging(EPUBPreferences(
+                    textAlign: textAlign
+                ))
+                view.updatePreferences()
+            }
+            
+            Prop("fontFamily") { (view: EPUBView, prop: String) in
+                view.preferences = view.preferences.merging(EPUBPreferences(
+                    fontFamily: FontFamily(rawValue: prop)
+                ))
+                view.updatePreferences()
             }
         }
     }

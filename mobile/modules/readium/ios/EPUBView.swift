@@ -28,6 +28,12 @@ class EPUBView: ExpoView {
     public var navigator: EPUBNavigatorViewController?
     public var highlights: [Highlight] = []
     public var bookmarks: [Locator] = []
+    public var readaloudColor: UIColor = .yellow
+    public var preferences: EPUBPreferences = EPUBPreferences(
+        fontFamily: FontFamily(rawValue: "Bookerly"),
+        lineHeight: 1.4,
+        paragraphSpacing: 0.5
+    )
     
     private var didTapWork: DispatchWorkItem?
     
@@ -51,11 +57,7 @@ class EPUBView: ExpoView {
             publication: publication,
             initialLocation: locator,
             config: .init(
-                preferences: EPUBPreferences(
-                    fontFamily: FontFamily(rawValue: "Bookerly"),
-                    lineHeight: 1.4,
-                    paragraphSpacing: 0.5
-                ),
+                preferences: preferences,
                 defaults: EPUBDefaults(
                     publisherStyles: false
                 ),
@@ -88,6 +90,10 @@ class EPUBView: ExpoView {
             }
             self?.onHighlightTap(["decoration": event.decoration.id, "x": rect.midX, "y": rect.minY])
         }
+    }
+    
+    public func updatePreferences() {
+        navigator?.submitPreferences(preferences)
     }
     
     func go() {
@@ -124,7 +130,7 @@ class EPUBView: ExpoView {
             return
         }
         
-        let overlayHighlight = Decoration.Style.highlight(tint: .yellow, isActive: true)
+        let overlayHighlight = Decoration.Style.highlight(tint: readaloudColor, isActive: true)
         let decoration = Decoration(
             id: id,
             locator: locator,
