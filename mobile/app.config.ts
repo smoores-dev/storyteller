@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: IS_DEV ? "Storyteller (dev)" : "Storyteller",
     slug: "storyteller",
-    version: "1.5.0",
+    version: "1.5.1",
     orientation: "portrait",
     icon: "./assets/Storyteller_Logo.png",
     userInterfaceStyle: "automatic",
