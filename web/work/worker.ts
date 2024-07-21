@@ -24,26 +24,18 @@ import {
 import { getInitialPrompt } from "@/process/prompt"
 import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
-import {
-  TranscriptionResult,
-  getAlignModel,
-  getTranscribeModel,
-  transcribeTrack,
-} from "@/transcribe"
+import { transcribeTrack } from "@/transcribe"
 import { UUID } from "@/uuid"
+import { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { MessagePort } from "node:worker_threads"
 
-const DEVICE = process.env["STORYTELLER_DEVICE"]
-const BATCH_SIZE = parseInt(process.env["STORYTELLER_BATCH_SIZE"] ?? "16", 10)
-const COMPUTE_TYPE = process.env["STORYTELLER_COMPUTE_TYPE"]
+// const DEVICE = process.env["STORYTELLER_DEVICE"] as WhisperCppBuild | undefined
 
 export async function transcribeBook(
   bookUuid: UUID,
-  initialPrompt: string,
-  device = "cpu",
-  batchSize = 16,
-  computeType = "int8",
+  initialPrompt: string | null,
+  language: string,
   onProgress?: (progress: number) => void,
 ) {
   const transcriptionsPath = getTranscriptionsFilepath(bookUuid)
@@ -53,10 +45,10 @@ export async function transcribeBook(
     throw new Error("Failed to transcribe book: found no processed audio files")
   }
 
-  const transcribeModel = getTranscribeModel(device, computeType, initialPrompt)
-  const { alignModel, alignMetadata } = getAlignModel(device)
-
-  const transcriptions: TranscriptionResult[] = []
+  const transcriptions: Pick<
+    RecognitionResult,
+    "transcript" | "wordTimeline"
+  >[] = []
   for (let i = 0; i < audioFiles.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const audioFile = audioFiles[i]!
@@ -71,19 +63,25 @@ export async function transcribeBook(
       })
       console.log(`Found existing transcription for ${filepath}`)
       transcriptions.push(
-        JSON.parse(existingTranscription) as TranscriptionResult,
+        JSON.parse(existingTranscription) as Pick<
+          RecognitionResult,
+          "transcript" | "wordTimeline"
+        >,
       )
     } catch (_) {
-      const transcription = transcribeTrack(
+      const transcription = await transcribeTrack(
         filepath,
-        device,
-        transcribeModel,
-        alignModel,
-        alignMetadata,
-        batchSize,
+        initialPrompt,
+        language,
       )
       transcriptions.push(transcription)
-      await writeFile(transcriptionFilepath, JSON.stringify(transcription))
+      await writeFile(
+        transcriptionFilepath,
+        JSON.stringify({
+          transcript: transcription.transcript,
+          wordTimeline: transcription.wordTimeline,
+        }),
+      )
     }
     onProgress?.((i + 1) / audioFiles.length)
   }
@@ -190,16 +188,13 @@ export default async function processBook({
         console.log("Transcribing...")
         const epub = await readEpub(bookUuid)
         const title = await epub.getTitle()
+        const language = (await epub.getLanguage()) ?? "en"
         const fullText = await getFullText(epub)
-        const initialPrompt = await getInitialPrompt(title ?? "", fullText)
-        await transcribeBook(
-          bookUuid,
-          initialPrompt,
-          DEVICE,
-          BATCH_SIZE,
-          COMPUTE_TYPE,
-          onProgress,
-        )
+        const initialPrompt =
+          language === "en"
+            ? await getInitialPrompt(title ?? "", fullText)
+            : null
+        await transcribeBook(bookUuid, initialPrompt, language, onProgress)
       }
 
       if (task.type === ProcessingTaskType.SYNC_CHAPTERS) {

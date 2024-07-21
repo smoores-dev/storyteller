@@ -6,18 +6,31 @@ import transcription from "../../__fixtures__/mobydick_001_002_melville.json"
 import { StorytellerTranscription } from "../getSentenceRanges"
 import assert from "node:assert"
 import { SyncCache } from "../syncCache"
+import { TimelineEntry } from "echogarden/dist/utilities/Timeline"
 
 const stTranscription: StorytellerTranscription = {
-  segments: transcription.segments.map((segment) => ({
-    ...segment,
-    audiofile: join("__fixtures__", "mobydick_001_002_melville.mp3"),
+  transcript: transcription.transcript,
+  wordTimeline: transcription.wordTimeline.map((entry) => ({
+    ...(entry as TimelineEntry),
+    audiofile: join(
+      "synchronize",
+      "__fixtures__",
+      "mobydick_001_002_melville.mp3",
+    ),
   })),
 }
 
 void describe("Synchronizer", () => {
   void it("synchronizes an epub", async () => {
-    const epub = await Epub.from(join("__fixtures__", "moby-dick-small.epub"))
-    const audiofiles = [join("__fixtures__", "mobydick_001_002_melville.mp3")]
+    const epub = await Epub.from(join("__fixtures__", "moby-dick.epub"))
+    const audiofiles = [
+      join(
+        "__fixtures__",
+        "__output__",
+        "moby-dick-audio-extracted",
+        "mobydick_001_002_melville.mp3",
+      ),
+    ]
     const syncCache = await SyncCache.init(
       join("__fixtures__", "__output__", "moby-dick-cache.json"),
     )
@@ -32,19 +45,21 @@ void describe("Synchronizer", () => {
     const mediaOverlay = await epub.readXhtmlItemContents(
       spine[1]!.mediaOverlay!,
     )
-    // console.log(JSON.stringify(mediaOverlay, null, 2))
-    const firstPar = mediaOverlay[0]!["smil"]![1]!["body"]![1]!["seq"]![1]!
-    assert.strictEqual(firstPar[":@"]!["@_id"], "sentence0")
+
+    // This gets us to sentence 570, which is the first sentence that's actually
+    // a part of the book and in the audiobook
+    const firstPar = mediaOverlay[0]!["smil"]![1]!["body"]![1]!["seq"]![1141]!
+    assert.strictEqual(firstPar[":@"]!["@_id"], "sentence570")
     assert.strictEqual(
       firstPar["par"]![1]![":@"]!["@_src"],
-      "../3484760691463238453_2701-h-0.htm.xhtml#sentence0",
+      "../3484760691463238453_2701-h-0.htm.xhtml#sentence570",
     )
     assert.strictEqual(
       firstPar["par"]![3]![":@"]!["@_src"],
       "../Audio/mobydick_001_002_melville.mp3",
     )
-    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipBegin"], "0s")
-    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipEnd"], "10.261s")
+    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipBegin"], "26.306s")
+    assert.strictEqual(firstPar["par"]![3]![":@"]!["@_clipEnd"], "26.352s")
 
     assert.ok(manifest["audio_mobydick_001_002_melville"])
     await epub.close()

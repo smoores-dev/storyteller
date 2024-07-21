@@ -34,35 +34,38 @@ const SETTINGS_COLUMN_NAMES = {
   bitrate: "bitrate",
 } as const
 
-export async function getSetting<
-  Name extends keyof typeof SETTINGS_COLUMN_NAMES,
->(name: Name) {
-  const db = await getDatabase()
+export function getSetting<Name extends keyof typeof SETTINGS_COLUMN_NAMES>(
+  name: Name,
+) {
+  const db = getDatabase()
 
-  const { value: valueJson } = await db.get<{ value: string }>(
-    `
+  const { value: valueJson } = db
+    .prepare<{ name: Name }>(
+      `
     SELECT value
     FROM settings
     WHERE name = $name
     `,
-    { $name: name },
-  )
+    )
+    .get({ name }) as { value: string }
 
   return JSON.parse(valueJson) as Settings[(typeof SETTINGS_COLUMN_NAMES)[Name]]
 }
 
-export async function getSettings(): Promise<Settings> {
-  const db = await getDatabase()
+export function getSettings(): Settings {
+  const db = getDatabase()
 
-  const rows = await db.all<{
-    name: keyof typeof SETTINGS_COLUMN_NAMES
-    value: string
-  }>(
-    `
+  const rows = db
+    .prepare(
+      `
     SELECT name, value
     FROM settings
     `,
-  )
+    )
+    .all() as {
+    name: keyof typeof SETTINGS_COLUMN_NAMES
+    value: string
+  }[]
 
   const result = rows.reduce(
     (acc, row) => ({
@@ -82,10 +85,10 @@ export async function getSettings(): Promise<Settings> {
   }
 }
 
-export async function updateSettings(settings: Settings) {
-  const db = await getDatabase()
+export function updateSettings(settings: Settings) {
+  const db = getDatabase()
 
-  const statement = await db.prepare(
+  const statement = db.prepare<{ name: string; value: string }>(
     `
     UPDATE settings
     SET value = $value
@@ -93,42 +96,40 @@ export async function updateSettings(settings: Settings) {
     `,
   )
 
-  await Promise.all([
-    statement.run({
-      $name: "smtp_from",
-      $value: JSON.stringify(settings.smtpFrom),
-    }),
-    statement.run({
-      $name: "smtp_host",
-      $value: JSON.stringify(settings.smtpHost),
-    }),
-    statement.run({
-      $name: "smtp_port",
-      $value: JSON.stringify(settings.smtpPort),
-    }),
-    statement.run({
-      $name: "smtp_username",
-      $value: JSON.stringify(settings.smtpUsername),
-    }),
-    statement.run({
-      $name: "smtp_password",
-      $value: JSON.stringify(settings.smtpPassword),
-    }),
-    statement.run({
-      $name: "web_url",
-      $value: JSON.stringify(settings.webUrl),
-    }),
-    statement.run({
-      $name: "library_name",
-      $value: JSON.stringify(settings.libraryName),
-    }),
-    statement.run({
-      $name: "codec",
-      $value: JSON.stringify(settings.codec),
-    }),
-    statement.run({
-      $name: "bitrate",
-      $value: JSON.stringify(settings.bitrate),
-    }),
-  ])
+  statement.run({
+    name: "smtp_from",
+    value: JSON.stringify(settings.smtpFrom),
+  })
+  statement.run({
+    name: "smtp_host",
+    value: JSON.stringify(settings.smtpHost),
+  })
+  statement.run({
+    name: "smtp_port",
+    value: JSON.stringify(settings.smtpPort),
+  })
+  statement.run({
+    name: "smtp_username",
+    value: JSON.stringify(settings.smtpUsername),
+  })
+  statement.run({
+    name: "smtp_password",
+    value: JSON.stringify(settings.smtpPassword),
+  })
+  statement.run({
+    name: "web_url",
+    value: JSON.stringify(settings.webUrl),
+  })
+  statement.run({
+    name: "library_name",
+    value: JSON.stringify(settings.libraryName),
+  })
+  statement.run({
+    name: "codec",
+    value: JSON.stringify(settings.codec),
+  })
+  statement.run({
+    name: "bitrate",
+    value: JSON.stringify(settings.bitrate),
+  })
 }

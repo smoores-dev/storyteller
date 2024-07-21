@@ -10,7 +10,6 @@ import {
   getBody,
 } from "@/epub"
 import { getTrackDuration } from "@/audio"
-import { TranscriptionResult } from "@/transcribe"
 import {
   SentenceRange,
   StorytellerTranscription,
@@ -22,6 +21,7 @@ import { tagSentences } from "./tagSentences"
 import { findBestOffset } from "./findChapterOffset"
 import { SyncCache } from "./syncCache"
 import { getXHtmlSentences } from "./getXhtmlSentences"
+import { RecognitionResult } from "echogarden/dist/api/Recognition"
 
 function createMediaOverlay(
   chapter: ManifestItem,
@@ -57,8 +57,8 @@ function createMediaOverlay(
                   {
                     ":@": {
                       "@_src": `../Audio/${basename(sentenceRange.audiofile)}`,
-                      "@_clipBegin": `${sentenceRange.start}s`,
-                      "@_clipEnd": `${sentenceRange.end}s`,
+                      "@_clipBegin": `${sentenceRange.start.toFixed(3)}s`,
+                      "@_clipEnd": `${sentenceRange.end.toFixed(3)}s`,
                     },
                     audio: [],
                   },
@@ -70,10 +70,6 @@ function createMediaOverlay(
       ],
     },
   ] as unknown as ParsedXml
-}
-
-function getTranscriptionText(transcription: StorytellerTranscription) {
-  return transcription.segments.map((segment) => segment.text).join(" ")
 }
 
 type SyncedChapter = {
@@ -93,20 +89,26 @@ export class Synchronizer {
     public epub: Epub,
     private syncCache: SyncCache,
     audiofiles: string[],
-    transcriptions: TranscriptionResult[],
+    transcriptions: Pick<RecognitionResult, "transcript" | "wordTimeline">[],
   ) {
     this.transcription = transcriptions.reduce<StorytellerTranscription>(
       (acc, transcription, index) => ({
-        segments: [
-          ...acc.segments,
-          ...transcription.segments.map((segment) => ({
-            ...segment,
+        ...acc,
+        transcript: acc.transcript + " " + transcription.transcript,
+        wordTimeline: [
+          ...acc.wordTimeline,
+          ...transcription.wordTimeline.map((entry) => ({
+            ...entry,
+            startOffsetUtf16:
+              entry.startOffsetUtf16 ?? 0 + acc.transcript.length + 1,
+            endOffsetUtf16:
+              entry.endOffsetUtf16 ?? 0 + acc.transcript.length + 1,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             audiofile: audiofiles[index]!,
           })),
         ],
       }),
-      { segments: [] },
+      { transcript: "", wordTimeline: [] },
     )
 
     this.getChapterSentences = memoize(this.getChapterSentences.bind(this))
@@ -240,11 +242,12 @@ export class Synchronizer {
 
   async syncBook(onProgress?: (progress: number) => void) {
     const spine = await this.epub.getSpineItems()
-    const transcriptionText = getTranscriptionText(this.transcription)
+    const transcriptionText = this.transcription.transcript
 
     let lastTranscriptionOffset = 0
     let lastSentenceRange: null | SentenceRange = null
 
+    console.log(spine.length)
     for (let index = 0; index < spine.length; index++) {
       onProgress?.(index / spine.length)
 

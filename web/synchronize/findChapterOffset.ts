@@ -29,16 +29,14 @@ export function findBestOffset(
       const firstMatch = findNearestMatch(
         queryString.toLowerCase(),
         transcriptionTextSlice.toLowerCase(),
-        {
-          max_l_dist: Math.floor(0.1 * queryString.length),
-        },
+        Math.floor(0.1 * queryString.length),
       )
 
       if (firstMatch) {
         return {
           startSentence,
           transcriptionOffset:
-            (firstMatch.start + startIndex) % transcriptionText.length,
+            (firstMatch.index + startIndex) % transcriptionText.length,
         }
       }
 

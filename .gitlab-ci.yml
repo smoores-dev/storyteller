@@ -177,8 +177,6 @@ release-web:
           url: "https://$CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA"
 
 prerelease-mobile:
-  tags:
-    - self-managed
   stage: prerelease
   image: alpine:latest
   rules:

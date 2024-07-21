@@ -6,7 +6,8 @@
   "workspaces": [
     "web/",
     "docs/",
-    "mobile/"
+    "mobile/",
+    "fuzzy/"
   ],
   "scripts": {
     "build:docs": "yarn workspace @storyteller/docs build",
@@ -19,7 +20,7 @@
     "types:web": "tsc -p web",
     "check:types": "tsc --build",
     "check": "concurrently -P 'npm:check:*'",
-    "deps": "yarn install && npm rebuild --build-from-source sqlite3 && patch -N -p1 node_modules/pymport/src/pymport.h web/pymport-swallow-unthrowable.patch; npm rebuild --build-from-source pymport",
+    "deps": "yarn install && npm rebuild --build-from-source sqlite3",
     "dev:docs": "yarn workspace @storyteller/docs start",
     "dev:web": "yarn workspace @storyteller/web dev",
     "fix:format": "prettier --write .",

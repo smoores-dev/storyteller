@@ -1,24 +1,16 @@
 import { getTrackDuration } from "@/audio"
-import { findNearestMatch } from "./fuzzy"
+
 import { tokenizeSentences } from "./nlp"
+import { findNearestMatch } from "./fuzzy"
+import { TimelineEntry } from "echogarden/dist/utilities/Timeline"
 
-type SingleWordSegment = {
-  word: string
-  start?: number
-  end?: number
-  score?: number
-}
-
-type SingleAlignedSegment = {
-  start: number
-  end: number
-  text: string
+export type StorytellerTimelineEntry = TimelineEntry & {
   audiofile: string
-  words: SingleWordSegment[]
 }
 
 export type StorytellerTranscription = {
-  segments: SingleAlignedSegment[]
+  transcript: string
+  wordTimeline: StorytellerTimelineEntry[]
 }
 
 export type SentenceRange = {
@@ -26,10 +18,6 @@ export type SentenceRange = {
   start: number
   end: number
   audiofile: string
-}
-
-function getTranscriptionText(transcription: StorytellerTranscription) {
-  return transcription.segments.map((segment) => segment.text).join(" ")
 }
 
 function getSentencesWithOffsets(text: string) {
@@ -58,99 +46,25 @@ function findStartTimestamp(
   matchStartIndex: number,
   transcription: StorytellerTranscription,
 ) {
-  let s = 0
-  let position = 0
-  let segment = transcription.segments[s]!
-  let w = 0
-  // eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition
-  while (true) {
-    while (
-      position + transcription.segments[s]!.text.length <
-      matchStartIndex
-    ) {
-      position += transcription.segments[s]!.text.length + 1
-      s += 1
-    }
-
-    w = 0
-    segment = transcription.segments[s]!
-    while (
-      w < segment.words.length &&
-      position + segment.words[w]!.word.length <= matchStartIndex
-    ) {
-      position += segment.words[w]!.word.length + 1
-      w += 1
-    }
-    if (w >= segment.words.length) {
-      s += 1
-      continue
-    }
-    break
+  const entry = transcription.wordTimeline.find(
+    (entry) => (entry.endOffsetUtf16 ?? 0) >= matchStartIndex,
+  )
+  if (!entry) return null
+  return {
+    start: entry.startTime,
+    end: entry.endTime,
+    audiofile: entry.audiofile,
   }
-
-  if (w === 0 && !("start" in segment.words[w]!))
-    return { start: segment.start, audiofile: segment.audiofile }
-
-  while (w < segment.words.length && !("start" in segment.words[w]!)) w += 1
-
-  if (w >= segment.words.length) {
-    if (s < transcription.segments.length) {
-      return {
-        start: transcription.segments[s + 1]!.start,
-        audiofile: transcription.segments[s + 1]!.audiofile,
-      }
-    }
-    return null
-  }
-
-  const startWord = segment.words[w]!
-
-  // We've already made sure that we have a word with a start timestamp
-  return { start: startWord.start!, audiofile: segment.audiofile }
 }
 
 export function findEndTimestamp(
   matchEndIndex: number,
   transcription: StorytellerTranscription,
-  transcriptionLength: number,
 ) {
-  let s = transcription.segments.length - 1
-  let position = transcriptionLength - 1
-  let w = transcription.segments[s]!.words.length - 1
-  let segment = transcription.segments[s]!
-
-  // eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition
-  while (true) {
-    while (position - transcription.segments[s]!.text.length >= matchEndIndex) {
-      position -= transcription.segments[s]!.text.length + 1
-      s -= 1
-    }
-
-    w = transcription.segments[s]!.words.length - 1
-    segment = transcription.segments[s]!
-
-    while (
-      w >= 0 &&
-      position - segment.words[w]!.word.length >= matchEndIndex
-    ) {
-      position -= segment.words[w]!.word.length + 1
-      w -= 1
-    }
-    if (w < 0) {
-      s -= 1
-      continue
-    }
-
-    break
-  }
-
-  const endWord = segment.words[w]!
-
-  if ("end" in endWord) {
-    return endWord.end
-  }
-
-  return segment.end
+  const entry = transcription.wordTimeline.findLast(
+    (entry) => (entry.startOffsetUtf16 ?? 0) <= matchEndIndex,
+  )
+  return entry?.endTime ?? null
 }
 
 function getWindowIndexFromOffset(window: string[], offset: number) {
@@ -171,7 +85,7 @@ export async function getSentenceRanges(
   lastSentenceRange: SentenceRange | null,
 ) {
   const sentenceRanges: SentenceRange[] = []
-  const fullTranscriptionText = getTranscriptionText(transcription)
+  const fullTranscriptionText = transcription.transcript.toLowerCase()
   const transcriptionText = fullTranscriptionText.slice(chapterOffset)
   const transcriptionSentences = getSentencesWithOffsets(transcriptionText).map(
     (sentence) => sentence.toLowerCase(),
@@ -198,9 +112,7 @@ export async function getSentenceRanges(
     const firstMatch = findNearestMatch(
       sentence.trim().toLowerCase(),
       transcriptionWindow,
-      {
-        max_l_dist: Math.floor(0.25 * sentence.trim().length),
-      },
+      Math.max(Math.floor(0.25 * sentence.trim().length), 1),
     )
 
     if (!firstMatch) {
@@ -224,7 +136,7 @@ export async function getSentenceRanges(
       .join("").length
 
     const startResult = findStartTimestamp(
-      firstMatch.start +
+      firstMatch.index +
         transcriptionOffset +
         transcriptionWindowOffset +
         chapterOffset,
@@ -237,14 +149,15 @@ export async function getSentenceRanges(
     let start = startResult.start
     const audiofile = startResult.audiofile
 
-    const end = findEndTimestamp(
-      firstMatch.end +
-        transcriptionOffset +
-        transcriptionWindowOffset +
-        chapterOffset,
-      transcription,
-      fullTranscriptionText.length,
-    )
+    const end =
+      findEndTimestamp(
+        firstMatch.index +
+          firstMatch.match.length +
+          transcriptionOffset +
+          transcriptionWindowOffset +
+          chapterOffset,
+        transcription,
+      ) ?? startResult.end
 
     if (sentenceRanges.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -283,14 +196,15 @@ export async function getSentenceRanges(
 
     notFound = 0
     lastMatchEnd =
-      firstMatch.end +
+      firstMatch.index +
+      firstMatch.match.length +
       transcriptionOffset +
       transcriptionWindowOffset +
       chapterOffset
 
     const windowIndexResult = getWindowIndexFromOffset(
       transcriptionWindowList,
-      firstMatch.end + transcriptionWindowOffset,
+      firstMatch.index + firstMatch.match.length + transcriptionWindowOffset,
     )
 
     transcriptionWindowIndex += windowIndexResult.index

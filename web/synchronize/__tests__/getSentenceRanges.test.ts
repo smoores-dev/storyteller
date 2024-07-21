@@ -12,6 +12,7 @@ import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
 import { Epub } from "../../epub"
 import { tokenizeSentences } from "../nlp"
 import assert from "node:assert"
+import { TimelineEntry } from "echogarden/dist/utilities/Timeline"
 
 void describe("getSentenceRanges", () => {
   void it("accurately find sentences ranges", async () => {
@@ -24,8 +25,9 @@ void describe("getSentenceRanges", () => {
     const sentences = tokenizeSentences(chapterOneText.slice(30888))
 
     const stTranscription: StorytellerTranscription = {
-      segments: mobyDickTranscription.segments.map((segment) => ({
-        ...segment,
+      transcript: mobyDickTranscription.transcript,
+      wordTimeline: mobyDickTranscription.wordTimeline.map((entry) => ({
+        ...(entry as TimelineEntry),
         audiofile: join(
           "synchronize",
           "__fixtures__",
@@ -37,7 +39,7 @@ void describe("getSentenceRanges", () => {
       0,
       stTranscription,
       sentences,
-      31,
+      223,
       null,
     )
 

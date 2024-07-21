@@ -4,8 +4,8 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export const GET = withHasPermission("settings_update")(async () => {
-  const settings = await getSettings()
+export const GET = withHasPermission("settings_update")(() => {
+  const settings = getSettings()
 
   return NextResponse.json({
     smtp_host: settings.smtpHost,
@@ -39,7 +39,7 @@ type SettingsRequest = {
 export const PUT = withHasPermission("settings_update")(async (request) => {
   const settings = (await request.json()) as SettingsRequest
 
-  await updateSettings({
+  updateSettings({
     smtpHost: settings.smtp_host,
     smtpPort: settings.smtp_port,
     smtpUsername: settings.smtp_username,

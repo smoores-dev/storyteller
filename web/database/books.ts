@@ -14,7 +14,7 @@ import { BookDetail } from "@/apiModels"
  * be removed after we feel confident that all clients (specifically,
  * mobile apps) have likely been updated.
  */
-export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
+export function getBookUuid(bookIdOrUuid: string): UUID {
   if (bookIdOrUuid.includes("-")) {
     // This is already a UUID, so just return it
     return bookIdOrUuid as UUID
@@ -23,15 +23,15 @@ export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
   // Otherwise, parse into an int and fetch the UUID from the db
   const bookId = parseInt(bookIdOrUuid, 10)
 
-  const db = await getDatabase()
-  const { uuid } = await db.get<{ uuid: UUID }>(
+  const db = getDatabase()
+  const statement = db.prepare<{ bookId: number }>(
     `
     SELECT uuid
     FROM book
-    WHERE id = $book_id
+    WHERE id = $bookId
     `,
-    { $book_id: bookId },
   )
+  const { uuid } = statement.get({ bookId }) as { uuid: UUID }
 
   return uuid
 }
@@ -64,16 +64,20 @@ export type AuthorInput = {
   role: string | null
 }
 
-export async function createBook(title: string, authors: AuthorInput[]) {
-  const db = await getDatabase()
+export function createBook(title: string, authors: AuthorInput[]) {
+  const db = getDatabase()
 
-  const { uuid: bookUuid, id } = await db.get<{ uuid: UUID; id: number }>(
+  const statement = db.prepare<{ title: string }>(
     `
     INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, $title)
     RETURNING uuid, id
     `,
-    { $title: title },
   )
+
+  const { uuid: bookUuid, id } = statement.get({ title }) as {
+    uuid: UUID
+    id: number
+  }
 
   const book: Book = {
     uuid: bookUuid,
@@ -82,26 +86,36 @@ export async function createBook(title: string, authors: AuthorInput[]) {
     authors: [],
   }
 
-  for (const author of authors) {
-    const { uuid: authorUuid } = await db.get<{ uuid: UUID }>(
-      `
-      INSERT INTO author (name, file_as) VALUES ($name, $file_as)
-      RETURNING uuid
-      `,
-      { $name: author.name, $file_as: author.fileAs },
-    )
+  const insertAuthorStatement = db.prepare<{
+    name: string
+    fileAs: string | null
+  }>(`
+    INSERT INTO author (name, file_as) VALUES ($name, $fileAs)
+    RETURNING uuid
+    `)
 
-    await db.run(
-      `
-      INSERT INTO author_to_book (book_uuid, author_uuid, role)
-      VALUES ($book_uuid, $author_uuid, $role)
-      `,
-      {
-        $book_uuid: bookUuid,
-        $author_uuid: authorUuid,
-        $role: author.role,
-      },
-    )
+  const insertAuthorToBookStatement = db.prepare<{
+    bookUuid: UUID
+    authorUuid: UUID
+    role: string | null
+  }>(
+    `
+    INSERT INTO author_to_book (book_uuid, author_uuid, role)
+    VALUES ($bookUuid, $authorUuid, $role)
+    `,
+  )
+
+  for (const author of authors) {
+    const { uuid: authorUuid } = insertAuthorStatement.get({
+      name: author.name,
+      fileAs: author.fileAs,
+    }) as { uuid: UUID }
+
+    insertAuthorToBookStatement.run({
+      bookUuid,
+      authorUuid,
+      role: author.role,
+    })
 
     book.authors.push({
       uuid: authorUuid,
@@ -120,26 +134,13 @@ export async function createBook(title: string, authors: AuthorInput[]) {
   return book
 }
 
-export async function getBooks(
+export function getBooks(
   bookUuids: string[] | null = null,
   syncedOnly = false,
-): Promise<Book[]> {
-  const db = await getDatabase()
+): Book[] {
+  const db = getDatabase()
 
-  const bookRows = await db.all<{
-    book_uuid: UUID
-    id: number
-    title: string
-    role: string
-    author_uuid: UUID | null
-    name: string
-    file_as: string
-    processing_task_uuid: UUID | null
-    type: ProcessingTaskType
-    status: ProcessingTaskStatus
-    progress: number
-  }>(
-    `
+  const statement = db.prepare(`
     SELECT
       book.uuid AS book_uuid, book.id, book.title,
       author_to_book.role,
@@ -153,9 +154,21 @@ export async function getBooks(
     LEFT JOIN processing_task
       ON book.uuid = processing_task.book_uuid
     ${bookUuids ? `WHERE book.uuid IN (${Array.from({ length: bookUuids.length }).fill("?").join(",")})` : ""}
-    `,
-    bookUuids ?? undefined,
-  )
+    `)
+
+  const bookRows = statement.all(bookUuids ?? undefined) as {
+    book_uuid: UUID
+    id: number
+    title: string
+    role: string
+    author_uuid: UUID | null
+    name: string
+    file_as: string
+    processing_task_uuid: UUID | null
+    type: ProcessingTaskType
+    status: ProcessingTaskStatus
+    progress: number
+  }[]
 
   const booksRecord = bookRows.reduce<
     Record<UUID, Omit<Book, "authors"> & { authors: Record<UUID, Author> }>
@@ -269,54 +282,53 @@ type LegacyBook = {
   audioFiletype: string
 }
 
-export async function getBooksLegacy_(): Promise<LegacyBook[]> {
-  const db = await getDatabase()
-  return db.all<LegacyBook>(
-    `
+export function getBooksLegacy_(): LegacyBook[] {
+  const db = getDatabase()
+  return db
+    .prepare(
+      `
     SELECT uuid, id, title, epub_filename AS epubFilename, audio_filename AS audioFilename, audio_filetype AS audioFiletype
     FROM book
     WHERE epub_filename IS NOT NULL OR audio_filename IS NOT NULL
     `,
-  )
+    )
+    .all() as LegacyBook[]
 }
 
-export async function clearFilenameColumns(bookUuid: UUID) {
-  const db = await getDatabase()
+export function clearFilenameColumns(bookUuid: UUID) {
+  const db = getDatabase()
 
-  await db.run(
+  db.prepare<{ bookUuid: UUID }>(
     `
     UPDATE book
     SET epub_filename=null, audio_filename=null
-    WHERE book.uuid = $book_uuid
+    WHERE book.uuid = $bookUuid
     `,
-    {
-      $book_uuid: bookUuid,
-    },
-  )
+  ).run({
+    bookUuid,
+  })
 }
 
-export async function deleteBook(bookUuid: UUID) {
-  const db = await getDatabase()
+export function deleteBook(bookUuid: UUID) {
+  const db = getDatabase()
 
-  await db.run(
+  db.prepare<{ bookUuid: UUID }>(
     `
     DELETE FROM processing_task
-    WHERE book_uuid = $book_uuid
+    WHERE book_uuid = $bookUuid
     `,
-    {
-      $book_uuid: bookUuid,
-    },
-  )
+  ).run({
+    bookUuid,
+  })
 
-  await db.run(
+  db.prepare<{ bookUuid: UUID }>(
     `
     DELETE FROM author_to_book
-    WHERE book_uuid = $book_uuid
+    WHERE book_uuid = $bookUuid
     `,
-    { $book_uuid: bookUuid },
-  )
+  ).run({ bookUuid })
 
-  await db.run(
+  db.prepare(
     `
     DELETE FROM author
     WHERE author.uuid
@@ -325,17 +337,16 @@ export async function deleteBook(bookUuid: UUID) {
         FROM author_to_book
       )
     `,
-  )
+  ).run()
 
-  await db.run(
+  db.prepare<{ bookUuid: UUID }>(
     `
     DELETE FROM book
-    WHERE uuid = $book_uuid
+    WHERE uuid = $bookUuid
     `,
-    {
-      $book_uuid: bookUuid,
-    },
-  )
+  ).run({
+    bookUuid,
+  })
 
   BookEvents.emit("message", {
     type: "bookDeleted",
@@ -344,63 +355,64 @@ export async function deleteBook(bookUuid: UUID) {
   })
 }
 
-export async function updateBook(
-  uuid: UUID,
-  title: string,
-  authors: AuthorInput[],
-) {
-  const db = await getDatabase()
+export function updateBook(uuid: UUID, title: string, authors: AuthorInput[]) {
+  const db = getDatabase()
 
-  await db.run(
+  db.prepare<{ title: string; uuid: UUID }>(
     `
     UPDATE book
     SET title = $title
     WHERE uuid = $uuid
     `,
-    {
-      $title: title,
-      $uuid: uuid,
-    },
-  )
+  ).run({
+    title,
+    uuid,
+  })
 
+  const insertAuthorStatement = db.prepare<{
+    name: string
+    fileAs: string | null
+  }>(`
+    INSERT INTO author (name, file_as)
+    VALUES ($name, $fileAs)
+    RETURNING uuid
+    `)
+
+  const insertAuthorToBookStatement = db.prepare<{
+    bookUuid: UUID
+    authorUuid: UUID
+    role: string | null
+  }>(`
+    INSERT INTO author_to_book (book_uuid, author_uuid, role)
+    VALUES ($bookUuid, $authorUuid, $role)
+    `)
+
+  const updateAuthorStatement = db.prepare<{ name: string; uuid: UUID }>(`
+    UPDATE author
+    SET name = $name
+    WHERE uuid = $uuid
+    `)
   for (const author of authors) {
     if (author.uuid === "") {
-      const { uuid: authorUuid } = await db.get<{ uuid: UUID }>(
-        `
-        INSERT INTO author (name, file_as)
-        VALUES ($name, $file_as)
-        RETURNING uuid
-        `,
-        { $name: author.name, $file_as: author.fileAs },
-      )
+      const { uuid: authorUuid } = insertAuthorStatement.get({
+        name: author.name,
+        fileAs: author.fileAs,
+      }) as { uuid: UUID }
 
-      await db.run(
-        `
-        INSERT INTO author_to_book (book_uuid, author_uuid, role)
-        VALUES ($book_uuid, $author_uuid, $role)
-        `,
-        {
-          $book_uuid: uuid,
-          $author_uuid: authorUuid,
-          $role: author.role,
-        },
-      )
+      insertAuthorToBookStatement.run({
+        bookUuid: uuid,
+        authorUuid,
+        role: author.role,
+      })
     } else {
-      await db.run(
-        `
-        UPDATE author
-        SET name = $name
-        WHERE uuid = $uuid
-        `,
-        {
-          $name: author.name,
-          $uuid: author.uuid,
-        },
-      )
+      updateAuthorStatement.run({
+        name: author.name,
+        uuid: author.uuid,
+      })
     }
   }
 
-  const [book] = await getBooks([uuid])
+  const [book] = getBooks([uuid])
 
   BookEvents.emit("message", {
     type: "bookUpdated",
