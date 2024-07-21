@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM node:20
 
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
