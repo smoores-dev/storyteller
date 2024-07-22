@@ -1,5 +1,7 @@
 FROM node:20
 
+WORKDIR /app
+
 COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /usr/local/bin/
 COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffprobe /usr/local/bin/
 
@@ -9,8 +11,6 @@ COPY .yarn/cache ./.yarn/cache
 COPY web/package.json ./web/package.json
 
 RUN yarn workspaces focus @storyteller/web
-# While using async/await fork:
-RUN npm rebuild --build-from-source sqlite3
 
 COPY . .
 

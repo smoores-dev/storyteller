@@ -23,14 +23,7 @@ const stTranscription: StorytellerTranscription = {
 void describe("Synchronizer", () => {
   void it("synchronizes an epub", async () => {
     const epub = await Epub.from(join("__fixtures__", "moby-dick.epub"))
-    const audiofiles = [
-      join(
-        "__fixtures__",
-        "__output__",
-        "moby-dick-audio-extracted",
-        "mobydick_001_002_melville.mp3",
-      ),
-    ]
+    const audiofiles = [join("__fixtures__", "mobydick_001_002_melville.mp3")]
     const syncCache = await SyncCache.init(
       join("__fixtures__", "__output__", "moby-dick-cache.json"),
     )
