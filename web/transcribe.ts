@@ -1,4 +1,6 @@
-import { recognize } from "echogarden/dist/api/API"
+import { recognize, setGlobalOption } from "echogarden/dist/api/API.js"
+
+setGlobalOption("logLevel", "error")
 
 export async function transcribeTrack(
   trackPath: string,

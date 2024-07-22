@@ -26,7 +26,7 @@ import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { transcribeTrack } from "@/transcribe"
 import { UUID } from "@/uuid"
-import { RecognitionResult } from "echogarden/dist/api/Recognition"
+import type { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { MessagePort } from "node:worker_threads"
 

@@ -8,7 +8,7 @@ __pycache__
 /public/
 
 .env.local
-storyteller.db
+storyteller.db*
 node_modules
 .yarn/*
 !.yarn/cache

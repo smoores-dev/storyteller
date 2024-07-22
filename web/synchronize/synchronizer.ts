@@ -18,10 +18,12 @@ import {
   interpolateSentenceRanges,
 } from "./getSentenceRanges"
 import { tagSentences } from "./tagSentences"
-import { findBestOffset } from "./findChapterOffset"
 import { SyncCache } from "./syncCache"
 import { getXHtmlSentences } from "./getXhtmlSentences"
-import { RecognitionResult } from "echogarden/dist/api/Recognition"
+import type { RecognitionResult } from "echogarden/dist/api/Recognition"
+import { findNearestMatch } from "./fuzzy"
+
+const OFFSET_SEARCH_WINDOW_SIZE = 5000
 
 function createMediaOverlay(
   chapter: ManifestItem,
@@ -76,6 +78,8 @@ type SyncedChapter = {
   chapter: ManifestItem
   xml: ParsedXml
   sentenceRanges: SentenceRange[]
+  startOffset: number
+  endOffset: number
 }
 
 export class Synchronizer {
@@ -100,9 +104,9 @@ export class Synchronizer {
           ...transcription.wordTimeline.map((entry) => ({
             ...entry,
             startOffsetUtf16:
-              entry.startOffsetUtf16 ?? 0 + acc.transcript.length + 1,
+              (entry.startOffsetUtf16 ?? 0) + acc.transcript.length + 1,
             endOffsetUtf16:
-              entry.endOffsetUtf16 ?? 0 + acc.transcript.length + 1,
+              (entry.endOffsetUtf16 ?? 0) + acc.transcript.length + 1,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             audiofile: audiofiles[index]!,
           })),
@@ -112,6 +116,84 @@ export class Synchronizer {
     )
 
     this.getChapterSentences = memoize(this.getChapterSentences.bind(this))
+  }
+
+  private findBestOffset(
+    epubSentences: string[],
+    transcriptionText: string,
+    lastMatchOffset: number,
+  ) {
+    let i = 0
+    while (i < transcriptionText.length) {
+      let startSentence = 0
+
+      const proposedStartIndex =
+        (lastMatchOffset + i) % transcriptionText.length
+      const proposedEndIndex =
+        (proposedStartIndex + OFFSET_SEARCH_WINDOW_SIZE) %
+        transcriptionText.length
+
+      const wrapping = proposedEndIndex < proposedStartIndex
+      let endIndex = wrapping ? transcriptionText.length : proposedEndIndex
+      let startIndex = proposedStartIndex
+
+      let startSeen: number | null = null
+      let endSeen: number | null = null
+      for (const synced of this.syncedChapters) {
+        if (startSeen !== null && endSeen === synced.startOffset) {
+          endSeen = synced.endOffset
+        } else {
+          startSeen = synced.startOffset
+          endSeen = synced.endOffset
+        }
+        if (startIndex >= startSeen && startIndex < endSeen) {
+          startIndex = endSeen
+        }
+        if (endIndex >= startSeen && endIndex <= endSeen) {
+          endIndex = startSeen
+        }
+      }
+
+      if (startIndex < endIndex) {
+        console.log(
+          `Searching through transcript from ${startIndex} to ${endIndex}`,
+        )
+        const transcriptionTextSlice: string = transcriptionText.slice(
+          startIndex,
+          endIndex,
+        )
+
+        while (startSentence < epubSentences.length) {
+          const queryString = epubSentences
+            .slice(startSentence, startSentence + 6)
+            .join(" ")
+
+          const firstMatch = findNearestMatch(
+            queryString.toLowerCase(),
+            transcriptionTextSlice.toLowerCase(),
+            Math.max(Math.floor(0.1 * queryString.length), 1),
+          )
+
+          if (firstMatch) {
+            return {
+              startSentence,
+              transcriptionOffset:
+                (firstMatch.index + startIndex) % transcriptionText.length,
+            }
+          }
+
+          startSentence += 3
+        }
+      }
+
+      if (wrapping) {
+        i += transcriptionText.length - proposedStartIndex
+      } else {
+        i += Math.floor(OFFSET_SEARCH_WINDOW_SIZE / 2)
+      }
+    }
+
+    return { startSentence: 0, transcriptionOffset: null }
   }
 
   private async getChapterSentences(chapterId: string) {
@@ -196,6 +278,7 @@ export class Synchronizer {
     transcriptionOffset: number,
     lastSentenceRange: SentenceRange | null,
   ) {
+    console.log("Syncing chapter")
     const manifest = await this.epub.getManifest()
     const chapter = manifest[chapterId]
     if (!chapter)
@@ -204,8 +287,10 @@ export class Synchronizer {
       )
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
+    console.log("Getting chapter sentences")
     const chapterSentences = await this.getChapterSentences(chapterId)
 
+    console.log("Getting sentence ranges")
     const { sentenceRanges, transcriptionOffset: endTranscriptionOffset } =
       await getSentenceRanges(
         startSentence,
@@ -214,7 +299,9 @@ export class Synchronizer {
         transcriptionOffset,
         lastSentenceRange,
       )
+    console.log("Interpolating sentence ranges")
     const interpolated = interpolateSentenceRanges(sentenceRanges)
+    console.log("Tagging sentences")
     const tagged = tagSentences(chapterXml)
 
     const storytellerStylesheetUrl = relative(
@@ -232,6 +319,8 @@ export class Synchronizer {
       chapter,
       xml: tagged,
       sentenceRanges: interpolated,
+      startOffset: transcriptionOffset,
+      endOffset: endTranscriptionOffset,
     })
 
     return {
@@ -269,9 +358,10 @@ export class Synchronizer {
         console.log(`Chapter #${index} is fewer than four words; skipping`)
         continue
       }
+      console.log("Finding offset in audio")
       const { startSentence, transcriptionOffset } =
         this.syncCache.getChapterIndex(index) ??
-        findBestOffset(
+        this.findBestOffset(
           chapterSentences,
           transcriptionText,
           lastTranscriptionOffset,

@@ -12,7 +12,7 @@ import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
 import { Epub } from "../../epub"
 import { tokenizeSentences } from "../nlp"
 import assert from "node:assert"
-import { TimelineEntry } from "echogarden/dist/utilities/Timeline"
+import type { TimelineEntry } from "echogarden/dist/utilities/Timeline"
 
 void describe("getSentenceRanges", () => {
   void it("accurately find sentences ranges", async () => {

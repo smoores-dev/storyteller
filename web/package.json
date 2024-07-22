@@ -9,7 +9,7 @@
     "test:watch": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test --watch",
     "test:all": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test **/*.test.ts",
     "build": "yarn build:worker && next build",
-    "build:worker": "esbuild work/worker.ts --bundle --platform=node --external:pymport --external:@mapbox/node-pre-gyp --external:sqlite3 --outdir=work-dist/",
+    "build:worker": "esbuild work/worker.ts --bundle --platform=node --format=esm --packages=external --outdir=work-dist/",
     "start": "tsx database/migrate.ts && next start",
     "client:gen": "openapi --input http://127.0.01:8000/openapi.json --output ./apiModels"
   },
@@ -56,7 +56,7 @@
     "@types/nodemailer": "^6",
     "@types/stream-chain": "^2",
     "@types/stream-json": "^1",
-    "esbuild": "^0.20.2",
+    "esbuild": "^0.23.0",
     "openapi-typescript-codegen": "^0.24.0",
     "stream-chain": "^2.2.5",
     "stream-json": "^1.8.0",

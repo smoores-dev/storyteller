@@ -156,7 +156,7 @@ export function getBooks(
     ${bookUuids ? `WHERE book.uuid IN (${Array.from({ length: bookUuids.length }).fill("?").join(",")})` : ""}
     `)
 
-  const bookRows = statement.all(bookUuids ?? undefined) as {
+  const bookRows = (bookUuids ? statement.all(bookUuids) : statement.all()) as {
     book_uuid: UUID
     id: number
     title: string
