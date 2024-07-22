@@ -1,5 +1,8 @@
 FROM node:20
 
+COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /usr/local/bin/
+COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffprobe /usr/local/bin/
+
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
 COPY .yarn/cache ./.yarn/cache
