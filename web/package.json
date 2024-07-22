@@ -7,7 +7,7 @@
     "dev": "PORT=8001 next dev",
     "test": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test",
     "test:watch": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test --watch",
-    "test:all": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test **/*.test.ts",
+    "test:all": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test __tests__/*.test.ts */__tests__/*.test.ts",
     "build": "yarn build:worker && next build",
     "build:worker": "esbuild work/worker.ts --bundle --platform=node --format=esm --packages=external --outdir=work-dist/",
     "start": "tsx database/migrate.ts && next start",
