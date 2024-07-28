@@ -47,7 +47,7 @@ function findStartTimestamp(
   transcription: StorytellerTranscription,
 ) {
   const entry = transcription.wordTimeline.find(
-    (entry) => (entry.endOffsetUtf16 ?? 0) >= matchStartIndex,
+    (entry) => (entry.endOffsetUtf16 ?? 0) > matchStartIndex,
   )
   if (!entry) return null
   return {
@@ -62,7 +62,7 @@ export function findEndTimestamp(
   transcription: StorytellerTranscription,
 ) {
   const entry = transcription.wordTimeline.findLast(
-    (entry) => (entry.startOffsetUtf16 ?? 0) <= matchEndIndex,
+    (entry) => (entry.startOffsetUtf16 ?? 0) < matchEndIndex,
   )
   return entry?.endTime ?? null
 }
@@ -85,7 +85,7 @@ export async function getSentenceRanges(
   lastSentenceRange: SentenceRange | null,
 ) {
   const sentenceRanges: SentenceRange[] = []
-  const fullTranscriptionText = transcription.transcript.toLowerCase()
+  const fullTranscriptionText = transcription.transcript
   const transcriptionText = fullTranscriptionText.slice(chapterOffset)
   const transcriptionSentences = getSentencesWithOffsets(transcriptionText).map(
     (sentence) => sentence.toLowerCase(),
@@ -101,6 +101,10 @@ export async function getSentenceRanges(
   while (sentenceIndex < sentences.length) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const sentence = sentences[sentenceIndex]!
+    if (sentence.length <= 3) {
+      sentenceIndex += 1
+      continue
+    }
     const transcriptionWindowList = transcriptionSentences.slice(
       transcriptionWindowIndex,
       transcriptionWindowIndex + 10,

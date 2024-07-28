@@ -155,9 +155,6 @@ export class Synchronizer {
       }
 
       if (startIndex < endIndex) {
-        console.log(
-          `Searching through transcript from ${startIndex} to ${endIndex}`,
-        )
         const transcriptionTextSlice: string = transcriptionText.slice(
           startIndex,
           endIndex,
@@ -278,7 +275,6 @@ export class Synchronizer {
     transcriptionOffset: number,
     lastSentenceRange: SentenceRange | null,
   ) {
-    console.log("Syncing chapter")
     const manifest = await this.epub.getManifest()
     const chapter = manifest[chapterId]
     if (!chapter)
@@ -287,10 +283,8 @@ export class Synchronizer {
       )
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
-    console.log("Getting chapter sentences")
     const chapterSentences = await this.getChapterSentences(chapterId)
 
-    console.log("Getting sentence ranges")
     const { sentenceRanges, transcriptionOffset: endTranscriptionOffset } =
       await getSentenceRanges(
         startSentence,
@@ -299,9 +293,7 @@ export class Synchronizer {
         transcriptionOffset,
         lastSentenceRange,
       )
-    console.log("Interpolating sentence ranges")
     const interpolated = interpolateSentenceRanges(sentenceRanges)
-    console.log("Tagging sentences")
     const tagged = tagSentences(chapterXml)
 
     const storytellerStylesheetUrl = relative(
@@ -336,7 +328,6 @@ export class Synchronizer {
     let lastTranscriptionOffset = 0
     let lastSentenceRange: null | SentenceRange = null
 
-    console.log(spine.length)
     for (let index = 0; index < spine.length; index++) {
       onProgress?.(index / spine.length)
 
@@ -358,7 +349,6 @@ export class Synchronizer {
         console.log(`Chapter #${index} is fewer than four words; skipping`)
         continue
       }
-      console.log("Finding offset in audio")
       const { startSentence, transcriptionOffset } =
         this.syncCache.getChapterIndex(index) ??
         this.findBestOffset(

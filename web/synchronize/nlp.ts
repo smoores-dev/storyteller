@@ -1,39 +1,26 @@
-import natural from "natural"
+import wink from "wink-nlp"
+import model from "wink-eng-lite-web-model"
+
+const nlp = wink(model)
+const { its, as } = nlp
 
 export function tokenizeSentences(text: string) {
-  const tokenizer = new natural.SentenceTokenizerNew()
-  try {
-    const tokenized = tokenizer.tokenize(text.trim())
-    const sentences: string[] = []
-    for (const s of tokenized) {
-      if (!s.startsWith("”")) {
-        sentences.push(s)
-        continue
-      }
-      const prevSentence = sentences.pop()
-      if (!prevSentence) {
-        sentences.push(s)
-        continue
-      }
-      sentences.push(prevSentence + "”")
-      if (s.length > 1) {
-        sentences.push(s.slice(1).trim())
-      }
-    }
-    return sentences
-  } catch {
-    return []
-  }
+  const nlpDoc = nlp.readDoc(text)
+  return (
+    nlpDoc
+      .sentences()
+      .out()
+      // Strip out any zero-length "sentences", usually the result of newlines
+      .filter((s) => !!s)
+  )
 }
 
 export function bagOfWords(text: string) {
-  const tokenizer = new natural.WordPunctTokenizer()
-  return Array.from(new Set(tokenizer.tokenize(text)))
-  // const nlpDoc = nlp.readDoc(text)
-  // const words = nlpDoc
-  //   .tokens()
-  //   // eslint-disable-next-line @typescript-eslint/unbound-method
-  //   .filter((token) => token.out(its.type) === "word")
-  // // eslint-disable-next-line @typescript-eslint/unbound-method
-  // return words.out(its.normal, as.unique)
+  const nlpDoc = nlp.readDoc(text)
+  const words = nlpDoc
+    .tokens()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    .filter((token) => token.out(its.type) === "word")
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  return words.out(its.normal, as.unique)
 }

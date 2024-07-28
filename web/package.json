@@ -9,7 +9,7 @@
     "test:watch": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test --watch",
     "test:all": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test __tests__/*.test.ts */__tests__/*.test.ts",
     "build": "yarn build:worker && next build",
-    "build:worker": "esbuild work/worker.ts --bundle --platform=node --format=esm --packages=external --outdir=work-dist/",
+    "build:worker": "esbuild work/worker.ts --bundle --platform=node --sourcemap=inline --format=esm --packages=external --outdir=work-dist/",
     "start": "tsx database/migrate.ts && next start",
     "client:gen": "openapi --input http://127.0.01:8000/openapi.json --output ./apiModels"
   },
@@ -34,14 +34,16 @@
     "memoize": "^10.0.0",
     "mime-types": "^2.1.35",
     "music-metadata": "^7.14.0",
-    "natural": "^7.1.0",
     "next": "^14.1.0",
     "nodemailer": "^6.9.13",
     "piscina": "^4.4.0",
     "react": "^18.2.0",
     "react-circular-progressbar": "^2.1.0",
     "react-dom": "^18.2.0",
-    "sharp": "^0.33.2"
+    "sharp": "^0.33.2",
+    "simple-git": "^3.25.0",
+    "wink-eng-lite-web-model": "^1.8.0",
+    "wink-nlp": "^2.3.0"
   },
   "packageManager": "yarn@4.1.1",
   "devDependencies": {
