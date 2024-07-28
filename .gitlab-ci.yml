@@ -72,6 +72,9 @@ pages:
 
 publish-web:
   image: docker:24.0.5
+  services:
+    - name: docker:24.0.5
+      alias: docker
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+/'
