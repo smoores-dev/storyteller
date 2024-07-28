@@ -440,7 +440,10 @@ export class Epub {
     if (!primaryLanguage) return null
 
     const languageCode = primaryLanguage.value
-    if (!languageCode) return null
+    // Handle a weird edge case where Calibre's metadata
+    // GUI incorrectly sets the language code to 'und'
+    // https://www.mobileread.com/forums/showthread.php?t=87928
+    if (!languageCode || languageCode === "und") return null
 
     if (!short) return languageCode
 
