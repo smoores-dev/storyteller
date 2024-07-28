@@ -18,6 +18,7 @@ const WHISPER_REPO =
 const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.6.2"
 
 const ENABLE_CUDA = WHISPER_BUILD.startsWith("cublas")
+const ENABLE_OPENCL = WHISPER_BUILD === "clblast"
 
 setGlobalOption("logLevel", "error")
 
@@ -88,9 +89,12 @@ async function installWhisper() {
       path = `/usr/local/cuda-${cudaVersions.majorMinor}/bin:${path}`
       libraryPath = `/usr/local/cuda-${cudaVersions.majorMinor}/lib64/stubs:${libraryPath}`
     }
+    if (ENABLE_OPENCL) {
+      await exec("apt-get install libclblast-dev")
+    }
     console.log("Building whisper.cpp")
     // TODO: add -j flag
-    await exec("make", {
+    await exec("make -j", {
       cwd: repoDir,
       env: {
         ...process.env,
@@ -98,6 +102,9 @@ async function installWhisper() {
           WHISPER_CUDA: "1",
           PATH: path,
           LIBRARY_PATH: libraryPath,
+        }),
+        ...(ENABLE_OPENCL && {
+          CLBLAST: "1",
         }),
       },
     })
