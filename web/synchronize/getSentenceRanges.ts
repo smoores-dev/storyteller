@@ -91,6 +91,14 @@ export async function getSentenceRanges(
     (sentence) => sentence.toLowerCase(),
   )
 
+  const sentenceEntries = sentences
+    .map((sentence, index) => [index, sentence] as const)
+    .filter(
+      ([, sentence]) =>
+        sentence.replaceAll(/[.-_()[\],/?!@#$%^^&*`~;:='"<>+ˌˈ]/g, "").length >
+        3,
+    )
+
   let transcriptionWindowIndex = 0
   let transcriptionWindowOffset = 0
   let lastGoodTranscriptionWindow = 0
@@ -98,13 +106,10 @@ export async function getSentenceRanges(
   let sentenceIndex = startSentence
   let lastMatchEnd = chapterOffset
 
-  while (sentenceIndex < sentences.length) {
+  while (sentenceIndex < sentenceEntries.length) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const sentence = sentences[sentenceIndex]!
-    if (sentence.length <= 3) {
-      sentenceIndex += 1
-      continue
-    }
+    const [sentenceId, sentence] = sentenceEntries[sentenceIndex]!
+
     const transcriptionWindowList = transcriptionSentences.slice(
       transcriptionWindowIndex,
       transcriptionWindowIndex + 10,
@@ -122,7 +127,7 @@ export async function getSentenceRanges(
     if (!firstMatch) {
       sentenceIndex += 1
       notFound += 1
-      if (notFound === 3 || sentenceIndex === sentences.length - 1) {
+      if (notFound === 3 || sentenceIndex === sentenceEntries.length - 1) {
         transcriptionWindowIndex += 1
         if (transcriptionWindowIndex == lastGoodTranscriptionWindow + 30) {
           transcriptionWindowIndex = lastGoodTranscriptionWindow
@@ -169,7 +174,7 @@ export async function getSentenceRanges(
       const previousAudiofile = previousSentenceRange.audiofile
 
       if (audiofile === previousAudiofile) {
-        if (previousSentenceRange.id === sentenceIndex - 1) {
+        if (previousSentenceRange.id === sentenceId - 1) {
           previousSentenceRange.end = start
         }
       } else {
@@ -192,7 +197,7 @@ export async function getSentenceRanges(
     }
 
     sentenceRanges.push({
-      id: sentenceIndex,
+      id: sentenceId,
       start,
       end,
       audiofile,
