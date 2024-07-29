@@ -5,6 +5,7 @@ import { mkdir, stat } from "node:fs/promises"
 import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 import { exec as execCb } from "node:child_process"
 import { promisify } from "node:util"
+import { availableParallelism } from "node:os"
 
 const exec = promisify(execCb)
 
@@ -15,10 +16,9 @@ const WHISPER_REPO =
   process.env["STORYTELLER_WHISPER_REPO"] ??
   "https://github.com/ggerganov/whisper.cpp"
 
-const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.6.2"
+const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "main"
 
 const ENABLE_CUDA = WHISPER_BUILD.startsWith("cublas")
-const ENABLE_OPENCL = WHISPER_BUILD === "clblast"
 
 setGlobalOption("logLevel", "error")
 
@@ -89,13 +89,8 @@ async function installWhisper() {
       path = `/usr/local/cuda-${cudaVersions.majorMinor}/bin:${path}`
       libraryPath = `/usr/local/cuda-${cudaVersions.majorMinor}/lib64/stubs:${libraryPath}`
     }
-    if (ENABLE_OPENCL) {
-      console.log("CLBLAST enabled; installing CLBLAST development headers")
-      await exec("apt-get -y install libclblast-dev")
-    }
     console.log("Building whisper.cpp")
-    // TODO: add -j flag
-    await exec("make -j", {
+    await exec(`make -j${availableParallelism()}`, {
       cwd: repoDir,
       env: {
         ...process.env,
@@ -103,9 +98,6 @@ async function installWhisper() {
           WHISPER_CUDA: "1",
           PATH: path,
           LIBRARY_PATH: libraryPath,
-        }),
-        ...(ENABLE_OPENCL && {
-          CLBLAST: "1",
         }),
       },
     })
