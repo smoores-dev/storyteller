@@ -32,11 +32,11 @@ void describe("transcribe", () => {
     )
 
     assert.deepStrictEqual(
-      transcription.timeline[0]?.timeline?.[0]?.endTime,
+      transcription.wordTimeline[0]?.timeline?.[0]?.endTime,
       3.871,
     )
     assert.deepStrictEqual(
-      transcription.timeline[0]?.text,
+      transcription.wordTimeline[0]?.text,
       " This is a LibraVox recording.",
     )
   })

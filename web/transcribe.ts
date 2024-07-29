@@ -1,4 +1,8 @@
-import { recognize, setGlobalOption } from "echogarden/dist/api/API.js"
+import {
+  RecognitionResult,
+  recognize,
+  setGlobalOption,
+} from "echogarden/dist/api/API.js"
 import { join } from "node:path"
 import { DATA_DIR, WHISPER_BUILD_DIR } from "./directories"
 import { mkdir, stat } from "node:fs/promises"
@@ -16,7 +20,7 @@ const WHISPER_REPO =
   process.env["STORYTELLER_WHISPER_REPO"] ??
   "https://github.com/ggerganov/whisper.cpp"
 
-const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "main"
+const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "master"
 
 const ENABLE_CUDA = WHISPER_BUILD.startsWith("cublas")
 
@@ -110,12 +114,12 @@ export async function transcribeTrack(
   trackPath: string,
   initialPrompt: string | null,
   language: string,
-) {
+): Promise<Pick<RecognitionResult, "transcript" | "wordTimeline">> {
   console.log(`Transcribing audio file ${trackPath}`)
 
   const executablePath = await installWhisper()
 
-  return await recognize(trackPath, {
+  const { transcript, wordTimeline } = await recognize(trackPath, {
     engine: "whisper.cpp",
     language,
     whisperCpp: {
@@ -126,4 +130,6 @@ export async function transcribeTrack(
       ...(executablePath && { executablePath }),
     },
   })
+
+  return { transcript, wordTimeline }
 }
