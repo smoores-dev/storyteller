@@ -90,7 +90,8 @@ async function installWhisper() {
       libraryPath = `/usr/local/cuda-${cudaVersions.majorMinor}/lib64/stubs:${libraryPath}`
     }
     if (ENABLE_OPENCL) {
-      await exec("apt-get install libclblast-dev")
+      console.log("CLBLAST enabled; installing CLBLAST development headers")
+      await exec("apt-get -y install libclblast-dev")
     }
     console.log("Building whisper.cpp")
     // TODO: add -j flag

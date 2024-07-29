@@ -19,16 +19,16 @@ COPY . .
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN yarn build:web
 
 EXPOSE 8001
 
-ENV PORT 8001
-ENV HOST 0.0.0.0
-# ENV NEXT_SHARP_PATH /app/node_modules/sharp
-ENV STORYTELLER_DATA_DIR /data
+ENV PORT=8001
+ENV HOST=0.0.0.0
+# ENV NEXT_SHARP_PATH=/app/node_modules/sharp
+ENV STORYTELLER_DATA_DIR=/data
 
 CMD yarn workspace @storyteller/web start
