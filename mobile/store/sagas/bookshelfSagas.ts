@@ -25,6 +25,7 @@ import {
   deleteLocalBookFiles,
   getOldLocalBookCoverUrl,
   getOldLocalAudioBookCoverUrl,
+  getBookCoversDirectoryUrl,
 } from "../persistence/files"
 import { getApiClient } from "../selectors/apiSelectors"
 import { getLibraryBook } from "../selectors/librarySelectors"
@@ -335,11 +336,9 @@ export function* downloadBookSaga() {
         )) as Awaited<ReturnType<typeof FileSystem.getInfoAsync>>
 
         if (!archiveInfo.exists) {
-          yield call(
-            FileSystem.makeDirectoryAsync,
-            getBookArchivesDirectoryUrl(),
-            { intermediates: true },
-          )
+          yield call(FileSystem.makeDirectoryAsync, localBookArchiveDirUrl, {
+            intermediates: true,
+          })
         }
 
         yield call(FileSystem.copyAsync, {
@@ -366,6 +365,19 @@ export function* downloadBookSaga() {
           resource.rel?.includes("cover"),
         )
         if (coverLink) {
+          const bookCoversDirectoryUrl = getBookCoversDirectoryUrl()
+
+          const coversDirectoryInfo = (yield call(
+            FileSystem.getInfoAsync,
+            bookCoversDirectoryUrl,
+          )) as Awaited<ReturnType<typeof FileSystem.getInfoAsync>>
+
+          if (!coversDirectoryInfo.exists) {
+            yield call(FileSystem.makeDirectoryAsync, bookCoversDirectoryUrl, {
+              intermediates: true,
+            })
+          }
+
           const coverString = (yield call(
             getResource,
             bookId,

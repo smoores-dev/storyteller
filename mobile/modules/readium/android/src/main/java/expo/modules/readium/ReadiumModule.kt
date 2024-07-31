@@ -1,6 +1,8 @@
 package expo.modules.readium
 
 import android.graphics.Color
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import expo.modules.kotlin.functions.Coroutine
@@ -8,7 +10,6 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.shared.ExperimentalReadiumApi
@@ -17,14 +18,16 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import java.net.URI
 import java.net.URL
+import java.util.Base64
 
 class ReadiumModule : Module() {
     // Each module class must implement the definition function. The definition consists of components
     // that describes the module's functionality and behavior.
     // See https://docs.expo.dev/modules/module-api for more details about available components.
+    @RequiresApi(Build.VERSION_CODES.O)
     @OptIn(ExperimentalReadiumApi::class)
     override fun definition() = ModuleDefinition {
-        val bookService: BookService = BookService(appContext.reactContext!!)
+        val bookService = BookService(appContext.reactContext!!)
 
         // Sets the name of the module that JavaScript code will use to refer to the module. Takes a
         // string as an argument.
@@ -43,6 +46,10 @@ class ReadiumModule : Module() {
             val linkJson = JSONObject(linkMap)
             val link = Link.fromJSON(linkJson) ?: return@Coroutine null
             val resource = bookService.getResource(bookId, link)
+            if (link.type?.startsWith("image/") == true) {
+                val data = resource.read().getOrThrow()
+                return@Coroutine String(Base64.getEncoder().encode(data))
+            }
             return@Coroutine resource.readAsString().getOrThrow()
         }
 
