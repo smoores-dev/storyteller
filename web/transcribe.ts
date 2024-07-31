@@ -10,6 +10,7 @@ import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 import { exec as execCb } from "node:child_process"
 import { promisify } from "node:util"
 import { availableParallelism } from "node:os"
+import { WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
 
 const exec = promisify(execCb)
 
@@ -21,6 +22,25 @@ const WHISPER_REPO =
   "https://github.com/ggerganov/whisper.cpp"
 
 const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "master"
+
+type ModelType =
+  | "tiny"
+  | "tiny-q5_1"
+  | "base"
+  | "base-q5_1"
+  | "small"
+  | "small-q5_1"
+  | "medium"
+  | "medium-q5_0"
+  | "large"
+  | "large-v1"
+  | "large-v2"
+  | "large-v2-q5_0"
+  | "large-v3"
+  | "large-v3-q5_0"
+
+const WHISPER_MODEL =
+  (process.env["STORYTELLER_WHISPER_MODEL"] as ModelType | undefined) ?? "tiny"
 
 const ENABLE_CUDA = WHISPER_BUILD.startsWith("cublas")
 
@@ -110,6 +130,16 @@ async function installWhisper() {
   return executablePath
 }
 
+function getWhisperCppModelId(
+  language: string,
+  modelType: ModelType,
+): WhisperCppModelId {
+  if (language !== "en") return modelType
+  const quant = modelType.indexOf("-q")
+  if (quant === -1) return `${modelType}.en` as WhisperCppModelId
+  return `${modelType.slice(0, quant)}.en${modelType.slice(quant)}` as WhisperCppModelId
+}
+
 export async function transcribeTrack(
   trackPath: string,
   initialPrompt: string | null,
@@ -124,7 +154,7 @@ export async function transcribeTrack(
     language,
     whisperCpp: {
       ...(initialPrompt && { prompt: initialPrompt }),
-      model: language === "en" ? "tiny.en" : "tiny",
+      model: getWhisperCppModelId(language, WHISPER_MODEL),
       build: executablePath === null ? "cpu" : "custom",
       ...(ENABLE_CUDA && { enableGPU: true }),
       ...(executablePath && { executablePath }),
