@@ -4,7 +4,7 @@ import {
   setGlobalOption,
 } from "echogarden/dist/api/API.js"
 import { join } from "node:path"
-import { DATA_DIR, WHISPER_BUILD_DIR } from "./directories"
+import { WHISPER_BUILD_DIR } from "./directories"
 import { mkdir, stat } from "node:fs/promises"
 import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 import { exec as execCb } from "node:child_process"
@@ -41,7 +41,7 @@ async function installWhisper() {
     const git = simpleGit(repoDir)
     await git.addConfig(
       "safe.directory",
-      DATA_DIR,
+      WHISPER_BUILD_DIR,
       false,
       GitConfigScope.global,
     )

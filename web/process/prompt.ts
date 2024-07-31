@@ -26,6 +26,5 @@ export async function getInitialPrompt(title: string, fullText: string) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         inventedWords[inventedWords.length - 1]!
   const initialPrompt = `The following is a chapter from the book "${title}". It may contain words that are not in the English dictionary, such as ${invintedWordString}. Please try to transcribe it accurately.`
-  console.log(initialPrompt)
   return initialPrompt
 }

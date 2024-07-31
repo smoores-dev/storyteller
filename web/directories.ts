@@ -10,4 +10,4 @@ export const IMAGE_DIR = join(DATA_DIR, "assets", "images")
 
 export const CACHE_DIR = join(DATA_DIR, "cache")
 
-export const WHISPER_BUILD_DIR = join(DATA_DIR, "whisper")
+export const WHISPER_BUILD_DIR = join(process.cwd(), "whisper-builds")
