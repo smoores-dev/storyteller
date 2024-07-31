@@ -327,6 +327,21 @@ export function* downloadBookSaga() {
         yield call(downloadBookArchive, bookId)
         yield call(downloadBookCovers, bookId)
       } else {
+        const localBookArchiveDirUrl = getBookArchivesDirectoryUrl()
+
+        const archiveInfo = (yield call(
+          FileSystem.getInfoAsync,
+          localBookArchiveDirUrl,
+        )) as Awaited<ReturnType<typeof FileSystem.getInfoAsync>>
+
+        if (!archiveInfo.exists) {
+          yield call(
+            FileSystem.makeDirectoryAsync,
+            getBookArchivesDirectoryUrl(),
+            { intermediates: true },
+          )
+        }
+
         yield call(FileSystem.copyAsync, {
           from: action.payload.archiveUrl,
           to: getLocalBookArchiveUrl(bookId),
