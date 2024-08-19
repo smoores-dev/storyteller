@@ -5,12 +5,14 @@ import {
   View,
   useWindowDimensions,
 } from "react-native"
+import uuid from "react-native-uuid"
 import { ReadiumLocator } from "../modules/readium/src/Readium.types"
 import { useAppDispatch } from "../store/appState"
 import { Highlight, bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { TrashIcon } from "../icons/TrashIcon"
 import { HighlightColorPicker } from "./HighlightColorPicker"
 import { useColorTheme } from "../hooks/useColorTheme"
+import type { UUID } from "node:crypto"
 
 type Props = {
   bookId: number
@@ -68,7 +70,7 @@ export function SelectionMenu({
             dispatch(
               bookshelfSlice.actions.highlightCreated({
                 bookId,
-                highlight: { id: crypto.randomUUID(), color, locator },
+                highlight: { id: uuid.v4() as UUID, color, locator },
               }),
             )
             onClose()
