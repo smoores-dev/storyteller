@@ -1,9 +1,10 @@
 import { Stack } from "expo-router"
 import { useState } from "react"
-import { TextInput, View, StyleSheet, Pressable } from "react-native"
+import { TextInput, View, StyleSheet } from "react-native"
 import { UIText } from "../../../components/UIText"
 import { useAppDispatch } from "../../../store/appState"
 import { loginButtonTapped } from "../../../store/slices/authSlice"
+import { Button } from "../../../components/Button"
 
 const styles = StyleSheet.create({
   container: {
@@ -30,18 +31,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 2,
     backgroundColor: "white",
-  },
-  button: {
-    backgroundColor: "#D0D0D7",
-    color: "black",
-    borderWidth: 1,
-    borderRadius: 2,
-    borderColor: "#7A7B86",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    display: "flex",
-    alignItems: "center",
-    marginTop: 32,
   },
 })
 
@@ -80,14 +69,13 @@ export default function LoginPage() {
           value={password}
           onChangeText={setPassword}
         />
-        <Pressable
+        <Button
           onPress={() => {
             dispatch(loginButtonTapped({ username, password }))
           }}
-          style={styles.button}
         >
           <UIText>Login</UIText>
-        </Pressable>
+        </Button>
       </View>
     </View>
   )
