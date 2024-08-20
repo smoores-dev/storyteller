@@ -1,9 +1,10 @@
 import { Stack } from "expo-router"
 import { useState } from "react"
-import { TextInput, View, StyleSheet, Pressable } from "react-native"
+import { TextInput, View, StyleSheet } from "react-native"
 import { UIText } from "../../../components/UIText"
 import { useAppDispatch } from "../../../store/appState"
 import { apiBaseUrlChanged } from "../../../store/slices/apiSlice"
+import { Button } from "../../../components/Button"
 
 const styles = StyleSheet.create({
   container: {
@@ -31,18 +32,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "white",
   },
-  button: {
-    backgroundColor: "#D0D0D7",
-    color: "black",
-    borderWidth: 1,
-    borderRadius: 2,
-    borderColor: "#7A7B86",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    display: "flex",
-    alignItems: "center",
-    marginTop: 32,
-  },
 })
 
 export default function LoginPage() {
@@ -68,14 +57,13 @@ export default function LoginPage() {
           value={url}
           onChangeText={setUrl}
         />
-        <Pressable
+        <Button
           onPress={() => {
             dispatch(apiBaseUrlChanged({ baseUrl: url }))
           }}
-          style={styles.button}
         >
           <UIText>Done</UIText>
-        </Pressable>
+        </Button>
       </View>
     </View>
   )

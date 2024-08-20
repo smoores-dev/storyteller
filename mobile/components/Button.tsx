@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet } from "react-native"
 import { UIText } from "./UIText"
 import { ReactNode } from "react"
+import { activeBackgroundColor } from "../design"
 
 type Props = {
   children: ReactNode
@@ -17,7 +18,7 @@ export function Button({ children, onPress }: Props) {
 
 export const buttonStyles = StyleSheet.create({
   button: {
-    backgroundColor: "#88888888",
+    backgroundColor: activeBackgroundColor,
     borderWidth: 1,
     borderRadius: 2,
     borderColor: "#7A7B86",

@@ -9,6 +9,7 @@ import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {
   onOutsideTap: () => void
+  topInset?: number | undefined
 }
 
 enum BookNavTab {
@@ -17,7 +18,7 @@ enum BookNavTab {
   HIGHLIGHTS = "HIGHLIGHTS",
 }
 
-export function BookNavigation({ onOutsideTap }: Props) {
+export function BookNavigation({ topInset, onOutsideTap }: Props) {
   const { background, foreground } = useColorTheme()
   const [selectedTab, setSelectedTab] = useState(BookNavTab.TABLE_OF_CONTENTS)
   const insets = useSafeAreaInsets()
@@ -28,7 +29,7 @@ export function BookNavigation({ onOutsideTap }: Props) {
       <View
         style={[
           styles.dialog,
-          { top: insets.top + styles.dialog.top },
+          { top: insets.top + styles.dialog.top + (topInset ?? 0) },
           { backgroundColor: background, shadowColor: foreground },
         ]}
       >
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 32,
     left: 74,
-    top: 56,
+    top: 12,
     paddingVertical: 16,
     borderRadius: 8,
     borderWidth: 1,
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    bottom: 300,
+    bottom: 100,
     zIndex: 3,
     elevation: 3,
   },
