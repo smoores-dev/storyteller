@@ -13,6 +13,10 @@ import {
 } from "./src/Readium.types"
 import EPUBView from "./src/ReadiumView"
 
+export async function extractArchive(archiveUrl: string, extractedUrl: string) {
+  await ReadiumModule.extractArchive(archiveUrl, extractedUrl)
+}
+
 export async function openPublication(
   bookId: number,
   expandedBookUri: string,

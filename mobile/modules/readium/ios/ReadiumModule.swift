@@ -5,6 +5,10 @@ import R2Navigator
 public class ReadiumModule: Module {
     public func definition() -> ModuleDefinition {
         Name("Readium")
+        
+        AsyncFunction("extractArchive") { (archiveUrl: URL, extractedUrl: URL) in
+            try BookService.instance.extractArchive(archiveUrl: archiveUrl, extractedUrl: extractedUrl)
+        }
 
         AsyncFunction("openPublication") { (bookId: Int, publicationUri: URL) -> String in
             let pub = try await BookService.instance.openPublication(for: bookId, at: publicationUri)

@@ -1,4 +1,3 @@
-import { unzip } from "react-native-zip-archive"
 import {
   select,
   takeEvery,
@@ -17,7 +16,6 @@ import {
   getBooksDirectoryUrl,
   getBookArchivesDirectoryUrl,
   getLocalBookExtractedUrl,
-  getBookExtractedDirectoryUrl,
   ensureCoversDirectory,
   getLocalBookCoverUrl,
   getLocalAudioBookCoverUrl,
@@ -74,6 +72,7 @@ import {
 } from "redux-saga"
 import { logger } from "../../logger"
 import {
+  extractArchive,
   getClip,
   getFragment,
   getResource,
@@ -200,22 +199,19 @@ export function* extractBookArchive(bookId: number) {
   )) as Awaited<ReturnType<typeof FileSystem.getInfoAsync>>
 
   if (extractedInfo.exists) {
-    logger.info(`Archive already extracted. Skipping extraction`)
-  } else {
-    logger.info(`Extracting EPUB archive to ${localBookExtractedUrl}`)
-    const extractedDirInfo = (yield call(
-      FileSystem.getInfoAsync,
-      getBookExtractedDirectoryUrl(),
-    )) as Awaited<ReturnType<typeof FileSystem.getInfoAsync>>
-
-    if (!extractedDirInfo.exists) {
-      yield call(FileSystem.makeDirectoryAsync, getBookExtractedDirectoryUrl())
-    }
-
-    const localBookArchiveUrl = getLocalBookArchiveUrl(bookId)
-
-    yield call(unzip, localBookArchiveUrl, localBookExtractedUrl)
+    logger.info(`Archive already extracted. Removing.`)
+    yield call(FileSystem.deleteAsync, localBookExtractedUrl)
   }
+
+  logger.info(`Extracting EPUB archive to ${localBookExtractedUrl}`)
+
+  yield call(FileSystem.makeDirectoryAsync, localBookExtractedUrl, {
+    intermediates: true,
+  })
+
+  const localBookArchiveUrl = getLocalBookArchiveUrl(bookId)
+
+  yield call(extractArchive, localBookArchiveUrl, localBookExtractedUrl)
 
   return localBookExtractedUrl
 }
