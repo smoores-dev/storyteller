@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: IS_DEV ? "Storyteller (dev)" : "Storyteller",
     slug: "storyteller",
-    version: "1.5.4",
+    version: "1.5.5",
     orientation: "portrait",
     icon: "./assets/Storyteller_Logo.png",
     userInterfaceStyle: "automatic",
@@ -80,7 +80,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       package: IS_DEV
         ? "dev.smoores.Storyteller.dev"
         : "dev.smoores.Storyteller",
-      versionCode: 20,
+      versionCode: 21,
       adaptiveIcon: {
         foregroundImage: "./assets/Storyteller_Logo.png",
         backgroundColor: "#ffffff",
