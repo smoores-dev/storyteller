@@ -14,7 +14,11 @@ import org.readium.r2.shared.publication.services.positionsByReadingOrder
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.streamer.Streamer
 import java.io.File
+import java.io.FileOutputStream
 import java.net.URL
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipInputStream
 
 class BookService(private val context: Context) {
 
@@ -59,6 +63,22 @@ class BookService(private val context: Context) {
         })
     private var publications: MutableMap<Long, Publication> = mutableMapOf()
     private var mediaOverlays: MutableMap<Long, Map<String, STMediaOverlays>> = mutableMapOf()
+
+    fun extractArchive(archiveUrl: URL, extractedUrl: URL) {
+        ZipFile(archiveUrl.path).use { zip ->
+            zip.entries().asSequence()
+                .filterNot { it.isDirectory }
+                .forEach { entry ->
+                    zip.getInputStream(entry).use { input ->
+                        val newFile = File(extractedUrl.path, entry.name)
+                        newFile.parentFile?.mkdirs()
+                        newFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+            }
+        }
+    }
 
     fun getPublication(bookId: Long): Publication? {
         return publications[bookId]
