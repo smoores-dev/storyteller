@@ -14,6 +14,8 @@ import { BookmarkIcon } from "../icons/BookmarkIcon"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { ReadiumLocator } from "../modules/readium/src/Readium.types"
 import { UIText } from "./UIText"
+import { getOpenDialog } from "../store/selectors/toolbarSelectors"
+import { activeBackgroundColor } from "../design"
 
 type Props = {
   mode: "audio" | "text"
@@ -25,6 +27,7 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
   const currentLocator = useAppSelector(
     (state) => book && getLocator(state, book.id),
   )
+  const openDialog = useAppSelector(getOpenDialog)
 
   const dispatch = useAppDispatch()
 
@@ -33,21 +36,30 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
   return (
     <>
       <View style={styles.toolbar}>
-        <Pressable
-          style={styles.toolbarButton}
-          onPress={() => {
-            dispatch(
-              toolbarSlice.actions.dialogToggled({
-                dialog: ToolbarDialog.SETTINGS,
-              }),
-            )
-          }}
-        >
-          <UIText style={{ fontSize: 20 }}>Aa</UIText>
-        </Pressable>
+        {mode === "text" && (
+          <Pressable
+            style={[
+              styles.toolbarButton,
+              styles.settingsButton,
+              openDialog === ToolbarDialog.SETTINGS && styles.activeButton,
+            ]}
+            onPress={() => {
+              dispatch(
+                toolbarSlice.actions.dialogToggled({
+                  dialog: ToolbarDialog.SETTINGS,
+                }),
+              )
+            }}
+          >
+            <UIText style={{ fontSize: 20 }}>Aa</UIText>
+          </Pressable>
+        )}
 
         <Pressable
-          style={styles.toolbarButton}
+          style={[
+            styles.toolbarButton,
+            openDialog === ToolbarDialog.SPEED && styles.activeButton,
+          ]}
           onPress={() => {
             dispatch(
               toolbarSlice.actions.dialogToggled({
@@ -83,7 +95,11 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
         </Pressable>
 
         <Pressable
-          style={styles.toolbarButton}
+          style={[
+            styles.toolbarButton,
+            openDialog === ToolbarDialog.TABLE_OF_CONTENTS &&
+              styles.activeButton,
+          ]}
           onPress={() => {
             dispatch(
               toolbarSlice.actions.dialogToggled({
@@ -102,7 +118,10 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             <BookOpenOutlineIcon />
           </Link>
         ) : (
-          <Link style={[styles.toolbarButton]} href={{ pathname: "/player" }}>
+          <Link
+            style={[styles.toolbarButton, styles.audioLink]}
+            href={{ pathname: "/player" }}
+          >
             <PlayIcon />
           </Link>
         )}
@@ -118,8 +137,23 @@ const styles = StyleSheet.create({
   },
   toolbarButton: {
     marginHorizontal: 8,
+    padding: 4,
+    borderRadius: 4,
   },
+  settingsButton: {
+    marginHorizontal: 0,
+  },
+
   bookLink: {
-    marginTop: 2,
+    marginTop: 12,
+    marginHorizontal: 0,
+  },
+  audioLink: {
+    marginTop: 4,
+    padding: 0,
+    marginLeft: 0,
+  },
+  activeButton: {
+    backgroundColor: activeBackgroundColor,
   },
 })

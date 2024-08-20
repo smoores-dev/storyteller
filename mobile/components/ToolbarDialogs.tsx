@@ -6,7 +6,11 @@ import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
 import { BookNavigation } from "./BookNavigation"
 import { BookSettingsMenu } from "./BookSettingsMenu"
 
-export function ToolbarDialogs() {
+interface Props {
+  topInset?: number | undefined
+}
+
+export function ToolbarDialogs({ topInset }: Props) {
   const book = useAppSelector(getCurrentlyPlayingBook)
   const openDialog = useAppSelector(getOpenDialog)
 
@@ -18,6 +22,7 @@ export function ToolbarDialogs() {
     <>
       {openDialog === ToolbarDialog.TABLE_OF_CONTENTS && (
         <BookNavigation
+          topInset={topInset}
           onOutsideTap={() => {
             dispatch(toolbarSlice.actions.dialogClosed())
           }}
@@ -27,6 +32,7 @@ export function ToolbarDialogs() {
       {openDialog === ToolbarDialog.SPEED && (
         <SpeedMenu
           bookId={book.id}
+          topInset={topInset}
           onOutsideTap={() => {
             dispatch(toolbarSlice.actions.dialogClosed())
           }}

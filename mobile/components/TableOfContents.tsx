@@ -8,15 +8,8 @@ import {
   getLocator,
 } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
-
-function extractPath(href: string) {
-  const url = new URL(href, "http://storyteller.local")
-  return url.pathname
-}
-
-function isSameChapter(href1: string, href2: string) {
-  return extractPath(href1) === extractPath(href2)
-}
+import { isSameChapter } from "../links"
+import { activeBackgroundColor } from "../design"
 
 export function TableOfContents() {
   const ref = useRef<null | ScrollView>(null)
@@ -70,7 +63,7 @@ export function TableOfContents() {
               paddingVertical: 16,
               paddingHorizontal: 16,
               ...(isSameChapter(item.href, locator?.href ?? "") && {
-                backgroundColor: "#EEE",
+                backgroundColor: activeBackgroundColor,
               }),
             }}
           >
@@ -97,7 +90,7 @@ export function TableOfContents() {
                 paddingHorizontal: 16,
                 paddingLeft: 24,
                 ...(isSameChapter(child.href, locator?.href ?? "") && {
-                  backgroundColor: "#88888888",
+                  backgroundColor: activeBackgroundColor,
                 }),
               }}
               onPress={async () => {

@@ -5,6 +5,7 @@ import { StartupStatus } from "../store/slices/startupSlice"
 import { SplashScreen, useRouter } from "expo-router"
 import { useAppSelector } from "../store/appState"
 import { useColorTheme } from "../hooks/useColorTheme"
+import { activeBackgroundColor } from "../design"
 
 export function StorytellerProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -29,7 +30,7 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
           background,
           card: background,
           text: foreground,
-          border: "#88888888",
+          border: activeBackgroundColor,
           notification: background,
         },
       }}

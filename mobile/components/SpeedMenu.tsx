@@ -8,10 +8,11 @@ import { preferencesSlice } from "../store/slices/preferencesSlice"
 
 type Props = {
   bookId: number
+  topInset?: number | undefined
   onOutsideTap?: () => void
 }
 
-export function SpeedMenu({ bookId, onOutsideTap }: Props) {
+export function SpeedMenu({ bookId, topInset, onOutsideTap }: Props) {
   const { background } = useColorTheme()
 
   const insets = useSafeAreaInsets()
@@ -39,7 +40,7 @@ export function SpeedMenu({ bookId, onOutsideTap }: Props) {
           position: "absolute",
           right: 32,
           left: 106,
-          top: insets.top + 56,
+          top: insets.top + 12 + (topInset ?? 0),
           // paddingHorizontal: 32,
           paddingVertical: 16,
           borderRadius: 8,
