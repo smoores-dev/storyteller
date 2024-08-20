@@ -36,6 +36,10 @@ class ReadiumModule : Module() {
         // The module will be accessible from `requireNativeModule('Readium')` in JavaScript.
         Name("Readium")
 
+        AsyncFunction("extractArchive") Coroutine { archiveUrl: URL, extractedUrl: URL ->
+            bookService.extractArchive(archiveUrl, extractedUrl)
+        }
+
         // Defines a JavaScript function that always returns a Promise and whose native code
         // is by default dispatched on the different thread than the JavaScript runtime runs on.
         AsyncFunction("openPublication") Coroutine { bookId: Long, publicationUri: URL ->

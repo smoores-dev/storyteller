@@ -5829,7 +5829,6 @@ __metadata:
     react-native-track-player: "npm:^4.0.0"
     react-native-uuid: "npm:^2.0.2"
     react-native-webview: "npm:13.8.6"
-    react-native-zip-archive: "npm:^7.0.1"
     react-redux: "npm:^8.1.2"
     redux-logger: "npm:^3.0.6"
     redux-saga: "npm:^1.2.3"
@@ -18701,16 +18700,6 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10c0/441e13d145fe2783a6ecc3d3b90673fc9f26c7d0a9051c8fc603c925a94c0a5ee4a5a172aa80bcdc1c07d2f33a2fe17cccebc00ea3b142f5fd7558a139496a92
-  languageName: node
-  linkType: hard
-
-"react-native-zip-archive@npm:^7.0.1":
-  version: 7.0.1
-  resolution: "react-native-zip-archive@npm:7.0.1"
-  peerDependencies:
-    react: ">=16.8.6"
-    react-native: ">=0.60.0"
-  checksum: 10c0/806f817a8d0bcd3130306f94cd5c1e60e21359fb4c23dd538596570b34b4e5e1dc8f24d6a264a63871936afd62c50571798283bd277b9378eb692bcac765c578
   languageName: node
   linkType: hard
 
