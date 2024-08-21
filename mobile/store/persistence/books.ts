@@ -216,6 +216,7 @@ export async function deleteBook(bookId: number) {
     `books.${bookId}`,
     `books.${bookId}.locator`,
     `books.${bookId}.bookmarks`,
+    `books.${bookId}.highlights`,
   ])
   const bookIds = await readBookIds()
   if (!bookIds) return

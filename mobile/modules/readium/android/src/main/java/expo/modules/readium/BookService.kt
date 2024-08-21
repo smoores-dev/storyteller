@@ -146,11 +146,11 @@ class BookService(private val context: Context) {
         val chapterIndex = publication.readingOrder.indexOfFirstWithHref(link.href)
             ?: return defaultLocator
         val nextChapterIndex = chapterIndex + 1
-        val nextChapterLink = publication.readingOrder[nextChapterIndex]
         val startOfNextChapterProgression = nextChapterIndex.let {
             if (it == publication.readingOrder.size) {
                 return@let 1.0
             } else {
+                val nextChapterLink = publication.readingOrder[nextChapterIndex]
                 return@let locateFromPositions(bookId, nextChapterLink).locations.totalProgression
             }
         } ?: return defaultLocator
