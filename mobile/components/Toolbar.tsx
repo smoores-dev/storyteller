@@ -1,5 +1,5 @@
 import { Link } from "expo-router"
-import { Pressable, StyleSheet, View } from "react-native"
+import { Platform, Pressable, StyleSheet, View } from "react-native"
 import { BookOpenOutlineIcon } from "../icons/BookOpenOutlineIcon"
 import { SpedometerIcon } from "../icons/SpedometerIcon"
 import { TableOfContentsIcon } from "../icons/TableOfContentsIcon"
@@ -143,9 +143,8 @@ const styles = StyleSheet.create({
   settingsButton: {
     marginHorizontal: 0,
   },
-
   bookLink: {
-    marginTop: 12,
+    ...(Platform.OS === "ios" && { marginTop: 12 }),
     marginHorizontal: 0,
   },
   audioLink: {
