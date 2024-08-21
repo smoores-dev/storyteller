@@ -132,6 +132,12 @@ export async function deleteLocalBookFiles(bookId: number) {
     FileSystem.deleteAsync(getLocalBookArchiveUrl(bookId), {
       idempotent: true,
     }),
+    FileSystem.deleteAsync(getLocalBookCoverUrl(bookId), {
+      idempotent: true,
+    }),
+    FileSystem.deleteAsync(getOldLocalAudioBookCoverUrl(bookId), {
+      idempotent: true,
+    }),
   ])
 }
 

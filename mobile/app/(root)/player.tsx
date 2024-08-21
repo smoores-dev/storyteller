@@ -1,6 +1,7 @@
 import { Link, router } from "expo-router"
 import {
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -223,8 +224,9 @@ const styles = StyleSheet.create({
   },
   trackCount: {
     alignSelf: "center",
-    // color: "#88888888",
-    // fontSize: 1,
+    ...(Platform.OS === "android" && {
+      marginBottom: 12,
+    }),
   },
   details: {
     width: "100%",
@@ -242,6 +244,9 @@ const styles = StyleSheet.create({
   progressBarWrapper: {
     width: "100%",
     paddingHorizontal: 24,
+    ...(Platform.OS === "android" && {
+      marginBottom: 8,
+    }),
   },
   playerControls: {
     marginTop: 24,

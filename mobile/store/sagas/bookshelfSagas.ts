@@ -24,6 +24,7 @@ import {
   getOldLocalBookCoverUrl,
   getOldLocalAudioBookCoverUrl,
   getBookCoversDirectoryUrl,
+  getAudioBookCoversDirectoryUrl,
 } from "../persistence/files"
 import { getApiClient } from "../selectors/apiSelectors"
 import { getLibraryBook } from "../selectors/librarySelectors"
@@ -213,6 +214,10 @@ export function* extractBookArchive(bookId: number) {
 
   yield call(extractArchive, localBookArchiveUrl, localBookExtractedUrl)
 
+  // Clear up some space by deleting the archive once it's been
+  // extracted
+  yield call(FileSystem.deleteAsync, localBookArchiveUrl)
+
   return localBookExtractedUrl
 }
 
@@ -374,6 +379,19 @@ export function* downloadBookSaga() {
             })
           }
 
+          const audioCoversDirectoryUrl = getAudioBookCoversDirectoryUrl()
+
+          const audioCoversDirectoryInfo = (yield call(
+            FileSystem.getInfoAsync,
+            audioCoversDirectoryUrl,
+          )) as Awaited<ReturnType<typeof FileSystem.getInfoAsync>>
+
+          if (!audioCoversDirectoryInfo.exists) {
+            yield call(FileSystem.makeDirectoryAsync, audioCoversDirectoryUrl, {
+              intermediates: true,
+            })
+          }
+
           const coverString = (yield call(
             getResource,
             bookId,
@@ -383,6 +401,13 @@ export function* downloadBookSaga() {
           yield call(
             FileSystem.writeAsStringAsync,
             getLocalBookCoverUrl(bookId),
+            coverString,
+            { encoding: FileSystem.EncodingType.Base64 },
+          )
+
+          yield call(
+            FileSystem.writeAsStringAsync,
+            getLocalAudioBookCoverUrl(bookId),
             coverString,
             { encoding: FileSystem.EncodingType.Base64 },
           )
