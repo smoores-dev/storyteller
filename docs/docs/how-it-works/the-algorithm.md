@@ -64,15 +64,15 @@ file size.
 ## Step 2: Transcribe the audio
 
 Once we have individual tracks to work with, we begin transcription. This is the
-most resource intensive part of the process. We rely on the Whisper AI
-transcription model from OpenAI, via
-[WhisperX](https://github.com/m-bain/whisperx). The WhisperX project also uses
-`wave2vec2` to provide accurate word-level timestamps, which is important for
-sentence-level synchronization. The transcription process is fairly standard;
-the only interesting addition to the process that Storyteller makes is to supply
-an "initial prompt" to the transcription model, outlining its task as
-transcribing an audiobook chapter and providing a list of words from the book
-that don't exist in the English dictionary as hints.
+most resource intensive part of the process. Storyteller supports a number of
+transcription backends via
+[echogarden](https://github.com/echogarden-project/echogarden) (see the
+[transcription engine docs](/docs/administering#transcription-engine-settings)
+for more info). The transcription process is fairly standard; the only
+interesting addition to the process that Storyteller makes is to supply an
+"initial prompt" to the transcription model, outlining its task as transcribing
+an audiobook chapter and providing a list of words from the book that don't
+exist in the English dictionary as hints.
 
 ## Step 3: Produce the synced book
 

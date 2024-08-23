@@ -1,7 +1,7 @@
 import { DATA_DIR } from "@/directories"
 import { join } from "node:path"
 import { cwd } from "node:process"
-import { Database } from "sqlite3"
+import Db, { Database } from "better-sqlite3"
 
 let db: Database | undefined
 
@@ -9,12 +9,13 @@ const DATABASE_URL = join(DATA_DIR, "storyteller.db")
 
 const UUID_EXT_PATH = join(cwd(), "sqlite", "uuid.c")
 
-export async function getDatabase() {
+export function getDatabase(): Database {
   if (db) return db
 
-  db = await Database.create(DATABASE_URL)
+  db = new Db(DATABASE_URL)
+  db.pragma("journal_mode = WAL")
   try {
-    await db.loadExtension(UUID_EXT_PATH)
+    db.loadExtension(UUID_EXT_PATH)
   } catch (e) {
     console.error(e)
   }

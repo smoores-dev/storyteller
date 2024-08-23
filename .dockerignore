@@ -6,5 +6,7 @@
 !/web
 /web/.next
 /web/node_modules
+/web/tsbuild
+/web/work-dist
 
 /docker

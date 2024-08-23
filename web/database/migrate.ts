@@ -10,43 +10,43 @@ type Migration = {
   name: string
 }
 
-async function getMigration(hash: string) {
-  const db = await getDatabase()
+function getMigration(hash: string) {
+  const db = getDatabase()
   try {
-    const row = await db.get<Migration | undefined>(
-      `
+    const row = db
+      .prepare<{ hash: string }>(
+        `
       SELECT id, hash, name
       FROM migration
       WHERE hash = $hash
       `,
-      { $hash: hash },
-    )
+      )
+      .get({ hash }) as Migration | undefined
     return row ?? null
   } catch (e) {
     return null
   }
 }
 
-async function createMigration(hash: string, name: string) {
-  const db = await getDatabase()
-  await db.run(
+function createMigration(hash: string, name: string) {
+  const db = getDatabase()
+  db.prepare<{ name: string; hash: string }>(
     `
     INSERT INTO migration (hash, name)
     VALUES ($hash, $name)
     `,
-    { $hash: hash, $name: name },
-  )
+  ).run({ hash, name })
 }
 
 async function migrateFile(path: string) {
-  const db = await getDatabase()
+  const db = getDatabase()
 
   const contents = await readFile(path, {
     encoding: "utf-8",
   })
   const hash = createHash("sha256").update(contents).digest("hex")
 
-  const existingMigration = await getMigration(hash)
+  const existingMigration = getMigration(hash)
   if (!existingMigration) {
     console.log(`Running migration: "${basename(path, ".sql")}"\n`)
     console.log(contents)
@@ -56,10 +56,10 @@ async function migrateFile(path: string) {
       .filter((statement) => !!statement.length)
 
     for (const statement of statements) {
-      await db.run(statement)
+      db.prepare(statement).run()
     }
 
-    await createMigration(hash, basename(path))
+    createMigration(hash, basename(path))
   }
 }
 

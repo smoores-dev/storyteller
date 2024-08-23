@@ -1,25 +1,4 @@
 .main {
   composes: main from "../page.module.css";
-}
-
-.settings-form {
-  composes: form from "../login/page.module.css";
-  max-width: 500px;
-}
-
-.settings-form input,
-.settings-form select {
-  margin-top: 1rem;
-  margin-bottom: 2rem;
-  min-width: 400px;
-}
-
-@media screen and (max-width: 700px) {
-  .settings-form input {
-    min-width: calc(100vw - 6rem);
-  }
-}
-
-.settings-form fieldset {
-  margin: 2rem 0;
+  padding: 0 1rem;
 }

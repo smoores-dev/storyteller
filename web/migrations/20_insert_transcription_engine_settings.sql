@@ -1,0 +1,12 @@
+INSERT INTO settings (name, value) VALUES ('transcription_engine', null);
+INSERT INTO settings (name, value) VALUES ('whisper_build', null);
+INSERT INTO settings (name, value) VALUES ('whisper_model', null);
+INSERT INTO settings (name, value) VALUES ('google_cloud_api_key', null);
+INSERT INTO settings (name, value) VALUES ('azure_subscription_key', null);
+INSERT INTO settings (name, value) VALUES ('azure_service_region', null);
+INSERT INTO settings (name, value) VALUES ('amazon_transcribe_region', null);
+INSERT INTO settings (name, value) VALUES ('amazon_transcribe_access_key_id', null);
+INSERT INTO settings (name, value) VALUES ('amazon_transcribe_secret_access_key', null);
+INSERT INTO settings (name, value) VALUES ('open_ai_api_key', null);
+INSERT INTO settings (name, value) VALUES ('open_ai_organization', null);
+INSERT INTO settings (name, value) VALUES ('open_ai_base_url', null);

@@ -2,16 +2,11 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import {
+  Settings as DbSettings,
+  SETTINGS_COLUMN_NAMES,
+} from "@/database/settings"
+
 export type Settings = {
-  smtp_host: string
-  smtp_port: number
-  smtp_username: string
-  smtp_password: string
-  smtp_from: string
-  smtp_ssl: boolean
-  smtp_reject_unauthorized: boolean
-  library_name: string
-  web_url: string
-  codec?: string | undefined
-  bitrate?: string | undefined
+  [Key in keyof typeof SETTINGS_COLUMN_NAMES]: Required<DbSettings>[(typeof SETTINGS_COLUMN_NAMES)[Key]]
 }

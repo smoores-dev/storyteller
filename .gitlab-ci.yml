@@ -13,7 +13,7 @@ always-yes:
     - echo "Done!"
 
 check:
-  image: registry.gitlab.com/smoores/storyteller-base:latest
+  image: node:20
   stage: check
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -26,10 +26,8 @@ check:
         - "**/*.tsx"
         - yarn.lock
   script:
+    - apt update && apt install -y --no-install-recommends ffmpeg
     - yarn
-    - patch -p1 node_modules/pymport/src/pymport.h
-      web/pymport-swallow-unthrowable.patch
-    - npm rebuild --build-from-source pymport
     - yarn check
     - git fetch origin main --depth 1
     - ./scripts/check-versions.sh
@@ -73,12 +71,13 @@ pages:
       - public
 
 publish-web:
-  tags:
-    - self-managed
   image: docker:24.0.5
+  services:
+    - name: docker:24.0.5
+      alias: docker
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+/'
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker context create gitlab-ci
@@ -90,57 +89,15 @@ publish-web:
       $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
       --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
 
-publish-cuda-11:
-  tags:
-    - self-managed
-  image: docker:24.0.5
-  stage: publish
-  rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker context create gitlab-ci
-    - docker buildx create --use --driver=docker-container gitlab-ci
-  script:
-    - docker buildx build --push -f Dockerfile --build-arg
-      BASE_TAG=cuda-11-latest --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-11-latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-11-latest,mode=max --tag
-      $CI_REGISTRY_IMAGE:cuda-11-latest --tag
-      $CI_REGISTRY_IMAGE:cuda-11-$CI_COMMIT_SHORT_SHA --tag
-      $CI_REGISTRY_IMAGE:cuda-11-$CI_COMMIT_TAG .
-
-publish-cuda-12:
-  tags:
-    - self-managed
-  image: docker:24.0.5
-  stage: publish
-  rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker context create gitlab-ci
-    - docker buildx create --use --driver=docker-container gitlab-ci
-  script:
-    - docker buildx build --push -f Dockerfile --build-arg
-      BASE_TAG=cuda-12-latest --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-12-latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:cuda-12-latest,mode=max --tag
-      $CI_REGISTRY_IMAGE:cuda-12-latest --tag
-      $CI_REGISTRY_IMAGE:cuda-12-$CI_COMMIT_SHORT_SHA --tag
-      $CI_REGISTRY_IMAGE:cuda-12-$CI_COMMIT_TAG .
-
 prerelease-web:
-  tags:
-    - self-managed
   stage: prerelease
   image: alpine:latest
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+/'
   script:
     - apk add curl jq
     - version=$(echo $CI_COMMIT_TAG | sed -r 's/web-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+$//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
     - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
       "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
       select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
@@ -153,15 +110,13 @@ prerelease-web:
       - release_notes.md
 
 release-web:
-  tags:
-    - self-managed
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
     - job: prerelease-web
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
@@ -171,14 +126,10 @@ release-web:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "CPU-only build for $CI_COMMIT_TAG"
+        - name: "Image for $CI_COMMIT_TAG"
           url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
-        - name: "CUDA-enabled build for $CI_COMMIT_TAG"
-          url: "https://$CI_REGISTRY_IMAGE:cuda-$CI_COMMIT_SHORT_SHA"
 
 prerelease-mobile:
-  tags:
-    - self-managed
   stage: prerelease
   image: alpine:latest
   rules:
