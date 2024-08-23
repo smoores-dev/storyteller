@@ -2,6 +2,9 @@
 
 [![Join the chat at https://gitter.im/smoores/storyteller](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/smoores/storyteller?utm_source=badge&utm_medium=badge&utm_content=badge)
 
+Want to get started?
+[Head over to the documentation site](https://smoores.gitlab.io/storyteller/)!
+
 <table>
   <tbody>
     <tr>
@@ -14,9 +17,6 @@
     </tr>
   </tbody>
 </table>
-
-Want to get started?
-[Head over to the documentation site](https://smoores.gitlab.io/storyteller/)!
 
 Storyteller is a self-hosted platform for creating and reading ebooks with
 synced narration. It's made of of three components: the API server, the web
