@@ -57,8 +57,6 @@ check-version:
     - git push --tags
 
 pages:
-  tags:
-    - self-managed
   image: node:18-alpine
   stage: publish
   rules:
