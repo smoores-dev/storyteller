@@ -30,6 +30,18 @@ below, or use
 [1Password's online random password generator](https://1password.com/password-generator/).
 Store the generated secret key in a text file in the current directory.
 
+### NVIDIA GPUs
+
+Storyteller can use your CUDA-enabled NVIDIA GPU to accelerate the transcription
+phase (see
+[transcription engine settings](/docs/administering#transcription-engine-settings)
+for more). In order to access your GPU from within the Docker container, you
+_must_ install the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+and
+[configure docker"](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker).
+Then you can uncomment the `runtime: nvidia` line below, in the `compose.yaml`.
+
 ```yaml
 # Example compose config for Storyteller
 
