@@ -5,6 +5,11 @@ description: A brief overview of what Storyteller is and who it's for.
 
 # What is this?
 
+<div style={{display: 'flex', margin: "32px 0", gap: '60px', overflowX: 'scroll'}}>
+<img style={{height: '500px', borderRadius: '16px'}} src="/storyteller/img/league-of-dragons-text.png" />
+<img style={{height: '500px', borderRadius: '16px'}} src="/storyteller/img/league-of-dragons-audio.png" />
+</div>
+
 Storyteller is a self-hosted platform for creating and reading ebooks with
 synced narration. It's made of of two components: the synchronization server,
 and the mobile apps. Together, these components allow you to take audiobooks and

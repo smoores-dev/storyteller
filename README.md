@@ -2,6 +2,11 @@
 
 [![Join the chat at https://gitter.im/smoores/storyteller](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/smoores/storyteller?utm_source=badge&utm_medium=badge&utm_content=badge)
 
+<div style="display: flex; margin: 32px 0; gap: 60px; overflow-x: scroll;">
+<img style="height: 500px; border-radius: 16px" src="docs/static/img/league-of-dragons-text.png" />
+<img style="height: 500px; border-radius: 16px" src="docs/static/img/league-of-dragons-audio.png" />
+</div>
+
 Want to get started?
 [Head over to the documentation site](https://smoores.gitlab.io/storyteller/)!
 
