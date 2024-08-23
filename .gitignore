@@ -4,11 +4,12 @@ __pycache__
 /dict/
 /indices/
 /cache/
+/whisper-builds/
 
 /public/
 
 .env.local
-storyteller.db
+storyteller.db*
 node_modules
 .yarn/*
 !.yarn/cache

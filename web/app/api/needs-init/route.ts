@@ -3,8 +3,8 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export async function GET() {
-  const count = await getUserCount()
+export function GET() {
+  const count = getUserCount()
   if (count > 0) {
     return new NextResponse(null, { status: 403 })
   }

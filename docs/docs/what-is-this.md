@@ -6,10 +6,10 @@ description: A brief overview of what Storyteller is and who it's for.
 # What is this?
 
 Storyteller is a self-hosted platform for creating and reading ebooks with
-synced narration. It's made of of two components: the backend server, and the
-mobile apps. Together, these components allow you to take audiobooks and ebooks
-that you already own and automatically synchronize them, as well as read or
-listen to (or both!) the resulting synced books.
+synced narration. It's made of of two components: the synchronization server,
+and the mobile apps. Together, these components allow you to take audiobooks and
+ebooks that you already own and automatically synchronize them, as well as read
+or listen to (or both!) the resulting synced books.
 
 ## Who is this for?
 

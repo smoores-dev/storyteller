@@ -8,11 +8,11 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export const GET = withHasPermission("book_list")(async (request) => {
+export const GET = withHasPermission("book_list")((request) => {
   const url = request.nextUrl
   const syncedOnly = url.searchParams.get("synced")
 
-  const books = await getBooks(null, syncedOnly !== null)
+  const books = getBooks(null, syncedOnly !== null)
 
   return NextResponse.json(
     books.reverse().map((book) => ({
@@ -61,7 +61,7 @@ export const POST = withHasPermission("book_create")(async (request) => {
   const title = await epub.getTitle()
   const authors = await epub.getAuthors()
 
-  const book = await createBook(
+  const book = createBook(
     title ?? epubFile.name.replace(".epub", ""),
     authors.map((author) => ({ ...author, uuid: "" })),
   )

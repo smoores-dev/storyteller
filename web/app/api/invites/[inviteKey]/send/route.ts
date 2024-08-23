@@ -13,7 +13,7 @@ export const POST = withHasPermission<Params>("user_create")(async (
 ) => {
   const key = context.params.inviteKey
 
-  const invite = await getInvite(key)
+  const invite = getInvite(key)
 
   await sendInvite(invite.email, key)
 

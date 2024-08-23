@@ -431,6 +431,28 @@ export class Epub {
     return this.getEpub2CoverImage()
   }
 
+  async getLanguage(short = false) {
+    const metadata = await this.getMetadata()
+    const languageEntries = metadata.filter(
+      (entry) => entry.type === "dc:language",
+    )
+    const primaryLanguage = languageEntries[0]
+    if (!primaryLanguage) return null
+
+    const languageCode = primaryLanguage.value
+    // Handle a weird edge case where Calibre's metadata
+    // GUI incorrectly sets the language code to 'und'
+    // https://www.mobileread.com/forums/showthread.php?t=87928
+    if (!languageCode || languageCode === "und") return null
+
+    if (!short) return languageCode
+
+    const hyphenIndex = languageCode.indexOf("-")
+    if (hyphenIndex === -1) return languageCode
+
+    return languageCode.slice(0, hyphenIndex).toLowerCase()
+  }
+
   async getTitle(short = false) {
     const metadata = await this.getMetadata()
     const titleEntries = metadata.filter((entry) => entry.type === "dc:title")

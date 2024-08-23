@@ -23,7 +23,7 @@ export const PUT = withHasPermission<Params>("book_update")(async (
   request,
   context,
 ) => {
-  const bookUuid = await getBookUuid(context.params.bookId)
+  const bookUuid = getBookUuid(context.params.bookId)
   const formData = await request.formData()
   const title = formData.get("title")?.valueOf()
   if (typeof title !== "string") {
@@ -37,7 +37,7 @@ export const PUT = withHasPermission<Params>("book_update")(async (
     (authorString) =>
       JSON.parse(authorString.valueOf() as string) as AuthorInput,
   )
-  const updated = await updateBook(bookUuid, title, authors)
+  const updated = updateBook(bookUuid, title, authors)
 
   const textCover = formData.get("text_cover")?.valueOf()
   if (typeof textCover === "object") {
@@ -68,12 +68,12 @@ export const PUT = withHasPermission<Params>("book_update")(async (
   })
 })
 
-export const GET = withHasPermission<Params>("book_read")(async (
+export const GET = withHasPermission<Params>("book_read")((
   _request,
   context,
 ) => {
-  const bookUuid = await getBookUuid(context.params.bookId)
-  const [book] = await getBooks([bookUuid])
+  const bookUuid = getBookUuid(context.params.bookId)
+  const [book] = getBooks([bookUuid])
   if (!book) {
     return NextResponse.json(
       { message: `Could not find book with id ${context.params.bookId}` },
@@ -97,8 +97,8 @@ export const DELETE = withHasPermission<Params>("book_delete")(async (
   _request,
   context,
 ) => {
-  const bookUuid = await getBookUuid(context.params.bookId)
-  const [book] = await getBooks([bookUuid])
+  const bookUuid = getBookUuid(context.params.bookId)
+  const [book] = getBooks([bookUuid])
   if (!book) {
     return NextResponse.json(
       { message: `Could not find book with id ${context.params.bookId}` },
@@ -106,7 +106,8 @@ export const DELETE = withHasPermission<Params>("book_delete")(async (
     )
   }
 
-  await Promise.all([deleteAssets(book.uuid), deleteBook(book.uuid)])
+  deleteBook(book.uuid)
+  await deleteAssets(book.uuid)
 
   return new Response(null, { status: 204 })
 })

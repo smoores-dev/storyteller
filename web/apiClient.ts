@@ -276,6 +276,7 @@ export class ApiClient {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
+      cache: "no-cache",
     })
 
     if (!response.ok) {
@@ -286,7 +287,7 @@ export class ApiClient {
     return settings
   }
 
-  async updateSettings(settings: Settings) {
+  async updateSettings(settings: Required<Settings>) {
     const url = new URL(`${this.rootPath}/settings`, this.origin)
 
     const response = await fetch(url, {

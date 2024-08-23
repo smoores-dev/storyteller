@@ -8,11 +8,11 @@ type Params = {
   userUuid: UUID
 }
 
-export const DELETE = withHasPermission<Params>("user_delete")(async (
+export const DELETE = withHasPermission<Params>("user_delete")((
   _request,
   context,
 ) => {
-  await deleteUser(context.params.userUuid)
+  deleteUser(context.params.userUuid)
 
   return new Response(null, { status: 204 })
 })

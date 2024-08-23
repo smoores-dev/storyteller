@@ -34,4 +34,16 @@ export const TEXT_CONTENT = [
   "ul",
 ]
 
-export const BLOCKS = [...TEXT_CONTENT, ...CONTENT_SECTIONING]
+export const TABLE_PARTS = [
+  "table",
+  "thead",
+  "th",
+  "tbody",
+  "tr",
+  "td",
+  "colgroup",
+  "caption",
+  "tfoot",
+]
+
+export const BLOCKS = [...TEXT_CONTENT, ...CONTENT_SECTIONING, ...TABLE_PARTS]

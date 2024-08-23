@@ -13,7 +13,7 @@ export const POST = withHasPermission<Params>("book_process")(async (
   request,
   context,
 ) => {
-  const bookUuid = await getBookUuid(context.params.bookId)
+  const bookUuid = getBookUuid(context.params.bookId)
   const url = request.nextUrl
   const restart = typeof url.searchParams.get("restart") === "string"
 
@@ -26,11 +26,11 @@ export const POST = withHasPermission<Params>("book_process")(async (
   return new Response(null, { status: 204 })
 })
 
-export const DELETE = withHasPermission<Params>("book_process")(async (
+export const DELETE = withHasPermission<Params>("book_process")((
   _request,
   context,
 ) => {
-  const bookUuid = await getBookUuid(context.params.bookId)
+  const bookUuid = getBookUuid(context.params.bookId)
 
   cancelProcessing(bookUuid)
 

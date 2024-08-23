@@ -10,8 +10,8 @@ import { NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export const GET = withHasPermission("user_list")(async () => {
-  const users = await getUsers()
+export const GET = withHasPermission("user_list")(() => {
+  const users = getUsers()
   return NextResponse.json(users)
 })
 
@@ -25,7 +25,7 @@ type InviteAccept = {
 
 export async function POST(request: NextRequest) {
   const invite = (await request.json()) as InviteAccept
-  const verified = await verifyInvite(invite.email, invite.invite_key)
+  const verified = verifyInvite(invite.email, invite.invite_key)
   if (!verified) {
     return NextResponse.json(
       {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
   const hashedPassword = await hashPassword(invite.password)
 
-  await createUser(
+  createUser(
     invite.username,
     invite.full_name,
     invite.email,

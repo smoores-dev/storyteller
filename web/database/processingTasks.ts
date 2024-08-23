@@ -19,88 +19,88 @@ export type ProcessingTask = {
   bookUuid: UUID
 }
 
-export async function createProcessingTask(
+export function createProcessingTask(
   type: ProcessingTaskType,
   status: ProcessingTaskStatus,
   bookUuid: UUID,
 ) {
-  const db = await getDatabase()
+  const db = getDatabase()
 
-  const { uuid } = await db.get<{ uuid: UUID }>(
-    `
+  const { uuid } = db
+    .prepare<{
+      type: ProcessingTaskType
+      status: ProcessingTaskStatus
+      bookUuid: UUID
+    }>(
+      `
     INSERT INTO processing_task (type, status, book_uuid)
-    VALUES ($type, $status, $book_uuid)
+    VALUES ($type, $status, $bookUuid)
     RETURNING uuid
     `,
-    {
-      $type: type,
-      $status: status,
-      $book_uuid: bookUuid,
-    },
-  )
+    )
+    .get({
+      type,
+      status,
+      bookUuid,
+    }) as { uuid: UUID }
 
   return uuid
 }
 
-export async function getProcessingTasksForBook(bookUuid: UUID) {
-  const db = await getDatabase()
+export function getProcessingTasksForBook(bookUuid: UUID) {
+  const db = getDatabase()
 
-  return db.all<ProcessingTask>(
-    `
+  return db
+    .prepare<{ bookUuid: UUID }>(
+      `
     SELECT uuid, type, status, progress, book_uuid AS bookUuid
     FROM processing_task
     WHERE book_uuid = $bookUuid
     `,
-    { $bookUuid: bookUuid },
-  )
+    )
+    .all({ bookUuid }) as ProcessingTask[]
 }
 
-export async function resetProcessingTasksForBook(bookUuid: UUID) {
-  const db = await getDatabase()
+export function resetProcessingTasksForBook(bookUuid: UUID) {
+  const db = getDatabase()
 
-  await db.run(
+  db.prepare(
     `
     UPDATE processing_task
     SET progress = 0.0, status = 'STARTED'
     WHERE book_uuid = $bookUuid
     `,
-    {
-      $bookUuid: bookUuid,
-    },
-  )
+  ).run({
+    bookUuid,
+  })
 }
 
-export async function updateTaskProgress(taskUuid: UUID, progress: number) {
-  const db = await getDatabase()
+export function updateTaskProgress(taskUuid: UUID, progress: number) {
+  const db = getDatabase()
 
-  await db.run(
+  db.prepare<{ progress: number; uuid: UUID }>(
     `
     UPDATE processing_task
     SET progress = $progress
     WHERE uuid = $uuid
     `,
-    {
-      $progress: progress,
-      $uuid: taskUuid,
-    },
-  )
+  ).run({
+    progress,
+    uuid: taskUuid,
+  })
 }
 
-export async function updateTaskStatus(
-  taskUuid: UUID,
-  status: ProcessingTaskStatus,
-) {
-  const db = await getDatabase()
+export function updateTaskStatus(taskUuid: UUID, status: ProcessingTaskStatus) {
+  const db = getDatabase()
 
-  await db.run(
+  db.prepare<{ status: ProcessingTaskStatus; uuid: UUID }>(
     `
     UPDATE processing_task
     SET status = $status
     WHERE uuid = $uuid
     `,
-    {
-      $status: status,
-      $uuid: taskUuid,
-    },
-  )
+  ).run({
+    status,
+    uuid: taskUuid,
+  })
 }
