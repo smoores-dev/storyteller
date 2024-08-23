@@ -16,7 +16,7 @@ export const GET = withHasPermission<Params>("book_download")(async (
   request,
   context,
 ) => {
-  const bookUuid = await getBookUuid(context.params.bookId)
+  const bookUuid = getBookUuid(context.params.bookId)
   const range = request.headers.get("Range")?.valueOf()
   const ifRange = request.headers.get("If-Range")?.valueOf()
   const filepath = getEpubSyncedFilepath(bookUuid)

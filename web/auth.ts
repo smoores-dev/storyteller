@@ -24,7 +24,7 @@ export async function authenticateUser(
   username: string,
   password: string,
 ): Promise<User | null> {
-  const user = await getUser(username)
+  const user = getUser(username)
 
   if (!user) return null
 
@@ -90,8 +90,8 @@ export function withToken<
   }
 }
 
-export async function verifyToken(token: string) {
-  const isRevoked = await isTokenRevoked(token)
+export function verifyToken(token: string) {
+  const isRevoked = isTokenRevoked(token)
   if (isRevoked) return null
 
   try {
@@ -121,7 +121,7 @@ export function withVerifyToken<
   ) => Response | Promise<Response>,
 ) {
   return withToken<Params>(async function (request, context, token) {
-    const tokenData = await verifyToken(token)
+    const tokenData = verifyToken(token)
     if (!tokenData) {
       return NextResponse.json(
         {
@@ -151,10 +151,7 @@ export function withHasPermission<
   ) {
     return withVerifyToken<Params>(
       async (request, context, token, tokenData) => {
-        const hasPermission = await userHasPermission(
-          tokenData.username,
-          permission,
-        )
+        const hasPermission = userHasPermission(tokenData.username, permission)
 
         if (!hasPermission) {
           return NextResponse.json({ message: "Forbidden" }, { status: 403 })

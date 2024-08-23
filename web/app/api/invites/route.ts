@@ -46,7 +46,7 @@ export const POST = withHasPermission("user_create")(async (request) => {
     settingsUpdate: permissionsInput.settings_update,
   }
 
-  await createInvite(email, key, permissions)
+  createInvite(email, key, permissions)
 
   try {
     await sendInvite(email, key)
@@ -58,7 +58,7 @@ export const POST = withHasPermission("user_create")(async (request) => {
   return NextResponse.json({ email, key })
 })
 
-export const GET = withHasPermission("invite_list")(async () => {
-  const invites = await getInvites()
+export const GET = withHasPermission("invite_list")(() => {
+  const invites = getInvites()
   return NextResponse.json(invites)
 })

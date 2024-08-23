@@ -19,12 +19,7 @@ export async function POST(request: NextRequest) {
   const user = (await request.json()) as UserRequest
   const hashedPassword = await hashPassword(user.password)
 
-  await createAdminUser(
-    user.username,
-    user.full_name,
-    user.email,
-    hashedPassword,
-  )
+  createAdminUser(user.username, user.full_name, user.email, hashedPassword)
 
   const accessTokenExpires = getAccessTokenExpireDate()
   const accessToken = createAccessToken(

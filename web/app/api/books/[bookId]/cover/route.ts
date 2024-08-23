@@ -17,7 +17,7 @@ export const GET = withHasPermission<Params>("book_read")(async (
   request,
   context,
 ) => {
-  const bookUuid = await getBookUuid(context.params.bookId)
+  const bookUuid = getBookUuid(context.params.bookId)
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"
 
   const coverFilepath = audio

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 # Syncing books
@@ -10,8 +10,9 @@ things:
 
 1. An EPUB book. EPUB is an open file format for ebooks, and most online book
    stores will provide EPUB files for their books, though many unfortunately
-   still use DRM. Storyteller _cannot_ work with books that are locked with DRM.
-   ACSM files, or EPUB files with Readium's LCP, will not work with Storyteller.
+   still use DRM ("Digital Rights Management"). Storyteller _cannot_ work with
+   books that are locked with DRM. ACSM files, AZW4 files, Mobipocket files,
+   Apple Fairplay encrypted EPUBs, etc, will not work with Storyteller.
 2. An audiobook. This can either be provided as any number of MP4, M4A, M4B, or
    MP3 files, or any number of ZIP archives of files of those types. If
    providing multiple files, it's best to ensure that they're alphanumerically
@@ -53,6 +54,12 @@ docker run -v ~/Documents/Storyteller:/data -p 8001:8001 --memory=24g --cpus=8 r
 
 ## Where do I get DRM-free books?
 
+DRM ("Digital Rights Management") is a category of software that attempts to
+limit access to digital goods. iTunes used to use DRM for music bought through
+the iTunes store; the MP3 files that users downloaded from iTunes could _only_
+be played on their Apple devices. In the book publishing world, the most common
+DRM schemes are from Adobe, Amazon, and Apple.
+
 It is unfortunately the case that most book publishers and sellers only provide
 digital book files with DRM protection. Finding alternatives that provide
 DRM-free options can be a challenge.
@@ -72,32 +79,3 @@ straightforward to actually access the book files directly. I personally
 purchase ebooks through [Rakuten kobo](https://www.kobo.com/); it's easy to
 download book files from your purchased books, and books that are sold without
 DRM can be downloaded as EPUB files.
-
-## Using CUDA for GPU accelerated transcription
-
-> Note: The minimum supported CUDA version is 11.8.
-
-The transcription phase can be fairly slow on a CPU, but it can be sped up quite
-dramatically with a CUDA-enabled GPU. There are a few steps you'll need to
-follow to do so.
-
-1. Install and configure the
-   [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
-   Make sure to follow the
-   ["Configuration Docker"](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker)
-   section as well.
-2. Update your `compose.yaml` file or docker CLI commands:
-
-   a. Replace the `:latest` image tag with `:cuda-latest` (note that this image
-   is much larger and may take a while to download)
-
-   b. Add `runtime: nvidia` to the service stanza. You can add it right below
-   the `image` property
-
-### CUDA Environment Variables
-
-| Parameter                           | Description                                                                                                                | Default | CUDA Options                                                                                                         |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
-| STORYTELLER_DEVICE (required)       | The device Storyteller will use to process files.                                                                          | `cpu`   | `cuda`                                                                                                               |
-| STORYTELLER_BATCH_SIZE (optional)   | Number of audio chunks being processed at a single time. Decrease this value if you are running into out of memory errors. | `16`    | minumum value of `1`                                                                                                 |
-| STORYTELLER_COMPUTE_TYPE (optional) | Helps with reducing the model size and accelerate its execution. Increasing this value may impact quality.                 | `int8`  | [See CTranslate2 documentation.](https://opennmt.net/CTranslate2/quantization.html#implicit-type-conversion-on-load) |

@@ -47,13 +47,12 @@ export type User = {
 // sqlite doesn't really have booleans, so it returns numbers here
 type SqliteUserPermissions = { [K in keyof UserPermissions]: 0 | 1 }
 
-export async function getUser(username: string): Promise<User | null> {
-  const db = await getDatabase()
+export function getUser(username: string): User | null {
+  const db = getDatabase()
 
-  const row = await db.get<
-    null | (Omit<User, "username"> & SqliteUserPermissions)
-  >(
-    `
+  const row = db
+    .prepare<{ username: string }>(
+      `
     SELECT
       user.uuid,
       user.full_name AS fullName,
@@ -78,10 +77,10 @@ export async function getUser(username: string): Promise<User | null> {
       ON user.user_permission_uuid = user_permission.uuid
     WHERE username = $username
     `,
-    {
-      $username: username.toLowerCase(),
-    },
-  )
+    )
+    .get({
+      username: username.toLowerCase(),
+    }) as null | (Omit<User, "username"> & SqliteUserPermissions)
 
   if (!row) return null
 
@@ -97,24 +96,27 @@ export async function getUser(username: string): Promise<User | null> {
   }
 }
 
-export async function getUserCount() {
-  const db = await getDatabase()
+export function getUserCount() {
+  const db = getDatabase()
 
-  const { count } = await db.get<{ count: number }>(
-    `
+  const { count } = db
+    .prepare(
+      `
     SELECT count(uuid) AS count
     FROM user;
     `,
-  )
+    )
+    .get() as { count: number }
 
   return count
 }
 
-export async function getUsers() {
-  const db = await getDatabase()
+export function getUsers() {
+  const db = getDatabase()
 
-  const rows = await db.all<User & SqliteUserPermissions>(
-    `
+  const rows = db
+    .prepare(
+      `
     SELECT
       user.uuid,
       user.username,
@@ -139,7 +141,8 @@ export async function getUsers() {
     JOIN user_permission
       ON user.user_permission_uuid = user_permission.uuid
     `,
-  )
+    )
+    .all() as Array<User & SqliteUserPermissions>
 
   return rows.map((row) => {
     const { uuid, username, fullName, email, hashedPassword, ...permissions } =
@@ -156,16 +159,17 @@ export async function getUsers() {
   })
 }
 
-export async function createAdminUser(
+export function createAdminUser(
   username: string,
   fullName: string,
   email: string,
   hashedPassword: string,
 ) {
-  const db = await getDatabase()
+  const db = getDatabase()
 
-  const { uuid } = await db.get<{ uuid: UUID }>(
-    `
+  const { uuid } = db
+    .prepare(
+      `
     INSERT INTO user_permission (
       book_create,
       book_delete,
@@ -188,9 +192,16 @@ export async function createAdminUser(
     )
     RETURNING uuid
     `,
-  )
+    )
+    .get() as { uuid: UUID }
 
-  await db.run(
+  db.prepare<{
+    username: string
+    fullName: string
+    email: string
+    hashedPassword: string
+    userPermissionUuid: UUID
+  }>(
     `
     INSERT INTO user (
       username,
@@ -209,69 +220,72 @@ export async function createAdminUser(
       FROM user
     )
     `,
-    {
-      $username: username,
-      $fullName: fullName,
-      $email: email,
-      $hashedPassword: hashedPassword,
-      $userPermissionUuid: uuid,
-    },
-  )
+  ).run({
+    username: username.toLowerCase(),
+    fullName,
+    email,
+    hashedPassword,
+    userPermissionUuid: uuid,
+  })
 }
 
-export async function deleteUser(userUuid: UUID) {
-  const db = await getDatabase()
+export function deleteUser(userUuid: UUID) {
+  const db = getDatabase()
 
-  const { uuid: userPermissionUuid } = await db.get<{ uuid: UUID }>(
-    `
+  const { uuid: userPermissionUuid } = db
+    .prepare<{ uuid: UUID }>(
+      `
     SELECT user_permission_uuid
     FROM user
     WHERE uuid = $uuid
     `,
-    {
-      $uuid: userUuid,
-    },
-  )
+    )
+    .get({
+      uuid: userUuid,
+    }) as { uuid: UUID }
 
-  await db.run(
+  db.prepare<{ uuid: UUID }>(
     `
     DELETE FROM user
     WHERE uuid = $uuid
     `,
-    {
-      $uuid: userUuid,
-    },
-  )
+  ).run({
+    uuid: userUuid,
+  })
 
-  await db.run(
+  db.prepare<{ userPermissionUuid: UUID }>(
     `
     DELETE FROM invite
     WHERE user_permission_uuid = $userPermissionUuid
     `,
-    {
-      $userPermissionUuid: userPermissionUuid,
-    },
-  )
+  ).run({
+    userPermissionUuid,
+  })
 
-  await db.run(
+  db.prepare<{ uuid: UUID }>(
     `
     DELETE FROM user_permission
     WHERE uuid = $uuid
     `,
-    { $uuid: userPermissionUuid },
-  )
+  ).run({ uuid: userPermissionUuid })
 }
 
-export async function createUser(
+export function createUser(
   username: string,
   fullName: string,
   email: string,
   hashedPassword: string,
   inviteKey: string,
 ) {
-  const db = await getDatabase()
+  const db = getDatabase()
 
-  await db.run(
+  db.prepare<{
+    username: string
+    fullName: string
+    email: string
+    hashedPassword: string
+    inviteKey: string
+  }>(
     `
     INSERT INTO user (
       username,
@@ -291,46 +305,42 @@ export async function createUser(
       )
     ) 
     `,
-    {
-      $username: username.toLowerCase(),
-      $fullName: fullName,
-      $email: email,
-      $hashedPassword: hashedPassword,
-      $inviteKey: inviteKey,
-    },
-  )
+  ).run({
+    username: username.toLowerCase(),
+    fullName,
+    email,
+    hashedPassword,
+    inviteKey,
+  })
 
-  await db.run(
+  db.prepare<{ inviteKey: string }>(
     `
     DELETE FROM invite
     WHERE key = $inviteKey
     `,
-    {
-      $inviteKey: inviteKey,
-    },
-  )
+  ).run({
+    inviteKey,
+  })
 }
 
-export async function userHasPermission(
-  username: string,
-  permission: Permission,
-) {
-  const db = await getDatabase()
+export function userHasPermission(username: string, permission: Permission) {
+  const db = getDatabase()
 
-  const { [permission]: hasPermission } = await db.get<{
-    [K in Permission]: 0 | 1
-  }>(
-    `
+  const { [permission]: hasPermission } = db
+    .prepare<{ username: string }>(
+      `
     SELECT ${permission}
     FROM user_permission
     JOIN user
       ON user.user_permission_uuid = user_permission.uuid
     WHERE user.username = $username
     `,
-    {
-      $username: username.toLowerCase(),
-    },
-  )
+    )
+    .get({
+      username: username.toLowerCase(),
+    }) as {
+    [K in Permission]: 0 | 1
+  }
 
   return hasPermission === 1
 }

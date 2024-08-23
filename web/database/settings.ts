@@ -1,5 +1,30 @@
 import { getDatabase } from "./connection"
 
+export type TranscriptionEngine =
+  | "whisper.cpp"
+  | "google-cloud"
+  | "microsoft-azure"
+  | "amazon-transcribe"
+  | "openai-cloud"
+
+export type WhisperBuild = "cpu" | "cublas-11.8" | "cublas-12.4" | "openblas"
+
+export type WhisperModel =
+  | "tiny"
+  | "tiny-q5_1"
+  | "base"
+  | "base-q5_1"
+  | "small"
+  | "small-q5_1"
+  | "medium"
+  | "medium-q5_0"
+  | "large"
+  | "large-v1"
+  | "large-v2"
+  | "large-v2-q5_0"
+  | "large-v3"
+  | "large-v3-q5_0"
+
 export type Settings = {
   smtpHost?: string
   smtpPort?: number
@@ -12,15 +37,21 @@ export type Settings = {
   webUrl?: string
   codec?: string | null
   bitrate?: string | null
+  transcriptionEngine?: TranscriptionEngine | null
+  whisperBuild?: WhisperBuild | null
+  whisperModel?: WhisperModel | null
+  googleCloudApiKey?: string | null
+  azureSubscriptionKey?: string | null
+  azureServiceRegion?: string | null
+  amazonTranscribeRegion?: string | null
+  amazonTranscribeAccessKeyId?: string | null
+  amazonTranscribeSecretAccessKey?: string | null
+  openAiApiKey?: string | null
+  openAiOrganization?: string | null
+  openAiBaseUrl?: string | null
 }
 
-// Sqlite doesn't have real booleans; these are stored as bits
-type SqliteSettings = Omit<Settings, "smtpSsl" | "smtpRejectUnauthorized"> & {
-  smtpSsl: 0 | 1
-  smtpRejectUnauthorized: 0 | 1
-}
-
-const SETTINGS_COLUMN_NAMES = {
+export const SETTINGS_COLUMN_NAMES = {
   smtp_host: "smtpHost",
   smtp_port: "smtpPort",
   smtp_username: "smtpUsername",
@@ -32,37 +63,52 @@ const SETTINGS_COLUMN_NAMES = {
   web_url: "webUrl",
   codec: "codec",
   bitrate: "bitrate",
-} as const
+  transcription_engine: "transcriptionEngine",
+  whisper_build: "whisperBuild",
+  whisper_model: "whisperModel",
+  google_cloud_api_key: "googleCloudApiKey",
+  azure_subscription_key: "azureSubscriptionKey",
+  azure_service_region: "azureServiceRegion",
+  amazon_transcribe_region: "amazonTranscribeRegion",
+  amazon_transcribe_access_key_id: "amazonTranscribeAccessKeyId",
+  amazon_transcribe_secret_access_key: "amazonTranscribeSecretAccessKey",
+  open_ai_api_key: "openAiApiKey",
+  open_ai_organization: "openAiOrganization",
+  open_ai_base_url: "openAiBaseUrl",
+} as const satisfies Record<string, keyof Settings>
 
-export async function getSetting<
-  Name extends keyof typeof SETTINGS_COLUMN_NAMES,
->(name: Name) {
-  const db = await getDatabase()
+export function getSetting<Name extends keyof typeof SETTINGS_COLUMN_NAMES>(
+  name: Name,
+) {
+  const db = getDatabase()
 
-  const { value: valueJson } = await db.get<{ value: string }>(
-    `
+  const { value: valueJson } = db
+    .prepare<{ name: Name }>(
+      `
     SELECT value
     FROM settings
     WHERE name = $name
     `,
-    { $name: name },
-  )
+    )
+    .get({ name }) as { value: string }
 
   return JSON.parse(valueJson) as Settings[(typeof SETTINGS_COLUMN_NAMES)[Name]]
 }
 
-export async function getSettings(): Promise<Settings> {
-  const db = await getDatabase()
+export function getSettings(): Settings {
+  const db = getDatabase()
 
-  const rows = await db.all<{
-    name: keyof typeof SETTINGS_COLUMN_NAMES
-    value: string
-  }>(
-    `
+  const rows = db
+    .prepare(
+      `
     SELECT name, value
     FROM settings
     `,
-  )
+    )
+    .all() as {
+    name: keyof typeof SETTINGS_COLUMN_NAMES
+    value: string
+  }[]
 
   const result = rows.reduce(
     (acc, row) => ({
@@ -73,19 +119,19 @@ export async function getSettings(): Promise<Settings> {
         | boolean,
     }),
     {},
-  ) as SqliteSettings
+  ) as Settings
 
   return {
     ...result,
-    smtpSsl: result.smtpSsl === 1,
-    smtpRejectUnauthorized: result.smtpRejectUnauthorized === 1,
+    smtpSsl: result.smtpSsl === true,
+    smtpRejectUnauthorized: result.smtpRejectUnauthorized === true,
   }
 }
 
-export async function updateSettings(settings: Settings) {
-  const db = await getDatabase()
+export function updateSettings(settings: Required<Settings>) {
+  const db = getDatabase()
 
-  const statement = await db.prepare(
+  const statement = db.prepare<{ name: string; value: string }>(
     `
     UPDATE settings
     SET value = $value
@@ -93,42 +139,19 @@ export async function updateSettings(settings: Settings) {
     `,
   )
 
-  await Promise.all([
-    statement.run({
-      $name: "smtp_from",
-      $value: JSON.stringify(settings.smtpFrom),
-    }),
-    statement.run({
-      $name: "smtp_host",
-      $value: JSON.stringify(settings.smtpHost),
-    }),
-    statement.run({
-      $name: "smtp_port",
-      $value: JSON.stringify(settings.smtpPort),
-    }),
-    statement.run({
-      $name: "smtp_username",
-      $value: JSON.stringify(settings.smtpUsername),
-    }),
-    statement.run({
-      $name: "smtp_password",
-      $value: JSON.stringify(settings.smtpPassword),
-    }),
-    statement.run({
-      $name: "web_url",
-      $value: JSON.stringify(settings.webUrl),
-    }),
-    statement.run({
-      $name: "library_name",
-      $value: JSON.stringify(settings.libraryName),
-    }),
-    statement.run({
-      $name: "codec",
-      $value: JSON.stringify(settings.codec),
-    }),
-    statement.run({
-      $name: "bitrate",
-      $value: JSON.stringify(settings.bitrate),
-    }),
-  ])
+  Object.entries(SETTINGS_COLUMN_NAMES).forEach(
+    ([columnName, propertyName]) => {
+      console.log(
+        propertyName,
+        propertyName in settings,
+        settings[propertyName],
+      )
+      if (!(propertyName in settings)) return
+
+      statement.run({
+        name: columnName,
+        value: JSON.stringify(settings[propertyName]),
+      })
+    },
+  )
 }

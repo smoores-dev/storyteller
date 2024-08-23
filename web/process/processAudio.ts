@@ -21,7 +21,7 @@ import {
   splitTrack,
   transcodeTrack,
 } from "@/audio"
-import { type TranscriptionResult } from "@/transcribe"
+import { StorytellerTranscription } from "@/synchronize/getSentenceRanges"
 
 export function getAudioDirectory(bookUuid: UUID) {
   return join(AUDIO_DIR, bookUuid)
@@ -340,7 +340,7 @@ export async function getTranscriptions(bookUuid: UUID) {
       const transcriptionContents = await readFile(filepath, {
         encoding: "utf-8",
       })
-      return JSON.parse(transcriptionContents) as TranscriptionResult
+      return JSON.parse(transcriptionContents) as StorytellerTranscription
     }),
   )
   return transcriptions
