@@ -353,13 +353,35 @@ export class ApiClient {
     return book
   }
 
+  async createBook(epubFile: string, audioFiles: string[]): Promise<BookDetail>
   async createBook(
     epubFile: File,
     audioFiles: FileList,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
+  ): Promise<BookDetail>
+  async createBook(
+    epubFile: File | string,
+    audioFiles: FileList | string[],
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<BookDetail> {
     const url = new URL(`${this.rootPath}/books/`, this.origin)
 
+    if (typeof epubFile === "string" && Array.isArray(audioFiles)) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { ...this.getHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          epub_path: epubFile,
+          audio_paths: audioFiles,
+        }),
+      })
+
+      if (response.status > 299) {
+        throw new ApiClientError(response.status, response.statusText)
+      }
+
+      return (await response.json()) as BookDetail
+    }
     const response = await axios.postForm<BookDetail>(
       url.toString(),
       {
@@ -369,7 +391,10 @@ export class ApiClient {
       {
         formSerializer: { indexes: null },
         withCredentials: true,
-        onUploadProgress,
+        // If we get to the overload with Files rather than strings,
+        // onUploadProgress is definitely provided
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        onUploadProgress: onUploadProgress!,
       },
     )
 

@@ -1,10 +1,11 @@
-import { persistAudio, persistEpub } from "@/assets"
+import { linkAudio, linkEpub, persistAudio, persistEpub } from "@/assets"
 import { withHasPermission } from "@/auth"
 import { createBook, getBooks } from "@/database/books"
 import { Epub } from "@/epub"
 import { isProcessing, isQueued } from "@/work/distributor"
 import { BlobReader } from "@zip.js/zip.js"
 import { NextResponse } from "next/server"
+import { basename } from "path"
 
 export const dynamic = "force-dynamic"
 
@@ -36,6 +37,37 @@ function entriesAreFiles(
 }
 
 export const POST = withHasPermission("book_create")(async (request) => {
+  if (request.headers.get("Content-Type") === "application/json") {
+    const { epub_path: epubPath, audio_paths: audioPaths } =
+      (await request.json()) as {
+        epub_path: string
+        audio_paths: string[]
+      }
+
+    try {
+      const epub = await Epub.from(epubPath)
+      const title = await epub.getTitle()
+      const authors = await epub.getAuthors()
+
+      const book = createBook(
+        title ?? basename(epubPath).replace(".epub", ""),
+        authors.map((author) => ({ ...author, uuid: "" })),
+      )
+      await linkEpub(book.uuid, epubPath)
+      await linkAudio(book.uuid, audioPaths)
+
+      return NextResponse.json(book)
+    } catch (e) {
+      console.error(e)
+      return NextResponse.json(
+        {
+          message: "Missing epubPath or audioPaths",
+        },
+        { status: 405 },
+      )
+    }
+  }
+
   const formData = await request.formData()
   const epubFile = formData.get("epub_file")
   const audioFiles = formData.getAll("audio_files")
