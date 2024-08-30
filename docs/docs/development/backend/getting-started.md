@@ -6,29 +6,23 @@ sidebar_position: 1
 
 ## Setting up a local development environment
 
-Storyteller's backend is primarily a Next.js server. It uses
-[pymport](https://github.com/mmomtchev/pymport) to run some Python code, namely
-`whisperx` and `fuzzysearch`.
+Storyteller's backend is primarily a Next.js server. It's written in Typescript,
+and relies on some additional libraries that are worth getting up to speed on:
 
-Due to the challenges with making the necessary libraries available to pymport,
-development should be done in the provided
-[development container](https://containers.dev/). If you use VS Code, this is as
-simple as installing the Dev Containers extension, and selecting "Rebuild and
-reopen in container" from the command prompt.
+- [sqlite](https://www.sqlite.org/) is the database, and we use
+  [better-sqlite](https://www.npmjs.com/package/better-sqlite3) as the driver
+- [piscina](https://piscinajs.github.io/piscina/) is the worker distribution
+  manager for running the synchronization processing on a separate worker thread
+- [echogarden](https://github.com/echogarden-project/echogarden) is the speech
+  toolset that we use for transcription
 
-Otherwise, you may wish to use a standalone dev container runtime, such as
-[open dev container](https://gitlab.com/smoores/open-devcontainer) or the
-[Dev Container CLI](https://github.com/devcontainers/cli).
+### Development tools
 
-### Developing with Dev Containers
-
-To use the development container in this repo, first ensure that you have
-[Docker installed](https://docs.docker.com/get-docker/) on your system, and the
-Docker daemon is running.
-
-If you do not use VS Code for development, you can use the devcontainer CLI to
-start the container with `devcontainer up`. `devcontainer exec` will allow you
-to execute commands in the container, including starting a shell session.
+In order to get started with the backend development, you'll need to have
+`ffmpeg`, `node.js` (v20.x), `yarn`, and `sqlite` installed. You can either
+install these with your operating system's package manager, or you can use the
+Nix flake provided in this project (`nix develop .`), which includes all of
+these tools.
 
 ## Installing dependencies
 
@@ -39,24 +33,16 @@ available after following the development environment setup flow.
 To install Node.js dependencies, run:
 
 ```shell
-yarn deps
+yarn install
 ```
-
-:::info
-
-Note that running the standard `yarn install` command is insufficient for
-properly installing and setting up this project's dependencies. We need to
-rebuild a few packages from source, as well as manually modifying pymport to
-prevent hard crashes when a user cancels an in-progress processing task.
-
-:::
 
 ## Running the development server
 
-The following command will run the dev server:
+The following command will run the dev server, using the project root as the
+"data directory" (where `assets` and the sqlite db file will live):
 
 ```shell
-yarn dev:web
+STORYTELLER_DATA_DIR=$(pwd) yarn dev:web
 ```
 
 This will run the web server on port 8001. You should be able to see it in your
