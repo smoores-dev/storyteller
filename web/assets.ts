@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises"
+import { mkdir, rm, symlink, writeFile } from "node:fs/promises"
 import {
   getEpubDirectory,
   getEpubFilepath,
@@ -13,7 +13,14 @@ import {
   getTranscriptionsFilepath,
 } from "./process/processAudio"
 import { getSyncCachePath } from "./synchronize/syncCache"
-import { dirname } from "node:path"
+import { basename, dirname } from "node:path"
+
+export async function linkEpub(bookUuid: UUID, origin: string) {
+  const filepath = getEpubFilepath(bookUuid)
+  const directory = dirname(filepath)
+  await mkdir(directory, { recursive: true })
+  await symlink(origin, filepath)
+}
 
 export async function persistEpub(bookUuid: UUID, file: File) {
   const filepath = getEpubFilepath(bookUuid)
@@ -22,6 +29,19 @@ export async function persistEpub(bookUuid: UUID, file: File) {
   const arrayBuffer = await file.arrayBuffer()
   const data = new Uint8Array(arrayBuffer)
   await writeFile(filepath, data)
+}
+
+export async function linkAudio(bookUuid: UUID, origins: string[]) {
+  await Promise.all(
+    origins.map(async (origin) => {
+      const base = basename(origin)
+      const filepath = getOriginalAudioFilepath(bookUuid, base)
+      const directory = dirname(filepath)
+      await mkdir(directory, { recursive: true })
+
+      await symlink(origin, filepath)
+    }),
+  )
 }
 
 export async function persistAudio(bookUuid: UUID, audioFiles: File[]) {

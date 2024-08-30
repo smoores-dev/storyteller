@@ -18,8 +18,6 @@ type SettingsResponse = {
 export const GET = withHasPermission("settings_update")(() => {
   const settings = getSettings()
 
-  console.log(settings)
-
   const response: SettingsResponse = {
     smtp_host: settings.smtpHost,
     smtp_port: settings.smtpPort,
