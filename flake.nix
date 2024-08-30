@@ -33,23 +33,14 @@
             libstdcpp = pkgs.stdenv.cc.cc.lib;
             ffmpeg = pkgs.ffmpeg;
             # Use Python 3.12
-            python3 = pkgs.python312;
             nodejs = pkgs.nodejs_20;
             yarn = pkgs.yarn.override { inherit nodejs; };
-            # Use latest Poetry
-            poetry = pkgs-unstable.poetry.override { inherit python3; };
             # sqlite for debugging
             sqlite = pkgs.sqlite;
           in
           pkgs.mkShell {
             # The Nix packages provided in the environment
             packages = [
-              # Python plus helper tools
-              (python3.withPackages (ps: with ps; [
-                virtualenv # Virtualenv
-                pip # The pip installer
-              ]))
-              poetry
               ffmpeg
               # Node
               nodejs
