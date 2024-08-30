@@ -1,0 +1,68 @@
+.form {
+  height: calc(100% - 6em);
+  display: flex;
+  flex-direction: column;
+}
+
+.selected-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.selected-value {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: var(--border-radius);
+  border: none;
+}
+
+.selected-value:hover {
+  opacity: 0.8;
+  cursor: default;
+}
+
+.combobox-input {
+  display: block;
+  width: calc(100% - 1.5rem);
+  padding: 0.5rem 0.75rem;
+  border: thin solid black;
+}
+
+.combobox-wrapper {
+  position: static !important;
+  transform: none !important;
+  height: calc(100% - 5em);
+  overflow-y: auto;
+  width: calc(100% - 2rem) !important;
+  margin: 1rem 0;
+  padding: 0 1rem;
+}
+
+.combobox-items {
+  width: 100%;
+}
+
+.combobox-item {
+  padding: 0.25rem 0.5rem;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.combobox-item:hover,
+.combobox-item[data-active-item] {
+  background: var(--primary-color);
+  color: white;
+  border-radius: var(--border-radius);
+}
+
+.submit-button {
+  composes: button from "./addbookform.module.css";
+  align-self: flex-end;
+}

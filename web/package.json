@@ -31,6 +31,7 @@
     "http-proxy": "^1.18.1",
     "js-levenshtein": "^1.1.6",
     "jsonwebtoken": "^9.0.2",
+    "match-sorter": "^6.3.4",
     "memoize": "^10.0.0",
     "mime-types": "^2.1.35",
     "music-metadata": "^7.14.0",
