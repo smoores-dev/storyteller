@@ -316,6 +316,23 @@ export class ApiClient {
     }
   }
 
+  async deleteBookAssets(bookUuid: string, originals?: boolean): Promise<void> {
+    const url = new URL(`${this.rootPath}/books/${bookUuid}/cache`, this.origin)
+    if (originals) {
+      url.searchParams.set("originals", "true")
+    }
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
   async listBooks(): Promise<BookDetail[]> {
     const url = new URL(`${this.rootPath}/books`, this.origin)
 

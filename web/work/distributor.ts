@@ -16,9 +16,10 @@ import {
   updateTaskStatus,
 } from "@/database/processingTasks"
 import { getSettings } from "@/database/settings"
+import type processBook from "./worker"
 
 const controllers: Map<UUID, AbortController> = new Map()
-const queue: UUID[] = []
+const queue: { bookUuid: UUID; restart: boolean }[] = []
 
 const filename = join(cwd(), "work-dist", "worker.js")
 
@@ -30,7 +31,7 @@ const piscina = new Piscina({
 export function cancelProcessing(bookUuid: UUID) {
   const abortController = controllers.get(bookUuid)
   if (!abortController) {
-    const index = queue.indexOf(bookUuid)
+    const index = queue.findIndex((enqueued) => bookUuid === enqueued.bookUuid)
     if (index === -1) return
     queue.splice(index, 1)
     return
@@ -40,7 +41,7 @@ export function cancelProcessing(bookUuid: UUID) {
   if (controllers.has(bookUuid)) controllers.delete(bookUuid)
 }
 
-export async function startProcessing(bookUuid: UUID) {
+export async function startProcessing(bookUuid: UUID, restart: boolean) {
   if (controllers.has(bookUuid)) return
 
   const settings = getSettings()
@@ -51,7 +52,9 @@ export async function startProcessing(bookUuid: UUID) {
     BookEvents.emit("message", event)
 
     if (event.type === "processingStarted") {
-      const index = queue.indexOf(event.bookUuid)
+      const index = queue.findIndex(
+        ({ bookUuid }) => bookUuid === event.bookUuid,
+      )
       queue.splice(index, 1)
       resetProcessingTasksForBook(event.bookUuid)
       const currentTasks = getProcessingTasksForBook(event.bookUuid)
@@ -87,7 +90,7 @@ export async function startProcessing(bookUuid: UUID) {
     }
   })
 
-  queue.push(bookUuid)
+  queue.push({ bookUuid, restart })
   BookEvents.emit("message", {
     type: "processingQueued",
     bookUuid,
@@ -99,7 +102,9 @@ export async function startProcessing(bookUuid: UUID) {
 
   try {
     await piscina.run(
-      { bookUuid, settings, port: port1 },
+      { bookUuid, restart, settings, port: port1 } satisfies Parameters<
+        typeof processBook
+      >[0],
       { transferList: [port1], signal: abortController.signal },
     )
   } catch (err) {
@@ -125,7 +130,7 @@ export function isProcessing(bookUuid: UUID) {
 }
 
 export function isQueued(bookUuid: UUID) {
-  return queue.includes(bookUuid)
+  return queue.some((enqueued) => enqueued.bookUuid === bookUuid)
 }
 
 export type BookProcessingEvent =

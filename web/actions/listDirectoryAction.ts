@@ -1,6 +1,8 @@
 "use server"
 
+import { hasPermission } from "@/auth"
 import { readdir, stat } from "fs/promises"
+import { cookies } from "next/headers"
 import { join, dirname } from "node:path"
 
 export type DirectoryEntry = { name: string; type: "file" | "directory" }
@@ -8,6 +10,10 @@ export type DirectoryEntry = { name: string; type: "file" | "directory" }
 export async function listDirectoryAction(
   directory: string,
 ): Promise<DirectoryEntry[]> {
+  if (!hasPermission("book_create", cookies().get("st_token"))) {
+    throw new Error("Forbidden")
+  }
+
   if (!directory.endsWith("/")) {
     const parent = dirname(directory)
     return listDirectoryAction(parent + "/")

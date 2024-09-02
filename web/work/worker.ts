@@ -2,6 +2,7 @@ import {
   ProcessingTaskStatus,
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
+import { deleteProcessed } from "@/assets"
 import {
   PROCESSING_TASK_ORDER,
   type ProcessingTask,
@@ -132,14 +133,20 @@ export function determineRemainingTasks(
 
 export default async function processBook({
   bookUuid,
+  restart,
   settings,
   port,
 }: {
   bookUuid: UUID
+  restart: boolean
   settings: Settings
   port: MessagePort
 }) {
   port.postMessage({ type: "processingStarted", bookUuid })
+
+  if (restart) {
+    await deleteProcessed(bookUuid)
+  }
 
   const currentTasks: ProcessingTask[] = await new Promise((resolve) => {
     port.once("message", resolve)
