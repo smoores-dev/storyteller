@@ -1,4 +1,3 @@
-import { deleteProcessed } from "@/assets"
 import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
 import { cancelProcessing, startProcessing } from "@/work/distributor"
@@ -9,7 +8,7 @@ type Params = {
   bookId: string
 }
 
-export const POST = withHasPermission<Params>("book_process")(async (
+export const POST = withHasPermission<Params>("book_process")((
   request,
   context,
 ) => {
@@ -17,11 +16,7 @@ export const POST = withHasPermission<Params>("book_process")(async (
   const url = request.nextUrl
   const restart = typeof url.searchParams.get("restart") === "string"
 
-  if (restart) {
-    await deleteProcessed(bookUuid)
-  }
-
-  void startProcessing(bookUuid)
+  void startProcessing(bookUuid, restart)
 
   return new Response(null, { status: 204 })
 })

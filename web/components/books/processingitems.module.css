@@ -1,0 +1,49 @@
+.popover-anchor {
+  composes: menu-item from "./bookoptions.module.css";
+}
+
+.menu {
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: var(--border-radius);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.menu:focus {
+  outline: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius);
+  cursor: default;
+}
+
+.menu-item:not([aria-disabled="true"]):hover {
+  background-color: #d9d9d9;
+}
+
+.delete {
+  composes: delete from "./bookoptions.module.css";
+}
+
+.disabled {
+  opacity: 0.6;
+}
+
+.tooltip {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+}

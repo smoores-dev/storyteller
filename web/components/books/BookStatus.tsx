@@ -89,7 +89,7 @@ export function BookStatus({ book }: Props) {
         )}
       </div>
       <div className={styles["actions"]}>
-        <BookOptions book={book} />
+        <BookOptions synchronized={synchronized} book={book} />
       </div>
     </div>
   )

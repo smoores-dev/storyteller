@@ -68,6 +68,13 @@ export async function deleteProcessed(bookUuid: UUID) {
   ])
 }
 
+export async function deleteOriginals(bookUuid: UUID) {
+  await Promise.all([
+    rm(getEpubFilepath(bookUuid)),
+    rm(getOriginalAudioFilepath(bookUuid)),
+  ])
+}
+
 export async function deleteAssets(bookUuid: UUID) {
   await Promise.all([
     rm(getEpubDirectory(bookUuid), { recursive: true, force: true }),

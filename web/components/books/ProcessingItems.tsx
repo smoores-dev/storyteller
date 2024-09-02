@@ -1,4 +1,4 @@
-import styles from "./bookoptions.module.css"
+import styles from "./processingitems.module.css"
 import { BookDetail } from "@/apiModels"
 import cx from "classnames"
 
@@ -7,17 +7,22 @@ import {
   Tooltip,
   TooltipAnchor,
   MenuItem,
+  Menu,
+  MenuProvider,
+  MenuButton,
 } from "@ariakit/react"
 import { HardRestartIcon } from "../icons/HardRestartIcon"
 import { SoftRestartIcon } from "../icons/SoftRestartIcon"
 import { StopIcon } from "../icons/StopIcon"
 import { useApiClient } from "@/hooks/useApiClient"
+import { DeleteIcon } from "../icons/DeleteIcon"
 
 type Props = {
   book: BookDetail
+  synchronized: boolean
 }
 
-export function ProcessingItems({ book }: Props) {
+export function ProcessingItems({ book, synchronized }: Props) {
   const client = useApiClient()
 
   if (
@@ -25,38 +30,69 @@ export function ProcessingItems({ book }: Props) {
     !book.processing_status?.is_queued
   ) {
     return (
-      <>
-        <MenuItem
-          className={styles["menu-item"]}
-          onClick={() => client.processBook(book.uuid, false)}
-        >
+      <MenuProvider placement="left-start">
+        <MenuButton className={styles["popover-anchor"]} render={<MenuItem />}>
           <TooltipProvider placement="right">
             <TooltipAnchor>
-              <SoftRestartIcon ariaLabel="Re-process" />
+              <SoftRestartIcon ariaLabel="Processing" />
             </TooltipAnchor>
-            <Tooltip>Re-process</Tooltip>
+            <Tooltip>Processing</Tooltip>
           </TooltipProvider>
-        </MenuItem>
-        <MenuItem
-          className={styles["menu-item"]}
-          onClick={() => client.processBook(book.uuid, true)}
-        >
-          <TooltipProvider placement="right">
-            <TooltipAnchor>
-              <HardRestartIcon ariaLabel="Force re-process" />
-            </TooltipAnchor>
-            <Tooltip>Force re-process</Tooltip>
-          </TooltipProvider>
-        </MenuItem>
-      </>
+        </MenuButton>
+        <Menu gutter={12} className={styles["menu"]}>
+          <MenuItem
+            className={styles["menu-item"]}
+            onClick={() => client.processBook(book.uuid, false)}
+          >
+            <SoftRestartIcon aria-hidden />{" "}
+            {synchronized ? "Re-process (using cached files)" : "Continue"}
+          </MenuItem>
+          <MenuItem
+            className={styles["menu-item"]}
+            onClick={() => client.processBook(book.uuid, true)}
+          >
+            <HardRestartIcon aria-hidden /> Delete cache and re-process from
+            source files
+          </MenuItem>
+          <MenuItem
+            className={styles["menu-item"]}
+            onClick={() => client.deleteBookAssets(book.uuid)}
+          >
+            <DeleteIcon aria-hidden /> Delete cache files
+          </MenuItem>
+          {synchronized ? (
+            <MenuItem
+              className={cx(styles["menu-item"], styles["delete"])}
+              onClick={() => client.deleteBookAssets(book.uuid, true)}
+            >
+              <DeleteIcon aria-hidden /> Delete source and cache files
+            </MenuItem>
+          ) : (
+            <TooltipProvider>
+              <TooltipAnchor
+                render={<MenuItem />}
+                className={cx(
+                  styles["menu-item"],
+                  styles["delete"],
+                  styles["disabled"],
+                )}
+                onClick={(e) => {
+                  e.preventDefault()
+                }}
+              >
+                <DeleteIcon aria-hidden /> Delete source and cache files
+              </TooltipAnchor>
+              <Tooltip className={styles["tooltip"]}>
+                You can&apos;t delete source files until the book has been
+                synced successfully
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </Menu>
+      </MenuProvider>
     )
   }
 
-  // if (
-  //   !book.processing_status.is_processing ||
-  //   book.processing_status.current_task !==
-  //     ProcessingTaskType.TRANSCRIBE_CHAPTERS
-  // ) {
   return (
     <MenuItem
       className={cx(styles["menu-item"], styles["delete"])}
@@ -80,28 +116,4 @@ export function ProcessingItems({ book }: Props) {
       </TooltipProvider>
     </MenuItem>
   )
-  // }
-
-  // return (
-  //   <TooltipProvider placement="right">
-  //     <Tooltip>
-  //       It&apos;s unsafe to stop processing during transcription (sorry!)
-  //     </Tooltip>
-  //     <TooltipAnchor>
-  //       <MenuItem
-  //         disabled
-  //         className={cx(styles["menu-item"], styles["delete"])}
-  //         onClick={() => client.cancelProcessing(book.uuid)}
-  //       >
-  //         <StopIcon
-  //           ariaLabel={
-  //             book.processing_status.is_queued
-  //               ? "Remove from queue"
-  //               : "Stop processing"
-  //           }
-  //         />
-  //       </MenuItem>
-  //     </TooltipAnchor>
-  //   </TooltipProvider>
-  // )
 }
