@@ -146,7 +146,7 @@ export function Sidebar({ className }: Props) {
             </div>
           </>
         ) : (
-          "All synced!"
+          "No processes running"
         )}
       </section>
       <nav className={styles["nav"]}>

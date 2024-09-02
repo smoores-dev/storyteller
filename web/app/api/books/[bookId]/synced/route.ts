@@ -3,8 +3,8 @@ import { getBookUuid } from "@/database/books"
 import { getEpubSyncedFilepath } from "@/process/processEpub"
 import { FileHandle, open } from "node:fs/promises"
 import { NextResponse } from "next/server"
-import { basename } from "node:path"
 import { createHash } from "node:crypto"
+import { Epub } from "@/epub"
 
 export const dynamic = "force-dynamic"
 
@@ -20,6 +20,13 @@ export const GET = withHasPermission<Params>("book_download")(async (
   const range = request.headers.get("Range")?.valueOf()
   const ifRange = request.headers.get("If-Range")?.valueOf()
   const filepath = getEpubSyncedFilepath(bookUuid)
+  const epub = await Epub.from(filepath)
+  const title = await epub.getTitle(true)
+  const normalizedTitle =
+    title
+      ?.normalize("NFD")
+      .replaceAll(/\p{Diacritic}/gu, "")
+      .replaceAll(/[^a-zA-Z0-9-_.~!#$&'()*+,/:;=?@[\] ]/gu, "") ?? bookUuid
 
   let file: FileHandle
   try {
@@ -70,7 +77,7 @@ export const GET = withHasPermission<Params>("book_download")(async (
   return new NextResponse(file.createReadStream({ start, end: end - 1 }), {
     status: partialResponse ? 206 : 200,
     headers: {
-      "Content-Disposition": `attachment; filename="${basename(filepath)}"`,
+      "Content-Disposition": `attachment; filename="${normalizedTitle}.epub"`,
       "Content-Type": "application/epub+zip",
       "Accept-Ranges": "bytes",
       "Content-Length": `${end - start}`,

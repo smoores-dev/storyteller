@@ -18,9 +18,10 @@ import { ProcessingItems } from "./ProcessingItems"
 
 type Props = {
   book: BookDetail
+  synchronized: boolean
 }
 
-export function BookOptions({ book }: Props) {
+export function BookOptions({ book, synchronized }: Props) {
   const client = useApiClient()
   const router = useRouter()
 
@@ -44,7 +45,9 @@ export function BookOptions({ book }: Props) {
             </TooltipProvider>
           </MenuItem>
         )}
-        {permissions.book_process && <ProcessingItems book={book} />}
+        {permissions.book_process && book.processing_status && (
+          <ProcessingItems synchronized={synchronized} book={book} />
+        )}
         {permissions.book_delete && (
           <MenuItem
             className={cx(styles["menu-item"], styles["delete"])}
@@ -56,7 +59,7 @@ export function BookOptions({ book }: Props) {
               <TooltipAnchor>
                 <DeleteIcon ariaLabel="Delete" />
               </TooltipAnchor>
-              <Tooltip>Delete</Tooltip>
+              <Tooltip>Delete book</Tooltip>
             </TooltipProvider>
           </MenuItem>
         )}

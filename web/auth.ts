@@ -5,6 +5,7 @@ import { add } from "date-fns/fp/add"
 import { verify as verifyJwt, sign, JwtPayload } from "jsonwebtoken"
 import { NextRequest, NextResponse } from "next/server"
 import { isTokenRevoked } from "./database/tokenRevokations"
+import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies"
 
 const JWT_SECRET_KEY = process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
 const JWT_ALGORITHM = "HS256"
@@ -57,15 +58,17 @@ function extractTokenFromHeader(request: NextRequest) {
   return authToken
 }
 
-function extractTokenFromCookie(request: NextRequest) {
-  const cookie = request.cookies.get("st_token")
+function extractTokenFromCookie(cookie: RequestCookie | undefined) {
   if (!cookie) return null
 
   return cookie.value
 }
 
 export function extractToken(request: NextRequest) {
-  return extractTokenFromHeader(request) ?? extractTokenFromCookie(request)
+  return (
+    extractTokenFromHeader(request) ??
+    extractTokenFromCookie(request.cookies.get("st_token"))
+  )
 }
 
 export function withToken<
@@ -161,4 +164,17 @@ export function withHasPermission<
       },
     )
   }
+}
+
+export function hasPermission(
+  permission: Permission,
+  cookie: RequestCookie | undefined,
+) {
+  const token = extractTokenFromCookie(cookie)
+  if (!token) return false
+
+  const tokenData = verifyToken(token)
+  if (!tokenData) return false
+
+  return userHasPermission(tokenData.username, permission)
 }
