@@ -1,4 +1,4 @@
-import { mkdir, rm, symlink, writeFile } from "node:fs/promises"
+import { mkdir, readdir, rm, stat, symlink, writeFile } from "node:fs/promises"
 import {
   getEpubDirectory,
   getEpubFilepath,
@@ -6,14 +6,14 @@ import {
 } from "./process/processEpub"
 import { UUID } from "./uuid"
 import {
+  AUDIO_FILE_EXTENSIONS,
   getAudioDirectory,
-  getAudioIndexPath,
   getOriginalAudioFilepath,
   getProcessedAudioFilepath,
   getTranscriptionsFilepath,
 } from "./process/processAudio"
 import { getSyncCachePath } from "./synchronize/syncCache"
-import { basename, dirname } from "node:path"
+import { basename, dirname, extname } from "node:path"
 
 export async function linkEpub(bookUuid: UUID, origin: string) {
   const filepath = getEpubFilepath(bookUuid)
@@ -58,12 +58,30 @@ export async function persistAudio(bookUuid: UUID, audioFiles: File[]) {
   )
 }
 
+export async function originalEpubExists(bookUuid: UUID) {
+  try {
+    await stat(getEpubFilepath(bookUuid))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function originalAudioExists(bookUuid: UUID) {
+  const originalAudioDirectory = getOriginalAudioFilepath(bookUuid)
+  const filenames = await readdir(originalAudioDirectory)
+
+  return filenames.some((filename) => {
+    const ext = extname(filename)
+    return ext === ".zip" || AUDIO_FILE_EXTENSIONS.includes(ext)
+  })
+}
+
 export async function deleteProcessed(bookUuid: UUID) {
   await Promise.all([
     rm(getEpubSyncedDirectory(bookUuid), { recursive: true, force: true }),
     rm(getProcessedAudioFilepath(bookUuid), { recursive: true, force: true }),
     rm(getTranscriptionsFilepath(bookUuid), { recursive: true, force: true }),
-    rm(getAudioIndexPath(bookUuid), { force: true }),
     rm(getSyncCachePath(bookUuid), { force: true }),
   ])
 }
