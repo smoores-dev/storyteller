@@ -1,6 +1,7 @@
 import { deleteOriginals, deleteProcessed } from "@/assets"
 import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
+import { BookEvents } from "@/events"
 
 type Params = {
   bookId: string
@@ -18,6 +19,14 @@ export const DELETE = withHasPermission<Params>("book_process")(async (
     deleteProcessed(bookUuid),
     ...(includeOriginals ? [deleteOriginals(bookUuid)] : []),
   ])
+
+  if (includeOriginals) {
+    BookEvents.emit("message", {
+      type: "bookUpdated",
+      bookUuid,
+      payload: { original_files_exist: false },
+    })
+  }
 
   return new Response(null, { status: 204 })
 })

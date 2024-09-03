@@ -10,5 +10,6 @@ export type BookDetail = {
   id: number | null
   title: string
   authors: Array<BookAuthor>
+  original_files_exist: boolean
   processing_status: ProcessingStatus | null
 }
