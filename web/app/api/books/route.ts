@@ -1,4 +1,11 @@
-import { linkAudio, linkEpub, persistAudio, persistEpub } from "@/assets"
+import {
+  linkAudio,
+  linkEpub,
+  originalAudioExists,
+  originalEpubExists,
+  persistAudio,
+  persistEpub,
+} from "@/assets"
 import { withHasPermission } from "@/auth"
 import { createBook, getBooks } from "@/database/books"
 import { Epub } from "@/epub"
@@ -9,11 +16,23 @@ import { basename } from "path"
 
 export const dynamic = "force-dynamic"
 
-export const GET = withHasPermission("book_list")((request) => {
+export const GET = withHasPermission("book_list")(async (request) => {
   const url = request.nextUrl
   const syncedOnly = url.searchParams.get("synced")
 
-  const books = getBooks(null, syncedOnly !== null)
+  const books = await Promise.all(
+    getBooks(null, syncedOnly !== null).map(async (book) => {
+      return {
+        ...book,
+        original_files_exist: (
+          await Promise.all([
+            originalEpubExists(book.uuid),
+            originalAudioExists(book.uuid),
+          ])
+        ).every((originalsExist) => originalsExist),
+      }
+    }),
+  )
 
   return NextResponse.json(
     books.reverse().map((book) => ({

@@ -1,6 +1,6 @@
 import { TEXT_DIR } from "@/directories"
 import { UUID } from "@/uuid"
-import { readFile, stat, writeFile } from "node:fs/promises"
+import { readFile, writeFile } from "node:fs/promises"
 import { extname, join } from "node:path"
 import { Epub } from "@/epub"
 
@@ -28,16 +28,15 @@ export async function getEpubIndex(
   bookUuid: UUID,
 ): Promise<null | { cover?: string }> {
   const path = getEpubIndexPath(bookUuid)
+
   try {
-    await stat(path)
+    const indexFile = await readFile(path, {
+      encoding: "utf-8",
+    })
+    return JSON.parse(indexFile) as { cover?: string }
   } catch (_) {
     return null
   }
-
-  const indexFile = await readFile(path, {
-    encoding: "utf-8",
-  })
-  return JSON.parse(indexFile) as { cover?: string }
 }
 
 export async function getEpubCoverFilepath(bookUuid: UUID) {

@@ -45,9 +45,11 @@ export function BookOptions({ book, synchronized }: Props) {
             </TooltipProvider>
           </MenuItem>
         )}
-        {permissions.book_process && book.processing_status && (
-          <ProcessingItems synchronized={synchronized} book={book} />
-        )}
+        {permissions.book_process &&
+          book.processing_status &&
+          book.original_files_exist && (
+            <ProcessingItems synchronized={synchronized} book={book} />
+          )}
         {permissions.book_delete && (
           <MenuItem
             className={cx(styles["menu-item"], styles["delete"])}

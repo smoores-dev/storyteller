@@ -92,7 +92,10 @@ export function getTranscriptionsFilepath(bookUuid: UUID, filename = "") {
 const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 const MP3_FILE_EXTENSIONS = [".mp3"]
 const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
-const AUDIO_FILE_EXTENSIONS = [...MP3_FILE_EXTENSIONS, ...MPEG4_FILE_EXTENSIONS]
+export const AUDIO_FILE_EXTENSIONS = [
+  ...MP3_FILE_EXTENSIONS,
+  ...MPEG4_FILE_EXTENSIONS,
+]
 
 export async function persistCover(bookUuid: UUID, coverFilename: string) {
   const index = (await getAudioIndex(bookUuid)) ?? {}
