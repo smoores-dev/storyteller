@@ -7164,7 +7164,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     date-fns: "npm:^3.6.0"
     debug: "npm:^4.3.4"
-    echogarden: "npm:^1.5.0"
+    echogarden: "github:smoores-dev/echogarden#1e4f8b494ece5e293183c702e293a2f4537537f4"
     esbuild: "npm:^0.23.0"
     fast-xml-parser: "npm:^4.3.6"
     form-data: "npm:^4.0.0"
@@ -11747,9 +11747,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"echogarden@npm:^1.5.0":
+"echogarden@github:smoores-dev/echogarden#1e4f8b494ece5e293183c702e293a2f4537537f4":
   version: 1.5.0
-  resolution: "echogarden@npm:1.5.0"
+  resolution: "echogarden@https://github.com/smoores-dev/echogarden.git#commit=1e4f8b494ece5e293183c702e293a2f4537537f4"
   dependencies:
     "@aws-sdk/client-polly": "npm:^3.583.0"
     "@aws-sdk/client-transcribe-streaming": "npm:^3.583.0"
@@ -11805,7 +11805,7 @@ __metadata:
     winax:
       optional: true
   bin:
-    echogarden: dist/cli/CLILauncher.js
+    echogarden: ./dist/cli/CLILauncher.js
   conditions: (os=win32 | os=darwin | os=linux)
   languageName: node
   linkType: hard
