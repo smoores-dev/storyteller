@@ -149,6 +149,7 @@ export async function transcribeTrack(
   ) {
     const whisperOptions = await installWhisper(settings)
     const { transcript, wordTimeline } = await recognize(trackPath, {
+      timelineLevel: "word",
       engine: "whisper.cpp",
       language,
       whisperCpp: {
@@ -168,6 +169,7 @@ export async function transcribeTrack(
     }
 
     const { transcript, wordTimeline } = await recognize(trackPath, {
+      timelineLevel: "word",
       engine: "google-cloud",
       language,
       googleCloud: {
@@ -190,6 +192,7 @@ export async function transcribeTrack(
     }
 
     const { transcript, wordTimeline } = await recognize(trackPath, {
+      timelineLevel: "word",
       engine: "microsoft-azure",
       language,
       microsoftAzure: {
@@ -218,6 +221,7 @@ export async function transcribeTrack(
     }
 
     const { transcript, wordTimeline } = await recognize(trackPath, {
+      timelineLevel: "word",
       engine: "amazon-transcribe",
       language,
       amazonTranscribe: {
@@ -236,6 +240,7 @@ export async function transcribeTrack(
   }
 
   const { transcript, wordTimeline } = await recognize(trackPath, {
+    timelineLevel: "word",
     engine: "openai-cloud",
     language,
     openAICloud: {
