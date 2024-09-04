@@ -12,7 +12,7 @@ void describe("getXhtmlSentences", () => {
       },
     ] as ParsedXml
 
-    const output = getXHtmlSentences(input)
+    const output = getXHtmlSentences(input, "en")
 
     assert.deepEqual(output, [
       "This is a text node.",
@@ -43,7 +43,7 @@ void describe("getXhtmlSentences", () => {
       },
     ]
 
-    const output = getXHtmlSentences(input)
+    const output = getXHtmlSentences(input, "en")
 
     assert.deepEqual(output, [
       "This is a text node.",
@@ -83,7 +83,7 @@ void describe("getXhtmlSentences", () => {
       },
     ]
 
-    const output = getXHtmlSentences(input)
+    const output = getXHtmlSentences(input, "en")
 
     assert.deepEqual(output, [
       "This is a text node.",

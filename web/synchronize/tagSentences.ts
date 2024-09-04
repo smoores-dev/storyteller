@@ -248,14 +248,14 @@ function copyOuterXml(xml: ParsedXml) {
   return outerXml
 }
 
-export function tagSentences(xml: ParsedXml) {
+export function tagSentences(xml: ParsedXml, language: string) {
   const html = findByName("html", xml)
   if (!html) throw new Error("Invalid XHTML document: no html element")
 
   const body = findByName("body", html["html"])
   if (!body) throw new Error("Invalid XHTML document: No body element")
 
-  const sentences = getXHtmlSentences(body["body"])
+  const sentences = getXHtmlSentences(body["body"], language)
   const outerXml = copyOuterXml(xml)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const taggedHtml = findByName("html", xml)!

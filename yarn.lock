@@ -7162,6 +7162,7 @@ __metadata:
     axios: "npm: 1.6.7"
     better-sqlite3: "npm:^11.1.2"
     classnames: "npm:^2.5.1"
+    cldr-segmentation: "npm:^2.2.1"
     date-fns: "npm:^3.6.0"
     debug: "npm:^4.3.4"
     echogarden: "npm:^1.5.0"
@@ -11219,6 +11220,18 @@ __metadata:
   version: 1.2.1
   resolution: "debounce@npm:1.2.1"
   checksum: 10c0/6c9320aa0973fc42050814621a7a8a78146c1975799b5b3cc1becf1f77ba9a5aa583987884230da0842a03f385def452fad5d60db97c3d1c8b824e38a8edf500
+  languageName: node
+  linkType: hard
+
+"debug@npm:*":
+  version: 4.3.6
+  resolution: "debug@npm:4.3.6"
+  dependencies:
+    ms: "npm:2.1.2"
+  peerDependenciesMeta:
+    supports-color:
+      optional: true
+  checksum: 10c0/3293416bff072389c101697d4611c402a6bacd1900ac20c0492f61a9cdd6b3b29750fc7f5e299f8058469ef60ff8fb79b86395a30374fbd2490113c1c7112285
   languageName: node
   linkType: hard
 

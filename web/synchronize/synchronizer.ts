@@ -193,10 +193,10 @@ export class Synchronizer {
     return { startSentence: 0, transcriptionOffset: null }
   }
 
-  private async getChapterSentences(chapterId: string) {
+  private async getChapterSentences(chapterId: string, language: string) {
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
-    const sentences = getXHtmlSentences(getBody(chapterXml))
+    const sentences = getXHtmlSentences(getBody(chapterXml), language)
     const cleanSentences = sentences.map((sentence) =>
       sentence.replaceAll(/\s+/g, " "),
     )
@@ -273,6 +273,7 @@ export class Synchronizer {
     startSentence: number,
     chapterId: string,
     transcriptionOffset: number,
+    language: string,
     lastSentenceRange: SentenceRange | null,
   ) {
     const manifest = await this.epub.getManifest()
@@ -283,7 +284,7 @@ export class Synchronizer {
       )
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
-    const chapterSentences = await this.getChapterSentences(chapterId)
+    const chapterSentences = await this.getChapterSentences(chapterId, language)
 
     const { sentenceRanges, transcriptionOffset: endTranscriptionOffset } =
       await getSentenceRanges(
@@ -291,10 +292,11 @@ export class Synchronizer {
         this.transcription,
         chapterSentences,
         transcriptionOffset,
+        language,
         lastSentenceRange,
       )
     const interpolated = interpolateSentenceRanges(sentenceRanges)
-    const tagged = tagSentences(chapterXml)
+    const tagged = tagSentences(chapterXml, language)
 
     const storytellerStylesheetUrl = relative(
       dirname(chapter.href),
@@ -322,6 +324,7 @@ export class Synchronizer {
   }
 
   async syncBook(onProgress?: (progress: number) => void) {
+    const language = (await this.epub.getLanguage()) ?? "en"
     const spine = await this.epub.getSpineItems()
     const transcriptionText = this.transcription.transcript
 
@@ -336,7 +339,10 @@ export class Synchronizer {
       console.log(`Syncing chapter #${index}`)
 
       const chapterId = spineItem.id
-      const chapterSentences = await this.getChapterSentences(chapterId)
+      const chapterSentences = await this.getChapterSentences(
+        chapterId,
+        language,
+      )
       if (chapterSentences.length === 0) {
         console.log(`Chapter #${index} has no text; skipping`)
         continue
@@ -381,6 +387,7 @@ export class Synchronizer {
           startSentence,
           chapterId,
           transcriptionOffset,
+          language,
           lastSentenceRange,
         ))
     }

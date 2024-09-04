@@ -84,7 +84,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -141,7 +141,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -183,7 +183,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -225,7 +225,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -267,7 +267,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -319,7 +319,7 @@ void describe("tagSentences", () => {
 </html>
     `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -373,7 +373,7 @@ void describe("tagSentences", () => {
 </html>
     `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -428,7 +428,7 @@ void describe("tagSentences", () => {
   </body>
 </html>`) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -473,7 +473,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -499,7 +499,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -525,7 +525,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences(input, "en")
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
