@@ -243,11 +243,11 @@ export function SettingsForm({ settings }: Props) {
             </FormLabel>
             <FormLabel name={form.names["open_ai_organization"]}>
               Organization (optional)
-              <FormInput name={form.names["open_ai_organization"]} required />
+              <FormInput name={form.names["open_ai_organization"]} />
             </FormLabel>
             <FormLabel name={form.names["open_ai_base_url"]}>
               Base url (optional)
-              <FormInput name={form.names["open_ai_base_url"]} required />
+              <FormInput name={form.names["open_ai_base_url"]} />
             </FormLabel>
           </>
         )}
