@@ -77,6 +77,10 @@ function getWindowIndexFromOffset(window: string[], offset: number) {
 }
 /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
+function collapseWhitespace(input: string) {
+  return input.replaceAll(/\s+/g, " ")
+}
+
 export async function getSentenceRanges(
   startSentence: number,
   transcription: StorytellerTranscription,
@@ -118,10 +122,12 @@ export async function getSentenceRanges(
       .join("")
       .slice(transcriptionWindowOffset)
 
+    const query = collapseWhitespace(sentence.trim()).toLowerCase()
+
     const firstMatch = findNearestMatch(
-      sentence.trim().toLowerCase(),
+      query,
       transcriptionWindow,
-      Math.max(Math.floor(0.25 * sentence.trim().length), 1),
+      Math.max(Math.floor(0.25 * query.length), 1),
     )
 
     if (!firstMatch) {
@@ -178,9 +184,11 @@ export async function getSentenceRanges(
           previousSentenceRange.end = start
         }
       } else {
-        const lastTrackDuration = await getTrackDuration(previousAudiofile)
-        previousSentenceRange.end = lastTrackDuration
-        start = 0
+        if (previousSentenceRange.id === sentenceId - 1) {
+          const lastTrackDuration = await getTrackDuration(previousAudiofile)
+          previousSentenceRange.end = lastTrackDuration
+          start = 0
+        }
       }
     } else if (lastSentenceRange !== null) {
       if (audiofile === lastSentenceRange.audiofile) {
@@ -229,7 +237,26 @@ export async function getSentenceRanges(
   }
 }
 
-export function interpolateSentenceRanges(sentenceRanges: SentenceRange[]) {
+/**
+ * Given two sentence ranges, find the trailing gap of the first
+ * and the leading gap of the second, and return the larger gap
+ * and corresponding audiofile.
+ */
+async function getLargestGap(
+  trailing: SentenceRange,
+  leading: SentenceRange,
+): Promise<[number, string]> {
+  const leadingGap = leading.start
+  const trailingGap =
+    (await getTrackDuration(trailing.audiofile)) - trailing.end
+
+  if (trailingGap > leadingGap) return [trailingGap, trailing.audiofile]
+  return [leadingGap, leading.audiofile]
+}
+
+export async function interpolateSentenceRanges(
+  sentenceRanges: SentenceRange[],
+) {
   const interpolated: SentenceRange[] = []
   const [first, ...rest] = sentenceRanges
   if (!first) return interpolated
@@ -264,7 +291,17 @@ export function interpolateSentenceRanges(sentenceRanges: SentenceRange[]) {
       continue
     }
 
-    let diff = sentenceRange.start - lastSentenceRange.end
+    const crossesAudioBoundary =
+      sentenceRange.audiofile !== lastSentenceRange.audiofile
+
+    // If we missed the first or last sentence of an audio track,
+    // assume that it belongs to whichever audio track has a larger
+    // gap
+    // eslint-disable-next-line prefer-const
+    let [diff, audiofile] = crossesAudioBoundary
+      ? await getLargestGap(lastSentenceRange, sentenceRange)
+      : [sentenceRange.start - lastSentenceRange.end, sentenceRange.audiofile]
+
     // Sometimes the transcription may entirely miss a short sentence.
     // If it does, allocate a quarter second for it and continue
     if (diff <= 0) {
@@ -278,7 +315,7 @@ export function interpolateSentenceRanges(sentenceRanges: SentenceRange[]) {
         id: lastSentenceRange.id + i + 1,
         start: lastSentenceRange.end + interpolatedLength * i,
         end: lastSentenceRange.end + interpolatedLength * (i + 1),
-        audiofile: lastSentenceRange.audiofile,
+        audiofile: audiofile,
       })
     }
 
