@@ -209,7 +209,13 @@ export class Epub {
     this.dataWriter = new Uint8ArrayWriter()
     this.zipWriter = new ZipWriter(this.dataWriter)
 
-    this.readXhtmlItemContents = memoize(this.readXhtmlItemContents.bind(this))
+    this.readXhtmlItemContents = memoize(
+      this.readXhtmlItemContents.bind(this),
+      // This isn't unnecessary, the generic here just isn't handling the
+      // overloaded method type correctly
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      { cacheKey: ([id, as]) => `${id}:${as ?? "xhtml"}` },
+    )
   }
 
   async close() {
