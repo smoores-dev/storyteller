@@ -82,6 +82,31 @@ type SyncedChapter = {
   endOffset: number
 }
 
+export function concatTranscriptions(
+  transcriptions: Pick<RecognitionResult, "transcript" | "wordTimeline">[],
+  audiofiles: string[],
+) {
+  return transcriptions.reduce<StorytellerTranscription>(
+    (acc, transcription, index) => ({
+      ...acc,
+      transcript: acc.transcript + " " + transcription.transcript,
+      wordTimeline: [
+        ...acc.wordTimeline,
+        ...transcription.wordTimeline.map((entry) => ({
+          ...entry,
+          startOffsetUtf16:
+            (entry.startOffsetUtf16 ?? 0) + acc.transcript.length + 1,
+          endOffsetUtf16:
+            (entry.endOffsetUtf16 ?? 0) + acc.transcript.length + 1,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          audiofile: audiofiles[index]!,
+        })),
+      ],
+    }),
+    { transcript: "", wordTimeline: [] },
+  )
+}
+
 export class Synchronizer {
   private transcription: StorytellerTranscription
 
@@ -95,25 +120,7 @@ export class Synchronizer {
     audiofiles: string[],
     transcriptions: Pick<RecognitionResult, "transcript" | "wordTimeline">[],
   ) {
-    this.transcription = transcriptions.reduce<StorytellerTranscription>(
-      (acc, transcription, index) => ({
-        ...acc,
-        transcript: acc.transcript + " " + transcription.transcript,
-        wordTimeline: [
-          ...acc.wordTimeline,
-          ...transcription.wordTimeline.map((entry) => ({
-            ...entry,
-            startOffsetUtf16:
-              (entry.startOffsetUtf16 ?? 0) + acc.transcript.length + 1,
-            endOffsetUtf16:
-              (entry.endOffsetUtf16 ?? 0) + acc.transcript.length + 1,
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            audiofile: audiofiles[index]!,
-          })),
-        ],
-      }),
-      { transcript: "", wordTimeline: [] },
-    )
+    this.transcription = concatTranscriptions(transcriptions, audiofiles)
 
     this.getChapterSentences = memoize(this.getChapterSentences.bind(this))
   }
@@ -293,7 +300,7 @@ export class Synchronizer {
         transcriptionOffset,
         lastSentenceRange,
       )
-    const interpolated = interpolateSentenceRanges(sentenceRanges)
+    const interpolated = await interpolateSentenceRanges(sentenceRanges)
     const tagged = tagSentences(chapterXml)
 
     const storytellerStylesheetUrl = relative(
