@@ -19,9 +19,10 @@ import { BookEvent } from "@/events"
 
 type Props = {
   className?: string | undefined
+  version: string
 }
 
-export function Sidebar({ className }: Props) {
+export function Sidebar({ className, version }: Props) {
   const client = useApiClient()
 
   const pathname = usePathname()
@@ -116,6 +117,7 @@ export function Sidebar({ className }: Props) {
         />
         Storyteller
       </h1>
+      <p className={styles["version"]}>Version: {version}</p>
       <section className={styles["in-progress"]}>
         {currentBook ? (
           <>
