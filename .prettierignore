@@ -20,3 +20,5 @@ mobile/dist
 mobile/.expo
 mobile/modules/*/android/build
 mobile/modules/*/ios/.build
+
+flake.*

@@ -7,7 +7,11 @@ import { Sidebar } from "./Sidebar"
 import { Button } from "@ariakit/react"
 import { MenuIcon } from "../icons/MenuIcon"
 
-export function Header() {
+interface Props {
+  version: string
+}
+
+export function Header({ version }: Props) {
   const [showSidebar, setShowSidebar] = useState(false)
   const headerRef = useRef<HTMLHeadingElement | null>(null)
 
@@ -52,7 +56,9 @@ export function Header() {
           <MenuIcon />
         </Button>
       </h1>
-      {showSidebar && <Sidebar className={styles["sidebar"]} />}
+      {showSidebar && (
+        <Sidebar className={styles["sidebar"]} version={version} />
+      )}
     </>
   )
 }

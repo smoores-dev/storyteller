@@ -12,6 +12,10 @@
   font-size: 2rem;
 }
 
+.version {
+  padding: 0 1rem;
+}
+
 .in-progress {
   display: flex;
   padding: 1rem;
