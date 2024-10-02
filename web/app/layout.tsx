@@ -23,6 +23,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const versionString = process.env["CI_COMMIT_TAG"]
+  const version = versionString?.match(/^web-v(.*)$/)?.[1] ?? "development"
+
   let currentUser: User | undefined = undefined
   try {
     const client = createAuthedApiClient()
@@ -38,9 +41,9 @@ export default async function RootLayout({
           <UserPermissionsProvider
             value={currentUser?.permissions ?? EMPTY_PERMISSIONS}
           >
-            <Header />
+            <Header version={version} />
             <div className={styles["container"]}>
-              <Sidebar className={styles["sidebar"]} />
+              <Sidebar className={styles["sidebar"]} version={version} />
               {children}
             </div>
           </UserPermissionsProvider>
