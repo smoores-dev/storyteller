@@ -23,3 +23,8 @@ node_modules
 tsconfig.tsbuildinfo
 
 tsbuild
+
+# direnv/devenv config and cache
+.envrc
+.direnv
+.devenv
