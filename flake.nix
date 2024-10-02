@@ -4,11 +4,16 @@
   # Flake inputs
   inputs = {
     nixpkgs.url = "nixpkgs";
-    nixpkgs-unstable.url = "nixpkgs/nixos-unstable"; # need latest poetry (1.5.x)
+    devenv.url = "github:cachix/devenv";
+  };
+
+  nixConfig = {
+    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    extra-substituters = "https://devenv.cachix.org";
   };
 
   # Flake outputs
-  outputs = { self, nixpkgs, nixpkgs-unstable }:
+  outputs = { self, nixpkgs, devenv, ... } @ inputs:
     let
       # Systems supported
       allSystems = [
@@ -21,34 +26,32 @@
       # Helper to provide system-specific attributes
       forAllSystems = f: nixpkgs.lib.genAttrs allSystems (system: f {
         pkgs = import nixpkgs { inherit system; };
-        pkgs-unstable = import nixpkgs-unstable { inherit system; };
       });
     in
     {
+      packages = nixpkgs.lib.genAttrs allSystems (system: {
+        devenv-up = self.devShells.${system}.default.config.procfileScript;
+      });
+
       # Development environment output
-      devShells = forAllSystems ({ pkgs, pkgs-unstable }: {
+      devShells = forAllSystems ({ pkgs }: {
         default =
-          let
-            # Make libstdc++.so.6 available to pytorch
-            libstdcpp = pkgs.stdenv.cc.cc.lib;
-            ffmpeg = pkgs.ffmpeg;
-            # Use Python 3.12
-            nodejs = pkgs.nodejs_20;
-            yarn = pkgs.yarn.override { inherit nodejs; };
-            # sqlite for debugging
-            sqlite = pkgs.sqlite;
-          in
-          pkgs.mkShell {
-            # The Nix packages provided in the environment
-            packages = [
-              ffmpeg
-              # Node
-              nodejs
-              yarn
-              # sqlite
-              sqlite
+          devenv.lib.mkShell {
+            inherit inputs pkgs;
+            modules = [
+              ({ pkgs, config, ... }: {
+                # This is your devenv configuration
+                packages = [
+                  pkgs.ffmpeg
+                  pkgs.nodejs_20
+                  (pkgs.yarn.override { nodejs = pkgs.nodejs_20; })
+                  pkgs.sqlite
+                ];
+
+                # processes.run.exec = "hello";
+              })
             ];
-            LD_LIBRARY_PATH = "${libstdcpp}/lib/";
+            # LD_LIBRARY_PATH = "${libstdcpp}/lib/";
           };
       });
     };
