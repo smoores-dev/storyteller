@@ -325,6 +325,37 @@ export async function interpolateSentenceRanges(
   return interpolated
 }
 
+/**
+ * Whisper sometimes provides words with no time information,
+ * or start and end timestamps that are equal. EpubCheck complains
+ * about these, so we nudge them out a bit to make sure that they're
+ * not truly equal.
+ */
+export function expandEmptySentenceRanges(sentenceRanges: SentenceRange[]) {
+  const expandedRanges: SentenceRange[] = []
+  for (const sentenceRange of sentenceRanges) {
+    const previousSentenceRange = expandedRanges[expandedRanges.length - 1]
+    if (!previousSentenceRange) {
+      expandedRanges.push(sentenceRange)
+      continue
+    }
+
+    const nudged =
+      previousSentenceRange.end > sentenceRange.start &&
+      previousSentenceRange.audiofile === sentenceRange.audiofile
+        ? { ...sentenceRange, start: previousSentenceRange.end }
+        : sentenceRange
+
+    const expanded =
+      nudged.end <= nudged.start
+        ? { ...nudged, end: nudged.start + 0.001 }
+        : nudged
+
+    expandedRanges.push(expanded)
+  }
+  return expandedRanges
+}
+
 export function getChapterDuration(sentenceRanges: SentenceRange[]) {
   let i = 0
   let duration = 0
