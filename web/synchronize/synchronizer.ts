@@ -13,6 +13,7 @@ import { getTrackDuration } from "@/audio"
 import {
   SentenceRange,
   StorytellerTranscription,
+  expandEmptySentenceRanges,
   getChapterDuration,
   getSentenceRanges,
   interpolateSentenceRanges,
@@ -301,6 +302,7 @@ export class Synchronizer {
         lastSentenceRange,
       )
     const interpolated = await interpolateSentenceRanges(sentenceRanges)
+    const expanded = expandEmptySentenceRanges(interpolated)
     const tagged = tagSentences(chapterXml)
 
     const storytellerStylesheetUrl = relative(
@@ -317,13 +319,13 @@ export class Synchronizer {
     this.syncedChapters.push({
       chapter,
       xml: tagged,
-      sentenceRanges: interpolated,
+      sentenceRanges: expanded,
       startOffset: transcriptionOffset,
       endOffset: endTranscriptionOffset,
     })
 
     return {
-      lastSentenceRange: interpolated[interpolated.length - 1] ?? null,
+      lastSentenceRange: expanded[expanded.length - 1] ?? null,
       endTranscriptionOffset,
     }
   }
