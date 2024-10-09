@@ -5690,6 +5690,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-clipboard/clipboard@npm:^1.14.2":
+  version: 1.14.2
+  resolution: "@react-native-clipboard/clipboard@npm:1.14.2"
+  peerDependencies:
+    react: ">= 16.9.0"
+    react-native: ">= 0.61.5"
+    react-native-macos: ">= 0.61.0"
+    react-native-windows: ">= 0.61.0"
+  peerDependenciesMeta:
+    react-native-macos:
+      optional: true
+    react-native-windows:
+      optional: true
+  checksum: 10c0/32d3bd4c68a1292700b61fba479aeb8defd41ee115b4baf1965e43a67a2cfcc0b2ee9730eb0a6cbca01861a1b6d7f01cb32235fd6842eb337957781da1d3a1da
+  languageName: node
+  linkType: hard
+
 "@react-native-community/cli-clean@npm:13.6.9":
   version: 13.6.9
   resolution: "@react-native-community/cli-clean@npm:13.6.9"
@@ -7082,6 +7099,7 @@ __metadata:
     "@babel/plugin-transform-template-literals": "npm:^7.23.3"
     "@expo/config-plugins": "npm:~8.0.0"
     "@react-native-async-storage/async-storage": "npm:1.23.1"
+    "@react-native-clipboard/clipboard": "npm:^1.14.2"
     "@react-native-community/slider": "npm:4.5.2"
     "@react-native-picker/picker": "npm:2.7.5"
     "@react-navigation/native": "npm:~6.1.6"
