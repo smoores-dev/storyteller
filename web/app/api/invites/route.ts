@@ -1,5 +1,6 @@
 import { withHasPermission } from "@/auth"
 import { createInvite, getInvites } from "@/database/invites"
+import { UserPermissions } from "@/database/users"
 import { sendInvite } from "@/invites"
 import { NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
@@ -29,7 +30,7 @@ export const POST = withHasPermission("user_create")(async (request) => {
 
   const key = randomBytes(6).toString("hex")
 
-  const permissions = {
+  const permissions: UserPermissions = {
     bookCreate: permissionsInput.book_create,
     bookDelete: permissionsInput.book_delete,
     bookRead: permissionsInput.book_read,
