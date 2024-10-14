@@ -66,3 +66,19 @@
   composes: button from "./addbookform.module.css";
   align-self: flex-end;
 }
+
+.select-all-button {
+  composes: file-source-upload from "./addbookform.module.css";
+  margin-top: 0.25rem;
+  border-top-right-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
+  align-self: flex-start;
+}
+
+.select-all-button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.select-all-button:active {
+  background-color: rgba(0, 0, 0, 0.4);
+}
