@@ -32,7 +32,8 @@ ${webUrl}/invites/${key}
 
   if (!smtpHost) {
     console.log("No SMTP client configured. Printing message to log:")
-    console.log(JSON.stringify(message, null, 2))
+    console.log(message.text)
+    return
   }
 
   const transporter = createTransport({
