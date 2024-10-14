@@ -9,7 +9,9 @@ build:
 
     - eas/resolve_build_config
 
-    - eas/prebuild
+    - run:
+        name: Prebuild
+        command: yarn workspace @storyteller/mobile expo prebuild -p android
 
     - eas/inject_android_credentials
 
