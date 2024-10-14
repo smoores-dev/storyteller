@@ -47,7 +47,7 @@ export type User = {
 // sqlite doesn't really have booleans, so it returns numbers here
 type SqliteUserPermissions = { [K in keyof UserPermissions]: 0 | 1 }
 
-export function getUser(username: string): User | null {
+export function getUser(usernameOrEmail: string): User | null {
   const db = getDatabase()
 
   const row = db
@@ -56,6 +56,7 @@ export function getUser(username: string): User | null {
     SELECT
       user.uuid,
       user.full_name AS fullName,
+      user.username,
       user.email,
       user.hashed_password AS hashedPassword,
       book_create AS bookCreate,
@@ -75,16 +76,17 @@ export function getUser(username: string): User | null {
     FROM user
     JOIN user_permission
       ON user.user_permission_uuid = user_permission.uuid
-    WHERE username = $username
+    WHERE username = $username OR email = $username
     `,
     )
     .get({
-      username: username.toLowerCase(),
-    }) as null | (Omit<User, "username"> & SqliteUserPermissions)
+      username: usernameOrEmail.toLowerCase(),
+    }) as null | (User & SqliteUserPermissions)
 
   if (!row) return null
 
-  const { uuid, fullName, email, hashedPassword, ...permissions } = row
+  const { uuid, fullName, username, email, hashedPassword, ...permissions } =
+    row
 
   return {
     uuid,

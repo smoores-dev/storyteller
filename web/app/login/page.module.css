@@ -3,24 +3,3 @@
   max-width: 600px;
   padding: 4rem;
 }
-
-.form {
-  display: flex;
-  flex-direction: column;
-}
-
-.form label {
-  display: block;
-  margin: 1rem 0.5rem 0.5rem;
-}
-
-.form input {
-  display: block;
-  padding: 1rem;
-}
-
-.form button {
-  align-self: flex-end;
-  margin: 2rem 0.5rem 0 0;
-  padding: 0.75rem 1rem;
-}
