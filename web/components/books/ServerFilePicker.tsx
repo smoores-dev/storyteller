@@ -144,6 +144,23 @@ export function ServerFilePicker({
               autoSelect="always"
               multiple={multiple}
             />
+            {multiple && (
+              <Button
+                className={styles["select-all-button"]}
+                onClick={() => {
+                  form.setValue(
+                    form.names.path,
+                    matchedEntries
+                      .filter((entry) => entry.type === "file")
+                      .map((entry) =>
+                        [parent, entry.name].join("/").replaceAll("//", "/"),
+                      ),
+                  )
+                }}
+              >
+                Select all
+              </Button>
+            )}
             <ComboboxPopover
               disabled={actionIsPending || isPending}
               wrapperProps={{
