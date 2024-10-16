@@ -20,7 +20,6 @@ import "../tasks/backgroundFetchSyncPositions"
 TrackPlayer.registerPlaybackService(() => PlaybackService)
 
 const PLAYER_OPTIONS = {
-  alwaysPauseOnInterruption: true,
   capabilities: [
     ...(Platform.OS === "ios" ? [Capability.Bookmark] : []),
     Capability.JumpBackward,
@@ -35,6 +34,7 @@ const PLAYER_OPTIONS = {
 async function initializePlayer() {
   try {
     await TrackPlayer.setupPlayer({
+      autoHandleInterruptions: true,
       iosCategory: IOSCategory.Playback,
       iosCategoryMode: IOSCategoryMode.SpokenAudio,
     })
