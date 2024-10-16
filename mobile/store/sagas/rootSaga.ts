@@ -16,6 +16,7 @@ import {
   writeBookmarkSaga,
   writeHighlightSaga,
   updatePlayerSpeedSaga,
+  syncPositionsSaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -53,5 +54,6 @@ export function* rootSaga() {
     call(clearServerSaga),
     call(logoutSaga),
     call(syncDebug),
+    call(syncPositionsSaga),
   ])
 }

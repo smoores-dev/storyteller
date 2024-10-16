@@ -22,7 +22,10 @@ type Props = {
 export function BookLink({ bookId }: Props) {
   const dispatch = useAppDispatch()
   const book = useAppSelector((state) => getBookshelfBook(state, bookId))
-  const locator = useAppSelector((state) => getLocator(state, bookId))
+  const timestampedLocator = useAppSelector((state) =>
+    getLocator(state, bookId),
+  )
+  const locator = timestampedLocator?.locator
 
   const location = Array.isArray(locator?.locations)
     ? locator.locations[0]

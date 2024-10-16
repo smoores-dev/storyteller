@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "PORT=8001 next dev",
+    "dev": "tsx database/migrate.ts && PORT=8001 next dev",
     "test": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test",
     "test:watch": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test --watch",
     "test:all": "STORYTELLER_DATA_DIR=__fixtures__/__output__ tsx --test __tests__/*.test.ts */__tests__/*.test.ts",

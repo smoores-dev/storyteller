@@ -58,6 +58,7 @@ import TrackPlayer, {
 } from "react-native-track-player"
 import {
   getBookshelfBook,
+  getBookshelfBookIds,
   getCurrentlyPlayingBook,
   getLocator,
 } from "../selectors/bookshelfSelectors"
@@ -87,6 +88,7 @@ import {
 import { BookAuthor } from "../../apiModels"
 import { preferencesSlice } from "../slices/preferencesSlice"
 import { getBookPlayerSpeed } from "../selectors/preferencesSelectors"
+import { ApiClientError } from "../../apiClient"
 
 export function createDownloadChannel(
   pauseState: FileSystem.DownloadPauseState,
@@ -429,7 +431,12 @@ export function* downloadBookSaga() {
         firstLink,
       )) as Awaited<ReturnType<typeof locateLink>>
 
-      yield call(writeLocator, bookId, firstLocator)
+      const timestampedLocator = {
+        locator: firstLocator,
+        timestamp: Date.now(),
+      }
+
+      yield call(writeLocator, bookId, timestampedLocator)
 
       yield put(
         bookshelfSlice.actions.bookDownloadCompleted({
@@ -441,7 +448,7 @@ export function* downloadBookSaga() {
             highlights: [],
             bookmarks: [],
           },
-          locator: firstLocator,
+          locator: timestampedLocator,
         }),
       )
     },
@@ -608,10 +615,70 @@ function takeLeadingWithQueue<P extends ActionPattern>(
   })
 }
 
+/**
+ * On a set interval, scan through local books and attempt to
+ * sync their positions to the backend API.
+ *
+ * If we encounter a conflict, indicating that there's a newer position
+ * from another client for a given book, we pull that newer position and
+ * update our local state.
+ */
+export function* syncPositionsSaga() {
+  const apiClient = (yield select(getApiClient)) as ReturnType<
+    typeof getApiClient
+  >
+
+  if (!apiClient?.isAuthenticated()) return
+
+  const pollChannel = eventChannel((emit) => {
+    const interval = setInterval(() => {
+      emit(true)
+    }, 10000)
+    return () => clearInterval(interval)
+  })
+
+  yield takeEvery(pollChannel, function* () {
+    const bookIds = (yield select(getBookshelfBookIds)) as ReturnType<
+      typeof getBookshelfBookIds
+    >
+    for (const bookId of bookIds) {
+      const timestampedLocator = (yield select(
+        getLocator,
+        bookId,
+      )) as ReturnType<typeof getLocator>
+      if (!timestampedLocator) continue
+      const { timestamp, locator } = timestampedLocator
+      try {
+        yield call(
+          [apiClient, apiClient.syncPosition],
+          bookId,
+          locator,
+          timestamp,
+        )
+      } catch (e) {
+        if (e instanceof ApiClientError && e.statusCode === 409) {
+          const newPosition = (yield call(
+            [apiClient, apiClient.getSyncedPosition],
+            bookId,
+          )) as Awaited<ReturnType<typeof apiClient.getSyncedPosition>>
+
+          yield put(
+            bookshelfSlice.actions.bookPositionSynced({
+              bookId,
+              locator: newPosition,
+            }),
+          )
+        }
+      }
+    }
+  })
+}
+
 export function* persistLocatorSaga() {
   yield takeLeadingWithQueue(
     [
       bookshelfSlice.actions.bookRelocated,
+      bookshelfSlice.actions.bookPositionSynced,
       bookshelfSlice.actions.navItemTapped,
       bookshelfSlice.actions.playerPositionUpdateCompleted,
       bookshelfSlice.actions.bookDownloadCompleted,
@@ -629,16 +696,20 @@ export function* persistLocatorSaga() {
 }
 
 function* getCurrentClip(book: BookshelfBook) {
-  const locator = (yield select(getLocator, book.id)) as ReturnType<
+  const timestampedLocator = (yield select(getLocator, book.id)) as ReturnType<
     typeof getLocator
   >
 
-  if (!locator) {
+  console.log(timestampedLocator)
+
+  if (!timestampedLocator) {
     logger.error(
       `Could not convert locator to position for book ${book.id}: no locator found in state.`,
     )
     return
   }
+
+  const { locator } = timestampedLocator
 
   const clip = (yield call(getClip, book.id, locator)) as Awaited<
     ReturnType<typeof getClip>
@@ -723,12 +794,21 @@ export function* seekToLocatorSaga() {
   yield takeEvery(
     [
       bookshelfSlice.actions.bookRelocated,
+      bookshelfSlice.actions.bookPositionSynced,
       bookshelfSlice.actions.navItemTapped,
       bookshelfSlice.actions.bookmarkTapped,
       bookshelfSlice.actions.bookDoubleTapped,
     ],
     function* (action) {
       const { bookId } = action.payload
+
+      // When we sync positions from the server, we may
+      // get updates for books that are not currently being read/played,
+      // in which case we should just abort
+      const currentlyPlayingBook = (yield select(
+        getCurrentlyPlayingBook,
+      )) as ReturnType<typeof getCurrentlyPlayingBook>
+      if (bookId !== currentlyPlayingBook?.id) return
 
       const book = (yield select(getBookshelfBook, bookId)) as ReturnType<
         typeof getBookshelfBook
@@ -794,10 +874,15 @@ export function* relocateToTrackPositionSaga() {
         return
       }
 
+      const timestampedLocator = {
+        timestamp: Date.now(),
+        locator: fragment.locator,
+      }
+
       yield put(
         bookshelfSlice.actions.playerPositionUpdateCompleted({
           bookId: currentBook.id,
-          locator: fragment.locator,
+          locator: timestampedLocator,
         }),
       )
     },

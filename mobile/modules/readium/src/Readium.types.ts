@@ -36,6 +36,11 @@ export type ReadiumLocator = {
   }
 }
 
+export type TimestampedLocator = {
+  timestamp: number
+  locator: ReadiumLocator
+}
+
 export type ReadiumLocalizedString = string | Record<string, string>
 
 export type ReadiumLink = {

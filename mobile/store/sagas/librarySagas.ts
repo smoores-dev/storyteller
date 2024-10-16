@@ -95,7 +95,7 @@ export function* hydrateExistingDownloads() {
             highlights: [],
             bookmarks: [],
           },
-          locator: firstLocator,
+          locator: { locator: firstLocator, timestamp: Date.now() },
         }),
       )
     })

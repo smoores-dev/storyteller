@@ -22,7 +22,10 @@ export function Highlights() {
               dispatch(
                 bookshelfSlice.actions.bookmarkTapped({
                   bookId: book.id,
-                  bookmark: highlight.locator,
+                  bookmark: {
+                    locator: highlight.locator,
+                    timestamp: Date.now(),
+                  },
                 }),
               )
             }}

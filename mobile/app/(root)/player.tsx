@@ -40,7 +40,10 @@ const events = [Event.PlaybackState, Event.PlaybackTrackChanged]
 export default function PlayerScreen() {
   const dimensions = useWindowDimensions()
   const book = useAppSelector(getCurrentlyPlayingBook)
-  const locator = useAppSelector((state) => book && getLocator(state, book.id))
+  const timestampedLocator = useAppSelector(
+    (state) => book && getLocator(state, book.id),
+  )
+  const locator = timestampedLocator?.locator
   const activeBookmarks = useMemo(
     () =>
       locator && book

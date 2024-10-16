@@ -16,7 +16,10 @@ export function TableOfContents() {
   const currentItemRef = useRef<null | View>(null)
 
   const book = useAppSelector(getCurrentlyPlayingBook)
-  const locator = useAppSelector((state) => book && getLocator(state, book.id))
+  const timestampedLocator = useAppSelector(
+    (state) => book && getLocator(state, book.id),
+  )
+  const locator = timestampedLocator?.locator
 
   const dispatch = useAppDispatch()
 
@@ -53,7 +56,7 @@ export function TableOfContents() {
               dispatch(
                 bookshelfSlice.actions.navItemTapped({
                   bookId: book.id,
-                  locator,
+                  locator: { locator, timestamp: Date.now() },
                 }),
               )
             }}
@@ -99,7 +102,7 @@ export function TableOfContents() {
                 dispatch(
                   bookshelfSlice.actions.navItemTapped({
                     bookId: book.id,
-                    locator,
+                    locator: { locator, timestamp: Date.now() },
                   }),
                 )
               }}

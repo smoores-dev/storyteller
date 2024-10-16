@@ -15,7 +15,10 @@ export default function BookScreen() {
   const bookId = parseInt(id, 10)
 
   const book = useAppSelector((state) => getBookshelfBook(state, bookId))
-  const locator = useAppSelector((state) => getLocator(state, bookId))
+  const timestampedLocator = useAppSelector((state) =>
+    getLocator(state, bookId),
+  )
+  const locator = timestampedLocator?.locator
 
   const isFocused = useIsFocused()
 
