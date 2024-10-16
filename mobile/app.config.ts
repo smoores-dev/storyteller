@@ -71,7 +71,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         UISupportsDocumentBrowser: true,
         UIFileSharingEnabled: true,
         LSSupportsOpeningDocumentsInPlace: true,
-        UIBackgroundModes: ["audio"],
+        UIBackgroundModes: ["audio", "fetch"],
         NSMicrophoneUsageDescription:
           "This permission is not needed by the app, but it is required by an underlying API. If you see this dialog, contact us.",
       },
