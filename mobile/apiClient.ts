@@ -1,4 +1,5 @@
 import { Body_login_token_post, BookDetail, Token } from "./apiModels"
+import { ReadiumLocator } from "./modules/readium/src/Readium.types"
 import { joinUrlPaths } from "./urls"
 
 AbortSignal.timeout ??= function timeout(ms) {
@@ -174,5 +175,63 @@ export class ApiClient {
     }
 
     return true
+  }
+
+  async getSyncedPosition(
+    bookId: number,
+  ): Promise<{ timestamp: number; locator: ReadiumLocator }> {
+    const url = new URL(
+      joinUrlPaths(this.rootPath, `books/${bookId}/positions`),
+      this.origin,
+    )
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(
+        url.toString(),
+        response.status,
+        response.statusText,
+      )
+    }
+
+    const { timestamp, locator } = (await response.json()) as {
+      timestamp: number
+      locator: ReadiumLocator
+    }
+    return { timestamp, locator }
+  }
+
+  async syncPosition(
+    bookId: number,
+    locator: ReadiumLocator,
+    timestamp: number,
+  ): Promise<void> {
+    const url = new URL(
+      joinUrlPaths(this.rootPath, `books/${bookId}/positions`),
+      this.origin,
+    )
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: this.getHeaders(),
+      credentials: "include",
+      body: JSON.stringify({
+        locator,
+        timestamp,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(
+        url.toString(),
+        response.status,
+        response.statusText,
+      )
+    }
   }
 }

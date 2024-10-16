@@ -15,6 +15,7 @@ import { StorytellerProvider } from "../components/StorytellerProvider"
 import { useEffect } from "react"
 import { AppState, AppStateStatus, Platform } from "react-native"
 import { logger } from "../logger"
+import "../tasks/backgroundFetchSyncPositions"
 
 TrackPlayer.registerPlaybackService(() => PlaybackService)
 

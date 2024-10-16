@@ -129,7 +129,7 @@ export function Epub({ book, locator }: Props) {
             dispatch(
               bookshelfSlice.actions.bookRelocated({
                 bookId: book.id,
-                locator: event.nativeEvent,
+                locator: { locator: event.nativeEvent, timestamp: Date.now() },
               }),
             )
           }
@@ -140,7 +140,7 @@ export function Epub({ book, locator }: Props) {
             dispatch(
               bookshelfSlice.actions.bookDoubleTapped({
                 bookId: book.id,
-                locator: event.nativeEvent,
+                locator: { locator: event.nativeEvent, timestamp: Date.now() },
               }),
             )
           }}

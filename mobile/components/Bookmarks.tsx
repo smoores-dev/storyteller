@@ -19,7 +19,7 @@ export function Bookmarks() {
               dispatch(
                 bookshelfSlice.actions.bookmarkTapped({
                   bookId: book.id,
-                  bookmark,
+                  bookmark: { locator: bookmark, timestamp: Date.now() },
                 }),
               )
             }}

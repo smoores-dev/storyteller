@@ -85,7 +85,7 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
               dispatch(
                 bookshelfSlice.actions.bookmarkAdded({
                   bookId: book.id,
-                  locator: currentLocator,
+                  locator: currentLocator.locator,
                 }),
               )
             }

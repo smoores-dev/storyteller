@@ -4,6 +4,7 @@ import { PayloadAction, createAction, createSlice } from "@reduxjs/toolkit"
 import {
   ReadiumLocator,
   ReadiumManifest,
+  TimestampedLocator,
 } from "../../modules/readium/src/Readium.types"
 import { areLocatorsEqual } from "../../modules/readium"
 import type { UUID } from "crypto"
@@ -44,7 +45,7 @@ export type BookshelfState = {
     [id: number]: BookshelfBook
   }
   locators: {
-    [id: number]: ReadiumLocator
+    [id: number]: TimestampedLocator
   }
 }
 
@@ -89,7 +90,7 @@ export const bookshelfSlice = createSlice({
       state,
       action: PayloadAction<{
         books: BookshelfBook[]
-        locators: { [id: number]: ReadiumLocator }
+        locators: { [id: number]: TimestampedLocator }
       }>,
     ) {
       const { books, locators } = action.payload
@@ -107,7 +108,7 @@ export const bookshelfSlice = createSlice({
       state,
       action: PayloadAction<{
         book: BookshelfBook
-        locator: ReadiumLocator
+        locator: TimestampedLocator
       }>,
     ) {
       const { book, locator } = action.payload
@@ -118,7 +119,7 @@ export const bookshelfSlice = createSlice({
     },
     navItemTapped(
       state,
-      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+      action: PayloadAction<{ bookId: number; locator: TimestampedLocator }>,
     ) {
       const { bookId, locator } = action.payload
 
@@ -126,7 +127,7 @@ export const bookshelfSlice = createSlice({
     },
     bookmarkTapped(
       state,
-      action: PayloadAction<{ bookId: number; bookmark: ReadiumLocator }>,
+      action: PayloadAction<{ bookId: number; bookmark: TimestampedLocator }>,
     ) {
       const { bookId, bookmark } = action.payload
 
@@ -134,7 +135,15 @@ export const bookshelfSlice = createSlice({
     },
     bookRelocated(
       state,
-      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+      action: PayloadAction<{ bookId: number; locator: TimestampedLocator }>,
+    ) {
+      const { bookId, locator } = action.payload
+
+      state.locators[bookId] = locator
+    },
+    bookPositionSynced(
+      state,
+      action: PayloadAction<{ bookId: number; locator: TimestampedLocator }>,
     ) {
       const { bookId, locator } = action.payload
 
@@ -148,7 +157,7 @@ export const bookshelfSlice = createSlice({
     },
     bookDoubleTapped(
       state,
-      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+      action: PayloadAction<{ bookId: number; locator: TimestampedLocator }>,
     ) {
       const { bookId, locator } = action.payload
 
@@ -167,7 +176,7 @@ export const bookshelfSlice = createSlice({
     },
     playerPositionUpdateCompleted(
       state,
-      action: PayloadAction<{ bookId: number; locator: ReadiumLocator }>,
+      action: PayloadAction<{ bookId: number; locator: TimestampedLocator }>,
     ) {
       const { bookId, locator } = action.payload
 
