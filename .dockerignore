@@ -4,6 +4,7 @@
 !/.yarnrc.yml
 !/.yarn
 !/web
+!/docker-scripts
 /web/.next
 /web/node_modules
 /web/tsbuild

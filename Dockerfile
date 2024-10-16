@@ -1,7 +1,7 @@
 FROM node:20-bullseye
 
 RUN apt-get update && \
-    apt-get install -y build-essential git cmake software-properties-common
+    apt-get install -y build-essential git cmake software-properties-common sqlite3 argon2
 
 WORKDIR /app
 
@@ -15,7 +15,10 @@ COPY web/package.json ./web/package.json
 
 RUN yarn workspaces focus @storyteller/web
 
+COPY docker-scripts/ ./scripts/
+
 COPY . .
+
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
