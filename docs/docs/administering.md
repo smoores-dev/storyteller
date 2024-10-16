@@ -49,6 +49,20 @@ If your email provider supports SMTP, you can simply follow their instructions
 for configuring email in Storyteller. Otherwise, you can use a free SMTP relay
 service, such as Sendgrid.
 
+### Reseting a Password
+
+If you need to reset a password for any user (including admins) you can do so by
+running a script on the docker service supplying either the username or email of
+the user you wish to reset. This can be done with:
+
+```sh
+# With a username
+$ docker exec -it <container-name-or-id> scripts/reset-password.sh --username <username>
+
+# With an email
+$ docker exec -it <container-name-or-id> scripts/reset-password.sh --email <email>
+```
+
 ## Audio settings
 
 As part of its audio pre-processing step, Storyteller can transcode your audio
