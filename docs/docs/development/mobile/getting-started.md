@@ -42,7 +42,7 @@ yarn install
 
 If your work only requires modifying the Typescript parts of the codebase, then
 you don't need to set up Android Studio or XCode for local development.
-[Reach out to Shane](/doc/say-hi) for access to a development build of the
+[Reach out to Shane](/docs/say-hi) for access to a development build of the
 Storyteller apps that you can install on your personal Android or iOS device.
 Once that's set up, run, `cd` into the `mobile` directory of the Storyteller
 repo and run:

@@ -29,6 +29,7 @@ check:
     - apt update && apt install -y --no-install-recommends ffmpeg
     - yarn
     - yarn check
+    - yarn build:docs
     - git fetch origin main --depth 1
     - ./scripts/check-versions.sh
     # At the moment, we only have tests for the web package,
