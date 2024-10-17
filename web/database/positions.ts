@@ -98,7 +98,7 @@ export function getPosition(userUuid: UUID, bookUuid: UUID) {
       userUuid,
       bookUuid,
       locator: JSON.parse(result.locator) as unknown,
-      timeStamp: result.timestamp,
+      timestamp: result.timestamp,
     }
   )
 }
