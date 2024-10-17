@@ -84,6 +84,7 @@ import {
 import {
   ReadiumContributor,
   ReadiumLocalizedString,
+  TimestampedLocator,
 } from "../../modules/readium/src/Readium.types"
 import { BookAuthor } from "../../apiModels"
 import { preferencesSlice } from "../slices/preferencesSlice"
@@ -416,24 +417,41 @@ export function* downloadBookSaga() {
         }
       }
 
-      const firstLink = manifest.readingOrder[0]
+      const apiClient = (yield select(getApiClient)) as ReturnType<
+        typeof getApiClient
+      >
 
-      if (!firstLink)
-        throw new Error(
-          `Failed to parse book ${parseLocalizedString(
-            manifest.metadata.title,
-          )}: No reading order found`,
-        )
+      let timestampedLocator: TimestampedLocator | null = null
+      if (apiClient?.isAuthenticated()) {
+        try {
+          timestampedLocator = (yield call(
+            [apiClient, apiClient.getSyncedPosition],
+            bookId,
+          )) as Awaited<ReturnType<typeof apiClient.getSyncedPosition>>
+        } catch {
+          //
+        }
+      }
+      if (!timestampedLocator) {
+        const firstLink = manifest.readingOrder[0]
 
-      const firstLocator = (yield call(
-        locateLink,
-        bookId,
-        firstLink,
-      )) as Awaited<ReturnType<typeof locateLink>>
+        if (!firstLink)
+          throw new Error(
+            `Failed to parse book ${parseLocalizedString(
+              manifest.metadata.title,
+            )}: No reading order found`,
+          )
 
-      const timestampedLocator = {
-        locator: firstLocator,
-        timestamp: Date.now(),
+        const firstLocator = (yield call(
+          locateLink,
+          bookId,
+          firstLink,
+        )) as Awaited<ReturnType<typeof locateLink>>
+
+        timestampedLocator = {
+          locator: firstLocator,
+          timestamp: Date.now(),
+        }
       }
 
       yield call(writeLocator, bookId, timestampedLocator)
@@ -634,6 +652,10 @@ export function* syncPositionsSaga() {
     const interval = setInterval(() => {
       emit(true)
     }, 10000)
+    // Run this in a new macro task so that it doesn't
+    // emit before we start listening in the takeEvery
+    // call
+    setImmediate(() => emit(true))
     return () => clearInterval(interval)
   })
 
@@ -657,17 +679,21 @@ export function* syncPositionsSaga() {
         )
       } catch (e) {
         if (e instanceof ApiClientError && e.statusCode === 409) {
-          const newPosition = (yield call(
-            [apiClient, apiClient.getSyncedPosition],
-            bookId,
-          )) as Awaited<ReturnType<typeof apiClient.getSyncedPosition>>
-
-          yield put(
-            bookshelfSlice.actions.bookPositionSynced({
+          try {
+            const newPosition = (yield call(
+              [apiClient, apiClient.getSyncedPosition],
               bookId,
-              locator: newPosition,
-            }),
-          )
+            )) as Awaited<ReturnType<typeof apiClient.getSyncedPosition>>
+
+            yield put(
+              bookshelfSlice.actions.bookPositionSynced({
+                bookId,
+                locator: newPosition,
+              }),
+            )
+          } catch {
+            // Ignore any errors here; we'll retry in ten seconds anyway
+          }
         }
       }
     }
@@ -699,8 +725,6 @@ function* getCurrentClip(book: BookshelfBook) {
   const timestampedLocator = (yield select(getLocator, book.id)) as ReturnType<
     typeof getLocator
   >
-
-  console.log(timestampedLocator)
 
   if (!timestampedLocator) {
     logger.error(
