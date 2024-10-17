@@ -45,8 +45,11 @@ export async function readLocators(
   // Ensure that all locators are timestamped
   for (const [id, locator] of Object.entries(locators)) {
     if ("timestamp" in locator) continue
-    const timestamped = { timestamp: Date.now(), locator }
-    console.log("updating timestamped locator", id, timestamped)
+    // Set the date in the past, so that it will be
+    // overwritten by any real timestamped locator from
+    // the server
+    const date = new Date().setFullYear(2020).valueOf()
+    const timestamped = { timestamp: date, locator }
     await writeLocator(parseInt(id), timestamped)
     locators[id] = timestamped
   }
