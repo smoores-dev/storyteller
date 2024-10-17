@@ -27,14 +27,18 @@ TaskManager.defineTask(BACKGROUND_POSITION_SYNC_TASK, async () => {
       await apiClient?.syncPosition(bookId, locator, timestamp)
     } catch (e) {
       if (e instanceof ApiClientError && e.statusCode === 409) {
-        const newPosition = await apiClient.getSyncedPosition(bookId)
+        try {
+          const newPosition = await apiClient.getSyncedPosition(bookId)
 
-        store.dispatch(
-          bookshelfSlice.actions.bookPositionSynced({
-            bookId,
-            locator: newPosition,
-          }),
-        )
+          store.dispatch(
+            bookshelfSlice.actions.bookPositionSynced({
+              bookId,
+              locator: newPosition,
+            }),
+          )
+        } catch {
+          // Ignore any errors here; we'll retry again at the next interval anyway
+        }
       }
     }
   }
@@ -44,6 +48,4 @@ TaskManager.defineTask(BACKGROUND_POSITION_SYNC_TASK, async () => {
 
 BackgroundFetch.registerTaskAsync(BACKGROUND_POSITION_SYNC_TASK, {
   minimumInterval: 60 * 15, // 15 minutes
-  stopOnTerminate: false, // android only,
-  startOnBoot: true, // android only
 })
