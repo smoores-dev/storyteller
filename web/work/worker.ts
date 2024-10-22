@@ -36,7 +36,7 @@ import { MessagePort } from "node:worker_threads"
 export async function transcribeBook(
   bookUuid: UUID,
   initialPrompt: string | null,
-  language: string,
+  locale: Intl.Locale,
   settings: Settings,
   onProgress?: (progress: number) => void,
 ) {
@@ -74,7 +74,7 @@ export async function transcribeBook(
       const transcription = await transcribeTrack(
         filepath,
         initialPrompt,
-        language,
+        locale,
         settings,
       )
       transcriptions.push(transcription)
@@ -197,16 +197,16 @@ export default async function processBook({
         console.log("Transcribing...")
         const epub = await readEpub(bookUuid)
         const title = await epub.getTitle()
-        const language = (await epub.getLanguage()) ?? "en"
+        const locale = (await epub.getLanguage()) ?? new Intl.Locale("en-US")
         const fullText = await getFullText(epub)
         const initialPrompt =
-          language === "en"
+          locale.language === "en"
             ? await getInitialPrompt(title ?? "", fullText)
             : null
         await transcribeBook(
           bookUuid,
           initialPrompt,
-          language,
+          locale,
           settings,
           onProgress,
         )
