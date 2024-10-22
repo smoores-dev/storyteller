@@ -138,7 +138,7 @@ function getWhisperCppModelId(
 export async function transcribeTrack(
   trackPath: string,
   initialPrompt: string | null,
-  language: string,
+  locale: Intl.Locale,
   settings: Settings,
 ): Promise<Pick<RecognitionResult, "transcript" | "wordTimeline">> {
   console.log(`Transcribing audio file ${trackPath}`)
@@ -151,10 +151,13 @@ export async function transcribeTrack(
     const { transcript, wordTimeline } = await recognize(trackPath, {
       timelineLevel: "word",
       engine: "whisper.cpp",
-      language,
+      language: locale.language,
       whisperCpp: {
         ...(initialPrompt && { prompt: initialPrompt }),
-        model: getWhisperCppModelId(language, settings.whisperModel ?? "tiny"),
+        model: getWhisperCppModelId(
+          locale.language,
+          settings.whisperModel ?? "tiny",
+        ),
         ...whisperOptions,
       },
     })
@@ -171,7 +174,7 @@ export async function transcribeTrack(
     const { transcript, wordTimeline } = await recognize(trackPath, {
       timelineLevel: "word",
       engine: "google-cloud",
-      language,
+      language: locale.toString(),
       googleCloud: {
         apiKey: settings.googleCloudApiKey,
       },
@@ -194,7 +197,7 @@ export async function transcribeTrack(
     const { transcript, wordTimeline } = await recognize(trackPath, {
       timelineLevel: "word",
       engine: "microsoft-azure",
-      language,
+      language: locale.toString(),
       microsoftAzure: {
         serviceRegion: settings.azureServiceRegion,
         subscriptionKey: settings.azureSubscriptionKey,
@@ -223,7 +226,7 @@ export async function transcribeTrack(
     const { transcript, wordTimeline } = await recognize(trackPath, {
       timelineLevel: "word",
       engine: "amazon-transcribe",
-      language,
+      language: locale.toString(),
       amazonTranscribe: {
         region: settings.amazonTranscribeRegion,
         accessKeyId: settings.amazonTranscribeAccessKeyId,
@@ -242,7 +245,7 @@ export async function transcribeTrack(
   const { transcript, wordTimeline } = await recognize(trackPath, {
     timelineLevel: "word",
     engine: "openai-cloud",
-    language,
+    language: locale.language,
     openAICloud: {
       ...(initialPrompt && { prompt: initialPrompt }),
       apiKey: settings.openAiApiKey,
