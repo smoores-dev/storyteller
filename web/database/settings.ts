@@ -141,11 +141,6 @@ export function updateSettings(settings: Required<Settings>) {
 
   Object.entries(SETTINGS_COLUMN_NAMES).forEach(
     ([columnName, propertyName]) => {
-      console.log(
-        propertyName,
-        propertyName in settings,
-        settings[propertyName],
-      )
       if (!(propertyName in settings)) return
 
       statement.run({
