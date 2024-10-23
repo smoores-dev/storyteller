@@ -501,23 +501,20 @@ export class ApiClient {
   async updateBook(
     bookUuid: string,
     title: string,
+    language: string | null,
     authors: BookAuthor[],
     textCover: File | null,
     audioCover: File | null,
   ): Promise<BookDetail> {
     const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
-    // const url = new URL(`http://localhost:8000/books/${bookUuid}`)
 
     const body = new FormData()
     body.append("title", title)
+    if (language !== null) {
+      body.append("language", language)
+    }
     for (const author of authors) {
       body.append("authors", JSON.stringify(author))
-      // body.append("authors[][uuid]", author.uuid)
-      // body.append("authors[][name]", author.name)
-      // if (author.role !== null) {
-      //   body.append("authors[][role]", author.role)
-      // }
-      // body.append("authors[][file_as]", author.file_as)
     }
 
     if (textCover !== null) {
