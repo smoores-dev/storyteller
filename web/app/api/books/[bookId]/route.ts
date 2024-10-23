@@ -1,3 +1,7 @@
+import {
+  ProcessingTaskStatus,
+  ProcessingTaskType,
+} from "@/apiModels/models/ProcessingStatus"
 import { deleteAssets } from "@/assets"
 import { withHasPermission } from "@/auth"
 import {
@@ -7,8 +11,13 @@ import {
   getBooks,
   updateBook,
 } from "@/database/books"
+import { Epub } from "@/epub"
 import { persistCustomCover as persistCustomAudioCover } from "@/process/processAudio"
-import { persistCustomCover as persistCustomTextCover } from "@/process/processEpub"
+import {
+  getEpubFilepath,
+  getEpubSyncedFilepath,
+  persistCustomCover as persistCustomTextCover,
+} from "@/process/processEpub"
 import { isProcessing } from "@/work/distributor"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
@@ -32,12 +41,37 @@ export const PUT = withHasPermission<Params>("book_update")(async (
       { status: 405 },
     )
   }
+
+  const language = formData.get("language")?.valueOf() ?? null
+  if (typeof language !== "string") {
+    return NextResponse.json(
+      {
+        message: "Invalid language",
+      },
+      { status: 405 },
+    )
+  }
+
   const authorStrings = formData.getAll("authors")
   const authors = authorStrings.map(
     (authorString) =>
       JSON.parse(authorString.valueOf() as string) as AuthorInput,
   )
-  const updated = updateBook(bookUuid, title, authors)
+  const updated = updateBook(bookUuid, title, language, authors)
+
+  if (
+    updated.processingStatus?.currentTask ===
+      ProcessingTaskType.SYNC_CHAPTERS &&
+    updated.processingStatus.status === ProcessingTaskStatus.COMPLETED
+  ) {
+    const syncedEpubPath = getEpubSyncedFilepath(updated.uuid)
+    const epub = await Epub.from(syncedEpubPath)
+    await epub.setTitle(updated.title)
+    if (updated.language) {
+      await epub.setLanguage(updated.language)
+    }
+    await epub.writeToFile(syncedEpubPath)
+  }
 
   const textCover = formData.get("text_cover")?.valueOf()
   if (typeof textCover === "object") {
@@ -68,7 +102,7 @@ export const PUT = withHasPermission<Params>("book_update")(async (
   })
 })
 
-export const GET = withHasPermission<Params>("book_read")((
+export const GET = withHasPermission<Params>("book_read")(async (
   _request,
   context,
 ) => {
@@ -79,6 +113,20 @@ export const GET = withHasPermission<Params>("book_read")((
       { message: `Could not find book with id ${context.params.bookId}` },
       { status: 404 },
     )
+  }
+
+  if (!book.language) {
+    const synchronized =
+      book.processingStatus?.currentTask === ProcessingTaskType.SYNC_CHAPTERS &&
+      book.processingStatus.status === ProcessingTaskStatus.COMPLETED
+    const epubPath = synchronized
+      ? getEpubSyncedFilepath(book.uuid)
+      : getEpubFilepath(book.uuid)
+    const epub = await Epub.from(epubPath)
+    const locale = await epub.getLanguage()
+    if (locale) {
+      book.language = locale.toString()
+    }
   }
 
   return NextResponse.json({

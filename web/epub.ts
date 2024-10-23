@@ -454,6 +454,40 @@ export class Epub {
     return new Intl.Locale(locale)
   }
 
+  async setLanguage(languageCode: string) {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = findByName("package", packageDocument)
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: found no package element in package document",
+      )
+
+    const metadata = findByName("metadata", packageElement.package)
+    if (!metadata)
+      throw new Error(
+        "Failed to parse EPUB: found no metadata element in package document",
+      )
+
+    const languageElement = findByName("dc:language", metadata.metadata)
+
+    if (!languageElement) {
+      metadata.metadata.push({
+        "dc:language": [{ "#text": languageCode } as XmlNode],
+      })
+    } else {
+      languageElement["dc:language"] = [{ "#text": languageCode } as XmlNode]
+    }
+
+    const updatedPackageDocument = (await Epub.xmlBuilder.build(
+      packageDocument,
+    )) as string
+
+    const rootfile = await this.getRootfile()
+
+    this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
+  }
+
   async getTitle(short = false) {
     const metadata = await this.getMetadata()
     const titleEntries = metadata.filter((entry) => entry.type === "dc:title")
@@ -511,6 +545,40 @@ export class Epub {
     return (sortedTitleParts.length === 0 ? titleEntries : sortedTitleParts)
       .map((entry) => entry.value)
       .join(", ")
+  }
+
+  async setTitle(title: string) {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = findByName("package", packageDocument)
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: found no package element in package document",
+      )
+
+    const metadata = findByName("metadata", packageElement.package)
+    if (!metadata)
+      throw new Error(
+        "Failed to parse EPUB: found no metadata element in package document",
+      )
+
+    const titleElement = findByName("dc:title", metadata.metadata)
+
+    if (!titleElement) {
+      metadata.metadata.push({
+        "dc:title": [{ "#text": title } as XmlNode],
+      })
+    } else {
+      titleElement["dc:title"] = [{ "#text": title } as XmlNode]
+    }
+
+    const updatedPackageDocument = (await Epub.xmlBuilder.build(
+      packageDocument,
+    )) as string
+
+    const rootfile = await this.getRootfile()
+
+    this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
   }
 
   async getAuthors(): Promise<

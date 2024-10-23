@@ -3,6 +3,7 @@ import {
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 import { deleteProcessed } from "@/assets"
+import { getBooks } from "@/database/books"
 import {
   PROCESSING_TASK_ORDER,
   type ProcessingTask,
@@ -197,12 +198,20 @@ export default async function processBook({
         console.log("Transcribing...")
         const epub = await readEpub(bookUuid)
         const title = await epub.getTitle()
-        const locale = (await epub.getLanguage()) ?? new Intl.Locale("en-US")
+        const [book] = getBooks([bookUuid])
+        if (!book)
+          throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
+
+        const locale = book.language
+          ? new Intl.Locale(book.language)
+          : (await epub.getLanguage()) ?? new Intl.Locale("en-US")
+
         const fullText = await getFullText(epub)
         const initialPrompt =
           locale.language === "en"
             ? await getInitialPrompt(title ?? "", fullText)
             : null
+
         await transcribeBook(
           bookUuid,
           initialPrompt,
@@ -230,6 +239,15 @@ export default async function processBook({
           transcriptions,
         )
         await synchronizer.syncBook(onProgress)
+        const [book] = getBooks([bookUuid])
+
+        if (!book)
+          throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
+
+        await epub.setTitle(book.title)
+        if (book.language) {
+          await epub.setLanguage(book.language)
+        }
         await epub.writeToFile(getEpubSyncedFilepath(bookUuid))
         await epub.close()
       }
