@@ -67,9 +67,11 @@ export const POST = withHasPermission("book_create")(async (request) => {
       const epub = await Epub.from(epubPath)
       const title = await epub.getTitle()
       const authors = await epub.getAuthors()
+      const language = await epub.getLanguage()
 
       const book = createBook(
         title ?? basename(epubPath).replace(".epub", ""),
+        language?.toString() ?? null,
         authors.map((author) => ({ ...author, uuid: "" })),
       )
       await linkEpub(book.uuid, epubPath)
@@ -111,9 +113,11 @@ export const POST = withHasPermission("book_create")(async (request) => {
 
   const title = await epub.getTitle()
   const authors = await epub.getAuthors()
+  const language = await epub.getLanguage()
 
   const book = createBook(
     title ?? epubFile.name.replace(".epub", ""),
+    language?.toString() ?? null,
     authors.map((author) => ({ ...author, uuid: "" })),
   )
   await persistEpub(book.uuid, epubFile)

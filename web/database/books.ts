@@ -53,6 +53,7 @@ export type Book = {
   uuid: UUID
   id: number
   title: string
+  language: string | null
   authors: Author[]
   processingStatus?: ProcessingStatus
 }
@@ -64,17 +65,21 @@ export type AuthorInput = {
   role: string | null
 }
 
-export function createBook(title: string, authors: AuthorInput[]) {
+export function createBook(
+  title: string,
+  language: string | null,
+  authors: AuthorInput[],
+) {
   const db = getDatabase()
 
-  const statement = db.prepare<{ title: string }>(
+  const statement = db.prepare<{ title: string; language: string | null }>(
     `
-    INSERT INTO book (id, title) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, $title)
+    INSERT INTO book (id, title, language) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, $title, $language)
     RETURNING uuid, id
     `,
   )
 
-  const { uuid: bookUuid, id } = statement.get({ title }) as {
+  const { uuid: bookUuid, id } = statement.get({ title, language }) as {
     uuid: UUID
     id: number
   }
@@ -82,6 +87,7 @@ export function createBook(title: string, authors: AuthorInput[]) {
   const book: Book = {
     uuid: bookUuid,
     id,
+    language,
     title,
     authors: [],
   }
@@ -142,7 +148,7 @@ export function getBooks(
 
   const statement = db.prepare(`
     SELECT
-      book.uuid AS book_uuid, book.id, book.title,
+      book.uuid AS book_uuid, book.id, book.title, book.language,
       author_to_book.role,
       author.uuid AS author_uuid, author.name, author.file_as,
       processing_task.uuid AS processing_task_uuid, processing_task.type, processing_task.status, processing_task.progress
@@ -160,6 +166,7 @@ export function getBooks(
     book_uuid: UUID
     id: number
     title: string
+    language: string | null
     role: string
     author_uuid: UUID | null
     name: string
@@ -181,6 +188,7 @@ export function getBooks(
           uuid: row.book_uuid,
           id: row.id,
           title: row.title,
+          language: row.language,
           authors:
             row.author_uuid !== null
               ? {
@@ -355,17 +363,23 @@ export function deleteBook(bookUuid: UUID) {
   })
 }
 
-export function updateBook(uuid: UUID, title: string, authors: AuthorInput[]) {
+export function updateBook(
+  uuid: UUID,
+  title: string,
+  language: string | null,
+  authors: AuthorInput[],
+) {
   const db = getDatabase()
 
-  db.prepare<{ title: string; uuid: UUID }>(
+  db.prepare<{ title: string; language: string | null; uuid: UUID }>(
     `
     UPDATE book
-    SET title = $title
+    SET title = $title, language = $language
     WHERE uuid = $uuid
     `,
   ).run({
     title,
+    language,
     uuid,
   })
 

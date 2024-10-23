@@ -22,6 +22,7 @@ enum SaveState {
 
 export function BookEditForm({ book }: Props) {
   const [title, setTitle] = useState(book.title)
+  const [language, setLanguage] = useState(book.language)
   const [authors, setAuthors] = useState(book.authors)
   const [textCover, setTextCover] = useState<File | null>(null)
   const [audioCover, setAudioCover] = useState<File | null>(null)
@@ -131,6 +132,7 @@ export function BookEditForm({ book }: Props) {
                 await client.updateBook(
                   book.uuid,
                   title,
+                  language,
                   authors,
                   textCover,
                   audioCover,
@@ -157,6 +159,20 @@ export function BookEditForm({ book }: Props) {
               onChange={(e) => {
                 const value = e.target.value
                 setTitle(value)
+              }}
+            />
+          </label>
+          <label className={styles["label"]}>
+            Language
+            <input
+              className={styles["input"]}
+              id="language"
+              name="language"
+              type="text"
+              value={language ?? ""}
+              onChange={(e) => {
+                const value = e.target.value
+                setLanguage(value)
               }}
             />
           </label>
