@@ -1,4 +1,5 @@
-import { ScrollView, View, Pressable } from "react-native"
+import { View, Pressable } from "react-native"
+import { ScrollView } from "react-native-gesture-handler"
 import { UIText } from "./UIText"
 import { locateLink } from "../modules/readium"
 import { useRef } from "react"
