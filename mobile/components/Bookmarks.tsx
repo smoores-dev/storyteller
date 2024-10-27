@@ -1,4 +1,5 @@
-import { ScrollView, View, Pressable } from "react-native"
+import { View, Pressable } from "react-native"
+import { ScrollView } from "react-native-gesture-handler"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
