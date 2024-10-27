@@ -3,11 +3,11 @@ import {
   Image,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
 } from "react-native"
+import { ScrollView } from "react-native-gesture-handler"
 import { ChevronDownIcon } from "../../icons/ChevronDownIcon"
 import { useAppSelector } from "../../store/appState"
 import { UIText } from "../../components/UIText"
@@ -107,28 +107,29 @@ export default function PlayerScreen() {
 
   return (
     <View style={styles.container}>
+      <ToolbarDialogs />
+      <View style={styles.topbar}>
+        {isPresented ? (
+          <Pressable
+            hitSlop={20}
+            onPress={() => {
+              router.back()
+            }}
+          >
+            <ChevronDownIcon />
+          </Pressable>
+        ) : (
+          <Link href="/">
+            <ChevronDownIcon />
+          </Link>
+        )}
+        <Toolbar mode="audio" activeBookmarks={activeBookmarks} />
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Native modals have dark backgrounds on iOS, set the status bar to light content. */}
         {/* <StatusBar style="light" /> */}
         {isLoading && <LoadingView />}
-        <ToolbarDialogs />
-        <View style={styles.topbar}>
-          {isPresented ? (
-            <Pressable
-              hitSlop={20}
-              onPress={() => {
-                router.back()
-              }}
-            >
-              <ChevronDownIcon />
-            </Pressable>
-          ) : (
-            <Link href="/">
-              <ChevronDownIcon />
-            </Link>
-          )}
-          <Toolbar mode="audio" activeBookmarks={activeBookmarks} />
-        </View>
         <Image
           style={[
             styles.cover,
