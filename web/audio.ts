@@ -2,6 +2,7 @@ import { promisify } from "node:util"
 import { exec as execCallback } from "node:child_process"
 import memoize from "memoize"
 import { quotePath } from "./shell"
+import { copyFile } from "node:fs/promises"
 
 const exec = promisify(execCallback)
 
@@ -174,19 +175,21 @@ export async function transcodeTrack(
   codec: string | null,
   bitrate: string | null,
 ) {
+  if (codec == null) {
+    await copyFile(path, destination)
+    return
+  }
   const command = "ffmpeg"
   const args = [
     "-nostdin",
     "-i",
     quotePath(path),
     "-vn",
-    ...(typeof codec === "string"
-      ? // Note: there seem to be issues with attempting to copy cover art
-        // for some mp3s while splitting.
-        // TODO: possibly re-add cover art after splitting?
-        // ? ["-c:v", "copy", "-c:a", codec, "-b:a", bitrate ?? "32K"]
-        ["-c:a", codec, "-b:a", bitrate ?? "32K"]
-      : ["-c:a", "copy"]),
+    // Note: there seem to be issues with attempting to copy cover art
+    // for some mp3s while splitting.
+    // TODO: possibly re-add cover art after splitting?
+    // ["-c:v", "copy", "-c:a", codec, "-b:a", bitrate ?? "32K"]
+    ["-c:a", codec, "-b:a", bitrate ?? "32K"],
     "-map",
     "0",
     "-map_chapters",
@@ -196,7 +199,18 @@ export async function transcodeTrack(
     `"${destination}"`,
   ]
 
-  const { stderr } = await exec(`${command} ${args.join(" ")}`)
+  let stderr: string | null = null
+  try {
+    ;({ stderr } = await exec(`${command} ${args.join(" ")}`))
+  } catch {
+    // Run again to get detailed ffmpeg output
+    const { stdout, stderr } = await exec(
+      `${command} ${args.filter((a) => a !== "-v" && a !== "quiet").join(" ")}`,
+    )
+    console.log(stdout)
+    console.error(stderr)
+    throw new Error(`Failed to transcode track at "${path}"`)
+  }
 
   if (stderr) {
     throw new Error(stderr)
@@ -241,7 +255,18 @@ export async function splitTrack(
 
   // TODO: If we pass an abort signal here, we may be able to prevent
   // app crashes when the worker is terminated!
-  const { stderr } = await exec(`${command} ${args.join(" ")}`)
+  let stderr: string | null = null
+  try {
+    ;({ stderr } = await exec(`${command} ${args.join(" ")}`))
+  } catch {
+    // Run again to get detailed ffmpeg output
+    const { stdout, stderr } = await exec(
+      `${command} ${args.filter((a) => a !== "-v" && a !== "quiet").join(" ")}`,
+    )
+    console.log(stdout)
+    console.error(stderr)
+    throw new Error(`Failed to split track at "${path}"`)
+  }
 
   if (stderr) {
     throw new Error(stderr)
