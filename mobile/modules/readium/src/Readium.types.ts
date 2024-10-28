@@ -271,6 +271,6 @@ export type EPUBViewProps = {
 }
 
 export type EPUBViewRef = {
-  next: () => Promise<ReadiumLocator>
-  prev: () => Promise<ReadiumLocator>
+  goForward: () => Promise<void>
+  goBackward: () => Promise<void>
 }
