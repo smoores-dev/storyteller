@@ -1,6 +1,7 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Platform, Pressable, StyleSheet, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import KeyEvent from "react-native-keyevent"
 
 import { Link, Tabs } from "expo-router"
 import { useKeepAwake } from "expo-keep-awake"
@@ -62,6 +63,25 @@ export function Epub({ book, locator }: Props) {
     startPosition,
     endPosition,
   } = useAudioBook()
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return
+
+    KeyEvent.onKeyDownListener(
+      (event: { action: number; keyCode: number; pressedKey: string }) => {
+        if (event.keyCode === 92) {
+          epubViewRef.current?.goBackward()
+        }
+        if (event.keyCode === 93) {
+          epubViewRef.current?.goForward()
+        }
+      },
+    )
+
+    return () => {
+      KeyEvent.removeKeyDownListener()
+    }
+  }, [])
 
   return (
     <View
