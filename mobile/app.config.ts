@@ -46,6 +46,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           iCloudContainerEnvironment: IS_DEV ? "Development" : "Production",
         },
       ],
+      "@bam.tech/react-native-keyevent-expo-config-plugin",
     ],
     updates: {
       url: "https://u.expo.dev/3cc95011-19af-4637-a666-e1bec160c0f8",
