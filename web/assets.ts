@@ -65,12 +65,16 @@ export async function originalEpubExists(bookUuid: UUID) {
 
 export async function originalAudioExists(bookUuid: UUID) {
   const originalAudioDirectory = getOriginalAudioFilepath(bookUuid)
-  const filenames = await readdir(originalAudioDirectory)
+  try {
+    const filenames = await readdir(originalAudioDirectory)
 
-  return filenames.some((filename) => {
-    const ext = extname(filename)
-    return ext === ".zip" || AUDIO_FILE_EXTENSIONS.includes(ext)
-  })
+    return filenames.some((filename) => {
+      const ext = extname(filename)
+      return ext === ".zip" || AUDIO_FILE_EXTENSIONS.includes(ext)
+    })
+  } catch {
+    return false
+  }
 }
 
 export async function deleteProcessed(bookUuid: UUID) {
@@ -83,8 +87,8 @@ export async function deleteProcessed(bookUuid: UUID) {
 
 export async function deleteOriginals(bookUuid: UUID) {
   await Promise.all([
-    rm(getEpubFilepath(bookUuid)),
-    rm(getOriginalAudioFilepath(bookUuid)),
+    rm(getEpubFilepath(bookUuid), { force: true }),
+    rm(getOriginalAudioFilepath(bookUuid), { recursive: true, force: true }),
   ])
 }
 
