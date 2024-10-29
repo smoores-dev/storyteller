@@ -9,7 +9,6 @@ import {
   readFile,
   readdir,
   rm,
-  stat,
   writeFile,
 } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
@@ -48,15 +47,13 @@ export async function getAudioIndex(
   const path = getAudioIndexPath(bookUuid)
 
   try {
-    await stat(path)
-  } catch (_) {
+    const indexFile = await readFile(path, {
+      encoding: "utf-8",
+    })
+    return JSON.parse(indexFile) as AudioIndex
+  } catch {
     return null
   }
-
-  const indexFile = await readFile(path, {
-    encoding: "utf-8",
-  })
-  return JSON.parse(indexFile) as AudioIndex
 }
 
 export function getOriginalAudioFilepath(bookUuid: UUID, filename = "") {
