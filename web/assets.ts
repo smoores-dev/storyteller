@@ -1,9 +1,5 @@
 import { mkdir, readdir, rm, stat, symlink, writeFile } from "node:fs/promises"
-import {
-  getEpubDirectory,
-  getEpubFilepath,
-  getEpubSyncedDirectory,
-} from "./process/processEpub"
+import { getEpubDirectory, getEpubFilepath } from "./process/processEpub"
 import { UUID } from "./uuid"
 import {
   AUDIO_FILE_EXTENSIONS,
@@ -79,7 +75,6 @@ export async function originalAudioExists(bookUuid: UUID) {
 
 export async function deleteProcessed(bookUuid: UUID) {
   await Promise.all([
-    rm(getEpubSyncedDirectory(bookUuid), { recursive: true, force: true }),
     rm(getProcessedAudioFilepath(bookUuid), { recursive: true, force: true }),
     rm(getTranscriptionsFilepath(bookUuid), { recursive: true, force: true }),
     rm(getSyncCachePath(bookUuid), { force: true }),
