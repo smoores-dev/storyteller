@@ -349,6 +349,15 @@ export function deleteBook(bookUuid: UUID) {
 
   db.prepare<{ bookUuid: UUID }>(
     `
+    DELETE FROM position
+    WHERE book_uuid = $bookUuid
+    `,
+  ).run({
+    bookUuid,
+  })
+
+  db.prepare<{ bookUuid: UUID }>(
+    `
     DELETE FROM book
     WHERE uuid = $bookUuid
     `,
