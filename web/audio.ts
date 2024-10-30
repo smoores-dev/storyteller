@@ -175,7 +175,7 @@ export async function transcodeTrack(
   codec: string | null,
   bitrate: string | null,
 ) {
-  if (codec == null) {
+  if (!codec) {
     await copyFile(path, destination)
     return
   }
@@ -237,7 +237,7 @@ export async function splitTrack(
     "-i",
     quotePath(path),
     "-vn",
-    ...(typeof codec === "string"
+    ...(codec
       ? // Note: there seem to be issues with attempting to copy cover art
         // for some mp3s while splitting.
         // TODO: possibly re-add cover art after splitting?
