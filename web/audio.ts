@@ -189,7 +189,10 @@ export async function transcodeTrack(
     // for some mp3s while splitting.
     // TODO: possibly re-add cover art after splitting?
     // ["-c:v", "copy", "-c:a", codec, "-b:a", bitrate ?? "32K"]
-    ["-c:a", codec, "-b:a", bitrate ?? "32K"],
+    "-c:a",
+    codec,
+    "-b:a",
+    bitrate ?? "32K",
     "-map",
     "0",
     "-map_chapters",
