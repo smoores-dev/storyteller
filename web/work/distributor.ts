@@ -18,15 +18,52 @@ import {
 import { getSettings } from "@/database/settings"
 import type processBook from "./worker"
 
-const controllers: Map<UUID, AbortController> = new Map()
-const queue: { bookUuid: UUID; restart: boolean }[] = []
+/**
+ * Next.js app directory seems to have a bug where, in production,
+ * a single module can be imported multiple times (breaking the module
+ * cache) if it's depended on by different modules that end up in different
+ * bundled chunks.
+ *
+ * This results in multiple instances of the module level values in this
+ * module, all of which rely on being singletons to work correctly.
+ */
+declare global {
+  // variables declared with const/let cannot be added to the global scope
+  /* eslint-disable no-var */
+  var controllers: Map<UUID, AbortController> | undefined
+  var queue: { bookUuid: UUID; restart: boolean }[] | undefined
+  var piscina: Piscina | undefined
+  /* eslint-enable no-var */
+}
+
+let controllers: Map<UUID, AbortController>
+if (globalThis.controllers) {
+  controllers = globalThis.controllers
+} else {
+  controllers = new Map()
+  globalThis.controllers = controllers
+}
+
+let queue: { bookUuid: UUID; restart: boolean }[]
+if (globalThis.queue) {
+  queue = globalThis.queue
+} else {
+  queue = []
+  globalThis.queue = queue
+}
 
 const filename = join(cwd(), "work-dist", "worker.js")
 
-const piscina = new Piscina({
-  filename,
-  maxThreads: 1,
-})
+let piscina: Piscina
+if (globalThis.piscina) {
+  piscina = globalThis.piscina
+} else {
+  piscina = new Piscina({
+    filename,
+    maxThreads: 1,
+  })
+  globalThis.piscina = piscina
+}
 
 export function cancelProcessing(bookUuid: UUID) {
   const abortController = controllers.get(bookUuid)
