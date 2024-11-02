@@ -6,7 +6,7 @@ export type Lang = number
 type SourceRule = { patterns: [string, string, string, string] }
 
 type SourceSecondFinalRule = Array<{
-  lang: number
+  lang: Lang
   rules: SourceRule[]
 }>
 
@@ -71,16 +71,15 @@ function parsePhoneticRule(src: string): DestRulePhonetic {
 }
 
 function parsePhoneticRules(src: string) {
-  let source = src
-  if (!source.includes("(")) {
-    return [parsePhoneticRule(source)]
+  if (!src.includes("(")) {
+    return [parsePhoneticRule(src)]
   }
 
-  if (!source.includes(")")) {
-    throw new Error(`invalid rule ${source}: must contain closing bracket`)
+  if (!src.includes(")")) {
+    throw new Error(`invalid rule ${src}: must contain closing bracket`)
   }
 
-  source = src.slice(1, -1)
+  src = src.slice(1, -1)
   const parts = src.split("|")
   return parts.map((part) => parsePhoneticRule(part))
 }
@@ -174,7 +173,7 @@ function parseFinalRule(source: SourceFinalRules): DestFinalRules {
   return {
     first: parseRules(source.first),
     second: source.second.map(({ lang, rules }) => ({
-      lang,
+      lang: Math.pow(2, lang),
       rules: parseRules(rules),
     })),
   }
@@ -184,8 +183,9 @@ export const BmpmRules = {
   rules: Object.fromEntries(
     Object.entries(rulesJson.rules).map(([langName, rules]) => {
       const langIndex = rulesJson.languages.indexOf(langName)
+      const lang = Math.pow(2, langIndex)
       return [
-        langIndex,
+        lang,
         parseRules(
           rules as Array<{
             patterns: [string, string, string, string]
@@ -193,7 +193,7 @@ export const BmpmRules = {
         ),
       ]
     }),
-  ),
+  ) as Record<Lang, DestRule[]>,
   finalRules: {
     approx: parseFinalRule(rulesJson.finalRules.approx as SourceFinalRules),
     exact: parseFinalRule(rulesJson.finalRules.exact as SourceFinalRules),

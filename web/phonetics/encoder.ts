@@ -20,6 +20,7 @@ export enum Accuracy {
 }
 
 function getRules(accuracy: Accuracy, language: Lang) {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const main = BmpmRules.rules[language]!
 
   const [final1, final2] =
@@ -28,13 +29,13 @@ function getRules(accuracy: Accuracy, language: Lang) {
           BmpmRules.finalRules.approx.first,
           BmpmRules.finalRules.approx.second.find(
             ({ lang }) => lang === language,
-          )!.rules,
+          )?.rules ?? [],
         ]
       : [
           BmpmRules.finalRules.exact.first,
           BmpmRules.finalRules.exact.second.find(
             ({ lang }) => lang === language,
-          )!.rules,
+          )?.rules ?? [],
         ]
 
   return { main, final1, final2 }
@@ -136,15 +137,15 @@ function matchRule(ruleMatch: DestRuleMatch, input: string) {
   if (ruleMatch.prefix.length) {
     for (const i of ruleMatch.prefix) {
       if (input.startsWith(i)) return true
-      return false
     }
+    return false
   }
 
   if (ruleMatch.suffix.length) {
     for (const i of ruleMatch.suffix) {
       if (input.endsWith(i)) return true
-      return false
     }
+    return false
   }
 
   if (ruleMatch.pattern) {
@@ -155,32 +156,32 @@ function matchRule(ruleMatch: DestRuleMatch, input: string) {
 }
 
 function applyRuleTo(rule: DestRule, input: string, position: number) {
-  let offset = 1
+  const offset = 1
 
   if (rule.phoneticRules.length === 0) {
-    return { result: null, offset }
+    return { result: [], offset }
   }
 
   if (rule.pattern.length > input.length - position) {
-    return { result: null, offset }
+    return { result: [], offset }
   }
 
-  if (containsAt(input, rule.pattern, position)) {
-    return { result: null, offset }
+  if (!containsAt(input, rule.pattern, position)) {
+    return { result: [], offset }
   }
 
   if (
     rule.rightContext &&
     !matchRule(rule.rightContext, input.slice(position + rule.pattern.length))
   ) {
-    return { result: null, offset }
+    return { result: [], offset }
   }
 
   if (
     rule.leftContext &&
     !matchRule(rule.leftContext, input.slice(0, position))
   ) {
-    return { result: null, offset }
+    return { result: [], offset }
   }
 
   return { result: rule.phoneticRules, offset: rule.pattern.length }
@@ -198,13 +199,14 @@ function mergeRulesToTokens(
   const initialLength = tokens.items.length
   for (let i = 0; i < initialLength; i++) {
     for (const rule of rules) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const copyId = tokens.buffer.copy(tokens.items[i]!.id)
       tokens.buffer.append(copyId, rule.text)
       tokens.items.push({ id: copyId, langs: lang })
     }
   }
 
-  tokens.items = tokens.items.splice(0, initialLength)
+  tokens.items.splice(0, initialLength)
 }
 
 function applyRules(
@@ -231,22 +233,24 @@ function applyRules(
       for (const rule of rules) {
         const { result: tmp, offset: newOffset } = applyRuleTo(rule, item, j)
         offset = newOffset
-        if (!tmp) continue
-        applied = true
-        if (newTokens.items.length === 0) {
-          newTokens.items.push(
-            ...tmp.map(({ text, langs }) => ({
-              id: newTokens.buffer.add(text),
-              langs,
-            })),
-          )
-        } else {
-          mergeRulesToTokens(newTokens, tmp, lang)
+        if (tmp.length > 0) {
+          applied = true
+          if (newTokens.items.length === 0) {
+            newTokens.items.push(
+              ...tmp.map(({ text, langs }) => ({
+                id: newTokens.buffer.add(text),
+                langs,
+              })),
+            )
+          } else {
+            mergeRulesToTokens(newTokens, tmp, lang)
+          }
+          break
         }
-        break
       }
       if (!applied) {
         for (const token of newTokens.items) {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           newTokens.buffer.append(token.id, item[j]!)
         }
       }
@@ -314,7 +318,7 @@ export class Encoder {
   constructor(
     private accuracy = Accuracy.APPROX,
     private language: number,
-    private useBufferStorage = false,
+    // private useBufferStorage = false,
   ) {}
 
   encode(input: string) {

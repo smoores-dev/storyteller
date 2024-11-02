@@ -40,6 +40,7 @@ export class CharBuffer {
     if (!item) throw new Error("tried to retrieve item by nonexistent id")
     const index = item.to
     for (let i = index; i < index + data.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.buf.write(data[i - index]!, i, "utf-8")
     }
     return data.length
