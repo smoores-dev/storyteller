@@ -87,6 +87,7 @@ export async function getSentenceRanges(
   sentences: string[],
   chapterOffset: number,
   lastSentenceRange: SentenceRange | null,
+  encodingCache: Map<string, string[]>,
 ) {
   const sentenceRanges: SentenceRange[] = []
   const fullTranscriptionText = transcription.transcript
