@@ -128,6 +128,26 @@ export async function extractCover(bookUuid: UUID, trackPath: string) {
   await persistCustomCover(bookUuid, coverFilename, coverImage.data)
 }
 
+function determineExtension(codec: string | null, inputFilename: string) {
+  if (codec === "libopus") {
+    return ".mp4"
+  }
+  if (codec === "libmp3lame") {
+    return ".mp3"
+  }
+  if (codec === "aac") {
+    return ".mp4"
+  }
+  const inputExtension = extname(inputFilename)
+  if (MP3_FILE_EXTENSIONS.includes(inputExtension)) {
+    return ".mp3"
+  }
+  if (MPEG4_FILE_EXTENSIONS.includes(inputExtension)) {
+    return ".mp4"
+  }
+  return inputExtension
+}
+
 export async function processAudioFile(
   filepath: string,
   outDir: string,
@@ -138,14 +158,15 @@ export async function processAudioFile(
 ): Promise<AudioFile[]> {
   const duration = await getTrackDuration(filepath)
   const chapters = await getTrackChapters(filepath)
+  const outputExtension = determineExtension(codec, filepath)
   if (!chapters.length) {
-    const destination = join(outDir, `${prefix}00001.mp4`)
+    const destination = join(outDir, `${prefix}00001${outputExtension}`)
     await transcodeTrack(filepath, destination, codec, bitrate)
     return [
       {
-        filename: `${prefix}00001.mp4`,
+        filename: `${prefix}00001${outputExtension}`,
         bare_filename: `${prefix}00001`,
-        extension: ".mp4",
+        extension: outputExtension,
       },
     ]
   }
@@ -159,7 +180,7 @@ export async function processAudioFile(
   for (let i = 0; i < chapterRanges.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const chapterRange = chapterRanges[i]!
-    const chapterFilename = `${prefix}${(i + 1).toString().padStart(5, "0")}.mp4`
+    const chapterFilename = `${prefix}${(i + 1).toString().padStart(5, "0")}${outputExtension}`
     const chapterFilepath = join(outDir, chapterFilename)
     await rm(chapterFilepath, { force: true })
 

@@ -2,6 +2,7 @@ import { promisify } from "node:util"
 import { exec as execCallback } from "node:child_process"
 import memoize from "memoize"
 import { quotePath } from "./shell"
+import { extname } from "node:path"
 
 const exec = promisify(execCallback)
 
@@ -174,23 +175,18 @@ export async function transcodeTrack(
   codec: string | null,
   bitrate: string | null,
 ) {
+  const destExtension = extname(path)
+
   const command = "ffmpeg"
   const args = [
     "-nostdin",
     "-i",
     quotePath(path),
     "-vn",
-    ...(codec
-      ? // Note: there seem to be issues with attempting to copy cover art
-        // for some mp3s while splitting.
-        // TODO: possibly re-add cover art after splitting?
-        // ? ["-c:v", "copy", "-c:a", codec, "-b:a", bitrate ?? "32K"]
-        ["-c:a", codec, "-b:a", bitrate ?? "32K"]
-      : []),
-    "-map",
-    "0",
-    "-map_chapters",
-    "-1",
+    ...(codec ? ["-c:a", codec] : []),
+    ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
+    ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
+    ...(destExtension === ".mp4" ? ["-map", "0", "-map_chapters", "-1"] : []),
     "-v",
     "quiet",
     `"${destination}"`,
@@ -224,6 +220,8 @@ export async function splitTrack(
 ) {
   if (from === to) return
 
+  const destExtension = extname(path)
+
   const command = "ffmpeg"
   const args = [
     "-nostdin",
@@ -234,17 +232,10 @@ export async function splitTrack(
     "-i",
     quotePath(path),
     "-vn",
-    ...(codec
-      ? // Note: there seem to be issues with attempting to copy cover art
-        // for some mp3s while splitting.
-        // TODO: possibly re-add cover art after splitting?
-        // ? ["-c:v", "copy", "-c:a", codec, "-b:a", bitrate ?? "32K"]
-        ["-c:a", codec, "-b:a", bitrate ?? "32K"]
-      : []),
-    "-map",
-    "0",
-    "-map_chapters",
-    "-1",
+    ...(codec ? ["-c:a", codec] : []),
+    ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
+    ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
+    ...(destExtension === ".mp4" ? ["-map", "0", "-map_chapters", "-1"] : []),
     "-v",
     "quiet",
     `"${destination}"`,
