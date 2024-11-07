@@ -41,6 +41,8 @@ export function SettingsForm({ settings }: Props) {
       form.names["transcription_engine"],
     ) ?? "whisper.cpp"
 
+  const codec = form.useValue<Settings["codec"]>(form.names["codec"])
+
   return (
     <Form
       className={styles["settings-form"]}
@@ -69,23 +71,52 @@ export function SettingsForm({ settings }: Props) {
           >
             <option value="">Default</option>
             <option value="libopus">OPUS</option>
+            <option value="libmp3lame">MP3</option>
+            <option value="aac">AAC</option>
           </FormInput>
         </FormLabel>
-        <FormLabel name={form.names["bitrate"]}>
-          Preferred audio bitrate
-          <FormInput
-            name={form.names["bitrate"]}
-            render={<select />}
-            defaultValue={settings["bitrate"] ?? ""}
-          >
-            <option value="">Default</option>
-            <option value="16K">16 Kb/s</option>
-            <option value="24K">24 Kb/s</option>
-            <option value="32K">32 Kb/s</option>
-            <option value="64K">64 Kb/s</option>
-            <option value="96K">96 Kb/s</option>
-          </FormInput>
-        </FormLabel>
+        {codec === "libopus" && (
+          <FormLabel name={form.names["bitrate"]}>
+            Preferred audio bitrate
+            <FormInput
+              name={form.names["bitrate"]}
+              render={<select />}
+              defaultValue={settings["bitrate"] ?? ""}
+            >
+              <option value="">Default (32 Kb/s)</option>
+              <option value="16K">16 Kb/s</option>
+              <option value="24K">24 Kb/s</option>
+              <option value="32K">32 Kb/s</option>
+              <option value="64K">64 Kb/s</option>
+              <option value="96K">96 Kb/s</option>
+            </FormInput>
+          </FormLabel>
+        )}
+        {codec === "libmp3lame" && (
+          <FormLabel name={form.names["bitrate"]}>
+            Preferred audio quality
+            <FormInput
+              name={form.names["bitrate"]}
+              render={<select />}
+              defaultValue={settings["bitrate"] ?? ""}
+            >
+              <option value="">Default (constant 48 kb/s)</option>
+              <option value="0">0 (high quality/low compression)</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">
+                4 (perceptually transparent/moderate compression)
+              </option>
+              <option value="5">5</option>
+              <option value="6">6 (acceptable quality/high compression)</option>
+              <option value="0">0</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </FormInput>
+          </FormLabel>
+        )}
       </fieldset>
       <fieldset>
         <legend>Transcription settings</legend>
