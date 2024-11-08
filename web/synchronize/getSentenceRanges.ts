@@ -1,8 +1,9 @@
 import { getTrackDuration } from "@/audio"
 
 import { tokenizeSentences } from "./nlp"
-import { findNearestMatch } from "./fuzzy"
+// import { findNearestMatch } from "./fuzzy"
 import type { TimelineEntry } from "echogarden/dist/utilities/Timeline"
+import { findMatch } from "@/phonetics/findMatch"
 
 export type StorytellerTimelineEntry = TimelineEntry & {
   audiofile: string
@@ -125,10 +126,11 @@ export async function getSentenceRanges(
 
     const query = collapseWhitespace(sentence.trim()).toLowerCase()
 
-    const firstMatch = findNearestMatch(
+    const firstMatch = findMatch(
+      "en",
+      encodingCache,
       query,
       transcriptionWindow,
-      Math.max(Math.floor(0.25 * query.length), 1),
     )
 
     if (!firstMatch) {

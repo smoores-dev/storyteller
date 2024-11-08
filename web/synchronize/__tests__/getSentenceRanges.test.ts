@@ -41,6 +41,7 @@ void describe("getSentenceRanges", () => {
       sentences,
       223,
       null,
+      new Map(),
     )
 
     assert.deepStrictEqual(output, expected)

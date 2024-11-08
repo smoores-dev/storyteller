@@ -23,12 +23,13 @@ export class CharBuffer {
   }
 
   private rawAdd(data: string, space: number, id: number) {
-    this.ensureBufferSize(id + data.length + space)
+    const size = Buffer.byteLength(data, "utf8")
+    this.ensureBufferSize(id + size + space)
     this.buf.write(data, id, "utf-8")
-    this.buf.fill(0, id + data.length, id + data.length + space)
+    this.buf.fill(0, id + size, id + size + space)
     this.items.set(id, {
       from: id,
-      to: id + data.length,
+      to: id + size,
       space,
     })
   }
@@ -36,6 +37,7 @@ export class CharBuffer {
   // rawWrite only happens when we know there's enough
   // space, so we don't need to ensure the buffer size
   private rawWrite(data: string, id: number) {
+    const size = Buffer.byteLength(data, "utf8")
     const item = this.items.get(id)
     if (!item) throw new Error("tried to retrieve item by nonexistent id")
     const index = item.to
@@ -43,20 +45,22 @@ export class CharBuffer {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.buf.write(data[i - index]!, i, "utf-8")
     }
-    return data.length
+    return size
   }
 
   private rawAppend(data: string, space: number) {
-    this.ensureBufferSize(this.index + data.length + space)
+    const size = Buffer.byteLength(data, "utf8")
+    this.ensureBufferSize(this.index + size + space)
     this.buf.write(data, this.index, "utf-8")
-    this.buf.fill(0, this.index + data.length, space)
-    this.index += data.length + space
+    this.buf.fill(0, this.index + size, space)
+    this.index += size + space
   }
 
   add(data: string) {
     const currentIndex = this.index
-    this.rawAdd(data, data.length, currentIndex)
-    this.index += data.length * 2
+    const size = Buffer.byteLength(data, "utf8")
+    this.rawAdd(data, size, currentIndex)
+    this.index += size * 2
 
     return currentIndex
   }
@@ -65,10 +69,11 @@ export class CharBuffer {
     if (space < 0) {
       throw new Error("space must be >=0")
     }
+    const size = Buffer.byteLength(data, "utf8")
 
     const currentIndex = this.index
     this.rawAdd(data, space, currentIndex)
-    this.index += data.length + space
+    this.index += size + space
 
     return currentIndex
   }
@@ -78,15 +83,17 @@ export class CharBuffer {
     if (!item) throw new Error("tried to retrieve item by nonexistent id")
     const currentIndex = this.index
     const data = this.buf.toString("utf-8", item.from, item.to)
+    const size = Buffer.byteLength(data, "utf8")
     this.rawAdd(data, item.space, currentIndex)
-    this.index += data.length + item.space
+    this.index += size + item.space
     return currentIndex
   }
 
   append(id: number, data: string) {
+    const dataSize = Buffer.byteLength(data, "utf8")
     const item = this.items.get(id)
     if (!item) throw new Error("tried to retrieve item by nonexistent id")
-    if (item.space >= data.length) {
+    if (item.space >= dataSize) {
       const written = this.rawWrite(data, id)
       item.to += written
       item.space -= written
@@ -94,10 +101,12 @@ export class CharBuffer {
     }
 
     const oldData = this.buf.toString("utf-8", item.from, item.to)
-    const dataLength = oldData.length + data.length
+    const oldDataSize = Buffer.byteLength(oldData, "utf8")
+
+    const dataLength = oldDataSize + dataSize
     const from = this.index
     this.rawAppend(oldData, 0)
-    this.rawAppend(data, data.length)
+    this.rawAppend(data, dataSize)
     item.from = from
     item.to = from + dataLength
     item.space = dataLength

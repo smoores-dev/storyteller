@@ -304,7 +304,7 @@ export class Synchronizer {
         chapterSentences,
         transcriptionOffset,
         lastSentenceRange,
-        encodingCache,
+        this.encodingCache,
       )
     const interpolated = await interpolateSentenceRanges(sentenceRanges)
     const expanded = expandEmptySentenceRanges(interpolated)
