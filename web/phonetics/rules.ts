@@ -180,6 +180,12 @@ function parseFinalRule(source: SourceFinalRules): DestFinalRules {
 }
 
 export const BmpmRules = {
+  languages: Object.fromEntries(
+    rulesJson.languages.map((language, index) => [
+      language,
+      Math.pow(2, index),
+    ]),
+  ),
   rules: Object.fromEntries(
     Object.entries(rulesJson.rules).map(([langName, rules]) => {
       const langIndex = rulesJson.languages.indexOf(langName)

@@ -200,13 +200,50 @@ function mergeRulesToTokens(
   for (let i = 0; i < initialLength; i++) {
     for (const rule of rules) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const copyId = tokens.buffer.copy(tokens.items[i]!.id)
+      const item = tokens.items[i]!
+      const newLang = mergeLangs(item.langs, rule.langs)
+      if (newLang === 0) {
+        continue
+      }
+      const copyId = tokens.buffer.copy(item.id)
       tokens.buffer.append(copyId, rule.text)
       tokens.items.push({ id: copyId, langs: lang })
     }
   }
 
   tokens.items.splice(0, initialLength)
+}
+
+function deduplicateTokens(tokens: Tokens) {
+  const set = new Set<string>()
+  for (let i = 0; i < tokens.items.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const t = tokens.items[i]!
+    const tokenString = `${tokens.buffer.get(t.id)}-${t.langs}`
+    if (!set.has(tokenString)) {
+      set.add(tokenString)
+      continue
+    }
+    tokens.items.splice(i, 1)
+    i--
+  }
+}
+
+function mergeLangs(l: Lang, ...src: Lang[]) {
+  if (src.length === 0) {
+    return l
+  }
+
+  let result = l
+  for (const lang of src) {
+    if (result === -1 || result === 1) {
+      result = lang
+      continue
+    }
+    result &= lang
+  }
+
+  return result
 }
 
 function applyRules(
@@ -266,10 +303,13 @@ function applyRules(
     }
   }
 
-  return {
+  const result = {
     buffer: input.buffer,
     items,
   }
+
+  deduplicateTokens(result)
+  return result
 }
 
 function makeTokens(
@@ -315,11 +355,40 @@ function makeTokens(
 }
 
 export class Encoder {
+  private language: number
   constructor(
     private accuracy = Accuracy.APPROX,
-    private language: number,
+    language:
+      | "any"
+      | "arabic"
+      | "cyrillic"
+      | "czech"
+      | "dutch"
+      | "english"
+      | "french"
+      | "german"
+      | "greek"
+      | "greeklatin"
+      | "hebrew"
+      | "hungarian"
+      | "italian"
+      | "latvian"
+      | "polish"
+      | "portuguese"
+      | "romanian"
+      | "russian"
+      | "spanish"
+      | "turkish",
     // private useBufferStorage = false,
-  ) {}
+  ) {
+    const langCode = BmpmRules.languages[language]
+    if (langCode === undefined) {
+      throw new Error(
+        `Invalid language received: ${language}. Valid options are: ${Object.keys(BmpmRules.languages).join(", ")}`,
+      )
+    }
+    this.language = langCode
+  }
 
   encode(input: string) {
     const { main, final1, final2 } = getRules(this.accuracy, this.language)
