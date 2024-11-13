@@ -3,6 +3,7 @@ import fs from "node:fs"
 import { withDangerousMod } from "@expo/config-plugins"
 import type { ExpoConfig, ConfigContext } from "expo/config"
 import { mergeContents } from "@expo/config-plugins/build/utils/generateCode"
+import packageInfo from "./package.json"
 
 const IS_DEV = process.env["APP_VARIANT"] === "development"
 
@@ -11,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: IS_DEV ? "Storyteller (dev)" : "Storyteller",
     slug: "storyteller",
-    version: "1.8.1",
+    version: packageInfo.version,
     orientation: "portrait",
     icon: "./assets/Storyteller_Logo.png",
     userInterfaceStyle: "automatic",
