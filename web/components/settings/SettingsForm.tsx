@@ -211,12 +211,13 @@ export function SettingsForm({ settings }: Props) {
                 <option value="small-q5_1">small-q5_1</option>
                 <option value="medium">medium</option>
                 <option value="medium-q5_0">medium-q5_0</option>
-                <option value="large">large</option>
                 <option value="large-v1">large-v1</option>
                 <option value="large-v2">large-v2</option>
                 <option value="large-v2-q5_0">large-v2-q5_0</option>
                 <option value="large-v3">large-v3</option>
                 <option value="large-v3-q5_0">large-v3-q5_0</option>
+                <option value="large-v3-turbo">large-v3-turbo</option>
+                <option value="large-v3-turbo-q5_0">large-v3-turbo-q5_0</option>
               </FormInput>
             </FormLabel>
           </>

@@ -18,12 +18,13 @@ export type WhisperModel =
   | "small-q5_1"
   | "medium"
   | "medium-q5_0"
-  | "large"
   | "large-v1"
   | "large-v2"
   | "large-v2-q5_0"
   | "large-v3"
   | "large-v3-q5_0"
+  | "large-v3-turbo"
+  | "large-v3-turbo-q5_0"
 
 export type Settings = {
   smtpHost?: string

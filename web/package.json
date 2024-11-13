@@ -25,7 +25,7 @@
     "classnames": "^2.5.1",
     "date-fns": "^3.6.0",
     "debug": "^4.3.4",
-    "echogarden": "github:smoores-dev/echogarden#1e4f8b494ece5e293183c702e293a2f4537537f4",
+    "echogarden": "^2.0.0",
     "fast-xml-parser": "^4.3.6",
     "form-data": "^4.0.0",
     "http-proxy": "^1.18.1",
