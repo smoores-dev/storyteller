@@ -3,6 +3,7 @@ import { exec as execCallback } from "node:child_process"
 import memoize from "memoize"
 import { quotePath } from "./shell"
 import { extname } from "node:path"
+import { copyFile } from "node:fs/promises"
 
 const exec = promisify(execCallback)
 
@@ -175,7 +176,12 @@ export async function transcodeTrack(
   codec: string | null,
   bitrate: string | null,
 ) {
-  const destExtension = extname(path)
+  const sourceExtension = extname(path)
+  const destExtension = extname(destination)
+
+  if (!codec && sourceExtension === destExtension) {
+    await copyFile(path, destination)
+  }
 
   const command = "ffmpeg"
   const args = [
@@ -220,7 +226,7 @@ export async function splitTrack(
 ) {
   if (from === to) return
 
-  const destExtension = extname(path)
+  const destExtension = extname(destination)
 
   const command = "ffmpeg"
   const args = [
