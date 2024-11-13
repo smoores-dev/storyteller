@@ -22,6 +22,9 @@ export function* loginSaga() {
         SecureStore.setItemAsync,
         "st_credentials",
         JSON.stringify({ username, password }),
+        {
+          keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+        },
       )
 
       const apiBaseUrl = (yield select(getApiBaseUrl)) as ReturnType<
