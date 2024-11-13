@@ -1,9 +1,9 @@
-import { Accuracy, Encoder } from "./encoder"
+import { Accuracy, Encoder } from "bmpm"
 import { findNearestMatch as findNearestFuzzyMatch } from "@/synchronize/fuzzy"
 
 const langs = {
-  en: 32,
-}
+  en: "english",
+} as const
 
 export function findNearestMatch(
   lang: keyof typeof langs,

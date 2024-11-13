@@ -22,6 +22,7 @@
     "argon2": "^0.40.1",
     "axios": " 1.6.7",
     "better-sqlite3": "^11.1.2",
+    "bmpm": "^0.1.1",
     "classnames": "^2.5.1",
     "date-fns": "^3.6.0",
     "debug": "^4.3.4",
