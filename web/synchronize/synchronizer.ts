@@ -23,6 +23,7 @@ import { SyncCache } from "./syncCache"
 import { getXHtmlSentences } from "./getXhtmlSentences"
 import type { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { findNearestMatch } from "./fuzzy"
+import { extname } from "node:path"
 
 const OFFSET_SEARCH_WINDOW_SIZE = 5000
 
@@ -221,6 +222,7 @@ export class Synchronizer {
     await Promise.all(
       audiofiles.map(async (audiofile) => {
         const { name, base } = parse(audiofile)
+        const ext = extname(base)
 
         const id = `audio_${name}`
 
@@ -238,7 +240,7 @@ export class Synchronizer {
           {
             id,
             href: epubAudioFilename,
-            mediaType: "audio/mpeg",
+            mediaType: ext === ".mp3" ? "audio/mpeg" : "audio/mp4",
           },
           audio,
         )
