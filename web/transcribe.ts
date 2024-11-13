@@ -19,7 +19,7 @@ const WHISPER_REPO =
   process.env["STORYTELLER_WHISPER_REPO"] ??
   "https://github.com/ggerganov/whisper.cpp"
 
-const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.6.2"
+const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.7.1"
 setGlobalOption("logLevel", "error")
 
 async function installWhisper(settings: Settings) {
@@ -127,9 +127,11 @@ async function installWhisper(settings: Settings) {
 
 function getWhisperCppModelId(
   language: string,
-  modelType: WhisperModel,
+  modelType: WhisperModel | "large",
 ): WhisperCppModelId {
-  if (language !== "en") return modelType
+  if (modelType === "large") return "large-v3-turbo"
+  // large-x models don't have English-specific variants
+  if (language !== "en" || modelType.startsWith("large")) return modelType
   const quant = modelType.indexOf("-q")
   if (quant === -1) return `${modelType}.en` as WhisperCppModelId
   return `${modelType.slice(0, quant)}.en${modelType.slice(quant)}` as WhisperCppModelId
@@ -149,11 +151,11 @@ export async function transcribeTrack(
   ) {
     const whisperOptions = await installWhisper(settings)
     const { transcript, wordTimeline } = await recognize(trackPath, {
-      timelineLevel: "word",
       engine: "whisper.cpp",
       language: locale.language,
       whisperCpp: {
         ...(initialPrompt && { prompt: initialPrompt }),
+        enableFlashAttention: true,
         model: getWhisperCppModelId(
           locale.language,
           settings.whisperModel ?? "tiny",
@@ -172,7 +174,6 @@ export async function transcribeTrack(
     }
 
     const { transcript, wordTimeline } = await recognize(trackPath, {
-      timelineLevel: "word",
       engine: "google-cloud",
       language: locale.toString(),
       googleCloud: {
@@ -195,7 +196,6 @@ export async function transcribeTrack(
     }
 
     const { transcript, wordTimeline } = await recognize(trackPath, {
-      timelineLevel: "word",
       engine: "microsoft-azure",
       language: locale.toString(),
       microsoftAzure: {
@@ -224,7 +224,6 @@ export async function transcribeTrack(
     }
 
     const { transcript, wordTimeline } = await recognize(trackPath, {
-      timelineLevel: "word",
       engine: "amazon-transcribe",
       language: locale.toString(),
       amazonTranscribe: {
@@ -243,7 +242,6 @@ export async function transcribeTrack(
   }
 
   const { transcript, wordTimeline } = await recognize(trackPath, {
-    timelineLevel: "word",
     engine: "openai-cloud",
     language: locale.language,
     openAICloud: {
