@@ -43,6 +43,10 @@ export function SettingsForm({ settings }: Props) {
 
   const codec = form.useValue<Settings["codec"]>(form.names["codec"])
 
+  const openAiBaseUrl = form.useValue<Settings["open_ai_base_url"]>(
+    form.names["open_ai_base_url"],
+  )
+
   return (
     <Form
       className={styles["settings-form"]}
@@ -281,6 +285,14 @@ export function SettingsForm({ settings }: Props) {
               Base url (optional)
               <FormInput name={form.names["open_ai_base_url"]} />
             </FormLabel>
+            {openAiBaseUrl && (
+              <FormLabel name={form.names["open_ai_base_url"]}>
+                Model name (e.g.
+                &quot;Systran/faster-distil-whisper-large-v3&quot; for
+                faster-whisper-server&rsquo;s large-v3 model)
+                <FormInput name={form.names["open_ai_model_name"]} required />
+              </FormLabel>
+            )}
           </>
         )}
       </fieldset>

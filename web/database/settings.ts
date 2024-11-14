@@ -50,6 +50,7 @@ export type Settings = {
   openAiApiKey?: string | null
   openAiOrganization?: string | null
   openAiBaseUrl?: string | null
+  openAiModelName?: string | null
 }
 
 export const SETTINGS_COLUMN_NAMES = {
@@ -76,6 +77,7 @@ export const SETTINGS_COLUMN_NAMES = {
   open_ai_api_key: "openAiApiKey",
   open_ai_organization: "openAiOrganization",
   open_ai_base_url: "openAiBaseUrl",
+  open_ai_model_name: "openAiModelName",
 } as const satisfies Record<string, keyof Settings>
 
 export function getSetting<Name extends keyof typeof SETTINGS_COLUMN_NAMES>(

@@ -43,6 +43,7 @@ export const GET = withHasPermission("settings_update")(() => {
     open_ai_api_key: settings.openAiApiKey,
     open_ai_organization: settings.openAiOrganization,
     open_ai_base_url: settings.openAiBaseUrl,
+    open_ai_model_name: settings.openAiModelName,
   }
 
   return NextResponse.json(response)
@@ -80,6 +81,7 @@ export const PUT = withHasPermission("settings_update")(async (request) => {
     openAiApiKey: settings.open_ai_api_key,
     openAiOrganization: settings.open_ai_organization,
     openAiBaseUrl: settings.open_ai_base_url,
+    openAiModelName: settings.open_ai_model_name,
   })
 
   return new Response(null, { status: 204 })

@@ -251,6 +251,8 @@ export async function transcribeTrack(
         organization: settings.openAiOrganization,
       }),
       ...(settings.openAiBaseUrl && { baseURL: settings.openAiBaseUrl }),
+      ...(settings.openAiBaseUrl &&
+        settings.openAiModelName && { model: settings.openAiModelName }),
     },
   })
   return { transcript, wordTimeline }
