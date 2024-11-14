@@ -4069,10 +4069,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@echogarden/espeak-ng-emscripten@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "@echogarden/espeak-ng-emscripten@npm:0.3.0"
-  checksum: 10c0/7163023b91394eda5ded0fd2e819a14944edd4888beee4c1b87f1095ec536802749636c8f69144391d2ebf171ed23c217a2aa44ac48959f71ee8391ccdc47880
+"@echogarden/espeak-ng-emscripten@npm:^0.3.2":
+  version: 0.3.3
+  resolution: "@echogarden/espeak-ng-emscripten@npm:0.3.3"
+  checksum: 10c0/4a9b4459b45bc6d0392ab8d2ab28f9323f0d2c368e9dfc86d016864e1bb9b09848ff076f71cce673d650e8e32b5252aa1e4b55fb2b0d7fb33ae69cb8b1bb1db4
   languageName: node
   linkType: hard
 
@@ -4094,13 +4094,6 @@ __metadata:
   version: 0.2.0
   resolution: "@echogarden/fvad-wasm@npm:0.2.0"
   checksum: 10c0/d5480abf5c555ffa7fbe3f75a18b3c5f9b0d5d64b0d31f92097269637e827f3253556b39e1d52bbabeae604c43c8f1479d1bfd798d7fee112cdb3a250124a093
-  languageName: node
-  linkType: hard
-
-"@echogarden/kissfft-wasm@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@echogarden/kissfft-wasm@npm:0.2.0"
-  checksum: 10c0/f02a8c6101e50f7c01d50181295e8638bbb11d23e601b4dfda482cbac90f617a1116ea0177263429e3647b686052d0ab95ca56fb2a77e75ac76cccee9d4996a9
   languageName: node
   linkType: hard
 
@@ -7365,7 +7358,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     date-fns: "npm:^3.6.0"
     debug: "npm:^4.3.4"
-    echogarden: "npm:^2.0.0"
+    echogarden: "npm:^2.0.3"
     esbuild: "npm:^0.23.0"
     fast-xml-parser: "npm:^4.3.6"
     form-data: "npm:^4.0.0"
@@ -11408,6 +11401,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"debug@npm:*":
+  version: 4.3.7
+  resolution: "debug@npm:4.3.7"
+  dependencies:
+    ms: "npm:^2.1.3"
+  peerDependenciesMeta:
+    supports-color:
+      optional: true
+  checksum: 10c0/1471db19c3b06d485a622d62f65947a19a23fbd0dd73f7fd3eafb697eec5360cde447fb075919987899b1a2096e85d35d4eb5a4de09a57600ac9cf7e6c8e768b
+  languageName: node
+  linkType: hard
+
 "debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.6.0, debug@npm:^2.6.9":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
@@ -11933,18 +11938,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"echogarden@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "echogarden@npm:2.0.0"
+"echogarden@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "echogarden@npm:2.0.3"
   dependencies:
     "@aws-sdk/client-polly": "npm:^3.687.0"
     "@aws-sdk/client-transcribe-streaming": "npm:^3.687.0"
     "@echogarden/audio-io": "npm:^0.2.3"
-    "@echogarden/espeak-ng-emscripten": "npm:^0.3.0"
+    "@echogarden/espeak-ng-emscripten": "npm:^0.3.2"
     "@echogarden/fasttext-wasm": "npm:^0.1.0"
     "@echogarden/flite-wasi": "npm:^0.1.1"
     "@echogarden/fvad-wasm": "npm:^0.2.0"
-    "@echogarden/kissfft-wasm": "npm:^0.2.0"
     "@echogarden/pffft-wasm": "npm:^0.4.2"
     "@echogarden/rnnoise-wasm": "npm:^0.2.0"
     "@echogarden/rubberband-wasm": "npm:^0.2.0"
@@ -11961,7 +11965,6 @@ __metadata:
     fs-extra: "npm:^11.2.0"
     gaxios: "npm:^6.7.1"
     graceful-fs: "npm:^4.2.11"
-    html-escaper: "npm:^3.0.3"
     html-to-text: "npm:^9.0.5"
     import-meta-resolve: "npm:^4.1.0"
     jieba-wasm: "npm:^2.2.0"
@@ -11969,10 +11972,9 @@ __metadata:
     json5: "npm:^2.2.3"
     kuromoji: "npm:^0.1.2"
     microsoft-cognitiveservices-speech-sdk: "npm:^1.41.0"
-    moving-median: "npm:^1.0.0"
     msgpack-lite: "npm:^0.1.26"
     onnxruntime-node: "npm:^1.20.0"
-    openai: "npm:^4.71.1"
+    openai: "npm:^4.72.0"
     sam-js: "npm:^0.3.1"
     strip-ansi: "npm:^7.1.0"
     tar: "npm:^7.4.3"
@@ -14836,13 +14838,6 @@ __metadata:
   version: 2.0.2
   resolution: "html-escaper@npm:2.0.2"
   checksum: 10c0/208e8a12de1a6569edbb14544f4567e6ce8ecc30b9394fcaa4e7bb1e60c12a7c9a1ed27e31290817157e8626f3a4f29e76c8747030822eb84a6abb15c255f0a0
-  languageName: node
-  linkType: hard
-
-"html-escaper@npm:^3.0.3":
-  version: 3.0.3
-  resolution: "html-escaper@npm:3.0.3"
-  checksum: 10c0/a042fa4139127ff7546513e90ea39cc9161a1938ce90122dbc4260d4b7252c9aa8452f4509c0c2889901b8ae9a8699179150f1f99d3f80bcf7317573c5f08f4e
   languageName: node
   linkType: hard
 
@@ -18006,13 +18001,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moving-median@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "moving-median@npm:1.0.0"
-  checksum: 10c0/e174657eb053f0423272524ee0dd7e8bd9a925945828b7b4a13a67b1c69ff617a0dd5cf28921cf1281c2bf7eda64f62bf79e73892bad75250f66f1d56489a208
-  languageName: node
-  linkType: hard
-
 "mrmime@npm:^1.0.0":
   version: 1.0.1
   resolution: "mrmime@npm:1.0.1"
@@ -18041,7 +18029,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ms@npm:2.1.3, ms@npm:^2.0.0, ms@npm:^2.1.1":
+"ms@npm:2.1.3, ms@npm:^2.0.0, ms@npm:^2.1.1, ms@npm:^2.1.3":
   version: 2.1.3
   resolution: "ms@npm:2.1.3"
   checksum: 10c0/d924b57e7312b3b63ad21fc5b3dc0af5e78d61a1fc7cfb5457edaf26326bf62be5307cc87ffb6862ef1c2b33b0233cdb5d4f01c4c958cc0d660948b65a287a48
@@ -18758,7 +18746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.71.1":
+"openai@npm:^4.72.0":
   version: 4.72.0
   resolution: "openai@npm:4.72.0"
   dependencies:
