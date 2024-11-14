@@ -49,12 +49,12 @@ function createMediaOverlay(
               },
               seq: sentenceRanges.map((sentenceRange) => ({
                 ":@": {
-                  "@_id": `sentence${sentenceRange.id}`,
+                  "@_id": `${chapter.id}-sentence${sentenceRange.id}`,
                 },
                 par: [
                   {
                     ":@": {
-                      "@_src": `../${chapter.href}#sentence${sentenceRange.id}`,
+                      "@_src": `../${chapter.href}#${chapter.id}-sentence${sentenceRange.id}`,
                     },
                     text: [],
                   },
@@ -289,7 +289,7 @@ export class Synchronizer {
     const chapter = manifest[chapterId]
     if (!chapter)
       throw new Error(
-        `Failed to sync chapter: could not find chapter with it ${chapterId} in manifest`,
+        `Failed to sync chapter: could not find chapter with id ${chapterId} in manifest`,
       )
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
@@ -305,7 +305,7 @@ export class Synchronizer {
       )
     const interpolated = await interpolateSentenceRanges(sentenceRanges)
     const expanded = expandEmptySentenceRanges(interpolated)
-    const tagged = tagSentences(chapterXml)
+    const tagged = tagSentences(chapterId, chapterXml)
 
     const storytellerStylesheetUrl = relative(
       dirname(chapter.href),
