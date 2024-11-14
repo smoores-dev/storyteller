@@ -25,7 +25,10 @@ import { ToolbarDialogs } from "./ToolbarDialogs"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { SelectionMenu } from "./SelectionMenu"
 import { useColorTheme } from "../hooks/useColorTheme"
-import { getFilledBookPreferences } from "../store/selectors/preferencesSelectors"
+import {
+  getFilledBookPreferences,
+  getVolumeButtonsTurnPages,
+} from "../store/selectors/preferencesSelectors"
 
 type Props = {
   book: BookshelfBook
@@ -40,6 +43,7 @@ export function Epub({ book, locator }: Props) {
   const preferences = useAppSelector((state) =>
     getFilledBookPreferences(state, book.id),
   )
+  const volumeButtonsTurnPages = useAppSelector(getVolumeButtonsTurnPages)
 
   const [selection, setSelection] = useState<{
     x: number
@@ -65,7 +69,7 @@ export function Epub({ book, locator }: Props) {
   } = useAudioBook()
 
   useEffect(() => {
-    if (Platform.OS !== "android") return
+    if (!volumeButtonsTurnPages) return
 
     KeyEvent.onKeyDownListener(
       (event: { action: number; keyCode: number; pressedKey: string }) => {
