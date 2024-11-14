@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "0.4.29",
+  "version": "0.4.30",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,7 +25,7 @@
     "classnames": "^2.5.1",
     "date-fns": "^3.6.0",
     "debug": "^4.3.4",
-    "echogarden": "^2.0.0",
+    "echogarden": "^2.0.3",
     "fast-xml-parser": "^4.3.6",
     "form-data": "^4.0.0",
     "http-proxy": "^1.18.1",
