@@ -15,8 +15,12 @@ import { basename, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import {
+  AUDIO_FILE_EXTENSIONS,
+  COVER_IMAGE_FILE_EXTENSIONS,
   getTrackChapters,
   getTrackDuration,
+  MP3_FILE_EXTENSIONS,
+  MPEG4_FILE_EXTENSIONS,
   splitTrack,
   transcodeTrack,
 } from "@/audio"
@@ -85,14 +89,6 @@ export async function getProcessedFiles(bookUuid: UUID) {
 export function getTranscriptionsFilepath(bookUuid: UUID, filename = "") {
   return join(getAudioDirectory(bookUuid), "transcriptions", filename)
 }
-
-const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
-const MP3_FILE_EXTENSIONS = [".mp3"]
-const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
-export const AUDIO_FILE_EXTENSIONS = [
-  ...MP3_FILE_EXTENSIONS,
-  ...MPEG4_FILE_EXTENSIONS,
-]
 
 export async function persistCover(bookUuid: UUID, coverFilename: string) {
   const index = (await getAudioIndex(bookUuid)) ?? {}

@@ -7,6 +7,14 @@ import { copyFile } from "node:fs/promises"
 
 const exec = promisify(execCallback)
 
+export const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
+export const MP3_FILE_EXTENSIONS = [".mp3"]
+export const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
+export const AUDIO_FILE_EXTENSIONS = [
+  ...MP3_FILE_EXTENSIONS,
+  ...MPEG4_FILE_EXTENSIONS,
+]
+
 type FfmpegTrackFormat = {
   format: {
     filename: string
@@ -170,6 +178,25 @@ export const getTrackChapters = memoize(async function getTrackChapters(
   return chapters.map((chapter) => parseChapterInfo(chapter))
 })
 
+function areSameType(extensionA: string, extensionB: string) {
+  if (extensionA === extensionB) {
+    return true
+  }
+  if (
+    MPEG4_FILE_EXTENSIONS.includes(extensionA) &&
+    MPEG4_FILE_EXTENSIONS.includes(extensionB)
+  ) {
+    return true
+  }
+  if (
+    MP3_FILE_EXTENSIONS.includes(extensionA) &&
+    MP3_FILE_EXTENSIONS.includes(extensionB)
+  ) {
+    return true
+  }
+  return false
+}
+
 export async function transcodeTrack(
   path: string,
   destination: string,
@@ -179,7 +206,7 @@ export async function transcodeTrack(
   const sourceExtension = extname(path)
   const destExtension = extname(destination)
 
-  if (!codec && sourceExtension === destExtension) {
+  if (!codec && areSameType(sourceExtension, destExtension)) {
     await copyFile(path, destination)
   }
 
@@ -225,8 +252,10 @@ export async function splitTrack(
   bitrate: string | null,
 ) {
   if (from === to) return
-
+  const sourceExtension = extname(path)
   const destExtension = extname(destination)
+
+  const copy = !codec && areSameType(sourceExtension, destExtension)
 
   const command = "ffmpeg"
   const args = [
@@ -238,6 +267,7 @@ export async function splitTrack(
     "-i",
     quotePath(path),
     "-vn",
+    ...(copy ? ["-c", "copy"] : []),
     ...(codec ? ["-c:a", codec] : []),
     ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
     ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
