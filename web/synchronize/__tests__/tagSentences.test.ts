@@ -6,13 +6,14 @@ import assert from "node:assert"
 void describe("appendTextNode", () => {
   void it("can append text nodes to empty parents", () => {
     const input: ParsedXml = []
-    appendTextNode(input, "test", [], new Set())
+    appendTextNode("chapter_one", input, "test", [], new Set())
     assert.deepStrictEqual(input, [{ "#text": "test" }])
   })
 
   void it("can append text nodes with marks", () => {
     const input: ParsedXml = []
     appendTextNode(
+      "chapter_one",
       input,
       "test",
       [{ elementName: "a", attributes: { "@_href": "#" } }],
@@ -25,9 +26,12 @@ void describe("appendTextNode", () => {
 
   void it("can wrap text nodes with sentence spans", () => {
     const input: ParsedXml = []
-    appendTextNode(input, "test", [], new Set(), 0)
+    appendTextNode("chapter_one", input, "test", [], new Set(), 0)
     assert.deepStrictEqual(input, [
-      { span: [{ "#text": "test" }], ":@": { "@_id": "sentence0" } },
+      {
+        span: [{ "#text": "test" }],
+        ":@": { "@_id": "chapter_one-sentence0" },
+      },
     ])
   })
 
@@ -35,14 +39,14 @@ void describe("appendTextNode", () => {
     const input: ParsedXml = [
       {
         span: [{ "#text": "test" } as unknown as XmlNode],
-        ":@": { "@_id": "sentence0" },
+        ":@": { "@_id": "chapter_one-sentence0" },
       } as unknown as XmlNode,
     ]
-    appendTextNode(input, "test", [], new Set(), 0)
+    appendTextNode("chapter_one", input, "test", [], new Set(), 0)
     assert.deepStrictEqual(input, [
       {
         span: [{ "#text": "test" }, { "#text": "test" }],
-        ":@": { "@_id": "sentence0" },
+        ":@": { "@_id": "chapter_one-sentence0" },
       },
     ])
   })
@@ -84,7 +88,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -96,11 +100,11 @@ void describe("tagSentences", () => {
   </head>
   <body>
     <p>
-        <span id="sentence0">Call me Ishmael.</span> <span id="sentence1">Some years ago—never mind how long precisely—having
+        <span id="chapter_one-sentence0">Call me Ishmael.</span> <span id="chapter_one-sentence1">Some years ago—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore, I thought I would sail about a little and see the watery part of
-        the world.</span> <span id="sentence2">It is a way I have of driving off the spleen and regulating the
-        circulation.</span> <span id="sentence3">Whenever I find myself growing grim about the mouth; whenever
+        the world.</span> <span id="chapter_one-sentence2">It is a way I have of driving off the spleen and regulating the
+        circulation.</span> <span id="chapter_one-sentence3">Whenever I find myself growing grim about the mouth; whenever
         it is a damp, drizzly November in my soul; whenever I find myself
         involuntarily pausing before coffin warehouses, and bringing up the rear
         of every funeral I meet; and especially whenever my hypos get such an
@@ -110,9 +114,9 @@ void describe("tagSentences", () => {
         as I can.</span>
     </p>
     <p>
-        <span id="sentence4">This is my substitute for pistol and ball.</span> <span id="sentence5">With a philosophical
+        <span id="chapter_one-sentence4">This is my substitute for pistol and ball.</span> <span id="chapter_one-sentence5">With a philosophical
         flourish Cato throws himself upon his sword; I quietly take to the ship.</span>
-        <span id="sentence6">There is nothing surprising in this.</span> <span id="sentence7">If they but knew it, almost all men
+        <span id="chapter_one-sentence6">There is nothing surprising in this.</span> <span id="chapter_one-sentence7">If they but knew it, almost all men
         in their degree, some time or other, cherish very nearly the same feelings
         towards the ocean with me.</span>
     </p>
@@ -141,7 +145,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -153,7 +157,7 @@ void describe("tagSentences", () => {
   </head>
   <body>
     <p>
-        <span id="sentence0">Call me <strong>Ishmael</strong>.</span> <span id="sentence1">Some years ago—never mind how long precisely—having
+        <span id="chapter_one-sentence0">Call me <strong>Ishmael</strong>.</span> <span id="chapter_one-sentence1">Some years ago—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore, I thought I would sail about a little and see the watery part of
         the world.</span>
@@ -183,7 +187,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -195,7 +199,7 @@ void describe("tagSentences", () => {
   </head>
   <body>
     <p>
-        <span id="sentence0">Call me <strong>Ishmael.</strong></span><strong> </strong><span id="sentence1"><strong>Some years ago</strong>—never mind how long precisely—having
+        <span id="chapter_one-sentence0">Call me <strong>Ishmael.</strong></span><strong> </strong><span id="chapter_one-sentence1"><strong>Some years ago</strong>—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore, I thought I would sail about a little and see the watery part of
         the world.</span>
@@ -225,7 +229,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -237,7 +241,7 @@ void describe("tagSentences", () => {
   </head>
   <body>
     <p>
-        <span id="sentence0"><em>Call me </em><em><strong>Ishmael</strong></em><em>.</em></span> <span id="sentence1">Some years ago—never mind how long precisely—having
+        <span id="chapter_one-sentence0"><em>Call me </em><em><strong>Ishmael</strong></em><em>.</em></span> <span id="chapter_one-sentence1">Some years ago—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore, I thought I would sail about a little and see the watery part of
         the world.</span>
@@ -267,7 +271,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.deepStrictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -279,7 +283,7 @@ void describe("tagSentences", () => {
   </head>
   <body>
     <p>
-        <span id="sentence0">Call me Ishmael.</span> <span id="sentence1">Some<img src="#"/> years ago—never mind how long precisely—having
+        <span id="chapter_one-sentence0">Call me Ishmael.</span> <span id="chapter_one-sentence1">Some<img src="#"/> years ago—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore, I thought I would sail about a little and see the watery part of
         the world.</span>
@@ -319,7 +323,7 @@ void describe("tagSentences", () => {
 </html>
     `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -335,14 +339,14 @@ void describe("tagSentences", () => {
   <body>
     <blockquote class="blockquotelet">
       <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak"/></p>
-      <p class="blockno"><span id="sentence0">Look on my works, ye mighty, and despair!</span></p>
-      <p class="blockno1"><span id="sentence1">A little joke.</span></p>
+      <p class="blockno"><span id="chapter_one-sentence0">Look on my works, ye mighty, and despair!</span></p>
+      <p class="blockno1"><span id="chapter_one-sentence1">A little joke.</span></p>
       <p class="blockno1"> </p>
-      <p class="blockno1"><span id="sentence2">Trust that I have accounted for all variables of irony.</span></p>
+      <p class="blockno1"><span id="chapter_one-sentence2">Trust that I have accounted for all variables of irony.</span></p>
       <p class="blockno1"> </p>
-      <p class="blockno1"><span id="sentence3">Though I suppose if you’re unfamiliar with overanthologized works of the early Strand 6
+      <p class="blockno1"><span id="chapter_one-sentence3">Though I suppose if you’re unfamiliar with overanthologized works of the early Strand 6
         nineteenth century, the joke’s on me.</span></p>
-      <p class="blockin"><span id="sentence4">I hoped you’d come.</span></p>
+      <p class="blockin"><span id="chapter_one-sentence4">I hoped you’d come.</span></p>
     </blockquote>
   </body>
     
@@ -373,7 +377,7 @@ void describe("tagSentences", () => {
 </html>
     `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -385,12 +389,12 @@ void describe("tagSentences", () => {
   </head>
   <body>
     <p>
-        <span id="sentence0">Call me Ishmael.</span> <span id="sentence1">Some years ago—never mind how long precisely—having
+        <span id="chapter_one-sentence0">Call me Ishmael.</span> <span id="chapter_one-sentence1">Some years ago—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore,</span>
     </p>
     <p>
-        <span id="sentence2">I thought I would sail about a little and see the watery part of
+        <span id="chapter_one-sentence2">I thought I would sail about a little and see the watery part of
         the world.</span>
     </p>
   </body>
@@ -428,7 +432,7 @@ void describe("tagSentences", () => {
   </body>
 </html>`) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -445,17 +449,17 @@ void describe("tagSentences", () => {
     <a id="d1-d2s6d3s2"/>
     <div class="page_top_padding">
       <span epub:type="pagebreak" id="page_9" role="doc-pagebreak" title="9"/>
-      <h1 class="para-cn-chap-pg trajan-pro-3"><span id="sentence0">CHAPTER 1</span></h1>
+      <h1 class="para-cn-chap-pg trajan-pro-3"><span id="chapter_one-sentence0">CHAPTER 1</span></h1>
       <div class="para-orn">
         <span class="figure figure_dingbat">
         </span><span class="figure figure_dingbat"><img alt="" class="height_1em" role="presentation" src="../images/Novi_9780345493439_epub3_001_r1.jpg"/></span></div>
-      <p class="para-pf dropcaps3line char-dropcap-DC trajan-pro-3-dc" style="text-indent:0;"><span id="sentence1">The hot wind blowing into Macao was sluggish and unrefreshing, only stirring up the rotting salt smell of the harbor, the fish-corpses and great knots of black-red seaweed, the effluvia of human and dragon wastes.</span> <span id="sentence2">Even so the sailors were sitting crowded along the rails of the <i class="char-i">Allegiance</i> for a breath of the moving air, leaning against one another to get a little room.</span> <span id="sentence3">A little scuffling broke out amongst them from time to time, a dull exchange of shoving back and forth, but these quarrels died almost at once in the punishing heat.</span></p>
-      <p class="para-p"><span id="sentence4">Temeraire lay disconsolately upon the dragondeck, gazing towards the white haze of the open ocean, the aviators on duty lying half-asleep in his great shadow.</span> <span id="sentence5">Laurence himself had sacrificed dignity so far as to take off his coat, as he was sitting in the crook of Temeraire’s foreleg and so concealed from view.</span></p>
-      <p class="para-p"><span id="sentence6">“I am sure I could pull the ship out of the harbor,” Temeraire said, not for the first time in the past week; and sighed when this amiable plan was again refused: in a calm he might indeed have been able to tow even the enormous dragon transport, but against a direct headwind he could only exhaust himself to no purpose.</span></p>
+      <p class="para-pf dropcaps3line char-dropcap-DC trajan-pro-3-dc" style="text-indent:0;"><span id="chapter_one-sentence1">The hot wind blowing into Macao was sluggish and unrefreshing, only stirring up the rotting salt smell of the harbor, the fish-corpses and great knots of black-red seaweed, the effluvia of human and dragon wastes.</span> <span id="chapter_one-sentence2">Even so the sailors were sitting crowded along the rails of the <i class="char-i">Allegiance</i> for a breath of the moving air, leaning against one another to get a little room.</span> <span id="chapter_one-sentence3">A little scuffling broke out amongst them from time to time, a dull exchange of shoving back and forth, but these quarrels died almost at once in the punishing heat.</span></p>
+      <p class="para-p"><span id="chapter_one-sentence4">Temeraire lay disconsolately upon the dragondeck, gazing towards the white haze of the open ocean, the aviators on duty lying half-asleep in his great shadow.</span> <span id="chapter_one-sentence5">Laurence himself had sacrificed dignity so far as to take off his coat, as he was sitting in the crook of Temeraire’s foreleg and so concealed from view.</span></p>
+      <p class="para-p"><span id="chapter_one-sentence6">“I am sure I could pull the ship out of the harbor,” Temeraire said, not for the first time in the past week; and sighed when this amiable plan was again refused: in a calm he might indeed have been able to tow even the enormous dragon transport, but against a direct headwind he could only exhaust himself to no purpose.</span></p>
       <span epub:type="pagebreak" id="page_10" role="doc-pagebreak" title="10"/>
-      <p class="para-p"><span id="sentence7">“Even in a calm you could scarcely pull her any great distance,” Laurence added consolingly.</span> <span id="sentence8">“A few miles may be of some use out in the open ocean, but at present we may as well stay in harbor, and be a little more comfortable; we would make very little speed even if we could get her out.”</span></p>
-      <p class="para-p"><span id="sentence9">“It seems a great pity to me that we must always be waiting on the wind, when everything else is ready and we are also,” Temeraire said.</span> <span id="sentence10">“I would so like to be home <i class="char-i">soon:</i> there is so very much to be done.”</span> <span id="sentence11">His tail thumped hollowly upon the boards, for emphasis.</span></p>
-      <p class="para-p"><span id="sentence12">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now.</span> <span id="sentence13">“You must be prepared to endure some delays; at home as much as here.”</span></p>
+      <p class="para-p"><span id="chapter_one-sentence7">“Even in a calm you could scarcely pull her any great distance,” Laurence added consolingly.</span> <span id="chapter_one-sentence8">“A few miles may be of some use out in the open ocean, but at present we may as well stay in harbor, and be a little more comfortable; we would make very little speed even if we could get her out.”</span></p>
+      <p class="para-p"><span id="chapter_one-sentence9">“It seems a great pity to me that we must always be waiting on the wind, when everything else is ready and we are also,” Temeraire said.</span> <span id="chapter_one-sentence10">“I would so like to be home <i class="char-i">soon:</i> there is so very much to be done.”</span> <span id="chapter_one-sentence11">His tail thumped hollowly upon the boards, for emphasis.</span></p>
+      <p class="para-p"><span id="chapter_one-sentence12">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now.</span> <span id="chapter_one-sentence13">“You must be prepared to endure some delays; at home as much as here.”</span></p>
     </div>
   </body>
 </html>`,
@@ -473,7 +477,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -482,7 +486,7 @@ void describe("tagSentences", () => {
 <head>
 </head>
 <body>
-<p><span id="sentence0">true</span></p>
+<p><span id="chapter_one-sentence0">true</span></p>
 </body>
 </html>`,
     )
@@ -499,7 +503,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -508,7 +512,7 @@ void describe("tagSentences", () => {
 <head>
 </head>
 <body>
-<p><span id="sentence0">5.000</span></p>
+<p><span id="chapter_one-sentence0">5.000</span></p>
 </body>
 </html>`,
     )
@@ -525,7 +529,7 @@ void describe("tagSentences", () => {
 </html>
 `) as ParsedXml
 
-    const output = tagSentences(input)
+    const output = tagSentences("chapter_one", input)
 
     assert.strictEqual(
       Epub.xhtmlBuilder.build(output),
@@ -534,7 +538,7 @@ void describe("tagSentences", () => {
 <head>
 </head>
 <body>
-<p><span id="sentence0">null</span></p>
+<p><span id="chapter_one-sentence0">null</span></p>
 </body>
 </html>`,
     )
