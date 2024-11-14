@@ -14,6 +14,7 @@ type Mark = {
 }
 
 export function appendTextNode(
+  chapterId: string,
   xml: ParsedXml,
   text: string,
   marks: Mark[],
@@ -24,17 +25,18 @@ export function appendTextNode(
 
   const textNode = { "#text": text } as unknown as XmlNode
 
-  appendLeafNode(xml, textNode, marks, taggedSentences, sentenceId)
+  appendLeafNode(chapterId, xml, textNode, marks, taggedSentences, sentenceId)
 }
 
 export function appendLeafNode(
+  chapterId: string,
   xml: ParsedXml,
   node: XmlNode,
   marks: Mark[],
   taggedSentences: Set<number>,
   sentenceId?: number,
 ) {
-  const tagId = `sentence${sentenceId}`
+  const tagId = `${chapterId}-sentence${sentenceId}`
 
   const markedNode = [...marks].reverse().reduce<XmlNode>(
     (acc, mark) =>
@@ -78,6 +80,7 @@ type TagState = {
 }
 
 function tagSentencesInXml(
+  chapterId: string,
   currentSentenceIndex: number,
   currentSentenceProgress: number,
   sentences: string[],
@@ -97,7 +100,13 @@ function tagSentencesInXml(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const index = remainingNodeText.indexOf(remainingSentence[0]!)
     if (index === -1) {
-      appendTextNode(taggedXml, remainingNodeText, marks, taggedSentences)
+      appendTextNode(
+        chapterId,
+        taggedXml,
+        remainingNodeText,
+        marks,
+        taggedSentences,
+      )
       return {
         currentSentenceIndex,
         currentSentenceProgress,
@@ -106,12 +115,14 @@ function tagSentencesInXml(
     }
     if (remainingNodeText.slice(index).length < remainingSentence.length) {
       appendTextNode(
+        chapterId,
         taggedXml,
         remainingNodeText.slice(0, index),
         marks,
         taggedSentences,
       )
       appendTextNode(
+        chapterId,
         taggedXml,
         remainingNodeText.slice(index),
         marks,
@@ -126,12 +137,14 @@ function tagSentencesInXml(
       }
     } else {
       appendTextNode(
+        chapterId,
         taggedXml,
         remainingNodeText.slice(0, index),
         marks,
         taggedSentences,
       )
       appendTextNode(
+        chapterId,
         taggedXml,
         remainingSentence,
         marks,
@@ -143,6 +156,7 @@ function tagSentencesInXml(
       // add back the remainder of this text node (which should be whitespace).
       if (currentSentenceIndex + 1 === sentences.length) {
         appendTextNode(
+          chapterId,
           taggedXml,
           remainingNodeText.slice(index + remainingSentence.length),
           marks,
@@ -184,6 +198,7 @@ function tagSentencesInXml(
 
       if (child[childTagName]?.length === 0) {
         appendLeafNode(
+          chapterId,
           taggedXml,
           child,
           nextMarks,
@@ -215,6 +230,7 @@ function tagSentencesInXml(
       state.currentNodeProgress !== -1
     ) {
       state = tagSentencesInXml(
+        chapterId,
         state.currentSentenceIndex,
         state.currentSentenceProgress,
         sentences,
@@ -248,7 +264,7 @@ function copyOuterXml(xml: ParsedXml) {
   return outerXml
 }
 
-export function tagSentences(xml: ParsedXml) {
+export function tagSentences(chapterId: string, xml: ParsedXml) {
   const html = findByName("html", xml)
   if (!html) throw new Error("Invalid XHTML document: no html element")
 
@@ -264,7 +280,17 @@ export function tagSentences(xml: ParsedXml) {
   const taggedBody = findByName("body", taggedHtml["html"])!
   taggedBody["body"] = []
 
-  tagSentencesInXml(0, 0, sentences, body, 0, new Set(), [], taggedBody["body"])
+  tagSentencesInXml(
+    chapterId,
+    0,
+    0,
+    sentences,
+    body,
+    0,
+    new Set(),
+    [],
+    taggedBody["body"],
+  )
 
   return outerXml
 }
