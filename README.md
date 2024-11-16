@@ -4,6 +4,8 @@
 
 [![Join our Discord at https://discord.gg/KhSvFqcrza](https://dcbadge.limes.pink/api/server/KhSvFqcrza)](https://discord.gg/KhSvFqcrza)
 
+[![Join our Discourse at https://storyteller.discourse.group/](https://img.shields.io/discourse/topics?server=https%3A%2F%2Fstoryteller.discourse.group%2F&style=for-the-badge)](https://storyteller.discourse.group/)
+
 <table>
   <tbody>
     <tr>
