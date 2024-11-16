@@ -1,6 +1,6 @@
 # Storyteller
 
-[![Join the chat at https://gitter.im/smoores/storyteller](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/smoores/storyteller?utm_source=badge&utm_medium=badge&utm_content=badge)
+[![Join the chat at https://matrix.to/#/#smoores_storyteller:gitter.im](https://badges.gitter.im/Join%20Chat.svg)](https://matrix.to/#/#smoores_storyteller:gitter.im)
 
 [![Join our Discord at https://discord.gg/KhSvFqcrza](https://dcbadge.limes.pink/api/server/KhSvFqcrza)](https://discord.gg/KhSvFqcrza)
 
