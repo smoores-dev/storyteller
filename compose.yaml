@@ -2,7 +2,7 @@
 
 services:
   web:
-    image: registry.gitlab.com/smoores/storyteller:latest # For CUDA, use registry.gitlab.com/smoores/storyteller:cuda-latest
+    image: registry.gitlab.com/smoores/storyteller:latest
     # Uncomment for CUDA
     # runtime: nvidia
     volumes:
@@ -16,12 +16,7 @@ services:
       # https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-targeted-named-volume
       - ~/Documents/Storyteller:/data:rw
     environment:
-      # Generate a cryptopgraphically secure random string,
-      # e.g. with:
-      #  openssl rand -base64 32
-      - STORYTELLER_SECRET_KEY=/run/secrets/secret_key
-      # Uncomment for CUDA
-      # - STORYTELLER_DEVICE=cuda
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
     ports:
       - "8001:8001"
     secrets:
@@ -29,4 +24,8 @@ services:
 
 secrets:
   secret_key:
+    # Generate a cryptopgraphically secure random string,
+    # e.g. with:
+    #  openssl rand -base64 32
+    # and put it in this file
     file: ./STORYTELLER_SECRET_KEY.txt

@@ -6,8 +6,32 @@ import { verify as verifyJwt, sign, JwtPayload } from "jsonwebtoken"
 import { NextRequest, NextResponse } from "next/server"
 import { isTokenRevoked } from "./database/tokenRevokations"
 import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies"
+import { readFileSync } from "node:fs"
 
-const JWT_SECRET_KEY = process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
+const JWT_SECRET_KEY_FILE = process.env["STORYTELLER_SECRET_KEY_FILE"]
+const DEFAULT_SECRET_KEY_FILE = "/run/secrets/secret_key"
+
+/**
+ * There was a period of time where Storyteller's example
+ * compose.yaml file incorrectly set the STORYTELLER_SECRET_KEY
+ * environment variable to the string `/run/secrets/secret_key`,
+ * rather than the contents of that file.
+ *
+ * To mitigate this security risk even for users that don't
+ * update their configuration, if that's the value of the env
+ * variable, we read the value from the file instead.
+ */
+function readSecretKey() {
+  if (JWT_SECRET_KEY_FILE) {
+    return readFileSync(JWT_SECRET_KEY_FILE, { encoding: "utf-8" })
+  }
+  if (process.env["STORYTELLER_SECRET_KEY"] === DEFAULT_SECRET_KEY_FILE) {
+    return readFileSync(DEFAULT_SECRET_KEY_FILE, { encoding: "utf-8" })
+  }
+  return process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
+}
+
+const JWT_SECRET_KEY = readSecretKey()
 const JWT_ALGORITHM = "HS256"
 export const ACCESS_TOKEN_EXPIRE_DAYS = 10
 
