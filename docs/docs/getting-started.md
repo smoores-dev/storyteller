@@ -48,7 +48,6 @@ Then you can uncomment the `runtime: nvidia` line below, in the `compose.yaml`.
 services:
   web:
     image: registry.gitlab.com/smoores/storyteller:latest
-    # Uncomment for CUDA
     # runtime: nvidia
     volumes:
       # This can be whatever you like; you can even use a
@@ -61,7 +60,7 @@ services:
       # https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-targeted-named-volume
       - ~/Documents/Storyteller:/data:rw
     environment:
-      - STORYTELLER_SECRET_KEY=/run/secrets/secret_key
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
     ports:
       - "8001:8001"
     secrets:
@@ -72,7 +71,7 @@ secrets:
     # Generate a cryptopgraphically secure random string,
     # e.g. with:
     #  openssl rand -base64 32
-    # and place it in this file
+    # and put it in this file
     file: ./STORYTELLER_SECRET_KEY.txt
 ```
 
