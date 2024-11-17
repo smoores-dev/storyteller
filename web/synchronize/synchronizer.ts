@@ -116,7 +116,7 @@ export class Synchronizer {
 
   private syncedChapters: SyncedChapter[] = []
 
-  private encodingCache = new Map<string, string[]>()
+  private encodingCache = new Map<string, string>()
 
   constructor(
     public epub: Epub,
@@ -304,6 +304,7 @@ export class Synchronizer {
         chapterSentences,
         transcriptionOffset,
         lastSentenceRange,
+        (await this.epub.getLanguage()) ?? new Intl.Locale("en-US"),
         this.encodingCache,
       )
     const interpolated = await interpolateSentenceRanges(sentenceRanges)

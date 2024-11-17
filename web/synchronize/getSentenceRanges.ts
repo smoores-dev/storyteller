@@ -3,7 +3,11 @@ import { getTrackDuration } from "@/audio"
 import { tokenizeSentences } from "./nlp"
 // import { findNearestMatch } from "./fuzzy"
 import type { TimelineEntry } from "echogarden/dist/utilities/Timeline"
-import { findNearestMatch } from "@/phonetics/findMatch"
+import {
+  findNearestPhoneticMatch,
+  findNearestMatch,
+  isBmpmLanguage,
+} from "./fuzzy"
 
 export type StorytellerTimelineEntry = TimelineEntry & {
   audiofile: string
@@ -88,7 +92,8 @@ export async function getSentenceRanges(
   sentences: string[],
   chapterOffset: number,
   lastSentenceRange: SentenceRange | null,
-  encodingCache: Map<string, string[]>,
+  locale: Intl.Locale,
+  encodingCache: Map<string, string>,
 ) {
   const sentenceRanges: SentenceRange[] = []
   const fullTranscriptionText = transcription.transcript
@@ -126,12 +131,18 @@ export async function getSentenceRanges(
 
     const query = collapseWhitespace(sentence.trim()).toLowerCase()
 
-    const firstMatch = findNearestMatch(
-      "en",
-      encodingCache,
-      query,
-      transcriptionWindow,
-    )
+    const firstMatch = isBmpmLanguage(locale.language)
+      ? findNearestPhoneticMatch(
+          locale.language,
+          encodingCache,
+          query,
+          transcriptionWindow,
+        )
+      : findNearestMatch(
+          query,
+          transcriptionWindow,
+          Math.max(Math.floor(0.25 * query.length), 1),
+        )
 
     if (!firstMatch) {
       sentenceIndex += 1

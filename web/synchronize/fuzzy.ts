@@ -1,3 +1,104 @@
+import { Accuracy, Encoder } from "bmpm"
+
+const langs = {
+  ar: "arabic",
+  ru: "cyrillic",
+  cs: "czech",
+  nl: "dutch",
+  en: "english",
+  fr: "french",
+  de: "german",
+  el: "greek",
+  he: "hebrew",
+  hu: "hungarian",
+  it: "italian",
+  lv: "latvian",
+  pl: "polish",
+  pt: "portuguese",
+  ro: "romanian",
+  es: "spanish",
+  tr: "turkish",
+} as const
+
+const BMPM_SUPPORTED_LANGS = Object.keys(langs)
+
+export function isBmpmLanguage(
+  language: string,
+): language is keyof typeof langs {
+  return BMPM_SUPPORTED_LANGS.includes(language)
+}
+
+export function findNearestPhoneticMatch(
+  lang: keyof typeof langs,
+  encodingCache: Map<string, string>,
+  needle: string,
+  haystack: string,
+) {
+  const langId = langs[lang]
+  const encoder = new Encoder(Accuracy.EXACT, langId)
+  const needleWords: [string, number][] = []
+  const haystackWords: [string, number][] = []
+  for (const [span, words] of [
+    [needle, needleWords],
+    [haystack, haystackWords],
+  ] as const) {
+    for (let i = 0; i < span.length; ) {
+      const nextSpace = span.indexOf(" ", i)
+      const word = span.slice(i, nextSpace === -1 ? undefined : nextSpace)
+      let encoding = encodingCache.get(word)
+      if (!encoding) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        encoding = encoder.encode(
+          word
+            .replaceAll(/[-._()[\],/?!@#$%^^&*`~;:="“”<>+ˌ]/g, "")
+            .replaceAll(/’/g, "'"),
+        )[0]!
+        encodingCache.set(word, encoding)
+      }
+      words.push([word, i])
+      if (nextSpace === -1) break
+      i = nextSpace + 1
+    }
+  }
+
+  const encodedNeedle = needleWords
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    .map(([n]) => encodingCache.get(n)!)
+    .join("")
+  const encodedHaystack = haystackWords
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    .map(([h]) => encodingCache.get(h)!)
+    .join("")
+
+  const match = findNearestMatch(
+    encodedNeedle,
+    encodedHaystack,
+    Math.max(Math.round(0.25 * encodedNeedle.length), 1),
+  )
+  if (!match) return null
+
+  const start = match.index
+  const end = match.index + match.match.length
+
+  const startMapped = haystackWords.reduce(
+    (p, [h, i]) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      i >= p ? p : p + (h.length - encodingCache.get(h)!.length + 1),
+    start,
+  )
+  const endMapped = haystackWords.reduce(
+    (p, [h, i]) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      i >= p ? p : p + (h.length - encodingCache.get(h)!.length + 1),
+    end,
+  )
+
+  return {
+    index: startMapped,
+    match: haystack.slice(startMapped, endMapped),
+  }
+}
+
 export function findNearestMatch(
   needle: string,
   haystack: string,

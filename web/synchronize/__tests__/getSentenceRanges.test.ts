@@ -41,6 +41,7 @@ void describe("getSentenceRanges", () => {
       sentences,
       223,
       null,
+      new Intl.Locale("en-US"),
       new Map(),
     )
 
