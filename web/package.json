@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "0.4.32-phonetic.0",
+  "version": "0.4.32-phonetic.1",
   "private": true,
   "type": "module",
   "scripts": {
