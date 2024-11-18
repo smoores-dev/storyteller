@@ -303,7 +303,6 @@ export class Synchronizer {
         transcriptionOffset,
         lastSentenceRange,
         (await this.epub.getLanguage()) ?? new Intl.Locale("en-US"),
-        new Map(),
       )
     const interpolated = await interpolateSentenceRanges(sentenceRanges)
     const expanded = expandEmptySentenceRanges(interpolated)

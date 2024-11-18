@@ -7366,6 +7366,7 @@ __metadata:
     http-proxy: "npm:^1.18.1"
     js-levenshtein: "npm:^1.1.6"
     jsonwebtoken: "npm:^9.0.2"
+    lru-cache: "npm:^11.0.2"
     match-sorter: "npm:^6.3.4"
     memoize: "npm:^10.0.0"
     mime-types: "npm:^2.1.35"
@@ -17133,6 +17134,13 @@ __metadata:
   version: 10.2.0
   resolution: "lru-cache@npm:10.2.0"
   checksum: 10c0/c9847612aa2daaef102d30542a8d6d9b2c2bb36581c1bf0dc3ebf5e5f3352c772a749e604afae2e46873b930a9e9523743faac4e5b937c576ab29196774712ee
+  languageName: node
+  linkType: hard
+
+"lru-cache@npm:^11.0.2":
+  version: 11.0.2
+  resolution: "lru-cache@npm:11.0.2"
+  checksum: 10c0/c993b8e06ead0b24b969c1dbb5b301716aed66e320e9014a80012f5febe280b438f28ff50046b2c55ff404e889351ccb332ff91f8dd175a21f5eae80e3fb155f
   languageName: node
   linkType: hard
 

@@ -42,7 +42,6 @@ void describe("getSentenceRanges", () => {
       223,
       null,
       new Intl.Locale("en-US"),
-      new Map(),
     )
 
     assert.deepStrictEqual(output, expected)

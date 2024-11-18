@@ -1,4 +1,5 @@
 import { Accuracy, Encoder } from "bmpm"
+import { LRUCache } from "lru-cache"
 
 const langs = {
   ar: "arabic",
@@ -28,9 +29,23 @@ export function isBmpmLanguage(
   return BMPM_SUPPORTED_LANGS.includes(language)
 }
 
+declare global {
+  // variables declared with const/let cannot be added to the global scope
+  /* eslint-disable no-var */
+  var encodingCache: LRUCache<string, string> | undefined
+  /* eslint-enable no-var */
+}
+
+let encodingCache: LRUCache<string, string>
+if (globalThis.encodingCache) {
+  encodingCache = globalThis.encodingCache
+} else {
+  encodingCache = new LRUCache({ max: 4_194_304 })
+  globalThis.encodingCache = encodingCache
+}
+
 export function findNearestPhoneticMatch(
   lang: keyof typeof langs,
-  encodingCache: Map<string, string>,
   needle: string,
   haystack: string,
 ) {

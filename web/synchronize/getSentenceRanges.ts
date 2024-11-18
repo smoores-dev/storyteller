@@ -93,7 +93,6 @@ export async function getSentenceRanges(
   chapterOffset: number,
   lastSentenceRange: SentenceRange | null,
   locale: Intl.Locale,
-  encodingCache: Map<string, string>,
 ) {
   const sentenceRanges: SentenceRange[] = []
   const fullTranscriptionText = transcription.transcript
@@ -132,12 +131,7 @@ export async function getSentenceRanges(
     const query = collapseWhitespace(sentence.trim()).toLowerCase()
 
     const firstMatch = isBmpmLanguage(locale.language)
-      ? findNearestPhoneticMatch(
-          locale.language,
-          encodingCache,
-          query,
-          transcriptionWindow,
-        )
+      ? findNearestPhoneticMatch(locale.language, query, transcriptionWindow)
       : findNearestMatch(
           query,
           transcriptionWindow,
