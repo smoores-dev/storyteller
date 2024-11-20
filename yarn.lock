@@ -7341,6 +7341,7 @@ __metadata:
     "@ariakit/react": "npm:^0.4.1"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/better-sqlite3": "npm:^7.6.11"
+    "@types/busboy": "npm:^1"
     "@types/http-proxy": "npm:^1.17.14"
     "@types/js-levenshtein": "npm:^1"
     "@types/jsonwebtoken": "npm:^9"
@@ -7355,6 +7356,7 @@ __metadata:
     argon2: "npm:^0.40.1"
     axios: "npm: 1.6.7"
     better-sqlite3: "npm:^11.1.2"
+    busboy: "npm:^1.6.0"
     classnames: "npm:^2.5.1"
     date-fns: "npm:^3.6.0"
     debug: "npm:^4.3.4"
@@ -7630,6 +7632,15 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/eebedbca185ac3c39dd5992ef18d9e2a9f99e7f3c2f52f5561f90e9ed482c5d224c7962db95362712f580ed5713264e777a98d8f0bd8747f4eadf62937baed16
+  languageName: node
+  linkType: hard
+
+"@types/busboy@npm:^1":
+  version: 1.5.4
+  resolution: "@types/busboy@npm:1.5.4"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/0bdd209069a445d5a71277e558978ec0db1b1a3d108335da96477d017177ae349c4d81d604db0bea19e3c99c10af2d60dbac20e36cef7cb7a517e5a4760738bd
   languageName: node
   linkType: hard
 
@@ -9983,7 +9994,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"busboy@npm:1.6.0":
+"busboy@npm:1.6.0, busboy@npm:^1.6.0":
   version: 1.6.0
   resolution: "busboy@npm:1.6.0"
   dependencies:

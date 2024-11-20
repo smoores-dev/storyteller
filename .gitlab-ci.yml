@@ -13,7 +13,7 @@ always-yes:
     - echo "Done!"
 
 check:
-  image: node:20
+  image: node:22
   stage: check
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -38,7 +38,7 @@ check:
 
 check-version:
   stage: prerelease
-  image: node:20
+  image: node:22
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
@@ -58,7 +58,7 @@ check-version:
     - git push --tags
 
 pages:
-  image: node:18-alpine
+  image: node:22-alpine
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^docs-v?\d+\.\d+\.\d+$/'

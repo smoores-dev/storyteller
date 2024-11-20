@@ -9,7 +9,7 @@ import {
 } from "@zip.js/zip.js"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize, { memoizeClear } from "memoize"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, open, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path/posix"
 
 export type XmlNode = Record<string, ParsedXml> & {
@@ -223,12 +223,22 @@ export class Epub {
     await this.zipWriter.close()
   }
 
-  static async from(input: string | Reader<unknown>): Promise<Epub> {
-    const dataReader =
-      typeof input === "string"
-        ? new Uint8ArrayReader(new Uint8Array((await readFile(input)).buffer))
-        : input
-    const epub = new Epub(dataReader)
+  static async from(path: string): Promise<Epub> {
+    // Manually stream file into memory to avoid hard-coded
+    // 2GB limit on file I/O operations in Node.js/libuv
+    // https://github.com/libuv/libuv/pull/1501
+    const fileHandle = await open(path)
+    const stats = await fileHandle.stat()
+    const fileData = new Uint8Array(stats.size)
+    let i = 0
+    for await (const chunk of fileHandle.readableWebStream()) {
+      const chunkArray = new Uint8Array(chunk as ArrayBuffer)
+      fileData.set(chunkArray, i)
+      i += chunkArray.byteLength
+    }
+    await fileHandle.close()
+    const reader = new Uint8ArrayReader(fileData)
+    const epub = new Epub(reader)
     const entries = await epub.zipReader.getEntries()
     epub.entries = entries.map((entry) => new ZipEntry(entry))
     return epub

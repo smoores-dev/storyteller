@@ -13,7 +13,13 @@
   };
 
   # Flake outputs
-  outputs = { self, nixpkgs, devenv, ... } @ inputs:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      devenv,
+      ...
+    }@inputs:
     let
       # Systems supported
       allSystems = [
@@ -24,9 +30,14 @@
       ];
 
       # Helper to provide system-specific attributes
-      forAllSystems = f: nixpkgs.lib.genAttrs allSystems (system: f {
-        pkgs = import nixpkgs { inherit system; };
-      });
+      forAllSystems =
+        f:
+        nixpkgs.lib.genAttrs allSystems (
+          system:
+          f {
+            pkgs = import nixpkgs { inherit system; };
+          }
+        );
     in
     {
       packages = nixpkgs.lib.genAttrs allSystems (system: {
@@ -34,25 +45,30 @@
       });
 
       # Development environment output
-      devShells = forAllSystems ({ pkgs }: {
-        default =
-          devenv.lib.mkShell {
+      devShells = forAllSystems (
+        { pkgs }:
+        {
+          default = devenv.lib.mkShell {
             inherit inputs pkgs;
             modules = [
-              ({ pkgs, config, ... }: {
-                # This is your devenv configuration
-                packages = [
-                  pkgs.ffmpeg
-                  pkgs.nodejs_20
-                  (pkgs.yarn.override { nodejs = pkgs.nodejs_20; })
-                  pkgs.sqlite
-                ];
+              (
+                { pkgs, config, ... }:
+                {
+                  # This is your devenv configuration
+                  packages = [
+                    pkgs.ffmpeg
+                    pkgs.nodejs_22
+                    (pkgs.yarn.override { nodejs = pkgs.nodejs_22; })
+                    pkgs.sqlite
+                  ];
 
-                # processes.run.exec = "hello";
-              })
+                  # processes.run.exec = "hello";
+                }
+              )
             ];
             # LD_LIBRARY_PATH = "${libstdcpp}/lib/";
           };
-      });
+        }
+      );
     };
 }

@@ -22,6 +22,7 @@
     "argon2": "^0.40.1",
     "axios": " 1.6.7",
     "better-sqlite3": "^11.1.2",
+    "busboy": "^1.6.0",
     "classnames": "^2.5.1",
     "date-fns": "^3.6.0",
     "debug": "^4.3.4",
@@ -50,6 +51,7 @@
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
     "@types/better-sqlite3": "^7.6.11",
+    "@types/busboy": "^1",
     "@types/http-proxy": "^1.17.14",
     "@types/js-levenshtein": "^1",
     "@types/jsonwebtoken": "^9",
