@@ -1,4 +1,4 @@
-import { mkdir, readdir, rm, stat, symlink, writeFile } from "node:fs/promises"
+import { copyFile, mkdir, readdir, rm, stat, symlink } from "node:fs/promises"
 import { getEpubDirectory, getEpubFilepath } from "./process/processEpub"
 import { UUID } from "./uuid"
 import {
@@ -18,13 +18,12 @@ export async function linkEpub(bookUuid: UUID, origin: string) {
   await symlink(origin, filepath)
 }
 
-export async function persistEpub(bookUuid: UUID, file: File) {
+export async function persistEpub(bookUuid: UUID, tmpPath: string) {
   const filepath = getEpubFilepath(bookUuid)
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
-  const arrayBuffer = await file.arrayBuffer()
-  const data = new Uint8Array(arrayBuffer)
-  await writeFile(filepath, data)
+  await copyFile(tmpPath, filepath)
+  await rm(tmpPath)
 }
 
 export async function linkAudio(bookUuid: UUID, origins: string[]) {
@@ -40,16 +39,15 @@ export async function linkAudio(bookUuid: UUID, origins: string[]) {
   )
 }
 
-export async function persistAudio(bookUuid: UUID, audioFiles: File[]) {
+export async function persistAudio(bookUuid: UUID, audioPaths: string[]) {
   await Promise.all(
-    audioFiles.map(async (file) => {
-      const filepath = getOriginalAudioFilepath(bookUuid, file.name)
+    audioPaths.map(async (path) => {
+      const filename = basename(path)
+      const filepath = getOriginalAudioFilepath(bookUuid, filename)
       const directory = dirname(filepath)
       await mkdir(directory, { recursive: true })
-
-      const arrayBuffer = await file.arrayBuffer()
-      const data = new Uint8Array(arrayBuffer)
-      return writeFile(filepath, data)
+      await copyFile(path, filepath)
+      await rm(path)
     }),
   )
 }

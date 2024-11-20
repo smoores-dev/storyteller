@@ -208,6 +208,7 @@ export async function transcodeTrack(
 
   if (!codec && areSameType(sourceExtension, destExtension)) {
     await copyFile(path, destination)
+    return
   }
 
   const command = "ffmpeg"
