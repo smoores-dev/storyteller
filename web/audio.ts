@@ -252,7 +252,7 @@ export async function splitTrack(
   codec: string | null,
   bitrate: string | null,
 ) {
-  if (from === to) return
+  if (from === to) return false
   const sourceExtension = extname(path)
   const destExtension = extname(destination)
 
@@ -296,4 +296,5 @@ export async function splitTrack(
   if (stderr) {
     throw new Error(stderr)
   }
+  return true
 }

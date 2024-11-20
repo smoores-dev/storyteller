@@ -181,20 +181,24 @@ export async function processAudioFile(
     await rm(chapterFilepath, { force: true })
 
     console.log(`Splitting chapter ${chapterFilepath}`)
-    audioFiles.push({
-      filename: chapterFilename,
-      bare_filename: chapterFilename.slice(0, chapterFilename.length - 4),
-      extension: ".mp4",
-    })
 
-    await splitTrack(
-      filepath,
-      chapterRange.start,
-      chapterRange.end,
-      chapterFilepath,
-      codec,
-      bitrate,
-    )
+    if (
+      await splitTrack(
+        filepath,
+        chapterRange.start,
+        chapterRange.end,
+        chapterFilepath,
+        codec,
+        bitrate,
+      )
+    ) {
+      audioFiles.push({
+        filename: chapterFilename,
+        bare_filename: chapterFilename.slice(0, chapterFilename.length - 4),
+        extension: outputExtension,
+      })
+    }
+
     onProgress?.((i + 1) / chapterRanges.length)
   }
 
