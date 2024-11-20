@@ -85,7 +85,7 @@ export function Epub({ book, locator }: Props) {
     return () => {
       KeyEvent.removeKeyDownListener()
     }
-  }, [])
+  }, [volumeButtonsTurnPages])
 
   return (
     <View
