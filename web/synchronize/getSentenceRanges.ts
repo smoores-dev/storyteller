@@ -192,7 +192,9 @@ export async function getSentenceRanges(
       }
     } else if (lastSentenceRange !== null) {
       if (audiofile === lastSentenceRange.audiofile) {
-        lastSentenceRange.end = start
+        if (sentenceId === 0) {
+          lastSentenceRange.end = start
+        }
       } else {
         const lastTrackDuration = await getTrackDuration(
           lastSentenceRange.audiofile,
@@ -256,23 +258,38 @@ async function getLargestGap(
 
 export async function interpolateSentenceRanges(
   sentenceRanges: SentenceRange[],
+  lastSentenceRange: SentenceRange | null,
 ) {
   const interpolated: SentenceRange[] = []
   const [first, ...rest] = sentenceRanges
   if (!first) return interpolated
   if (first.id !== 0) {
-    const count = first.id + 1
-    const diff = first.end
+    const count = first.id
+    const crossesAudioBoundary =
+      !lastSentenceRange || first.audiofile !== lastSentenceRange.audiofile
+    let diff = crossesAudioBoundary
+      ? first.end
+      : first.start - lastSentenceRange.end
+
+    // Sometimes the transcription may entirely miss a short sentence.
+    // If it does, allocate a short clip for it and continue
+    if (!crossesAudioBoundary && diff <= 0) {
+      diff = 0.25
+      lastSentenceRange.end = first.start - diff
+    }
     const interpolatedLength = diff / count
+    const start = crossesAudioBoundary ? first.start : lastSentenceRange.end
 
     for (let i = 0; i < count; i++) {
       interpolated.push({
         id: i,
-        start: first.start + interpolatedLength * i,
-        end: first.start + interpolatedLength * (i + 1),
+        start: start + interpolatedLength * i,
+        end: start + interpolatedLength * (i + 1),
         audiofile: first.audiofile,
       })
     }
+
+    interpolated.push(first)
   } else {
     rest.unshift(first)
   }
@@ -303,18 +320,25 @@ export async function interpolateSentenceRanges(
       : [sentenceRange.start - lastSentenceRange.end, sentenceRange.audiofile]
 
     // Sometimes the transcription may entirely miss a short sentence.
-    // If it does, allocate a quarter second for it and continue
+    // If it does, allocate a short clip for it and continue
     if (diff <= 0) {
-      lastSentenceRange.end = sentenceRange.start - 0.25
-      diff = 0.25
+      if (crossesAudioBoundary) {
+        const rangeLength = sentenceRange.end - sentenceRange.start
+        diff = rangeLength < 0.5 ? rangeLength / 2 : 0.25
+        sentenceRange.start = diff
+      } else {
+        diff = 0.25
+        lastSentenceRange.end = sentenceRange.start - diff
+      }
     }
     const interpolatedLength = diff / count
+    const start = crossesAudioBoundary ? 0 : lastSentenceRange.end
 
     for (let i = 0; i < count; i++) {
       interpolated.push({
         id: lastSentenceRange.id + i + 1,
-        start: lastSentenceRange.end + interpolatedLength * i,
-        end: lastSentenceRange.end + interpolatedLength * (i + 1),
+        start: start + interpolatedLength * i,
+        end: start + interpolatedLength * (i + 1),
         audiofile: audiofile,
       })
     }

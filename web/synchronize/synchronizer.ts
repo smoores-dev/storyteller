@@ -303,7 +303,10 @@ export class Synchronizer {
         transcriptionOffset,
         lastSentenceRange,
       )
-    const interpolated = await interpolateSentenceRanges(sentenceRanges)
+    const interpolated = await interpolateSentenceRanges(
+      sentenceRanges,
+      lastSentenceRange,
+    )
     const expanded = expandEmptySentenceRanges(interpolated)
     const tagged = tagSentences(chapterId, chapterXml)
 
