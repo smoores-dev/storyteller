@@ -5,7 +5,7 @@ import {
   originalEpubExists,
   persistAudio,
   persistEpub,
-} from "@/assets"
+} from "@/assets/assets"
 import { withHasPermission } from "@/auth"
 import { createBook, getBooks } from "@/database/books"
 import { Epub } from "@/epub"

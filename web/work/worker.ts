@@ -2,7 +2,13 @@ import {
   ProcessingTaskStatus,
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
-import { deleteProcessed } from "@/assets"
+import { deleteProcessed } from "@/assets/assets"
+import { getProcessedAudioFiles } from "@/assets/covers"
+import {
+  getTranscriptionsFilepath,
+  getProcessedAudioFilepath,
+  getEpubSyncedFilepath,
+} from "@/assets/paths"
 import { getBooks } from "@/database/books"
 import {
   PROCESSING_TASK_ORDER,
@@ -10,19 +16,11 @@ import {
 } from "@/database/processingTasks"
 import { Settings } from "@/database/settings"
 import {
-  getProcessedAudioFilepath,
-  getProcessedFiles,
   getTranscriptionFilename,
   getTranscriptions,
-  getTranscriptionsFilepath,
   processAudiobook,
 } from "@/process/processAudio"
-import {
-  getEpubSyncedFilepath,
-  getFullText,
-  processEpub,
-  readEpub,
-} from "@/process/processEpub"
+import { getFullText, processEpub, readEpub } from "@/process/processEpub"
 import { getInitialPrompt } from "@/process/prompt"
 import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
@@ -43,7 +41,7 @@ export async function transcribeBook(
 ) {
   const transcriptionsPath = getTranscriptionsFilepath(bookUuid)
   await mkdir(transcriptionsPath, { recursive: true })
-  const audioFiles = await getProcessedFiles(bookUuid)
+  const audioFiles = await getProcessedAudioFiles(bookUuid)
   if (!audioFiles) {
     throw new Error("Failed to transcribe book: found no processed audio files")
   }
@@ -224,7 +222,7 @@ export default async function processBook({
 
       if (task.type === ProcessingTaskType.SYNC_CHAPTERS) {
         const epub = await readEpub(bookUuid)
-        const audioFiles = await getProcessedFiles(bookUuid)
+        const audioFiles = await getProcessedAudioFiles(bookUuid)
         const transcriptions = await getTranscriptions(bookUuid)
         if (!audioFiles) {
           throw new Error(`No audio files found for book ${bookUuid}`)

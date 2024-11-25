@@ -1,10 +1,10 @@
 import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
-import { getEpubSyncedFilepath } from "@/process/processEpub"
 import { FileHandle, open } from "node:fs/promises"
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 import { Epub } from "@/epub"
+import { getEpubSyncedFilepath } from "@/assets/paths"
 
 export const dynamic = "force-dynamic"
 
