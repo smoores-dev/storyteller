@@ -1,4 +1,3 @@
-import { AUDIO_DIR } from "@/directories"
 import { UUID } from "@/uuid"
 import { extension } from "mime-types"
 import { parseFile, selectCover } from "music-metadata"
@@ -25,92 +24,24 @@ import {
   transcodeTrack,
 } from "@/audio"
 import { StorytellerTranscription } from "@/synchronize/getSentenceRanges"
-import { detectVoiceActivity } from "echogarden/dist/api/VoiceActivityDetection"
+import { detectVoiceActivity } from "echogarden"
 import { streamFile } from "@/fs"
 import { randomUUID } from "node:crypto"
-
-export function getAudioDirectory(bookUuid: UUID) {
-  return join(AUDIO_DIR, bookUuid)
-}
-
-export function getAudioIndexPath(bookUuid: UUID) {
-  return join(getAudioDirectory(bookUuid), "index.json")
-}
-
-export type AudioFile = {
-  filename: string
-  bare_filename: string
-  extension: string
-}
-
-export type AudioIndex = {
-  cover?: string
-  processed_files?: AudioFile[]
-}
-
-export async function getAudioIndex(
-  bookUuid: UUID,
-): Promise<null | AudioIndex> {
-  const path = getAudioIndexPath(bookUuid)
-
-  try {
-    const indexFile = await readFile(path, {
-      encoding: "utf-8",
-    })
-    return JSON.parse(indexFile) as AudioIndex
-  } catch {
-    return null
-  }
-}
-
-export function getOriginalAudioFilepath(bookUuid: UUID, filename = "") {
-  return join(getAudioDirectory(bookUuid), "original", filename)
-}
-
-export function getProcessedAudioFilepath(bookUuid: UUID, filename = "") {
-  return join(getAudioDirectory(bookUuid), "processed", filename)
-}
-
-export async function getAudioCoverFilepath(bookUuid: UUID) {
-  const index = await getAudioIndex(bookUuid)
-  if (index === null) return index
-
-  if (!("cover" in index)) return null
-
-  return join(getAudioDirectory(bookUuid), index.cover)
-}
-
-export async function getProcessedFiles(bookUuid: UUID) {
-  const index = await getAudioIndex(bookUuid)
-  return index?.processed_files?.sort(({ filename: a }, { filename: b }) => {
-    if (a < b) return -1
-    if (b > a) return 1
-    return 0
-  })
-}
-
-export function getTranscriptionsFilepath(bookUuid: UUID, filename = "") {
-  return join(getAudioDirectory(bookUuid), "transcriptions", filename)
-}
-
-export async function persistCover(bookUuid: UUID, coverFilename: string) {
-  const index = (await getAudioIndex(bookUuid)) ?? {}
-  index.cover = coverFilename
-
-  await writeFile(getAudioIndexPath(bookUuid), JSON.stringify(index), {
-    encoding: "utf-8",
-  })
-}
-
-export async function persistCustomCover(
-  bookUuid: UUID,
-  filename: string,
-  cover: Uint8Array,
-) {
-  const coverFilepath = join(getAudioDirectory(bookUuid), filename)
-  await writeFile(coverFilepath, cover)
-  await persistCover(bookUuid, filename)
-}
+import {
+  getAudioIndexPath,
+  getAudioDirectory,
+  getOriginalAudioFilepath,
+  getProcessedAudioFilepath,
+  getTranscriptionsFilepath,
+} from "@/assets/paths"
+import {
+  AudioFile,
+  getAudioCoverFilepath,
+  getAudioIndex,
+  getProcessedAudioFiles,
+  persistAudioCover,
+  persistCustomAudioCover,
+} from "@/assets/covers"
 
 export async function extractCover(bookUuid: UUID, trackPath: string) {
   const { common } = await parseFile(trackPath)
@@ -124,7 +55,7 @@ export async function extractCover(bookUuid: UUID, trackPath: string) {
     )
 
   const coverFilename = `Audio Cover.${ext}`
-  await persistCustomCover(bookUuid, coverFilename, coverImage.data)
+  await persistCustomAudioCover(bookUuid, coverFilename, coverImage.data)
 }
 
 function determineExtension(codec: string | null, inputFilename: string) {
@@ -294,7 +225,7 @@ export async function processFile(
   ) {
     const coverFilepath = join(getAudioDirectory(bookUuid), filename)
     await copyFile(filepath, coverFilepath)
-    await persistCover(bookUuid, filename)
+    await persistAudioCover(bookUuid, filename)
   }
 
   if (AUDIO_FILE_EXTENSIONS.includes(ext)) {
@@ -420,7 +351,7 @@ export function getTranscriptionFilename(audoFile: AudioFile) {
 }
 
 export async function getTranscriptions(bookUuid: UUID) {
-  const audioFiles = await getProcessedFiles(bookUuid)
+  const audioFiles = await getProcessedAudioFiles(bookUuid)
   if (!audioFiles)
     throw new Error(
       "Could not retrieve transcriptions: found no processed audio files",

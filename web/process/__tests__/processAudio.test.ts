@@ -1,13 +1,11 @@
 import { describe, it } from "node:test"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
-import {
-  getAudioCoverFilepath,
-  getProcessedAudioFilepath,
-  processFile,
-} from "../processAudio"
+import { processFile } from "../processAudio"
 import { mkdir, readdir } from "node:fs/promises"
 import assert from "node:assert"
+import { getProcessedAudioFilepath } from "@/assets/paths"
+import { getAudioCoverFilepath } from "@/assets/covers"
 
 void describe("processFile", () => {
   void it("can process mpeg4 files", async () => {
