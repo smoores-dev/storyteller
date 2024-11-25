@@ -188,6 +188,7 @@ export default async function processBook({
         await processEpub(bookUuid)
         await processAudiobook(
           bookUuid,
+          settings.maxTrackLength ?? null,
           settings.codec ?? null,
           settings.bitrate ?? null,
           onProgress,

@@ -8,7 +8,7 @@ import { createAuthedApiClient } from "@/authedApiClient"
 export const dynamic = "force-dynamic"
 
 export default async function Home() {
-  const client = createAuthedApiClient()
+  const client = await createAuthedApiClient()
 
   let books: BookDetail[] = []
 

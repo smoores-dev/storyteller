@@ -25,6 +25,8 @@ import {
   transcodeTrack,
 } from "@/audio"
 import { StorytellerTranscription } from "@/synchronize/getSentenceRanges"
+import { detectVoiceActivity } from "echogarden/dist/api/VoiceActivityDetection"
+import { streamFile } from "@/fs"
 
 export function getAudioDirectory(bookUuid: UUID) {
   return join(AUDIO_DIR, bookUuid)
@@ -144,10 +146,57 @@ function determineExtension(codec: string | null, inputFilename: string) {
   return inputExtension
 }
 
+export async function getSafeRanges(
+  filepath: string,
+  duration: number,
+  maxLength: number | null,
+) {
+  console.log(
+    "Audio track is longer than two hours; using VAD to determine safe split points",
+  )
+  const audio = await streamFile(filepath)
+  const vadTimeline = await detectVoiceActivity(audio, {
+    engine: "adaptive-gate",
+  })
+  const silenceTimeline = vadTimeline.timeline.reduce<
+    { start: number; end: number }[]
+  >((acc, entry) => {
+    const lastEntry = acc[acc.length - 1]
+    if (!lastEntry) {
+      acc.push({ start: entry.endTime, end: entry.endTime })
+      return acc
+    }
+    lastEntry.end = entry.startTime
+    acc.push({ start: entry.endTime, end: entry.endTime })
+    return acc
+  }, [])
+  const ranges: { start: number; end: number }[] = [{ start: 0, end: duration }]
+  for (let i = 0; i + 1 < duration / (60 * 60 * (maxLength ?? 2)); i++) {
+    const candidates = silenceTimeline.filter(
+      (entry) =>
+        entry.start > 60 * 60 * (maxLength ?? 2) * (i + 1) - 60 &&
+        entry.end < 60 * 60 * (maxLength ?? 2) * (i + 1) + 60,
+    )
+    const nearestLikelySentenceBreak = candidates.reduce((acc, entry) => {
+      const currLength = acc.end - acc.start
+      const entryLength = entry.end - entry.start
+      return currLength > entryLength ? acc : entry
+    })
+    // We initialize this with one element, so there's always at least
+    // one element in it
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const lastRange = ranges[ranges.length - 1]!
+    lastRange.end = nearestLikelySentenceBreak.start
+    ranges.push({ start: nearestLikelySentenceBreak.end, end: duration })
+  }
+  return ranges
+}
+
 export async function processAudioFile(
   filepath: string,
   outDir: string,
   prefix: string,
+  maxLength: number | null,
   codec: string | null,
   bitrate: string | null,
   onProgress?: (progress: number) => void,
@@ -155,7 +204,7 @@ export async function processAudioFile(
   const duration = await getTrackDuration(filepath)
   const chapters = await getTrackChapters(filepath)
   const outputExtension = determineExtension(codec, filepath)
-  if (!chapters.length) {
+  if (!chapters.length && duration < 60 * 60 * (maxLength ?? 2)) {
     const destination = join(outDir, `${prefix}00001${outputExtension}`)
     await transcodeTrack(filepath, destination, codec, bitrate)
     return [
@@ -167,10 +216,12 @@ export async function processAudioFile(
     ]
   }
 
-  const chapterRanges = chapters.map((chapter, index) => {
-    const nextChapterStart = chapters[index + 1]?.startTime ?? duration
-    return { start: chapter.startTime, end: nextChapterStart }
-  })
+  const chapterRanges = chapters.length
+    ? chapters.map((chapter, index) => {
+        const nextChapterStart = chapters[index + 1]?.startTime ?? duration
+        return { start: chapter.startTime, end: nextChapterStart }
+      })
+    : await getSafeRanges(filepath, duration, maxLength)
 
   const audioFiles: AudioFile[] = []
   for (let i = 0; i < chapterRanges.length; i++) {
@@ -210,6 +261,7 @@ export async function processFile(
   filepath: string,
   outDir: string,
   prefix: string,
+  maxLength: number | null,
   codec: string | null,
   bitrate: string | null,
   onProgress?: (progress: number) => void,
@@ -237,6 +289,7 @@ export async function processFile(
       filepath,
       outDir,
       prefix,
+      maxLength,
       codec,
       bitrate,
       onProgress,
@@ -272,6 +325,7 @@ export async function processFile(
             tempFilepath,
             outDir,
             `${prefix}${i.toString().padStart(5, "0")}-`,
+            maxLength,
             codec,
             bitrate,
             (progress: number) =>
@@ -305,6 +359,7 @@ export async function persistProcessedFilesList(
 
 export async function processAudiobook(
   bookUuid: UUID,
+  maxLength: number | null,
   codec: string | null,
   bitrate: string | null,
   onProgress?: (progress: number) => void,
@@ -331,6 +386,7 @@ export async function processAudiobook(
       filepath,
       processedAudioDirectory,
       `${i.toString().padStart(5, "0")}-`,
+      maxLength,
       codec,
       bitrate,
       (progress: number) =>

@@ -15,7 +15,7 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null)
+    await processFile(uuid, input, outDir, "00000-", null, null, null)
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp4",
@@ -39,7 +39,7 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null)
+    await processFile(uuid, input, outDir, "00000-", null, null, null)
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp3",
@@ -63,7 +63,7 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null)
+    await processFile(uuid, input, outDir, "00000-", null, null, null)
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00000-00001.mp3",

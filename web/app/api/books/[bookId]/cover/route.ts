@@ -9,15 +9,16 @@ import { Epub } from "@/epub"
 
 export const dynamic = "force-dynamic"
 
-type Params = {
+type Params = Promise<{
   bookId: string
-}
+}>
 
 export const GET = withHasPermission<Params>("book_read")(async (
   request,
   context,
 ) => {
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"
 
   const coverFilepath = audio

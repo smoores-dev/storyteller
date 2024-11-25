@@ -13,9 +13,9 @@ type PositionBody = {
   timestamp: number
 }
 
-type Params = {
+type Params = Promise<{
   bookId: string
-}
+}>
 
 export const POST = withHasPermission<Params>("book_read")(async (
   request,
@@ -25,7 +25,8 @@ export const POST = withHasPermission<Params>("book_read")(async (
 ) => {
   const body = (await request.json()) as PositionBody
   const username = tokenData.username
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
 
   const user = getUser(username)
   if (!user) throw new Error("Couldn't find authenticated user in database")
@@ -44,14 +45,15 @@ export const POST = withHasPermission<Params>("book_read")(async (
   return new Response(null, { status: 204 })
 })
 
-export const GET = withHasPermission<Params>("book_read")((
+export const GET = withHasPermission<Params>("book_read")(async (
   _request,
   context,
   _token,
   tokenData,
 ) => {
   const username = tokenData.username
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
   const user = getUser(username)
   if (!user) throw new Error("Couldn't find authenticated user in database")
 
