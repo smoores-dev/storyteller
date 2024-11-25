@@ -8,14 +8,14 @@ import { getCookieDomain } from "@/cookies"
 export const dynamic = "force-dynamic"
 
 type Props = {
-  params: {
+  params: Promise<{
     inviteKey: string
-  }
+  }>
 }
 
 export default async function InvitePage(props: Props) {
   const client = new ApiClient(apiHost, proxyRootPath)
-  const invite = await client.getInvite(props.params.inviteKey)
+  const invite = await client.getInvite((await props.params).inviteKey)
 
   async function acceptInvite(data: FormData) {
     "use server"
@@ -25,7 +25,7 @@ export default async function InvitePage(props: Props) {
     const password = data.get("password")?.valueOf() as string | undefined
     if (!fullName || !username || !password) return
 
-    const cookieOrigin = headers().get("Origin")
+    const cookieOrigin = (await headers()).get("Origin")
     const domain = getCookieDomain(cookieOrigin)
 
     const client = new ApiClient(apiHost, proxyRootPath)
@@ -34,10 +34,10 @@ export default async function InvitePage(props: Props) {
       full_name: fullName,
       username,
       password,
-      invite_key: props.params.inviteKey,
+      invite_key: (await props.params).inviteKey,
     })
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     cookieStore.set("st_token", token.access_token, {
       secure: true,
       domain,

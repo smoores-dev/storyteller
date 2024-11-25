@@ -2,8 +2,8 @@ import { cookies } from "next/headers"
 import { ApiClient } from "./apiClient"
 import { apiHost, proxyRootPath } from "./app/apiHost"
 
-export function createAuthedApiClient() {
-  const cookieStore = cookies()
+export async function createAuthedApiClient() {
+  const cookieStore = await cookies()
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const authTokenCookie = cookieStore.get("st_token")!
 

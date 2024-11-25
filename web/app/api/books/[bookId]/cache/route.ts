@@ -3,15 +3,16 @@ import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
 import { BookEvents } from "@/events"
 
-type Params = {
+type Params = Promise<{
   bookId: string
-}
+}>
 
 export const DELETE = withHasPermission<Params>("book_process")(async (
   request,
   context,
 ) => {
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
   const url = request.nextUrl
   const includeOriginals = typeof url.searchParams.get("originals") === "string"
 

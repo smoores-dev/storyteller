@@ -4,19 +4,24 @@ import { NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-type Params = {
+type Params = Promise<{
   inviteKey: string
-}
+}>
 
-export function GET(_request: NextRequest, context: { params: Params }) {
-  const invite = getInvite(context.params.inviteKey)
+export async function GET(
+  _request: NextRequest,
+  context: { params: Promise<Params> },
+) {
+  const { inviteKey } = await context.params
+  const invite = getInvite(inviteKey)
   return NextResponse.json(invite)
 }
 
-export const DELETE = withHasPermission<Params>("invite_delete")((
+export const DELETE = withHasPermission<Params>("invite_delete")(async (
   _request,
   context,
 ) => {
-  deleteInvite(context.params.inviteKey)
+  const { inviteKey } = await context.params
+  deleteInvite(inviteKey)
   return new Response(null, { status: 204 })
 })

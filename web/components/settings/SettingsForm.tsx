@@ -6,6 +6,7 @@ import styles from "./settingsform.module.css"
 import {
   Form,
   FormCheckbox,
+  FormControl,
   FormInput,
   FormLabel,
   FormSubmit,
@@ -47,6 +48,10 @@ export function SettingsForm({ settings }: Props) {
     form.names["open_ai_base_url"],
   )
 
+  const maxTrackLength = form.useValue<Settings["max_track_length"]>(
+    form.names["max_track_length"],
+  )
+
   return (
     <Form
       className={styles["settings-form"]}
@@ -66,6 +71,38 @@ export function SettingsForm({ settings }: Props) {
       </fieldset>
       <fieldset>
         <legend>Audio settings</legend>
+        <FormLabel name={form.names["max_track_length"]}>
+          Maximum processed track length
+        </FormLabel>
+        <p>
+          Audio tracks longer than this will be split to be this length or
+          shorter before transcribing.
+        </p>
+        <p>
+          This can help with reducing Storyteller&apos;s memory usage during
+          transcription.
+        </p>
+        <FormControl
+          name={form.names["max_track_length"]}
+          defaultValue={settings["max_track_length"] ?? 2}
+          render={
+            <select
+              value={maxTrackLength ?? 2}
+              onChange={(event) => {
+                form.setValue(
+                  form.names["max_track_length"],
+                  parseInt(event.target.value, 10),
+                )
+              }}
+            />
+          }
+        >
+          <option value={0.75}>45 minutes</option>
+          <option value={1}>1 hour</option>
+          <option value={2}>2 hours (default)</option>
+          <option value={3}>3 hours</option>
+          <option value={4}>4 hours</option>
+        </FormControl>
         <FormLabel name={form.names["codec"]}>
           Preferred audio codec
           <FormInput

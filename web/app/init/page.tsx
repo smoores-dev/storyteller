@@ -15,7 +15,7 @@ export default function InitPage() {
     const password = data.get("password")?.valueOf() as string | undefined
     if (!fullName || !username || !password || !email) return
 
-    const cookieOrigin = headers().get("Origin")
+    const cookieOrigin = (await headers()).get("Origin")
     const domain = getCookieDomain(cookieOrigin)
 
     const client = new ApiClient(apiHost, proxyRootPath)
@@ -26,7 +26,7 @@ export default function InitPage() {
       password,
     })
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     cookieStore.set(
       "st_token",
       Buffer.from(JSON.stringify(token)).toString("base64"),

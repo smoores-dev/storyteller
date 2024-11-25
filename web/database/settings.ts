@@ -36,6 +36,7 @@ export type Settings = {
   smtpRejectUnauthorized?: boolean
   libraryName?: string
   webUrl?: string
+  maxTrackLength?: number | null
   codec?: string | null
   bitrate?: string | null
   transcriptionEngine?: TranscriptionEngine | null
@@ -63,6 +64,7 @@ export const SETTINGS_COLUMN_NAMES = {
   smtp_reject_unauthorized: "smtpRejectUnauthorized",
   library_name: "libraryName",
   web_url: "webUrl",
+  max_track_length: "maxTrackLength",
   codec: "codec",
   bitrate: "bitrate",
   transcription_engine: "transcriptionEngine",

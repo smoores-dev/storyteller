@@ -3,15 +3,16 @@ import { getInvite } from "@/database/invites"
 import { sendInvite } from "@/invites"
 import { NextResponse } from "next/server"
 
-type Params = {
+type Params = Promise<{
   inviteKey: string
-}
+}>
 
 export const POST = withHasPermission<Params>("user_create")(async (
   _request,
   context,
 ) => {
-  const key = context.params.inviteKey
+  const { inviteKey } = await context.params
+  const key = inviteKey
 
   const invite = getInvite(key)
 

@@ -15,7 +15,7 @@ export default function Login() {
     const password = data.get("password")?.valueOf() as string | undefined
     if (!username || !password) return
 
-    const cookieOrigin = headers().get("Origin")
+    const cookieOrigin = (await headers()).get("Origin")
 
     const secure = getCookieSecure(cookieOrigin)
     const domain = getCookieDomain(cookieOrigin)
@@ -28,7 +28,7 @@ export default function Login() {
       return "bad-creds"
     }
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     cookieStore.set("st_token", token.access_token, {
       secure,
       domain: domain,

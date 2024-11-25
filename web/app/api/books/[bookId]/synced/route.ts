@@ -8,15 +8,16 @@ import { Epub } from "@/epub"
 
 export const dynamic = "force-dynamic"
 
-type Params = {
+type Params = Promise<{
   bookId: string
-}
+}>
 
 export const GET = withHasPermission<Params>("book_download")(async (
   request,
   context,
 ) => {
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
   const range = request.headers.get("Range")?.valueOf()
   const ifRange = request.headers.get("If-Range")?.valueOf()
   const filepath = getEpubSyncedFilepath(bookUuid)
@@ -33,7 +34,7 @@ export const GET = withHasPermission<Params>("book_download")(async (
     file = await open(filepath)
   } catch (_) {
     return NextResponse.json(
-      { message: `Could not find book with id ${context.params.bookId}` },
+      { message: `Could not find book with id ${bookId}` },
       { status: 404 },
     )
   }

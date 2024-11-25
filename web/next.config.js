@@ -6,13 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: [
-      "piscina",
-      "pymport",
-      "@mapbox/node-pre-gyp",
-    ],
-  },
+  serverExternalPackages: ["piscina", "@mapbox/node-pre-gyp", "echogarden"],
 }
 
 export default nextConfig

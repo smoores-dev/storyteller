@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const authTokenCookie = cookieStore.get("st_token")
   const isLoginPage = request.nextUrl.pathname.startsWith("/login")
   if (!authTokenCookie && !isLoginPage) {
