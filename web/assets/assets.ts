@@ -1,15 +1,16 @@
 import { copyFile, mkdir, readdir, rm, stat, symlink } from "node:fs/promises"
-import { getEpubDirectory, getEpubFilepath } from "./process/processEpub"
-import { UUID } from "./uuid"
+import { UUID } from "../uuid"
+import { getSyncCachePath } from "../synchronize/syncCache"
+import { basename, dirname, extname } from "node:path"
+import { AUDIO_FILE_EXTENSIONS } from "../audio"
 import {
+  getEpubFilepath,
+  getEpubDirectory,
   getAudioDirectory,
   getOriginalAudioFilepath,
   getProcessedAudioFilepath,
   getTranscriptionsFilepath,
-} from "./process/processAudio"
-import { getSyncCachePath } from "./synchronize/syncCache"
-import { basename, dirname, extname } from "node:path"
-import { AUDIO_FILE_EXTENSIONS } from "./audio"
+} from "./paths"
 
 export async function linkEpub(bookUuid: UUID, origin: string) {
   const filepath = getEpubFilepath(bookUuid)

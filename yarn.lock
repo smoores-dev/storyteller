@@ -7608,7 +7608,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     date-fns: "npm:^3.6.0"
     debug: "npm:^4.3.4"
-    echogarden: "npm:^2.0.5"
+    echogarden: "npm:^2.0.7"
     esbuild: "npm:^0.23.0"
     fast-xml-parser: "npm:^4.3.6"
     form-data: "npm:^4.0.0"
@@ -12203,9 +12203,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"echogarden@npm:^2.0.5":
-  version: 2.0.5
-  resolution: "echogarden@npm:2.0.5"
+"echogarden@npm:^2.0.7":
+  version: 2.0.7
+  resolution: "echogarden@npm:2.0.7"
   dependencies:
     "@aws-sdk/client-polly": "npm:^3.696.0"
     "@aws-sdk/client-transcribe-streaming": "npm:^3.696.0"

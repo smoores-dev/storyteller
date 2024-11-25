@@ -2,7 +2,12 @@ import {
   ProcessingTaskStatus,
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
-import { deleteAssets } from "@/assets"
+import { deleteAssets } from "@/assets/assets"
+import {
+  persistCustomEpubCover,
+  persistCustomAudioCover,
+} from "@/assets/covers"
+import { getEpubFilepath, getEpubSyncedFilepath } from "@/assets/paths"
 import { withHasPermission } from "@/auth"
 import {
   AuthorInput,
@@ -12,12 +17,6 @@ import {
   updateBook,
 } from "@/database/books"
 import { Epub } from "@/epub"
-import { persistCustomCover as persistCustomAudioCover } from "@/process/processAudio"
-import {
-  getEpubFilepath,
-  getEpubSyncedFilepath,
-  persistCustomCover as persistCustomTextCover,
-} from "@/process/processEpub"
 import { isProcessing } from "@/work/distributor"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
@@ -80,7 +79,7 @@ export const PUT = withHasPermission<Params>("book_update")(async (
     const ext = extension(textCoverFile.type)
     const arrayBuffer = await textCoverFile.arrayBuffer()
     const data = new Uint8Array(arrayBuffer)
-    await persistCustomTextCover(bookUuid, `Cover.${ext}`, data)
+    await persistCustomEpubCover(bookUuid, `Cover.${ext}`, data)
   }
 
   const audioCover = formData.get("audio_cover")?.valueOf()

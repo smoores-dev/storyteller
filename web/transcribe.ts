@@ -1,8 +1,4 @@
-import {
-  RecognitionResult,
-  recognize,
-  setGlobalOption,
-} from "echogarden/dist/api/API.js"
+import { RecognitionResult, recognize, setGlobalOption } from "echogarden"
 import { join } from "node:path"
 import { WHISPER_BUILD_DIR } from "./directories"
 import { mkdir, stat } from "node:fs/promises"

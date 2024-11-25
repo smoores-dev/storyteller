@@ -1,4 +1,4 @@
-import { deleteOriginals, deleteProcessed } from "@/assets"
+import { deleteOriginals, deleteProcessed } from "@/assets/assets"
 import { withHasPermission } from "@/auth"
 import { getBookUuid } from "@/database/books"
 import { BookEvents } from "@/events"
