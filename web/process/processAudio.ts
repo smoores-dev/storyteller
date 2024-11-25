@@ -27,6 +27,7 @@ import {
 import { StorytellerTranscription } from "@/synchronize/getSentenceRanges"
 import { detectVoiceActivity } from "echogarden/dist/api/VoiceActivityDetection"
 import { streamFile } from "@/fs"
+import { randomUUID } from "node:crypto"
 
 export function getAudioDirectory(bookUuid: UUID) {
   return join(AUDIO_DIR, bookUuid)
@@ -154,34 +155,49 @@ export async function getSafeRanges(
   console.log(
     "Audio track is longer than two hours; using VAD to determine safe split points",
   )
-  const audio = await streamFile(filepath)
-  const vadTimeline = await detectVoiceActivity(audio, {
-    engine: "adaptive-gate",
-  })
-  const silenceTimeline = vadTimeline.timeline.reduce<
-    { start: number; end: number }[]
-  >((acc, entry) => {
-    const lastEntry = acc[acc.length - 1]
-    if (!lastEntry) {
-      acc.push({ start: entry.endTime, end: entry.endTime })
-      return acc
-    }
-    lastEntry.end = entry.startTime
-    acc.push({ start: entry.endTime, end: entry.endTime })
-    return acc
-  }, [])
+  const filename = basename(filepath)
+  const ext = extname(filename)
+  const rawFilename = filename.replace(ext, "")
+  const tmpDir = join(tmpdir(), `storyteller-silence-${randomUUID()}`)
+  await mkdir(tmpDir, { recursive: true })
+  const tmpFilepath = join(tmpDir, `${rawFilename}.wav`)
+
+  const maxSeconds = 60 * 60 * (maxLength ?? 2)
   const ranges: { start: number; end: number }[] = [{ start: 0, end: duration }]
-  for (let i = 0; i + 1 < duration / (60 * 60 * (maxLength ?? 2)); i++) {
-    const candidates = silenceTimeline.filter(
-      (entry) =>
-        entry.start > 60 * 60 * (maxLength ?? 2) * (i + 1) - 60 &&
-        entry.end < 60 * 60 * (maxLength ?? 2) * (i + 1) + 60,
-    )
-    const nearestLikelySentenceBreak = candidates.reduce((acc, entry) => {
+  for (let i = 0; i + 1 < duration / maxSeconds; i++) {
+    const approxCutPoint = maxSeconds * (i + 1)
+    const searchStart = approxCutPoint - 60
+    const searchEnd = approxCutPoint + 60
+    await splitTrack(filepath, searchStart, searchEnd, tmpFilepath, null, null)
+    const audio = await streamFile(tmpFilepath)
+    const vadTimeline = await detectVoiceActivity(audio, {
+      engine: "adaptive-gate",
+    })
+    const silenceTimeline = vadTimeline.timeline.reduce<
+      { start: number; end: number }[]
+    >((acc, entry) => {
+      const lastEntry = acc[acc.length - 1]
+      if (!lastEntry) {
+        acc.push({
+          start: entry.endTime + searchStart,
+          end: entry.endTime + searchStart,
+        })
+        return acc
+      }
+      lastEntry.end = entry.startTime + searchStart
+      acc.push({
+        start: entry.endTime + searchStart,
+        end: entry.endTime + searchStart,
+      })
+      return acc
+    }, [])
+
+    const nearestLikelySentenceBreak = silenceTimeline.reduce((acc, entry) => {
       const currLength = acc.end - acc.start
       const entryLength = entry.end - entry.start
       return currLength > entryLength ? acc : entry
     })
+
     // We initialize this with one element, so there's always at least
     // one element in it
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
