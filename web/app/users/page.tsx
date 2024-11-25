@@ -8,7 +8,7 @@ import { UsersList } from "@/components/users/UsersList"
 export const dynamic = "force-dynamic"
 
 export default async function UsersPage() {
-  const client = createAuthedApiClient()
+  const client = await createAuthedApiClient()
 
   let users: User[] = []
   let invites: Invite[] = []

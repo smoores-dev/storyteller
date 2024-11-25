@@ -10,7 +10,7 @@ export type DirectoryEntry = { name: string; type: "file" | "directory" }
 export async function listDirectoryAction(
   directory: string,
 ): Promise<DirectoryEntry[]> {
-  if (!hasPermission("book_create", cookies().get("st_token"))) {
+  if (!hasPermission("book_create", (await cookies()).get("st_token"))) {
     throw new Error("Forbidden")
   }
 

@@ -28,7 +28,7 @@ export default async function RootLayout({
 
   let currentUser: User | undefined = undefined
   try {
-    const client = createAuthedApiClient()
+    const client = await createAuthedApiClient()
     currentUser = await client.getCurrentUser()
   } catch (e) {
     if (e instanceof ApiClientError && e.statusCode >= 500) console.error(e)

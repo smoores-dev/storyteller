@@ -24,15 +24,16 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-type Params = {
+type Params = Promise<{
   bookId: string
-}
+}>
 
 export const PUT = withHasPermission<Params>("book_update")(async (
   request,
   context,
 ) => {
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
   const formData = await request.formData()
   const title = formData.get("title")?.valueOf()
   if (typeof title !== "string") {
@@ -106,11 +107,12 @@ export const GET = withHasPermission<Params>("book_read")(async (
   _request,
   context,
 ) => {
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
   const [book] = getBooks([bookUuid])
   if (!book) {
     return NextResponse.json(
-      { message: `Could not find book with id ${context.params.bookId}` },
+      { message: `Could not find book with id ${bookId}` },
       { status: 404 },
     )
   }
@@ -145,11 +147,12 @@ export const DELETE = withHasPermission<Params>("book_delete")(async (
   _request,
   context,
 ) => {
-  const bookUuid = getBookUuid(context.params.bookId)
+  const { bookId } = await context.params
+  const bookUuid = getBookUuid(bookId)
   const [book] = getBooks([bookUuid])
   if (!book) {
     return NextResponse.json(
-      { message: `Could not find book with id ${context.params.bookId}` },
+      { message: `Could not find book with id ${bookId}` },
       { status: 404 },
     )
   }

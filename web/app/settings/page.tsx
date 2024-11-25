@@ -8,7 +8,7 @@ import { SettingsForm } from "@/components/settings/SettingsForm"
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  const client = createAuthedApiClient()
+  const client = await createAuthedApiClient()
 
   let settings: Settings
 

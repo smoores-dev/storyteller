@@ -96,7 +96,9 @@ export function extractToken(request: NextRequest) {
 }
 
 export function withToken<
-  Params extends Record<string, unknown> = Record<string, unknown>,
+  Params extends Promise<Record<string, unknown>> = Promise<
+    Record<string, unknown>
+  >,
 >(
   handler: (
     request: NextRequest,
@@ -138,7 +140,9 @@ export function verifyToken(token: string) {
 }
 
 export function withVerifyToken<
-  Params extends Record<string, unknown> = Record<string, unknown>,
+  Params extends Promise<Record<string, unknown>> = Promise<
+    Record<string, unknown>
+  >,
 >(
   handler: (
     request: NextRequest,
@@ -166,7 +170,9 @@ export function withVerifyToken<
 }
 
 export function withHasPermission<
-  Params extends Record<string, unknown> = Record<string, unknown>,
+  Params extends Promise<Record<string, unknown>> = Promise<
+    Record<string, unknown>
+  >,
 >(permission: Permission) {
   return function (
     handler: (

@@ -6,13 +6,17 @@ import { createAuthedApiClient } from "@/authedApiClient"
 import { BookEditForm } from "@/components/books/BookEditForm"
 
 type Props = {
-  params: {
+  params: Promise<{
     uuid: string
-  }
+  }>
 }
 
-export default async function BookEdit({ params: { uuid } }: Props) {
-  const client = createAuthedApiClient()
+export default async function BookEdit(props: Props) {
+  const params = await props.params
+
+  const { uuid } = params
+
+  const client = await createAuthedApiClient()
 
   let book: BookDetail | null = null
 
