@@ -95,19 +95,28 @@ export async function getSentenceRanges(
     (sentence) => sentence.toLowerCase(),
   )
 
+  let startSentenceEntry = startSentence
+
   const sentenceEntries = sentences
     .map((sentence, index) => [index, sentence] as const)
-    .filter(
-      ([, sentence]) =>
-        sentence.replaceAll(/[.-_()[\],/?!@#$%^^&*`~;:='"<>+ˌˈ]/g, "").length >
-        3,
-    )
+    .filter(([index, sentence]) => {
+      if (
+        sentence.replaceAll(/[.-_()[\],/?!@#$%^^&*`~;:='"<>+ˌˈ]/g, "").length <=
+        3
+      ) {
+        // We have to adjust the start sentence, since we're going to
+        // be iterating over the filtered sentenceEntries
+        if (index < startSentence) startSentenceEntry--
+        return false
+      }
+      return true
+    })
 
   let transcriptionWindowIndex = 0
   let transcriptionWindowOffset = 0
   let lastGoodTranscriptionWindow = 0
   let notFound = 0
-  let sentenceIndex = startSentence
+  let sentenceIndex = startSentenceEntry
   let lastMatchEnd = chapterOffset
 
   while (sentenceIndex < sentenceEntries.length) {
@@ -202,7 +211,7 @@ export async function getSentenceRanges(
         lastSentenceRange.end = lastTrackDuration
         start = 0
       }
-    } else {
+    } else if (startSentence === 0) {
       start = 0
     }
 
@@ -268,7 +277,7 @@ export async function interpolateSentenceRanges(
     const crossesAudioBoundary =
       !lastSentenceRange || first.audiofile !== lastSentenceRange.audiofile
     let diff = crossesAudioBoundary
-      ? first.end
+      ? first.start
       : first.start - lastSentenceRange.end
 
     // Sometimes the transcription may entirely miss a short sentence.
@@ -278,7 +287,7 @@ export async function interpolateSentenceRanges(
       lastSentenceRange.end = first.start - diff
     }
     const interpolatedLength = diff / count
-    const start = crossesAudioBoundary ? first.start : lastSentenceRange.end
+    const start = crossesAudioBoundary ? 0 : lastSentenceRange.end
 
     for (let i = 0; i < count; i++) {
       interpolated.push({
