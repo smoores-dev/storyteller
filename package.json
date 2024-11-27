@@ -2,7 +2,7 @@
   "name": "storyteller",
   "private": true,
   "type": "module",
-  "packageManager": "yarn@4.5.1",
+  "packageManager": "yarn@4.5.3",
   "workspaces": [
     "web/",
     "docs/",
