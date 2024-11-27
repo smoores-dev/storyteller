@@ -18,7 +18,7 @@ const WHISPER_REPO =
 const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.7.1"
 setGlobalOption("logLevel", "error")
 
-async function installWhisper(settings: Settings) {
+export async function installWhisper(settings: Settings) {
   const whisperBuild = settings.whisperBuild ?? "cpu"
   const enableCuda = whisperBuild.startsWith("cublas")
   if (process.env.NODE_ENV === "development") {
@@ -98,7 +98,7 @@ async function installWhisper(settings: Settings) {
       await exec("apt-get -y install libopenblas-dev")
     }
     console.log("Building whisper.cpp")
-    await exec(`make -j${availableParallelism()}`, {
+    await exec(`make -j${availableParallelism() - 1}`, {
       cwd: repoDir,
       env: {
         ...process.env,
@@ -138,6 +138,15 @@ export async function transcribeTrack(
   initialPrompt: string | null,
   locale: Intl.Locale,
   settings: Settings,
+  whisperOptions?:
+    | {
+        build: "cpu"
+      }
+    | {
+        executablePath: string
+        enableGPU?: boolean
+        build: "custom"
+      },
 ): Promise<Pick<RecognitionResult, "transcript" | "wordTimeline">> {
   console.log(`Transcribing audio file ${trackPath}`)
 
@@ -145,7 +154,6 @@ export async function transcribeTrack(
     !settings.transcriptionEngine ||
     settings.transcriptionEngine === "whisper.cpp"
   ) {
-    const whisperOptions = await installWhisper(settings)
     const { transcript, wordTimeline } = await recognize(trackPath, {
       engine: "whisper.cpp",
       language: locale.language,

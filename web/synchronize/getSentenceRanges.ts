@@ -142,7 +142,7 @@ export async function getSentenceRanges(
     if (!firstMatch) {
       sentenceIndex += 1
       notFound += 1
-      if (notFound === 3 || sentenceIndex === sentenceEntries.length - 1) {
+      if (notFound === 3 || sentenceIndex === sentenceEntries.length) {
         transcriptionWindowIndex += 1
         if (transcriptionWindowIndex == lastGoodTranscriptionWindow + 30) {
           transcriptionWindowIndex = lastGoodTranscriptionWindow
@@ -209,9 +209,11 @@ export async function getSentenceRanges(
           lastSentenceRange.audiofile,
         )
         lastSentenceRange.end = lastTrackDuration
-        start = 0
+        if (sentenceId === 0) {
+          start = 0
+        }
       }
-    } else if (startSentence === 0) {
+    } else if (sentenceId === 0) {
       start = 0
     }
 
