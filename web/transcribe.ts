@@ -108,7 +108,7 @@ async function installWhisper(settings: Settings) {
         "sh -c 'echo deb [arch=amd64] https://repo.radeon.com/amdgpu/6.2.1/ubuntu focal main > /etc/apt/sources.list.d/amdgpu.list'",
       )
       await exec("apt-get update")
-      await exec("apt-get install rocm-dev hipblas-dev", {
+      await exec("apt-get -y install rocm-dev hipblas-dev", {
         env: { ...process.env, DEBIAN_FRONTEND: "noninteractive" },
       })
     }
