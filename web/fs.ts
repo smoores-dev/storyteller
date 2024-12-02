@@ -12,9 +12,9 @@ export async function streamFile(path: string): Promise<Uint8Array> {
     const fileData = new Uint8Array(stats.size)
     let i = 0
     for await (const chunk of fileHandle.createReadStream()) {
-      const chunkArray = new Uint8Array(chunk as ArrayBuffer)
-      fileData.set(chunkArray, i)
-      i += chunkArray.byteLength
+      const buffer = chunk as Buffer
+      fileData.set(buffer, i)
+      i += buffer.byteLength
     }
     return fileData
   } finally {
