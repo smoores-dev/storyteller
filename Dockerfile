@@ -9,7 +9,16 @@ RUN apt-get update && \
     sqlite3 \
     libsqlite3-dev \
     argon2 \
-    wget
+    wget \
+    ca-certificates \
+    curl \
+    gnupg \
+    libelf1 \
+    libnuma-dev \
+    kmod \
+    file \
+    python3 \
+    python3-pip
 
 COPY scripts/install-node.sh .
 

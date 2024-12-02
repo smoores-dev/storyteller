@@ -98,8 +98,6 @@ async function installWhisper(settings: Settings) {
       await exec("apt-get -y install libopenblas-dev")
     } else if (whisperBuild === "hipblas") {
       console.log("Installing ROCm and hipBLAS")
-      await exec("apt-get update")
-      await exec("apt-get -y install ca-certificates curl gnupg")
       await exec(
         "curl -sL http://repo.radeon.com/rocm/rocm.gpg.key | apt-key add -",
       )
@@ -110,9 +108,9 @@ async function installWhisper(settings: Settings) {
         "sh -c 'echo deb [arch=amd64] https://repo.radeon.com/amdgpu/6.2.1/ubuntu focal main > /etc/apt/sources.list.d/amdgpu.list'",
       )
       await exec("apt-get update")
-      await exec(
-        "apt-get install libelf1 libnuma-dev build-essential git vim-nox cmake-curses-gui kmod file python3 python3-pip rocm-dev hipblas-dev",
-      )
+      await exec("apt-get install rocm-dev hipblas-dev", {
+        env: { ...process.env, DEBIAN_FRONTEND: "noninteractive" },
+      })
     }
     console.log("Building whisper.cpp")
     await exec(`make -j${availableParallelism()}`, {
