@@ -228,6 +228,7 @@ export function SettingsForm({ settings }: Props) {
                 <option value="openblas">OpenBLAS (CPU, accelerated)</option>
                 <option value="cublas-11.8">cuBLAS 11.8 (NVIDIA GPU)</option>
                 <option value="cublas-12.4">cuBLAS 12.4 (NVIDIA GPU)</option>
+                <option value="hipblas">hipBLAS (AMD GPU)</option>
               </FormInput>
             </FormLabel>
             <p>

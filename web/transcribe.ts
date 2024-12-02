@@ -15,7 +15,7 @@ const WHISPER_REPO =
   process.env["STORYTELLER_WHISPER_REPO"] ??
   "https://github.com/ggerganov/whisper.cpp"
 
-const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.7.1"
+const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.7.2"
 setGlobalOption("logLevel", "error")
 
 async function installWhisper(settings: Settings) {
@@ -96,6 +96,23 @@ async function installWhisper(settings: Settings) {
       console.log("Installing OpenBLAS")
       await exec("apt-get update")
       await exec("apt-get -y install libopenblas-dev")
+    } else if (whisperBuild === "hipblas") {
+      console.log("Installing ROCm and hipBLAS")
+      await exec("apt-get update")
+      await exec("apt-get -y install ca-certificates curl gnupg")
+      await exec(
+        "curl -sL http://repo.radeon.com/rocm/rocm.gpg.key | apt-key add -",
+      )
+      await exec(
+        "sh -c 'echo deb [arch=amd64] http://repo.radeon.com/rocm/apt/6.2.1/ focal main > /etc/apt/sources.list.d/rocm.list'",
+      )
+      await exec(
+        "sh -c 'echo deb [arch=amd64] https://repo.radeon.com/amdgpu/6.2.1/ubuntu focal main > /etc/apt/sources.list.d/amdgpu.list'",
+      )
+      await exec("apt-get update")
+      await exec(
+        "apt-get install libelf1 libnuma-dev build-essential git vim-nox cmake-curses-gui kmod file python3 python3-pip rocm-dev hipblas-dev",
+      )
     }
     console.log("Building whisper.cpp")
     await exec(`make -j${availableParallelism()}`, {
@@ -110,13 +127,16 @@ async function installWhisper(settings: Settings) {
         ...(whisperBuild === "openblas" && {
           WHISPER_OPENBLAS: "1",
         }),
+        ...(whisperBuild === "hipblas" && {
+          GGML_HIPBLAS: "1",
+        }),
       },
     })
   }
 
   return {
     build: "custom",
-    ...(enableCuda && { enableGPU: true }),
+    ...((enableCuda || whisperBuild === "hipblas") && { enableGPU: true }),
     executablePath,
   } as const
 }

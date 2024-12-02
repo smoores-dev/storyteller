@@ -5,6 +5,7 @@
 !/.yarn
 !/web
 !/docker-scripts
+!/scripts
 /web/.next
 /web/node_modules
 /web/tsbuild

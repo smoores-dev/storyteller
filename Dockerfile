@@ -1,7 +1,21 @@
-FROM node:22-bullseye
+FROM ubuntu:20.04
 
 RUN apt-get update && \
-    apt-get install -y build-essential git cmake software-properties-common sqlite3 argon2
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential \
+    git \
+    cmake \
+    software-properties-common \
+    sqlite3 \
+    libsqlite3-dev \
+    argon2 \
+    wget
+
+COPY scripts/install-node.sh .
+
+ARG TARGETARCH
+# Manually install node 22 from prebuilt binary
+RUN ./install-node.sh
 
 WORKDIR /app
 
@@ -19,6 +33,7 @@ COPY docker-scripts/ ./scripts/
 
 COPY . .
 
+RUN cp docker-scripts/* ./scripts/
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
