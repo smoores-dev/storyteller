@@ -10,7 +10,7 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises"
-import { basename, extname, join } from "node:path"
+import { basename, dirname, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import {
@@ -81,24 +81,27 @@ function determineExtension(codec: string | null, inputFilename: string) {
 export async function getSafeRanges(
   filepath: string,
   duration: number,
-  maxLength: number | null,
+  maxLength: number,
+  start: number = 0,
 ) {
   console.log(
-    "Audio track is longer than two hours; using VAD to determine safe split points",
+    `Audio track is longer than ${maxLength} hours; using VAD to determine safe split points`,
   )
   const filename = basename(filepath)
   const ext = extname(filename)
   const rawFilename = filename.replace(ext, "")
   const tmpDir = join(tmpdir(), `storyteller-silence-${randomUUID()}`)
-  await mkdir(tmpDir, { recursive: true })
-  const tmpFilepath = join(tmpDir, `${rawFilename}.wav`)
 
-  const maxSeconds = 60 * 60 * (maxLength ?? 2)
-  const ranges: { start: number; end: number }[] = [{ start: 0, end: duration }]
+  const maxSeconds = 60 * 60 * maxLength
+  const ranges: { start: number; end: number }[] = [
+    { start: start, end: duration + start },
+  ]
   for (let i = 0; i + 1 < duration / maxSeconds; i++) {
-    const approxCutPoint = maxSeconds * (i + 1)
-    const searchStart = approxCutPoint - 60
-    const searchEnd = approxCutPoint + 60
+    const tmpFilepath = join(tmpDir, i.toString(), `${rawFilename}.wav`)
+    await mkdir(dirname(tmpFilepath), { recursive: true })
+    const approxCutPoint = start + maxSeconds * (i + 1)
+    const searchStart = approxCutPoint - 120
+    const searchEnd = approxCutPoint
     await splitTrack(filepath, searchStart, searchEnd, tmpFilepath, null, null)
     const audio = await streamFile(tmpFilepath)
     const vadTimeline = await detectVoiceActivity(audio, {
@@ -134,7 +137,11 @@ export async function getSafeRanges(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const lastRange = ranges[ranges.length - 1]!
     lastRange.end = nearestLikelySentenceBreak.start
-    ranges.push({ start: nearestLikelySentenceBreak.end, end: duration })
+    ranges.push({
+      start: nearestLikelySentenceBreak.end,
+      end: duration + start,
+    })
+    await rm(dirname(tmpFilepath), { recursive: true, force: true })
   }
   return ranges
 }
@@ -148,10 +155,11 @@ export async function processAudioFile(
   bitrate: string | null,
   onProgress?: (progress: number) => void,
 ): Promise<AudioFile[]> {
+  maxLength = maxLength ?? 2
   const duration = await getTrackDuration(filepath)
   const chapters = await getTrackChapters(filepath)
   const outputExtension = determineExtension(codec, filepath)
-  if (!chapters.length && duration < 60 * 60 * (maxLength ?? 2)) {
+  if (!chapters.length && duration < 60 * 60 * maxLength) {
     const destination = join(outDir, `${prefix}00001${outputExtension}`)
     await transcodeTrack(filepath, destination, codec, bitrate)
     return [
@@ -163,12 +171,35 @@ export async function processAudioFile(
     ]
   }
 
-  const chapterRanges = chapters.length
-    ? chapters.map((chapter, index) => {
-        const nextChapterStart = chapters[index + 1]?.startTime ?? duration
-        return { start: chapter.startTime, end: nextChapterStart }
-      })
-    : await getSafeRanges(filepath, duration, maxLength)
+  const chapterRanges: {
+    start: number
+    end: number
+  }[] = []
+
+  if (chapters.length) {
+    const initialRanges = chapters.map((chapter, index) => {
+      const nextChapterStart = chapters[index + 1]?.startTime ?? duration
+      return { start: chapter.startTime, end: nextChapterStart }
+    })
+
+    for (const range of initialRanges) {
+      const chapterDuration = range.end - range.start
+      if (chapterDuration <= maxLength) {
+        chapterRanges.push(range)
+        continue
+      }
+      chapterRanges.push(
+        ...(await getSafeRanges(
+          filepath,
+          chapterDuration,
+          maxLength,
+          range.start,
+        )),
+      )
+    }
+  } else {
+    chapterRanges.push(...(await getSafeRanges(filepath, duration, maxLength)))
+  }
 
   const audioFiles: AudioFile[] = []
   for (let i = 0; i < chapterRanges.length; i++) {
