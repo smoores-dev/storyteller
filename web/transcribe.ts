@@ -64,29 +64,42 @@ async function installWhisper(settings: Settings) {
       const cudaVersions =
         whisperBuild === "cublas-12.4"
           ? {
-              full: "12-4-local_12.4.0-550.54.14-1",
-              semver: "12.4.0",
-              majorMinor: "12.4",
-              short: "12-4",
+              full: "12-6-local_12.6.3-560.35.05-1",
+              semver: "12.6.3",
+              majorMinor: "12.6",
+              short: "12-6",
+              ubuntu: "2404",
             }
           : {
               full: "11-8-local_11.8.0-520.61.05-1",
               semver: "11.8.0",
               majorMinor: "11.8",
               short: "11-8",
+              // There's no official support for 11.8 on 22.04, but we're
+              // gonna hack it.
+              ubuntu: "2204",
             }
 
       console.log("Downloading toolkit package")
       await exec(
-        `wget --quiet https://developer.download.nvidia.com/compute/cuda/${cudaVersions.semver}/local_installers/cuda-repo-debian11-${cudaVersions.full}_amd64.deb`,
+        `wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${cudaVersions.ubuntu}/x86_64/cuda-ubuntu${cudaVersions.ubuntu}.pin`,
+      )
+      await exec(
+        `mv cuda-ubuntu${cudaVersions.ubuntu}.pin /etc/apt/preferences.d/cuda-repository-pin-600`,
+      )
+      await exec(
+        `wget --quiet https://developer.download.nvidia.com/compute/cuda/${cudaVersions.semver}/local_installers/cuda-repo-ubuntu${cudaVersions.ubuntu}-${cudaVersions.full}_amd64.deb`,
       )
       console.log("Unpacking toolkit package")
-      await exec(`dpkg -i cuda-repo-debian11-${cudaVersions.full}_amd64.deb`)
       await exec(
-        `cp /var/cuda-repo-debian11-${cudaVersions.short}-local/cuda-*-keyring.gpg /usr/share/keyrings/`,
+        `dpkg -i cuda-repo-ubuntu${cudaVersions.ubuntu}-${cudaVersions.full}_amd64.deb`,
       )
-      await exec(`rm cuda-repo-debian11-${cudaVersions.full}_amd64.deb`)
-      await exec("add-apt-repository contrib")
+      await exec(
+        `cp /var/cuda-repo-ubuntu${cudaVersions.ubuntu}-${cudaVersions.short}-local/cuda-*-keyring.gpg /usr/share/keyrings/`,
+      )
+      await exec(
+        `rm cuda-repo-ubuntu${cudaVersions.ubuntu}-${cudaVersions.full}_amd64.deb`,
+      )
       await exec("apt update")
       console.log("Installing toolkit")
       await exec(`apt-get -y install cuda-toolkit-${cudaVersions.short}`)
