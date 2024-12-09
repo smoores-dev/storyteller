@@ -1,5 +1,6 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
+RUN echo "Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600" > /etc/apt/preferences.d/rocm-pin-600
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
