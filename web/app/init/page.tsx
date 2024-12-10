@@ -43,11 +43,24 @@ export default function InitPage() {
       </header>
       <form className={styles["init-form"]} action={init}>
         <label htmlFor="email">email</label>
-        <input id="email" name="email" type="email" required />
+        <input
+          className={styles["input"]}
+          id="email"
+          name="email"
+          type="email"
+          required
+        />
         <label htmlFor="full_name">full name</label>
-        <input id="full_name" name="full_name" type="text" required />
+        <input
+          className={styles["input"]}
+          id="full_name"
+          name="full_name"
+          type="text"
+          required
+        />
         <label htmlFor="username">username</label>
         <input
+          className={styles["input"]}
           id="username"
           name="username"
           type="text"
@@ -56,7 +69,13 @@ export default function InitPage() {
           required
         />
         <label htmlFor="password">password</label>
-        <input id="password" name="password" type="password" required />
+        <input
+          className={styles["input"]}
+          id="password"
+          name="password"
+          type="password"
+          required
+        />
         <button type="submit">Accept</button>
       </form>
     </main>

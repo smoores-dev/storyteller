@@ -3,5 +3,9 @@
 }
 
 .init-form {
-  composes: form from "../login/page.module.css";
+  composes: form from "../../components/login/loginform.module.css";
+}
+
+.input {
+  composes: input from "../../components/login/loginform.module.css";
 }
