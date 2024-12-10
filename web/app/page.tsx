@@ -39,7 +39,7 @@ export default async function Home() {
   }
 
   return (
-    <main>
+    <main className={styles["main"]}>
       <h2 className={styles["heading"]}>Books</h2>
       <div className={styles["content"]}>
         <BookList books={books} />
