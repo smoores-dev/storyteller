@@ -135,7 +135,11 @@ const manifestItem: ManifestItem = {
 }
 
 // You can specify the contents as a string
-const contents = `<html lang="en-US">
+const contents = `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:epub="http://www.idpf.org/2007/ops"
+      xml:lang="en-US"
+      lang="en-US">
   <head></head>
   <body>
     <h1>Chapter 1</h1>
@@ -144,13 +148,10 @@ const contents = `<html lang="en-US">
 </html>`
 
 // Or you can specify the contents as an XML structure
-const xmlContents = Epub.createXmlElement("html", { lang: "en-US" }, [
-  Epub.createXmlElement("head", {}),
-  Epub.createXmlElement("body", {}, [
-    Epub.createXmlElement("h1", {}, [Epub.createXmlTextNode("Chapter 1")]),
-    Epub.createXmlElement("p", {}, [
-      Epub.createXmlTextNode("At first, there were s'mores."),
-    ]),
+const xmlContents = epub.createXhtmlDocument([
+  Epub.createXmlElement("h1", {}, [Epub.createXmlTextNode("Chapter 1")]),
+  Epub.createXmlElement("p", {}, [
+    Epub.createXmlTextNode("At first, there were s'mores."),
   ]),
 ])
 

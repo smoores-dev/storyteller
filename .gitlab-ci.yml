@@ -51,6 +51,12 @@ check-version:
     - cd ../mobile
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
     - ../scripts/if-version-change.sh git tag mobile-v${PACKAGE_VERSION}
+    - cd ../fs
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag fs-v${PACKAGE_VERSION}
+    - cd ../epub
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag epub-v${PACKAGE_VERSION}
     - cd ..
     - apt update && apt install -y --no-install-recommends git-lfs
     - git remote set-url origin
@@ -85,9 +91,9 @@ publish-web:
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --platform
       linux/amd64,linux/arm64 --push -f Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:hipblas --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:hipblas,mode=max --tag
-      $CI_REGISTRY_IMAGE:hipblas --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
       --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
 
 prerelease-web:
@@ -118,6 +124,108 @@ release-web:
       artifacts: true
   rules:
     - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "Image for $CI_COMMIT_TAG"
+          url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+
+publish-fs:
+  image: node:22
+  stage: publish
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
+  script:
+    - yarn check:types
+    - yarn workspace @smoores/fs build
+    - yarn config set npmAuthToken ${NPM_PUBLISH_TOKEN}
+    - yarn workspace @smoores/fs publish
+
+prerelease-fs:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/fs-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-fs:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-fs
+      artifacts: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "Image for $CI_COMMIT_TAG"
+          url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+
+publish-epub:
+  image: node:22
+  stage: publish
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
+  script:
+    - yarn check:types
+    - yarn workspace @smoores/epub build
+    - yarn config set npmAuthToken ${NPM_PUBLISH_TOKEN}
+    - yarn workspace @smoores/epub publish
+
+prerelease-epub:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/epub-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-epub:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-epub
+      artifacts: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
