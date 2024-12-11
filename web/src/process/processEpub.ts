@@ -1,6 +1,6 @@
 import { UUID } from "@/uuid"
 import { extname } from "node:path"
-import { Epub } from "@/epub"
+import { Epub } from "@smoores/epub"
 import { getEpubFilepath } from "@/assets/paths"
 import { getEpubCoverFilepath, persistCustomEpubCover } from "@/assets/covers"
 import { logger } from "@/logging"
@@ -24,7 +24,7 @@ export async function processEpub(bookUuid: UUID) {
   const epub = await readEpub(bookUuid)
 
   try {
-    const coverImageItem = await epub.getCoverImage()
+    const coverImageItem = await epub.getCoverImageItem()
     if (!coverImageItem) {
       logger.info(
         `Could not find cover image while processing EPUB file for book ${bookUuid}`,

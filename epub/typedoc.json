@@ -1,0 +1,21 @@
+{
+  "$schema": "https://typedoc-plugin-markdown.org/schema.json",
+  "entryPoints": ["./index.ts"],
+  "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-remark"],
+  "readme": "none",
+  "mergeReadme": false,
+  "gitRevision": "main",
+  "outputFileStrategy": "modules",
+  "out": "./gen",
+  "cleanOutputDir": false,
+  "hidePageHeader": true,
+  "hideGroupHeadings": true,
+  "formatWithPrettier": true,
+  "parametersFormat": "table",
+  "remarkPlugins": [["remark-toc", { "maxDepth": 4, "heading": "API Docs" }]],
+  "defaultRemarkPlugins": {
+    "gfm": true,
+    "frontmatter": false,
+    "mdx": false
+  }
+}

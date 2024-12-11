@@ -11,7 +11,7 @@ import { exec as execCallback } from "node:child_process"
 
 import mobyDickTranscription from "../../__fixtures__/mobydick_001_002_melville.json"
 import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
-import { Epub } from "../../epub"
+import { Epub } from "@smoores/epub"
 import { tokenizeSentences } from "../nlp"
 import assert from "node:assert"
 import type { TimelineEntry } from "echogarden/dist/utilities/Timeline"

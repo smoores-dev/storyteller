@@ -12,3 +12,10 @@ cache
 
 mobile/ios
 mobile/android
+
+epub/index.js
+epub/index.d.ts
+epub/index.test.d.ts
+
+fs/index.js
+fs/index.d.ts

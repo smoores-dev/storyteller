@@ -1,5 +1,5 @@
 import { describe, it } from "node:test"
-import { Epub, ParsedXml, XmlNode } from "../../epub"
+import { Epub, ParsedXml } from "@smoores/epub"
 import { appendTextNode, tagSentences } from "../tagSentences"
 import assert from "node:assert"
 
@@ -38,9 +38,9 @@ void describe("appendTextNode", () => {
   void it("can join text nodes with the same sentence ids", () => {
     const input: ParsedXml = [
       {
-        span: [{ "#text": "test" } as unknown as XmlNode],
+        span: [{ "#text": "test" }],
         ":@": { "@_id": "chapter_one-sentence0" },
-      } as unknown as XmlNode,
+      },
     ]
     appendTextNode("chapter_one", input, "test", [], new Set(), 0)
     assert.deepStrictEqual(input, [

@@ -33,7 +33,11 @@
       // }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // This allows us to treat our typescript source files
+      // in dependent packages as internal to this workspace
+      // for development purposes (e.g. hot module reloading, etc)
+      "@smoores/*": ["../*/index.ts"]
     },
     "outDir": "tsbuild",
     "noEmit": false
@@ -47,5 +51,13 @@
     "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", "tsbuild", "work-dist"]
+  "exclude": ["node_modules", ".next", "tsbuild", "work-dist"],
+  "references": [
+    {
+      "path": "../epub"
+    },
+    {
+      "path": "../fs"
+    }
+  ]
 }

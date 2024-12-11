@@ -1,4 +1,4 @@
-import { ParsedXml, XmlNode } from "@/epub"
+import { ParsedXml, XmlNode } from "@smoores/epub"
 import { describe, it } from "node:test"
 import { getXHtmlSentences } from "../getXhtmlSentences"
 import { strict as assert } from "node:assert/strict"

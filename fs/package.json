@@ -1,0 +1,19 @@
+{
+  "name": "@smoores/fs",
+  "version": "0.1.0",
+  "type": "module",
+  "module": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    "import": "./index.js",
+    "types": "./index.d.ts"
+  },
+  "scripts": {
+    "build": "yarn swc ./index.ts -o ./index.js"
+  },
+  "devDependencies": {
+    "@swc/cli": "^0.5.2",
+    "@swc/core": "^1.10.0",
+    "@tsconfig/strictest": "^2.0.5"
+  }
+}
