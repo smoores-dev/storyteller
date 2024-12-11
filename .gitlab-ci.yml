@@ -85,9 +85,9 @@ publish-web:
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --platform
       linux/amd64,linux/arm64 --push -f Dockerfile --cache-from
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest --cache-to
-      type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:hipblas --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache:hipblas,mode=max --tag
+      $CI_REGISTRY_IMAGE:hipblas --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
       --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
 
 prerelease-web:
