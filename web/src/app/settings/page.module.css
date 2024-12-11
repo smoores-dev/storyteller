@@ -1,4 +1,4 @@
 .main {
-  composes: main from "../page.module.css";
+  /* composes: main from "../page.module.css"; */
   padding: 0 1rem;
 }

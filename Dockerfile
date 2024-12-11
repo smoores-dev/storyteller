@@ -1,17 +1,14 @@
-FROM node:22-bullseye
-
-RUN apt-get update && \
-    apt-get install -y build-essential git cmake software-properties-common sqlite3 argon2
+FROM registry.gitlab.com/smoores/storyteller-base:latest
 
 WORKDIR /app
-
-COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /usr/local/bin/
-COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffprobe /usr/local/bin/
 
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
 COPY .yarn/cache ./.yarn/cache
 COPY web/package.json ./web/package.json
+
+COPY fs/package.json ./fs/package.json
+COPY epub/package.json ./epub/package.json
 
 RUN yarn workspaces focus @storyteller/web
 
@@ -19,6 +16,7 @@ COPY docker-scripts/ ./scripts/
 
 COPY . .
 
+RUN cp docker-scripts/* ./scripts/
 
 RUN gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
 
