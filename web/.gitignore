@@ -29,8 +29,8 @@ yarn-error.log*
 *.tsbuildinfo
 
 # test fixtures
-__fixtures__/__output__/*
-!__fixtures__/__output__/.keep
+src/__fixtures__/__output__/*
+!src/__fixtures__/__output__/.keep
 
 # e.g. uuid.c.so sqlite extension
 *.so

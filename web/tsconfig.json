@@ -33,18 +33,18 @@
       // }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     },
     "outDir": "tsbuild",
     "noEmit": false
   },
   "extends": ["@tsconfig/strictest"],
   "include": [
-    "next-env.d.ts",
-    "**/*.js",
-    "**/*.json",
-    "**/*.ts",
-    "**/*.tsx",
+    "./next-env.d.ts",
+    "src/**/*.js",
+    "src/**/*.json",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules", ".next", "tsbuild", "work-dist"]
