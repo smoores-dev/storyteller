@@ -135,7 +135,11 @@ const manifestItem: ManifestItem = {
 }
 
 // You can specify the contents as a string
-const contents = `<html lang="en-US">
+const contents = `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:epub="http://www.idpf.org/2007/ops"
+      xml:lang="en-US"
+      lang="en-US">
   <head></head>
   <body>
     <h1>Chapter 1</h1>
@@ -144,13 +148,10 @@ const contents = `<html lang="en-US">
 </html>`
 
 // Or you can specify the contents as an XML structure
-const xmlContents = Epub.createXmlElement("html", { lang: "en-US" }, [
-  Epub.createXmlElement("head", {}),
-  Epub.createXmlElement("body", {}, [
-    Epub.createXmlElement("h1", {}, [Epub.createXmlTextNode("Chapter 1")]),
-    Epub.createXmlElement("p", {}, [
-      Epub.createXmlTextNode("At first, there were s'mores."),
-    ]),
+const xmlContents = epub.createXhtmlDocument([
+  Epub.createXmlElement("h1", {}, [Epub.createXmlTextNode("Chapter 1")]),
+  Epub.createXmlElement("p", {}, [
+    Epub.createXmlTextNode("At first, there were s'mores."),
   ]),
 ])
 
@@ -193,6 +194,7 @@ To get started with developing in the Storyteller monorepo, check out the
     * [addSpineItem()](#addspineitem)
     * [addSubject()](#addsubject)
     * [close()](#close)
+    * [createXhtmlDocument()](#createxhtmldocument)
     * [getContributors()](#getcontributors)
     * [getCoverImage()](#getcoverimage)
     * [getCoverImageItem()](#getcoverimageitem)
@@ -257,9 +259,9 @@ To get started with developing in the Storyteller monorepo, check out the
     * [title](#title)
     * [type?](#type)
 * [ElementName](#elementname)
-  * [Defined in](#defined-in-71)
-* [EpubMetadata](#epubmetadata)
   * [Defined in](#defined-in-72)
+* [EpubMetadata](#epubmetadata)
+  * [Defined in](#defined-in-73)
 * [ManifestItem](#manifestitem)
   * [Type declaration](#type-declaration)
     * [fallback?](#fallback)
@@ -268,27 +270,27 @@ To get started with developing in the Storyteller monorepo, check out the
     * [mediaOverlay?](#mediaoverlay)
     * [mediaType?](#mediatype)
     * [properties?](#properties-5)
-  * [Defined in](#defined-in-73)
+  * [Defined in](#defined-in-74)
 * [MetadataEntry](#metadataentry)
   * [Type declaration](#type-declaration-1)
     * [id?](#id-1)
     * [properties](#properties-6)
     * [type](#type-1)
     * [value](#value-1)
-  * [Defined in](#defined-in-74)
-* [ParsedXml](#parsedxml)
   * [Defined in](#defined-in-75)
+* [ParsedXml](#parsedxml)
+  * [Defined in](#defined-in-76)
 * [XmlElement\<Name>](#xmlelementname)
   * [Type declaration](#type-declaration-2)
     * [:@?](#)
   * [Type Parameters](#type-parameters-4)
-  * [Defined in](#defined-in-76)
-* [XmlNode](#xmlnode)
   * [Defined in](#defined-in-77)
+* [XmlNode](#xmlnode)
+  * [Defined in](#defined-in-78)
 * [XmlTextNode](#xmltextnode)
   * [Type declaration](#type-declaration-3)
     * [#text](#text)
-  * [Defined in](#defined-in-78)
+  * [Defined in](#defined-in-79)
 
 ## Epub
 
@@ -328,7 +330,7 @@ await epub.close()
 
 ##### Defined in
 
-[index.ts:226](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L226)
+[index.ts:229](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L229)
 
 #### xhtmlParser
 
@@ -336,7 +338,7 @@ await epub.close()
 
 ##### Defined in
 
-[index.ts:194](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L194)
+[index.ts:197](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L197)
 
 #### xmlBuilder
 
@@ -344,7 +346,7 @@ await epub.close()
 
 ##### Defined in
 
-[index.ts:219](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L219)
+[index.ts:222](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L222)
 
 #### xmlParser
 
@@ -352,7 +354,7 @@ await epub.close()
 
 ##### Defined in
 
-[index.ts:187](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L187)
+[index.ts:190](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L190)
 
 ### Methods
 
@@ -385,7 +387,7 @@ This is a convenience method for
 
 ##### Defined in
 
-[index.ts:1296](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1296)
+[index.ts:1299](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1299)
 
 #### addCreator()
 
@@ -414,7 +416,7 @@ creators. Otherwise, it will be added to the end of the list.
 
 ##### Defined in
 
-[index.ts:1198](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1198)
+[index.ts:1201](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1201)
 
 #### addManifestItem()
 
@@ -446,7 +448,7 @@ Create a new manifest item and write its contents to a new entry.
 
 ###### Defined in
 
-[index.ts:1645](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1645)
+[index.ts:1680](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1680)
 
 ##### Call Signature
 
@@ -476,7 +478,7 @@ Create a new manifest item and write its contents to a new entry.
 
 ###### Defined in
 
-[index.ts:1650](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1650)
+[index.ts:1685](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1685)
 
 ##### Call Signature
 
@@ -505,7 +507,7 @@ Create a new manifest item and write its contents to a new entry.
 
 ###### Defined in
 
-[index.ts:1655](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1655)
+[index.ts:1690](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1690)
 
 #### addMetadata()
 
@@ -533,7 +535,7 @@ useful semantic representations of metadata, use specific methods such as
 
 ##### Defined in
 
-[index.ts:1793](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1793)
+[index.ts:1828](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1828)
 
 #### addSpineItem()
 
@@ -564,7 +566,7 @@ throw an error.
 
 ##### Defined in
 
-[index.ts:1354](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1354)
+[index.ts:1357](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1357)
 
 #### addSubject()
 
@@ -588,7 +590,7 @@ Add a subject to the EPUB metadata.
 
 ##### Defined in
 
-[index.ts:887](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L887)
+[index.ts:890](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L890)
 
 #### close()
 
@@ -603,7 +605,32 @@ collected.
 
 ##### Defined in
 
-[index.ts:404](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L404)
+[index.ts:407](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L407)
+
+#### createXhtmlDocument()
+
+> **createXhtmlDocument**(`body`, `head`?, `language`?):
+> `Promise`<([`XmlElement`](README.md#xmlelementname)<`"html"`> |
+> [`XmlElement`](README.md#xmlelementname)<`"?xml"`>)\[]>
+
+Create a new XHTML document with the given body and head.
+
+##### Parameters
+
+| Parameter   | Type                               | Description                                        |
+| ----------- | ---------------------------------- | -------------------------------------------------- |
+| `body`      | [`ParsedXml`](README.md#parsedxml) | The XML nodes to place in the body of the document |
+| `head`?     | [`ParsedXml`](README.md#parsedxml) | Optional - the XMl nodes to place in the head      |
+| `language`? | `Locale`                           | Optional - defaults to the EPUB's language         |
+
+##### Returns
+
+`Promise`<([`XmlElement`](README.md#xmlelementname)<`"html"`> |
+[`XmlElement`](README.md#xmlelementname)<`"?xml"`>)\[]>
+
+##### Defined in
+
+[index.ts:1486](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1486)
 
 #### getContributors()
 
@@ -623,7 +650,7 @@ This is a convenience method for `epub.getCreators('contributor')`.
 
 ##### Defined in
 
-[index.ts:1185](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1185)
+[index.ts:1188](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1188)
 
 #### getCoverImage()
 
@@ -644,7 +671,7 @@ retrieve the image manifest item, use epub.getCoverImageItem().
 
 ##### Defined in
 
-[index.ts:790](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L790)
+[index.ts:793](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L793)
 
 #### getCoverImageItem()
 
@@ -666,7 +693,7 @@ this item's id to epub.readItemContents, or use epub.getCoverImage() instead.
 
 ##### Defined in
 
-[index.ts:771](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L771)
+[index.ts:774](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L774)
 
 #### getCreators()
 
@@ -690,7 +717,7 @@ Retrieve the list of creators.
 
 ##### Defined in
 
-[index.ts:1127](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1127)
+[index.ts:1130](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1130)
 
 #### getLanguage()
 
@@ -711,7 +738,7 @@ Intl.Locale instance.
 
 ##### Defined in
 
-[index.ts:971](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L971)
+[index.ts:974](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L974)
 
 #### getManifest()
 
@@ -733,7 +760,7 @@ properties.
 
 ##### Defined in
 
-[index.ts:610](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L610)
+[index.ts:613](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L613)
 
 #### getMetadata()
 
@@ -757,7 +784,7 @@ as `getTitle()` and `getAuthors()`.
 
 ##### Defined in
 
-[index.ts:668](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L668)
+[index.ts:671](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L671)
 
 #### getPublicationDate()
 
@@ -778,7 +805,7 @@ If there is no dc:date element, returns null.
 
 ##### Defined in
 
-[index.ts:827](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L827)
+[index.ts:830](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L830)
 
 #### getSpineItems()
 
@@ -799,7 +826,7 @@ to users by default.
 
 ##### Defined in
 
-[index.ts:1335](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1335)
+[index.ts:1338](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1338)
 
 #### getSubjects()
 
@@ -822,7 +849,7 @@ authority, and term.
 
 ##### Defined in
 
-[index.ts:926](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L926)
+[index.ts:929](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L929)
 
 #### getTitle()
 
@@ -846,7 +873,7 @@ Retrieve the title of the Epub.
 
 ##### Defined in
 
-[index.ts:1013](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1013)
+[index.ts:1016](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1016)
 
 #### getType()
 
@@ -867,7 +894,7 @@ If there is no dc:type element, returns null.
 
 ##### Defined in
 
-[index.ts:874](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L874)
+[index.ts:877](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L877)
 
 #### readItemContents()
 
@@ -893,7 +920,7 @@ Retrieve the contents of a manifest item, given its id.
 
 ###### Defined in
 
-[index.ts:1455](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1455)
+[index.ts:1458](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1458)
 
 ##### Call Signature
 
@@ -918,7 +945,7 @@ Retrieve the contents of a manifest item, given its id.
 
 ###### Defined in
 
-[index.ts:1456](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1456)
+[index.ts:1459](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1459)
 
 #### readXhtmlItemContents()
 
@@ -946,7 +973,7 @@ Retrieves the contents of an XHTML item, given its manifest id.
 
 ###### Defined in
 
-[index.ts:1484](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1484)
+[index.ts:1519](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1519)
 
 ##### Call Signature
 
@@ -971,7 +998,7 @@ Retrieves the contents of an XHTML item, given its manifest id.
 
 ###### Defined in
 
-[index.ts:1485](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1485)
+[index.ts:1520](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1520)
 
 #### removeManifestItem()
 
@@ -989,7 +1016,7 @@ Retrieves the contents of an XHTML item, given its manifest id.
 
 ##### Defined in
 
-[index.ts:1585](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1585)
+[index.ts:1620](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1620)
 
 #### removeSpineItem()
 
@@ -1013,7 +1040,7 @@ Remove the spine item at the specified index.
 
 ##### Defined in
 
-[index.ts:1402](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1402)
+[index.ts:1405](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1405)
 
 #### replaceMetadata()
 
@@ -1041,7 +1068,7 @@ first metadata entry that matches the predicate will be replaced.
 
 ##### Defined in
 
-[index.ts:1841](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1841)
+[index.ts:1876](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1876)
 
 #### setCoverImage()
 
@@ -1065,7 +1092,7 @@ then writes the provided image data to the provided href within the publication.
 
 ##### Defined in
 
-[index.ts:804](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L804)
+[index.ts:807](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L807)
 
 #### setLanguage()
 
@@ -1092,7 +1119,7 @@ element
 
 ##### Defined in
 
-[index.ts:996](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L996)
+[index.ts:999](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L999)
 
 #### setPublicationDate()
 
@@ -1119,7 +1146,7 @@ element
 
 ##### Defined in
 
-[index.ts:842](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L842)
+[index.ts:845](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L845)
 
 #### setTitle()
 
@@ -1148,7 +1175,7 @@ If no title currently exists, a single title metadata entry will be created.
 
 ##### Defined in
 
-[index.ts:1088](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1088)
+[index.ts:1091](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1091)
 
 #### setType()
 
@@ -1175,7 +1202,7 @@ element.
 
 ##### Defined in
 
-[index.ts:858](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L858)
+[index.ts:861](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L861)
 
 #### updateManifestItem()
 
@@ -1203,7 +1230,7 @@ To update the contents of an entry, use `epub.writeItemContents()` or
 
 ##### Defined in
 
-[index.ts:1729](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1729)
+[index.ts:1764](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1764)
 
 #### writeItemContents()
 
@@ -1233,7 +1260,7 @@ The id must reference an existing manifest item. If creating a new item, use
 
 ###### Defined in
 
-[index.ts:1537](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1537)
+[index.ts:1572](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1572)
 
 ##### Call Signature
 
@@ -1262,7 +1289,7 @@ The id must reference an existing manifest item. If creating a new item, use
 
 ###### Defined in
 
-[index.ts:1538](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1538)
+[index.ts:1573](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1573)
 
 #### writeToFile()
 
@@ -1288,7 +1315,7 @@ updated to the current UTC timestamp.
 
 ##### Defined in
 
-[index.ts:1905](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1905)
+[index.ts:1940](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1940)
 
 #### writeXhtmlItemContents()
 
@@ -1316,7 +1343,7 @@ The id must reference an existing manifest item. If creating a new item, use
 
 ##### Defined in
 
-[index.ts:1577](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1577)
+[index.ts:1612](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1612)
 
 #### addLinkToXhtmlHead()
 
@@ -1343,7 +1370,7 @@ This method modifies the provided XML structure.
 
 ##### Defined in
 
-[index.ts:256](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L256)
+[index.ts:259](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L259)
 
 #### create()
 
@@ -1365,7 +1392,7 @@ Construct an Epub instance, optionally beginning with the provided metadata.
 
 ##### Defined in
 
-[index.ts:420](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L420)
+[index.ts:423](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L423)
 
 #### createXmlElement()
 
@@ -1374,9 +1401,9 @@ Construct an Epub instance, optionally beginning with the provided metadata.
 
 ##### Type Parameters
 
-| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` |
+| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` \| \`?${string}\` |
 
 ##### Parameters
 
@@ -1392,7 +1419,7 @@ Construct an Epub instance, optionally beginning with the provided metadata.
 
 ##### Defined in
 
-[index.ts:291](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L291)
+[index.ts:294](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L294)
 
 #### createXmlTextNode()
 
@@ -1410,7 +1437,7 @@ Construct an Epub instance, optionally beginning with the provided metadata.
 
 ##### Defined in
 
-[index.ts:304](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L304)
+[index.ts:307](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L307)
 
 #### findXmlChildByName()
 
@@ -1422,9 +1449,9 @@ optional filter.
 
 ##### Type Parameters
 
-| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` |
+| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` \| \`?${string}\` |
 
 ##### Parameters
 
@@ -1440,7 +1467,7 @@ optional filter.
 
 ##### Defined in
 
-[index.ts:357](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L357)
+[index.ts:360](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L360)
 
 #### formatSmilDuration()
 
@@ -1465,7 +1492,7 @@ used for Media Overlays.
 
 ##### Defined in
 
-[index.ts:239](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L239)
+[index.ts:242](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L242)
 
 #### from()
 
@@ -1485,7 +1512,7 @@ Construct an Epub instance by reading an EPUB file from `path`.
 
 ##### Defined in
 
-[index.ts:499](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L499)
+[index.ts:502](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L502)
 
 #### getXhtmlBody()
 
@@ -1506,7 +1533,7 @@ sub-structure representing the children of the document's body element.
 
 ##### Defined in
 
-[index.ts:281](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L281)
+[index.ts:284](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L284)
 
 #### getXhtmlTextContent()
 
@@ -1527,7 +1554,7 @@ representing the concatenation of all text nodes in the document.
 
 ##### Defined in
 
-[index.ts:313](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L313)
+[index.ts:316](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L316)
 
 #### getXmlChildren()
 
@@ -1538,9 +1565,9 @@ Given an XMLElement, return a list of its children
 
 ##### Type Parameters
 
-| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` |
+| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` \| \`?${string}\` |
 
 ##### Parameters
 
@@ -1554,7 +1581,7 @@ Given an XMLElement, return a list of its children
 
 ##### Defined in
 
-[index.ts:345](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L345)
+[index.ts:348](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L348)
 
 #### getXmlElementName()
 
@@ -1564,9 +1591,9 @@ Given an XMLElement, return its tag name.
 
 ##### Type Parameters
 
-| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` |
+| Type Parameter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Name` *extends* \`a${string}\` \| \`b${string}\` \| \`c${string}\` \| \`d${string}\` \| \`e${string}\` \| \`f${string}\` \| \`g${string}\` \| \`h${string}\` \| \`i${string}\` \| \`j${string}\` \| \`k${string}\` \| \`l${string}\` \| \`m${string}\` \| \`n${string}\` \| \`o${string}\` \| \`p${string}\` \| \`q${string}\` \| \`r${string}\` \| \`s${string}\` \| \`t${string}\` \| \`u${string}\` \| \`v${string}\` \| \`w${string}\` \| \`x${string}\` \| \`y${string}\` \| \`z${string}\` \| \`A${string}\` \| \`B${string}\` \| \`C${string}\` \| \`D${string}\` \| \`E${string}\` \| \`F${string}\` \| \`G${string}\` \| \`H${string}\` \| \`I${string}\` \| \`J${string}\` \| \`K${string}\` \| \`L${string}\` \| \`M${string}\` \| \`N${string}\` \| \`O${string}\` \| \`P${string}\` \| \`Q${string}\` \| \`R${string}\` \| \`S${string}\` \| \`T${string}\` \| \`U${string}\` \| \`V${string}\` \| \`W${string}\` \| \`X${string}\` \| \`Y${string}\` \| \`Z${string}\` \| \`?${string}\` |
 
 ##### Parameters
 
@@ -1580,7 +1607,7 @@ Given an XMLElement, return its tag name.
 
 ##### Defined in
 
-[index.ts:330](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L330)
+[index.ts:333](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L333)
 
 #### isXmlTextNode()
 
@@ -1600,7 +1627,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:370](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L370)
+[index.ts:373](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L373)
 
 ***
 
@@ -1614,7 +1641,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:138](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L138)
+[index.ts:141](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L141)
 
 #### name
 
@@ -1622,7 +1649,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:137](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L137)
+[index.ts:140](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L140)
 
 ***
 
@@ -1637,7 +1664,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:145](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L145)
+[index.ts:148](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L148)
 
 #### fileAs?
 
@@ -1645,7 +1672,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:144](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L144)
+[index.ts:147](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L147)
 
 #### name
 
@@ -1653,7 +1680,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:142](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L142)
+[index.ts:145](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L145)
 
 #### role?
 
@@ -1661,7 +1688,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:143](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L143)
+[index.ts:146](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L146)
 
 ***
 
@@ -1675,7 +1702,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:132](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L132)
+[index.ts:135](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L135)
 
 #### term
 
@@ -1683,7 +1710,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:133](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L133)
+[index.ts:136](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L136)
 
 #### value
 
@@ -1691,7 +1718,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:131](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L131)
+[index.ts:134](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L134)
 
 ***
 
@@ -1705,7 +1732,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:155](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L155)
+[index.ts:158](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L158)
 
 #### creators?
 
@@ -1713,7 +1740,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:154](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L154)
+[index.ts:157](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L157)
 
 #### date?
 
@@ -1721,7 +1748,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:152](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L152)
+[index.ts:155](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L155)
 
 #### identifier
 
@@ -1729,7 +1756,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:151](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L151)
+[index.ts:154](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L154)
 
 #### language
 
@@ -1737,7 +1764,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:150](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L150)
+[index.ts:153](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L153)
 
 #### subjects?
 
@@ -1745,7 +1772,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:153](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L153)
+[index.ts:156](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L156)
 
 #### title
 
@@ -1753,7 +1780,7 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:149](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L149)
+[index.ts:152](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L152)
 
 #### type?
 
@@ -1761,19 +1788,20 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 ##### Defined in
 
-[index.ts:156](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L156)
+[index.ts:159](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L159)
 
 ***
 
 ## ElementName
 
-> **ElementName**: \`${Letter | Uppercase\<Letter>}${string}\`
+> **ElementName**:
+> \`${Letter | Uppercase\<Letter> | QuestionMark}${string}\`
 
 A valid name for an XML element (must start with a letter)
 
 ### Defined in
 
-[index.ts:60](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L60)
+[index.ts:62](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L62)
 
 ***
 
@@ -1783,7 +1811,7 @@ A valid name for an XML element (must start with a letter)
 
 ### Defined in
 
-[index.ts:128](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L128)
+[index.ts:131](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L131)
 
 ***
 
@@ -1819,7 +1847,7 @@ A valid name for an XML element (must start with a letter)
 
 ### Defined in
 
-[index.ts:78](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L78)
+[index.ts:81](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L81)
 
 ***
 
@@ -1847,7 +1875,7 @@ A valid name for an XML element (must start with a letter)
 
 ### Defined in
 
-[index.ts:121](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L121)
+[index.ts:124](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L124)
 
 ***
 
@@ -1859,7 +1887,7 @@ An XML structure
 
 ### Defined in
 
-[index.ts:76](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L76)
+[index.ts:79](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L79)
 
 ***
 
@@ -1883,7 +1911,7 @@ An XML element
 
 ### Defined in
 
-[index.ts:63](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L63)
+[index.ts:66](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L66)
 
 ***
 
@@ -1896,7 +1924,7 @@ A valid XML node. May be either an element or a text node.
 
 ### Defined in
 
-[index.ts:73](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L73)
+[index.ts:76](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L76)
 
 ***
 
@@ -1914,4 +1942,4 @@ A text node in an XML document
 
 ### Defined in
 
-[index.ts:70](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L70)
+[index.ts:73](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L73)

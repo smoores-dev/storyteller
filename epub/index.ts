@@ -56,8 +56,11 @@ type Letter =
   | "y"
   | "z"
 
+type QuestionMark = "?"
+
 /** A valid name for an XML element (must start with a letter) */
-export type ElementName = `${Letter | Uppercase<Letter>}${string}`
+export type ElementName =
+  `${Letter | Uppercase<Letter> | QuestionMark}${string}`
 
 /** An XML element */
 export type XmlElement<Name extends ElementName = ElementName> = {
@@ -1470,6 +1473,38 @@ export class Epub {
       ? await this.getFileData(path, encoding)
       : await this.getFileData(path)
     return itemEntry
+  }
+
+  /**
+   * Create a new XHTML document with the given body
+   * and head.
+   *
+   * @param body The XML nodes to place in the body of the document
+   * @param head Optional - the XMl nodes to place in the head
+   * @param language Optional - defaults to the EPUB's language
+   */
+  async createXhtmlDocument(
+    body: ParsedXml,
+    head?: ParsedXml,
+    language?: Intl.Locale,
+  ) {
+    const lang = language ?? (await this.getLanguage())
+
+    return [
+      Epub.createXmlElement("?xml", { version: "1.0", encoding: "UTF-8" }),
+      Epub.createXmlElement(
+        "html",
+        {
+          xmlns: "http://www.w3.org/1999/xhtml",
+          "xmlns:epub": "http://www.idpf.org/2007/ops",
+          ...(lang && { "xml:lang": lang.toString(), lang: lang.toString() }),
+        },
+        [
+          Epub.createXmlElement("head", {}, head),
+          Epub.createXmlElement("body", {}, body),
+        ],
+      ),
+    ]
   }
 
   /**
