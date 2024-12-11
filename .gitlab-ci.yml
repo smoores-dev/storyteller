@@ -142,6 +142,7 @@ publish-fs:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
   script:
+    - yarn
     - yarn check:types
     - yarn workspace @smoores/fs build
     - yarn config set npmAuthToken ${NPM_PUBLISH_TOKEN}
@@ -193,6 +194,7 @@ publish-epub:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
   script:
+    - yarn
     - yarn check:types
     - yarn workspace @smoores/epub build
     - yarn config set npmAuthToken ${NPM_PUBLISH_TOKEN}
