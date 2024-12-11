@@ -10,7 +10,7 @@
     "test:all": "STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
     "build": "yarn build:worker && next build",
     "build:worker": "esbuild src/work/worker.ts --bundle --platform=node --sourcemap=inline --format=esm --packages=external --outdir=work-dist/",
-    "start": "tsx database/migrate.ts && next start"
+    "start": "tsx src/database/migrate.ts && next start"
   },
   "dependencies": {
     "@ariakit/react": "^0.4.1",

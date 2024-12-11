@@ -5,6 +5,9 @@ module.exports = {
     browser: true,
     es2023: true,
   },
+  rules: {
+    "no-console": ["error", { allow: ["warn", "error"] }],
+  },
   overrides: [
     {
       files: [

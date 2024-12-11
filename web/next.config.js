@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   transpilePackages: ["@smoores/epub", "smoores/fs"],
-  serverExternalPackages: ["piscina", "@mapbox/node-pre-gyp"],
+  serverExternalPackages: ["piscina", "@mapbox/node-pre-gyp", "pino"],
 }
 
 export default nextConfig
