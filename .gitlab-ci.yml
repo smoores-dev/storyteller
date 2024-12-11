@@ -145,7 +145,7 @@ publish-fs:
     - yarn
     - yarn check:types
     - yarn workspace @smoores/fs build
-    - yarn config set npmAuthToken ${NPM_PUBLISH_TOKEN}
+    - yarn config set npmAuthToken $NPM_PUBLISH_TOKEN
     - yarn workspace @smoores/fs publish
 
 prerelease-fs:
@@ -197,7 +197,7 @@ publish-epub:
     - yarn
     - yarn check:types
     - yarn workspace @smoores/epub build
-    - yarn config set npmAuthToken ${NPM_PUBLISH_TOKEN}
+    - yarn config set npmAuthToken $NPM_PUBLISH_TOKEN
     - yarn workspace @smoores/epub publish
 
 prerelease-epub:
