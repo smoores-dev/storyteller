@@ -8,6 +8,10 @@
     "import": "./index.js",
     "types": "./index.d.ts"
   },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
   "scripts": {
     "build": "yarn swc ./index.ts -o ./index.js",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
