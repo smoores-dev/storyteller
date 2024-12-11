@@ -25,7 +25,7 @@ import {
 } from "@/audio"
 import { StorytellerTranscription } from "@/synchronize/getSentenceRanges"
 import { detectVoiceActivity } from "echogarden"
-import { streamFile } from "@/fs"
+import { streamFile } from "@smoores/fs"
 import { randomUUID } from "node:crypto"
 import {
   getAudioIndexPath,

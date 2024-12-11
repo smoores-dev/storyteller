@@ -16,7 +16,7 @@ import {
   getBooks,
   updateBook,
 } from "@/database/books"
-import { Epub } from "@/epub"
+import { Epub } from "@smoores/epub"
 import { isProcessing } from "@/work/distributor"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
@@ -68,7 +68,7 @@ export const PUT = withHasPermission<Params>("book_update")(async (
     const epub = await Epub.from(syncedEpubPath)
     await epub.setTitle(updated.title)
     if (updated.language) {
-      await epub.setLanguage(updated.language)
+      await epub.setLanguage(new Intl.Locale(updated.language))
     }
     await epub.writeToFile(syncedEpubPath)
   }

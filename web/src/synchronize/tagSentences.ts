@@ -1,15 +1,15 @@
 import {
+  Epub,
+  ElementName,
   ParsedXml,
+  XmlElement,
   XmlNode,
-  findByName,
-  getElementName,
-  isTextNode,
-} from "@/epub"
+} from "@smoores/epub"
 import { BLOCKS } from "./semantics"
 import { getXHtmlSentences } from "./getXhtmlSentences"
 
 type Mark = {
-  elementName: string
+  elementName: ElementName
   attributes: Record<string, string> | undefined
 }
 
@@ -23,7 +23,7 @@ export function appendTextNode(
 ) {
   if (text.length === 0) return
 
-  const textNode = { "#text": text } as unknown as XmlNode
+  const textNode = { "#text": text }
 
   appendLeafNode(chapterId, xml, textNode, marks, taggedSentences, sentenceId)
 }
@@ -38,23 +38,23 @@ export function appendLeafNode(
 ) {
   const tagId = `${chapterId}-sentence${sentenceId}`
 
-  const markedNode = [...marks].reverse().reduce<XmlNode>(
+  const markedNode = [...marks].reverse().reduce<XmlElement>(
     (acc, mark) =>
       ({
         [mark.elementName]: [acc],
         ":@": mark.attributes,
-      }) as unknown as XmlNode,
+      }) as XmlElement,
     node,
   )
 
   const lastNode = xml[xml.length - 1]
   if (
     lastNode &&
-    !isTextNode(lastNode) &&
+    !Epub.isXmlTextNode(lastNode) &&
     lastNode[":@"]?.["@_id"] &&
     lastNode[":@"]["@_id"] === tagId
   ) {
-    const tagName = getElementName(lastNode)
+    const tagName = Epub.getXmlElementName(lastNode)
     lastNode[tagName]?.push(markedNode)
     return
   }
@@ -67,7 +67,7 @@ export function appendLeafNode(
   const taggedNode = {
     span: [markedNode],
     ":@": { "@_id": tagId },
-  } as unknown as XmlNode
+  }
 
   taggedSentences.add(sentenceId)
   xml.push(taggedNode)
@@ -90,7 +90,7 @@ function tagSentencesInXml(
   marks: Mark[],
   taggedXml: ParsedXml,
 ): TagState {
-  if (isTextNode(currentNode)) {
+  if (Epub.isXmlTextNode(currentNode)) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const remainingSentence = sentences[currentSentenceIndex]!.slice(
       currentSentenceProgress,
@@ -173,7 +173,7 @@ function tagSentencesInXml(
     }
   }
 
-  const tagName = getElementName(currentNode)
+  const tagName = Epub.getXmlElementName(currentNode)
 
   let state: TagState = {
     currentSentenceIndex,
@@ -191,8 +191,8 @@ function tagSentencesInXml(
 
     let nextTaggedXml = taggedXml
     const nextMarks = [...marks]
-    if (!isTextNode(child)) {
-      const childTagName = getElementName(child)
+    if (!Epub.isXmlTextNode(child)) {
+      const childTagName = Epub.getXmlElementName(child)
 
       const isTextContent = BLOCKS.includes(childTagName.toLowerCase())
 
@@ -214,10 +214,9 @@ function tagSentencesInXml(
         const block = {
           [childTagName]: [],
           ":@": child[":@"],
-        } as unknown as XmlNode
+        } as XmlElement
         nextTaggedXml.push(block)
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        nextTaggedXml = block[childTagName]!
+        nextTaggedXml = Epub.getXmlChildren(block)
       } else {
         nextMarks.push({
           elementName: childTagName,
@@ -249,7 +248,7 @@ function tagSentencesInXml(
 
 function copyOuterXml(xml: ParsedXml) {
   const outerXml: ParsedXml = xml
-  const html = findByName("html", xml)
+  const html = Epub.findXmlChildByName("html", xml)
   if (!html) throw new Error("Invalid XHTML: Found no html element")
 
   const bodyIndex = html["html"].findIndex((element) => "body" in element)
@@ -259,25 +258,25 @@ function copyOuterXml(xml: ParsedXml) {
   html["html"].splice(bodyIndex, 1, {
     ...body,
     body: [],
-  } as unknown as XmlNode)
+  })
 
   return outerXml
 }
 
 export function tagSentences(chapterId: string, xml: ParsedXml) {
-  const html = findByName("html", xml)
+  const html = Epub.findXmlChildByName("html", xml)
   if (!html) throw new Error("Invalid XHTML document: no html element")
 
-  const body = findByName("body", html["html"])
+  const body = Epub.findXmlChildByName("body", html["html"])
   if (!body) throw new Error("Invalid XHTML document: No body element")
 
   const sentences = getXHtmlSentences(body["body"])
   const outerXml = copyOuterXml(xml)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const taggedHtml = findByName("html", xml)!
+  const taggedHtml = Epub.findXmlChildByName("html", xml)!
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const taggedBody = findByName("body", taggedHtml["html"])!
+  const taggedBody = Epub.findXmlChildByName("body", taggedHtml["html"])!
   taggedBody["body"] = []
 
   tagSentencesInXml(
