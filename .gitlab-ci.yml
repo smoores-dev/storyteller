@@ -185,8 +185,8 @@ release-fs:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "Image for $CI_COMMIT_TAG"
-          url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+        - name: "NPM package for @smoores/fs"
+          url: "https://npmjs.com/package/@smoores/fs"
 
 publish-epub:
   image: node:22
@@ -237,8 +237,8 @@ release-epub:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "Image for $CI_COMMIT_TAG"
-          url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+        - name: "NPM package for @smoores/fs"
+          url: "https://npmjs.com/package/@smoores/epub"
 
 prerelease-mobile:
   stage: prerelease
