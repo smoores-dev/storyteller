@@ -104,6 +104,15 @@ module.exports = {
       },
     },
     {
+      files: ["epub/**/*.ts", "fs/**/*.ts"],
+      extends: ["plugin:@typescript-eslint/strict-type-checked"],
+      parser: "@typescript-eslint/parser",
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: __dirname,
+      },
+    },
+    {
       files: ["**/*.test.ts", "**/*.test.tsx"],
       parser: "@typescript-eslint/parser",
       parserOptions: {

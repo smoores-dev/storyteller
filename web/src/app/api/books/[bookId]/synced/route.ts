@@ -3,7 +3,7 @@ import { getBookUuid } from "@/database/books"
 import { FileHandle, open } from "node:fs/promises"
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
-import { Epub } from "@/epub"
+import { Epub } from "@smoores/epub"
 import { getEpubSyncedFilepath } from "@/assets/paths"
 
 export const dynamic = "force-dynamic"

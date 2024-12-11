@@ -1,14 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { basename, dirname, parse, relative } from "node:path/posix"
 import memoize from "memoize"
-import {
-  Epub,
-  ManifestItem,
-  ParsedXml,
-  addLink,
-  formatDuration,
-  getBody,
-} from "@/epub"
+import { Epub, ManifestItem, ParsedXml } from "@smoores/epub"
 import { getTrackDuration } from "@/audio"
 import {
   SentenceRange,
@@ -74,7 +67,7 @@ function createMediaOverlay(
         },
       ],
     },
-  ] as unknown as ParsedXml
+  ]
 }
 
 type SyncedChapter = {
@@ -206,7 +199,7 @@ export class Synchronizer {
   private async getChapterSentences(chapterId: string) {
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
-    const sentences = getXHtmlSentences(getBody(chapterXml))
+    const sentences = getXHtmlSentences(Epub.getXhtmlBody(chapterXml))
     const cleanSentences = sentences.map((sentence) =>
       sentence.replaceAll(/\s+/g, " "),
     )
@@ -270,14 +263,14 @@ export class Synchronizer {
 
     const chapterDuration = getChapterDuration(sentenceRanges)
 
-    await this.epub.addMetadata(
-      "meta",
-      {
+    await this.epub.addMetadata({
+      type: "meta",
+      properties: {
         property: "media:duration",
         refines: `#${mediaOverlayId}`,
       },
-      formatDuration(chapterDuration),
-    )
+      value: Epub.formatSmilDuration(chapterDuration),
+    })
   }
 
   private async syncChapter(
@@ -316,7 +309,7 @@ export class Synchronizer {
       "Styles/storyteller-readaloud.css",
     )
 
-    addLink(tagged, {
+    Epub.addLinkToXhtmlHead(tagged, {
       rel: "stylesheet",
       href: storytellerStylesheetUrl,
       type: "text/css",
@@ -410,16 +403,16 @@ export class Synchronizer {
       await this.writeSyncedChapter(syncedChapter)
     }
 
-    await this.epub.addMetadata(
-      "meta",
-      { property: "media:duration" },
-      formatDuration(this.totalDuration),
-    )
-    await this.epub.addMetadata(
-      "meta",
-      { property: "media:active-class" },
-      "-epub-media-overlay-active",
-    )
+    await this.epub.addMetadata({
+      type: "meta",
+      properties: { property: "media:duration" },
+      value: Epub.formatSmilDuration(this.totalDuration),
+    })
+    await this.epub.addMetadata({
+      type: "meta",
+      properties: { property: "media:active-class" },
+      value: "-epub-media-overlay-active",
+    })
     await this.epub.addManifestItem(
       {
         id: "storyteller_readaloud_styles",

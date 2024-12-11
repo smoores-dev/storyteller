@@ -1,0 +1,39 @@
+{
+  "name": "@smoores/epub",
+  "version": "0.1.0",
+  "type": "module",
+  "module": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    "import": "./index.js",
+    "types": "./index.d.ts"
+  },
+  "scripts": {
+    "build": "yarn swc ./index.ts -o ./index.js",
+    "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
+    "readme:api": "typedoc",
+    "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
+    "test": "tsx --test",
+    "test:watch": "tsx --test --watch"
+  },
+  "devDependencies": {
+    "@swc/cli": "^0.5.2",
+    "@swc/core": "^1.10.0",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/mime-types": "^2",
+    "@types/node": "^22.10.1",
+    "markdown-toc": "^1.2.0",
+    "remark-toc": "^9.0.0",
+    "tsx": "^4.19.2",
+    "typedoc": "^0.27.3",
+    "typedoc-plugin-markdown": "^4.3.2",
+    "typedoc-plugin-remark": "^1.2.0"
+  },
+  "dependencies": {
+    "@smoores/fs": "workspace:^",
+    "@zip.js/zip.js": "^2.7.53",
+    "fast-xml-parser": "^4.5.0",
+    "memoize": "^10.0.0",
+    "mime-types": "^2.1.35"
+  }
+}

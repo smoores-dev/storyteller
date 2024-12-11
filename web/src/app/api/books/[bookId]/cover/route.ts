@@ -3,7 +3,7 @@ import { getBookUuid } from "@/database/books"
 import { open } from "node:fs/promises"
 import { NextResponse } from "next/server"
 import { basename } from "node:path"
-import { Epub } from "@/epub"
+import { Epub } from "@smoores/epub"
 import { getAudioCoverFilepath, getEpubCoverFilepath } from "@/assets/covers"
 import { getEpubFilepath } from "@/assets/paths"
 
@@ -41,10 +41,8 @@ export const GET = withHasPermission<Params>("book_read")(async (
     })
   } catch (_) {
     const epub = await Epub.from(getEpubFilepath(bookUuid))
-    const coverImageItem = await epub.getCoverImage()
-    if (!coverImageItem) return new NextResponse(null, { status: 404 })
-
-    const coverImage = await epub.readItemContents(coverImageItem.id)
+    const coverImage = await epub.getCoverImage()
+    if (!coverImage) return new NextResponse(null, { status: 404 })
 
     return new NextResponse(coverImage)
   }

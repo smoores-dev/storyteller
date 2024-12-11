@@ -9,6 +9,12 @@
     },
     {
       "path": "mobile"
+    },
+    {
+      "path": "fs"
+    },
+    {
+      "path": "epub"
     }
   ]
 }

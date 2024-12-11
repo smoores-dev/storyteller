@@ -246,7 +246,7 @@ export default async function processBook({
 
         await epub.setTitle(book.title)
         if (book.language) {
-          await epub.setLanguage(book.language)
+          await epub.setLanguage(new Intl.Locale(book.language))
         }
         await epub.writeToFile(getEpubSyncedFilepath(bookUuid))
         await epub.close()

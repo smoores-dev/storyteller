@@ -7,7 +7,8 @@
     "web/",
     "docs/",
     "mobile/",
-    "fuzzy/"
+    "fs/",
+    "epub/"
   ],
   "scripts": {
     "build:docs": "yarn workspace @storyteller/docs build",
@@ -27,6 +28,7 @@
     "fix:lint": "eslint --cache --fix .",
     "fix": "concurrently -P 'npm:fix:*'",
     "postinstall": "husky",
+    "test:epub": "yarn workspace @smoores/epub test",
     "test:web": "yarn workspace @storyteller/web test:all",
     "test": "concurrently -P 'npm:test:*'"
   },
@@ -35,7 +37,7 @@
     "@next/eslint-plugin-next": "^14.1.0",
     "@types/eslint": "^8.56.2",
     "@types/eslint__eslintrc": "^2.1.1",
-    "@types/node": "^18.0.0",
+    "@types/node": "^22.10.1",
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@typescript-eslint/parser": "^7.5.0",
     "concurrently": "^8.2.2",

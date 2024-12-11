@@ -1,17 +1,4 @@
 {
-  "python.analysis.typeCheckingMode": "basic",
-  "python.languageServer": "Pylance",
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
-  },
-  "[python]": {
-    "diffEditor.ignoreTrimWhitespace": false,
-    "editor.defaultFormatter": "ms-python.black-formatter",
-    "editor.wordBasedSuggestions": "off",
-    "editor.tabSize": 4,
-    "editor.indentSize": "tabSize"
-  },
   "search.exclude": {
     "**/.yarn": true,
     "**/.pnp.*": true
