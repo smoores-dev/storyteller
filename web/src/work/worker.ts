@@ -261,7 +261,7 @@ export default async function processBook({
       logger.error(
         `Encountered error while running task "${task.type}" for book ${bookUuid}`,
       )
-      logger.error(e)
+      console.error(e)
       port.postMessage({
         type: "processingFailed",
         bookUuid,

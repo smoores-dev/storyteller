@@ -53,7 +53,11 @@ if (globalThis.queue) {
   globalThis.queue = queue
 }
 
-const filename = join(cwd(), "work-dist", "worker.js")
+const filename = join(
+  cwd(),
+  "work-dist",
+  process.env["STORYTELLER_WORKER"] ?? "worker.cjs",
+)
 
 let piscina: Piscina
 if (globalThis.piscina) {

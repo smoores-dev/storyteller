@@ -156,11 +156,12 @@ export async function processAudioFile(
   bitrate: string | null,
   onProgress?: (progress: number) => void,
 ): Promise<AudioFile[]> {
-  maxLength = maxLength ?? 2
+  const maxHours = maxLength ?? 2
+  const maxSeconds = 60 * 60 * maxHours
   const duration = await getTrackDuration(filepath)
   const chapters = await getTrackChapters(filepath)
   const outputExtension = determineExtension(codec, filepath)
-  if (!chapters.length && duration < 60 * 60 * maxLength) {
+  if (!chapters.length && duration <= maxSeconds) {
     const destination = join(outDir, `${prefix}00001${outputExtension}`)
     await transcodeTrack(filepath, destination, codec, bitrate)
     return [
@@ -185,7 +186,7 @@ export async function processAudioFile(
 
     for (const range of initialRanges) {
       const chapterDuration = range.end - range.start
-      if (chapterDuration <= maxLength) {
+      if (chapterDuration <= maxSeconds) {
         chapterRanges.push(range)
         continue
       }
@@ -193,13 +194,13 @@ export async function processAudioFile(
         ...(await getSafeRanges(
           filepath,
           chapterDuration,
-          maxLength,
+          maxHours,
           range.start,
         )),
       )
     }
   } else {
-    chapterRanges.push(...(await getSafeRanges(filepath, duration, maxLength)))
+    chapterRanges.push(...(await getSafeRanges(filepath, duration, maxHours)))
   }
 
   const audioFiles: AudioFile[] = []
