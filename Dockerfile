@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/smoores/storyteller-base:latest
+FROM registry.gitlab.com/smoores/storyteller-base:latest AS builder
 
 WORKDIR /app
 
@@ -27,12 +27,38 @@ ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
 RUN yarn build:web
 
+FROM registry.gitlab.com/smoores/storyteller-base:latest AS runner
+
+WORKDIR /app
+
+COPY --from=builder /app/web/.next/standalone ./.next/standalone
+COPY --from=builder /app/web/public ./.next/standalone/web/public
+COPY --from=builder /app/web/.next/static ./.next/standalone/web/.next/static
+COPY --from=builder /app/web/sqlite/uuid.c.so ./.next/standalone/web/sqlite/uuid.c.so
+
+# Copy SQL migrations
+COPY --from=builder /app/web/migrate-dist ./.next/standalone/web/migrate-dist
+COPY --from=builder /app/web/migrations ./.next/standalone/web/migrations
+
+# WASM files aren't statically imported, so esbuild doesn't find them and they need to be manually copied over
+COPY --from=builder /app/node_modules/@echogarden/speex-resampler-wasm/wasm/*.wasm ./.next/standalone/web/work-dist/
+COPY --from=builder /app/node_modules/tiktoken/lite/tiktoken_bg.wasm ./.next/standalone/web/work-dist/
+
+# Unfortunately, echogarden attempts to manually resolve some of its own files
+COPY --from=builder /app/node_modules/echogarden/data ./.next/standalone/data
+COPY --from=builder /app/node_modules/echogarden/dist ./.next/standalone/dist
+
 EXPOSE 8001
 
 ENV PORT=8001
-ENV HOST=0.0.0.0
+ENV HOSTNAME=0.0.0.0
 ENV STORYTELLER_DATA_DIR=/data
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-CMD ["yarn", "workspace", "@storyteller/web", "start"]
+ENV SQLITE_NATIVE_BINDING=/app/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ENV STORYTELLER_WORKER=worker.cjs
+
+WORKDIR /app/.next/standalone/web
+
+CMD ["node", "--run", "start", "migrate-dist/migrate.cjs"]
