@@ -10,6 +10,7 @@
     "esModuleInterop": true,
     "preserveSymlinks": true,
     "skipLibCheck": true,
+    "checkJs": false,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "isolatedModules": true,

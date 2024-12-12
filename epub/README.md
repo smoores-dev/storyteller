@@ -491,7 +491,7 @@ Create a new manifest item and write its contents to a new entry.
 | Parameter  | Type                                     | Description                                                                                                |
 | ---------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `item`     | [`ManifestItem`](README.md#manifestitem) | -                                                                                                          |
-| `contents` | `Uint8Array`                             | The new contents. May be either a parsed XML tree or a unicode string, as determined by the `as` argument. |
+| `contents` | `Uint8Array`<`ArrayBufferLike`>          | The new contents. May be either a parsed XML tree or a unicode string, as determined by the `as` argument. |
 
 ###### Returns
 
@@ -654,7 +654,7 @@ This is a convenience method for `epub.getCreators('contributor')`.
 
 #### getCoverImage()
 
-> **getCoverImage**(): `Promise`<`null` | `Uint8Array`>
+> **getCoverImage**(): `Promise`<`null` | `Uint8Array`<`ArrayBufferLike`>>
 
 Retrieve the cover image data as a byte array.
 
@@ -663,7 +663,7 @@ retrieve the image manifest item, use epub.getCoverImageItem().
 
 ##### Returns
 
-`Promise`<`null` | `Uint8Array`>
+`Promise`<`null` | `Uint8Array`<`ArrayBufferLike`>>
 
 ##### Link
 
@@ -900,7 +900,7 @@ If there is no dc:type element, returns null.
 
 ##### Call Signature
 
-> **readItemContents**(`id`): `Promise`<`Uint8Array`>
+> **readItemContents**(`id`): `Promise`<`Uint8Array`<`ArrayBufferLike`>>
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -912,7 +912,7 @@ Retrieve the contents of a manifest item, given its id.
 
 ###### Returns
 
-`Promise`<`Uint8Array`>
+`Promise`<`Uint8Array`<`ArrayBufferLike`>>
 
 ###### Link
 
@@ -1081,10 +1081,10 @@ then writes the provided image data to the provided href within the publication.
 
 ##### Parameters
 
-| Parameter | Type         |
-| --------- | ------------ |
-| `href`    | `string`     |
-| `data`    | `Uint8Array` |
+| Parameter | Type                            |
+| --------- | ------------------------------- |
+| `href`    | `string`                        |
+| `data`    | `Uint8Array`<`ArrayBufferLike`> |
 
 ##### Returns
 
@@ -1245,10 +1245,10 @@ The id must reference an existing manifest item. If creating a new item, use
 
 ###### Parameters
 
-| Parameter  | Type         | Description                                                                                           |
-| ---------- | ------------ | ----------------------------------------------------------------------------------------------------- |
-| `id`       | `string`     | The id of the manifest item to write new contents for                                                 |
-| `contents` | `Uint8Array` | The new contents. May be either a utf-8 encoded string or a byte array, as determined by the encoding |
+| Parameter  | Type                            | Description                                                                                           |
+| ---------- | ------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `id`       | `string`                        | The id of the manifest item to write new contents for                                                 |
+| `contents` | `Uint8Array`<`ArrayBufferLike`> | The new contents. May be either a utf-8 encoded string or a byte array, as determined by the encoding |
 
 ###### Returns
 

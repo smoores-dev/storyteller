@@ -1,12 +1,8 @@
 import pino from "pino"
+import PinoPretty from "pino-pretty"
 
-export const logger = pino({
-  ...(process.env["STORYTELLER_LOG_FORMAT"] !== "json" && {
-    transport: {
-      target: "pino-pretty",
-      options: {
-        ignore: "pid,hostname",
-      },
-    },
+export const logger = pino(
+  PinoPretty({
+    ignore: "pid,hostname",
   }),
-})
+)

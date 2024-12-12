@@ -19,5 +19,8 @@
 /web/node_modules
 /web/tsbuild
 /web/work-dist
+/web/src/__fixtures/
+/web/.env.local
+__tests__
 
 /docker

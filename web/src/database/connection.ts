@@ -13,7 +13,14 @@ const UUID_EXT_PATH = join(cwd(), "sqlite", "uuid.c")
 export function getDatabase(): Database {
   if (db) return db
 
-  db = new Db(DATABASE_URL)
+  db = new Db(
+    DATABASE_URL,
+    process.env["SQLITE_NATIVE_BINDING"]
+      ? {
+          nativeBinding: process.env["SQLITE_NATIVE_BINDING"],
+        }
+      : undefined,
+  )
   db.pragma("journal_mode = WAL")
   try {
     db.loadExtension(UUID_EXT_PATH)

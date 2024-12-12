@@ -13,7 +13,6 @@ import {
   SelectProvider,
 } from "@ariakit/react"
 import { UserPermissions } from "@/apiModels"
-import { logger } from "@/logging"
 
 const ADMIN_PERMISSIONS: UserPermissions = {
   book_create: true,
@@ -215,7 +214,7 @@ export function CreateInviteForm({ onUpdate }: Props) {
                 try {
                   await client.createInvite({ email, ...permissions })
                 } catch (e) {
-                  logger.error(e)
+                  console.error(e)
                   setState(State.ERROR)
                   onUpdate()
                   return
