@@ -55,7 +55,7 @@ The most important of these documents is the
 > individual resources, and provide the reading order and other information
 > necessary for its rendering.
 
-This library is primary concerned with providing access to the metadata,
+This library is primarily concerned with providing access to the metadata,
 manifest, and spine of the EPUB publication. Metadata refers to information
 _about_ the publication, such as its title or authors. The manifest refers to
 the complete set of resources that are used to render the publication, such as
@@ -112,7 +112,7 @@ const epub = await Epub.create({
   title: "S'mores For Everyone",
   // This should be the primary language of the publication.
   // Individual content resources may specify their own languages.
-  language: Intl.Locale("en-US"),
+  language: new Intl.Locale("en-US"),
   // This can be any unique identifier, including UUIDs, ISBNs, etc
   identifier: randomUUID(),
 })
