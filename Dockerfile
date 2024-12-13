@@ -50,6 +50,9 @@ COPY --from=builder /app/node_modules/echogarden/dist ./.next/standalone/dist
 
 EXPOSE 8001
 
+ARG CI_COMMIT_TAG
+ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
+
 ENV PORT=8001
 ENV HOSTNAME=0.0.0.0
 ENV STORYTELLER_DATA_DIR=/data
