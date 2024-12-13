@@ -11,6 +11,23 @@ type Migration = {
   name: string
 }
 
+function isFirstStartup() {
+  const db = getDatabase()
+  try {
+    const row = db
+      .prepare(
+        `
+SELECT COUNT(*) as migration_count
+FROM migration
+`,
+      )
+      .get() as { migration_count: number }
+    return row.migration_count === 0
+  } catch {
+    return true
+  }
+}
+
 function getMigration(hash: string) {
   const db = getDatabase()
   try {
@@ -39,6 +56,47 @@ function createMigration(hash: string, name: string) {
   ).run({ hash, name })
 }
 
+function setInitialAudioCodec(options: {
+  codec: string
+  bitrate: string | undefined
+}) {
+  const db = getDatabase()
+  db.prepare<{ codec: string }>(
+    `
+    UPDATE settings
+    SET value = $codec
+    WHERE name = 'codec';
+    `,
+  ).run({
+    codec:
+      options.codec === "opus"
+        ? "libopus"
+        : options.codec === "mp3"
+          ? "libmp3lame"
+          : "acc",
+  })
+
+  if (options.bitrate) {
+    db.prepare<{ bitrate: string }>(
+      `
+      UPDATE settings
+      SET value = $bitrate
+      WHERE name = 'bitrate';
+      `,
+    ).run({
+      bitrate: options.bitrate,
+    })
+  }
+}
+
+function getInitialAudioCodec() {
+  const env = process.env["STORYTELLER_INITIAL_AUDIO_CODEC"]
+  if (!env) return null
+  const match = env.match(/^(mp3|aac|opus)(?:-(16|24|32|64|96))?$/)
+  if (!match?.[1]) return null
+  return { codec: match[1], bitrate: match[2] }
+}
+
 async function migrateFile(path: string) {
   const db = getDatabase()
 
@@ -65,6 +123,12 @@ async function migrateFile(path: string) {
 }
 
 async function migrate() {
+  // Make sure to evaluate this _before_ running any migrations
+  const foundFirstStartup = isFirstStartup()
+  if (foundFirstStartup) logger.info("First startup - initializing database")
+
+  const initialCodec = getInitialAudioCodec()
+
   const migrationsDir = join(cwd(), "migrations")
   const migrationFiles = await readdir(migrationsDir)
   migrationFiles.sort()
@@ -74,6 +138,10 @@ async function migrate() {
   // until after the first migration.
   for (const migrationFile of migrationFiles) {
     await migrateFile(join(migrationsDir, migrationFile))
+  }
+
+  if (foundFirstStartup && initialCodec) {
+    setInitialAudioCodec(initialCodec)
   }
 }
 
