@@ -47,6 +47,7 @@ COPY --from=builder /app/node_modules/tiktoken/lite/tiktoken_bg.wasm ./.next/sta
 # Unfortunately, echogarden attempts to manually resolve some of its own files
 COPY --from=builder /app/node_modules/echogarden/data ./.next/standalone/data
 COPY --from=builder /app/node_modules/echogarden/dist ./.next/standalone/dist
+COPY --from=builder /app/node_modules/@echogarden/espeak-ng-emscripten/espeak-ng.data ./.next/standalone/web/work-dist/
 
 EXPOSE 8001
 
