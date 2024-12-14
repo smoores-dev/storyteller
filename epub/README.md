@@ -12,6 +12,8 @@ A Node.js library for inspecting, modifying, and creating EPUB 3 publications.
   - [Reading from a file](#reading-from-a-file)
   - [Creating from scratch](#creating-from-scratch)
   - [Adding a chapter](#adding-a-chapter)
+  - [Writing to disk](#writing-to-disk)
+  - [Writing to a byte array](#writing-to-a-byte-array)
 - [Development](#development)
 - [API Docs](#api-docs)
 
@@ -166,6 +168,33 @@ await epub.addManifestItem(manifestItem, xmlContents, "xml")
 await epub.addSpineItem(manifestItem.id)
 ```
 
+### Writing to disk
+
+```ts
+import { Epub } from "@smoores/epub"
+
+const epub = await Epub.from("path/to/book.epub")
+await epub.setTitle("S'mores for Everyone")
+
+await epub.writeToFile("path/to/updated.epub")
+```
+
+### Writing to a byte array
+
+```ts
+import { randomUUID } from "node:crypto"
+
+import { Epub } from "@smoores/epub"
+
+const epub = await Epub.create({
+  title: "S'mores For Everyone",
+  language: new Intl.Locale("en-US"),
+  identifier: randomUUID(),
+})
+
+const data: Uint8Array = await epub.writeToArray()
+```
+
 For more details about using the API, see the [API documentation](#epub).
 
 ## Development
@@ -219,6 +248,7 @@ To get started with developing in the Storyteller monorepo, check out the
     * [setType()](#settype)
     * [updateManifestItem()](#updatemanifestitem)
     * [writeItemContents()](#writeitemcontents)
+    * [writeToArray()](#writetoarray)
     * [writeToFile()](#writetofile)
     * [writeXhtmlItemContents()](#writexhtmlitemcontents)
     * [addLinkToXhtmlHead()](#addlinktoxhtmlhead)
@@ -259,9 +289,9 @@ To get started with developing in the Storyteller monorepo, check out the
     * [title](#title)
     * [type?](#type)
 * [ElementName](#elementname)
-  * [Defined in](#defined-in-72)
-* [EpubMetadata](#epubmetadata)
   * [Defined in](#defined-in-73)
+* [EpubMetadata](#epubmetadata)
+  * [Defined in](#defined-in-74)
 * [ManifestItem](#manifestitem)
   * [Type declaration](#type-declaration)
     * [fallback?](#fallback)
@@ -270,27 +300,27 @@ To get started with developing in the Storyteller monorepo, check out the
     * [mediaOverlay?](#mediaoverlay)
     * [mediaType?](#mediatype)
     * [properties?](#properties-5)
-  * [Defined in](#defined-in-74)
+  * [Defined in](#defined-in-75)
 * [MetadataEntry](#metadataentry)
   * [Type declaration](#type-declaration-1)
     * [id?](#id-1)
     * [properties](#properties-6)
     * [type](#type-1)
     * [value](#value-1)
-  * [Defined in](#defined-in-75)
-* [ParsedXml](#parsedxml)
   * [Defined in](#defined-in-76)
+* [ParsedXml](#parsedxml)
+  * [Defined in](#defined-in-77)
 * [XmlElement\<Name>](#xmlelementname)
   * [Type declaration](#type-declaration-2)
     * [:@?](#)
   * [Type Parameters](#type-parameters-4)
-  * [Defined in](#defined-in-77)
-* [XmlNode](#xmlnode)
   * [Defined in](#defined-in-78)
+* [XmlNode](#xmlnode)
+  * [Defined in](#defined-in-79)
 * [XmlTextNode](#xmltextnode)
   * [Type declaration](#type-declaration-3)
     * [#text](#text)
-  * [Defined in](#defined-in-79)
+  * [Defined in](#defined-in-80)
 
 ## Epub
 
@@ -1291,6 +1321,26 @@ The id must reference an existing manifest item. If creating a new item, use
 
 [index.ts:1573](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1573)
 
+#### writeToArray()
+
+> **writeToArray**(): `Promise`<`Uint8Array`<`ArrayBufferLike`>>
+
+Write the current contents of the Epub to a new Uint8Array.
+
+This *does not* close the Epub. It can continue to be modified after it has been
+written to disk. Use `epub.close()` to close the Epub.
+
+When this method is called, the "dcterms:modified" meta tag is automatically
+updated to the current UTC timestamp.
+
+##### Returns
+
+`Promise`<`Uint8Array`<`ArrayBufferLike`>>
+
+##### Defined in
+
+[index.ts:1936](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1936)
+
 #### writeToFile()
 
 > **writeToFile**(`path`): `Promise`<`void`>
@@ -1315,7 +1365,7 @@ updated to the current UTC timestamp.
 
 ##### Defined in
 
-[index.ts:1940](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1940)
+[index.ts:1992](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1992)
 
 #### writeXhtmlItemContents()
 
