@@ -24,7 +24,11 @@ void describe("Epub", () => {
     })
     const title = await epub.getTitle()
     assert.equal(title, "Title")
+    const outputPath = join("__fixtures__", "__output__", "created.epub")
+    await epub.writeToFile(outputPath)
     await epub.close()
+    const info = await stat(outputPath)
+    assert.ok(info.isFile())
   })
 
   void it("strips leading and trailing whitespace from metadata values", async () => {
@@ -128,17 +132,15 @@ void describe("Epub", () => {
     const epub = await Epub.from(inputFilepath)
 
     const outputFilepath = join(
-      "src",
       "__fixtures__",
       "__output__",
       "moby-dick-write-to-file.epub",
     )
 
     await epub.writeToFile(outputFilepath)
-    const info = await stat(outputFilepath)
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    assert.ok(info.isFile)
     await epub.close()
+    const info = await stat(outputFilepath)
+    assert.ok(info.isFile())
   })
 
   void it("can modify an xhtml item", async () => {
@@ -161,7 +163,6 @@ void describe("Epub", () => {
     await epub.writeXhtmlItemContents(spineItems[0]!.id, coverPageData)
 
     const outputFilepath = join(
-      "src",
       "__fixtures__",
       "__output__",
       "moby-dick-modify-xhtml-item.epub",
