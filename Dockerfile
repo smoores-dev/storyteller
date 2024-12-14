@@ -42,6 +42,7 @@ COPY --from=builder /app/web/migrations ./.next/standalone/web/migrations
 
 # WASM files aren't statically imported, so esbuild doesn't find them and they need to be manually copied over
 COPY --from=builder /app/node_modules/@echogarden/speex-resampler-wasm/wasm/*.wasm ./.next/standalone/web/work-dist/
+COPY --from=builder /app/node_modules/@echogarden/pffft-wasm/dist/simd/pffft.wasm ./.next/standalone/web/work-dist/
 COPY --from=builder /app/node_modules/tiktoken/lite/tiktoken_bg.wasm ./.next/standalone/web/work-dist/
 
 # Unfortunately, echogarden attempts to manually resolve some of its own files
