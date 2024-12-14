@@ -12,6 +12,8 @@ A Node.js library for inspecting, modifying, and creating EPUB 3 publications.
   - [Reading from a file](#reading-from-a-file)
   - [Creating from scratch](#creating-from-scratch)
   - [Adding a chapter](#adding-a-chapter)
+  - [Writing to disk](#writing-to-disk)
+  - [Writing to a byte array](#writing-to-a-byte-array)
 - [Development](#development)
 - [API Docs](#api-docs)
 
@@ -164,6 +166,33 @@ await epub.addManifestItem(manifestItem, xmlContents, "xml")
 
 // Then add the item to the spine
 await epub.addSpineItem(manifestItem.id)
+```
+
+### Writing to disk
+
+```ts
+import { Epub } from "@smoores/epub"
+
+const epub = await Epub.from("path/to/book.epub")
+await epub.setTitle("S'mores for Everyone")
+
+await epub.writeToFile("path/to/updated.epub")
+```
+
+### Writing to a byte array
+
+```ts
+import { randomUUID } from "node:crypto"
+
+import { Epub } from "@smoores/epub"
+
+const epub = await Epub.create({
+  title: "S'mores For Everyone",
+  language: new Intl.Locale("en-US"),
+  identifier: randomUUID(),
+})
+
+const data: Uint8Array = await epub.writeToArray()
 ```
 
 For more details about using the API, see the [API documentation](#epub).
