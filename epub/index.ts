@@ -1923,7 +1923,7 @@ export class Epub {
 
   /**
    * Write the current contents of the Epub to a new
-   * EPUB archive on disk.
+   * Uint8Array.
    *
    * This _does not_ close the Epub. It can continue to
    * be modified after it has been written to disk. Use
@@ -1932,12 +1932,8 @@ export class Epub {
    * When this method is called, the "dcterms:modified"
    * meta tag is automatically updated to the current UTC
    * timestamp.
-   *
-   * @param path The file path to write the new archive to. The
-   *  parent directory does not need te exist -- the path will be
-   *  recursively created.
    */
-  async writeToFile(path: string) {
+  async writeToArray() {
     await this.replaceMetadata(
       (entry) => entry.properties["property"] === "dcterms:modified",
       {
@@ -1971,6 +1967,30 @@ export class Epub {
     )
 
     const data = await this.zipWriter.close()
+    // Reset the ZipWriter to allow further modification
+    this.dataWriter = new Uint8ArrayWriter()
+    this.zipWriter = new ZipWriter(this.dataWriter)
+    return data
+  }
+
+  /**
+   * Write the current contents of the Epub to a new
+   * EPUB archive on disk.
+   *
+   * This _does not_ close the Epub. It can continue to
+   * be modified after it has been written to disk. Use
+   * `epub.close()` to close the Epub.
+   *
+   * When this method is called, the "dcterms:modified"
+   * meta tag is automatically updated to the current UTC
+   * timestamp.
+   *
+   * @param path The file path to write the new archive to. The
+   *  parent directory does not need te exist -- the path will be
+   *  recursively created.
+   */
+  async writeToFile(path: string) {
+    const data = await this.writeToArray()
     if (!data.length)
       throw new Error(
         "Failed to write zip archive to file; writer returned no data",
@@ -1978,9 +1998,5 @@ export class Epub {
 
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, data)
-
-    // Reset the ZipWriter to allow further modification
-    this.dataWriter = new Uint8ArrayWriter()
-    this.zipWriter = new ZipWriter(this.dataWriter)
   }
 }
