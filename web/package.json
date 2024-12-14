@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "0.4.48",
+  "version": "0.4.49-eric-fix.0",
   "private": true,
   "type": "module",
   "scripts": {
