@@ -1949,10 +1949,11 @@ export class Epub {
 
     let mimetypeEntry = this.getEntry("mimetype")
     if (!mimetypeEntry) {
-      this.writeEntryContents("mimetype", "application/epub+zip", "utf-8")
-      // This is guaranteed to exist; we just created it
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      mimetypeEntry = this.getEntry("mimetype")!
+      mimetypeEntry = new EpubEntry({
+        filename: "mimetype",
+        data: new TextEncoder().encode("application/epub+zip"),
+      })
+      this.entries.push(mimetypeEntry)
     }
 
     const mimetypeReader = new Uint8ArrayReader(await mimetypeEntry.getData())
