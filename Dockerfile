@@ -66,6 +66,9 @@ ENV STORYTELLER_WORKER=worker.cjs
 
 WORKDIR /app/.next/standalone/web
 
+# runs migration and node server
+COPY --from=builder /app/web/start.sh .
+
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-CMD ["node", "--run", "start", "migrate-dist/migrate.cjs"]
+CMD ["./start.sh"]
