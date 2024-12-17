@@ -12,7 +12,7 @@
     "build": "yarn build:worker && yarn build:migrate && next build",
     "build:worker": "esbuild src/work/worker.ts --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",
     "build:migrate": "esbuild src/database/migrate.ts --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=migrate-dist/",
-    "start": "node migrate-dist/migrate.cjs && node server.js"
+    "start": "./start.sh"
   },
   "dependencies": {
     "@ariakit/react": "^0.4.1",
