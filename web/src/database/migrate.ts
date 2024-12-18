@@ -68,12 +68,13 @@ function setInitialAudioCodec(options: {
     WHERE name = 'codec';
     `,
   ).run({
-    codec:
+    codec: JSON.stringify(
       options.codec === "opus"
         ? "libopus"
         : options.codec === "mp3"
           ? "libmp3lame"
           : "acc",
+    ),
   })
 
   if (options.bitrate) {
@@ -84,7 +85,7 @@ function setInitialAudioCodec(options: {
       WHERE name = 'bitrate';
       `,
     ).run({
-      bitrate: options.bitrate,
+      bitrate: JSON.stringify(options.bitrate),
     })
   }
 }
