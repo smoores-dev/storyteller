@@ -1,12 +1,9 @@
-import { promisify } from "node:util"
-import { exec as execCallback } from "node:child_process"
+import { exec } from "node:child_process"
 import memoize from "memoize"
 import { quotePath } from "./shell"
 import { extname } from "node:path"
 import { copyFile } from "node:fs/promises"
 import { logger } from "./logging"
-
-const exec = promisify(execCallback)
 
 export const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 export const MP3_FILE_EXTENSIONS = [".mp3"]
@@ -97,23 +94,39 @@ function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
   }
 }
 
-export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
-  let stdout: string
+async function execCmd(command: string) {
+  const process = exec(command)
+  let stdout = ""
+  let stderr = ""
+  process.stdout?.on("data", (chunk: string) => {
+    stdout += chunk
+  })
+  process.stderr?.on("data", (chunk: string) => {
+    stderr += chunk
+  })
   try {
-    const out = await exec(
-      `ffprobe -i ${quotePath(path)} -show_format -v quiet -of json`,
-    )
-    if (out.stderr) throw new Error(out.stderr)
-    stdout = out.stdout
-  } catch {
-    // Run again to get detailed ffprobe output
-    const { stdout, stderr } = await exec(
-      `ffprobe -i ${quotePath(path)} -show_format -of json`,
-    )
+    await new Promise<void>((resolve, reject) => {
+      process.on("exit", (code) => {
+        if (code === 0) {
+          resolve()
+          return
+        }
+        reject(new Error(`Process failed with exit code: ${code}`))
+      })
+      process.on("error", reject)
+    })
+  } catch (e) {
+    logger.error(e)
     logger.info(stdout)
-    logger.error(stderr)
-    throw new Error(`Failed to parse track info from "${path}"`)
+    throw new Error(stderr)
   }
+  return stdout
+}
+
+export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
+  const stdout = await execCmd(
+    `ffprobe -i ${quotePath(path)} -show_format -of json`,
+  )
   const info = JSON.parse(stdout) as FfmpegTrackFormat
   return parseTrackInfo(info.format)
 })
@@ -158,22 +171,9 @@ function parseChapterInfo(ffmpegChapterInfo: FfmpegChapterInfo): ChapterInfo {
 export const getTrackChapters = memoize(async function getTrackChapters(
   path: string,
 ) {
-  let stdout: string
-  try {
-    const out = await exec(
-      `ffprobe -i ${quotePath(path)} -show_chapters -v quiet -of json`,
-    )
-    if (out.stderr) throw new Error(out.stderr)
-    stdout = out.stdout
-  } catch {
-    // Run again to get detailed ffprobe output
-    const { stdout, stderr } = await exec(
-      `ffprobe -i ${quotePath(path)} -show_chapters -of json`,
-    )
-    logger.info(stdout)
-    logger.error(stderr)
-    throw new Error(`Failed to parse track info from "${path}"`)
-  }
+  const stdout = await execCmd(
+    `ffprobe -i ${quotePath(path)} -show_chapters -of json`,
+  )
 
   const { chapters } = JSON.parse(stdout) as FfmpegChapters
   return chapters.map((chapter) => parseChapterInfo(chapter))
@@ -222,27 +222,10 @@ export async function transcodeTrack(
     ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
     ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
     ...(destExtension === ".mp4" ? ["-map", "0", "-map_chapters", "-1"] : []),
-    "-v",
-    "quiet",
     `"${destination}"`,
   ]
 
-  let stderr: string | null = null
-  try {
-    ;({ stderr } = await exec(`${command} ${args.join(" ")}`))
-  } catch {
-    // Run again to get detailed ffmpeg output
-    const { stdout, stderr } = await exec(
-      `${command} ${args.filter((a) => a !== "-v" && a !== "quiet").join(" ")}`,
-    )
-    logger.info(stdout)
-    logger.error(stderr)
-    throw new Error(`Failed to transcode track at "${path}"`)
-  }
-
-  if (stderr) {
-    throw new Error(stderr)
-  }
+  await execCmd(`${command} ${args.join(" ")}`)
 }
 
 export async function splitTrack(
@@ -274,28 +257,9 @@ export async function splitTrack(
     ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
     ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
     ...(destExtension === ".mp4" ? ["-map", "0", "-map_chapters", "-1"] : []),
-    "-v",
-    "quiet",
     `"${destination}"`,
   ]
 
-  // TODO: If we pass an abort signal here, we may be able to prevent
-  // app crashes when the worker is terminated!
-  let stderr: string | null = null
-  try {
-    ;({ stderr } = await exec(`${command} ${args.join(" ")}`))
-  } catch {
-    // Run again to get detailed ffmpeg output
-    const { stdout, stderr } = await exec(
-      `${command} ${args.filter((a) => a !== "-v" && a !== "quiet").join(" ")}`,
-    )
-    logger.info(stdout)
-    logger.error(stderr)
-    throw new Error(`Failed to split track at "${path}"`)
-  }
-
-  if (stderr) {
-    throw new Error(stderr)
-  }
+  await execCmd(`${command} ${args.join(" ")}`)
   return true
 }
