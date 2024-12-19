@@ -14,12 +14,13 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: "Sync your audiobooks and ebooks",
+    title: "Align your audiobooks and ebooks",
     Svg: SyncSvg,
     description: (
       <>
-        Storyteller is a platform for automatically syncing audiobooks and
-        ebooks.
+        Switch back and forth between listening and reading without losing your
+        place, or have Storyteller read aloud to you while highlighting the
+        text!
       </>
     ),
   },

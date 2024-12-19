@@ -23,5 +23,4 @@ button in the top right corner. Here, you should be able to select your
 downloaded Storyteller book from your Downloads folder.
 
 If anyone finds any apps that have better support for EPUB Media Overlays and
-allow users to supply their own book files, please let us know on
-[Gitter](/docs/say-hi)!
+allow users to supply their own book files, please [let us know](/docs/say-hi)!
