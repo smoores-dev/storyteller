@@ -95,7 +95,7 @@ function getInitialAudioCodec() {
   if (!env) return null
   const match = env.match(/^(mp3|aac|opus)(?:-(16|24|32|64|96))?$/)
   if (!match?.[1]) return null
-  return { codec: match[1], bitrate: match[2] }
+  return { codec: match[1], bitrate: match[2] && `${match[2]}k` }
 }
 
 async function migrateFile(path: string) {
