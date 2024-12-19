@@ -24,7 +24,7 @@ permissions to each user. Most likely, you'll want most users to have the "Basic
 User" capabilities, which allows them to see the list of books on the server and
 download individual books. You can also invite additional administrators, or
 give users fine-grained permissions (for example, you may choose to give a user
-the capability to add and synchronize new books, but not to invite new users).
+the capability to add and align new books, but not to invite new users).
 
 In the future, Storyteller will support "Collections" of books, so that
 administrators can more selectively share their library with users.
@@ -81,16 +81,15 @@ Pre-processing step!
 
 ## Transcription engine settings
 
-As part of the synchronization process, Storyteller attempts to transcribe the
+As part of the alignment process, Storyteller attempts to transcribe the
 audiobook narration to text (see
 [/docs/how-it-works/the-algorithm](/docs/how-it-works/the-algorithm) for more
 details).
 
 This is by far the most resource-intensive phase of the process. By default,
 Storyteller will attempt to run the transcription job locally, using your
-server's hardware. If you would prefer to run the task via a paid third-party
-service, you set that with the "transcription engine" setting on the Settings
-page.
+server's hardware. If you prefer to run the task via a paid third-party service,
+you set that with the "transcription engine" setting on the Settings page.
 
 The available paid transcription services are:
 

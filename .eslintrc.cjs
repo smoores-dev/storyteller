@@ -1,3 +1,48 @@
+const reactTypescriptConfig = {
+  extends: [
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
+    "plugin:react-hooks/recommended",
+  ],
+  settings: {
+    react: {
+      version: "detect",
+    },
+  },
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    project: true,
+    tsconfigRootDir: __dirname,
+  },
+  rules: {
+    "@typescript-eslint/restrict-template-expressions": [
+      "error",
+      {
+        allowNumber: true,
+      },
+    ],
+    "@typescript-eslint/no-misused-promises": [
+      "error",
+      {
+        checksVoidReturn: false,
+      },
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        args: "all",
+        argsIgnorePattern: "^_",
+        caughtErrors: "all",
+        caughtErrorsIgnorePattern: "^_",
+        destructuredArrayIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        ignoreRestSiblings: true,
+      },
+    ],
+  },
+}
+
 module.exports = {
   plugins: ["@typescript-eslint"],
   extends: ["eslint:recommended", "prettier"],
@@ -25,49 +70,17 @@ module.exports = {
     },
     { files: ["docs/sidebars.js"], env: { commonjs: true } },
     {
-      files: ["mobile/**/*.ts", "mobile/**/*.tsx"],
-      extends: [
-        "plugin:@typescript-eslint/recommended",
-        "plugin:react/recommended",
-        "plugin:react/jsx-runtime",
-        "plugin:react-hooks/recommended",
-      ],
-      settings: {
-        react: {
-          version: "detect",
-        },
-      },
-      parser: "@typescript-eslint/parser",
-      parserOptions: {
-        project: true,
-        tsconfigRootDir: __dirname,
-      },
+      files: ["docs/**/*.ts", "docs/**/*.tsx"],
+      ...reactTypescriptConfig,
       rules: {
-        "@typescript-eslint/restrict-template-expressions": [
-          "error",
-          {
-            allowNumber: true,
-          },
-        ],
-        "@typescript-eslint/no-misused-promises": [
-          "error",
-          {
-            checksVoidReturn: false,
-          },
-        ],
-        "@typescript-eslint/no-unused-vars": [
-          "error",
-          {
-            args: "all",
-            argsIgnorePattern: "^_",
-            caughtErrors: "all",
-            caughtErrorsIgnorePattern: "^_",
-            destructuredArrayIgnorePattern: "^_",
-            varsIgnorePattern: "^_",
-            ignoreRestSiblings: true,
-          },
-        ],
+        ...reactTypescriptConfig.rules,
+        "react/jsx-uses-react": "error",
+        "react/react-in-jsx-scope": "error",
       },
+    },
+    {
+      files: ["mobile/**/*.ts", "mobile/**/*.tsx"],
+      ...reactTypescriptConfig,
     },
     {
       files: ["mobile/babel.config.js"],

@@ -6,29 +6,31 @@ sidebar_position: 1
 
 Storyteller is made up of two primary components:
 
-1. **The synchronization server** serves a REST API that powers the mobile apps,
-   as well as a web interface for managing your Storyteller instance. This is
-   the component responsible for actually synchronizing audiobooks and ebooks.
+1. **The alignment server** serves a REST API that powers the mobile apps, as
+   well as a web interface for managing your Storyteller instance. This is the
+   component responsible for actually aligning audiobooks and ebooks.
 2. **The mobile apps** provide an actual reading and listening experience for
-   the synced books produced by Storyteller.
+   the aligned books produced by Storyteller.
 
-As an instance administrator, you'll need to run the Storyteller synchronization
+As an instance administrator, you'll need to run the Storyteller alignment
 server. You and your users can connect to your instance from the mobile apps, or
-download the synced books from the web interface.
+download the aligned books from the web interface.
 
 **Note:** Before going further, take a moment to read the documentation on
 [minimum necessary resources](/docs/resources) and make sure that you have a
 machine that will be able to run Storyteller!
 
-## Docker compose
+If you don't, or you'd rather not have to go through the hassle of managing your
+own server (it can be fun, really!), you can also create a Storyteller instance
+on [PikaPods](https://www.pikapods.com/pods?run=storyteller). PikaPods is a
+service for running open source apps like Storyteller. It's a paid service, and
+they share profits with open source maintainers (that's me!), so every PikaPods
+instance helps support future Storyteller development.
 
-There's a compose file in the project repository, embedded here for ease of use.
-**Please actually take a moment to generate a secret key**; without it, your
-Storyteller user accounts _are not meaningfully secure_. You can do so with your
-password manager, the `openssl` command as recommended in the compose file
-below, or use
-[1Password's online random password generator](https://1password.com/password-generator/).
-Store the generated secret key in a text file in the current directory.
+But if you think you would be interested in self-hosting, and you're just not
+sure how to get started, don't hesitate to reach out for help!
+[We've got a great community](/docs/say-hi), and we'd be happy to help you get
+started.
 
 ### NVIDIA GPUs
 
@@ -41,6 +43,16 @@ _must_ install the
 and
 [configure docker"](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker).
 Then you can uncomment the `runtime: nvidia` line below, in the `compose.yaml`.
+
+## Docker compose
+
+There's a compose file in the project repository, embedded here for ease of use.
+**Please actually take a moment to generate a secret key**; without it, your
+Storyteller user accounts _are not meaningfully secure_. You can do so with your
+password manager, the `openssl` command as recommended in the compose file
+below, or use
+[1Password's online random password generator](https://1password.com/password-generator/).
+Store the generated secret key in a text file in the current directory.
 
 ```yaml
 # Example compose config for Storyteller
@@ -77,15 +89,15 @@ secrets:
 
 To run, simply create a file named `compose.yaml` in the current directory with
 the above contents (modified as needed), and run `docker compose up`. Once the
-services have started, you can start [syncing books](/docs/syncing-books) and
+services have started, you can start [aligning books](/docs/aligning-books) and
 [reading them](/docs/category/reading-your-books)!
 
 ## Manual docker commands
 
-### Running the synchronization server
+### Running the alignment server
 
-The Storyteller synchronization server is distributed as a Docker image,
-available on the GitLab Container Registry at
+The Storyteller alignment server is distributed as a Docker image, available on
+the GitLab Container Registry at
 `registry.gitlab.com/smoores/storyteller:latest`.
 
 The API server saves a lot of data to the local filesystem; it's not uncommon to
@@ -93,7 +105,7 @@ have over 1GB of data for a single book. It's important to mount a volume at the
 `/data` directory in the container so that your content isn't lost when you
 restart or update your container.
 
-The following will run the API server, saving Storyteller caches and synced
+The following will run the API server, saving Storyteller caches and aligned
 books to the user's Documents directory. The `-it` flags will allow you to kill
 the process with Ctrl+C; you can alternatively use the `-d` flag to run the
 process in the background. This command also assumes that you have defined a
@@ -118,8 +130,8 @@ see the response `{ "Hello": "World" }`.
 
 To create your admin account and get started, head to
 [`http://localhost:8001/`](http://localhost:8001) in a browser, and continue on
-the the [administering](/docs/administering) docs!
+to the [administering](/docs/administering) docs!
 
 Once your service is up and running, you can start
-[syncing books](/docs/syncing-books) and
+[aligning books](/docs/aligning-books) and
 [reading them](/docs/category/reading-your-books)!

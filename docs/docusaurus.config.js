@@ -8,7 +8,7 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 const config = {
   title: "Storyteller",
   tagline:
-    "A self-hosted platform for automatically syncing ebooks and audiobooks.",
+    "A self-hosted platform for automatically aligning ebooks and audiobooks.",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
