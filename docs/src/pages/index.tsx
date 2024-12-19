@@ -36,10 +36,7 @@ function HomepageHeader() {
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext()
   return (
-    <Layout
-      title={`${siteConfig.title} Docs`}
-      description="A self-hosted platform for automatically syncing ebooks and audiobooks."
-    >
+    <Layout title={`${siteConfig.title} Docs`} description={siteConfig.tagline}>
       <HomepageHeader />
       <main>
         <HomepageFeatures />

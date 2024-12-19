@@ -5,10 +5,10 @@ sidebar_position: 1
 # The Algorithm
 
 At the core of the Storyteller system is its
-[synchronization algorithm](https://gitlab.com/smoores/storyteller/-/blob/main/web/synchronize/synchronizer.ts?ref_type=heads).
+[alignment algorithm](https://gitlab.com/smoores/storyteller/-/blob/main/web/synchronize/synchronizer.ts?ref_type=heads).
 This algorithm is responsible for taking an audiobook (as any number of mp4,
 m4a, m4b, or mp3 files, or zip archives of those file types) and an ebook (as an
-epub file) and producing a new epub file with synced narration support. This
+epub file) and producing a new epub file with guided narration support. This
 process is known as forced alignment.
 
 ## Background: EPUB and Media Overlays
@@ -18,7 +18,7 @@ found [on the w3c website](https://www.w3.org/publishing/epub3/). At its core,
 an EPUB is a ZIP file of xhtml and assets, with some additional XML files used
 for defining the structure of the book.
 
-EPUB has support for synced narration in via
+EPUB has support for guided narration in via
 [the Media Overlay specification](https://www.w3.org/TR/epub-33/#sec-media-overlays).
 This allows EPUB creators to define the relatonships between xhtml elements
 (such as paragraphs) and audio content.
@@ -35,9 +35,9 @@ xhtml tag, which means that in order to associate a single sentence with a
 length of audio, we must in fact modify the xhtml of the ebook ourselves to
 include these tags. More on this later.
 
-The goal of the Storyteller synchronization algorithm is to produce modified
-EPUB documents that include per-sentence tags that are associated with the
-correct length of audio in the provided audiobook.
+The goal of the Storyteller alignment algorithm is to produce modified EPUB
+documents that include per-sentence tags that are associated with the correct
+length of audio in the provided audiobook.
 
 ## Step 1: Audio pre-processing
 
@@ -74,18 +74,18 @@ interesting addition to the process that Storyteller makes is to supply an
 an audiobook chapter and providing a list of words from the book that don't
 exist in the English dictionary as hints.
 
-## Step 3: Produce the synced book
+## Step 3: Produce the aligned book
 
 The final step is to take the transcriptions from Whisper and actually align
 them with the text from the ebook.
 
 ### Finding the chapter in the transcription
 
-The first challenge we face in the synchronization system is that audiobooks are
-not 1:1 audio representations of ebooks. There is often some audio-only
-introduction from the narrator and/or publishing company, tables of contents are
-skipped, and forewards and other pre-story content is often skipped or read
-_after_ the story, rather than before.
+The first challenge we face in the alignment system is that audiobooks are not
+1:1 audio representations of ebooks. There is often some audio-only introduction
+from the narrator and/or publishing company, tables of contents are skipped, and
+forewards and other pre-story content is often skipped or read _after_ the
+story, rather than before.
 
 This means that Storyteller can't assume that the chapters in the ebook are in
 order in the audiobook, or even represented at all. To work around this, for
@@ -104,10 +104,10 @@ the individual sentences.
 
 Earlier, we mentioned that most books don't have markup around their sentences,
 and that the Media Overlay specification requires references to specific
-elements in the text for synchronizing with audio segments. But syncing with
-entire paragraphs just doesn't provide a very good narration experience;
-sentences are much better! There are also performance reasons to prefer
-sentence-level alignment over paragraph-level alignment.
+elements in the text for alignment with audio segments. But aligning with entire
+paragraphs just doesn't provide a very good narration experience; sentences are
+much better! There are also performance reasons to prefer sentence-level
+alignment over paragraph-level alignment.
 
 In order to support sentence-level alignment, Storyteller goes through each
 chapter and wraps each sentence with a `span` tag, giving it a unique `id`

@@ -2,10 +2,10 @@
 sidebar_position: 4
 ---
 
-# Syncing books
+# Aligning books
 
 Once you have your Storyteller server up and running, you can start managing
-your new library! In order to produce a synced book, Storyteller needs two
+your new library! In order to produce an aligned book, Storyteller needs two
 things:
 
 1. An EPUB book. EPUB is an open file format for ebooks, and most online book
@@ -25,15 +25,15 @@ Once you have your book files, you can upload them to your Storyteller server.
 Navigate to your web interface and click the "Add book" button, which will open
 a dialogue where you can upload each file, first the EPUB, and then the
 audiobook files. After your file uploads have completed, you can click the
-"Start processing" button, which will begin the automated syncing process.
+"Start processing" button, which will begin the automated alignment process.
 
 Storyteller runs entirely on your hardware, which means the length of the
-syncing process will vary depending on your hardware. Most of the processing
+alignment process will vary depending on your hardware. Most of the processing
 time is made up by the automated transcription of the audiobook, which is a very
 resource intensive task. This will go faster if you have faster CPU cores, more
-CPU cores, or a CUDA-capable GPU, but it's expected that the entire
-synchronization process will take around 1-4 hours for most books on most
-relatively modern hardware.
+CPU cores, or a CUDA-capable GPU, but it's expected that the entire alignment
+process will take around 1-4 hours for most books on most relatively modern
+hardware.
 
 **Note**: If you have a CUDA-capable GPU, and would like to use that rather than
 your CPU for transcription, check out the
