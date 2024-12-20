@@ -33,6 +33,12 @@ yarn:
 yarn add @smoores/epub
 ```
 
+deno:
+
+```sh
+deno install npm:@smoores/epub
+```
+
 ## About
 
 Throughout this library's documentation, there will be many references to
