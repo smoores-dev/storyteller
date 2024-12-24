@@ -26,7 +26,7 @@
     "busboy": "^1.6.0",
     "classnames": "^2.5.1",
     "date-fns": "^3.6.0",
-    "echogarden": "^2.0.7",
+    "echogarden": "^2.0.14",
     "jsonwebtoken": "^9.0.2",
     "match-sorter": "^6.3.4",
     "memoize": "^10.0.0",
