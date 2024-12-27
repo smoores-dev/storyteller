@@ -1,5 +1,0 @@
-releases:
-  "@storyteller/docs": patch
-
-declined:
-  - "@storyteller/web"
