@@ -225,7 +225,6 @@ export function SettingsForm({ settings }: Props) {
                 defaultValue={settings["whisper_build"] ?? "cpu"}
               >
                 <option value="cpu">CPU</option>
-                <option value="openblas">OpenBLAS (CPU, accelerated)</option>
                 <option value="cublas-11.8">cuBLAS 11.8 (NVIDIA GPU)</option>
                 <option value="cublas-12.6">cuBLAS 12.6 (NVIDIA GPU)</option>
                 <option value="hipblas">hipBLAS (AMD GPU)</option>
