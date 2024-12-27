@@ -114,11 +114,10 @@ acceleration frameworks whisper.cpp is built with.
 
 The available acceleration frameworks are:
 
-- OpenBLAS. This is a CPU-based BLAS library; this means that you can use it
-  without a GPU. It's supported by most CPUs; if you're using your CPU, we
-  recommend that you try out OpenBLAS, as it may have better performance than
-  the default whisper.cpp build.
 - cuBLAS-11.8. This is a CUDA-based BLAS library. It requires a CUDA-enabled
   NVIDIA GPU. Specifically, this is for GPUs with CUDA 11; use cuBLAS-12.4 if
   you are running CUDA 12
 - cuBLAS-12.4. Same as cuBLAS-11.8, but for CUDA 12.
+- hipBLAS. This is an AMD-based BLAS library. It requires an AMD GPU that
+  supports the ROCm computation framework, and for the AMD GPU drivers to be
+  installed on the host

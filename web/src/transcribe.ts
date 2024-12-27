@@ -98,10 +98,6 @@ async function installWhisper(settings: Settings) {
       await exec(`apt-get -y install cuda-toolkit-${cudaVersions.short}`)
       path = `/usr/local/cuda-${cudaVersions.majorMinor}/bin:${path}`
       libraryPath = `/usr/local/cuda-${cudaVersions.majorMinor}/lib64/stubs:${libraryPath}`
-    } else if (whisperBuild === "openblas") {
-      logger.info("Installing OpenBLAS")
-      await exec("apt-get update")
-      await exec("apt-get -y install libopenblas-dev")
     } else if (whisperBuild === "hipblas") {
       logger.info("Installing ROCm and hipBLAS")
       await exec(
@@ -137,9 +133,6 @@ async function installWhisper(settings: Settings) {
               WHISPER_CUDA: "1",
               PATH: path,
               LIBRARY_PATH: libraryPath,
-            }),
-            ...(whisperBuild === "openblas" && {
-              WHISPER_OPENBLAS: "1",
             }),
             ...(whisperBuild === "hipblas" && {
               GGML_HIPBLAS: "1",

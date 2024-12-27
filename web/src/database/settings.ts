@@ -7,12 +7,7 @@ export type TranscriptionEngine =
   | "amazon-transcribe"
   | "openai-cloud"
 
-export type WhisperBuild =
-  | "cpu"
-  | "cublas-11.8"
-  | "cublas-12.6"
-  | "openblas"
-  | "hipblas"
+export type WhisperBuild = "cpu" | "cublas-11.8" | "cublas-12.6" | "hipblas"
 
 export type WhisperModel =
   | "tiny"

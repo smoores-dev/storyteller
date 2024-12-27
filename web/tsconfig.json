@@ -52,7 +52,7 @@
     "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", "tsbuild", "work-dist"],
+  "exclude": ["migrations/node_modules", ".next", "tsbuild", "work-dist"],
   "references": [
     {
       "path": "../epub"
