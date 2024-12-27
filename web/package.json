@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/database/migrate.ts && yarn dev:worker && STORYTELLER_WORKER=worker.js PORT=8001 next dev --turbopack",
+    "dev": "yarn build:sqlite-ext && tsx src/database/migrate.ts && yarn dev:worker && STORYTELLER_WORKER=worker.js PORT=8001 next dev --turbopack",
     "dev:worker": "esbuild src/work/worker.ts --bundle --platform=node --packages=external --sourcemap=inline --format=esm --outdir=work-dist/",
-    "test": "STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx --test",
-    "test:watch": "STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx --test --watch",
-    "test:all": "STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
-    "build": "yarn build:worker && yarn build:migrate && next build",
+    "test": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx --test",
+    "test:watch": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx --test --watch",
+    "test:all": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
+    "build": "yarn build:sqlite-ext && yarn build:worker && yarn build:migrate && next build",
+    "build:sqlite-ext": "gcc -g -fPIC -rdynamic -shared sqlite/uuid.c -o sqlite/uuid.c.so",
     "build:worker": "esbuild src/work/worker.ts --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",
     "build:migrate": "esbuild src/database/migrate.ts --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=migrate-dist/",
     "start": "./start.sh"
