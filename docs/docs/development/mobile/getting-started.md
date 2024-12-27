@@ -21,6 +21,12 @@ additional libraries that are worth getting up to speed on:
 
 ### Development tools
 
+Before cloning the repo, be sure to install and configure
+[Git LFS](https://git-lfs.com/). If you've already cloned the repo, after you
+install Git LFS, make sure to run `git lfs pull` in the repo. This will pull the
+test fixtures from GitLab's Large File System storage, without which the tests
+will not run.
+
 In order to get started with mobile development, you'll need to have `node.js`
 (v20.x) and `yarn` installed. You can either install these with your operating
 system's package manager, or you can use the Nix flake provided in this project
