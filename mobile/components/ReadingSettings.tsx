@@ -1,5 +1,5 @@
 import Slider from "@react-native-community/slider"
-import { Platform, Pressable, StyleSheet, View } from "react-native"
+import { Pressable, StyleSheet, View } from "react-native"
 import Select from "react-native-picker-select"
 import { dequal } from "dequal"
 import { appColor } from "../design"
@@ -305,28 +305,6 @@ export function ReadingSettings({ bookId }: Props) {
           }}
         />
       </View>
-      {Platform.OS === "android" && (
-        <View style={styles.field}>
-          <UIText style={styles.label}>Volume buttons turn pages</UIText>
-          <ButtonGroup
-            value={preferences.volumeButtonsTurnPages}
-            onChange={(value: boolean) =>
-              dispatch(
-                preferencesSlice.actions.globalPreferencesUpdated({
-                  volumeButtonsTurnPages: value,
-                }),
-              )
-            }
-          >
-            <ButtonGroupButton value={true}>
-              <UIText>On</UIText>
-            </ButtonGroupButton>
-            <ButtonGroupButton value={false}>
-              <UIText>Off</UIText>
-            </ButtonGroupButton>
-          </ButtonGroup>
-        </View>
-      )}
     </View>
   )
 }

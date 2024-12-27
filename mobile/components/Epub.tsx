@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { Platform, Pressable, StyleSheet, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import KeyEvent from "react-native-keyevent"
 
 import { Link, Tabs } from "expo-router"
 import { useKeepAwake } from "expo-keep-awake"
@@ -25,10 +24,7 @@ import { ToolbarDialogs } from "./ToolbarDialogs"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { SelectionMenu } from "./SelectionMenu"
 import { useColorTheme } from "../hooks/useColorTheme"
-import {
-  getFilledBookPreferences,
-  getVolumeButtonsTurnPages,
-} from "../store/selectors/preferencesSelectors"
+import { getFilledBookPreferences } from "../store/selectors/preferencesSelectors"
 
 type Props = {
   book: BookshelfBook
@@ -43,7 +39,6 @@ export function Epub({ book, locator }: Props) {
   const preferences = useAppSelector((state) =>
     getFilledBookPreferences(state, book.id),
   )
-  const volumeButtonsTurnPages = useAppSelector(getVolumeButtonsTurnPages)
 
   const [selection, setSelection] = useState<{
     x: number
@@ -67,25 +62,6 @@ export function Epub({ book, locator }: Props) {
     startPosition,
     endPosition,
   } = useAudioBook()
-
-  useEffect(() => {
-    if (!volumeButtonsTurnPages) return
-
-    KeyEvent.onKeyDownListener(
-      (event: { action: number; keyCode: number; pressedKey: string }) => {
-        if (event.keyCode === 92) {
-          epubViewRef.current?.goBackward()
-        }
-        if (event.keyCode === 93) {
-          epubViewRef.current?.goForward()
-        }
-      },
-    )
-
-    return () => {
-      KeyEvent.removeKeyDownListener()
-    }
-  }, [volumeButtonsTurnPages])
 
   return (
     <View

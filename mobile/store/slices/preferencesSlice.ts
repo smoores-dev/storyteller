@@ -42,7 +42,6 @@ export type PreferencesState = {
   colorThemes: ColorTheme[]
   lightTheme: string
   darkTheme: string
-  volumeButtonsTurnPages: boolean
   typography: TypographyPreferences
   layout: LayoutPreferences
   readaloudColor: HighlightTint
@@ -67,7 +66,6 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
   ],
   lightTheme: "Day",
   darkTheme: "Night",
-  volumeButtonsTurnPages: false,
   typography: {
     scale: 1.0,
     lineHeight: 1.4,
