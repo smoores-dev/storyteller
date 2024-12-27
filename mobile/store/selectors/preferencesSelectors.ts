@@ -33,7 +33,3 @@ export const getFilledBookPreferences = createSelector(
 export function getBookPlayerSpeed(state: RootState, bookId: number) {
   return getBookPreferences(state, bookId)?.audio?.speed ?? 1
 }
-
-export function getVolumeButtonsTurnPages(state: RootState) {
-  return getGlobalPreferences(state).volumeButtonsTurnPages
-}
