@@ -44,6 +44,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
     var bookService: BookService? = null
     var bookId: Long? = null
+    var initialLocator: Locator? = null
     var locator: Locator? = null
     var isPlaying: Boolean = false
     var navigator: EpubNavigatorFragment? = null
@@ -62,7 +63,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         }
 
         val bookId = this.bookId ?: return
-        val locator = this.locator ?: return
+        val locator = this.initialLocator ?: return
         val publication = bookService?.getPublication(bookId) ?: return
 
         val fragmentTag = resources.getString(R.string.epub_fragment_tag)
@@ -91,9 +92,11 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         }
     }
 
-    fun go() {
-        val navigator = this.navigator ?: return initializeNavigator()
-        val locator = this.locator ?: return
+    fun go(locator: Locator) {
+        val navigator = this.navigator ?: run {
+            this.initialLocator = locator
+            return initializeNavigator()
+        }
 
         navigator.go(locator, true)
         if (isPlaying) {
@@ -192,59 +195,50 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     fun setupUserScript(): EpubView {
-        val bookId = this.bookId ?: return this
-        val locator = this.locator ?: this.navigator?.currentLocator?.value ?: return this
-        val fragments = bookService?.getFragments(bookId, locator) ?: return this
-
-        val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
-        val jsFragmentsArray = "[${joinedFragments}]"
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
             navigator?.evaluateJavascript(
                 """
-                globalThis.storytellerFragments = ${jsFragmentsArray};
-        
-                let storytellerDoubleClickTimeout = null;
-                let storytellerTouchMoved = false;
-                for (const fragment of globalThis.storytellerFragments) {
-                    const element = document.getElementById(fragment);
-                    if (!element) continue;
-                    element.addEventListener('touchstart', (event) => {
-                        storytellerTouchMoved = false;
-                    });
-                    element.addEventListener('touchmove', (event) => {
-                        storytellerTouchMoved = true;
-                    });
-                    element.addEventListener('touchend', (event) => {
-                        if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
-            
-                        event.bubbles = true
-                        event.clientX = event.changedTouches[0].clientX
-                        event.clientY = event.changedTouches[0].clientY
-                        const clone = new MouseEvent('click', event);
-                        event.stopImmediatePropagation();
-                        event.preventDefault();
-    
-                        if (storytellerDoubleClickTimeout) {
-                            clearTimeout(storytellerDoubleClickTimeout);
-                            storytellerDoubleClickTimeout = null;
-                            console.log('handleDoubleTap' in storyteller);
-                            console.log(storyteller);
-                            console.log(storyteller.handleDoubleTap);
-                            storyteller.handleDoubleTap(fragment);
-                            return
-                        }
-    
-                        storytellerDoubleClickTimeout = setTimeout(() => {
-                            storytellerDoubleClickTimeout = null;
-                            element.parentElement.dispatchEvent(clone);
-                        }, 350);
-                    })
+                function addDoubleTapListeners() {
+                    let storytellerDoubleClickTimeout = null;
+                    let storytellerTouchMoved = false;
+                    for (const fragment of globalThis.storytellerFragments) {
+                        const element = document.getElementById(fragment);
+                        if (!element) continue;
+                        element.addEventListener('touchstart', (event) => {
+                            storytellerTouchMoved = false;
+                        });
+                        element.addEventListener('touchmove', (event) => {
+                            storytellerTouchMoved = true;
+                        });
+                        element.addEventListener('touchend', (event) => {
+                            if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
+                
+                            event.bubbles = true
+                            event.clientX = event.changedTouches[0].clientX
+                            event.clientY = event.changedTouches[0].clientY
+                            const clone = new MouseEvent('click', event);
+                            event.stopImmediatePropagation();
+                            event.preventDefault();
+
+                            if (storytellerDoubleClickTimeout) {
+                                clearTimeout(storytellerDoubleClickTimeout);
+                                storytellerDoubleClickTimeout = null;
+                                window.webkit.messageHandlers.storytellerDoubleClick.postMessage(fragment);
+                                return
+                            }
+
+                            storytellerDoubleClickTimeout = setTimeout(() => {
+                                storytellerDoubleClickTimeout = null;
+                                element.parentElement.dispatchEvent(clone);
+                            }, 350);
+                        })
+                    }
                 }
             
                 document.addEventListener('selectionchange', () => {
                     if (document.getSelection().isCollapsed) {
-                        storyteller.handleSelectionCleared();
+                        window.webkit.messageHandlers.storytellerSelectionCleared.postMessage(null);
                     }
                 });
                 """.trimIndent()
@@ -292,6 +286,23 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         findOnPage(locator)
 
+        if (locator.href !== this.locator?.href) {
+            val bookId = this.bookId ?: return
+
+            val locator = this.locator ?: this.navigator?.currentLocator?.value ?: return
+            val fragments = bookService?.getFragments(bookId, locator) ?: return
+    
+            val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
+            val jsFragmentsArray = "[${joinedFragments}]"
+
+            navigator?.evaluateJavascript(
+                """
+                globalThis.storytellerFragments = \(jsFragmentsArray);
+                addDoubleTapListeners();
+            """.trimIndent()
+            )
+        }
+
         Log.d("EpubView", "Navigated to ${locator.locations.position}")
 
         val result = navigator?.evaluateJavascript(
@@ -329,5 +340,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val fragmentsLocator =
             locator.copy(locations = locator.locations.copy(fragments = listOf(fragment)))
         onLocatorChange(fragmentsLocator.toJSON().toMap())
+
+        this.locator = locator
     }
 }

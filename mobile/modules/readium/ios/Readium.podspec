@@ -16,6 +16,7 @@ Pod::Spec.new do |s|
   s.dependency 'ReadiumOPDS'
   s.dependency 'ReadiumInternal'
   s.dependency 'ReadiumAdapterGCDWebServer'
+  s.dependency 'ZIPFoundation'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {

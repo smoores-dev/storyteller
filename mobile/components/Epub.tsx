@@ -33,6 +33,8 @@ type Props = {
 
 export function Epub({ book, locator }: Props) {
   useKeepAwake()
+
+  const hasLoadedRef = useRef(false)
   const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<ReadiumLocator[]>([])
   const [activeHighlight, setActiveHighlight] = useState<Highlight | null>(null)
@@ -125,14 +127,30 @@ export function Epub({ book, locator }: Props) {
           onBookmarksActivate={(event) => {
             setActiveBookmarks(event.nativeEvent.activeBookmarks)
           }}
-          onLocatorChange={(event) =>
+          onLocatorChange={(event) => {
+            // If this is the very first time we're mounting this
+            // component, we actually want to ignore the "locator changed"
+            // event, which will just be trying to reset to the beginning
+            // of the currently rendered page
+            if (!hasLoadedRef.current) {
+              hasLoadedRef.current = true
+              // Sometimes we need to pay attention to the first locator changed,
+              // if we rely on it to figure out the fragments for the initial
+              // locator
+              if (
+                !event.nativeEvent.locations?.fragments ||
+                locator.locations?.fragments
+              ) {
+                return
+              }
+            }
             dispatch(
               bookshelfSlice.actions.bookRelocated({
                 bookId: book.id,
                 locator: { locator: event.nativeEvent, timestamp: Date.now() },
               }),
             )
-          }
+          }}
           onMiddleTouch={() => {
             setShowInterface((p) => !p)
           }}

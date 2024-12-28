@@ -81,7 +81,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       package: IS_DEV
         ? "dev.smoores.Storyteller.dev"
         : "dev.smoores.Storyteller",
-      versionCode: 27,
       adaptiveIcon: {
         foregroundImage: "./assets/Storyteller_Logo.png",
         backgroundColor: "#ffffff",
@@ -106,13 +105,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         tag: "react-native-readium",
         src: contents,
         newSrc: `  pod 'Minizip', modular_headers: true
-  pod 'R2Shared', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.6.1/Support/CocoaPods/ReadiumShared.podspec'
-  pod 'R2Streamer', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.6.1/Support/CocoaPods/ReadiumStreamer.podspec'
-  pod 'R2Navigator', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.6.1/Support/CocoaPods/ReadiumNavigator.podspec'
-  pod 'ReadiumAdapterGCDWebServer', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.6.1/Support/CocoaPods/ReadiumAdapterGCDWebServer.podspec'
-  pod 'ReadiumOPDS', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.6.1/Support/CocoaPods/ReadiumOPDS.podspec'
-  pod 'ReadiumInternal', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.6.1/Support/CocoaPods/ReadiumInternal.podspec'
-  pod 'GCDWebServer', podspec: 'https://raw.githubusercontent.com/readium/GCDWebServer/3.7.4/GCDWebServer.podspec', modular_headers: true
+  pod 'ZIPFoundation', '~> 0.9'
+  pod 'R2Shared', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumShared.podspec'
+  pod 'R2Streamer', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumStreamer.podspec'
+  pod 'R2Navigator', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumNavigator.podspec'
+  pod 'ReadiumAdapterGCDWebServer', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumAdapterGCDWebServer.podspec'
+  pod 'ReadiumOPDS', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumOPDS.podspec'
+  pod 'ReadiumInternal', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumInternal.podspec'
+  pod 'Fuzi', podspec: 'https://raw.githubusercontent.com/readium/Fuzi/refs/heads/master/Fuzi.podspec'
+  pod 'ReadiumGCDWebServer', podspec: 'https://raw.githubusercontent.com/readium/GCDWebServer/4.0.0/GCDWebServer.podspec', modular_headers: true
 `,
         anchor: /use_native_modules/,
         offset: 0,
