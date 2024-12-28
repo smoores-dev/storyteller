@@ -4,14 +4,14 @@ import Foundation
 import R2Shared
 import R2Streamer
 import Fuzi
-import Minizip
+import ZIPFoundation
 
 enum BookServiceError : Error {
     case unopenedPublication(Int)
     case locatorNotInReadingOrder(Int, String)
     case noMediaOverlay(Int, String)
     case openContent(Int, String)
-    case extractFailed(URL)
+    case extractFailed(URL, String)
 }
 
 final class BookService {
@@ -72,71 +72,15 @@ final class BookService {
     }
     
     func extractArchive(archiveUrl: URL, extractedUrl: URL) throws {
-        guard let unzipped = unzOpen64(archiveUrl.path) else {
-            throw BookServiceError.extractFailed(archiveUrl)
-        }
         
         let fileManager = FileManager.default
         
-        defer { unzClose(unzipped) }
-        
-        var result = unzGoToFirstFile(unzipped)
-        while result == UNZ_OK {
-            var fileInfo = unz_file_info64()
-            var fileName = [CChar](repeating: 0, count: 256)
-            
-            unzGetCurrentFileInfo64(unzipped, &fileInfo, &fileName, UInt(fileName.count), nil, 0, nil, 0)
-            
-            let fileNameString = String(cString: fileName)
-            let destinationFilePath = extractedUrl.appendingPathComponent(fileNameString)
-            
-            if fileNameString.hasSuffix("/") {
-                // Create directory
-                do {
-                    try fileManager.createDirectory(atPath: destinationFilePath.path, withIntermediateDirectories: true, attributes: nil)
-                } catch {
-                    throw BookServiceError.extractFailed(archiveUrl)
-                }
-            } else {
-                // Create file
-                if unzOpenCurrentFile(unzipped) != UNZ_OK {
-                    throw BookServiceError.extractFailed(archiveUrl)
-                }
-                
-                defer { unzCloseCurrentFile(unzipped) }
-                
-                let bufferSize: Int = 4096
-                var buffer = [UInt8](repeating: 0, count: bufferSize)
-                var bytesRead: Int32
-                
-                let destinationDir = destinationFilePath.deletingLastPathComponent().path
-                
-                do {
-                    try fileManager.createDirectory(atPath: destinationDir, withIntermediateDirectories: true, attributes: nil)
-                } catch {
-                    throw BookServiceError.extractFailed(archiveUrl)
-                }
-                
-                fileManager.createFile(atPath: destinationFilePath.path, contents: nil, attributes: nil)
-                
-                guard let fileHandle = FileHandle(forWritingAtPath: destinationFilePath.path) else {
-                    throw BookServiceError.extractFailed(archiveUrl)
-                }
-                
-                bytesRead = unzReadCurrentFile(unzipped, &buffer, UInt32(bufferSize))
-                while bytesRead > 0 {
-                    fileHandle.write(Data(buffer[..<Int(bytesRead)]))
-                    bytesRead = unzReadCurrentFile(unzipped, &buffer, UInt32(bufferSize))
-                }
-                
-                fileHandle.closeFile()
-            }
-            
-            result = unzGoToNextFile(unzipped)
-        }
-        
-        if result != UNZ_END_OF_LIST_OF_FILE {
-            throw BookServiceError.extractFailed(archiveUrl)
+        do {
+            try fileManager.createDirectory(at: extractedUrl, withIntermediateDirectories: true, attributes: nil)
+            try fileManager.unzipItem(at: archiveUrl, to: extractedUrl)
+        } catch {
+            print(error.localizedDescription)
+            throw BookServiceError.extractFailed(archiveUrl, error.localizedDescription)
         }
     }
     

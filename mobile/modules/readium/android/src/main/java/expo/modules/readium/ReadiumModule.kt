@@ -139,8 +139,7 @@ class ReadiumModule : Module() {
                     if (currentLocator == locatorComp) return@Prop
                 }
 
-                view.locator = locator
-                view.go()
+                view.go(locator)
             }
 
             Prop("isPlaying") { view: EpubView, prop: Boolean? ->

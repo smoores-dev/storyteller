@@ -78,8 +78,7 @@ public class ReadiumModule: Module {
                     }
                 }
                 
-                view.locator = locator
-                view.go()
+                view.go(locator: locator)
             }
 
             Prop("isPlaying") { (view: EPUBView, prop: Bool?) in
