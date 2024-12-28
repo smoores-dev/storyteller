@@ -16,6 +16,7 @@ import { useEffect } from "react"
 import { AppState, AppStateStatus, Platform } from "react-native"
 import { logger } from "../logger"
 import "../tasks/backgroundFetchSyncPositions"
+import { GestureHandlerRootView } from "react-native-gesture-handler"
 
 TrackPlayer.registerPlaybackService(() => PlaybackService)
 
@@ -93,12 +94,14 @@ export default function Layout() {
   }, [])
 
   return (
-    <Provider store={store}>
-      <StorytellerProvider>
-        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          <Slot />
-        </SafeAreaProvider>
-      </StorytellerProvider>
-    </Provider>
+    <GestureHandlerRootView>
+      <Provider store={store}>
+        <StorytellerProvider>
+          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+            <Slot />
+          </SafeAreaProvider>
+        </StorytellerProvider>
+      </Provider>
+    </GestureHandlerRootView>
   )
 }

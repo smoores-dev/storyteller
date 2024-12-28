@@ -23,6 +23,7 @@ class EPUBView: ExpoView {
     let onBookmarksActivate = EventDispatcher()
     
     public var bookId: Int?
+    public var initialLocation: Locator?
     public var locator: Locator?
     public var isPlaying: Bool = false
     public var navigator: EPUBNavigatorViewController?
@@ -42,7 +43,7 @@ class EPUBView: ExpoView {
             return
         }
         
-        guard let bookId = self.bookId, let locator = self.locator else {
+        guard let bookId = self.bookId, let locator = self.initialLocation else {
             return
         }
         
@@ -96,13 +97,10 @@ class EPUBView: ExpoView {
         navigator?.submitPreferences(preferences)
     }
     
-    func go() {
+    func go(locator: Locator) {
         guard let navigator = self.navigator else {
+            self.initialLocation = locator
             initializeNavigator()
-            return
-        }
-        
-        guard let locator = self.locator else {
             return
         }
         
@@ -253,55 +251,42 @@ extension EPUBView: EPUBNavigatorDelegate {
     }
     
     func navigator(_ navigator: EPUBNavigatorViewController, setupUserScripts userContentController: WKUserContentController) {
-        guard let bookId = self.bookId else {
-            return
-        }
-        
-        guard let locator = self.locator else {
-            return
-        }
-        
-        let fragments = BookService.instance.getFragments(for: bookId, locator: locator)
-        
-        let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
-        let jsFragmentsArray = "[\(joinedFragments)]"
-        
         let scriptSource = """
-            globalThis.storytellerFragments = \(jsFragmentsArray);
-        
-            let storytellerDoubleClickTimeout = null;
-            let storytellerTouchMoved = false;
-            for (const fragment of globalThis.storytellerFragments) {
-                const element = document.getElementById(fragment);
-                if (!element) continue;
-                element.addEventListener('touchstart', (event) => {
-                    storytellerTouchMoved = false;
-                });
-                element.addEventListener('touchmove', (event) => {
-                    storytellerTouchMoved = true;
-                });
-                element.addEventListener('touchend', (event) => {
-                    if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
-        
-                    event.bubbles = true
-                    event.clientX = event.changedTouches[0].clientX
-                    event.clientY = event.changedTouches[0].clientY
-                    const clone = new MouseEvent('click', event);
-                    event.stopImmediatePropagation();
-                    event.preventDefault();
+            function addDoubleTapListeners() {
+                let storytellerDoubleClickTimeout = null;
+                let storytellerTouchMoved = false;
+                for (const fragment of globalThis.storytellerFragments) {
+                    const element = document.getElementById(fragment);
+                    if (!element) continue;
+                    element.addEventListener('touchstart', (event) => {
+                        storytellerTouchMoved = false;
+                    });
+                    element.addEventListener('touchmove', (event) => {
+                        storytellerTouchMoved = true;
+                    });
+                    element.addEventListener('touchend', (event) => {
+                        if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
+            
+                        event.bubbles = true
+                        event.clientX = event.changedTouches[0].clientX
+                        event.clientY = event.changedTouches[0].clientY
+                        const clone = new MouseEvent('click', event);
+                        event.stopImmediatePropagation();
+                        event.preventDefault();
 
-                    if (storytellerDoubleClickTimeout) {
-                        clearTimeout(storytellerDoubleClickTimeout);
-                        storytellerDoubleClickTimeout = null;
-                        window.webkit.messageHandlers.storytellerDoubleClick.postMessage(fragment);
-                        return
-                    }
+                        if (storytellerDoubleClickTimeout) {
+                            clearTimeout(storytellerDoubleClickTimeout);
+                            storytellerDoubleClickTimeout = null;
+                            window.webkit.messageHandlers.storytellerDoubleClick.postMessage(fragment);
+                            return
+                        }
 
-                    storytellerDoubleClickTimeout = setTimeout(() => {
-                        storytellerDoubleClickTimeout = null;
-                        element.parentElement.dispatchEvent(clone);
-                    }, 350);
-                })
+                        storytellerDoubleClickTimeout = setTimeout(() => {
+                            storytellerDoubleClickTimeout = null;
+                            element.parentElement.dispatchEvent(clone);
+                        }, 350);
+                    })
+                }
             }
         
             document.addEventListener('selectionchange', () => {
@@ -345,6 +330,22 @@ extension EPUBView: EPUBNavigatorDelegate {
         
         findOnPage(locator: locator)
         
+        if locator.href != self.locator?.href {
+            guard let bookId = self.bookId else {
+                return
+            }
+            
+            let fragments = BookService.instance.getFragments(for: bookId, locator: locator)
+            
+            let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
+            let jsFragmentsArray = "[\(joinedFragments)]"
+            
+            epubNav.evaluateJavaScript("""
+                globalThis.storytellerFragments = \(jsFragmentsArray);
+                addDoubleTapListeners();
+            """)
+        }
+        
         epubNav.evaluateJavaScript("""
             (function() {
                 function isEntirelyOnScreen(element) {
@@ -385,5 +386,7 @@ extension EPUBView: EPUBNavigatorDelegate {
                 )
             }
         }
+        
+        self.locator = locator
     }
 }
