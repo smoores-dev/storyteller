@@ -1,15 +1,4 @@
-# From v3 to ... v0.4?
-
-Ok, to start off: I goofed. For simplicity's sake, when I started talking about
-the first breaking change in Storyteller, I called the version that folks had
-been using "v1" and the new version "v2". But really, that wasn't right:
-Storyteller still isn't stable, and properly those were v0.1 and v0.2.
-
-Storyteller is getting _much_ closer to its first stable release, though, and
-that means a proper v1 is coming, so now's as good a time as any to correct the
-versioning scheme. This release is **v0.4**!
-
-Now, on to the actual migration. This one is pretty simple.
+# From v0.3 to v0.4
 
 ## No more CUDA-specific images
 
