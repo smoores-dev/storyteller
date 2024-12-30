@@ -1,3 +1,4 @@
+import { UserPermissions } from "@/apiModels"
 import { withVerifyToken } from "@/auth"
 import { getUser } from "@/database/users"
 import { NextResponse } from "next/server"
@@ -20,7 +21,10 @@ export const GET = withVerifyToken((_request, _context, _token, tokenData) => {
   }
 
   return NextResponse.json({
-    ...user,
+    uuid: user.uuid,
+    full_name: user.fullName,
+    username: user.username,
+    email: user.email,
     permissions: {
       book_create: user.permissions.bookCreate,
       book_delete: user.permissions.bookDelete,
@@ -36,6 +40,7 @@ export const GET = withVerifyToken((_request, _context, _token, tokenData) => {
       user_delete: user.permissions.userDelete,
       user_list: user.permissions.userList,
       user_read: user.permissions.userRead,
-    },
+      user_update: user.permissions.userUpdate,
+    } satisfies UserPermissions,
   })
 })

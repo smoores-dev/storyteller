@@ -1,69 +1,62 @@
-import { EMPTY_PERMISSIONS, usePermission } from "@/contexts/UserPermissions"
+import { usePermission } from "@/contexts/UserPermissions"
 import { useApiClient } from "@/hooks/useApiClient"
 import { useCallback, useState, MouseEvent } from "react"
-import styles from "./createinviteform.module.css"
-import {
-  Button,
-  Select,
-  SelectArrow,
-  SelectItem,
-  SelectItemCheck,
-  SelectLabel,
-  SelectPopover,
-  SelectProvider,
-} from "@ariakit/react"
 import { UserPermissions } from "@/apiModels"
+import { useForm } from "@mantine/form"
+import {
+  Stack,
+  TextInput,
+  Button,
+  MultiSelect,
+  Box,
+  Text,
+  Group,
+} from "@mantine/core"
 
-const ADMIN_PERMISSIONS: UserPermissions = {
-  book_create: true,
-  book_read: true,
-  book_process: true,
-  book_download: true,
-  book_list: true,
-  book_delete: true,
-  book_update: true,
-  invite_list: true,
-  invite_delete: true,
-  user_create: true,
-  user_list: true,
-  user_read: true,
-  user_delete: true,
-  settings_update: true,
-}
+export const ADMIN_PERMISSIONS: Array<keyof UserPermissions> = [
+  "book_create",
+  "book_read",
+  "book_process",
+  "book_download",
+  "book_list",
+  "book_delete",
+  "book_update",
+  "invite_list",
+  "invite_delete",
+  "user_create",
+  "user_list",
+  "user_read",
+  "user_delete",
+  "user_update",
+  "settings_update",
+]
 
-const BASIC_PERMISSIONS: UserPermissions = {
-  book_create: false,
-  book_read: true,
-  book_process: false,
-  book_download: true,
-  book_list: true,
-  book_delete: false,
-  book_update: false,
-  invite_list: false,
-  invite_delete: false,
-  user_create: false,
-  user_list: false,
-  user_read: false,
-  user_delete: false,
-  settings_update: false,
-}
+export const BASIC_PERMISSIONS: Array<keyof UserPermissions> = [
+  "book_read",
+  "book_download",
+  "book_list",
+]
 
-const PERMISSION_LABELS: { [P in keyof UserPermissions]: string } = {
-  book_create: "Upload new books",
-  book_read: "See book info",
-  book_process: "Manage book syncing",
-  book_download: "Download synced books",
-  book_list: "List all books",
-  book_delete: "Delete books",
-  book_update: "Change book info",
-  invite_list: "See user invites",
-  invite_delete: "Delete user invites",
-  user_create: "Invite new users",
-  user_list: "List all users",
-  user_read: "See other users' info",
-  user_delete: "Delete users",
-  settings_update: "Change server settings",
-}
+export const PERMISSIONS_VALUES: Array<{
+  value: keyof UserPermissions
+  label: string
+}> = [
+  { value: "book_create", label: "Upload new books" },
+  { value: "book_read", label: "See book info" },
+  { value: "book_process", label: "Manage book syncing" },
+  { value: "book_download", label: "Download synced books" },
+  { value: "book_list", label: "List all books" },
+  { value: "book_delete", label: "Delete books" },
+  { value: "book_update", label: "Change book info" },
+  { value: "invite_list", label: "See user invites" },
+  { value: "invite_delete", label: "Delete user invites" },
+  { value: "user_create", label: "Invite new users" },
+  { value: "user_list", label: "List all users" },
+  { value: "user_read", label: "See other users' info" },
+  { value: "user_delete", label: "Delete users" },
+  { value: "user_update", label: "Update other users' permissions" },
+  { value: "settings_update", label: "Change server settings" },
+]
 
 enum State {
   CLEAN = "CLEAN",
@@ -72,36 +65,30 @@ enum State {
   ERROR = "ERROR",
 }
 
-function renderValue(currentPermissions: UserPermissions) {
-  return `${Object.values(currentPermissions).reduce(
-    (acc, isSet) => (isSet ? acc + 1 : acc),
-    0,
-  )} selected`
-}
-
-function getSelected(
-  currentPermissions: UserPermissions,
-): Array<keyof UserPermissions> {
-  return Object.entries(currentPermissions)
-    .filter(([, isSet]) => isSet)
-    .map(([key]) => key as keyof UserPermissions)
-}
-
 type Props = {
   onUpdate: () => void
 }
 
 export function CreateInviteForm({ onUpdate }: Props) {
   const [showForm, setShowForm] = useState(false)
-  const [email, setEmail] = useState("")
-  const [permissions, setPermissions] = useState(BASIC_PERMISSIONS)
+
+  const form = useForm({
+    initialValues: {
+      email: "",
+      permissions: BASIC_PERMISSIONS,
+    },
+  })
+
   const [state, setState] = useState(State.CLEAN)
 
-  const resetState = useCallback((event: MouseEvent) => {
-    event.preventDefault()
-    setShowForm(true)
-    setEmail("")
-  }, [])
+  const resetState = useCallback(
+    (event: MouseEvent) => {
+      event.preventDefault()
+      setShowForm(true)
+      form.reset()
+    },
+    [form],
+  )
 
   const client = useApiClient()
   const canAddUser = usePermission("user_create")
@@ -109,135 +96,91 @@ export function CreateInviteForm({ onUpdate }: Props) {
   if (!canAddUser) return null
 
   return (
-    <div className={styles["container"]}>
+    <Stack className="mt-8 max-w-[600px] rounded-md bg-gray-200 p-8">
       {showForm ? (
-        <form className={styles["form"]}>
-          <fieldset className={styles["fields"]}>
-            <label>
-              Email
-              <input
-                className={styles["input"]}
-                id="email"
-                name="email"
-                type="email"
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                }}
-                value={email}
-              />
-            </label>
-            <div>
-              <SelectProvider
-                value={getSelected(permissions)}
-                setValue={(selected: Array<keyof UserPermissions>) => {
-                  const next = { ...EMPTY_PERMISSIONS }
-                  for (const permission of selected) {
-                    next[permission] = true
-                  }
-                  setPermissions(next)
-                }}
-              >
-                <SelectLabel>Role</SelectLabel>
-                <Button
-                  className={styles["text-button"]}
-                  onClick={() => {
-                    setPermissions(ADMIN_PERMISSIONS)
-                  }}
-                >
-                  Admin
-                </Button>
-                <Button
-                  className={styles["text-button"]}
-                  onClick={() => {
-                    setPermissions(BASIC_PERMISSIONS)
-                  }}
-                >
-                  Basic
-                </Button>
-                <Select className={styles["select-button"]}>
-                  {renderValue(permissions)}
-                  <SelectArrow />
-                </Select>
-                <SelectPopover
-                  gutter={4}
-                  sameWidth
-                  unmountOnHide
-                  className={styles["select-popover"]}
-                >
-                  {Object.entries(PERMISSION_LABELS).map(
-                    ([permission, label]) => (
-                      <SelectItem
-                        key={permission}
-                        value={permission}
-                        className={styles["select-item"]}
-                      >
-                        <SelectItemCheck />
-                        {label}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectPopover>
-              </SelectProvider>
-            </div>
-          </fieldset>
-          {state === State.SUCCESS ? (
-            <div className={styles["results"]}>
-              <span>Done!</span>
-              <Button
-                type="reset"
-                className={styles["button"]}
-                onClick={resetState}
-              >
-                Invite another user
-              </Button>
-            </div>
-          ) : state === State.ERROR ? (
-            <div className={styles["results"]}>
-              <span>Failed - check your server logs for more details</span>
-              <Button
-                type="reset"
-                className={styles["button"]}
-                onClick={resetState}
-              >
-                Try again
-              </Button>
-            </div>
-          ) : (
-            <Button
-              type="submit"
-              className={styles["submit-button"]}
-              disabled={email === "" || state !== State.CLEAN}
-              onClick={async (e) => {
-                e.preventDefault()
+        <form
+          onSubmit={form.onSubmit(async ({ email, permissions }) => {
+            setState(State.LOADING)
+            const permissionsObject = Object.fromEntries(
+              permissions.map((permission) => [permission, true]),
+            ) as UserPermissions
+            try {
+              await client.createInvite({ email, ...permissionsObject })
+            } catch (e) {
+              console.error(e)
+              setState(State.ERROR)
+              onUpdate()
+              return
+            }
 
-                setState(State.LOADING)
-                try {
-                  await client.createInvite({ email, ...permissions })
-                } catch (e) {
-                  console.error(e)
-                  setState(State.ERROR)
-                  onUpdate()
-                  return
+            setState(State.SUCCESS)
+            onUpdate()
+          })}
+        >
+          <Stack gap={0}>
+            <TextInput label="Email" {...form.getInputProps("email")} />
+            <Box className="self-end">
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  form.setFieldValue("permissions", ADMIN_PERMISSIONS)
+                }}
+              >
+                Admin
+              </Button>
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  form.setFieldValue("permissions", BASIC_PERMISSIONS)
+                }}
+              >
+                Basic
+              </Button>
+            </Box>
+            <MultiSelect
+              label="Permissions"
+              className="mb-4"
+              data={PERMISSIONS_VALUES}
+              {...form.getInputProps("permissions")}
+            />
+            {state === State.SUCCESS ? (
+              <Group justify="space-between">
+                <Text>Done!</Text>
+                <Button type="reset" onClick={resetState}>
+                  Invite another user
+                </Button>
+              </Group>
+            ) : state === State.ERROR ? (
+              <Group justify="space-between">
+                <Text>Failed - check your server logs for more details</Text>
+                <Button type="reset" onClick={resetState}>
+                  Try again
+                </Button>
+              </Group>
+            ) : (
+              <Button
+                type="submit"
+                className="self-end"
+                disabled={
+                  form.getValues().email === "" || state !== State.CLEAN
                 }
-
-                setState(State.SUCCESS)
-                onUpdate()
-              }}
-            >
-              Create
-            </Button>
-          )}
+              >
+                Create
+              </Button>
+            )}
+          </Stack>
         </form>
       ) : (
         <Button
-          className={styles["add-button"]}
+          className="self-center"
+          variant="white"
           onClick={() => {
             setShowForm(true)
           }}
         >
-          Invite user
+          + Invite user
         </Button>
       )}
-    </div>
+    </Stack>
   )
 }

@@ -1,8 +1,9 @@
 import { Invite } from "@/apiModels"
-import styles from "./invitestatus.module.css"
 import { InviteActions } from "./InviteActions"
 import { useContext, useLayoutEffect, useState } from "react"
 import { ApiHostContext } from "@/contexts/ApiHostContext"
+import { Box, Group, Paper, Stack, Title } from "@mantine/core"
+import Link from "next/link"
 
 type Props = {
   invite: Invite
@@ -22,18 +23,21 @@ export function InviteStatus({ invite, onUpdate }: Props) {
   }, [invite.key, rootPath])
 
   return (
-    <div className={styles["container"]}>
-      <div className={styles["content"]}>
-        <h4>{invite.email}</h4>
-        {inviteUrl !== null && (
-          <>
-            Invite link: <a href={inviteUrl}>{inviteUrl}</a>
-          </>
-        )}
-      </div>
-      <div className={styles["actions"]}>
+    <Paper className="max-w-[600px]">
+      <Group justify="space-between">
+        <Stack>
+          <Title order={4}>{invite.email}</Title>
+          {inviteUrl !== null && (
+            <Box>
+              Invite link:{" "}
+              <Link href={inviteUrl} className="text-st-orange-600 underline">
+                {inviteUrl}
+              </Link>
+            </Box>
+          )}
+        </Stack>
         <InviteActions invite={invite} onUpdate={onUpdate} />
-      </div>
-    </div>
+      </Group>
+    </Paper>
   )
 }

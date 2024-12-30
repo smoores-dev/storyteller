@@ -50,7 +50,8 @@
     "src/**/*.json",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "postcss.config.js"
   ],
   "exclude": ["migrations/node_modules", ".next", "tsbuild", "work-dist"],
   "references": [

@@ -419,7 +419,7 @@ export function updateBook(
     if (author.uuid === "") {
       const { uuid: authorUuid } = insertAuthorStatement.get({
         name: author.name,
-        fileAs: author.fileAs,
+        fileAs: author.fileAs ?? author.name,
       }) as { uuid: UUID }
 
       insertAuthorToBookStatement.run({

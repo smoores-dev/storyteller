@@ -16,5 +16,6 @@ export type UserPermissions = {
   user_list: boolean
   user_read: boolean
   user_delete: boolean
+  user_update: boolean
   settings_update: boolean
 }

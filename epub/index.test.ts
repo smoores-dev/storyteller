@@ -235,4 +235,52 @@ void describe("Epub", () => {
     )
     await epub.close()
   })
+
+  void it("can remove a creator", async () => {
+    const epub = await Epub.create({
+      title: "Title",
+      language: new Intl.Locale("en-US"),
+      identifier: "1",
+      creators: [
+        {
+          name: "Creator 1",
+        },
+        {
+          name: "Creator 2",
+        },
+        {
+          name: "Creator 3",
+        },
+      ],
+    })
+
+    await epub.removeCreator(1)
+
+    const creators = await epub.getCreators()
+    assert.equal(creators.length, 2)
+    assert.deepStrictEqual(creators[0], {
+      name: "Creator 1",
+    })
+    assert.deepStrictEqual(creators[1], {
+      name: "Creator 3",
+    })
+  })
+
+  void it("can handle simultaneous package document updates", async () => {
+    const epub = await Epub.create({
+      title: "Title",
+      language: new Intl.Locale("en-US"),
+      identifier: "1",
+    })
+
+    await Promise.all([
+      epub.setTitle("Updated title"),
+      epub.setLanguage(new Intl.Locale("en-GB")),
+      epub.addCreator({ name: "Creator" }),
+    ])
+
+    assert.strictEqual(await epub.getTitle(), "Updated title")
+    assert.strictEqual((await epub.getLanguage())?.toString(), "en-GB")
+    assert.deepStrictEqual(await epub.getCreators(), [{ name: "Creator" }])
+  })
 })

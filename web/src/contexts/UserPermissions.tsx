@@ -17,6 +17,7 @@ export const EMPTY_PERMISSIONS: UserPermissions = {
   user_list: false,
   user_read: false,
   user_delete: false,
+  user_update: false,
   settings_update: false,
 }
 

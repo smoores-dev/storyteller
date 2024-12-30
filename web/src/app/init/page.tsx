@@ -3,7 +3,7 @@ import { getCookieDomain } from "@/cookies"
 import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { apiHost, proxyRootPath } from "../apiHost"
-import styles from "./page.module.css"
+import { Button, PasswordInput, TextInput, Title } from "@mantine/core"
 
 export default function InitPage() {
   async function init(data: FormData) {
@@ -37,47 +37,31 @@ export default function InitPage() {
   }
 
   return (
-    <main className={styles["main"]}>
+    <>
       <header>
-        <h2>Set up the admin user</h2>
+        <Title order={2}>Set up the admin user</Title>
       </header>
-      <form className={styles["init-form"]} action={init}>
-        <label htmlFor="email">email</label>
-        <input
-          className={styles["input"]}
-          id="email"
+      <form action={init}>
+        <TextInput
+          label="email"
           name="email"
           type="email"
+          withAsterisk
           required
         />
-        <label htmlFor="full_name">full name</label>
-        <input
-          className={styles["input"]}
-          id="full_name"
-          name="full_name"
-          type="text"
-          required
-        />
-        <label htmlFor="username">username</label>
-        <input
-          className={styles["input"]}
-          id="username"
+        <TextInput label="Full name" name="full_name" type="text" />
+        <TextInput
+          label="Username"
           name="username"
           type="text"
           autoCapitalize="none"
           autoCorrect="off"
+          withAsterisk
           required
         />
-        <label htmlFor="password">password</label>
-        <input
-          className={styles["input"]}
-          id="password"
-          name="password"
-          type="password"
-          required
-        />
-        <button type="submit">Accept</button>
+        <PasswordInput label="Password" name="password" withAsterisk required />
+        <Button type="submit">Create admin user</Button>
       </form>
-    </main>
+    </>
   )
 }

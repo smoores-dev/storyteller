@@ -1,3 +1,4 @@
+import { UserPermissions } from "@/apiModels"
 import {
   createAccessToken,
   getAccessTokenExpireDate,
@@ -12,7 +13,31 @@ export const dynamic = "force-dynamic"
 
 export const GET = withHasPermission("user_list")(() => {
   const users = getUsers()
-  return NextResponse.json(users)
+  return NextResponse.json(
+    users.map((user) => ({
+      uuid: user.uuid,
+      full_name: user.fullName,
+      username: user.username,
+      email: user.email,
+      permissions: {
+        book_create: user.permissions.bookCreate,
+        book_delete: user.permissions.bookDelete,
+        book_download: user.permissions.bookDownload,
+        book_list: user.permissions.bookList,
+        book_process: user.permissions.bookProcess,
+        book_read: user.permissions.bookRead,
+        book_update: user.permissions.bookUpdate,
+        invite_delete: user.permissions.inviteDelete,
+        invite_list: user.permissions.inviteList,
+        settings_update: user.permissions.settingsUpdate,
+        user_create: user.permissions.userCreate,
+        user_delete: user.permissions.userDelete,
+        user_list: user.permissions.userList,
+        user_read: user.permissions.userRead,
+        user_update: user.permissions.userUpdate,
+      } satisfies UserPermissions,
+    })),
+  )
 })
 
 type InviteAccept = {

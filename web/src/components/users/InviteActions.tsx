@@ -1,18 +1,8 @@
-import cx from "classnames"
 import { Invite } from "@/apiModels"
 import { usePermissions } from "@/contexts/UserPermissions"
 import { useApiClient } from "@/hooks/useApiClient"
-import {
-  MenuItem,
-  MenuProvider,
-  Menubar,
-  Tooltip,
-  TooltipAnchor,
-  TooltipProvider,
-} from "@ariakit/react"
-import styles from "./useractions.module.css"
-import { DeleteIcon } from "../icons/DeleteIcon"
-import { HardRestartIcon } from "../icons/HardRestartIcon"
+import { ActionIcon, Stack, Tooltip } from "@mantine/core"
+import { IconReload, IconTrash } from "@tabler/icons-react"
 
 type Props = {
   invite: Invite
@@ -25,40 +15,34 @@ export function InviteActions({ invite, onUpdate }: Props) {
   const permissions = usePermissions()
 
   return (
-    <Menubar className={styles["menu"]}>
-      <MenuProvider>
-        {permissions.user_create && (
-          <MenuItem
-            className={styles["menu-item"]}
-            onClick={() => {
-              void client.resendInvite(invite.key)
-            }}
-          >
-            <TooltipProvider placement="right">
-              <TooltipAnchor>
-                <HardRestartIcon ariaLabel="Re-send" />
-              </TooltipAnchor>
-              <Tooltip>Re-send</Tooltip>
-            </TooltipProvider>
-          </MenuItem>
-        )}
-        {permissions.invite_delete && (
-          <MenuItem
-            className={cx(styles["menu-item"], styles["delete"])}
-            onClick={async () => {
-              await client.deleteInvite(invite.key)
-              onUpdate()
-            }}
-          >
-            <TooltipProvider placement="right">
-              <TooltipAnchor>
-                <DeleteIcon ariaLabel="Delete" />
-              </TooltipAnchor>
-              <Tooltip>Delete</Tooltip>
-            </TooltipProvider>
-          </MenuItem>
-        )}
-      </MenuProvider>
-    </Menubar>
+    <Stack>
+      {permissions.user_create && (
+        <ActionIcon
+          variant="subtle"
+          color="black"
+          onClick={() => {
+            void client.resendInvite(invite.key)
+          }}
+        >
+          <Tooltip position="right" label="Re-send">
+            <IconReload aria-label="Re-send" />
+          </Tooltip>
+        </ActionIcon>
+      )}
+      {permissions.invite_delete && (
+        <ActionIcon
+          variant="subtle"
+          color="red"
+          onClick={async () => {
+            await client.deleteInvite(invite.key)
+            onUpdate()
+          }}
+        >
+          <Tooltip position="right" label="Delete invite">
+            <IconTrash aria-label="Delete invite" />
+          </Tooltip>{" "}
+        </ActionIcon>
+      )}
+    </Stack>
   )
 }

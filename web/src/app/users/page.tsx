@@ -1,10 +1,10 @@
 import { ApiClientError } from "@/apiClient"
 import { Invite, User } from "@/apiModels"
 import { redirect } from "next/navigation"
-import styles from "./page.module.css"
 import { createAuthedApiClient } from "@/authedApiClient"
 import { UsersList } from "@/components/users/UsersList"
 import { logger } from "@/logging"
+import { Stack, Title } from "@mantine/core"
 
 export const dynamic = "force-dynamic"
 
@@ -24,29 +24,29 @@ export default async function UsersPage() {
 
     if (e instanceof ApiClientError && e.statusCode === 403) {
       return (
-        <main className={styles["content"]}>
-          <h2>Forbidden</h2>
+        <>
+          <Title order={2}>Forbidden</Title>
           <p>You don&apos;t have permission to see this page</p>
-        </main>
+        </>
       )
     }
 
     logger.error(e)
 
     return (
-      <main className={styles["content"]}>
-        <h2>API is down</h2>
+      <>
+        <Title order={2}>API is down</Title>
         <p>Storyteller couldn&apos;t connect to the Storyteller API</p>
-      </main>
+      </>
     )
   }
 
   return (
-    <main>
-      <h2 className={styles["heading"]}>Users &amp; Invites</h2>
-      <section className={styles["content"]}>
+    <>
+      <Title order={2}>Users &amp; Invites</Title>
+      <Stack className="mt-4">
         <UsersList users={users} invites={invites} />
-      </section>
-    </main>
+      </Stack>
+    </>
   )
 }

@@ -1,7 +1,0 @@
-.heading {
-  composes: heading from "../page.module.css";
-}
-
-.content {
-  composes: content from "../page.module.css";
-}
