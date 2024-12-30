@@ -93,8 +93,9 @@ publish-web:
       linux/amd64,linux/arm64 --push -f Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max --tag
-      $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-      --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
+      $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:web-v1 --tag
+      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA --tag
+      $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
 
 prerelease-web:
   stage: prerelease
