@@ -1,6 +1,5 @@
 "use client"
 
-import styles from "./userslist.module.css"
 import { Invite, User } from "@/apiModels"
 import { UserStatus } from "./UserStatus"
 import { useApiClient } from "@/hooks/useApiClient"
@@ -8,6 +7,7 @@ import { usePermissions } from "@/contexts/UserPermissions"
 import { useCallback, useState } from "react"
 import { InviteStatus } from "./InviteStatus"
 import { CreateInviteForm } from "./CreateInviteForm"
+import { List, Title } from "@mantine/core"
 
 type Props = {
   users: User[]
@@ -39,27 +39,27 @@ export function UsersList({
     <>
       {permissions.invite_list && (
         <>
-          <h3>Invites</h3>
+          <Title order={3}>Invites</Title>
           <CreateInviteForm onUpdate={refreshInvites} />
-          <ol className={styles["list"]}>
+          <List type="ordered" listStyleType="none">
             {invites.map((invite) => (
-              <li key={invite.key}>
+              <List.Item key={invite.key} classNames={{ itemWrapper: "block" }}>
                 <InviteStatus invite={invite} onUpdate={refreshInvites} />
-              </li>
+              </List.Item>
             ))}
-          </ol>
+          </List>
         </>
       )}
       {permissions.user_list && (
         <>
-          <h3>Users</h3>
-          <ol className={styles["list"]}>
+          <Title order={3}>Users</Title>
+          <List type="ordered" listStyleType="none">
             {users.map((user) => (
-              <li key={user.uuid}>
+              <List.Item key={user.uuid} classNames={{ itemWrapper: "block" }}>
                 <UserStatus user={user} onUpdate={refreshUsers} />
-              </li>
+              </List.Item>
             ))}
-          </ol>
+          </List>
         </>
       )}
     </>

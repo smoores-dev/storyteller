@@ -9,6 +9,7 @@ import {
   Settings,
   Token,
   User,
+  UserPermissions,
   UserRequest,
 } from "./apiModels"
 
@@ -252,6 +253,21 @@ export class ApiClient {
     }
   }
 
+  async updateUser(uuid: string, permissions: UserPermissions): Promise<void> {
+    const url = new URL(`${this.rootPath}/users/${uuid}`, this.origin)
+
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      credentials: "include",
+      body: JSON.stringify({ permissions }),
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+  }
+
   async getCurrentUser(): Promise<User> {
     const url = new URL(`${this.rootPath}/user`, this.origin)
 
@@ -373,12 +389,12 @@ export class ApiClient {
   async createBook(epubFile: string, audioFiles: string[]): Promise<BookDetail>
   async createBook(
     epubFile: File,
-    audioFiles: FileList,
+    audioFiles: File[],
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<BookDetail>
   async createBook(
     epubFile: File | string,
-    audioFiles: FileList | string[],
+    audioFiles: File[] | string[],
     onUploadProgress?: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<BookDetail> {
     const url = new URL(`${this.rootPath}/books/`, this.origin)

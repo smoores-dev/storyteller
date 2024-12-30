@@ -17,6 +17,9 @@ const nextConfig = {
   ],
   output: "standalone",
   outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../.."),
+  experimental: {
+    optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
+  },
 }
 
 export default nextConfig

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation"
 import { apiHost, proxyRootPath } from "../../apiHost"
 import { ApiClient } from "@/apiClient"
-import styles from "../../login/page.module.css"
 import { cookies, headers } from "next/headers"
 import { getCookieDomain } from "@/cookies"
+import { Button, PasswordInput, TextInput, Title } from "@mantine/core"
 
 export const dynamic = "force-dynamic"
 
@@ -48,33 +48,35 @@ export default async function InvitePage(props: Props) {
   }
 
   return (
-    <main className={styles["main"]}>
+    <>
       <header>
-        <h2>Accept Invite</h2>
+        <Title order={2}>Accept Invite</Title>
       </header>
-      <form className={styles["form"]} action={acceptInvite}>
-        <label htmlFor="email">email</label>
-        <input
-          id="email"
+      <form action={acceptInvite}>
+        <TextInput
+          label="email"
           name="email"
           type="email"
           defaultValue={invite.email}
           disabled
+          withAsterisk
+          required
         />
-        <label htmlFor="full_name">full name</label>
-        <input id="full_name" name="full_name" type="text" />
-        <label htmlFor="username">username</label>
-        <input
-          id="username"
+        <TextInput label="Full name" name="full_name" type="text" />
+        <TextInput
+          label="Username"
           name="username"
           type="text"
           autoCapitalize="none"
           autoCorrect="off"
+          withAsterisk
+          required
         />
-        <label htmlFor="password">password</label>
-        <input id="password" name="password" type="password" />
-        <button type="submit">Accept</button>
+        <PasswordInput label="Password" name="password" withAsterisk required />
+        <Button mt={16} type="submit">
+          Accept
+        </Button>
       </form>
-    </main>
+    </>
   )
 }

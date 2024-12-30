@@ -17,6 +17,7 @@ export type UserPermissions = {
   userDelete: boolean
   userList: boolean
   userRead: boolean
+  userUpdate: boolean
 }
 
 export type Permission =
@@ -34,6 +35,7 @@ export type Permission =
   | "user_delete"
   | "user_list"
   | "user_read"
+  | "user_update"
 
 export type User = {
   uuid: UUID
@@ -72,6 +74,7 @@ export function getUser(usernameOrEmail: string): User | null {
       user_list AS userList,
       user_read AS userRead,
       user_delete AS userDelete,
+      user_update AS userUpdate,
       settings_update AS settingsUpdate
     FROM user
     JOIN user_permission
@@ -138,6 +141,7 @@ export function getUsers() {
       user_list AS userList,
       user_read AS userRead,
       user_delete AS userDelete,
+      user_update AS userUpdate,
       settings_update AS settingsUpdate
     FROM user
     JOIN user_permission
@@ -186,6 +190,7 @@ export function createAdminUser(
       user_list,
       user_read,
       user_delete,
+      user_update,
       settings_update
     ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     WHERE NOT EXISTS (
@@ -328,7 +333,7 @@ export function createUser(
 export function userHasPermission(username: string, permission: Permission) {
   const db = getDatabase()
 
-  const { [permission]: hasPermission } = db
+  const result = db
     .prepare<{ username: string }>(
       `
     SELECT ${permission}
@@ -340,9 +345,61 @@ export function userHasPermission(username: string, permission: Permission) {
     )
     .get({
       username: username.toLowerCase(),
-    }) as {
-    [K in Permission]: 0 | 1
-  }
+    }) as
+    | {
+        [K in Permission]: 0 | 1
+      }
+    | null
+
+  if (!result) return false
+
+  const { [permission]: hasPermission } = result
 
   return hasPermission === 1
+}
+
+export function updateUserPermissions(
+  userUuid: UUID,
+  permissions: UserPermissions,
+) {
+  const db = getDatabase()
+
+  const { uuid: userPermissionUuid } = db
+    .prepare<{ uuid: UUID }>(
+      `
+    SELECT user_permission.uuid
+    FROM user_permission
+    JOIN user
+      ON user.user_permission_uuid = user_permission.uuid
+    WHERE user.uuid = $uuid
+    `,
+    )
+    .get({ uuid: userUuid }) as { uuid: UUID }
+
+  db.prepare<{ uuid: UUID } & { [K in keyof UserPermissions]: 0 | 1 }>(
+    `
+    UPDATE user_permission
+    SET
+      book_create = $bookCreate,
+      book_delete = $bookDelete,
+      book_read = $bookRead,
+      book_process = $bookProcess,
+      book_download = $bookDownload,
+      book_update = $bookUpdate,
+      book_list = $bookList,
+      invite_list = $inviteList,
+      invite_delete = $inviteDelete,
+      user_create = $userCreate,
+      user_list = $userList,
+      user_read = $userRead,
+      user_delete = $userDelete,
+      user_update = $userUpdate,
+      settings_update = $settingsUpdate
+    WHERE
+      uuid = $uuid
+    `,
+  ).run({
+    uuid: userPermissionUuid,
+    ...mapValues(permissions, (v) => (v ? 1 : 0)),
+  })
 }

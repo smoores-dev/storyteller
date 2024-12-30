@@ -95,6 +95,15 @@ export async function getEpubCoverFilepath(bookUuid: UUID) {
   return join(getEpubDirectory(bookUuid), index.cover)
 }
 
+export async function getEpubCoverFilename(bookUuid: UUID) {
+  const index = await getEpubIndex(bookUuid)
+  if (index === null) return index
+
+  if (!("cover" in index)) return null
+
+  return index.cover
+}
+
 export async function persistEpubCover(bookUuid: UUID, coverFilename: string) {
   const index = (await getEpubIndex(bookUuid)) ?? {}
   index.cover = coverFilename
@@ -112,4 +121,20 @@ export async function persistCustomEpubCover(
   const coverFilepath = join(getEpubDirectory(bookUuid), filename)
   await writeFile(coverFilepath, cover)
   await persistEpubCover(bookUuid, filename)
+}
+
+export async function getCustomEpubCover(bookUuid: UUID) {
+  const filepath = await getEpubCoverFilepath(bookUuid)
+  if (filepath === null) return null
+
+  const buffer = await readFile(filepath)
+  return new Uint8Array(buffer)
+}
+
+export async function getCustomAudioCover(bookUuid: UUID) {
+  const filepath = await getAudioCoverFilepath(bookUuid)
+  if (filepath === null) return null
+
+  const buffer = await readFile(filepath)
+  return new Uint8Array(buffer)
 }

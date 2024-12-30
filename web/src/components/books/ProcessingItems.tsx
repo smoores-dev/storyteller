@@ -1,21 +1,12 @@
-import styles from "./processingitems.module.css"
 import { BookDetail } from "@/apiModels"
-import cx from "classnames"
-
-import {
-  TooltipProvider,
-  Tooltip,
-  TooltipAnchor,
-  MenuItem,
-  Menu,
-  MenuProvider,
-  MenuButton,
-} from "@ariakit/react"
-import { HardRestartIcon } from "../icons/HardRestartIcon"
-import { SoftRestartIcon } from "../icons/SoftRestartIcon"
-import { StopIcon } from "../icons/StopIcon"
 import { useApiClient } from "@/hooks/useApiClient"
-import { DeleteIcon } from "../icons/DeleteIcon"
+import { ActionIcon, Menu, Text, Tooltip } from "@mantine/core"
+import {
+  IconProgress,
+  IconProgressX,
+  IconReload,
+  IconTrash,
+} from "@tabler/icons-react"
 
 type Props = {
   book: BookDetail
@@ -30,90 +21,93 @@ export function ProcessingItems({ book, synchronized }: Props) {
     !book.processing_status?.is_queued
   ) {
     return (
-      <MenuProvider placement="left-start">
-        <MenuButton className={styles["popover-anchor"]} render={<MenuItem />}>
-          <TooltipProvider placement="right">
-            <TooltipAnchor>
-              <SoftRestartIcon ariaLabel="Processing" />
-            </TooltipAnchor>
-            <Tooltip>Processing</Tooltip>
-          </TooltipProvider>
-        </MenuButton>
-        <Menu gutter={12} className={styles["menu"]}>
-          <MenuItem
-            className={styles["menu-item"]}
+      <Menu position="left-start">
+        <Menu.Target>
+          <ActionIcon color="black" variant="subtle">
+            <Tooltip position="right" label="Processing">
+              <IconProgress aria-label="Processing" />
+            </Tooltip>
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item
+            classNames={{
+              itemLabel: "flex gap-2",
+            }}
             onClick={() => client.processBook(book.uuid, false)}
           >
-            <SoftRestartIcon aria-hidden />{" "}
+            <IconProgress aria-hidden />{" "}
             {synchronized ? "Re-process (using cached files)" : "Continue"}
-          </MenuItem>
-          <MenuItem
-            className={styles["menu-item"]}
+          </Menu.Item>
+          <Menu.Item
+            classNames={{
+              itemLabel: "flex gap-2",
+            }}
             onClick={() => client.processBook(book.uuid, true)}
           >
-            <HardRestartIcon aria-hidden /> Delete cache and re-process from
-            source files
-          </MenuItem>
-          <MenuItem
-            className={styles["menu-item"]}
+            <IconReload aria-hidden /> Delete cache and re-process from source
+            files
+          </Menu.Item>
+          <Menu.Item
+            classNames={{
+              itemLabel: "flex gap-2",
+            }}
             onClick={() => client.deleteBookAssets(book.uuid)}
           >
-            <DeleteIcon aria-hidden /> Delete cache files
-          </MenuItem>
+            <IconReload aria-hidden /> Delete cache files
+          </Menu.Item>
           {synchronized ? (
-            <MenuItem
-              className={cx(styles["menu-item"], styles["delete"])}
+            <Menu.Item
+              classNames={{
+                itemLabel: "flex gap-2",
+              }}
               onClick={() => client.deleteBookAssets(book.uuid, true)}
             >
-              <DeleteIcon aria-hidden /> Delete source and cache files
-            </MenuItem>
+              <IconTrash color="red" aria-hidden /> Delete source and cache
+              files
+            </Menu.Item>
           ) : (
-            <TooltipProvider>
-              <TooltipAnchor
-                render={<MenuItem />}
-                className={cx(
-                  styles["menu-item"],
-                  styles["delete"],
-                  styles["disabled"],
-                )}
-                onClick={(e) => {
-                  e.preventDefault()
-                }}
+            <Tooltip label="You can't delete source files until the book has been synced successfully">
+              <Text
+                size="sm"
+                display="flex"
+                className="gap-2"
+                opacity={0.5}
+                py="xs"
+                px="sm"
               >
-                <DeleteIcon aria-hidden /> Delete source and cache files
-              </TooltipAnchor>
-              <Tooltip className={styles["tooltip"]}>
-                You can&apos;t delete source files until the book has been
-                synced successfully
-              </Tooltip>
-            </TooltipProvider>
+                <IconTrash color="red" aria-hidden /> Delete source and cache
+                files
+              </Text>
+            </Tooltip>
           )}
-        </Menu>
-      </MenuProvider>
+        </Menu.Dropdown>
+      </Menu>
     )
   }
 
   return (
-    <MenuItem
-      className={cx(styles["menu-item"], styles["delete"])}
-      onClick={() => client.cancelProcessing(book.uuid)}
+    <Tooltip
+      position="right"
+      label={
+        book.processing_status.is_queued
+          ? "Remove from queue"
+          : "Stop processing"
+      }
     >
-      <TooltipProvider placement="right">
-        <TooltipAnchor>
-          <StopIcon
-            ariaLabel={
-              book.processing_status.is_queued
-                ? "Remove from queue"
-                : "Stop processing"
-            }
-          />
-        </TooltipAnchor>
-        <Tooltip>
-          {book.processing_status.is_queued
-            ? "Remove from queue"
-            : "Stop processing"}
-        </Tooltip>
-      </TooltipProvider>
-    </MenuItem>
+      <ActionIcon
+        color="red"
+        variant="subtle"
+        onClick={() => client.cancelProcessing(book.uuid)}
+      >
+        <IconProgressX
+          aria-label={
+            book.processing_status.is_queued
+              ? "Remove from queue"
+              : "Stop processing"
+          }
+        />
+      </ActionIcon>
+    </Tooltip>
   )
 }

@@ -3,20 +3,25 @@
 import { hasPermission } from "@/auth"
 import { readdir, stat } from "fs/promises"
 import { cookies } from "next/headers"
-import { join, dirname } from "node:path"
+import { join } from "node:path"
 
-export type DirectoryEntry = { name: string; type: "file" | "directory" }
+export type DirectoryFileEntry = {
+  name: string
+  isDirectory: false
+  path: string
+  updatedAt: string
+  size: number
+}
+
+export type DirectoryEntry =
+  | { name: string; isDirectory: true; path: string; updatedAt: string }
+  | DirectoryFileEntry
 
 export async function listDirectoryAction(
   directory: string,
 ): Promise<DirectoryEntry[]> {
   if (!hasPermission("book_create", (await cookies()).get("st_token"))) {
     throw new Error("Forbidden")
-  }
-
-  if (!directory.endsWith("/")) {
-    const parent = dirname(directory)
-    return listDirectoryAction(parent + "/")
   }
 
   let entries: string[]
@@ -39,8 +44,14 @@ export async function listDirectoryAction(
     )
   ).filter((entry) => !!entry)
 
-  return entryStats.map(([filename, stats]) => ({
-    name: filename,
-    type: stats.isDirectory() ? "directory" : "file",
-  }))
+  return entryStats.map(([filename, stats]) => {
+    const path = join(directory, filename)
+    return {
+      name: filename,
+      isDirectory: stats.isDirectory(),
+      path: stats.isDirectory() ? `${path}/` : path,
+      updatedAt: stats.mtime.toISOString(),
+      ...(!stats.isDirectory() && { size: stats.size }),
+    } as DirectoryEntry
+  })
 }
