@@ -3,7 +3,11 @@ import {
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 import { deleteProcessed } from "@/assets/assets"
-import { getProcessedAudioFiles } from "@/assets/covers"
+import {
+  getCustomEpubCover,
+  getEpubCoverFilename,
+  getProcessedAudioFiles,
+} from "@/assets/covers"
 import {
   getTranscriptionsFilepath,
   getProcessedAudioFilepath,
@@ -254,6 +258,15 @@ export default async function processBook({
         await epub.setTitle(book.title)
         if (book.language) {
           await epub.setLanguage(new Intl.Locale(book.language))
+        }
+        const epubCover = await getCustomEpubCover(bookUuid)
+        const epubFilename = await getEpubCoverFilename(bookUuid)
+        if (epubCover) {
+          const prevCoverItem = await epub.getCoverImageItem()
+          await epub.setCoverImage(
+            prevCoverItem?.href ?? `images/${epubFilename}`,
+            epubCover,
+          )
         }
         await epub.writeToFile(getEpubSyncedFilepath(bookUuid))
         await epub.close()

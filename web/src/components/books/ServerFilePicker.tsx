@@ -1,213 +1,330 @@
 import {
   DirectoryEntry,
+  DirectoryFileEntry,
   listDirectoryAction,
 } from "@/actions/listDirectoryAction"
-import {
-  Button,
-  Combobox,
-  ComboboxItem,
-  ComboboxItemCheck,
-  ComboboxPopover,
-  ComboboxProvider,
-  Form,
-  FormControl,
-  FormLabel,
-  FormSubmit,
-  useFormStore,
-} from "@ariakit/react"
-import { useEffect, useMemo, useState, useTransition } from "react"
-import styles from "./serverfilepicker.module.css"
+import { useEffect, useMemo, useState } from "react"
 import { matchSorter } from "match-sorter"
 import { FolderIcon } from "../icons/FolderIcon"
 import { FileIcon } from "../icons/FileIcon"
-import { CloseIcon } from "../icons/CloseIcon"
+import {
+  Pill,
+  Combobox,
+  useCombobox,
+  TextInput,
+  Group,
+  Text,
+  Stack,
+  Button,
+} from "@mantine/core"
+import { formatBytes } from "@/strings"
+import { IconCheck } from "@tabler/icons-react"
+import cx from "classnames"
+
+function dirname(path: string) {
+  const segments = path.split("/")
+  const dirSegments = segments.slice(0, -1)
+  return [...dirSegments, ""].join("/")
+}
+
+function basename(path: string) {
+  const segments = path.split("/")
+  return segments[segments.length - 1] ?? ""
+}
+
+// function join(pathA: string, pathB: string) {
+//   if (!pathA.endsWith("/")) {
+//     pathA = pathA.slice(0, -1)
+//   }
+//   return `${pathA}/${pathB}`
+// }
+
+function useListDirectoryAction(
+  currentSearchDirectory: string,
+  allowedExtensions: string[],
+) {
+  const [entries, setEntries] = useState<DirectoryEntry[]>([])
+
+  const [actionIsPending, setActionIsPending] = useState(false)
+
+  useEffect(() => {
+    setActionIsPending(true)
+    void listDirectoryAction(dirname(currentSearchDirectory)).then(
+      (entries) => {
+        setEntries(
+          entries.filter(
+            (entry) =>
+              entry.isDirectory ||
+              allowedExtensions.some((ext) => entry.name.endsWith(ext)),
+          ),
+        )
+        setActionIsPending(false)
+      },
+    )
+  }, [allowedExtensions, currentSearchDirectory])
+
+  const matchedEntries = useMemo(() => {
+    return matchSorter(entries, basename(currentSearchDirectory), {
+      keys: ["name"],
+    })
+  }, [currentSearchDirectory, entries])
+
+  return { entries: matchedEntries, actionIsPending }
+}
 
 type Props =
   | {
       allowedExtensions: string[]
       multiple?: false | undefined
-      onChange: (file: string) => void
+      onChange: (file: DirectoryFileEntry | null) => void
     }
   | {
       allowedExtensions: string[]
       multiple: true
-      onChange: (files: string[]) => void
+      onChange: (files: DirectoryFileEntry[]) => void
     }
+
+function ServerMultipleFilePicker({
+  allowedExtensions,
+  onChange,
+}: {
+  allowedExtensions: string[]
+  onChange: (files: DirectoryFileEntry[]) => void
+}) {
+  const combobox = useCombobox()
+
+  const { updateSelectedOptionIndex, selectFirstOption, focusTarget } = combobox
+
+  const [currentSearchDirectory, setCurrentSearchDirectory] = useState("/")
+  const [values, setValues] = useState<DirectoryFileEntry[]>([])
+
+  function handleSelectAll() {
+    setValues((prev) => [
+      ...prev.filter((v) => !entries.some((entry) => entry.path === v.path)),
+      ...entries.filter((entry) => !entry.isDirectory),
+    ])
+  }
+
+  function handleValueSelect(val: string) {
+    if (val.endsWith("/")) {
+      setCurrentSearchDirectory(val)
+      return
+    }
+    setValues((prev) =>
+      prev.some((entry) => entry.path === val)
+        ? prev.filter((v) => v.path !== val)
+        : [...prev, entries.find((e) => e.path === val) as DirectoryFileEntry],
+    )
+  }
+
+  function handleValueRemove(val: string) {
+    setValues((prev) => prev.filter((v) => v.path !== val))
+  }
+
+  const { entries, actionIsPending } = useListDirectoryAction(
+    currentSearchDirectory,
+    allowedExtensions,
+  )
+
+  // Whenever we change the list of entries, reset the selection
+  // to the first option
+  useEffect(() => {
+    selectFirstOption()
+    updateSelectedOptionIndex("selected")
+    focusTarget()
+  }, [focusTarget, entries, selectFirstOption, updateSelectedOptionIndex])
+
+  return (
+    <Stack>
+      <Combobox
+        store={combobox}
+        onOptionSubmit={handleValueSelect}
+        disabled={actionIsPending}
+      >
+        <Pill.Group>
+          {values.map((entry) => (
+            <Pill
+              key={entry.path}
+              withRemoveButton
+              onRemove={() => {
+                handleValueRemove(entry.path)
+              }}
+            >
+              {entry.name}
+            </Pill>
+          ))}
+        </Pill.Group>
+        <Combobox.EventsTarget>
+          <TextInput
+            placeholder="Pick value"
+            value={currentSearchDirectory}
+            onChange={(event) => {
+              setCurrentSearchDirectory(event.currentTarget.value)
+            }}
+          />
+        </Combobox.EventsTarget>
+        <Button
+          className="self-start"
+          variant="subtle"
+          size="compact-sm"
+          onClick={() => {
+            handleSelectAll()
+          }}
+        >
+          Select all
+        </Button>
+        <Combobox.Options className="h-96 max-h-full overflow-auto">
+          {entries.map((entry) => (
+            <Combobox.Option
+              key={entry.name}
+              active={values.some((value) => value.path === entry.path)}
+              value={entry.path}
+            >
+              <Group>
+                <IconCheck
+                  className={cx({
+                    invisible: values.every(
+                      (value) => value.path !== entry.path,
+                    ),
+                  })}
+                />
+                {entry.isDirectory ? (
+                  <FolderIcon height="1rem" />
+                ) : (
+                  <FileIcon height="1rem" />
+                )}
+                <Text>{entry.name}</Text>
+                <Text>{entry.isDirectory ? " " : formatBytes(entry.size)}</Text>
+              </Group>
+            </Combobox.Option>
+          ))}
+        </Combobox.Options>
+      </Combobox>
+      <Button
+        className="self-end"
+        variant="filled"
+        onClick={() => {
+          onChange(values)
+        }}
+      >
+        Select
+      </Button>
+    </Stack>
+  )
+}
+
+function ServerSingleFilePicker({
+  allowedExtensions,
+  onChange,
+}: {
+  allowedExtensions: string[]
+  onChange: (files: DirectoryFileEntry | null) => void
+}) {
+  const combobox = useCombobox()
+
+  const { updateSelectedOptionIndex, selectFirstOption, focusTarget } = combobox
+
+  const [currentSearchDirectory, setCurrentSearchDirectory] = useState("/")
+  const [value, setValue] = useState<DirectoryFileEntry | null>(null)
+
+  function handleValueSelect(val: string) {
+    if (val.endsWith("/")) {
+      setCurrentSearchDirectory(val)
+      return
+    }
+    setValue((prev) =>
+      prev?.path === val
+        ? null
+        : (entries.find((e) => e.path === val) as DirectoryFileEntry),
+    )
+  }
+
+  const { entries, actionIsPending } = useListDirectoryAction(
+    currentSearchDirectory,
+    allowedExtensions,
+  )
+
+  // Whenever we change the list of entries, reset the selection
+  // to the first option
+  useEffect(() => {
+    selectFirstOption()
+    updateSelectedOptionIndex("selected")
+    focusTarget()
+  }, [focusTarget, entries, selectFirstOption, updateSelectedOptionIndex])
+
+  return (
+    <Stack>
+      <Combobox
+        store={combobox}
+        onOptionSubmit={handleValueSelect}
+        disabled={actionIsPending}
+      >
+        <Combobox.EventsTarget>
+          <TextInput
+            classNames={{ input: "text-lg md:text-base" }}
+            placeholder="Pick value"
+            value={currentSearchDirectory}
+            onChange={(event) => {
+              setCurrentSearchDirectory(event.currentTarget.value)
+            }}
+          />
+        </Combobox.EventsTarget>
+        <Combobox.Options className="h-96 max-h-full overflow-auto">
+          {entries.map((entry) => (
+            <Combobox.Option
+              key={entry.name}
+              active={value?.path === entry.path}
+              value={entry.path}
+            >
+              <Group>
+                <IconCheck
+                  className={cx({
+                    invisible: value?.path !== entry.path,
+                  })}
+                />
+                {entry.isDirectory ? (
+                  <FolderIcon height="1rem" />
+                ) : (
+                  <FileIcon height="1rem" />
+                )}
+                <Text>{entry.name}</Text>
+                <Text>{entry.isDirectory ? " " : formatBytes(entry.size)}</Text>
+              </Group>
+            </Combobox.Option>
+          ))}
+        </Combobox.Options>
+      </Combobox>
+      <Button
+        className="self-end"
+        variant="filled"
+        onClick={() => {
+          onChange(value)
+        }}
+      >
+        Select
+      </Button>
+    </Stack>
+  )
+}
 
 export function ServerFilePicker({
   allowedExtensions,
   multiple,
   onChange,
 }: Props) {
-  const [entries, setEntries] = useState<DirectoryEntry[]>([])
-  const [actionIsPending, setActionIsPending] = useState(false)
-
-  const [isPending, startTransition] = useTransition()
-
-  const form = useFormStore({
-    defaultValues: {
-      searchDirectory: "/",
-      path: multiple ? ([] as string[]) : "/",
-    },
-  })
-
-  const currentSearchDirectory = form.useValue<string>(
-    form.names.searchDirectory,
-  )
-  const currentPath = form.useValue<string | string[]>(form.names.path)
-
-  useEffect(() => {
-    setActionIsPending(true)
-    void listDirectoryAction(currentSearchDirectory).then((entries) => {
-      setEntries(
-        entries.filter(
-          (entry) =>
-            entry.type === "directory" ||
-            allowedExtensions.some((ext) => entry.name.endsWith(ext)),
-        ),
-      )
-      setActionIsPending(false)
-    })
-  }, [allowedExtensions, currentSearchDirectory])
-
-  const [grandparent, parent, basename] = useMemo(() => {
-    const segments = currentSearchDirectory.split("/")
-    return [
-      segments.slice(0, segments.length - 2).join("/"),
-      segments.slice(0, segments.length - 1).join("/"),
-      segments[segments.length - 1] ?? "",
-    ]
-  }, [currentSearchDirectory])
-
-  const matchedEntries = matchSorter(entries, basename, { keys: ["name"] })
-
-  form.useSubmit((state) => {
-    onChange(state.values.path as string & string[])
-  })
+  if (multiple) {
+    return (
+      <ServerMultipleFilePicker
+        allowedExtensions={allowedExtensions}
+        onChange={onChange}
+      />
+    )
+  }
 
   return (
-    <Form store={form} className={styles["form"]}>
-      <div className={styles["selected-values"]}>
-        {Array.isArray(currentPath) &&
-          currentPath.map((path) => {
-            const segments = path.split("/")
-            return (
-              <Button
-                key={path}
-                onClick={() => {
-                  form.setValue(form.names.path, (paths: string[]) =>
-                    paths.filter((p) => p !== path),
-                  )
-                }}
-                className={styles["selected-value"]}
-              >
-                {segments[segments.length - 1]} <CloseIcon height="1rem" />
-              </Button>
-            )
-          })}
-      </div>
-
-      <FormLabel hidden name={form.names.path}>
-        Path
-      </FormLabel>
-      <FormControl
-        name={form.names.path}
-        render={
-          <ComboboxProvider
-            open={true}
-            value={currentSearchDirectory}
-            setValue={(value) => {
-              startTransition(() => {
-                form.setValue(
-                  form.names.searchDirectory,
-                  value === "" ? "/" : value,
-                )
-              })
-            }}
-            selectedValue={currentPath}
-            setSelectedValue={(value) => {
-              const update =
-                typeof value === "string" ? value : value[value.length - 1]
-              if (update?.endsWith("/")) {
-                form.setValue(form.names.searchDirectory, update)
-              } else {
-                if (typeof value === "string") {
-                  form.setValue(form.names.searchDirectory, value)
-                }
-                form.setValue(form.names.path, value)
-              }
-            }}
-          >
-            <Combobox
-              className={styles["combobox-input"]}
-              autoComplete="list"
-              autoSelect="always"
-              multiple={multiple}
-            />
-            {multiple && (
-              <Button
-                className={styles["select-all-button"]}
-                onClick={() => {
-                  form.setValue(
-                    form.names.path,
-                    matchedEntries
-                      .filter((entry) => entry.type === "file")
-                      .map((entry) =>
-                        [parent, entry.name].join("/").replaceAll("//", "/"),
-                      ),
-                  )
-                }}
-              >
-                Select all
-              </Button>
-            )}
-            <ComboboxPopover
-              disabled={actionIsPending || isPending}
-              wrapperProps={{
-                className: styles["combobox-wrapper"],
-              }}
-              className={styles["combobox-items"]}
-              hideOnEscape={false}
-              hideOnInteractOutside={false}
-            >
-              {currentSearchDirectory !== "/" && (
-                <ComboboxItem
-                  key="directory-up"
-                  className={styles["combobox-item"]}
-                  value={grandparent + "/"}
-                  resetValueOnSelect={false}
-                >
-                  <FolderIcon height="1rem" /> ..
-                </ComboboxItem>
-              )}
-              {matchedEntries.map((entry) => (
-                <ComboboxItem
-                  key={entry.name}
-                  className={styles["combobox-item"]}
-                  resetValueOnSelect={false}
-                  value={
-                    [parent, entry.name].join("/").replaceAll("//", "/") +
-                    (entry.type === "directory" ? "/" : "")
-                  }
-                >
-                  {entry.type === "directory" ? (
-                    <FolderIcon height="1rem" />
-                  ) : (
-                    <FileIcon height="1rem" />
-                  )}{" "}
-                  {entry.name} <ComboboxItemCheck />
-                </ComboboxItem>
-              ))}
-            </ComboboxPopover>
-          </ComboboxProvider>
-        }
-      />
-      <FormSubmit
-        className={styles["submit-button"]}
-        disabled={multiple ? currentPath.length === 0 : currentPath === "/"}
-      >
-        Choose
-      </FormSubmit>
-    </Form>
+    <ServerSingleFilePicker
+      allowedExtensions={allowedExtensions}
+      onChange={onChange}
+    />
   )
 }

@@ -1,13 +1,23 @@
 "use client"
 
-import { TabProvider, TabList, Tab, TabPanel, Button } from "@ariakit/react"
-import { DeleteIcon } from "../icons/DeleteIcon"
-import { SaveIcon } from "../icons/SaveIcon"
-import styles from "./bookeditform.module.css"
-import Image from "next/image"
+import NextImage from "next/image"
 import { BookDetail } from "@/apiModels"
 import { useApiClient } from "@/hooks/useApiClient"
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { useForm } from "@mantine/form"
+import {
+  FileButton,
+  Button,
+  Tabs,
+  Image,
+  Group,
+  Stack,
+  TextInput,
+  Text,
+  Fieldset,
+  ActionIcon,
+} from "@mantine/core"
+import { IconPlus, IconTrash } from "@tabler/icons-react"
 
 type Props = {
   book: BookDetail
@@ -21,15 +31,35 @@ enum SaveState {
 }
 
 export function BookEditForm({ book }: Props) {
-  const [title, setTitle] = useState(book.title)
-  const [language, setLanguage] = useState(book.language)
-  const [authors, setAuthors] = useState(book.authors)
-  const [textCover, setTextCover] = useState<File | null>(null)
-  const [audioCover, setAudioCover] = useState<File | null>(null)
+  const client = useApiClient()
+
+  const form = useForm({
+    initialValues: {
+      title: book.title,
+      language: book.language,
+      authors: book.authors,
+      textCover: null as File | null,
+      audioCover: null as File | null,
+    },
+  })
+
+  const { textCover, audioCover, authors } = form.getValues()
+  const textCoverUrl = useMemo(
+    () =>
+      textCover
+        ? URL.createObjectURL(textCover)
+        : client.getCoverUrl(book.uuid),
+    [book.uuid, client, textCover],
+  )
+  const audioCoverUrl = useMemo(
+    () =>
+      audioCover
+        ? URL.createObjectURL(audioCover)
+        : client.getCoverUrl(book.uuid, true),
+    [book.uuid, client, audioCover],
+  )
 
   const [savedState, setSavedState] = useState<SaveState>(SaveState.CLEAN)
-
-  const client = useApiClient()
 
   return (
     <>
@@ -38,194 +68,150 @@ export function BookEditForm({ book }: Props) {
         <p>Failed to update. Check your server logs for details.</p>
       )}
       <form
-        id="book-details"
-        className={styles["form"]}
-        action="/api/files/"
-        method="POST"
+        onSubmit={form.onSubmit(async (values) => {
+          setSavedState(SaveState.LOADING)
+          try {
+            await client.updateBook(
+              book.uuid,
+              values.title,
+              values.language,
+              values.authors,
+              values.textCover,
+              values.audioCover,
+            )
+          } catch (_) {
+            setSavedState(SaveState.ERROR)
+            return
+          }
+
+          setSavedState(SaveState.SAVED)
+        })}
       >
-        <div>
-          <div className={styles["cover-art-wrapper"]}>
-            <TabProvider defaultSelectedId="text-cover-tab">
-              <TabList className={styles["cover-art-tab-list"]}>
-                <Tab
-                  className={styles["text-cover-art-tab"]}
-                  id="text-cover-tab"
-                >
-                  Text
-                </Tab>
-                <Tab className={styles["audio-cover-art-tab"]}>Audio</Tab>
-              </TabList>
-              <TabPanel tabId="text-cover-tab">
-                <label className={styles["cover-art-label"]}>
-                  <Image
-                    className={styles["cover-art"]}
-                    height={98 * 3}
-                    width={64 * 3}
-                    src={
-                      textCover
-                        ? URL.createObjectURL(textCover)
-                        : client.getCoverUrl(book.uuid)
-                    }
-                    alt=""
-                    aria-hidden
-                  />
-                  <span className={styles["cover-art-text"]}>
-                    Edit cover art
-                  </span>
-                  <input
-                    className={styles["cover-art-input"]}
-                    id="text-cover-art"
-                    name="text-cover-art"
-                    type="file"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
-                      setTextCover(file)
-                    }}
-                  />
-                </label>
-              </TabPanel>
-              <TabPanel>
-                <label className={styles["cover-art-label"]}>
-                  <Image
-                    className={styles["cover-art"]}
-                    height={64 * 3}
-                    width={64 * 3}
-                    src={
-                      audioCover
-                        ? URL.createObjectURL(audioCover)
-                        : client.getCoverUrl(book.uuid, true)
-                    }
-                    alt=""
-                    aria-hidden
-                  />
-                  <span className={styles["cover-art-text"]}>
-                    Edit audio cover art
-                  </span>
-                  <input
-                    className={styles["cover-art-input"]}
-                    id="audio-cover-art"
-                    name="audio-cover-art"
-                    type="file"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
-                      setAudioCover(file)
-                    }}
-                  />
-                </label>
-              </TabPanel>
-            </TabProvider>
-          </div>
-        </div>
-        <div className={styles["text-inputs"]}>
-          <Button
-            className={styles["icon-button"]}
-            form="book-details"
-            type="submit"
-            disabled={savedState === SaveState.LOADING}
-            onClick={async (e) => {
-              e.preventDefault()
-
-              setSavedState(SaveState.LOADING)
-              try {
-                await client.updateBook(
-                  book.uuid,
-                  title,
-                  language,
-                  authors,
-                  textCover,
-                  audioCover,
-                )
-              } catch (_) {
-                setSavedState(SaveState.ERROR)
-                return
-              }
-
-              setSavedState(SaveState.SAVED)
-            }}
-          >
-            <SaveIcon />
-            <span>Save</span>
-          </Button>
-          <label className={styles["label"]}>
-            Title
-            <input
-              className={styles["input"]}
-              id="title"
-              name="title"
-              type="text"
-              value={title}
-              onChange={(e) => {
-                const value = e.target.value
-                setTitle(value)
-              }}
-            />
-          </label>
-          <label className={styles["label"]}>
-            Language
-            <input
-              className={styles["input"]}
-              id="language"
-              name="language"
-              type="text"
-              value={language ?? ""}
-              onChange={(e) => {
-                const value = e.target.value
-                setLanguage(value)
-              }}
-            />
-          </label>
-          <fieldset className={styles["fieldset"]}>
-            <legend>Authors</legend>
-            {authors.map((author, i) => (
-              <div key={author.uuid} className={styles["authors-input"]}>
-                <input
-                  key={author.uuid}
-                  className={styles["input"]}
-                  aria-label="Author name"
-                  id={`author-${author.uuid}`}
-                  name={`author-${author.uuid}`}
-                  type="text"
-                  value={author.name}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    const newAuthors = [...authors]
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    newAuthors[i]!.name = value
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    newAuthors[i]!.file_as = value
-                    setAuthors(newAuthors)
-                  }}
-                />
-                {i > 0 && (
+        <Group align="stretch" gap="xl" mt="lg">
+          <Tabs defaultValue="text-cover">
+            <Tabs.List>
+              <Tabs.Tab value="text-cover">Text</Tabs.Tab>
+              <Tabs.Tab value="audio-cover">Audio</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="text-cover">
+              <FileButton
+                accept="image/jpeg,image/png"
+                {...form.getInputProps("textCover")}
+              >
+                {(props) => (
                   <Button
-                    className={styles["delete-button"]}
-                    onClick={() => {
-                      const newAuthors = [...authors]
-                      newAuthors.splice(i, 1)
-                      setAuthors(newAuthors)
-                    }}
+                    {...props}
+                    variant="subtle"
+                    className="flex h-[max-content] w-[max-content] justify-center"
                   >
-                    <DeleteIcon />
-                    Remove
+                    <Image
+                      component={NextImage}
+                      height={98 * 3}
+                      width={64 * 3}
+                      h={98 * 3}
+                      w={64 * 3}
+                      src={textCoverUrl}
+                      alt=""
+                      aria-hidden
+                    />
+                    <Text
+                      c="black"
+                      className="absolute bottom-4 left-0 inline-block w-full bg-white bg-opacity-90 py-2"
+                    >
+                      Edit cover art
+                    </Text>
                   </Button>
                 )}
-              </div>
+              </FileButton>
+            </Tabs.Panel>
+            <Tabs.Panel value="audio-cover">
+              <FileButton
+                accept="image/jpeg,image/png"
+                {...form.getInputProps("audioCover")}
+              >
+                {(props) => (
+                  <Button
+                    {...props}
+                    variant="subtle"
+                    className="h-[max-content] w-[max-content]"
+                    classNames={{
+                      label: "flex justify-center bg-black",
+                    }}
+                  >
+                    <Image
+                      component={NextImage}
+                      fit="contain"
+                      height={64 * 3}
+                      width={64 * 3}
+                      h={64 * 3}
+                      w={64 * 3}
+                      src={audioCoverUrl}
+                      alt=""
+                      aria-hidden
+                    />
+                    <Text
+                      c="black"
+                      className="absolute bottom-4 left-0 inline-block w-full bg-white bg-opacity-90 py-2"
+                    >
+                      Edit cover art
+                    </Text>
+                  </Button>
+                )}
+              </FileButton>
+            </Tabs.Panel>
+          </Tabs>
+          <Stack gap={0} className="grow">
+            <TextInput label="Title" {...form.getInputProps("title")} />
+            <TextInput label="Language" {...form.getInputProps("language")} />
+            {authors.map((author, i) => (
+              <Fieldset
+                key={author.uuid || i}
+                legend="Author"
+                className="relative"
+              >
+                <TextInput
+                  label="Name"
+                  {...form.getInputProps(`authors.${i}.name`)}
+                />
+                <TextInput
+                  label="Role"
+                  {...form.getInputProps(`authors.${i}.role`)}
+                />
+                {i > 0 && (
+                  <ActionIcon
+                    variant="subtle"
+                    className="absolute right-4 top-0"
+                    onClick={() => {
+                      form.removeListItem("authors", i)
+                    }}
+                  >
+                    <IconTrash color="red" />
+                  </ActionIcon>
+                )}
+              </Fieldset>
             ))}
             <Button
-              className={styles["button"]}
+              leftSection={<IconPlus />}
+              variant="outline"
+              mt="sm"
+              className="self-end"
               onClick={() => {
-                setAuthors([
-                  ...authors,
-                  { name: "", role: "Author", uuid: "", file_as: "" },
-                ])
+                form.insertListItem("authors", {
+                  name: "",
+                  role: "Author",
+                  uuid: "",
+                  file_as: "",
+                })
               }}
             >
-              + Add author
+              Add author
             </Button>
-          </fieldset>
-        </div>
+          </Stack>
+        </Group>
+
+        <Group justify="flex-end" className="sticky bottom-0 z-10 bg-white p-6">
+          <Button type="submit">Save</Button>
+        </Group>
       </form>
     </>
   )

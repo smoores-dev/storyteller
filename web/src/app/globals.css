@@ -1,29 +1,11 @@
-:root {
-  --border-radius: 0.5rem;
-  --primary-color: #b74c0f;
-  --active-primary-color: #5f2808;
-  --error-color: #a20634;
-}
+@import "@mantine/core/styles.css";
 
-@font-face {
-  font-family: YoungSerif;
-  src: url("/fonts/YoungSerif.ttf");
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@font-face {
-  font-family: Inter;
-  src: url("/fonts/Inter-VariableFont_slnt,wght.ttf");
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  font-family: Inter;
-}
-
-h1,
-h2,
-h3 {
-  font-family: YoungSerif;
+@layer base {
+  p {
+    @apply my-3;
+  }
 }
