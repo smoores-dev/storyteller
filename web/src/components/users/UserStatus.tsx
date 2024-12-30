@@ -37,7 +37,7 @@ export function UserStatus({ user, onUpdate }: Props) {
 
   return (
     <Paper className="max-w-[600px]">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="nowrap">
         <Stack gap={0}>
           <Title order={4}>{user.full_name}</Title>
           <div>{user.username}</div>

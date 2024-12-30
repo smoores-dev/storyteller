@@ -51,7 +51,7 @@ export function BookStatus({ book }: Props) {
 
   return (
     <Paper className="max-w-[600px]">
-      <Group justify="space-between" align="stretch">
+      <Group justify="space-between" wrap="nowrap" align="stretch">
         <Image
           className="rounded-md"
           component={NextImage}

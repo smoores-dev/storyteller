@@ -24,7 +24,7 @@ export function InviteStatus({ invite, onUpdate }: Props) {
 
   return (
     <Paper className="max-w-[600px]">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="nowrap">
         <Stack>
           <Title order={4}>{invite.email}</Title>
           {inviteUrl !== null && (
