@@ -224,7 +224,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                             if (storytellerDoubleClickTimeout) {
                                 clearTimeout(storytellerDoubleClickTimeout);
                                 storytellerDoubleClickTimeout = null;
-                                window.webkit.messageHandlers.storytellerDoubleClick.postMessage(fragment);
+                                storyteller.handleDoubleTap(fragment);
                                 return
                             }
 
@@ -238,7 +238,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             
                 document.addEventListener('selectionchange', () => {
                     if (document.getSelection().isCollapsed) {
-                        window.webkit.messageHandlers.storytellerSelectionCleared.postMessage(null);
+                        storyteller.handleSelectionCleared();
                     }
                 });
                 """.trimIndent()
@@ -297,7 +297,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
             navigator?.evaluateJavascript(
                 """
-                globalThis.storytellerFragments = \(jsFragmentsArray);
+                globalThis.storytellerFragments = ${jsFragmentsArray};
                 addDoubleTapListeners();
             """.trimIndent()
             )
