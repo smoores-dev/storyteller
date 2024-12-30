@@ -341,7 +341,8 @@ export class Synchronizer {
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const spineItem = spine[index]!
-      logger.info(`Syncing chapter #${index}`)
+
+      logger.info(`Syncing epub item #${index} : ${basename(spineItem.href)}`)
 
       const chapterId = spineItem.id
       const chapterSentences = await this.getChapterSentences(chapterId)

@@ -155,9 +155,16 @@ export default async function processBook({
   // const currentTasks = await getProcessingTasksForBook(bookUuid)
   const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
 
+  // get book info from db
+  const [book] = getBooks([bookUuid])
+  if (!book) throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
+  // book reference to use in log
+  const bookRefForLog = `"${book.title}" (uuid: ${bookUuid})`
+
   logger.info(
-    `Found ${remainingTasks.length} remaining tasks for book ${bookUuid}`,
+    `Found ${remainingTasks.length} remaining tasks for book ${bookRefForLog}`,
   )
+
   for (const task of remainingTasks) {
     port.postMessage({
       type: "taskTypeUpdated",
@@ -270,6 +277,6 @@ export default async function processBook({
       return
     }
   }
-  logger.info(`Completed synchronizing book ${bookUuid}`)
+  logger.info(`Completed synchronizing book ${bookRefForLog})`)
   port.postMessage({ type: "processingCompleted", bookUuid })
 }
