@@ -192,7 +192,7 @@ export function createAdminUser(
       user_delete,
       user_update,
       settings_update
-    ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+    ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     WHERE NOT EXISTS (
       SELECT uuid
       FROM user_permission
