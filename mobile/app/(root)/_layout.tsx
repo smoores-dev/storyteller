@@ -27,7 +27,7 @@ export default function ModalLayout() {
         <Stack.Screen
           name="player"
           options={{
-            presentation: "fullScreenModal",
+            presentation: Platform.isPad ? "fullScreenModal" : "modal",
           }}
         />
         <Stack.Screen
