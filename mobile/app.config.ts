@@ -61,7 +61,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     assetBundlePatterns: ["**/*"],
     ios: {
-      supportsTablet: false,
+      supportsTablet: true,
       bundleIdentifier: IS_DEV
         ? "dev.smoores.Storyteller.dev"
         : "dev.smoores.Storyteller",
