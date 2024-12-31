@@ -27,10 +27,13 @@ export default function ModalLayout() {
         <Stack.Screen
           name="player"
           options={{
-            presentation: "modal",
+            presentation: "fullScreenModal",
           }}
         />
-        <Stack.Screen name="log" options={{ presentation: "modal" }} />
+        <Stack.Screen
+          name="log"
+          options={{ presentation: "fullScreenModal" }}
+        />
       </Stack>
     )
   }
