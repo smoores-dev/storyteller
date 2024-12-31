@@ -295,6 +295,8 @@ export async function processFile(
           MPEG4_FILE_EXTENSIONS.includes(zext)
         ) {
           const tempFilepath = join(tempDir, entry.filename)
+          const tempDirname = dirname(tempFilepath)
+          await mkdir(tempDirname, { recursive: true })
           await writeFile(
             tempFilepath,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
