@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/mobile",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "main": "expo-router/entry",
   "scripts": {
     "start:device": "APP_VARIANT=development expo start --dev-client",
