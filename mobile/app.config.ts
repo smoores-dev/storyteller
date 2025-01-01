@@ -1,6 +1,6 @@
 import path from "node:path"
 import fs from "node:fs"
-import { withDangerousMod } from "@expo/config-plugins"
+import { withDangerousMod, withGradleProperties } from "@expo/config-plugins"
 import type { ExpoConfig, ConfigContext } from "expo/config"
 import { mergeContents } from "@expo/config-plugins/build/utils/generateCode"
 import packageInfo from "./package.json"
@@ -19,13 +19,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: "storyteller",
     plugins: [
       "expo-router",
+      "expo-secure-store",
       [
         "expo-build-properties",
         {
           ios: { deploymentTarget: "15.5" },
           android: {
-            compileSdkVersion: 34,
-            buildToolsVersion: "34.0.0",
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            buildToolsVersion: "35.0.0",
             usesCleartextTraffic: true,
             kotlinVersion: "1.9.24",
           },
@@ -93,7 +95,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
   }
 
-  return withDangerousMod(initialConfig, [
+  // Automatically convert support library dependencies to
+  // androidx. I think this was the default before sdk 51,
+  // and I don't know why I suddenly need to add it manually
+  // now. Without this configuration, the android build fails
+  // with duplicate class errors (as classes are provided by
+  // both support libraries and androidx).
+  const configWithGradleProps = withGradleProperties(
+    initialConfig,
+    (config) => {
+      config.modResults.push({
+        type: "property",
+        key: "android.enableJetifier",
+        value: "true",
+      })
+      return config
+    },
+  )
+
+  return withDangerousMod(configWithGradleProps, [
     "ios",
     async (config) => {
       const filePath = path.join(
