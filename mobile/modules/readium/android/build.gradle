@@ -15,14 +15,14 @@ buildscript {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
   }
 
-  ext.readium_version = '2.4.0'
+  ext.readium_version = '2.4.3'
 }
 
 project.android {
-  compileSdkVersion safeExtGet("compileSdkVersion", 34)
+  compileSdkVersion safeExtGet("compileSdkVersion", 35)
   defaultConfig {
-    minSdkVersion safeExtGet("minSdkVersion", 21)
-    targetSdkVersion safeExtGet("targetSdkVersion", 34)
+    minSdkVersion safeExtGet("minSdkVersion", 24)
+    targetSdkVersion safeExtGet("targetSdkVersion", 35)
   }
 }
 
@@ -43,16 +43,16 @@ repositories {
 
 dependencies {
   implementation project(':expo-modules-core')
-  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${safeExtGet('kotlinVersion', '1.8.22')}"
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${safeExtGet('kotlinVersion', '1.9.24')}"
   implementation "org.readium.kotlin-toolkit:readium-shared:$readium_version"
   implementation "org.readium.kotlin-toolkit:readium-streamer:$readium_version"
   implementation "org.readium.kotlin-toolkit:readium-navigator:$readium_version"
   implementation "org.readium.kotlin-toolkit:readium-opds:$readium_version"
   implementation "org.readium.kotlin-toolkit:readium-lcp:$readium_version"
   implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3'
-  implementation 'androidx.fragment:fragment-ktx:1.6.2'
-  implementation 'androidx.compose.ui:ui-android:1.5.4'
-  implementation 'org.jsoup:jsoup:1.15.3'
+  implementation 'androidx.fragment:fragment-ktx:1.8.5'
+  implementation 'androidx.compose.ui:ui-android:1.7.6'
+  implementation 'org.jsoup:jsoup:1.18.3'
   implementation 'com.mcxiaoke.koi:async:0.5.5'
   implementation 'com.mcxiaoke.koi:core:0.5.5'
 }
