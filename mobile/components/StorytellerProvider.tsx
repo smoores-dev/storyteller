@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from "react"
-import { ThemeProvider } from "@react-navigation/native"
+import { DefaultTheme, ThemeProvider } from "@react-navigation/native"
 import { getStartupStatus } from "../store/selectors/startupSelectors"
 import { StartupStatus } from "../store/slices/startupSlice"
 import { SplashScreen, useRouter } from "expo-router"
@@ -24,6 +24,7 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider
       value={{
+        ...DefaultTheme,
         dark,
         colors: {
           primary: foreground,
