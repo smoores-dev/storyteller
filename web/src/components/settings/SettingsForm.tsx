@@ -305,7 +305,7 @@ export function SettingsForm({ settings }: Props) {
                   instance.
                 </>
               }
-              {...form.getInputProps("amazon_transcribe_secret_access_key")}
+              {...form.getInputProps("open_ai_base_url")}
             />
             <TextInput
               label="Model name (optional)"
