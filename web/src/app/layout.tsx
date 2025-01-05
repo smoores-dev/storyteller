@@ -13,7 +13,7 @@ import { ColorSchemeScript } from "@mantine/core"
 
 import "./globals.css"
 import { BookDetail } from "@/apiModels"
-
+import { getCurrentVersion } from "@/versions"
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -37,8 +37,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const versionString = process.env["CI_COMMIT_TAG"]
-  const version = versionString?.match(/^web-v(.*)$/)?.[1] ?? "development"
+  const version = getCurrentVersion()
 
   const currentUser = await getCurrentUser()
   const client = await createAuthedApiClient()
