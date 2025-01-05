@@ -31,6 +31,7 @@ import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { transcribeTrack } from "@/transcribe"
 import { UUID } from "@/uuid"
+import { getCurrentVersion } from "@/versions"
 import type { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { MessagePort } from "node:worker_threads"
@@ -268,6 +269,21 @@ export default async function processBook({
             epubCover,
           )
         }
+        /* Add metadata : app version */
+        const appVersion = getCurrentVersion()
+        await epub.addMetadata({
+          type: "meta",
+          properties: { property: "storyteller:version" },
+          value: appVersion,
+        })
+        /* Add metadata : aligned epub creation datetime */
+        const dateTimeString = new Date().toISOString()
+        await epub.addMetadata({
+          type: "meta",
+          properties: { property: "storyteller:media-overlays-modified" },
+          value: dateTimeString,
+        })
+
         await epub.writeToFile(getEpubSyncedFilepath(bookUuid))
         await epub.close()
       }
