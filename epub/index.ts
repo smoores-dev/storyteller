@@ -1171,6 +1171,56 @@ export class Epub {
   }
 
   /**
+   * Return the set of custom vocabulary prefixes set on this publication's
+   * root package element.
+   *
+   * Returns a map from prefix to URI
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-prefix-attr
+   */
+  async getPackageVocabularyPrefixes() {
+    const packageDocument = await this.getPackageDocument()
+    const packageElement = Epub.findXmlChildByName("package", packageDocument)
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: found no package element in package document",
+      )
+
+    const prefixValue = packageElement[":@"]?.["@_prefix"]
+    if (!prefixValue) return {}
+
+    const matches = prefixValue.matchAll(/(?:([a-z]+): +(\S+)\s*)/gs)
+    return Array.from(matches).reduce<Record<string, string>>(
+      (acc, match) =>
+        match[1] && match[2] ? { ...acc, [match[1]]: match[2] } : acc,
+      {},
+    )
+  }
+
+  /**
+   * Set a custom vocabulary prefix on the root package element.
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-prefix-attr
+   */
+  async setPackageVocabularyPrefix(prefix: string, uri: string) {
+    await this.withPackageDocument(async (packageDocument) => {
+      const packageElement = Epub.findXmlChildByName("package", packageDocument)
+      if (!packageElement)
+        throw new Error(
+          "Failed to parse EPUB: found no package element in package document",
+        )
+
+      const prefixes = await this.getPackageVocabularyPrefixes()
+      prefixes[prefix] = uri
+
+      packageElement[":@"] ??= {}
+      packageElement[":@"]["@_prefix"] = Object.entries(prefixes)
+        .map(([p, u]) => `${p}: ${u}`)
+        .join("\n    ")
+    })
+  }
+
+  /**
    * Set the title of the Epub.
    *
    * If a title already exists, only the first title metadata
