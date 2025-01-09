@@ -1,6 +1,12 @@
 import { join } from "node:path"
 import { describe, it } from "node:test"
-import { Epub, ParsedXml, XmlElement, XmlTextNode } from "./index.js"
+import {
+  Epub,
+  MetadataEntry,
+  ParsedXml,
+  XmlElement,
+  XmlTextNode,
+} from "./index.js"
 import assert from "node:assert"
 import { stat } from "node:fs/promises"
 
@@ -127,6 +133,44 @@ void describe("Epub", () => {
     await epub.close()
   })
 
+  void it("can add metadata", async () => {
+    const inputFilepath = join("__fixtures__", "moby-dick.epub")
+    const epub = await Epub.from(inputFilepath)
+
+    const newItem: MetadataEntry = {
+      properties: { property: "example" },
+      value: "metadata value",
+      type: "meta",
+      id: "test-metadata",
+    }
+    await epub.addMetadata(newItem)
+    assert.deepEqual(newItem, (await epub.getMetadata()).at(-1))
+  })
+
+  void it("replaces the correct metadata entry", async () => {
+    // This is to test a regression for !106.  There is still a related issue for malformed epubs.
+    const inputFilepath = join("__fixtures__", "moby-dick.epub")
+    const epub = await Epub.from(inputFilepath)
+
+    const firstValue: MetadataEntry = {
+      properties: { property: "example" },
+      value: "first-value",
+      type: "meta",
+      id: "test_metadata",
+    }
+    const secondValue: MetadataEntry = { ...firstValue, value: "second-value" }
+    const isAddedEntry = (entry: MetadataEntry) =>
+      entry.properties["property"] == "example" &&
+      entry.type == "meta" &&
+      entry.id == "test_metadata"
+
+    await epub.addMetadata(firstValue)
+    await epub.replaceMetadata(isAddedEntry, secondValue)
+
+    assert.equal(-1, (await epub.getMetadata()).indexOf(firstValue))
+    assert.deepEqual(secondValue, (await epub.getMetadata()).at(-1))
+  })
+
   void it("can write the epub to a file", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(inputFilepath)
@@ -141,6 +185,32 @@ void describe("Epub", () => {
     await epub.close()
     const info = await stat(outputFilepath)
     assert.ok(info.isFile())
+  })
+
+  void it("writes the last modified time correctly", async () => {
+    const inputFilepath = join("__fixtures__", "moby-dick.epub")
+    const epub = await Epub.from(inputFilepath)
+
+    const startTime = new Date()
+    startTime.setMilliseconds(0)
+    await epub.writeToArray()
+    const endTime = new Date()
+    endTime.setMilliseconds(1000) // Round up to next second
+
+    const writeTimeStr = (await epub.getMetadata()).find(
+      (elem) => elem.properties["property"] === "dcterms:modified",
+    )?.value
+    assert.ok(writeTimeStr, "could not find last modified time")
+    const writeTime = new Date(writeTimeStr)
+    assert.match(
+      writeTimeStr,
+      /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/,
+      "written time not in correct format",
+    )
+    assert.ok(
+      startTime <= writeTime && writeTime <= endTime,
+      "last modified time was not in expected range",
+    )
   })
 
   void it("can modify an xhtml item", async () => {
