@@ -742,18 +742,19 @@ export class Epub {
     const metadata: EpubMetadata = metadataElement.metadata
       .filter((node): node is XmlElement => !Epub.isXmlTextNode(node))
       .map((item) => {
-        const id = item[":@"]?.["@_id"]
         const elementName = Epub.getXmlElementName(item)
         const textNode = Epub.getXmlChildren(item)[0]
-        if (!textNode || !Epub.isXmlTextNode(textNode)) return null
 
         // https://www.w3.org/TR/epub-33/#sec-metadata-values
         // Whitespace within these element values is not significant.
         // Sequences of one or more whitespace characters are collapsed
         // to a single space [infra] during processing .
-        const value = textNode["#text"].replaceAll(/\s+/g, " ")
+        const value =
+          !textNode || !Epub.isXmlTextNode(textNode)
+            ? undefined
+            : textNode["#text"].replaceAll(/\s+/g, " ")
         const attributes = item[":@"] ?? {}
-        const properties = Object.fromEntries(
+        const { id, ...properties } = Object.fromEntries(
           Object.entries(attributes).map(([attrName, value]) => [
             attrName.slice(2),
             value,
@@ -766,7 +767,6 @@ export class Epub {
           value,
         }
       })
-      .filter((element) => !!element)
 
     return metadata
   }
@@ -1919,7 +1919,7 @@ export class Epub {
         Epub.createXmlElement(
           entry.type,
           {
-            ...(entry.id && { "@_id": entry.id }),
+            ...(entry.id && { id: entry.id }),
             ...entry.properties,
           },
           entry.value !== undefined
@@ -1969,7 +1969,7 @@ export class Epub {
       const newElement = Epub.createXmlElement(
         entry.type,
         {
-          ...(entry.id && { "@_id": entry.id }),
+          ...(entry.id && { id: entry.id }),
           ...entry.properties,
         },
         entry.value !== undefined ? [Epub.createXmlTextNode(entry.value)] : [],
@@ -2001,7 +2001,8 @@ export class Epub {
       {
         type: "meta",
         properties: { property: "dcterms:modified" },
-        value: new Date().toISOString(),
+        // We need UTC with integer seconds, but toISOString gives UTC with ms
+        value: new Date().toISOString().replace(/\.\d+/, ""),
       },
     )
 
