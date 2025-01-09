@@ -237,6 +237,7 @@ To get started with developing in the Storyteller monorepo, check out the
     * [getLanguage()](#getlanguage)
     * [getManifest()](#getmanifest)
     * [getMetadata()](#getmetadata)
+    * [getPackageVocabularyPrefixes()](#getpackagevocabularyprefixes)
     * [getPublicationDate()](#getpublicationdate)
     * [getSpineItems()](#getspineitems)
     * [getSubjects()](#getsubjects)
@@ -251,6 +252,7 @@ To get started with developing in the Storyteller monorepo, check out the
     * [replaceMetadata()](#replacemetadata)
     * [setCoverImage()](#setcoverimage)
     * [setLanguage()](#setlanguage)
+    * [setPackageVocabularyPrefix()](#setpackagevocabularyprefix)
     * [setPublicationDate()](#setpublicationdate)
     * [setTitle()](#settitle)
     * [setType()](#settype)
@@ -298,9 +300,9 @@ To get started with developing in the Storyteller monorepo, check out the
     * [title](#title)
     * [type?](#type)
 * [ElementName](#elementname)
-  * [Defined in](#defined-in-76)
+  * [Defined in](#defined-in-78)
 * [EpubMetadata](#epubmetadata)
-  * [Defined in](#defined-in-77)
+  * [Defined in](#defined-in-79)
 * [ManifestItem](#manifestitem)
   * [Type declaration](#type-declaration)
     * [fallback?](#fallback)
@@ -309,27 +311,27 @@ To get started with developing in the Storyteller monorepo, check out the
     * [mediaOverlay?](#mediaoverlay)
     * [mediaType?](#mediatype)
     * [properties?](#properties-5)
-  * [Defined in](#defined-in-78)
+  * [Defined in](#defined-in-80)
 * [MetadataEntry](#metadataentry)
   * [Type declaration](#type-declaration-1)
     * [id?](#id-1)
     * [properties](#properties-6)
     * [type](#type-1)
     * [value](#value-1)
-  * [Defined in](#defined-in-79)
+  * [Defined in](#defined-in-81)
 * [ParsedXml](#parsedxml)
-  * [Defined in](#defined-in-80)
+  * [Defined in](#defined-in-82)
 * [XmlElement\<Name>](#xmlelementname)
   * [Type declaration](#type-declaration-2)
     * [:@?](#)
   * [Type Parameters](#type-parameters-5)
-  * [Defined in](#defined-in-81)
+  * [Defined in](#defined-in-83)
 * [XmlNode](#xmlnode)
-  * [Defined in](#defined-in-82)
+  * [Defined in](#defined-in-84)
 * [XmlTextNode](#xmltextnode)
   * [Type declaration](#type-declaration-3)
     * [#text](#text)
-  * [Defined in](#defined-in-83)
+  * [Defined in](#defined-in-85)
 
 ## Epub
 
@@ -426,7 +428,7 @@ This is a convenience method for
 
 ##### Defined in
 
-[index.ts:1457](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1457)
+[index.ts:1507](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1507)
 
 #### addCreator()
 
@@ -455,7 +457,7 @@ creators. Otherwise, it will be added to the end of the list.
 
 ##### Defined in
 
-[index.ts:1296](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1296)
+[index.ts:1346](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1346)
 
 #### addManifestItem()
 
@@ -487,7 +489,7 @@ Create a new manifest item and write its contents to a new entry.
 
 ###### Defined in
 
-[index.ts:1812](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1812)
+[index.ts:1862](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1862)
 
 ##### Call Signature
 
@@ -517,7 +519,7 @@ Create a new manifest item and write its contents to a new entry.
 
 ###### Defined in
 
-[index.ts:1817](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1817)
+[index.ts:1867](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1867)
 
 ##### Call Signature
 
@@ -546,7 +548,7 @@ Create a new manifest item and write its contents to a new entry.
 
 ###### Defined in
 
-[index.ts:1822](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1822)
+[index.ts:1872](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1872)
 
 #### addMetadata()
 
@@ -574,7 +576,7 @@ useful semantic representations of metadata, use specific methods such as
 
 ##### Defined in
 
-[index.ts:1945](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1945)
+[index.ts:1995](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1995)
 
 #### addSpineItem()
 
@@ -605,7 +607,7 @@ throw an error.
 
 ##### Defined in
 
-[index.ts:1515](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1515)
+[index.ts:1565](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1565)
 
 #### addSubject()
 
@@ -669,7 +671,7 @@ Create a new XHTML document with the given body and head.
 
 ##### Defined in
 
-[index.ts:1628](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1628)
+[index.ts:1678](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1678)
 
 #### getContributors()
 
@@ -689,7 +691,7 @@ This is a convenience method for `epub.getCreators('contributor')`.
 
 ##### Defined in
 
-[index.ts:1283](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1283)
+[index.ts:1333](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1333)
 
 #### getCoverImage()
 
@@ -756,7 +758,7 @@ Retrieve the list of creators.
 
 ##### Defined in
 
-[index.ts:1225](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1225)
+[index.ts:1275](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1275)
 
 #### getLanguage()
 
@@ -825,6 +827,28 @@ as `getTitle()` and `getAuthors()`.
 
 [index.ts:791](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L791)
 
+#### getPackageVocabularyPrefixes()
+
+> **getPackageVocabularyPrefixes**(): `Promise`<`Record`<`string`,
+> `string`>>
+
+Return the set of custom vocabulary prefixes set on this publication's root
+package element.
+
+Returns a map from prefix to URI
+
+##### Returns
+
+`Promise`<`Record`<`string`, `string`>>
+
+##### Link
+
+<https://www.w3.org/TR/epub-33/#sec-prefix-attr>
+
+##### Defined in
+
+[index.ts:1181](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1181)
+
 #### getPublicationDate()
 
 > **getPublicationDate**(): `Promise`<`null` | `Date`>
@@ -865,7 +889,7 @@ to users by default.
 
 ##### Defined in
 
-[index.ts:1496](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1496)
+[index.ts:1546](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1546)
 
 #### getSubjects()
 
@@ -959,7 +983,7 @@ Retrieve the contents of a manifest item, given its id.
 
 ###### Defined in
 
-[index.ts:1600](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1600)
+[index.ts:1650](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1650)
 
 ##### Call Signature
 
@@ -984,7 +1008,7 @@ Retrieve the contents of a manifest item, given its id.
 
 ###### Defined in
 
-[index.ts:1601](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1601)
+[index.ts:1651](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1651)
 
 #### readXhtmlItemContents()
 
@@ -1012,7 +1036,7 @@ Retrieves the contents of an XHTML item, given its manifest id.
 
 ###### Defined in
 
-[index.ts:1661](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1661)
+[index.ts:1711](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1711)
 
 ##### Call Signature
 
@@ -1037,7 +1061,7 @@ Retrieves the contents of an XHTML item, given its manifest id.
 
 ###### Defined in
 
-[index.ts:1662](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1662)
+[index.ts:1712](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1712)
 
 #### removeContributor()
 
@@ -1066,7 +1090,7 @@ This is a convenience method for `epub.removeCreator(index, 'contributor')`.
 
 ##### Defined in
 
-[index.ts:1441](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1441)
+[index.ts:1491](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1491)
 
 #### removeCreator()
 
@@ -1094,7 +1118,7 @@ returned by `epub.getCreators()`.
 
 ##### Defined in
 
-[index.ts:1385](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1385)
+[index.ts:1435](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1435)
 
 #### removeManifestItem()
 
@@ -1112,7 +1136,7 @@ returned by `epub.getCreators()`.
 
 ##### Defined in
 
-[index.ts:1762](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1762)
+[index.ts:1812](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1812)
 
 #### removeSpineItem()
 
@@ -1136,7 +1160,7 @@ Remove the spine item at the specified index.
 
 ##### Defined in
 
-[index.ts:1555](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1555)
+[index.ts:1605](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1605)
 
 #### replaceMetadata()
 
@@ -1164,7 +1188,7 @@ first metadata entry that matches the predicate will be replaced.
 
 ##### Defined in
 
-[index.ts:1990](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1990)
+[index.ts:2040](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L2040)
 
 #### setCoverImage()
 
@@ -1216,6 +1240,31 @@ element
 ##### Defined in
 
 [index.ts:1094](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1094)
+
+#### setPackageVocabularyPrefix()
+
+> **setPackageVocabularyPrefix**(`prefix`, `uri`): `Promise`<`void`>
+
+Set a custom vocabulary prefix on the root package element.
+
+##### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `prefix`  | `string` |
+| `uri`     | `string` |
+
+##### Returns
+
+`Promise`<`void`>
+
+##### Link
+
+<https://www.w3.org/TR/epub-33/#sec-prefix-attr>
+
+##### Defined in
+
+[index.ts:1205](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1205)
 
 #### setPublicationDate()
 
@@ -1271,7 +1320,7 @@ If no title currently exists, a single title metadata entry will be created.
 
 ##### Defined in
 
-[index.ts:1186](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1186)
+[index.ts:1236](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1236)
 
 #### setType()
 
@@ -1326,7 +1375,7 @@ To update the contents of an entry, use `epub.writeItemContents()` or
 
 ##### Defined in
 
-[index.ts:1889](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1889)
+[index.ts:1939](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1939)
 
 #### writeItemContents()
 
@@ -1356,7 +1405,7 @@ The id must reference an existing manifest item. If creating a new item, use
 
 ###### Defined in
 
-[index.ts:1714](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1714)
+[index.ts:1764](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1764)
 
 ##### Call Signature
 
@@ -1385,7 +1434,7 @@ The id must reference an existing manifest item. If creating a new item, use
 
 ###### Defined in
 
-[index.ts:1715](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1715)
+[index.ts:1765](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1765)
 
 #### writeToArray()
 
@@ -1405,7 +1454,7 @@ updated to the current UTC timestamp.
 
 ##### Defined in
 
-[index.ts:2041](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L2041)
+[index.ts:2091](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L2091)
 
 #### writeToFile()
 
@@ -1431,7 +1480,7 @@ updated to the current UTC timestamp.
 
 ##### Defined in
 
-[index.ts:2098](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L2098)
+[index.ts:2148](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L2148)
 
 #### writeXhtmlItemContents()
 
@@ -1459,7 +1508,7 @@ The id must reference an existing manifest item. If creating a new item, use
 
 ##### Defined in
 
-[index.ts:1754](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1754)
+[index.ts:1804](https://gitlab.com/smoores/storyteller/-/blob/main/epub/index.ts#L1804)
 
 #### addLinkToXhtmlHead()
 

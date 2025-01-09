@@ -276,13 +276,18 @@ export default async function processBook({
           properties: { property: "storyteller:version" },
           value: appVersion,
         })
-        /* Add metadata : aligned epub creation datetime */
-        const dateTimeString = new Date().toISOString()
+        // We need UTC with integer seconds, but toISOString gives UTC with ms
+        const dateTimeString = new Date().toISOString().replace(/\.\d+/, "")
         await epub.addMetadata({
           type: "meta",
           properties: { property: "storyteller:media-overlays-modified" },
           value: dateTimeString,
         })
+
+        await epub.setPackageVocabularyPrefix(
+          "storyteller",
+          "https://smoores.gitlab.io/storyteller/docs/vocabulary",
+        )
 
         await epub.writeToFile(getEpubSyncedFilepath(bookUuid))
         await epub.close()
