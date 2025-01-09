@@ -25,6 +25,11 @@ tsconfig.tsbuildinfo
 tsbuild
 
 # direnv/devenv config and cache
-.envrc
+local.envrc
 .direnv
 .devenv
+/.devenv-initialized
+
+# An option to put data not in the root repo directory
+/dev-data/
+/data/
