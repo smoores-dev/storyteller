@@ -5,6 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch Webapp",
+      "request": "launch",
+      "runtimeExecutable": "yarn",
+      "env": {
+        "STORYTELLER_DATA_DIR": "${workspaceFolder}/dev-data"
+      },
+      "runtimeArgs": ["dev:web"],
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
+    {
       "name": "Node.js: Current test",
       "request": "launch",
       "runtimeArgs": [
