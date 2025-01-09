@@ -289,7 +289,7 @@ void describe("Epub", () => {
     Test contents
   </p>
 </body>
-</html>        
+</html>
 `
     await epub.addManifestItem(newItem, newContents, "utf-8")
 

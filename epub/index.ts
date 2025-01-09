@@ -465,7 +465,7 @@ export class Epub {
   </manifest>
   <spine>
   </spine>
-</package>    
+</package>
 `)
     entries.push(
       new EpubEntry({ filename: "OEBPS/content.opf", data: packageDocument }),
@@ -709,6 +709,75 @@ export class Epub {
   }
 
   /**
+   * Returns the first index in the metadata element's children array
+   * that matches the provided predicate.
+   *
+   * Note: This may technically be different than the index in the
+   * getMetadata() array, as it includes non-metadata nodes, like
+   * text nodes. These are technically not allowed, but may exist,
+   * nonetheless. As consumers only ever see the getMetadata()
+   * array, this method is only meant to be used internally.
+   */
+  private async findMetadataIndex(
+    predicate: (entry: MetadataEntry) => boolean,
+  ) {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = Epub.findXmlChildByName("package", packageDocument)
+
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no package element in package document",
+      )
+
+    const metadataElement = Epub.findXmlChildByName(
+      "metadata",
+      packageElement.package,
+    )
+
+    if (!metadataElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no metadata element in package document",
+      )
+
+    return metadataElement.metadata.findIndex((node) => {
+      const item = Epub.parseMetadataItem(node)
+      if (!item) return false
+      return predicate(item)
+    })
+  }
+
+  private static parseMetadataItem(node: XmlNode) {
+    if (Epub.isXmlTextNode(node)) return null
+
+    const elementName = Epub.getXmlElementName(node)
+    const textNode = Epub.getXmlChildren(node)[0]
+
+    // https://www.w3.org/TR/epub-33/#sec-metadata-values
+    // Whitespace within these element values is not significant.
+    // Sequences of one or more whitespace characters are collapsed
+    // to a single space [infra] during processing .
+    const value =
+      !textNode || !Epub.isXmlTextNode(textNode)
+        ? undefined
+        : textNode["#text"].replaceAll(/\s+/g, " ")
+    const attributes = node[":@"] ?? {}
+    const { id, ...properties } = Object.fromEntries(
+      Object.entries(attributes).map(([attrName, value]) => [
+        attrName.slice(2),
+        value,
+      ]),
+    )
+
+    return {
+      id,
+      type: elementName,
+      properties,
+      value,
+    }
+  }
+
+  /**
    * Retrieve the metadata entries for the Epub.
    *
    * This is represented as an array of metadata entries,
@@ -740,33 +809,8 @@ export class Epub {
       )
 
     const metadata: EpubMetadata = metadataElement.metadata
-      .filter((node): node is XmlElement => !Epub.isXmlTextNode(node))
-      .map((item) => {
-        const elementName = Epub.getXmlElementName(item)
-        const textNode = Epub.getXmlChildren(item)[0]
-
-        // https://www.w3.org/TR/epub-33/#sec-metadata-values
-        // Whitespace within these element values is not significant.
-        // Sequences of one or more whitespace characters are collapsed
-        // to a single space [infra] during processing .
-        const value =
-          !textNode || !Epub.isXmlTextNode(textNode)
-            ? undefined
-            : textNode["#text"].replaceAll(/\s+/g, " ")
-        const attributes = item[":@"] ?? {}
-        const { id, ...properties } = Object.fromEntries(
-          Object.entries(attributes).map(([attrName, value]) => [
-            attrName.slice(2),
-            value,
-          ]),
-        )
-        return {
-          id,
-          type: elementName,
-          properties,
-          value,
-        }
-      })
+      .map((node) => Epub.parseMetadataItem(node))
+      .filter((node) => !!node)
 
     return metadata
   }
@@ -1963,8 +2007,7 @@ export class Epub {
           "Failed to parse EPUB: found no metadata element in package document",
         )
 
-      const metadata = await this.getMetadata()
-      const oldEntryIndex = metadata.findIndex(predicate)
+      const oldEntryIndex = await this.findMetadataIndex(predicate)
 
       const newElement = Epub.createXmlElement(
         entry.type,
