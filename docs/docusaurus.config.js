@@ -70,6 +70,11 @@ const config = {
             label: "Docs",
           },
           {
+            href: "https://opencollective.com/storyteller",
+            label: "Donate",
+            position: "left",
+          },
+          {
             href: "https://gitlab.com/smoores/storyteller",
             label: "GitLab",
             position: "right",
@@ -85,6 +90,31 @@ const config = {
               {
                 label: "Get started",
                 to: "/docs/getting-started",
+              },
+              {
+                label: "Administering",
+                to: "/docs/administering",
+              },
+              {
+                label: "Aligning",
+                to: "/docs/aligning-books",
+              },
+              {
+                label: "Reading",
+                to: "/docs/reading-your-books/storyteller-apps",
+              },
+            ],
+          },
+          {
+            title: "Contribute",
+            items: [
+              {
+                label: "Donate",
+                to: "https://opencollective.com/storyteller",
+              },
+              {
+                label: "Development",
+                to: "/docs/category/development",
               },
             ],
           },
