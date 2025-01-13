@@ -40,9 +40,9 @@ ${webUrl}/invites/${key}
   const transporter = createTransport({
     host: smtpHost,
     port: smtpPort,
-    secure: smtpSsl ?? true,
+    secure: smtpSsl,
     tls: {
-      rejectUnauthorized: smtpRejectUnauthorized ?? true,
+      rejectUnauthorized: smtpRejectUnauthorized,
     },
     auth: {
       user: smtpUsername,

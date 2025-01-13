@@ -347,11 +347,12 @@ export function SettingsForm({ settings }: Props) {
               connect over the internet, keep SSL enabled!
             </>
           }
-          {...form.getInputProps("smtp_ssl")}
+          {...form.getInputProps("smtp_ssl", { type: "checkbox" })}
         />
         <Checkbox
           label="SMTP - Reject self-signed TLS certs?"
-          {...form.getInputProps("smtp_reject_unauthorized")}
+          {...(form.getInputProps("smtp_reject_unauthorized"),
+          { type: "checkbox" })}
         />
       </Fieldset>
       <Group justify="flex-end" className="sticky bottom-0 z-10 bg-white p-6">

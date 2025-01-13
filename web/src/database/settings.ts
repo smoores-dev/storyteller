@@ -128,8 +128,8 @@ export function getSettings(): Settings {
 
   return {
     ...result,
-    smtpSsl: result.smtpSsl === true,
-    smtpRejectUnauthorized: result.smtpRejectUnauthorized === true,
+    smtpSsl: result.smtpSsl ?? true,
+    smtpRejectUnauthorized: result.smtpRejectUnauthorized ?? true,
   }
 }
 
