@@ -111,7 +111,7 @@ prerelease-web:
       select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
     - to_sha=$CI_COMMIT_SHORT_SHA
     - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-web"
       | jq -r .notes > release_notes.md'
   artifacts:
     paths:
@@ -163,7 +163,7 @@ prerelease-fs:
       select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
     - to_sha=$CI_COMMIT_SHORT_SHA
     - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-fs"
       | jq -r .notes > release_notes.md'
   artifacts:
     paths:
@@ -215,7 +215,7 @@ prerelease-epub:
       select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
     - to_sha=$CI_COMMIT_SHORT_SHA
     - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-epub"
       | jq -r .notes > release_notes.md'
   artifacts:
     paths:
@@ -255,7 +255,7 @@ prerelease-mobile:
       select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
     - to_sha=$CI_COMMIT_SHORT_SHA
     - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-mobile"
       | jq -r .notes > release_notes.md'
   artifacts:
     paths:
