@@ -14,12 +14,13 @@ import { basename, dirname, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import {
-  AUDIO_FILE_EXTENSIONS,
   COVER_IMAGE_FILE_EXTENSIONS,
   getTrackChapters,
   getTrackDuration,
+  isAudioFile,
   MP3_FILE_EXTENSIONS,
   MPEG4_FILE_EXTENSIONS,
+  OPUS_FILE_EXTENSIONS,
   splitTrack,
   transcodeTrack,
 } from "@/audio"
@@ -61,7 +62,7 @@ export async function extractCover(bookUuid: UUID, trackPath: string) {
 
 function determineExtension(codec: string | null, inputFilename: string) {
   if (codec === "libopus") {
-    return ".mp4"
+    return ".ogg"
   }
   if (codec === "libmp3lame") {
     return ".mp3"
@@ -70,6 +71,9 @@ function determineExtension(codec: string | null, inputFilename: string) {
     return ".mp4"
   }
   const inputExtension = extname(inputFilename)
+  if (OPUS_FILE_EXTENSIONS.includes(inputExtension)) {
+    return ".ogg"
+  }
   if (MP3_FILE_EXTENSIONS.includes(inputExtension)) {
     return ".mp3"
   }
@@ -225,7 +229,10 @@ export async function processAudioFile(
     ) {
       audioFiles.push({
         filename: chapterFilename,
-        bare_filename: chapterFilename.slice(0, chapterFilename.length - 4),
+        bare_filename: chapterFilename.slice(
+          0,
+          chapterFilename.lastIndexOf("."),
+        ),
         extension: outputExtension,
       })
     }
@@ -261,7 +268,7 @@ export async function processFile(
     await persistAudioCover(bookUuid, filename)
   }
 
-  if (AUDIO_FILE_EXTENSIONS.includes(ext)) {
+  if (isAudioFile(ext)) {
     if ((await getAudioCoverFilepath(bookUuid)) === null) {
       await extractCover(bookUuid, filepath)
     }
@@ -290,10 +297,7 @@ export async function processFile(
         if (entry.directory) continue
 
         const zext = extname(entry.filename)
-        if (
-          MP3_FILE_EXTENSIONS.includes(zext) ||
-          MPEG4_FILE_EXTENSIONS.includes(zext)
-        ) {
+        if (isAudioFile(zext) || COVER_IMAGE_FILE_EXTENSIONS.includes(zext)) {
           const tempFilepath = join(tempDir, entry.filename)
           const tempDirname = dirname(tempFilepath)
           await mkdir(tempDirname, { recursive: true })
