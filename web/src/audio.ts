@@ -4,14 +4,12 @@ import { quotePath } from "./shell"
 import { extname } from "node:path"
 import { copyFile } from "node:fs/promises"
 import { logger } from "./logging"
+import { lookup } from "mime-types"
 
 export const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 export const MP3_FILE_EXTENSIONS = [".mp3"]
-export const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
-export const AUDIO_FILE_EXTENSIONS = [
-  ...MP3_FILE_EXTENSIONS,
-  ...MPEG4_FILE_EXTENSIONS,
-]
+export const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b", ".aac"]
+export const OPUS_FILE_EXTENSIONS = [".ogg", ".oga", ".opus"]
 
 type FfmpegTrackFormat = {
   format: {
@@ -63,6 +61,29 @@ type TrackInfo = {
     encoder: string
     mediaType: string
   }
+}
+
+/**
+ * Determines if a file with the given name or extension might contain audio.
+ *
+ * @remarks
+ * Note that extension-based file type determination is only a heuristic; both
+ * false negatives and false positives are possible.  False positives are
+ * especially likely, since many file types can optionally contain audio.
+ *
+ * @param ext The extension (or complete filename) to check
+ * @returns Whether the file *may* contain audio
+ */
+export function isAudioFile(ext: string): boolean {
+  // The mime-db package does not recognize m4b (jshttp/mime-db#357).
+  if (ext.endsWith(".m4b")) {
+    return true
+  }
+
+  const mimetype = lookup(ext)
+  return mimetype
+    ? mimetype.startsWith("audio") || mimetype.startsWith("video")
+    : false
 }
 
 function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
@@ -192,6 +213,12 @@ function areSameType(extensionA: string, extensionB: string) {
   if (
     MP3_FILE_EXTENSIONS.includes(extensionA) &&
     MP3_FILE_EXTENSIONS.includes(extensionB)
+  ) {
+    return true
+  }
+  if (
+    OPUS_FILE_EXTENSIONS.includes(extensionA) &&
+    OPUS_FILE_EXTENSIONS.includes(extensionB)
   ) {
     return true
   }

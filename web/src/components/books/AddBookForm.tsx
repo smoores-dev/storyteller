@@ -107,7 +107,17 @@ export function AddBookForm() {
       >
         {openDialog === "audio" ? (
           <ServerFilePicker
-            allowedExtensions={[".mp4", ".mp3", ".zip", ".m4b", ".m4a"]}
+            allowedExtensions={[
+              ".zip",
+              ".mp3",
+              ".mp4",
+              ".m4a",
+              ".m4b",
+              ".aac",
+              ".ogg",
+              ".oga",
+              ".opus",
+            ]}
             multiple
             onChange={(files) => {
               setAudioPaths(files)
@@ -210,7 +220,7 @@ export function AddBookForm() {
               <Stack align="center">
                 {fileSource === "upload" ? (
                   <FileButton
-                    accept="application/zip,audio/mpeg,audio/mp4,video/mp4"
+                    accept="application/zip,audio/*,video/*"
                     multiple
                     onChange={(files) => {
                       setAudioFiles(files)
