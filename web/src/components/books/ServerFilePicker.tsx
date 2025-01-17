@@ -20,6 +20,7 @@ import {
 import { formatBytes } from "@/strings"
 import { IconCheck } from "@tabler/icons-react"
 import cx from "classnames"
+import { lookup } from "mime-types"
 
 function dirname(path: string) {
   const segments = path.split("/")
@@ -32,17 +33,11 @@ function basename(path: string) {
   return segments[segments.length - 1] ?? ""
 }
 
-// function join(pathA: string, pathB: string) {
-//   if (!pathA.endsWith("/")) {
-//     pathA = pathA.slice(0, -1)
-//   }
-//   return `${pathA}/${pathB}`
-// }
-
 function useListDirectoryAction(
   currentSearchDirectory: string,
-  allowedExtensions: string[],
+  accept: string,
 ) {
+  const fileTypes = useMemo(() => accept.split(","), [accept])
   const [entries, setEntries] = useState<DirectoryEntry[]>([])
 
   const [actionIsPending, setActionIsPending] = useState(false)
@@ -55,13 +50,25 @@ function useListDirectoryAction(
           entries.filter(
             (entry) =>
               entry.isDirectory ||
-              allowedExtensions.some((ext) => entry.name.endsWith(ext)),
+              fileTypes.some((type) => {
+                if (type.startsWith(".")) {
+                  return entry.name.endsWith(type)
+                }
+                const contentType = entry.name.endsWith(".m4b")
+                  ? "audio/mpeg4"
+                  : lookup(entry.name)
+                if (!contentType) return false
+                if (type.endsWith("/*")) {
+                  return contentType.startsWith(type.slice(0, type.length - 1))
+                }
+                return contentType === type
+              }),
           ),
         )
         setActionIsPending(false)
       },
     )
-  }, [allowedExtensions, currentSearchDirectory])
+  }, [currentSearchDirectory, fileTypes])
 
   const matchedEntries = useMemo(() => {
     return matchSorter(entries, basename(currentSearchDirectory), {
@@ -74,21 +81,21 @@ function useListDirectoryAction(
 
 type Props =
   | {
-      allowedExtensions: string[]
+      accept: string
       multiple?: false | undefined
       onChange: (file: DirectoryFileEntry | null) => void
     }
   | {
-      allowedExtensions: string[]
+      accept: string
       multiple: true
       onChange: (files: DirectoryFileEntry[]) => void
     }
 
 function ServerMultipleFilePicker({
-  allowedExtensions,
+  accept,
   onChange,
 }: {
-  allowedExtensions: string[]
+  accept: string
   onChange: (files: DirectoryFileEntry[]) => void
 }) {
   const combobox = useCombobox()
@@ -123,7 +130,7 @@ function ServerMultipleFilePicker({
 
   const { entries, actionIsPending } = useListDirectoryAction(
     currentSearchDirectory,
-    allowedExtensions,
+    accept,
   )
 
   // Whenever we change the list of entries, reset the selection
@@ -214,10 +221,10 @@ function ServerMultipleFilePicker({
 }
 
 function ServerSingleFilePicker({
-  allowedExtensions,
+  accept,
   onChange,
 }: {
-  allowedExtensions: string[]
+  accept: string
   onChange: (files: DirectoryFileEntry | null) => void
 }) {
   const combobox = useCombobox()
@@ -241,7 +248,7 @@ function ServerSingleFilePicker({
 
   const { entries, actionIsPending } = useListDirectoryAction(
     currentSearchDirectory,
-    allowedExtensions,
+    accept,
   )
 
   // Whenever we change the list of entries, reset the selection
@@ -307,24 +314,10 @@ function ServerSingleFilePicker({
   )
 }
 
-export function ServerFilePicker({
-  allowedExtensions,
-  multiple,
-  onChange,
-}: Props) {
+export function ServerFilePicker({ accept, multiple, onChange }: Props) {
   if (multiple) {
-    return (
-      <ServerMultipleFilePicker
-        allowedExtensions={allowedExtensions}
-        onChange={onChange}
-      />
-    )
+    return <ServerMultipleFilePicker accept={accept} onChange={onChange} />
   }
 
-  return (
-    <ServerSingleFilePicker
-      allowedExtensions={allowedExtensions}
-      onChange={onChange}
-    />
-  )
+  return <ServerSingleFilePicker accept={accept} onChange={onChange} />
 }
