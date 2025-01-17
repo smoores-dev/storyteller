@@ -107,17 +107,7 @@ export function AddBookForm() {
       >
         {openDialog === "audio" ? (
           <ServerFilePicker
-            allowedExtensions={[
-              ".zip",
-              ".mp3",
-              ".mp4",
-              ".m4a",
-              ".m4b",
-              ".aac",
-              ".ogg",
-              ".oga",
-              ".opus",
-            ]}
+            accept="application/zip,audio/*,video/*"
             multiple
             onChange={(files) => {
               setAudioPaths(files)
@@ -126,7 +116,7 @@ export function AddBookForm() {
           />
         ) : (
           <ServerFilePicker
-            allowedExtensions={[".epub"]}
+            accept="application/epub+zip"
             onChange={(file) => {
               setEpubPath(file)
               setOpenDialog(null)
