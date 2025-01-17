@@ -2,7 +2,7 @@ import { copyFile, mkdir, readdir, rm, stat, symlink } from "node:fs/promises"
 import { UUID } from "../uuid"
 import { getSyncCachePath } from "../synchronize/syncCache"
 import { basename, dirname, extname } from "node:path"
-import { AUDIO_FILE_EXTENSIONS } from "../audio"
+import { isAudioFile } from "../audio"
 import {
   getEpubFilepath,
   getEpubDirectory,
@@ -69,7 +69,7 @@ export async function originalAudioExists(bookUuid: UUID) {
 
     return filenames.some((filename) => {
       const ext = extname(filename)
-      return ext === ".zip" || AUDIO_FILE_EXTENSIONS.includes(ext)
+      return ext === ".zip" || isAudioFile(ext)
     })
   } catch {
     return false

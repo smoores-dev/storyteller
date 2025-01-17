@@ -6,10 +6,10 @@ sidebar_position: 1
 
 At the core of the Storyteller system is its
 [alignment algorithm](https://gitlab.com/smoores/storyteller/-/blob/main/web/synchronize/synchronizer.ts?ref_type=heads).
-This algorithm is responsible for taking an audiobook (as any number of mp4,
-m4a, m4b, or mp3 files, or zip archives of those file types) and an ebook (as an
-epub file) and producing a new epub file with guided narration support. This
-process is known as forced alignment.
+This algorithm is responsible for taking an audiobook (as any number of audio
+files or zip archives of audio files) and an ebook (as an epub file) and
+producing a new epub file with guided narration support. This process is known
+as forced alignment.
 
 ## Background: EPUB and Media Overlays
 
