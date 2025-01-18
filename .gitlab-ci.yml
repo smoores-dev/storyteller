@@ -77,6 +77,7 @@ pages:
 
 publish-web:
   image: docker:24.0.5
+  tags: [self-managed]
   services:
     - name: docker:24.0.5
       alias: docker
