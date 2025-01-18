@@ -76,17 +76,17 @@ void describe("processFile", () => {
     await processFile(uuid, input, outDir, "00000-", null, null, null)
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
-      "00000-00001.ogg",
-      "00000-00002.ogg",
-      "00000-00003.ogg",
-      "00000-00004.ogg",
-      "00000-00005.ogg",
-      "00000-00006.ogg",
-      "00000-00007.ogg",
-      "00000-00008.ogg",
-      "00000-00009.ogg",
-      "00000-00010.ogg",
-      "00000-00011.ogg",
+      "00000-00001.mp4",
+      "00000-00002.mp4",
+      "00000-00003.mp4",
+      "00000-00004.mp4",
+      "00000-00005.mp4",
+      "00000-00006.mp4",
+      "00000-00007.mp4",
+      "00000-00008.mp4",
+      "00000-00009.mp4",
+      "00000-00010.mp4",
+      "00000-00011.mp4",
     ])
     const audioCover = await getAudioCoverFilepath(uuid)
     assert.ok(audioCover!.endsWith("Audio Cover.png"))
@@ -111,7 +111,7 @@ void describe("processFile", () => {
     await mkdir(outDir, { recursive: true })
     await processFile(uuid, input, outDir, "00000-", null, "libopus", null)
     const outFiles = await readdir(outDir)
-    assert.deepStrictEqual(outFiles, ["00000-00001.ogg"])
+    assert.deepStrictEqual(outFiles, ["00000-00001.mp4"])
     const audioCover = await getAudioCoverFilepath(uuid)
     assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
