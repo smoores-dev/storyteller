@@ -61,23 +61,22 @@ export async function extractCover(bookUuid: UUID, trackPath: string) {
 }
 
 function determineExtension(codec: string | null, inputFilename: string) {
-  if (codec === "libopus") {
-    return ".ogg"
-  }
   if (codec === "libmp3lame") {
     return ".mp3"
   }
-  if (codec === "aac") {
+  // iOS doesn't support Ogg containers at all, so we
+  // need to use mp4 containers for OPUS streams
+  if (codec === "aac" || codec === "libopus") {
     return ".mp4"
   }
   const inputExtension = extname(inputFilename)
-  if (OPUS_FILE_EXTENSIONS.includes(inputExtension)) {
-    return ".ogg"
-  }
   if (MP3_FILE_EXTENSIONS.includes(inputExtension)) {
     return ".mp3"
   }
-  if (MPEG4_FILE_EXTENSIONS.includes(inputExtension)) {
+  if (
+    MPEG4_FILE_EXTENSIONS.includes(inputExtension) ||
+    OPUS_FILE_EXTENSIONS.includes(inputExtension)
+  ) {
     return ".mp4"
   }
   return inputExtension
