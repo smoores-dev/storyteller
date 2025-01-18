@@ -54,9 +54,7 @@ function useListDirectoryAction(
                 if (type.startsWith(".")) {
                   return entry.name.endsWith(type)
                 }
-                const contentType = entry.name.endsWith(".m4b")
-                  ? "audio/mpeg4"
-                  : lookup(entry.name)
+                const contentType = lookup(entry.name)
                 if (!contentType) return false
                 if (type.endsWith("/*")) {
                   return contentType.startsWith(type.slice(0, type.length - 1))
