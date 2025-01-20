@@ -249,6 +249,10 @@ function commonFfmpegArguments(
     args.push("-c:a", "copy")
   }
 
+  if (destExtension === ".mp4") {
+    args.push("-map", "0", "-map_chapters", "-1")
+  }
+
   return args
 }
 
