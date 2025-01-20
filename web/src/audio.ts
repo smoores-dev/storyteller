@@ -225,6 +225,33 @@ function areSameType(extensionA: string, extensionB: string) {
   return false
 }
 
+function commonFfmpegArguments(
+  sourceExtension: string,
+  destExtension: string,
+  codec: string | null,
+  bitrate: string | null,
+) {
+  const args = ["-vn"]
+  if (codec) {
+    args.push(
+      "-c:a",
+      codec,
+      ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
+      ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
+    )
+  } else if (
+    areSameType(sourceExtension, destExtension) ||
+    destExtension == ".mp4"
+  ) {
+    // Ideally this would be a check for whether the container could handle the
+    // input, but it seems like ffmpeg doesn't make that easy to figure out.
+    // Right now this only comes up when remuxing ogg to mp4, where copy works.
+    args.push("-c:a", "copy")
+  }
+
+  return args
+}
+
 export async function transcodeTrack(
   path: string,
   destination: string,
@@ -244,11 +271,7 @@ export async function transcodeTrack(
     "-nostdin",
     "-i",
     quotePath(path),
-    "-vn",
-    ...(codec ? ["-c:a", codec] : []),
-    ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
-    ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
-    ...(destExtension === ".mp4" ? ["-map", "0", "-map_chapters", "-1"] : []),
+    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
     `"${destination}"`,
   ]
 
@@ -267,8 +290,6 @@ export async function splitTrack(
   const sourceExtension = extname(path)
   const destExtension = extname(destination)
 
-  const copy = !codec && areSameType(sourceExtension, destExtension)
-
   const command = "ffmpeg"
   const args = [
     "-nostdin",
@@ -278,12 +299,7 @@ export async function splitTrack(
     to,
     "-i",
     quotePath(path),
-    "-vn",
-    ...(copy ? ["-c", "copy"] : []),
-    ...(codec ? ["-c:a", codec] : []),
-    ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
-    ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
-    ...(destExtension === ".mp4" ? ["-map", "0", "-map_chapters", "-1"] : []),
+    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
     `"${destination}"`,
   ]
 
