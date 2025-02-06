@@ -505,13 +505,16 @@ export class Epub {
   }
 
   /**
-   * Construct an Epub instance by reading an EPUB
-   * file from `path`.
+   * Construct an Epub instance by reading an existing EPUB
+   * publication.
    *
-   * @param path Must be a valid filepath to an EPUB archive
+   * @param pathOrData Must be either a string representing the
+   *        path to an EPUB file on disk, or a Uint8Array representing
+   *        the data of the EPUB publication.
    */
-  static async from(path: string): Promise<Epub> {
-    const fileData = await streamFile(path)
+  static async from(pathOrData: string | Uint8Array): Promise<Epub> {
+    const fileData =
+      typeof pathOrData === "string" ? await streamFile(pathOrData) : pathOrData
     const dataReader = new Uint8ArrayReader(fileData)
     const zipReader = new ZipReader(dataReader)
     const zipEntries = await zipReader.getEntries()
