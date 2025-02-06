@@ -9,6 +9,7 @@ import {
 } from "./index.js"
 import assert from "node:assert"
 import { stat } from "node:fs/promises"
+import { streamFile } from "@smoores/fs"
 
 void describe("xhtml parsing", () => {
   void it("can handle self-closing stop nodes", () => {
@@ -62,6 +63,14 @@ void describe("Epub", () => {
   void it("can read from an archived .epub file", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const epub = await Epub.from(filepath)
+    assert.ok(epub instanceof Epub)
+    await epub.close()
+  })
+
+  void it("can read from a data array representing a .epub file", async () => {
+    const filepath = join("__fixtures__", "moby-dick.epub")
+    const data = await streamFile(filepath)
+    const epub = await Epub.from(data)
     assert.ok(epub instanceof Epub)
     await epub.close()
   })
