@@ -6,14 +6,18 @@
   "types": "index.d.ts",
   "exports": {
     "import": "./index.js",
+    "require": "./index.cjs",
     "types": "./index.d.ts"
   },
   "files": [
     "index.js",
+    "index.cjs",
     "index.d.ts"
   ],
   "scripts": {
-    "build": "yarn swc ./index.ts -o ./index.js"
+    "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs",
+    "build:esm": "yarn swc ./index.ts -o ./index.js",
+    "build": "yarn build:esm && yarn build:cjs"
   },
   "devDependencies": {
     "@swc/cli": "^0.5.2",

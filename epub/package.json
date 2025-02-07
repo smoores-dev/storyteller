@@ -6,14 +6,18 @@
   "types": "index.d.ts",
   "exports": {
     "import": "./index.js",
+    "require": "./index.cjs",
     "types": "./index.d.ts"
   },
   "files": [
     "index.js",
+    "index.cjs",
     "index.d.ts"
   ],
   "scripts": {
-    "build": "yarn swc ./index.ts -o ./index.js",
+    "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs",
+    "build:esm": "yarn swc ./index.ts -o ./index.js",
+    "build": "yarn build:esm && yarn build:cjs",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",
     "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
@@ -36,11 +40,11 @@
   },
   "dependencies": {
     "@smoores/fs": "workspace:^",
-    "@zip.js/zip.js": "^2.7.53",
+    "@zip.js/zip.js": "^2.0.0",
     "async-mutex": "^0.5.0",
-    "fast-xml-parser": "^4.5.0",
-    "memoize": "^10.0.0",
-    "mime-types": "^2.1.35"
+    "fast-xml-parser": "^4.0.0",
+    "mem": "^8.0.0",
+    "mime-types": "^2.0.0"
   },
   "publishConfig": {
     "access": "public"
