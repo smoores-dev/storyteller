@@ -1,6 +1,0 @@
-releases:
-  "@smoores/epub": patch
-  "@smoores/fs": patch
-
-declined:
-  - "@storyteller/web"
