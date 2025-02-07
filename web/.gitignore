@@ -36,3 +36,4 @@ src/__fixtures__/__output__/*
 *.so
 
 work-dist
+migrate-dist

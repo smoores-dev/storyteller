@@ -6,7 +6,7 @@ import {
   ZipWriter,
 } from "@zip.js/zip.js"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
-import memoize, { memoizeClear } from "memoize"
+import memoize from "mem"
 import { mkdir, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path/posix"
 import { streamFile } from "@smoores/fs"
@@ -1783,7 +1783,7 @@ export class Epub {
 
     // readXhtmlItemContents is already explicitly bound in the constructor
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    memoizeClear(this.readXhtmlItemContents)
+    memoize.clear(this.readXhtmlItemContents)
     const href = this.resolveHref(rootfile, manifestItem.href)
     if (encoding === "utf-8") {
       this.writeEntryContents(href, contents as string, encoding)
