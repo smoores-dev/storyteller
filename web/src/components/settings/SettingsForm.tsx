@@ -55,6 +55,8 @@ export function SettingsForm({ settings }: Props) {
     open_ai_organization: settings.open_ai_organization ?? "",
     open_ai_base_url: settings.open_ai_base_url ?? "",
     open_ai_model_name: settings.open_ai_model_name ?? "",
+    deepgram_api_key: settings.deepgram_api_key ?? "",
+    deepgram_model: settings.deepgram_model ?? "nova-3",
   }
 
   const form = useForm({
@@ -193,6 +195,14 @@ export function SettingsForm({ settings }: Props) {
                 OpenAI Cloud Platform
               </a>
             </List.Item>
+            <List.Item>
+              <a
+                href="https://developers.deepgram.com/docs/pre-recorded-audio"
+                rel="nofollow"
+              >
+                Deepgram Speech to Text
+              </a>
+            </List.Item>
           </List>
         </Box>
         <NativeSelect
@@ -204,6 +214,7 @@ export function SettingsForm({ settings }: Props) {
           <option value="microsoft-azure">Azure Cognitive Services</option>
           <option value="amazon-transcribe">Amazon Transcribe</option>
           <option value="openai-cloud">OpenAI Cloud Platform</option>
+          <option value="deepgram">Deepgram Speech to Text</option>
         </NativeSelect>
         {state.transcription_engine === "whisper.cpp" && (
           <>
@@ -317,6 +328,33 @@ export function SettingsForm({ settings }: Props) {
                 </>
               }
               {...form.getInputProps("open_ai_model_name")}
+            />
+          </>
+        )}
+        {state.transcription_engine === "deepgram" && (
+          <>
+            <TextInput
+              label="API Key"
+              withAsterisk
+              {...form.getInputProps("deepgram_api_key")}
+            />
+            <TextInput
+              label="Model name"
+              description={
+                <>
+                  Can be any model the server supports, like <Code>nova-3</Code>
+                  , <Code>nova-2</Code>,<Code>nova</Code>, <Code>enhanced</Code>
+                  , <Code>base</Code> or <Code>whisper</Code> (see model list{" "}
+                  <a
+                    href="https://developers.deepgram.com/docs/model"
+                    rel="nofollow"
+                  >
+                    here
+                  </a>
+                  ). Defaults to <Code>nova-3</Code>
+                </>
+              }
+              {...form.getInputProps("deepgram_model")}
             />
           </>
         )}

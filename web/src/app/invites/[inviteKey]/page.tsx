@@ -62,7 +62,13 @@ export default async function InvitePage(props: Props) {
           withAsterisk
           required
         />
-        <TextInput label="Full name" name="full_name" type="text" />
+        <TextInput
+          label="Full name"
+          name="full_name"
+          type="text"
+          withAsterisk
+          required
+        />
         <TextInput
           label="Username"
           name="username"
