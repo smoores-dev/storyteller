@@ -49,7 +49,13 @@ export default function InitPage() {
           withAsterisk
           required
         />
-        <TextInput label="Full name" name="full_name" type="text" />
+        <TextInput
+          label="Full name"
+          name="full_name"
+          type="text"
+          withAsterisk
+          required
+        />
         <TextInput
           label="Username"
           name="username"

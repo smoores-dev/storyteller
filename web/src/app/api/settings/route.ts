@@ -45,6 +45,8 @@ export const GET = withHasPermission("settings_update")(() => {
     open_ai_organization: settings.openAiOrganization,
     open_ai_base_url: settings.openAiBaseUrl,
     open_ai_model_name: settings.openAiModelName,
+    deepgram_api_key: settings.deepgrapmApiKey,
+    deepgram_model: settings.deepgramModel,
   }
 
   return NextResponse.json(response)
@@ -84,6 +86,8 @@ export const PUT = withHasPermission("settings_update")(async (request) => {
     openAiOrganization: settings.open_ai_organization,
     openAiBaseUrl: settings.open_ai_base_url,
     openAiModelName: settings.open_ai_model_name,
+    deepgrapmApiKey: settings.deepgram_api_key,
+    deepgramModel: settings.deepgram_model,
   })
 
   return new Response(null, { status: 204 })
