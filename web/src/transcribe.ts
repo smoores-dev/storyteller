@@ -272,25 +272,45 @@ export async function transcribeTrack(
     return { transcript, wordTimeline }
   }
 
-  if (!settings.openAiApiKey) {
+  if (settings.transcriptionEngine === "openai-cloud") {
+    if (!settings.openAiApiKey) {
+      throw new Error(
+        "Failed to start transcription with engine openai-cloud: missing api key",
+      )
+    }
+
+    const { transcript, wordTimeline } = await recognize(trackPath, {
+      engine: "openai-cloud",
+      language: locale.language,
+      openAICloud: {
+        ...(initialPrompt && { prompt: initialPrompt }),
+        apiKey: settings.openAiApiKey,
+        ...(settings.openAiOrganization && {
+          organization: settings.openAiOrganization,
+        }),
+        ...(settings.openAiBaseUrl && { baseURL: settings.openAiBaseUrl }),
+        ...(settings.openAiBaseUrl &&
+          settings.openAiModelName && { model: settings.openAiModelName }),
+      },
+    })
+    return { transcript, wordTimeline }
+  }
+
+  if (!settings.deepgrapmApiKey) {
     throw new Error(
-      "Failed to start transcription with engine openai-cloud: missing api key",
+      "Failed to start transcription with engine deepgram: missing api key",
     )
   }
 
   const { transcript, wordTimeline } = await recognize(trackPath, {
-    engine: "openai-cloud",
+    engine: "deepgram",
     language: locale.language,
-    openAICloud: {
-      ...(initialPrompt && { prompt: initialPrompt }),
-      apiKey: settings.openAiApiKey,
-      ...(settings.openAiOrganization && {
-        organization: settings.openAiOrganization,
-      }),
-      ...(settings.openAiBaseUrl && { baseURL: settings.openAiBaseUrl }),
-      ...(settings.openAiBaseUrl &&
-        settings.openAiModelName && { model: settings.openAiModelName }),
+    deepgram: {
+      apiKey: settings.deepgrapmApiKey,
+      ...(settings.deepgramModel && { model: settings.deepgramModel }),
+      punctuate: true,
     },
   })
+
   return { transcript, wordTimeline }
 }

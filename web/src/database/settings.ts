@@ -6,6 +6,7 @@ export type TranscriptionEngine =
   | "microsoft-azure"
   | "amazon-transcribe"
   | "openai-cloud"
+  | "deepgram"
 
 export type WhisperBuild = "cpu" | "cublas-11.8" | "cublas-12.6" | "hipblas"
 
@@ -52,6 +53,8 @@ export type Settings = {
   openAiOrganization?: string | null
   openAiBaseUrl?: string | null
   openAiModelName?: string | null
+  deepgrapmApiKey?: string | null
+  deepgramModel?: string | null
 }
 
 export const SETTINGS_COLUMN_NAMES = {
@@ -80,6 +83,8 @@ export const SETTINGS_COLUMN_NAMES = {
   open_ai_organization: "openAiOrganization",
   open_ai_base_url: "openAiBaseUrl",
   open_ai_model_name: "openAiModelName",
+  deepgram_api_key: "deepgrapmApiKey",
+  deepgram_model: "deepgramModel",
 } as const satisfies Record<string, keyof Settings>
 
 export function getSetting<Name extends keyof typeof SETTINGS_COLUMN_NAMES>(
