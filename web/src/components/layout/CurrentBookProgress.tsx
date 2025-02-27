@@ -22,7 +22,7 @@ export function CurrentBookProgress() {
     ]
 
   return (
-    <Group bg="st-orange" w={340} wrap="nowrap">
+    <Group bg="st-orange" wrap="nowrap">
       <Image
         component={NextImage}
         h={150}
