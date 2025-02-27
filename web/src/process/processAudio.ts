@@ -1,4 +1,5 @@
 import { UUID } from "@/uuid"
+import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { extension } from "mime-types"
 import { parseFile, selectCover } from "music-metadata"
 import {
@@ -157,6 +158,7 @@ export async function processAudioFile(
   maxLength: number | null,
   codec: string | null,
   bitrate: string | null,
+  semaphore: AsyncSemaphore,
   onProgress?: (progress: number) => void,
 ): Promise<AudioFile[]> {
   const maxHours = maxLength ?? 2
@@ -166,7 +168,12 @@ export async function processAudioFile(
   const outputExtension = determineExtension(codec, filepath)
   if (!chapters.length && duration <= maxSeconds) {
     const destination = join(outDir, `${prefix}00001${outputExtension}`)
-    await transcodeTrack(filepath, destination, codec, bitrate)
+    await semaphore.wait()
+    try {
+      await transcodeTrack(filepath, destination, codec, bitrate)
+    } finally {
+      semaphore.release()
+    }
     return [
       {
         filename: `${prefix}00001${outputExtension}`,
@@ -207,37 +214,41 @@ export async function processAudioFile(
   }
 
   const audioFiles: AudioFile[] = []
-  for (let i = 0; i < chapterRanges.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const chapterRange = chapterRanges[i]!
-    const chapterFilename = `${prefix}${(i + 1).toString().padStart(5, "0")}${outputExtension}`
-    const chapterFilepath = join(outDir, chapterFilename)
-    await rm(chapterFilepath, { force: true })
+  await Promise.all(
+    chapterRanges.map(async (chapterRange, index) => {
+      const chapterFilename = `${prefix}${(index + 1).toString().padStart(5, "0")}${outputExtension}`
+      const chapterFilepath = join(outDir, chapterFilename)
+      await semaphore.wait()
+      try {
+        await rm(chapterFilepath, { force: true })
 
-    logger.info(`Splitting chapter ${chapterFilepath}`)
+        logger.info(`Splitting chapter ${chapterFilepath}`)
 
-    if (
-      await splitTrack(
-        filepath,
-        chapterRange.start,
-        chapterRange.end,
-        chapterFilepath,
-        codec,
-        bitrate,
-      )
-    ) {
-      audioFiles.push({
-        filename: chapterFilename,
-        bare_filename: chapterFilename.slice(
-          0,
-          chapterFilename.lastIndexOf("."),
-        ),
-        extension: outputExtension,
-      })
-    }
+        const wasSplit = await splitTrack(
+          filepath,
+          chapterRange.start,
+          chapterRange.end,
+          chapterFilepath,
+          codec,
+          bitrate,
+        )
+        if (wasSplit) {
+          audioFiles.push({
+            filename: chapterFilename,
+            bare_filename: chapterFilename.slice(
+              0,
+              chapterFilename.lastIndexOf("."),
+            ),
+            extension: outputExtension,
+          })
+        }
+      } finally {
+        semaphore.release()
+      }
 
-    onProgress?.((i + 1) / chapterRanges.length)
-  }
+      onProgress?.((audioFiles.length + 1) / chapterRanges.length)
+    }),
+  )
 
   return audioFiles
 }
@@ -250,6 +261,7 @@ export async function processFile(
   maxLength: number | null,
   codec: string | null,
   bitrate: string | null,
+  semaphore: AsyncSemaphore,
   onProgress?: (progress: number) => void,
 ) {
   const audioFiles: AudioFile[] = []
@@ -278,6 +290,7 @@ export async function processFile(
       maxLength,
       codec,
       bitrate,
+      semaphore,
       onProgress,
     )
     audioFiles.push(...processed)
@@ -290,37 +303,39 @@ export async function processFile(
     const zipReader = new ZipReader(dataReader)
     try {
       const entries = await zipReader.getEntries()
-      for (let i = 0; i < entries.length; i++) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const entry = entries[i]!
-        if (entry.directory) continue
+      await Promise.all(
+        entries.map(async (entry, index) => {
+          if (entry.directory) return
 
-        const zext = extname(entry.filename)
-        if (isAudioFile(zext) || COVER_IMAGE_FILE_EXTENSIONS.includes(zext)) {
-          const tempFilepath = join(tempDir, entry.filename)
-          const tempDirname = dirname(tempFilepath)
-          await mkdir(tempDirname, { recursive: true })
-          await writeFile(
-            tempFilepath,
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await entry.getData!(new Uint8ArrayWriter()),
-          )
-          const processed = await processFile(
-            bookUuid,
-            tempFilepath,
-            outDir,
-            `${prefix}${i.toString().padStart(5, "0")}-`,
-            maxLength,
-            codec,
-            bitrate,
-            (progress: number) =>
-              onProgress?.(
-                i / entries.length + progress * (1 / entries.length),
-              ),
-          )
-          audioFiles.push(...processed)
-        }
-      }
+          const zext = extname(entry.filename)
+          if (isAudioFile(zext) || COVER_IMAGE_FILE_EXTENSIONS.includes(zext)) {
+            const tempFilepath = join(tempDir, entry.filename)
+            const tempDirname = dirname(tempFilepath)
+            await mkdir(tempDirname, { recursive: true })
+            await writeFile(
+              tempFilepath,
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              await entry.getData!(new Uint8ArrayWriter()),
+            )
+            const processed = await processFile(
+              bookUuid,
+              tempFilepath,
+              outDir,
+              `${prefix}${index.toString().padStart(5, "0")}-`,
+              maxLength,
+              codec,
+              bitrate,
+              semaphore,
+              (progress: number) =>
+                onProgress?.(
+                  audioFiles.length / entries.length +
+                    progress * (1 / entries.length),
+                ),
+            )
+            audioFiles.push(...processed)
+          }
+        }),
+      )
     } finally {
       await zipReader.close()
       await rm(tempDir, { recursive: true, force: true })
@@ -347,6 +362,7 @@ export async function processAudiobook(
   maxLength: number | null,
   codec: string | null,
   bitrate: string | null,
+  semaphore: AsyncSemaphore,
   onProgress?: (progress: number) => void,
 ) {
   const originalAudioDirectory = getOriginalAudioFilepath(bookUuid)
@@ -361,25 +377,30 @@ export async function processAudiobook(
 
   const audioFiles: AudioFile[] = []
 
-  for (let i = 0; i < filenames.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const filename = filenames[i]!
-    const filepath = getOriginalAudioFilepath(bookUuid, filename)
+  await Promise.all(
+    filenames.map(async (filename, index) => {
+      const filepath = getOriginalAudioFilepath(bookUuid, filename)
 
-    const processed = await processFile(
-      bookUuid,
-      filepath,
-      processedAudioDirectory,
-      `${i.toString().padStart(5, "0")}-`,
-      maxLength,
-      codec,
-      bitrate,
-      (progress: number) =>
-        onProgress?.(i / filenames.length + progress * (1 / filenames.length)),
-    )
-    audioFiles.push(...processed)
-  }
+      const processed = await processFile(
+        bookUuid,
+        filepath,
+        processedAudioDirectory,
+        `${index.toString().padStart(5, "0")}-`,
+        maxLength,
+        codec,
+        bitrate,
+        semaphore,
+        (progress: number) =>
+          onProgress?.(
+            audioFiles.length / filenames.length +
+              progress * (1 / filenames.length),
+          ),
+      )
+      audioFiles.push(...processed)
+    }),
+  )
 
+  // TODO: Do these need to be sorted??
   await persistProcessedFilesList(bookUuid, audioFiles)
   return audioFiles
 }

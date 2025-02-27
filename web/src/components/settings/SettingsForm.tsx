@@ -13,6 +13,7 @@ import {
   Group,
   List,
   NativeSelect,
+  NumberInput,
   PasswordInput,
   TextInput,
 } from "@mantine/core"
@@ -57,6 +58,8 @@ export function SettingsForm({ settings }: Props) {
     open_ai_model_name: settings.open_ai_model_name ?? "",
     deepgram_api_key: settings.deepgram_api_key ?? "",
     deepgram_model: settings.deepgram_model ?? "nova-3",
+    parallel_transcribes: settings.parallel_transcribes,
+    parallel_transcodes: settings.parallel_transcodes,
   }
 
   const form = useForm({
@@ -358,6 +361,33 @@ export function SettingsForm({ settings }: Props) {
             />
           </>
         )}
+      </Fieldset>
+      <Fieldset legend="Parellelization settings">
+        <Box
+          className="mb-3 text-sm"
+          style={{ color: "var(--mantine-color-dimmed)" }}
+        >
+          <p>
+            Audio transcoding is an inherently single-threaded task, and
+            Whisper’s transcription engine has diminishing returns on multi-core
+            processing for a single file.
+          </p>
+          <p>
+            However, since Storyteller splits input audio into multiple tracks,
+            it’s possible to run transcoding and transcription on multiple
+            tracks in parallel.
+          </p>
+        </Box>
+        <NumberInput
+          label="Number of audio tracks to transcode in parallel"
+          description="Transcoding one track will use on CPU core"
+          {...form.getInputProps("parallel_transcodes")}
+        />
+        <NumberInput
+          label="Number of audio tracks to transcribe in parallel"
+          description="Transcribing one track will use up to 4 CPU cores"
+          {...form.getInputProps("parallel_transcribes")}
+        />
       </Fieldset>
       <Fieldset legend="Email settings">
         <TextInput label="SMTP host" {...form.getInputProps("smtp_host")} />

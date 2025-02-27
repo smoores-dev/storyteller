@@ -55,6 +55,8 @@ export type Settings = {
   openAiModelName?: string | null
   deepgrapmApiKey?: string | null
   deepgramModel?: string | null
+  parallelTranscodes: number
+  parallelTranscribes: number
 }
 
 export const SETTINGS_COLUMN_NAMES = {
@@ -85,6 +87,8 @@ export const SETTINGS_COLUMN_NAMES = {
   open_ai_model_name: "openAiModelName",
   deepgram_api_key: "deepgrapmApiKey",
   deepgram_model: "deepgramModel",
+  parallel_transcodes: "parallelTranscodes",
+  parallel_transcribes: "parallelTranscribes",
 } as const satisfies Record<string, keyof Settings>
 
 export function getSetting<Name extends keyof typeof SETTINGS_COLUMN_NAMES>(

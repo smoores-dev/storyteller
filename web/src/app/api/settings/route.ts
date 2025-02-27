@@ -47,6 +47,8 @@ export const GET = withHasPermission("settings_update")(() => {
     open_ai_model_name: settings.openAiModelName,
     deepgram_api_key: settings.deepgrapmApiKey,
     deepgram_model: settings.deepgramModel,
+    parallel_transcodes: settings.parallelTranscodes,
+    parallel_transcribes: settings.parallelTranscribes,
   }
 
   return NextResponse.json(response)
@@ -88,6 +90,8 @@ export const PUT = withHasPermission("settings_update")(async (request) => {
     openAiModelName: settings.open_ai_model_name,
     deepgrapmApiKey: settings.deepgram_api_key,
     deepgramModel: settings.deepgram_model,
+    parallelTranscodes: settings.parallel_transcodes,
+    parallelTranscribes: settings.parallel_transcribes,
   })
 
   return new Response(null, { status: 204 })
