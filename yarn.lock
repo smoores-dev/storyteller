@@ -5400,6 +5400,41 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@esfx/async-semaphore@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@esfx/async-semaphore@npm:1.0.0"
+  dependencies:
+    "@esfx/async-waitqueue": "npm:^1.0.0"
+    "@esfx/cancelable": "npm:^1.0.0"
+  checksum: 10c0/570f6d5bb991e64e782112f2a7c12085e01c29ae2bd5033ee08fab40758abb13b1abf654ad65e77839895145fa35291369946b20e028a0ad10e17c976906115e
+  languageName: node
+  linkType: hard
+
+"@esfx/async-waitqueue@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@esfx/async-waitqueue@npm:1.0.0"
+  dependencies:
+    "@esfx/cancelable": "npm:^1.0.0"
+  checksum: 10c0/da0b9d6a9e50b6dcc71f12b7692a71433524b59f011fd3a84e34626ddd1a2c8a1b31a8a97ec0d5cc43a47899c7545b7bdfec7a3ba7db58c186d6bfb53e2edc52
+  languageName: node
+  linkType: hard
+
+"@esfx/cancelable@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@esfx/cancelable@npm:1.0.0"
+  dependencies:
+    "@esfx/disposable": "npm:^1.0.0"
+  checksum: 10c0/11ec9cecd29d6a69c183fd0c6c7623629b323c66ae5e9df89a4fc2b35743aa70e415c41140c3b0a8f49da2e8fe89707fe5212f5cc3152ef75e6e0a50a9bdafd5
+  languageName: node
+  linkType: hard
+
+"@esfx/disposable@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@esfx/disposable@npm:1.0.0"
+  checksum: 10c0/896dec1c3477c9a5c53effdaa9c923494cd17f47bb21fe714c23b7504f22bb7384c33ffac8573f477e4f11ca1ee925d82c072e33a3c49001d267652054eaf35f
+  languageName: node
+  linkType: hard
+
 "@eslint-community/eslint-utils@npm:^4.2.0, @eslint-community/eslint-utils@npm:^4.4.0":
   version: 4.4.0
   resolution: "@eslint-community/eslint-utils@npm:4.4.0"
@@ -8522,6 +8557,7 @@ __metadata:
   resolution: "@storyteller/web@workspace:web"
   dependencies:
     "@echogarden/espeak-ng-emscripten": "npm:^0.3.3"
+    "@esfx/async-semaphore": "npm:^1.0.0"
     "@mantine/core": "npm:^7.15.1"
     "@mantine/form": "npm:^7.15.1"
     "@mantine/hooks": "npm:^7.15.1"

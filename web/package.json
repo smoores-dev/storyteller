@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@echogarden/espeak-ng-emscripten": "^0.3.3",
+    "@esfx/async-semaphore": "^1.0.0",
     "@mantine/core": "^7.15.1",
     "@mantine/form": "^7.15.1",
     "@mantine/hooks": "^7.15.1",

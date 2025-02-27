@@ -34,6 +34,8 @@ const defaultSettings: Settings = {
   open_ai_model_name: "",
   deepgram_api_key: "",
   deepgram_model: "",
+  parallel_transcribes: 1,
+  parallel_transcodes: 1,
 }
 
 export const dynamic = "force-dynamic"
