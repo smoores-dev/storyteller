@@ -6,6 +6,7 @@ import { mkdir, readdir } from "node:fs/promises"
 import assert from "node:assert"
 import { getProcessedAudioFilepath } from "@/assets/paths"
 import { getAudioCoverFilepath } from "@/assets/covers"
+import { AsyncSemaphore } from "@esfx/async-semaphore"
 
 void describe("processFile", () => {
   void it("can process mpeg4 files", async () => {
@@ -17,7 +18,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp4",
@@ -45,7 +55,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp3",
@@ -73,7 +92,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp4",
@@ -97,7 +125,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, ["00000-00001.flac"])
     const audioCover = await getAudioCoverFilepath(uuid)
@@ -109,7 +146,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, "libopus", null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      "libopus",
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, ["00000-00001.mp4"])
     const audioCover = await getAudioCoverFilepath(uuid)
@@ -121,7 +167,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00000-00001.mp3",
@@ -135,7 +190,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, "libopus", null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      "libopus",
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [])
     const audioCover = await getAudioCoverFilepath(uuid)
@@ -147,7 +211,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", null, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      null,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [])
     const audioCover = await getAudioCoverFilepath(uuid)
@@ -159,7 +232,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", 0.1, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      0.1,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00000-00001.mp3",
@@ -189,7 +271,16 @@ void describe("processFile", () => {
     const uuid = randomUUID()
     const outDir = getProcessedAudioFilepath(uuid)
     await mkdir(outDir, { recursive: true })
-    await processFile(uuid, input, outDir, "00000-", 0.25, null, null)
+    await processFile(
+      uuid,
+      input,
+      outDir,
+      "00000-",
+      0.25,
+      null,
+      null,
+      new AsyncSemaphore(1),
+    )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp4",

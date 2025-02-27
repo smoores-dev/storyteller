@@ -1,8 +1,8 @@
 CREATE TABLE migration(
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            hash TEXT NOT NULL
-        );
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    hash TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS "book"(
   uuid TEXT PRIMARY KEY DEFAULT (uuid()),
   id INTEGER, /* Maintain the old integer ids to avoid breaking changes */
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS "book"(
   epub_filename TEXT,
   audio_filename TEXT,
   audio_filetype TEXT NOT NULL DEFAULT 'mp4'
-);
+, language TEXT DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS "author"(
   uuid TEXT PRIMARY KEY DEFAULT (uuid()),
   id INTEGER,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS "user_permission"(
   user_delete BOOLEAN NOT NULL DEFAULT 0,
   settings_update BOOLEAN NOT NULL DEFAULT 0,
   book_delete BOOLEAN NOT NULL DEFAULT 0
-, book_update BOOLEAN NOT NULL DEFAULT 0, invite_list BOOLEAN NOT NULL DEFAULT 0, invite_delete BOOLEAN NOT NULL DEFAULT 0);
+, book_update BOOLEAN NOT NULL DEFAULT 0, invite_list BOOLEAN NOT NULL DEFAULT 0, invite_delete BOOLEAN NOT NULL DEFAULT 0, user_update BOOLEAN NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS "invite"(
   uuid TEXT PRIMARY KEY DEFAULT (uuid()),
   id INTEGER,
@@ -78,4 +78,15 @@ CREATE TABLE IF NOT EXISTS "settings"(
 );
 CREATE TABLE token_revokation(
   token TEXT PRIMARY KEY
+);
+CREATE TABLE position(
+  position_uuid TEXT PRIMARY KEY DEFAULT (uuid()), 
+  user_uuid TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  locator TEXT NOT NULL,
+  timestamp FLOAT NOT NULL,
+
+  FOREIGN KEY(user_uuid) REFERENCES user(uuid)
+  FOREIGN KEY(book_uuid) REFERENCES book(uuid)
+  UNIQUE(user_uuid, book_uuid)
 );

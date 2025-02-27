@@ -29,14 +29,13 @@ import { getFullText, processEpub, readEpub } from "@/process/processEpub"
 import { getInitialPrompt } from "@/process/prompt"
 import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
-import { transcribeTrack } from "@/transcribe"
+import { installWhisper, transcribeTrack } from "@/transcribe"
 import { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
+import { AsyncSemaphore } from "@esfx/async-semaphore"
 import type { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { MessagePort } from "node:worker_threads"
-
-// const DEVICE = process.env["STORYTELLER_DEVICE"] as WhisperCppBuild | undefined
 
 export async function transcribeBook(
   bookUuid: UUID,
@@ -45,6 +44,7 @@ export async function transcribeBook(
   settings: Settings,
   onProgress?: (progress: number) => void,
 ) {
+  const semaphore = new AsyncSemaphore(settings.parallelTranscribes)
   const transcriptionsPath = getTranscriptionsFilepath(bookUuid)
   await mkdir(transcriptionsPath, { recursive: true })
   const audioFiles = await getProcessedAudioFiles(bookUuid)
@@ -52,47 +52,60 @@ export async function transcribeBook(
     throw new Error("Failed to transcribe book: found no processed audio files")
   }
 
+  if (
+    !settings.transcriptionEngine ||
+    settings.transcriptionEngine === "whisper.cpp"
+  ) {
+    await installWhisper(settings)
+  }
+
   const transcriptions: Pick<
     RecognitionResult,
     "transcript" | "wordTimeline"
   >[] = []
-  for (let i = 0; i < audioFiles.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const audioFile = audioFiles[i]!
-    const transcriptionFilepath = getTranscriptionsFilepath(
-      bookUuid,
-      getTranscriptionFilename(audioFile),
-    )
-    const filepath = getProcessedAudioFilepath(bookUuid, audioFile.filename)
-    try {
-      const existingTranscription = await readFile(transcriptionFilepath, {
-        encoding: "utf-8",
-      })
-      logger.info(`Found existing transcription for ${filepath}`)
-      transcriptions.push(
-        JSON.parse(existingTranscription) as Pick<
-          RecognitionResult,
-          "transcript" | "wordTimeline"
-        >,
-      )
-    } catch (_) {
-      const transcription = await transcribeTrack(
-        filepath,
-        initialPrompt,
-        locale,
-        settings,
-      )
-      transcriptions.push(transcription)
-      await writeFile(
-        transcriptionFilepath,
-        JSON.stringify({
-          transcript: transcription.transcript,
-          wordTimeline: transcription.wordTimeline,
-        }),
-      )
-    }
-    onProgress?.((i + 1) / audioFiles.length)
-  }
+
+  await Promise.all(
+    audioFiles.map(async (audioFile) => {
+      await semaphore.wait()
+      try {
+        const transcriptionFilepath = getTranscriptionsFilepath(
+          bookUuid,
+          getTranscriptionFilename(audioFile),
+        )
+        const filepath = getProcessedAudioFilepath(bookUuid, audioFile.filename)
+        try {
+          const existingTranscription = await readFile(transcriptionFilepath, {
+            encoding: "utf-8",
+          })
+          logger.info(`Found existing transcription for ${filepath}`)
+          transcriptions.push(
+            JSON.parse(existingTranscription) as Pick<
+              RecognitionResult,
+              "transcript" | "wordTimeline"
+            >,
+          )
+        } catch (_) {
+          const transcription = await transcribeTrack(
+            filepath,
+            initialPrompt,
+            locale,
+            settings,
+          )
+          transcriptions.push(transcription)
+          await writeFile(
+            transcriptionFilepath,
+            JSON.stringify({
+              transcript: transcription.transcript,
+              wordTimeline: transcription.wordTimeline,
+            }),
+          )
+        }
+        onProgress?.((transcriptions.length + 1) / audioFiles.length)
+      } finally {
+        semaphore.release()
+      }
+    }),
+  )
   return transcriptions
 }
 
@@ -202,6 +215,7 @@ export default async function processBook({
           settings.maxTrackLength ?? null,
           settings.codec ?? null,
           settings.bitrate ?? null,
+          new AsyncSemaphore(settings.parallelTranscodes),
           onProgress,
         )
       }

@@ -21,7 +21,7 @@ void describe("transcribe", () => {
       trackPath,
       "The following is a recording of Moby Dick by Herman Melville. Please transcribe it.",
       new Intl.Locale("en-US"),
-      {},
+      { parallelTranscodes: 1, parallelTranscribes: 1 },
     )
 
     await writeFile(
