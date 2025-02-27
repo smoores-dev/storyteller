@@ -5,6 +5,9 @@ import { extname } from "node:path"
 import { copyFile } from "node:fs/promises"
 import { logger } from "./logging"
 import { lookup } from "mime-types"
+import { promisify } from "util"
+
+const execPromise = promisify(exec)
 
 export const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
 export const MP3_FILE_EXTENSIONS = [".mp3"]
@@ -116,32 +119,16 @@ function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
 }
 
 async function execCmd(command: string) {
-  const process = exec(command)
-  let stdout = ""
-  let stderr = ""
-  process.stdout?.on("data", (chunk: string) => {
-    stdout += chunk
-  })
-  process.stderr?.on("data", (chunk: string) => {
-    stderr += chunk
-  })
+  let stdout: string = ""
+  let stderr: string = ""
   try {
-    await new Promise<void>((resolve, reject) => {
-      process.on("exit", (code) => {
-        if (code === 0) {
-          resolve()
-          return
-        }
-        reject(new Error(`Process failed with exit code: ${code}`))
-      })
-      process.on("error", reject)
-    })
-  } catch (e) {
-    logger.error(e)
+    ;({ stdout, stderr } = await execPromise(command))
+    return stdout
+  } catch (error) {
+    logger.error(error)
     logger.info(stdout)
     throw new Error(stderr)
   }
-  return stdout
 }
 
 export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
