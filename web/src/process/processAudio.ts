@@ -170,6 +170,7 @@ export async function processAudioFile(
     const destination = join(outDir, `${prefix}00001${outputExtension}`)
     await semaphore.wait()
     try {
+      logger.info(`Transcoding track ${destination}`)
       await transcodeTrack(filepath, destination, codec, bitrate)
     } finally {
       semaphore.release()
