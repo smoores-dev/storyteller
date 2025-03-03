@@ -6,8 +6,10 @@ import { UIText } from "./UIText"
 import { Bookmarks } from "./Bookmarks"
 import { Highlights } from "./Highlights"
 import { useColorTheme } from "../hooks/useColorTheme"
+import { TrackLisk } from "./TrackList"
 
 type Props = {
+  mode: "text" | "audio"
   onOutsideTap: () => void
   topInset?: number | undefined
 }
@@ -18,7 +20,7 @@ enum BookNavTab {
   HIGHLIGHTS = "HIGHLIGHTS",
 }
 
-export function BookNavigation({ topInset, onOutsideTap }: Props) {
+export function BookNavigation({ mode, topInset, onOutsideTap }: Props) {
   const { background, foreground } = useColorTheme()
   const [selectedTab, setSelectedTab] = useState(BookNavTab.TABLE_OF_CONTENTS)
   const insets = useSafeAreaInsets()
@@ -77,7 +79,11 @@ export function BookNavigation({ topInset, onOutsideTap }: Props) {
           </Pressable>
         </View>
         {selectedTab === BookNavTab.TABLE_OF_CONTENTS ? (
-          <TableOfContents />
+          mode === "text" ? (
+            <TableOfContents />
+          ) : (
+            <TrackLisk />
+          )
         ) : selectedTab === BookNavTab.BOOKMARKS ? (
           <Bookmarks />
         ) : (

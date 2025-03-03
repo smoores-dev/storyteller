@@ -58,6 +58,16 @@ async function initializePlayer() {
 
 initializePlayer()
 
+export {
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary,
+} from "expo-router"
+
+export const unstable_settings = {
+  // Ensure that reloading on `/modal` keeps a back button present.
+  initialRouteName: "(tabs)",
+}
+
 SplashScreen.preventAutoHideAsync()
 
 export default function Layout() {
@@ -92,6 +102,8 @@ export default function Layout() {
 
     return
   }, [])
+
+  // console.log(usePathname())
 
   return (
     <GestureHandlerRootView>

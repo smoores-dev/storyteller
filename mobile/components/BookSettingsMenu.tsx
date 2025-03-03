@@ -4,6 +4,7 @@ import {
   ScrollView,
   useWindowDimensions,
   StyleSheet,
+  Platform,
 } from "react-native"
 import { appColor } from "../design"
 import { toolbarSlice } from "../store/slices/toolbarSlice"
@@ -20,7 +21,7 @@ type Props = {
 export function BookSettingsMenu({ bookId }: Props) {
   const insets = useSafeAreaInsets()
   const dimensions = useWindowDimensions()
-  const { background, foreground } = useColorTheme()
+  const { background, foreground, surface } = useColorTheme()
   const dispatch = useAppDispatch()
 
   return (
@@ -28,8 +29,10 @@ export function BookSettingsMenu({ bookId }: Props) {
       style={[
         styles.container,
         {
+          bottom: insets.bottom,
           backgroundColor: background,
           shadowColor: foreground,
+          borderColor: surface,
         },
       ]}
     >
@@ -41,7 +44,15 @@ export function BookSettingsMenu({ bookId }: Props) {
       >
         <UIText style={styles.doneText}>Done</UIText>
       </Pressable>
-      <ScrollView style={{ height: dimensions.height / 2 - insets.top }}>
+      <ScrollView
+        style={{
+          height:
+            dimensions.height / 2 -
+            (insets.top +
+              insets.bottom +
+              (Platform.OS === "android" ? 32 + 34 : 0)),
+        }}
+      >
         <ReadingSettings bookId={bookId} />
       </ScrollView>
     </View>
@@ -57,7 +68,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     borderWidth: 1,
-    borderColor: "#AAA",
+    borderBottomColor: "transparent",
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 16,

@@ -34,8 +34,9 @@ import { Toolbar } from "../../components/Toolbar"
 import { ToolbarDialogs } from "../../components/ToolbarDialogs"
 import { areLocatorsEqual } from "../../modules/readium"
 import { isSameChapter } from "../../links"
+import { seekBackward, seekForward } from "../../audio/PlaybackService"
 
-const events = [Event.PlaybackState, Event.PlaybackTrackChanged]
+const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 
 export default function PlayerScreen() {
   const dimensions = useWindowDimensions()
@@ -107,7 +108,7 @@ export default function PlayerScreen() {
 
   return (
     <View style={styles.container}>
-      <ToolbarDialogs />
+      <ToolbarDialogs mode="audio" />
       <View style={styles.topbar}>
         {isPresented ? (
           <Pressable
@@ -176,18 +177,16 @@ export default function PlayerScreen() {
             <PrevIcon />
           </Pressable>
           <Pressable
-            onPress={async () => {
-              const currentPosition = await TrackPlayer.getPosition()
-              await TrackPlayer.seekTo(currentPosition - 15)
+            onPress={() => {
+              seekBackward(15)
             }}
           >
             <JumpBackwardFifteenIcon />
           </Pressable>
           <PlayPause style={styles.playPause} isPlaying={isPlaying} />
           <Pressable
-            onPress={async () => {
-              const currentPosition = await TrackPlayer.getPosition()
-              await TrackPlayer.seekTo(currentPosition + 15)
+            onPress={() => {
+              seekForward(15)
             }}
           >
             <JumpForwardFifteenIcon />

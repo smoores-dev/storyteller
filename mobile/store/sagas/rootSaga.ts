@@ -17,6 +17,7 @@ import {
   writeHighlightSaga,
   updatePlayerSpeedSaga,
   syncPositionsSaga,
+  manualTrackSeekSaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -42,6 +43,7 @@ export function* rootSaga() {
     call(loadTrackPlayerSaga),
     call(ensureTrackPlaySaga),
     call(seekToLocatorSaga),
+    call(manualTrackSeekSaga),
     call(relocateToTrackPositionSaga),
     call(deleteBookSaga),
     call(deleteBookmarkSaga),

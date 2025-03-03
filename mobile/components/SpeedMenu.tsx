@@ -1,10 +1,17 @@
-import { Pressable, ScrollView, TouchableOpacity, View } from "react-native"
+import { StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { UIText } from "./UIText"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
 import { preferencesSlice } from "../store/slices/preferencesSlice"
+import { Stack } from "./ui/Stack"
+import { spacing } from "./ui/tokens/spacing"
+import { Group } from "./ui/Group"
+import { Button } from "./ui/Button"
+import { MinusCircle, PlusCircle } from "lucide-react-native"
+import Slider from "@react-native-community/slider"
+import { fontSizes } from "./ui/tokens/fontSizes"
 
 type Props = {
   bookId: number
@@ -13,9 +20,10 @@ type Props = {
 }
 
 export function SpeedMenu({ bookId, topInset, onOutsideTap }: Props) {
-  const { background } = useColorTheme()
+  const { background, foreground, surface, dark } = useColorTheme()
 
   const insets = useSafeAreaInsets()
+  const dimensions = useWindowDimensions()
 
   const dispatch = useAppDispatch()
   const currentSpeed = useAppSelector((state) =>
@@ -35,53 +43,118 @@ export function SpeedMenu({ bookId, topInset, onOutsideTap }: Props) {
         }}
         onPress={onOutsideTap}
       />
-      <ScrollView
-        style={{
-          position: "absolute",
-          right: 32,
-          left: 106,
-          top: insets.top + 12 + (topInset ?? 0),
-          // paddingHorizontal: 32,
-          paddingVertical: 16,
-          borderRadius: 8,
-          borderWidth: 1,
-          borderColor: "black",
-          bottom: 300,
-          zIndex: 3,
-          backgroundColor: background,
-        }}
+      <Stack
+        style={[
+          styles.container,
+          {
+            left: dimensions.width - 32 - 320,
+            top: insets.top + 12 + (topInset ?? 0),
+            borderColor: surface,
+            backgroundColor: background,
+          },
+        ]}
       >
-        {[0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.5].map((speed) => (
-          <View key={speed} style={{ paddingHorizontal: 8 }}>
-            <Pressable
+        <UIText>Playback speed</UIText>
+        <UIText>{currentSpeed}x</UIText>
+        <Group style={styles.sliderGroup}>
+          <Button
+            chromeless
+            onPress={() => {
+              dispatch(
+                preferencesSlice.actions.playerSpeedChanged({
+                  bookId: bookId,
+                  speed: Math.round(((currentSpeed ?? 1) - 0.1) * 10) / 10,
+                }),
+              )
+            }}
+          >
+            <MinusCircle size={spacing[2]} color={foreground} />
+          </Button>
+          <Slider
+            style={styles.slider}
+            value={currentSpeed}
+            step={0.1}
+            minimumValue={0.5}
+            maximumValue={4.0}
+            minimumTrackTintColor={foreground}
+            maximumTrackTintColor={surface}
+            thumbImage={
+              dark
+                ? require("../assets/slider-thumb-image-white.png")
+                : require("../assets/slider-thumb-image-black.png")
+            }
+            onValueChange={(newValue) => {
+              dispatch(
+                preferencesSlice.actions.playerSpeedChanged({
+                  bookId: bookId,
+                  speed: Math.round(((newValue ?? 1) - 0.1) * 10) / 10,
+                }),
+              )
+            }}
+          />
+          <Button
+            chromeless
+            onPress={() => {
+              dispatch(
+                preferencesSlice.actions.playerSpeedChanged({
+                  bookId: bookId,
+                  speed: Math.round(((currentSpeed ?? 1) + 0.1) * 10) / 10,
+                }),
+              )
+            }}
+          >
+            <PlusCircle size={spacing[2]} color={foreground} />
+          </Button>
+        </Group>
+        <Group style={styles.optionsGroup}>
+          {[0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+            <Button
+              style={styles.optionButton}
+              key={speed}
               onPress={() => {
                 dispatch(
                   preferencesSlice.actions.playerSpeedChanged({
-                    bookId,
+                    bookId: bookId,
                     speed,
                   }),
                 )
-                onOutsideTap?.()
-              }}
-              style={{
-                borderBottomWidth: 1,
-                borderBottomColor: "#CCC",
-                paddingVertical: 16,
-                paddingHorizontal: 16,
               }}
             >
-              <UIText
-                style={{
-                  fontSize: 14,
-                  fontWeight: speed === currentSpeed ? "bold" : "normal",
-                }}
-              >
-                {speed}x
-              </UIText>
-            </Pressable>
-          </View>
-        ))}
-      </ScrollView>
+              <UIText style={styles.optionText}>{speed}</UIText>
+            </Button>
+          ))}
+        </Group>
+      </Stack>
     </>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    right: 32,
+    padding: spacing[2],
+    borderRadius: spacing.borderRadius,
+    borderWidth: 1,
+    zIndex: 3,
+    alignItems: "center",
+  },
+  sliderGroup: {
+    gap: spacing[2],
+    alignItems: "center",
+  },
+  slider: {
+    flexGrow: 1,
+  },
+  optionButton: {
+    paddingVertical: spacing[1],
+    paddingHorizontal: spacing[1],
+  },
+  optionsGroup: {
+    gap: spacing[1],
+    margin: spacing[1],
+  },
+  optionText: {
+    ...fontSizes.xs,
+  },
+})

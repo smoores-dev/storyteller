@@ -10,9 +10,9 @@ import { Link } from "expo-router"
 import { apiSlice } from "../../../store/slices/apiSlice"
 import { getDebugLoggingEnabled } from "../../../store/selectors/loggingSelectors"
 import { loggingSlice } from "../../../store/slices/loggingSlice"
-import { UILink } from "../../../components/UILink"
-import { Button, buttonStyles } from "../../../components/Button"
+import { Button } from "../../../components/ui/Button"
 import { ReadingSettings } from "../../../components/ReadingSettings"
+import { spacing } from "../../../components/ui/tokens/spacing"
 
 export default function Settings() {
   const { top } = useSafeAreaInsets()
@@ -24,13 +24,14 @@ export default function Settings() {
   return (
     <View style={{ ...styles.container, paddingTop: top }}>
       <HeaderText style={styles.title}>Settings</HeaderText>
-      <ScrollView>
+      <ScrollView style={styles.scrollview}>
         <View>
           {apiBaseUrl ? (
             <>
               <UIText>Logged in to:</UIText>
               <UIText>{apiBaseUrl}</UIText>
               <Button
+                style={styles.button}
                 onPress={() => {
                   dispatch(apiSlice.actions.changeServerButtonTapped())
                 }}
@@ -39,9 +40,11 @@ export default function Settings() {
               </Button>
             </>
           ) : (
-            <UILink style={buttonStyles.button} href="/server">
-              Choose server
-            </UILink>
+            <Link href="/server" asChild>
+              <Button>
+                <UIText>Choose server</UIText>
+              </Button>
+            </Link>
           )}
         </View>
         {apiBaseUrl && (
@@ -51,6 +54,7 @@ export default function Settings() {
                 <UIText>Logged in as:</UIText>
                 <UIText>{username}</UIText>
                 <Button
+                  style={styles.button}
                   onPress={() => {
                     dispatch(authSlice.actions.logoutButtonTapped())
                   }}
@@ -59,8 +63,10 @@ export default function Settings() {
                 </Button>
               </>
             ) : (
-              <Link href="/login" style={buttonStyles.button}>
-                Log in
+              <Link href="/login" asChild>
+                <Button>
+                  <UIText>Log in</UIText>
+                </Button>
               </Link>
             )}
           </View>
@@ -75,7 +81,9 @@ export default function Settings() {
           >
             <UIText>{debugEnabled ? "Disable" : "Enable"} debug logging</UIText>
           </Button>
-          <UILink href="log">View logs</UILink>
+          <Link href="/log">
+            <UIText>View logs</UIText>
+          </Link>
         </View>
       </ScrollView>
     </View>
@@ -97,5 +105,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginVertical: 12,
+  },
+  scrollview: {
+    width: "100%",
+  },
+  button: {
+    marginVertical: spacing[1],
   },
 })

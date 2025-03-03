@@ -43,12 +43,15 @@ export function* loginSaga() {
           password,
         })) as Awaited<ReturnType<typeof apiClient.login>>
       } catch (error) {
-        logger.error(error)
-        alert(
-          `Failed to log in to server ${url.toString()} as user ${username}:\n${(
-            error as Error
-          ).toString()}`,
-        )
+        if (action.type === loginButtonTapped.type) {
+          logger.error(error)
+          alert(
+            `Failed to log in to server ${url.toString()} as user ${username}:\n${(
+              error as Error
+            ).toString()}`,
+          )
+        }
+
         return
       }
 

@@ -39,7 +39,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           fonts: [
             "./assets/fonts/Bookerly.ttf",
             "./assets/fonts/Bookerly Bold.ttf",
+            "./assets/fonts/Bookerly Italic.ttf",
             "./assets/fonts/YoungSerif.ttf",
+            "./assets/fonts/OpenDyslexic-Regular.otf",
+            "./assets/fonts/OpenDyslexic-Bold.otf",
+            "./assets/fonts/OpenDyslexic-Bold-Italic.otf",
+            "./assets/fonts/OpenDyslexic-Italic.otf",
+            "./node_modules/@expo-google-fonts/literata/Literata_500Medium.ttf",
           ],
         },
       ],
@@ -49,17 +55,24 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           iCloudContainerEnvironment: IS_DEV ? "Development" : "Production",
         },
       ],
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/Storyteller_Logo.png",
+          resizeMode: "contain",
+          imageWidth: 300,
+          backgroundColor: "#ffffff",
+          dark: {
+            image: "./assets/Storyteller_Logo.png",
+            imageWidth: 300,
+            backgroundColor: "#000000",
+            resizeMode: "contain",
+          },
+        },
+      ],
     ],
-    updates: {
-      url: "https://u.expo.dev/3cc95011-19af-4637-a666-e1bec160c0f8",
-    },
     runtimeVersion: {
       policy: "appVersion",
-    },
-    splash: {
-      image: "./assets/Storyteller_Logo.png",
-      resizeMode: "contain",
-      backgroundColor: "#ffffff",
     },
     assetBundlePatterns: ["**/*"],
     ios: {

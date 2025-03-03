@@ -36,7 +36,7 @@ export function TableOfContents() {
         currentItemRef.current?.measureLayout(ref.current, (_x, y) => {
           ref.current?.scrollTo({
             y: y - 40,
-            animated: true,
+            animated: false,
           })
         })
       }}

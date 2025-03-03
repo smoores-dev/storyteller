@@ -11,22 +11,21 @@ import androidx.annotation.ColorInt
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.lifecycleScope
-import kotlinx.serialization.json.Json
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
+import kotlin.math.ceil
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.ExperimentalDecorator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
-import org.readium.r2.navigator.preferences.Color
 import org.readium.r2.navigator.preferences.FontFamily
+import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
-import kotlin.math.ceil
 
 data class Highlight(val id: String, @ColorInt val color: Int, val locator: Locator)
 
@@ -51,6 +50,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     var highlights: List<Highlight> = listOf()
     var bookmarks: List<Locator> = listOf()
     var readaloudColor = 0xffffff00.toInt()
+    @OptIn(ExperimentalReadiumApi::class)
     var preferences: EpubPreferences = EpubPreferences(
         fontFamily = FontFamily("Bookerly"),
         lineHeight = 1.4,
@@ -104,6 +104,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         }
     }
 
+    @OptIn(ExperimentalReadiumApi::class)
     fun updatePreferences() {
         navigator?.submitPreferences(preferences)
     }
@@ -157,7 +158,11 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val currentProgression = locator.locations.progression ?: return
 
         val joinedProgressions =
-            bookmarks.mapNotNull { it.locations.progression }.joinToString { it.toString() }
+            bookmarks
+                .filter { it.href == locator.href }
+                .mapNotNull { it.locations.progression }
+                .joinToString { it.toString() }
+
 
         val jsProgressionsArray = "[${joinedProgressions}]"
 
@@ -170,7 +175,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
                 function snapOffset(offset) {
                     const value = offset + 1;
-                    
+
                     return value - (value % maxScreenX);
                 }
 
@@ -213,7 +218,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                         });
                         element.addEventListener('touchend', (event) => {
                             if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
-                
+
                             event.bubbles = true
                             event.clientX = event.changedTouches[0].clientX
                             event.clientY = event.changedTouches[0].clientY
@@ -235,7 +240,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                         })
                     }
                 }
-            
+
                 document.addEventListener('selectionchange', () => {
                     if (document.getSelection().isCollapsed) {
                         storyteller.handleSelectionCleared();
@@ -291,7 +296,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
             val locator = this.locator ?: this.navigator?.currentLocator?.value ?: return
             val fragments = bookService?.getFragments(bookId, locator) ?: return
-    
+
             val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
 
