@@ -18,41 +18,41 @@ final class BookService {
     private let streamer: Streamer
     private var publications: [Int : Publication] = [:]
     private var mediaOverlays: [Int : [String : STMediaOverlays]] = [:]
-    
+
     public static let instance = BookService()
-    
+
     private static func onCreatePublication(_ mediaType: MediaType,_ manifest: inout Manifest,_ fetcher: inout Fetcher,_ services: inout PublicationServicesBuilder) -> Void {
         guard let opfHREF = try? EPUBContainerParser(fetcher: fetcher).parseOPFHREF() else {
             return
         }
-        
+
         let opfResource = fetcher.get(opfHREF)
         defer { opfResource.close() }
         guard let opfData = try? opfResource.read().get() else {
             return
         }
-        
+
         guard let document = try? Fuzi.XMLDocument(data: opfData) else {
             return
         }
         document.definePrefix("opf", forNamespace: "http://www.idpf.org/2007/opf")
-        
+
         let manifestItems = document.xpath("/opf:package/opf:manifest/opf:item")
-        
+
         var readingOrder = manifest.readingOrder
         for manifestItem in manifestItems {
             guard var href = manifestItem.attr("href")?.removingPercentEncoding else {
                 continue
             }
-            
+
             href = HREF(href, relativeTo: opfHREF).string
-            
+
             guard let readingOrderIndex = readingOrder.firstIndex(withHREF: href) else {
                 continue
             }
-            
+
             let link = readingOrder[readingOrderIndex]
-            
+
             if let mediaOverlayId = manifestItem.attr("media-overlay"),
                let mediaOverlay = manifestItems.first(where: { $0.attr("id") == mediaOverlayId }),
                let mediaOverlayHref = mediaOverlay.attr("href") {
@@ -64,17 +64,17 @@ final class BookService {
             readingOrder: readingOrder
         )
     }
-    
+
     private init() {
         streamer = Streamer(
             onCreatePublication: Self.onCreatePublication
         )
     }
-    
+
     func extractArchive(archiveUrl: URL, extractedUrl: URL) throws {
-        
+
         let fileManager = FileManager.default
-        
+
         do {
             try fileManager.createDirectory(at: extractedUrl, withIntermediateDirectories: true, attributes: nil)
             try fileManager.unzipItem(at: archiveUrl, to: extractedUrl)
@@ -83,7 +83,7 @@ final class BookService {
             throw BookServiceError.extractFailed(archiveUrl, error.localizedDescription)
         }
     }
-    
+
     func getPublication(for bookId: Int) -> Publication? {
         return publications[bookId]
     }
@@ -94,61 +94,68 @@ final class BookService {
         }
         return publication.get(link)
     }
-    
+
+    func getPositions(for bookId: Int) throws -> [Locator] {
+        guard let publication = publications[bookId] else {
+            throw BookServiceError.unopenedPublication(bookId)
+        }
+        return publication.positions
+    }
+
     func getClip(for bookId: Int, locator: Locator) throws -> Clip? {
         guard let publication = getPublication(for: bookId) else {
             throw BookServiceError.unopenedPublication(bookId)
         }
-        
+
         guard let link = publication.readingOrder.first(where: { $0.href == locator.href }) else {
             throw BookServiceError.locatorNotInReadingOrder(bookId, locator.href)
         }
-        
+
         guard let overlayHref = link.properties.otherProperties["mediaOverlay"] as? String,
               let mediaOverlays = self.mediaOverlays[bookId]?[overlayHref] else {
 //            throw BookServiceError.noMediaOverlay(bookId, link.href)
             return nil
         }
-        
+
         guard let fragment = locator.locations.fragments.first else {
             return nil
         }
 
         return try? mediaOverlays.clip(forFragmentId: fragment)
     }
-    
+
     func locateFromPositions(for bookId: Int, link: Link) throws -> Locator {
         guard let publication = getPublication(for: bookId) else {
             throw BookServiceError.unopenedPublication(bookId)
         }
-        
+
         guard let readingOrderIndex = publication.readingOrder.firstIndex(withHREF: link.href) else {
             throw BookServiceError.locatorNotInReadingOrder(bookId, link.href)
         }
-        
+
         guard let locator = publication.positionsByReadingOrder[readingOrderIndex].first else {
             throw BookServiceError.locatorNotInReadingOrder(bookId, link.href)
         }
-        
+
         return locator
     }
-    
+
     func getFragments(for bookId: Int, locator: Locator) -> [TextFragment] {
         let mediaOverlayStore = self.mediaOverlays[bookId]
         let mediaOverlays = mediaOverlayStore?.values
         let textFragments = mediaOverlays?.flatMap { $0.fragments() } ?? []
         return textFragments.filter { $0.href == locator.href }
     }
-    
+
     func getLocatorFor(bookId: Int, href: String, fragment: String) throws -> Locator? {
         guard let publication = getPublication(for: bookId) else {
             throw BookServiceError.unopenedPublication(bookId)
         }
-        
+
         guard let link = publication.link(withHREF: href) else {
             return nil
         }
-        
+
         let resource = publication.get(link)
         let htmlContent = try resource.readAsString().get()
         if #available(iOS 16.0, *) {
@@ -176,21 +183,21 @@ final class BookService {
                     )
                 )
             }
-            
+
             return nil
         }
-        
+
         return Locator(
             href: href,
             type: "application/xhtml+xml"
         )
     }
-    
+
     func getFragment(for bookId: Int, clipUrl: URL, position: Double) throws -> TextFragment? {
         guard let mediaOverlayStore = self.mediaOverlays[bookId] else {
             return nil
         }
-        
+
         var maybeFragment: TextFragment? = nil
         for mediaOverlays in mediaOverlayStore.values {
             if let found = mediaOverlays.fragment(clipUrl: clipUrl, position: position) {
@@ -198,14 +205,14 @@ final class BookService {
                 break
             }
         }
-        
+
         guard var fragment = maybeFragment else {
             return nil
         }
-        
+
         let locator = try getLocatorFor(bookId: bookId, href: fragment.href, fragment: fragment.fragment)
         fragment.locator = locator
-        
+
         return fragment
     }
 
@@ -215,16 +222,16 @@ final class BookService {
         }
         return publication.locate(link)
     }
-    
+
     private func makeMediaOverlays(for bookId: Int, pub publication: Publication) throws {
         var mediaOverlayStore: [String : STMediaOverlays] = [:]
-        
+
         let mediaOverlayLinks = publication.resources.filter(byMediaType: .smil)
-        
+
         for link in mediaOverlayLinks {
             let mediaOverlays = STMediaOverlays()
             let node = MediaOverlayNode()
-            
+
             let smilResource = publication.get(link)
             defer { smilResource.close() }
             guard let smilData = try? smilResource.read().get(),
@@ -246,10 +253,10 @@ final class BookService {
             // get body parameters <par>a
             STSMILParser.parseParallels(in: body, withParent: node, base: link.href)
             STSMILParser.parseSequences(in: body, withParent: node, mediaOverlays: mediaOverlays.mediaOverlays, base: link.href)
-            
+
             mediaOverlayStore[link.href] = mediaOverlays
         }
-        
+
         self.mediaOverlays[bookId] = mediaOverlayStore
     }
 

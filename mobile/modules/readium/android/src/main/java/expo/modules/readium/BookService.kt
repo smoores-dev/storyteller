@@ -10,6 +10,7 @@ import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.asset.FileAsset
 import org.readium.r2.shared.publication.indexOfFirstWithHref
+import org.readium.r2.shared.publication.services.positions
 import org.readium.r2.shared.publication.services.positionsByReadingOrder
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.streamer.Streamer
@@ -88,6 +89,12 @@ class BookService(private val context: Context) {
         val publication = getPublication(bookId)
             ?: throw Exception("Publication for book $bookId is unopened.")
         return publication.get(link)
+    }
+
+    suspend fun getPositions(bookId: Long): List<Locator> {
+        val publication = getPublication(bookId)
+            ?: throw Exception("Publication for book $bookId is unopened.")
+        return publication.positions()
     }
 
     fun getClip(bookId: Long, locator: Locator): Clip? {

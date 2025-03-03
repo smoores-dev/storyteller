@@ -14,9 +14,6 @@ import {
   EPUBViewRef,
   ReadiumLocator,
 } from "../modules/readium/src/Readium.types"
-import { ChevronLeftIcon } from "../icons/ChevronLeftIcon"
-import { UIText } from "./UIText"
-import { PlayPause } from "./PlayPause"
 import { MiniPlayer } from "./MiniPlayer"
 import { useAudioBook } from "../hooks/useAudioBook"
 import { Toolbar } from "./Toolbar"
@@ -25,6 +22,9 @@ import { useAppDispatch, useAppSelector } from "../store/appState"
 import { SelectionMenu } from "./SelectionMenu"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { getFilledBookPreferences } from "../store/selectors/preferencesSelectors"
+import { Group } from "./ui/Group"
+import { ChevronLeft } from "lucide-react-native"
+import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
   book: BookshelfBook
@@ -55,15 +55,7 @@ export function Epub({ book, locator }: Props) {
   const [showInterface, setShowInterface] = useState(true)
   const epubViewRef = useRef<EPUBViewRef | null>(null)
 
-  const {
-    percentComplete,
-    progress,
-    remainingTime,
-    isPlaying,
-    isLoading,
-    startPosition,
-    endPosition,
-  } = useAudioBook()
+  const { isPlaying } = useAudioBook()
 
   return (
     <View
@@ -77,7 +69,7 @@ export function Epub({ book, locator }: Props) {
       ]}
     >
       <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
-      <ToolbarDialogs topInset={insets.top + 6} />
+      <ToolbarDialogs mode="text" topInset={insets.top + 6} />
       {selection && (
         <SelectionMenu
           bookId={book.id}
@@ -173,43 +165,17 @@ export function Epub({ book, locator }: Props) {
         />
       </View>
       {showInterface && (
-        <View style={[styles.backButton, { top: insets.top }]}>
-          <Link href="/" asChild>
-            <Pressable hitSlop={20}>
-              <ChevronLeftIcon />
-            </Pressable>
-          </Link>
-        </View>
-      )}
-      {showInterface && (
-        <View
-          style={[
-            styles.toolbarWrapper,
-            {
-              top: insets.top + 6,
-            },
-          ]}
-        >
-          <Toolbar mode="text" activeBookmarks={activeBookmarks} />
-        </View>
-      )}
-      {!showInterface ? (
-        <View style={styles.playerStatus}>
-          <UIText>
-            {percentComplete}% - {remainingTime} left
-          </UIText>
-          <PlayPause isPlaying={isPlaying} isLoading={isLoading} />
-        </View>
-      ) : (
-        <MiniPlayer
-          book={book}
-          progress={progress}
-          startPosition={startPosition}
-          isPlaying={isPlaying}
-          isLoading={isLoading}
-          endPosition={endPosition}
-          style={styles.miniPlayer}
-        />
+        <>
+          <Group style={[styles.backButton, { top: insets.top + 6 }]}>
+            <Link href="/" replace asChild>
+              <Pressable hitSlop={20}>
+                <ChevronLeft color={foreground} />
+              </Pressable>
+            </Link>
+            <Toolbar mode="text" activeBookmarks={activeBookmarks} />
+          </Group>
+          <MiniPlayer book={book} />
+        </>
       )}
     </View>
   )
@@ -230,9 +196,12 @@ const styles = StyleSheet.create({
   },
   epub: { flex: 1 },
   backButton: {
+    left: spacing[2],
+    justifyContent: "space-between",
     position: "absolute",
     flexDirection: "row",
     alignItems: "center",
+    right: spacing[2],
     zIndex: 3,
   },
   toolbarWrapper: {

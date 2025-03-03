@@ -2,13 +2,12 @@ import Slider from "@react-native-community/slider"
 import { Pressable, StyleSheet, View } from "react-native"
 import Select from "react-native-picker-select"
 import { dequal } from "dequal"
-import { appColor } from "../design"
 import { formatNumber } from "../formatting"
 import {
   defaultPreferences,
   preferencesSlice,
 } from "../store/slices/preferencesSlice"
-import { ButtonGroup, ButtonGroupButton } from "./ButtonGroup"
+import { ButtonGroup, ButtonGroupButton } from "./ui/ButtonGroup"
 import { HighlightColorPicker } from "./HighlightColorPicker"
 import { UIText } from "./UIText"
 import { useColorTheme } from "../hooks/useColorTheme"
@@ -18,6 +17,11 @@ import {
   getGlobalPreferences,
 } from "../store/selectors/preferencesSelectors"
 import { useMemo } from "react"
+import { colors } from "./ui/tokens/colors"
+import { fontSizes } from "./ui/tokens/fontSizes"
+import { spacing } from "./ui/tokens/spacing"
+import { PlusIcon } from "lucide-react-native"
+import { Link } from "expo-router"
 
 type Props = {
   bookId?: number
@@ -36,7 +40,7 @@ export function ReadingSettings({ bookId }: Props) {
     [globalPreferences, preferences],
   )
 
-  const { foreground, dark } = useColorTheme()
+  const { foreground, dark, surface } = useColorTheme()
   const dispatch = useAppDispatch()
 
   return (
@@ -71,6 +75,7 @@ export function ReadingSettings({ bookId }: Props) {
           darkTheme={dark}
           value={preferences.lightTheme}
           useNativeAndroidPickerStyle={false}
+          placeholder={{}}
           onValueChange={(value) => {
             dispatch(
               preferencesSlice.actions.globalPreferencesUpdated({
@@ -100,6 +105,7 @@ export function ReadingSettings({ bookId }: Props) {
           darkTheme={dark}
           value={preferences.darkTheme}
           useNativeAndroidPickerStyle={false}
+          placeholder={{}}
           onValueChange={(value) => {
             dispatch(
               preferencesSlice.actions.globalPreferencesUpdated({
@@ -123,6 +129,13 @@ export function ReadingSettings({ bookId }: Props) {
           }}
         />
       </View>
+      <Link
+        href="/custom-theme"
+        style={{ flexDirection: "row", alignItems: "center" }}
+      >
+        <PlusIcon color={colors.primary9} size={spacing[2]} />
+        <UIText style={{ color: colors.primary9 }}> Custom theme</UIText>
+      </Link>
       <View
         style={[
           styles.field,
@@ -142,25 +155,51 @@ export function ReadingSettings({ bookId }: Props) {
           }}
         />
       </View>
-      <View style={styles.typographyHeaderContainer}>
+      <View
+        style={
+          bookId
+            ? styles.bookTypographyHeaderContainer
+            : styles.typographyHeaderContainer
+        }
+      >
         <UIText style={styles.subsubheading}>
           Typography{!bookId && " defaults"}
         </UIText>
         {bookId ? (
-          <Pressable
-            disabled={dirty}
-            onPress={() => {
-              dispatch(
-                preferencesSlice.actions.bookPreferencesSetAsDefaults({
-                  bookId,
-                }),
-              )
-            }}
-          >
-            <UIText style={dirty ? styles.disabled : styles.pressable}>
-              Set as defaults
-            </UIText>
-          </Pressable>
+          <View style={styles.typographyControls}>
+            <Pressable
+              disabled={dirty}
+              onPress={() => {
+                dispatch(
+                  preferencesSlice.actions.bookPreferencesSetAsDefaults({
+                    bookId,
+                  }),
+                )
+              }}
+            >
+              <UIText style={dirty ? styles.disabled : styles.pressable}>
+                Set as defaults
+              </UIText>
+            </Pressable>
+            <Pressable
+              disabled={
+                preferences.typography === defaultPreferences.typography
+              }
+              onPress={() => {
+                dispatch(preferencesSlice.actions.typographyPreferencesReset())
+              }}
+            >
+              <UIText
+                style={
+                  preferences.typography === defaultPreferences.typography
+                    ? styles.disabled
+                    : styles.pressable
+                }
+              >
+                Reset to defaults
+              </UIText>
+            </Pressable>
+          </View>
         ) : (
           <Pressable
             disabled={preferences.typography === defaultPreferences.typography}
@@ -181,69 +220,67 @@ export function ReadingSettings({ bookId }: Props) {
         )}
       </View>
 
-      <View style={styles.field}>
-        <UIText style={[styles.label, { flexGrow: 1 }]}>Font scaling</UIText>
-        <View style={styles.sliderWrapper}>
-          <Slider
-            style={styles.slider}
-            minimumValue={0.7}
-            maximumValue={1.5}
-            step={0.05}
-            value={preferences.typography.scale}
-            minimumTrackTintColor={appColor}
-            maximumTrackTintColor="#EAEAEA"
-            thumbTintColor={appColor}
-            onValueChange={(value) => {
-              const update = {
-                typography: {
-                  ...preferences.typography,
-                  // Rounding to hundredths to account for floating point errors
-                  scale: Math.round(value * 100) / 100,
-                },
-              }
-              const action = bookId
-                ? preferencesSlice.actions.bookPreferencesUpdated({
-                    bookId,
-                    prefs: update,
-                  })
-                : preferencesSlice.actions.globalPreferencesUpdated(update)
-              dispatch(action)
-            }}
-          />
-          <UIText>{formatNumber(preferences.typography.scale, 2)}x</UIText>
-        </View>
+      <View style={[styles.field, { gap: spacing[2] }]}>
+        <UIText style={styles.label}>Font scaling</UIText>
+        <Slider
+          style={styles.slider}
+          minimumValue={0.7}
+          maximumValue={1.5}
+          step={0.05}
+          value={preferences.typography.scale}
+          minimumTrackTintColor={colors.primary9}
+          maximumTrackTintColor={surface}
+          thumbImage={require("../assets/slider-thumb-image.png")}
+          onValueChange={(value) => {
+            const update = {
+              typography: {
+                ...preferences.typography,
+                // Rounding to hundredths to account for floating point errors
+                scale: Math.round(value * 100) / 100,
+              },
+            }
+            const action = bookId
+              ? preferencesSlice.actions.bookPreferencesUpdated({
+                  bookId,
+                  prefs: update,
+                })
+              : preferencesSlice.actions.globalPreferencesUpdated(update)
+            dispatch(action)
+          }}
+        />
+        <UIText>{formatNumber(preferences.typography.scale, 2)}x</UIText>
       </View>
-      <View style={styles.field}>
-        <UIText style={[styles.label, { flexGrow: 1 }]}>Line height</UIText>
-        <View style={styles.sliderWrapper}>
-          <Slider
-            style={styles.slider}
-            minimumValue={1.0}
-            maximumValue={2.0}
-            step={0.05}
-            value={preferences.typography.lineHeight}
-            minimumTrackTintColor={appColor}
-            maximumTrackTintColor="#EAEAEA"
-            thumbTintColor={appColor}
-            onValueChange={(value) => {
-              const update = {
-                typography: {
-                  ...preferences.typography,
-                  // Rounding to hundredths to account for floating point errors
-                  lineHeight: Math.round(value * 100) / 100,
-                },
-              }
-              const action = bookId
-                ? preferencesSlice.actions.bookPreferencesUpdated({
-                    bookId,
-                    prefs: update,
-                  })
-                : preferencesSlice.actions.globalPreferencesUpdated(update)
-              dispatch(action)
-            }}
-          />
-          <UIText>{formatNumber(preferences.typography.lineHeight, 2)}x</UIText>
-        </View>
+      <View style={[styles.field, { gap: spacing[2] }]}>
+        <UIText style={styles.label}>Line height</UIText>
+        <Slider
+          style={styles.slider}
+          minimumValue={1.0}
+          maximumValue={2.0}
+          step={0.05}
+          value={preferences.typography.lineHeight}
+          minimumTrackTintColor={colors.primary9}
+          maximumTrackTintColor={surface}
+          thumbImage={require("../assets/slider-thumb-image.png")}
+          onValueChange={(value) => {
+            const update = {
+              typography: {
+                ...preferences.typography,
+                // Rounding to hundredths to account for floating point errors
+                lineHeight: Math.round(value * 100) / 100,
+              },
+            }
+            const action = bookId
+              ? preferencesSlice.actions.bookPreferencesUpdated({
+                  bookId,
+                  prefs: update,
+                })
+              : preferencesSlice.actions.globalPreferencesUpdated(update)
+            dispatch(action)
+          }}
+        />
+        <UIText style={{ flexGrow: 1 }}>
+          {formatNumber(preferences.typography.lineHeight, 2)}x
+        </UIText>
       </View>
       <View style={styles.field}>
         <UIText style={styles.label}>Text alignment</UIText>
@@ -294,7 +331,11 @@ export function ReadingSettings({ bookId }: Props) {
               : preferencesSlice.actions.globalPreferencesUpdated(update)
             dispatch(action)
           }}
-          items={[{ label: "Bookerly", value: "Bookerly" }]}
+          items={[
+            { label: "Bookerly", value: "Bookerly" },
+            { label: "Literata", value: "Literata" },
+            { label: "OpenDyslexic", value: "OpenDyslexic" },
+          ]}
           style={{
             inputIOS: {
               color: foreground,
@@ -311,32 +352,35 @@ export function ReadingSettings({ bookId }: Props) {
 
 const styles = StyleSheet.create({
   subsubheading: {
-    fontSize: 22,
+    ...fontSizes.xl,
     fontWeight: "600",
-    marginVertical: 12,
+    marginVertical: spacing["1.5"],
   },
   subheading: {
-    fontSize: 24,
+    ...fontSizes["2xl"],
     fontWeight: "bold",
-    marginVertical: 12,
+    marginVertical: spacing["1.5"],
   },
   field: {
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginVertical: 12,
+    marginVertical: spacing["1.5"],
   },
   label: {
-    fontSize: 18,
+    ...fontSizes.lg,
+    flexGrow: 0,
   },
   typographyHeaderContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
+  bookTypographyHeaderContainer: {},
+  typographyControls: { flexDirection: "row", justifyContent: "space-between" },
   pressable: {
-    color: appColor,
+    color: colors.primary9,
   },
   disabled: {
     opacity: 0.6,
@@ -345,7 +389,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    flexGrow: 3,
+    gap: spacing[1],
   },
-  slider: { height: 16, flexBasis: 200 },
+  slider: { height: spacing[2], flexGrow: 1 },
 })

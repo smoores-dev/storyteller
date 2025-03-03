@@ -31,7 +31,11 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="browse"
-        options={{ title: "Browse", href: "/browse", tabBarIcon: BrowseIcon }}
+        options={{
+          title: "Browse",
+          href: "/browse",
+          tabBarIcon: BrowseIcon,
+        }}
       />
       <Tabs.Screen
         name="settings"

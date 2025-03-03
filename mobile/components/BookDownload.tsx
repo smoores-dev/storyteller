@@ -1,7 +1,5 @@
-import { Image, Pressable, StyleSheet, View } from "react-native"
+import { Image, StyleSheet, View } from "react-native"
 import { UIText } from "./UIText"
-import { DownloadIcon } from "../icons/DownloadIcon"
-import { appColor } from "../design"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getIsBookDownloading,
@@ -10,7 +8,9 @@ import {
 import { getApiClient } from "../store/selectors/apiSelectors"
 import { librarySlice } from "../store/slices/librarySlice"
 import { DownloadingIndicator } from "./DownloadingIndicator"
-import { ThemeOverrideProvider } from "./ThemeOverrideProvider"
+import { Button } from "./ui/Button"
+import { DownloadCloud } from "lucide-react-native"
+import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
   bookId: number
@@ -49,17 +49,16 @@ export function BookDownload({ bookId }: Props) {
           {isDownloading ? (
             <DownloadingIndicator bookId={bookId} />
           ) : (
-            <ThemeOverrideProvider foreground="white">
-              <Pressable
-                style={styles.downloadButton}
-                onPress={() => {
-                  dispatch(librarySlice.actions.bookDownloadPressed({ bookId }))
-                }}
-              >
-                <DownloadIcon />
-                <UIText style={styles.downloadButtonText}>Download</UIText>
-              </Pressable>
-            </ThemeOverrideProvider>
+            <Button
+              style={styles.downloadButton}
+              variant="primary"
+              onPress={() => {
+                dispatch(librarySlice.actions.bookDownloadPressed({ bookId }))
+              }}
+            >
+              <UIText style={styles.downloadButtonText}>Download</UIText>
+              <DownloadCloud color="white" />
+            </Button>
           )}
         </View>
       </View>
@@ -102,14 +101,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   downloadButton: {
-    backgroundColor: appColor,
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    width: "100%",
-    borderRadius: 4,
+    gap: spacing[1],
   },
   downloadButtonText: {
     color: "white",

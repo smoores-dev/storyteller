@@ -35,6 +35,11 @@ import {
   playerPositionUpdated,
   playerPaused,
   localBookImported,
+  playerPositionSeeked,
+  playerTotalPositionSeeked,
+  playerTrackChanged,
+  nextTrackPressed,
+  prevTrackPressed,
 } from "../slices/bookshelfSlice"
 import { librarySlice } from "../slices/librarySlice"
 import * as FileSystem from "expo-file-system"
@@ -77,6 +82,7 @@ import {
   extractArchive,
   getClip,
   getFragment,
+  getPositions,
   getResource,
   locateLink,
   openPublication,
@@ -364,6 +370,10 @@ export function* downloadBookSaga() {
         extractedPath,
       )) as Awaited<ReturnType<typeof openPublication>>
 
+      const positions = (yield call(getPositions, bookId)) as Awaited<
+        ReturnType<typeof getPositions>
+      >
+
       if (action.type === localBookImported.type) {
         const coverLink = manifest.resources?.find((resource) =>
           resource.rel?.includes("cover"),
@@ -463,6 +473,7 @@ export function* downloadBookSaga() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
+            positions,
             highlights: [],
             bookmarks: [],
           },
@@ -553,6 +564,10 @@ export function* hydrateBookshelf() {
       extractedPath,
     )) as Awaited<ReturnType<typeof openPublication>>
 
+    const positions = (yield call(getPositions, bookId)) as Awaited<
+      ReturnType<typeof getPositions>
+    >
+
     const oldCoverInfo = (yield call(
       FileSystem.getInfoAsync,
       getOldLocalBookCoverUrl(bookId),
@@ -590,6 +605,7 @@ export function* hydrateBookshelf() {
       title: parseLocalizedString(manifest.metadata.title),
       authors: readiumToStorytellerAuthors(manifest.metadata.author),
       manifest,
+      positions,
       highlights,
       bookmarks,
     })
@@ -865,6 +881,62 @@ export function* seekToLocatorSaga() {
   )
 }
 
+export function* manualTrackSeekSaga() {
+  yield takeLeadingWithQueue(
+    [
+      playerPositionSeeked,
+      playerTotalPositionSeeked,
+      playerTrackChanged,
+      nextTrackPressed,
+      prevTrackPressed,
+    ],
+    function* (action) {
+      const { type } = action
+
+      // NOTE: This is currently unused, because the
+      // slider UI is too unwieldy
+      if (type === playerTotalPositionSeeked.type) {
+        const {
+          payload: { progress },
+        } = action
+        let skipTo = progress
+        let nextTrack = null
+
+        const tracks = (yield call(TrackPlayer.getQueue)) as Awaited<
+          ReturnType<typeof TrackPlayer.getQueue>
+        >
+        let acc = 0
+        for (let i = 0; i < tracks.length; i++) {
+          const track = tracks[i]!
+          acc += track.duration ?? 0
+          if (acc > progress) break
+          nextTrack = i
+          skipTo -= track.duration ?? 0
+        }
+        if (nextTrack === null) return
+
+        yield call(TrackPlayer.skip, nextTrack, skipTo)
+      } else if (type === playerPositionSeeked.type) {
+        const {
+          payload: { progress },
+        } = action
+        yield call(TrackPlayer.seekTo, progress)
+      } else if (type === playerTrackChanged.type) {
+        const {
+          payload: { index },
+        } = action
+        yield call(TrackPlayer.skip, index)
+      } else if (type === nextTrackPressed.type) {
+        yield call(TrackPlayer.skipToNext)
+      } else if (type === prevTrackPressed.type) {
+        yield call(TrackPlayer.skipToPrevious)
+      }
+
+      yield put(playerPositionUpdated())
+    },
+  )
+}
+
 export function* relocateToTrackPositionSaga() {
   yield takeLeadingWithQueue(
     [playerPositionUpdated, playerPaused],
@@ -875,8 +947,8 @@ export function* relocateToTrackPositionSaga() {
 
       if (!currentTrack) return
 
-      const position = (yield call(TrackPlayer.getPosition)) as Awaited<
-        ReturnType<typeof TrackPlayer.getPosition>
+      const { position } = (yield call(TrackPlayer.getProgress)) as Awaited<
+        ReturnType<typeof TrackPlayer.getProgress>
       >
 
       const currentBook = (yield select(getCurrentlyPlayingBook)) as ReturnType<

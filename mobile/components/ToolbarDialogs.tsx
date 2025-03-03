@@ -7,10 +7,11 @@ import { BookNavigation } from "./BookNavigation"
 import { BookSettingsMenu } from "./BookSettingsMenu"
 
 interface Props {
+  mode: "text" | "audio"
   topInset?: number | undefined
 }
 
-export function ToolbarDialogs({ topInset }: Props) {
+export function ToolbarDialogs({ mode, topInset }: Props) {
   const book = useAppSelector(getCurrentlyPlayingBook)
   const openDialog = useAppSelector(getOpenDialog)
 
@@ -22,6 +23,7 @@ export function ToolbarDialogs({ topInset }: Props) {
     <>
       {openDialog === ToolbarDialog.TABLE_OF_CONTENTS && (
         <BookNavigation
+          mode={mode}
           topInset={topInset}
           onOutsideTap={() => {
             dispatch(toolbarSlice.actions.dialogClosed())
