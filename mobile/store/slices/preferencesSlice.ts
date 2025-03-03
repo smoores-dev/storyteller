@@ -2,11 +2,13 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit"
 import { HighlightTint } from "../../colors"
 import deepmerge from "deepmerge"
 import { WritableDraft } from "immer/dist/internal"
+import { colors } from "../../components/ui/tokens/colors"
 
 type ColorTheme = {
   name: string
   foreground: string
   background: string
+  surface: string
   isDark: boolean
 }
 
@@ -35,6 +37,10 @@ export type BookPreferences = {
   typography?: Partial<TypographyPreferences>
   layout?: Partial<LayoutPreferences>
   audio?: Partial<AudioPreferences>
+  detailView?: {
+    mode: "audio" | "text"
+    scope: "chapter" | "book"
+  }
 }
 
 export type PreferencesState = {
@@ -53,14 +59,23 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
   colorThemes: [
     {
       name: "Day",
-      foreground: "#111111",
-      background: "#FFFFFF",
+      foreground: colors.gray9,
+      background: colors.white,
+      surface: colors.gray2,
+      isDark: false,
+    },
+    {
+      name: "Sepia",
+      foreground: colors.brown9,
+      background: colors.yellow0,
+      surface: colors.brown2,
       isDark: false,
     },
     {
       name: "Night",
-      foreground: "#DDDDDD",
-      background: "#111111",
+      foreground: colors.gray3,
+      background: colors.gray9,
+      surface: colors.gray7,
       isDark: true,
     },
   ],
@@ -131,6 +146,27 @@ export const preferencesSlice = createSlice({
         ...prefs,
       }
     },
+    bookDetailImagePressed(state, action: PayloadAction<{ bookId: number }>) {
+      const { bookId } = action.payload
+
+      const book = state.bookPreferences[bookId] ?? {}
+      const detailPrefs = book.detailView ?? { mode: "text", scope: "chapter" }
+      detailPrefs.mode = detailPrefs.mode === "audio" ? "text" : "audio"
+      book.detailView = detailPrefs
+      state.bookPreferences[bookId] = book
+    },
+    bookDetailPositionPressed(
+      state,
+      action: PayloadAction<{ bookId: number }>,
+    ) {
+      const { bookId } = action.payload
+
+      const book = state.bookPreferences[bookId] ?? {}
+      const detailPrefs = book.detailView ?? { mode: "text", scope: "chapter" }
+      detailPrefs.scope = detailPrefs.scope === "book" ? "chapter" : "book"
+      book.detailView = detailPrefs
+      state.bookPreferences[bookId] = book
+    },
     bookPreferencesSetAsDefaults(
       state,
       action: PayloadAction<{ bookId: number }>,
@@ -149,6 +185,9 @@ export const preferencesSlice = createSlice({
     },
     typographyPreferencesReset(state) {
       state.typography = defaultPreferences.typography
+    },
+    customThemeSaved(state, action: PayloadAction<{ theme: ColorTheme }>) {
+      state.colorThemes.push(action.payload.theme)
     },
   },
 })

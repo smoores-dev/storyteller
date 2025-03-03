@@ -22,6 +22,7 @@ export function useColorTheme() {
 
   const foreground = overrides?.foreground ?? theme.foreground
   const background = overrides?.background ?? theme.background
+  const surface = overrides?.surface ?? theme.surface
 
-  return { foreground, background, dark: darkMode }
+  return { foreground, background, surface, dark: darkMode }
 }

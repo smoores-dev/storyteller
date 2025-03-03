@@ -37,6 +37,11 @@ export async function locateLink(
   return locator
 }
 
+export async function getPositions(bookId: number): Promise<ReadiumLocator[]> {
+  const positions = await ReadiumModule.getPositions(bookId)
+  return positions
+}
+
 export async function getResource(
   bookId: number,
   link: ReadiumLink,

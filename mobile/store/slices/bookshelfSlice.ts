@@ -35,6 +35,7 @@ export type BookshelfBook = {
   manifest: ReadiumManifest
   bookmarks: ReadiumLocator[]
   highlights: Highlight[]
+  positions: ReadiumLocator[]
 }
 
 export type BookshelfState = {
@@ -61,12 +62,37 @@ export const playerPositionUpdated = createAction(
   "bookshelf/playerPositionUpdated",
 )
 
+export const playerPositionSeeked = createAction(
+  "bookshelf/playerPositionSeeked",
+  (payload: { progress: number }) => ({
+    payload,
+  }),
+)
+
+export const playerTotalPositionSeeked = createAction(
+  "bookshelf/playerTotalPositionSeeked",
+  (payload: { progress: number }) => ({
+    payload,
+  }),
+)
+
 export const localBookImported = createAction(
   "bookshelf/localBookImported",
   (bookId: number, archiveUrl: string) => ({ payload: { bookId, archiveUrl } }),
 )
 
 export const playerPaused = createAction("bookshelf/playerPaused")
+
+export const playerTrackChanged = createAction(
+  "bookshelf/playerTrackChanged",
+  (payload: { index: number }) => ({
+    payload,
+  }),
+)
+
+export const nextTrackPressed = createAction("bookshelf/nextTrackPressed")
+
+export const prevTrackPressed = createAction("bookshelf/prevTrackPressed")
 
 function compareLocators(a: ReadiumLocator, b: ReadiumLocator) {
   if (a.locations?.totalProgression === undefined) {

@@ -1,21 +1,28 @@
 import { Link } from "expo-router"
-import { Platform, Pressable, StyleSheet, View } from "react-native"
-import { BookOpenOutlineIcon } from "../icons/BookOpenOutlineIcon"
+import { Platform, StyleSheet, View } from "react-native"
 import { SpedometerIcon } from "../icons/SpedometerIcon"
-import { TableOfContentsIcon } from "../icons/TableOfContentsIcon"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getCurrentlyPlayingBook,
   getLocator,
 } from "../store/selectors/bookshelfSelectors"
 import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
-import { PlayIcon } from "../icons/PlayIcon"
-import { BookmarkIcon } from "../icons/BookmarkIcon"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { ReadiumLocator } from "../modules/readium/src/Readium.types"
-import { UIText } from "./UIText"
 import { getOpenDialog } from "../store/selectors/toolbarSelectors"
 import { activeBackgroundColor } from "../design"
+import {
+  ALargeSmall,
+  Bookmark,
+  BookmarkCheck,
+  BookOpen,
+  Headphones,
+  TableOfContents,
+} from "lucide-react-native"
+import { useColorTheme } from "../hooks/useColorTheme"
+import { Button } from "./ui/Button"
+import { UIText } from "./UIText"
+import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
 
 type Props = {
   mode: "audio" | "text"
@@ -28,6 +35,11 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
     (state) => book && getLocator(state, book.id),
   )
   const openDialog = useAppSelector(getOpenDialog)
+  const currentSpeed = useAppSelector(
+    (state) => book && getBookPlayerSpeed(state, book.id),
+  )
+
+  const { foreground, surface } = useColorTheme()
 
   const dispatch = useAppDispatch()
 
@@ -37,11 +49,14 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
     <>
       <View style={styles.toolbar}>
         {mode === "text" && (
-          <Pressable
+          <Button
+            chromeless
             style={[
               styles.toolbarButton,
               styles.settingsButton,
-              openDialog === ToolbarDialog.SETTINGS && styles.activeButton,
+              openDialog === ToolbarDialog.SETTINGS && {
+                backgroundColor: surface,
+              },
             ]}
             onPress={() => {
               dispatch(
@@ -51,15 +66,16 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
               )
             }}
           >
-            <UIText style={{ fontSize: 20 }}>Aa</UIText>
-          </Pressable>
+            <ALargeSmall color={foreground} />
+          </Button>
         )}
 
-        <Pressable
+        <Button
           style={[
             styles.toolbarButton,
-            openDialog === ToolbarDialog.SPEED && styles.activeButton,
+            openDialog === ToolbarDialog.SPEED && { backgroundColor: surface },
           ]}
+          chromeless
           onPress={() => {
             dispatch(
               toolbarSlice.actions.dialogToggled({
@@ -68,11 +84,15 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             )
           }}
         >
-          <SpedometerIcon />
-        </Pressable>
+          {currentSpeed === 1 ? (
+            <SpedometerIcon />
+          ) : (
+            <UIText>{currentSpeed}x</UIText>
+          )}
+        </Button>
 
-        <Pressable
-          disabled={!currentLocator}
+        <Button
+          chromeless
           onPress={() => {
             if (activeBookmarks.length) {
               dispatch(
@@ -91,14 +111,20 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             }
           }}
         >
-          <BookmarkIcon filled={!!activeBookmarks.length} />
-        </Pressable>
+          {activeBookmarks.length ? (
+            <BookmarkCheck color={foreground} />
+          ) : (
+            <Bookmark color={foreground} />
+          )}
+        </Button>
 
-        <Pressable
+        <Button
+          chromeless
           style={[
             styles.toolbarButton,
-            openDialog === ToolbarDialog.TABLE_OF_CONTENTS &&
-              styles.activeButton,
+            openDialog === ToolbarDialog.TABLE_OF_CONTENTS && {
+              backgroundColor: surface,
+            },
           ]}
           onPress={() => {
             dispatch(
@@ -108,21 +134,22 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             )
           }}
         >
-          <TableOfContentsIcon />
-        </Pressable>
+          <TableOfContents color={foreground} />
+        </Button>
         {mode === "audio" ? (
           <Link
             style={[styles.toolbarButton, styles.bookLink]}
+            replace
             href={{ pathname: "/book/[id]", params: { id: book.id } }}
           >
-            <BookOpenOutlineIcon />
+            <BookOpen style={{ marginBottom: -4 }} color={foreground} />
           </Link>
         ) : (
           <Link
             style={[styles.toolbarButton, styles.audioLink]}
             href={{ pathname: "/player" }}
           >
-            <PlayIcon />
+            <Headphones color={foreground} />
           </Link>
         )}
       </View>
@@ -145,7 +172,9 @@ const styles = StyleSheet.create({
   },
   bookLink: {
     ...(Platform.OS === "ios" && { marginTop: 12 }),
-    marginHorizontal: 0,
+    marginTop: 4,
+    padding: 0,
+    marginLeft: 0,
   },
   audioLink: {
     marginTop: 4,

@@ -14,7 +14,11 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { logger } from "../../logger"
 import { BookDetail } from "../../apiModels"
-import { locateLink, openPublication } from "../../modules/readium"
+import {
+  getPositions,
+  locateLink,
+  openPublication,
+} from "../../modules/readium"
 import { bookshelfSlice } from "../slices/bookshelfSlice"
 
 export function* hydrateExistingDownloads() {
@@ -72,6 +76,10 @@ export function* hydrateExistingDownloads() {
         extractedPath,
       )) as Awaited<ReturnType<typeof openPublication>>
 
+      const positions = (yield call(getPositions, book.id)) as Awaited<
+        ReturnType<typeof getPositions>
+      >
+
       const firstLink = manifest.readingOrder[0]
 
       if (!firstLink)
@@ -92,6 +100,7 @@ export function* hydrateExistingDownloads() {
             title: parseLocalizedString(manifest.metadata.title),
             authors: readiumToStorytellerAuthors(manifest.metadata.author),
             manifest,
+            positions,
             highlights: [],
             bookmarks: [],
           },

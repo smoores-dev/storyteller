@@ -81,12 +81,60 @@ class EpubFragment(
             listener = listener,
             configuration = EpubNavigatorFragment.Configuration {
                 servedAssets = listOf(
-                    "fonts/Bookerly.ttf"
+                    "fonts/Bookerly.ttf",
+                    "fonts/OpenDyslexic.otf",
+                    "fonts/Literata_500Medium.ttf"
                 )
 
                 addFontFamilyDeclaration(FontFamily("Bookerly")) {
                     addFontFace {
                         addSource("fonts/Bookerly.ttf")
+                        setFontStyle(FontStyle.NORMAL)
+                        setFontWeight(FontWeight.NORMAL)
+                    }
+
+                    addFontFace {
+                        addSource("fonts/Bookerly Bold.ttf")
+                        setFontStyle(FontStyle.NORMAL)
+                        setFontWeight(FontWeight.BOLD)
+                    }
+
+                    addFontFace {
+                        addSource("fonts/Bookerly Italic.ttf")
+                        setFontStyle(FontStyle.ITALIC)
+                        setFontWeight(FontWeight.NORMAL)
+                    }
+                }
+
+                addFontFamilyDeclaration(FontFamily("OpenDyslexic")) {
+                    addFontFace {
+                        addSource("fonts/OpenDyslexic-Regular.ttf")
+                        setFontStyle(FontStyle.NORMAL)
+                        setFontWeight(FontWeight.NORMAL)
+                    }
+
+                    addFontFace {
+                        addSource("fonts/OpenDyslexic-Bold.ttf")
+                        setFontStyle(FontStyle.NORMAL)
+                        setFontWeight(FontWeight.BOLD)
+                    }
+
+                    addFontFace {
+                        addSource("fonts/OpenDyslexic-Bold-Italic.ttf")
+                        setFontStyle(FontStyle.ITALIC)
+                        setFontWeight(FontWeight.BOLD)
+                    }
+
+                    addFontFace {
+                        addSource("fonts/OpenDyslexic-Italic.ttf")
+                        setFontStyle(FontStyle.ITALIC)
+                        setFontWeight(FontWeight.NORMAL)
+                    }
+                }
+
+                addFontFamilyDeclaration(FontFamily("Literata")) {
+                    addFontFace {
+                        addSource("fonts/Literata_500Medium.ttf")
                         setFontStyle(FontStyle.NORMAL)
                         setFontWeight(FontWeight.NORMAL)
                     }

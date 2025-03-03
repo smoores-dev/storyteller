@@ -62,6 +62,12 @@ class ReadiumModule : Module() {
                     return@Coroutine resource.readAsString().getOrThrow()
                 }
 
+        AsyncFunction("getPositions") Coroutine
+                { bookId: Long ->
+                    val positions = bookService.getPositions(bookId)
+                    return@Coroutine positions.map { it.toJSON().toMap() }
+                }
+
         AsyncFunction("getClip") Coroutine
                 { bookId: Long, locatorMap: Map<String, Any> ->
                     val locatorJson = JSONObject(locatorMap)

@@ -1,16 +1,40 @@
-import { StyleSheet, View } from "react-native"
-import { MiniPlayer } from "./MiniPlayer"
-import { useAudioBook } from "../hooks/useAudioBook"
-import { useAppSelector } from "../store/appState"
+import { StyleSheet, View, Image, Pressable } from "react-native"
+import { formatTime, useAudioBook } from "../hooks/useAudioBook"
+import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { useColorTheme } from "../hooks/useColorTheme"
+import { useState, useEffect, useMemo } from "react"
+import { ProgressBar } from "./ProgressBar"
+import { playerPositionSeeked } from "../store/slices/bookshelfSlice"
+import { Link } from "expo-router"
+import { getLocalAudioBookCoverUrl } from "../store/persistence/files"
+import { UIText } from "./UIText"
+import { PlayPause } from "./PlayPause"
+import { spacing } from "./ui/tokens/spacing"
+import { fontSizes } from "./ui/tokens/fontSizes"
 
 export function MiniPlayerWidget() {
   const { foreground, background } = useColorTheme()
 
-  const book = useAppSelector(getCurrentlyPlayingBook)
-  const { isPlaying, isLoading, progress, startPosition, endPosition } =
+  const { isPlaying, isLoading, progress, startPosition, endPosition, track } =
     useAudioBook()
+
+  const dispatch = useAppDispatch()
+  const [eagerProgress, setEagerProgress] = useState(progress)
+
+  const formattedEagerProgress = useMemo(() => {
+    return formatTime(eagerProgress)
+  }, [eagerProgress])
+
+  const formattedProgress = useMemo(() => {
+    return `${formattedEagerProgress} / ${track.formattedEndPosition}`
+  }, [formattedEagerProgress, track.formattedEndPosition])
+
+  useEffect(() => {
+    setEagerProgress(progress)
+  }, [progress])
+
+  const book = useAppSelector(getCurrentlyPlayingBook)
 
   return (
     <View
@@ -19,14 +43,65 @@ export function MiniPlayerWidget() {
         { backgroundColor: background, shadowColor: foreground },
       ]}
     >
-      <MiniPlayer
-        book={book}
-        isPlaying={isPlaying}
-        isLoading={isLoading}
-        progress={progress}
-        startPosition={startPosition}
-        endPosition={endPosition}
-      />
+      {book && (
+        <View>
+          <ProgressBar
+            style={{ marginTop: -18, marginBottom: -18 }}
+            start={startPosition}
+            stop={endPosition}
+            progress={eagerProgress}
+            onProgressChange={(value) => {
+              setEagerProgress(value)
+              dispatch(playerPositionSeeked({ progress: value }))
+            }}
+          />
+
+          <View
+            style={{
+              paddingVertical: 15,
+              paddingLeft: 15,
+              paddingRight: spacing[4],
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: spacing[3],
+            }}
+          >
+            <Link href="/player" asChild>
+              <Pressable style={styles.details}>
+                <Image
+                  style={{
+                    height: 40,
+                    width: 40,
+                    borderRadius: 4,
+                  }}
+                  source={{ uri: getLocalAudioBookCoverUrl(book.id) }}
+                />
+                <View>
+                  <UIText
+                    numberOfLines={1}
+                    style={{
+                      ...fontSizes.sm,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {book.title}
+                  </UIText>
+                  <UIText
+                    numberOfLines={1}
+                    style={{
+                      ...fontSizes.sm,
+                    }}
+                  >
+                    {formattedProgress}
+                  </UIText>
+                </View>
+              </Pressable>
+            </Link>
+            <PlayPause isPlaying={isPlaying} isLoading={isLoading} />
+          </View>
+        </View>
+      )}
     </View>
   )
 }
@@ -46,5 +121,13 @@ const styles = StyleSheet.create({
       height: 2,
     },
     elevation: 3,
+  },
+  details: {
+    paddingRight: spacing[6],
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing[3],
+    flexShrink: 1,
   },
 })

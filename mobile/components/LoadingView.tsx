@@ -1,6 +1,9 @@
 import { ActivityIndicator, View } from "react-native"
+import { useColorTheme } from "../hooks/useColorTheme"
 
 export function LoadingView() {
+  const { background, foreground } = useColorTheme()
+
   return (
     <View
       style={{
@@ -9,7 +12,7 @@ export function LoadingView() {
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: "#FFF",
+        backgroundColor: background,
         justifyContent: "center",
         alignItems: "center",
         zIndex: 1000,
@@ -24,16 +27,20 @@ export function LoadingView() {
             bottom: 20,
             left: 0,
             right: 0,
-            backgroundColor: "#FFF",
+            backgroundColor: background,
             justifyContent: "center",
             alignItems: "center",
           },
           {
-            backgroundColor: "#FFF",
+            backgroundColor: background,
           },
         ]}
       >
-        <ActivityIndicator color={"black"} size={"small"} style={{ flex: 1 }} />
+        <ActivityIndicator
+          color={foreground}
+          size={"small"}
+          style={{ flex: 1 }}
+        />
       </View>
     </View>
   )

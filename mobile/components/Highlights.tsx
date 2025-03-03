@@ -4,8 +4,12 @@ import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { UIText } from "./UIText"
-import { highlightTints } from "../colors"
+import { highlightTints, highlightUnderlines } from "../colors"
 import { useColorTheme } from "../hooks/useColorTheme"
+import { Stack } from "./ui/Stack"
+import { colors } from "./ui/tokens/colors"
+import { spacing } from "./ui/tokens/spacing"
+import { fontSizes } from "./ui/tokens/fontSizes"
 
 export function Highlights() {
   const book = useAppSelector(getCurrentlyPlayingBook)
@@ -13,6 +17,17 @@ export function Highlights() {
   const dispatch = useAppDispatch()
 
   if (!book) return null
+
+  if (!book.highlights.length) {
+    return (
+      <Stack style={{ padding: spacing[12] }}>
+        <UIText style={{ color: colors.gray8 }}>
+          No highlights yet! Try adding some by selecting some text and choosing
+          a color.
+        </UIText>
+      </Stack>
+    )
+  }
 
   return (
     <ScrollView>
@@ -58,10 +73,17 @@ export function Highlights() {
             {highlight.locator.text?.highlight && (
               <UIText
                 style={{
-                  fontSize: 13,
+                  ...fontSizes.sm,
+                  textAlign: "justify",
                   fontFamily: "Bookerly",
                   backgroundColor:
                     highlightTints[dark ? "dark" : "light"][highlight.color],
+                  textDecorationLine: "underline",
+                  textDecorationStyle: "solid",
+                  textDecorationColor:
+                    highlightUnderlines[dark ? "dark" : "light"][
+                      highlight.color
+                    ],
                 }}
               >
                 {highlight.locator.text.highlight}

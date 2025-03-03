@@ -24,6 +24,7 @@ export default function ModalLayout() {
   if (Platform.OS === "ios") {
     return (
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="player"
           options={{
@@ -31,8 +32,16 @@ export default function ModalLayout() {
           }}
         />
         <Stack.Screen
+          name="custom-theme"
+          options={{
+            presentation: Platform.isPad ? "fullScreenModal" : "modal",
+          }}
+        />
+        <Stack.Screen
           name="log"
-          options={{ presentation: "fullScreenModal" }}
+          options={{
+            presentation: Platform.isPad ? "fullScreenModal" : "modal",
+          }}
         />
       </Stack>
     )
@@ -42,8 +51,17 @@ export default function ModalLayout() {
   // sheet, so on Android we fall back to the legacy JS stack
   return (
     <JsStack screenOptions={{ headerShown: false }}>
+      <JsStack.Screen name="(tabs)" />
       <JsStack.Screen
         name="player"
+        options={{
+          presentation: "modal",
+          gestureEnabled: true,
+          ...TransitionPresets.ModalPresentationIOS,
+        }}
+      />
+      <JsStack.Screen
+        name="custom-theme"
         options={{
           presentation: "modal",
           gestureEnabled: true,

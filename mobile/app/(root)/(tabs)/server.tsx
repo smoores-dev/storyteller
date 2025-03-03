@@ -1,10 +1,12 @@
 import { Stack } from "expo-router"
 import { useState } from "react"
-import { TextInput, View, StyleSheet } from "react-native"
+import { View, StyleSheet } from "react-native"
 import { UIText } from "../../../components/UIText"
 import { useAppDispatch } from "../../../store/appState"
 import { apiBaseUrlChanged } from "../../../store/slices/apiSlice"
-import { Button } from "../../../components/Button"
+import { TextInput } from "../../../components/ui/TextInput"
+import { Button } from "../../../components/ui/Button"
+import { spacing } from "../../../components/ui/tokens/spacing"
 
 const styles = StyleSheet.create({
   container: {
@@ -19,18 +21,11 @@ const styles = StyleSheet.create({
   },
   form: {
     width: "65%",
+    gap: spacing[2],
   },
   label: {
     marginTop: 16,
     marginHorizontal: 8,
-    marginBottom: 8,
-  },
-  input: {
-    padding: 16,
-    borderColor: "#7A7B86",
-    borderWidth: 1,
-    borderRadius: 2,
-    backgroundColor: "white",
   },
 })
 
@@ -49,7 +44,6 @@ export default function LoginPage() {
       <View style={styles.form}>
         <UIText style={styles.label}>Server url</UIText>
         <TextInput
-          style={styles.input}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="done"

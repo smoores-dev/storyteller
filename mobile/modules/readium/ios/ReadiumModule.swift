@@ -5,7 +5,7 @@ import R2Navigator
 public class ReadiumModule: Module {
     public func definition() -> ModuleDefinition {
         Name("Readium")
-        
+
         AsyncFunction("extractArchive") { (archiveUrl: URL, extractedUrl: URL) in
             try BookService.instance.extractArchive(archiveUrl: archiveUrl, extractedUrl: extractedUrl)
         }
@@ -14,7 +14,7 @@ public class ReadiumModule: Module {
             let pub = try await BookService.instance.openPublication(for: bookId, at: publicationUri)
             return pub.jsonManifest ?? "{}"
         }
-        
+
         AsyncFunction("getResource") { (bookId: Int, linkJson: [String : Any]) -> String in
             let link = try Link(json: linkJson)
             let resource = try BookService.instance.getResource(for: bookId, link: link)
@@ -24,13 +24,18 @@ public class ReadiumModule: Module {
             }
             return try resource.readAsString().get()
         }
-        
+
+        AsyncFunction("getPositions") { (bookId: Int) -> [[String : Any]] in
+            let positions = try BookService.instance.getPositions(for: bookId)
+            return positions.map { $0.json }
+        }
+
         AsyncFunction("getClip") { (bookId: Int, locatorJson: [String : Any]) -> [String : Any]? in
             guard let locator = try Locator(json: locatorJson),
                   let clip = try BookService.instance.getClip(for: bookId, locator: locator) else {
                 return nil
             }
-            
+
             return [
                 "relativeUrl": clip.relativeUrl!.absoluteString,
                 "fragmentId": clip.fragmentId!,
@@ -39,7 +44,7 @@ public class ReadiumModule: Module {
                 "duration": clip.duration!
             ]
         }
-        
+
         AsyncFunction("getFragment") { (bookId: Int, clipUrlString: String, position: Double) -> [String : Any]? in
             guard let clipUrl = URL(string: clipUrlString),
                   let fragment = try BookService.instance.getFragment(for: bookId, clipUrl: clipUrl, position: position) else {
@@ -51,7 +56,7 @@ public class ReadiumModule: Module {
                 "locator": fragment.locator!.json
             ]
         }
-        
+
         AsyncFunction("locateLink") { (bookId: Int, linkJson: [String : Any]) -> [String : Any]? in
             let link = try Link(json: linkJson)
             let locator = BookService.instance.locateLink(for: bookId, link: link)
@@ -60,7 +65,7 @@ public class ReadiumModule: Module {
 
         View(EPUBView.self) {
             Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
-            
+
             Prop("bookId") { (view: EPUBView, prop: Int) in
                 view.bookId = prop
                 view.initializeNavigator()
@@ -70,14 +75,14 @@ public class ReadiumModule: Module {
                 guard let locator = try? Locator(json: prop) else {
                     return
                 }
-                
+
                 if let currentLocation = view.navigator?.currentLocation {
                     let locatorComp = currentLocation.locations.fragments.isEmpty ? locator.copy( locations: { $0.fragments = [] }) : locator;
                     guard currentLocation != locatorComp else {
                         return
                     }
                 }
-                
+
                 view.go(locator: locator)
             }
 
@@ -119,29 +124,29 @@ public class ReadiumModule: Module {
                 view.highlights = highlights
                 view.decorateHighlights()
             }
-            
+
             Prop("bookmarks") { (view: EPUBView, prop: [[String: Any]]) in
                 let bookmarks = prop.compactMap { (locatorJson: [String : Any]) -> Locator? in
                     return try? Locator(json: locatorJson)
                 }
-                
+
                 view.bookmarks = bookmarks
                 if let currentLocator = view.navigator?.currentLocation {
                     view.findOnPage(locator: currentLocator)
                 }
             }
-            
+
             Prop("colorTheme") { (view: EPUBView, prop: [String: String]) in
                 let foregroundHex = prop["foreground"] ?? "#111111"
                 let backgroundHex = prop["background"] ?? "#FFFFFF"
-                
+
                 view.preferences = view.preferences.merging(EPUBPreferences(
                     backgroundColor: Color(hex: backgroundHex),
                     textColor: Color(hex: foregroundHex)
                 ))
                 view.updatePreferences()
             }
-            
+
             Prop("readaloudColor") { (view: EPUBView, prop: String) in
                 let mappedColor = switch prop {
                     case "yellow": UIColor.yellow
@@ -151,9 +156,9 @@ public class ReadiumModule: Module {
                     case "magenta": UIColor.magenta
                     default: UIColor.yellow
                 }
-                
+
                 view.readaloudColor = mappedColor
-                
+
                 if (view.isPlaying) {
                     view.clearHighlightedFragment()
                     guard let currentLocator = view.navigator?.currentLocation else {
@@ -162,35 +167,35 @@ public class ReadiumModule: Module {
                     view.highlightFragment(locator: currentLocator)
                 }
             }
-            
+
             Prop("fontScale") { (view: EPUBView, prop: Double) in
                 view.preferences = view.preferences.merging(EPUBPreferences(
                     fontSize: prop
                 ))
-                
+
                 view.updatePreferences()
             }
-            
+
             Prop("lineHeight") { (view: EPUBView, prop: Double) in
                 view.preferences = view.preferences.merging(EPUBPreferences(
                     lineHeight: prop
                 ))
-                
+
                 view.updatePreferences()
             }
-            
+
             Prop("textAlign") { (view: EPUBView, prop: String) in
                 let textAlign = switch prop {
                     case "left": TextAlignment.left
                     default: TextAlignment.justify
                 }
-                
+
                 view.preferences = view.preferences.merging(EPUBPreferences(
                     textAlign: textAlign
                 ))
                 view.updatePreferences()
             }
-            
+
             Prop("fontFamily") { (view: EPUBView, prop: String) in
                 view.preferences = view.preferences.merging(EPUBPreferences(
                     fontFamily: FontFamily(rawValue: prop)

@@ -6,7 +6,6 @@ import {
   writeGlobalPreferences,
 } from "../persistence/preferences"
 import {
-  BookPreferences,
   PreferencesState,
   defaultPreferences,
   preferencesSlice,
@@ -34,10 +33,11 @@ export function* hydratePreferences() {
     bookPreferencePromises,
   )) as Awaited<ReturnType<typeof Promise.all<typeof bookPreferencePromises>>>
 
-  const bookPreferencesRecord = bookPreferences
-    .map((prefs, index) => [bookIds[index], prefs])
-    .filter((entry): entry is [number, BookPreferences] => !!entry[1])
-    .reduce((acc, [bookId, prefs]) => ({ ...acc, [bookId]: prefs }), {})
+  const bookPreferencesRecord = Object.fromEntries(
+    bookPreferences.map(
+      (prefs, index) => [bookIds[index]!, prefs ?? {}] as const,
+    ),
+  )
 
   const preferences: PreferencesState = {
     ...globalPreferences,
