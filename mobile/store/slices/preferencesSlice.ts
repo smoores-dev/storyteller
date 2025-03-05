@@ -3,6 +3,7 @@ import { HighlightTint } from "../../colors"
 import deepmerge from "deepmerge"
 import { WritableDraft } from "immer/dist/internal"
 import { colors } from "../../components/ui/tokens/colors"
+import { bookshelfSlice } from "./bookshelfSlice"
 
 type ColorTheme = {
   name: string
@@ -189,5 +190,17 @@ export const preferencesSlice = createSlice({
     customThemeSaved(state, action: PayloadAction<{ theme: ColorTheme }>) {
       state.colorThemes.push(action.payload.theme)
     },
+  },
+  extraReducers(builder) {
+    builder.addCase(
+      bookshelfSlice.actions.bookDownloadCompleted,
+      (state, action) => {
+        const { book } = action.payload
+
+        if (state.bookPreferences[book.id]) return
+
+        state.bookPreferences[book.id] = {}
+      },
+    )
   },
 })

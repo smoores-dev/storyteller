@@ -100,7 +100,7 @@ import { ApiClientError } from "../../apiClient"
 export function createDownloadChannel(
   pauseState: FileSystem.DownloadPauseState,
 ) {
-  let download: FileSystem.DownloadResumable
+  let download!: FileSystem.DownloadResumable
 
   const buf = buffers.sliding<{ progress: number }>(1)
   const progressChannel = eventChannel<{ progress: number }>((emit) => {
@@ -122,7 +122,6 @@ export function createDownloadChannel(
     }
   }, buf)
 
-  // @ts-expect-error `download` is actually assigned here; eventChannel is synchronous
   return { progressChannel, download }
 }
 

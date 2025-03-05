@@ -9,11 +9,22 @@ import { BrowseIcon } from "../../../icons/BrowseIcon"
 import ContextMenu from "react-native-context-menu-view"
 import * as DocumentPicker from "expo-document-picker"
 import { localBookImported } from "../../../store/slices/bookshelfSlice"
+import { UIText } from "../../../components/UIText"
+import { colors } from "../../../components/ui/tokens/colors"
+import { Link } from "expo-router"
+import { spacing } from "../../../components/ui/tokens/spacing"
+import { getUsername } from "../../../store/selectors/authSelectors"
+import { PlusCircle } from "lucide-react-native"
+import { useColorTheme } from "../../../hooks/useColorTheme"
+import { fontSizes } from "../../../components/ui/tokens/fontSizes"
 
 export default function Home() {
   const { top } = useSafeAreaInsets()
   const bookIds = useAppSelector(getBookshelfBookIds)
+  const username = useAppSelector(getUsername)
   const dispatch = useAppDispatch()
+
+  const { foreground, background, surface } = useColorTheme()
 
   return (
     <View style={{ ...styles.container, paddingTop: top }}>
@@ -58,6 +69,46 @@ export default function Home() {
         {bookIds.map((bookId) => (
           <BookLink key={bookId} bookId={bookId} />
         ))}
+        {bookIds.length === 0 && (
+          <View
+            style={{
+              gap: spacing[2],
+              marginRight: spacing[2.5],
+              padding: spacing[2],
+              backgroundColor: surface,
+              borderRadius: spacing.borderRadius,
+            }}
+          >
+            <UIText style={fontSizes.base}>
+              You don’t have any books downloaded, yet!
+            </UIText>
+            <UIText style={fontSizes.base}>
+              You can either{" "}
+              {!username && (
+                <>
+                  <Link href="/server">
+                    <UIText style={{ color: colors.blue8, ...fontSizes.base }}>
+                      connect to a Storyteller instance
+                    </UIText>
+                  </Link>{" "}
+                  and then download a book from the{" "}
+                  <Link href="/browse">
+                    <UIText style={{ color: colors.blue8, ...fontSizes.base }}>
+                      Browse tab
+                    </UIText>
+                  </Link>
+                </>
+              )}
+              , or use the plus icon (
+              <PlusCircle
+                fill={foreground}
+                stroke={background}
+                style={{ marginBottom: -2 }}
+              />
+              ) to import a book file that you’ve already saved to your device.
+            </UIText>
+          </View>
+        )}
         {/* Spacer for the miniplayer */}
         <View style={{ height: 76, width: "100%" }} />
       </ScrollView>
