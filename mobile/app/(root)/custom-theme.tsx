@@ -23,6 +23,7 @@ import { Button } from "../../components/ui/Button"
 import { useAppDispatch } from "../../store/appState"
 import { preferencesSlice } from "../../store/slices/preferencesSlice"
 import { ButtonGroup, ButtonGroupButton } from "../../components/ui/ButtonGroup"
+import { useRouter } from "expo-router"
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -60,6 +61,8 @@ export default function CustomThemePage() {
     () => computeSurface(foreground, background),
     [background, foreground],
   )
+
+  const router = useRouter()
 
   const [name, setName] = useState("")
 
@@ -140,6 +143,7 @@ export default function CustomThemePage() {
                   },
                 }),
               )
+              router.back()
             }}
           >
             <UIText>Save</UIText>

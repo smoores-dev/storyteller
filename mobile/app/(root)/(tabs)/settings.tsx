@@ -13,6 +13,7 @@ import { loggingSlice } from "../../../store/slices/loggingSlice"
 import { Button } from "../../../components/ui/Button"
 import { ReadingSettings } from "../../../components/ReadingSettings"
 import { spacing } from "../../../components/ui/tokens/spacing"
+import { colors } from "../../../components/ui/tokens/colors"
 
 export default function Settings() {
   const { top } = useSafeAreaInsets()
@@ -21,15 +22,27 @@ export default function Settings() {
   const debugEnabled = useAppSelector(getDebugLoggingEnabled)
   const dispatch = useAppDispatch()
 
+  const apiUrl = apiBaseUrl && new URL(apiBaseUrl)
+  const homepageUrl =
+    apiUrl && new URL(apiUrl.pathname.replace("/api", ""), apiUrl.origin)
+
   return (
     <View style={{ ...styles.container, paddingTop: top }}>
       <HeaderText style={styles.title}>Settings</HeaderText>
       <ScrollView style={styles.scrollview}>
         <View>
-          {apiBaseUrl ? (
+          {homepageUrl ? (
             <>
-              <UIText>Logged in to:</UIText>
-              <UIText>{apiBaseUrl}</UIText>
+              <UIText>{username ? "Logged in" : "Logging in"} to:</UIText>
+              <Link
+                style={{ marginBottom: spacing[1] }}
+                href={homepageUrl.toString()}
+              >
+                <UIText style={{ color: colors.blue8 }}>
+                  {apiUrl.hostname}
+                  {apiUrl.pathname.replace("/api", "")}
+                </UIText>
+              </Link>
               <Button
                 style={styles.button}
                 onPress={() => {
