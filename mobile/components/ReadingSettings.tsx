@@ -313,6 +313,7 @@ export function ReadingSettings({ bookId }: Props) {
       <View style={styles.field}>
         <UIText style={styles.label}>Font family</UIText>
         <Select
+          placeholder={{}}
           darkTheme={dark}
           value={preferences.typography.fontFamily}
           useNativeAndroidPickerStyle={false}

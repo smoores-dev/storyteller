@@ -7,6 +7,8 @@ import { apiBaseUrlChanged } from "../../../store/slices/apiSlice"
 import { TextInput } from "../../../components/ui/TextInput"
 import { Button } from "../../../components/ui/Button"
 import { spacing } from "../../../components/ui/tokens/spacing"
+import { useColorTheme } from "../../../hooks/useColorTheme"
+import { fontSizes } from "../../../components/ui/tokens/fontSizes"
 
 const styles = StyleSheet.create({
   container: {
@@ -32,6 +34,7 @@ const styles = StyleSheet.create({
 export default function LoginPage() {
   const dispatch = useAppDispatch()
   const [url, setUrl] = useState("")
+  const { surface } = useColorTheme()
 
   return (
     <View style={styles.container}>
@@ -41,6 +44,25 @@ export default function LoginPage() {
         }}
       />
       <UIText style={styles.title}>Storyteller</UIText>
+      <View
+        style={{
+          gap: spacing[2],
+          marginHorizontal: spacing[2.5],
+          padding: spacing[2],
+          backgroundColor: surface,
+          borderRadius: spacing.borderRadius,
+        }}
+      >
+        <UIText style={fontSizes.base}>
+          Enter the full URL for your Storyteller server instance, including the
+          scheme (http:// or https://).
+        </UIText>
+        <UIText style={fontSizes.base}>
+          This may look like a local IP address and port, such as
+          http://192.168.1.12:8001, or a domain name, such as
+          https://storyteller.yourdomain.com.
+        </UIText>
+      </View>
       <View style={styles.form}>
         <UIText style={styles.label}>Server url</UIText>
         <TextInput

@@ -1,4 +1,4 @@
-import { Link, router } from "expo-router"
+import { router } from "expo-router"
 import {
   Image,
   Platform,
@@ -9,10 +9,10 @@ import {
 } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
 import { ChevronDownIcon } from "../../icons/ChevronDownIcon"
-import { useAppSelector } from "../../store/appState"
+import { useAppDispatch, useAppSelector } from "../../store/appState"
 import { UIText } from "../../components/UIText"
 import { HeaderText } from "../../components/HeaderText"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import TrackPlayer, {
   useTrackPlayerEvents,
   Event,
@@ -35,6 +35,8 @@ import { ToolbarDialogs } from "../../components/ToolbarDialogs"
 import { areLocatorsEqual } from "../../modules/readium"
 import { isSameChapter } from "../../links"
 import { seekBackward, seekForward } from "../../audio/PlaybackService"
+import { debounce } from "../../debounce"
+import { playerPositionSeeked } from "../../store/slices/bookshelfSlice"
 
 const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 
@@ -57,32 +59,43 @@ export default function PlayerScreen() {
   const [currentTrack, setCurrentTrack] = useState(1)
   const [trackCount, setTrackCount] = useState(1)
 
-  const {
-    isLoading,
-    isPlaying,
-    progress,
-    startPosition,
-    endPosition,
-    remainingTime,
-  } = useAudioBook()
+  const dispatch = useAppDispatch()
+  const { isLoading, isPlaying, track, remainingTime } = useAudioBook()
+  const trackPositionRef = useRef(track.position)
+  trackPositionRef.current = track.position
+
+  const [eagerProgress, setEagerProgress] = useState(track.position)
+
+  const syncEagerProgress = useMemo(() => {
+    return debounce(() => {
+      setEagerProgress(trackPositionRef.current)
+    }, 200)
+  }, [])
+
+  useEffect(() => {
+    syncEagerProgress()
+    return () => {
+      syncEagerProgress.cancel()
+    }
+  }, [track.position, locator, syncEagerProgress])
 
   const progressTime = useMemo(() => {
-    const relativeProgress = progress - startPosition
+    const relativeProgress = track.position - track.startPosition
     const minutes = Math.floor(relativeProgress / 60)
     const seconds = Math.floor(relativeProgress - minutes * 60)
       .toString()
       .padStart(2, "0")
     return `${minutes}:${seconds}`
-  }, [progress, startPosition])
+  }, [track.position, track.startPosition])
 
   const remainingProgressTime = useMemo(() => {
-    const remainingProgress = endPosition - progress
+    const remainingProgress = track.endPosition - track.position
     const minutes = Math.floor(remainingProgress / 60)
     const seconds = Math.floor(remainingProgress - minutes * 60)
       .toString()
       .padStart(2, "0")
     return `-${minutes}:${seconds}`
-  }, [endPosition, progress])
+  }, [track.endPosition, track.position])
 
   useTrackPlayerEvents(events, async () => {
     setCurrentTrack(((await TrackPlayer.getActiveTrackIndex()) ?? 0) + 1)
@@ -98,8 +111,6 @@ export default function PlayerScreen() {
     updateStats()
   }, [])
 
-  const isPresented = router.canGoBack()
-
   if (!book) return null
 
   const title = book.manifest.toc?.find((link) =>
@@ -110,20 +121,14 @@ export default function PlayerScreen() {
     <View style={styles.container}>
       <ToolbarDialogs mode="audio" />
       <View style={styles.topbar}>
-        {isPresented ? (
-          <Pressable
-            hitSlop={20}
-            onPress={() => {
-              router.back()
-            }}
-          >
-            <ChevronDownIcon />
-          </Pressable>
-        ) : (
-          <Link href="/">
-            <ChevronDownIcon />
-          </Link>
-        )}
+        <Pressable
+          hitSlop={20}
+          onPress={() => {
+            router.back()
+          }}
+        >
+          <ChevronDownIcon />
+        </Pressable>
         <Toolbar mode="audio" activeBookmarks={activeBookmarks} />
       </View>
 
@@ -153,11 +158,12 @@ export default function PlayerScreen() {
             Track {currentTrack} of {trackCount}
           </UIText>
           <ProgressBar
-            start={startPosition}
-            stop={endPosition}
-            progress={progress}
+            start={track.startPosition}
+            stop={track.endPosition}
+            progress={eagerProgress}
             onProgressChange={(newProgress) => {
-              TrackPlayer.seekTo(newProgress)
+              setEagerProgress(newProgress)
+              dispatch(playerPositionSeeked({ progress: newProgress }))
             }}
           />
         </View>

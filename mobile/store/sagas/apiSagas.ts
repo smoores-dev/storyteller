@@ -2,9 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { call, put, takeEvery } from "redux-saga/effects"
 import { apiBaseUrlChanged, apiSlice } from "../slices/apiSlice"
 import { router } from "expo-router"
-import { ApiClient, ApiClientError } from "../../apiClient"
-import { Generated } from "./bookshelfSagas"
-import { logger } from "../../logger"
+import { ApiClient } from "../../apiClient"
 import { joinUrlPaths } from "../../urls"
 
 /**
@@ -22,7 +20,7 @@ import { joinUrlPaths } from "../../urls"
  * @param baseUrlString The base URL inputted by the user
  * @returns The actual base URL for the API; depends on whether backend is v1 or v2+
  */
-function* determineBaseUrl(baseUrlString: string) {
+function determineBaseUrl(baseUrlString: string) {
   const baseUrl = new URL(baseUrlString)
 
   if (baseUrl.pathname.endsWith("/api") || baseUrl.pathname.endsWith("/api/")) {
@@ -30,28 +28,7 @@ function* determineBaseUrl(baseUrlString: string) {
   }
 
   baseUrl.pathname = joinUrlPaths(baseUrl.pathname, "/api")
-  const apiClient = new ApiClient(baseUrl.origin, baseUrl.pathname)
-
-  try {
-    const helloWorld = (yield call([apiClient, apiClient.hello])) as Awaited<
-      ReturnType<typeof apiClient.hello>
-    >
-    if (helloWorld["Hello"] === "World") {
-      return baseUrl.toString()
-    } else {
-      return baseUrlString
-    }
-  } catch (error) {
-    if (error instanceof ApiClientError && error.statusCode === 404) {
-      return baseUrlString
-    }
-    logger.info(
-      `Failed attempting to determine correct server base URL; using user provided input`,
-    )
-    logger.debug(error)
-  }
-
-  return baseUrlString
+  return baseUrl.toString()
 }
 
 export function* serverUpdatedSaga() {
@@ -59,7 +36,18 @@ export function* serverUpdatedSaga() {
     const baseUrl = (yield call(
       determineBaseUrl,
       action.payload.baseUrl,
-    )) as Generated<ReturnType<typeof determineBaseUrl>>
+    )) as ReturnType<typeof determineBaseUrl>
+
+    // Trigger a no-op request to prompt the user to allow
+    // local connections if necessary.
+    const apiUrl = new URL(baseUrl)
+    const apiClient = new ApiClient(apiUrl.origin, apiUrl.pathname)
+    try {
+      yield call([apiClient, apiClient.hello])
+    } catch {
+      // nothing to do here?
+    }
+
     yield put(apiSlice.actions.apiBaseUrlChangeCommitted({ baseUrl }))
   })
 }
