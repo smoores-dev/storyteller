@@ -2,7 +2,10 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit"
 import { HighlightTint } from "../../colors"
 import deepmerge from "deepmerge"
 import { WritableDraft } from "immer/dist/internal"
-import { colors } from "../../components/ui/tokens/colors"
+import {
+  colors,
+  computeForegroundSecondary,
+} from "../../components/ui/tokens/colors"
 import { bookshelfSlice } from "./bookshelfSlice"
 
 type ColorTheme = {
@@ -10,6 +13,7 @@ type ColorTheme = {
   foreground: string
   background: string
   surface: string
+  foregroundSecondary: string
   isDark: boolean
 }
 
@@ -63,6 +67,10 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
       foreground: colors.gray9,
       background: colors.white,
       surface: colors.gray2,
+      foregroundSecondary: computeForegroundSecondary(
+        colors.gray9,
+        colors.white,
+      ),
       isDark: false,
     },
     {
@@ -70,6 +78,10 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
       foreground: colors.brown9,
       background: colors.yellow0,
       surface: colors.brown2,
+      foregroundSecondary: computeForegroundSecondary(
+        colors.brown9,
+        colors.yellow0,
+      ),
       isDark: false,
     },
     {
@@ -77,6 +89,10 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
       foreground: colors.gray3,
       background: colors.gray9,
       surface: colors.gray7,
+      foregroundSecondary: computeForegroundSecondary(
+        colors.gray3,
+        colors.gray9,
+      ),
       isDark: true,
     },
   ],

@@ -24,32 +24,15 @@ import { useAppDispatch } from "../../store/appState"
 import { preferencesSlice } from "../../store/slices/preferencesSlice"
 import { ButtonGroup, ButtonGroupButton } from "../../components/ui/ButtonGroup"
 import { useRouter } from "expo-router"
+import {
+  computeForegroundSecondary,
+  computeSurface,
+} from "../../components/ui/tokens/colors"
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false, // Reanimated runs in strict mode by default
 })
-
-function getComponents(hex: string) {
-  const match = hex.match(
-    /([0-9A-Fa-f][0-9A-Fa-f])([0-9A-Fa-f][0-9A-Fa-f])([0-9A-Fa-f][0-9A-Fa-f])/,
-  )
-  if (!match) throw new Error(`Invalid hex string: ${hex}`)
-  const [, r, g, b] = match
-  if (!r || !g || !b) throw new Error(`Invalid hex string: ${hex}`)
-  return [parseInt(r, 16), parseInt(g, 16), parseInt(b, 16)] as const
-}
-
-function computeSurface(foreground: string, background: string) {
-  const [fr, fg, fb] = getComponents(foreground)
-  const [br, bg, bb] = getComponents(background)
-
-  const sr = Math.min(Math.floor((br - fr) * (4 / 5) + fr), 255)
-  const sg = Math.min(Math.floor((bg - fg) * (4 / 5) + fg), 255)
-  const sb = Math.min(Math.floor((bb - fb) * (4 / 5) + fb), 255)
-
-  return `#${sr.toString(16).padStart(2, "0")}${sg.toString(16).padStart(2, "0")}${sb.toString(16).padStart(2, "0")}`
-}
 
 export default function CustomThemePage() {
   const { foreground: initialForeground, background: initialBackground } =
@@ -59,6 +42,10 @@ export default function CustomThemePage() {
   const [background, setBackground] = useState(initialBackground)
   const surface = useMemo(
     () => computeSurface(foreground, background),
+    [background, foreground],
+  )
+  const foregroundSecondary = useMemo(
+    () => computeForegroundSecondary(foreground, background),
     [background, foreground],
   )
 
@@ -74,6 +61,7 @@ export default function CustomThemePage() {
     <ThemeOverrideProvider
       foreground={foreground}
       surface={surface}
+      foregroundSecondary={foregroundSecondary}
       background={background}
     >
       <ScrollView
@@ -137,6 +125,7 @@ export default function CustomThemePage() {
                   theme: {
                     name,
                     foreground,
+                    foregroundSecondary,
                     background,
                     surface,
                     isDark,

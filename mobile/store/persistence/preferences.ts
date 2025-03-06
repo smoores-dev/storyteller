@@ -4,6 +4,10 @@ import {
   BookPreferences,
   defaultPreferences,
 } from "../slices/preferencesSlice"
+import {
+  computeForegroundSecondary,
+  computeSurface,
+} from "../../components/ui/tokens/colors"
 
 export async function readGlobalPreferences(): Promise<null | Omit<
   PreferencesState,
@@ -17,20 +21,6 @@ export async function readGlobalPreferences(): Promise<null | Omit<
     "bookPreferences"
   >
 
-  // Ensure that new fields (surface) are on existing
-  // user themes
-  preferences.colorThemes.forEach((theme) => {
-    if (theme.surface) return
-
-    const surface = defaultPreferences.colorThemes.find(
-      (t) => t.name === theme.name,
-    )?.surface
-
-    if (!surface) return
-
-    theme.surface = surface
-  })
-
   // Ensure that new default themes get added to user preferences
   defaultPreferences.colorThemes.forEach((theme) => {
     const existingTheme = preferences.colorThemes.find(
@@ -41,10 +31,21 @@ export async function readGlobalPreferences(): Promise<null | Omit<
       existingTheme.foreground = theme.foreground
       existingTheme.isDark = theme.isDark
       existingTheme.surface = theme.surface
+      existingTheme.foregroundSecondary = theme.foregroundSecondary
       return
     }
 
     preferences.colorThemes.push(theme)
+  })
+
+  // Ensure that new fields are on existing
+  // user themes
+  preferences.colorThemes.forEach((theme) => {
+    theme.surface = computeSurface(theme.foreground, theme.background)
+    theme.foregroundSecondary = computeForegroundSecondary(
+      theme.foreground,
+      theme.background,
+    )
   })
 
   return preferences
