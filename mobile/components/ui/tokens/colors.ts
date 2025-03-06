@@ -162,3 +162,48 @@ export const colors = {
   brown8: "#7b594e",
   brown9: "#6d4b40",
 } as const
+
+type RGB = [number, number, number]
+
+function getComponents(hex: string): RGB {
+  const match = hex.match(
+    /([0-9A-Fa-f][0-9A-Fa-f])([0-9A-Fa-f][0-9A-Fa-f])([0-9A-Fa-f][0-9A-Fa-f])/,
+  )
+  if (!match) throw new Error(`Invalid hex string: ${hex}`)
+  const [, r, g, b] = match
+  if (!r || !g || !b) throw new Error(`Invalid hex string: ${hex}`)
+  return [parseInt(r, 16), parseInt(g, 16), parseInt(b, 16)]
+}
+
+function formatRgb(rgb: RGB): string {
+  return `#${rgb[0].toString(16).padStart(2, "0")}${rgb[1].toString(16).padStart(2, "0")}${rgb[2].toString(16).padStart(2, "0")}`
+}
+
+function blendRgb(a: RGB, b: RGB, blendValue: number): RGB {
+  return [
+    Math.min(Math.floor((b[0] - a[0]) * blendValue + a[0]), 255),
+    Math.min(Math.floor((b[1] - a[1]) * blendValue + a[1]), 255),
+    Math.min(Math.floor((b[2] - a[2]) * blendValue + a[2]), 255),
+  ]
+}
+
+export function computeSurface(foreground: string, background: string) {
+  const foregroundRgb = getComponents(foreground)
+  const backgroundRgb = getComponents(background)
+
+  const surfaceRgb = blendRgb(foregroundRgb, backgroundRgb, 4 / 5)
+
+  return formatRgb(surfaceRgb)
+}
+
+export function computeForegroundSecondary(
+  foreground: string,
+  background: string,
+) {
+  const foregroundRgb = getComponents(foreground)
+  const backgroundRgb = getComponents(background)
+
+  const foregroundSecondaryRgb = blendRgb(foregroundRgb, backgroundRgb, 1 / 5)
+
+  return formatRgb(foregroundSecondaryRgb)
+}
