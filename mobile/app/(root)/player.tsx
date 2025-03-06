@@ -37,6 +37,9 @@ import { isSameChapter } from "../../links"
 import { seekBackward, seekForward } from "../../audio/PlaybackService"
 import { debounce } from "../../debounce"
 import { playerPositionSeeked } from "../../store/slices/bookshelfSlice"
+import { spacing } from "../../components/ui/tokens/spacing"
+import { useColorTheme } from "../../hooks/useColorTheme"
+import { fontSizes } from "../../components/ui/tokens/fontSizes"
 
 const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 
@@ -46,6 +49,8 @@ export default function PlayerScreen() {
   const timestampedLocator = useAppSelector(
     (state) => book && getLocator(state, book.id),
   )
+  const { foregroundSecondary } = useColorTheme()
+
   const locator = timestampedLocator?.locator
   const activeBookmarks = useMemo(
     () =>
@@ -111,11 +116,24 @@ export default function PlayerScreen() {
     updateStats()
   }, [])
 
-  if (!book) return null
+  const chapterTitle = useMemo(() => {
+    if (!book?.manifest.toc) return undefined
 
-  const title = book.manifest.toc?.find((link) =>
-    isSameChapter(link.href, locator?.href ?? ""),
-  )?.title
+    for (const link of book.manifest.toc) {
+      if (isSameChapter(link.href, locator?.href ?? "")) {
+        return link.title
+      }
+      if (!link.children) continue
+      for (const childLink of link.children) {
+        if (isSameChapter(childLink.href, locator?.href ?? "")) {
+          return childLink.title
+        }
+      }
+    }
+    return undefined
+  }, [book?.manifest.toc, locator?.href])
+
+  if (!book) return null
 
   return (
     <View style={styles.container}>
@@ -140,7 +158,10 @@ export default function PlayerScreen() {
           style={[
             styles.cover,
             {
-              width: dimensions.width - styles.cover.padding * 2,
+              width: Math.min(
+                dimensions.width - spacing[3],
+                dimensions.height - 520,
+              ),
             },
           ]}
           source={{ uri: getLocalAudioBookCoverUrl(book.id) }}
@@ -149,8 +170,11 @@ export default function PlayerScreen() {
           <HeaderText numberOfLines={2} style={styles.title}>
             {book.title}
           </HeaderText>
-          <UIText numberOfLines={1} style={styles.parts}>
-            {title}
+          <UIText
+            numberOfLines={1}
+            style={[{ color: foregroundSecondary }, styles.parts]}
+          >
+            {chapterTitle}
           </UIText>
         </View>
         <View style={styles.progressBarWrapper}>
@@ -227,7 +251,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   cover: {
-    padding: 24,
+    marginVertical: spacing[2],
+    marginHorizontal: "auto",
     aspectRatio: 1,
     borderRadius: 4,
   },
@@ -247,7 +272,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   parts: {
-    fontSize: 18,
+    ...fontSizes.base,
     marginBottom: 16,
   },
   progressBarWrapper: {
