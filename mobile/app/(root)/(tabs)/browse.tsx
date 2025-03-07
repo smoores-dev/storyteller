@@ -24,7 +24,7 @@ export default function Browse() {
   const username = useAppSelector(getUsername)
   const loading = useAppSelector(getIsLibraryLoading)
   const dispatch = useAppDispatch()
-  const { surface } = useColorTheme()
+  const { surface, dark } = useColorTheme()
 
   useEffect(() => {
     dispatch(librarySlice.actions.libraryTabOpened())
@@ -90,7 +90,12 @@ export default function Browse() {
           <UIText style={fontSizes.base}>
             To get started,{" "}
             <Link href="/server">
-              <UIText style={{ color: colors.blue8, ...fontSizes.base }}>
+              <UIText
+                style={{
+                  color: dark ? colors.blue3 : colors.blue8,
+                  ...fontSizes.base,
+                }}
+              >
                 connect to a Storyteller instance
               </UIText>
             </Link>

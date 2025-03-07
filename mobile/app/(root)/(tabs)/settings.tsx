@@ -14,6 +14,7 @@ import { Button } from "../../../components/ui/Button"
 import { ReadingSettings } from "../../../components/ReadingSettings"
 import { spacing } from "../../../components/ui/tokens/spacing"
 import { colors } from "../../../components/ui/tokens/colors"
+import { useColorTheme } from "../../../hooks/useColorTheme"
 
 export default function Settings() {
   const { top } = useSafeAreaInsets()
@@ -21,6 +22,8 @@ export default function Settings() {
   const username = useAppSelector(getUsername)
   const debugEnabled = useAppSelector(getDebugLoggingEnabled)
   const dispatch = useAppDispatch()
+
+  const { dark } = useColorTheme()
 
   const apiUrl = apiBaseUrl && new URL(apiBaseUrl)
   const homepageUrl =
@@ -38,7 +41,7 @@ export default function Settings() {
                 style={{ marginBottom: spacing[1] }}
                 href={homepageUrl.toString()}
               >
-                <UIText style={{ color: colors.blue8 }}>
+                <UIText style={{ color: dark ? colors.blue3 : colors.blue8 }}>
                   {apiUrl.hostname}
                   {apiUrl.pathname.replace("/api", "")}
                 </UIText>

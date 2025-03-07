@@ -29,7 +29,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             targetSdkVersion: 35,
             buildToolsVersion: "35.0.0",
             usesCleartextTraffic: true,
-            kotlinVersion: "1.9.24",
           },
         },
       ],
