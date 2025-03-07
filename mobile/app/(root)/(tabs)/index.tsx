@@ -24,7 +24,7 @@ export default function Home() {
   const username = useAppSelector(getUsername)
   const dispatch = useAppDispatch()
 
-  const { foreground, background, surface } = useColorTheme()
+  const { foreground, background, surface, dark } = useColorTheme()
 
   return (
     <View style={{ ...styles.container, paddingTop: top }}>
@@ -87,13 +87,23 @@ export default function Home() {
               {!username && (
                 <>
                   <Link href="/server">
-                    <UIText style={{ color: colors.blue8, ...fontSizes.base }}>
+                    <UIText
+                      style={{
+                        color: dark ? colors.blue3 : colors.blue8,
+                        ...fontSizes.base,
+                      }}
+                    >
                       connect to a Storyteller instance
                     </UIText>
                   </Link>{" "}
                   and then download a book from the{" "}
                   <Link href="/browse">
-                    <UIText style={{ color: colors.blue8, ...fontSizes.base }}>
+                    <UIText
+                      style={{
+                        color: dark ? colors.blue3 : colors.blue8,
+                        ...fontSizes.base,
+                      }}
+                    >
                       Browse tab
                     </UIText>
                   </Link>

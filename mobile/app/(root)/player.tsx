@@ -137,7 +137,10 @@ export default function PlayerScreen() {
 
   return (
     <View style={styles.container}>
-      <ToolbarDialogs mode="audio" />
+      <ToolbarDialogs
+        mode="audio"
+        topInset={Platform.OS === "android" ? 24 : 0}
+      />
       <View style={styles.topbar}>
         <Pressable
           hitSlop={20}

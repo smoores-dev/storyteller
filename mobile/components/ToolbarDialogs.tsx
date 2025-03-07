@@ -5,15 +5,17 @@ import { getOpenDialog } from "../store/selectors/toolbarSelectors"
 import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
 import { BookNavigation } from "./BookNavigation"
 import { BookSettingsMenu } from "./BookSettingsMenu"
+import { Platform } from "react-native"
 
 interface Props {
   mode: "text" | "audio"
   topInset?: number | undefined
 }
 
-export function ToolbarDialogs({ mode, topInset }: Props) {
+export function ToolbarDialogs({ mode, topInset: topInsetProp = 0 }: Props) {
   const book = useAppSelector(getCurrentlyPlayingBook)
   const openDialog = useAppSelector(getOpenDialog)
+  const topInset = topInsetProp + (Platform.OS === "android" ? 24 : 0)
 
   const dispatch = useAppDispatch()
 

@@ -52,6 +52,7 @@ export function* writeBookPreferencesSaga() {
     [
       preferencesSlice.actions.playerSpeedChanged,
       preferencesSlice.actions.bookPreferencesUpdated,
+      preferencesSlice.actions.bookDetailPositionPressed,
     ],
     function* (action) {
       const { bookId } = action.payload
