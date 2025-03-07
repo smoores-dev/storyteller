@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, View } from "react-native"
+import { Image, Platform, Pressable, StyleSheet, View } from "react-native"
 import {
   getLocalAudioBookCoverUrl,
   getLocalBookCoverUrl,
@@ -190,7 +190,7 @@ export function MiniPlayer({ book }: Props) {
       <View style={styles.container}>
         <ProgressBar
           style={
-            bookPrefs?.detailView?.scope === "book"
+            bookPrefs?.detailView?.scope === "book" || Platform.OS === "android"
               ? undefined
               : { marginTop: -18, marginBottom: -18 }
           }

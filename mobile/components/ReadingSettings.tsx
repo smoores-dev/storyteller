@@ -1,4 +1,4 @@
-import Slider from "@react-native-community/slider"
+import { Slider } from "./ui/Slider"
 import { Pressable, StyleSheet, View } from "react-native"
 import Select from "react-native-picker-select"
 import { dequal } from "dequal"
@@ -40,7 +40,7 @@ export function ReadingSettings({ bookId }: Props) {
     [globalPreferences, preferences],
   )
 
-  const { foreground, dark, surface } = useColorTheme()
+  const { foreground, dark } = useColorTheme()
   const dispatch = useAppDispatch()
 
   return (
@@ -224,13 +224,10 @@ export function ReadingSettings({ bookId }: Props) {
         <UIText style={styles.label}>Font scaling</UIText>
         <Slider
           style={styles.slider}
-          minimumValue={0.7}
-          maximumValue={1.5}
+          start={0.7}
+          stop={1.5}
           step={0.05}
           value={preferences.typography.scale}
-          minimumTrackTintColor={colors.primary9}
-          maximumTrackTintColor={surface}
-          thumbImage={require("../assets/slider-thumb-image.png")}
           onValueChange={(value) => {
             const update = {
               typography: {
@@ -254,13 +251,10 @@ export function ReadingSettings({ bookId }: Props) {
         <UIText style={styles.label}>Line height</UIText>
         <Slider
           style={styles.slider}
-          minimumValue={1.0}
-          maximumValue={2.0}
+          start={1.0}
+          stop={2.0}
           step={0.05}
           value={preferences.typography.lineHeight}
-          minimumTrackTintColor={colors.primary9}
-          maximumTrackTintColor={surface}
-          thumbImage={require("../assets/slider-thumb-image.png")}
           onValueChange={(value) => {
             const update = {
               typography: {

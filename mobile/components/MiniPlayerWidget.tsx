@@ -1,4 +1,4 @@
-import { StyleSheet, View, Image, Pressable } from "react-native"
+import { StyleSheet, View, Image, Pressable, Platform } from "react-native"
 import { formatTime, useAudioBook } from "../hooks/useAudioBook"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
@@ -46,7 +46,11 @@ export function MiniPlayerWidget() {
       {book && (
         <View>
           <ProgressBar
-            style={{ marginTop: -18, marginBottom: -18 }}
+            style={
+              Platform.OS === "ios"
+                ? { marginTop: -18, marginBottom: -18 }
+                : undefined
+            }
             start={startPosition}
             stop={endPosition}
             progress={eagerProgress}

@@ -1,7 +1,6 @@
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native"
-import Slider from "@react-native-community/slider"
+import { Slider } from "./ui/Slider"
 import { appColor } from "../design"
-import { colors } from "./ui/tokens/colors"
 import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {
@@ -26,18 +25,11 @@ export function ProgressBar({
     return (
       <View style={style}>
         <Slider
-          style={{ height: 3 }}
-          minimumValue={start}
-          maximumValue={stop}
+          start={start}
+          stop={stop}
           step={step}
           value={progress}
-          thumbImage={require("../assets/slider-thumb-image.png")}
-          minimumTrackTintColor={colors.primary9}
-          maximumTrackTintColor={surface}
-          onValueChange={(value) => {
-            if (value === progress) return
-            onProgressChange(value)
-          }}
+          onValueChange={onProgressChange}
         />
       </View>
     )
