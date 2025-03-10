@@ -21,7 +21,10 @@ import { ToolbarDialogs } from "./ToolbarDialogs"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { SelectionMenu } from "./SelectionMenu"
 import { useColorTheme } from "../hooks/useColorTheme"
-import { getFilledBookPreferences } from "../store/selectors/preferencesSelectors"
+import {
+  getFilledBookPreferences,
+  getGlobalPreferences,
+} from "../store/selectors/preferencesSelectors"
 import { Group } from "./ui/Group"
 import { ChevronLeft } from "lucide-react-native"
 import { spacing } from "./ui/tokens/spacing"
@@ -41,6 +44,7 @@ export function Epub({ book, locator }: Props) {
   const preferences = useAppSelector((state) =>
     getFilledBookPreferences(state, book.id),
   )
+  const { customFonts } = useAppSelector(getGlobalPreferences)
 
   const [selection, setSelection] = useState<{
     x: number
@@ -104,6 +108,7 @@ export function Epub({ book, locator }: Props) {
           fontFamily={preferences.typography.fontFamily}
           readaloudColor={preferences.readaloudColor}
           colorTheme={{ foreground, background }}
+          customFonts={customFonts}
           onHighlightTap={(event) => {
             setSelection({
               x: event.nativeEvent.x,

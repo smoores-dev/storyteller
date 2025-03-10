@@ -23,6 +23,10 @@ import { preferencesSlice } from "../store/slices/preferencesSlice"
 import { fontSizes } from "./ui/tokens/fontSizes"
 import { debounce } from "../debounce"
 
+// Roughly the number of "positions" that fit in a
+// standard paperback book page
+const PAPERBACK_PAGE_SCALE = 3
+
 type Props = {
   book: BookshelfBook
 }
@@ -32,7 +36,7 @@ export function MiniPlayer({ book }: Props) {
   const bookPrefs = useAppSelector((state) =>
     getBookPreferences(state, book.id),
   )
-  const { isPlaying, isLoading, track, total } = useAudioBook()
+  const { isPlaying, isLoading, track, total, rate } = useAudioBook()
   const trackPositionRef = useRef(track.position)
   trackPositionRef.current = track.position
 
@@ -113,8 +117,8 @@ export function MiniPlayer({ book }: Props) {
   )
 
   const formattedEagerProgress = useMemo(() => {
-    return formatTime(eagerProgress)
-  }, [eagerProgress])
+    return formatTime(eagerProgress / rate)
+  }, [eagerProgress, rate])
 
   const { title, formattedProgress } = useMemo(() => {
     if (bookPrefs?.detailView?.mode === "audio") {
@@ -139,7 +143,7 @@ export function MiniPlayer({ book }: Props) {
         ) ?? 0) + 1
       return {
         title: book.title,
-        formattedProgress: `pg. ${position} / ${book.positions.length}`,
+        formattedProgress: `pg. ${Math.round(position / PAPERBACK_PAGE_SCALE) || 1} / ${Math.round(book.positions.length / PAPERBACK_PAGE_SCALE)}`,
       }
     }
     const chapterPosition =
@@ -150,7 +154,7 @@ export function MiniPlayer({ book }: Props) {
       ) ?? 0) + 1
     return {
       title: chapterTitle,
-      formattedProgress: `pg. ${chapterPosition} / ${chapterPositions.length}`,
+      formattedProgress: `pg. ${Math.round(chapterPosition / PAPERBACK_PAGE_SCALE) || 1} / ${Math.round(chapterPositions.length / PAPERBACK_PAGE_SCALE)}`,
     }
   }, [
     bookPrefs?.detailView?.mode,

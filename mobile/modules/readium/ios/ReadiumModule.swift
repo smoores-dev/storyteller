@@ -196,6 +196,29 @@ public class ReadiumModule: Module {
                 view.updatePreferences()
             }
 
+            Prop("customFonts") {(view: EPUBView, prop: [[String : String]]) in
+                let customFonts = prop.compactMap { (customFontDict: [String : String]) -> CustomFont? in
+                    guard let uri = customFontDict["uri"] else {
+                        return nil
+                    }
+                    guard let name = customFontDict["name"] else {
+                        return nil
+                    }
+                    guard let type = customFontDict["type"] else {
+                        return nil
+                    }
+                    return CustomFont(uri: uri, name: name, type: type)
+                }
+                view.customFonts = customFonts
+
+                if view.navigator == nil {
+                    return
+                }
+
+                view.destroyNavigator()
+                view.initializeNavigator()
+            }
+
             Prop("fontFamily") { (view: EPUBView, prop: String) in
                 view.preferences = view.preferences.merging(EPUBPreferences(
                     fontFamily: FontFamily(rawValue: prop)

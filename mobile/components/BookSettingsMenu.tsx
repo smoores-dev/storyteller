@@ -13,6 +13,7 @@ import { UIText } from "./UIText"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { useAppDispatch } from "../store/appState"
+import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
   bookId: number
@@ -51,6 +52,9 @@ export function BookSettingsMenu({ bookId }: Props) {
             (insets.top +
               insets.bottom +
               (Platform.OS === "android" ? 32 + 34 : 0)),
+        }}
+        contentContainerStyle={{
+          paddingBottom: spacing[6],
         }}
       >
         <ReadingSettings bookId={bookId} />

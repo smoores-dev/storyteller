@@ -18,6 +18,7 @@ import {
   updatePlayerSpeedSaga,
   syncPositionsSaga,
   manualTrackSeekSaga,
+  playerPlaySaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -57,5 +58,6 @@ export function* rootSaga() {
     call(logoutSaga),
     call(syncDebug),
     call(syncPositionsSaga),
+    call(playerPlaySaga),
   ])
 }

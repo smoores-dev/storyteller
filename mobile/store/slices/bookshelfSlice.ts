@@ -83,6 +83,8 @@ export const localBookImported = createAction(
 
 export const playerPaused = createAction("bookshelf/playerPaused")
 
+export const playerPlayed = createAction("bookshelf/playerPlayed")
+
 export const playerTrackChanged = createAction(
   "bookshelf/playerTrackChanged",
   (payload: { index: number }) => ({

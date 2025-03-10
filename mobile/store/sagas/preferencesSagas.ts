@@ -1,4 +1,4 @@
-import { call, put, select, takeEvery } from "redux-saga/effects"
+import { all, call, put, select, takeEvery } from "redux-saga/effects"
 import {
   readBookPreferences,
   readGlobalPreferences,
@@ -8,6 +8,7 @@ import {
 import {
   PreferencesState,
   defaultPreferences,
+  parseCustomFont,
   preferencesSlice,
 } from "../slices/preferencesSlice"
 import { readBookIds } from "../persistence/books"
@@ -15,6 +16,8 @@ import {
   getBookPreferences,
   getGlobalPreferences,
 } from "../selectors/preferencesSelectors"
+import { listCustomFontUrls } from "../persistence/fonts"
+import * as Fonts from "expo-font"
 
 export function* hydratePreferences() {
   const globalPreferences =
@@ -39,9 +42,20 @@ export function* hydratePreferences() {
     ),
   )
 
+  const customFontUrls = (yield call(listCustomFontUrls)) as Awaited<
+    ReturnType<typeof listCustomFontUrls>
+  >
+
+  const customFonts = customFontUrls.map(parseCustomFont)
+
+  yield all(
+    customFonts.map((f) => call(Fonts.loadAsync, { [f.name]: { uri: f.uri } })),
+  )
+
   const preferences: PreferencesState = {
     ...globalPreferences,
     bookPreferences: bookPreferencesRecord,
+    customFonts,
   }
 
   yield put(preferencesSlice.actions.preferencesHydrated(preferences))

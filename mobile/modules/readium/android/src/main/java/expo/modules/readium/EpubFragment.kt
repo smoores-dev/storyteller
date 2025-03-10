@@ -64,6 +64,7 @@ class SelectionActionModeCallback(private val epubView: EpubView) : BaseActionMo
 class EpubFragment(
     private var locator: Locator,
     private val publication: Publication,
+    private val customFonts: List<CustomFont>,
     private val listener: EpubView
 ) : Fragment(R.layout.fragment_reader) {
     var navigator: EpubNavigatorFragment? = null
@@ -81,30 +82,9 @@ class EpubFragment(
             listener = listener,
             configuration = EpubNavigatorFragment.Configuration {
                 servedAssets = listOf(
-                    "fonts/Bookerly.ttf",
                     "fonts/OpenDyslexic.otf",
                     "fonts/Literata_500Medium.ttf"
                 )
-
-                addFontFamilyDeclaration(FontFamily("Bookerly")) {
-                    addFontFace {
-                        addSource("fonts/Bookerly.ttf")
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(FontWeight.NORMAL)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/Bookerly Bold.ttf")
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(FontWeight.BOLD)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/Bookerly Italic.ttf")
-                        setFontStyle(FontStyle.ITALIC)
-                        setFontWeight(FontWeight.NORMAL)
-                    }
-                }
 
                 addFontFamilyDeclaration(FontFamily("OpenDyslexic")) {
                     addFontFace {
@@ -137,6 +117,16 @@ class EpubFragment(
                         addSource("fonts/Literata_500Medium.ttf")
                         setFontStyle(FontStyle.NORMAL)
                         setFontWeight(FontWeight.NORMAL)
+                    }
+                }
+
+                customFonts.forEach {
+                    addFontFamilyDeclaration(FontFamily(it.name)) {
+                        addFontFace {
+                            addSource(it.uri)
+                            setFontStyle(FontStyle.NORMAL)
+                            setFontWeight(FontWeight.NORMAL)
+                        }
                     }
                 }
 
