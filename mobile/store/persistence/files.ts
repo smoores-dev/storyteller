@@ -67,57 +67,6 @@ export function getLocalBookFileUrl(bookId: number, relativeFilepath: string) {
     .join("/")}`
 }
 
-async function readDirectoryAsyncRecursive(
-  directory: string,
-): Promise<string[]> {
-  const files: string[] = []
-  const directories: string[] = []
-  const entries = await FileSystem.readDirectoryAsync(directory)
-  for (const entry of entries) {
-    const fullEntry = `${directory}/${entry}`
-    const entryInfo = await FileSystem.getInfoAsync(fullEntry)
-    if (entryInfo.isDirectory) {
-      directories.push(fullEntry)
-    } else {
-      files.push(fullEntry)
-    }
-  }
-  return [
-    ...files,
-    ...(await Promise.all(directories.map(readDirectoryAsyncRecursive))).flat(),
-  ]
-}
-
-export async function readLocalBookCssFileMap(bookId: number) {
-  const localBookExtractedUrl = getLocalBookExtractedUrl(bookId)
-  const allFilenames = await readDirectoryAsyncRecursive(localBookExtractedUrl)
-  const cssFilenames = allFilenames.filter((f) => f.endsWith(".css"))
-  return Object.fromEntries(
-    await Promise.all(
-      cssFilenames.map(async (f) => {
-        const contents = await FileSystem.readAsStringAsync(f, {
-          encoding: "utf8",
-        })
-        return [
-          f.replace(`${localBookExtractedUrl}`, "file://"),
-          contents,
-        ] as const
-      }),
-    ),
-  )
-}
-
-export async function readLocalBookCssFileMaps(bookIds: number[]) {
-  return Object.fromEntries(
-    await Promise.all(
-      bookIds.map(async (id) => {
-        const cssMap = await readLocalBookCssFileMap(id)
-        return [id, cssMap] as const
-      }),
-    ),
-  )
-}
-
 export async function readBookFile(bookId: number, relativeFilepath: string) {
   return await FileSystem.readAsStringAsync(
     getLocalBookFileUrl(bookId, relativeFilepath),

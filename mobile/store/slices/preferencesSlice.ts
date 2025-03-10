@@ -38,6 +38,12 @@ type AudioPreferences = {
   speed: number
 }
 
+type AutomaticRewindPreferences = {
+  enabled: boolean
+  afterInterruption: number
+  afterBreak: number
+}
+
 export type BookPreferences = {
   typography?: Partial<TypographyPreferences>
   layout?: Partial<LayoutPreferences>
@@ -46,6 +52,12 @@ export type BookPreferences = {
     mode: "audio" | "text"
     scope: "chapter" | "book"
   }
+}
+
+export type CustomFont = {
+  uri: string
+  name: string
+  type: "ttf" | "otf"
 }
 
 export type PreferencesState = {
@@ -57,6 +69,8 @@ export type PreferencesState = {
   layout: LayoutPreferences
   readaloudColor: HighlightTint
   bookPreferences: Record<number, BookPreferences>
+  customFonts: CustomFont[]
+  automaticRewind: AutomaticRewindPreferences
 }
 
 export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
@@ -102,7 +116,7 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
     scale: 1.0,
     lineHeight: 1.4,
     alignment: "justify",
-    fontFamily: "Bookerly",
+    fontFamily: "Literata",
   },
   layout: {
     margins: {
@@ -113,6 +127,12 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
     animation: true,
   },
   readaloudColor: "yellow",
+  customFonts: [],
+  automaticRewind: {
+    enabled: true,
+    afterInterruption: 3,
+    afterBreak: 10,
+  },
 }
 
 const initialState: PreferencesState = {
@@ -200,11 +220,28 @@ export const preferencesSlice = createSlice({
         layout,
       } as WritableDraft<BookPreferences>)
     },
+    bookTypographyPreferencesReset(
+      state,
+      action: PayloadAction<{ bookId: number }>,
+    ) {
+      const { bookId } = action.payload
+
+      const book = state.bookPreferences[bookId]
+      if (!book) return
+
+      book.typography = {}
+    },
     typographyPreferencesReset(state) {
       state.typography = defaultPreferences.typography
     },
     customThemeSaved(state, action: PayloadAction<{ theme: ColorTheme }>) {
       state.colorThemes.push(action.payload.theme)
+    },
+    customFontLoaded(state, action: PayloadAction<{ fontUrl: string }>) {
+      const { fontUrl } = action.payload
+
+      const font = parseCustomFont(fontUrl)
+      state.customFonts.push(font)
     },
   },
   extraReducers(builder) {
@@ -220,3 +257,16 @@ export const preferencesSlice = createSlice({
     )
   },
 })
+
+export function parseCustomFont(fontUrl: string): CustomFont {
+  const segments = fontUrl.split("/")
+  const filename = segments[segments.length - 1]!
+  const extDot = filename.lastIndexOf(".")
+  const name = filename.slice(0, extDot)
+  const ext = filename.slice(extDot + 1)
+  return {
+    uri: fontUrl,
+    name,
+    type: ext as "ttf" | "otf",
+  }
+}

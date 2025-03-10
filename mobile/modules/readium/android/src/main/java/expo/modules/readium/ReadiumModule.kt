@@ -246,6 +246,20 @@ class ReadiumModule : Module() {
                 view.updatePreferences()
             }
 
+            Prop("customFonts") { view: EpubView, prop: List<Map<String, String>> ->
+                val customFonts =
+                        prop.map {
+                            val uri = it["uri"] as String
+                            val name = it["name"] as String
+                            val type = it["type"] as String
+                            CustomFont(uri, name, type)
+                        }
+
+                view.customFonts = customFonts
+                view.destroyNavigator()
+                view.initializeNavigator()
+            }
+
             Prop("fontFamily") { view: EpubView, prop: String ->
                 view.preferences = view.preferences.copy(fontFamily = FontFamily(prop))
                 view.updatePreferences()

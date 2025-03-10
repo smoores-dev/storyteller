@@ -40,6 +40,7 @@ import {
   playerTrackChanged,
   nextTrackPressed,
   prevTrackPressed,
+  playerPlayed,
 } from "../slices/bookshelfSlice"
 import { librarySlice } from "../slices/librarySlice"
 import * as FileSystem from "expo-file-system"
@@ -94,7 +95,10 @@ import {
 } from "../../modules/readium/src/Readium.types"
 import { BookAuthor } from "../../apiModels"
 import { preferencesSlice } from "../slices/preferencesSlice"
-import { getBookPlayerSpeed } from "../selectors/preferencesSelectors"
+import {
+  getBookPlayerSpeed,
+  getGlobalPreferences,
+} from "../selectors/preferencesSelectors"
 import { ApiClientError } from "../../apiClient"
 
 export function createDownloadChannel(
@@ -1036,4 +1040,51 @@ export function* updatePlayerSpeedSaga() {
       yield call(TrackPlayer.setRate, speed)
     },
   )
+}
+
+const FIVE_MINUTES_IN_MILLIS = 5 * 60 * 1000
+
+export function* playerPlaySaga() {
+  yield takeEvery(playerPlayed, function* () {
+    const preferences = (yield select(getGlobalPreferences)) as ReturnType<
+      typeof getGlobalPreferences
+    >
+
+    if (!preferences.automaticRewind.enabled) {
+      yield call(TrackPlayer.play)
+      return
+    }
+
+    const currentBook = (yield select(getCurrentlyPlayingBook)) as ReturnType<
+      typeof getCurrentlyPlayingBook
+    >
+
+    if (!currentBook) {
+      yield call(TrackPlayer.play)
+      return
+    }
+
+    const timestamped = (yield select(
+      getLocator,
+      currentBook.id,
+    )) as ReturnType<typeof getLocator>
+    if (!timestamped) {
+      yield call(TrackPlayer.play)
+      return
+    }
+
+    const { timestamp } = timestamped
+    if (Date.now() - timestamp < FIVE_MINUTES_IN_MILLIS) {
+      // It's been less than "a long break", rewind by the
+      // interruption amount
+      yield call(
+        TrackPlayer.seekBy,
+        -preferences.automaticRewind.afterInterruption,
+      )
+    } else {
+      yield call(TrackPlayer.seekBy, -preferences.automaticRewind.afterBreak)
+    }
+
+    yield call(TrackPlayer.play)
+  })
 }

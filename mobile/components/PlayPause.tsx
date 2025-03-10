@@ -3,6 +3,8 @@ import { PauseIcon } from "../icons/PauseIcon"
 import { PlayIcon } from "../icons/PlayIcon"
 import TrackPlayer from "react-native-track-player"
 import { useColorTheme } from "../hooks/useColorTheme"
+import { useAppDispatch } from "../store/appState"
+import { playerPlayed } from "../store/slices/bookshelfSlice"
 
 type Props = {
   style?: ViewProps["style"]
@@ -11,6 +13,7 @@ type Props = {
 }
 
 export function PlayPause({ style, isPlaying, isLoading = false }: Props) {
+  const dispatch = useAppDispatch()
   const { foreground } = useColorTheme()
 
   if (isLoading) return <ActivityIndicator />
@@ -28,7 +31,7 @@ export function PlayPause({ style, isPlaying, isLoading = false }: Props) {
     <Pressable
       hitSlop={20}
       onPress={() => {
-        TrackPlayer.play()
+        dispatch(playerPlayed())
       }}
     >
       <PlayIcon

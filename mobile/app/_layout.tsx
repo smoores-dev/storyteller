@@ -4,6 +4,7 @@ import {
   initialWindowMetrics,
 } from "react-native-safe-area-context"
 import TrackPlayer, {
+  AndroidAudioContentType,
   Capability,
   IOSCategory,
   IOSCategoryMode,
@@ -38,6 +39,7 @@ async function initializePlayer() {
       autoHandleInterruptions: true,
       iosCategory: IOSCategory.Playback,
       iosCategoryMode: IOSCategoryMode.SpokenAudio,
+      androidAudioContentType: AndroidAudioContentType.Speech,
     })
 
     await TrackPlayer.updateOptions({

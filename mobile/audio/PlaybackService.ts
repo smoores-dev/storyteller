@@ -2,8 +2,10 @@ import TrackPlayer, { Event, State } from "react-native-track-player"
 import { store } from "../store/store"
 import {
   playerPaused,
+  playerPlayed,
   playerPositionUpdated,
 } from "../store/slices/bookshelfSlice"
+import { getGlobalPreferences } from "../store/selectors/preferencesSelectors"
 
 export async function seekBackward(interval: number) {
   const { position: currentPosition } = await TrackPlayer.getProgress()
@@ -52,8 +54,8 @@ export async function PlaybackService() {
     store.dispatch(playerPaused())
   })
 
-  TrackPlayer.addEventListener(Event.RemotePlay, async () => {
-    await TrackPlayer.play()
+  TrackPlayer.addEventListener(Event.RemotePlay, () => {
+    store.dispatch(playerPlayed())
   })
 
   TrackPlayer.addEventListener(Event.RemoteJumpBackward, async (event) => {
@@ -62,5 +64,21 @@ export async function PlaybackService() {
 
   TrackPlayer.addEventListener(Event.RemoteJumpForward, async (event) => {
     await seekForward(event.interval)
+  })
+
+  TrackPlayer.addEventListener(Event.RemoteDuck, async (event) => {
+    if (!event.paused) return
+
+    const autoRewindSettings = getGlobalPreferences(
+      store.getState(),
+    ).automaticRewind
+
+    if (!autoRewindSettings.enabled) return
+
+    // We intentionally use seekBy instead of seekBackward here to
+    // avoid seeking past track boundaries. The idea is that it would
+    // be _more_ confusing to start a playing session with the last three
+    // seconds of the previous chapter, rather than less.
+    await TrackPlayer.seekBy(-autoRewindSettings.afterInterruption)
   })
 }
