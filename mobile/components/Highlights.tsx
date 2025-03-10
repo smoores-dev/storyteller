@@ -75,7 +75,7 @@ export function Highlights() {
                 style={{
                   ...fontSizes.sm,
                   textAlign: "justify",
-                  fontFamily: "Bookerly",
+                  fontFamily: "Literata",
                   backgroundColor:
                     highlightTints[dark ? "dark" : "light"][highlight.color],
                   textDecorationLine: "underline",

@@ -22,6 +22,7 @@ import { fontSizes } from "./ui/tokens/fontSizes"
 import { spacing } from "./ui/tokens/spacing"
 import { PlusIcon } from "lucide-react-native"
 import { Link } from "expo-router"
+import { FontLoader } from "./FontLoader"
 
 type Props = {
   bookId?: number
@@ -92,9 +93,15 @@ export function ReadingSettings({ bookId }: Props) {
           style={{
             inputIOS: {
               color: foreground,
+              alignSelf: "flex-end",
             },
             inputAndroid: {
               color: foreground,
+              alignSelf: "flex-end",
+            },
+            viewContainer: {
+              flexGrow: 1,
+              justifyContent: "center",
             },
           }}
         />
@@ -122,9 +129,15 @@ export function ReadingSettings({ bookId }: Props) {
           style={{
             inputIOS: {
               color: foreground,
+              alignSelf: "flex-end",
             },
             inputAndroid: {
               color: foreground,
+              alignSelf: "flex-end",
+            },
+            viewContainer: {
+              flexGrow: 1,
+              justifyContent: "center",
             },
           }}
         />
@@ -162,7 +175,7 @@ export function ReadingSettings({ bookId }: Props) {
             : styles.typographyHeaderContainer
         }
       >
-        <UIText style={styles.subsubheading}>
+        <UIText style={styles.subheading}>
           Typography{!bookId && " defaults"}
         </UIText>
         {bookId ? (
@@ -186,7 +199,11 @@ export function ReadingSettings({ bookId }: Props) {
                 preferences.typography === defaultPreferences.typography
               }
               onPress={() => {
-                dispatch(preferencesSlice.actions.typographyPreferencesReset())
+                dispatch(
+                  preferencesSlice.actions.bookTypographyPreferencesReset({
+                    bookId,
+                  }),
+                )
               }}
             >
               <UIText
@@ -327,20 +344,32 @@ export function ReadingSettings({ bookId }: Props) {
             dispatch(action)
           }}
           items={[
-            { label: "Bookerly", value: "Bookerly" },
             { label: "Literata", value: "Literata" },
             { label: "OpenDyslexic", value: "OpenDyslexic" },
+            ...globalPreferences.customFonts.map((font) => ({
+              label: font.name,
+              value: font.name,
+            })),
           ]}
           style={{
             inputIOS: {
               color: foreground,
+              fontFamily: preferences.typography.fontFamily,
+              alignSelf: "flex-end",
             },
             inputAndroid: {
               color: foreground,
+              fontFamily: preferences.typography.fontFamily,
+              alignSelf: "flex-end",
+            },
+            viewContainer: {
+              flexGrow: 1,
+              justifyContent: "center",
             },
           }}
         />
       </View>
+      <FontLoader />
     </View>
   )
 }
@@ -379,12 +408,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.6,
-  },
-  sliderWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: spacing[1],
   },
   slider: { height: spacing[2], flexGrow: 1 },
 })

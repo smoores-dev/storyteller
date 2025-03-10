@@ -29,6 +29,8 @@ import org.readium.r2.shared.publication.Locator
 
 data class Highlight(val id: String, @ColorInt val color: Int, val locator: Locator)
 
+data class CustomFont(val uri: String, val name: String, val type: String)
+
 @SuppressLint("ViewConstructor", "ResourceType")
 @OptIn(ExperimentalDecorator::class)
 class EpubView(context: Context, appContext: AppContext) : ExpoView(context, appContext),
@@ -47,21 +49,18 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     var locator: Locator? = null
     var isPlaying: Boolean = false
     var navigator: EpubNavigatorFragment? = null
+    var customFonts: List<CustomFont> = listOf()
     var highlights: List<Highlight> = listOf()
     var bookmarks: List<Locator> = listOf()
     var readaloudColor = 0xffffff00.toInt()
     @OptIn(ExperimentalReadiumApi::class)
     var preferences: EpubPreferences = EpubPreferences(
-        fontFamily = FontFamily("Bookerly"),
+        fontFamily = FontFamily("Literata"),
         lineHeight = 1.4,
         paragraphSpacing = 0.5
     )
 
     fun initializeNavigator() {
-        if (this.navigator != null) {
-            return
-        }
-
         val bookId = this.bookId ?: return
         val locator = this.initialLocator ?: return
         val publication = bookService?.getPublication(bookId) ?: return
@@ -70,7 +69,12 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
 
         val listener = this
-        val epubFragment = EpubFragment(locator, publication, listener)
+        val epubFragment = EpubFragment(
+            locator,
+            publication,
+            customFonts,
+            listener
+        )
 
         activity?.supportFragmentManager?.commitNow {
             setReorderingAllowed(true)
@@ -90,6 +94,17 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                 onLocatorChanged(it)
             }
         }
+    }
+
+    fun destroyNavigator() {
+        val navigator = this.navigator ?: return
+        val fragmentTag = resources.getString(R.string.epub_fragment_tag)
+        val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
+        activity?.supportFragmentManager?.commitNow {
+            setReorderingAllowed(true)
+            remove(navigator)
+        }
+        removeView(navigator.view)
     }
 
     fun go(locator: Locator) {

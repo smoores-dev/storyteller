@@ -11,7 +11,7 @@ import {
 
 export async function readGlobalPreferences(): Promise<null | Omit<
   PreferencesState,
-  "bookPreferences"
+  "bookPreferences" | "customFonts"
 >> {
   const stored = await AsyncStorage.getItem("preferences")
   if (!stored) return null
@@ -20,6 +20,15 @@ export async function readGlobalPreferences(): Promise<null | Omit<
     PreferencesState,
     "bookPreferences"
   >
+
+  // Ensure that user preferences contain new automaticRewind settings
+  if (!preferences.automaticRewind) {
+    preferences.automaticRewind = defaultPreferences.automaticRewind
+  }
+
+  if (preferences.typography.fontFamily === "Bookerly") {
+    preferences.typography.fontFamily = "Literata"
+  }
 
   // Ensure that new default themes get added to user preferences
   defaultPreferences.colorThemes.forEach((theme) => {

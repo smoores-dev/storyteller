@@ -36,9 +36,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-font",
         {
           fonts: [
-            "./assets/fonts/Bookerly.ttf",
-            "./assets/fonts/Bookerly Bold.ttf",
-            "./assets/fonts/Bookerly Italic.ttf",
             "./assets/fonts/YoungSerif.ttf",
             "./assets/fonts/OpenDyslexic-Regular.otf",
             "./assets/fonts/OpenDyslexic-Bold.otf",

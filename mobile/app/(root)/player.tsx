@@ -1,13 +1,5 @@
 import { router } from "expo-router"
-import {
-  Image,
-  Platform,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from "react-native"
-import { ScrollView } from "react-native-gesture-handler"
+import { Image, Platform, Pressable, StyleSheet, View } from "react-native"
 import { ChevronDownIcon } from "../../icons/ChevronDownIcon"
 import { useAppDispatch, useAppSelector } from "../../store/appState"
 import { UIText } from "../../components/UIText"
@@ -18,7 +10,7 @@ import TrackPlayer, {
   Event,
 } from "react-native-track-player"
 import { ProgressBar } from "../../components/ProgressBar"
-import { useAudioBook } from "../../hooks/useAudioBook"
+import { formatTime, useAudioBook } from "../../hooks/useAudioBook"
 import { PlayPause } from "../../components/PlayPause"
 import { PrevIcon } from "../../icons/PrevIcon"
 import { NextIcon } from "../../icons/NextIcon"
@@ -44,7 +36,6 @@ import { fontSizes } from "../../components/ui/tokens/fontSizes"
 const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 
 export default function PlayerScreen() {
-  const dimensions = useWindowDimensions()
   const book = useAppSelector(getCurrentlyPlayingBook)
   const timestampedLocator = useAppSelector(
     (state) => book && getLocator(state, book.id),
@@ -65,7 +56,7 @@ export default function PlayerScreen() {
   const [trackCount, setTrackCount] = useState(1)
 
   const dispatch = useAppDispatch()
-  const { isLoading, isPlaying, track, remainingTime } = useAudioBook()
+  const { isLoading, isPlaying, track, remainingTime, rate } = useAudioBook()
   const trackPositionRef = useRef(track.position)
   trackPositionRef.current = track.position
 
@@ -85,22 +76,12 @@ export default function PlayerScreen() {
   }, [track.position, locator, syncEagerProgress])
 
   const progressTime = useMemo(() => {
-    const relativeProgress = track.position - track.startPosition
-    const minutes = Math.floor(relativeProgress / 60)
-    const seconds = Math.floor(relativeProgress - minutes * 60)
-      .toString()
-      .padStart(2, "0")
-    return `${minutes}:${seconds}`
-  }, [track.position, track.startPosition])
+    return formatTime(eagerProgress / rate)
+  }, [eagerProgress, rate])
 
   const remainingProgressTime = useMemo(() => {
-    const remainingProgress = track.endPosition - track.position
-    const minutes = Math.floor(remainingProgress / 60)
-    const seconds = Math.floor(remainingProgress - minutes * 60)
-      .toString()
-      .padStart(2, "0")
-    return `-${minutes}:${seconds}`
-  }, [track.endPosition, track.position])
+    return "-" + formatTime((track.endPosition - eagerProgress) / rate)
+  }, [eagerProgress, rate, track.endPosition])
 
   useTrackPlayerEvents(events, async () => {
     setCurrentTrack(((await TrackPlayer.getActiveTrackIndex()) ?? 0) + 1)
@@ -153,20 +134,10 @@ export default function PlayerScreen() {
         <Toolbar mode="audio" activeBookmarks={activeBookmarks} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Native modals have dark backgrounds on iOS, set the status bar to light content. */}
-        {/* <StatusBar style="light" /> */}
+      <View style={styles.scrollContent}>
         {isLoading && <LoadingView />}
         <Image
-          style={[
-            styles.cover,
-            {
-              width: Math.min(
-                dimensions.width - spacing[3],
-                dimensions.height - 520,
-              ),
-            },
-          ]}
+          style={[styles.cover]}
           source={{ uri: getLocalAudioBookCoverUrl(book.id) }}
         />
         <View style={styles.details}>
@@ -232,7 +203,7 @@ export default function PlayerScreen() {
             <NextIcon />
           </Pressable>
         </View>
-      </ScrollView>
+      </View>
     </View>
   )
 }
@@ -243,6 +214,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignItems: "center",
+    flex: 1,
+    height: "100%",
+    marginBottom: spacing[2],
   },
   topbar: {
     paddingTop: 12,
@@ -254,10 +228,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   cover: {
-    marginVertical: spacing[2],
+    marginVertical: spacing[1],
     marginHorizontal: "auto",
     aspectRatio: 1,
     borderRadius: 4,
+    flexShrink: 1,
+    flexGrow: 1,
   },
   trackCount: {
     alignSelf: "center",
