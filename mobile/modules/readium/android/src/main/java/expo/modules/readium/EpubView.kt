@@ -36,6 +36,13 @@ data class CustomFont(val uri: String, val name: String, val type: String)
 class EpubView(context: Context, appContext: AppContext) : ExpoView(context, appContext),
     EpubNavigatorFragment.Listener, DecorableNavigator.Listener {
 
+    // Required for proper layout! Forces Expo to
+    // use the Android layout system for this view,
+    // rather than React Native's. Without this,
+    // the ViewPager and WebViews will be laid out
+    // incorrectly
+    override val shouldUseAndroidLayout = true
+
     val onLocatorChange by EventDispatcher()
     val onMiddleTouch by EventDispatcher()
     val onBookmarksActivate by EventDispatcher()
