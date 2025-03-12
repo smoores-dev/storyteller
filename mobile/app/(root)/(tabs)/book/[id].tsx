@@ -7,7 +7,6 @@ import {
   getLocator,
 } from "../../../../store/selectors/bookshelfSelectors"
 import { useIsFocused } from "../../../../hooks/useIsFocused"
-import { Platform } from "react-native"
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams() as { id: string }
@@ -25,14 +24,6 @@ export default function BookScreen() {
   return (
     book &&
     locator &&
-    isFocused && (
-      <Epub
-        // On Android, sometimes the viewer fails to render after changing
-        // chapters, so we remount when the chapter changes
-        key={Platform.OS === "android" ? locator.href : book.id}
-        book={book}
-        locator={locator}
-      />
-    )
+    isFocused && <Epub key={book.id} book={book} locator={locator} />
   )
 }
