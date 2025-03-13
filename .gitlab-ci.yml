@@ -12,6 +12,28 @@ always-yes:
   script:
     - echo "Done!"
 
+migrate-images:
+  stage: build
+  image: "debian:bookworm"
+  variables:
+    TARGET_IMAGE: "registry.gitlab.com/storyteller-platform/storyteller"
+  script:
+    - apt-get update
+    - apt-get install -y jq ca-certificates skopeo
+    - 'skopeo login --username "${CI_REGISTRY_USER}" --password
+      "${CI_REGISTRY_PASSWORD}" ${CI_REGISTRY}'
+    - |
+      for tag in $(skopeo list-tags docker://${CI_REGISTRY_IMAGE} | jq -r .Tags[]); do
+        if [[ -z $(skopeo inspect docker://${TARGET_IMAGE}:$tag 2>&1 >/dev/null) ]]; then
+          echo "Skipping ${CI_REGISTRY_IMAGE}:$tag (already present at target)."
+        else
+          echo "Copying ${CI_REGISTRY_IMAGE}:$tag ..."
+          skopeo copy --dest-creds "oauth2:${TEMP_PWD}" --retry-times 3 docker://${CI_REGISTRY_IMAGE}:$tag docker://${TARGET_IMAGE}:$tag
+        fi
+      done
+  rules:
+    - if: $TRIGGERVAR == "true"
+
 check:
   image: node:22
   stage: check
