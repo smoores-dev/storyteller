@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   title: {
     marginVertical: 32,
-    fontSize: 32,
+    ...fontSizes["3xl"],
   },
   subheading: {
     fontSize: 24,
