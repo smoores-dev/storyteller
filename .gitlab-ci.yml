@@ -13,7 +13,7 @@ always-yes:
     - echo "Done!"
 
 migrate-images:
-  stage: build
+  stage: publish
   image: "debian:bookworm"
   variables:
     TARGET_IMAGE: "registry.gitlab.com/storyteller-platform/storyteller"
