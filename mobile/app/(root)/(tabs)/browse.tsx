@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   title: {
     marginVertical: 32,
     paddingLeft: 24,
-    fontSize: 32,
+    ...fontSizes["3xl"],
     alignSelf: "flex-start",
   },
   bookLinks: {

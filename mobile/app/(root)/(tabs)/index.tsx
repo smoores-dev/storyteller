@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 32,
+    ...fontSizes["3xl"],
   },
   header: {
     marginVertical: 32,
