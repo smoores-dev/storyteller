@@ -45,9 +45,9 @@ const FeatureList: FeatureItem[] = [
     description: (
       <>
         Storyteller is completely{" "}
-        <Link to="/docs/getting-started">self-hosted</Link>. All of your books
-        stay on your hardware, and you&apos;re free to move, copy, and back them
-        up as needed.
+        <Link to="/docs/intro/getting-started">self-hosted</Link>. All of your
+        books stay on your hardware, and you&apos;re free to move, copy, and
+        back them up as needed.
       </>
     ),
   },

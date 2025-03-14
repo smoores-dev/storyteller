@@ -21,7 +21,7 @@ instances that the user has explicitly connected to.
 ## Bug Reporting & Voluntary User Data Submission
 
 Users can report issues with Storyteller on
-[GitLab](https://gitlab.com/smoores/storyteller/-/issues) or
+[GitLab](https://gitlab.com/storyteller-platform/storyteller/-/issues) or
 [GitHub](https://github.com/smoores-dev/storyteller/issues). Information
 submitted on these systems is public, and is subject to GitLab and GitHub's
 respective privacy policies.

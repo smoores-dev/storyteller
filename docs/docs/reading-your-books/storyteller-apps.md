@@ -11,7 +11,7 @@ and on the
 
 When you first install the Storyteller mobile app, you will need to configure
 your server URL in the app settings. This should be set to the base URL for your
-[web interface](/docs/getting-started).
+[web interface](/docs/intro/getting-started).
 
 After you've configured your server URL, you'll be asked to log in. You can then
 view all of the books in your chosen library in the Browse tab, and download any

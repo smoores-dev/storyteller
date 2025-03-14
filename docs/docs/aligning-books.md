@@ -35,9 +35,13 @@ CPU cores, or a CUDA-capable GPU, but it's expected that the entire alignment
 process will take around 1-4 hours for most books on most relatively modern
 hardware.
 
-**Note**: If you have a CUDA-capable GPU, and would like to use that rather than
+:::info GPU acceleration
+
+If you have a CUDA- or ROCm-capable GPU, and would like to use that rather than
 your CPU for transcription, check out the
-[instructions below](#using-cuda-for-gpu-accelerated-transcription).
+[instructions in the Getting Started Guide](/docs/intro/getting-started#gpus).
+
+:::
 
 Please note that the transcription task will, by default, use as many CPU cores
 and as much RAM as is available, and Docker, by default, will give it access to
@@ -49,7 +53,7 @@ the API service container. For example, the following will run the container
 with access to 24GB of memory and 8 CPU cores:
 
 ```shell
-docker run -v ~/Documents/Storyteller:/data -p 8001:8001 --memory=24g --cpus=8 registry.gitlab.com/smoores/storyteller:latest
+docker run -v ~/Documents/Storyteller:/data -p 8001:8001 --memory=24g --cpus=8 registry.gitlab.com/storyteller-platform/storyteller:latest
 ```
 
 ## Where do I get DRM-free books?

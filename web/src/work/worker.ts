@@ -300,7 +300,7 @@ export default async function processBook({
 
         await epub.setPackageVocabularyPrefix(
           "storyteller",
-          "https://smoores.gitlab.io/storyteller/docs/vocabulary",
+          "https://storyteller-platform.gitlab.io/storyteller/docs/vocabulary",
         )
 
         await epub.writeToFile(getEpubSyncedFilepath(bookUuid))

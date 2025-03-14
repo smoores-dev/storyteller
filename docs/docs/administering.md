@@ -65,19 +65,38 @@ $ docker exec -it <container-name-or-id> scripts/reset-password.sh --email <emai
 
 ## Audio settings
 
+### Max track length
+
+Storyteller can automatically split tracks longer than a given length. This will
+reduce the memory consumption of the transcription step. The default is 2 hours,
+but shorter values will result in less memory usage during transcription.
+
+Storyteller will use silence detection to attempt to split tracks between
+sentences, so as to not interfere with transcription. In practice, this works
+very well!
+
+### Transcoding
+
+Audio files are "encoded", usually with some amount of compression. Different
+encoders will have different effects on audio — some are better for music,
+others better for speech, etc. Storyteller supports three audio codecs: MP3, AAC
+(typically used in MP4/M4A/M4B files), and OPUS. OPUS is particularly efficient
+at compressing human speech, and can result in significantly smaller output
+files.
+
 As part of its audio pre-processing step, Storyteller can transcode your audio
-files using the [OPUS codec](https://opus-codec.org/). This encoding is
-particularly efficient at compressing human speech, and can result in
-significantly smaller output files.
+files using any of these codecs. If you'd like to enable transcoding, go to the
+Settings page of your Storyteller instance and set "Preferred audio codec".
+Depending on your choice, you may be presented with a choice of bitrate as well.
+Generally speaking, the defaults are reasonable, lower numbers mean lower
+quality (and smaller files), and higher numbers mean higher quality (and larger
+files).
 
-If you'd like to enable OPUS transcoding, go to the Settings page of your
-Storyteller instance and set "Preferred audio codec" to "OPUS", and then choose
-a bitrate. The default will be 32 Kb/s, which is a nice balance of storage
-savings and audio quality, but you can choose a higher bitrate for less
-compression, or a lower one for more.
-
-Please note that enabling OPUS transcoding will significantly slow down the
-Pre-processing step!
+Please note that enabling transcoding will significantly slow down the
+pre-processing step! You can improve transcoding performance by increasing the
+maximum simultaneous transcodes in the parallelization settings — the ideal
+number is the number of cores that you have available for Storyteller to use,
+minus 1.
 
 ## Transcription engine settings
 
@@ -97,6 +116,7 @@ The available paid transcription services are:
 - [Azure Cognitive Services](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text/)
 - [Amazon Transcribe](https://aws.amazon.com/transcribe/)
 - [OpenAI Cloud Platform](https://platform.openai.com/)
+- [DeepGram Speech to Text](https://deepgram.com/product/speech-to-text)
 
 To use any of these services, you must first set up an account with the service
 provider, and obtain any relevant API keys and configuration. You can then

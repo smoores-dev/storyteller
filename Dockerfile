@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/smoores/storyteller-base:latest AS builder
+FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS builder
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
 RUN yarn build:web
 
-FROM registry.gitlab.com/smoores/storyteller-base:latest AS runner
+FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS runner
 
 WORKDIR /app
 

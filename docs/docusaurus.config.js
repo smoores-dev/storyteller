@@ -9,11 +9,11 @@ const darkCodeTheme = themes.dracula
 const config = {
   title: "Storyteller",
   tagline:
-    "A self-hosted platform for automatically aligning ebooks and audiobooks.",
+    "A self-hosted platform for automatically aligning ebooks and audiobooks for immersive reading.",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
-  url: "https://smoores.gitlab.com.io/",
+  url: "https://storyteller-platform.gitlab.com.io/",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/storyteller/",
@@ -43,7 +43,8 @@ const config = {
           sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: "https://gitlab.com/smoores/storyteller/-/tree/main/docs/",
+          editUrl:
+            "https://gitlab.com/storyteller-platform/storyteller/-/tree/main/docs/",
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
@@ -51,6 +52,8 @@ const config = {
       }),
     ],
   ],
+
+  plugins: [require.resolve("docusaurus-lunr-search")],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
@@ -76,7 +79,7 @@ const config = {
             position: "left",
           },
           {
-            href: "https://gitlab.com/smoores/storyteller",
+            href: "https://gitlab.com/storyteller-platform/storyteller",
             label: "GitLab",
             position: "right",
           },
@@ -90,7 +93,7 @@ const config = {
             items: [
               {
                 label: "Get started",
-                to: "/docs/getting-started",
+                to: "/docs/intro/getting-started",
               },
               {
                 label: "Administering",

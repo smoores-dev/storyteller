@@ -2,7 +2,7 @@
 
 services:
   web:
-    image: registry.gitlab.com/smoores/storyteller:latest
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest
     # Uncomment for CUDA
     # runtime: nvidia
     volumes:
