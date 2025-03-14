@@ -18,4 +18,4 @@ after upgrading. But you can now:
 - Stop publishing your API server port. It only needs to be accessible to your
   web server, which will be the case if you use Docker Compose or a custom
   Docker network, as recommended in the
-  [Getting Started](/docs/getting-started).
+  [Getting Started](/docs/intro/getting-started).

@@ -20,7 +20,7 @@
 </table>
 
 Want to get started?
-[Head over to the documentation site](https://smoores.gitlab.io/storyteller/)!
+[Head over to the documentation site](https://storyteller-platform.gitlab.io/storyteller/)!
 
 Storyteller is a self-hosted platform for creating and reading ebooks with
 synced narration. It's made of three components: the API server, the web
@@ -31,13 +31,13 @@ as well as read or listen to (or both!) the resulting synced books.
 ## Contributing
 
 Please take a look at our
-[guidelines for developing Storyteller](https://smoores.gitlab.io/storyteller/docs/category/development)
+[guidelines for developing Storyteller](https://storyteller-platform.gitlab.io/storyteller/docs/category/development)
 before contributing.
 
 ## How it works
 
 Check out the docs to learn more about
-[how Storyteller's forced alignment algorithm works](https://smoores.gitlab.io/storyteller/docs/how-it-works/the-algorithm).
+[how Storyteller's forced alignment algorithm works](https://storyteller-platform.gitlab.io/storyteller/docs/how-it-works/the-algorithm).
 
 ## Contributors
 

@@ -5,7 +5,7 @@ sidebar_position: 1
 # The Algorithm
 
 At the core of the Storyteller system is its
-[alignment algorithm](https://gitlab.com/smoores/storyteller/-/blob/main/web/synchronize/synchronizer.ts?ref_type=heads).
+[alignment algorithm](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/web/synchronize/synchronizer.ts?ref_type=heads).
 This algorithm is responsible for taking an audiobook (as any number of audio
 files or zip archives of audio files) and an ebook (as an epub file) and
 producing a new epub file with guided narration support. This process is known
