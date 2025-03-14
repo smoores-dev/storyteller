@@ -23,14 +23,12 @@ server. You and your users can connect to your instance from the mobile apps, or
 download the aligned books from the web interface.
 
 <details>
-    <summary>
-        What does alignment mean?
-    </summary>
+    <summary>What does alignment mean?</summary>
 
-    The process that Storyteller uses to line up the text of your ebook with the
-    audio of your audiobook belongs to a category of algorithms called “forced
-    alignment.” We call a book that Storyteller has processed “aligned,” and the
-    process itself “alignment.”
+The process that Storyteller uses to line up the text of your ebook with the
+audio of your audiobook belongs to a category of algorithms called “forced
+alignment.” We call a book that Storyteller has processed “aligned,” and the
+process itself “alignment.”
 
 </details>
 
