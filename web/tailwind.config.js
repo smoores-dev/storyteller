@@ -29,6 +29,7 @@ const tailwindConfig = {
           700: "var(--mantine-color-st-orange-7)",
           800: "var(--mantine-color-st-orange-8)",
           900: "var(--mantine-color-st-orange-9)",
+          DEFAULT: "var(--mantine-color-st-orange-6)",
         },
       },
     },
