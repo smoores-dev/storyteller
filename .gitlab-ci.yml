@@ -256,8 +256,8 @@ publish-mobile:
     - yarn workspace @storyteller/mobile dlx eas-cli@latest build --profile
       production -p all --auto-submit --no-wait --non-interactive
     # Build an Android APK for sideloading
-    - yarn workspace @storyteller/mobile dlx eas-cli@latest build --preview -p
-      android
+    - yarn workspace @storyteller/mobile dlx eas-cli@latest build --profile
+      preview -p android
 
 prerelease-mobile:
   stage: prerelease
