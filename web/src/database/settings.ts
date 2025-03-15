@@ -57,6 +57,7 @@ export type Settings = {
   deepgramModel?: string | null
   parallelTranscodes: number
   parallelTranscribes: number
+  parallelWhisperBuild: number
 }
 
 export const SETTINGS_COLUMN_NAMES = {
@@ -89,6 +90,7 @@ export const SETTINGS_COLUMN_NAMES = {
   deepgram_model: "deepgramModel",
   parallel_transcodes: "parallelTranscodes",
   parallel_transcribes: "parallelTranscribes",
+  parallel_whisper_build: "parallelWhisperBuild",
 } as const satisfies Record<string, keyof Settings>
 
 export function getSetting<Name extends keyof typeof SETTINGS_COLUMN_NAMES>(
