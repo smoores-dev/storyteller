@@ -49,6 +49,7 @@ export const GET = withHasPermission("settings_update")(() => {
     deepgram_model: settings.deepgramModel,
     parallel_transcodes: settings.parallelTranscodes,
     parallel_transcribes: settings.parallelTranscribes,
+    parallel_whisper_build: settings.parallelWhisperBuild,
   }
 
   return NextResponse.json(response)
@@ -92,6 +93,7 @@ export const PUT = withHasPermission("settings_update")(async (request) => {
     deepgramModel: settings.deepgram_model,
     parallelTranscodes: settings.parallel_transcodes,
     parallelTranscribes: settings.parallel_transcribes,
+    parallelWhisperBuild: settings.parallel_whisper_build,
   })
 
   return new Response(null, { status: 204 })

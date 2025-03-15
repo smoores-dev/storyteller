@@ -5,7 +5,6 @@ import { mkdir, stat } from "node:fs/promises"
 import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 import { exec as execCb, spawn } from "node:child_process"
 import { promisify } from "node:util"
-import { availableParallelism } from "node:os"
 import { WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
 import { Settings, WhisperModel } from "./database/settings"
 import { logger } from "./logging"
@@ -120,26 +119,22 @@ export async function installWhisper(settings: Settings) {
     // pipe the stdio to /dev/null, since we don't need it
     // and it can be very, very long!
     await new Promise<void>((resolve, reject) => {
-      const make = spawn(
-        "make",
-        [`-j${Math.min(1, availableParallelism() - 1)}`],
-        {
-          cwd: repoDir,
-          shell: true,
-          stdio: ["ignore", "ignore", "ignore"],
-          env: {
-            ...process.env,
-            ...(enableCuda && {
-              WHISPER_CUDA: "1",
-              PATH: path,
-              LIBRARY_PATH: libraryPath,
-            }),
-            ...(whisperBuild === "hipblas" && {
-              GGML_HIPBLAS: "1",
-            }),
-          },
+      const make = spawn("make", [`-j${settings.parallelWhisperBuild}`], {
+        cwd: repoDir,
+        shell: true,
+        stdio: ["ignore", "ignore", "ignore"],
+        env: {
+          ...process.env,
+          ...(enableCuda && {
+            WHISPER_CUDA: "1",
+            PATH: path,
+            LIBRARY_PATH: libraryPath,
+          }),
+          ...(whisperBuild === "hipblas" && {
+            GGML_HIPBLAS: "1",
+          }),
         },
-      )
+      })
 
       make.on("close", (code, signal) => {
         if (code !== 0 || signal) {

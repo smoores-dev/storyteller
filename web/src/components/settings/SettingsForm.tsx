@@ -60,6 +60,7 @@ export function SettingsForm({ settings }: Props) {
     deepgram_model: settings.deepgram_model ?? "nova-3",
     parallel_transcribes: settings.parallel_transcribes,
     parallel_transcodes: settings.parallel_transcodes,
+    parallel_whisper_build: settings.parallel_whisper_build,
   }
 
   const form = useForm({
@@ -94,13 +95,13 @@ export function SettingsForm({ settings }: Props) {
         <NativeSelect
           label="Maximum processed track length"
           description={
-            <>
+            <span className="text-black opacity-70">
               Audio tracks longer than this will be split to be this length or
               shorter before transcribing.
               <br />
               This can help with reducing Storyteller&rsquo;s memory usage
               during transcription.
-            </>
+            </span>
           }
           {...form.getInputProps("max_track_length")}
         >
@@ -155,10 +156,7 @@ export function SettingsForm({ settings }: Props) {
         )}
       </Fieldset>
       <Fieldset legend="Transcription settings">
-        <Box
-          className="mb-3 text-sm"
-          style={{ color: "var(--mantine-color-dimmed)" }}
-        >
+        <Box className="mb-3 text-sm opacity-70">
           <p>
             As part of the synchronization process, Storyteller attempts to
             transcribe the audiobook narration to text.
@@ -230,9 +228,17 @@ export function SettingsForm({ settings }: Props) {
               <option value="cublas-12.6">cuBLAS 12.6 (NVIDIA GPU)</option>
               <option value="hipblas">hipBLAS (AMD GPU)</option>
             </NativeSelect>
+            <Box className="text-sm opacity-70">
+              <p>
+                You can also specify which Whisper model Storyteller should use
+                for transcription. The default (tiny) is sufficient for most
+                English books. For books with many uncommon words, or in
+                languages other than English, you may need to try larger models,
+                such as small or medium.
+              </p>
+            </Box>
             <NativeSelect
               label="Whisper model"
-              description="You can also specify which Whisper model Storyteller should use for transcription. The default (tiny) is sufficient for most English books. For books with many uncommon words, or in languages other than English, you may need to try larger models, such as small or medium."
               {...form.getInputProps("whisper_model")}
             >
               <option value="tiny">tiny</option>
@@ -363,10 +369,7 @@ export function SettingsForm({ settings }: Props) {
         )}
       </Fieldset>
       <Fieldset legend="Parellelization settings">
-        <Box
-          className="mb-3 text-sm"
-          style={{ color: "var(--mantine-color-dimmed)" }}
-        >
+        <Box className="mb-3 text-sm opacity-70">
           <p>
             Audio transcoding is an inherently single-threaded task, and
             Whisper’s transcription engine has diminishing returns on multi-core
@@ -385,8 +388,19 @@ export function SettingsForm({ settings }: Props) {
         />
         <NumberInput
           label="Number of audio tracks to transcribe in parallel"
-          description="Transcribing one track will use up to 4 CPU cores"
+          description="Transcribing one track will use up to 4 CPU cores (when using CPU-based transcription)"
           {...form.getInputProps("parallel_transcribes")}
+        />
+        <Box className="mb-3 text-sm opacity-70">
+          <p>
+            Whenever the Storyteller container is recreated (e.g. after an
+            update), it will rebuild whisper.cpp. This process can be sped up
+            considerably by dedicating multiple CPU cores.
+          </p>
+        </Box>
+        <NumberInput
+          label="Number of CPU cores to allocate for building whisper.cpp locally"
+          {...form.getInputProps("parallel_whisper_build")}
         />
       </Fieldset>
       <Fieldset legend="Email settings">
