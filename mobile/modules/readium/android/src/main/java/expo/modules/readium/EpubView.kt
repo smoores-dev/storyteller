@@ -224,6 +224,14 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     fun setupUserScript(): EpubView {
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
+            val bookId = this.bookId ?: return
+
+            val locator = this.locator ?: this.navigator?.currentLocator?.value ?: return
+            val fragments = bookService?.getFragments(bookId, locator) ?: return
+
+            val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
+            val jsFragmentsArray = "[${joinedFragments}]"
+
             navigator?.evaluateJavascript(
                 """
                 function addDoubleTapListeners() {
@@ -268,6 +276,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                         storyteller.handleSelectionCleared();
                     }
                 });
+
+                globalThis.storytellerFragments = ${jsFragmentsArray};
+                addDoubleTapListeners();
                 """.trimIndent()
             )
         }
