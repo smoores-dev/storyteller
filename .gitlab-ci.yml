@@ -257,7 +257,7 @@ publish-mobile:
       production -p all --auto-submit --no-wait --non-interactive
     # Build an Android APK for sideloading
     - yarn workspace @storyteller/mobile dlx eas-cli@latest build --profile
-      preview -p android
+      preview -p android --no-wait --non-interactive
 
 prerelease-mobile:
   stage: prerelease
