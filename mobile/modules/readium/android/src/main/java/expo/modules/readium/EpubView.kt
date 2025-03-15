@@ -224,10 +224,10 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     fun setupUserScript(): EpubView {
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
-            val bookId = this.bookId ?: return
+            val bookId = bookId ?: return@launch
 
-            val locator = this.locator ?: this.navigator?.currentLocator?.value ?: return
-            val fragments = bookService?.getFragments(bookId, locator) ?: return
+            val locator = locator ?: navigator?.currentLocator?.value ?: return@launch
+            val fragments = bookService?.getFragments(bookId, locator) ?: return@launch
 
             val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
