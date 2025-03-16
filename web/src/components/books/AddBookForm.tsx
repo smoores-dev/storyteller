@@ -20,6 +20,21 @@ import { IconX } from "@tabler/icons-react"
 import { formatBytes } from "@/strings"
 import { DirectoryFileEntry } from "@/actions/listDirectoryAction"
 
+function iOS() {
+  return (
+    [
+      "iPad Simulator",
+      "iPhone Simulator",
+      "iPod Simulator",
+      "iPad",
+      "iPhone",
+      "iPod",
+    ].includes(navigator.platform) ||
+    // iPad on iOS 13 detection
+    (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+  )
+}
+
 enum UploadState {
   CLEAN = "CLEAN",
   UPLOADING = "UPLOADING",
@@ -210,7 +225,9 @@ export function AddBookForm() {
               <Stack align="center">
                 {fileSource === "upload" ? (
                   <FileButton
-                    accept="application/zip,audio/*,video/*,.m4b"
+                    {...(iOS()
+                      ? {}
+                      : { accept: "application/zip,audio/*,video/*,.m4b" })}
                     multiple
                     onChange={(files) => {
                       setAudioFiles(files)
