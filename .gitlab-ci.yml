@@ -1,6 +1,7 @@
 stages: # List of stages for jobs, and their order of execution
   - check
   - publish
+  - manifest
   - prerelease
   - release
 
@@ -92,11 +93,7 @@ publish-web-amd64:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --push -f
       Dockerfile --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest
       --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max
-      --tag $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:web-v1 --tag
-      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA --tag
-      $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
-  after_script:
-    - docker buildx rm gitlab-ci
+      --tag $CI_REGISTRY_IMAGE-amd64:$CI_COMMIT_SHORT_SHA .
 
 publish-web-arm64:
   image: docker:24.0.5
@@ -115,11 +112,35 @@ publish-web-arm64:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --push -f
       Dockerfile --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest
       --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max
-      --tag $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:web-v1 --tag
-      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA --tag
-      $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
-  after_script:
-    - docker buildx rm gitlab-ci
+      --tag $CI_REGISTRY_IMAGE-arm64:$CI_COMMIT_SHORT_SHA .
+
+publish-web-manifest:
+  image: docker:24.0.5
+  services:
+    - name: docker:24.0.5-dind
+      alias: docker
+  stage: manifest
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+/'
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker manifest create $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      $CI_REGISTRY_IMAGE-amd64:$CI_COMMIT_SHORT_SHA
+      $CI_REGISTRY_IMAGE-arm64:$CI_COMMIT_SHORT_SHA
+    - docker manifest create $CI_REGISTRY_IMAGE:latest
+      $CI_REGISTRY_IMAGE-amd64:$CI_COMMIT_SHORT_SHA
+      $CI_REGISTRY_IMAGE-arm64:$CI_COMMIT_SHORT_SHA
+    - docker manifest create $CI_REGISTRY_IMAGE:web-v1
+      $CI_REGISTRY_IMAGE-amd64:$CI_COMMIT_SHORT_SHA
+      $CI_REGISTRY_IMAGE-arm64:$CI_COMMIT_SHORT_SHA
+    - docker manifest create $CI_REGISTRY_IMAGE:$COMMIT_TAG
+      $CI_REGISTRY_IMAGE-amd64:$CI_COMMIT_SHORT_SHA
+      $CI_REGISTRY_IMAGE-arm64:$CI_COMMIT_SHORT_SHA
+    - docker manifest push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker manifest push $CI_REGISTRY_IMAGE:latest
+    - docker manifest push $CI_REGISTRY_IMAGE:web-v1
+    - docker manifest push $CI_REGISTRY_IMAGE:$COMMIT_TAG
 
 prerelease-web:
   stage: prerelease
