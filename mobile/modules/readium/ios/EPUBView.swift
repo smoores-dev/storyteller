@@ -295,7 +295,7 @@ extension EPUBView: EPUBNavigatorDelegate {
         guard let bookId = self.bookId else {
             return
         }
-        guard let locator = self.locator else {
+        guard let locator = navigator.currentLocation else {
             return
         }
 
@@ -305,7 +305,7 @@ extension EPUBView: EPUBNavigatorDelegate {
         let jsFragmentsArray = "[\(joinedFragments)]"
 
         let scriptSource = """
-            function addDoubleTapListeners() {
+            globalThis.addDoubleTapListeners = function addDoubleTapListeners() {
                 let storytellerDoubleClickTimeout = null;
                 let storytellerTouchMoved = false;
                 for (const fragment of globalThis.storytellerFragments) {
@@ -349,7 +349,7 @@ extension EPUBView: EPUBNavigatorDelegate {
             });
 
             globalThis.storytellerFragments = \(jsFragmentsArray);
-            addDoubleTapListeners();
+            globalThis.addDoubleTapListeners();
         """
 
         userContentController.addUserScript(WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
@@ -398,7 +398,7 @@ extension EPUBView: EPUBNavigatorDelegate {
 
             epubNav.evaluateJavaScript("""
                 globalThis.storytellerFragments = \(jsFragmentsArray);
-                addDoubleTapListeners();
+                globalThis.addDoubleTapListeners();
             """)
         }
 
