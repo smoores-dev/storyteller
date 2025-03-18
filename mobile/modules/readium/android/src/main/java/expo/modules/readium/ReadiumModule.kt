@@ -117,47 +117,18 @@ class ReadiumModule : Module() {
                 if (view.bookService == null) {
                     view.bookService = bookService
                 }
-                view.bookId = prop
-                view.initializeNavigator()
-            }
-
-            AsyncFunction("goForward") { view: EpubView ->
-                val navigator = view.navigator ?: return@AsyncFunction
-                navigator.goForward(animated = true)
-            }
-
-            AsyncFunction("goBackward") { view: EpubView ->
-                val navigator = view.navigator ?: return@AsyncFunction
-                navigator.goBackward(animated = true)
+                view.pendingProps.bookId = prop
             }
 
             Prop("locator") { view: EpubView, prop: Map<String, Any> ->
                 val locator = Locator.fromJSON(JSONObject(prop)) ?: return@Prop
 
-                val maybeCurrentLocator = view.navigator?.currentLocator?.value
-                maybeCurrentLocator?.let { currentLocator ->
-                    val locatorComp =
-                            if (currentLocator.locations.fragments.isEmpty())
-                                    currentLocator.copy(
-                                            locations = locator.locations.copy(fragments = listOf())
-                                    )
-                            else currentLocator
-                    if (currentLocator == locatorComp) return@Prop
-                }
-
-                view.go(locator)
+                view.pendingProps.locator = locator
             }
 
             Prop("isPlaying") { view: EpubView, prop: Boolean? ->
                 val isPlaying = prop ?: false
-                view.isPlaying = isPlaying
-
-                val locator = view.locator
-                if (view.isPlaying && locator != null) {
-                    view.highlightFragment(locator)
-                } else {
-                    view.clearHighlightFragment()
-                }
+                view.pendingProps.isPlaying = isPlaying
             }
 
             Prop("highlights") { view: EpubView, prop: List<Map<String, Any>> ->
@@ -178,33 +149,20 @@ class ReadiumModule : Module() {
                             return@mapNotNull Highlight(id, color, locator)
                         }
 
-                view.highlights = highlights
-                view.decorateHighlights()
+                view.pendingProps.highlights = highlights
             }
 
             Prop("bookmarks") { view: EpubView, prop: List<Map<String, Any>> ->
                 val bookmarks = prop.mapNotNull { Locator.fromJSON(JSONObject(it)) }
 
-                view.bookmarks = bookmarks
-                val currentLocator = view.navigator?.currentLocator?.value ?: return@Prop
-
-                val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
-                activity?.lifecycleScope?.launch { view.findOnPage(currentLocator) }
+                view.pendingProps.bookmarks = bookmarks
             }
 
             Prop("colorTheme") { view: EpubView, prop: Map<String, String> ->
                 val foregroundHex = prop["foreground"] ?: "#000000"
                 val backgroundHex = prop["background"] ?: "#FFFFFF"
-                val foreground = Color.parseColor(foregroundHex)
-                val background = Color.parseColor(backgroundHex)
-
-                view.preferences =
-                        view.preferences.copy(
-                                textColor = org.readium.r2.navigator.preferences.Color(foreground),
-                                backgroundColor =
-                                        org.readium.r2.navigator.preferences.Color(background)
-                        )
-                view.updatePreferences()
+                view.pendingProps.foreground = Color.parseColor(foregroundHex)
+                view.pendingProps.background = Color.parseColor(backgroundHex)
             }
 
             Prop("readaloudColor") { view: EpubView, prop: String ->
@@ -218,22 +176,15 @@ class ReadiumModule : Module() {
                             else -> 0xffffff00.toInt()
                         }
 
-                view.readaloudColor = color
-
-                if (view.isPlaying) {
-                    view.clearHighlightFragment()
-                    view.navigator?.let { view.highlightFragment(it.currentLocator.value) }
-                }
+                view.pendingProps.readaloudColor = color
             }
 
             Prop("fontScale") { view: EpubView, prop: Double ->
-                view.preferences = view.preferences.copy(fontSize = prop)
-                view.updatePreferences()
+                view.pendingProps.fontSize = prop
             }
 
             Prop("lineHeight") { view: EpubView, prop: Double ->
-                view.preferences = view.preferences.copy(lineHeight = prop)
-                view.updatePreferences()
+                view.pendingProps.lineHeight = prop
             }
 
             Prop("textAlign") { view: EpubView, prop: String ->
@@ -242,8 +193,8 @@ class ReadiumModule : Module() {
                             "left" -> TextAlign.LEFT
                             else -> TextAlign.JUSTIFY
                         }
-                view.preferences = view.preferences.copy(textAlign = textAlign)
-                view.updatePreferences()
+
+                view.pendingProps.textAlign = textAlign
             }
 
             Prop("customFonts") { view: EpubView, prop: List<Map<String, String>> ->
@@ -255,14 +206,15 @@ class ReadiumModule : Module() {
                             CustomFont(uri, name, type)
                         }
 
-                view.customFonts = customFonts
-                view.destroyNavigator()
-                view.initializeNavigator()
+                view.pendingProps.customFonts = customFonts
             }
 
             Prop("fontFamily") { view: EpubView, prop: String ->
-                view.preferences = view.preferences.copy(fontFamily = FontFamily(prop))
-                view.updatePreferences()
+                view.pendingProps.fontFamily = FontFamily(prop)
+            }
+
+            OnViewDidUpdateProps { view: EpubView ->
+                view.finalizeProps()
             }
         }
     }

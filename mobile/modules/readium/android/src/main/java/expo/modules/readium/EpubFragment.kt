@@ -62,9 +62,7 @@ class SelectionActionModeCallback(private val epubView: EpubView) : BaseActionMo
 @SuppressLint("ViewConstructor")
 @OptIn(ExperimentalReadiumApi::class)
 class EpubFragment(
-    private var locator: Locator,
     private val publication: Publication,
-    private val customFonts: List<CustomFont>,
     private val listener: EpubView
 ) : Fragment(R.layout.fragment_reader) {
     var navigator: EpubNavigatorFragment? = null
@@ -78,7 +76,7 @@ class EpubFragment(
                 ),
             ),
         ).createFragmentFactory(
-            locator,
+            listener.props!!.locator,
             listener = listener,
             configuration = EpubNavigatorFragment.Configuration {
                 servedAssets = listOf(
@@ -120,7 +118,7 @@ class EpubFragment(
                     }
                 }
 
-                customFonts.forEach {
+                listener.props!!.customFonts.forEach {
                     addFontFamilyDeclaration(FontFamily(it.name)) {
                         addFontFace {
                             addSource(it.uri)
@@ -132,11 +130,19 @@ class EpubFragment(
 
                 selectionActionModeCallback = SelectionActionModeCallback(listener)
 
-                registerJavascriptInterface("storyteller") {
+                registerJavascriptInterface("storytellerAPI") {
                     listener.setupUserScript()
                 }
             },
-            initialPreferences = listener.preferences,
+            initialPreferences =  EpubPreferences(
+                backgroundColor = org.readium.r2.navigator.preferences.Color(listener.props!!.background),
+                fontFamily = listener.props!!.fontFamily,
+                fontSize = listener.props!!.fontSize,
+                lineHeight = listener.props!!.lineHeight,
+                paragraphSpacing = listener.props!!.paragraphSpacing,
+                textAlign = listener.props!!.textAlign,
+                textColor = org.readium.r2.navigator.preferences.Color(listener.props!!.foreground),
+            ),
         )
 
         super.onCreate(savedInstanceState)
