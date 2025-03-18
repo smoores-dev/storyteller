@@ -29,9 +29,10 @@ const PAPERBACK_PAGE_SCALE = 3
 
 type Props = {
   book: BookshelfBook
+  automaticRewind: boolean
 }
 
-export function MiniPlayer({ book }: Props) {
+export function MiniPlayer({ book, automaticRewind }: Props) {
   const locator = useAppSelector((state) => getLocator(state, book.id))
   const bookPrefs = useAppSelector((state) =>
     getBookPreferences(state, book.id),
@@ -287,7 +288,11 @@ export function MiniPlayer({ book }: Props) {
               {formattedProgress}
             </UIText>
           </Pressable>
-          <PlayPause isPlaying={isPlaying} isLoading={isLoading} />
+          <PlayPause
+            isPlaying={isPlaying}
+            isLoading={isLoading}
+            automaticRewind={automaticRewind}
+          />
         </View>
       </View>
     )

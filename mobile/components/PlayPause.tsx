@@ -10,9 +10,15 @@ type Props = {
   style?: ViewProps["style"]
   isPlaying: boolean
   isLoading?: boolean
+  automaticRewind?: boolean
 }
 
-export function PlayPause({ style, isPlaying, isLoading = false }: Props) {
+export function PlayPause({
+  style,
+  isPlaying,
+  automaticRewind = true,
+  isLoading = false,
+}: Props) {
   const dispatch = useAppDispatch()
   const { foreground } = useColorTheme()
 
@@ -31,7 +37,11 @@ export function PlayPause({ style, isPlaying, isLoading = false }: Props) {
     <Pressable
       hitSlop={20}
       onPress={() => {
-        dispatch(playerPlayed())
+        if (automaticRewind) {
+          dispatch(playerPlayed())
+        } else {
+          TrackPlayer.play()
+        }
       }}
     >
       <PlayIcon

@@ -67,8 +67,7 @@ public class ReadiumModule: Module {
             Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
 
             Prop("bookId") { (view: EPUBView, prop: Int) in
-                view.bookId = prop
-                view.initializeNavigator()
+                view.pendingProps.bookId = prop
             }
 
             Prop("locator") { (view: EPUBView, prop: [String : Any]) in
@@ -76,24 +75,12 @@ public class ReadiumModule: Module {
                     return
                 }
 
-                if let currentLocation = view.navigator?.currentLocation {
-                    let locatorComp = currentLocation.locations.fragments.isEmpty ? locator.copy( locations: { $0.fragments = [] }) : locator;
-                    guard currentLocation != locatorComp else {
-                        return
-                    }
-                }
-
-                view.go(locator: locator)
+                view.pendingProps.locator = locator
             }
 
             Prop("isPlaying") { (view: EPUBView, prop: Bool?) in
                 let isPlaying = prop ?? false
-                view.isPlaying = isPlaying
-                if view.isPlaying, let locator = view.locator {
-                    view.highlightFragment(locator: locator)
-                } else {
-                    view.clearHighlightedFragment()
-                }
+                view.pendingProps.isPlaying = isPlaying
             }
 
             Prop("highlights") { (view: EPUBView, prop: [[String: Any]]) in
@@ -121,8 +108,7 @@ public class ReadiumModule: Module {
                     return Highlight(id: id, color: mappedColor, locator: locator)
                 }
 
-                view.highlights = highlights
-                view.decorateHighlights()
+                view.pendingProps.highlights = highlights
             }
 
             Prop("bookmarks") { (view: EPUBView, prop: [[String: Any]]) in
@@ -130,21 +116,15 @@ public class ReadiumModule: Module {
                     return try? Locator(json: locatorJson)
                 }
 
-                view.bookmarks = bookmarks
-                if let currentLocator = view.navigator?.currentLocation {
-                    view.findOnPage(locator: currentLocator)
-                }
+                view.pendingProps.bookmarks = bookmarks
             }
 
             Prop("colorTheme") { (view: EPUBView, prop: [String: String]) in
                 let foregroundHex = prop["foreground"] ?? "#111111"
                 let backgroundHex = prop["background"] ?? "#FFFFFF"
 
-                view.preferences = view.preferences.merging(EPUBPreferences(
-                    backgroundColor: Color(hex: backgroundHex),
-                    textColor: Color(hex: foregroundHex)
-                ))
-                view.updatePreferences()
+                view.pendingProps.background = Color(hex: backgroundHex)
+                view.pendingProps.foreground = Color(hex: foregroundHex)
             }
 
             Prop("readaloudColor") { (view: EPUBView, prop: String) in
@@ -157,31 +137,15 @@ public class ReadiumModule: Module {
                     default: UIColor.yellow
                 }
 
-                view.readaloudColor = mappedColor
-
-                if (view.isPlaying) {
-                    view.clearHighlightedFragment()
-                    guard let currentLocator = view.navigator?.currentLocation else {
-                        return
-                    }
-                    view.highlightFragment(locator: currentLocator)
-                }
+                view.pendingProps.readaloudColor = mappedColor
             }
 
             Prop("fontScale") { (view: EPUBView, prop: Double) in
-                view.preferences = view.preferences.merging(EPUBPreferences(
-                    fontSize: prop
-                ))
-
-                view.updatePreferences()
+                view.pendingProps.fontSize = prop
             }
 
             Prop("lineHeight") { (view: EPUBView, prop: Double) in
-                view.preferences = view.preferences.merging(EPUBPreferences(
-                    lineHeight: prop
-                ))
-
-                view.updatePreferences()
+                view.pendingProps.lineHeight = prop
             }
 
             Prop("textAlign") { (view: EPUBView, prop: String) in
@@ -190,10 +154,7 @@ public class ReadiumModule: Module {
                     default: TextAlignment.justify
                 }
 
-                view.preferences = view.preferences.merging(EPUBPreferences(
-                    textAlign: textAlign
-                ))
-                view.updatePreferences()
+                view.pendingProps.textAlign = textAlign
             }
 
             Prop("customFonts") {(view: EPUBView, prop: [[String : String]]) in
@@ -209,21 +170,15 @@ public class ReadiumModule: Module {
                     }
                     return CustomFont(uri: uri, name: name, type: type)
                 }
-                view.customFonts = customFonts
-
-                if view.navigator == nil {
-                    return
-                }
-
-                view.destroyNavigator()
-                view.initializeNavigator()
+                view.pendingProps.customFonts = customFonts
             }
 
             Prop("fontFamily") { (view: EPUBView, prop: String) in
-                view.preferences = view.preferences.merging(EPUBPreferences(
-                    fontFamily: FontFamily(rawValue: prop)
-                ))
-                view.updatePreferences()
+                view.pendingProps.fontFamily = FontFamily(rawValue: prop)
+            }
+
+            OnViewDidUpdateProps {(view: EPUBView) in
+                view.finalizeProps()
             }
         }
     }

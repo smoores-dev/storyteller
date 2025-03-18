@@ -37,6 +37,13 @@ type Props = {
 export function Epub({ book, locator }: Props) {
   useKeepAwake()
 
+  // Track whether the locator came from the EPUB view.
+  // This allows us to disable automatic rewind when the
+  // user presses play after swiping to a new page, which
+  // would "rewind" to the previous page and be jarring.
+  const locatorRef = useRef<ReadiumLocator | null>(null)
+  const locatorIsFromEpub = locatorRef.current === locator
+
   const hasLoadedRef = useRef(false)
   const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<ReadiumLocator[]>([])
@@ -141,10 +148,14 @@ export function Epub({ book, locator }: Props) {
                 return
               }
             }
+            locatorRef.current = event.nativeEvent
             dispatch(
               bookshelfSlice.actions.bookRelocated({
                 bookId: book.id,
-                locator: { locator: event.nativeEvent, timestamp: Date.now() },
+                locator: {
+                  locator: event.nativeEvent,
+                  timestamp: Date.now(),
+                },
               }),
             )
           }}
@@ -179,7 +190,7 @@ export function Epub({ book, locator }: Props) {
             </Link>
             <Toolbar mode="text" activeBookmarks={activeBookmarks} />
           </Group>
-          <MiniPlayer book={book} />
+          <MiniPlayer book={book} automaticRewind={!locatorIsFromEpub} />
         </>
       )}
     </View>

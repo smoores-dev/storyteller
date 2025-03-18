@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalReadiumApi::class)
+
 package expo.modules.readium
 
+import android.graphics.Color
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PointF
@@ -14,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
+import expo.modules.readium.FinalizedProps
 import kotlin.math.ceil
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -23,6 +27,7 @@ import org.readium.r2.navigator.ExperimentalDecorator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.preferences.FontFamily
+import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
@@ -30,6 +35,42 @@ import org.readium.r2.shared.publication.Locator
 data class Highlight(val id: String, @ColorInt val color: Int, val locator: Locator)
 
 data class CustomFont(val uri: String, val name: String, val type: String)
+
+data class Props(
+    var bookId: Long?,
+    var locator: Locator?,
+    var isPlaying: Boolean?,
+    var highlights: List<Highlight>?,
+    var bookmarks: List<Locator>?,
+    var readaloudColor: Int?,
+    var customFonts: List<CustomFont>?,
+    @ColorInt var foreground: Int?,
+    @ColorInt var background: Int?,
+    var fontFamily: FontFamily?,
+    var lineHeight: Double?,
+    var paragraphSpacing: Double?,
+    var fontSize: Double?,
+    var textAlign: TextAlign?
+)
+
+
+data class FinalizedProps(
+    var bookId: Long,
+    var locator: Locator,
+    var isPlaying: Boolean,
+    var highlights: List<Highlight>,
+    var bookmarks: List<Locator>,
+    var readaloudColor: Int,
+    var customFonts: List<CustomFont>,
+    @ColorInt var foreground: Int,
+    @ColorInt var background: Int,
+    var fontFamily: FontFamily,
+    var lineHeight: Double,
+    var paragraphSpacing: Double,
+    var fontSize: Double,
+    var textAlign: TextAlign
+)
+
 
 @SuppressLint("ViewConstructor", "ResourceType")
 @OptIn(ExperimentalDecorator::class)
@@ -51,35 +92,113 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     val onHighlightTap by EventDispatcher()
 
     var bookService: BookService? = null
-    var bookId: Long? = null
-    var initialLocator: Locator? = null
-    var locator: Locator? = null
-    var isPlaying: Boolean = false
     var navigator: EpubNavigatorFragment? = null
-    var customFonts: List<CustomFont> = listOf()
-    var highlights: List<Highlight> = listOf()
-    var bookmarks: List<Locator> = listOf()
-    var readaloudColor = 0xffffff00.toInt()
-    @OptIn(ExperimentalReadiumApi::class)
-    var preferences: EpubPreferences = EpubPreferences(
-        fontFamily = FontFamily("Literata"),
-        lineHeight = 1.4,
-        paragraphSpacing = 0.5
+
+    var pendingProps: Props = Props(
+        bookId=null,
+        locator=null,
+        isPlaying=null,
+        highlights=null,
+        bookmarks=null,
+        readaloudColor=null,
+        customFonts=null,
+        foreground=null,
+        background=null,
+        fontFamily=null,
+        lineHeight=null,
+        paragraphSpacing=null,
+        fontSize=null,
+        textAlign=null,
     )
+    var props: FinalizedProps? = null
+
+    fun finalizeProps() {
+        val oldProps = props
+
+        props =
+        FinalizedProps(
+            bookId = pendingProps.bookId!!,
+            locator = pendingProps.locator!!,
+            isPlaying = pendingProps.isPlaying ?: oldProps?.isPlaying ?: false,
+            highlights = pendingProps.highlights ?: oldProps?.highlights ?: listOf(),
+            bookmarks = pendingProps.bookmarks ?: oldProps?.bookmarks ?: listOf(),
+            readaloudColor = pendingProps.readaloudColor
+                ?: oldProps?.readaloudColor ?: 0xffffff00.toInt(),
+            customFonts = pendingProps.customFonts ?: oldProps?.customFonts ?: listOf(),
+            foreground = pendingProps.foreground
+                ?: oldProps?.foreground ?: Color.parseColor("#111111"),
+            background = pendingProps.background
+                ?: oldProps?.background ?: Color.parseColor("#FFFFFF"),
+            fontFamily = pendingProps.fontFamily
+                ?: oldProps?.fontFamily ?: FontFamily("Literata"),
+            lineHeight = pendingProps.lineHeight ?: oldProps?.lineHeight ?: 1.4,
+            paragraphSpacing = pendingProps.paragraphSpacing
+                ?: oldProps?.paragraphSpacing ?: 0.5,
+            fontSize = pendingProps.fontSize ?: oldProps?.fontSize ?: 1.0,
+            textAlign = pendingProps.textAlign ?: oldProps?.textAlign ?: TextAlign.JUSTIFY,
+        )
+
+        if (props!!.bookId != oldProps?.bookId || props!!.customFonts != oldProps.customFonts) {
+            destroyNavigator()
+            initializeNavigator()
+            return
+        }
+
+        val activity = appContext.currentActivity as FragmentActivity?
+
+        // Don't go to a new location if it's the same as the current location, except with
+        // different fragments. Prevents unnecessarily triggering renders and state updates
+        // when the position hasn't actually changed
+        val locatorComp =
+            if (navigator!!.currentLocator.value.locations.fragments.isEmpty())
+                props!!.locator.copy(locations = props!!.locator.locations.copy(fragments = listOf()))
+            else props!!.locator
+
+        if (locatorComp != navigator!!.currentLocator.value) {
+            go(props!!.locator)
+        }
+
+        if (props!!.isPlaying) {
+            highlightFragment(props!!.locator)
+        } else {
+            clearHighlightFragment()
+        }
+
+        if (props!!.highlights != oldProps.highlights) {
+            decorateHighlights()
+        }
+
+        if (props!!.bookmarks != oldProps.bookmarks) {
+            activity?.lifecycleScope?.launch { findOnPage(props!!.locator) }
+        }
+
+        if (props!!.readaloudColor != oldProps.readaloudColor) {
+            clearHighlightFragment()
+            highlightFragment(props!!.locator)
+        }
+
+        navigator!!.submitPreferences(
+            EpubPreferences(
+                backgroundColor = org.readium.r2.navigator.preferences.Color(props!!.background),
+                fontFamily = props!!.fontFamily,
+                fontSize = props!!.fontSize,
+                lineHeight = props!!.lineHeight,
+                paragraphSpacing = props!!.paragraphSpacing,
+                textAlign = props!!.textAlign,
+                textColor = org.readium.r2.navigator.preferences.Color(props!!.foreground),
+            )
+        )
+    }
 
     fun initializeNavigator() {
-        val bookId = this.bookId ?: return
-        val locator = this.initialLocator ?: return
-        val publication = bookService?.getPublication(bookId) ?: return
+        val publication = bookService?.getPublication(props!!.bookId) ?: return
 
         val fragmentTag = resources.getString(R.string.epub_fragment_tag)
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
 
         val listener = this
         val epubFragment = EpubFragment(
-            locator,
             publication,
-            customFonts,
             listener
         )
 
@@ -105,7 +224,6 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
     fun destroyNavigator() {
         val navigator = this.navigator ?: return
-        val fragmentTag = resources.getString(R.string.epub_fragment_tag)
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.supportFragmentManager?.commitNow {
             setReorderingAllowed(true)
@@ -115,20 +233,15 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     fun go(locator: Locator) {
-        val navigator = this.navigator ?: run {
-            this.initialLocator = locator
-            return initializeNavigator()
+        val activity = appContext.currentActivity as FragmentActivity?
+        activity?.lifecycleScope?.launch {
+            navigator!!.evaluateJavascript(
+                """
+            storyteller.firstVisibleFragment = null;
+            """.trimIndent()
+            )
+            navigator!!.go(locator, true)
         }
-
-        navigator.go(locator, true)
-        if (isPlaying) {
-            highlightFragment(locator)
-        }
-    }
-
-    @OptIn(ExperimentalReadiumApi::class)
-    fun updatePreferences() {
-        navigator?.submitPreferences(preferences)
     }
 
     override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
@@ -140,7 +253,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     fun decorateHighlights() {
-        val decorations = highlights.map {
+        val decorations = props!!.highlights.map {
             val style = Decoration.Style.Highlight(it.color, isActive = true)
             return@map Decoration(
                 id = it.id,
@@ -158,7 +271,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     fun highlightFragment(locator: Locator) {
         val id = locator.locations.fragments.first()
 
-        val overlayHighlight = Decoration.Style.Highlight(readaloudColor, isActive = true)
+        val overlayHighlight = Decoration.Style.Highlight(props!!.readaloudColor, isActive = true)
         val decoration = Decoration(id, locator, overlayHighlight)
 
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
@@ -180,7 +293,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val currentProgression = locator.locations.progression ?: return
 
         val joinedProgressions =
-            bookmarks
+            props!!.bookmarks
                 .filter { it.href == locator.href }
                 .mapNotNull { it.locations.progression }
                 .joinToString { it.toString() }
@@ -213,7 +326,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         ) ?: return onBookmarksActivate(mapOf("activeBookmarks" to listOf<Locator>()))
 
         val parsed = Json.decodeFromString<List<Double>>(result)
-        val found = bookmarks.filter {
+        val found = props!!.bookmarks.filter {
             val progression = it.locations.progression ?: return@filter false
             return@filter parsed.contains(progression)
         }
@@ -224,61 +337,84 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     fun setupUserScript(): EpubView {
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
-            val bookId = bookId ?: return@launch
-
-            val locator = locator ?: navigator?.currentLocator?.value ?: return@launch
-            val fragments = bookService?.getFragments(bookId, locator) ?: return@launch
+            val fragments = bookService?.getFragments(props!!.bookId, props!!.locator) ?: return@launch
 
             val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
 
             navigator?.evaluateJavascript(
                 """
-                function addDoubleTapListeners() {
-                    let storytellerDoubleClickTimeout = null;
-                    let storytellerTouchMoved = false;
-                    for (const fragment of globalThis.storytellerFragments) {
-                        const element = document.getElementById(fragment);
-                        if (!element) continue;
-                        element.addEventListener('touchstart', (event) => {
-                            storytellerTouchMoved = false;
-                        });
-                        element.addEventListener('touchmove', (event) => {
-                            storytellerTouchMoved = true;
-                        });
-                        element.addEventListener('touchend', (event) => {
-                            if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
+                globalThis.storyteller = {};
+                storyteller.doubleClickTimeout = null;
+                storyteller.touchMoved = false;
 
-                            event.bubbles = true
-                            event.clientX = event.changedTouches[0].clientX
-                            event.clientY = event.changedTouches[0].clientY
-                            const clone = new MouseEvent('click', event);
-                            event.stopImmediatePropagation();
-                            event.preventDefault();
-
-                            if (storytellerDoubleClickTimeout) {
-                                clearTimeout(storytellerDoubleClickTimeout);
-                                storytellerDoubleClickTimeout = null;
-                                storyteller.handleDoubleTap(fragment);
-                                return
-                            }
-
-                            storytellerDoubleClickTimeout = setTimeout(() => {
-                                storytellerDoubleClickTimeout = null;
-                                element.parentElement.dispatchEvent(clone);
-                            }, 350);
-                        })
-                    }
+                storyteller.touchStartHandler = (event) => {
+                    storyteller.touchMoved = false;
                 }
+
+                storyteller.touchMoveHandler = (event) => {
+                    storyteller.touchMoved = true;
+                }
+
+                storyteller.touchEndHandler = (event) => {
+                    if (storyteller.touchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
+
+                    event.bubbles = true
+                    event.clientX = event.changedTouches[0].clientX
+                    event.clientY = event.changedTouches[0].clientY
+                    const clone = new MouseEvent('click', event);
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+
+                    if (storyteller.doubleClickTimeout) {
+                        clearTimeout(storyteller.doubleClickTimeout);
+                        storyteller.doubleClickTimeout = null;
+                        storytellerAPI.handleDoubleTap(event.currentTarget.id);
+                        return
+                    }
+
+                    const element = event.currentTarget;
+
+                    storyteller.doubleClickTimeout = setTimeout(() => {
+                        storyteller.doubleClickTimeout = null;
+                        element.parentElement.dispatchEvent(clone);
+                    }, 350);
+                }
+
+                storyteller.observer = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.addEventListener('touchstart', storyteller.touchStartHandler)
+                            entry.target.addEventListener('touchmove', storyteller.touchMoveHandler)
+                            entry.target.addEventListener('touchend', storyteller.touchEndHandler)
+                        } else {
+                            entry.target.removeEventListener('touchstart', storyteller.touchStartHandler)
+                            entry.target.removeEventListener('touchmove', storyteller.touchMoveHandler)
+                            entry.target.removeEventListener('touchend', storyteller.touchEndHandler)
+                        }
+
+                        if (entry.intersectionRatio === 1) {
+                            // TODO: Is this fast enough?
+                            if (!storyteller.firstVisibleFragment || storyteller.fragmentIds.indexOf(entry.target.id) < storyteller.fragmentIds.indexOf(storyteller.firstVisibleFragment.id)) {
+                                console.log('found earlier fragment', entry.target.id)
+                                storyteller.firstVisibleFragment = entry.target
+                            }
+                        }
+                    })
+                }, {
+                    threshold: [0, 1],
+                })
 
                 document.addEventListener('selectionchange', () => {
                     if (document.getSelection().isCollapsed) {
-                        storyteller.handleSelectionCleared();
+                        storytellerAPI.handleSelectionCleared();
                     }
                 });
 
-                globalThis.storytellerFragments = ${jsFragmentsArray};
-                addDoubleTapListeners();
+                storyteller.fragmentIds = $jsFragmentsArray;
+                storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
+                    storyteller.observer.observe(element)
+                })
                 """.trimIndent()
             )
         }
@@ -288,12 +424,11 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
     @JavascriptInterface
     fun handleDoubleTap(fragment: String) {
-        val bookId = this.bookId ?: return
         val bookService = this.bookService ?: return
         val currentLocator = navigator?.currentLocator?.value ?: return
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
-            val locator = bookService.buildFragmentLocator(bookId, currentLocator.href, fragment)
+            val locator = bookService.buildFragmentLocator(props!!.bookId, currentLocator.href, fragment)
 
             onDoubleTouch(locator.toJSON().toMap())
         }
@@ -305,12 +440,27 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     override fun onTap(point: PointF): Boolean {
+        val activity = appContext.currentActivity as FragmentActivity?
         if (point.x < width * 0.2) {
-            navigator?.goBackward(animated = true)
+            activity?.lifecycleScope?.launch {
+                navigator!!.evaluateJavascript(
+                    """
+            storyteller.firstVisibleFragment = null;
+            """.trimIndent()
+                )
+                navigator?.goBackward(animated = true)
+            }
             return true
         }
         if (point.x > width * 0.8) {
-            navigator?.goForward(animated = true)
+            activity?.lifecycleScope?.launch {
+                navigator!!.evaluateJavascript(
+                    """
+            storyteller.firstVisibleFragment = null;
+            """.trimIndent()
+                )
+                navigator?.goForward(animated = true)
+            }
             return true
         }
         onMiddleTouch(mapOf())
@@ -318,57 +468,33 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     private suspend fun onLocatorChanged(locator: Locator) {
-        if (isPlaying) {
-            return
-        }
-
         findOnPage(locator)
 
-        if (locator.href !== this.locator?.href) {
-            val bookId = this.bookId ?: return
-
-            val locator = this.locator ?: this.navigator?.currentLocator?.value ?: return
-            val fragments = bookService?.getFragments(bookId, locator) ?: return
+        if (locator.href !== props!!.locator?.href) {
+            val fragments = bookService?.getFragments(props!!.bookId, locator) ?: return
 
             val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
 
             navigator?.evaluateJavascript(
                 """
-                globalThis.storytellerFragments = ${jsFragmentsArray};
-                addDoubleTapListeners();
+                storyteller.fragmentIds = $jsFragmentsArray;
+                storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
+                    storyteller.observer.observe(element)
+                })
             """.trimIndent()
             )
         }
 
-        Log.d("EpubView", "Navigated to ${locator.locations.position}")
+        if (props!!.isPlaying) {
+            return
+        }
 
         val result = navigator?.evaluateJavascript(
             """
-            (function() {
-                function isEntirelyOnScreen(element) {
-                    const rects = element.getClientRects();
-                    console.log(element.id, rects);
-                    return Array.from(rects).every((rect) => {
-                        const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
-                        const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
-                        return isVerticallyWithin && isHorizontallyWithin;
-                    });
-                }
-
-                for (const fragment of globalThis.storytellerFragments) {
-                    const element = document.getElementById(fragment);
-                    if (!element) continue;
-                    if (isEntirelyOnScreen(element)) {
-                        return fragment;
-                    }
-                }
-
-                return null;
-            })();
-        """.trimIndent()
+            storyteller.firstVisibleFragment?.id
+            """.trimIndent()
         )
-        Log.d("EpubView", "result: $result")
         if (result == null) {
             return onLocatorChange(locator.toJSON().toMap())
         }
@@ -378,7 +504,5 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val fragmentsLocator =
             locator.copy(locations = locator.locations.copy(fragments = listOf(fragment)))
         onLocatorChange(fragmentsLocator.toJSON().toMap())
-
-        this.locator = locator
     }
 }

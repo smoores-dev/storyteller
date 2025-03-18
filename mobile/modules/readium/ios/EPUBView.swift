@@ -4,20 +4,52 @@ import R2Shared
 import R2Navigator
 import ReadiumAdapterGCDWebServer
 
-struct Highlight {
+struct Highlight: Equatable {
     var id: String
     var color: UIColor
     var locator: Locator
 }
 
-struct CustomFont {
+struct CustomFont: Equatable {
     var uri: String
     var name: String
     var type: String
 }
 
-// This view will be used as a native component. Make sure to inherit from `ExpoView`
-// to apply the proper styling (e.g. border radius and shadows).
+struct Props {
+    var bookId: Int?
+    var locator: Locator?
+    var isPlaying: Bool?
+    var highlights: [Highlight]?
+    var bookmarks: [Locator]?
+    var readaloudColor: UIColor?
+    var customFonts: [CustomFont]?
+    var foreground: Color?
+    var background: Color?
+    var fontFamily: FontFamily?
+    var lineHeight: Double?
+    var paragraphSpacing: Double?
+    var fontSize: Double?
+    var textAlign: TextAlignment?
+}
+
+struct FinalizedProps {
+    var bookId: Int
+    var locator: Locator
+    var isPlaying: Bool
+    var highlights: [Highlight]
+    var bookmarks: [Locator]
+    var readaloudColor: UIColor
+    var customFonts: [CustomFont]
+    var foreground: Color
+    var background: Color
+    var fontFamily: FontFamily
+    var lineHeight: Double
+    var paragraphSpacing: Double
+    var fontSize: Double
+    var textAlign: TextAlignment
+}
+
 class EPUBView: ExpoView {
     private let templates = HTMLDecorationTemplate.defaultTemplates()
     let onLocatorChange = EventDispatcher()
@@ -28,29 +60,83 @@ class EPUBView: ExpoView {
     let onHighlightTap = EventDispatcher()
     let onBookmarksActivate = EventDispatcher()
 
-    public var bookId: Int?
-    public var initialLocation: Locator?
-    public var locator: Locator?
-    public var isPlaying: Bool = false
     public var navigator: EPUBNavigatorViewController?
-    public var highlights: [Highlight] = []
-    public var bookmarks: [Locator] = []
-    public var readaloudColor: UIColor = .yellow
-    public var preferences: EPUBPreferences = EPUBPreferences(
-        fontFamily: FontFamily(rawValue: "Literata"),
-        lineHeight: 1.4,
-        paragraphSpacing: 0.5
-    )
-    public var customFonts: [CustomFont] = []
 
-    private var didTapWork: DispatchWorkItem?
+    public var pendingProps: Props = Props()
+    public var props: FinalizedProps?
 
-    public func initializeNavigator() {
-        guard let bookId = self.bookId, let locator = self.initialLocation else {
+    public func finalizeProps() {
+        let oldProps = props
+
+        props = FinalizedProps(
+            bookId: pendingProps.bookId!,
+            locator: pendingProps.locator!,
+            isPlaying: pendingProps.isPlaying ?? oldProps?.isPlaying ?? false,
+            highlights: pendingProps.highlights ?? oldProps?.highlights ?? [],
+            bookmarks: pendingProps.bookmarks ?? oldProps?.bookmarks ?? [],
+            readaloudColor: pendingProps.readaloudColor ?? oldProps?.readaloudColor ?? .yellow,
+            customFonts: pendingProps.customFonts ?? oldProps?.customFonts ?? [],
+            foreground: pendingProps.foreground ?? oldProps?.foreground ?? Color(hex: "#111111")!,
+            background: pendingProps.background ?? oldProps?.background ?? Color(hex: "#FFFFFF")!,
+            fontFamily: pendingProps.fontFamily ?? oldProps?.fontFamily ?? FontFamily(rawValue: "Literata"),
+            lineHeight: pendingProps.lineHeight ?? oldProps?.lineHeight ?? 1.4,
+            paragraphSpacing: pendingProps.paragraphSpacing ?? oldProps?.paragraphSpacing ?? 0.5,
+            fontSize: pendingProps.fontSize ?? oldProps?.fontSize ?? 1.0,
+            textAlign: pendingProps.textAlign ?? oldProps?.textAlign ?? TextAlignment.justify
+        )
+
+        if props!.bookId != oldProps?.bookId || props!.customFonts != oldProps?.customFonts {
+            destroyNavigator()
+            initializeNavigator()
             return
         }
 
-        guard let publication = BookService.instance.getPublication(for: bookId) else {
+        // Don't go to a new location if it's the same as the current location, except with
+        // different fragments. Prevents unnecessarily triggering renders and state updates
+        // when the position hasn't actually changed
+        let locatorComp = navigator!.currentLocation?.locations.fragments.isEmpty ?? false
+            ? props!.locator.copy( locations: { $0.fragments = [] })
+            : props!.locator;
+
+        if locatorComp != navigator!.currentLocation {
+            go(locator: props!.locator)
+        }
+
+        if props!.isPlaying {
+            highlightFragment(locator: props!.locator)
+        } else {
+            clearHighlightedFragment()
+        }
+
+        if props!.highlights != oldProps?.highlights {
+            decorateHighlights()
+        }
+
+        if props!.bookmarks != oldProps?.bookmarks {
+            findOnPage(locator: props!.locator)
+        }
+
+        if props!.readaloudColor != oldProps?.readaloudColor {
+            clearHighlightedFragment()
+            highlightFragment(locator: props!.locator)
+        }
+
+        navigator!.submitPreferences(EPUBPreferences(
+            backgroundColor: props!.background,
+            fontFamily: props!.fontFamily,
+            fontSize: props!.fontSize,
+            lineHeight: props!.lineHeight,
+            paragraphSpacing: props!.paragraphSpacing,
+            textAlign: props!.textAlign,
+            textColor: props!.foreground
+        ))
+    }
+
+    // the fuck is this?
+    private var didTapWork: DispatchWorkItem?
+
+    public func initializeNavigator() {
+        guard let publication = BookService.instance.getPublication(for: props!.bookId) else {
             print("skipping navigator init, publication has not yet been opened")
             return
         }
@@ -88,7 +174,7 @@ class EPUBView: ExpoView {
                     ),
                 ]
             ).eraseToAnyHTMLFontFamilyDeclaration(),
-        ] + customFonts.map {
+        ] + props!.customFonts.map {
             CSSFontFamilyDeclaration(
                 fontFamily: FontFamily(rawValue: $0.name),
                 fontFaces: [
@@ -102,9 +188,17 @@ class EPUBView: ExpoView {
 
         guard let navigator = try? EPUBNavigatorViewController(
             publication: publication,
-            initialLocation: locator,
+            initialLocation: props!.locator,
             config: .init(
-                preferences: preferences,
+                preferences: EPUBPreferences(
+                    backgroundColor: props!.background,
+                    fontFamily: props!.fontFamily,
+                    fontSize: props!.fontSize,
+                    lineHeight: props!.lineHeight,
+                    paragraphSpacing: props!.paragraphSpacing,
+                    textAlign: props!.textAlign,
+                    textColor: props!.foreground
+                ),
                 defaults: EPUBDefaults(
                     publisherStyles: false
                 ),
@@ -133,26 +227,16 @@ class EPUBView: ExpoView {
         self.navigator?.view.removeFromSuperview()
     }
 
-    public func updatePreferences() {
-        navigator?.submitPreferences(preferences)
-    }
-
     func go(locator: Locator) {
-        guard let navigator = self.navigator else {
-            self.initialLocation = locator
-            initializeNavigator()
-            return
-        }
-
-        _ = navigator.go(to: locator, animated: true) {
-            if self.isPlaying {
-                self.highlightFragment(locator: locator)
-            }
+        navigator!.evaluateJavaScript("""
+            storyteller.firstVisibleFragment = null;
+        """) { _ in
+            _ = self.navigator!.go(to: locator, animated: true)
         }
     }
 
     func decorateHighlights() {
-        let decorations = highlights.map { highlight in
+        let decorations = props!.highlights.map { highlight in
             let style = Decoration.Style.highlight(tint: highlight.color, isActive: true)
             return Decoration(
                 id: highlight.id,
@@ -168,7 +252,7 @@ class EPUBView: ExpoView {
             return
         }
 
-        let overlayHighlight = Decoration.Style.highlight(tint: readaloudColor, isActive: true)
+        let overlayHighlight = Decoration.Style.highlight(tint: props!.readaloudColor, isActive: true)
         let decoration = Decoration(
             id: id,
             locator: locator,
@@ -199,7 +283,7 @@ class EPUBView: ExpoView {
             return
         }
 
-        let joinedProgressions = bookmarks
+        let joinedProgressions = props!.bookmarks
             .filter { $0.href == locator.href }
             .compactMap(\.locations.progression)
             .map { "\($0)" }
@@ -238,7 +322,7 @@ class EPUBView: ExpoView {
                     return
                 }
 
-                let found = self.bookmarks.filter {
+                let found = self.props!.bookmarks.filter {
                     guard let progression = $0.locations.progression else {
                         return false
                     }
@@ -265,14 +349,8 @@ extension EPUBView: WKScriptMessageHandler {
                 guard let fragment = message.body as? String else {
                     return
                 }
-                guard let bookId = self.bookId else {
-                    return
-                }
-                guard let currentLocator = self.navigator?.currentLocation else {
-                    return
-                }
 
-                guard let locator = try? BookService.instance.getLocatorFor(bookId: bookId, href: currentLocator.href, fragment: fragment) else {
+                guard let locator = try? BookService.instance.getLocatorFor(bookId: props!.bookId, href: props!.locator.href, fragment: fragment) else {
                     return
                 }
 
@@ -292,55 +370,73 @@ extension EPUBView: EPUBNavigatorDelegate {
     }
 
     func navigator(_ navigator: EPUBNavigatorViewController, setupUserScripts userContentController: WKUserContentController) {
-        guard let bookId = self.bookId else {
-            return
-        }
-        guard let locator = navigator.currentLocation else {
-            return
-        }
 
-        let fragments = BookService.instance.getFragments(for: bookId, locator: locator)
+        let fragments = BookService.instance.getFragments(for: props!.bookId, locator: props!.locator)
 
         let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
         let jsFragmentsArray = "[\(joinedFragments)]"
 
         let scriptSource = """
-            globalThis.addDoubleTapListeners = function addDoubleTapListeners() {
-                let storytellerDoubleClickTimeout = null;
-                let storytellerTouchMoved = false;
-                for (const fragment of globalThis.storytellerFragments) {
-                    const element = document.getElementById(fragment);
-                    if (!element) continue;
-                    element.addEventListener('touchstart', (event) => {
-                        storytellerTouchMoved = false;
-                    });
-                    element.addEventListener('touchmove', (event) => {
-                        storytellerTouchMoved = true;
-                    });
-                    element.addEventListener('touchend', (event) => {
-                        if (storytellerTouchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
+            globalThis.storyteller = {};
+            storyteller.doubleClickTimeout = null;
+            storyteller.touchMoved = false;
 
-                        event.bubbles = true
-                        event.clientX = event.changedTouches[0].clientX
-                        event.clientY = event.changedTouches[0].clientY
-                        const clone = new MouseEvent('click', event);
-                        event.stopImmediatePropagation();
-                        event.preventDefault();
-
-                        if (storytellerDoubleClickTimeout) {
-                            clearTimeout(storytellerDoubleClickTimeout);
-                            storytellerDoubleClickTimeout = null;
-                            window.webkit.messageHandlers.storytellerDoubleClick.postMessage(fragment);
-                            return
-                        }
-
-                        storytellerDoubleClickTimeout = setTimeout(() => {
-                            storytellerDoubleClickTimeout = null;
-                            element.parentElement.dispatchEvent(clone);
-                        }, 350);
-                    })
-                }
+            storyteller.touchStartHandler = (event) => {
+                storyteller.touchMoved = false;
             }
+
+            storyteller.touchMoveHandler = (event) => {
+                storyteller.touchMoved = true;
+            }
+
+            storyteller.touchEndHandler = (event) => {
+                if (storyteller.touchMoved || !document.getSelection().isCollapsed || event.changedTouches.length !== 1) return;
+
+                event.bubbles = true
+                event.clientX = event.changedTouches[0].clientX
+                event.clientY = event.changedTouches[0].clientY
+                const clone = new MouseEvent('click', event);
+                event.stopImmediatePropagation();
+                event.preventDefault();
+
+                if (storyteller.doubleClickTimeout) {
+                    clearTimeout(storyteller.doubleClickTimeout);
+                    storyteller.doubleClickTimeout = null;
+                    window.webkit.messageHandlers.storytellerDoubleClick.postMessage(event.currentTarget.id);
+                    return
+                }
+
+                const element = event.currentTarget;
+
+                storyteller.doubleClickTimeout = setTimeout(() => {
+                    storyteller.doubleClickTimeout = null;
+                    element.parentElement.dispatchEvent(clone);
+                }, 350);
+            }
+
+            storyteller.observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.addEventListener('touchstart', storyteller.touchStartHandler)
+                        entry.target.addEventListener('touchmove', storyteller.touchMoveHandler)
+                        entry.target.addEventListener('touchend', storyteller.touchEndHandler)
+                    } else {
+                        entry.target.removeEventListener('touchstart', storyteller.touchStartHandler)
+                        entry.target.removeEventListener('touchmove', storyteller.touchMoveHandler)
+                        entry.target.removeEventListener('touchend', storyteller.touchEndHandler)
+                    }
+
+                    if (entry.intersectionRatio === 1) {
+                        // TODO: Is this fast enough?
+                        if (!storyteller.firstVisibleFragment || storyteller.fragmentIds.indexOf(entry.target.id) < storyteller.fragmentIds.indexOf(storyteller.firstVisibleFragment.id)) {
+                            console.log('found earlier fragment', entry.target.id)
+                            storyteller.firstVisibleFragment = entry.target
+                        }
+                    }
+                })
+            }, {
+                threshold: [0, 1],
+            })
 
             document.addEventListener('selectionchange', () => {
                 if (document.getSelection().isCollapsed) {
@@ -348,8 +444,10 @@ extension EPUBView: EPUBNavigatorDelegate {
                 }
             });
 
-            globalThis.storytellerFragments = \(jsFragmentsArray);
-            globalThis.addDoubleTapListeners();
+            storyteller.fragmentIds = \(jsFragmentsArray);
+            storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
+                storyteller.observer.observe(element)
+            })
         """
 
         userContentController.addUserScript(WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
@@ -362,13 +460,22 @@ extension EPUBView: EPUBNavigatorDelegate {
     }
 
     func navigator(_ navigator: VisualNavigator, didTapAt point: CGPoint) {
+        let navigator = navigator as! EPUBNavigatorViewController
         self.didTapWork = nil
         if point.x < self.bounds.maxX * 0.2 {
-            _ = navigator.goBackward(animated: true) {}
+            navigator.evaluateJavaScript("""
+                storyteller.firstVisibleFragment = null;
+            """) { _ in
+                _ = navigator.goBackward(animated: true) {}
+            }
             return
         }
         if point.x > self.bounds.maxX * 0.8 {
-            _ = navigator.goForward(animated: true) {}
+            navigator.evaluateJavaScript("""
+                storyteller.firstVisibleFragment = null;
+            """) { _ in
+                _ = navigator.goForward(animated: true) {}
+            }
             return
         }
 
@@ -376,53 +483,30 @@ extension EPUBView: EPUBNavigatorDelegate {
     }
 
     func navigator(_ navigator: Navigator, locationDidChange locator: Locator) {
-        if isPlaying {
-            return
-        }
-
-        guard let epubNav = navigator as? EPUBNavigatorViewController else {
-            return
-        }
+        let navigator = (navigator as! EPUBNavigatorViewController)
 
         findOnPage(locator: locator)
 
-        if locator.href != self.locator?.href {
-            guard let bookId = self.bookId else {
-                return
-            }
-
-            let fragments = BookService.instance.getFragments(for: bookId, locator: locator)
+        if locator.href != props!.locator.href {
+            let fragments = BookService.instance.getFragments(for: props!.bookId, locator: locator)
 
             let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
             let jsFragmentsArray = "[\(joinedFragments)]"
 
-            epubNav.evaluateJavaScript("""
-                globalThis.storytellerFragments = \(jsFragmentsArray);
-                globalThis.addDoubleTapListeners();
+            navigator.evaluateJavaScript("""
+                storyteller.fragmentIds = \(jsFragmentsArray);
+                storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
+                    storyteller.observer.observe(element)
+                })
             """)
         }
 
-        epubNav.evaluateJavaScript("""
-            (function() {
-                function isEntirelyOnScreen(element) {
-                    const rects = element.getClientRects();
-                    return Array.from(rects).every((rect) => {
-                        const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
-                        const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
-                        return isVerticallyWithin && isHorizontallyWithin;
-                    });
-                }
+        if props!.isPlaying {
+            return
+        }
 
-                for (const fragment of globalThis.storytellerFragments) {
-                    const element = document.getElementById(fragment);
-                    if (!element) continue;
-                    if (isEntirelyOnScreen(element)) {
-                        return fragment;
-                    }
-                }
-
-                return null;
-            })();
+        navigator.evaluateJavaScript("""
+            storyteller.firstVisibleFragment?.id
         """) {
             switch $0 {
             case .failure(_):
@@ -442,7 +526,5 @@ extension EPUBView: EPUBNavigatorDelegate {
                 )
             }
         }
-
-        self.locator = locator
     }
 }
