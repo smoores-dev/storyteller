@@ -1073,6 +1073,10 @@ export function* playerPlaySaga() {
       return
     }
 
+    // TODO: This will technically go back beyond the beginning of
+    // a chapter, if the chapter starts part-way into a track. Ideally,
+    // we wouldn't go back beyond the beginning of tracks (handled here)
+    // OR chapters.
     const { timestamp } = timestamped
     if (Date.now() - timestamp < FIVE_MINUTES_IN_MILLIS) {
       // It's been less than "a long break", rewind by the

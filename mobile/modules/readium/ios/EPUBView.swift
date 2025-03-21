@@ -65,6 +65,8 @@ class EPUBView: ExpoView {
     public var pendingProps: Props = Props()
     public var props: FinalizedProps?
 
+    private var changingResource = false
+
     public func finalizeProps() {
         let oldProps = props
 
@@ -221,6 +223,12 @@ class EPUBView: ExpoView {
             }
             self?.onHighlightTap(["decoration": event.decoration.id, "x": rect.midX, "y": rect.minY])
         }
+        navigator.firstVisibleElementLocator {
+            guard let found = $0 else {
+                return
+            }
+            self.onLocatorChange(found.json)
+        }
     }
 
     public func destroyNavigator() {
@@ -228,11 +236,10 @@ class EPUBView: ExpoView {
     }
 
     func go(locator: Locator) {
-        navigator!.evaluateJavaScript("""
-            storyteller.firstVisibleFragment = null;
-        """) { _ in
-            _ = self.navigator!.go(to: locator, animated: true)
+        if locator.href != navigator?.currentLocation?.href {
+            changingResource = true
         }
+        _ = self.navigator!.go(to: locator, animated: true)
     }
 
     func decorateHighlights() {
@@ -425,17 +432,9 @@ extension EPUBView: EPUBNavigatorDelegate {
                         entry.target.removeEventListener('touchmove', storyteller.touchMoveHandler)
                         entry.target.removeEventListener('touchend', storyteller.touchEndHandler)
                     }
-
-                    if (entry.intersectionRatio === 1) {
-                        // TODO: Is this fast enough?
-                        if (!storyteller.firstVisibleFragment || storyteller.fragmentIds.indexOf(entry.target.id) < storyteller.fragmentIds.indexOf(storyteller.firstVisibleFragment.id)) {
-                            console.log('found earlier fragment', entry.target.id)
-                            storyteller.firstVisibleFragment = entry.target
-                        }
-                    }
                 })
             }, {
-                threshold: [0, 1],
+                threshold: [0],
             })
 
             document.addEventListener('selectionchange', () => {
@@ -443,6 +442,43 @@ extension EPUBView: EPUBNavigatorDelegate {
                     window.webkit.messageHandlers.storytellerSelectionCleared.postMessage(null);
                 }
             });
+
+            storyteller.isEntirelyOnScreen = function isEntirelyOnScreen(element) {
+                const rects = element.getClientRects()
+                return Array.from(rects).every((rect) => {
+                    const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
+                    const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
+                    return isVerticallyWithin && isHorizontallyWithin;
+                });
+            }
+
+            const originalFindLocator = readium.findFirstVisibleLocator
+            readium.findFirstVisibleLocator = function findFirstVisibleLocator() {
+                let firstVisibleFragmentId = null;
+
+                for (const fragmentId of storyteller.fragmentIds) {
+                    const element = document.getElementById(fragmentId);
+                    if (!element) continue;
+                    if (storyteller.isEntirelyOnScreen(element)) {
+                        firstVisibleFragmentId = fragmentId
+                        break
+                    }
+                }
+
+                if (firstVisibleFragmentId === null) return originalFindLocator();
+
+                return {
+                    href: "#",
+                    type: "application/xhtml+xml",
+                    locations: {
+                        cssSelector: `#${firstVisibleFragmentId}`,
+                        fragments: [firstVisibleFragmentId]
+                    },
+                    text: {
+                        highlight: document.getElementById(firstVisibleFragmentId).textContent,
+                    },
+                };
+            }
 
             storyteller.fragmentIds = \(jsFragmentsArray);
             storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
@@ -463,19 +499,11 @@ extension EPUBView: EPUBNavigatorDelegate {
         let navigator = navigator as! EPUBNavigatorViewController
         self.didTapWork = nil
         if point.x < self.bounds.maxX * 0.2 {
-            navigator.evaluateJavaScript("""
-                storyteller.firstVisibleFragment = null;
-            """) { _ in
-                _ = navigator.goBackward(animated: true) {}
-            }
+            _ = navigator.goBackward(animated: true) {}
             return
         }
         if point.x > self.bounds.maxX * 0.8 {
-            navigator.evaluateJavaScript("""
-                storyteller.firstVisibleFragment = null;
-            """) { _ in
-                _ = navigator.goForward(animated: true) {}
-            }
+            _ = navigator.goForward(animated: true) {}
             return
         }
 
@@ -487,7 +515,9 @@ extension EPUBView: EPUBNavigatorDelegate {
 
         findOnPage(locator: locator)
 
-        if locator.href != props!.locator.href {
+        if locator.href != props!.locator.href || changingResource {
+            changingResource = false
+
             let fragments = BookService.instance.getFragments(for: props!.bookId, locator: locator)
 
             let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
@@ -497,33 +527,21 @@ extension EPUBView: EPUBNavigatorDelegate {
                 storyteller.fragmentIds = \(jsFragmentsArray);
                 storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
                     storyteller.observer.observe(element)
-                })
-            """)
-        }
-
-        if props!.isPlaying {
-            return
-        }
-
-        navigator.evaluateJavaScript("""
-            storyteller.firstVisibleFragment?.id
-        """) {
-            switch $0 {
-            case .failure(_):
-                self.onLocatorChange(locator.json)
-            case .success(let anyValue):
-                guard let value = anyValue as? String else {
-                    self.onLocatorChange(locator.json)
+                });
+            """) { _ in
+                navigator.firstVisibleElementLocator {
+                    guard let found = $0 else {
+                        return
+                    }
+                    self.onLocatorChange(found.json)
+                }
+            }
+        } else {
+            navigator.firstVisibleElementLocator {
+                guard let found = $0 else {
                     return
                 }
-
-                self.onLocatorChange(
-                    locator.copy(
-                        locations: {
-                            $0.otherLocations["fragments"] = [value]
-                        }
-                    ).json
-                )
+                self.onLocatorChange(found.json)
             }
         }
     }
