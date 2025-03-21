@@ -221,18 +221,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             navigator?.currentLocator?.collect {
                 onLocatorChanged(it)
             }
-        }
-
-        activity?.lifecycleScope?.launch {
-            val firstVisibleLocator = navigator!!.firstVisibleElementLocator()
-            if (firstVisibleLocator == null) {
-                val locator = navigator?.currentLocator?.value
-                if (locator != null) {
-                    onLocatorChange(locator.toJSON().toMap())
-                }
-                return@launch
-            }
-            onLocatorChange(firstVisibleLocator.toJSON().toMap())
+            emitCurrentLocator()
         }
     }
 
@@ -244,6 +233,23 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             remove(navigator)
         }
         removeView(navigator.view)
+    }
+
+    private suspend fun emitCurrentLocator() {
+        val currentLocator = navigator!!.currentLocator?.value ?: return
+        val found = navigator!!.firstVisibleElementLocator()
+        if (found == null) {
+            onLocatorChange(currentLocator.toJSON().toMap())
+            return
+        }
+        val merged = currentLocator.copy(
+            locations = currentLocator.locations.copy(
+                fragments = found.locations.fragments,
+                otherLocations = found.locations.otherLocations,
+            ),
+            text = found.text
+        )
+        onLocatorChange(merged.toJSON().toMap())
     }
 
     fun go(locator: Locator) {
@@ -508,19 +514,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                 })
             """.trimIndent()
             )
-            val firstVisibleLocator = navigator!!.firstVisibleElementLocator()
-            if (firstVisibleLocator == null) {
-                onLocatorChange(locator.toJSON().toMap())
-                return
-            }
-            onLocatorChange(firstVisibleLocator.toJSON().toMap())
+            emitCurrentLocator()
         } else {
-            val firstVisibleLocator = navigator!!.firstVisibleElementLocator()
-            if (firstVisibleLocator == null) {
-                onLocatorChange(locator.toJSON().toMap())
-                return
-            }
-            onLocatorChange(firstVisibleLocator.toJSON().toMap())
+            emitCurrentLocator()
         }
     }
 }
