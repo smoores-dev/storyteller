@@ -225,6 +225,9 @@ class EPUBView: ExpoView {
         }
         navigator.firstVisibleElementLocator {
             guard let found = $0 else {
+                if let locator = self.navigator?.currentLocation {
+                    self.onLocatorChange(locator.json)
+                }
                 return
             }
             self.onLocatorChange(found.json)
@@ -452,7 +455,6 @@ extension EPUBView: EPUBNavigatorDelegate {
                 });
             }
 
-            const originalFindLocator = readium.findFirstVisibleLocator
             readium.findFirstVisibleLocator = function findFirstVisibleLocator() {
                 let firstVisibleFragmentId = null;
 
@@ -465,7 +467,7 @@ extension EPUBView: EPUBNavigatorDelegate {
                     }
                 }
 
-                if (firstVisibleFragmentId === null) return originalFindLocator();
+                if (firstVisibleFragmentId === null) return null;
 
                 return {
                     href: "#",
@@ -531,6 +533,7 @@ extension EPUBView: EPUBNavigatorDelegate {
             """) { _ in
                 navigator.firstVisibleElementLocator {
                     guard let found = $0 else {
+                        self.onLocatorChange(locator.json)
                         return
                     }
                     self.onLocatorChange(found.json)
@@ -539,6 +542,7 @@ extension EPUBView: EPUBNavigatorDelegate {
         } else {
             navigator.firstVisibleElementLocator {
                 guard let found = $0 else {
+                    self.onLocatorChange(locator.json)
                     return
                 }
                 self.onLocatorChange(found.json)
