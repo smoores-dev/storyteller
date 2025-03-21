@@ -223,19 +223,31 @@ class EPUBView: ExpoView {
             }
             self?.onHighlightTap(["decoration": event.decoration.id, "x": rect.midX, "y": rect.minY])
         }
-        navigator.firstVisibleElementLocator {
-            guard let found = $0 else {
-                if let locator = self.navigator?.currentLocation {
-                    self.onLocatorChange(locator.json)
-                }
-                return
-            }
-            self.onLocatorChange(found.json)
-        }
+        emitCurrentLocator()
     }
 
     public func destroyNavigator() {
         self.navigator?.view.removeFromSuperview()
+    }
+    
+    func emitCurrentLocator() {
+        navigator!.firstVisibleElementLocator {
+            guard let currentLocator = self.navigator!.currentLocation else {
+                return
+            }
+            guard let found = $0 else {
+                self.onLocatorChange(currentLocator.json)
+                return
+            }
+            let merged = currentLocator.copy(locations: {
+                $0.otherLocations["fragments"] = found.locations.fragments
+                $0.otherLocations["cssSelector"] = found.locations.cssSelector
+            },
+            text: {
+                $0.highlight = found.text.highlight
+            })
+            self.onLocatorChange(merged.json)
+        }
     }
 
     func go(locator: Locator) {
@@ -531,22 +543,10 @@ extension EPUBView: EPUBNavigatorDelegate {
                     storyteller.observer.observe(element)
                 });
             """) { _ in
-                navigator.firstVisibleElementLocator {
-                    guard let found = $0 else {
-                        self.onLocatorChange(locator.json)
-                        return
-                    }
-                    self.onLocatorChange(found.json)
-                }
+                self.emitCurrentLocator()
             }
         } else {
-            navigator.firstVisibleElementLocator {
-                guard let found = $0 else {
-                    self.onLocatorChange(locator.json)
-                    return
-                }
-                self.onLocatorChange(found.json)
-            }
+            self.emitCurrentLocator()
         }
     }
 }
