@@ -94,6 +94,8 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     var bookService: BookService? = null
     var navigator: EpubNavigatorFragment? = null
 
+    private var changingResource = false
+
     var pendingProps: Props = Props(
         bookId=null,
         locator=null,
@@ -220,6 +222,11 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                 onLocatorChanged(it)
             }
         }
+
+        activity?.lifecycleScope?.launch {
+            val firstVisibleLocator = navigator!!.firstVisibleElementLocator() ?: return@launch
+            onLocatorChange(firstVisibleLocator.toJSON().toMap())
+        }
     }
 
     fun destroyNavigator() {
@@ -233,15 +240,10 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     fun go(locator: Locator) {
-        val activity = appContext.currentActivity as FragmentActivity?
-        activity?.lifecycleScope?.launch {
-            navigator!!.evaluateJavascript(
-                """
-            storyteller.firstVisibleFragment = null;
-            """.trimIndent()
-            )
-            navigator!!.go(locator, true)
+        if (locator.href != navigator?.currentLocator?.value?.href) {
+            changingResource = true
         }
+        navigator!!.go(locator, true)
     }
 
     override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
@@ -392,17 +394,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                             entry.target.removeEventListener('touchmove', storyteller.touchMoveHandler)
                             entry.target.removeEventListener('touchend', storyteller.touchEndHandler)
                         }
-
-                        if (entry.intersectionRatio === 1) {
-                            // TODO: Is this fast enough?
-                            if (!storyteller.firstVisibleFragment || storyteller.fragmentIds.indexOf(entry.target.id) < storyteller.fragmentIds.indexOf(storyteller.firstVisibleFragment.id)) {
-                                console.log('found earlier fragment', entry.target.id)
-                                storyteller.firstVisibleFragment = entry.target
-                            }
-                        }
                     })
                 }, {
-                    threshold: [0, 1],
+                    threshold: [0],
                 })
 
                 document.addEventListener('selectionchange', () => {
@@ -410,6 +404,43 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                         storytellerAPI.handleSelectionCleared();
                     }
                 });
+
+                storyteller.isEntirelyOnScreen = function isEntirelyOnScreen(element) {
+                    const rects = element.getClientRects()
+                    return Array.from(rects).every((rect) => {
+                        const isVerticallyWithin = rect.bottom >= 0 && rect.top <= window.innerHeight;
+                        const isHorizontallyWithin = rect.right >= 0 && rect.left <= window.innerWidth;
+                        return isVerticallyWithin && isHorizontallyWithin;
+                    });
+                }
+
+                const originalFindLocator = readium.findFirstVisibleLocator
+                readium.findFirstVisibleLocator = function findFirstVisibleLocator() {
+                    let firstVisibleFragmentId = null;
+
+                    for (const fragmentId of storyteller.fragmentIds) {
+                        const element = document.getElementById(fragmentId);
+                        if (!element) continue;
+                        if (storyteller.isEntirelyOnScreen(element)) {
+                            firstVisibleFragmentId = fragmentId
+                            break
+                        }
+                    }
+
+                    if (firstVisibleFragmentId === null) return originalFindLocator();
+
+                    return {
+                        href: "#",
+                        type: "application/xhtml+xml",
+                        locations: {
+                            cssSelector: "#" + firstVisibleFragmentId,
+                            fragments: [firstVisibleFragmentId]
+                        },
+                        text: {
+                            highlight: document.getElementById(firstVisibleFragmentId).textContent,
+                        },
+                    };
+                }
 
                 storyteller.fragmentIds = $jsFragmentsArray;
                 storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
@@ -440,27 +471,12 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     override fun onTap(point: PointF): Boolean {
-        val activity = appContext.currentActivity as FragmentActivity?
         if (point.x < width * 0.2) {
-            activity?.lifecycleScope?.launch {
-                navigator!!.evaluateJavascript(
-                    """
-            storyteller.firstVisibleFragment = null;
-            """.trimIndent()
-                )
-                navigator?.goBackward(animated = true)
-            }
+            navigator?.goBackward(animated = true)
             return true
         }
         if (point.x > width * 0.8) {
-            activity?.lifecycleScope?.launch {
-                navigator!!.evaluateJavascript(
-                    """
-            storyteller.firstVisibleFragment = null;
-            """.trimIndent()
-                )
-                navigator?.goForward(animated = true)
-            }
+            navigator?.goForward(animated = true)
             return true
         }
         onMiddleTouch(mapOf())
@@ -470,7 +486,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     private suspend fun onLocatorChanged(locator: Locator) {
         findOnPage(locator)
 
-        if (locator.href !== props!!.locator?.href) {
+        if (locator.href != props!!.locator.href || changingResource) {
+            changingResource = false
+
             val fragments = bookService?.getFragments(props!!.bookId, locator) ?: return
 
             val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
@@ -484,25 +502,11 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                 })
             """.trimIndent()
             )
+            val firstVisibleLocator = navigator!!.firstVisibleElementLocator() ?: return
+            onLocatorChange(firstVisibleLocator.toJSON().toMap())
+        } else {
+            val firstVisibleLocator = navigator!!.firstVisibleElementLocator() ?: return
+            onLocatorChange(firstVisibleLocator.toJSON().toMap())
         }
-
-        if (props!!.isPlaying) {
-            return
-        }
-
-        val result = navigator?.evaluateJavascript(
-            """
-            storyteller.firstVisibleFragment?.id
-            """.trimIndent()
-        )
-        if (result == null) {
-            return onLocatorChange(locator.toJSON().toMap())
-        }
-        val fragment = Json.decodeFromString<String?>(result)
-            ?: return onLocatorChange(locator.toJSON().toMap())
-
-        val fragmentsLocator =
-            locator.copy(locations = locator.locations.copy(fragments = listOf(fragment)))
-        onLocatorChange(fragmentsLocator.toJSON().toMap())
     }
 }
