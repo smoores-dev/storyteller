@@ -144,7 +144,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
         ) ?? 0) + 1
       return {
         title: book.title,
-        formattedProgress: `pg. ${Math.round(position / PAPERBACK_PAGE_SCALE) || 1} / ${Math.round(book.positions.length / PAPERBACK_PAGE_SCALE)}`,
+        formattedProgress: `pg. ${Math.ceil(position / PAPERBACK_PAGE_SCALE) || 1} / ${Math.ceil(book.positions.length / PAPERBACK_PAGE_SCALE)}`,
       }
     }
     const chapterPosition =
@@ -155,7 +155,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
       ) ?? 0) + 1
     return {
       title: chapterTitle,
-      formattedProgress: `pg. ${Math.round(chapterPosition / PAPERBACK_PAGE_SCALE) || 1} / ${Math.round(chapterPositions.length / PAPERBACK_PAGE_SCALE)}`,
+      formattedProgress: `pg. ${Math.ceil(chapterPosition / PAPERBACK_PAGE_SCALE) || 1} / ${Math.ceil(chapterPositions.length / PAPERBACK_PAGE_SCALE)}`,
     }
   }, [
     bookPrefs?.detailView?.mode,

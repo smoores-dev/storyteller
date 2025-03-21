@@ -224,7 +224,14 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         }
 
         activity?.lifecycleScope?.launch {
-            val firstVisibleLocator = navigator!!.firstVisibleElementLocator() ?: return@launch
+            val firstVisibleLocator = navigator!!.firstVisibleElementLocator()
+            if (firstVisibleLocator == null) {
+                val locator = navigator?.currentLocator?.value
+                if (locator != null) {
+                    onLocatorChange(locator.toJSON().toMap())
+                }
+                return@launch
+            }
             onLocatorChange(firstVisibleLocator.toJSON().toMap())
         }
     }
@@ -414,7 +421,6 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                     });
                 }
 
-                const originalFindLocator = readium.findFirstVisibleLocator
                 readium.findFirstVisibleLocator = function findFirstVisibleLocator() {
                     let firstVisibleFragmentId = null;
 
@@ -427,7 +433,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                         }
                     }
 
-                    if (firstVisibleFragmentId === null) return originalFindLocator();
+                    if (firstVisibleFragmentId === null) return null;
 
                     return {
                         href: "#",
@@ -502,10 +508,18 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                 })
             """.trimIndent()
             )
-            val firstVisibleLocator = navigator!!.firstVisibleElementLocator() ?: return
+            val firstVisibleLocator = navigator!!.firstVisibleElementLocator()
+            if (firstVisibleLocator == null) {
+                onLocatorChange(locator.toJSON().toMap())
+                return
+            }
             onLocatorChange(firstVisibleLocator.toJSON().toMap())
         } else {
-            val firstVisibleLocator = navigator!!.firstVisibleElementLocator() ?: return
+            val firstVisibleLocator = navigator!!.firstVisibleElementLocator()
+            if (firstVisibleLocator == null) {
+                onLocatorChange(locator.toJSON().toMap())
+                return
+            }
             onLocatorChange(firstVisibleLocator.toJSON().toMap())
         }
     }
