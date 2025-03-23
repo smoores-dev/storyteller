@@ -22,7 +22,7 @@ export function PlayPause({
   const dispatch = useAppDispatch()
   const { foreground } = useColorTheme()
 
-  if (isLoading) return <ActivityIndicator />
+  if (isLoading) return <ActivityIndicator style={style} />
 
   return isPlaying ? (
     <Pressable

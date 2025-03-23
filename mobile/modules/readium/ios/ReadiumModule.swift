@@ -56,6 +56,32 @@ public class ReadiumModule: Module {
                 "locator": fragment.locator!.json
             ]
         }
+        
+        AsyncFunction("getPreviousFragment") { (bookId: Int, locatorJson: [String : Any]) -> [String : Any]? in
+            guard let locator = try Locator(json: locatorJson),
+                  let previous = try? BookService.instance.getFragment(for: bookId, before: locator) else {
+                return nil
+            }
+            
+            return [
+                "href": previous.href,
+                "fragment": previous.fragment,
+                "locator": previous.locator!.json
+            ]
+        }
+        
+        AsyncFunction("getNextFragment") { (bookId: Int, locatorJson: [String : Any]) -> [String : Any]? in
+            guard let locator = try Locator(json: locatorJson),
+                  let next = try? BookService.instance.getFragment(for: bookId, after: locator) else {
+                return nil
+            }
+            
+            return [
+                "href": next.href,
+                "fragment": next.fragment,
+                "locator": next.locator!.json
+            ]
+        }
 
         AsyncFunction("locateLink") { (bookId: Int, linkJson: [String : Any]) -> [String : Any]? in
             let link = try Link(json: linkJson)

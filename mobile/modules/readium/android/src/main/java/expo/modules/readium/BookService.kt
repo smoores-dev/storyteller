@@ -15,11 +15,8 @@ import org.readium.r2.shared.publication.services.positionsByReadingOrder
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.streamer.Streamer
 import java.io.File
-import java.io.FileOutputStream
 import java.net.URL
-import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-import java.util.zip.ZipInputStream
 
 class BookService(private val context: Context) {
 
@@ -195,6 +192,32 @@ class BookService(private val context: Context) {
         fragment.locator = buildFragmentLocator(bookId, fragment.href, fragment.fragment)
 
         return fragment
+    }
+
+    suspend fun getPreviousFragment(bookId: Long, locator: Locator): TextFragment? {
+        val currentFragment = locator.locations.fragments.firstOrNull() ?: return null
+        val mediaOverlayStore = this.mediaOverlays[bookId] ?: return null
+        val mediaOverlays = mediaOverlayStore.values
+        val textFragments = mediaOverlays.flatMap { it.fragments() }
+        val currentIndex = textFragments.indexOfFirst { it.href == locator.href && it.fragment == currentFragment } ?: return null
+        if (currentIndex == 0) return null
+        val previousIndex = currentIndex.dec()
+        val previousFragment = textFragments[previousIndex]
+        previousFragment.locator = buildFragmentLocator(bookId, previousFragment.href, previousFragment.fragment)
+        return previousFragment
+    }
+
+    suspend fun getNextFragment(bookId: Long, locator: Locator): TextFragment? {
+        val currentFragment = locator.locations.fragments.firstOrNull() ?: return null
+        val mediaOverlayStore = this.mediaOverlays[bookId] ?: return null
+        val mediaOverlays = mediaOverlayStore.values
+        val textFragments = mediaOverlays.flatMap { it.fragments() }
+        val currentIndex = textFragments.indexOfFirst { it.href == locator.href && it.fragment == currentFragment } ?: return null
+        if (currentIndex == textFragments.size - 1) return null
+        val nextIndex = currentIndex.inc()
+        val nextFragment = textFragments[nextIndex]
+        nextFragment.locator = buildFragmentLocator(bookId, nextFragment.href, nextFragment.fragment)
+        return nextFragment
     }
 
     fun locateLink(bookId: Long, link: Link): Locator? {

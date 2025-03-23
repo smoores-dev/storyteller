@@ -19,6 +19,7 @@ import {
   syncPositionsSaga,
   manualTrackSeekSaga,
   playerPlaySaga,
+  fragmentSkipSaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -59,5 +60,6 @@ export function* rootSaga() {
     call(syncDebug),
     call(syncPositionsSaga),
     call(playerPlaySaga),
+    call(fragmentSkipSaga),
   ])
 }

@@ -8,8 +8,10 @@ import { PlayPause } from "./PlayPause"
 import {
   BookshelfBook,
   bookshelfSlice,
+  nextFragmentPressed,
   playerPositionSeeked,
   playerTotalPositionSeeked,
+  previousFragmentPressed,
 } from "../store/slices/bookshelfSlice"
 import { UIText } from "./UIText"
 import { useState, useMemo, useEffect, useRef } from "react"
@@ -22,6 +24,9 @@ import { spacing } from "./ui/tokens/spacing"
 import { preferencesSlice } from "../store/slices/preferencesSlice"
 import { fontSizes } from "./ui/tokens/fontSizes"
 import { debounce } from "../debounce"
+import { FastForward, Rewind } from "lucide-react-native"
+import { useColorTheme } from "../hooks/useColorTheme"
+import { Button } from "./ui/Button"
 
 // Roughly the number of "positions" that fit in a
 // standard paperback book page
@@ -33,11 +38,13 @@ type Props = {
 }
 
 export function MiniPlayer({ book, automaticRewind }: Props) {
+  const { foreground } = useColorTheme()
   const locator = useAppSelector((state) => getLocator(state, book.id))
   const bookPrefs = useAppSelector((state) =>
     getBookPreferences(state, book.id),
   )
-  const { isPlaying, isLoading, track, total, rate } = useAudioBook()
+  const { isPlaying, isLoading, track, total, rate, remainingTime } =
+    useAudioBook()
   const trackPositionRef = useRef(track.position)
   trackPositionRef.current = track.position
 
@@ -126,11 +133,11 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
       if (bookPrefs.detailView.scope === "book") {
         return {
           title: book.title,
-          formattedProgress: `${formattedEagerProgress} / ${total.formattedEndPosition}`,
+          formattedProgress: remainingTime,
         }
       }
       return {
-        title: `Track ${track.index} of ${total.trackCount}`,
+        title: `Track ${track.index + 1} of ${total.trackCount}`,
         formattedProgress: `${formattedEagerProgress} / ${track.formattedEndPosition}`,
       }
     }
@@ -164,7 +171,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
     locator?.locator.locations?.totalProgression,
     locator?.locator.locations?.progression,
     chapterTitle,
-    total.formattedEndPosition,
+    remainingTime,
     total.trackCount,
     track.index,
     track.formattedEndPosition,
@@ -193,42 +200,80 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
   return (
     bookPrefs && (
       <View style={styles.container}>
-        <ProgressBar
-          style={
-            bookPrefs?.detailView?.scope === "book" || Platform.OS === "android"
-              ? undefined
-              : { marginTop: -18, marginBottom: -18 }
-          }
-          start={progressStart}
-          stop={progressEnd}
-          progress={eagerProgress}
-          onProgressChange={
-            bookPrefs?.detailView?.scope === "book"
-              ? undefined
-              : (value) => {
-                  setEagerProgress(value)
-                  if (bookPrefs?.detailView?.mode === "audio") {
-                    if (bookPrefs?.detailView?.scope === "book") {
-                      dispatch(playerTotalPositionSeeked({ progress: value }))
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: spacing[2],
+          }}
+        >
+          <ProgressBar
+            style={{
+              flexGrow: 1,
+              // marginRight: spacing[2],
+              ...(bookPrefs?.detailView?.scope === "book" ||
+              Platform.OS === "android"
+                ? undefined
+                : { marginTop: -18, marginBottom: -18 }),
+            }}
+            start={progressStart}
+            stop={progressEnd}
+            progress={eagerProgress}
+            onProgressChange={
+              bookPrefs?.detailView?.scope === "book"
+                ? undefined
+                : (value) => {
+                    setEagerProgress(value)
+                    if (bookPrefs?.detailView?.mode === "audio") {
+                      if (bookPrefs?.detailView?.scope === "book") {
+                        dispatch(playerTotalPositionSeeked({ progress: value }))
+                      } else {
+                        dispatch(playerPositionSeeked({ progress: value }))
+                      }
                     } else {
-                      dispatch(playerPositionSeeked({ progress: value }))
+                      const nextLocator = chapterPositions[value - 1]
+                      if (nextLocator === undefined) return
+                      dispatch(
+                        bookshelfSlice.actions.bookRelocated({
+                          bookId: book.id,
+                          locator: {
+                            locator: nextLocator,
+                            timestamp: Date.now(),
+                          },
+                        }),
+                      )
                     }
-                  } else {
-                    const nextLocator = chapterPositions[value - 1]
-                    if (nextLocator === undefined) return
-                    dispatch(
-                      bookshelfSlice.actions.bookRelocated({
-                        bookId: book.id,
-                        locator: {
-                          locator: nextLocator,
-                          timestamp: Date.now(),
-                        },
-                      }),
-                    )
                   }
-                }
-          }
-        />
+            }
+          />
+          <Button
+            chromeless
+            onPress={() => {
+              dispatch(previousFragmentPressed())
+            }}
+          >
+            <Rewind color={foreground} fill={foreground} size={spacing[2.5]} />
+          </Button>
+          <View style={{ width: spacing[4] }}>
+            <PlayPause
+              isPlaying={isPlaying}
+              isLoading={isLoading}
+              automaticRewind={automaticRewind}
+            />
+          </View>
+          <Button
+            chromeless
+            onPress={() => {
+              dispatch(nextFragmentPressed())
+            }}
+          >
+            <FastForward
+              color={foreground}
+              fill={foreground}
+              size={spacing[2.5]}
+            />
+          </Button>
+        </View>
 
         <View style={styles.details}>
           <Pressable
@@ -237,7 +282,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
             }}
             onPress={() => {
               dispatch(
-                preferencesSlice.actions.bookDetailImagePressed({
+                preferencesSlice.actions.bookDetailPressed({
                   bookId: book.id,
                 }),
               )
@@ -264,7 +309,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
             }}
             onPress={() => {
               dispatch(
-                preferencesSlice.actions.bookDetailPositionPressed({
+                preferencesSlice.actions.bookDetailPressed({
                   bookId: book.id,
                 }),
               )
@@ -288,11 +333,12 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
               {formattedProgress}
             </UIText>
           </Pressable>
-          <PlayPause
-            isPlaying={isPlaying}
-            isLoading={isLoading}
-            automaticRewind={automaticRewind}
-          />
+          <UIText style={fontSizes.sm}>
+            {Math.round(
+              (locator?.locator.locations?.totalProgression ?? 0) * 100,
+            )}
+            %
+          </UIText>
         </View>
       </View>
     )
@@ -308,7 +354,6 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   details: {
-    paddingVertical: 15,
     paddingLeft: 15,
     paddingRight: spacing[4],
     flexDirection: "row",

@@ -67,6 +67,20 @@ export async function getFragment(
   return fragment
 }
 
+export async function getNextFragment(
+  bookId: number,
+  locator: ReadiumLocator,
+): Promise<ReadiumTextFragment | null> {
+  return ReadiumModule.getNextFragment(bookId, locator)
+}
+
+export async function getPreviousFragment(
+  bookId: number,
+  locator: ReadiumLocator,
+): Promise<ReadiumTextFragment | null> {
+  return ReadiumModule.getPreviousFragment(bookId, locator)
+}
+
 export function areLocatorsEqual(a: ReadiumLocator, b: ReadiumLocator) {
   if (a.href !== b.href) return false
   if (a.locations?.progression !== b.locations?.progression) return false

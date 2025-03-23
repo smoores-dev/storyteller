@@ -96,6 +96,12 @@ export const nextTrackPressed = createAction("bookshelf/nextTrackPressed")
 
 export const prevTrackPressed = createAction("bookshelf/prevTrackPressed")
 
+export const nextFragmentPressed = createAction("bookshelf/nextFragmentPressed")
+
+export const previousFragmentPressed = createAction(
+  "bookshelf/previousFragmentPressed",
+)
+
 function compareLocators(a: ReadiumLocator, b: ReadiumLocator) {
   if (a.locations?.totalProgression === undefined) {
     return -1
