@@ -41,6 +41,8 @@ import {
   nextTrackPressed,
   prevTrackPressed,
   playerPlayed,
+  nextFragmentPressed,
+  previousFragmentPressed,
 } from "../slices/bookshelfSlice"
 import { librarySlice } from "../slices/librarySlice"
 import * as FileSystem from "expo-file-system"
@@ -83,7 +85,9 @@ import {
   extractArchive,
   getClip,
   getFragment,
+  getNextFragment,
   getPositions,
+  getPreviousFragment,
   getResource,
   locateLink,
   openPublication,
@@ -1091,4 +1095,46 @@ export function* playerPlaySaga() {
 
     yield call(TrackPlayer.play)
   })
+}
+
+export function* fragmentSkipSaga() {
+  yield takeEvery(
+    [nextFragmentPressed, previousFragmentPressed],
+    function* (action) {
+      const book = (yield select(getCurrentlyPlayingBook)) as ReturnType<
+        typeof getCurrentlyPlayingBook
+      >
+      if (!book) return
+      const locator = (yield select(getLocator, book.id)) as ReturnType<
+        typeof getLocator
+      >
+      if (!locator) return
+
+      const navigateTo = (yield call(
+        action.type === nextFragmentPressed.type
+          ? getNextFragment
+          : getPreviousFragment,
+        book.id,
+        locator.locator,
+      )) as Awaited<ReturnType<typeof getNextFragment>>
+
+      if (!navigateTo) return
+
+      const clip = (yield call(
+        getClip,
+        book.id,
+        navigateTo.locator,
+      )) as Awaited<ReturnType<typeof getClip>>
+
+      const tracks = (yield call(TrackPlayer.getQueue)) as BookshelfTrack[]
+
+      const trackIndex = tracks.findIndex(
+        (track) => track.relativeUrl === clip.relativeUrl,
+      )
+
+      if (trackIndex !== -1) {
+        yield call(TrackPlayer.skip, trackIndex, clip.start)
+      }
+    },
+  )
 }

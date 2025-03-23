@@ -5,6 +5,7 @@ import R2Shared
 import R2Streamer
 import Fuzi
 import ZIPFoundation
+import OrderedCollections
 
 enum BookServiceError : Error {
     case unopenedPublication(Int)
@@ -17,7 +18,7 @@ enum BookServiceError : Error {
 final class BookService {
     private let streamer: Streamer
     private var publications: [Int : Publication] = [:]
-    private var mediaOverlays: [Int : [String : STMediaOverlays]] = [:]
+    private var mediaOverlays: [Int : OrderedDictionary<String, STMediaOverlays>] = [:]
 
     public static let instance = BookService()
 
@@ -146,6 +147,44 @@ final class BookService {
         let textFragments = mediaOverlays?.flatMap { $0.fragments() } ?? []
         return textFragments.filter { $0.href == locator.href }
     }
+    
+    func getFragment(for bookId: Int, before locator: Locator) throws ->  TextFragment? {
+        guard let currentFragment = locator.locations.fragments.first else {
+            return nil
+        }
+        let mediaOverlayStore = self.mediaOverlays[bookId]
+        let mediaOverlays = mediaOverlayStore?.values
+        let textFragments = mediaOverlays?.flatMap { $0.fragments() } ?? []
+        guard let currentIndex = textFragments.firstIndex(where: { $0.href == locator.href && $0.fragment == currentFragment }) else {
+            return nil
+        }
+        if currentIndex == textFragments.startIndex {
+            return nil
+        }
+        let previousIndex = textFragments.index(before: currentIndex)
+        var previousFragment = textFragments[previousIndex]
+        previousFragment.locator = try getLocatorFor(bookId: bookId, href: previousFragment.href, fragment: previousFragment.fragment)
+        return previousFragment
+    }
+    
+    func getFragment(for bookId: Int, after locator: Locator) throws -> TextFragment? {
+        guard let currentFragment = locator.locations.fragments.first else {
+            return nil
+        }
+        let mediaOverlayStore = self.mediaOverlays[bookId]
+        let mediaOverlays = mediaOverlayStore?.values
+        let textFragments = mediaOverlays?.flatMap { $0.fragments() } ?? []
+        guard let currentIndex = textFragments.firstIndex(where: { $0.href == locator.href && $0.fragment == currentFragment }) else {
+            return nil
+        }
+        if currentIndex == textFragments.endIndex {
+            return nil
+        }
+        let nextIndex = textFragments.index(after: currentIndex)
+        var nextFragment = textFragments[nextIndex]
+        nextFragment.locator = try getLocatorFor(bookId: bookId, href: nextFragment.href, fragment: nextFragment.fragment)
+        return nextFragment
+    }
 
     func getLocatorFor(bookId: Int, href: String, fragment: String) throws -> Locator? {
         guard let publication = getPublication(for: bookId) else {
@@ -224,7 +263,7 @@ final class BookService {
     }
 
     private func makeMediaOverlays(for bookId: Int, pub publication: Publication) throws {
-        var mediaOverlayStore: [String : STMediaOverlays] = [:]
+        var mediaOverlayStore: OrderedDictionary<String, STMediaOverlays> = [:]
 
         let mediaOverlayLinks = publication.resources.filter(byMediaType: .smil)
 

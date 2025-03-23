@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import TrackPlayer, {
   Event,
   usePlaybackState,
@@ -59,7 +59,27 @@ export function useAudioBook() {
     (state) => (book && getBookPlayerSpeed(state, book.id)) ?? 1,
   )
 
-  const isPlaying = playerState === State.Playing
+  // If the player has transitioned from playing
+  // into buffering (or ready, which it sometimos does
+  // on Android), it will automatically transition back
+  // to playing, probably without any actual gap in
+  // audio. In that case, we want to continue showing the
+  // audio as playing, since that's what the user experienced.
+  // If the audio was _not_ already playing when it
+  // transitioned to buffering/ready, then we show the audio
+  // as paused.
+  const lastPlayPauseState = useRef(State.Paused)
+
+  const isPlaying =
+    lastPlayPauseState.current === State.Paused
+      ? playerState === State.Playing
+      : playerState === State.Playing ||
+        playerState === State.Buffering ||
+        playerState === State.Ready
+
+  if (playerState === State.Playing || playerState === State.Paused) {
+    lastPlayPauseState.current = playerState
+  }
 
   const total = useMemo(() => {
     return tracks.reduce((acc, track) => acc + (track.duration ?? 0), 0)

@@ -17,12 +17,13 @@ Pod::Spec.new do |s|
   s.dependency 'ReadiumInternal'
   s.dependency 'ReadiumAdapterGCDWebServer'
   s.dependency 'ZIPFoundation'
+  s.dependency 'OrderedCollections'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'SWIFT_COMPILATION_MODE' => 'wholemodule'
   }
-  
+
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
 end

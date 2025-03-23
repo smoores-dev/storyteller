@@ -183,24 +183,27 @@ export const preferencesSlice = createSlice({
         ...prefs,
       }
     },
-    bookDetailImagePressed(state, action: PayloadAction<{ bookId: number }>) {
+    bookDetailPressed(state, action: PayloadAction<{ bookId: number }>) {
       const { bookId } = action.payload
 
       const book = state.bookPreferences[bookId] ?? {}
       const detailPrefs = book.detailView ?? { mode: "text", scope: "chapter" }
-      detailPrefs.mode = detailPrefs.mode === "audio" ? "text" : "audio"
-      book.detailView = detailPrefs
-      state.bookPreferences[bookId] = book
-    },
-    bookDetailPositionPressed(
-      state,
-      action: PayloadAction<{ bookId: number }>,
-    ) {
-      const { bookId } = action.payload
 
-      const book = state.bookPreferences[bookId] ?? {}
-      const detailPrefs = book.detailView ?? { mode: "text", scope: "chapter" }
-      detailPrefs.scope = detailPrefs.scope === "book" ? "chapter" : "book"
+      if (detailPrefs.mode === "text" && detailPrefs.scope === "chapter") {
+        detailPrefs.scope = "book"
+      } else if (detailPrefs.mode === "text") {
+        detailPrefs.mode = "audio"
+        detailPrefs.scope = "chapter"
+      } else if (
+        detailPrefs.mode === "audio" &&
+        detailPrefs.scope === "chapter"
+      ) {
+        detailPrefs.scope = "book"
+      } else {
+        detailPrefs.mode = "text"
+        detailPrefs.scope = "chapter"
+      }
+
       book.detailView = detailPrefs
       state.bookPreferences[bookId] = book
     },

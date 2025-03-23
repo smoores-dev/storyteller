@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   epubWrapper: {
     position: "absolute",
-    bottom: 80,
+    bottom: 70,
     left: 0,
     right: 0,
     zIndex: 1,

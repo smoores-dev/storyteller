@@ -95,6 +95,28 @@ class ReadiumModule : Module() {
                     )
                 }
 
+        AsyncFunction("getNextFragment") Coroutine { bookId: Long, locatorMap: Map<String, Any> ->
+            val locatorJson = JSONObject(locatorMap)
+            val locator = Locator.fromJSON(locatorJson) ?: return@Coroutine null
+            val next = bookService.getNextFragment(bookId, locator) ?: return@Coroutine null
+            mutableMapOf(
+                "href" to next.href,
+                "fragment" to next.fragment,
+                "locator" to next.locator?.toJSON()?.toMap()
+            )
+        }
+
+        AsyncFunction("getPreviousFragment") Coroutine { bookId: Long, locatorMap: Map<String, Any> ->
+            val locatorJson = JSONObject(locatorMap)
+            val locator = Locator.fromJSON(locatorJson) ?: return@Coroutine null
+            val previous = bookService.getPreviousFragment(bookId, locator) ?: return@Coroutine null
+            mutableMapOf(
+                "href" to previous.href,
+                "fragment" to previous.fragment,
+                "locator" to previous.locator?.toJSON()?.toMap()
+            )
+        }
+
         AsyncFunction("locateLink") { bookId: Long, linkMap: Map<String, Any> ->
             val linkJson = JSONObject(linkMap)
             val link = Link.fromJSON(linkJson) ?: throw Exception("Failed to parse link from json")
