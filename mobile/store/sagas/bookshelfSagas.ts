@@ -764,12 +764,6 @@ function* getCurrentClip(book: BookshelfBook) {
   return clip
 }
 
-export function* ensureTrackPlaySaga() {
-  yield takeEvery(bookshelfSlice.actions.bookDoubleTapped, function* () {
-    yield call(TrackPlayer.play)
-  })
-}
-
 export function* loadTrackPlayerSaga() {
   yield takeLatest(
     [
@@ -873,7 +867,7 @@ export function* seekToLocatorSaga() {
         )
         return
       }
-      logger.debug(clip)
+      logger.debug("Current clip:", clip)
 
       const tracks = (yield call(TrackPlayer.getQueue)) as BookshelfTrack[]
 
@@ -883,6 +877,10 @@ export function* seekToLocatorSaga() {
 
       if (trackIndex !== -1) {
         yield call(TrackPlayer.skip, trackIndex, clip.start)
+      }
+
+      if (action.type === bookshelfSlice.actions.bookDoubleTapped.type) {
+        yield call(TrackPlayer.play)
       }
     },
   )
@@ -1132,7 +1130,14 @@ export function* fragmentSkipSaga() {
         (track) => track.relativeUrl === clip.relativeUrl,
       )
 
-      if (trackIndex !== -1) {
+      const currentTrackIndex = (yield call(
+        TrackPlayer.getActiveTrackIndex,
+      )) as Awaited<ReturnType<typeof TrackPlayer.getActiveTrackIndex>>
+
+      if (trackIndex === -1) return
+      if (trackIndex === currentTrackIndex) {
+        yield call(TrackPlayer.seekTo, clip.start)
+      } else {
         yield call(TrackPlayer.skip, trackIndex, clip.start)
       }
     },
