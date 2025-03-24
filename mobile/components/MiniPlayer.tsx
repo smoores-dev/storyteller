@@ -15,7 +15,7 @@ import {
 } from "../store/slices/bookshelfSlice"
 import { UIText } from "./UIText"
 import { useState, useMemo, useEffect, useRef } from "react"
-import { useAudioBook, formatTime } from "../hooks/useAudioBook"
+import { useAudioBook, formatTimeHuman } from "../hooks/useAudioBook"
 import { isSameChapter } from "../links"
 import { useAppSelector, useAppDispatch } from "../store/appState"
 import { getLocator } from "../store/selectors/bookshelfSelectors"
@@ -23,10 +23,10 @@ import { getBookPreferences } from "../store/selectors/preferencesSelectors"
 import { spacing } from "./ui/tokens/spacing"
 import { preferencesSlice } from "../store/slices/preferencesSlice"
 import { fontSizes } from "./ui/tokens/fontSizes"
-import { debounce } from "../debounce"
 import { FastForward, Rewind } from "lucide-react-native"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { Button } from "./ui/Button"
+import { throttle } from "../throttle"
 
 // Roughly the number of "positions" that fit in a
 // standard paperback book page
@@ -43,8 +43,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
   const bookPrefs = useAppSelector((state) =>
     getBookPreferences(state, book.id),
   )
-  const { isPlaying, isLoading, track, total, rate, remainingTime } =
-    useAudioBook()
+  const { isPlaying, isLoading, track, total, rate } = useAudioBook()
   const trackPositionRef = useRef(track.position)
   trackPositionRef.current = track.position
 
@@ -52,17 +51,20 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
   const [eagerProgress, setEagerProgress] = useState(track.position)
 
   const syncEagerProgress = useMemo(() => {
-    return debounce(() => {
+    return throttle(() => {
       setEagerProgress(positionRef.current)
     }, 200)
   }, [])
 
   useEffect(() => {
     syncEagerProgress()
+  }, [total.position, track.position, locator, syncEagerProgress])
+
+  useEffect(() => {
     return () => {
       syncEagerProgress.cancel()
     }
-  }, [total.position, track.position, locator, syncEagerProgress])
+  }, [syncEagerProgress])
 
   useEffect(() => {
     setEagerProgress(positionRef.current)
@@ -124,21 +126,21 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
     ],
   )
 
-  const formattedEagerProgress = useMemo(() => {
-    return formatTime(eagerProgress / rate)
-  }, [eagerProgress, rate])
-
   const { title, formattedProgress } = useMemo(() => {
     if (bookPrefs?.detailView?.mode === "audio") {
       if (bookPrefs.detailView.scope === "book") {
         return {
           title: book.title,
-          formattedProgress: remainingTime,
+          formattedProgress: `${formatTimeHuman(
+            total.endPosition / rate - eagerProgress / rate,
+          )} left`,
         }
       }
       return {
         title: `Track ${track.index + 1} of ${total.trackCount}`,
-        formattedProgress: `${formattedEagerProgress} / ${track.formattedEndPosition}`,
+        formattedProgress: `${formatTimeHuman(
+          track.endPosition / rate - eagerProgress / rate,
+        )} left`,
       }
     }
     if (bookPrefs?.detailView?.scope === "book") {
@@ -167,18 +169,19 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
   }, [
     bookPrefs?.detailView?.mode,
     bookPrefs?.detailView?.scope,
+    chapterPositions,
+    chapterTitle,
+    track.index,
+    track.endPosition,
+    total.trackCount,
+    total.endPosition,
+    rate,
+    eagerProgress,
+    book.title,
+    book.positions,
     locator?.locator.locations?.position,
     locator?.locator.locations?.totalProgression,
     locator?.locator.locations?.progression,
-    chapterTitle,
-    remainingTime,
-    total.trackCount,
-    track.index,
-    track.formattedEndPosition,
-    formattedEagerProgress,
-    book.title,
-    book.positions,
-    chapterPositions,
   ])
 
   const progressStart =
@@ -324,21 +327,29 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
             >
               {title}
             </UIText>
-            <UIText
-              numberOfLines={1}
+            <View
               style={{
-                ...fontSizes.sm,
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
               }}
             >
-              {formattedProgress}
-            </UIText>
+              <UIText
+                numberOfLines={1}
+                style={{
+                  ...fontSizes.sm,
+                }}
+              >
+                {formattedProgress}
+              </UIText>
+              <UIText style={fontSizes.sm}>
+                {Math.round(
+                  (locator?.locator.locations?.totalProgression ?? 0) * 100,
+                )}
+                %
+              </UIText>
+            </View>
           </Pressable>
-          <UIText style={fontSizes.sm}>
-            {Math.round(
-              (locator?.locator.locations?.totalProgression ?? 0) * 100,
-            )}
-            %
-          </UIText>
         </View>
       </View>
     )
