@@ -16,15 +16,7 @@ import { fontSizes } from "./ui/tokens/fontSizes"
 export function MiniPlayerWidget() {
   const { foreground, background } = useColorTheme()
 
-  const {
-    isPlaying,
-    isLoading,
-    progress,
-    startPosition,
-    endPosition,
-    track,
-    rate,
-  } = useAudioBook()
+  const { progress, startPosition, endPosition, track, rate } = useAudioBook()
 
   const dispatch = useAppDispatch()
   const [eagerProgress, setEagerProgress] = useState(progress)
@@ -109,7 +101,7 @@ export function MiniPlayerWidget() {
                 </View>
               </Pressable>
             </Link>
-            <PlayPause isPlaying={isPlaying} isLoading={isLoading} />
+            <PlayPause />
           </View>
         </View>
       )}

@@ -56,7 +56,7 @@ export default function PlayerScreen() {
   const [trackCount, setTrackCount] = useState(1)
 
   const dispatch = useAppDispatch()
-  const { isLoading, isPlaying, track, remainingTime, rate } = useAudioBook()
+  const { isLoading, track, remainingTime, rate } = useAudioBook()
   const trackPositionRef = useRef(track.position)
   trackPositionRef.current = track.position
 
@@ -187,7 +187,7 @@ export default function PlayerScreen() {
           >
             <JumpBackwardFifteenIcon />
           </Pressable>
-          <PlayPause style={styles.playPause} isPlaying={isPlaying} />
+          <PlayPause style={styles.playPause} />
           <Pressable
             onPress={() => {
               seekForward(15)

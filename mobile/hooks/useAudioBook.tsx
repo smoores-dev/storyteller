@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import TrackPlayer, {
   Event,
   usePlaybackState,
@@ -39,6 +47,49 @@ export function formatTimeHuman(time: number) {
 }
 
 export function useAudioBook() {
+  return useContext(AudioBookContext)
+}
+
+export type AudioBookContextValue = {
+  isLoading: boolean
+  progress: number
+  isPlaying: boolean
+  trackCount: number
+  tracks: BookshelfTrack[]
+  startPosition: number
+  endPosition: number
+  percentComplete: number
+  rate: number
+  remainingTime: string
+  track: {
+    index: number
+    position: number
+    startPosition: number
+    endPosition: number
+    percentComplete: number
+    formattedPosition: string
+    formattedStartPosition: string
+    formattedEndPosition: string
+  }
+  total: {
+    position: number
+    startPosition: number
+    endPosition: number
+    percentComplete: number
+    formattedPosition: string
+    formattedStartPosition: string
+    formattedEndPosition: string
+    trackCount: number
+  }
+}
+
+const AudioBookContext = createContext(null as unknown as AudioBookContextValue)
+
+interface Props {
+  children: ReactNode
+}
+
+export function AudioBookProvider({ children }: Props) {
   const isLoading = useAppSelector(getIsAudioLoading)
 
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
@@ -114,49 +165,58 @@ export function useAudioBook() {
   )
   const remainingTime = `${remainingHours} hours ${remainingMinutes} minutes`
 
-  return {
-    isLoading,
-    progress: position,
-    isPlaying,
-    trackCount: tracks.length,
-    tracks,
-    startPosition: 0,
-    endPosition: duration,
-    percentComplete: percentComplete,
-    rate: rate,
-    remainingTime: remainingTime,
-    track: {
-      index: currentTrackIndex,
-      position,
+  const value = useMemo(
+    () => ({
+      isLoading,
+      progress: position,
+      isPlaying,
+      trackCount: tracks.length,
+      tracks,
       startPosition: 0,
       endPosition: duration,
-      percentComplete: Math.round((position / duration) * 100),
-      formattedPosition: useMemo(
-        () => formatTime(position / rate),
-        [position, rate],
-      ),
-      formattedStartPosition: useMemo(() => formatTime(0), []),
-      formattedEndPosition: useMemo(
-        () => formatTime(duration / rate),
-        [duration, rate],
-      ),
-    },
-    total: {
-      trackCount: tracks.length,
-      position: total - remaining,
-      startPosition: 0,
-      endPosition: total,
+      percentComplete: percentComplete,
+      rate: rate,
+      remainingTime: remainingTime,
+      track: {
+        index: currentTrackIndex,
+        position,
+        startPosition: 0,
+        endPosition: duration,
+        percentComplete: Math.round((position / duration) * 100),
+        formattedPosition: formatTime(position / rate),
+        formattedStartPosition: formatTime(0),
+        formattedEndPosition: formatTime(duration / rate),
+      },
+      total: {
+        trackCount: tracks.length,
+        position: total - remaining,
+        startPosition: 0,
+        endPosition: total,
+        percentComplete,
+        formattedRemaining: remainingTime,
+        formattedPosition: formatTime((total - remaining) / rate),
+        formattedStartPosition: formatTime(0),
+        formattedEndPosition: formatTime(total / rate),
+      },
+    }),
+    [
+      currentTrackIndex,
+      duration,
+      isLoading,
+      isPlaying,
       percentComplete,
-      formattedRemaining: remainingTime,
-      formattedPosition: useMemo(
-        () => formatTime((total - remaining) / rate),
-        [total, remaining, rate],
-      ),
-      formattedStartPosition: useMemo(() => formatTime(0), []),
-      formattedEndPosition: useMemo(
-        () => formatTime(total / rate),
-        [rate, total],
-      ),
-    },
-  }
+      position,
+      rate,
+      remaining,
+      remainingTime,
+      total,
+      tracks,
+    ],
+  )
+
+  return (
+    <AudioBookContext.Provider value={value}>
+      {children}
+    </AudioBookContext.Provider>
+  )
 }

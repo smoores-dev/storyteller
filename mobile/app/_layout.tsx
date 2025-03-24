@@ -18,6 +18,7 @@ import { AppState, AppStateStatus, Platform } from "react-native"
 import { logger } from "../logger"
 import "../tasks/backgroundFetchSyncPositions"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
+import { AudioBookProvider } from "../hooks/useAudioBook"
 
 TrackPlayer.registerPlaybackService(() => PlaybackService)
 
@@ -105,16 +106,16 @@ export default function Layout() {
     return
   }, [])
 
-  // console.log(usePathname())
-
   return (
     <GestureHandlerRootView>
       <Provider store={store}>
-        <StorytellerProvider>
-          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            <Slot />
-          </SafeAreaProvider>
-        </StorytellerProvider>
+        <AudioBookProvider>
+          <StorytellerProvider>
+            <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+              <Slot />
+            </SafeAreaProvider>
+          </StorytellerProvider>
+        </AudioBookProvider>
       </Provider>
     </GestureHandlerRootView>
   )

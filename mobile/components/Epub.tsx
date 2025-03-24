@@ -28,6 +28,7 @@ import {
 import { Group } from "./ui/Group"
 import { ChevronLeft } from "lucide-react-native"
 import { spacing } from "./ui/tokens/spacing"
+import { SubtlePlayPause } from "./SubtlePlayPause"
 
 type Props = {
   book: BookshelfBook
@@ -183,7 +184,7 @@ export function Epub({ book, locator }: Props) {
           isPlaying={isPlaying}
         />
       </View>
-      {showInterface && (
+      {showInterface ? (
         <>
           <Group style={[styles.backButton, { top: insets.top + 6 }]}>
             <Link href="/" replace asChild>
@@ -195,6 +196,8 @@ export function Epub({ book, locator }: Props) {
           </Group>
           <MiniPlayer book={book} automaticRewind={!locatorIsFromEpub} />
         </>
+      ) : (
+        <SubtlePlayPause automaticRewind={!locatorIsFromEpub} />
       )}
     </View>
   )
