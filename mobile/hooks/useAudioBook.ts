@@ -28,6 +28,16 @@ export function formatTime(time: number) {
   return `${minutes}:${seconds}`
 }
 
+export function formatTimeHuman(time: number) {
+  const hours = Math.floor(time / 3600)
+  const minutes = Math.floor(time / 60 - hours * 60)
+
+  if (hours) {
+    return `${hours} hr ${minutes} min`
+  }
+  return `${minutes} min`
+}
+
 export function useAudioBook() {
   const isLoading = useAppSelector(getIsAudioLoading)
 

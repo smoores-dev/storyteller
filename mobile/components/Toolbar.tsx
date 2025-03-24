@@ -1,6 +1,5 @@
 import { Link } from "expo-router"
-import { Platform, StyleSheet, View } from "react-native"
-import { SpedometerIcon } from "../icons/SpedometerIcon"
+import { StyleSheet, View } from "react-native"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getCurrentlyPlayingBook,
@@ -10,12 +9,12 @@ import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
 import { ReadiumLocator } from "../modules/readium/src/Readium.types"
 import { getOpenDialog } from "../store/selectors/toolbarSelectors"
-import { activeBackgroundColor } from "../design"
 import {
-  ALargeSmall,
   Bookmark,
   BookmarkCheck,
   BookOpen,
+  CaseSensitive,
+  Gauge,
   Headphones,
   TableOfContents,
 } from "lucide-react-native"
@@ -23,6 +22,7 @@ import { useColorTheme } from "../hooks/useColorTheme"
 import { Button } from "./ui/Button"
 import { UIText } from "./UIText"
 import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
+import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
   mode: "audio" | "text"
@@ -53,7 +53,6 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             chromeless
             style={[
               styles.toolbarButton,
-              styles.settingsButton,
               openDialog === ToolbarDialog.SETTINGS && {
                 backgroundColor: surface,
               },
@@ -66,7 +65,10 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
               )
             }}
           >
-            <ALargeSmall color={foreground} />
+            <CaseSensitive
+              style={{ marginBottom: -2, marginTop: 2 }}
+              color={foreground}
+            />
           </Button>
         )}
 
@@ -85,13 +87,33 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
           }}
         >
           {currentSpeed === 1 ? (
-            <SpedometerIcon />
+            <Gauge color={foreground} />
           ) : (
-            <UIText>{currentSpeed}x</UIText>
+            <UIText style={{ fontWeight: "bold" }}>{currentSpeed}x</UIText>
           )}
         </Button>
 
         <Button
+          chromeless
+          style={[
+            styles.toolbarButton,
+            openDialog === ToolbarDialog.TABLE_OF_CONTENTS && {
+              backgroundColor: surface,
+            },
+          ]}
+          onPress={() => {
+            dispatch(
+              toolbarSlice.actions.dialogToggled({
+                dialog: ToolbarDialog.TABLE_OF_CONTENTS,
+              }),
+            )
+          }}
+        >
+          <TableOfContents color={foreground} />
+        </Button>
+
+        <Button
+          style={styles.toolbarButton}
           chromeless
           onPress={() => {
             if (activeBookmarks.length) {
@@ -118,38 +140,21 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
           )}
         </Button>
 
-        <Button
-          chromeless
-          style={[
-            styles.toolbarButton,
-            openDialog === ToolbarDialog.TABLE_OF_CONTENTS && {
-              backgroundColor: surface,
-            },
-          ]}
-          onPress={() => {
-            dispatch(
-              toolbarSlice.actions.dialogToggled({
-                dialog: ToolbarDialog.TABLE_OF_CONTENTS,
-              }),
-            )
-          }}
-        >
-          <TableOfContents color={foreground} />
-        </Button>
         {mode === "audio" ? (
           <Link
-            style={[styles.toolbarButton, styles.bookLink]}
+            asChild
             replace
             href={{ pathname: "/book/[id]", params: { id: book.id } }}
           >
-            <BookOpen style={{ marginBottom: -4 }} color={foreground} />
+            <Button chromeless style={styles.toolbarButton}>
+              <BookOpen color={foreground} />
+            </Button>
           </Link>
         ) : (
-          <Link
-            style={[styles.toolbarButton, styles.audioLink]}
-            href={{ pathname: "/player" }}
-          >
-            <Headphones color={foreground} />
+          <Link asChild href={{ pathname: "/player" }}>
+            <Button chromeless style={styles.toolbarButton}>
+              <Headphones color={foreground} />
+            </Button>
           </Link>
         )}
       </View>
@@ -163,25 +168,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   toolbarButton: {
-    marginHorizontal: 8,
-    padding: 4,
+    width: spacing[5],
+    paddingVertical: spacing[1],
+    paddingHorizontal: "auto",
     borderRadius: 4,
+    alignItems: "center",
+  },
+  toolbarLink: {
+    marginBottom: -spacing[1.5],
   },
   settingsButton: {
     marginHorizontal: 0,
-  },
-  bookLink: {
-    ...(Platform.OS === "ios" && { marginTop: 12 }),
-    marginTop: 4,
-    padding: 0,
-    marginLeft: 0,
-  },
-  audioLink: {
-    marginTop: 4,
-    padding: 0,
-    marginLeft: 0,
-  },
-  activeButton: {
-    backgroundColor: activeBackgroundColor,
   },
 })

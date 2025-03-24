@@ -132,6 +132,9 @@ export function Epub({ book, locator }: Props) {
             setActiveBookmarks(event.nativeEvent.activeBookmarks)
           }}
           onLocatorChange={(event) => {
+            if (isPlaying) {
+              return
+            }
             // If this is the very first time we're mounting this
             // component, we actually want to ignore the "locator changed"
             // event, which will just be trying to reset to the beginning
