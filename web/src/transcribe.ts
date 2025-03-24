@@ -21,7 +21,7 @@ setGlobalOption("logLevel", "error")
 export async function installWhisper(settings: Settings) {
   const whisperBuild = settings.whisperBuild ?? "cpu"
   const enableCuda = whisperBuild.startsWith("cublas")
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "development" && !process.env["DEV_CONTAINER"]) {
     return {
       build: "cpu",
     } as const
