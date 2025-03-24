@@ -5,20 +5,15 @@ import TrackPlayer from "react-native-track-player"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { useAppDispatch } from "../store/appState"
 import { playerPlayed } from "../store/slices/bookshelfSlice"
+import { useAudioBook } from "../hooks/useAudioBook"
 
 type Props = {
   style?: ViewProps["style"]
-  isPlaying: boolean
-  isLoading?: boolean
   automaticRewind?: boolean
 }
 
-export function PlayPause({
-  style,
-  isPlaying,
-  automaticRewind = true,
-  isLoading = false,
-}: Props) {
+export function PlayPause({ style, automaticRewind = true }: Props) {
+  const { isPlaying, isLoading } = useAudioBook()
   const dispatch = useAppDispatch()
   const { foreground } = useColorTheme()
 

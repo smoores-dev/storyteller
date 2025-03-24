@@ -43,7 +43,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
   const bookPrefs = useAppSelector((state) =>
     getBookPreferences(state, book.id),
   )
-  const { isPlaying, isLoading, track, total, rate } = useAudioBook()
+  const { track, total, rate } = useAudioBook()
   const trackPositionRef = useRef(track.position)
   trackPositionRef.current = track.position
 
@@ -258,11 +258,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
             <Rewind color={foreground} fill={foreground} size={spacing[2.5]} />
           </Button>
           <View style={{ width: spacing[4] }}>
-            <PlayPause
-              isPlaying={isPlaying}
-              isLoading={isLoading}
-              automaticRewind={automaticRewind}
-            />
+            <PlayPause automaticRewind={automaticRewind} />
           </View>
           <Button
             chromeless
