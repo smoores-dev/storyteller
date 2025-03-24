@@ -71,7 +71,10 @@
                       git lfs pull
                       touch .devenv-initialized'';
                     status = "test -f .devenv-initialized";
-                    before = [ "devenv:enterShell" "devenv:enterTest" ];
+                    before = [
+                      "devenv:enterShell"
+                      "devenv:enterTest"
+                    ];
                   };
 
                   devcontainer.enable = true;
@@ -94,9 +97,13 @@
                   ];
                   # Variant of default but works with flake devenv
                   devcontainer.settings.updateContentCommand = ''
+                    direnv allow
                     mkdir -p ~/.local/share/nix/
                     echo -n '{"extra-substituters":{"https://devenv.cachix.org":true},"extra-trusted-public-keys":{"devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=":true}}' > ~/.local/share/nix/trusted-settings.json
                     DIRENV_WARN_TIMEOUT=0 direnv exec ''${containerWorkspaceFolder} devenv test'';
+                  devcontainer.settings.containerEnv = {
+                    DEV_CONTAINER = "true";
+                  };
 
                   enterTest = "yarn check";
 
