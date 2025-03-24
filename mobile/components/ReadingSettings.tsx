@@ -242,7 +242,7 @@ export function ReadingSettings({ bookId }: Props) {
         <Slider
           style={styles.slider}
           start={0.7}
-          stop={1.5}
+          stop={2}
           step={0.05}
           value={preferences.typography.scale}
           onValueChange={(value) => {
