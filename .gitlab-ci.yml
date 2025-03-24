@@ -14,7 +14,7 @@ always-yes:
     - echo "Done!"
 
 check:
-  image: node:22
+  image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
   stage: check
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -27,7 +27,6 @@ check:
         - "**/*.tsx"
         - yarn.lock
   script:
-    - apt update && apt install -y --no-install-recommends ffmpeg
     - yarn
     - yarn check
     - yarn build:docs
