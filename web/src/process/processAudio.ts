@@ -112,6 +112,15 @@ export async function getSafeRanges(
     const vadTimeline = await detectVoiceActivity(audio, {
       engine: "adaptive-gate",
     })
+
+    // It's possible for ffmpeg to guess the duration
+    // incorrectly, resulting in empty search files.
+    // This happens at the very end, so we just bail out
+    // if we encounter this.
+    if (vadTimeline.timeline.length === 0) {
+      break
+    }
+
     const silenceTimeline = vadTimeline.timeline.reduce<
       { start: number; end: number }[]
     >((acc, entry) => {
