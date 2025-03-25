@@ -247,7 +247,6 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                 fragments = found.locations.fragments,
                 otherLocations = found.locations.otherLocations,
             ),
-            text = found.text
         )
         onLocatorChange(merged.toJSON().toMap())
     }

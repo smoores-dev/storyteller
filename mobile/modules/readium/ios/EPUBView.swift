@@ -229,7 +229,7 @@ class EPUBView: ExpoView {
     public func destroyNavigator() {
         self.navigator?.view.removeFromSuperview()
     }
-    
+
     func emitCurrentLocator() {
         navigator!.firstVisibleElementLocator {
             guard let currentLocator = self.navigator!.currentLocation else {
@@ -242,9 +242,6 @@ class EPUBView: ExpoView {
             let merged = currentLocator.copy(locations: {
                 $0.otherLocations["fragments"] = found.locations.fragments
                 $0.otherLocations["cssSelector"] = found.locations.cssSelector
-            },
-            text: {
-                $0.highlight = found.text.highlight
             })
             self.onLocatorChange(merged.json)
         }
