@@ -1,0 +1,8 @@
+{
+  "label": "Community Guides",
+  "position": 8.5,
+  "link": {
+    "type": "generated-index",
+    "description": "Storyteller’s goal is to work right out of the box for as many users as possible. But there are a lot of ways to run Storyteller, and everyone’s setup is different! These guides are submitted by Storyteller users and include instructions on how to use Storyteller and other tools to meet different needs across the Storyteller community."
+  }
+}
