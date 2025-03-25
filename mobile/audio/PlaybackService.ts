@@ -54,7 +54,17 @@ export async function PlaybackService() {
     store.dispatch(playerPaused())
   })
 
-  TrackPlayer.addEventListener(Event.RemotePlay, () => {
+  TrackPlayer.addEventListener(Event.RemotePlay, async () => {
+    const state = await TrackPlayer.getPlaybackState()
+    if (state.state === State.Playing) {
+      // Some bluetooth headphones (like Shokz OpenRun) will send a play event
+      // instead of a pause event if the playback rate in the app is faster
+      // than 1x.
+      await TrackPlayer.pause()
+      store.dispatch(playerPaused())
+      return
+    }
+
     store.dispatch(playerPlayed())
   })
 
