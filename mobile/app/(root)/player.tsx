@@ -27,11 +27,11 @@ import { ToolbarDialogs } from "../../components/ToolbarDialogs"
 import { areLocatorsEqual } from "../../modules/readium"
 import { isSameChapter } from "../../links"
 import { seekBackward, seekForward } from "../../audio/PlaybackService"
-import { debounce } from "../../debounce"
 import { playerPositionSeeked } from "../../store/slices/bookshelfSlice"
 import { spacing } from "../../components/ui/tokens/spacing"
 import { useColorTheme } from "../../hooks/useColorTheme"
 import { fontSizes } from "../../components/ui/tokens/fontSizes"
+import { throttle } from "../../throttle"
 
 const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 
@@ -63,17 +63,20 @@ export default function PlayerScreen() {
   const [eagerProgress, setEagerProgress] = useState(track.position)
 
   const syncEagerProgress = useMemo(() => {
-    return debounce(() => {
+    return throttle(() => {
       setEagerProgress(trackPositionRef.current)
     }, 200)
   }, [])
 
   useEffect(() => {
     syncEagerProgress()
+  }, [track.position, locator, syncEagerProgress])
+
+  useEffect(() => {
     return () => {
       syncEagerProgress.cancel()
     }
-  }, [track.position, locator, syncEagerProgress])
+  }, [syncEagerProgress])
 
   const progressTime = useMemo(() => {
     return formatTime(eagerProgress / rate)
