@@ -89,7 +89,12 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
           {currentSpeed === 1 ? (
             <Gauge color={foreground} />
           ) : (
-            <UIText style={{ fontWeight: "bold" }}>{currentSpeed}x</UIText>
+            <UIText
+              maxFontSizeMultiplier={1.75}
+              style={[styles.toolbarTextButton, { fontWeight: "bold" }]}
+            >
+              {currentSpeed}x
+            </UIText>
           )}
         </Button>
 
@@ -166,13 +171,17 @@ const styles = StyleSheet.create({
   toolbar: {
     flexDirection: "row",
     alignItems: "center",
+    gap: spacing["0.5"],
   },
   toolbarButton: {
-    width: spacing[5],
+    minWidth: spacing[5],
     paddingVertical: spacing[1],
     paddingHorizontal: "auto",
     borderRadius: 4,
     alignItems: "center",
+  },
+  toolbarTextButton: {
+    paddingHorizontal: spacing[1],
   },
   toolbarLink: {
     marginBottom: -spacing[1.5],
