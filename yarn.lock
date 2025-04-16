@@ -8376,6 +8376,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^5.59.7"
     babel-plugin-transform-inline-environment-variables: "npm:^0.4.4"
     create-expo-module: "npm:^0.8.10"
+    date-fns: "npm:^4.1.0"
     dequal: "npm:^2.0.3"
     eslint: "npm:^8.41.0"
     eslint-config-prettier: "npm:^8.8.0"
@@ -8399,7 +8400,7 @@ __metadata:
     expo-status-bar: "npm:~2.0.1"
     expo-system-ui: "npm:~4.0.8"
     expo-task-manager: "npm:~12.0.5"
-    lucide-react-native: "npm:^0.475.0"
+    lucide-react-native: "npm:^0.481.0"
     prettier: "npm:^3.2.5"
     react: "npm:18.3.1"
     react-native: "npm:0.76.7"
@@ -13223,6 +13224,13 @@ __metadata:
   version: 3.6.0
   resolution: "date-fns@npm:3.6.0"
   checksum: 10c0/0b5fb981590ef2f8e5a3ba6cd6d77faece0ea7f7158948f2eaae7bbb7c80a8f63ae30b01236c2923cf89bb3719c33aeb150c715ea4fe4e86e37dcf06bed42fb6
+  languageName: node
+  linkType: hard
+
+"date-fns@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "date-fns@npm:4.1.0"
+  checksum: 10c0/b79ff32830e6b7faa009590af6ae0fb8c3fd9ffad46d930548fbb5acf473773b4712ae887e156ba91a7b3dc30591ce0f517d69fd83bd9c38650fdc03b4e0bac8
   languageName: node
   linkType: hard
 
@@ -19920,14 +19928,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react-native@npm:^0.475.0":
-  version: 0.475.0
-  resolution: "lucide-react-native@npm:0.475.0"
+"lucide-react-native@npm:^0.481.0":
+  version: 0.481.0
+  resolution: "lucide-react-native@npm:0.481.0"
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0
     react-native: "*"
     react-native-svg: ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0
-  checksum: 10c0/47641b95d0dca8c257102c62b4d7549ec9cde5d4320ef6bb4d9073ce30f3c66bd654f0b0c5fcc2d50b140be1b84b8ae777d24e3fd4fe9a6ce5f831ad815c192f
+  checksum: 10c0/fdda2e865d0a8e460e1fd0a3b18306d4d3c062c2069274c7fedc4026582d8b9547f3f2a90f57c3afc66adf4fb31177ec4a74d619043ffbfd3405e7cd39008372
   languageName: node
   linkType: hard
 

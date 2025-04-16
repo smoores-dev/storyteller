@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getCurrentlyPlayingBook,
   getLocator,
+  getSleepTimer,
 } from "../store/selectors/bookshelfSelectors"
 import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
@@ -14,6 +15,7 @@ import {
   BookmarkCheck,
   BookOpen,
   CaseSensitive,
+  ClockFading,
   Gauge,
   Headphones,
   TableOfContents,
@@ -23,10 +25,25 @@ import { Button } from "./ui/Button"
 import { UIText } from "./UIText"
 import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
 import { spacing } from "./ui/tokens/spacing"
+import ContextMenu from "react-native-context-menu-view"
+import { intervalToDuration, isPast } from "date-fns"
+import { useEffect, useState } from "react"
 
 type Props = {
   mode: "audio" | "text"
   activeBookmarks: ReadiumLocator[]
+}
+
+function formatSleepTimer(sleepTimer: Date) {
+  const duration = intervalToDuration({
+    start: new Date(),
+    end: sleepTimer,
+  })
+  const minutes = String(
+    (duration.minutes ?? 0) + (duration.hours ? duration.hours * 60 : 0),
+  ).padStart(2, "0")
+  const seconds = String(duration.seconds ?? 0).padStart(2, "0")
+  return `${minutes}:${seconds}`
 }
 
 export function Toolbar({ mode, activeBookmarks }: Props) {
@@ -38,6 +55,29 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
   const currentSpeed = useAppSelector(
     (state) => book && getBookPlayerSpeed(state, book.id),
   )
+
+  const [formattedSleepTimer, setFormattedSleepTimer] = useState<string | null>(
+    null,
+  )
+
+  const sleepTimer = useAppSelector(getSleepTimer)
+
+  useEffect(() => {
+    if (sleepTimer) {
+      const intervalId = setInterval(() => {
+        if (isPast(sleepTimer)) {
+          clearInterval(intervalId)
+          setFormattedSleepTimer(null)
+          return
+        }
+        setFormattedSleepTimer(formatSleepTimer(sleepTimer))
+      }, 500)
+      return () => clearInterval(intervalId)
+    } else {
+      setFormattedSleepTimer(null)
+    }
+    return () => {}
+  }, [sleepTimer])
 
   const { foreground, surface } = useColorTheme()
 
@@ -71,6 +111,112 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             />
           </Button>
         )}
+        <ContextMenu
+          actions={[
+            {
+              title: "Off",
+            },
+            {
+              title: "5 Mins",
+            },
+            {
+              title: "10 Mins",
+            },
+            {
+              title: "15 Mins",
+            },
+            {
+              title: "30 Mins",
+            },
+            {
+              title: "45 Mins",
+            },
+            {
+              title: "60 Mins",
+            },
+            {
+              title: "90 Mins",
+            },
+            {
+              title: "120 Mins",
+            },
+            ...(__DEV__
+              ? [{ title: "5 seconds" }, { title: "30 seconds" }]
+              : []),
+          ]}
+          onPress={({ nativeEvent }) => {
+            const sleepTimer = new Date()
+            switch (nativeEvent.index) {
+              case 0: {
+                dispatch(
+                  bookshelfSlice.actions.sleepTimerSet({ sleepTimer: null }),
+                )
+                return
+              }
+              case 1: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 5)
+                break
+              }
+              case 2: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 10)
+                break
+              }
+              case 3: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 15)
+                break
+              }
+              case 4: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 30)
+                break
+              }
+              case 5: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 45)
+                break
+              }
+              case 6: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 60)
+                break
+              }
+              case 7: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 90)
+                break
+              }
+              case 8: {
+                sleepTimer.setMinutes(sleepTimer.getMinutes() + 120)
+                break
+              }
+              case 9: {
+                sleepTimer.setSeconds(sleepTimer.getSeconds() + 5)
+                break
+              }
+              case 10: {
+                sleepTimer.setSeconds(sleepTimer.getSeconds() + 30)
+                break
+              }
+              default: {
+                return
+              }
+            }
+            dispatch(bookshelfSlice.actions.sleepTimerSet({ sleepTimer }))
+          }}
+          dropdownMenuMode
+        >
+          <Button
+            style={[styles.toolbarButton, styles.toolbarTextButton]}
+            chromeless
+          >
+            {formattedSleepTimer ? (
+              <UIText
+                maxFontSizeMultiplier={1.75}
+                style={styles.toolbarTextButton}
+              >
+                {formattedSleepTimer}
+              </UIText>
+            ) : (
+              <ClockFading color={foreground} />
+            )}
+          </Button>
+        </ContextMenu>
 
         <Button
           style={[

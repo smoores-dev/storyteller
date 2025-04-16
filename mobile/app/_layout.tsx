@@ -77,18 +77,21 @@ export default function Layout() {
   useEffect(() => {
     function onAppStateChange(status: AppStateStatus) {
       if (status === "active") {
-        logger.debug("Foregrounded: updating progress interval to 3s")
+        logger.debug("Foregrounded: updating progress interval to 0.2s")
 
         TrackPlayer.updateOptions({
           ...PLAYER_OPTIONS,
           progressUpdateEventInterval: 0.2,
         })
       } else {
-        logger.debug("Backgrounded: updating progress interval to 30s")
+        const { sleepTimer } = store.getState().bookshelf
+        const interval = sleepTimer ? 5 : 30
+
+        logger.debug(`Backgrounded: updating progress interval to ${interval}s`)
 
         TrackPlayer.updateOptions({
           ...PLAYER_OPTIONS,
-          progressUpdateEventInterval: 30,
+          progressUpdateEventInterval: interval,
         })
       }
     }

@@ -41,6 +41,7 @@ export type BookshelfBook = {
 export type BookshelfState = {
   currentPlayingBookId: number | null
   isAudioLoading: boolean
+  sleepTimer: number | null | undefined
   index: number[]
   entities: {
     [id: number]: BookshelfBook
@@ -53,6 +54,7 @@ export type BookshelfState = {
 const initialState: BookshelfState = {
   currentPlayingBookId: null,
   isAudioLoading: false,
+  sleepTimer: null,
   index: [],
   entities: {},
   locators: {},
@@ -215,6 +217,15 @@ export const bookshelfSlice = createSlice({
       const { bookId, locator } = action.payload
 
       state.locators[bookId] = locator
+    },
+    sleepTimerSet: (
+      state,
+      action: PayloadAction<{ sleepTimer: Date | null }>,
+    ) => {
+      state.sleepTimer = action.payload.sleepTimer?.getTime()
+    },
+    sleepTimerExpired: (state) => {
+      state.sleepTimer = null
     },
     bookDeleted(state, action: PayloadAction<{ bookId: number }>) {
       const { bookId } = action.payload

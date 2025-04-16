@@ -69,6 +69,7 @@ import {
   getBookshelfBookIds,
   getCurrentlyPlayingBook,
   getLocator,
+  getSleepTimer,
 } from "../selectors/bookshelfSelectors"
 import { router } from "expo-router"
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake"
@@ -104,6 +105,7 @@ import {
   getGlobalPreferences,
 } from "../selectors/preferencesSelectors"
 import { ApiClientError } from "../../apiClient"
+import { isPast } from "date-fns"
 
 export function createDownloadChannel(
   pauseState: FileSystem.DownloadPauseState,
@@ -942,6 +944,22 @@ export function* manualTrackSeekSaga() {
   )
 }
 
+export function* sleepTimerSaga() {
+  yield takeEvery(playerPositionUpdated, function* () {
+    const sleepTimer = (yield select(getSleepTimer)) as ReturnType<
+      typeof getSleepTimer
+    >
+    if (sleepTimer === null) {
+      return
+    }
+
+    if (isPast(sleepTimer)) {
+      yield call(TrackPlayer.pause)
+      yield put(bookshelfSlice.actions.sleepTimerExpired())
+    }
+  })
+}
+
 export function* relocateToTrackPositionSaga() {
   yield takeLeadingWithQueue(
     [playerPositionUpdated, playerPaused],
@@ -1051,6 +1069,13 @@ export function* playerPlaySaga() {
     const preferences = (yield select(getGlobalPreferences)) as ReturnType<
       typeof getGlobalPreferences
     >
+
+    const sleepTimer = (yield select(getSleepTimer)) as ReturnType<
+      typeof getSleepTimer
+    >
+    if (sleepTimer && isPast(sleepTimer)) {
+      yield put(bookshelfSlice.actions.sleepTimerExpired())
+    }
 
     if (!preferences.automaticRewind.enabled) {
       yield call(TrackPlayer.play)
