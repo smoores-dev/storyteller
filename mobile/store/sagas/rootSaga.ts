@@ -19,6 +19,7 @@ import {
   manualTrackSeekSaga,
   playerPlaySaga,
   fragmentSkipSaga,
+  sleepTimerSaga,
 } from "./bookshelfSagas"
 import {
   clearServerSaga,
@@ -44,6 +45,7 @@ export function* rootSaga() {
     call(loadTrackPlayerSaga),
     call(seekToLocatorSaga),
     call(manualTrackSeekSaga),
+    call(sleepTimerSaga),
     call(relocateToTrackPositionSaga),
     call(deleteBookSaga),
     call(deleteBookmarkSaga),
