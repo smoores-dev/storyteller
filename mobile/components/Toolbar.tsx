@@ -1,5 +1,5 @@
 import { Link } from "expo-router"
-import { StyleSheet, View } from "react-native"
+import { PixelRatio, StyleSheet, View } from "react-native"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getCurrentlyPlayingBook,
@@ -26,7 +26,7 @@ import { UIText } from "./UIText"
 import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
 import { spacing } from "./ui/tokens/spacing"
 import ContextMenu from "react-native-context-menu-view"
-import { intervalToDuration, isPast } from "date-fns"
+import { intervalToDuration, isFuture, isPast } from "date-fns"
 import { useEffect, useState } from "react"
 
 type Props = {
@@ -46,6 +46,8 @@ function formatSleepTimer(sleepTimer: Date) {
   return `${minutes}:${seconds}`
 }
 
+const MAX_FONT_SCALE = 1.75
+
 export function Toolbar({ mode, activeBookmarks }: Props) {
   const book = useAppSelector(getCurrentlyPlayingBook)
   const currentLocator = useAppSelector(
@@ -56,11 +58,11 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
     (state) => book && getBookPlayerSpeed(state, book.id),
   )
 
-  const [formattedSleepTimer, setFormattedSleepTimer] = useState<string | null>(
-    null,
-  )
-
   const sleepTimer = useAppSelector(getSleepTimer)
+
+  const [formattedSleepTimer, setFormattedSleepTimer] = useState<string | null>(
+    sleepTimer && isFuture(sleepTimer) ? formatSleepTimer(sleepTimer) : null,
+  )
 
   useEffect(() => {
     if (sleepTimer) {
@@ -201,21 +203,20 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
           }}
           dropdownMenuMode
         >
-          <Button
-            style={[styles.toolbarButton, styles.toolbarTextButton]}
-            chromeless
-          >
-            {formattedSleepTimer ? (
+          {formattedSleepTimer ? (
+            <Button style={styles.sleepTimerCountdownButton} chromeless>
               <UIText
-                maxFontSizeMultiplier={1.75}
-                style={styles.toolbarTextButton}
+                minimumFontScale={1}
+                maxFontSizeMultiplier={MAX_FONT_SCALE}
               >
                 {formattedSleepTimer}
               </UIText>
-            ) : (
+            </Button>
+          ) : (
+            <Button style={styles.toolbarButton} chromeless>
               <ClockFading color={foreground} />
-            )}
-          </Button>
+            </Button>
+          )}
         </ContextMenu>
 
         <Button
@@ -236,8 +237,9 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
             <Gauge color={foreground} />
           ) : (
             <UIText
-              maxFontSizeMultiplier={1.75}
-              style={[styles.toolbarTextButton, { fontWeight: "bold" }]}
+              minimumFontScale={1}
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
+              style={styles.playbackSpeedText}
             >
               {currentSpeed}x
             </UIText>
@@ -326,8 +328,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: "center",
   },
-  toolbarTextButton: {
+  sleepTimerCountdownButton: {
+    width:
+      48 * Math.min(Math.max(PixelRatio.getFontScale(), 1), MAX_FONT_SCALE),
+    paddingHorizontal: "auto",
+    alignItems: "center",
+  },
+  playbackSpeedText: {
     paddingHorizontal: spacing[1],
+    fontWeight: "bold",
   },
   toolbarLink: {
     marginBottom: -spacing[1.5],
