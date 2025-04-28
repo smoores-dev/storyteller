@@ -2,9 +2,8 @@ import { Inter, Young_Serif } from "next/font/google"
 
 import { ApiHostContextProvider } from "@/contexts/ApiHostContext"
 import { proxyRootPath } from "./apiHost"
-// import { Header } from "@/components/layout/Header"
 import {
-  EMPTY_PERMISSIONS as EMPTY_PERMISSIONS,
+  EMPTY_PERMISSIONS,
   UserPermissionsProvider,
 } from "@/contexts/UserPermissions"
 import { createAuthedApiClient, getCurrentUser } from "@/authedApiClient"

@@ -3,7 +3,7 @@ import { getSettings } from "./database/settings"
 import { logger } from "./logging"
 
 export async function sendInvite(email: string, key: string) {
-  const settings = getSettings()
+  const settings = await getSettings()
   const {
     libraryName,
     webUrl,
@@ -40,9 +40,9 @@ ${webUrl}/invites/${key}
   const transporter = createTransport({
     host: smtpHost,
     port: smtpPort,
-    secure: smtpSsl,
+    secure: smtpSsl ?? true,
     tls: {
-      rejectUnauthorized: smtpRejectUnauthorized,
+      rejectUnauthorized: smtpRejectUnauthorized ?? true,
     },
     auth: {
       user: smtpUsername,

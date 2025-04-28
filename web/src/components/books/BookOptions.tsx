@@ -3,16 +3,15 @@ import { useApiClient } from "@/hooks/useApiClient"
 import { usePermissions } from "@/contexts/UserPermissions"
 import { ProcessingItems } from "./ProcessingItems"
 import { ActionIcon, Button, Group, Modal, Stack, Tooltip } from "@mantine/core"
-import { IconPencil, IconTrash } from "@tabler/icons-react"
-import NextLink from "next/link"
+import { IconTrash } from "@tabler/icons-react"
 import { useDisclosure } from "@mantine/hooks"
 
 type Props = {
   book: BookDetail
-  synchronized: boolean
+  aligned: boolean
 }
 
-export function BookOptions({ book, synchronized }: Props) {
+export function BookOptions({ book, aligned }: Props) {
   const [opened, { open, close }] = useDisclosure()
   const client = useApiClient()
 
@@ -45,24 +44,12 @@ export function BookOptions({ book, synchronized }: Props) {
         </Stack>
       </Modal>
       <Stack>
-        {permissions.book_update && (
-          <ActionIcon
-            component={NextLink}
-            variant="subtle"
-            color="black"
-            href={`/books/${book.uuid}`}
-          >
-            <Tooltip position="right" label="Edit">
-              <IconPencil aria-label="Edit" />
-            </Tooltip>
-          </ActionIcon>
-        )}
-        {permissions.book_process &&
-          book.processing_status &&
-          book.original_files_exist && (
-            <ProcessingItems synchronized={synchronized} book={book} />
+        {permissions.bookProcess &&
+          book.processingTask &&
+          book.originalFilesExist && (
+            <ProcessingItems aligned={aligned} book={book} />
           )}
-        {permissions.book_delete && (
+        {permissions.bookDelete && (
           <ActionIcon variant="subtle" color="red" onClick={open}>
             <Tooltip position="right" label="Delete book">
               <IconTrash aria-label="Delete" />

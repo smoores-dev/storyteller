@@ -1,4 +1,4 @@
-import { User, UserPermissions } from "@/apiModels"
+import { User } from "@/apiModels"
 import { UserActions } from "./UserActions"
 import {
   Box,
@@ -17,6 +17,7 @@ import {
 } from "./CreateInviteForm"
 import { useForm } from "@mantine/form"
 import { useApiClient } from "@/hooks/useApiClient"
+import { UserPermissionSet } from "@/database/users"
 
 type Props = {
   user: User
@@ -29,7 +30,7 @@ export function UserStatus({ user, onUpdate }: Props) {
 
   const form = useForm({
     initialValues: {
-      permissions: Object.entries(user.permissions)
+      permissions: Object.entries(user.permissions ?? {})
         .filter(([, value]) => value)
         .map(([perm]) => perm),
     },
@@ -39,7 +40,7 @@ export function UserStatus({ user, onUpdate }: Props) {
     <Paper className="max-w-[600px]">
       <Group justify="space-between" wrap="nowrap">
         <Stack gap={0}>
-          <Title order={4}>{user.full_name}</Title>
+          <Title order={4}>{user.fullName}</Title>
           <div>{user.username}</div>
           <div>{user.email}</div>
         </Stack>
@@ -57,7 +58,7 @@ export function UserStatus({ user, onUpdate }: Props) {
             setShowPermissions(false)
             const permissionsObject = Object.fromEntries(
               values.permissions.map((permission) => [permission, true]),
-            ) as UserPermissions
+            ) as UserPermissionSet
             await client.updateUser(user.uuid, permissionsObject)
           })}
         >

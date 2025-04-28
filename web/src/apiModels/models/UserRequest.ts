@@ -5,6 +5,6 @@
 export type UserRequest = {
   username: string
   email: string
-  full_name: string
+  fullName: string
   password: string
 }

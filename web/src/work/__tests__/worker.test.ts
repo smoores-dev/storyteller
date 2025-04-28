@@ -43,10 +43,13 @@ void describe("determineRemainingTasks", () => {
     const input: ProcessingTask[] = [
       {
         uuid: randomUUID(),
+        id: null,
         type: ProcessingTaskType.SPLIT_CHAPTERS,
         status: ProcessingTaskStatus.COMPLETED,
         progress: 0,
         bookUuid: uuid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
     ]
 
@@ -78,6 +81,9 @@ void describe("determineRemainingTasks", () => {
         status: ProcessingTaskStatus.COMPLETED,
         progress: 0,
         bookUuid: uuid,
+        id: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       {
         uuid: randomUUID(),
@@ -85,6 +91,9 @@ void describe("determineRemainingTasks", () => {
         status: ProcessingTaskStatus.STARTED,
         progress: 0,
         bookUuid: uuid,
+        id: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       {
         uuid: randomUUID(),
@@ -92,6 +101,9 @@ void describe("determineRemainingTasks", () => {
         status: ProcessingTaskStatus.STARTED,
         progress: 0,
         bookUuid: uuid,
+        id: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
     ]
 
@@ -110,6 +122,9 @@ void describe("determineRemainingTasks", () => {
         status: ProcessingTaskStatus.COMPLETED,
         progress: 0,
         bookUuid: uuid,
+        id: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       {
         uuid: randomUUID(),
@@ -117,6 +132,9 @@ void describe("determineRemainingTasks", () => {
         status: ProcessingTaskStatus.COMPLETED,
         progress: 0,
         bookUuid: uuid,
+        id: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       {
         uuid: randomUUID(),
@@ -124,6 +142,9 @@ void describe("determineRemainingTasks", () => {
         status: ProcessingTaskStatus.IN_ERROR,
         progress: 0,
         bookUuid: uuid,
+        id: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
     ]
 

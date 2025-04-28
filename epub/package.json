@@ -18,7 +18,7 @@
   "scripts": {
     "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs",
     "build:esm": "yarn swc ./index.ts -o ./index.js",
-    "build": "yarn build:esm && yarn build:cjs",
+    "build": "yarn check:types && yarn build:esm && yarn build:cjs",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",
     "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
@@ -37,7 +37,7 @@
     "typedoc": "^0.27.3",
     "typedoc-plugin-markdown": "^4.3.2",
     "typedoc-plugin-remark": "^1.2.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@smoores/fs": "workspace:^",

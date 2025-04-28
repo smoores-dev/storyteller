@@ -13,12 +13,14 @@ import {
   getProcessedAudioFilepath,
   getEpubSyncedFilepath,
 } from "@/assets/paths"
-import { getBooks } from "@/database/books"
+import { getBook, updateBook } from "@/database/books"
 import {
+  NewProcessingTask,
   PROCESSING_TASK_ORDER,
   type ProcessingTask,
 } from "@/database/processingTasks"
-import { Settings } from "@/database/settings"
+import { formatTranscriptionEngineDetails } from "@/database/settings"
+import { Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import {
   getTranscriptionFilename,
@@ -112,7 +114,7 @@ export async function transcribeBook(
 export function determineRemainingTasks(
   bookUuid: UUID,
   processingTasks: ProcessingTask[],
-): Array<Omit<ProcessingTask, "uuid"> & { uuid?: UUID }> {
+): Array<Omit<NewProcessingTask, "id">> {
   const sortedTasks = [...processingTasks].sort(
     (taskA, taskB) =>
       PROCESSING_TASK_ORDER[taskA.type] - PROCESSING_TASK_ORDER[taskB.type],
@@ -134,7 +136,7 @@ export function determineRemainingTasks(
     (task) => task.status === ProcessingTaskStatus.COMPLETED,
   )
 
-  return (sortedTasks as Omit<ProcessingTask, "uuid">[])
+  return (sortedTasks as Omit<NewProcessingTask, "id">[])
     .slice(lastCompletedTaskIndex + 1)
     .concat(
       Object.entries(PROCESSING_TASK_ORDER)
@@ -174,7 +176,7 @@ export default async function processBook({
   const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
 
   // get book info from db
-  const [book] = getBooks([bookUuid])
+  const book = await getBook(bookUuid)
   if (!book) throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
   // book reference to use in log
   const bookRefForLog = `"${book.title}" (uuid: ${bookUuid})`
@@ -224,7 +226,7 @@ export default async function processBook({
         logger.info("Transcribing...")
         const epub = await readEpub(bookUuid)
         const title = await epub.getTitle()
-        const [book] = getBooks([bookUuid])
+        const book = await getBook(bookUuid)
         if (!book)
           throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
 
@@ -265,7 +267,7 @@ export default async function processBook({
           transcriptions,
         )
         await synchronizer.syncBook(onProgress)
-        const [book] = getBooks([bookUuid])
+        const book = await getBook(bookUuid)
 
         if (!book)
           throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
@@ -305,6 +307,11 @@ export default async function processBook({
 
         await epub.writeToFile(getEpubSyncedFilepath(bookUuid))
         await epub.close()
+        await updateBook(book.uuid, {
+          alignedByStorytellerVersion: appVersion,
+          alignedAt: dateTimeString,
+          alignedWith: formatTranscriptionEngineDetails(settings),
+        })
       }
 
       port.postMessage({

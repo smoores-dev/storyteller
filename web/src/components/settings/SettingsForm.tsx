@@ -29,38 +29,37 @@ export function SettingsForm({ settings }: Props) {
   const client = useApiClient()
 
   const initialValues: Settings = {
-    smtp_host: settings.smtp_host,
-    smtp_port: settings.smtp_port,
-    smtp_username: settings.smtp_username,
-    smtp_password: settings.smtp_password,
-    smtp_from: settings.smtp_from,
-    smtp_ssl: settings.smtp_ssl,
-    smtp_reject_unauthorized: settings.smtp_reject_unauthorized,
-    library_name: settings.library_name,
-    web_url: settings.web_url,
-    max_track_length: settings.max_track_length ?? 2,
+    smtpHost: settings.smtpHost,
+    smtpPort: settings.smtpPort,
+    smtpUsername: settings.smtpUsername,
+    smtpPassword: settings.smtpPassword,
+    smtpFrom: settings.smtpFrom,
+    smtpSsl: settings.smtpSsl,
+    smtpRejectUnauthorized: settings.smtpRejectUnauthorized,
+    libraryName: settings.libraryName,
+    webUrl: settings.webUrl,
+    maxTrackLength: settings.maxTrackLength ?? 2,
     codec: settings.codec ?? "",
     bitrate: settings.bitrate ?? "",
-    transcription_engine: settings.transcription_engine ?? "whisper.cpp",
-    whisper_build: settings.whisper_build ?? "cpu",
-    whisper_model: settings.whisper_model ?? "tiny",
-    google_cloud_api_key: settings.google_cloud_api_key ?? "",
-    azure_subscription_key: settings.azure_subscription_key ?? "",
-    azure_service_region: settings.azure_service_region ?? "",
-    amazon_transcribe_region: settings.amazon_transcribe_region ?? "",
-    amazon_transcribe_access_key_id:
-      settings.amazon_transcribe_access_key_id ?? "",
-    amazon_transcribe_secret_access_key:
-      settings.amazon_transcribe_secret_access_key ?? "",
-    open_ai_api_key: settings.open_ai_api_key ?? "",
-    open_ai_organization: settings.open_ai_organization ?? "",
-    open_ai_base_url: settings.open_ai_base_url ?? "",
-    open_ai_model_name: settings.open_ai_model_name ?? "",
-    deepgram_api_key: settings.deepgram_api_key ?? "",
-    deepgram_model: settings.deepgram_model ?? "nova-3",
-    parallel_transcribes: settings.parallel_transcribes,
-    parallel_transcodes: settings.parallel_transcodes,
-    parallel_whisper_build: settings.parallel_whisper_build,
+    transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
+    whisperBuild: settings.whisperBuild ?? "cpu",
+    whisperModel: settings.whisperModel ?? "tiny",
+    googleCloudApiKey: settings.googleCloudApiKey ?? "",
+    azureSubscriptionKey: settings.azureSubscriptionKey ?? "",
+    azureServiceRegion: settings.azureServiceRegion ?? "",
+    amazonTranscribeRegion: settings.amazonTranscribeRegion ?? "",
+    amazonTranscribeAccessKeyId: settings.amazonTranscribeAccessKeyId ?? "",
+    amazonTranscribeSecretAccessKey:
+      settings.amazonTranscribeSecretAccessKey ?? "",
+    openAiApiKey: settings.openAiApiKey ?? "",
+    openAiOrganization: settings.openAiOrganization ?? "",
+    openAiBaseUrl: settings.openAiBaseUrl ?? "",
+    openAiModelName: settings.openAiModelName ?? "",
+    deepgramApiKey: settings.deepgramApiKey ?? "",
+    deepgramModel: settings.deepgramModel ?? "nova-3",
+    parallelTranscribes: settings.parallelTranscribes,
+    parallelTranscodes: settings.parallelTranscodes,
+    parallelWhisperBuild: settings.parallelWhisperBuild,
   }
 
   const form = useForm({
@@ -217,7 +216,7 @@ export function SettingsForm({ settings }: Props) {
           <option value="openai-cloud">OpenAI Cloud Platform</option>
           <option value="deepgram">Deepgram Speech to Text</option>
         </NativeSelect>
-        {state.transcription_engine === "whisper.cpp" && (
+        {state.transcriptionEngine === "whisper.cpp" && (
           <>
             <NativeSelect
               label="Whisper build"
@@ -259,14 +258,14 @@ export function SettingsForm({ settings }: Props) {
             </NativeSelect>
           </>
         )}
-        {state.transcription_engine === "google-cloud" && (
+        {state.transcriptionEngine === "google-cloud" && (
           <TextInput
             label="API key"
             withAsterisk
             {...form.getInputProps("google_cloud_api_key")}
           />
         )}
-        {state.transcription_engine === "microsoft-azure" && (
+        {state.transcriptionEngine === "microsoft-azure" && (
           <>
             <TextInput
               label="Subscription key"
@@ -280,7 +279,7 @@ export function SettingsForm({ settings }: Props) {
             />
           </>
         )}
-        {state.transcription_engine === "amazon-transcribe" && (
+        {state.transcriptionEngine === "amazon-transcribe" && (
           <>
             <TextInput
               label="Region"
@@ -299,7 +298,7 @@ export function SettingsForm({ settings }: Props) {
             />
           </>
         )}
-        {state.transcription_engine === "openai-cloud" && (
+        {state.transcriptionEngine === "openai-cloud" && (
           <>
             <TextInput
               label="API Key"
@@ -340,7 +339,7 @@ export function SettingsForm({ settings }: Props) {
             />
           </>
         )}
-        {state.transcription_engine === "deepgram" && (
+        {state.transcriptionEngine === "deepgram" && (
           <>
             <TextInput
               label="API Key"

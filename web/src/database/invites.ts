@@ -1,185 +1,113 @@
-import { UUID } from "@/uuid"
 import { getDatabase } from "./connection"
-import { UserPermissions } from "./users"
+import { NewUserPermission } from "./users"
+import { asInt } from "./plugins/booleanPlugin"
 
 export type Invite = {
   email: string
   key: string
 }
 
-export function createInvite(
+export async function createInvite(
   email: string,
   key: string,
-  permissions: UserPermissions,
+  permissions: NewUserPermission,
 ) {
   const db = getDatabase()
 
-  const { uuid } = db
-    .prepare(
-      `
-    INSERT INTO user_permission (
-      book_create,
-      book_delete,
-      book_read,
-      book_process,
-      book_download,
-      book_update,
-      book_list,
-      invite_list,
-      invite_delete,
-      user_create,
-      user_list,
-      user_read,
-      user_delete,
-      settings_update
-  ) VALUES (
-      $bookCreate,
-      $bookDelete,
-      $bookRead,
-      $bookProcess,
-      $bookDownload,
-      $bookUpdate,
-      $bookList,
-      $inviteList,
-      $inviteDelete,
-      $userCreate,
-      $userList,
-      $userRead,
-      $userDelete,
-      $settingsUpdate
-  )
-  RETURNING uuid
-  `,
-    )
-    .get({
-      bookCreate: permissions.bookCreate ? 1 : 0,
-      bookDelete: permissions.bookDelete ? 1 : 0,
-      bookRead: permissions.bookRead ? 1 : 0,
-      bookProcess: permissions.bookProcess ? 1 : 0,
-      bookDownload: permissions.bookDownload ? 1 : 0,
-      bookUpdate: permissions.bookUpdate ? 1 : 0,
-      bookList: permissions.bookList ? 1 : 0,
-      inviteList: permissions.inviteList ? 1 : 0,
-      inviteDelete: permissions.inviteDelete ? 1 : 0,
-      userCreate: permissions.userCreate ? 1 : 0,
-      userList: permissions.userList ? 1 : 0,
-      userRead: permissions.userRead ? 1 : 0,
-      userDelete: permissions.userDelete ? 1 : 0,
-      settingsUpdate: permissions.settingsUpdate ? 1 : 0,
-    }) as { uuid: UUID }
+  const { uuid } = await db
+    .insertInto("userPermission")
+    .values({
+      bookCreate: asInt(permissions.bookCreate),
+      bookUpdate: asInt(permissions.bookUpdate),
+      bookList: asInt(permissions.bookList),
+      bookDelete: asInt(permissions.bookDelete),
+      bookDownload: asInt(permissions.bookDownload),
+      bookProcess: asInt(permissions.bookProcess),
+      inviteDelete: asInt(permissions.inviteDelete),
+      inviteList: asInt(permissions.inviteList),
+      settingsUpdate: asInt(permissions.settingsUpdate),
+      userCreate: asInt(permissions.userCreate),
+      userList: asInt(permissions.userList),
+      userRead: asInt(permissions.userRead),
+      userDelete: asInt(permissions.userDelete),
+      userUpdate: asInt(permissions.userUpdate),
+    })
+    .returning(["uuid"])
+    .executeTakeFirstOrThrow()
 
-  db.prepare(
-    `
-    INSERT INTO invite (email, key, user_permission_uuid)
-    VALUES ($email, $key, $userPermissionUuid)
-    `,
-  ).run({
-    email,
-    key,
-    userPermissionUuid: uuid,
-  })
+  await db
+    .insertInto("invite")
+    .values({ email, key, userPermissionUuid: uuid })
+    .execute()
 }
 
-export function getInvite(key: string): Invite {
+export async function getInvite(key: string): Promise<Invite> {
   const db = getDatabase()
 
-  const { email } = db
-    .prepare<{ key: string }>(
-      `
-    SELECT email
-    FROM invite
-    WHERE key = $key
-    `,
-    )
-    .get({
-      key,
-    }) as { email: string }
+  const { email } = await db
+    .selectFrom("invite")
+    .select(["email"])
+    .where("key", "=", key)
+    .executeTakeFirstOrThrow()
 
   return { email, key }
 }
 
-export function getInvites(): Invite[] {
+export async function getInvites(): Promise<Invite[]> {
   const db = getDatabase()
 
-  return db
-    .prepare(
-      `
-    SELECT invite.email, key
-    FROM invite
-    JOIN user_permission
-      ON user_permission.uuid = invite.user_permission_uuid
-    LEFT JOIN user
-      ON user.user_permission_uuid = user_permission.uuid
-    WHERE user.uuid IS NULL
-    `,
+  return await db
+    .selectFrom("invite")
+    .select(["invite.email", "key"])
+    .innerJoin(
+      "userPermission",
+      "userPermission.uuid",
+      "invite.userPermissionUuid",
     )
-    .all() as Invite[]
+    .leftJoin("user", "user.userPermissionUuid", "userPermission.uuid")
+    .execute()
 }
 
-export function verifyInvite(email: string, key: string) {
+export async function verifyInvite(email: string, key: string) {
   const db = getDatabase()
 
-  return !!db
-    .prepare<{ email: string; key: string }>(
-      `
-    SELECT uuid
-    FROM invite
-    WHERE email = $email
-      AND key = $key
-    `,
-    )
-    .get({
-      email,
-      key,
-    })
+  const rows = await db
+    .selectFrom("invite")
+    .select(["uuid"])
+    .where("email", "=", email)
+    .where("key", "=", key)
+    .execute()
+
+  return !!rows.length
 }
 
-export function deleteInvite(key: string) {
+export async function deleteInvite(key: string) {
   const db = getDatabase()
 
-  const acceptedUser = db
-    .prepare<{ key: string }>(
-      `
-    SELECT user.id
-    FROM user
-    JOIN user_permission
-      ON user.user_permission_uuid = user_permission.uuid
-    JOIN invite
-      ON invite.user_permission_uuid = user_permission.uuid
-    WHERE invite.key = $key
-    `,
+  const acceptedUser = await db
+    .selectFrom("user")
+    .innerJoin(
+      "userPermission",
+      "user.userPermissionUuid",
+      "userPermission.uuid",
     )
-    .get({
-      key,
-    })
+    .innerJoin("invite", "invite.userPermissionUuid", "userPermission.uuid")
+    .executeTakeFirst()
 
   if (acceptedUser) {
     throw new Error("User has already accepted this invite")
   }
 
-  const { uuid: userPermissionUuid } = db
-    .prepare<{ key: string }>(
-      `
-    SELECT user_permission_uuid
-    FROM invite
-    WHERE invite.key = $key
-    `,
-    )
-    .get({
-      key,
-    }) as { uuid: UUID }
+  const { userPermissionUuid } = await db
+    .selectFrom("invite")
+    .select(["userPermissionUuid"])
+    .where("invite.key", "=", key)
+    .executeTakeFirstOrThrow()
 
-  db.prepare<{ key: string }>(
-    `
-    DELETE FROM invite
-    WHERE key = $key
-    `,
-  ).run({ key })
+  await db.deleteFrom("invite").where("key", "=", key).execute()
 
-  db.prepare<{ uuid: UUID }>(
-    `
-    DELETE FROM user_permission
-    WHERE uuid = $uuid
-    `,
-  ).run({ uuid: userPermissionUuid })
+  await db
+    .deleteFrom("userPermission")
+    .where("uuid", "=", userPermissionUuid)
+    .execute()
 }

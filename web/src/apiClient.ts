@@ -1,7 +1,5 @@
 import axios, { AxiosProgressEvent } from "axios"
 import {
-  Body_login_token_post,
-  BookAuthor,
   BookDetail,
   Invite,
   InviteAccept,
@@ -9,9 +7,11 @@ import {
   Settings,
   Token,
   User,
-  UserPermissions,
   UserRequest,
 } from "./apiModels"
+import { UserPermissionSet } from "./database/users"
+import { AuthorRelation, BookUpdate } from "./database/books"
+import { BookEvent } from "./events"
 
 export class ApiClientError extends Error {
   constructor(
@@ -37,8 +37,8 @@ export class ApiClient {
       : { Authorization: `Bearer ${this.accessToken}` }
   }
 
-  getSyncedDownloadUrl(bookUuid: string) {
-    return `${this.rootPath}/books/${bookUuid}/synced`
+  getAlignedDownloadUrl(bookUuid: string) {
+    return `${this.rootPath}/v2/books/${bookUuid}/aligned`
   }
 
   getCoverUrl(bookUuid: string, audio = false) {
@@ -46,11 +46,11 @@ export class ApiClient {
     if (audio) {
       searchParams.append("audio", "true")
     }
-    return `${this.rootPath}/books/${bookUuid}/cover?${searchParams.toString()}`
+    return `${this.rootPath}/v2/books/${bookUuid}/cover?${searchParams.toString()}`
   }
 
   async needsInit(): Promise<boolean> {
-    const url = new URL(`${this.rootPath}/needs-init`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/needs-init`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",
@@ -67,12 +67,12 @@ export class ApiClient {
     return true
   }
 
-  async login(creds: Body_login_token_post): Promise<Token> {
+  async login(creds: { username: string; password: string }): Promise<Token> {
     const formData = new FormData()
     formData.set("username", creds.username)
     formData.set("password", creds.password)
 
-    const url = new URL(`${this.rootPath}/token`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/token`, this.origin)
 
     const response = await fetch(url, {
       method: "POST",
@@ -91,7 +91,7 @@ export class ApiClient {
   }
 
   async logout(): Promise<void> {
-    const url = new URL(`${this.rootPath}/logout`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/logout`, this.origin)
 
     const response = await fetch(url, {
       method: "POST",
@@ -105,7 +105,7 @@ export class ApiClient {
   }
 
   async createInvite(inviteRequest: InviteRequest): Promise<Invite> {
-    const url = new URL(`${this.rootPath}/invites`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/invites`, this.origin)
 
     const response = await fetch(url, {
       method: "POST",
@@ -124,7 +124,7 @@ export class ApiClient {
 
   async resendInvite(inviteKey: string): Promise<void> {
     const url = new URL(
-      `${this.rootPath}/invites/${inviteKey}/send`,
+      `${this.rootPath}/v2/invites/${inviteKey}/send`,
       this.origin,
     )
 
@@ -140,7 +140,7 @@ export class ApiClient {
   }
 
   async getInvite(inviteKey: string): Promise<Invite> {
-    const url = new URL(`${this.rootPath}/invites/${inviteKey}`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/invites/${inviteKey}`, this.origin)
 
     const response = await fetch(url, {
       headers: this.getHeaders(),
@@ -156,7 +156,7 @@ export class ApiClient {
   }
 
   async deleteInvite(inviteKey: string): Promise<void> {
-    const url = new URL(`${this.rootPath}/invites/${inviteKey}`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/invites/${inviteKey}`, this.origin)
 
     const response = await fetch(url, {
       method: "DELETE",
@@ -170,7 +170,7 @@ export class ApiClient {
   }
 
   async listInvites(): Promise<Invite[]> {
-    const url = new URL(`${this.rootPath}/invites`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/invites`, this.origin)
 
     const response = await fetch(url, {
       headers: this.getHeaders(),
@@ -186,7 +186,7 @@ export class ApiClient {
   }
 
   async acceptInvite(inviteAccept: InviteAccept): Promise<Token> {
-    const url = new URL(`${this.rootPath}/users`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/users`, this.origin)
 
     const response = await fetch(url, {
       method: "POST",
@@ -205,7 +205,7 @@ export class ApiClient {
   }
 
   async listUsers(): Promise<User[]> {
-    const url = new URL(`${this.rootPath}/users`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/users`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",
@@ -222,7 +222,7 @@ export class ApiClient {
   }
 
   async createAdminUser(userRequest: UserRequest): Promise<Token> {
-    const url = new URL(`${this.rootPath}/users/admin`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/users/admin`, this.origin)
 
     const response = await fetch(url, {
       method: "POST",
@@ -240,7 +240,7 @@ export class ApiClient {
   }
 
   async deleteUser(uuid: string): Promise<void> {
-    const url = new URL(`${this.rootPath}/users/${uuid}`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/users/${uuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "DELETE",
@@ -253,8 +253,11 @@ export class ApiClient {
     }
   }
 
-  async updateUser(uuid: string, permissions: UserPermissions): Promise<void> {
-    const url = new URL(`${this.rootPath}/users/${uuid}`, this.origin)
+  async updateUser(
+    uuid: string,
+    permissions: UserPermissionSet,
+  ): Promise<void> {
+    const url = new URL(`${this.rootPath}/v2/users/${uuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "PUT",
@@ -269,7 +272,7 @@ export class ApiClient {
   }
 
   async getCurrentUser(): Promise<User> {
-    const url = new URL(`${this.rootPath}/user`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/user`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",
@@ -286,7 +289,7 @@ export class ApiClient {
   }
 
   async getSettings(): Promise<Settings> {
-    const url = new URL(`${this.rootPath}/settings`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/settings`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",
@@ -303,8 +306,8 @@ export class ApiClient {
     return settings
   }
 
-  async updateSettings(settings: Required<Settings>) {
-    const url = new URL(`${this.rootPath}/settings`, this.origin)
+  async updateSettings(settings: Settings) {
+    const url = new URL(`${this.rootPath}/v2/settings`, this.origin)
 
     const response = await fetch(url, {
       method: "PUT",
@@ -319,7 +322,7 @@ export class ApiClient {
   }
 
   async deleteBook(bookUuid: string): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/books/${bookUuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "DELETE",
@@ -333,7 +336,10 @@ export class ApiClient {
   }
 
   async deleteBookAssets(bookUuid: string, originals?: boolean): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookUuid}/cache`, this.origin)
+    const url = new URL(
+      `${this.rootPath}/v2/books/${bookUuid}/cache`,
+      this.origin,
+    )
     if (originals) {
       url.searchParams.set("originals", "true")
     }
@@ -350,7 +356,7 @@ export class ApiClient {
   }
 
   async listBooks(): Promise<BookDetail[]> {
-    const url = new URL(`${this.rootPath}/books`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/books`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",
@@ -370,7 +376,7 @@ export class ApiClient {
     file: File,
     onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<BookDetail> {
-    const url = new URL(`${this.rootPath}/books/epub`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/books/epub`, this.origin)
 
     const response = await axios.postForm<BookDetail>(
       url.toString(),
@@ -397,15 +403,15 @@ export class ApiClient {
     audioFiles: File[] | string[],
     onUploadProgress?: (progressEvent: AxiosProgressEvent) => void,
   ): Promise<BookDetail> {
-    const url = new URL(`${this.rootPath}/books/`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/books/`, this.origin)
 
     if (typeof epubFile === "string" && Array.isArray(audioFiles)) {
       const response = await fetch(url, {
         method: "POST",
         headers: { ...this.getHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          epub_path: epubFile,
-          audio_paths: audioFiles,
+          epubPath: epubFile,
+          audioPaths: audioFiles,
         }),
       })
 
@@ -418,8 +424,8 @@ export class ApiClient {
     const response = await axios.postForm<BookDetail>(
       url.toString(),
       {
-        epub_file: epubFile,
-        audio_files: audioFiles,
+        epubFile: epubFile,
+        audioFiles: audioFiles,
       },
       {
         formSerializer: { indexes: null },
@@ -438,31 +444,9 @@ export class ApiClient {
     return response.data
   }
 
-  async uploadBookAudio(
-    bookUuid: string,
-    files: FileList,
-    onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
-  ): Promise<void> {
-    const url = new URL(`${this.rootPath}/books/${bookUuid}/audio`, this.origin)
-
-    const response = await axios.postForm<BookDetail>(
-      url.toString(),
-      { files },
-      {
-        formSerializer: { indexes: null },
-        withCredentials: true,
-        onUploadProgress,
-      },
-    )
-
-    if (response.status > 299) {
-      throw new ApiClientError(response.status, response.statusText)
-    }
-  }
-
   async processBook(bookUuid: string, restart?: boolean): Promise<void> {
     const url = new URL(
-      `${this.rootPath}/books/${bookUuid}/process`,
+      `${this.rootPath}/v2/books/${bookUuid}/process`,
       this.origin,
     )
     if (restart) {
@@ -482,7 +466,7 @@ export class ApiClient {
 
   async cancelProcessing(bookUuid: string): Promise<void> {
     const url = new URL(
-      `${this.rootPath}/books/${bookUuid}/process`,
+      `${this.rootPath}/v2/books/${bookUuid}/process`,
       this.origin,
     )
 
@@ -498,7 +482,7 @@ export class ApiClient {
   }
 
   async getBookDetails(bookUuid: string): Promise<BookDetail> {
-    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/books/${bookUuid}`, this.origin)
 
     const response = await fetch(url, {
       method: "GET",
@@ -515,30 +499,29 @@ export class ApiClient {
   }
 
   async updateBook(
-    bookUuid: string,
-    title: string,
-    language: string | null,
-    authors: BookAuthor[],
+    update: BookUpdate & { authors: AuthorRelation[] },
     textCover: File | null,
     audioCover: File | null,
   ): Promise<BookDetail> {
-    const url = new URL(`${this.rootPath}/books/${bookUuid}`, this.origin)
+    const url = new URL(`${this.rootPath}/v2/books/${update.uuid}`, this.origin)
 
     const body = new FormData()
-    body.append("title", title)
-    if (language !== null) {
-      body.append("language", language)
+    if (update.title != undefined) {
+      body.append("title", update.title)
     }
-    for (const author of authors) {
+    if (update.language != undefined) {
+      body.append("language", update.language)
+    }
+    for (const author of update.authors) {
       body.append("authors", JSON.stringify(author))
     }
 
     if (textCover !== null) {
-      body.append("text_cover", textCover)
+      body.append("textCover", textCover)
     }
 
     if (audioCover !== null) {
-      body.append("audio_cover", audioCover)
+      body.append("audioCover", audioCover)
     }
 
     const response = await fetch(url, {
@@ -555,5 +538,18 @@ export class ApiClient {
 
     const book = (await response.json()) as BookDetail
     return book
+  }
+
+  subscribeToBookEvents(listener: (event: BookEvent) => void) {
+    const url = new URL(`${this.rootPath}/v2/books/events`, this.origin)
+    const eventSource = new EventSource(url.toString())
+    eventSource.addEventListener("message", (event: MessageEvent<string>) => {
+      const parsedEvent = JSON.parse(event.data) as BookEvent
+      listener(parsedEvent)
+    })
+
+    return () => {
+      eventSource.close()
+    }
   }
 }

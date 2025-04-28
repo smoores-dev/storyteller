@@ -18,6 +18,7 @@ import {
   ActionIcon,
 } from "@mantine/core"
 import { IconPlus, IconTrash } from "@tabler/icons-react"
+import { AuthorRelation } from "@/database/books"
 
 type Props = {
   book: BookDetail
@@ -37,7 +38,7 @@ export function BookEditForm({ book }: Props) {
     initialValues: {
       title: book.title,
       language: book.language,
-      authors: book.authors,
+      authors: book.authors as AuthorRelation[],
       textCover: null as File | null,
       audioCover: null as File | null,
     },
@@ -72,10 +73,12 @@ export function BookEditForm({ book }: Props) {
           setSavedState(SaveState.LOADING)
           try {
             await client.updateBook(
-              book.uuid,
-              values.title,
-              values.language,
-              values.authors,
+              {
+                ...book,
+                title: values.title,
+                language: values.language,
+                authors: values.authors,
+              },
               values.textCover,
               values.audioCover,
             )

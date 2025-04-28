@@ -52,9 +52,6 @@ export function AddBookForm() {
   const [audioPaths, setAudioPaths] = useState<DirectoryFileEntry[] | null>(
     null,
   )
-  const [currentUploadIndex, setCurrentUploadIndex] = useState<number | null>(
-    null,
-  )
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [uploadState, setUploadState] = useState<UploadState>(UploadState.CLEAN)
 
@@ -65,7 +62,6 @@ export function AddBookForm() {
     setAudioFiles(null)
     setEpubPath(null)
     setAudioPaths(null)
-    setCurrentUploadIndex(null)
     setUploadProgress(null)
     setUploadState(UploadState.CLEAN)
   }, [])
@@ -80,9 +76,6 @@ export function AddBookForm() {
       if (epubFile === null || audioFiles === null) return
       try {
         await client.createBook(epubFile, audioFiles, (event) => {
-          if (event.progress === 1) {
-            setCurrentUploadIndex((p) => (p === null ? 0 : p + 1))
-          }
           setUploadProgress(event.progress ?? null)
         })
       } catch (_) {
@@ -105,7 +98,7 @@ export function AddBookForm() {
     setUploadState(UploadState.SUCCESS)
   }
 
-  const canAddBook = usePermission("book_create")
+  const canAddBook = usePermission("bookCreate")
 
   if (!canAddBook) return null
 
@@ -371,12 +364,7 @@ export function AddBookForm() {
               {uploadState === UploadState.UPLOADING &&
                 uploadProgress !== null && (
                   <Box className="p-6">
-                    <Text>
-                      {currentUploadIndex === null
-                        ? epubFile?.name
-                        : audioFiles?.[currentUploadIndex]?.name ??
-                          "Processing..."}
-                    </Text>
+                    <Text>{"Uploading to server…"}</Text>
                     <Progress value={uploadProgress * 100} />
                   </Box>
                 )}

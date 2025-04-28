@@ -10,7 +10,7 @@ export default function InitPage() {
     "use server"
 
     const email = data.get("email")?.valueOf() as string | undefined
-    const fullName = data.get("full_name")?.valueOf() as string | undefined
+    const fullName = data.get("fullName")?.valueOf() as string | undefined
     const username = data.get("username")?.valueOf() as string | undefined
     const password = data.get("password")?.valueOf() as string | undefined
     if (!fullName || !username || !password || !email) return
@@ -21,7 +21,7 @@ export default function InitPage() {
     const client = new ApiClient(apiHost, proxyRootPath)
     const token = await client.createAdminUser({
       email: email,
-      full_name: fullName,
+      fullName,
       username,
       password,
     })
@@ -51,7 +51,7 @@ export default function InitPage() {
         />
         <TextInput
           label="Full name"
-          name="full_name"
+          name="fullName"
           type="text"
           withAsterisk
           required

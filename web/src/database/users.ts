@@ -1,171 +1,111 @@
 import { UUID } from "@/uuid"
 import { getDatabase } from "./connection"
-import { mapValues } from "@/objects"
+import { Insertable, Selectable, Updateable } from "kysely"
+import { DB } from "./schema"
+import { jsonObjectFrom } from "kysely/helpers/sqlite"
+import { asInt } from "./plugins/booleanPlugin"
 
-export type UserPermissions = {
-  bookCreate: boolean
-  bookDelete: boolean
-  bookDownload: boolean
-  bookList: boolean
-  bookProcess: boolean
-  bookRead: boolean
-  bookUpdate: boolean
-  inviteDelete: boolean
-  inviteList: boolean
-  settingsUpdate: boolean
-  userCreate: boolean
-  userDelete: boolean
-  userList: boolean
-  userRead: boolean
-  userUpdate: boolean
-}
+export type UserPermission = Selectable<DB["userPermission"]>
+export type NewUserPermission = Insertable<DB["userPermission"]>
+export type UserPermissionUpdate = Updateable<DB["userPermission"]>
 
-export type Permission =
-  | "book_create"
-  | "book_delete"
-  | "book_download"
-  | "book_list"
-  | "book_process"
-  | "book_read"
-  | "book_update"
-  | "invite_delete"
-  | "invite_list"
-  | "settings_update"
-  | "user_create"
-  | "user_delete"
-  | "user_list"
-  | "user_read"
-  | "user_update"
+export type UserPermissionSet = Omit<
+  UserPermission,
+  "uuid" | "id" | "createdAt" | "updatedAt"
+>
 
-export type User = {
-  uuid: UUID
-  username: string
-  fullName: string
-  email: string
-  hashedPassword: string
-  permissions: UserPermissions
-}
+export type Permission = keyof UserPermissionSet
 
-// sqlite doesn't really have booleans, so it returns numbers here
-type SqliteUserPermissions = { [K in keyof UserPermissions]: 0 | 1 }
+export type User = Selectable<DB["user"]>
 
-export function getUser(usernameOrEmail: string): User | null {
+export async function getUser(usernameOrEmail: string) {
   const db = getDatabase()
 
-  const row = db
-    .prepare<{ username: string }>(
-      `
-    SELECT
-      user.uuid,
-      user.full_name AS fullName,
-      user.username,
-      user.email,
-      user.hashed_password AS hashedPassword,
-      book_create AS bookCreate,
-      book_read AS bookRead,
-      book_process AS bookProcess,
-      book_download AS bookDownload,
-      book_delete AS bookDelete,
-      book_update AS bookUpdate,
-      book_list AS bookList,
-      invite_list AS inviteList,
-      invite_delete AS inviteDelete,
-      user_create AS userCreate,
-      user_list AS userList,
-      user_read AS userRead,
-      user_delete AS userDelete,
-      user_update AS userUpdate,
-      settings_update AS settingsUpdate
-    FROM user
-    JOIN user_permission
-      ON user.user_permission_uuid = user_permission.uuid
-    WHERE username = $username OR email = $username
-    `,
+  const row = await db
+    .selectFrom("user")
+    .select(["uuid", "fullName", "username", "email", "hashedPassword"])
+    .select((eb) => [
+      jsonObjectFrom(
+        eb
+          .selectFrom("userPermission")
+          .select([
+            "bookCreate",
+            "bookDelete",
+            "bookRead",
+            "bookProcess",
+            "bookDownload",
+            "bookUpdate",
+            "bookList",
+            "inviteList",
+            "inviteDelete",
+            "userCreate",
+            "userList",
+            "userRead",
+            "userDelete",
+            "userUpdate",
+            "settingsUpdate",
+          ])
+          .whereRef("user.userPermissionUuid", "=", "userPermission.uuid"),
+      ).as("permissions"),
+    ])
+    .where((eb) =>
+      eb.or([
+        eb("username", "=", usernameOrEmail.toLowerCase()),
+        eb("email", "=", usernameOrEmail.toLowerCase()),
+      ]),
     )
-    .get({
-      username: usernameOrEmail.toLowerCase(),
-    }) as null | (User & SqliteUserPermissions)
+    .executeTakeFirst()
 
-  if (!row) return null
-
-  const { uuid, fullName, username, email, hashedPassword, ...permissions } =
-    row
-
-  return {
-    uuid,
-    username,
-    fullName,
-    email,
-    hashedPassword,
-    permissions: mapValues(permissions, (v) => v === 1),
-  }
+  return row ?? null
 }
 
-export function getUserCount() {
+export async function getUserCount() {
   const db = getDatabase()
 
-  const { count } = db
-    .prepare(
-      `
-    SELECT count(uuid) AS count
-    FROM user;
-    `,
-    )
-    .get() as { count: number }
+  const { count } = await db
+    .selectFrom("user")
+    .select([(eb) => eb.fn.count("uuid").as("count")])
+    .executeTakeFirstOrThrow()
 
-  return count
+  return count as number
 }
 
-export function getUsers() {
+export async function getUsers() {
   const db = getDatabase()
 
-  const rows = db
-    .prepare(
-      `
-    SELECT
-      user.uuid,
-      user.username,
-      user.full_name AS fullName,
-      user.email,
-      user.hashed_password AS hashedPassword,
-      book_create AS bookCreate,
-      book_read AS bookRead,
-      book_process AS bookProcess,
-      book_download AS bookDownload,
-      book_delete AS bookDelete,
-      book_update AS bookUpdate,
-      book_list AS bookList,
-      invite_list AS inviteList,
-      invite_delete AS inviteDelete,
-      user_create AS userCreate,
-      user_list AS userList,
-      user_read AS userRead,
-      user_delete AS userDelete,
-      user_update AS userUpdate,
-      settings_update AS settingsUpdate
-    FROM user
-    JOIN user_permission
-      ON user.user_permission_uuid = user_permission.uuid
-    `,
-    )
-    .all() as Array<User & SqliteUserPermissions>
+  const rows = await db
+    .selectFrom("user")
+    .select(["uuid", "fullName", "username", "email", "hashedPassword"])
+    .select((eb) => [
+      jsonObjectFrom(
+        eb
+          .selectFrom("userPermission")
+          .select([
+            "bookCreate",
+            "bookDelete",
+            "bookRead",
+            "bookProcess",
+            "bookDownload",
+            "bookUpdate",
+            "bookList",
+            "inviteList",
+            "inviteDelete",
+            "userCreate",
+            "userList",
+            "userRead",
+            "userDelete",
+            "userUpdate",
+            "settingsUpdate",
+          ])
+          .whereRef("user.userPermissionUuid", "=", "userPermission.uuid"),
+      ).as("permissions"),
+    ])
+    .execute()
 
-  return rows.map((row) => {
-    const { uuid, username, fullName, email, hashedPassword, ...permissions } =
-      row
-
-    return {
-      uuid,
-      username,
-      fullName,
-      email,
-      hashedPassword,
-      permissions: mapValues(permissions, (v) => v === 1),
-    }
-  })
+  return rows
 }
 
-export function createAdminUser(
+export async function createAdminUser(
   username: string,
   fullName: string,
   email: string,
@@ -173,111 +113,88 @@ export function createAdminUser(
 ) {
   const db = getDatabase()
 
-  const { uuid } = db
-    .prepare(
-      `
-    INSERT INTO user_permission (
-      book_create,
-      book_delete,
-      book_read,
-      book_process,
-      book_download,
-      book_update,
-      book_list,
-      invite_list,
-      invite_delete,
-      user_create,
-      user_list,
-      user_read,
-      user_delete,
-      user_update,
-      settings_update
-    ) SELECT 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-    WHERE NOT EXISTS (
-      SELECT uuid
-      FROM user_permission
+  const { uuid } = await db
+    .insertInto("userPermission")
+    .columns([
+      "bookCreate",
+      "bookDelete",
+      "bookRead",
+      "bookProcess",
+      "bookDownload",
+      "bookUpdate",
+      "bookList",
+      "inviteList",
+      "inviteDelete",
+      "userCreate",
+      "userList",
+      "userRead",
+      "userDelete",
+      "userUpdate",
+      "settingsUpdate",
+    ])
+    .expression((eb) =>
+      db
+        .selectNoFrom([
+          eb.lit(1).as("bookCreate"),
+          eb.lit(1).as("bookDelete"),
+          eb.lit(1).as("bookRead"),
+          eb.lit(1).as("bookProcess"),
+          eb.lit(1).as("bookDownload"),
+          eb.lit(1).as("bookUpdate"),
+          eb.lit(1).as("bookList"),
+          eb.lit(1).as("inviteList"),
+          eb.lit(1).as("inviteDelete"),
+          eb.lit(1).as("userCreate"),
+          eb.lit(1).as("userList"),
+          eb.lit(1).as("userRead"),
+          eb.lit(1).as("userDelete"),
+          eb.lit(1).as("userUpdate"),
+          eb.lit(1).as("settingsUpdate"),
+        ])
+        .where((web) =>
+          web.not(
+            web.exists(web.selectFrom("userPermission").select(["uuid"])),
+          ),
+        ),
     )
-    RETURNING uuid
-    `,
-    )
-    .get() as { uuid: UUID }
+    .returning(["uuid"])
+    .executeTakeFirstOrThrow()
 
-  db.prepare<{
-    username: string
-    fullName: string
-    email: string
-    hashedPassword: string
-    userPermissionUuid: UUID
-  }>(
-    `
-    INSERT INTO user (
-      username,
-      full_name,
+  await db
+    .insertInto("user")
+    .values({
+      username: username.toLowerCase(),
+      fullName,
       email,
-      hashed_password,
-      user_permission_uuid
-    ) SELECT
-      $username,
-      $fullName,
-      $email,
-      $hashedPassword,
-      $userPermissionUuid
-    WHERE NOT EXISTS (
-      SELECT uuid
-      FROM user
-    )
-    `,
-  ).run({
-    username: username.toLowerCase(),
-    fullName,
-    email,
-    hashedPassword,
-    userPermissionUuid: uuid,
-  })
+      hashedPassword,
+      userPermissionUuid: uuid,
+    })
+    .execute()
 }
 
-export function deleteUser(userUuid: UUID) {
+export async function deleteUser(userUuid: UUID) {
   const db = getDatabase()
 
-  const { uuid: userPermissionUuid } = db
-    .prepare<{ uuid: UUID }>(
-      `
-    SELECT user_permission_uuid
-    FROM user
-    WHERE uuid = $uuid
-    `,
-    )
-    .get({
-      uuid: userUuid,
-    }) as { uuid: UUID }
+  const { userPermissionUuid } = await db
+    .selectFrom("user")
+    .select(["userPermissionUuid"])
+    .where("uuid", "=", userUuid)
+    .executeTakeFirstOrThrow()
 
-  db.prepare<{ uuid: UUID }>(
-    `
-    DELETE FROM user
-    WHERE uuid = $uuid
-    `,
-  ).run({
-    uuid: userUuid,
-  })
+  await db.deleteFrom("user").where("uuid", "=", userUuid).execute()
 
-  db.prepare<{ userPermissionUuid: UUID }>(
-    `
-    DELETE FROM invite
-    WHERE user_permission_uuid = $userPermissionUuid
-    `,
-  ).run({
-    userPermissionUuid,
-  })
+  await db
+    .deleteFrom("invite")
+    .where("userPermissionUuid", "=", userPermissionUuid)
+    .execute()
 
-  db.prepare<{ uuid: UUID }>(
-    `
-    DELETE FROM user_permission
-    WHERE uuid = $uuid
-    `,
-  ).run({ uuid: userPermissionUuid })
+  await db
+    .deleteFrom("userPermission")
+    .where("uuid", "=", userPermissionUuid)
+    .execute()
 }
 
-export function createUser(
+export async function createUser(
   username: string,
   fullName: string,
   email: string,
@@ -286,120 +203,74 @@ export function createUser(
 ) {
   const db = getDatabase()
 
-  db.prepare<{
-    username: string
-    fullName: string
-    email: string
-    hashedPassword: string
-    inviteKey: string
-  }>(
-    `
-    INSERT INTO user (
+  await db
+    .insertInto("user")
+    .values((eb) => ({
       username,
-      full_name,
+      fullName,
       email,
-      hashed_password,
-      user_permission_uuid
-    ) VALUES (
-      $username,
-      $fullName,
-      $email,
-      $hashedPassword,
-      (
-        SELECT user_permission_uuid
-        FROM invite
-        WHERE invite.key = $inviteKey
-      )
-    ) 
-    `,
-  ).run({
-    username: username.toLowerCase(),
-    fullName,
-    email,
-    hashedPassword,
-    inviteKey,
-  })
+      hashedPassword,
+      userPermissionUuid: eb
+        .selectFrom("invite")
+        .select(["userPermissionUuid"])
+        .where("key", "=", inviteKey),
+    }))
+    .execute()
 
-  db.prepare<{ inviteKey: string }>(
-    `
-    DELETE FROM invite
-    WHERE key = $inviteKey
-    `,
-  ).run({
-    inviteKey,
-  })
+  await db.deleteFrom("invite").where("key", "=", inviteKey).execute()
 }
 
-export function userHasPermission(username: string, permission: Permission) {
+export async function userHasPermission(
+  username: string,
+  permission: Permission,
+) {
   const db = getDatabase()
 
-  const result = db
-    .prepare<{ username: string }>(
-      `
-    SELECT ${permission}
-    FROM user_permission
-    JOIN user
-      ON user.user_permission_uuid = user_permission.uuid
-    WHERE user.username = $username
-    `,
-    )
-    .get({
-      username: username.toLowerCase(),
-    }) as
-    | {
-        [K in Permission]: 0 | 1
-      }
-    | null
+  const result = await db
+    .selectFrom("userPermission")
+    .select([permission])
+    .innerJoin("user", "user.userPermissionUuid", "userPermission.uuid")
+    .where("user.username", "=", username)
+    .executeTakeFirst()
 
   if (!result) return false
 
   const { [permission]: hasPermission } = result
 
-  return hasPermission === 1
+  return hasPermission
 }
 
-export function updateUserPermissions(
+export async function updateUserPermissions(
   userUuid: UUID,
-  permissions: UserPermissions,
+  permissions: UserPermissionUpdate,
 ) {
   const db = getDatabase()
 
-  const { uuid: userPermissionUuid } = db
-    .prepare<{ uuid: UUID }>(
-      `
-    SELECT user_permission.uuid
-    FROM user_permission
-    JOIN user
-      ON user.user_permission_uuid = user_permission.uuid
-    WHERE user.uuid = $uuid
-    `,
-    )
-    .get({ uuid: userUuid }) as { uuid: UUID }
+  const { userPermissionUuid } = await db
+    .selectFrom("userPermission")
+    .select(["userPermission.uuid as userPermissionUuid"])
+    .innerJoin("user", "user.userPermissionUuid", "userPermission.uuid")
+    .where("user.uuid", "=", userUuid)
+    .executeTakeFirstOrThrow()
 
-  db.prepare<{ uuid: UUID } & { [K in keyof UserPermissions]: 0 | 1 }>(
-    `
-    UPDATE user_permission
-    SET
-      book_create = $bookCreate,
-      book_delete = $bookDelete,
-      book_read = $bookRead,
-      book_process = $bookProcess,
-      book_download = $bookDownload,
-      book_update = $bookUpdate,
-      book_list = $bookList,
-      invite_list = $inviteList,
-      invite_delete = $inviteDelete,
-      user_create = $userCreate,
-      user_list = $userList,
-      user_read = $userRead,
-      user_delete = $userDelete,
-      user_update = $userUpdate,
-      settings_update = $settingsUpdate
-    WHERE
-      uuid = $uuid
-    `,
-  ).run({
-    uuid: userPermissionUuid,
-    ...mapValues(permissions, (v) => (v ? 1 : 0)),
-  })
+  await db
+    .updateTable("userPermission")
+    .set({
+      bookCreate: asInt(permissions.bookCreate),
+      bookUpdate: asInt(permissions.bookUpdate),
+      bookList: asInt(permissions.bookList),
+      bookDelete: asInt(permissions.bookDelete),
+      bookDownload: asInt(permissions.bookDownload),
+      bookProcess: asInt(permissions.bookProcess),
+      inviteDelete: asInt(permissions.inviteDelete),
+      inviteList: asInt(permissions.inviteList),
+      settingsUpdate: asInt(permissions.settingsUpdate),
+      userCreate: asInt(permissions.userCreate),
+      userList: asInt(permissions.userList),
+      userRead: asInt(permissions.userRead),
+      userDelete: asInt(permissions.userDelete),
+      userUpdate: asInt(permissions.userUpdate),
+    })
+    .where("uuid", "=", userPermissionUuid)
+    .execute()
 }

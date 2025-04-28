@@ -1,12 +1,14 @@
 import { UUID } from "@/uuid"
 import { getDatabase } from "./connection"
-import { PROCESSING_TASK_ORDER } from "./processingTasks"
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 import {
   ProcessingTaskType,
   ProcessingTaskStatus,
 } from "@/apiModels/models/ProcessingStatus"
 import { BookEvents } from "@/events"
-import { BookDetail } from "@/apiModels"
+import { DB } from "./schema"
+import { Insertable, Selectable, Updateable } from "kysely"
+import { Epub } from "@smoores/epub"
 
 /**
  * This function only exists to support old clients that haven't
@@ -14,7 +16,7 @@ import { BookDetail } from "@/apiModels"
  * be removed after we feel confident that all clients (specifically,
  * mobile apps) have likely been updated.
  */
-export function getBookUuid(bookIdOrUuid: string): UUID {
+export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
   if (bookIdOrUuid.includes("-")) {
     // This is already a UUID, so just return it
     return bookIdOrUuid as UUID
@@ -24,24 +26,22 @@ export function getBookUuid(bookIdOrUuid: string): UUID {
   const bookId = parseInt(bookIdOrUuid, 10)
 
   const db = getDatabase()
-  const statement = db.prepare<{ bookId: number }>(
-    `
-    SELECT uuid
-    FROM book
-    WHERE id = $bookId
-    `,
-  )
-  const { uuid } = statement.get({ bookId }) as { uuid: UUID }
+  const { uuid } = await db
+    .selectFrom("book")
+    .select(["uuid"])
+    .where("id", "=", bookId)
+    .executeTakeFirstOrThrow()
 
   return uuid
 }
 
-export type Author = {
-  uuid: UUID
-  name: string
-  fileAs?: string | null
-  role?: string | null
-}
+export type Author = Selectable<DB["author"]>
+export type NewAuthor = Insertable<DB["author"]>
+export type AuthorUpdate = Updateable<DB["author"]>
+
+export type AuthorToBook = Selectable<DB["authorToBook"]>
+export type NewAuthorToBook = Insertable<DB["authorToBook"]>
+export type AuthorToBookUpdate = Updateable<DB["authorToBook"]>
 
 export type ProcessingStatus = {
   currentTask: ProcessingTaskType
@@ -49,321 +49,296 @@ export type ProcessingStatus = {
   status: ProcessingTaskStatus
 }
 
-export type Book = {
-  uuid: UUID
-  id: number
-  title: string
-  language: string | null
-  authors: Author[]
-  processingStatus?: ProcessingStatus
+export type Series = Selectable<DB["series"]>
+export type NewSeries = Insertable<DB["series"]>
+export type SeriesUpdate = Updateable<DB["series"]>
+
+export type BookToSeries = Selectable<DB["bookToSeries"]>
+export type NewBookToSeries = Insertable<DB["bookToSeries"]>
+export type BookToSeriesUpdate = Updateable<DB["bookToSeries"]>
+
+export type Status = Selectable<DB["status"]>
+
+export type Book = Selectable<DB["book"]>
+export type NewBook = Insertable<DB["book"]>
+export type BookUpdate = Updateable<DB["book"]>
+
+export async function createBookFromEpub(epub: Epub, fallbackTitle: string) {
+  const title = await epub.getTitle()
+  const authors = await epub.getCreators()
+  const language = await epub.getLanguage()
+  const storytellerVersion = await epub.findMetadataItem(
+    (item) =>
+      item.properties["property"] === "storyteller:version" && !!item.value,
+  )
+  const storytellerMediaOverlaysModified = await epub.findMetadataItem(
+    (item) =>
+      item.properties["property"] === "storyteller:media-overlays-modified" &&
+      !!item.value,
+  )
+  const storytellerMediaOverlaysEngine = await epub.findMetadataItem(
+    (item) =>
+      item.properties["property"] === "storyteller:media-overlays-engine" &&
+      !!item.value,
+  )
+  const collections = await epub.getCollections()
+
+  return await createBook(
+    {
+      title: title ?? fallbackTitle,
+      language: language?.toString() ?? null,
+      alignedByStorytellerVersion: storytellerVersion?.value ?? null,
+      alignedAt: storytellerMediaOverlaysModified?.value ?? null,
+      alignedWith: storytellerMediaOverlaysEngine?.value ?? null,
+    },
+    {
+      authors: authors.map((author) => ({
+        name: author.name,
+        role: author.role ?? null,
+        fileAs: author.fileAs ?? author.name,
+      })),
+      series: collections
+        .filter((c) => c.type === "series")
+        .map((series, i) => ({
+          name: series.name,
+          featured: i === 0,
+          ...(series.position && { position: parseFloat(series.position) }),
+        })),
+    },
+  )
 }
 
-export type AuthorInput = {
-  uuid: UUID | ""
-  name: string
-  fileAs: string | null
-  role: string | null
-}
-
-export function createBook(
-  title: string,
-  language: string | null,
-  authors: AuthorInput[],
+export async function createBook(
+  insert: NewBook,
+  relations: { authors?: AuthorRelation[]; series?: SeriesRelation[] } = {},
 ) {
   const db = getDatabase()
 
-  const statement = db.prepare<{ title: string; language: string | null }>(
-    `
-    INSERT INTO book (id, title, language) VALUES (ABS(RANDOM()) % 9007199254740990 + 1, $title, $language)
-    RETURNING uuid, id
-    `,
-  )
+  const { uuid } = await db
+    .insertInto("book")
+    .values(insert)
+    .returning(["uuid"])
+    .executeTakeFirstOrThrow()
 
-  const { uuid: bookUuid, id } = statement.get({ title, language }) as {
-    uuid: UUID
-    id: number
+  if (relations.authors) {
+    for (const author of relations.authors) {
+      let existing = await db
+        .selectFrom("author")
+        .select(["uuid"])
+        .where("name", "=", author.name)
+        .executeTakeFirst()
+
+      if (!existing) {
+        existing = await db
+          .insertInto("author")
+          .values(author)
+          .returning(["uuid"])
+          .executeTakeFirstOrThrow()
+      }
+
+      await db
+        .insertInto("authorToBook")
+        .values({
+          authorUuid: existing.uuid,
+          bookUuid: uuid,
+          role: author.role ?? "aut",
+        })
+        .execute()
+
+      continue
+    }
   }
 
-  const book: Book = {
-    uuid: bookUuid,
-    id,
-    language,
-    title,
-    authors: [],
+  if (relations.series) {
+    for (const series of relations.series) {
+      let existing = await db
+        .selectFrom("series")
+        .select(["uuid"])
+        .where("name", "=", series.name)
+        .executeTakeFirst()
+
+      if (!existing) {
+        existing = await db
+          .insertInto("series")
+          .values(series)
+          .returning(["uuid"])
+          .executeTakeFirstOrThrow()
+      }
+
+      await db
+        .insertInto("bookToSeries")
+        .values({
+          seriesUuid: existing.uuid,
+          bookUuid: uuid,
+          featured: series.featured,
+          position: series.position,
+        })
+        .execute()
+
+      continue
+    }
   }
 
-  const insertAuthorStatement = db.prepare<{
-    name: string
-    fileAs: string | null
-  }>(`
-    INSERT INTO author (name, file_as) VALUES ($name, $fileAs)
-    RETURNING uuid
-    `)
+  const book = await getBook(uuid)
 
-  const insertAuthorToBookStatement = db.prepare<{
-    bookUuid: UUID
-    authorUuid: UUID
-    role: string | null
-  }>(
-    `
-    INSERT INTO author_to_book (book_uuid, author_uuid, role)
-    VALUES ($bookUuid, $authorUuid, $role)
-    `,
-  )
-
-  for (const author of authors) {
-    const { uuid: authorUuid } = insertAuthorStatement.get({
-      name: author.name,
-      fileAs: author.fileAs,
-    }) as { uuid: UUID }
-
-    insertAuthorToBookStatement.run({
-      bookUuid,
-      authorUuid,
-      role: author.role,
-    })
-
-    book.authors.push({
-      uuid: authorUuid,
-      name: author.name,
-      fileAs: author.fileAs,
-      role: author.role,
-    })
+  if (!book) {
+    throw new Error("Failod te create book")
   }
 
   BookEvents.emit("message", {
     type: "bookCreated",
     bookUuid: book.uuid,
-    payload: book as BookDetail,
+    payload: {
+      ...book,
+      originalFilesExist: true,
+      processingStatus: null,
+    },
   })
 
   return book
 }
 
-export function getBooks(
-  bookUuids: string[] | null = null,
-  syncedOnly = false,
-): Book[] {
+export async function getBooks(
+  bookUuids: UUID[] | null = null,
+  alignedOnly = false,
+) {
   const db = getDatabase()
 
-  const statement = db.prepare(`
-    SELECT
-      book.uuid AS book_uuid, book.id, book.title, book.language,
-      author_to_book.role,
-      author.uuid AS author_uuid, author.name, author.file_as,
-      processing_task.uuid AS processing_task_uuid, processing_task.type, processing_task.status, processing_task.progress
-    FROM book
-    LEFT JOIN author_to_book
-      ON book.uuid = author_to_book.book_uuid
-    LEFT JOIN author
-      ON author_to_book.author_uuid = author.uuid
-    LEFT JOIN processing_task
-      ON book.uuid = processing_task.book_uuid
-    ${bookUuids ? `WHERE book.uuid IN (${Array.from({ length: bookUuids.length }).fill("?").join(",")})` : ""}
-    `)
+  const books = await db
+    .selectFrom("book")
+    .selectAll("book")
+    .select((eb) => [
+      jsonArrayFrom(
+        eb
+          .selectFrom("author")
+          .innerJoin("authorToBook", "authorToBook.authorUuid", "author.uuid")
+          .select([
+            "author.uuid",
+            "author.id",
+            "author.name",
+            "author.fileAs",
+            "authorToBook.role",
+            "author.createdAt",
+            "author.updatedAt",
+          ])
+          .whereRef("authorToBook.bookUuid", "=", "book.uuid"),
+      ).as("authors"),
+      jsonArrayFrom(
+        eb
+          .selectFrom("series")
+          .innerJoin("bookToSeries", "bookToSeries.seriesUuid", "series.uuid")
+          .select([
+            "series.uuid",
+            "series.name",
+            "series.createdAt",
+            "series.updatedAt",
+          ])
+          .whereRef("bookToSeries.bookUuid", "=", "book.uuid"),
+      ).as("series"),
+      jsonArrayFrom(
+        eb
+          .selectFrom("tag")
+          .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
+          .select(["tag.uuid", "tag.name", "tag.createdAt", "tag.updatedAt"])
+          .whereRef("bookToTag.tagUuid", "=", "book.uuid"),
+      ).as("tags"),
+      jsonArrayFrom(
+        eb
+          .selectFrom("collection")
+          .innerJoin(
+            "bookToCollection",
+            "bookToCollection.collectionUuid",
+            "collection.uuid",
+          )
+          .select([
+            "collection.uuid",
+            "collection.name",
+            "collection.createdAt",
+            "collection.updatedAt",
+          ])
+          .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
+      ).as("series"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("processingTask")
+          .select([
+            "processingTask.uuid",
+            "processingTask.progress",
+            "processingTask.status",
+            "processingTask.type",
+            "processingTask.createdAt",
+            "processingTask.updatedAt",
+          ])
+          .whereRef("processingTask.bookUuid", "=", "book.uuid")
+          .orderBy("processingTask.updatedAt", "desc")
+          .limit(1),
+      ).as("processingTask"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("status")
+          .select([
+            "status.uuid",
+            "status.name",
+            "status.createdAt",
+            "status.updatedAt",
+          ])
+          .whereRef("status.uuid", "=", "book.statusUuid"),
+      ).as("status"),
+    ])
+    .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids))
+    .execute()
 
-  const bookRows = (bookUuids ? statement.all(bookUuids) : statement.all()) as {
-    book_uuid: UUID
-    id: number
-    title: string
-    language: string | null
-    role: string
-    author_uuid: UUID | null
-    name: string
-    file_as: string
-    processing_task_uuid: UUID | null
-    type: ProcessingTaskType
-    status: ProcessingTaskStatus
-    progress: number
-  }[]
+  if (!alignedOnly) return books
 
-  const booksRecord = bookRows.reduce<
-    Record<UUID, Omit<Book, "authors"> & { authors: Record<UUID, Author> }>
-  >((acc, row) => {
-    const book = acc[row.book_uuid]
-    if (!book) {
-      return {
-        ...acc,
-        [row.book_uuid]: {
-          uuid: row.book_uuid,
-          id: row.id,
-          title: row.title,
-          language: row.language,
-          authors:
-            row.author_uuid !== null
-              ? {
-                  [row.author_uuid]: {
-                    uuid: row.author_uuid,
-                    name: row.name,
-                    fileAs: row.file_as,
-                    role: row.role,
-                  },
-                }
-              : {},
-          ...(row.processing_task_uuid !== null && {
-            processingStatus: {
-              currentTask: row.type,
-              progress: row.progress,
-              status: row.status,
-            },
-          }),
-        },
-      }
-    }
-
-    const author = row.author_uuid && book.authors[row.author_uuid]
-
-    if (!author && row.author_uuid !== null) {
-      return {
-        ...acc,
-        [book.uuid]: {
-          ...book,
-          authors: {
-            ...book.authors,
-            [row.author_uuid]: {
-              uuid: row.author_uuid,
-              name: row.name,
-              fileAs: row.file_as,
-              role: row.role,
-            },
-          },
-          ...(row.processing_task_uuid !== null && {
-            processingStatus: {
-              currentTask: row.type,
-              progress: row.progress,
-              status: row.status,
-            },
-          }),
-        },
-      }
-    }
-
-    const processingStatus = book.processingStatus
-
-    if (
-      row.processing_task_uuid !== null &&
-      (!processingStatus ||
-        (PROCESSING_TASK_ORDER[row.type] >
-          PROCESSING_TASK_ORDER[processingStatus.currentTask] &&
-          processingStatus.status === ProcessingTaskStatus.COMPLETED))
-    ) {
-      return {
-        ...acc,
-        [book.uuid]: {
-          ...book,
-          processingStatus: {
-            currentTask: row.type,
-            progress: row.progress,
-            status: row.status,
-          },
-        },
-      }
-    }
-
-    return acc
-  }, {})
-
-  const books = Object.values(booksRecord).map((book) => ({
-    ...book,
-    authors: Object.values(book.authors),
-  }))
-
-  if (syncedOnly) {
-    return books.filter(
-      (book) =>
-        book.processingStatus &&
-        book.processingStatus.currentTask ===
-          ProcessingTaskType.SYNC_CHAPTERS &&
-        book.processingStatus.status === ProcessingTaskStatus.COMPLETED,
+  return books.filter((book) => {
+    return (
+      book.processingTask?.type === ProcessingTaskType.SYNC_CHAPTERS &&
+      book.processingTask.status === ProcessingTaskStatus.COMPLETED
     )
-  }
-
-  return books
+  })
 }
 
-type LegacyBook = {
-  uuid: UUID
-  id: number
-  title: string
-  epubFilename: string
-  audioFilename: string
-  audioFiletype: string
+export async function getBook(uuid: UUID) {
+  const [book] = await getBooks([uuid])
+  return book ?? null
 }
 
-export function getBooksLegacy_(): LegacyBook[] {
+export async function deleteBook(bookUuid: UUID) {
   const db = getDatabase()
-  return db
-    .prepare(
-      `
-    SELECT uuid, id, title, epub_filename AS epubFilename, audio_filename AS audioFilename, audio_filetype AS audioFiletype
-    FROM book
-    WHERE epub_filename IS NOT NULL OR audio_filename IS NOT NULL
-    `,
+
+  await db
+    .deleteFrom("processingTask")
+    .where("bookUuid", "=", bookUuid)
+    .execute()
+
+  await db.deleteFrom("authorToBook").where("bookUuid", "=", bookUuid).execute()
+
+  await db
+    .deleteFrom("author")
+    .whereRef("author.uuid", "not in", (eb) =>
+      eb.selectFrom("authorToBook").select(["authorUuid"]),
     )
-    .all() as LegacyBook[]
-}
+    .execute()
 
-export function clearFilenameColumns(bookUuid: UUID) {
-  const db = getDatabase()
+  await db.deleteFrom("bookToSeries").where("bookUuid", "=", bookUuid).execute()
 
-  db.prepare<{ bookUuid: UUID }>(
-    `
-    UPDATE book
-    SET epub_filename=null, audio_filename=null
-    WHERE book.uuid = $bookUuid
-    `,
-  ).run({
-    bookUuid,
-  })
-}
+  await db
+    .deleteFrom("series")
+    .whereRef("series.uuid", "not in", (eb) =>
+      eb.selectFrom("bookToSeries").select(["seriesUuid"]),
+    )
+    .execute()
 
-export function deleteBook(bookUuid: UUID) {
-  const db = getDatabase()
+  await db.deleteFrom("bookToTag").where("bookUuid", "=", bookUuid).execute()
 
-  db.prepare<{ bookUuid: UUID }>(
-    `
-    DELETE FROM processing_task
-    WHERE book_uuid = $bookUuid
-    `,
-  ).run({
-    bookUuid,
-  })
+  await db
+    .deleteFrom("bookToCollection")
+    .where("bookUuid", "=", bookUuid)
+    .execute()
 
-  db.prepare<{ bookUuid: UUID }>(
-    `
-    DELETE FROM author_to_book
-    WHERE book_uuid = $bookUuid
-    `,
-  ).run({ bookUuid })
+  await db.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
 
-  db.prepare(
-    `
-    DELETE FROM author
-    WHERE author.uuid
-      NOT IN (
-        SELECT author_uuid
-        FROM author_to_book
-      )
-    `,
-  ).run()
-
-  db.prepare<{ bookUuid: UUID }>(
-    `
-    DELETE FROM position
-    WHERE book_uuid = $bookUuid
-    `,
-  ).run({
-    bookUuid,
-  })
-
-  db.prepare<{ bookUuid: UUID }>(
-    `
-    DELETE FROM book
-    WHERE uuid = $bookUuid
-    `,
-  ).run({
-    bookUuid,
-  })
+  await db.deleteFrom("book").where("uuid", "=", bookUuid).execute()
 
   BookEvents.emit("message", {
     type: "bookDeleted",
@@ -372,85 +347,115 @@ export function deleteBook(bookUuid: UUID) {
   })
 }
 
-export function updateBook(
+export type AuthorRelation = NewAuthor & NewAuthorToBook
+export type SeriesRelation = NewSeries & NewBookToSeries
+
+export async function updateBook(
   uuid: UUID,
-  title: string,
-  language: string | null,
-  authors: AuthorInput[],
+  update: BookUpdate | null,
+  relations: { authors?: AuthorRelation[]; series?: SeriesRelation[] } = {},
 ) {
   const db = getDatabase()
 
-  db.prepare<{ title: string; language: string | null; uuid: UUID }>(
-    `
-    UPDATE book
-    SET title = $title, language = $language
-    WHERE uuid = $uuid
-    `,
-  ).run({
-    title,
-    language,
-    uuid,
-  })
+  if (update) {
+    await db.updateTable("book").set(update).where("uuid", "=", uuid).execute()
+  }
 
-  const insertAuthorStatement = db.prepare<{
-    name: string
-    fileAs: string | null
-  }>(`
-    INSERT INTO author (name, file_as)
-    VALUES ($name, $fileAs)
-    RETURNING uuid
-    `)
+  if (relations.authors) {
+    for (const author of relations.authors) {
+      const { uuid: authorUuid, ...values } = author
+      if (!authorUuid) {
+        let existing = await db
+          .selectFrom("author")
+          .select(["uuid"])
+          .where("name", "=", values.name)
+          .executeTakeFirst()
 
-  const insertAuthorToBookStatement = db.prepare<{
-    bookUuid: UUID
-    authorUuid: UUID
-    role: string | null
-  }>(`
-    INSERT INTO author_to_book (book_uuid, author_uuid, role)
-    VALUES ($bookUuid, $authorUuid, $role)
-    `)
+        if (!existing) {
+          existing = await db
+            .insertInto("author")
+            .values({ name: values.name, fileAs: values.fileAs })
+            .returning(["uuid"])
+            .executeTakeFirstOrThrow()
+        }
 
-  const updateAuthorStatement = db.prepare<{ name: string; uuid: UUID }>(`
-    UPDATE author
-    SET name = $name
-    WHERE uuid = $uuid
-    `)
-  for (const author of authors) {
-    if (author.uuid === "") {
-      const { uuid: authorUuid } = insertAuthorStatement.get({
-        name: author.name,
-        fileAs: author.fileAs ?? author.name,
-      }) as { uuid: UUID }
+        await db
+          .insertInto("authorToBook")
+          .values({
+            authorUuid: existing.uuid,
+            bookUuid: uuid,
+            role: values.role ?? "aut",
+          })
+          .execute()
 
-      insertAuthorToBookStatement.run({
-        bookUuid: uuid,
-        authorUuid,
-        role: author.role,
-      })
-    } else {
-      updateAuthorStatement.run({
-        name: author.name,
-        uuid: author.uuid,
-      })
+        continue
+      }
+
+      await db
+        .updateTable("author")
+        .set(values)
+        .where("uuid", "=", authorUuid)
+        .execute()
     }
   }
 
-  const [book] = getBooks([uuid])
+  if (relations.series) {
+    for (const series of relations.series) {
+      const { uuid: seriesUuid, ...values } = series
+      if (!seriesUuid) {
+        let existing = await db
+          .selectFrom("series")
+          .select(["uuid"])
+          .where("name", "=", values.name)
+          .executeTakeFirst()
+
+        if (!existing) {
+          existing = await db
+            .insertInto("series")
+            .values({
+              name: values.name,
+              description: values.description,
+            })
+            .returning(["uuid"])
+            .executeTakeFirstOrThrow()
+        }
+
+        await db
+          .insertInto("bookToSeries")
+          .values({
+            seriesUuid: existing.uuid,
+            bookUuid: uuid,
+            position: values.position,
+            featured: values.featured,
+          })
+          .execute()
+
+        continue
+      }
+
+      await db
+        .updateTable("series")
+        .set(values)
+        .where("uuid", "=", seriesUuid)
+        .execute()
+    }
+  }
+
+  const book = await getBook(uuid)
+  if (!book) throw new Error(`Failed to retrieve book with uuid ${uuid}`)
 
   BookEvents.emit("message", {
     type: "bookUpdated",
     bookUuid: uuid,
     payload: {
-      title,
-      authors:
-        book?.authors.map((author) => ({
-          ...author,
-          file_as: author.fileAs ?? author.name,
-          role: author.role ?? "aut",
-        })) ?? [],
+      title: book.title,
+      authors: book.authors.map((author) => ({
+        ...author,
+        file_as: author.fileAs,
+        role: author.role ?? "aut",
+      })),
     },
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return book!
+  return book
 }

@@ -13,12 +13,17 @@ type Params = Promise<{
   bookId: string
 }>
 
-export const GET = withHasPermission<Params>("book_read")(async (
+/**
+ * @summary deprecated - Get the cover image for a book
+ * @desc Use the `audio` search param to get the audio cover. The
+ *       default is to get the text cover.
+ */
+export const GET = withHasPermission<Params>("bookRead")(async (
   request,
   context,
 ) => {
   const { bookId } = await context.params
-  const bookUuid = getBookUuid(bookId)
+  const bookUuid = await getBookUuid(bookId)
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"
 
   const coverFilepath = audio

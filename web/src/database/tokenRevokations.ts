@@ -1,32 +1,19 @@
 import { getDatabase } from "./connection"
 
-export function revokeToken(token: string) {
+export async function revokeToken(token: string) {
   const db = getDatabase()
 
-  db.prepare<{ token: string }>(
-    `
-    INSERT INTO token_revokation (token)
-    VALUES ($token)
-    `,
-  ).run({
-    token,
-  })
+  await db.insertInto("tokenRevokation").values({ token }).execute()
 }
 
-export function isTokenRevoked(token: string) {
+export async function isTokenRevoked(token: string) {
   const db = getDatabase()
 
-  const row = db
-    .prepare<{ token: string }>(
-      `
-    SELECT token
-    FROM token_revokation
-    WHERE token = $token
-    `,
-    )
-    .get({
-      token,
-    }) as { token: string } | null
+  const row = await db
+    .selectFrom("tokenRevokation")
+    .select(["token"])
+    .where("token", "=", token)
+    .executeTakeFirst()
 
   if (!row) return false
 

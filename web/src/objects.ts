@@ -1,5 +1,5 @@
 export function mapValues<Key extends string | symbol, Value, Mapped>(
-  record: Record<Key, Value>,
+  record: Partial<Record<Key, Value>>,
   map: (v: Value) => Mapped,
 ): Record<Key, Mapped> {
   const entries = Object.entries(record) as [Key, Value][]

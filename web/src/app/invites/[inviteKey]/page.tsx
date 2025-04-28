@@ -20,7 +20,7 @@ export default async function InvitePage(props: Props) {
   async function acceptInvite(data: FormData) {
     "use server"
 
-    const fullName = data.get("full_name")?.valueOf() as string | undefined
+    const fullName = data.get("fullName")?.valueOf() as string | undefined
     const username = data.get("username")?.valueOf() as string | undefined
     const password = data.get("password")?.valueOf() as string | undefined
     if (!fullName || !username || !password) return
@@ -31,10 +31,10 @@ export default async function InvitePage(props: Props) {
     const client = new ApiClient(apiHost, proxyRootPath)
     const token = await client.acceptInvite({
       email: invite.email,
-      full_name: fullName,
+      fullName,
       username,
       password,
-      invite_key: (await props.params).inviteKey,
+      inviteKey: (await props.params).inviteKey,
     })
 
     const cookieStore = await cookies()
@@ -64,7 +64,7 @@ export default async function InvitePage(props: Props) {
         />
         <TextInput
           label="Full name"
-          name="full_name"
+          name="fullName"
           type="text"
           withAsterisk
           required

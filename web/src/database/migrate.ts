@@ -1,92 +1,76 @@
-import { basename, join } from "node:path"
+import { basename, extname, join } from "node:path"
 import { getDatabase } from "./connection"
 import { cwd } from "node:process"
 import { readFile, readdir } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { logger } from "@/logging"
+import { splitQuery, sqliteSplitterOptions } from "dbgate-query-splitter"
+import { sql } from "kysely"
 
-type Migration = {
-  id: number
-  hash: string
-  name: string
+const jsMigrations: Record<string, () => Promise<void>> = {
+  "33_add_more_book_metadata.sql": await import(
+    "./migrations/33_add_more_book_metadata.sql"
+  ).then((m) => m.default),
 }
 
-function isFirstStartup() {
+async function isFirstStartup() {
   const db = getDatabase()
   try {
-    const row = db
-      .prepare(
-        `
-SELECT COUNT(*) as migration_count
-FROM migration
-`,
-      )
-      .get() as { migration_count: number }
-    return row.migration_count === 0
+    const rows = await db
+      .selectFrom("migration")
+      .select([({ fn }) => fn.count("migration.id").as("migrationCount")])
+      .execute()
+
+    return rows[0]?.migrationCount === 0
   } catch {
     return true
   }
 }
 
-function getMigration(hash: string) {
+async function getMigration(hash: string) {
   const db = getDatabase()
   try {
-    const row = db
-      .prepare<{ hash: string }>(
-        `
-      SELECT id, hash, name
-      FROM migration
-      WHERE hash = $hash
-      `,
-      )
-      .get({ hash }) as Migration | undefined
+    const [row] = await db
+      .selectFrom("migration")
+      .select("hash")
+      .where("hash", "=", hash)
+      .execute()
     return row ?? null
   } catch (e) {
     return null
   }
 }
 
-function createMigration(hash: string, name: string) {
+async function createMigration(hash: string, name: string) {
   const db = getDatabase()
-  db.prepare<{ name: string; hash: string }>(
-    `
-    INSERT INTO migration (hash, name)
-    VALUES ($hash, $name)
-    `,
-  ).run({ hash, name })
+  await db.insertInto("migration").values({ name, hash }).execute()
 }
 
-function setInitialAudioCodec(options: {
+async function setInitialAudioCodec(options: {
   codec: string
   bitrate: string | undefined
 }) {
   const db = getDatabase()
-  db.prepare<{ codec: string }>(
-    `
-    UPDATE settings
-    SET value = $codec
-    WHERE name = 'codec';
-    `,
-  ).run({
-    codec: JSON.stringify(
-      options.codec === "opus"
-        ? "libopus"
-        : options.codec === "mp3"
-          ? "libmp3lame"
-          : "acc",
-    ),
-  })
+  await db
+    .updateTable("settings")
+    .set({
+      value: JSON.stringify(
+        options.codec === "opus"
+          ? "libopus"
+          : options.codec === "mp3"
+            ? "libmp3lame"
+            : "acc",
+      ),
+    })
+    .where("name", "=", "codec")
+    .execute()
 
   if (options.bitrate) {
-    db.prepare<{ bitrate: string }>(
-      `
-      UPDATE settings
-      SET value = $bitrate
-      WHERE name = 'bitrate';
-      `,
-    ).run({
-      bitrate: JSON.stringify(options.bitrate),
-    })
+    await db
+      .updateTable("settings")
+      .set({ value: JSON.stringify(options.bitrate) })
+      .where("name", "=", "bitrate")
+      .execute()
   }
 }
 
@@ -106,26 +90,30 @@ async function migrateFile(path: string) {
   })
   const hash = createHash("sha256").update(contents).digest("hex")
 
-  const existingMigration = getMigration(hash)
-  if (!existingMigration) {
-    logger.info(`Running migration: "${basename(path, ".sql")}"\n`)
-    logger.info(contents)
-    const statements = contents
-      .split(";")
-      .map((statement) => statement.trim())
-      .filter((statement) => !!statement.length)
+  const existingMigration = await getMigration(hash)
+  if (existingMigration) return false
+  logger.info(hash)
+  logger.info(`Running migration: "${basename(path, ".sql")}"\n`)
+  logger.info(contents)
+  const statements = splitQuery(contents, sqliteSplitterOptions) as string[]
 
-    for (const statement of statements) {
-      db.prepare(statement).run()
+  for (const statement of statements) {
+    try {
+      await sql`${sql.raw(statement)}`.execute(db)
+    } catch (e) {
+      logger.error(`Failed to run statement:
+${statement}`)
+      throw e
     }
-
-    createMigration(hash, basename(path))
   }
+
+  await createMigration(hash, basename(path))
+  return true
 }
 
 async function migrate() {
   // Make sure to evaluate this _before_ running any migrations
-  const foundFirstStartup = isFirstStartup()
+  const foundFirstStartup = await isFirstStartup()
   if (foundFirstStartup) logger.info("First startup - initializing database")
 
   const initialCodec = getInitialAudioCodec()
@@ -134,15 +122,20 @@ async function migrate() {
   const migrationFiles = await readdir(migrationsDir)
   migrationFiles.sort()
 
-  // We have to special case the "zero-th" migration,
-  // because we goofed and didn't add it as a migration
-  // until after the first migration.
-  for (const migrationFile of migrationFiles) {
-    await migrateFile(join(migrationsDir, migrationFile))
+  for (const migrationFile of migrationFiles.filter(
+    (f) => extname(f) === ".sql",
+  )) {
+    const migrated = await migrateFile(join(migrationsDir, migrationFile))
+
+    if (migrated) {
+      if (jsMigrations[migrationFile]) {
+        await jsMigrations[migrationFile]()
+      }
+    }
   }
 
   if (foundFirstStartup && initialCodec) {
-    setInitialAudioCodec(initialCodec)
+    await setInitialAudioCodec(initialCodec)
   }
 }
 

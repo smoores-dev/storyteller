@@ -86,11 +86,11 @@ export function cancelProcessing(bookUuid: UUID) {
 export async function startProcessing(bookUuid: UUID, restart: boolean) {
   if (controllers.has(bookUuid)) return
 
-  const settings = getSettings()
+  const settings = await getSettings()
 
   const { port1, port2 } = new MessageChannel()
 
-  port2.on("message", (event: BookProcessingEvent) => {
+  port2.on("message", async (event: BookProcessingEvent) => {
     BookEvents.emit("message", event)
 
     if (event.type === "processingStarted") {
@@ -98,36 +98,36 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
         ({ bookUuid }) => bookUuid === event.bookUuid,
       )
       queue.splice(index, 1)
-      resetProcessingTasksForBook(event.bookUuid)
-      const currentTasks = getProcessingTasksForBook(event.bookUuid)
+      await resetProcessingTasksForBook(event.bookUuid)
+      const currentTasks = await getProcessingTasksForBook(event.bookUuid)
       port2.postMessage(currentTasks)
     }
     if (event.type === "taskTypeUpdated") {
       const { taskUuid, taskType, taskStatus } = event.payload
       const returnUuid =
         taskUuid ??
-        createProcessingTask(
+        (await createProcessingTask(
           taskType,
           ProcessingTaskStatus.STARTED,
           event.bookUuid,
-        )
+        ))
 
       if (taskStatus !== ProcessingTaskStatus.STARTED) {
-        updateTaskStatus(returnUuid, ProcessingTaskStatus.STARTED)
+        await updateTaskStatus(returnUuid, ProcessingTaskStatus.STARTED)
       }
       port2.postMessage(returnUuid)
     }
     if (event.type === "taskProgressUpdated") {
       const { progress, taskUuid } = event.payload
-      updateTaskProgress(taskUuid, progress)
+      await updateTaskProgress(taskUuid, progress)
     }
     if (event.type === "taskCompleted") {
       const { taskUuid } = event.payload
-      updateTaskStatus(taskUuid, ProcessingTaskStatus.COMPLETED)
+      await updateTaskStatus(taskUuid, ProcessingTaskStatus.COMPLETED)
     }
     if (event.type === "processingFailed") {
       const { taskUuid } = event.payload
-      updateTaskStatus(taskUuid, ProcessingTaskStatus.IN_ERROR)
+      await updateTaskStatus(taskUuid, ProcessingTaskStatus.IN_ERROR)
     }
   })
 

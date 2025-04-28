@@ -1,35 +1,47 @@
 "use client"
 
 import { BookDetail } from "@/apiModels"
-import { BookStatus } from "./BookStatus"
 import { AddBookForm } from "./AddBookForm"
 import { usePermission } from "@/contexts/UserPermissions"
 import { useLiveBooks } from "@/hooks/useLiveBooks"
-import { List } from "@mantine/core"
+import { Group, List, Stack } from "@mantine/core"
+import { BookThumbnail } from "./BookThumbnail"
+import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
+import { Search } from "./Search"
+import { Sort } from "./Sort"
 
 type Props = {
   books: BookDetail[]
 }
 
 export function BookList({ books: initialBooks }: Props) {
-  const canListBooks = usePermission("book_list")
-  const books = useLiveBooks(initialBooks)
+  const canListBooks = usePermission("bookList")
+
+  const liveBooks = useLiveBooks(initialBooks)
+  const { books, onFilterChange, filter, sort, onSortChange } =
+    useFilterSortedBooks(liveBooks)
 
   return (
     <>
       <AddBookForm />
       {canListBooks && (
-        <List listStyleType="none">
-          {books.map((book) => (
-            <List.Item
-              key={book.uuid}
-              className="my-8"
-              classNames={{ itemWrapper: "block" }}
-            >
-              <BookStatus book={book} />
-            </List.Item>
-          ))}
-        </List>
+        <Stack>
+          <Group>
+            <Search value={filter} onValueChange={onFilterChange} />
+            <Sort value={sort} onValueChange={onSortChange} />
+          </Group>
+          <List listStyleType="none" className="flex flex-row flex-wrap gap-8">
+            {books.map((book) => (
+              <List.Item
+                key={book.uuid}
+                className="my-8"
+                classNames={{ itemWrapper: "block" }}
+              >
+                <BookThumbnail book={book} />
+              </List.Item>
+            ))}
+          </List>
+        </Stack>
       )}
     </>
   )

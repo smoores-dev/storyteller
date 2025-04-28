@@ -12,12 +12,16 @@ type Params = Promise<{
   bookId: string
 }>
 
-export const GET = withHasPermission<Params>("book_download")(async (
+/**
+ * @summary deprecated - Get the aligned EPUB file
+ * @desc Supports HTTP range requests for pause-able downloads.
+ */
+export const GET = withHasPermission<Params>("bookDownload")(async (
   request,
   context,
 ) => {
   const { bookId } = await context.params
-  const bookUuid = getBookUuid(bookId)
+  const bookUuid = await getBookUuid(bookId)
   const range = request.headers.get("Range")?.valueOf()
   const ifRange = request.headers.get("If-Range")?.valueOf()
   const filepath = getEpubSyncedFilepath(bookUuid)
@@ -39,13 +43,13 @@ export const GET = withHasPermission<Params>("book_download")(async (
     )
   }
 
-  const stat = await file.stat()
-  const lastModified = new Date(stat.mtime).toISOString()
-  const etagBase = `${stat.mtime.valueOf()}-${stat.size}`
+  const stats = await file.stat()
+  const lastModified = new Date(stats.mtime).toISOString()
+  const etagBase = `${stats.mtime.valueOf()}-${stats.size}`
   const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
 
   let start = 0
-  let end = stat.size
+  let end = stats.size - 1
 
   const partialResponse =
     range?.startsWith("bytes=") &&
@@ -74,16 +78,26 @@ export const GET = withHasPermission<Params>("book_download")(async (
     }
   }
 
+  if (end > stats.size - 1) {
+    return new NextResponse(null, {
+      status: 416,
+      headers: { "Content-Range": `bytes */${stats.size}` },
+    })
+  }
+
   // @ts-expect-error NextResponse handle Node.js ReadStreams just fine
-  return new NextResponse(file.createReadStream({ start, end: end - 1 }), {
+  return new NextResponse(file.createReadStream({ start, end }), {
     status: partialResponse ? 206 : 200,
     headers: {
       "Content-Disposition": `attachment; filename="${normalizedTitle}.epub"`,
       "Content-Type": "application/epub+zip",
-      "Accept-Ranges": "bytes",
-      "Content-Length": `${end - start}`,
-      "Last-Modified": new Date(stat.mtime).toISOString(),
+      "Content-Length": `${end - start + 1}`,
+      "Last-Modified": new Date(stats.mtime).toISOString(),
       Etag: etag,
+      ...(partialResponse && {
+        "Accept-Ranges": "bytes",
+        "Content-Range": `bytes ${start}-${end}/${stats.size}`,
+      }),
     },
   })
 })
