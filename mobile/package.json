@@ -82,7 +82,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-native": "^4.0.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.3.0"
+    "typescript": "^5.8.3"
   },
   "private": true,
   "packageManager": "yarn@4.1.1",

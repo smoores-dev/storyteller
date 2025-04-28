@@ -4,7 +4,8 @@ import { redirect } from "next/navigation"
 import { createAuthedApiClient } from "@/authedApiClient"
 import { BookEditForm } from "@/components/books/BookEditForm"
 import { logger } from "@/logging"
-import { Title } from "@mantine/core"
+import { Stack, Title } from "@mantine/core"
+import { BookStatus } from "@/components/books/BookStatus"
 
 type Props = {
   params: Promise<{
@@ -48,9 +49,10 @@ export default async function BookEdit(props: Props) {
   }
 
   return (
-    <>
+    <Stack gap={24}>
       <Title order={2}>{book.title}</Title>
+      <BookStatus book={book} />
       <BookEditForm book={book} />
-    </>
+    </Stack>
   )
 }

@@ -2,15 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { BookAuthor } from "./BookAuthor"
-import type { ProcessingStatus } from "./ProcessingStatus"
+import { getBook } from "@/database/books"
 
-export type BookDetail = {
-  uuid: string
-  id: number | null
-  title: string
-  language: string | null
-  authors: Array<BookAuthor>
-  original_files_exist: boolean
-  processing_status: ProcessingStatus | null
+export type BookDetail = Awaited<ReturnType<typeof getBook>> & {
+  originalFilesExist: boolean
+  processingStatus: "queued" | "processing" | null
 }

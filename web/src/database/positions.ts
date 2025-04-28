@@ -1,6 +1,44 @@
 import { UUID } from "@/uuid"
 import { getDatabase } from "./connection"
 
+export type ReadiumLocation = {
+  fragments?: string[]
+  progression?: number
+  position?: number
+  totalProgression?: number
+  cssSelector?: string
+  partialCfi?: string
+  domRange?: {
+    start: {
+      cssSelector: string
+      textNodeIndex: number
+      charOffset?: number
+    }
+    end?: {
+      cssSelector: string
+      textNodeIndex: number
+      charOffset?: number
+    }
+  }
+}
+
+export type ReadiumLocator = {
+  href: string
+  type: string
+  title?: string
+  locations?: ReadiumLocation
+  text?: {
+    after?: string
+    before?: string
+    highlight?: string
+  }
+}
+
+export type Position = {
+  locator: ReadiumLocator
+  timestamp: number
+}
+
 export class PositionConflictError extends Error {
   constructor() {
     super("Attempted to write a position older than the current one")
@@ -8,96 +46,64 @@ export class PositionConflictError extends Error {
   }
 }
 
-export function upsertPosition(
+export async function upsertPosition(
   userUuid: UUID,
   bookUuid: UUID,
-  locator: unknown,
+  locator: ReadiumLocator,
   timestamp: number,
 ) {
   const db = getDatabase()
 
-  const insertStatement = db.prepare<{
-    userUuid: UUID
-    bookUuid: UUID
-    locator: string
-    timestamp: number
-  }>(`
-    INSERT INTO position (user_uuid, book_uuid, locator, timestamp)
-    VALUES ($userUuid, $bookUuid, $locator, $timestamp)
-  `)
-
-  const updateStatement = db.prepare<{
-    userUuid: UUID
-    bookUuid: UUID
-    locator: string
-    timestamp: number
-  }>(`
-    UPDATE position
-    SET locator=$locator, timestamp=$timestamp
-    WHERE user_uuid=$userUuid AND book_uuid=$bookUuid
-  `)
-
-  const queryStatement = db.prepare<{ userUuid: UUID; bookUuid: UUID }>(`
-    SELECT timestamp
-    FROM position
-    WHERE user_uuid=$userUuid AND book_uuid=$bookUuid
-  `)
-
   const locatorString = JSON.stringify(locator)
 
-  const upsertTransaction = db.transaction(() => {
-    const existing = queryStatement.get({
-      userUuid,
-      bookUuid,
-    }) as { timestamp: number } | undefined
+  const upserted = await db.transaction().execute(async (tr) => {
+    const existing = await tr
+      .selectFrom("position")
+      .select(["timestamp"])
+      .where("userUuid", "=", bookUuid)
+      .executeTakeFirst()
+
     if (!existing) {
-      insertStatement.run({
-        userUuid,
-        bookUuid,
-        locator: locatorString,
-        timestamp,
-      })
+      await db
+        .insertInto("position")
+        .values({ userUuid, bookUuid, locator: locatorString, timestamp })
+        .execute()
+
       return true
     }
+
     if (existing.timestamp > timestamp) return false
-    updateStatement.run({
-      userUuid,
-      bookUuid,
-      locator: locatorString,
-      timestamp,
-    })
+
+    await db
+      .updateTable("position")
+      .set({ locator: locatorString, timestamp })
+      .where("userUuid", "=", userUuid)
+      .where("bookUuid", "=", bookUuid)
+      .execute()
+
     return true
   })
 
-  const upserted = upsertTransaction()
   if (!upserted) {
     throw new PositionConflictError()
   }
 }
 
-export function getPosition(userUuid: UUID, bookUuid: UUID) {
+export async function getPosition(userUuid: UUID, bookUuid: UUID) {
   const db = getDatabase()
-  const statement = db.prepare<{
-    userUuid: UUID
-    bookUuid: UUID
-  }>(`
-    SELECT locator, timestamp
-    FROM position
-    WHERE user_uuid=$userUuid AND book_uuid=$bookUuid
-  `)
 
-  const result = statement.get({ userUuid, bookUuid }) as
-    | {
-        locator: string
-        timestamp: number
-      }
-    | undefined
+  const result = await db
+    .selectFrom("position")
+    .select(["locator", "timestamp"])
+    .where("userUuid", "=", userUuid)
+    .where("bookUuid", "=", bookUuid)
+    .executeTakeFirst()
 
   return (
     result && {
       userUuid,
       bookUuid,
-      locator: JSON.parse(result.locator) as unknown,
+      locator: JSON.parse(result.locator) as ReadiumLocator,
       timestamp: result.timestamp,
     }
   )

@@ -19,3 +19,5 @@ epub/index.test.d.ts
 
 fs/index.js
 fs/index.d.ts
+
+web/whisper-builds

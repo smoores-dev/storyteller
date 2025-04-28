@@ -4,6 +4,7 @@ import { transcribeTrack } from "@/transcribe"
 import assert from "assert"
 import { setGlobalOption } from "echogarden/dist/api/GlobalOptions"
 import { writeFile } from "fs/promises"
+import { Settings } from "@/apiModels"
 
 setGlobalOption("logLevel", "error")
 
@@ -25,7 +26,7 @@ void describe("transcribe", () => {
         parallelTranscodes: 1,
         parallelTranscribes: 1,
         parallelWhisperBuild: 1,
-      },
+      } as Settings,
     )
 
     await writeFile(

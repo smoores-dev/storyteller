@@ -37,7 +37,7 @@ export function UsersList({
 
   return (
     <>
-      {permissions.invite_list && (
+      {permissions.inviteList && (
         <>
           <Title order={3}>Invites</Title>
           <CreateInviteForm onUpdate={refreshInvites} />
@@ -50,7 +50,7 @@ export function UsersList({
           </List>
         </>
       )}
-      {permissions.user_list && (
+      {permissions.userList && (
         <>
           <Title order={3}>Users</Title>
           <List type="ordered" listStyleType="none">

@@ -1,11 +1,19 @@
 import { DATA_DIR } from "@/directories"
 import { join } from "node:path"
 import { cwd } from "node:process"
-import Db, { Database } from "better-sqlite3"
+import Db from "better-sqlite3"
 import { logger } from "@/logging"
 import { mkdirSync } from "node:fs"
+import {
+  CamelCasePlugin,
+  Kysely,
+  ParseJSONResultsPlugin,
+  SqliteDialect,
+} from "kysely"
+import { DB } from "./schema"
+import { BooleanPlugin } from "./plugins/booleanPlugin"
 
-let db: Database | undefined
+let db: Kysely<DB> | undefined
 
 const DATABASE_URL = join(DATA_DIR, "storyteller.db")
 
@@ -22,28 +30,47 @@ function createDatabase() {
   )
 }
 
-export function getDatabase(): Database {
+export function getDatabase(): Kysely<DB> {
   if (db) return db
 
-  try {
-    db = createDatabase()
-  } catch (e) {
-    if (
-      e instanceof TypeError &&
-      e.message === "Cannot open database because the directory does not exist"
-    ) {
-      mkdirSync(DATA_DIR, { recursive: true })
-      db = createDatabase()
-    }
-    throw e
-  }
+  mkdirSync(DATA_DIR, { recursive: true })
+  const sqlite = createDatabase()
 
-  db.pragma("journal_mode = WAL")
+  sqlite.pragma("journal_mode = WAL")
 
   try {
-    db.loadExtension(UUID_EXT_PATH)
+    sqlite.loadExtension(UUID_EXT_PATH)
   } catch (e) {
     logger.error(e)
   }
+
+  db = new Kysely<DB>({
+    dialect: new SqliteDialect({ database: sqlite }),
+    plugins: [
+      new CamelCasePlugin(),
+      new ParseJSONResultsPlugin(),
+      new BooleanPlugin<DB>({
+        fields: [
+          "featured",
+          "bookRead",
+          "bookProcess",
+          "bookDownload",
+          "bookList",
+          "userCreate",
+          "userList",
+          "userRead",
+          "userDelete",
+          "settingsUpdate",
+          "bookDelete",
+          "bookUpdate",
+          "inviteList",
+          "inviteDelete",
+          "userUpdate",
+          "isDefault",
+        ],
+      }),
+    ],
+  })
+
   return db
 }

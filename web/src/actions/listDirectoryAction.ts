@@ -20,7 +20,8 @@ export type DirectoryEntry =
 export async function listDirectoryAction(
   directory: string,
 ): Promise<DirectoryEntry[]> {
-  if (!hasPermission("book_create", (await cookies()).get("st_token"))) {
+  const stToken = (await cookies()).get("st_token")
+  if (!(await hasPermission("bookCreate", stToken))) {
     throw new Error("Forbidden")
   }
 

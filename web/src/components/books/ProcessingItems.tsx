@@ -10,16 +10,13 @@ import {
 
 type Props = {
   book: BookDetail
-  synchronized: boolean
+  aligned: boolean
 }
 
-export function ProcessingItems({ book, synchronized }: Props) {
+export function ProcessingItems({ book, aligned }: Props) {
   const client = useApiClient()
 
-  if (
-    !book.processing_status?.is_processing &&
-    !book.processing_status?.is_queued
-  ) {
+  if (book.processingStatus === null) {
     return (
       <Menu position="left-start">
         <Menu.Target>
@@ -37,7 +34,7 @@ export function ProcessingItems({ book, synchronized }: Props) {
             onClick={() => client.processBook(book.uuid, false)}
           >
             <IconProgress aria-hidden />{" "}
-            {synchronized ? "Re-process (using cached files)" : "Continue"}
+            {aligned ? "Re-process (using cached files)" : "Continue"}
           </Menu.Item>
           <Menu.Item
             classNames={{
@@ -56,7 +53,7 @@ export function ProcessingItems({ book, synchronized }: Props) {
           >
             <IconReload aria-hidden /> Delete cache files
           </Menu.Item>
-          {synchronized ? (
+          {aligned ? (
             <Menu.Item
               classNames={{
                 itemLabel: "flex gap-2",
@@ -90,7 +87,7 @@ export function ProcessingItems({ book, synchronized }: Props) {
     <Tooltip
       position="right"
       label={
-        book.processing_status.is_queued
+        book.processingStatus === "queued"
           ? "Remove from queue"
           : "Stop processing"
       }
@@ -102,7 +99,7 @@ export function ProcessingItems({ book, synchronized }: Props) {
       >
         <IconProgressX
           aria-label={
-            book.processing_status.is_queued
+            book.processingStatus === "queued"
               ? "Remove from queue"
               : "Stop processing"
           }

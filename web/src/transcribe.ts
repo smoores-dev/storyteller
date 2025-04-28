@@ -6,8 +6,8 @@ import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 import { exec as execCb, spawn } from "node:child_process"
 import { promisify } from "node:util"
 import { WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
-import { Settings, WhisperModel } from "./database/settings"
 import { logger } from "./logging"
+import { Settings, WhisperModel } from "./database/settingsTypes"
 
 const exec = promisify(execCb)
 
@@ -291,7 +291,7 @@ export async function transcribeTrack(
     return { transcript, wordTimeline }
   }
 
-  if (!settings.deepgrapmApiKey) {
+  if (!settings.deepgramApiKey) {
     throw new Error(
       "Failed to start transcription with engine deepgram: missing api key",
     )
@@ -301,7 +301,7 @@ export async function transcribeTrack(
     engine: "deepgram",
     language: locale.language,
     deepgram: {
-      apiKey: settings.deepgrapmApiKey,
+      apiKey: settings.deepgramApiKey,
       ...(settings.deepgramModel && { model: settings.deepgramModel }),
       punctuate: true,
     },

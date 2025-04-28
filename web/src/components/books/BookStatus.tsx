@@ -1,6 +1,5 @@
 "use client"
 
-import NextImage from "next/image"
 import { BookDetail } from "@/apiModels"
 import { useApiClient } from "@/hooks/useApiClient"
 import { BookOptions } from "./BookOptions"
@@ -10,17 +9,8 @@ import {
   ProcessingTaskStatus,
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
-import {
-  Paper,
-  Image,
-  Group,
-  Stack,
-  Box,
-  Title,
-  Text,
-  Button,
-  Progress,
-} from "@mantine/core"
+import { Paper, Group, Stack, Box, Text, Button, Progress } from "@mantine/core"
+import { useLiveBooks } from "@/hooks/useLiveBooks"
 
 type Props = {
   book: BookDetail
@@ -32,68 +22,54 @@ export const ProcessingTaskTypes = {
   TRANSCRIBE_CHAPTERS: "Transcribing tracks",
 }
 
-export function BookStatus({ book }: Props) {
+export function BookStatus({ book: initialBook }: Props) {
   const client = useApiClient()
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const book = useLiveBooks([initialBook])[0]!
 
   const permissions = usePermissions()
 
-  const synchronized =
-    book.processing_status?.current_task === ProcessingTaskType.SYNC_CHAPTERS &&
-    book.processing_status.status === ProcessingTaskStatus.COMPLETED
+  const aligned =
+    book.processingTask?.type === ProcessingTaskType.SYNC_CHAPTERS &&
+    book.processingTask.status === ProcessingTaskStatus.COMPLETED
 
   const userFriendlyTaskType =
-    book.processing_status &&
+    book.processingTask &&
     ProcessingTaskTypes[
-      book.processing_status.current_task as keyof typeof ProcessingTaskTypes
+      book.processingTask.type as keyof typeof ProcessingTaskTypes
     ]
 
-  if (!permissions.book_read) return null
+  if (!permissions.bookRead) return null
 
   return (
     <Paper className="max-w-[600px]">
-      <Group justify="space-between" wrap="nowrap" align="stretch">
-        <Image
-          className="rounded-md"
-          component={NextImage}
-          h={150}
-          w={98}
-          height={150}
-          width={98}
-          alt=""
-          aria-hidden
-          src={client.getCoverUrl(book.uuid)}
-        />
+      <Group justify="space-between" wrap="nowrap" align="flex-end">
         <Stack justify="space-between" className="grow">
-          <Box>
-            <Title order={3} className="text-lg">
-              {book.title}
-            </Title>
-            {book.authors[0] && <Text>{book.authors[0].name}</Text>}
-          </Box>
-          {synchronized ? (
-            permissions.book_download && (
+          {aligned ? (
+            permissions.bookDownload && (
               <a
-                href={client.getSyncedDownloadUrl(book.uuid)}
+                href={client.getAlignedDownloadUrl(book.uuid)}
                 className="text-st-orange-600 underline"
+                download={`${book.title}.epub`}
               >
                 Download
               </a>
             )
-          ) : book.processing_status ? (
-            book.processing_status.is_queued ? (
+          ) : book.processingTask ? (
+            book.processingStatus === "queued" ? (
               "Queued"
             ) : (
               <Box>
                 {userFriendlyTaskType}
-                {book.processing_status.is_processing ? "" : " (stopped)"}
-                {book.processing_status.status ===
+                {book.processingStatus === "processing" ? "" : " (stopped)"}
+                {book.processingTask.status ===
                   ProcessingTaskStatus.IN_ERROR && <ProcessingFailedMessage />}
                 <Progress
-                  value={Math.floor(book.processing_status.progress * 100)}
+                  value={Math.floor(book.processingTask.progress * 100)}
                 />
               </Box>
             )
-          ) : permissions.book_process ? (
+          ) : permissions.bookProcess ? (
             <Button
               className="self-start"
               onClick={() => {
@@ -106,7 +82,7 @@ export function BookStatus({ book }: Props) {
             <Text>Unprocessed</Text>
           )}
         </Stack>
-        <BookOptions synchronized={synchronized} book={book} />
+        <BookOptions aligned={aligned} book={book} />
       </Group>
     </Paper>
   )

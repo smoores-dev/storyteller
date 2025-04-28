@@ -1,0 +1,7 @@
+releases:
+  "@smoores/epub": patch
+  "@storyteller/web": major
+
+declined:
+  - "@storyteller/docs"
+  - "@storyteller/mobile"

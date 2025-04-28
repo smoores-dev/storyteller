@@ -1,6 +1,6 @@
 import { hash, verify as verifyPassword } from "argon2"
 
-import { Permission, User, getUser, userHasPermission } from "./database/users"
+import { Permission, getUser, userHasPermission } from "./database/users"
 import { add } from "date-fns/fp/add"
 import { verify as verifyJwt, sign, JwtPayload } from "jsonwebtoken"
 import { NextRequest, NextResponse } from "next/server"
@@ -45,11 +45,8 @@ export async function hashPassword(password: string) {
   return await hash(password)
 }
 
-export async function authenticateUser(
-  username: string,
-  password: string,
-): Promise<User | null> {
-  const user = getUser(username)
+export async function authenticateUser(username: string, password: string) {
+  const user = await getUser(username)
 
   if (!user) return null
 
@@ -119,8 +116,8 @@ export function withToken<
   }
 }
 
-export function verifyToken(token: string) {
-  const isRevoked = isTokenRevoked(token)
+export async function verifyToken(token: string) {
+  const isRevoked = await isTokenRevoked(token)
   if (isRevoked) return null
 
   try {
@@ -152,7 +149,7 @@ export function withVerifyToken<
   ) => Response | Promise<Response>,
 ) {
   return withToken<Params>(async function (request, context, token) {
-    const tokenData = verifyToken(token)
+    const tokenData = await verifyToken(token)
     if (!tokenData) {
       return NextResponse.json(
         {
@@ -184,7 +181,10 @@ export function withHasPermission<
   ) {
     return withVerifyToken<Params>(
       async (request, context, token, tokenData) => {
-        const hasPermission = userHasPermission(tokenData.username, permission)
+        const hasPermission = await userHasPermission(
+          tokenData.username,
+          permission,
+        )
 
         if (!hasPermission) {
           return NextResponse.json({ message: "Forbidden" }, { status: 403 })
@@ -196,14 +196,14 @@ export function withHasPermission<
   }
 }
 
-export function hasPermission(
+export async function hasPermission(
   permission: Permission,
   cookie: RequestCookie | undefined,
 ) {
   const token = extractTokenFromCookie(cookie)
   if (!token) return false
 
-  const tokenData = verifyToken(token)
+  const tokenData = await verifyToken(token)
   if (!tokenData) return false
 
   return userHasPermission(tokenData.username, permission)

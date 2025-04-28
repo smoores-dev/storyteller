@@ -17,14 +17,14 @@ export function UserActions({ user, onEdit, onUpdate }: Props) {
 
   return (
     <Stack>
-      {permissions.user_update && (
+      {permissions.userUpdate && (
         <ActionIcon variant="subtle" color="black" onClick={onEdit}>
           <Tooltip position="right" label="Edit">
             <IconPencil aria-label="Edit" />
           </Tooltip>
         </ActionIcon>
       )}
-      {permissions.user_delete && (
+      {permissions.userDelete && (
         <ActionIcon
           variant="subtle"
           color="red"

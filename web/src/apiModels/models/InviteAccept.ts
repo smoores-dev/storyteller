@@ -4,8 +4,8 @@
 
 export type InviteAccept = {
   username: string
-  full_name: string
+  fullName: string
   email: string
   password: string
-  invite_key: string
+  inviteKey: string
 }

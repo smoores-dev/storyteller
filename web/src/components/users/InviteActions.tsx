@@ -16,7 +16,7 @@ export function InviteActions({ invite, onUpdate }: Props) {
 
   return (
     <Stack>
-      {permissions.user_create && (
+      {permissions.userCreate && (
         <ActionIcon
           variant="subtle"
           color="black"
@@ -29,7 +29,7 @@ export function InviteActions({ invite, onUpdate }: Props) {
           </Tooltip>
         </ActionIcon>
       )}
-      {permissions.invite_delete && (
+      {permissions.inviteDelete && (
         <ActionIcon
           variant="subtle"
           color="red"

@@ -13,6 +13,7 @@ import { streamFile } from "@smoores/fs"
 import { randomUUID } from "node:crypto"
 import { lookup } from "mime-types"
 import { Mutex } from "async-mutex"
+import he from "he"
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
@@ -158,6 +159,12 @@ export interface DublinCore {
   creators?: DcCreator[]
   contributors?: DcCreator[]
   type?: string
+}
+
+export interface Collection {
+  name: string
+  type?: string
+  position?: string
 }
 
 /**
@@ -750,6 +757,52 @@ export class Epub {
     })
   }
 
+  /**
+   * Returns the item in the metadata element's children array
+   * that matches the provided predicate.
+   */
+  public async findMetadataItem(predicate: (entry: MetadataEntry) => boolean) {
+    const [first] = await this.findAllMetadataItems(predicate)
+    return first ?? null
+  }
+
+  /**
+   * Returns the item in the metadata element's children array
+   * that matches the provided predicate.
+   */
+  public async findAllMetadataItems(
+    predicate: (entry: MetadataEntry) => boolean,
+  ) {
+    const packageDocument = await this.getPackageDocument()
+
+    const packageElement = Epub.findXmlChildByName("package", packageDocument)
+
+    if (!packageElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no package element in package document",
+      )
+
+    const metadataElement = Epub.findXmlChildByName(
+      "metadata",
+      packageElement.package,
+    )
+
+    if (!metadataElement)
+      throw new Error(
+        "Failed to parse EPUB: Found no metadata element in package document",
+      )
+
+    const elements = metadataElement.metadata.filter((node) => {
+      const item = Epub.parseMetadataItem(node)
+      if (!item) return false
+      return predicate(item)
+    })
+
+    return elements
+      .map((element) => Epub.parseMetadataItem(element))
+      .filter((item) => !!item)
+  }
+
   private static parseMetadataItem(node: XmlNode) {
     if (Epub.isXmlTextNode(node)) return null
 
@@ -1174,6 +1227,39 @@ export class Epub {
   }
 
   /**
+   * Update the Epub's description metadata entry.
+   *
+   * Updates the existing dc:description element if one exists.
+   * Otherwise creates a new element. Any non-ASCII symbols,
+   * `&`, `<`, `>`, `"`, `'`, and `\``` will be encoded as HTML entities.
+   */
+  async setDescription(description: string) {
+    await this.replaceMetadata(({ type }) => type === "dc:description", {
+      type: "dc:description",
+      value: he.encode(description),
+      properties: {},
+    })
+  }
+
+  /**
+   * Retrieve the Epub's description as specified in its
+   * package document metadata.
+   *
+   * If no description metadata is specified, returns null.
+   * Returns the description as a string. Descriptions may
+   * include HTML markup.
+   */
+  async getDescription() {
+    const metadata = await this.getMetadata()
+    const descriptionEntry = metadata.find(
+      (entry) => entry.type === "dc:description",
+    )
+    if (!descriptionEntry?.value) return null
+    const escaped = descriptionEntry.value
+    return he.decode(escaped)
+  }
+
+  /**
    * Return the set of custom vocabulary prefixes set on this publication's
    * root package element.
    *
@@ -1266,6 +1352,165 @@ export class Epub {
         )
       } else {
         titleElement["dc:title"] = [Epub.createXmlTextNode(title)]
+      }
+    })
+  }
+
+  /**
+   * Retrieve the list of collections.
+   */
+  async getCollections() {
+    const metadata = await this.getMetadata()
+
+    const collections: Collection[] = []
+
+    for (const entry of metadata) {
+      if (
+        entry.properties["property"] === "belongs-to-collection" &&
+        entry.value
+      ) {
+        const type = metadata.find(
+          (e) =>
+            e.properties["refines"] === `#${entry.id ?? ""}` &&
+            entry.properties["property"] === "collection-type",
+        )?.value
+
+        const position = metadata.find(
+          (e) =>
+            e.properties["refines"] === `#${entry.id ?? ""}` &&
+            entry.properties["property"] === "group-position",
+        )?.value
+
+        collections.push({
+          name: entry.value,
+          ...(type && { type }),
+          ...(position && { position }),
+        })
+      }
+    }
+
+    return collections
+  }
+
+  /**
+   * Add a collection to the EPUB metadata.
+   *
+   * If index is provided, the collection will be placed at
+   * that index in the list of collections. Otherwise, it
+   * will be added to the end of the list.
+   */
+  async addCollection(collection: Collection, index?: number) {
+    const collectionId = randomUUID()
+
+    // Order matters for creators and contributors,
+    // so we can't just append these to the end of the
+    // metadata element's children using `addMetadata`.
+    // We have to manually find the correct insertion point
+    // based on the provided index
+    await this.withPackageDocument((packageDocument) => {
+      const packageElement = Epub.findXmlChildByName("package", packageDocument)
+      if (!packageElement)
+        throw new Error(
+          "Failed to parse EPUB: found no package element in package document",
+        )
+
+      const metadata = Epub.findXmlChildByName(
+        "metadata",
+        packageElement.package,
+      )
+      if (!metadata)
+        throw new Error(
+          "Failed to parse EPUB: found no metadata element in package document",
+        )
+
+      let collectionCount = 0
+      let metadataIndex = 0
+      for (const meta of Epub.getXmlChildren(metadata)) {
+        if (collectionCount === index) break
+        metadataIndex++
+        if (Epub.isXmlTextNode(meta)) continue
+        if (Epub.getXmlElementName(meta) !== "meta") continue
+        if (meta[":@"]?.["@_property"] !== "belongs-to-collection") continue
+        collectionCount++
+      }
+
+      Epub.getXmlChildren(metadata).splice(
+        metadataIndex,
+        0,
+        Epub.createXmlElement("belongs-to-collection", { id: collectionId }, [
+          Epub.createXmlTextNode(collection.name),
+        ]),
+      )
+    })
+
+    // These can all just go at the end; order is only
+    // important for the `dc:creator`/`dc:contributor`
+    // elements
+    if (collection.position) {
+      await this.addMetadata({
+        type: "meta",
+        properties: { refines: `#${collectionId}`, property: "group-position" },
+        value: collection.position,
+      })
+    }
+
+    if (collection.type) {
+      await this.addMetadata({
+        type: "meta",
+        properties: {
+          refines: `#${collectionId}`,
+          property: "collection-type",
+        },
+        value: collection.type,
+      })
+    }
+  }
+
+  /**
+   * Remove a collection from the EPUB metadata.
+   *
+   * Removes the collection at the provided index. This index
+   * refers to the array returned by `epub.getCollections()`.
+   */
+  async removeCollection(index: number) {
+    await this.withPackageDocument((packageDocument) => {
+      const packageElement = Epub.findXmlChildByName("package", packageDocument)
+      if (!packageElement)
+        throw new Error(
+          "Failed to parse EPUB: found no package element in package document",
+        )
+
+      const metadata = Epub.findXmlChildByName(
+        "metadata",
+        packageElement.package,
+      )
+      if (!metadata)
+        throw new Error(
+          "Failed to parse EPUB: found no metadata element in package document",
+        )
+
+      let collectionCount = 0
+      let metadataIndex = 0
+      for (const meta of Epub.getXmlChildren(metadata)) {
+        if (collectionCount === index) break
+        metadataIndex++
+        if (Epub.isXmlTextNode(meta)) continue
+        if (Epub.getXmlElementName(meta) !== "meta") continue
+        if (meta[":@"]?.["@_property"] !== "belongs-to-collection") continue
+        collectionCount++
+      }
+
+      const [removed] = Epub.getXmlChildren(metadata).splice(metadataIndex, 1)
+
+      if (removed && !Epub.isXmlTextNode(removed) && removed[":@"]?.["@_id"]) {
+        const id = removed[":@"]["@_id"]
+        const newChildren = Epub.getXmlChildren(metadata).filter((node) => {
+          if (Epub.isXmlTextNode(node)) return true
+          if (Epub.getXmlElementName(node) !== "meta") return true
+          if (node[":@"]?.["refines"] !== `#${id}`) return true
+          return false
+        })
+        Epub.replaceXmlChildren(metadata, newChildren)
       }
     })
   }
