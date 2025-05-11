@@ -2,9 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import { getBook } from "@/database/books"
+import { BookWithRelations } from "@/database/books"
 
-export type BookDetail = Awaited<ReturnType<typeof getBook>> & {
+export type BookDetail = BookWithRelations & {
   originalFilesExist: boolean
   processingStatus: "queued" | "processing" | null
 }

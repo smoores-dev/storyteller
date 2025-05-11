@@ -357,7 +357,7 @@ SELECT
   uuid,
   id,
   name,
-  value
+  COALESCE(value, 'null')
 FROM
   settings;
 

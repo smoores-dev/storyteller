@@ -26,7 +26,7 @@ export async function createProcessingTask(
   const { uuid } = await db
     .insertInto("processingTask")
     .values({ type, status, bookUuid })
-    .returning(["uuid"])
+    .returning(["uuid as uuid"])
     .executeTakeFirstOrThrow()
 
   return uuid

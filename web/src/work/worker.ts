@@ -3,15 +3,11 @@ import {
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 import { deleteProcessed } from "@/assets/assets"
-import {
-  getCustomEpubCover,
-  getEpubCoverFilename,
-  getProcessedAudioFiles,
-} from "@/assets/covers"
+import { getProcessedAudioFiles } from "@/assets/covers"
 import {
   getTranscriptionsFilepath,
   getProcessedAudioFilepath,
-  getEpubSyncedFilepath,
+  getEpubAlignedFilepath,
 } from "@/assets/paths"
 import { getBook, updateBook } from "@/database/books"
 import {
@@ -27,7 +23,12 @@ import {
   getTranscriptions,
   processAudiobook,
 } from "@/process/processAudio"
-import { getFullText, processEpub, readEpub } from "@/process/processEpub"
+import {
+  getFullText,
+  processEpub,
+  readEpub,
+  writeMetadataToEpub,
+} from "@/process/processEpub"
 import { getInitialPrompt } from "@/process/prompt"
 import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
@@ -267,51 +268,18 @@ export default async function processBook({
           transcriptions,
         )
         await synchronizer.syncBook(onProgress)
-        const book = await getBook(bookUuid)
 
-        if (!book)
-          throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
-
-        await epub.setTitle(book.title)
-        if (book.language) {
-          await epub.setLanguage(new Intl.Locale(book.language))
-        }
-        const epubCover = await getCustomEpubCover(bookUuid)
-        const epubFilename = await getEpubCoverFilename(bookUuid)
-        if (epubCover) {
-          const prevCoverItem = await epub.getCoverImageItem()
-          await epub.setCoverImage(
-            prevCoverItem?.href ?? `images/${epubFilename}`,
-            epubCover,
-          )
-        }
-        /* Add metadata : app version */
-        const appVersion = getCurrentVersion()
-        await epub.addMetadata({
-          type: "meta",
-          properties: { property: "storyteller:version" },
-          value: appVersion,
-        })
-        // We need UTC with integer seconds, but toISOString gives UTC with ms
-        const dateTimeString = new Date().toISOString().replace(/\.\d+/, "")
-        await epub.addMetadata({
-          type: "meta",
-          properties: { property: "storyteller:media-overlays-modified" },
-          value: dateTimeString,
-        })
-
-        await epub.setPackageVocabularyPrefix(
-          "storyteller",
-          "https://storyteller-platform.gitlab.io/storyteller/docs/vocabulary",
-        )
-
-        await epub.writeToFile(getEpubSyncedFilepath(bookUuid))
-        await epub.close()
-        await updateBook(book.uuid, {
-          alignedByStorytellerVersion: appVersion,
-          alignedAt: dateTimeString,
+        const book = await updateBook(bookUuid, {
+          alignedByStorytellerVersion: getCurrentVersion(),
+          // We need UTC with integer seconds, but toISOString gives UTC with ms
+          alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
           alignedWith: formatTranscriptionEngineDetails(settings),
         })
+
+        await writeMetadataToEpub(book, epub)
+
+        await epub.writeToFile(getEpubAlignedFilepath(bookUuid))
+        await epub.close()
       }
 
       port.postMessage({

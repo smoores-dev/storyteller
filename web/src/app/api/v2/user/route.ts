@@ -37,6 +37,7 @@ export const GET = withVerifyToken(
         bookProcess: user.permissions?.bookProcess ?? false,
         bookRead: user.permissions?.bookRead ?? false,
         bookUpdate: user.permissions?.bookUpdate ?? false,
+        collectionCreate: user.permissions?.collectionCreate ?? false,
         inviteDelete: user.permissions?.inviteDelete ?? false,
         inviteList: user.permissions?.inviteList ?? false,
         settingsUpdate: user.permissions?.settingsUpdate ?? false,

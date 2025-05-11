@@ -10,8 +10,13 @@ import {
   UserRequest,
 } from "./apiModels"
 import { UserPermissionSet } from "./database/users"
-import { AuthorRelation, BookUpdate } from "./database/books"
+import { AuthorRelation, Book, SeriesRelation } from "./database/books"
 import { BookEvent } from "./events"
+import { Status } from "./database/statuses"
+import { Author } from "./database/authors"
+import { Series } from "./database/series"
+import { Collection } from "./database/collections"
+import { UUID } from "./uuid"
 
 export class ApiClientError extends Error {
   constructor(
@@ -499,21 +504,46 @@ export class ApiClient {
   }
 
   async updateBook(
-    update: BookUpdate & { authors: AuthorRelation[] },
+    update: {
+      uuid: Book["uuid"]
+      title: Book["title"]
+      language: Book["language"]
+      statusUuid: Book["statusUuid"]
+      publicationDate: Book["publicationDate"]
+      authors: AuthorRelation[]
+      series: SeriesRelation[]
+      collections: UUID[]
+      tags: string[]
+    },
     textCover: File | null,
     audioCover: File | null,
   ): Promise<BookDetail> {
     const url = new URL(`${this.rootPath}/v2/books/${update.uuid}`, this.origin)
 
     const body = new FormData()
-    if (update.title != undefined) {
-      body.append("title", update.title)
-    }
-    if (update.language != undefined) {
+    body.append("title", update.title)
+    if (update.language !== null) {
       body.append("language", update.language)
     }
+    if (update.publicationDate) {
+      body.append("publicationDate", update.publicationDate)
+    }
+    body.append("statusUuid", update.statusUuid)
+
+    for (const tag of update.tags) {
+      body.append("tags", tag)
+    }
+
     for (const author of update.authors) {
       body.append("authors", JSON.stringify(author))
+    }
+
+    for (const series of update.series) {
+      body.append("series", JSON.stringify(series))
+    }
+
+    for (const collection of update.collections) {
+      body.append("collections", collection)
     }
 
     if (textCover !== null) {
@@ -551,5 +581,115 @@ export class ApiClient {
     return () => {
       eventSource.close()
     }
+  }
+
+  async listStatuses() {
+    const url = new URL(`${this.rootPath}/v2/statuses`, this.origin)
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const statuses = (await response.json()) as Status[]
+    return statuses
+  }
+
+  async listAuthors() {
+    const url = new URL(`${this.rootPath}/v2/authors`, this.origin)
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const authors = (await response.json()) as Author[]
+    return authors
+  }
+
+  async listSeries() {
+    const url = new URL(`${this.rootPath}/v2/series`, this.origin)
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const series = (await response.json()) as Series[]
+    return series
+  }
+
+  async listCollections() {
+    const url = new URL(`${this.rootPath}/v2/collections`, this.origin)
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const collections = (await response.json()) as Collection[]
+    return collections
+  }
+
+  async listTags() {
+    const url = new URL(`${this.rootPath}/v2/tags`, this.origin)
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const tags = (await response.json()) as Collection[]
+    return tags
+  }
+
+  async createCollection(values: {
+    name: string
+    description: string
+    public: boolean
+    users: string[]
+  }) {
+    const url = new URL(`${this.rootPath}/v2/collections`, this.origin)
+
+    const body = {
+      name: values.name,
+      description: values.description,
+      public: values.public,
+      ...(!values.public && { users: values.users }),
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.getHeaders(),
+      credentials: "include",
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const collection = (await response.json()) as Collection
+    return collection
   }
 }

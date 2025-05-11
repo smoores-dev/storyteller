@@ -169,7 +169,7 @@ export interface TokenRevokation {
 export interface User {
   createdAt: Generated<string>
   email: string
-  fullName: string
+  fullName: Generated<string>
   hashedPassword: string
   id: number | null
   updatedAt: Generated<string>
@@ -186,6 +186,7 @@ export interface UserPermission {
   bookProcess: Generated<boolean>
   bookRead: Generated<boolean>
   bookUpdate: Generated<boolean>
+  collectionCreate: Generated<boolean>
   createdAt: Generated<string>
   id: number | null
   inviteDelete: Generated<boolean>

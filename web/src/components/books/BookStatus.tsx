@@ -1,6 +1,5 @@
 "use client"
 
-import { BookDetail } from "@/apiModels"
 import { useApiClient } from "@/hooks/useApiClient"
 import { BookOptions } from "./BookOptions"
 import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
@@ -10,10 +9,11 @@ import {
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 import { Paper, Group, Stack, Box, Text, Button, Progress } from "@mantine/core"
-import { useLiveBooks } from "@/hooks/useLiveBooks"
+import { UUID } from "@/uuid"
+import { useBook } from "./LiveBooksProvider"
 
 type Props = {
-  book: BookDetail
+  bookUuid: UUID
 }
 
 export const ProcessingTaskTypes = {
@@ -22,10 +22,10 @@ export const ProcessingTaskTypes = {
   TRANSCRIBE_CHAPTERS: "Transcribing tracks",
 }
 
-export function BookStatus({ book: initialBook }: Props) {
+export function BookStatus({ bookUuid }: Props) {
   const client = useApiClient()
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const book = useLiveBooks([initialBook])[0]!
+  const book = useBook(bookUuid)!
 
   const permissions = usePermissions()
 

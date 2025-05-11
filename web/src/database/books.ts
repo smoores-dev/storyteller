@@ -9,6 +9,9 @@ import { BookEvents } from "@/events"
 import { DB } from "./schema"
 import { Insertable, Selectable, Updateable } from "kysely"
 import { Epub } from "@smoores/epub"
+import { NewAuthor } from "./authors"
+import { NewSeries } from "./series"
+import { syncRelations } from "./relations"
 
 /**
  * This function only exists to support old clients that haven't
@@ -35,10 +38,6 @@ export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
   return uuid
 }
 
-export type Author = Selectable<DB["author"]>
-export type NewAuthor = Insertable<DB["author"]>
-export type AuthorUpdate = Updateable<DB["author"]>
-
 export type AuthorToBook = Selectable<DB["authorToBook"]>
 export type NewAuthorToBook = Insertable<DB["authorToBook"]>
 export type AuthorToBookUpdate = Updateable<DB["authorToBook"]>
@@ -49,15 +48,24 @@ export type ProcessingStatus = {
   status: ProcessingTaskStatus
 }
 
-export type Series = Selectable<DB["series"]>
-export type NewSeries = Insertable<DB["series"]>
-export type SeriesUpdate = Updateable<DB["series"]>
+export type BookToCollection = Selectable<DB["bookToCollection"]>
+export type NewBookToCollection = Insertable<DB["bookToCollection"]>
+export type BookToCollectionUpdate = Updateable<DB["bookToCollection"]>
+
+export type NewTag = Insertable<DB["tag"]>
+export type TagUpdate = Updateable<DB["tag"]>
+
+export type BookToTag = Selectable<DB["bookToTag"]>
+export type NewBookToTag = Insertable<DB["bookToTag"]>
+export type BookToTagUpdate = Updateable<DB["bookToTag"]>
 
 export type BookToSeries = Selectable<DB["bookToSeries"]>
 export type NewBookToSeries = Insertable<DB["bookToSeries"]>
 export type BookToSeriesUpdate = Updateable<DB["bookToSeries"]>
 
-export type Status = Selectable<DB["status"]>
+export type AuthorRelation = NewAuthor & NewAuthorToBook
+export type SeriesRelation = NewSeries & NewBookToSeries
+export type TagRelation = NewTag & NewBookToTag
 
 export type Book = Selectable<DB["book"]>
 export type NewBook = Insertable<DB["book"]>
@@ -117,66 +125,59 @@ export async function createBook(
   const { uuid } = await db
     .insertInto("book")
     .values(insert)
-    .returning(["uuid"])
+    .returning(["uuid as uuid"])
     .executeTakeFirstOrThrow()
 
   if (relations.authors) {
-    for (const author of relations.authors) {
-      let existing = await db
-        .selectFrom("author")
-        .select(["uuid"])
-        .where("name", "=", author.name)
-        .executeTakeFirst()
-
-      if (!existing) {
-        existing = await db
-          .insertInto("author")
-          .values(author)
-          .returning(["uuid"])
-          .executeTakeFirstOrThrow()
-      }
-
-      await db
-        .insertInto("authorToBook")
-        .values({
-          authorUuid: existing.uuid,
-          bookUuid: uuid,
-          role: author.role ?? "aut",
-        })
-        .execute()
-
-      continue
-    }
+    await syncRelations({
+      entityUuid: uuid,
+      relations: relations.authors,
+      relatedTable: "author",
+      relationTable: "authorToBook",
+      relatedPrimaryKeyColumn: "uuid",
+      identifierColumn: "name",
+      relatedForeignKeyColumn: "authorToBook.authorUuid",
+      entityForeignKeyColumn: "authorToBook.bookUuid",
+      extractRelatedValues: (values) => ({
+        name: values.name,
+        fileAs: values.fileAs,
+      }),
+      extractRelationValues: (authorUuid, values) => ({
+        authorUuid: authorUuid,
+        bookUuid: uuid,
+        role: values.role,
+      }),
+      extractRelationUpdateValues: (values) => ({
+        role: values.role,
+      }),
+    })
   }
 
   if (relations.series) {
-    for (const series of relations.series) {
-      let existing = await db
-        .selectFrom("series")
-        .select(["uuid"])
-        .where("name", "=", series.name)
-        .executeTakeFirst()
-
-      if (!existing) {
-        existing = await db
-          .insertInto("series")
-          .values(series)
-          .returning(["uuid"])
-          .executeTakeFirstOrThrow()
-      }
-
-      await db
-        .insertInto("bookToSeries")
-        .values({
-          seriesUuid: existing.uuid,
-          bookUuid: uuid,
-          featured: series.featured,
-          position: series.position,
-        })
-        .execute()
-
-      continue
-    }
+    await syncRelations({
+      entityUuid: uuid,
+      relations: relations.series,
+      relatedTable: "series",
+      relationTable: "bookToSeries",
+      relatedPrimaryKeyColumn: "uuid",
+      identifierColumn: "name",
+      relatedForeignKeyColumn: "bookToSeries.seriesUuid",
+      entityForeignKeyColumn: "bookToSeries.bookUuid",
+      extractRelatedValues: (values) => ({
+        name: values.name,
+        description: values.description,
+      }),
+      extractRelationValues: (seriesUuid, values) => ({
+        seriesUuid: seriesUuid,
+        bookUuid: uuid,
+        position: values.position,
+        featured: values.featured,
+      }),
+      extractRelationUpdateValues: (values) => ({
+        position: values.position,
+        featured: values.featured,
+      }),
+    })
   }
 
   const book = await getBook(uuid)
@@ -230,6 +231,8 @@ export async function getBooks(
           .select([
             "series.uuid",
             "series.name",
+            "bookToSeries.featured",
+            "bookToSeries.position",
             "series.createdAt",
             "series.updatedAt",
           ])
@@ -240,7 +243,7 @@ export async function getBooks(
           .selectFrom("tag")
           .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
           .select(["tag.uuid", "tag.name", "tag.createdAt", "tag.updatedAt"])
-          .whereRef("bookToTag.tagUuid", "=", "book.uuid"),
+          .whereRef("bookToTag.bookUuid", "=", "book.uuid"),
       ).as("tags"),
       jsonArrayFrom(
         eb
@@ -257,7 +260,7 @@ export async function getBooks(
             "collection.updatedAt",
           ])
           .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
-      ).as("series"),
+      ).as("collections"),
       jsonObjectFrom(
         eb
           .selectFrom("processingTask")
@@ -297,6 +300,8 @@ export async function getBooks(
     )
   })
 }
+
+export type BookWithRelations = NonNullable<Awaited<ReturnType<typeof getBook>>>
 
 export async function getBook(uuid: UUID) {
   const [book] = await getBooks([uuid])
@@ -347,13 +352,15 @@ export async function deleteBook(bookUuid: UUID) {
   })
 }
 
-export type AuthorRelation = NewAuthor & NewAuthorToBook
-export type SeriesRelation = NewSeries & NewBookToSeries
-
 export async function updateBook(
   uuid: UUID,
   update: BookUpdate | null,
-  relations: { authors?: AuthorRelation[]; series?: SeriesRelation[] } = {},
+  relations: {
+    authors?: AuthorRelation[]
+    series?: SeriesRelation[]
+    collections?: UUID[]
+    tags?: string[]
+  } = {},
 ) {
   const db = getDatabase()
 
@@ -362,83 +369,176 @@ export async function updateBook(
   }
 
   if (relations.authors) {
-    for (const author of relations.authors) {
-      const { uuid: authorUuid, ...values } = author
-      if (!authorUuid) {
-        let existing = await db
-          .selectFrom("author")
-          .select(["uuid"])
-          .where("name", "=", values.name)
-          .executeTakeFirst()
-
-        if (!existing) {
-          existing = await db
-            .insertInto("author")
-            .values({ name: values.name, fileAs: values.fileAs })
-            .returning(["uuid"])
-            .executeTakeFirstOrThrow()
-        }
-
-        await db
-          .insertInto("authorToBook")
-          .values({
-            authorUuid: existing.uuid,
-            bookUuid: uuid,
-            role: values.role ?? "aut",
-          })
-          .execute()
-
-        continue
-      }
-
-      await db
-        .updateTable("author")
-        .set(values)
-        .where("uuid", "=", authorUuid)
-        .execute()
-    }
+    await syncRelations({
+      entityUuid: uuid,
+      relations: relations.authors,
+      relatedTable: "author",
+      relationTable: "authorToBook",
+      relatedPrimaryKeyColumn: "uuid",
+      identifierColumn: "name",
+      relatedForeignKeyColumn: "authorToBook.authorUuid",
+      entityForeignKeyColumn: "authorToBook.bookUuid",
+      extractRelatedValues: (values) => ({
+        name: values.name,
+        fileAs: values.fileAs,
+      }),
+      extractRelationValues: (authorUuid, values) => ({
+        authorUuid: authorUuid,
+        bookUuid: uuid,
+        role: values.role,
+      }),
+      extractRelationUpdateValues: (values) => ({
+        role: values.role,
+      }),
+    })
   }
 
   if (relations.series) {
-    for (const series of relations.series) {
-      const { uuid: seriesUuid, ...values } = series
-      if (!seriesUuid) {
-        let existing = await db
-          .selectFrom("series")
-          .select(["uuid"])
-          .where("name", "=", values.name)
-          .executeTakeFirst()
+    await syncRelations({
+      entityUuid: uuid,
+      relations: relations.series,
+      relatedTable: "series",
+      relationTable: "bookToSeries",
+      relatedPrimaryKeyColumn: "uuid",
+      identifierColumn: "name",
+      relatedForeignKeyColumn: "bookToSeries.seriesUuid",
+      entityForeignKeyColumn: "bookToSeries.bookUuid",
+      extractRelatedValues: (values) => ({
+        name: values.name,
+        description: values.description,
+      }),
+      extractRelationValues: (seriesUuid, values) => ({
+        seriesUuid: seriesUuid,
+        bookUuid: uuid,
+        position: values.position,
+        featured: values.featured,
+      }),
+      extractRelationUpdateValues: (values) => ({
+        position: values.position,
+        featured: values.featured,
+      }),
+    })
+  }
 
-        if (!existing) {
-          existing = await db
-            .insertInto("series")
-            .values({
-              name: values.name,
-              description: values.description,
-            })
-            .returning(["uuid"])
-            .executeTakeFirstOrThrow()
-        }
-
-        await db
-          .insertInto("bookToSeries")
-          .values({
-            seriesUuid: existing.uuid,
-            bookUuid: uuid,
-            position: values.position,
-            featured: values.featured,
-          })
-          .execute()
-
-        continue
-      }
-
+  if (relations.collections) {
+    const collections = relations.collections
+    if (collections.length) {
       await db
-        .updateTable("series")
-        .set(values)
-        .where("uuid", "=", seriesUuid)
+        .insertInto("bookToCollection")
+        .columns(["bookUuid", "collectionUuid"])
+        .expression((eb) =>
+          eb
+            .selectFrom(() =>
+              collections
+                .map((collection) =>
+                  db
+                    .selectNoFrom([
+                      eb.val(uuid).as("bookUuid"),
+                      eb.val(collection).as("collectionUuid"),
+                    ])
+                    .where((web) =>
+                      web.not(
+                        web.exists(
+                          web
+                            .selectFrom("bookToCollection")
+                            .select([web.lit(1).as("one")])
+                            .where("bookUuid", "=", uuid)
+                            .where("collectionUuid", "=", collection),
+                        ),
+                      ),
+                    ),
+                )
+                .reduce((acc, expr) => acc.unionAll(expr))
+                .as("values"),
+            )
+            .selectAll(),
+        )
         .execute()
     }
+
+    await db
+      .deleteFrom("bookToCollection")
+      .where("bookUuid", "=", uuid)
+      .where("collectionUuid", "not in", relations.collections)
+      .execute()
+  }
+
+  if (relations.tags) {
+    const tags = relations.tags
+    if (tags.length) {
+      await db
+        .insertInto("tag")
+        .columns(["name"])
+        .expression((eb) =>
+          eb
+            .selectFrom(() =>
+              tags
+                .map((tag) =>
+                  db.selectNoFrom([eb.val(tag).as("name")]).where((web) =>
+                    web.not(
+                      web.exists(
+                        web
+                          .selectFrom("tag")
+                          .select([web.lit(1).as("one")])
+                          .where("tag.name", "=", tag),
+                      ),
+                    ),
+                  ),
+                )
+                .reduce((acc, expr) => acc.unionAll(expr))
+                .as("values"),
+            )
+            .selectAll(),
+        )
+        .execute()
+
+      await db
+        .insertInto("bookToTag")
+        .columns(["bookUuid", "tagUuid"])
+        .expression((eb) =>
+          eb
+            .selectFrom(() =>
+              tags
+                .map((tag) =>
+                  eb
+                    .selectFrom("tag")
+                    .select([
+                      eb.val(uuid).as("bookUuid"),
+                      "tag.uuid as tagUuid",
+                    ])
+                    .where("tag.name", "=", tag)
+                    .where((web) =>
+                      web.not(
+                        web.exists(
+                          web
+                            .selectFrom("bookToTag")
+                            .select([web.lit(1).as("one")])
+                            .innerJoin("tag", "tag.uuid", "tagUuid")
+                            .where("bookUuid", "=", uuid)
+                            .where("tag.name", "=", tag),
+                        ),
+                      ),
+                    ),
+                )
+                .reduce((acc, expr) => acc.unionAll(expr))
+                .as("values"),
+            )
+            .selectAll(),
+        )
+        .execute()
+    }
+
+    await db
+      .deleteFrom("bookToTag")
+      .where("bookUuid", "=", uuid)
+      .where((web) =>
+        web(
+          "tagUuid",
+          "not in",
+          web.selectFrom("tag").select(["uuid"]).where("tag.name", "in", tags),
+        ),
+      )
+      .execute()
   }
 
   const book = await getBook(uuid)
@@ -447,14 +547,7 @@ export async function updateBook(
   BookEvents.emit("message", {
     type: "bookUpdated",
     bookUuid: uuid,
-    payload: {
-      title: book.title,
-      authors: book.authors.map((author) => ({
-        ...author,
-        file_as: author.fileAs,
-        role: author.role ?? "aut",
-      })),
-    },
+    payload: book,
   })
 
   return book

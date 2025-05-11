@@ -4,12 +4,16 @@ import {
   ProcessingTaskStatus,
 } from "@/apiModels/models/ProcessingStatus"
 import { ProcessingTask } from "@/database/processingTasks"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useApiClient } from "./useApiClient"
+import { BookUpdatePayload } from "@/events"
 
 export function useLiveBooks(initialBooks: BookDetail[] = []) {
   const client = useApiClient()
   const [books, setBooks] = useState(initialBooks)
+  const updateCallbacksRef = useRef<Array<(book: BookUpdatePayload) => void>>(
+    [],
+  )
 
   useEffect(() => {
     return client.subscribeToBookEvents((event) => {
@@ -28,6 +32,9 @@ export function useLiveBooks(initialBooks: BookDetail[] = []) {
           switch (event.type) {
             case "bookUpdated": {
               return { ...book, ...event.payload }
+            }
+            case "bookCacheDeleted": {
+              return { ...book, originalFilesExist: false }
             }
             case "processingQueued": {
               return {
@@ -113,10 +120,31 @@ export function useLiveBooks(initialBooks: BookDetail[] = []) {
             }
           }
         })
+
         return newBooks
       })
+
+      if (event.type === "bookUpdated") {
+        updateCallbacksRef.current.forEach((callback) => {
+          callback(event.payload)
+        })
+      }
     })
   }, [client])
 
-  return books
+  const registerUpdateCallback = useCallback(
+    (callback: (update: BookUpdatePayload) => void) => {
+      updateCallbacksRef.current.push(callback)
+      return () => {
+        const index = updateCallbacksRef.current.indexOf(callback)
+        updateCallbacksRef.current.splice(index, 1)
+      }
+    },
+    [],
+  )
+
+  return useMemo(
+    () => ({ books, registerUpdateCallback }),
+    [books, registerUpdateCallback],
+  )
 }

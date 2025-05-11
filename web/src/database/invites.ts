@@ -1,6 +1,5 @@
 import { getDatabase } from "./connection"
 import { NewUserPermission } from "./users"
-import { asInt } from "./plugins/booleanPlugin"
 
 export type Invite = {
   email: string
@@ -17,22 +16,22 @@ export async function createInvite(
   const { uuid } = await db
     .insertInto("userPermission")
     .values({
-      bookCreate: asInt(permissions.bookCreate),
-      bookUpdate: asInt(permissions.bookUpdate),
-      bookList: asInt(permissions.bookList),
-      bookDelete: asInt(permissions.bookDelete),
-      bookDownload: asInt(permissions.bookDownload),
-      bookProcess: asInt(permissions.bookProcess),
-      inviteDelete: asInt(permissions.inviteDelete),
-      inviteList: asInt(permissions.inviteList),
-      settingsUpdate: asInt(permissions.settingsUpdate),
-      userCreate: asInt(permissions.userCreate),
-      userList: asInt(permissions.userList),
-      userRead: asInt(permissions.userRead),
-      userDelete: asInt(permissions.userDelete),
-      userUpdate: asInt(permissions.userUpdate),
+      bookCreate: permissions.bookCreate,
+      bookUpdate: permissions.bookUpdate,
+      bookList: permissions.bookList,
+      bookDelete: permissions.bookDelete,
+      bookDownload: permissions.bookDownload,
+      bookProcess: permissions.bookProcess,
+      inviteDelete: permissions.inviteDelete,
+      inviteList: permissions.inviteList,
+      settingsUpdate: permissions.settingsUpdate,
+      userCreate: permissions.userCreate,
+      userList: permissions.userList,
+      userRead: permissions.userRead,
+      userDelete: permissions.userDelete,
+      userUpdate: permissions.userUpdate,
     })
-    .returning(["uuid"])
+    .returning(["uuid as uuid"])
     .executeTakeFirstOrThrow()
 
   await db

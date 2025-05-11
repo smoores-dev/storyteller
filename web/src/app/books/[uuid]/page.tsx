@@ -2,10 +2,10 @@ import { ApiClientError } from "@/apiClient"
 import { BookDetail } from "@/apiModels"
 import { redirect } from "next/navigation"
 import { createAuthedApiClient } from "@/authedApiClient"
-import { BookEditForm } from "@/components/books/BookEditForm"
 import { logger } from "@/logging"
-import { Stack, Title } from "@mantine/core"
+import { Stack, Text, Title } from "@mantine/core"
 import { BookStatus } from "@/components/books/BookStatus"
+import { BookEdit } from "@/components/books/BookEdit"
 
 type Props = {
   params: Promise<{
@@ -13,7 +13,7 @@ type Props = {
   }>
 }
 
-export default async function BookEdit(props: Props) {
+export default async function BookEditPage(props: Props) {
   const params = await props.params
 
   const { uuid } = params
@@ -51,8 +51,34 @@ export default async function BookEdit(props: Props) {
   return (
     <Stack gap={24}>
       <Title order={2}>{book.title}</Title>
-      <BookStatus book={book} />
-      <BookEditForm book={book} />
+      <BookStatus bookUuid={book.uuid} />
+      {(book.alignedAt ||
+        book.alignedWith ||
+        book.alignedByStorytellerVersion) && (
+        <Stack className="rounded bg-gray-100 p-4">
+          {book.alignedAt && (
+            <Text>
+              <span className="font-bold">Last aligned:</span>{" "}
+              {new Date(book.alignedAt).toLocaleString()}
+            </Text>
+          )}
+          {book.alignedWith && (
+            <Text>
+              <span className="font-bold">Transcription engine:</span>{" "}
+              {book.alignedWith}
+            </Text>
+          )}
+          {book.alignedByStorytellerVersion && (
+            <Text>
+              <span className="font-bold">
+                Storyteller version used to align:
+              </span>{" "}
+              {book.alignedByStorytellerVersion}
+            </Text>
+          )}
+        </Stack>
+      )}
+      <BookEdit bookUuid={book.uuid} />
     </Stack>
   )
 }

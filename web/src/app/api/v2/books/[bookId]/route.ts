@@ -10,22 +10,27 @@ import {
 import {
   persistCustomEpubCover,
   persistCustomAudioCover,
-  getCustomEpubCover,
-  getEpubCoverFilename,
 } from "@/assets/covers"
-import { getEpubFilepath, getEpubSyncedFilepath } from "@/assets/paths"
+import { getEpubAlignedFilepath } from "@/assets/paths"
 import { withHasPermission } from "@/auth"
 import {
   AuthorRelation,
   deleteBook,
   getBook,
   getBookUuid,
+  SeriesRelation,
   updateBook,
 } from "@/database/books"
+import { writeMetadataToEpub } from "@/process/processEpub"
+import { UUID } from "@/uuid"
 import { isProcessing, isQueued } from "@/work/distributor"
 import { Epub } from "@smoores/epub"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
+
+function isIso8601(dateString: string) {
+  return dateString === new Date(dateString).toISOString()
+}
 
 export const dynamic = "force-dynamic"
 
@@ -54,7 +59,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   }
 
   const language = formData.get("language")?.valueOf() ?? null
-  if (typeof language !== "string") {
+  if (typeof language !== "string" && language !== null) {
     return NextResponse.json(
       {
         message: "Invalid language",
@@ -63,12 +68,46 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const authorStrings = formData.getAll("authors")
-  const authors = authorStrings.map(
-    (authorString) =>
-      JSON.parse(authorString.valueOf() as string) as AuthorRelation,
+  const publicationDate = formData.get("publicationDate")?.valueOf() ?? null
+  if (
+    (typeof publicationDate !== "string" && publicationDate !== null) ||
+    (publicationDate && !isIso8601(publicationDate))
+  ) {
+    return NextResponse.json(
+      {
+        message: "Invalid publicationDate",
+      },
+      { status: 405 },
+    )
+  }
+
+  const statusUuid = formData.get("statusUuid")?.valueOf()
+  if (typeof statusUuid !== "string") {
+    return NextResponse.json(
+      { message: "Book must have a status" },
+      { status: 405 },
+    )
+  }
+
+  const tags = formData.getAll("tags").map((entry) => entry.valueOf() as string)
+
+  const authors = formData
+    .getAll("authors")
+    .map((entry) => JSON.parse(entry.valueOf() as string) as AuthorRelation)
+
+  const series = formData
+    .getAll("series")
+    .map((entry) => JSON.parse(entry.valueOf() as string) as SeriesRelation)
+
+  const collections = formData
+    .getAll("collections")
+    .map((entry) => entry.valueOf() as UUID)
+
+  const updated = await updateBook(
+    bookUuid,
+    { title, language, statusUuid: statusUuid as UUID, publicationDate },
+    { authors, series, collections, tags },
   )
-  const updated = await updateBook(bookUuid, { title, language }, { authors })
 
   const textCover = formData.get("textCover")?.valueOf()
   if (typeof textCover === "object") {
@@ -92,33 +131,11 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     updated.processingTask?.type === ProcessingTaskType.SYNC_CHAPTERS &&
     updated.processingTask.status === ProcessingTaskStatus.COMPLETED
   ) {
-    const syncedEpubPath = getEpubSyncedFilepath(updated.uuid)
-    const epub = await Epub.from(syncedEpubPath)
-    await epub.setTitle(updated.title)
-    if (updated.language) {
-      await epub.setLanguage(new Intl.Locale(updated.language))
-    }
-    const epubAuthors = await epub.getCreators()
-    for (let i = 0; i < epubAuthors.length; i++) {
-      await epub.removeCreator(i)
-    }
-    for (const author of updated.authors) {
-      await epub.addCreator({
-        name: author.name,
-        fileAs: author.fileAs,
-        role: author.role ?? "aut",
-      })
-    }
-    const epubCover = await getCustomEpubCover(bookUuid)
-    const epubFilename = await getEpubCoverFilename(bookUuid)
-    if (epubCover) {
-      const prevCoverItem = await epub.getCoverImageItem()
-      await epub.setCoverImage(
-        prevCoverItem?.href ?? `images/${epubFilename}`,
-        epubCover,
-      )
-    }
-    await epub.writeToFile(syncedEpubPath)
+    const alignedEpubPath = getEpubAlignedFilepath(updated.uuid)
+    const epub = await Epub.from(alignedEpubPath)
+    await writeMetadataToEpub(updated, epub)
+    await epub.writeToFile(alignedEpubPath)
+    await epub.close()
   }
 
   return NextResponse.json(updated)
@@ -140,20 +157,6 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       { message: `Could not find book with id ${bookId}` },
       { status: 404 },
     )
-  }
-
-  if (!book.language) {
-    const synchronized =
-      book.processingTask?.type === ProcessingTaskType.SYNC_CHAPTERS &&
-      book.processingTask.status === ProcessingTaskStatus.COMPLETED
-    const epubPath = synchronized
-      ? getEpubSyncedFilepath(book.uuid)
-      : getEpubFilepath(book.uuid)
-    const epub = await Epub.from(epubPath)
-    const locale = await epub.getLanguage()
-    if (locale) {
-      book.language = locale.toString()
-    }
   }
 
   return NextResponse.json({

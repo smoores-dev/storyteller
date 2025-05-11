@@ -75,6 +75,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
         epub,
         basename(epubPath).replace(".epub", ""),
       )
+      await epub.close()
       await linkEpub(book.uuid, epubPath)
       await linkAudio(book.uuid, audioPaths)
 

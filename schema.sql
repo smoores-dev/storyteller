@@ -1,24 +1,3 @@
-CREATE TABLE IF NOT EXISTS "position" (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  user_uuid TEXT NOT NULL,
-  book_uuid TEXT NOT NULL,
-  locator TEXT NOT NULL,
-  timestamp REAL NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_uuid) REFERENCES user (uuid),
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  UNIQUE (user_uuid, book_uuid)
-);
-CREATE TRIGGER position_update_trigger AFTER
-UPDATE ON position FOR EACH ROW BEGIN
-UPDATE position
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
 CREATE TABLE IF NOT EXISTS "migration" (
   id INTEGER PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
@@ -130,7 +109,7 @@ CREATE TABLE IF NOT EXISTS "user_permission" (
   user_update BOOLEAN NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+, collection_create BOOLEAN NOT NULL DEFAULT 0);
 CREATE TRIGGER user_permission_update_trigger AFTER
 UPDATE ON user_permission FOR EACH ROW BEGIN
 UPDATE user_permission
@@ -211,7 +190,7 @@ WHERE
   token = OLD.token;
 
 END;
-CREATE TABLE temp_position (
+CREATE TABLE IF NOT EXISTS "position" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   user_uuid TEXT NOT NULL,
   book_uuid TEXT NOT NULL,
@@ -223,6 +202,15 @@ CREATE TABLE temp_position (
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
   UNIQUE (user_uuid, book_uuid)
 );
+CREATE TRIGGER position_update_trigger AFTER
+UPDATE ON position FOR EACH ROW BEGIN
+UPDATE position
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
 CREATE TABLE series (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   name TEXT NOT NULL,

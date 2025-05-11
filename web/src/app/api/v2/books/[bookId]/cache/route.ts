@@ -29,9 +29,9 @@ export const DELETE = withHasPermission<Params>("bookProcess")(async (
 
   if (includeOriginals) {
     BookEvents.emit("message", {
-      type: "bookUpdated",
+      type: "bookCacheDeleted",
       bookUuid,
-      payload: { originalFilesExist: false },
+      payload: undefined,
     })
   }
 
