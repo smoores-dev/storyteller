@@ -2,10 +2,7 @@ import { Inter, Young_Serif } from "next/font/google"
 
 import { ApiHostContextProvider } from "@/contexts/ApiHostContext"
 import { proxyRootPath } from "./apiHost"
-import {
-  EMPTY_PERMISSIONS,
-  UserPermissionsProvider,
-} from "@/contexts/UserPermissions"
+import { CurrentUserProvider } from "@/contexts/UserPermissions"
 import { createAuthedApiClient, getCurrentUser } from "@/authedApiClient"
 import { AppShell } from "@/components/AppShell"
 import { ColorSchemeScript } from "@mantine/core"
@@ -60,13 +57,11 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <ApiHostContextProvider value={{ rootPath: proxyRootPath }}>
-          <UserPermissionsProvider
-            value={currentUser?.permissions ?? EMPTY_PERMISSIONS}
-          >
+          <CurrentUserProvider value={currentUser}>
             <AppShell version={version} books={books}>
               {children}
             </AppShell>
-          </UserPermissionsProvider>
+          </CurrentUserProvider>
         </ApiHostContextProvider>
       </body>
     </html>

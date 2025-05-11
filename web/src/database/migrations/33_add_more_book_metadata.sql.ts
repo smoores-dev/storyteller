@@ -1,4 +1,4 @@
-import { getEpubFilepath, getEpubSyncedFilepath } from "@/assets/paths"
+import { getEpubFilepath, getEpubAlignedFilepath } from "@/assets/paths"
 import { BookUpdate, getBooks, SeriesRelation, updateBook } from "../books"
 import { Epub } from "@smoores/epub"
 import { getDatabase } from "../connection"
@@ -12,7 +12,7 @@ export default async function migrate() {
     const series: SeriesRelation[] = []
     let epub: Epub
     let createdAt: string
-    const syncedFilepath = getEpubSyncedFilepath(book.uuid)
+    const syncedFilepath = getEpubAlignedFilepath(book.uuid)
     try {
       epub = await Epub.from(syncedFilepath)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

@@ -9,10 +9,16 @@ export type BaseEvent<Type extends string, Payload = void> = {
   payload: Payload
 }
 
+export type BookUpdatePayload = Omit<
+  BookDetail,
+  "originalFilesExist" | "processingTask" | "processingStatus"
+>
+
 export type BookDetailMessage =
   | BaseEvent<"bookCreated", BookDetail>
   | BaseEvent<"bookDeleted">
-  | BaseEvent<"bookUpdated", Partial<BookDetail>>
+  | BaseEvent<"bookUpdated", BookUpdatePayload>
+  | BaseEvent<"bookCacheDeleted">
 
 export type BookEvent = BookProcessingEvent | BookDetailMessage
 

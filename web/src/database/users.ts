@@ -3,7 +3,6 @@ import { getDatabase } from "./connection"
 import { Insertable, Selectable, Updateable } from "kysely"
 import { DB } from "./schema"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
-import { asInt } from "./plugins/booleanPlugin"
 
 export type UserPermission = Selectable<DB["userPermission"]>
 export type NewUserPermission = Insertable<DB["userPermission"]>
@@ -36,6 +35,7 @@ export async function getUser(usernameOrEmail: string) {
             "bookDownload",
             "bookUpdate",
             "bookList",
+            "collectionCreate",
             "inviteList",
             "inviteDelete",
             "userCreate",
@@ -88,6 +88,7 @@ export async function getUsers() {
             "bookDownload",
             "bookUpdate",
             "bookList",
+            "collectionCreate",
             "inviteList",
             "inviteDelete",
             "userCreate",
@@ -123,6 +124,7 @@ export async function createAdminUser(
       "bookDownload",
       "bookUpdate",
       "bookList",
+      "collectionCreate",
       "inviteList",
       "inviteDelete",
       "userCreate",
@@ -142,6 +144,7 @@ export async function createAdminUser(
           eb.lit(1).as("bookDownload"),
           eb.lit(1).as("bookUpdate"),
           eb.lit(1).as("bookList"),
+          eb.lit(1).as("collectionCreate"),
           eb.lit(1).as("inviteList"),
           eb.lit(1).as("inviteDelete"),
           eb.lit(1).as("userCreate"),
@@ -256,20 +259,21 @@ export async function updateUserPermissions(
   await db
     .updateTable("userPermission")
     .set({
-      bookCreate: asInt(permissions.bookCreate),
-      bookUpdate: asInt(permissions.bookUpdate),
-      bookList: asInt(permissions.bookList),
-      bookDelete: asInt(permissions.bookDelete),
-      bookDownload: asInt(permissions.bookDownload),
-      bookProcess: asInt(permissions.bookProcess),
-      inviteDelete: asInt(permissions.inviteDelete),
-      inviteList: asInt(permissions.inviteList),
-      settingsUpdate: asInt(permissions.settingsUpdate),
-      userCreate: asInt(permissions.userCreate),
-      userList: asInt(permissions.userList),
-      userRead: asInt(permissions.userRead),
-      userDelete: asInt(permissions.userDelete),
-      userUpdate: asInt(permissions.userUpdate),
+      bookCreate: permissions.bookCreate,
+      bookUpdate: permissions.bookUpdate,
+      bookList: permissions.bookList,
+      bookDelete: permissions.bookDelete,
+      bookDownload: permissions.bookDownload,
+      bookProcess: permissions.bookProcess,
+      collectionCreate: permissions.collectionCreate,
+      inviteDelete: permissions.inviteDelete,
+      inviteList: permissions.inviteList,
+      settingsUpdate: permissions.settingsUpdate,
+      userCreate: permissions.userCreate,
+      userList: permissions.userList,
+      userRead: permissions.userRead,
+      userDelete: permissions.userDelete,
+      userUpdate: permissions.userUpdate,
     })
     .where("uuid", "=", userPermissionUuid)
     .execute()

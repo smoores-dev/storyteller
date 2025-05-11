@@ -1,23 +1,18 @@
 "use client"
 
-import { BookDetail } from "@/apiModels"
 import { AddBookForm } from "./AddBookForm"
 import { usePermission } from "@/contexts/UserPermissions"
-import { useLiveBooks } from "@/hooks/useLiveBooks"
 import { Group, List, Stack } from "@mantine/core"
 import { BookThumbnail } from "./BookThumbnail"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
 import { Search } from "./Search"
 import { Sort } from "./Sort"
+import { useBooks } from "./LiveBooksProvider"
 
-type Props = {
-  books: BookDetail[]
-}
-
-export function BookList({ books: initialBooks }: Props) {
+export function BookList() {
   const canListBooks = usePermission("bookList")
 
-  const liveBooks = useLiveBooks(initialBooks)
+  const liveBooks = useBooks()
   const { books, onFilterChange, filter, sort, onSortChange } =
     useFilterSortedBooks(liveBooks)
 

@@ -10,7 +10,7 @@ export function getEpubSyncedDirectory(bookUuid: UUID) {
   return join(getEpubDirectory(bookUuid), "synced")
 }
 
-export function getEpubSyncedFilepath(bookUuid: UUID) {
+export function getEpubAlignedFilepath(bookUuid: UUID) {
   return join(getEpubSyncedDirectory(bookUuid), `${bookUuid}.epub`)
 }
 

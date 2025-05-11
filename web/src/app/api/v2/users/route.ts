@@ -20,7 +20,7 @@ export const GET = withHasPermission("userList")(async () => {
   return NextResponse.json(
     users.map((user) => ({
       uuid: user.uuid,
-      full_name: user.fullName,
+      fullName: user.fullName,
       username: user.username,
       email: user.email,
       permissions: {
@@ -31,6 +31,7 @@ export const GET = withHasPermission("userList")(async () => {
         bookProcess: user.permissions?.bookProcess ?? false,
         bookRead: user.permissions?.bookRead ?? false,
         bookUpdate: user.permissions?.bookUpdate ?? false,
+        collectionCreate: user.permissions?.collectionCreate ?? false,
         inviteDelete: user.permissions?.inviteDelete ?? false,
         inviteList: user.permissions?.inviteList ?? false,
         settingsUpdate: user.permissions?.settingsUpdate ?? false,

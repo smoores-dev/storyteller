@@ -35,6 +35,10 @@ import { usePermissions } from "@/contexts/UserPermissions"
 import { LiveBooksProvider } from "./books/LiveBooksProvider"
 import { CurrentBookProgress } from "./layout/CurrentBookProgress"
 import { BookDetail } from "@/apiModels"
+import dayjs from "dayjs"
+import customParseFormat from "dayjs/plugin/customParseFormat"
+
+dayjs.extend(customParseFormat)
 
 const stOrange: MantineColorsTuple = [
   "#fff1e7",
