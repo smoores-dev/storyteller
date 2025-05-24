@@ -10,6 +10,7 @@ __pycache__
 
 .env.local
 storyteller.db*
+words.txt
 node_modules
 .yarn/*
 !.yarn/cache

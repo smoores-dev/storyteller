@@ -1,10 +1,28 @@
 import { bagOfWords } from "@/synchronize/nlp"
+import { readFile, writeFile } from "node:fs/promises"
 
 async function readDict() {
-  const response = await fetch(
-    "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt",
-  )
-  const dict = await response.text()
+  let dict = ""
+  try {
+    dict = await readFile("words.txt", {
+      encoding: "utf-8",
+    })
+  } catch (err) {
+    console.error(
+      "Will attempt to download word list; unable to read words.txt from filesystem",
+      err,
+    )
+    try {
+      const response = await fetch(
+        "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt",
+      )
+      dict = await response.text()
+      await writeFile("words.txt", dict)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const dictWords = dict.split("\n").map((word) => word.toLowerCase())
   return new Set(dictWords)
 }
