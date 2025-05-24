@@ -44,7 +44,7 @@ publishers and designers original visual style. Links to
 [Android App](https://play.google.com/store/apps/details?id=com.colibrio.reader&hl=en_US)
 &amp; [Web App](https://demo.colibrio.com/)
 
-To add a Storyteller book to Thorium Reader, go to your Storyteller web
+To add a Storyteller book to Colibrio Reader, go to your Storyteller web
 interface, download the book files you wish to read, and then open the book with
 Colibrio by choosing Browse and selecting the downloaded file.
 
