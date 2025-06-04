@@ -6,7 +6,7 @@ import {
   persistAudio,
   persistEpub,
 } from "@/assets/assets"
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import { createBookFromEpub, getBooks } from "@/database/books"
 import { Epub } from "@smoores/epub"
 import { NextResponse } from "next/server"

@@ -4,5 +4,5 @@
 
 export type Invite = {
   email: string
-  key: string
+  inviteKey: string
 }

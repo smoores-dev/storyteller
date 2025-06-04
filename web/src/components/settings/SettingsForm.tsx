@@ -5,6 +5,8 @@ import { useApiClient } from "@/hooks/useApiClient"
 import { useRef, useState } from "react"
 import { useForm } from "@mantine/form"
 import {
+  ActionIcon,
+  Anchor,
   Box,
   Button,
   Checkbox,
@@ -15,8 +17,13 @@ import {
   NativeSelect,
   NumberInput,
   PasswordInput,
+  Select,
+  Stack,
+  Text,
   TextInput,
 } from "@mantine/core"
+import { IconPlus, IconTrash } from "@tabler/icons-react"
+import { AuthProviderInput } from "./AuthProviderInput"
 
 interface Props {
   settings: Settings
@@ -60,6 +67,7 @@ export function SettingsForm({ settings }: Props) {
     parallelTranscribes: settings.parallelTranscribes,
     parallelTranscodes: settings.parallelTranscodes,
     parallelWhisperBuild: settings.parallelWhisperBuild,
+    authProviders: settings.authProviders,
   }
 
   const form = useForm({
@@ -67,7 +75,7 @@ export function SettingsForm({ settings }: Props) {
     initialValues,
   })
 
-  const state = form.getValues()
+  const state = form.values
 
   return (
     <form
@@ -401,6 +409,146 @@ export function SettingsForm({ settings }: Props) {
           label="Number of CPU cores to allocate for building whisper.cpp locally"
           {...form.getInputProps("parallel_whisper_build")}
         />
+      </Fieldset>
+      <Fieldset legend="Authentication providers">
+        <Stack gap={4} className="my-4">
+          {state.authProviders.map((provider, i) => (
+            <Fieldset
+              key={i}
+              legend="Provider"
+              className="relative bg-white pt-10"
+            >
+              <Select
+                {...form.getInputProps(`authProviders.${i}.kind`)}
+                onChange={(value) => {
+                  if (value === "built-in") {
+                    form.replaceListItem("authProviders", i, {
+                      kind: "built-in",
+                      id: "keycloak",
+                      issuer: "",
+                      clientId: "",
+                      clientSecret: "",
+                    })
+                  } else {
+                    form.replaceListItem("authProviders", i, {
+                      kind: "custom",
+                      name: "",
+                      issuer: "",
+                      clientId: "",
+                      clientSecret: "",
+                      type: "oidc",
+                    })
+                  }
+                }}
+                required
+                withAsterisk
+                data={[
+                  { value: "built-in", label: "Built-in" },
+                  { value: "custom", label: "Custom" },
+                ]}
+              />
+              {provider.kind === "built-in" ? (
+                <AuthProviderInput
+                  value={provider.id}
+                  onChange={(value) => {
+                    form.replaceListItem("authProviders", i, {
+                      ...provider,
+                      id: value,
+                    })
+                  }}
+                />
+              ) : (
+                <TextInput
+                  label="Name"
+                  required
+                  withAsterisk
+                  {...form.getInputProps(`authProviders.${i}.name`)}
+                />
+              )}
+              {provider.kind === "custom" && (
+                <>
+                  <Text>
+                    Set callback URL to {state.webUrl}/api/v2/auth/callback/
+                    {provider.name
+                      .toLowerCase()
+                      .replaceAll(/ +/g, "-")
+                      .replaceAll(/[^a-zA-Z0-9-]/g, "")}
+                  </Text>
+                  <Select
+                    label="Provider type"
+                    required
+                    withAsterisk
+                    {...form.getInputProps(`authProviders.${i}.type`)}
+                    defaultValue="oidc"
+                    data={[
+                      { value: "oidc", label: "OIDC" },
+                      { value: "oauth", label: "OAuth" },
+                    ]}
+                  />
+                </>
+              )}
+              <TextInput
+                label="Issuer"
+                required={provider.kind === "custom"}
+                withAsterisk={provider.kind === "custom"}
+                description={
+                  provider.kind === "built-in" ? (
+                    <>
+                      Only required for some providers. Look up your provider in{" "}
+                      <Anchor
+                        className="text-sm"
+                        href="https://authjs.dev/reference/core/providers"
+                      >
+                        the Auth.js docs
+                      </Anchor>{" "}
+                      for more information.
+                    </>
+                  ) : undefined
+                }
+                placeholder="https://auth.example.com"
+                {...form.getInputProps(`authProviders.${i}.issuer`)}
+              />
+              <TextInput
+                label="Client ID"
+                required
+                withAsterisk
+                {...form.getInputProps(`authProviders.${i}.clientId`)}
+              />
+              <PasswordInput
+                label="Client secret"
+                required
+                withAsterisk
+                {...form.getInputProps(`authProviders.${i}.clientSecret`)}
+              />
+              <ActionIcon
+                variant="subtle"
+                className="absolute right-4 top-0"
+                onClick={() => {
+                  form.removeListItem("authProviders", i)
+                }}
+              >
+                <IconTrash color="red" />
+              </ActionIcon>
+            </Fieldset>
+          ))}
+          <Button
+            leftSection={<IconPlus />}
+            variant="outline"
+            mt="sm"
+            className="self-start"
+            onClick={() => {
+              form.insertListItem("authProviders", {
+                kind: "built-in",
+                id: "keycloak",
+                clientId: "",
+                clientSecret: "",
+                issuer: "",
+              })
+            }}
+          >
+            Add provider
+          </Button>
+        </Stack>
       </Fieldset>
       <Fieldset legend="Email settings">
         <TextInput label="SMTP host" {...form.getInputProps("smtp_host")} />

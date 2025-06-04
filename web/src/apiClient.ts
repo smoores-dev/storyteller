@@ -17,6 +17,7 @@ import { Author } from "./database/authors"
 import { Series } from "./database/series"
 import { Collection } from "./database/collections"
 import { UUID } from "./uuid"
+import { PublicProvider } from "@auth/core/types"
 
 export class ApiClientError extends Error {
   constructor(
@@ -72,9 +73,12 @@ export class ApiClient {
     return true
   }
 
-  async login(creds: { username: string; password: string }): Promise<Token> {
+  async login(creds: {
+    usernameOrEmail: string
+    password: string
+  }): Promise<Token> {
     const formData = new FormData()
-    formData.set("username", creds.username)
+    formData.set("usernameOrEmail", creds.usernameOrEmail)
     formData.set("password", creds.password)
 
     const url = new URL(`${this.rootPath}/v2/token`, this.origin)
@@ -190,7 +194,7 @@ export class ApiClient {
     return invites
   }
 
-  async acceptInvite(inviteAccept: InviteAccept): Promise<Token> {
+  async acceptInvite(inviteAccept: InviteAccept): Promise<Token | undefined> {
     const url = new URL(`${this.rootPath}/v2/users`, this.origin)
 
     const response = await fetch(url, {
@@ -205,6 +209,9 @@ export class ApiClient {
       throw new ApiClientError(response.status, response.statusText)
     }
 
+    if ("providerId" in inviteAccept) {
+      return
+    }
     const token = (await response.json()) as Token
     return token
   }
@@ -691,5 +698,22 @@ export class ApiClient {
 
     const collection = (await response.json()) as Collection
     return collection
+  }
+
+  async listProviders() {
+    const url = new URL(`${this.rootPath}/v2/auth/providers`, this.origin)
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.getHeaders(),
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new ApiClientError(response.status, response.statusText)
+    }
+
+    const providers = (await response.json()) as Record<string, PublicProvider>
+    return providers
   }
 }

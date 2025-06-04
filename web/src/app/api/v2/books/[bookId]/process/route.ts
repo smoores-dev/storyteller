@@ -1,4 +1,4 @@
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import { getBookUuid } from "@/database/books"
 import { cancelProcessing, startProcessing } from "@/work/distributor"
 

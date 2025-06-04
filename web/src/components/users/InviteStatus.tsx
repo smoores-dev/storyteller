@@ -16,11 +16,11 @@ export function InviteStatus({ invite, onUpdate }: Props) {
 
   useLayoutEffect(() => {
     const nextInviteUrl = new URL(
-      `${rootPath.replace("/api", "")}/invites/${invite.key}`,
+      `${rootPath.replace("/api", "")}/invites/${invite.inviteKey}`,
       window.location.toString(),
     )
     setInviteUrl(nextInviteUrl.toString())
-  }, [invite.key, rootPath])
+  }, [invite.inviteKey, rootPath])
 
   return (
     <Paper className="max-w-[600px]">

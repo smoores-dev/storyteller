@@ -1,5 +1,5 @@
 import { UUID } from "@/uuid"
-import { getDatabase } from "./connection"
+import { db } from "./connection"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 import {
   ProcessingTaskType,
@@ -12,6 +12,7 @@ import { Epub } from "@smoores/epub"
 import { NewAuthor } from "./authors"
 import { NewSeries } from "./series"
 import { syncRelations } from "./relations"
+import { getDefaultStatus } from "./statuses"
 
 /**
  * This function only exists to support old clients that haven't
@@ -28,7 +29,6 @@ export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
   // Otherwise, parse into an int and fetch the UUID from the db
   const bookId = parseInt(bookIdOrUuid, 10)
 
-  const db = getDatabase()
   const { uuid } = await db
     .selectFrom("book")
     .select(["uuid"])
@@ -63,8 +63,10 @@ export type BookToSeries = Selectable<DB["bookToSeries"]>
 export type NewBookToSeries = Insertable<DB["bookToSeries"]>
 export type BookToSeriesUpdate = Updateable<DB["bookToSeries"]>
 
-export type AuthorRelation = NewAuthor & NewAuthorToBook
-export type SeriesRelation = NewSeries & NewBookToSeries
+export type AuthorRelation = NewAuthor &
+  Omit<NewAuthorToBook, "authorUuid" | "bookUuid">
+export type SeriesRelation = NewSeries &
+  Omit<NewBookToSeries, "bookUuid" | "seriesUuid">
 export type TagRelation = NewTag & NewBookToTag
 
 export type Book = Selectable<DB["book"]>
@@ -91,6 +93,8 @@ export async function createBookFromEpub(epub: Epub, fallbackTitle: string) {
   )
   const collections = await epub.getCollections()
 
+  const defaultStatus = await getDefaultStatus()
+
   return await createBook(
     {
       title: title ?? fallbackTitle,
@@ -98,6 +102,7 @@ export async function createBookFromEpub(epub: Epub, fallbackTitle: string) {
       alignedByStorytellerVersion: storytellerVersion?.value ?? null,
       alignedAt: storytellerMediaOverlaysModified?.value ?? null,
       alignedWith: storytellerMediaOverlaysEngine?.value ?? null,
+      statusUuid: defaultStatus.uuid,
     },
     {
       authors: authors.map((author) => ({
@@ -120,8 +125,6 @@ export async function createBook(
   insert: NewBook,
   relations: { authors?: AuthorRelation[]; series?: SeriesRelation[] } = {},
 ) {
-  const db = getDatabase()
-
   const { uuid } = await db
     .insertInto("book")
     .values(insert)
@@ -139,8 +142,8 @@ export async function createBook(
       relatedForeignKeyColumn: "authorToBook.authorUuid",
       entityForeignKeyColumn: "authorToBook.bookUuid",
       extractRelatedValues: (values) => ({
-        name: values.name,
-        fileAs: values.fileAs,
+        name: values.name ?? "",
+        fileAs: values.fileAs ?? "",
       }),
       extractRelationValues: (authorUuid, values) => ({
         authorUuid: authorUuid,
@@ -164,7 +167,7 @@ export async function createBook(
       relatedForeignKeyColumn: "bookToSeries.seriesUuid",
       entityForeignKeyColumn: "bookToSeries.bookUuid",
       extractRelatedValues: (values) => ({
-        name: values.name,
+        name: values.name ?? "",
         description: values.description,
       }),
       extractRelationValues: (seriesUuid, values) => ({
@@ -183,7 +186,7 @@ export async function createBook(
   const book = await getBook(uuid)
 
   if (!book) {
-    throw new Error("Failod te create book")
+    throw new Error("Failed te create book")
   }
 
   BookEvents.emit("message", {
@@ -203,8 +206,6 @@ export async function getBooks(
   bookUuids: UUID[] | null = null,
   alignedOnly = false,
 ) {
-  const db = getDatabase()
-
   const books = await db
     .selectFrom("book")
     .selectAll("book")
@@ -309,8 +310,6 @@ export async function getBook(uuid: UUID) {
 }
 
 export async function deleteBook(bookUuid: UUID) {
-  const db = getDatabase()
-
   await db
     .deleteFrom("processingTask")
     .where("bookUuid", "=", bookUuid)
@@ -362,8 +361,6 @@ export async function updateBook(
     tags?: string[]
   } = {},
 ) {
-  const db = getDatabase()
-
   if (update) {
     await db.updateTable("book").set(update).where("uuid", "=", uuid).execute()
   }
@@ -379,8 +376,8 @@ export async function updateBook(
       relatedForeignKeyColumn: "authorToBook.authorUuid",
       entityForeignKeyColumn: "authorToBook.bookUuid",
       extractRelatedValues: (values) => ({
-        name: values.name,
-        fileAs: values.fileAs,
+        name: values.name ?? "",
+        fileAs: values.fileAs ?? "",
       }),
       extractRelationValues: (authorUuid, values) => ({
         authorUuid: authorUuid,
@@ -404,7 +401,7 @@ export async function updateBook(
       relatedForeignKeyColumn: "bookToSeries.seriesUuid",
       entityForeignKeyColumn: "bookToSeries.bookUuid",
       extractRelatedValues: (values) => ({
-        name: values.name,
+        name: values.name ?? "",
         description: values.description,
       }),
       extractRelationValues: (seriesUuid, values) => ({

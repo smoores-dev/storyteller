@@ -1,5 +1,5 @@
 import { UUID } from "@/uuid"
-import { getDatabase } from "./connection"
+import { db } from "./connection"
 import {
   ProcessingTaskStatus,
   ProcessingTaskType,
@@ -21,8 +21,6 @@ export async function createProcessingTask(
   status: ProcessingTaskStatus,
   bookUuid: UUID,
 ) {
-  const db = getDatabase()
-
   const { uuid } = await db
     .insertInto("processingTask")
     .values({ type, status, bookUuid })
@@ -33,8 +31,6 @@ export async function createProcessingTask(
 }
 
 export async function getProcessingTasksForBook(bookUuid: UUID) {
-  const db = getDatabase()
-
   return await db
     .selectFrom("processingTask")
     .select(["uuid", "type", "status", "progress", "bookUuid"])
@@ -43,8 +39,6 @@ export async function getProcessingTasksForBook(bookUuid: UUID) {
 }
 
 export async function resetProcessingTasksForBook(bookUuid: UUID) {
-  const db = getDatabase()
-
   await db
     .updateTable("processingTask")
     .set({ progress: 0, status: ProcessingTaskStatus.STARTED })
@@ -53,8 +47,6 @@ export async function resetProcessingTasksForBook(bookUuid: UUID) {
 }
 
 export async function updateTaskProgress(taskUuid: UUID, progress: number) {
-  const db = getDatabase()
-
   await db
     .updateTable("processingTask")
     .set({ progress })
@@ -66,8 +58,6 @@ export async function updateTaskStatus(
   taskUuid: UUID,
   status: ProcessingTaskStatus,
 ) {
-  const db = getDatabase()
-
   await db
     .updateTable("processingTask")
     .set({ status })

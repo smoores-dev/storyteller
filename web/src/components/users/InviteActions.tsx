@@ -21,7 +21,7 @@ export function InviteActions({ invite, onUpdate }: Props) {
           variant="subtle"
           color="black"
           onClick={() => {
-            void client.resendInvite(invite.key)
+            void client.resendInvite(invite.inviteKey)
           }}
         >
           <Tooltip position="right" label="Re-send">
@@ -34,7 +34,7 @@ export function InviteActions({ invite, onUpdate }: Props) {
           variant="subtle"
           color="red"
           onClick={async () => {
-            await client.deleteInvite(invite.key)
+            await client.deleteInvite(invite.inviteKey)
             onUpdate()
           }}
         >

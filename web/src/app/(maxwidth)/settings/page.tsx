@@ -37,6 +37,7 @@ const defaultSettings: Settings = {
   parallelTranscribes: 1,
   parallelTranscodes: 1,
   parallelWhisperBuild: 1,
+  authProviders: [],
 }
 
 export const dynamic = "force-dynamic"

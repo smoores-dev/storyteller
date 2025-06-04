@@ -1,5 +1,5 @@
 import { basename, extname, join } from "node:path"
-import { getDatabase } from "./connection"
+import { db } from "./connection"
 import { cwd } from "node:process"
 import { readFile, readdir } from "node:fs/promises"
 import { createHash } from "node:crypto"
@@ -14,7 +14,6 @@ const jsMigrations: Record<string, () => Promise<void>> = {
 }
 
 async function isFirstStartup() {
-  const db = getDatabase()
   try {
     const rows = await db
       .selectFrom("migration")
@@ -28,7 +27,6 @@ async function isFirstStartup() {
 }
 
 async function getMigration(hash: string) {
-  const db = getDatabase()
   try {
     const [row] = await db
       .selectFrom("migration")
@@ -42,7 +40,6 @@ async function getMigration(hash: string) {
 }
 
 async function createMigration(hash: string, name: string) {
-  const db = getDatabase()
   await db.insertInto("migration").values({ name, hash }).execute()
 }
 
@@ -50,7 +47,6 @@ async function setInitialAudioCodec(options: {
   codec: string
   bitrate: string | undefined
 }) {
-  const db = getDatabase()
   await db
     .updateTable("settings")
     .set({
@@ -83,8 +79,6 @@ function getInitialAudioCodec() {
 }
 
 async function migrateFile(path: string) {
-  const db = getDatabase()
-
   const contents = await readFile(path, {
     encoding: "utf-8",
   })

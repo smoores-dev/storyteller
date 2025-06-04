@@ -3,7 +3,7 @@ import {
   createAccessToken,
   getAccessTokenExpireDate,
   hashPassword,
-} from "@/auth"
+} from "@/auth/auth"
 import { createAdminUser } from "@/database/users"
 import { NextRequest, NextResponse } from "next/server"
 

@@ -1,4 +1,4 @@
-import { withHasPermission } from "@/auth"
+import { refreshNextAuth, withHasPermission } from "@/auth/auth"
 import { getSettings, updateSettings } from "@/database/settings"
 import { Settings } from "@/database/settingsTypes"
 import { NextResponse } from "next/server"
@@ -23,6 +23,7 @@ export const PUT = withHasPermission("settingsUpdate")(async (request) => {
   const settings = (await request.json()) as Settings
 
   await updateSettings(settings)
+  await refreshNextAuth()
 
   return new Response(null, { status: 204 })
 })

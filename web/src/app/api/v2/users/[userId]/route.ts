@@ -1,4 +1,4 @@
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import {
   deleteUser,
   updateUserPermissions,
@@ -9,7 +9,7 @@ import { UUID } from "@/uuid"
 export const dynamic = "force-dynamic"
 
 type Params = Promise<{
-  userUuid: UUID
+  userId: UUID
 }>
 
 /**
@@ -20,8 +20,8 @@ export const DELETE = withHasPermission<Params>("userDelete")(async (
   _request,
   context,
 ) => {
-  const { userUuid } = await context.params
-  await deleteUser(userUuid)
+  const { userId } = await context.params
+  await deleteUser(userId)
 
   return new Response(null, { status: 204 })
 })
@@ -34,11 +34,11 @@ export const PUT = withHasPermission<Params>("userUpdate")(async (
   request,
   context,
 ) => {
-  const { userUuid } = await context.params
+  const { userId } = await context.params
   const { permissions } = (await request.json()) as {
     permissions: UserPermissionSet
   }
-  await updateUserPermissions(userUuid, permissions)
+  await updateUserPermissions(userId, permissions)
 
   return new Response(null, { status: 204 })
 })
