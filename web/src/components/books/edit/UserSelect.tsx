@@ -18,8 +18,8 @@ export function UserSelect({ users, ...props }: Props) {
     <MultiSelect
       {...props}
       data={users.map((user) => ({
-        value: user.uuid,
-        label: user.fullName,
+        value: user.id,
+        label: user.name ?? user.email,
       }))}
     />
   )

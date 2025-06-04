@@ -21,17 +21,19 @@ import {
   NativeSelect,
   Text,
   Image,
+  PasswordInput,
 } from "@mantine/core"
 import {
   IconBook2,
   IconUser,
   IconSettings,
   IconLogout,
+  IconUsers,
 } from "@tabler/icons-react"
 import { ReactNode } from "react"
 import { useDisclosure } from "@mantine/hooks"
 import { usePathname } from "next/navigation"
-import { usePermissions } from "@/contexts/UserPermissions"
+import { useCurrentUser, usePermissions } from "@/contexts/UserPermissions"
 import { LiveBooksProvider } from "./books/LiveBooksProvider"
 import { CurrentBookProgress } from "./layout/CurrentBookProgress"
 import { BookDetail } from "@/apiModels"
@@ -101,6 +103,14 @@ const theme = createTheme({
         description: "text-sm",
       },
     }),
+    PasswordInput: PasswordInput.extend({
+      defaultProps: {
+        className: "my-4",
+      },
+      classNames: {
+        description: "text-sm",
+      },
+    }),
     NativeSelect: NativeSelect.extend({
       classNames: {
         description: "text-sm",
@@ -116,8 +126,9 @@ interface Props {
 }
 
 export function AppShell({ children, version, books }: Props) {
-  const [opened, { toggle }] = useDisclosure(false)
+  const [opened, { close }] = useDisclosure(false)
   const pathname = usePathname()
+  const currentUser = useCurrentUser()
   const permissions = usePermissions()
 
   return (
@@ -135,13 +146,15 @@ export function AppShell({ children, version, books }: Props) {
         >
           <AppShellHeader>
             <Group align="center">
-              <Burger
-                opened={opened}
-                color="st-orange"
-                onClick={toggle}
-                hiddenFrom="sm"
-                size="lg"
-              />
+              {currentUser && (
+                <Burger
+                  opened={opened}
+                  color="st-orange"
+                  onClick={close}
+                  hiddenFrom="sm"
+                  size="lg"
+                />
+              )}
               <Anchor component={NextLink} href="/">
                 <Group>
                   <Image
@@ -161,50 +174,60 @@ export function AppShell({ children, version, books }: Props) {
               </Anchor>
             </Group>
           </AppShellHeader>
-          <AppShellNavbar>
-            <Text c="black" my="sm" px="sm">
-              Version: {version}
-            </Text>
-            <CurrentBookProgress />
-            {(permissions.bookCreate || permissions.bookList) && (
+          {currentUser && (
+            <AppShellNavbar>
+              <Text c="black" my="sm" px="sm">
+                Version: {version}
+              </Text>
+              <CurrentBookProgress />
+              {(permissions.bookCreate || permissions.bookList) && (
+                <NavLink
+                  onClick={close}
+                  component={NextLink}
+                  href="/"
+                  leftSection={<IconBook2 />}
+                  label="Books"
+                  active={pathname === "/"}
+                />
+              )}
               <NavLink
-                onClick={toggle}
+                onClick={close}
                 component={NextLink}
-                href="/"
-                leftSection={<IconBook2 />}
-                label="Books"
-                active={pathname === "/"}
-              />
-            )}
-            {(permissions.userCreate || permissions.userList) && (
-              <NavLink
-                onClick={toggle}
-                component={NextLink}
-                href="/users"
+                href="/account"
                 leftSection={<IconUser />}
-                label="Users"
-                active={pathname === "/users"}
+                label="Account"
+                active={pathname === "/accounts"}
               />
-            )}
-            {permissions.settingsUpdate && (
+              {(permissions.userCreate || permissions.userList) && (
+                <NavLink
+                  onClick={close}
+                  component={NextLink}
+                  href="/users"
+                  leftSection={<IconUsers />}
+                  label="Users"
+                  active={pathname === "/users"}
+                />
+              )}
+              {permissions.settingsUpdate && (
+                <NavLink
+                  onClick={close}
+                  component={NextLink}
+                  href="/settings"
+                  leftSection={<IconSettings />}
+                  label="Settings"
+                  active={pathname === "/settings"}
+                />
+              )}
               <NavLink
-                onClick={toggle}
-                component={NextLink}
-                href="/settings"
-                leftSection={<IconSettings />}
-                label="Settings"
-                active={pathname === "/settings"}
+                onClick={close}
+                component="a"
+                href="/logout"
+                leftSection={<IconLogout />}
+                label="Logout"
+                active={pathname === "/logout"}
               />
-            )}
-            <NavLink
-              onClick={toggle}
-              component="a"
-              href="/logout"
-              leftSection={<IconLogout />}
-              label="Logout"
-              active={pathname === "/logout"}
-            />
-          </AppShellNavbar>
+            </AppShellNavbar>
+          )}
           <AppShellMain className="*:ml-8">{children}</AppShellMain>
         </MantineAppShell>
       </LiveBooksProvider>

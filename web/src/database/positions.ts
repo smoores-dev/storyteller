@@ -1,5 +1,5 @@
 import { UUID } from "@/uuid"
-import { getDatabase } from "./connection"
+import { db } from "./connection"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -47,26 +47,24 @@ export class PositionConflictError extends Error {
 }
 
 export async function upsertPosition(
-  userUuid: UUID,
+  userId: UUID,
   bookUuid: UUID,
   locator: ReadiumLocator,
   timestamp: number,
 ) {
-  const db = getDatabase()
-
   const locatorString = JSON.stringify(locator)
 
   const upserted = await db.transaction().execute(async (tr) => {
     const existing = await tr
       .selectFrom("position")
       .select(["timestamp"])
-      .where("userUuid", "=", bookUuid)
+      .where("userId", "=", bookUuid)
       .executeTakeFirst()
 
     if (!existing) {
       await db
         .insertInto("position")
-        .values({ userUuid, bookUuid, locator: locatorString, timestamp })
+        .values({ userId, bookUuid, locator: locatorString, timestamp })
         .execute()
 
       return true
@@ -77,7 +75,7 @@ export async function upsertPosition(
     await db
       .updateTable("position")
       .set({ locator: locatorString, timestamp })
-      .where("userUuid", "=", userUuid)
+      .where("userId", "=", userId)
       .where("bookUuid", "=", bookUuid)
       .execute()
 
@@ -89,19 +87,17 @@ export async function upsertPosition(
   }
 }
 
-export async function getPosition(userUuid: UUID, bookUuid: UUID) {
-  const db = getDatabase()
-
+export async function getPosition(userId: UUID, bookUuid: UUID) {
   const result = await db
     .selectFrom("position")
     .select(["locator", "timestamp"])
-    .where("userUuid", "=", userUuid)
+    .where("userId", "=", userId)
     .where("bookUuid", "=", bookUuid)
     .executeTakeFirst()
 
   return (
     result && {
-      userUuid,
+      userId,
       bookUuid,
       locator: JSON.parse(result.locator) as ReadiumLocator,
       timestamp: result.timestamp,

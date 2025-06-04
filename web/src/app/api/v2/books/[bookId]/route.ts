@@ -12,7 +12,7 @@ import {
   persistCustomAudioCover,
 } from "@/assets/covers"
 import { getEpubAlignedFilepath } from "@/assets/paths"
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import {
   AuthorRelation,
   deleteBook,

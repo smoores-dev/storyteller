@@ -1,6 +1,6 @@
 import { InviteRequest } from "@/apiModels"
-import { withHasPermission } from "@/auth"
-import { createInvite, getInvites } from "@/database/invites"
+import { withHasPermission } from "@/auth/auth"
+import { createUser, getInvites } from "@/database/users"
 import { sendInvite } from "@/invites"
 import { logger } from "@/logging"
 import { NextResponse } from "next/server"
@@ -19,7 +19,7 @@ export const POST = withHasPermission("userCreate")(async (request) => {
 
   const key = randomBytes(6).toString("hex")
 
-  await createInvite(email, key, permissions)
+  await createUser(email, key, permissions)
 
   try {
     await sendInvite(email, key)

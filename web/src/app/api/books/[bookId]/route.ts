@@ -3,7 +3,7 @@ import {
   ProcessingTaskStatus,
 } from "@/apiModels/models/ProcessingStatus"
 import { getEpubAlignedFilepath, getEpubFilepath } from "@/assets/paths"
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import { getBookUuid, getBook } from "@/database/books"
 import { Epub } from "@smoores/epub"
 import { NextResponse } from "next/server"

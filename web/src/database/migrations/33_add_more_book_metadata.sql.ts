@@ -1,11 +1,10 @@
 import { getEpubFilepath, getEpubAlignedFilepath } from "@/assets/paths"
 import { BookUpdate, getBooks, SeriesRelation, updateBook } from "../books"
 import { Epub } from "@smoores/epub"
-import { getDatabase } from "../connection"
+import { db } from "../connection"
 import { stat } from "node:fs/promises"
 
 export default async function migrate() {
-  const db = getDatabase()
   const books = await getBooks()
   for (const book of books) {
     let update: BookUpdate | null = null

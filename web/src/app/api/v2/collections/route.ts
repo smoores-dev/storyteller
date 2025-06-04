@@ -1,18 +1,15 @@
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import { createCollection, getCollections } from "@/database/collections"
+import { UUID } from "@/uuid"
 import { NextResponse } from "next/server"
 
 /**
  * @summary List all collections
  * @desc '
  */
-export const GET = withHasPermission("bookList")(async (
-  _request,
-  _context,
-  _token,
-  tokenData,
-) => {
-  const collections = await getCollections(tokenData.username)
+export const GET = withHasPermission("bookList")(async (request) => {
+  const user = request.auth.user
+  const collections = await getCollections(user.id)
 
   return NextResponse.json(collections)
 })
@@ -22,7 +19,7 @@ export const POST = withHasPermission("collectionCreate")(async (request) => {
     name: string
     description: string
     public: boolean
-    users?: string[]
+    users?: UUID[]
   }
 
   const created = await createCollection(values, users && { users })

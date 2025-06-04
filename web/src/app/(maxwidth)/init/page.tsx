@@ -1,48 +1,37 @@
+import { ApiClient } from "@/apiClient"
+import { getCookieDomain } from "@/cookies"
+import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { apiHost, proxyRootPath } from "../../apiHost"
-import { ApiClient } from "@/apiClient"
-import { cookies, headers } from "next/headers"
-import { getCookieDomain } from "@/cookies"
 import { Button, PasswordInput, TextInput, Title } from "@mantine/core"
 
-export const dynamic = "force-dynamic"
-
-type Props = {
-  params: Promise<{
-    inviteKey: string
-  }>
-}
-
-export default async function InvitePage(props: Props) {
-  const client = new ApiClient(apiHost, proxyRootPath)
-  const invite = await client.getInvite((await props.params).inviteKey)
-
-  async function acceptInvite(data: FormData) {
+export default function InitPage() {
+  async function init(data: FormData) {
     "use server"
 
+    const email = data.get("email")?.valueOf() as string | undefined
     const fullName = data.get("fullName")?.valueOf() as string | undefined
     const username = data.get("username")?.valueOf() as string | undefined
     const password = data.get("password")?.valueOf() as string | undefined
-    if (!fullName || !username || !password) return
+    if (!fullName || !username || !password || !email) return
 
     const cookieOrigin = (await headers()).get("Origin")
     const domain = getCookieDomain(cookieOrigin)
 
     const client = new ApiClient(apiHost, proxyRootPath)
-    const token = await client.acceptInvite({
-      email: invite.email,
+    const token = await client.createAdminUser({
+      email: email,
       fullName,
       username,
       password,
-      inviteKey: (await props.params).inviteKey,
     })
 
     const cookieStore = await cookies()
-    cookieStore.set("st_token", token.access_token, {
-      secure: true,
-      domain,
-      sameSite: "lax",
-    })
+    cookieStore.set(
+      "st_token",
+      Buffer.from(JSON.stringify(token)).toString("base64"),
+      { secure: true, domain, sameSite: "lax" },
+    )
 
     redirect("/")
   }
@@ -50,15 +39,13 @@ export default async function InvitePage(props: Props) {
   return (
     <>
       <header>
-        <Title order={2}>Accept Invite</Title>
+        <Title order={2}>Set up the admin user</Title>
       </header>
-      <form action={acceptInvite}>
+      <form action={init}>
         <TextInput
           label="email"
           name="email"
           type="email"
-          defaultValue={invite.email}
-          disabled
           withAsterisk
           required
         />
@@ -79,9 +66,7 @@ export default async function InvitePage(props: Props) {
           required
         />
         <PasswordInput label="Password" name="password" withAsterisk required />
-        <Button mt={16} type="submit">
-          Accept
-        </Button>
+        <Button type="submit">Create admin user</Button>
       </form>
     </>
   )

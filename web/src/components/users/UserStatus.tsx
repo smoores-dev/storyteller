@@ -40,7 +40,7 @@ export function UserStatus({ user, onUpdate }: Props) {
     <Paper className="max-w-[600px]">
       <Group justify="space-between" wrap="nowrap">
         <Stack gap={0}>
-          <Title order={4}>{user.fullName}</Title>
+          <Title order={4}>{user.name}</Title>
           <div>{user.username}</div>
           <div>{user.email}</div>
         </Stack>
@@ -59,7 +59,7 @@ export function UserStatus({ user, onUpdate }: Props) {
             const permissionsObject = Object.fromEntries(
               values.permissions.map((permission) => [permission, true]),
             ) as UserPermissionSet
-            await client.updateUser(user.uuid, permissionsObject)
+            await client.updateUser(user.id, permissionsObject)
           })}
         >
           <Box className="self-end">

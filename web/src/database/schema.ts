@@ -10,6 +10,23 @@ export type Generated<T> =
     ? ColumnType<S, I | undefined, U>
     : ColumnType<T, T | undefined, T>
 
+export interface Account {
+  accessToken: string | null
+  createdAt: Generated<string>
+  expiresAt: number | null
+  id: Generated<import("@/uuid").UUID>
+  idToken: string | null
+  provider: string
+  providerAccountId: string
+  refreshToken: string | null
+  scope: string | null
+  sessionState: string | null
+  tokenType: string | null
+  type: string
+  updatedAt: Generated<string>
+  userId: string
+}
+
 export interface Author {
   createdAt: Generated<string>
   fileAs: string
@@ -20,8 +37,8 @@ export interface Author {
 }
 
 export interface AuthorToBook {
-  authorUuid: Generated<import("@/uuid").UUID>
-  bookUuid: Generated<import("@/uuid").UUID>
+  authorUuid: import("@/uuid").UUID
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   id: number | null
   role: string | null
@@ -40,34 +57,34 @@ export interface Book {
   narrator: string | null
   publicationDate: string | null
   rating: number | null
-  statusUuid: Generated<import("@/uuid").UUID>
+  statusUuid: import("@/uuid").UUID
   title: string
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface BookToCollection {
-  bookUuid: Generated<import("@/uuid").UUID>
-  collectionUuid: Generated<import("@/uuid").UUID>
+  bookUuid: import("@/uuid").UUID
+  collectionUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface BookToSeries {
-  bookUuid: Generated<import("@/uuid").UUID>
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   featured: Generated<boolean>
   position: number | null
-  seriesUuid: Generated<import("@/uuid").UUID>
+  seriesUuid: import("@/uuid").UUID
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface BookToTag {
-  bookUuid: Generated<import("@/uuid").UUID>
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
-  tagUuid: Generated<import("@/uuid").UUID>
+  tagUuid: import("@/uuid").UUID
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
@@ -82,20 +99,10 @@ export interface Collection {
 }
 
 export interface CollectionToUser {
-  collectionUuid: Generated<import("@/uuid").UUID>
+  collectionUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   updatedAt: Generated<string>
-  userUuid: Generated<import("@/uuid").UUID>
-  uuid: Generated<import("@/uuid").UUID>
-}
-
-export interface Invite {
-  createdAt: Generated<string>
-  email: string
-  id: number | null
-  key: string
-  updatedAt: Generated<string>
-  userPermissionUuid: Generated<import("@/uuid").UUID>
+  userId: import("@/uuid").UUID
   uuid: Generated<import("@/uuid").UUID>
 }
 
@@ -108,17 +115,17 @@ export interface Migration {
 }
 
 export interface Position {
-  bookUuid: Generated<import("@/uuid").UUID>
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   locator: string
   timestamp: number
   updatedAt: Generated<string>
-  userUuid: Generated<import("@/uuid").UUID>
+  userId: import("@/uuid").UUID
   uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface ProcessingTask {
-  bookUuid: Generated<import("@/uuid").UUID>
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   id: number | null
   progress: Generated<number>
@@ -134,6 +141,15 @@ export interface Series {
   name: string
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
+}
+
+export interface Session {
+  createdAt: Generated<string>
+  expires: Date
+  id: Generated<import("@/uuid").UUID>
+  sessionToken: string
+  updatedAt: Generated<string>
+  userId: import("@/uuid").UUID
 }
 
 export interface Settings {
@@ -169,13 +185,15 @@ export interface TokenRevokation {
 export interface User {
   createdAt: Generated<string>
   email: string
-  fullName: Generated<string>
-  hashedPassword: string
-  id: number | null
+  emailVerified: Date | null
+  hashedPassword: string | null
+  id: Generated<import("@/uuid").UUID>
+  inviteAccepted: Date | null
+  inviteKey: string | null
+  name: string | null
   updatedAt: Generated<string>
-  username: string
-  userPermissionUuid: Generated<import("@/uuid").UUID>
-  uuid: Generated<import("@/uuid").UUID>
+  username: string | null
+  userPermissionUuid: import("@/uuid").UUID
 }
 
 export interface UserPermission {
@@ -201,7 +219,16 @@ export interface UserPermission {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface VerificationToken {
+  createdAt: Generated<string>
+  expires: Date
+  identifier: string
+  token: string
+  updatedAt: Generated<string>
+}
+
 export interface DB {
+  account: Account
   author: Author
   authorToBook: AuthorToBook
   book: Book
@@ -210,15 +237,16 @@ export interface DB {
   bookToTag: BookToTag
   collection: Collection
   collectionToUser: CollectionToUser
-  invite: Invite
   migration: Migration
   position: Position
   processingTask: ProcessingTask
   series: Series
+  session: Session
   settings: Settings
   status: Status
   tag: Tag
   tokenRevokation: TokenRevokation
   user: User
   userPermission: UserPermission
+  verificationToken: VerificationToken
 }

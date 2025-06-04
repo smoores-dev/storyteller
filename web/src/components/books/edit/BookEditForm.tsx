@@ -196,9 +196,9 @@ export function BookEditForm({
                 if (
                   !values.public &&
                   currentUser &&
-                  !values.users.includes(currentUser.uuid)
+                  !values.users.includes(currentUser.id)
                 ) {
-                  values.users.push(currentUser.uuid)
+                  values.users.push(currentUser.id)
                 }
                 const newCollection = await client.createCollection(values)
                 setCollections((collections) => [...collections, newCollection])

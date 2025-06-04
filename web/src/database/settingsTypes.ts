@@ -1,3 +1,5 @@
+import { Providers } from "@/auth/providers"
+
 export type TranscriptionEngine =
   | "whisper.cpp"
   | "google-cloud"
@@ -24,6 +26,25 @@ export type WhisperModel =
   | "large-v3-q5_0"
   | "large-v3-turbo"
   | "large-v3-turbo-q5_0"
+
+interface BuiltInAuthProvider {
+  kind: "built-in"
+  id: keyof typeof Providers
+  clientId: string
+  clientSecret: string
+  issuer?: string
+}
+
+interface CustomAuthProvider {
+  kind: "custom"
+  name: string
+  clientId: string
+  clientSecret: string
+  type: "oidc" | "oauth"
+  issuer: string
+}
+
+export type AuthProvider = BuiltInAuthProvider | CustomAuthProvider
 
 export type Settings = {
   smtpHost: string
@@ -56,6 +77,7 @@ export type Settings = {
   parallelTranscodes: number
   parallelTranscribes: number
   parallelWhisperBuild: number
+  authProviders: AuthProvider[]
 }
 
 export const SETTINGS_ROW_NAMES = {
@@ -89,4 +111,5 @@ export const SETTINGS_ROW_NAMES = {
   parallel_transcodes: "parallelTranscodes",
   parallel_transcribes: "parallelTranscribes",
   parallel_whisper_build: "parallelWhisperBuild",
+  auth_providers: "authProviders",
 } as const satisfies Record<string, keyof Settings>

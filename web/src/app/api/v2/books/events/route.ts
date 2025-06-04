@@ -1,4 +1,4 @@
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import { subscribeToBookEvents } from "@/events"
 import { NextResponse } from "next/server"
 // import { ReadableStream } from "node:stream/web"

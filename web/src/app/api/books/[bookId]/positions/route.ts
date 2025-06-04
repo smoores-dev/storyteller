@@ -1,4 +1,4 @@
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import { getBookUuid } from "@/database/books"
 import {
   getPosition,
@@ -6,7 +6,6 @@ import {
   PositionConflictError,
   upsertPosition,
 } from "@/database/positions"
-import { getUser } from "@/database/users"
 import { NextResponse } from "next/server"
 
 type Params = Promise<{
@@ -24,18 +23,14 @@ type Params = Promise<{
 export const POST = withHasPermission<Params>("bookRead")(async (
   request,
   context,
-  _token,
-  tokenData,
 ) => {
   const body = (await request.json()) as Position
-  const username = tokenData.username
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
 
-  const user = await getUser(username)
-  if (!user) throw new Error("Couldn't find authenticated user in database")
+  const user = request.auth.user
   try {
-    await upsertPosition(user.uuid, bookUuid, body.locator, body.timestamp)
+    await upsertPosition(user.id, bookUuid, body.locator, body.timestamp)
   } catch (e) {
     if (e instanceof PositionConflictError) {
       return NextResponse.json(
@@ -54,18 +49,14 @@ export const POST = withHasPermission<Params>("bookRead")(async (
  * @desc '
  */
 export const GET = withHasPermission<Params>("bookRead")(async (
-  _request,
+  request,
   context,
-  _token,
-  tokenData,
 ) => {
-  const username = tokenData.username
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
-  const user = await getUser(username)
-  if (!user) throw new Error("Couldn't find authenticated user in database")
+  const user = request.auth.user
 
-  const position = await getPosition(user.uuid, bookUuid)
+  const position = await getPosition(user.id, bookUuid)
 
   if (!position)
     return NextResponse.json({ message: "No position found" }, { status: 404 })

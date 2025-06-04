@@ -1,4 +1,4 @@
-import { withHasPermission } from "@/auth"
+import { withHasPermission } from "@/auth/auth"
 import { getSeries } from "@/database/series"
 import { NextResponse } from "next/server"
 
