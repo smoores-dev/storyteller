@@ -7,6 +7,7 @@ import {
   getLocator,
 } from "../../../../store/selectors/bookshelfSelectors"
 import { useIsFocused } from "../../../../hooks/useIsFocused"
+import { useIsNotBackground } from "../../../../hooks/useIsNotBackground"
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams() as { id: string }
@@ -20,10 +21,12 @@ export default function BookScreen() {
   const locator = timestampedLocator?.locator
 
   const isFocused = useIsFocused()
+  const isNotBackground = useIsNotBackground()
 
   return (
     book &&
     locator &&
-    isFocused && <Epub key={book.id} book={book} locator={locator} />
+    isFocused &&
+    isNotBackground && <Epub key={book.id} book={book} locator={locator} />
   )
 }
