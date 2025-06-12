@@ -29,6 +29,7 @@ import { Group } from "./ui/Group"
 import { ChevronLeft } from "lucide-react-native"
 import { spacing } from "./ui/tokens/spacing"
 import { SubtlePlayPause } from "./SubtlePlayPause"
+import { deepEquals } from "../deepEquals"
 
 type Props = {
   book: BookshelfBook
@@ -44,6 +45,8 @@ export function Epub({ book, locator }: Props) {
   // would "rewind" to the previous page and be jarring.
   const locatorRef = useRef<ReadiumLocator | null>(null)
   const locatorIsFromEpub = locatorRef.current === locator
+
+  const mountedTimeRef = useRef(Date.now())
 
   const hasLoadedRef = useRef(false)
   const { foreground, background } = useColorTheme()
@@ -136,22 +139,53 @@ export function Epub({ book, locator }: Props) {
             if (isPlaying) {
               return
             }
+
+            // This callback fires multiple times upon component mount, which
+            // is why it contains so many guards to prevent updating the locator
+            // timestamp erroneously. Only playing the audiobook or manually
+            // relocating should result in the timestamp being updated.
+            if (
+              locator.href === event.nativeEvent.href &&
+              deepEquals(locator.locations, event.nativeEvent.locations)
+            ) {
+              return
+            }
+
+            // Sometimes we need to pay attention to the first locator changed,
+            // if we rely on it to figure out the fragments for the initial
+            // locator.
+            const eventDoesNotProvideMissingFragments =
+              !event.nativeEvent.locations?.fragments ||
+              locator.locations?.fragments
+
             // If this is the very first time we're mounting this
             // component, we actually want to ignore the "locator changed"
             // event, which will just be trying to reset to the beginning
             // of the currently rendered page
             if (!hasLoadedRef.current) {
               hasLoadedRef.current = true
-              // Sometimes we need to pay attention to the first locator changed,
-              // if we rely on it to figure out the fragments for the initial
-              // locator
-              if (
-                !event.nativeEvent.locations?.fragments ||
-                locator.locations?.fragments
-              ) {
+              if (eventDoesNotProvideMissingFragments) {
                 return
               }
             }
+
+            // If this component just mounted, we want to ignore locator changes
+            // for a period of time after mounting because it will thrash around
+            // attempting to reset to the beginning of the currently rendered page which
+            // would cause the timestamp to get updated and break syncing.
+            // However, if the event contains missing fragments, then we allow
+            // dispatching to proceed even during the unstable period where
+            // readium is thrashing.
+            //
+            // I've only observed the thrashing on Android.
+            if (
+              Platform.OS === "android" &&
+              Date.now() - mountedTimeRef.current < 1000 &&
+              eventDoesNotProvideMissingFragments
+            ) {
+              return
+            }
+
             locatorRef.current = event.nativeEvent
             dispatch(
               bookshelfSlice.actions.bookRelocated({
