@@ -10,6 +10,7 @@ const IS_DEV = process.env["APP_VARIANT"] === "development"
 export default ({ config }: ConfigContext): ExpoConfig => {
   const initialConfig: ExpoConfig = {
     ...config,
+    owner: "storyteller-platform",
     name: IS_DEV ? "Storyteller (dev)" : "Storyteller",
     slug: "storyteller",
     version: packageInfo.version,
