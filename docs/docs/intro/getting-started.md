@@ -65,7 +65,7 @@ export STORYTELLER_SECRET_KEY=$(openssl rand -base64 32)
 
 docker run \
   -it \
-  -name storyteller \
+  --name storyteller \
   -v ~/Documents/Storyteller:/data:rw \
   -p 8001:8001 \
   -e STORYTELLER_SECRET_KEY=$STORYTELLER_SECRET_KEY \
