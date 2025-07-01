@@ -99,12 +99,17 @@ export function Epub({ book, locator }: Props) {
         />
       )}
       <View
-        style={[
-          styles.epubWrapper,
-          {
-            top: insets.top + 12,
-          },
-        ]}
+        style={{
+          position: "absolute",
+          top: insets.top + 12,
+          bottom: Platform.select({
+            android: 70 + insets.bottom,
+            default: 70,
+          }),
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }}
       >
         <EPUBView
           ref={epubViewRef}
@@ -242,14 +247,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "white",
   },
-  epubWrapper: {
-    position: "absolute",
-    bottom: 70,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-    ...(Platform.OS === "android" && { paddingVertical: 36 }),
-  },
   epub: { flex: 1 },
   backButton: {
     left: spacing[2],
@@ -277,13 +274,6 @@ const styles = StyleSheet.create({
     bottom: 27,
     left: 12,
     right: 16,
-    zIndex: 3,
-  },
-  miniPlayer: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 32,
     zIndex: 3,
   },
 })
