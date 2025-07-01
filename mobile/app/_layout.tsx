@@ -9,6 +9,7 @@ import TrackPlayer, {
   IOSCategory,
   IOSCategoryMode,
 } from "react-native-track-player"
+import { KeyboardProvider } from "react-native-keyboard-controller"
 import { Provider } from "react-redux"
 import { store } from "../store/store"
 import { PlaybackService } from "../audio/PlaybackService"
@@ -111,15 +112,17 @@ export default function Layout() {
 
   return (
     <GestureHandlerRootView>
-      <Provider store={store}>
-        <AudioBookProvider>
-          <StorytellerProvider>
-            <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-              <Slot />
-            </SafeAreaProvider>
-          </StorytellerProvider>
-        </AudioBookProvider>
-      </Provider>
+      <KeyboardProvider>
+        <Provider store={store}>
+          <AudioBookProvider>
+            <StorytellerProvider>
+              <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+                <Slot />
+              </SafeAreaProvider>
+            </StorytellerProvider>
+          </AudioBookProvider>
+        </Provider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   )
 }
