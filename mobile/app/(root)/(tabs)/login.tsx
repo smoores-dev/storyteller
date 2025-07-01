@@ -12,13 +12,11 @@ import { fontSizes } from "../../../components/ui/tokens/fontSizes"
 import { useColorTheme } from "../../../hooks/useColorTheme"
 import { getApiBaseUrl } from "../../../store/selectors/apiSelectors"
 import { colors } from "../../../components/ui/tokens/colors"
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller"
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    display: "flex",
     alignItems: "stretch",
-    justifyContent: "flex-start",
     paddingHorizontal: spacing[4],
   },
   title: {
@@ -55,7 +53,10 @@ export default function LoginPage() {
   const { dark } = useColorTheme()
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView
+      bottomOffset={40}
+      contentContainerStyle={styles.container}
+    >
       <Stack.Screen
         options={{
           title: "Login",
@@ -113,6 +114,6 @@ export default function LoginPage() {
           </Button>
         </View>
       </View>
-    </View>
+    </KeyboardAwareScrollView>
   )
 }

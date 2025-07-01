@@ -1,6 +1,8 @@
 import { Stack } from "expo-router"
 import { useState } from "react"
 import { View, StyleSheet } from "react-native"
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller"
+
 import { UIText } from "../../../components/UIText"
 import { useAppDispatch } from "../../../store/appState"
 import { apiBaseUrlChanged } from "../../../store/slices/apiSlice"
@@ -13,10 +15,7 @@ import { HeaderText } from "../../../components/HeaderText"
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    display: "flex",
     alignItems: "stretch",
-    justifyContent: "flex-start",
     paddingHorizontal: spacing[4],
   },
   title: {
@@ -39,7 +38,7 @@ export default function LoginPage() {
   const { surface } = useColorTheme()
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <Stack.Screen
         options={{
           title: "Select server",
@@ -84,6 +83,6 @@ export default function LoginPage() {
         <UIText style={fontSizes.base}>Or a domain name, such as:</UIText>
         <UIText style={fontSizes.base}>https://yourdomain.com</UIText>
       </View>
-    </View>
+    </KeyboardAwareScrollView>
   )
 }
