@@ -1,4 +1,7 @@
 import { Tabs } from "expo-router"
+import { Platform } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+
 import { BookshelfIcon } from "../../../icons/BookshelfIcon"
 import { BrowseIcon } from "../../../icons/BrowseIcon"
 import { SettingsIcon } from "../../../icons/SettingsIcon"
@@ -6,6 +9,7 @@ import { useColorTheme } from "../../../hooks/useColorTheme"
 
 export default function TabLayout() {
   const { foreground } = useColorTheme()
+  const insets = useSafeAreaInsets()
 
   return (
     <Tabs
@@ -13,11 +17,18 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: foreground,
         tabBarInactiveTintColor: foreground,
-        tabBarStyle: {
-          height: 84,
-          paddingTop: 12,
-          paddingBottom: 16,
-        },
+        tabBarStyle: [
+          {
+            height: 84,
+            paddingTop: 12,
+          },
+          Platform.select({
+            android: {
+              marginBottom: insets.bottom,
+            },
+            default: {},
+          }),
+        ],
       }}
     >
       <Tabs.Screen

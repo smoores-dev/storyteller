@@ -27,6 +27,7 @@ import { FastForward, Rewind } from "lucide-react-native"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { Button } from "./ui/Button"
 import { throttle } from "../throttle"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 // Roughly the number of "positions" that fit in a
 // standard paperback book page
@@ -38,6 +39,7 @@ type Props = {
 }
 
 export function MiniPlayer({ book, automaticRewind }: Props) {
+  const insets = useSafeAreaInsets()
   const { foreground } = useColorTheme()
   const locator = useAppSelector((state) => getLocator(state, book.id))
   const bookPrefs = useAppSelector((state) =>
@@ -202,7 +204,17 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
 
   return (
     bookPrefs && (
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          Platform.select({
+            android: {
+              marginBottom: insets.bottom,
+            },
+            default: {},
+          }),
+        ]}
+      >
         <View
           style={{
             flexDirection: "row",
