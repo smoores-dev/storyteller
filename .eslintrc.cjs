@@ -104,20 +104,7 @@ module.exports = {
         project: true,
         tsconfigRootDir: __dirname,
       },
-      rules: {
-        "@typescript-eslint/restrict-template-expressions": [
-          "error",
-          {
-            allowNumber: true,
-          },
-        ],
-        "@typescript-eslint/no-misused-promises": [
-          "error",
-          {
-            checksVoidReturn: false,
-          },
-        ],
-      },
+      rules: reactTypescriptConfig.rules,
     },
     {
       files: ["epub/**/*.ts", "fs/**/*.ts"],

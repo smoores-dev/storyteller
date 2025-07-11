@@ -1,15 +1,11 @@
 import { Inter, Young_Serif } from "next/font/google"
 
-import { ApiHostContextProvider } from "@/contexts/ApiHostContext"
-import { proxyRootPath } from "./apiHost"
-import { CurrentUserProvider } from "@/contexts/UserPermissions"
-import { createAuthedApiClient, getCurrentUser } from "@/authedApiClient"
 import { AppShell } from "@/components/AppShell"
 import { ColorSchemeScript } from "@mantine/core"
 
 import "./globals.css"
-import { BookDetail } from "@/apiModels"
 import { getCurrentVersion } from "@/versions"
+import StoreProvider from "@/components/StoreProvider"
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -28,23 +24,12 @@ export const metadata = {
   description: "A simple tool for syncing audiobooks and ebooks",
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const version = getCurrentVersion()
-
-  const currentUser = await getCurrentUser()
-  const client = await createAuthedApiClient()
-
-  let books: BookDetail[] = []
-
-  try {
-    books = await client.listBooks()
-  } catch {
-    // pass
-  }
 
   return (
     <html
@@ -56,13 +41,9 @@ export default async function RootLayout({
         <ColorSchemeScript />
       </head>
       <body suppressHydrationWarning>
-        <ApiHostContextProvider value={{ rootPath: proxyRootPath }}>
-          <CurrentUserProvider value={currentUser}>
-            <AppShell version={version} books={books}>
-              {children}
-            </AppShell>
-          </CurrentUserProvider>
-        </ApiHostContextProvider>
+        <StoreProvider>
+          <AppShell version={version}>{children}</AppShell>
+        </StoreProvider>
       </body>
     </html>
   )

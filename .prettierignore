@@ -16,7 +16,6 @@ tsbuild
 __fixtures__
 /web/work-dist
 /web/whisper-builds
-schema.sql
 
 mobile/android
 mobile/ios
@@ -26,7 +25,11 @@ mobile/modules/*/android/build
 mobile/modules/*/ios/.build
 
 epub/index.js
+epub/index.cjs
 epub/index.d.ts
+epub/node.js
+epub/node.cjs
+epub/node.d.ts
 epub/index.test.d.ts
 epub/gen
 epub/README.md

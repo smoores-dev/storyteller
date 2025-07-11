@@ -1,16 +1,16 @@
 import NextImage from "next/image"
 import { Group, Image, RingProgress, Stack, Text, Title } from "@mantine/core"
 import { ProcessingTaskTypes } from "../books/BookStatus"
-import { useBooks } from "../books/LiveBooksProvider"
-import { useApiClient } from "@/hooks/useApiClient"
+import { getCoverUrl, useListBooksQuery } from "@/store/api"
 
 export function CurrentBookProgress() {
-  const client = useApiClient()
-  const books = useBooks()
-
-  const currentBook = books.find(
-    (book) => book.processingStatus === "processing",
-  )
+  const { currentBook } = useListBooksQuery(undefined, {
+    selectFromResult: (result) => ({
+      currentBook: result.data?.find(
+        (book) => book.processingStatus === "processing",
+      ),
+    }),
+  })
 
   if (!currentBook) return null
 
@@ -31,7 +31,7 @@ export function CurrentBookProgress() {
         width={98}
         alt=""
         aria-hidden
-        src={client.getCoverUrl(currentBook.uuid)}
+        src={getCoverUrl(currentBook.uuid)}
       />
       <Stack className="mb-1 self-stretch" gap={2} justify="flex-end">
         <Title order={3} size="md">

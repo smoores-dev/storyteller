@@ -26,18 +26,13 @@
       {
         "name": "next"
       }
-      // {
-      //   "name": "typescript-plugin-css-modules",
-      //   "options": {
-      //     "noUncheckedIndexedAccess": true
-      //   }
-      // }
     ],
     "paths": {
       "@/*": ["./src/*"],
       // This allows us to treat our typescript source files
       // in dependent packages as internal to this workspace
       // for development purposes (e.g. hot module reloading, etc)
+      "@smoores/epub/node": ["../epub/node.ts"],
       "@smoores/*": ["../*/index.ts"]
     },
     "outDir": "tsbuild",
@@ -51,7 +46,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     ".next/types/**/*.ts",
-    "postcss.config.js"
+    "postcss.config.js",
+    "../epub/path-dirname.d.ts"
   ],
   "exclude": ["migrations/node_modules", ".next", "tsbuild", "work-dist"],
   "references": [

@@ -1,65 +1,50 @@
 "use client"
 
-import { Invite, User } from "@/apiModels"
 import { UserStatus } from "./UserStatus"
-import { useApiClient } from "@/hooks/useApiClient"
-import { usePermissions } from "@/contexts/UserPermissions"
-import { useCallback, useState } from "react"
 import { InviteStatus } from "./InviteStatus"
 import { CreateInviteForm } from "./CreateInviteForm"
 import { List, Title } from "@mantine/core"
+import {
+  useGetCurrentUserQuery,
+  useListInvitesQuery,
+  useListUsersQuery,
+} from "@/store/api"
 
-type Props = {
-  users: User[]
-  invites: Invite[]
-}
+export function UsersList() {
+  const { permissions } = useGetCurrentUserQuery(undefined, {
+    selectFromResult: (result) => ({
+      permissions: result.data?.permissions,
+    }),
+  })
 
-export function UsersList({
-  users: initialUsers,
-  invites: initialInvites,
-}: Props) {
-  const client = useApiClient()
-  const permissions = usePermissions()
-  const [users, setUsers] = useState(initialUsers)
-  const [invites, setInvites] = useState(initialInvites)
-
-  const refreshUsers = useCallback(() => {
-    void client.listUsers().then((users) => {
-      setUsers(users)
-    })
-  }, [client])
-
-  const refreshInvites = useCallback(() => {
-    void client.listInvites().then((invites) => {
-      setInvites(invites)
-    })
-  }, [client])
+  const { data: invites } = useListInvitesQuery()
+  const { data: users } = useListUsersQuery()
 
   return (
     <>
-      {permissions.inviteList && (
+      {permissions?.inviteList && (
         <>
           <Title order={3}>Invites</Title>
-          <CreateInviteForm onUpdate={refreshInvites} />
+          <CreateInviteForm />
           <List type="ordered" listStyleType="none">
-            {invites.map((invite) => (
+            {invites?.map((invite) => (
               <List.Item
                 key={invite.inviteKey}
                 classNames={{ itemWrapper: "block" }}
               >
-                <InviteStatus invite={invite} onUpdate={refreshInvites} />
+                <InviteStatus invite={invite} />
               </List.Item>
             ))}
           </List>
         </>
       )}
-      {permissions.userList && (
+      {permissions?.userList && (
         <>
           <Title order={3}>Users</Title>
           <List type="ordered" listStyleType="none">
-            {users.map((user) => (
+            {users?.map((user) => (
               <List.Item key={user.id} classNames={{ itemWrapper: "block" }}>
-                <UserStatus user={user} onUpdate={refreshUsers} />
+                <UserStatus user={user} />
               </List.Item>
             ))}
           </List>

@@ -16,17 +16,17 @@ import {
   PERMISSIONS_VALUES,
 } from "./CreateInviteForm"
 import { useForm } from "@mantine/form"
-import { useApiClient } from "@/hooks/useApiClient"
 import { UserPermissionSet } from "@/database/users"
+import { useUpdateUserMutation } from "@/store/api"
 
 type Props = {
   user: User
-  onUpdate: () => void
 }
 
-export function UserStatus({ user, onUpdate }: Props) {
-  const client = useApiClient()
+export function UserStatus({ user }: Props) {
   const [showPermissions, setShowPermissions] = useState(false)
+
+  const [updateUser, { isLoading }] = useUpdateUserMutation()
 
   const form = useForm({
     initialValues: {
@@ -49,7 +49,6 @@ export function UserStatus({ user, onUpdate }: Props) {
           onEdit={() => {
             setShowPermissions(true)
           }}
-          onUpdate={onUpdate}
         />
       </Group>
       {showPermissions && (
@@ -59,7 +58,7 @@ export function UserStatus({ user, onUpdate }: Props) {
             const permissionsObject = Object.fromEntries(
               values.permissions.map((permission) => [permission, true]),
             ) as UserPermissionSet
-            await client.updateUser(user.id, permissionsObject)
+            await updateUser({ uuid: user.id, permissions: permissionsObject })
           })}
         >
           <Box className="self-end">
@@ -86,7 +85,9 @@ export function UserStatus({ user, onUpdate }: Props) {
             data={PERMISSIONS_VALUES}
             {...form.getInputProps("permissions")}
           />
-          <Button type="submit">Save</Button>
+          <Button disabled={isLoading} type="submit">
+            {isLoading ? "Saving…" : "Save"}
+          </Button>
         </form>
       )}
     </Paper>

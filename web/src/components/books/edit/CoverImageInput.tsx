@@ -3,7 +3,52 @@ import { UseFormReturnType } from "@mantine/form"
 import NextImage from "next/image"
 import { useMemo } from "react"
 
+function CoverInput({
+  inputProps,
+  coverUrl,
+  height,
+}: {
+  inputProps: ReturnType<
+    UseFormReturnType<{
+      textCover: File | null
+    }>["getInputProps"]
+  >
+  coverUrl: string
+  height: number
+}) {
+  return (
+    <FileButton accept="image/jpeg,image/png" {...inputProps}>
+      {(props) => (
+        <Button
+          {...props}
+          variant="subtle"
+          className="flex h-[max-content] w-[max-content] justify-center"
+        >
+          <Image
+            className="rounded"
+            component={NextImage}
+            height={height * 3}
+            width={64 * 3}
+            h={height * 3}
+            w={64 * 3}
+            src={coverUrl}
+            alt=""
+            aria-hidden
+          />
+          <Text
+            c="black"
+            className="absolute bottom-4 left-0 inline-block w-full bg-white bg-opacity-90 py-2"
+          >
+            Edit cover art
+          </Text>
+        </Button>
+      )}
+    </FileButton>
+  )
+}
+
 interface Props {
+  mediaType: "both" | "ebook" | "audiobook"
   textCover: File | null
   audioCover: File | null
   textFallback: string
@@ -15,6 +60,7 @@ interface Props {
 }
 
 export function CoverImageInput({
+  mediaType,
   textCover,
   audioCover,
   textFallback,
@@ -30,6 +76,26 @@ export function CoverImageInput({
     [audioCover, audioFallback],
   )
 
+  if (mediaType === "ebook") {
+    return (
+      <CoverInput
+        inputProps={getInputProps("textCover")}
+        coverUrl={textCoverUrl}
+        height={98}
+      />
+    )
+  }
+
+  if (mediaType === "audiobook") {
+    return (
+      <CoverInput
+        inputProps={getInputProps("audioCover")}
+        coverUrl={audioCoverUrl}
+        height={64}
+      />
+    )
+  }
+
   return (
     <Tabs defaultValue="text-cover">
       <Tabs.List>
@@ -37,71 +103,18 @@ export function CoverImageInput({
         <Tabs.Tab value="audio-cover">Audio</Tabs.Tab>
       </Tabs.List>
       <Tabs.Panel value="text-cover">
-        <FileButton
-          accept="image/jpeg,image/png"
-          {...getInputProps("textCover")}
-        >
-          {(props) => (
-            <Button
-              {...props}
-              variant="subtle"
-              className="flex h-[max-content] w-[max-content] justify-center"
-            >
-              <Image
-                className="rounded"
-                component={NextImage}
-                height={98 * 3}
-                width={64 * 3}
-                h={98 * 3}
-                w={64 * 3}
-                src={textCoverUrl}
-                alt=""
-                aria-hidden
-              />
-              <Text
-                c="black"
-                className="absolute bottom-4 left-0 inline-block w-full bg-white bg-opacity-90 py-2"
-              >
-                Edit cover art
-              </Text>
-            </Button>
-          )}
-        </FileButton>
+        <CoverInput
+          inputProps={getInputProps("textCover")}
+          coverUrl={textCoverUrl}
+          height={98}
+        />
       </Tabs.Panel>
       <Tabs.Panel value="audio-cover">
-        <FileButton
-          accept="image/jpeg,image/png"
-          {...getInputProps("audioCover")}
-        >
-          {(props) => (
-            <Button
-              {...props}
-              variant="subtle"
-              className="h-[max-content] w-[max-content]"
-              classNames={{
-                label: "flex justify-center bg-black rounded",
-              }}
-            >
-              <Image
-                component={NextImage}
-                fit="contain"
-                height={64 * 3}
-                width={64 * 3}
-                h={64 * 3}
-                w={64 * 3}
-                src={audioCoverUrl}
-                alt=""
-                aria-hidden
-              />
-              <Text
-                c="black"
-                className="absolute bottom-4 left-0 inline-block w-full bg-white bg-opacity-90 py-2"
-              >
-                Edit cover art
-              </Text>
-            </Button>
-          )}
-        </FileButton>
+        <CoverInput
+          inputProps={getInputProps("audioCover")}
+          coverUrl={audioCoverUrl}
+          height={64}
+        />
       </Tabs.Panel>
     </Tabs>
   )

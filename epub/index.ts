@@ -7,13 +7,12 @@ import {
 } from "@zip.js/zip.js"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize from "mem"
-import { mkdir, writeFile } from "node:fs/promises"
-import { dirname, resolve } from "node:path/posix"
-import { streamFile } from "@smoores/fs"
-import { randomUUID } from "node:crypto"
+import dirname from "path-dirname"
+import resolve from "@einheit/path-resolve"
 import { lookup } from "mime-types"
 import { Mutex } from "async-mutex"
 import he from "he"
+import { nanoid } from "nanoid"
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
@@ -402,7 +401,7 @@ export class Epub {
 
   private packageMutex = new Mutex()
 
-  private constructor(
+  protected constructor(
     private entries: EpubEntry[],
     private onClose?: () => Promise<void> | void,
   ) {
@@ -478,7 +477,7 @@ export class Epub {
       new EpubEntry({ filename: "OEBPS/content.opf", data: packageDocument }),
     )
 
-    const epub = new Epub(entries)
+    const epub = new this(entries)
     const metadata: MetadataEntry[] = [
       {
         id: "pub-id",
@@ -520,13 +519,15 @@ export class Epub {
    *        the data of the EPUB publication.
    */
   static async from(pathOrData: string | Uint8Array): Promise<Epub> {
-    const fileData =
-      typeof pathOrData === "string" ? await streamFile(pathOrData) : pathOrData
+    if (typeof pathOrData === "string") {
+      throw new Error("Import from /node to construct from a file")
+    }
+    const fileData = pathOrData
     const dataReader = new Uint8ArrayReader(fileData)
     const zipReader = new ZipReader(dataReader)
     const zipEntries = await zipReader.getEntries()
     const epubEntries = zipEntries.map((entry) => new EpubEntry(entry))
-    const epub = new Epub(epubEntries, () => zipReader.close())
+    const epub = new this(epubEntries, () => zipReader.close())
     return epub
   }
 
@@ -1045,7 +1046,7 @@ export class Epub {
             value: subject,
           }
         : subject
-    const subjectId = randomUUID()
+    const subjectId = nanoid()
     await this.addMetadata({
       id: subjectId,
       type: "dc:subject",
@@ -1132,9 +1133,9 @@ export class Epub {
 
     const locale = primaryLanguage.value
     // Handle a weird edge case where Calibre's metadata
-    // GUI incorrectly sets the language code to 'und'
+    // GUI incorrectly sets the language code to 'und'/'UND'
     // https://www.mobileread.com/forums/showthread.php?t=87928
-    if (!locale || locale === "und") return null
+    if (!locale || locale.toLowerCase() === "und") return null
 
     return new Intl.Locale(locale)
   }
@@ -1400,7 +1401,7 @@ export class Epub {
    * will be added to the end of the list.
    */
   async addCollection(collection: Collection, index?: number) {
-    const collectionId = randomUUID()
+    const collectionId = nanoid()
 
     // Order matters for creators and contributors,
     // so we can't just append these to the end of the
@@ -1596,7 +1597,7 @@ export class Epub {
     index?: number,
     type: "creator" | "contributor" = "creator",
   ) {
-    const creatorId = randomUUID()
+    const creatorId = nanoid()
 
     // Order matters for creators and contributors,
     // so we can't just append these to the end of the
@@ -2375,32 +2376,5 @@ export class Epub {
     this.dataWriter = new Uint8ArrayWriter()
     this.zipWriter = new ZipWriter(this.dataWriter)
     return data
-  }
-
-  /**
-   * Write the current contents of the Epub to a new
-   * EPUB archive on disk.
-   *
-   * This _does not_ close the Epub. It can continue to
-   * be modified after it has been written to disk. Use
-   * `epub.close()` to close the Epub.
-   *
-   * When this method is called, the "dcterms:modified"
-   * meta tag is automatically updated to the current UTC
-   * timestamp.
-   *
-   * @param path The file path to write the new archive to. The
-   *  parent directory does not need te exist -- the path will be
-   *  recursively created.
-   */
-  async writeToFile(path: string) {
-    const data = await this.writeToArray()
-    if (!data.length)
-      throw new Error(
-        "Failed to write zip archive to file; writer returned no data",
-      )
-
-    await mkdir(dirname(path), { recursive: true })
-    await writeFile(path, data)
   }
 }

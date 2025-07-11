@@ -1,12 +1,9 @@
-import { readFile, writeFile } from "node:fs/promises"
-import { join } from "node:path"
-import {
-  getAudioIndexPath,
-  getAudioDirectory,
-  getEpubDirectory,
-  getEpubIndexPath,
-} from "./paths"
+import { readdir, readFile, rm, writeFile } from "node:fs/promises"
+import { basename, extname, join } from "node:path"
 import { UUID } from "@/uuid"
+import { BookWithRelations, getBookOrThrow } from "@/database/books"
+import { AUDIO_FILE_EXTENSIONS, COVER_IMAGE_FILE_EXTENSIONS } from "@/audio"
+import { parseFile, selectCover } from "music-metadata"
 
 export type AudioFile = {
   filename: string
@@ -19,46 +16,59 @@ export type AudioIndex = {
   processed_files?: AudioFile[]
 }
 
-export async function getAudioIndex(
-  bookUuid: UUID,
-): Promise<null | AudioIndex> {
-  const path = getAudioIndexPath(bookUuid)
+export async function getFirstCoverImage(directory: string) {
+  const entries = await readdir(directory, { recursive: true })
 
-  try {
-    const indexFile = await readFile(path, {
-      encoding: "utf-8",
-    })
-    return JSON.parse(indexFile) as AudioIndex
-  } catch {
-    return null
+  const firstTrack = entries.find((entry) =>
+    AUDIO_FILE_EXTENSIONS.includes(extname(entry)),
+  )
+  if (!firstTrack) return null
+
+  const { common } = await parseFile(join(directory, firstTrack))
+  const coverImage = selectCover(common.picture)
+  if (!coverImage) return null
+
+  return coverImage.data
+}
+
+async function findValidAudioCoverFile(directory: string) {
+  const entries = await readdir(directory, { recursive: true })
+
+  let cover: null | string = null
+  let audioCover: null | string = null
+  let epub: null | string = null
+
+  for (const entry of entries) {
+    const ext = extname(entry)
+    const name = basename(entry, ext)
+    if (
+      name.toLowerCase() === "cover" &&
+      COVER_IMAGE_FILE_EXTENSIONS.includes(ext)
+    ) {
+      cover = entry
+    }
+    if (
+      name.toLowerCase() === "audio cover" &&
+      COVER_IMAGE_FILE_EXTENSIONS.includes(ext)
+    ) {
+      audioCover = entry
+    }
+    if (ext === ".epub") {
+      epub = entry
+    }
   }
+
+  if (epub) return audioCover
+  return audioCover ?? cover
 }
 
-export async function getAudioCoverFilepath(bookUuid: UUID) {
-  const index = await getAudioIndex(bookUuid)
-  if (index === null) return index
+export async function getAudioCoverFilepath(book: BookWithRelations) {
+  const audioDirectory = book.audiobook?.filepath
+  if (!audioDirectory) return null
 
-  if (!("cover" in index)) return null
+  const coverFile = await findValidAudioCoverFile(audioDirectory)
 
-  return join(getAudioDirectory(bookUuid), index.cover)
-}
-
-export async function getProcessedAudioFiles(bookUuid: UUID) {
-  const index = await getAudioIndex(bookUuid)
-  return index?.processed_files?.sort(({ filename: a }, { filename: b }) => {
-    if (a < b) return -1
-    if (b > a) return 1
-    return 0
-  })
-}
-
-export async function persistAudioCover(bookUuid: UUID, coverFilename: string) {
-  const index = (await getAudioIndex(bookUuid)) ?? {}
-  index.cover = coverFilename
-
-  await writeFile(getAudioIndexPath(bookUuid), JSON.stringify(index), {
-    encoding: "utf-8",
-  })
+  return coverFile
 }
 
 export async function persistCustomAudioCover(
@@ -66,73 +76,20 @@ export async function persistCustomAudioCover(
   filename: string,
   cover: Uint8Array,
 ) {
-  const coverFilepath = join(getAudioDirectory(bookUuid), filename)
-  await writeFile(coverFilepath, cover)
-  await persistAudioCover(bookUuid, filename)
-}
+  const book = await getBookOrThrow(bookUuid)
+  const audioDirectory = book.audiobook?.filepath
+  if (!audioDirectory) return
 
-export async function getEpubIndex(
-  bookUuid: UUID,
-): Promise<null | { cover?: string }> {
-  const path = getEpubIndexPath(bookUuid)
-
-  try {
-    const indexFile = await readFile(path, {
-      encoding: "utf-8",
-    })
-    return JSON.parse(indexFile) as { cover?: string }
-  } catch (_) {
-    return null
+  const coverFile = await findValidAudioCoverFile(audioDirectory)
+  if (coverFile) {
+    await rm(join(audioDirectory, coverFile))
   }
+
+  await writeFile(join(audioDirectory, filename), cover)
 }
 
-export async function getEpubCoverFilepath(bookUuid: UUID) {
-  const index = await getEpubIndex(bookUuid)
-  if (index === null) return index
-
-  if (!("cover" in index)) return null
-
-  return join(getEpubDirectory(bookUuid), index.cover)
-}
-
-export async function getEpubCoverFilename(bookUuid: UUID) {
-  const index = await getEpubIndex(bookUuid)
-  if (index === null) return index
-
-  if (!("cover" in index)) return null
-
-  return index.cover
-}
-
-export async function persistEpubCover(bookUuid: UUID, coverFilename: string) {
-  const index = (await getEpubIndex(bookUuid)) ?? {}
-  index.cover = coverFilename
-
-  await writeFile(getEpubIndexPath(bookUuid), JSON.stringify(index), {
-    encoding: "utf-8",
-  })
-}
-
-export async function persistCustomEpubCover(
-  bookUuid: UUID,
-  filename: string,
-  cover: Uint8Array,
-) {
-  const coverFilepath = join(getEpubDirectory(bookUuid), filename)
-  await writeFile(coverFilepath, cover)
-  await persistEpubCover(bookUuid, filename)
-}
-
-export async function getCustomEpubCover(bookUuid: UUID) {
-  const filepath = await getEpubCoverFilepath(bookUuid)
-  if (filepath === null) return null
-
-  const buffer = await readFile(filepath)
-  return new Uint8Array(buffer)
-}
-
-export async function getCustomAudioCover(bookUuid: UUID) {
-  const filepath = await getAudioCoverFilepath(bookUuid)
+export async function getCustomAudioCover(book: BookWithRelations) {
+  const filepath = await getAudioCoverFilepath(book)
   if (filepath === null) return null
 
   const buffer = await readFile(filepath)

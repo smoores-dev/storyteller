@@ -24,21 +24,21 @@ import {
   PasswordInput,
 } from "@mantine/core"
 import {
-  IconBook2,
   IconUser,
   IconSettings,
   IconLogout,
   IconUsers,
+  IconHome,
+  IconBooks,
 } from "@tabler/icons-react"
 import { ReactNode } from "react"
 import { useDisclosure } from "@mantine/hooks"
 import { usePathname } from "next/navigation"
-import { useCurrentUser, usePermissions } from "@/contexts/UserPermissions"
-import { LiveBooksProvider } from "./books/LiveBooksProvider"
 import { CurrentBookProgress } from "./layout/CurrentBookProgress"
-import { BookDetail } from "@/apiModels"
 import dayjs from "dayjs"
 import customParseFormat from "dayjs/plugin/customParseFormat"
+import { useGetCurrentUserQuery, useListCollectionsQuery } from "@/store/api"
+import { usePermissions } from "@/hooks/usePermissions"
 
 dayjs.extend(customParseFormat)
 
@@ -122,115 +122,140 @@ const theme = createTheme({
 interface Props {
   version: string
   children: ReactNode
-  books: BookDetail[]
 }
 
-export function AppShell({ children, version, books }: Props) {
-  const [opened, { close }] = useDisclosure(false)
+export function AppShell({ children, version }: Props) {
+  const [opened, { close, toggle }] = useDisclosure(false)
   const pathname = usePathname()
-  const currentUser = useCurrentUser()
+  const { data: currentUser } = useGetCurrentUserQuery()
   const permissions = usePermissions()
+  const { data: collections } = useListCollectionsQuery()
 
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
-      <LiveBooksProvider initialBooks={books}>
-        <MantineAppShell
-          withBorder={false}
-          header={{ height: 100 }}
-          padding="md"
-          navbar={{
-            width: 300,
-            breakpoint: "sm",
-            collapsed: { mobile: !opened },
-          }}
-        >
-          <AppShellHeader>
-            <Group align="center">
-              {currentUser && (
-                <Burger
-                  opened={opened}
-                  color="st-orange"
-                  onClick={close}
-                  hiddenFrom="sm"
-                  size="lg"
+      <MantineAppShell
+        withBorder={false}
+        header={{ height: 100 }}
+        padding="md"
+        navbar={{
+          width: 200,
+          breakpoint: "sm",
+          collapsed: { mobile: !opened, desktop: !opened },
+        }}
+      >
+        <AppShellHeader>
+          <Group align="center">
+            {currentUser && (
+              <Burger
+                opened={opened}
+                color="st-orange"
+                onClick={toggle}
+                size="md"
+                className="ml-4"
+              />
+            )}
+            <Anchor component={NextLink} href="/">
+              <Group>
+                <Image
+                  component={NextImage}
+                  h={80}
+                  w={80}
+                  height={80}
+                  width={80}
+                  src="/Storyteller_Logo.png"
+                  alt=""
+                  aria-hidden
                 />
-              )}
-              <Anchor component={NextLink} href="/">
-                <Group>
-                  <Image
-                    component={NextImage}
-                    h={80}
-                    w={80}
-                    height={80}
-                    width={80}
-                    src="/Storyteller_Logo.png"
-                    alt=""
-                    aria-hidden
-                  />
-                  <Title size="h1" className="text-black">
-                    Storyteller
-                  </Title>
-                </Group>
-              </Anchor>
-            </Group>
-          </AppShellHeader>
-          {currentUser && (
-            <AppShellNavbar>
-              <Text c="black" my="sm" px="sm">
-                Version: {version}
-              </Text>
-              <CurrentBookProgress />
-              {(permissions.bookCreate || permissions.bookList) && (
+                <Title size="h1" className="text-black">
+                  Storyteller
+                </Title>
+              </Group>
+            </Anchor>
+          </Group>
+        </AppShellHeader>
+        {currentUser && (
+          <AppShellNavbar>
+            <Text c="black" my="sm" px="sm">
+              Version: {version}
+            </Text>
+            <CurrentBookProgress />
+            {permissions?.bookCreate || permissions?.bookList ? (
+              <>
                 <NavLink
                   onClick={close}
                   component={NextLink}
                   href="/"
-                  leftSection={<IconBook2 />}
-                  label="Books"
+                  leftSection={<IconHome />}
+                  label="Home"
                   active={pathname === "/"}
                 />
-              )}
+                <Title
+                  order={4}
+                  className="flex items-center gap-2 px-2 py-2 font-sans text-base font-normal"
+                >
+                  <IconBooks /> Collections
+                </Title>
+                <NavLink
+                  className="pl-11"
+                  onClick={close}
+                  component={NextLink}
+                  href={`/collections/none`}
+                  label={<span className="italic">Uncollected</span>}
+                  active={pathname === `/collections/none`}
+                />
+                {collections?.map((collection) => (
+                  <NavLink
+                    className="pl-11"
+                    key={collection.uuid}
+                    onClick={close}
+                    component={NextLink}
+                    href={`/collections/${collection.uuid}`}
+                    label={collection.name}
+                    active={pathname === `/collections/${collection.uuid}`}
+                  />
+                ))}
+              </>
+            ) : null}
+            <NavLink
+              onClick={close}
+              component={NextLink}
+              href="/account"
+              leftSection={<IconUser />}
+              label="Account"
+              active={pathname === "/accounts"}
+            />
+            {permissions?.userCreate || permissions?.userList ? (
               <NavLink
                 onClick={close}
                 component={NextLink}
-                href="/account"
-                leftSection={<IconUser />}
-                label="Account"
-                active={pathname === "/accounts"}
+                href="/users"
+                leftSection={<IconUsers />}
+                label="Users"
+                active={pathname === "/users"}
               />
-              {(permissions.userCreate || permissions.userList) && (
-                <NavLink
-                  onClick={close}
-                  component={NextLink}
-                  href="/users"
-                  leftSection={<IconUsers />}
-                  label="Users"
-                  active={pathname === "/users"}
-                />
-              )}
-              {permissions.settingsUpdate && (
-                <NavLink
-                  onClick={close}
-                  component={NextLink}
-                  href="/settings"
-                  leftSection={<IconSettings />}
-                  label="Settings"
-                  active={pathname === "/settings"}
-                />
-              )}
+            ) : null}
+            {permissions?.settingsUpdate ? (
               <NavLink
                 onClick={close}
-                component="a"
-                href="/logout"
-                leftSection={<IconLogout />}
-                label="Logout"
-                active={pathname === "/logout"}
+                component={NextLink}
+                href="/settings"
+                leftSection={<IconSettings />}
+                label="Settings"
+                active={pathname === "/settings"}
               />
-            </AppShellNavbar>
-          )}
-          <AppShellMain className="*:ml-8">{children}</AppShellMain>
-        </MantineAppShell>
-      </LiveBooksProvider>
+            ) : null}
+            <NavLink
+              onClick={close}
+              component="a"
+              href="/logout"
+              leftSection={<IconLogout />}
+              label="Logout"
+              active={pathname === "/logout"}
+            />
+          </AppShellNavbar>
+        )}
+        <AppShellMain className="*:ml-8">{children}</AppShellMain>
+      </MantineAppShell>
     </MantineProvider>
   )
 }

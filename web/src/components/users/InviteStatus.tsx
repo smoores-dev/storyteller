@@ -1,26 +1,24 @@
 import { Invite } from "@/apiModels"
 import { InviteActions } from "./InviteActions"
-import { useContext, useLayoutEffect, useState } from "react"
-import { ApiHostContext } from "@/contexts/ApiHostContext"
+import { useLayoutEffect, useState } from "react"
 import { Box, Group, Paper, Stack, Title } from "@mantine/core"
 import Link from "next/link"
 
 type Props = {
   invite: Invite
-  onUpdate: () => void
 }
 
-export function InviteStatus({ invite, onUpdate }: Props) {
-  const { rootPath } = useContext(ApiHostContext)
+export function InviteStatus({ invite }: Props) {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
 
   useLayoutEffect(() => {
-    const nextInviteUrl = new URL(
-      `${rootPath.replace("/api", "")}/invites/${invite.inviteKey}`,
-      window.location.toString(),
+    setInviteUrl(
+      new URL(
+        `/invites/${invite.inviteKey}`,
+        window.location.toString(),
+      ).toString(),
     )
-    setInviteUrl(nextInviteUrl.toString())
-  }, [invite.inviteKey, rootPath])
+  }, [invite.inviteKey])
 
   return (
     <Paper className="max-w-[600px]">
@@ -36,7 +34,7 @@ export function InviteStatus({ invite, onUpdate }: Props) {
             </Box>
           )}
         </Stack>
-        <InviteActions invite={invite} onUpdate={onUpdate} />
+        <InviteActions invite={invite} />
       </Group>
     </Paper>
   )

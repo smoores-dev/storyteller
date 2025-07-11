@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { basename, dirname, parse, relative } from "node:path/posix"
 import memoize from "memoize"
-import { Epub, ManifestItem, ParsedXml } from "@smoores/epub"
+import { Epub, ManifestItem, ParsedXml } from "@smoores/epub/node"
 import { getTrackDuration } from "@/audio"
 import {
   SentenceRange,
@@ -12,7 +12,6 @@ import {
   interpolateSentenceRanges,
 } from "./getSentenceRanges"
 import { tagSentences } from "./tagSentences"
-import { SyncCache } from "./syncCache"
 import { getXHtmlSentences } from "./getXhtmlSentences"
 import type { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { findNearestMatch } from "./fuzzy"
@@ -113,7 +112,6 @@ export class Synchronizer {
 
   constructor(
     public epub: Epub,
-    private syncCache: SyncCache,
     audiofiles: string[],
     transcriptions: Pick<RecognitionResult, "transcript" | "wordTimeline">[],
   ) {
@@ -365,33 +363,22 @@ export class Synchronizer {
         logger.info(`Chapter #${index} is fewer than four words; skipping`)
         continue
       }
-      const { startSentence, transcriptionOffset } =
-        this.syncCache.getChapterIndex(index) ??
-        this.findBestOffset(
-          chapterSentences,
-          transcriptionText,
-          lastTranscriptionOffset,
-        )
+      const { startSentence, transcriptionOffset } = this.findBestOffset(
+        chapterSentences,
+        transcriptionText,
+        lastTranscriptionOffset,
+      )
 
       if (transcriptionOffset === null) {
         logger.info(
           `Couldn't find matching transcription for chapter #${index}`,
         )
-        await this.syncCache.setChapterIndex(index, {
-          startSentence: 0,
-          transcriptionOffset: null,
-        })
         continue
       }
 
       logger.info(
         `Chapter #${index} best matches transcription at offset ${transcriptionOffset}, starting at sentence ${startSentence}`,
       )
-
-      await this.syncCache.setChapterIndex(index, {
-        startSentence,
-        transcriptionOffset,
-      })
       ;({ lastSentenceRange, endTranscriptionOffset: lastTranscriptionOffset } =
         await this.syncChapter(
           startSentence,

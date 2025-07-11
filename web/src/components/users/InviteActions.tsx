@@ -1,27 +1,34 @@
 import { Invite } from "@/apiModels"
-import { usePermissions } from "@/contexts/UserPermissions"
-import { useApiClient } from "@/hooks/useApiClient"
+import {
+  useDeleteInviteMutation,
+  useGetCurrentUserQuery,
+  useResendInviteMutation,
+} from "@/store/api"
 import { ActionIcon, Stack, Tooltip } from "@mantine/core"
 import { IconReload, IconTrash } from "@tabler/icons-react"
 
 type Props = {
   invite: Invite
-  onUpdate: () => void
 }
 
-export function InviteActions({ invite, onUpdate }: Props) {
-  const client = useApiClient()
+export function InviteActions({ invite }: Props) {
+  const { permissions } = useGetCurrentUserQuery(undefined, {
+    selectFromResult: (result) => ({
+      permissions: result.data?.permissions,
+    }),
+  })
 
-  const permissions = usePermissions()
+  const [resendInvite] = useResendInviteMutation()
+  const [deleteInvite] = useDeleteInviteMutation()
 
   return (
     <Stack>
-      {permissions.userCreate && (
+      {permissions?.userCreate && (
         <ActionIcon
           variant="subtle"
           color="black"
           onClick={() => {
-            void client.resendInvite(invite.inviteKey)
+            void resendInvite({ inviteKey: invite.inviteKey })
           }}
         >
           <Tooltip position="right" label="Re-send">
@@ -29,13 +36,12 @@ export function InviteActions({ invite, onUpdate }: Props) {
           </Tooltip>
         </ActionIcon>
       )}
-      {permissions.inviteDelete && (
+      {permissions?.inviteDelete && (
         <ActionIcon
           variant="subtle"
           color="red"
           onClick={async () => {
-            await client.deleteInvite(invite.inviteKey)
-            onUpdate()
+            await deleteInvite({ inviteKey: invite.inviteKey })
           }}
         >
           <Tooltip position="right" label="Delete invite">

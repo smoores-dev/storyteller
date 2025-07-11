@@ -22,7 +22,9 @@ export const POST = withHasPermission("collectionCreate")(async (request) => {
     users?: UUID[]
   }
 
-  const created = await createCollection(values, users && { users })
+  const created = await createCollection(values, {
+    users: [...(users ?? []), request.auth.user.id],
+  })
 
   return NextResponse.json(created)
 })

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS "migration" (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER migration_update_trigger AFTER
 UPDATE ON migration FOR EACH ROW BEGIN
 UPDATE migration
@@ -14,6 +15,7 @@ WHERE
   id = OLD.id;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "book" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   title TEXT NOT NULL,
@@ -21,8 +23,18 @@ CREATE TABLE IF NOT EXISTS "book" (
   id INTEGER,
   language TEXT DEFAULT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-, publication_date TEXT, aligned_by_storyteller_version TEXT, aligned_at TEXT, aligned_with TEXT, description TEXT, rating REAL, narrator TEXT, status_uuid TEXT REFERENCES status (uuid));
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  publication_date TEXT,
+  aligned_by_storyteller_version TEXT,
+  aligned_at TEXT,
+  aligned_with TEXT,
+  description TEXT,
+  rating REAL,
+  narrator TEXT,
+  status_uuid TEXT REFERENCES status (uuid),
+  suffix TEXT NOT NULL DEFAULT ''
+);
+
 CREATE TRIGGER book_update_trigger AFTER
 UPDATE ON book FOR EACH ROW BEGIN
 UPDATE book
@@ -32,6 +44,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "author" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -40,6 +53,7 @@ CREATE TABLE IF NOT EXISTS "author" (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER author_update_trigger AFTER
 UPDATE ON author FOR EACH ROW BEGIN
 UPDATE author
@@ -49,6 +63,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "author_to_book" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -60,6 +75,7 @@ CREATE TABLE IF NOT EXISTS "author_to_book" (
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
   FOREIGN KEY (author_uuid) REFERENCES author (uuid)
 );
+
 CREATE TRIGGER author_to_book_update_trigger AFTER
 UPDATE ON author_to_book FOR EACH ROW BEGIN
 UPDATE author_to_book
@@ -69,6 +85,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "processing_task" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -80,6 +97,7 @@ CREATE TABLE IF NOT EXISTS "processing_task" (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (book_uuid) REFERENCES book (uuid)
 );
+
 CREATE TRIGGER processing_task_update_trigger AFTER
 UPDATE ON processing_task FOR EACH ROW BEGIN
 UPDATE processing_task
@@ -89,6 +107,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "user_permission" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -108,8 +127,10 @@ CREATE TABLE IF NOT EXISTS "user_permission" (
   invite_delete BOOLEAN NOT NULL DEFAULT 0,
   user_update BOOLEAN NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-, collection_create BOOLEAN NOT NULL DEFAULT 0);
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  collection_create BOOLEAN NOT NULL DEFAULT 0
+);
+
 CREATE TRIGGER user_permission_update_trigger AFTER
 UPDATE ON user_permission FOR EACH ROW BEGIN
 UPDATE user_permission
@@ -119,6 +140,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "settings" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -127,6 +149,7 @@ CREATE TABLE IF NOT EXISTS "settings" (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER settings_update_trigger AFTER
 UPDATE ON settings FOR EACH ROW BEGIN
 UPDATE settings
@@ -136,11 +159,13 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "token_revokation" (
   token TEXT PRIMARY KEY NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER token_revokation_update_trigger AFTER
 UPDATE ON token_revokation FOR EACH ROW BEGIN
 UPDATE token_revokation
@@ -150,6 +175,7 @@ WHERE
   token = OLD.token;
 
 END;
+
 CREATE TABLE series (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   name TEXT NOT NULL,
@@ -157,6 +183,7 @@ CREATE TABLE series (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER series_update_trigger AFTER
 UPDATE ON series FOR EACH ROW BEGIN
 UPDATE series
@@ -166,6 +193,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE book_to_series (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   series_uuid TEXT NOT NULL,
@@ -177,6 +205,7 @@ CREATE TABLE book_to_series (
   FOREIGN KEY (series_uuid) REFERENCES series (uuid),
   FOREIGN KEY (book_uuid) REFERENCES book (uuid)
 );
+
 CREATE TRIGGER book_to_series_update_trigger AFTER
 UPDATE ON book_to_series FOR EACH ROW BEGIN
 UPDATE book_to_series
@@ -186,6 +215,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE status (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   name TEXT NOT NULL,
@@ -193,6 +223,7 @@ CREATE TABLE status (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER status_update_trigger AFTER
 UPDATE ON status FOR EACH ROW BEGIN
 UPDATE status
@@ -202,12 +233,14 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE tag (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   name TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER tag_update_trigger AFTER
 UPDATE ON tag FOR EACH ROW BEGIN
 UPDATE tag
@@ -217,6 +250,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE book_to_tag (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   tag_uuid TEXT NOT NULL,
@@ -226,6 +260,7 @@ CREATE TABLE book_to_tag (
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
   FOREIGN KEY (tag_uuid) REFERENCES tag (uuid)
 );
+
 CREATE TRIGGER book_to_tag_update_trigger AFTER
 UPDATE ON book_to_tag FOR EACH ROW BEGIN
 UPDATE book_to_tag
@@ -235,6 +270,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE collection (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   name TEXT NOT NULL,
@@ -243,6 +279,7 @@ CREATE TABLE collection (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER collection_update_trigger AFTER
 UPDATE ON collection FOR EACH ROW BEGIN
 UPDATE collection
@@ -252,6 +289,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE book_to_collection (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   collection_uuid TEXT NOT NULL,
@@ -261,6 +299,7 @@ CREATE TABLE book_to_collection (
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
   FOREIGN KEY (collection_uuid) REFERENCES collection (uuid)
 );
+
 CREATE TRIGGER book_to_collection_update_trigger AFTER
 UPDATE ON book_to_collection FOR EACH ROW BEGIN
 UPDATE book_to_collection
@@ -270,6 +309,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE account (
   id TEXT PRIMARY KEY DEFAULT (uuid ()),
   user_id TEXT NOT NULL,
@@ -287,6 +327,7 @@ CREATE TABLE account (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user (id)
 );
+
 CREATE TABLE session (
   id TEXT PRIMARY KEY DEFAULT (uuid ()),
   user_id TEXT NOT NULL,
@@ -296,6 +337,7 @@ CREATE TABLE session (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user (id)
 );
+
 CREATE TABLE verification_token (
   identifier TEXT NOT NULL,
   token TEXT NOT NULL UNIQUE,
@@ -303,6 +345,7 @@ CREATE TABLE verification_token (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TRIGGER account_update_trigger AFTER
 UPDATE ON account FOR EACH ROW BEGIN
 UPDATE account
@@ -312,6 +355,7 @@ WHERE
   id = OLD.id;
 
 END;
+
 CREATE TRIGGER session_update_trigger AFTER
 UPDATE ON session FOR EACH ROW BEGIN
 UPDATE session
@@ -321,6 +365,7 @@ WHERE
   id = OLD.id;
 
 END;
+
 CREATE TRIGGER verification_token_update_trigger AFTER
 UPDATE ON verification_token FOR EACH ROW BEGIN
 UPDATE verification_token
@@ -330,6 +375,7 @@ WHERE
   token = OLD.token;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "user" (
   id TEXT PRIMARY KEY DEFAULT (uuid ()),
   user_permission_uuid TEXT NOT NULL,
@@ -344,6 +390,7 @@ CREATE TABLE IF NOT EXISTS "user" (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_permission_uuid) REFERENCES user_permission (uuid)
 );
+
 CREATE TRIGGER user_update_trigger AFTER
 UPDATE ON user FOR EACH ROW BEGIN
 UPDATE user
@@ -353,6 +400,7 @@ WHERE
   id = OLD.id;
 
 END;
+
 CREATE TABLE collection_to_user (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   user_id TEXT NOT NULL,
@@ -362,6 +410,7 @@ CREATE TABLE collection_to_user (
   FOREIGN KEY (collection_uuid) REFERENCES collection (uuid),
   FOREIGN KEY (user_id) REFERENCES user (id)
 );
+
 CREATE TRIGGER collection_to_user_update_trigger AFTER
 UPDATE ON collection_to_user FOR EACH ROW BEGIN
 UPDATE collection_to_user
@@ -371,6 +420,7 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
 CREATE TABLE IF NOT EXISTS "position" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   user_id TEXT NOT NULL,
@@ -383,9 +433,65 @@ CREATE TABLE IF NOT EXISTS "position" (
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
   UNIQUE (user_id, book_uuid)
 );
+
 CREATE TRIGGER position_update_trigger AFTER
 UPDATE ON position FOR EACH ROW BEGIN
 UPDATE position
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE aligned_book (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL REFERENCES book (uuid),
+  filepath TEXT,
+  status TEXT NOT NULL DEFAULT 'CREATED',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER aligned_book_update_trigger AFTER
+UPDATE ON aligned_book FOR EACH ROW BEGIN
+UPDATE aligned_book
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE ebook (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL REFERENCES book (uuid),
+  filepath TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER ebook_update_trigger AFTER
+UPDATE ON ebook FOR EACH ROW BEGIN
+UPDATE ebook
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE audiobook (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL REFERENCES book (uuid),
+  filepath TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER audiobook_update_trigger AFTER
+UPDATE ON audiobook FOR EACH ROW BEGIN
+UPDATE audiobook
 SET
   updated_at = CURRENT_TIMESTAMP
 WHERE

@@ -1,9 +1,7 @@
 "use client"
 
 import { useCallback, useState, MouseEvent, FormEvent, Fragment } from "react"
-import { useApiClient } from "@/hooks/useApiClient"
-import { usePermission } from "@/contexts/UserPermissions"
-import { ServerFilePicker } from "./ServerFilePicker"
+import { ServerFilePicker } from "./modals/ServerFilePicker"
 import {
   Box,
   Button,
@@ -19,6 +17,7 @@ import {
 import { IconX } from "@tabler/icons-react"
 import { formatBytes } from "@/strings"
 import { DirectoryFileEntry } from "@/actions/listDirectoryAction"
+import { usePermission } from "@/hooks/usePermission"
 
 function iOS() {
   return (
@@ -66,18 +65,17 @@ export function AddBookForm() {
     setUploadState(UploadState.CLEAN)
   }, [])
 
-  const client = useApiClient()
-
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
     setUploadState(UploadState.UPLOADING)
     if (fileSource === "upload") {
       if (epubFile === null || audioFiles === null) return
       try {
-        await client.createBook(epubFile, audioFiles, (event) => {
-          setUploadProgress(event.progress ?? null)
-        })
+        // TODO: reimplement this
+        // await client.createBook(epubFile, audioFiles, (event) => {
+        //   setUploadProgress(event.progress ?? null)
+        // })
       } catch (_) {
         setUploadState(UploadState.ERROR)
         return
@@ -85,10 +83,10 @@ export function AddBookForm() {
     } else {
       try {
         if (epubPath === null || audioPaths === null) return
-        await client.createBook(
-          epubPath.path,
-          audioPaths.map((entry) => entry.path),
-        )
+        // await client.createBook(
+        //   epubPath.path,
+        //   audioPaths.map((entry) => entry.path),
+        // )
       } catch (_) {
         setUploadState(UploadState.ERROR)
         return

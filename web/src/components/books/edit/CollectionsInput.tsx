@@ -1,4 +1,3 @@
-import { usePermission } from "@/contexts/UserPermissions"
 import {
   Button,
   Checkbox,
@@ -17,6 +16,7 @@ import { User } from "@/apiModels"
 import { Collection } from "@/database/collections"
 import { SaveState } from "@/components/forms"
 import { UUID } from "@/uuid"
+import { usePermission } from "@/hooks/usePermission"
 
 interface Props {
   values: string[]

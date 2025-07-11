@@ -8,7 +8,7 @@ import {
 import { BookEvents } from "@/events"
 import { DB } from "./schema"
 import { Insertable, Selectable, Updateable } from "kysely"
-import { Epub } from "@smoores/epub"
+import { Epub } from "@smoores/epub/node"
 import { NewAuthor } from "./authors"
 import { NewSeries } from "./series"
 import { syncRelations } from "./relations"
@@ -69,11 +69,41 @@ export type SeriesRelation = NewSeries &
   Omit<NewBookToSeries, "bookUuid" | "seriesUuid">
 export type TagRelation = NewTag & NewBookToTag
 
+export type NewEbook = Insertable<DB["ebook"]>
+export type Ebook = Selectable<DB["ebook"]>
+export type EbookUpdate = Updateable<DB["ebook"]>
+
+export type NewAudiobook = Insertable<DB["audiobook"]>
+export type Audiobook = Selectable<DB["audiobook"]>
+export type AudiobookUpdate = Updateable<DB["audiobook"]>
+
+export type NewAlignedBook = Insertable<DB["alignedBook"]>
+export type AlignedBook = Selectable<DB["alignedBook"]>
+export type AlignedBookUpdate = Updateable<DB["alignedBook"]>
+
+export type EbookRelation = Omit<NewEbook, "bookUuid">
+export type AudiobookRelation = Omit<NewAudiobook, "bookUuid">
+export type AlignedBookRelation = Omit<NewAlignedBook, "bookUuid">
+
 export type Book = Selectable<DB["book"]>
 export type NewBook = Insertable<DB["book"]>
 export type BookUpdate = Updateable<DB["book"]>
 
-export async function createBookFromEpub(epub: Epub, fallbackTitle: string) {
+export async function createBookFromEpub(
+  epub: Epub,
+  fallbackTitle: string,
+  {
+    bookUuid,
+    ebookFilepath,
+    audiobookFilepath,
+    collectionUuid,
+  }: {
+    bookUuid?: UUID
+    ebookFilepath?: string
+    audiobookFilepath?: string
+    collectionUuid?: UUID
+  } = {},
+) {
   const title = await epub.getTitle()
   const authors = await epub.getCreators()
   const language = await epub.getLanguage()
@@ -91,12 +121,13 @@ export async function createBookFromEpub(epub: Epub, fallbackTitle: string) {
       item.properties["property"] === "storyteller:media-overlays-engine" &&
       !!item.value,
   )
-  const collections = await epub.getCollections()
+  const epubCollections = await epub.getCollections()
 
   const defaultStatus = await getDefaultStatus()
 
   return await createBook(
     {
+      uuid: bookUuid,
       title: title ?? fallbackTitle,
       language: language?.toString() ?? null,
       alignedByStorytellerVersion: storytellerVersion?.value ?? null,
@@ -105,25 +136,34 @@ export async function createBookFromEpub(epub: Epub, fallbackTitle: string) {
       statusUuid: defaultStatus.uuid,
     },
     {
+      ...(ebookFilepath && { ebook: { filepath: ebookFilepath } }),
+      ...(audiobookFilepath && { audiobook: { filepath: audiobookFilepath } }),
       authors: authors.map((author) => ({
         name: author.name,
         role: author.role ?? null,
         fileAs: author.fileAs ?? author.name,
       })),
-      series: collections
+      series: epubCollections
         .filter((c) => c.type === "series")
         .map((series, i) => ({
           name: series.name,
           featured: i === 0,
           ...(series.position && { position: parseFloat(series.position) }),
         })),
+      ...(collectionUuid && { collections: [collectionUuid] }),
     },
   )
 }
 
 export async function createBook(
   insert: NewBook,
-  relations: { authors?: AuthorRelation[]; series?: SeriesRelation[] } = {},
+  relations: {
+    authors?: AuthorRelation[]
+    series?: SeriesRelation[]
+    ebook?: EbookRelation
+    audiobook?: AudiobookRelation
+    collections?: UUID[]
+  } = {},
 ) {
   const { uuid } = await db
     .insertInto("book")
@@ -181,6 +221,41 @@ export async function createBook(
         featured: values.featured,
       }),
     })
+  }
+
+  if (relations.collections?.length) {
+    const collections = relations.collections
+    await db
+      .insertInto("bookToCollection")
+      .columns(["bookUuid", "collectionUuid"])
+      .expression((eb) =>
+        eb
+          .selectFrom(() =>
+            collections
+              .map((collection) =>
+                db
+                  .selectNoFrom([
+                    eb.val(uuid).as("bookUuid"),
+                    eb.val(collection).as("collectionUuid"),
+                  ])
+                  .where((web) =>
+                    web.not(
+                      web.exists(
+                        web
+                          .selectFrom("bookToCollection")
+                          .select([web.lit(1).as("one")])
+                          .where("bookUuid", "=", uuid)
+                          .where("collectionUuid", "=", collection),
+                      ),
+                    ),
+                  ),
+              )
+              .reduce((acc, expr) => acc.unionAll(expr))
+              .as("values"),
+          )
+          .selectAll(),
+      )
+      .execute()
   }
 
   const book = await getBook(uuid)
@@ -257,6 +332,8 @@ export async function getBooks(
           .select([
             "collection.uuid",
             "collection.name",
+            "collection.description",
+            "collection.public",
             "collection.createdAt",
             "collection.updatedAt",
           ])
@@ -288,6 +365,40 @@ export async function getBooks(
           ])
           .whereRef("status.uuid", "=", "book.statusUuid"),
       ).as("status"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("ebook")
+          .select([
+            "ebook.uuid",
+            "ebook.filepath",
+            "ebook.createdAt",
+            "ebook.updatedAt",
+          ])
+          .whereRef("ebook.bookUuid", "=", "book.uuid"),
+      ).as("ebook"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("audiobook")
+          .select([
+            "audiobook.uuid",
+            "audiobook.filepath",
+            "audiobook.createdAt",
+            "audiobook.updatedAt",
+          ])
+          .whereRef("audiobook.bookUuid", "=", "book.uuid"),
+      ).as("audiobook"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("alignedBook")
+          .select([
+            "alignedBook.uuid",
+            "alignedBook.filepath",
+            "alignedBook.status",
+            "alignedBook.createdAt",
+            "alignedBook.updatedAt",
+          ])
+          .whereRef("alignedBook.bookUuid", "=", "book.uuid"),
+      ).as("alignedBook"),
     ])
     .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids))
     .execute()
@@ -307,6 +418,12 @@ export type BookWithRelations = NonNullable<Awaited<ReturnType<typeof getBook>>>
 export async function getBook(uuid: UUID) {
   const [book] = await getBooks([uuid])
   return book ?? null
+}
+
+export async function getBookOrThrow(uuid: UUID) {
+  const book = await getBook(uuid)
+  if (!book) throw new Error(`No book found with uuid ${uuid}`)
+  return book
 }
 
 export async function deleteBook(bookUuid: UUID) {
@@ -342,6 +459,10 @@ export async function deleteBook(bookUuid: UUID) {
 
   await db.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
 
+  await db.deleteFrom("alignedBook").where("bookUuid", "=", bookUuid).execute()
+  await db.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
+  await db.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
+
   await db.deleteFrom("book").where("uuid", "=", bookUuid).execute()
 
   BookEvents.emit("message", {
@@ -359,6 +480,9 @@ export async function updateBook(
     series?: SeriesRelation[]
     collections?: UUID[]
     tags?: string[]
+    ebook?: EbookRelation
+    audiobook?: AudiobookRelation
+    alignedBook?: AlignedBookRelation
   } = {},
 ) {
   if (update) {
@@ -536,6 +660,69 @@ export async function updateBook(
         ),
       )
       .execute()
+  }
+
+  if (relations.ebook) {
+    const existing = await db
+      .selectFrom("ebook")
+      .select(["uuid"])
+      .where("bookUuid", "=", uuid)
+      .executeTakeFirst()
+
+    if (existing) {
+      await db
+        .updateTable("ebook")
+        .set({ filepath: relations.ebook.filepath })
+        .where("uuid", "=", existing.uuid)
+        .execute()
+    } else {
+      await db
+        .insertInto("ebook")
+        .values({ bookUuid: uuid, filepath: relations.ebook.filepath })
+        .execute()
+    }
+  }
+
+  if (relations.audiobook) {
+    const existing = await db
+      .selectFrom("audiobook")
+      .select(["uuid"])
+      .where("bookUuid", "=", uuid)
+      .executeTakeFirst()
+
+    if (existing) {
+      await db
+        .updateTable("audiobook")
+        .set({ filepath: relations.audiobook.filepath })
+        .where("uuid", "=", existing.uuid)
+        .execute()
+    } else {
+      await db
+        .insertInto("audiobook")
+        .values({ bookUuid: uuid, filepath: relations.audiobook.filepath })
+        .execute()
+    }
+  }
+
+  if (relations.alignedBook) {
+    const existing = await db
+      .selectFrom("alignedBook")
+      .select(["uuid"])
+      .where("bookUuid", "=", uuid)
+      .executeTakeFirst()
+
+    if (existing) {
+      await db
+        .updateTable("alignedBook")
+        .set({ filepath: relations.alignedBook.filepath })
+        .where("uuid", "=", existing.uuid)
+        .execute()
+    } else {
+      await db
+        .insertInto("alignedBook")
+        .values({ bookUuid: uuid, filepath: relations.alignedBook.filepath })
+        .execute()
+    }
   }
 
   const book = await getBook(uuid)

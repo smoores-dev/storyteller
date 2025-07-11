@@ -1,5 +1,9 @@
 import { BookDetail } from "@/apiModels"
-import { useApiClient } from "@/hooks/useApiClient"
+import {
+  useCancelProcessingMutation,
+  useDeleteBookAssetsMutation,
+  useProcessBookMutation,
+} from "@/store/api"
 import { ActionIcon, Menu, Text, Tooltip } from "@mantine/core"
 import {
   IconProgress,
@@ -14,7 +18,9 @@ type Props = {
 }
 
 export function ProcessingItems({ book, aligned }: Props) {
-  const client = useApiClient()
+  const [processBook] = useProcessBookMutation()
+  const [cancelProcessing] = useCancelProcessingMutation()
+  const [deleteBookAssets] = useDeleteBookAssetsMutation()
 
   if (book.processingStatus === null) {
     return (
@@ -31,7 +37,7 @@ export function ProcessingItems({ book, aligned }: Props) {
             classNames={{
               itemLabel: "flex gap-2",
             }}
-            onClick={() => client.processBook(book.uuid, false)}
+            onClick={() => processBook({ uuid: book.uuid, restart: false })}
           >
             <IconProgress aria-hidden />{" "}
             {aligned ? "Re-process (using cached files)" : "Continue"}
@@ -40,7 +46,7 @@ export function ProcessingItems({ book, aligned }: Props) {
             classNames={{
               itemLabel: "flex gap-2",
             }}
-            onClick={() => client.processBook(book.uuid, true)}
+            onClick={() => processBook({ uuid: book.uuid, restart: true })}
           >
             <IconReload aria-hidden /> Delete cache and re-process from source
             files
@@ -49,7 +55,7 @@ export function ProcessingItems({ book, aligned }: Props) {
             classNames={{
               itemLabel: "flex gap-2",
             }}
-            onClick={() => client.deleteBookAssets(book.uuid)}
+            onClick={() => deleteBookAssets({ uuid: book.uuid })}
           >
             <IconReload aria-hidden /> Delete cache files
           </Menu.Item>
@@ -58,7 +64,9 @@ export function ProcessingItems({ book, aligned }: Props) {
               classNames={{
                 itemLabel: "flex gap-2",
               }}
-              onClick={() => client.deleteBookAssets(book.uuid, true)}
+              onClick={() =>
+                deleteBookAssets({ uuid: book.uuid, originals: true })
+              }
             >
               <IconTrash color="red" aria-hidden /> Delete source and cache
               files
@@ -95,7 +103,7 @@ export function ProcessingItems({ book, aligned }: Props) {
       <ActionIcon
         color="red"
         variant="subtle"
-        onClick={() => client.cancelProcessing(book.uuid)}
+        onClick={() => cancelProcessing({ uuid: book.uuid })}
       >
         <IconProgressX
           aria-label={

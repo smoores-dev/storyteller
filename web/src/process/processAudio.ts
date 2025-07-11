@@ -3,7 +3,6 @@ import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { extension } from "mime-types"
 import { parseFile, selectCover } from "music-metadata"
 import {
-  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -30,21 +29,14 @@ import { detectVoiceActivity } from "echogarden"
 import { streamFile } from "@smoores/fs"
 import { randomUUID } from "node:crypto"
 import {
-  getAudioIndexPath,
-  getAudioDirectory,
-  getOriginalAudioFilepath,
+  getInternalOriginalAudioFilepath,
   getProcessedAudioFilepath,
   getTranscriptionsFilepath,
 } from "@/assets/paths"
-import {
-  AudioFile,
-  getAudioCoverFilepath,
-  getAudioIndex,
-  getProcessedAudioFiles,
-  persistAudioCover,
-  persistCustomAudioCover,
-} from "@/assets/covers"
+import { AudioFile, persistCustomAudioCover } from "@/assets/covers"
 import { logger } from "@/logging"
+import { Book, BookWithRelations } from "@/database/books"
+import { getProcessedAudioFiles } from "@/assets/fs"
 
 export async function extractCover(bookUuid: UUID, trackPath: string) {
   const { common } = await parseFile(trackPath)
@@ -264,7 +256,7 @@ export async function processAudioFile(
 }
 
 export async function processFile(
-  bookUuid: UUID,
+  book: Book,
   filepath: string,
   outDir: string,
   prefix: string,
@@ -280,19 +272,7 @@ export async function processFile(
   const ext = extname(filename)
   const bareFilename = basename(filename, ext)
 
-  if (
-    COVER_IMAGE_FILE_EXTENSIONS.includes(ext) &&
-    bareFilename.toLowerCase() === "cover"
-  ) {
-    const coverFilepath = join(getAudioDirectory(bookUuid), filename)
-    await copyFile(filepath, coverFilepath)
-    await persistAudioCover(bookUuid, filename)
-  }
-
   if (isAudioFile(ext)) {
-    if ((await getAudioCoverFilepath(bookUuid)) === null) {
-      await extractCover(bookUuid, filepath)
-    }
     const processed = await processAudioFile(
       filepath,
       outDir,
@@ -328,7 +308,7 @@ export async function processFile(
               await entry.getData!(new Uint8ArrayWriter()),
             )
             const processed = await processFile(
-              bookUuid,
+              book,
               tempFilepath,
               outDir,
               `${prefix}${index.toString().padStart(5, "0")}-`,
@@ -355,44 +335,35 @@ export async function processFile(
   return audioFiles
 }
 
-export async function persistProcessedFilesList(
-  bookUuid: UUID,
-  audioFiles: AudioFile[],
-) {
-  const index = (await getAudioIndex(bookUuid)) ?? {}
-  index.processed_files = audioFiles
-
-  await writeFile(getAudioIndexPath(bookUuid), JSON.stringify(index), {
-    encoding: "utf-8",
-  })
-}
-
 export async function processAudiobook(
-  bookUuid: UUID,
+  book: BookWithRelations,
   maxLength: number | null,
   codec: string | null,
   bitrate: string | null,
   semaphore: AsyncSemaphore,
   onProgress?: (progress: number) => void,
 ) {
-  const originalAudioDirectory = getOriginalAudioFilepath(bookUuid)
-  const processedAudioDirectory = getProcessedAudioFilepath(bookUuid)
+  const originalAudioDirectory = book.audiobook?.filepath
+  if (!originalAudioDirectory)
+    throw new Error(`No audiobook associated with book ${book.uuid}`)
+
+  const processedAudioDirectory = getProcessedAudioFilepath(book)
 
   await mkdir(processedAudioDirectory, { recursive: true })
 
-  const filenames = await readdir(originalAudioDirectory)
+  const filenames = await readdir(originalAudioDirectory, { recursive: true })
 
-  const processedFilenames = await readdir(processedAudioDirectory)
+  const processedFilenames = await getProcessedAudioFiles(book)
   if (processedFilenames.length) return
 
   const audioFiles: AudioFile[] = []
 
   await Promise.all(
     filenames.map(async (filename, index) => {
-      const filepath = getOriginalAudioFilepath(bookUuid, filename)
+      const filepath = getInternalOriginalAudioFilepath(book, filename)
 
       const processed = await processFile(
-        bookUuid,
+        book,
         filepath,
         processedAudioDirectory,
         `${index.toString().padStart(5, "0")}-`,
@@ -410,24 +381,27 @@ export async function processAudiobook(
     }),
   )
 
-  // TODO: Do these need to be sorted??
-  await persistProcessedFilesList(bookUuid, audioFiles)
   return audioFiles
 }
 
-export function getTranscriptionFilename(audoFile: AudioFile) {
-  return `${audoFile.bare_filename}.json`
+export function getTranscriptionFilename(audioFilepath: string) {
+  const ext = extname(audioFilepath)
+  const bare = basename(audioFilepath, ext)
+  return `${bare}.json`
 }
 
-export async function getTranscriptions(bookUuid: UUID) {
-  const audioFiles = await getProcessedAudioFiles(bookUuid)
-  if (!audioFiles)
+export async function getTranscriptions(book: Book) {
+  const audioFiles = await getProcessedAudioFiles(book)
+  if (!audioFiles.length)
     throw new Error(
       "Could not retrieve transcriptions: found no processed audio files",
     )
-  const transcriptionFilepaths = audioFiles.map((audioFile) =>
-    getTranscriptionsFilepath(bookUuid, getTranscriptionFilename(audioFile)),
+  const transcriptionFilepaths = await Promise.all(
+    audioFiles.map((audioFile) =>
+      getTranscriptionsFilepath(book, getTranscriptionFilename(audioFile)),
+    ),
   )
+
   const transcriptions = await Promise.all(
     transcriptionFilepaths.map(async (filepath) => {
       const transcriptionContents = await readFile(filepath, {

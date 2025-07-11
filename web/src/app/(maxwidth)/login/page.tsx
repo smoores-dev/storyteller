@@ -30,7 +30,7 @@ export default async function Login() {
       let token: Token
       try {
         token = await client.login({ usernameOrEmail, password })
-      } catch (e) {
+      } catch {
         return "bad-creds"
       }
 

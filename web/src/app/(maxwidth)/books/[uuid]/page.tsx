@@ -5,7 +5,7 @@ import { createAuthedApiClient } from "@/authedApiClient"
 import { logger } from "@/logging"
 import { Stack, Text, Title } from "@mantine/core"
 import { BookStatus } from "@/components/books/BookStatus"
-import { BookEdit } from "@/components/books/BookEdit"
+import { BookEditForm } from "@/components/books/edit/BookEditForm"
 
 type Props = {
   params: Promise<{
@@ -78,7 +78,7 @@ export default async function BookEditPage(props: Props) {
           )}
         </Stack>
       )}
-      <BookEdit bookUuid={book.uuid} />
+      <BookEditForm bookUuid={book.uuid} />
     </Stack>
   )
 }

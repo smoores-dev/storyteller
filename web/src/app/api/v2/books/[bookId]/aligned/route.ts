@@ -1,10 +1,9 @@
 import { withHasPermission } from "@/auth/auth"
-import { getBookUuid } from "@/database/books"
+import { getBook, getBookUuid } from "@/database/books"
 import { FileHandle, open } from "node:fs/promises"
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
-import { Epub } from "@smoores/epub"
-import { getEpubAlignedFilepath } from "@/assets/paths"
+import { Epub } from "@smoores/epub/node"
 import contentDisposition from "content-disposition"
 
 export const dynamic = "force-dynamic"
@@ -25,7 +24,16 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
   const bookUuid = await getBookUuid(bookId)
   const range = request.headers.get("Range")?.valueOf()
   const ifRange = request.headers.get("If-Range")?.valueOf()
-  const filepath = getEpubAlignedFilepath(bookUuid)
+  const book = await getBook(bookUuid)
+
+  if (!book?.alignedBook?.filepath) {
+    return Response.json(
+      { message: `Could not find book with id ${bookId}` },
+      { status: 404 },
+    )
+  }
+
+  const filepath = book.alignedBook.filepath
   const epub = await Epub.from(filepath)
   const title = await epub.getTitle(true)
   const normalizedTitle =
@@ -38,7 +46,7 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
   try {
     file = await open(filepath)
   } catch (_) {
-    return NextResponse.json(
+    return Response.json(
       { message: `Could not find book with id ${bookId}` },
       { status: 404 },
     )

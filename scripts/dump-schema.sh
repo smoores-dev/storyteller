@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
-# yarn workspace @storyteller/web tsx src/database/migrate.ts
-sqlite3 storyteller.db .schema > schema.sql
+
+yarn workspace @storyteller/web db:dump-schema
+
+yarn prettier --write schema.sql
+
 git add schema.sql

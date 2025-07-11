@@ -5,8 +5,8 @@ import {
 } from "@/actions/listDirectoryAction"
 import { useEffect, useMemo, useState } from "react"
 import { matchSorter } from "match-sorter"
-import { FolderIcon } from "../icons/FolderIcon"
-import { FileIcon } from "../icons/FileIcon"
+import { FolderIcon } from "../../icons/FolderIcon"
+import { FileIcon } from "../../icons/FileIcon"
 import {
   Pill,
   Combobox,
@@ -16,6 +16,7 @@ import {
   Text,
   Stack,
   Button,
+  // Modal,
 } from "@mantine/core"
 import { formatBytes } from "@/strings"
 import { IconCheck } from "@tabler/icons-react"
@@ -319,3 +320,48 @@ export function ServerFilePicker({ accept, multiple, onChange }: Props) {
 
   return <ServerSingleFilePicker accept={accept} onChange={onChange} />
 }
+
+// export function ServerFilePickerModal({
+//   isOpen,
+//   onClose,
+// }: {
+//   isOpen: boolean
+//   onClose: () => void
+// }) {
+//   const [type, setType] = useState<"ebook" | "audio" | null>(null)
+//   const [audioPaths, setAudioPaths] = useState<DirectoryFileEntry[] | null>(
+//     null,
+//   )
+//   const [epubPath, setEpubPath] = useState<DirectoryEntry | null>(null)
+
+//   return (
+//     <Modal
+//       opened={isOpen}
+//       onClose={onClose}
+//       title="Select files"
+//       centered
+//       size="xl"
+//     >
+//       {type === "audio" ? (
+//         <ServerFilePicker
+//           accept="application/zip,audio/*,video/*,.m4b"
+//           multiple
+//           onChange={(files) => {
+//             setAudioPaths(files)
+//           }}
+//         />
+//       ) : type === "ebook" ? (
+//         <ServerFilePicker
+//           accept="application/epub+zip"
+//           onChange={(file) => {
+//             setEpubPath(file)
+//           }}
+//         />
+//       ) : (
+//         <Group>
+//           <Button></Button>
+//         </Group>
+//       )}
+//     </Modal>
+//   )
+// }

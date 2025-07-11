@@ -6,7 +6,7 @@ import {
   ParsedXml,
   XmlElement,
   XmlTextNode,
-} from "./index.js"
+} from "./node.js"
 import assert from "node:assert"
 import { stat } from "node:fs/promises"
 import { streamFile } from "@smoores/fs"
