@@ -9,10 +9,15 @@ import { promisify } from "util"
 
 const execPromise = promisify(exec)
 
-export const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png"]
+export const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png", ".svg"]
 export const MP3_FILE_EXTENSIONS = [".mp3"]
 export const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b", ".aac"]
 export const OPUS_FILE_EXTENSIONS = [".ogg", ".oga", ".opus"]
+export const AUDIO_FILE_EXTENSIONS = [
+  ...MP3_FILE_EXTENSIONS,
+  ...MPEG4_FILE_EXTENSIONS,
+  ...OPUS_FILE_EXTENSIONS,
+]
 
 type FfmpegTrackFormat = {
   format: {
@@ -77,13 +82,13 @@ type TrackInfo = {
  * @param ext The extension (or complete filename) to check
  * @returns Whether the file *may* contain audio
  */
-export function isAudioFile(ext: string): boolean {
+export function isAudioFile(filenameOrExt: string): boolean {
   // The mime-db package does not recognize m4b (jshttp/mime-db#357).
-  if (ext.endsWith(".m4b")) {
+  if (filenameOrExt.endsWith(".m4b")) {
     return true
   }
 
-  const mimetype = lookup(ext)
+  const mimetype = lookup(filenameOrExt)
   return mimetype
     ? mimetype.startsWith("audio") || mimetype.startsWith("video")
     : false
@@ -142,6 +147,16 @@ export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
 export async function getTrackDuration(path: string) {
   const info = await getTrackInfo(path)
   return info["duration"]
+}
+
+type FfmpegStreams = {
+  streams: FfmpegStreamInfo[]
+}
+
+type FfmpegStreamInfo = {
+  disposition: {
+    attached_pic: number
+  }
 }
 
 type FfmpegChapters = {
@@ -212,13 +227,32 @@ function areSameType(extensionA: string, extensionB: string) {
   return false
 }
 
-function commonFfmpegArguments(
+const hasCoverArt = memoize(async function hasCoverArt(path: string) {
+  try {
+    const { stdout } = await execPromise(
+      `ffprobe -v quiet -show_streams -of json ${quotePath(path)}`,
+    )
+
+    const { streams } = JSON.parse(stdout) as FfmpegStreams
+
+    return streams.some((stream) => stream.disposition.attached_pic === 1)
+  } catch {
+    return null
+  }
+})
+
+async function commonFfmpegArguments(
+  source: string,
   sourceExtension: string,
   destExtension: string,
   codec: string | null,
   bitrate: string | null,
 ) {
-  const args = ["-vn"]
+  const args =
+    destExtension !== ".wav" && (await hasCoverArt(source))
+      ? ["-c:v copy", "-map 0:v", "-disposition:v:0", "attached_pic"]
+      : ["-vn"]
+
   if (codec) {
     args.push(
       "-c:a",
@@ -236,8 +270,10 @@ function commonFfmpegArguments(
     args.push("-c:a", "copy")
   }
 
+  args.push("-map", "0:a")
+
   if (destExtension === ".mp4") {
-    args.push("-map", "0", "-map_chapters", "-1")
+    args.push("-map_chapters", "-1")
   }
 
   return args
@@ -262,7 +298,13 @@ export async function transcodeTrack(
     "-nostdin",
     "-i",
     quotePath(path),
-    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
+    ...(await commonFfmpegArguments(
+      path,
+      sourceExtension,
+      destExtension,
+      codec,
+      bitrate,
+    )),
     `"${destination}"`,
   ]
 
@@ -290,7 +332,13 @@ export async function splitTrack(
     to,
     "-i",
     quotePath(path),
-    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
+    ...(await commonFfmpegArguments(
+      path,
+      sourceExtension,
+      destExtension,
+      codec,
+      bitrate,
+    )),
     `"${destination}"`,
   ]
 

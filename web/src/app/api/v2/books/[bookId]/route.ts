@@ -1,17 +1,12 @@
 import {
-  ProcessingTaskStatus,
-  ProcessingTaskType,
-} from "@/apiModels/models/ProcessingStatus"
-import {
   deleteAssets,
   originalAudioExists,
   originalEpubExists,
-} from "@/assets/assets"
+} from "@/assets/fs"
 import {
   persistCustomEpubCover,
   persistCustomAudioCover,
-} from "@/assets/covers"
-import { getEpubAlignedFilepath } from "@/assets/paths"
+} from "@/assets/legacy/covers"
 import { withHasPermission } from "@/auth/auth"
 import {
   AuthorRelation,
@@ -24,7 +19,7 @@ import {
 import { writeMetadataToEpub } from "@/process/processEpub"
 import { UUID } from "@/uuid"
 import { isProcessing, isQueued } from "@/work/distributor"
-import { Epub } from "@smoores/epub"
+import { Epub } from "@smoores/epub/node"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
 
@@ -127,11 +122,8 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     await persistCustomAudioCover(bookUuid, `Audio Cover.${ext}`, data)
   }
 
-  if (
-    updated.processingTask?.type === ProcessingTaskType.SYNC_CHAPTERS &&
-    updated.processingTask.status === ProcessingTaskStatus.COMPLETED
-  ) {
-    const alignedEpubPath = getEpubAlignedFilepath(updated.uuid)
+  if (updated.alignedBook?.filepath) {
+    const alignedEpubPath = updated.alignedBook.filepath
     const epub = await Epub.from(alignedEpubPath)
     await writeMetadataToEpub(updated, epub)
     await epub.writeToFile(alignedEpubPath)
@@ -162,10 +154,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   return NextResponse.json({
     ...book,
     originalFilesExist: (
-      await Promise.all([
-        originalEpubExists(book.uuid),
-        originalAudioExists(book.uuid),
-      ])
+      await Promise.all([originalEpubExists(book), originalAudioExists(book)])
     ).every((originalsExist) => originalsExist),
     processingStatus: isProcessing(book.uuid)
       ? "processing"
@@ -194,7 +183,7 @@ export const DELETE = withHasPermission<Params>("bookDelete")(async (
   }
 
   await deleteBook(book.uuid)
-  await deleteAssets(book.uuid)
+  await deleteAssets(book)
 
   return new Response(null, { status: 204 })
 })

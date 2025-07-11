@@ -6,19 +6,30 @@
   "types": "index.d.ts",
   "license": "MIT",
   "exports": {
-    "import": "./index.js",
-    "require": "./index.cjs",
-    "types": "./index.d.ts"
+    ".": {
+      "import": "./index.js",
+      "require": "./node.cjs",
+      "types": "./index.d.ts",
+      "node": "./node.js"
+    },
+    "./node": {
+      "import": "./node.js",
+      "require": "./node.cjs",
+      "types": "./node.d.ts"
+    }
   },
   "files": [
     "index.js",
+    "node.js",
+    "node.cjs",
     "index.cjs",
-    "index.d.ts"
+    "index.d.ts",
+    "node.d.ts"
   ],
   "scripts": {
-    "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs",
-    "build:esm": "yarn swc ./index.ts -o ./index.js",
-    "build": "yarn check:types && yarn build:esm && yarn build:cjs",
+    "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs && yarn swc ./node.ts -o ./node.cjs --no-swcrc --config-file .swcrc-cjs",
+    "build:esm": "yarn swc ./index.ts -o ./index.js && yarn swc ./node.ts -o ./node.js",
+    "build": "yarn tsc && yarn build:esm && yarn build:cjs",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",
     "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
@@ -40,12 +51,15 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@einheit/path-resolve": "^1.2.0",
     "@smoores/fs": "workspace:^",
     "@zip.js/zip.js": "^2.0.0",
     "async-mutex": "^0.5.0",
     "fast-xml-parser": "^4.0.0",
     "mem": "^8.0.0",
-    "mime-types": "^2.0.0"
+    "mime-types": "^2.0.0",
+    "nanoid": "^5.1.5",
+    "path-dirname": "^1.0.2"
   },
   "publishConfig": {
     "access": "public"

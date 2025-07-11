@@ -1,7 +1,6 @@
 "use client"
 
 import { Settings } from "@/apiModels"
-import { useApiClient } from "@/hooks/useApiClient"
 import { useRef, useState } from "react"
 import { useForm } from "@mantine/form"
 import {
@@ -24,6 +23,7 @@ import {
 } from "@mantine/core"
 import { IconPlus, IconTrash } from "@tabler/icons-react"
 import { AuthProviderInput } from "./AuthProviderInput"
+import { useUpdateSettingsMutation } from "@/store/api"
 
 interface Props {
   settings: Settings
@@ -33,7 +33,7 @@ export function SettingsForm({ settings }: Props) {
   const [saved, setSaved] = useState(false)
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const client = useApiClient()
+  const [updateSettings] = useUpdateSettingsMutation()
 
   const initialValues: Settings = {
     smtpHost: settings.smtpHost,
@@ -80,7 +80,7 @@ export function SettingsForm({ settings }: Props) {
   return (
     <form
       onSubmit={form.onSubmit(async (updatedSettings) => {
-        await client.updateSettings(updatedSettings)
+        await updateSettings(updatedSettings)
         setSaved(true)
 
         if (clearSavedTimeoutRef.current) {

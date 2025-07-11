@@ -9,9 +9,9 @@ import {
 import { dirname, join } from "node:path"
 import { exec as execCallback } from "node:child_process"
 
-import mobyDickTranscription from "../../__fixtures__/mobydick_001_002_melville.json"
+import mobyDickTranscription from "../../__fixtures__/transcriptions/mobydick_001_002_melville.json"
 import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
-import { Epub } from "@smoores/epub"
+import { Epub } from "@smoores/epub/node"
 import { tokenizeSentences } from "../nlp"
 import assert from "node:assert"
 import type { TimelineEntry } from "echogarden/dist/utilities/Timeline"

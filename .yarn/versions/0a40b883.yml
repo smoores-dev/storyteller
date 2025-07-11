@@ -1,0 +1,4 @@
+releases:
+  "@smoores/epub": minor
+  "@storyteller/docs": patch
+  "@storyteller/web": minor

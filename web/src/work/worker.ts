@@ -2,14 +2,13 @@ import {
   ProcessingTaskStatus,
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
-import { deleteProcessed } from "@/assets/assets"
-import { getProcessedAudioFiles } from "@/assets/covers"
+import { getProcessedAudioFiles, deleteProcessed } from "@/assets/fs"
 import {
   getTranscriptionsFilepath,
   getProcessedAudioFilepath,
-  getEpubAlignedFilepath,
+  getInternalEpubAlignedFilepath,
 } from "@/assets/paths"
-import { getBook, updateBook } from "@/database/books"
+import { Book, getBookOrThrow, updateBook } from "@/database/books"
 import {
   NewProcessingTask,
   PROCESSING_TASK_ORDER,
@@ -25,12 +24,10 @@ import {
 } from "@/process/processAudio"
 import {
   getFullText,
-  processEpub,
   readEpub,
   writeMetadataToEpub,
 } from "@/process/processEpub"
 import { getInitialPrompt } from "@/process/prompt"
-import { getSyncCache } from "@/synchronize/syncCache"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { installWhisper, transcribeTrack } from "@/transcribe"
 import { UUID } from "@/uuid"
@@ -41,17 +38,17 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { MessagePort } from "node:worker_threads"
 
 export async function transcribeBook(
-  bookUuid: UUID,
+  book: Book,
   initialPrompt: string | null,
   locale: Intl.Locale,
   settings: Settings,
   onProgress?: (progress: number) => void,
 ) {
   const semaphore = new AsyncSemaphore(settings.parallelTranscribes)
-  const transcriptionsPath = getTranscriptionsFilepath(bookUuid)
+  const transcriptionsPath = getTranscriptionsFilepath(book)
   await mkdir(transcriptionsPath, { recursive: true })
-  const audioFiles = await getProcessedAudioFiles(bookUuid)
-  if (!audioFiles) {
+  const audioFiles = await getProcessedAudioFiles(book)
+  if (!audioFiles.length) {
     throw new Error("Failed to transcribe book: found no processed audio files")
   }
 
@@ -72,10 +69,10 @@ export async function transcribeBook(
       await semaphore.wait()
       try {
         const transcriptionFilepath = getTranscriptionsFilepath(
-          bookUuid,
+          book,
           getTranscriptionFilename(audioFile),
         )
-        const filepath = getProcessedAudioFilepath(bookUuid, audioFile.filename)
+        const filepath = getProcessedAudioFilepath(book, audioFile)
         try {
           const existingTranscription = await readFile(transcriptionFilepath, {
             encoding: "utf-8",
@@ -164,9 +161,10 @@ export default async function processBook({
   port: MessagePort
 }) {
   port.postMessage({ type: "processingStarted", bookUuid })
+  let book = await getBookOrThrow(bookUuid)
 
   if (restart) {
-    await deleteProcessed(bookUuid)
+    await deleteProcessed(book)
   }
 
   const currentTasks: ProcessingTask[] = await new Promise((resolve) => {
@@ -177,8 +175,6 @@ export default async function processBook({
   const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
 
   // get book info from db
-  const book = await getBook(bookUuid)
-  if (!book) throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
   // book reference to use in log
   const bookRefForLog = `"${book.title}" (uuid: ${bookUuid})`
 
@@ -212,9 +208,8 @@ export default async function processBook({
     try {
       if (task.type === ProcessingTaskType.SPLIT_CHAPTERS) {
         logger.info("Pre-processing...")
-        await processEpub(bookUuid)
         await processAudiobook(
-          bookUuid,
+          book,
           settings.maxTrackLength ?? null,
           settings.codec ?? null,
           settings.bitrate ?? null,
@@ -225,11 +220,9 @@ export default async function processBook({
 
       if (task.type === ProcessingTaskType.TRANSCRIBE_CHAPTERS) {
         logger.info("Transcribing...")
-        const epub = await readEpub(bookUuid)
+        const epub = await readEpub(book)
         const title = await epub.getTitle()
-        const book = await getBook(bookUuid)
-        if (!book)
-          throw new Error(`Failed to retrieve book with uuid ${bookUuid}`)
+        book = await getBookOrThrow(bookUuid)
 
         const locale = book.language
           ? new Intl.Locale(book.language)
@@ -241,35 +234,30 @@ export default async function processBook({
             ? await getInitialPrompt(title ?? "", fullText)
             : null
 
-        await transcribeBook(
-          bookUuid,
-          initialPrompt,
-          locale,
-          settings,
-          onProgress,
-        )
+        await transcribeBook(book, initialPrompt, locale, settings, onProgress)
       }
 
       if (task.type === ProcessingTaskType.SYNC_CHAPTERS) {
-        const epub = await readEpub(bookUuid)
-        const audioFiles = await getProcessedAudioFiles(bookUuid)
-        const transcriptions = await getTranscriptions(bookUuid)
-        if (!audioFiles) {
+        const epub = await readEpub(book)
+        const audioFiles = await getProcessedAudioFiles(book)
+        book = await getBookOrThrow(bookUuid)
+        const transcriptions = await getTranscriptions(book)
+        if (!audioFiles.length) {
           throw new Error(`No audio files found for book ${bookUuid}`)
         }
         logger.info("Syncing narration...")
-        const syncCache = await getSyncCache(bookUuid)
         const synchronizer = new Synchronizer(
           epub,
-          syncCache,
-          audioFiles.map((audioFile) =>
-            getProcessedAudioFilepath(bookUuid, audioFile.filename),
+          await Promise.all(
+            audioFiles.map((audioFile) =>
+              getProcessedAudioFilepath(book, audioFile),
+            ),
           ),
           transcriptions,
         )
         await synchronizer.syncBook(onProgress)
 
-        const book = await updateBook(bookUuid, {
+        book = await updateBook(bookUuid, {
           alignedByStorytellerVersion: getCurrentVersion(),
           // We need UTC with integer seconds, but toISOString gives UTC with ms
           alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
@@ -278,7 +266,7 @@ export default async function processBook({
 
         await writeMetadataToEpub(book, epub)
 
-        await epub.writeToFile(getEpubAlignedFilepath(bookUuid))
+        await epub.writeToFile(getInternalEpubAlignedFilepath(book))
         await epub.close()
       }
 

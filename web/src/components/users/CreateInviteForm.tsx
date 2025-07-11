@@ -1,5 +1,3 @@
-import { usePermission } from "@/contexts/UserPermissions"
-import { useApiClient } from "@/hooks/useApiClient"
 import { useCallback, useState, MouseEvent } from "react"
 import { useForm } from "@mantine/form"
 import {
@@ -12,6 +10,8 @@ import {
   Group,
 } from "@mantine/core"
 import { UserPermissionSet } from "@/database/users"
+import { useCreateInviteMutation } from "@/store/api"
+import { usePermission } from "@/hooks/usePermission"
 
 export const ADMIN_PERMISSIONS: Array<keyof UserPermissionSet> = [
   "bookCreate",
@@ -58,18 +58,7 @@ export const PERMISSIONS_VALUES: Array<{
   { value: "settingsUpdate", label: "Change server settings" },
 ]
 
-enum State {
-  CLEAN = "CLEAN",
-  LOADING = "LOADING",
-  SUCCESS = "SUCCESS",
-  ERROR = "ERROR",
-}
-
-type Props = {
-  onUpdate: () => void
-}
-
-export function CreateInviteForm({ onUpdate }: Props) {
+export function CreateInviteForm() {
   const [showForm, setShowForm] = useState(false)
 
   const form = useForm({
@@ -78,8 +67,6 @@ export function CreateInviteForm({ onUpdate }: Props) {
       permissions: BASIC_PERMISSIONS,
     },
   })
-
-  const [state, setState] = useState(State.CLEAN)
 
   const resetState = useCallback(
     (event: MouseEvent) => {
@@ -90,7 +77,9 @@ export function CreateInviteForm({ onUpdate }: Props) {
     [form],
   )
 
-  const client = useApiClient()
+  const [createInvite, { isError, isUninitialized, isSuccess }] =
+    useCreateInviteMutation()
+
   const canAddUser = usePermission("userCreate")
 
   if (!canAddUser) return null
@@ -100,21 +89,10 @@ export function CreateInviteForm({ onUpdate }: Props) {
       {showForm ? (
         <form
           onSubmit={form.onSubmit(async ({ email, permissions }) => {
-            setState(State.LOADING)
             const permissionsObject = Object.fromEntries(
               permissions.map((permission) => [permission, true]),
             ) as UserPermissionSet
-            try {
-              await client.createInvite({ email, ...permissionsObject })
-            } catch (e) {
-              console.error(e)
-              setState(State.ERROR)
-              onUpdate()
-              return
-            }
-
-            setState(State.SUCCESS)
-            onUpdate()
+            await createInvite({ email, ...permissionsObject })
           })}
         >
           <Stack gap={0}>
@@ -143,14 +121,14 @@ export function CreateInviteForm({ onUpdate }: Props) {
               data={PERMISSIONS_VALUES}
               {...form.getInputProps("permissions")}
             />
-            {state === State.SUCCESS ? (
+            {isSuccess ? (
               <Group justify="space-between">
                 <Text>Done!</Text>
                 <Button type="reset" onClick={resetState}>
                   Invite another user
                 </Button>
               </Group>
-            ) : state === State.ERROR ? (
+            ) : isError ? (
               <Group justify="space-between">
                 <Text>Failed - check your server logs for more details</Text>
                 <Button type="reset" onClick={resetState}>
@@ -161,9 +139,7 @@ export function CreateInviteForm({ onUpdate }: Props) {
               <Button
                 type="submit"
                 className="self-end"
-                disabled={
-                  form.getValues().email === "" || state !== State.CLEAN
-                }
+                disabled={form.getValues().email === "" || !isUninitialized}
               >
                 Create
               </Button>

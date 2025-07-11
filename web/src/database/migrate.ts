@@ -7,9 +7,15 @@ import { logger } from "@/logging"
 import { splitQuery, sqliteSplitterOptions } from "dbgate-query-splitter"
 import { sql } from "kysely"
 
-const jsMigrations: Record<string, () => Promise<void>> = {
-  "33_add_more_book_metadata.sql": await import(
+const jsMigrations: Record<string, Promise<() => Promise<void>>> = {
+  "33_add_more_book_metadata.sql": import(
     "./migrations/33_add_more_book_metadata.sql"
+  ).then((m) => m.default),
+  "40_split_book_tables.sql": import(
+    "./migrations/40_split_book_tables.sql"
+  ).then((m) => m.default),
+  "41_reorganize_library.sql": import(
+    "./migrations/41_reorganize_library.sql"
   ).then((m) => m.default),
 }
 
@@ -34,7 +40,7 @@ async function getMigration(hash: string) {
       .where("hash", "=", hash)
       .execute()
     return row ?? null
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -123,7 +129,8 @@ async function migrate() {
 
     if (migrated) {
       if (jsMigrations[migrationFile]) {
-        await jsMigrations[migrationFile]()
+        const jsMigration = await jsMigrations[migrationFile]
+        await jsMigration()
       }
     }
   }

@@ -1,6 +1,9 @@
 index.js
 index.cjs
 index.d.ts
+node.js
+node.cjs
+node.d.ts
 index.test.d.ts
 
 __fixtures__/__output__

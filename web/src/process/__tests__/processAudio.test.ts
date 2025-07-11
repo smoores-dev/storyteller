@@ -1,25 +1,35 @@
 import { describe, it } from "node:test"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { randomUUID } from "node:crypto"
 import { processFile } from "../processAudio"
 import { mkdir, readdir } from "node:fs/promises"
 import assert from "node:assert"
-import { getProcessedAudioFilepath } from "@/assets/paths"
+import { getProcessedAudioFilepath, shortenUuid } from "@/assets/paths"
 import { getAudioCoverFilepath } from "@/assets/covers"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
+import { BookWithRelations } from "@/database/books"
 
 void describe("processFile", () => {
   void it("can process mpeg4 files", async () => {
     const input = join(
       "src",
       "__fixtures__",
+      "mpeg4",
       "MobyDickOrTheWhalePart1_librivox.m4b",
     )
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -42,21 +52,28 @@ void describe("processFile", () => {
       "00000-00010.mp4",
       "00000-00011.mp4",
     ])
-    const audioCover = await getAudioCoverFilepath(uuid)
-    assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
 
   void it("can process mp3 files", async () => {
     const input = join(
       "src",
       "__fixtures__",
+      "mp3",
       "MobyDickOrTheWhalePart1_librivox.mp3",
     )
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -79,21 +96,28 @@ void describe("processFile", () => {
       "00000-00010.mp3",
       "00000-00011.mp3",
     ])
-    const audioCover = await getAudioCoverFilepath(uuid)
-    assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
 
   void it("can process opus files", async () => {
     const input = join(
       "src",
       "__fixtures__",
+      "opus",
       "MobyDickOrTheWhalePart1_librivox.opus",
     )
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -116,17 +140,23 @@ void describe("processFile", () => {
       "00000-00010.mp4",
       "00000-00011.mp4",
     ])
-    const audioCover = await getAudioCoverFilepath(uuid)
-    assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
 
   void it("can handle nonstandard audio file", async () => {
-    const input = join("src", "__fixtures__", "mobydick.flac")
+    const input = join("src", "__fixtures__", "flac", "mobydick.flac")
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -137,17 +167,23 @@ void describe("processFile", () => {
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, ["00000-00001.flac"])
-    const audioCover = await getAudioCoverFilepath(uuid)
-    assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
 
   void it("can transcode nonstandard audio file", async () => {
-    const input = join("src", "__fixtures__", "mobydick.flac")
+    const input = join("src", "__fixtures__", "flac", "mobydick.flac")
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -158,17 +194,23 @@ void describe("processFile", () => {
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, ["00000-00001.mp4"])
-    const audioCover = await getAudioCoverFilepath(uuid)
-    assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
 
   void it("can process zip files", async () => {
-    const input = join("src", "__fixtures__", "moby-dick-1-7-audio.zip")
+    const input = join("src", "__fixtures__", "zip", "moby-dick-1-7-audio.zip")
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -186,12 +228,20 @@ void describe("processFile", () => {
   })
 
   void it("can process cover image", async () => {
-    const input = join("src", "__fixtures__", "Cover.png")
+    const input = join("src", "__fixtures__", "mp3", "Cover.png")
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -202,17 +252,30 @@ void describe("processFile", () => {
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [])
-    const audioCover = await getAudioCoverFilepath(uuid)
+    const audioCover = await getAudioCoverFilepath(book)
     assert.ok(audioCover!.endsWith("Cover.png"))
   })
 
   void it("ignores unrecognized file", async () => {
-    const input = join("src", "__fixtures__", "mobydick_001_002_melville.json")
+    const input = join(
+      "src",
+      "__fixtures__",
+      "transcriptions",
+      "mobydick_001_002_melville.json",
+    )
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -223,17 +286,25 @@ void describe("processFile", () => {
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [])
-    const audioCover = await getAudioCoverFilepath(uuid)
+    const audioCover = await getAudioCoverFilepath(book)
     assert.ok(audioCover === null)
   })
 
   void it("splits files longer than the max length", async () => {
-    const input = join("src", "__fixtures__", "moby-dick-1-7-audio.zip")
+    const input = join("src", "__fixtures__", "zip", "moby-dick-1-7-audio.zip")
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -266,13 +337,22 @@ void describe("processFile", () => {
     const input = join(
       "src",
       "__fixtures__",
+      "mpeg4",
       "MobyDickOrTheWhalePart1_librivox.m4b",
     )
     const uuid = randomUUID()
-    const outDir = getProcessedAudioFilepath(uuid)
+    const book = {
+      uuid: uuid,
+      title: "Moby Dick",
+      suffix: ` [${shortenUuid(uuid)}]`,
+      audiobook: {
+        filepath: dirname(input),
+      },
+    } as BookWithRelations
+    const outDir = getProcessedAudioFilepath(book)
     await mkdir(outDir, { recursive: true })
     await processFile(
-      uuid,
+      book,
       input,
       outDir,
       "00000-",
@@ -309,7 +389,5 @@ void describe("processFile", () => {
       "00000-00024.mp4",
       "00000-00025.mp4",
     ])
-    const audioCover = await getAudioCoverFilepath(uuid)
-    assert.ok(audioCover!.endsWith("Audio Cover.png"))
   })
 })

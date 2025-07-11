@@ -14,6 +14,7 @@ const nextConfig = {
     "@mapbox/node-pre-gyp",
     "pino",
     "pino-pretty",
+    "onnxruntime-node",
   ],
   output: "standalone",
   outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../.."),

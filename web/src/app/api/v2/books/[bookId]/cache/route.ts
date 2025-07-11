@@ -1,6 +1,6 @@
-import { deleteOriginals, deleteProcessed } from "@/assets/assets"
+import { deleteOriginals, deleteProcessed } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
-import { getBookUuid } from "@/database/books"
+import { getBook, getBookUuid } from "@/database/books"
 import { BookEvents } from "@/events"
 
 type Params = Promise<{
@@ -19,12 +19,19 @@ export const DELETE = withHasPermission<Params>("bookProcess")(async (
 ) => {
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
+  const book = await getBook(bookUuid)
+  if (!book) {
+    return Response.json(
+      { message: `Could not find book with id ${bookId}` },
+      { status: 404 },
+    )
+  }
   const url = request.nextUrl
   const includeOriginals = typeof url.searchParams.get("originals") === "string"
 
   await Promise.all([
-    deleteProcessed(bookUuid),
-    ...(includeOriginals ? [deleteOriginals(bookUuid)] : []),
+    deleteProcessed(book),
+    ...(includeOriginals ? [deleteOriginals(book)] : []),
   ])
 
   if (includeOriginals) {

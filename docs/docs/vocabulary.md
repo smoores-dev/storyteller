@@ -12,7 +12,7 @@ never be removed, but may be deprecated.
 This vocabulary defines a set of properties for describing Storyteller-aligned
 publications.
 
-## 2. Storyteller Properties
+## 2. Metadata Properties Vocabulary
 
 ### 2.1 version
 
@@ -40,3 +40,13 @@ publications.
 | Description   | A string representing the transcription engine used during the transcription phase of Storyteller’s alignment process. Includes the model name, if specified. |
 | Allowed value | xsd:string                                                                                                                                                    |
 | Example       | `<meta property="storyteller:media-overlays-transcription-engine">whisper.cpp:tiny</meta>`                                                                    |
+
+## 3. Manifest Properties Vocabulary
+
+### 3.1 audio-cover-image
+
+|             |                                                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------------------------------- |
+| Name        | audio-cover-image                                                                                                    |
+| Description | Indicates that a manifest item is to be used as the cover art when presenting the audio to the user.                 |
+| Example     | `<item id="audio-cover" href="audio cover.png" properties="storyteller:audio-cover-image" media-type="image/png" />` |

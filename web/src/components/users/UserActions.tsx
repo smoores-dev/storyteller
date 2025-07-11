@@ -1,36 +1,37 @@
 import { User } from "@/apiModels"
-import { usePermissions } from "@/contexts/UserPermissions"
-import { useApiClient } from "@/hooks/useApiClient"
+import { useDeleteUserMutation, useGetCurrentUserQuery } from "@/store/api"
 import { ActionIcon, Stack, Tooltip } from "@mantine/core"
 import { IconPencil, IconTrash } from "@tabler/icons-react"
 
 type Props = {
   user: User
   onEdit: () => void
-  onUpdate: () => void
 }
 
-export function UserActions({ user, onEdit, onUpdate }: Props) {
-  const client = useApiClient()
+export function UserActions({ user, onEdit }: Props) {
+  const { permissions } = useGetCurrentUserQuery(undefined, {
+    selectFromResult: (result) => ({
+      permissions: result.data?.permissions,
+    }),
+  })
 
-  const permissions = usePermissions()
+  const [deleteUser] = useDeleteUserMutation()
 
   return (
     <Stack>
-      {permissions.userUpdate && (
+      {permissions?.userUpdate && (
         <ActionIcon variant="subtle" color="black" onClick={onEdit}>
           <Tooltip position="right" label="Edit">
             <IconPencil aria-label="Edit" />
           </Tooltip>
         </ActionIcon>
       )}
-      {permissions.userDelete && (
+      {permissions?.userDelete && (
         <ActionIcon
           variant="subtle"
           color="red"
           onClick={async () => {
-            await client.deleteUser(user.id)
-            onUpdate()
+            await deleteUser({ uuid: user.id })
           }}
         >
           <Tooltip position="right" label="Delete user">

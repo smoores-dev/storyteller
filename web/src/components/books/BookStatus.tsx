@@ -1,16 +1,16 @@
 "use client"
 
-import { useApiClient } from "@/hooks/useApiClient"
 import { BookOptions } from "./BookOptions"
 import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
-import { usePermissions } from "@/contexts/UserPermissions"
-import {
-  ProcessingTaskStatus,
-  ProcessingTaskType,
-} from "@/apiModels/models/ProcessingStatus"
+import { ProcessingTaskStatus } from "@/apiModels/models/ProcessingStatus"
 import { Paper, Group, Stack, Box, Text, Button, Progress } from "@mantine/core"
 import { UUID } from "@/uuid"
-import { useBook } from "./LiveBooksProvider"
+import {
+  getAlignedDownloadUrl,
+  useListBooksQuery,
+  useProcessBookMutation,
+} from "@/store/api"
+import { usePermissions } from "@/hooks/usePermissions"
 
 type Props = {
   bookUuid: UUID
@@ -23,15 +23,19 @@ export const ProcessingTaskTypes = {
 }
 
 export function BookStatus({ bookUuid }: Props) {
-  const client = useApiClient()
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const book = useBook(bookUuid)!
+  const { book } = useListBooksQuery(undefined, {
+    selectFromResult: (result) => ({
+      book: result.data?.find((book) => book.uuid === bookUuid),
+    }),
+  })
 
   const permissions = usePermissions()
 
-  const aligned =
-    book.processingTask?.type === ProcessingTaskType.SYNC_CHAPTERS &&
-    book.processingTask.status === ProcessingTaskStatus.COMPLETED
+  const [processBook] = useProcessBookMutation()
+
+  if (!book) return null
+
+  const aligned = book.alignedBook?.status === "ALIGNED"
 
   const userFriendlyTaskType =
     book.processingTask &&
@@ -39,49 +43,56 @@ export function BookStatus({ bookUuid }: Props) {
       book.processingTask.type as keyof typeof ProcessingTaskTypes
     ]
 
-  if (!permissions.bookRead) return null
+  if (!permissions?.bookRead) return null
 
   return (
     <Paper className="max-w-[600px]">
       <Group justify="space-between" wrap="nowrap" align="flex-end">
-        <Stack justify="space-between" className="grow">
-          {aligned ? (
-            permissions.bookDownload && (
-              <a
-                href={client.getAlignedDownloadUrl(book.uuid)}
-                className="text-st-orange-600 underline"
-                download={`${book.title}.epub`}
+        {book.alignedBook || (book.ebook && book.audiobook) ? (
+          <Stack justify="space-between" className="grow">
+            {aligned ? (
+              permissions.bookDownload && (
+                <a
+                  href={getAlignedDownloadUrl(book.uuid)}
+                  className="text-st-orange-600 underline"
+                  download={`${book.title}.epub`}
+                >
+                  Download
+                </a>
+              )
+            ) : book.processingTask ? (
+              book.processingStatus === "queued" ? (
+                "Queued"
+              ) : (
+                <Box>
+                  {userFriendlyTaskType}
+                  {book.processingStatus === "processing" ? "" : " (stopped)"}
+                  {book.processingTask.status ===
+                    ProcessingTaskStatus.IN_ERROR && (
+                    <ProcessingFailedMessage />
+                  )}
+                  <Progress
+                    value={Math.floor(book.processingTask.progress * 100)}
+                  />
+                </Box>
+              )
+            ) : permissions.bookProcess ? (
+              <Button
+                className="self-start"
+                onClick={() => {
+                  void processBook({ uuid: book.uuid })
+                }}
               >
-                Download
-              </a>
-            )
-          ) : book.processingTask ? (
-            book.processingStatus === "queued" ? (
-              "Queued"
+                Start processing
+              </Button>
             ) : (
-              <Box>
-                {userFriendlyTaskType}
-                {book.processingStatus === "processing" ? "" : " (stopped)"}
-                {book.processingTask.status ===
-                  ProcessingTaskStatus.IN_ERROR && <ProcessingFailedMessage />}
-                <Progress
-                  value={Math.floor(book.processingTask.progress * 100)}
-                />
-              </Box>
-            )
-          ) : permissions.bookProcess ? (
-            <Button
-              className="self-start"
-              onClick={() => {
-                void client.processBook(book.uuid)
-              }}
-            >
-              Start processing
-            </Button>
-          ) : (
-            <Text>Unprocessed</Text>
-          )}
-        </Stack>
+              <Text>Unprocessed</Text>
+            )}
+          </Stack>
+        ) : (
+          // Just to keep the actions in the same place
+          <Box />
+        )}
         <BookOptions aligned={aligned} book={book} />
       </Group>
     </Paper>

@@ -77,6 +77,8 @@ export const config: NextAuthConfig = {
   pages: {
     signIn: "/login",
   },
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  secret: process.env["AUTH_SECRET"]!,
   adapter,
   jwt: {
     encode() {

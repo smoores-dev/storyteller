@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   })
   const req = new Request(url, { method: "POST", headers, body: params })
   try {
-    await Auth(req, { ...config, raw, skipCSRFCheck })
+    await Auth(req, { ...config, raw, skipCSRFCheck, trustHost: true })
     const session = await getCurrentUserSession(usernameOrEmail as string)
 
     return Response.json({
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (e) {
     if (e instanceof CredentialsSignin) {
-      return new Response(null, { status: 405 })
+      return new Response(null, { status: 401 })
     }
     return new Response(null, { status: 500 })
   }

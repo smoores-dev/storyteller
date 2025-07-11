@@ -103,10 +103,10 @@ export async function installWhisper(settings: Settings) {
         "curl -sL http://repo.radeon.com/rocm/rocm.gpg.key | apt-key add -",
       )
       await exec(
-        'printf "deb [arch=amd64] https://repo.radeon.com/rocm/apt/6.2.1/ jammy main" | tee /etc/apt/sources.list.d/rocm.list',
+        'printf "deb [arch=amd64] https://repo.radeon.com/rocm/apt/6.4.1/ jammy main" | tee /etc/apt/sources.list.d/rocm.list',
       )
       await exec(
-        'printf "deb [arch=amd64] https://repo.radeon.com/amdgpu/6.2.1/ubuntu jammy main" | tee /etc/apt/sources.list.d/amdgpu.list',
+        'printf "deb [arch=amd64] https://repo.radeon.com/amdgpu/6.4.1/ubuntu jammy main" | tee /etc/apt/sources.list.d/amdgpu.list',
       )
       await exec("apt-get update")
       await exec("apt-get -y install rocm-dev hipblas-dev", {

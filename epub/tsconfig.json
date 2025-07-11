@@ -15,7 +15,7 @@
       "@smoores/fs": ["../fs/index.ts"]
     }
   },
-  "include": ["index.ts", "index.test.ts"],
+  "include": ["index.ts", "node.ts", "index.test.ts", "./path-dirname.d.ts"],
   "references": [
     {
       "path": "../fs"
