@@ -23,7 +23,9 @@ always-yes:
     - echo "Done!"
 
 check:
-  image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
+  image:
+    name: registry.gitlab.com/storyteller-platform/storyteller-base:latest
+    pull_policy: if-not-present
   stage: check
   tags: [saas-linux-large-amd64]
   rules:
@@ -41,7 +43,9 @@ check:
 
 check-version:
   stage: prerelease
-  image: node:22
+  image:
+    name: node:22
+    pull_policy: if-not-present
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
@@ -67,7 +71,9 @@ check-version:
     - git push --tags
 
 pages:
-  image: node:22-alpine
+  image:
+    name: node:22-alpine
+    pull_policy: if-not-present
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^docs-v?\d+\.\d+\.\d+$/'
@@ -83,7 +89,9 @@ pages:
       - public
 
 publish-web-amd64:
-  image: docker:24.0.5
+  image:
+    name: docker:24.0.5
+    pull_policy: if-not-present
   tags: [saas-linux-large-amd64]
   services:
     - name: docker:24.0.5-dind
@@ -102,7 +110,9 @@ publish-web-amd64:
       --tag $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA .
 
 publish-web-arm64:
-  image: docker:24.0.5
+  image:
+    name: docker:24.0.5
+    pull_policy: if-not-present
   tags: [saas-linux-large-arm64]
   services:
     - name: docker:24.0.5-dind
@@ -121,7 +131,9 @@ publish-web-arm64:
       --tag $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA .
 
 publish-web-multiarch:
-  image: docker:24.0.5
+  image:
+    name: docker:24.0.5
+    pull_policy: if-not-present
   services:
     - name: docker:24.0.5-dind
       alias: docker
@@ -139,7 +151,9 @@ publish-web-multiarch:
 
 prerelease-web:
   stage: prerelease
-  image: alpine:latest
+  image:
+    name: alpine:latest
+    pull_policy: if-not-present
   rules:
     - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+/'
   script:
@@ -159,7 +173,9 @@ prerelease-web:
 
 release-web:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image:
+    name: registry.gitlab.com/gitlab-org/release-cli:latest
+    pull_policy: if-not-present
   needs:
     - job: prerelease-web
       artifacts: true
@@ -178,7 +194,9 @@ release-web:
           url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
 
 publish-fs:
-  image: node:22
+  image:
+    name: node:22
+    pull_policy: if-not-present
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
@@ -191,7 +209,9 @@ publish-fs:
 
 prerelease-fs:
   stage: prerelease
-  image: alpine:latest
+  image:
+    name: alpine:latest
+    pull_policy: if-not-present
   rules:
     - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
   script:
@@ -211,7 +231,9 @@ prerelease-fs:
 
 release-fs:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image:
+    name: registry.gitlab.com/gitlab-org/release-cli:latest
+    pull_policy: if-not-present
   needs:
     - job: prerelease-fs
       artifacts: true
@@ -230,7 +252,9 @@ release-fs:
           url: "https://npmjs.com/package/@smoores/fs"
 
 publish-epub:
-  image: node:22
+  image:
+    name: node:22
+    pull_policy: if-not-present
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
@@ -243,7 +267,9 @@ publish-epub:
 
 prerelease-epub:
   stage: prerelease
-  image: alpine:latest
+  image:
+    name: alpine:latest
+    pull_policy: if-not-present
   rules:
     - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
   script:
@@ -263,7 +289,9 @@ prerelease-epub:
 
 release-epub:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image:
+    name: registry.gitlab.com/gitlab-org/release-cli:latest
+    pull_policy: if-not-present
   needs:
     - job: prerelease-epub
       artifacts: true
@@ -283,7 +311,9 @@ release-epub:
 
 publish-mobile:
   stage: publish
-  image: node:22
+  image:
+    name: node:22
+    pull_policy: if-not-present
   rules:
     - if: '$CI_COMMIT_TAG =~ /^mobile-v?\d+\.\d+\.\d+$/'
   script:
@@ -297,7 +327,9 @@ publish-mobile:
 
 prerelease-mobile:
   stage: prerelease
-  image: alpine:latest
+  image:
+    name: alpine:latest
+    pull_policy: if-not-present
   rules:
     - if: '$CI_COMMIT_TAG =~ /^mobile-v?\d+\.\d+\.\d+$/'
   script:
@@ -317,7 +349,9 @@ prerelease-mobile:
 
 release-mobile:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image:
+    name: registry.gitlab.com/gitlab-org/release-cli:latest
+    pull_policy: if-not-present
   needs:
     - job: prerelease-mobile
       artifacts: true
