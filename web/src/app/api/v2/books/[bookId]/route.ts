@@ -169,7 +169,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
  * @desc Will also delete all files associated with the book from disk.
  */
 export const DELETE = withHasPermission<Params>("bookDelete")(async (
-  _request,
+  request,
   context,
 ) => {
   const { bookId } = await context.params
@@ -182,8 +182,12 @@ export const DELETE = withHasPermission<Params>("bookDelete")(async (
     )
   }
 
+  const includeAssets = request.nextUrl.searchParams.get("includeAssets")
+
   await deleteBook(book.uuid)
-  await deleteAssets(book)
+  if (includeAssets) {
+    await deleteAssets(book, { all: includeAssets === "all" })
+  }
 
   return new Response(null, { status: 204 })
 })

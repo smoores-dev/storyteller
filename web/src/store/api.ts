@@ -97,10 +97,16 @@ export const api = createApi({
         body: settings,
       }),
     }),
-    deleteBook: build.mutation<void, { uuid: UUID }>({
-      query: ({ uuid }) => ({
+    deleteBook: build.mutation<
+      void,
+      { uuid: UUID; includeAssets?: "all" | "internal" }
+    >({
+      query: ({ uuid, includeAssets }) => ({
         url: `/books/${uuid}`,
         method: "DELETE",
+        params: {
+          includeAssets,
+        },
       }),
     }),
     deleteBookAssets: build.mutation<void, { uuid: UUID; originals?: boolean }>(
