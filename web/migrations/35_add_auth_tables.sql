@@ -42,6 +42,43 @@ FROM
 
 DROP TRIGGER user_update_trigger;
 
+DROP TABLE IF EXISTS collection_to_user;
+
+CREATE TABLE temp_position (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  user_id TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  locator TEXT NOT NULL,
+  timestamp REAL NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  UNIQUE (user_id, book_uuid)
+);
+
+INSERT INTO
+  temp_position (
+    uuid,
+    user_id,
+    book_uuid,
+    locator,
+    timestamp,
+    created_at,
+    updated_at
+  )
+SELECT
+  uuid,
+  user_uuid,
+  book_uuid,
+  locator,
+  timestamp,
+  created_at,
+  updated_at
+FROM
+  position;
+
+DROP TABLE position;
+
 DROP TABLE user;
 
 ALTER TABLE authjs_user
@@ -54,6 +91,72 @@ SET
   updated_at = CURRENT_TIMESTAMP
 WHERE
   id = OLD.id;
+
+END;
+
+CREATE TABLE collection_to_user (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  user_id TEXT NOT NULL,
+  collection_uuid TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (collection_uuid) REFERENCES collection (uuid),
+  FOREIGN KEY (user_id) REFERENCES user (id)
+);
+
+CREATE TRIGGER IF NOT EXISTS collection_to_user_update_trigger AFTER
+UPDATE ON collection_to_user FOR EACH ROW BEGIN
+UPDATE collection_to_user
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE position(
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  user_id TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  locator TEXT NOT NULL,
+  timestamp REAL NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (user_id) REFERENCES user (id),
+  UNIQUE (user_id, book_uuid)
+);
+
+INSERT INTO
+  position(
+    uuid,
+    user_id,
+    book_uuid,
+    locator,
+    timestamp,
+    created_at,
+    updated_at
+  )
+SELECT
+  uuid,
+  user_id,
+  book_uuid,
+  locator,
+  timestamp,
+  created_at,
+  updated_at
+FROM
+  temp_position;
+
+DROP TABLE temp_position;
+
+CREATE TRIGGER IF NOT EXISTS position_update_trigger AFTER
+UPDATE ON position FOR EACH ROW BEGIN
+UPDATE position
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
 
 END;
 

@@ -77,9 +77,9 @@ export type NewAudiobook = Insertable<DB["audiobook"]>
 export type Audiobook = Selectable<DB["audiobook"]>
 export type AudiobookUpdate = Updateable<DB["audiobook"]>
 
-export type NewAlignedBook = Insertable<DB["alignedBook"]>
-export type AlignedBook = Selectable<DB["alignedBook"]>
-export type AlignedBookUpdate = Updateable<DB["alignedBook"]>
+export type NewAlignedBook = Insertable<DB["readaloud"]>
+export type AlignedBook = Selectable<DB["readaloud"]>
+export type AlignedBookUpdate = Updateable<DB["readaloud"]>
 
 export type EbookRelation = Omit<NewEbook, "bookUuid">
 export type AudiobookRelation = Omit<NewAudiobook, "bookUuid">
@@ -91,20 +91,23 @@ export type BookUpdate = Updateable<DB["book"]>
 
 export async function createBookFromEpub(
   epub: Epub,
-  fallbackTitle: string,
   {
-    bookUuid,
-    ebookFilepath,
-    audiobookFilepath,
-    collectionUuid,
+    uuid,
+    title,
   }: {
-    bookUuid?: UUID
-    ebookFilepath?: string
-    audiobookFilepath?: string
-    collectionUuid?: UUID
+    uuid?: UUID
+    title: string
+  },
+  relations: {
+    authors?: AuthorRelation[]
+    series?: SeriesRelation[]
+    ebook?: EbookRelation
+    audiobook?: AudiobookRelation
+    readaloud?: AlignedBookRelation
+    collections?: UUID[]
   } = {},
 ) {
-  const title = await epub.getTitle()
+  const epubTitle = await epub.getTitle()
   const authors = await epub.getCreators()
   const language = await epub.getLanguage()
   const storytellerVersion = await epub.findMetadataItem(
@@ -127,8 +130,8 @@ export async function createBookFromEpub(
 
   return await createBook(
     {
-      uuid: bookUuid,
-      title: title ?? fallbackTitle,
+      uuid,
+      title: epubTitle ?? title,
       language: language?.toString() ?? null,
       alignedByStorytellerVersion: storytellerVersion?.value ?? null,
       alignedAt: storytellerMediaOverlaysModified?.value ?? null,
@@ -136,8 +139,7 @@ export async function createBookFromEpub(
       statusUuid: defaultStatus.uuid,
     },
     {
-      ...(ebookFilepath && { ebook: { filepath: ebookFilepath } }),
-      ...(audiobookFilepath && { audiobook: { filepath: audiobookFilepath } }),
+      ...relations,
       authors: authors.map((author) => ({
         name: author.name,
         role: author.role ?? null,
@@ -150,7 +152,6 @@ export async function createBookFromEpub(
           featured: i === 0,
           ...(series.position && { position: parseFloat(series.position) }),
         })),
-      ...(collectionUuid && { collections: [collectionUuid] }),
     },
   )
 }
@@ -162,6 +163,7 @@ export async function createBook(
     series?: SeriesRelation[]
     ebook?: EbookRelation
     audiobook?: AudiobookRelation
+    readaloud?: AlignedBookRelation
     collections?: UUID[]
   } = {},
 ) {
@@ -221,6 +223,27 @@ export async function createBook(
         featured: values.featured,
       }),
     })
+  }
+
+  if (relations.readaloud) {
+    await db
+      .insertInto("readaloud")
+      .values({ ...relations.readaloud, bookUuid: uuid })
+      .execute()
+  }
+
+  if (relations.ebook) {
+    await db
+      .insertInto("ebook")
+      .values({ ...relations.ebook, bookUuid: uuid })
+      .execute()
+  }
+
+  if (relations.audiobook) {
+    await db
+      .insertInto("audiobook")
+      .values({ ...relations.audiobook, bookUuid: uuid })
+      .execute()
   }
 
   if (relations.collections?.length) {
@@ -334,6 +357,7 @@ export async function getBooks(
             "collection.name",
             "collection.description",
             "collection.public",
+            "collection.importPath",
             "collection.createdAt",
             "collection.updatedAt",
           ])
@@ -371,6 +395,7 @@ export async function getBooks(
           .select([
             "ebook.uuid",
             "ebook.filepath",
+            "ebook.missing",
             "ebook.createdAt",
             "ebook.updatedAt",
           ])
@@ -382,6 +407,7 @@ export async function getBooks(
           .select([
             "audiobook.uuid",
             "audiobook.filepath",
+            "audiobook.missing",
             "audiobook.createdAt",
             "audiobook.updatedAt",
           ])
@@ -389,16 +415,17 @@ export async function getBooks(
       ).as("audiobook"),
       jsonObjectFrom(
         eb
-          .selectFrom("alignedBook")
+          .selectFrom("readaloud")
           .select([
-            "alignedBook.uuid",
-            "alignedBook.filepath",
-            "alignedBook.status",
-            "alignedBook.createdAt",
-            "alignedBook.updatedAt",
+            "readaloud.uuid",
+            "readaloud.filepath",
+            "readaloud.missing",
+            "readaloud.status",
+            "readaloud.createdAt",
+            "readaloud.updatedAt",
           ])
-          .whereRef("alignedBook.bookUuid", "=", "book.uuid"),
-      ).as("alignedBook"),
+          .whereRef("readaloud.bookUuid", "=", "book.uuid"),
+      ).as("readaloud"),
     ])
     .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids))
     .execute()
@@ -459,7 +486,7 @@ export async function deleteBook(bookUuid: UUID) {
 
   await db.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
 
-  await db.deleteFrom("alignedBook").where("bookUuid", "=", bookUuid).execute()
+  await db.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
   await db.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
   await db.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
 
@@ -482,7 +509,7 @@ export async function updateBook(
     tags?: string[]
     ebook?: EbookRelation
     audiobook?: AudiobookRelation
-    alignedBook?: AlignedBookRelation
+    readaloud?: AlignedBookRelation
   } = {},
 ) {
   if (update) {
@@ -704,23 +731,23 @@ export async function updateBook(
     }
   }
 
-  if (relations.alignedBook) {
+  if (relations.readaloud) {
     const existing = await db
-      .selectFrom("alignedBook")
+      .selectFrom("readaloud")
       .select(["uuid"])
       .where("bookUuid", "=", uuid)
       .executeTakeFirst()
 
     if (existing) {
       await db
-        .updateTable("alignedBook")
-        .set({ filepath: relations.alignedBook.filepath })
+        .updateTable("readaloud")
+        .set({ filepath: relations.readaloud.filepath })
         .where("uuid", "=", existing.uuid)
         .execute()
     } else {
       await db
-        .insertInto("alignedBook")
-        .values({ bookUuid: uuid, filepath: relations.alignedBook.filepath })
+        .insertInto("readaloud")
+        .values({ bookUuid: uuid, filepath: relations.readaloud.filepath })
         .execute()
     }
   }

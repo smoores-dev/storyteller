@@ -122,8 +122,8 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     await persistCustomAudioCover(bookUuid, `Audio Cover.${ext}`, data)
   }
 
-  if (updated.alignedBook?.filepath) {
-    const alignedEpubPath = updated.alignedBook.filepath
+  if (updated.readaloud?.filepath) {
+    const alignedEpubPath = updated.readaloud.filepath
     const epub = await Epub.from(alignedEpubPath)
     await writeMetadataToEpub(updated, epub)
     await epub.writeToFile(alignedEpubPath)

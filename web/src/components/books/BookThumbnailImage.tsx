@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function BookThumbnailImage({ book }: Props) {
-  if (book.alignedBook || (book.ebook && book.audiobook)) {
+  if (book.readaloud || (book.ebook && book.audiobook)) {
     return (
       <Box className="relative">
         <EbookCoverImage

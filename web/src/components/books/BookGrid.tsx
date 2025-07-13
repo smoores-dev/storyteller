@@ -24,8 +24,9 @@ export function BookGrid({
       listStyleType="none"
       className={cx("mt-8 flex flex-row flex-wrap gap-6", className)}
     >
-      {books.map((book) => (
+      {books.map((book, index) => (
         <List.Item
+          style={{ zIndex: books.length - index }}
           key={book.uuid}
           className="relative"
           classNames={{ itemWrapper: "block" }}

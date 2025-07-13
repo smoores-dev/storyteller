@@ -1,9 +1,5 @@
 import { UserRequest } from "@/apiModels"
-import {
-  createAccessToken,
-  getAccessTokenExpireDate,
-  hashPassword,
-} from "@/auth/auth"
+import { createUserToken, hashPassword } from "@/auth/auth"
 import { createAdminUser } from "@/database/users"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -31,11 +27,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const accessTokenExpires = getAccessTokenExpireDate()
-  const accessToken = createAccessToken(
-    { sub: user.username },
-    accessTokenExpires,
-  )
+  const token = await createUserToken(user.username, user.password)
 
-  return NextResponse.json({ access_token: accessToken, token_type: "bearer" })
+  return NextResponse.json(token)
 }

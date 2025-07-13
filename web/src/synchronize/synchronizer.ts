@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { basename, dirname, parse, relative } from "node:path/posix"
 import memoize from "memoize"
 import { Epub, ManifestItem, ParsedXml } from "@smoores/epub/node"
-import { getTrackDuration } from "@/audio"
+import { getTrackDuration, lookupAudioMime } from "@/audio"
 import {
   SentenceRange,
   StorytellerTranscription,
@@ -15,9 +15,7 @@ import { tagSentences } from "./tagSentences"
 import { getXHtmlSentences } from "./getXhtmlSentences"
 import type { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { findNearestMatch } from "./fuzzy"
-import { extname } from "node:path"
 import { logger } from "@/logging"
-import { lookup } from "mime-types"
 
 const OFFSET_SEARCH_WINDOW_SIZE = 5000
 
@@ -215,7 +213,6 @@ export class Synchronizer {
     await Promise.all(
       audiofiles.map(async (audiofile) => {
         const { name, base } = parse(audiofile)
-        const ext = extname(base)
 
         const id = `audio_${name}`
 
@@ -230,11 +227,7 @@ export class Synchronizer {
 
         const audio = await readFile(audiofile)
 
-        // The mime-db package does not recognize m4b (jshttp/mime-db#357).
-        // It has something for all other audio files we recognize.
-        const mediaType = (
-          lookup(ext) || (ext === ".m4b" ? "audio/mp4" : undefined)
-        )?.replace(/^video/, "audio")
+        const mediaType = lookupAudioMime(base) ?? undefined
         await this.epub.addManifestItem(
           {
             id,

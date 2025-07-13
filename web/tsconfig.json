@@ -27,13 +27,9 @@
         "name": "next"
       }
     ],
+    "customConditions": ["@storyteller"],
     "paths": {
-      "@/*": ["./src/*"],
-      // This allows us to treat our typescript source files
-      // in dependent packages as internal to this workspace
-      // for development purposes (e.g. hot module reloading, etc)
-      "@smoores/epub/node": ["../epub/node.ts"],
-      "@smoores/*": ["../*/index.ts"]
+      "@/*": ["./src/*"]
     },
     "outDir": "tsbuild",
     "noEmit": false

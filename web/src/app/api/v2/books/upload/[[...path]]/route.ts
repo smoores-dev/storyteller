@@ -48,13 +48,6 @@ const server = new Server({
 
     const filetype = upload.metadata["filetype"] ?? lookup(filename)
 
-    if (!filetype) {
-      return {
-        status_code: 405,
-        body: "Could not determine type of uploaded file",
-      }
-    }
-
     const collectionUuid = upload.metadata["collection"] as UUID | undefined
 
     const isEpub = filetype === "application/epub+zip"
@@ -143,7 +136,7 @@ const server = new Server({
           series,
           ...(isAligned
             ? {
-                alignedBook: {
+                readaloud: {
                   status: "ALIGNED",
                   filepath: getInternalEpubAlignedFilepath(book),
                 },
@@ -153,10 +146,13 @@ const server = new Server({
 
         await persistEpub(book, uploadPath, isAligned)
       } else {
-        book = await createBookFromEpub(epub, basename(filename, ".epub"), {
-          bookUuid,
-          ...(collectionUuid && { collectionUuid }),
-        })
+        book = await createBookFromEpub(
+          epub,
+          { uuid: bookUuid, title: basename(filename, ".epub") },
+          {
+            ...(collectionUuid && { collections: [collectionUuid] }),
+          },
+        )
 
         await persistEpub(book, uploadPath, isAligned)
       }

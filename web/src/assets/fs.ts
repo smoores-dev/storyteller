@@ -48,7 +48,7 @@ export async function persistEpub(
   await updateBook(book.uuid, null, {
     ...(aligned
       ? {
-          alignedBook: {
+          readaloud: {
             filepath,
           },
         }
@@ -138,6 +138,6 @@ export async function deleteAssets(book: BookWithRelations) {
   await Promise.all([
     deleteOriginals(book),
     deleteProcessed(book),
-    ...(book.alignedBook?.filepath ? [rm(book.alignedBook.filepath)] : []),
+    ...(book.readaloud?.filepath ? [rm(book.readaloud.filepath)] : []),
   ])
 }

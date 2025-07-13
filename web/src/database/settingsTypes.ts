@@ -78,38 +78,5 @@ export type Settings = {
   parallelTranscribes: number
   parallelWhisperBuild: number
   authProviders: AuthProvider[]
+  importPath: string | null
 }
-
-export const SETTINGS_ROW_NAMES = {
-  smtp_host: "smtpHost",
-  smtp_port: "smtpPort",
-  smtp_username: "smtpUsername",
-  smtp_password: "smtpPassword",
-  smtp_from: "smtpFrom",
-  smtp_ssl: "smtpSsl",
-  smtp_reject_unauthorized: "smtpRejectUnauthorized",
-  library_name: "libraryName",
-  web_url: "webUrl",
-  max_track_length: "maxTrackLength",
-  codec: "codec",
-  bitrate: "bitrate",
-  transcription_engine: "transcriptionEngine",
-  whisper_build: "whisperBuild",
-  whisper_model: "whisperModel",
-  google_cloud_api_key: "googleCloudApiKey",
-  azure_subscription_key: "azureSubscriptionKey",
-  azure_service_region: "azureServiceRegion",
-  amazon_transcribe_region: "amazonTranscribeRegion",
-  amazon_transcribe_access_key_id: "amazonTranscribeAccessKeyId",
-  amazon_transcribe_secret_access_key: "amazonTranscribeSecretAccessKey",
-  open_ai_api_key: "openAiApiKey",
-  open_ai_organization: "openAiOrganization",
-  open_ai_base_url: "openAiBaseUrl",
-  open_ai_model_name: "openAiModelName",
-  deepgram_api_key: "deepgramApiKey",
-  deepgram_model: "deepgramModel",
-  parallel_transcodes: "parallelTranscodes",
-  parallel_transcribes: "parallelTranscribes",
-  parallel_whisper_build: "parallelWhisperBuild",
-  auth_providers: "authProviders",
-} as const satisfies Record<string, keyof Settings>

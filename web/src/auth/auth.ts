@@ -9,7 +9,6 @@ import {
   updateUserByEmail,
 } from "../database/users"
 import { add } from "date-fns/fp/add"
-import { sign } from "jsonwebtoken"
 import { NextRequest, NextResponse } from "next/server"
 import { readFileSync } from "node:fs"
 import NextAuth, { type DefaultSession, NextAuthConfig } from "next-auth"
@@ -23,6 +22,9 @@ import { randomUUID } from "node:crypto"
 import { getSettings } from "../database/settings"
 import { Providers } from "./providers"
 import { cookies } from "next/headers"
+import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
+import { headers as nextHeaders } from "next/headers"
+import { getCurrentUserSession } from "@/database/users"
 
 declare module "next-auth" {
   interface Session {
@@ -35,6 +37,29 @@ declare module "next-auth" {
     permissions: UserPermissionSet | null
     userPermissionUuid: UUID
   }
+}
+
+const JWT_SECRET_KEY_FILE = process.env["STORYTELLER_SECRET_KEY_FILE"]
+const DEFAULT_SECRET_KEY_FILE = "/run/secrets/secret_key"
+
+/**
+ * There was a period of time where Storyteller's example
+ * compose.yaml file incorrectly set the STORYTELLER_SECRET_KEY
+ * environment variable to the string `/run/secrets/secret_key`,
+ * rather than the contents of that file.
+ *
+ * To mitigate this security risk even for users that don't
+ * update their configuration, if that's the value of the env
+ * variable, we read the value from the file instead.
+ */
+function readSecretKey() {
+  if (JWT_SECRET_KEY_FILE) {
+    return readFileSync(JWT_SECRET_KEY_FILE, { encoding: "utf-8" })
+  }
+  if (process.env["STORYTELLER_SECRET_KEY"] === DEFAULT_SECRET_KEY_FILE) {
+    return readFileSync(DEFAULT_SECRET_KEY_FILE, { encoding: "utf-8" })
+  }
+  return process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
 }
 
 function fromDate(time: number, date = Date.now()) {
@@ -77,8 +102,7 @@ export const config: NextAuthConfig = {
   pages: {
     signIn: "/login",
   },
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  secret: process.env["AUTH_SECRET"]!,
+  secret: readSecretKey(),
   adapter,
   jwt: {
     encode() {
@@ -184,6 +208,37 @@ export async function refreshNextAuth() {
   nextAuth = NextAuth(createConfig)
 }
 
+export async function createUserToken(
+  usernameOrEmail: string,
+  password: string,
+) {
+  const headers = new Headers(await nextHeaders())
+  const signInURL = createActionURL(
+    "callback",
+    // @ts-expect-error `x-forwarded-proto` is not nullable, next.js sets it by default
+    headers.get("x-forwarded-proto"),
+    headers,
+    process.env,
+    config,
+  )
+  const url = `${signInURL.toString()}/credentials`
+  headers.set("Content-Type", "application/x-www-form-urlencoded")
+  const params = new URLSearchParams({
+    usernameOrEmail,
+    password,
+    callbackUrl: "/",
+  })
+  const req = new Request(url, { method: "POST", headers, body: params })
+  await Auth(req, { ...config, raw, skipCSRFCheck, trustHost: true })
+  const session = await getCurrentUserSession(usernameOrEmail)
+
+  return {
+    access_token: session.sessionToken,
+    expires_in: session.expires.valueOf() * 1000 - Date.now(),
+    token_type: "bearer",
+  }
+}
+
 /**
  * AppRouteHandlerFnContext is the context that is passed to the handler as the
  * second argument.
@@ -208,31 +263,6 @@ export type AppRouteHandlerFn = (
   // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 ) => void | Response | Promise<void | Response>
 
-const JWT_SECRET_KEY_FILE = process.env["STORYTELLER_SECRET_KEY_FILE"]
-const DEFAULT_SECRET_KEY_FILE = "/run/secrets/secret_key"
-
-/**
- * There was a period of time where Storyteller's example
- * compose.yaml file incorrectly set the STORYTELLER_SECRET_KEY
- * environment variable to the string `/run/secrets/secret_key`,
- * rather than the contents of that file.
- *
- * To mitigate this security risk even for users that don't
- * update their configuration, if that's the value of the env
- * variable, we read the value from the file instead.
- */
-function readSecretKey() {
-  if (JWT_SECRET_KEY_FILE) {
-    return readFileSync(JWT_SECRET_KEY_FILE, { encoding: "utf-8" })
-  }
-  if (process.env["STORYTELLER_SECRET_KEY"] === DEFAULT_SECRET_KEY_FILE) {
-    return readFileSync(DEFAULT_SECRET_KEY_FILE, { encoding: "utf-8" })
-  }
-  return process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
-}
-
-const JWT_SECRET_KEY = readSecretKey()
-const JWT_ALGORITHM = "HS256"
 export const ACCESS_TOKEN_EXPIRE_DAYS = 10
 
 const addAccessTokenExpireDays = add({ days: ACCESS_TOKEN_EXPIRE_DAYS })
@@ -258,15 +288,6 @@ export async function authenticateUser(
   }
 
   return user
-}
-
-export function createAccessToken(data: Record<string, string>, expires: Date) {
-  const payload = {
-    ...data,
-    exp: expires.valueOf(),
-  }
-
-  return sign(payload, JWT_SECRET_KEY, { algorithm: JWT_ALGORITHM })
 }
 
 function extractTokenFromHeader(request: NextRequest) {

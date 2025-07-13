@@ -33,7 +33,7 @@ declare global {
   /* eslint-disable no-var */
   var controllers: Map<UUID, AbortController> | undefined
   var queue: { bookUuid: UUID; restart: boolean }[] | undefined
-  var piscina: Piscina | undefined
+  var alignmentPiscina: Piscina | undefined
   /* eslint-enable no-var */
 }
 
@@ -59,15 +59,24 @@ const filename = join(
   process.env["STORYTELLER_WORKER"] ?? "worker.cjs",
 )
 
-let piscina: Piscina
-if (globalThis.piscina) {
-  piscina = globalThis.piscina
+let alignmentPiscina: Piscina
+if (globalThis.alignmentPiscina) {
+  alignmentPiscina = globalThis.alignmentPiscina
 } else {
-  piscina = new Piscina({
+  alignmentPiscina = new Piscina({
     filename,
     maxThreads: 1,
+    // In dev, we don't bundle packages in the worker.
+    // These flags allow us to import directly from the
+    // source typescript files for our own packages (e.g. @smoores/epub)
+    ...(process.env.NODE_ENV === "development" && {
+      env: {
+        NODE_OPTIONS:
+          "--conditions=@storyteller --experimental-transform-types",
+      },
+    }),
   })
-  globalThis.piscina = piscina
+  globalThis.alignmentPiscina = alignmentPiscina
 }
 
 export function cancelProcessing(bookUuid: UUID) {
@@ -142,7 +151,7 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
   controllers.set(bookUuid, abortController)
 
   try {
-    await piscina.run(
+    await alignmentPiscina.run(
       { bookUuid, restart, settings, port: port1 } satisfies Parameters<
         typeof processBook
       >[0],

@@ -1,10 +1,5 @@
 import { InviteAccept } from "@/apiModels"
-import {
-  createAccessToken,
-  getAccessTokenExpireDate,
-  hashPassword,
-  withHasPermission,
-} from "@/auth/auth"
+import { createUserToken, hashPassword, withHasPermission } from "@/auth/auth"
 
 import {
   acceptInvite,
@@ -81,11 +76,6 @@ export async function POST(request: NextRequest) {
     hashedPassword,
   )
 
-  const accessTokenExpires = getAccessTokenExpireDate()
-  const accessToken = createAccessToken(
-    { sub: invite.username },
-    accessTokenExpires,
-  )
-
-  return NextResponse.json({ access_token: accessToken, token_type: "bearer" })
+  const token = await createUserToken(invite.username, invite.password)
+  return NextResponse.json(token)
 }

@@ -7,12 +7,14 @@
   "license": "MIT",
   "exports": {
     ".": {
+      "@storyteller": "./index.ts",
       "import": "./index.js",
       "require": "./node.cjs",
       "types": "./index.d.ts",
       "node": "./node.js"
     },
     "./node": {
+      "@storyteller": "./node.ts",
       "import": "./node.js",
       "require": "./node.cjs",
       "types": "./node.d.ts"
@@ -57,7 +59,7 @@
     "async-mutex": "^0.5.0",
     "fast-xml-parser": "^4.0.0",
     "mem": "^8.0.0",
-    "mime-types": "^2.0.0",
+    "mime-types": "^3.0.1",
     "nanoid": "^5.1.5",
     "path-dirname": "^1.0.2"
   },

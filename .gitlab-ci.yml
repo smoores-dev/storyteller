@@ -16,6 +16,7 @@ always-yes:
 check:
   image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
   stage: check
+  tags: [saas-linux-large-amd64]
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:

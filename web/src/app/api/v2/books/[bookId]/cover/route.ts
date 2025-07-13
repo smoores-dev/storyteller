@@ -47,8 +47,8 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     } catch {
       const audioDirectory = book.audiobook?.filepath
       if (!audioDirectory) {
-        if (book.alignedBook?.filepath) {
-          const epub = await Epub.from(book.alignedBook.filepath)
+        if (book.readaloud?.filepath) {
+          const epub = await Epub.from(book.readaloud.filepath)
           const audioCoverImage = await getAudioCoverImaage(epub)
           if (audioCoverImage) return new Response(audioCoverImage)
         }
@@ -61,7 +61,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     }
   }
 
-  const epubFilepath = book.alignedBook?.filepath ?? book.ebook?.filepath
+  const epubFilepath = book.readaloud?.filepath ?? book.ebook?.filepath
   if (!epubFilepath) return new Response(null, { status: 404 })
 
   const epub = await Epub.from(epubFilepath)

@@ -1,0 +1,2 @@
+ALTER TABLE collection
+ADD COLUMN import_path TEXT DEFAULT NULL;

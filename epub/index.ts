@@ -1,5 +1,5 @@
 import {
-  Entry,
+  type Entry,
   Uint8ArrayReader,
   Uint8ArrayWriter,
   ZipReader,

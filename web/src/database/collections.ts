@@ -4,20 +4,28 @@ import { db } from "./connection"
 import { BookEvents } from "@/events"
 import { UUID } from "@/uuid"
 import { getBooks } from "./books"
+import { jsonArrayFrom } from "kysely/helpers/sqlite"
+import { update as updateAutoimport } from "@/assets/autoimport/listen"
 
 export type Collection = Selectable<DB["collection"]>
 export type NewCollection = Insertable<DB["collection"]>
 export type CollectionUpdate = Updateable<DB["collection"]>
 
+export type CollectionWithRelations = Awaited<ReturnType<typeof getCollection>>
+
 export async function getCollection(uuid: UUID, userId?: UUID) {
   const collection = await db
     .selectFrom("collection")
     .selectAll("collection")
-    .leftJoin(
-      "bookToCollection",
-      "bookToCollection.collectionUuid",
-      "collection.uuid",
-    )
+    .select((eb) => [
+      jsonArrayFrom(
+        eb
+          .selectFrom("user")
+          .innerJoin("collectionToUser", "collectionToUser.userId", "user.id")
+          .select(["user.id", "user.email", "user.username"])
+          .whereRef("collectionToUser.collectionUuid", "=", "collection.uuid"),
+      ).as("users"),
+    ])
     .$if(!!userId, (qb) =>
       qb
         .leftJoin(
@@ -43,6 +51,15 @@ export async function getCollections(userId?: UUID) {
   return await db
     .selectFrom("collection")
     .selectAll("collection")
+    .select((eb) => [
+      jsonArrayFrom(
+        eb
+          .selectFrom("user")
+          .innerJoin("collectionToUser", "collectionToUser.userId", "user.id")
+          .select(["user.id", "user.email", "user.username"])
+          .whereRef("collectionToUser.collectionUuid", "=", "collection.uuid"),
+      ).as("users"),
+    ])
     .$if(!!userId, (qb) =>
       qb
         .leftJoin(
@@ -65,18 +82,13 @@ export async function createCollection(
   insert: NewCollection,
   relations: { users?: UUID[] } = {},
 ) {
-  const collection = await db
+  const { uuid } = await db
     .insertInto("collection")
     .values(insert)
-    .returning([
-      "uuid as uuid",
-      "name as name",
-      "public as public",
-      "description as description",
-      "createdAt as createdAt",
-      "updatedAt as updatedAt",
-    ])
+    .returning(["uuid as uuid"])
     .executeTakeFirstOrThrow()
+
+  const collection = await getCollection(uuid)
 
   if (!collection.public && relations.users) {
     await db
@@ -90,10 +102,7 @@ export async function createCollection(
       .execute()
   }
 
-  return {
-    ...collection,
-    ...(!collection.public && { users: relations.users }),
-  }
+  return collection
 }
 
 export async function updateCollection(
@@ -101,21 +110,14 @@ export async function updateCollection(
   update: CollectionUpdate,
   relations: { users?: UUID[] } = {},
 ) {
-  const collection = Object.keys(update).length
-    ? await db
-        .updateTable("collection")
-        .set(update)
-        .where("uuid", "=", uuid)
-        .returning([
-          "uuid as uuid",
-          "name as name",
-          "public as public",
-          "description as description",
-          "createdAt as createdAt",
-          "updatedAt as updatedAt",
-        ])
-        .executeTakeFirstOrThrow()
-    : await getCollection(uuid)
+  if (Object.keys(update).length) {
+    await db
+      .updateTable("collection")
+      .set(update)
+      .where("uuid", "=", uuid)
+      .execute()
+  }
+  const collection = await getCollection(uuid)
 
   if (!collection.public && relations.users) {
     await db
@@ -133,6 +135,8 @@ export async function updateCollection(
       )
       .execute()
   }
+
+  await updateAutoimport(uuid)
 
   return collection
 }

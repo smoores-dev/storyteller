@@ -26,14 +26,14 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
   const ifRange = request.headers.get("If-Range")?.valueOf()
   const book = await getBook(bookUuid)
 
-  if (!book?.alignedBook?.filepath) {
+  if (!book?.readaloud?.filepath) {
     return Response.json(
       { message: `Could not find book with id ${bookId}` },
       { status: 404 },
     )
   }
 
-  const filepath = book.alignedBook.filepath
+  const filepath = book.readaloud.filepath
   const epub = await Epub.from(filepath)
   const title = await epub.getTitle(true)
   const normalizedTitle =
