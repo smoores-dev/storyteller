@@ -70,8 +70,8 @@ FROM
   book;
 
 INSERT INTO
-  aligned_book (book_uuid, ebook_uuid, audiobook_uuid)
+  aligned_book (book_uuid)
 SELECT
-  book.uuid,
+  book.uuid
 FROM
   book;

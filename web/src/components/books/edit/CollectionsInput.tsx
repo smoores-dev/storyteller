@@ -17,6 +17,7 @@ import { Collection } from "@/database/collections"
 import { SaveState } from "@/components/forms"
 import { UUID } from "@/uuid"
 import { usePermission } from "@/hooks/usePermission"
+import { ImportPathInput } from "@/components/ImportPathInput"
 
 interface Props {
   values: string[]
@@ -26,6 +27,7 @@ interface Props {
     description: string
     public: boolean
     users: string[]
+    importPath: string | null
   }) => void | Promise<void>
   getInputProps: UseFormReturnType<{ collections: string[] }>["getInputProps"]
   users: User[]
@@ -47,6 +49,7 @@ export function CollectionsInput({
       public: true,
       users: [] as UUID[],
       description: "",
+      importPath: null as null | string,
     },
   })
 
@@ -98,6 +101,19 @@ export function CollectionsInput({
             description="Whether this collection (and its books) should be visible to all users"
             {...form.getInputProps("public", { type: "checkbox" })}
           />
+          <ImportPathInput {...form.getInputProps("importPath")}>
+            <Text className="text-sm text-black opacity-70">
+              Storyteller can be configured to automatically import book files
+              from a specific directory.
+            </Text>
+            <Text className="text-sm text-black opacity-70">
+              When enabled, Storyteller will set up a filesystem watcher for the
+              directory. When any files are added or modified within the
+              directory, Storyteller will scan for new book files, and
+              automatically import any that it finds. They will be added to this
+              collection.
+            </Text>
+          </ImportPathInput>
           {!form.values.public && (
             <UserSelect
               label="Share with"

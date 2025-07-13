@@ -41,11 +41,6 @@ void describe("isAudioFile", () => {
     assert.ok(isAudioFile(".wav"))
   })
 
-  void it("recognizes video formats which might have audio", () => {
-    assert.ok(isAudioFile(".mkv"))
-    assert.ok(isAudioFile(".webm"))
-  })
-
   void it("does not recognize other formats", () => {
     assert.ok(!isAudioFile(".json"))
     assert.ok(!isAudioFile(".epub"))

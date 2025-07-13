@@ -7,16 +7,16 @@ import { logger } from "@/logging"
 import { splitQuery, sqliteSplitterOptions } from "dbgate-query-splitter"
 import { sql } from "kysely"
 
-const jsMigrations: Record<string, Promise<() => Promise<void>>> = {
-  "33_add_more_book_metadata.sql": import(
-    "./migrations/33_add_more_book_metadata.sql"
-  ).then((m) => m.default),
-  "40_split_book_tables.sql": import(
-    "./migrations/40_split_book_tables.sql"
-  ).then((m) => m.default),
-  "41_reorganize_library.sql": import(
-    "./migrations/41_reorganize_library.sql"
-  ).then((m) => m.default),
+const jsMigrations: Record<string, () => Promise<void>> = {
+  "33_add_more_book_metadata.sql": (
+    await import("./migrations/33_add_more_book_metadata.sql")
+  ).default,
+  "38_split_book_tables.sql": (
+    await import("./migrations/38_split_book_tables.sql")
+  ).default,
+  "39_reorganize_library.sql": (
+    await import("./migrations/39_reorganize_library.sql")
+  ).default,
 }
 
 async function isFirstStartup() {
@@ -97,21 +97,23 @@ async function migrateFile(path: string) {
   logger.info(contents)
   const statements = splitQuery(contents, sqliteSplitterOptions) as string[]
 
-  for (const statement of statements) {
-    try {
-      await sql`${sql.raw(statement)}`.execute(db)
-    } catch (e) {
-      logger.error(`Failed to run statement:
+  await db.transaction().execute(async (tr) => {
+    for (const statement of statements) {
+      try {
+        await sql`${sql.raw(statement)}`.execute(tr)
+      } catch (e) {
+        logger.error(`Failed to run statement:
 ${statement}`)
-      throw e
+        throw e
+      }
     }
-  }
+  })
 
   await createMigration(hash, basename(path))
   return true
 }
 
-async function migrate() {
+export async function migrate() {
   // Make sure to evaluate this _before_ running any migrations
   const foundFirstStartup = await isFirstStartup()
   if (foundFirstStartup) logger.info("First startup - initializing database")
@@ -128,10 +130,7 @@ async function migrate() {
     const migrated = await migrateFile(join(migrationsDir, migrationFile))
 
     if (migrated) {
-      if (jsMigrations[migrationFile]) {
-        const jsMigration = await jsMigrations[migrationFile]
-        await jsMigration()
-      }
+      await jsMigrations[migrationFile]?.()
     }
   }
 
@@ -140,4 +139,7 @@ async function migrate() {
   }
 }
 
-void migrate()
+// Support running directly as a script, for dev/testing
+if (process.argv[1] === import.meta.filename) {
+  void migrate()
+}

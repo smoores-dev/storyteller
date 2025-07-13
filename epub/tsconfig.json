@@ -8,12 +8,7 @@
     "moduleResolution": "Node16",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ESNext"],
-    "paths": {
-      // See the paths config in web/tsconfig.json for more
-      // info. This is only meaningfully used by the Next.js bundler.
-      "@smoores/fs": ["../fs/index.ts"]
-    }
+    "lib": ["ESNext"]
   },
   "include": ["index.ts", "node.ts", "index.test.ts", "./path-dirname.d.ts"],
   "references": [

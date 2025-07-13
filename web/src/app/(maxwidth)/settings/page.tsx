@@ -6,40 +6,6 @@ import { SettingsForm } from "@/components/settings/SettingsForm"
 import { logger } from "@/logging"
 import { Title } from "@mantine/core"
 
-const defaultSettings: Settings = {
-  smtpHost: "",
-  smtpPort: 0,
-  smtpUsername: "",
-  smtpPassword: "",
-  smtpFrom: "",
-  smtpSsl: true,
-  smtpRejectUnauthorized: true,
-  libraryName: "",
-  webUrl: "",
-  maxTrackLength: 2,
-  codec: "",
-  bitrate: "",
-  transcriptionEngine: "whisper.cpp",
-  whisperBuild: "cpu",
-  whisperModel: "tiny",
-  googleCloudApiKey: "",
-  azureSubscriptionKey: "",
-  azureServiceRegion: "",
-  amazonTranscribeRegion: "",
-  amazonTranscribeAccessKeyId: "",
-  amazonTranscribeSecretAccessKey: "",
-  openAiApiKey: "",
-  openAiOrganization: "",
-  openAiBaseUrl: "",
-  openAiModelName: "",
-  deepgramApiKey: "",
-  deepgramModel: "",
-  parallelTranscribes: 1,
-  parallelTranscodes: 1,
-  parallelWhisperBuild: 1,
-  authProviders: [],
-}
-
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
@@ -76,8 +42,7 @@ export default async function SettingsPage() {
   return (
     <>
       <Title order={2}>Settings</Title>
-      {/* This isn't enough to fill in defaults. We have to handle props that exist and are set to null, to */}
-      <SettingsForm settings={{ ...defaultSettings, ...settings }} />
+      <SettingsForm settings={{ ...settings }} />
     </>
   )
 }

@@ -8807,7 +8807,7 @@ __metadata:
     fast-xml-parser: "npm:^4.0.0"
     markdown-toc: "npm:^1.2.0"
     mem: "npm:^8.0.0"
-    mime-types: "npm:^2.0.0"
+    mime-types: "npm:^3.0.1"
     nanoid: "npm:^5.1.5"
     path-dirname: "npm:^1.0.2"
     remark-toc: "npm:^9.0.0"
@@ -8991,6 +8991,7 @@ __metadata:
     date-fns: "npm:^3.6.0"
     dayjs: "npm:^1.11.13"
     dbgate-query-splitter: "npm:^4.11.3"
+    debounce: "npm:^2.2.0"
     echogarden: "npm:^2.3.1"
     esbuild: "npm:^0.23.0"
     fuse.js: "npm:^7.1.0"
@@ -9000,7 +9001,7 @@ __metadata:
     kysely-codegen: "npm:^0.18.5"
     match-sorter: "npm:^6.3.4"
     memoize: "npm:^10.0.0"
-    mime-types: "npm:^2.1.35"
+    mime-types: "npm:^3.0.1"
     music-metadata: "npm:^11.6.0"
     next: "npm:^15.1.2"
     next-auth: "npm:^5.0.0-beta.28"
@@ -14354,6 +14355,13 @@ __metadata:
   version: 1.2.1
   resolution: "debounce@npm:1.2.1"
   checksum: 10c0/6c9320aa0973fc42050814621a7a8a78146c1975799b5b3cc1becf1f77ba9a5aa583987884230da0842a03f385def452fad5d60db97c3d1c8b824e38a8edf500
+  languageName: node
+  linkType: hard
+
+"debounce@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "debounce@npm:2.2.0"
+  checksum: 10c0/684536fe9a04c9eea46cf02f119f69aa4071813ba25b9b43370e1503ea60b34fd38d694c7145fa2be504f9d40e7e39354cb9ed155c70954a0eefa391aefe271c
   languageName: node
   linkType: hard
 
@@ -22963,6 +22971,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mime-db@npm:^1.54.0":
+  version: 1.54.0
+  resolution: "mime-db@npm:1.54.0"
+  checksum: 10c0/8d907917bc2a90fa2df842cdf5dfeaf509adc15fe0531e07bb2f6ab15992416479015828d6a74200041c492e42cce3ebf78e5ce714388a0a538ea9c53eece284
+  languageName: node
+  linkType: hard
+
 "mime-db@npm:~1.33.0":
   version: 1.33.0
   resolution: "mime-db@npm:1.33.0"
@@ -22988,12 +23003,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mime-types@npm:^2.0.0, mime-types@npm:^2.1.12, mime-types@npm:^2.1.27, mime-types@npm:^2.1.31, mime-types@npm:^2.1.35, mime-types@npm:~2.1.17, mime-types@npm:~2.1.24, mime-types@npm:~2.1.34":
+"mime-types@npm:^2.1.12, mime-types@npm:^2.1.27, mime-types@npm:^2.1.31, mime-types@npm:~2.1.17, mime-types@npm:~2.1.24, mime-types@npm:~2.1.34":
   version: 2.1.35
   resolution: "mime-types@npm:2.1.35"
   dependencies:
     mime-db: "npm:1.52.0"
   checksum: 10c0/82fb07ec56d8ff1fc999a84f2f217aa46cb6ed1033fefaabd5785b9a974ed225c90dc72fff460259e66b95b73648596dbcc50d51ed69cdf464af2d237d3149b2
+  languageName: node
+  linkType: hard
+
+"mime-types@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "mime-types@npm:3.0.1"
+  dependencies:
+    mime-db: "npm:^1.54.0"
+  checksum: 10c0/bd8c20d3694548089cf229016124f8f40e6a60bbb600161ae13e45f793a2d5bb40f96bbc61f275836696179c77c1d6bf4967b2a75e0a8ad40fe31f4ed5be4da5
   languageName: node
   linkType: hard
 

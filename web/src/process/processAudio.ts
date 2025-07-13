@@ -14,12 +14,14 @@ import { basename, dirname, extname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import {
+  AAC_FILE_EXTENSIONS,
   COVER_IMAGE_FILE_EXTENSIONS,
   getTrackChapters,
   getTrackDuration,
   isAudioFile,
   MP3_FILE_EXTENSIONS,
   MPEG4_FILE_EXTENSIONS,
+  OGG_FILE_EXTENSIONS,
   OPUS_FILE_EXTENSIONS,
   splitTrack,
   transcodeTrack,
@@ -62,16 +64,24 @@ function determineExtension(codec: string | null, inputFilename: string) {
   if (codec === "aac" || codec === "libopus") {
     return ".mp4"
   }
+
   const inputExtension = extname(inputFilename)
   if (MP3_FILE_EXTENSIONS.includes(inputExtension)) {
     return ".mp3"
   }
+
+  // All of these containers usually contain streams
+  // that can be stored in an MP4 container, and iOS
+  // only supports MP4 and MP3 containers
   if (
     MPEG4_FILE_EXTENSIONS.includes(inputExtension) ||
-    OPUS_FILE_EXTENSIONS.includes(inputExtension)
+    OGG_FILE_EXTENSIONS.includes(inputExtension) ||
+    OPUS_FILE_EXTENSIONS.includes(inputExtension) ||
+    AAC_FILE_EXTENSIONS.includes(inputExtension)
   ) {
     return ".mp4"
   }
+
   return inputExtension
 }
 
@@ -288,7 +298,7 @@ export async function processFile(
 
   if (ext === ".zip") {
     const tempDir = await mkdtemp(join(tmpdir(), bareFilename))
-    const zipContents = await readFile(filepath)
+    const zipContents = await streamFile(filepath)
     const dataReader = new Uint8ArrayReader(new Uint8Array(zipContents.buffer))
     const zipReader = new ZipReader(dataReader)
     try {

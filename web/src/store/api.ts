@@ -13,7 +13,7 @@ import { AuthorRelation, Book, SeriesRelation } from "@/database/books"
 import { Status } from "@/database/statuses"
 import { Author } from "@/database/authors"
 import { NewSeries, NewSeriesRelation, Series } from "@/database/series"
-import { Collection } from "@/database/collections"
+import { CollectionWithRelations } from "@/database/collections"
 import { Tag } from "@/database/tags"
 
 export const api = createApi({
@@ -330,7 +330,7 @@ export const api = createApi({
       providesTags: (series) =>
         series?.map((s) => ({ type: "Series", id: s.uuid })) ?? ["Series"],
     }),
-    listCollections: build.query<Collection[], void>({
+    listCollections: build.query<CollectionWithRelations[], void>({
       query: () => "/collections",
       providesTags: (collections) =>
         collections?.map((collection) => ({
@@ -339,15 +339,16 @@ export const api = createApi({
         })) ?? ["Collections"],
     }),
     updateCollection: build.mutation<
-      Collection,
+      CollectionWithRelations,
       {
         uuid: UUID
         update: {
           name?: string
-          description?: string
+          description?: string | null
           public?: boolean
           users?: UUID[]
           books?: UUID[]
+          importPath?: string | null
         }
       }
     >({
@@ -381,15 +382,16 @@ export const api = createApi({
       }),
     }),
     createCollection: build.mutation<
-      Collection,
+      CollectionWithRelations,
       {
         name: string
         description: string
         public: boolean
         users: string[]
+        importPath: string | null
       }
     >({
-      query: ({ name, description, public: isPublic, users }) => ({
+      query: ({ name, description, public: isPublic, users, importPath }) => ({
         url: "/collections",
         method: "POST",
         body: {
@@ -397,8 +399,10 @@ export const api = createApi({
           description,
           public: isPublic,
           ...(!isPublic && { users }),
+          importPath,
         },
       }),
+      invalidatesTags: ["Collections"],
     }),
     addBooksToSeries: build.mutation<
       void,
@@ -452,6 +456,7 @@ export const {
   useRemoveBooksFromSeriesMutation,
   useResendInviteMutation,
   useUpdateBookMutation,
+  useUpdateCollectionMutation,
   useUpdateSettingsMutation,
   useUpdateUserMutation,
 } = api

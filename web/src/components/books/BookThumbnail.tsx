@@ -23,10 +23,10 @@ interface Props {
 export function BookThumbnail({ book, link, onClick }: Props) {
   const [cancelProcessing] = useCancelProcessingMutation()
 
-  const audioOnly = !book.ebook && !book.alignedBook
+  const audioOnly = !book.ebook && !book.readaloud
 
   const inner = (
-    <Stack gap={2} className="h-[18.4375rem]">
+    <Stack gap={2} className="h-[18.9375rem]">
       <Stack className="mb-1 h-[14.0625rem] flex-col justify-center">
         <Box
           className={cx(
@@ -84,13 +84,15 @@ export function BookThumbnail({ book, link, onClick }: Props) {
           )}
         </Box>
       </Stack>
-      <Text className="line-clamp-2 max-w-[9.1875rem] text-sm font-semibold group-hover:line-clamp-none">
-        {book.alignedBook?.status === "ALIGNED" && (
+      <Text className="line-clamp-2 max-w-[9.1875rem] bg-white text-sm font-semibold group-hover:line-clamp-none">
+        {book.readaloud?.status === "ALIGNED" && (
           <IconReadaloud className="text-st-orange-600 -mx-1 -mb-2 -mt-3 inline-block h-6 w-6" />
         )}{" "}
         {book.title}
       </Text>
-      <Text className="max-w-[9.1875rem] text-sm">{book.authors[0]?.name}</Text>
+      <Text className="max-w-[9.1875rem] bg-white pb-2 text-sm">
+        {book.authors[0]?.name}
+      </Text>
     </Stack>
   )
 

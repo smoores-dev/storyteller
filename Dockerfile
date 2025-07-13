@@ -66,12 +66,9 @@ ENV STORYTELLER_WORKER=worker.cjs
 
 WORKDIR /app/.next/standalone/web
 
-# runs migration and node server
-COPY --from=builder /app/web/start.sh .
-
 # Download word list
 RUN wget https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-CMD ["./start.sh"]
+CMD ["node", "server.js"]

@@ -37,5 +37,6 @@ src/__fixtures__/__output__/*
 
 work-dist
 migrate-dist
+autoimport-dist
 
 whisper-builds/

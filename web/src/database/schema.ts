@@ -27,19 +27,11 @@ export interface Account {
   userId: string
 }
 
-export interface AlignedBook {
-  bookUuid: string
-  createdAt: Generated<string>
-  filepath: string | null
-  status: Generated<string>
-  updatedAt: Generated<string>
-  uuid: Generated<string>
-}
-
 export interface Audiobook {
   bookUuid: string
   createdAt: Generated<string>
   filepath: string
+  missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<string>
 }
@@ -110,6 +102,7 @@ export interface BookToTag {
 export interface Collection {
   createdAt: Generated<string>
   description: string | null
+  importPath: Generated<string | null>
   name: string
   public: Generated<boolean>
   updatedAt: Generated<string>
@@ -128,6 +121,7 @@ export interface Ebook {
   bookUuid: string
   createdAt: Generated<string>
   filepath: string
+  missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<string>
 }
@@ -161,6 +155,16 @@ export interface ProcessingTask {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface Readaloud {
+  bookUuid: string
+  createdAt: Generated<string>
+  filepath: string | null
+  missing: Generated<boolean>
+  status: Generated<string>
+  updatedAt: Generated<string>
+  uuid: Generated<string>
+}
+
 export interface Series {
   createdAt: Generated<string>
   description: string | null
@@ -181,7 +185,7 @@ export interface Session {
 export interface Settings {
   createdAt: Generated<string>
   id: number | null
-  name: keyof typeof import("@/database/settingsTypes").SETTINGS_ROW_NAMES
+  name: keyof import("@/database/settingsTypes").Settings
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
   value: string
@@ -255,7 +259,6 @@ export interface VerificationToken {
 
 export interface DB {
   account: Account
-  alignedBook: AlignedBook
   audiobook: Audiobook
   author: Author
   authorToBook: AuthorToBook
@@ -269,6 +272,7 @@ export interface DB {
   migration: Migration
   position: Position
   processingTask: ProcessingTask
+  readaloud: Readaloud
   series: Series
   session: Session
   settings: Settings

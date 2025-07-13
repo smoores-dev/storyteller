@@ -21,6 +21,14 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
   },
+  webpack: (config) => {
+    config.resolve.conditionNames = [
+      "@storyteller",
+      ...(config.resolve.conditionNames ?? ["..."]),
+    ]
+
+    return config
+  },
 }
 
 export default nextConfig

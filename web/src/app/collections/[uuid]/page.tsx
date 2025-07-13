@@ -1,6 +1,7 @@
 import { ApiClientError } from "@/apiClient"
 import { createAuthedApiClient } from "@/authedApiClient"
 import { BookList } from "@/components/books/BookList"
+import { CollectionSettings } from "@/components/collections/CollectionSettings"
 import { Collection } from "@/database/collections"
 import { logger } from "@/logging"
 import { UUID } from "@/uuid"
@@ -50,7 +51,8 @@ export default async function CollectionPage({ params }: Props) {
   return (
     <Stack gap={24}>
       <Title order={2} className="flex items-center gap-2 px-2 py-2">
-        <IconBooks size={30} /> {collection?.name ?? "Uncollected"}
+        <IconBooks size={30} /> {collection?.name ?? "Uncollected"}{" "}
+        {collection && <CollectionSettings uuid={collection.uuid} />}
       </Title>
       <Text>
         {collection

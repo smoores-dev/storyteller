@@ -142,13 +142,18 @@ export default async function migrate() {
       const newAlignedDir = paths.getInternalEpubAlignedFilepath(book)
       renameSync(legacyAlignedDir, newAlignedDir)
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await db
+        // @ts-expect-error This was briefly named aligned_book
         .updateTable("alignedBook")
+        // @ts-expect-error This was briefly named aligned_book
         .set({
           status: "ALIGNED",
           filepath: newAlignedDir,
         })
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         .where("bookUuid", "=", book.uuid)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         .execute()
 
       logger.info("Migrated aligned ebook")

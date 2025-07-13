@@ -24,6 +24,7 @@ import {
 import { IconPlus, IconTrash } from "@tabler/icons-react"
 import { AuthProviderInput } from "./AuthProviderInput"
 import { useUpdateSettingsMutation } from "@/store/api"
+import { ImportPathInput } from "../ImportPathInput"
 
 interface Props {
   settings: Settings
@@ -68,6 +69,7 @@ export function SettingsForm({ settings }: Props) {
     parallelTranscodes: settings.parallelTranscodes,
     parallelWhisperBuild: settings.parallelWhisperBuild,
     authProviders: settings.authProviders,
+    importPath: settings.importPath,
   }
 
   const form = useForm({
@@ -94,10 +96,27 @@ export function SettingsForm({ settings }: Props) {
       <Fieldset legend="Library settings">
         <TextInput
           label="Library name"
-          {...form.getInputProps("library_name")}
+          {...form.getInputProps("libraryName")}
         />
-        <TextInput label="Web URL" {...form.getInputProps("web_url")} />
+        <TextInput label="Web URL" {...form.getInputProps("webUrl")} />
       </Fieldset>
+      <ImportPathInput {...form.getInputProps("importPath")}>
+        <Text className="text-sm text-black opacity-70">
+          Storyteller can be configured to automatically import book files from
+          a specific directory.
+        </Text>
+        <Text className="text-sm text-black opacity-70">
+          When enabled, Storyteller will set up a filesystem watcher for the
+          directory. When any files are added or modified within the directory,
+          Storyteller will scan for new book files, and automatically import any
+          that it finds.
+        </Text>
+        <Text className="text-sm text-black opacity-70">
+          Book files found in this directory will not be automatically added to
+          a collection. You can also configure collection-specific automatic
+          import in the settings for that collection.
+        </Text>
+      </ImportPathInput>
       <Fieldset legend="Audio settings">
         <NativeSelect
           label="Maximum processed track length"
@@ -110,7 +129,7 @@ export function SettingsForm({ settings }: Props) {
               during transcription.
             </span>
           }
-          {...form.getInputProps("max_track_length")}
+          {...form.getInputProps("maxTrackLength")}
         >
           <option value={0.75}>45 minutes</option>
           <option value={1}>1 hour</option>
@@ -215,7 +234,7 @@ export function SettingsForm({ settings }: Props) {
         </Box>
         <NativeSelect
           label="Transcription engine"
-          {...form.getInputProps("transcription_engine")}
+          {...form.getInputProps("transcriptionEngine")}
         >
           <option value="whisper.cpp">whisper.cpp (local)</option>
           <option value="google-cloud">Google Cloud</option>
@@ -228,7 +247,7 @@ export function SettingsForm({ settings }: Props) {
           <>
             <NativeSelect
               label="Whisper build"
-              {...form.getInputProps("whisper_build")}
+              {...form.getInputProps("whisperBuild")}
             >
               <option value="cpu">CPU</option>
               <option value="cublas-11.8">cuBLAS 11.8 (NVIDIA GPU)</option>
@@ -246,7 +265,7 @@ export function SettingsForm({ settings }: Props) {
             </Box>
             <NativeSelect
               label="Whisper model"
-              {...form.getInputProps("whisper_model")}
+              {...form.getInputProps("whisperModel")}
             >
               <option value="tiny">tiny</option>
               <option value="tiny-q5_1">tiny-q5_1</option>
@@ -270,7 +289,7 @@ export function SettingsForm({ settings }: Props) {
           <TextInput
             label="API key"
             withAsterisk
-            {...form.getInputProps("google_cloud_api_key")}
+            {...form.getInputProps("googleCloudApiKey")}
           />
         )}
         {state.transcriptionEngine === "microsoft-azure" && (
@@ -278,12 +297,12 @@ export function SettingsForm({ settings }: Props) {
             <TextInput
               label="Subscription key"
               withAsterisk
-              {...form.getInputProps("azure_subscription_key")}
+              {...form.getInputProps("azureSubscriptionKey")}
             />
             <TextInput
               label="Service region key"
               withAsterisk
-              {...form.getInputProps("azure_service_region")}
+              {...form.getInputProps("azureServiceRegion")}
             />
           </>
         )}
@@ -292,17 +311,17 @@ export function SettingsForm({ settings }: Props) {
             <TextInput
               label="Region"
               withAsterisk
-              {...form.getInputProps("amazon_transcribe_region")}
+              {...form.getInputProps("amazonTranscribeAccessKeyId")}
             />
             <TextInput
               label="Access key id"
               withAsterisk
-              {...form.getInputProps("amazon_transcribe_access_key_id")}
+              {...form.getInputProps("amazonTranscribeAccessKeyId")}
             />
             <TextInput
               label="Secret access key"
               withAsterisk
-              {...form.getInputProps("amazon_transcribe_secret_access_key")}
+              {...form.getInputProps("amazonTranscribeSecretAccessKey")}
             />
           </>
         )}
@@ -311,11 +330,11 @@ export function SettingsForm({ settings }: Props) {
             <TextInput
               label="API Key"
               withAsterisk
-              {...form.getInputProps("open_ai_api_key")}
+              {...form.getInputProps("openAiApiKey")}
             />
             <TextInput
               label="Organization (optional)"
-              {...form.getInputProps("open_ai_organization")}
+              {...form.getInputProps("openAiOrganization")}
             />
             <TextInput
               label="Base URL (optional)"
@@ -325,14 +344,21 @@ export function SettingsForm({ settings }: Props) {
                   Cloud-compatible service URL, such as a self-hosted{" "}
                   <a
                     className="text-st-orange-800 underline"
-                    href="https://github.com/fedirz/faster-whisper-server"
+                    href="https://github.com/speaches-ai/speaches"
                   >
-                    faster-whisper-server
+                    speaches
                   </a>{" "}
-                  instance.
+                  instance, or a remote{" "}
+                  <a
+                    className="text-st-orange-800 underline"
+                    href="https://github.com/ggml-org/whisper.cpp/tree/master/examples/server"
+                  >
+                    whisper.cpp HTTP server
+                  </a>
+                  .
                 </>
               }
-              {...form.getInputProps("open_ai_base_url")}
+              {...form.getInputProps("openAiBaseUrl")}
             />
             <TextInput
               label="Model name (optional)"
@@ -343,7 +369,7 @@ export function SettingsForm({ settings }: Props) {
                   <Code>whisper-1</Code> for large-v3 on OpenAI Cloud.
                 </>
               }
-              {...form.getInputProps("open_ai_model_name")}
+              {...form.getInputProps("openAiModelName")}
             />
           </>
         )}
@@ -352,7 +378,7 @@ export function SettingsForm({ settings }: Props) {
             <TextInput
               label="API Key"
               withAsterisk
-              {...form.getInputProps("deepgram_api_key")}
+              {...form.getInputProps("deepgramApiKey")}
             />
             <TextInput
               label="Model name"
@@ -370,7 +396,7 @@ export function SettingsForm({ settings }: Props) {
                   ). Defaults to <Code>nova-3</Code>
                 </>
               }
-              {...form.getInputProps("deepgram_model")}
+              {...form.getInputProps("deepgramModel")}
             />
           </>
         )}

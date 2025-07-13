@@ -1,5 +1,6 @@
+import { update } from "@/assets/autoimport/listen"
 import { db } from "./connection"
-import { SETTINGS_ROW_NAMES, Settings } from "./settingsTypes"
+import { Settings } from "./settingsTypes"
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
   let details = settings.transcriptionEngine ?? "whisper.cpp"
@@ -18,16 +19,14 @@ export function formatTranscriptionEngineDetails(settings: Settings) {
   return details
 }
 
-export async function getSetting<Name extends keyof typeof SETTINGS_ROW_NAMES>(
-  name: Name,
-) {
+export async function getSetting<Name extends keyof Settings>(name: Name) {
   const { valueJson } = await db
     .selectFrom("settings")
     .select(["value as valueJson"])
     .where("name", "=", name)
     .executeTakeFirstOrThrow()
 
-  return JSON.parse(valueJson) as Settings[(typeof SETTINGS_ROW_NAMES)[Name]]
+  return JSON.parse(valueJson) as Settings[Name]
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -39,7 +38,7 @@ export async function getSettings(): Promise<Settings> {
   const result = rows.reduce(
     (acc, row) => ({
       ...acc,
-      [SETTINGS_ROW_NAMES[row.name]]:
+      [row.name]:
         // Kysely seems to auto-parse JSON arrays, so we need to guard
         // against values that have already been parsed
         typeof row.value === "string"
@@ -57,13 +56,15 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function updateSettings(settings: Settings) {
-  for (const [columnName, propertyName] of Object.entries(SETTINGS_ROW_NAMES)) {
+  for (const [settingName, value] of Object.entries(settings)) {
     await db
       .updateTable("settings")
       .set({
-        name: columnName as keyof typeof SETTINGS_ROW_NAMES,
-        value: JSON.stringify(settings[propertyName]),
+        value: JSON.stringify(value),
       })
+      .where("name", "=", settingName as keyof Settings)
       .execute()
   }
+
+  await update(null)
 }

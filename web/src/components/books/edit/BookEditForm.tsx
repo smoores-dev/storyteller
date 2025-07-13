@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useForm } from "@mantine/form"
-import { Button, Group, Stack, TextInput } from "@mantine/core"
+import { Button, Group, Stack, Textarea, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
 import { AuthorRelation, SeriesRelation } from "@/database/books"
 import { UUID } from "@/uuid"
@@ -56,7 +56,7 @@ export function BookEditForm({ bookUuid }: Props) {
     initialValues: book
       ? {
           title: book.title,
-          language: book.language ?? "",
+          language: book.language,
           authors: book.authors as AuthorRelation[],
           series: book.series as SeriesRelation[],
           statusUuid: book.statusUuid,
@@ -64,23 +64,23 @@ export function BookEditForm({ bookUuid }: Props) {
           publicationDate:
             book.publicationDate && new Date(book.publicationDate),
           rating: book.rating,
-          description: book.description ?? "",
-          narrator: book.narrator ?? "",
+          description: book.description,
+          narrator: book.narrator,
           tags: book.tags.map((tag) => tag.name),
           textCover: null as File | null,
           audioCover: null as File | null,
         }
       : {
           title: "",
-          language: "",
+          language: null,
           authors: [],
           series: [],
           statusUuid: "" as UUID,
           collections: [],
           publicationDate: null,
           rating: null,
-          description: "",
-          narrator: "",
+          description: null,
+          narrator: null,
           tags: [],
           textCover: null,
           audioCover: null,
@@ -99,15 +99,15 @@ export function BookEditForm({ bookUuid }: Props) {
 
     form.initialize({
       title: book.title,
-      language: book.language ?? "",
+      language: book.language,
       authors: book.authors as AuthorRelation[],
       series: book.series as SeriesRelation[],
       statusUuid: book.statusUuid,
       collections: book.collections.map((collection) => collection.uuid),
       publicationDate: book.publicationDate && new Date(book.publicationDate),
       rating: book.rating,
-      description: book.description ?? "",
-      narrator: book.narrator ?? "",
+      description: book.description,
+      narrator: book.narrator,
       tags: book.tags.map((tag) => tag.name),
       textCover: null as File | null,
       audioCover: null as File | null,
@@ -174,7 +174,7 @@ export function BookEditForm({ bookUuid }: Props) {
         <Group align="stretch" gap="xl" mt="lg">
           <CoverImageInput
             mediaType={
-              (book.ebook && book.audiobook) || book.alignedBook
+              (book.ebook && book.audiobook) || book.readaloud
                 ? "both"
                 : book.ebook
                   ? "ebook"
@@ -197,11 +197,24 @@ export function BookEditForm({ bookUuid }: Props) {
               className="m-0"
               label="Language"
               {...form.getInputProps("language")}
+              value={form.values.language ?? ""}
             />
             <DateInput
               label="Publication date"
               valueFormat="YYYY-MM-DD"
               {...form.getInputProps("publicationDate")}
+            />
+            <TextInput
+              className="m-0"
+              label="Narrator"
+              {...form.getInputProps("narrator")}
+              value={form.values.narrator ?? ""}
+            />
+            <Textarea
+              className="m-0"
+              label="Description"
+              {...form.getInputProps("description")}
+              value={form.values.description ?? ""}
             />
             <AuthorsInput
               values={bookAuthors}

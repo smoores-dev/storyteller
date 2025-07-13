@@ -32,10 +32,15 @@ export default async function migrate() {
     try {
       const alignedFilepath = resolve(getEpubAlignedFilepath(uuid))
       await stat(alignedFilepath)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await db
+        // @ts-expect-error This was briefly named aligned_book
         .updateTable("alignedBook")
+        // @ts-expect-error This was briefly named aligned_book
         .set({ status: "ALIGNED", filepath: alignedFilepath })
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         .where("bookUuid", "=", uuid)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         .execute()
     } catch {
       // skip this step if the book hasn't already been aligned

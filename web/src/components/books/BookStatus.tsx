@@ -35,7 +35,7 @@ export function BookStatus({ bookUuid }: Props) {
 
   if (!book) return null
 
-  const aligned = book.alignedBook?.status === "ALIGNED"
+  const aligned = book.readaloud?.status === "ALIGNED"
 
   const userFriendlyTaskType =
     book.processingTask &&
@@ -48,7 +48,7 @@ export function BookStatus({ bookUuid }: Props) {
   return (
     <Paper className="max-w-[600px]">
       <Group justify="space-between" wrap="nowrap" align="flex-end">
-        {book.alignedBook || (book.ebook && book.audiobook) ? (
+        {book.readaloud || (book.ebook && book.audiobook) ? (
           <Stack justify="space-between" className="grow">
             {aligned ? (
               permissions.bookDownload && (
