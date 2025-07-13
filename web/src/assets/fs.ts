@@ -134,10 +134,18 @@ export async function deleteOriginals(book: BookWithRelations) {
   ])
 }
 
-export async function deleteAssets(book: BookWithRelations) {
+export async function deleteAssets(
+  book: BookWithRelations,
+  { all }: { all?: boolean } = {},
+) {
+  if (!all) {
+    await deleteProcessed(book)
+    return
+  }
+
   await Promise.all([
-    deleteOriginals(book),
     deleteProcessed(book),
+    deleteOriginals(book),
     ...(book.readaloud?.filepath ? [rm(book.readaloud.filepath)] : []),
   ])
 }
