@@ -28,14 +28,7 @@ check:
   tags: [saas-linux-large-amd64]
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - "docs/docs/**/*"
-        - "docs/src/**/*"
-        - "**/*.ts"
-        - "**/*.js"
-        - "**/*.json"
-        - "**/*.tsx"
-        - yarn.lock
+    - if: '$CI_COMMIT_BRANCH == "main"'
   script:
     - yarn
     - yarn check
