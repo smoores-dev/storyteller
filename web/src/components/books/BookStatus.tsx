@@ -6,7 +6,7 @@ import { ProcessingTaskStatus } from "@/apiModels/models/ProcessingStatus"
 import { Paper, Group, Stack, Box, Text, Button, Progress } from "@mantine/core"
 import { UUID } from "@/uuid"
 import {
-  getAlignedDownloadUrl,
+  getDownloadUrl,
   useListBooksQuery,
   useProcessBookMutation,
 } from "@/store/api"
@@ -53,7 +53,7 @@ export function BookStatus({ bookUuid }: Props) {
             {aligned ? (
               permissions.bookDownload && (
                 <a
-                  href={getAlignedDownloadUrl(book.uuid)}
+                  href={getDownloadUrl(book.uuid, "readaloud")}
                   className="text-st-orange-600 underline"
                   download={`${book.title}.epub`}
                 >

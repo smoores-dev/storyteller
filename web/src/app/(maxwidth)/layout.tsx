@@ -5,5 +5,5 @@ interface Props {
 }
 
 export default function MaxwidthLayout({ children }: Props) {
-  return <div className="max-w-prose">{children}</div>
+  return <div className="max-w-[95ch]">{children}</div>
 }

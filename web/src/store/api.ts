@@ -9,7 +9,7 @@ import {
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 import { ProcessingTask } from "@/database/processingTasks"
-import { AuthorRelation, Book, SeriesRelation } from "@/database/books"
+import { AuthorRelation, BookUpdate, SeriesRelation } from "@/database/books"
 import { Status } from "@/database/statuses"
 import { Author } from "@/database/authors"
 import { NewSeries, NewSeriesRelation, Series } from "@/database/series"
@@ -261,52 +261,64 @@ export const api = createApi({
       BookDetail,
       {
         update: {
-          uuid: Book["uuid"]
-          title: Book["title"]
-          language: Book["language"]
-          statusUuid: Book["statusUuid"]
-          publicationDate: Book["publicationDate"]
-          authors: AuthorRelation[]
-          series: SeriesRelation[]
-          collections: UUID[]
-          tags: string[]
+          uuid: BookUpdate["uuid"]
+          title?: BookUpdate["title"]
+          language?: BookUpdate["language"]
+          statusUuid?: BookUpdate["statusUuid"]
+          publicationDate?: BookUpdate["publicationDate"]
+          authors?: AuthorRelation[]
+          series?: SeriesRelation[]
+          collections?: UUID[]
+          tags?: string[]
         }
-        textCover: File | null
-        audioCover: File | null
+        textCover?: File | null
+        audioCover?: File | null
       }
     >({
       query: ({ update, textCover, audioCover }) => {
         const body = new FormData()
-        body.append("title", update.title)
-        if (update.language !== null) {
+        if (update.title != null) {
+          body.append("title", update.title)
+        }
+        if (update.language != null) {
           body.append("language", update.language)
         }
         if (update.publicationDate) {
           body.append("publicationDate", update.publicationDate)
         }
-        body.append("statusUuid", update.statusUuid)
-
-        for (const tag of update.tags) {
-          body.append("tags", tag)
+        if (update.statusUuid != null) {
+          body.append("statusUuid", update.statusUuid)
         }
 
-        for (const author of update.authors) {
-          body.append("authors", JSON.stringify(author))
+        if (update.tags) {
+          for (const tag of update.tags) {
+            body.append("tags", tag)
+          }
         }
 
-        for (const series of update.series) {
-          body.append("series", JSON.stringify(series))
+        if (update.authors) {
+          for (const author of update.authors) {
+            body.append("authors", JSON.stringify(author))
+          }
         }
 
-        for (const collection of update.collections) {
-          body.append("collections", collection)
+        if (update.series) {
+          for (const series of update.series) {
+            body.append("series", JSON.stringify(series))
+          }
         }
 
-        if (textCover !== null) {
+        if (update.collections) {
+          for (const collection of update.collections) {
+            body.append("collections", collection)
+          }
+        }
+
+        if (textCover != null) {
           body.append("textCover", textCover)
         }
 
-        if (audioCover !== null) {
+        if (audioCover != null) {
           body.append("audioCover", audioCover)
         }
 
@@ -467,8 +479,12 @@ export const {
   useUpdateUserMutation,
 } = api
 
-export function getAlignedDownloadUrl(bookUuid: string) {
-  return `/api/v2/books/${bookUuid}/aligned`
+export function getDownloadUrl(
+  bookUuid: string,
+  format: "readaloud" | "audiobook" | "ebook",
+) {
+  const searchParams = new URLSearchParams({ format })
+  return `/api/v2/books/${bookUuid}/files?${searchParams.toString()}`
 }
 
 export function getCoverUrl(bookUuid: string, audio = false) {

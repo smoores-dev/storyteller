@@ -10,7 +10,6 @@ import { BookDetail } from "@/apiModels"
 import Link from "next/link"
 import { IconDotsCircleHorizontal, IconProgressX } from "@tabler/icons-react"
 import { useCancelProcessingMutation } from "@/store/api"
-import cx from "classnames"
 import { IconReadaloud } from "../icons/IconReadaloud"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 
@@ -23,19 +22,15 @@ interface Props {
 export function BookThumbnail({ book, link, onClick }: Props) {
   const [cancelProcessing] = useCancelProcessingMutation()
 
-  const audioOnly = !book.ebook && !book.readaloud
-
   const inner = (
     <Stack gap={2} className="h-[18.9375rem]">
       <Stack className="mb-1 h-[14.0625rem] flex-col justify-center">
-        <Box
-          className={cx(
-            "relative w-[9.1875rem]",
-            audioOnly ? "h-[9.1875rem]" : "h-[14.0625rem]",
-          )}
-        >
-          <BookThumbnailImage book={book} />
-          {/* {badge} */}
+        <Box className="relative h-[14.0625rem] w-[9.1875rem]">
+          <BookThumbnailImage
+            height="14.0625rem"
+            width="9.1875rem"
+            book={book}
+          />
           {book.processingStatus === "queued" && (
             <IconDotsCircleHorizontal
               size={40}
