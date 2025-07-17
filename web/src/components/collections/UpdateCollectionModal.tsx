@@ -1,4 +1,3 @@
-import { UUID } from "@/uuid"
 import {
   Button,
   Checkbox,
@@ -10,26 +9,17 @@ import {
 import { useForm } from "@mantine/form"
 import { UserSelect } from "../books/edit/UserSelect"
 import { useRef } from "react"
-import {
-  useListCollectionsQuery,
-  useListUsersQuery,
-  useUpdateCollectionMutation,
-} from "@/store/api"
+import { useListUsersQuery, useUpdateCollectionMutation } from "@/store/api"
 import { ImportPathInput } from "../ImportPathInput"
+import { CollectionWithRelations } from "@/database/collections"
 
 interface Props {
-  uuid: UUID
+  collection: CollectionWithRelations
   isOpen: boolean
   onClose: () => void
 }
 
-export function UpdateCollectionModal({ uuid, isOpen, onClose }: Props) {
-  const { collection } = useListCollectionsQuery(undefined, {
-    selectFromResult: (result) => ({
-      collection: result.data?.find((collection) => collection.uuid === uuid),
-    }),
-  })
-
+export function UpdateCollectionModal({ collection, isOpen, onClose }: Props) {
   const { data: users = [] } = useListUsersQuery()
 
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -39,16 +29,11 @@ export function UpdateCollectionModal({ uuid, isOpen, onClose }: Props) {
 
   const form = useForm({
     initialValues: {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      name: collection!.name,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      public: collection!.public,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      users: collection!.users.map((user) => user.id),
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      description: collection!.description,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      importPath: collection!.importPath,
+      name: collection.name,
+      public: collection.public,
+      users: collection.users.map((user) => user.id),
+      description: collection.description,
+      importPath: collection.importPath,
     },
   })
 
@@ -58,7 +43,7 @@ export function UpdateCollectionModal({ uuid, isOpen, onClose }: Props) {
         className="flex flex-col gap-4"
         onSubmit={form.onSubmit(async (values, event) => {
           event?.stopPropagation()
-          await updateCollection({ uuid, update: values })
+          await updateCollection({ uuid: collection.uuid, update: values })
 
           if (clearSavedTimeoutRef.current) {
             clearTimeout(clearSavedTimeoutRef.current)

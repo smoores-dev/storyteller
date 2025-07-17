@@ -1,8 +1,4 @@
-import {
-  deleteAssets,
-  originalAudioExists,
-  originalEpubExists,
-} from "@/assets/fs"
+import { deleteAssets } from "@/assets/fs"
 import {
   persistCustomEpubCover,
   persistCustomAudioCover,
@@ -153,9 +149,6 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
   return NextResponse.json({
     ...book,
-    originalFilesExist: (
-      await Promise.all([originalEpubExists(book), originalAudioExists(book)])
-    ).every((originalsExist) => originalsExist),
     processingStatus: isProcessing(book.uuid)
       ? "processing"
       : isQueued(book.uuid)

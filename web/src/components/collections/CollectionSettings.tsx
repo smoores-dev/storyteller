@@ -11,15 +11,19 @@ interface Props {
 }
 
 export function CollectionSettings({ uuid }: Props) {
-  const { isSuccess } = useListCollectionsQuery()
+  const { collection } = useListCollectionsQuery(undefined, {
+    selectFromResult: (result) => ({
+      collection: result.data?.find((collection) => collection.uuid === uuid),
+    }),
+  })
   const [isOpen, setIsOpen] = useState(false)
 
-  if (!isSuccess) return null
+  if (!collection) return null
 
   return (
     <>
       <UpdateCollectionModal
-        uuid={uuid}
+        collection={collection}
         isOpen={isOpen}
         onClose={() => {
           setIsOpen(false)

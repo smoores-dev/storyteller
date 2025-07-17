@@ -1,46 +1,65 @@
 import { withHasPermission } from "@/auth/auth"
-import { getBook, getBookUuid } from "@/database/books"
-import { FileHandle, open } from "node:fs/promises"
-import { NextResponse } from "next/server"
-import { createHash } from "node:crypto"
-import { Epub } from "@smoores/epub/node"
+import { getBookUuid, getBook, BookWithRelations } from "@/database/books"
 import contentDisposition from "content-disposition"
-
-export const dynamic = "force-dynamic"
+import { createHash } from "node:crypto"
+import { FileHandle, open } from "node:fs/promises"
 
 type Params = Promise<{
   bookId: string
 }>
 
+function determineFilepath(
+  book: BookWithRelations,
+  format: "readaloud" | "audiobook" | "ebook" | null,
+) {
+  if (!format) {
+    const filepath =
+      book.readaloud?.filepath ??
+      book.audiobook?.filepath ??
+      book.ebook?.filepath
+
+    return filepath
+  }
+
+  return book[format]?.filepath
+}
+
 /**
- * @summary Get the aligned EPUB file
- * @desc Supports HTTP range requests for pause-able downloads.
+ * @summary Get files for a book
+ * @desc The format query param should be specified as one of 'readaloud',
+ *       'audiobook', or 'ebook'. This endpoint supports resumable downloads via
+ *       HTTP Accept-Ranges headers.
  */
-export const GET = withHasPermission<Params>("bookDownload")(async (
+export const GET = withHasPermission<Params>("bookRead")(async (
   request,
   context,
 ) => {
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
-  const range = request.headers.get("Range")?.valueOf()
-  const ifRange = request.headers.get("If-Range")?.valueOf()
   const book = await getBook(bookUuid)
-
-  if (!book?.readaloud?.filepath) {
+  if (!book) {
     return Response.json(
       { message: `Could not find book with id ${bookId}` },
       { status: 404 },
     )
   }
 
-  const filepath = book.readaloud.filepath
-  const epub = await Epub.from(filepath)
-  const title = await epub.getTitle(true)
-  const normalizedTitle =
-    title
-      ?.normalize("NFD")
-      .replaceAll(/\p{Diacritic}/gu, "")
-      .replaceAll(/[^a-zA-Z0-9-_.~!#$&'()*+,/:;=?@[\] ]/gu, "") ?? bookUuid
+  const range = request.headers.get("Range")?.valueOf()
+  const ifRange = request.headers.get("If-Range")?.valueOf()
+
+  const format = request.nextUrl.searchParams.get("format") as
+    | "readaloud"
+    | "ebook"
+    | "audiobook"
+    | null
+
+  const filepath = determineFilepath(book, format)
+  if (!filepath) return new Response(null, { status: 404 })
+
+  const normalizedTitle = book.title
+    .normalize("NFD")
+    .replaceAll(/\p{Diacritic}/gu, "")
+    .replaceAll(/[^a-zA-Z0-9-_.~!#$&'()*+,/:;=?@[\] ]/gu, "")
 
   let file: FileHandle
   try {
@@ -88,17 +107,17 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
   }
 
   if (end > stats.size - 1) {
-    return new NextResponse(null, {
+    return new Response(null, {
       status: 416,
       headers: { "Content-Range": `bytes */${stats.size}` },
     })
   }
 
-  // @ts-expect-error NextResponse handle Node.js ReadStreams just fine
-  return new NextResponse(file.createReadStream({ start, end }), {
+  // @ts-expect-error Response handle Node.js ReadStreams just fine
+  return new Response(file.createReadStream({ start, end }), {
     status: partialResponse ? 206 : 200,
     headers: {
-      "Content-Disposition": contentDisposition(`${title}.epub`, {
+      "Content-Disposition": contentDisposition(`${book.title}.epub`, {
         fallback: `${normalizedTitle}.epub`,
       }),
       "Content-Type": "application/epub+zip",
