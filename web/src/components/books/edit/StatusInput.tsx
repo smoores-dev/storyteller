@@ -3,12 +3,20 @@ import { UUID } from "@/uuid"
 import { Combobox, InputBase, Group, Text, useCombobox } from "@mantine/core"
 
 interface Props {
+  disabled?: boolean | undefined
   value: UUID
   onChange: (uuid: UUID) => void
   options: Status[]
+  className?: string | undefined
 }
 
-export function StatusInput({ value, onChange, options }: Props) {
+export function StatusInput({
+  value,
+  onChange,
+  options,
+  disabled,
+  className,
+}: Props) {
   const combobox = useCombobox({
     onDropdownClose: () => {
       combobox.resetSelectedOption()
@@ -17,7 +25,9 @@ export function StatusInput({ value, onChange, options }: Props) {
 
   return (
     <Combobox
+      {...(className && { className })}
       store={combobox}
+      disabled={!!disabled}
       withinPortal={false}
       onOptionSubmit={(value) => {
         onChange(value as UUID)

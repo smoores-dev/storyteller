@@ -91,11 +91,9 @@ export function BookOptions({ book, aligned }: Props) {
         </Stack>
       </Modal>
       <Stack>
-        {permissions?.bookProcess &&
-          book.processingTask &&
-          book.originalFilesExist && (
-            <ProcessingItems aligned={aligned} book={book} />
-          )}
+        {permissions?.bookProcess && book.processingTask && (
+          <ProcessingItems aligned={aligned} book={book} />
+        )}
         {permissions?.bookDelete && (
           <ActionIcon variant="subtle" color="red" onClick={open}>
             <Tooltip position="right" label="Delete book">

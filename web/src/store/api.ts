@@ -9,7 +9,12 @@ import {
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 import { ProcessingTask } from "@/database/processingTasks"
-import { AuthorRelation, BookUpdate, SeriesRelation } from "@/database/books"
+import {
+  AuthorRelation,
+  BookRelationsUpdate,
+  BookUpdate,
+  SeriesRelation,
+} from "@/database/books"
 import { Status } from "@/database/statuses"
 import { Author } from "@/database/authors"
 import { NewSeries, NewSeriesRelation, Series } from "@/database/series"
@@ -120,6 +125,19 @@ export const api = createApi({
         }),
       },
     ),
+    deleteBooks: build.mutation<
+      void,
+      { books: UUID[]; includeAssets?: "all" | "internal" }
+    >({
+      query: ({ books, includeAssets }) => ({
+        url: `/books`,
+        method: "DELETE",
+        body: {
+          books,
+          includeAssets,
+        },
+      }),
+    }),
     listBooks: build.query<BookDetail[], void>({
       query: () => "/books",
       onCacheEntryAdded: async (
@@ -157,10 +175,6 @@ export const api = createApi({
               switch (event.type) {
                 case "bookUpdated": {
                   Object.assign(draftBook, event.payload)
-                  return
-                }
-                case "bookCacheDeleted": {
-                  draftBook.originalFilesExist = false
                   return
                 }
                 case "processingQueued": {
@@ -255,6 +269,16 @@ export const api = createApi({
       query: ({ uuid }) => ({
         url: `/books/${uuid}/process`,
         method: "DELETE",
+      }),
+    }),
+    mergeBooks: build.mutation<
+      BookDetail,
+      { update: BookUpdate; relations: BookRelationsUpdate; from: UUID[] }
+    >({
+      query: (body) => ({
+        url: `/books/merge`,
+        method: "POST",
+        body,
       }),
     }),
     updateBook: build.mutation<
@@ -447,17 +471,40 @@ export const api = createApi({
       providesTags: (tags) =>
         tags?.map((tag) => ({ type: "Tags", id: tag.uuid })) ?? ["Tags"],
     }),
+    addTagsToBooks: build.mutation<void, { tags: string[]; books: UUID[] }>({
+      query: (body) => ({
+        url: `/books/tags`,
+        method: "POST",
+        body,
+      }),
+    }),
+    removeTagsFromBooks: build.mutation<void, { tags: UUID[]; books: UUID[] }>({
+      query: (body) => ({
+        url: "/books/tags",
+        method: "DELETE",
+        body,
+      }),
+    }),
+    updateReadingStatus: build.mutation<void, { status: UUID; books: UUID[] }>({
+      query: (body) => ({
+        url: "/books/status",
+        method: "PUT",
+        body,
+      }),
+    }),
   }),
 })
 
 export const {
   useAddBooksToCollectionsMutation,
   useAddBooksToSeriesMutation,
+  useAddTagsToBooksMutation,
   useCancelProcessingMutation,
   useCreateCollectionMutation,
   useCreateInviteMutation,
   useDeleteBookAssetsMutation,
   useDeleteBookMutation,
+  useDeleteBooksMutation,
   useDeleteInviteMutation,
   useDeleteUserMutation,
   useGetCurrentUserQuery,
@@ -469,12 +516,15 @@ export const {
   useListStatusesQuery,
   useListTagsQuery,
   useListUsersQuery,
+  useMergeBooksMutation,
   useProcessBookMutation,
   useRemoveBooksFromCollectionsMutation,
   useRemoveBooksFromSeriesMutation,
+  useRemoveTagsFromBooksMutation,
   useResendInviteMutation,
   useUpdateBookMutation,
   useUpdateCollectionMutation,
+  useUpdateReadingStatusMutation,
   useUpdateSettingsMutation,
   useUpdateUserMutation,
 } = api

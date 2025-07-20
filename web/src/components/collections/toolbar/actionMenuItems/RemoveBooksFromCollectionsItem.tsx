@@ -6,8 +6,10 @@ import {
 import { UUID } from "@/uuid"
 import { Button, MenuItem, Modal, MultiSelect } from "@mantine/core"
 import { useForm } from "@mantine/form"
+import { useDisclosure } from "@mantine/hooks"
 import { IconBooks } from "@tabler/icons-react"
-import { useState } from "react"
+
+const EMPTY_COLLECTIONS: Collection[] = []
 
 interface Props {
   selected: Set<UUID>
@@ -27,14 +29,14 @@ export function RemoveBooksFromCollectionsItem({ selected }: Props) {
               }, new Map<UUID, Collection>())
               .values(),
           )
-        : [],
+        : EMPTY_COLLECTIONS,
     }),
   })
 
   const [removeBooksFromCollections, { isLoading }] =
     useRemoveBooksFromCollectionsMutation()
 
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, { open, close }] = useDisclosure()
 
   const form = useForm({
     initialValues: {
@@ -48,7 +50,7 @@ export function RemoveBooksFromCollectionsItem({ selected }: Props) {
         opened={isOpen}
         onClose={() => {
           form.reset()
-          setIsOpen(false)
+          close()
         }}
         title="Remove books from collections"
         centered
@@ -62,7 +64,7 @@ export function RemoveBooksFromCollectionsItem({ selected }: Props) {
             })
 
             form.reset()
-            setIsOpen(false)
+            close()
           })}
         >
           <MultiSelect
@@ -82,7 +84,7 @@ export function RemoveBooksFromCollectionsItem({ selected }: Props) {
       <MenuItem
         leftSection={<IconBooks size={14} className="text-red-600" />}
         onClick={() => {
-          setIsOpen(true)
+          open()
         }}
       >
         Remove from collections

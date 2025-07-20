@@ -28,7 +28,7 @@ export interface Account {
 }
 
 export interface Audiobook {
-  bookUuid: string
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   filepath: string
   missing: Generated<boolean>
@@ -118,7 +118,7 @@ export interface CollectionToUser {
 }
 
 export interface Ebook {
-  bookUuid: string
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   filepath: string
   missing: Generated<boolean>
@@ -156,7 +156,7 @@ export interface ProcessingTask {
 }
 
 export interface Readaloud {
-  bookUuid: string
+  bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   filepath: string | null
   missing: Generated<boolean>

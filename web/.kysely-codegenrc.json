@@ -5,6 +5,7 @@
   "overrides": {
     "columns": {
       "account.id": "Generated<import(\"@/uuid\").UUID>",
+      "audiobook.book_uuid": "import(\"@/uuid\").UUID",
       "audiobook.missing": "Generated<boolean>",
       "author.uuid": "Generated<import(\"@/uuid\").UUID>",
       "author_to_book.author_uuid": "import(\"@/uuid\").UUID",
@@ -27,6 +28,7 @@
       "collection_to_user.collection_uuid": "import(\"@/uuid\").UUID",
       "collection_to_user.user_id": "import(\"@/uuid\").UUID",
       "collection_to_user.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "ebook.book_uuid": "import(\"@/uuid\").UUID",
       "ebook.missing": "Generated<boolean>",
       "migration.uuid": "Generated<import(\"@/uuid\").UUID>",
       "position.book_uuid": "import(\"@/uuid\").UUID",
@@ -36,6 +38,7 @@
       "processing_task.status": "import('@/apiModels/models/ProcessingStatus').ProcessingTaskStatus",
       "processing_task.type": "import('@/apiModels/models/ProcessingStatus').ProcessingTaskType",
       "processing_task.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "readaloud.book_uuid": "import(\"@/uuid\").UUID",
       "readaloud.missing": "Generated<boolean>",
       "series.uuid": "Generated<import(\"@/uuid\").UUID>",
       "session.expires": "Date",

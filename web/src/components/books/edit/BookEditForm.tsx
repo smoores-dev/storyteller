@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { useForm } from "@mantine/form"
 import { Button, Group, Stack, Textarea, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
@@ -94,7 +94,7 @@ export function BookEditForm({ bookUuid }: Props) {
     },
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!book) return
 
     form.initialize({

@@ -61,6 +61,7 @@
                     pkgs.nodejs_22
                     (pkgs.yarn.override { nodejs = pkgs.nodejs_22; })
                     pkgs.sqlite
+                    pkgs.sqlite-interactive
                     pkgs.git-lfs
                   ];
 
