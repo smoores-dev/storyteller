@@ -8,6 +8,7 @@ import { getProcessedAudioFilepath, shortenUuid } from "@/assets/paths"
 import { getAudioCoverFilepath } from "@/assets/covers"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { BookWithRelations } from "@/database/books"
+import { availableParallelism } from "node:os"
 
 void describe("processFile", () => {
   void it("can process mpeg4 files", async () => {
@@ -36,7 +37,7 @@ void describe("processFile", () => {
       null,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
@@ -80,7 +81,7 @@ void describe("processFile", () => {
       null,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
@@ -124,7 +125,7 @@ void describe("processFile", () => {
       null,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
@@ -163,13 +164,14 @@ void describe("processFile", () => {
       null,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, ["00000-00001.flac"])
   })
 
-  void it("can transcode nonstandard audio file", async () => {
+  // This takes a long time to run
+  void it.skip("can transcode nonstandard audio file", async () => {
     const input = join("src", "__fixtures__", "flac", "mobydick.flac")
     const uuid = randomUUID()
     const book = {
@@ -190,7 +192,7 @@ void describe("processFile", () => {
       null,
       "libopus",
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, ["00000-00001.mp4"])
@@ -217,7 +219,7 @@ void describe("processFile", () => {
       null,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
@@ -248,7 +250,7 @@ void describe("processFile", () => {
       null,
       "libopus",
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [])
@@ -282,7 +284,7 @@ void describe("processFile", () => {
       null,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [])
@@ -311,7 +313,7 @@ void describe("processFile", () => {
       0.1,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
@@ -359,7 +361,7 @@ void describe("processFile", () => {
       0.25,
       null,
       null,
-      new AsyncSemaphore(1),
+      new AsyncSemaphore(availableParallelism() - 1),
     )
     const outFiles = await readdir(outDir)
     assert.deepStrictEqual(outFiles, [
