@@ -5,23 +5,6 @@ stages: # List of stages for jobs, and their order of execution
   - prerelease
   - release
 
-default:
-  cache: &global_cache
-    key: yarn-cache-$CI_COMMIT_REF_SLUG
-    fallback_keys:
-      - yarn-cache-main
-    paths:
-      - .yarn/cache/
-    policy: pull-push
-
-always-yes:
-  image: alpine:latest
-  stage: check
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  script:
-    - echo "Done!"
-
 check:
   image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
   stage: check
@@ -32,14 +15,55 @@ check:
   script:
     - yarn
     - yarn check
-    - yarn build:docs
+
+check-versions:
+  image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
+  stage: check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
     - git fetch origin main --depth 1
     - ./scripts/check-versions.sh
-    # At the moment, we only have tests for the web package,
-    # so there's no need to run them if that hasn't changed.
-    - if [ "$(git diff origin/main -- web)" ]; then yarn test; fi
 
-check-version:
+check-docs:
+  image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - yarn
+    - yarn build:docs
+
+test-web:
+  image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - changes:
+        - web/**/*
+  script:
+    - yarn
+    - yarn test:web
+
+test-epub:
+  image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - changes:
+        - epub/**/*
+  script:
+    - yarn
+    - yarn test:epub
+
+bump-versions:
   stage: prerelease
   image: node:22
   rules:
@@ -71,10 +95,6 @@ pages:
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^docs-v?\d+\.\d+\.\d+$/'
-  cache:
-    <<: *global_cache
-    # Don't push the cache after a focus install
-    policy: pull
   script:
     - yarn workspaces focus @storyteller/docs
     - yarn build:docs
