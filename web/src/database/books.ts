@@ -292,7 +292,6 @@ export async function createBook(
     bookUuid: book.uuid,
     payload: {
       ...book,
-      originalFilesExist: true,
       processingStatus: null,
     },
   })
@@ -499,18 +498,21 @@ export async function deleteBook(bookUuid: UUID) {
   })
 }
 
+export type BookRelationsUpdate = {
+  authors?: AuthorRelation[]
+  series?: SeriesRelation[]
+  collections?: UUID[]
+  tags?: string[]
+  ebook?: EbookRelation
+  audiobook?: AudiobookRelation
+  readaloud?: AlignedBookRelation
+  books?: UUID[]
+}
+
 export async function updateBook(
   uuid: UUID,
   update: BookUpdate | null,
-  relations: {
-    authors?: AuthorRelation[]
-    series?: SeriesRelation[]
-    collections?: UUID[]
-    tags?: string[]
-    ebook?: EbookRelation
-    audiobook?: AudiobookRelation
-    readaloud?: AlignedBookRelation
-  } = {},
+  relations: BookRelationsUpdate = {},
 ) {
   if (update) {
     await db.updateTable("book").set(update).where("uuid", "=", uuid).execute()
@@ -749,6 +751,36 @@ export async function updateBook(
         .insertInto("readaloud")
         .values({ bookUuid: uuid, filepath: relations.readaloud.filepath })
         .execute()
+    }
+  }
+
+  if (relations.books) {
+    await db
+      .updateTable("ebook")
+      .set({ bookUuid: uuid })
+      .where("bookUuid", "in", relations.books)
+      .execute()
+
+    await db
+      .updateTable("audiobook")
+      .set({ bookUuid: uuid })
+      .where("bookUuid", "in", relations.books)
+      .execute()
+
+    await db
+      .updateTable("readaloud")
+      .set({ bookUuid: uuid })
+      .where("bookUuid", "in", relations.books)
+      .execute()
+
+    await db
+      .updateTable("position")
+      .set({ bookUuid: uuid })
+      .where("bookUuid", "in", relations.books)
+      .execute()
+
+    for (const bookUuid of relations.books) {
+      await deleteBook(bookUuid)
     }
   }
 

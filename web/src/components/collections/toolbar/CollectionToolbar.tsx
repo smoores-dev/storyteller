@@ -40,7 +40,12 @@ export function CollectionToolbar({
       {isEditing && (
         <>
           <SelectMenu books={books} setSelected={setSelected} />
-          <ActionMenu selected={selected} />
+          <ActionMenu
+            selected={selected}
+            onClear={() => {
+              setSelected(new Set())
+            }}
+          />
         </>
       )}
       <AddBooksMenu collection={collection} />

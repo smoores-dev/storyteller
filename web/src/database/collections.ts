@@ -195,8 +195,8 @@ export async function removeBooksFromCollections(
       type: "bookUpdated",
       bookUuid: book.uuid,
       payload: {
-        collections: book.collections.filter((c) =>
-          collectionUuids.includes(c.uuid),
+        collections: book.collections.filter(
+          (c) => !collectionUuids.includes(c.uuid),
         ),
       },
     })

@@ -1,8 +1,9 @@
-import { originalAudioExists, originalEpubExists } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
-import { getBooks } from "@/database/books"
+import { deleteBook, getBooks } from "@/database/books"
 import { NextResponse } from "next/server"
 import { isProcessing, isQueued } from "@/work/distributor"
+import { UUID } from "@/uuid"
+import { deleteAssets } from "@/assets/fs"
 
 export const dynamic = "force-dynamic"
 
@@ -11,23 +12,14 @@ export const dynamic = "force-dynamic"
  * @desc Use the `alignedOnly` param to limit results to books that
  *       have been aligned by Storyteller successfully.
  */
-export const GET = withHasPermission("bookList")(async (request) => {
-  const url = request.nextUrl
-  const alignedOnly = url.searchParams.get("aligned")
-
-  const books = await getBooks(null, alignedOnly !== null)
+export const GET = withHasPermission("bookList")(async () => {
+  const books = await getBooks(null)
 
   return NextResponse.json(
     await Promise.all(
-      books.map(async (book) => {
+      books.map((book) => {
         return {
           ...book,
-          originalFilesExist: (
-            await Promise.all([
-              originalEpubExists(book),
-              originalAudioExists(book),
-            ])
-          ).every((originalsExist) => originalsExist),
           processingStatus: isProcessing(book.uuid)
             ? "processing"
             : isQueued(book.uuid)
@@ -37,4 +29,21 @@ export const GET = withHasPermission("bookList")(async (request) => {
       }),
     ),
   )
+})
+
+export const DELETE = withHasPermission("bookDelete")(async (request) => {
+  const { books: bookUuids, includeAssets } = (await request.json()) as {
+    books: UUID[]
+    includeAssets?: "all" | "internal"
+  }
+  const books = await getBooks(bookUuids)
+
+  for (const book of books) {
+    await deleteBook(book.uuid)
+    if (includeAssets) {
+      await deleteAssets(book, { all: includeAssets === "all" })
+    }
+  }
+
+  return new Response(null, { status: 204 })
 })
