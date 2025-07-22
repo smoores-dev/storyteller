@@ -37,9 +37,7 @@ check-docs:
         ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
         "main"')
       changes:
-        compare_to: "refs/heads/main"
-        paths:
-          - docs/**/*
+        - docs/**/*
   script:
     - yarn
     - yarn build:docs
@@ -53,9 +51,7 @@ test-web:
         ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
         "main"')
       changes:
-        compare_to: "refs/heads/main"
-        paths:
-          - web/**/*
+        - web/**/*
   script:
     - yarn
     - yarn test:web
@@ -69,9 +65,7 @@ test-epub:
         ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
         "main"')
       changes:
-        compare_to: "refs/heads/main"
-        paths:
-          - epub/**/*
+        - epub/**/*
   script:
     - yarn
     - yarn test:epub
