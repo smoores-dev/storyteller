@@ -10,8 +10,9 @@ check:
   stage: check
   tags: [saas-linux-large-amd64]
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if:
+        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
+        "main"')
   script:
     - yarn
     - yarn check
@@ -20,8 +21,9 @@ check-versions:
   image: registry.gitlab.com/storyteller-platform/storyteller-base:latest
   stage: check
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if:
+        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
+        "main"')
   script:
     - git fetch origin main --depth 1
     - ./scripts/check-versions.sh
@@ -31,9 +33,10 @@ check-docs:
   stage: check
   tags: [saas-linux-large-amd64]
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    - changes:
+    - if:
+        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
+        "main"')
+      changes:
         compare_to: "refs/heads/main"
         paths:
           - docs/**/*
@@ -46,9 +49,10 @@ test-web:
   stage: check
   tags: [saas-linux-large-amd64]
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    - changes:
+    - if:
+        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
+        "main"')
+      changes:
         compare_to: "refs/heads/main"
         paths:
           - web/**/*
@@ -61,9 +65,10 @@ test-epub:
   stage: check
   tags: [saas-linux-large-amd64]
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    - changes:
+    - if:
+        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || '$CI_COMMIT_BRANCH ==
+        "main"')
+      changes:
         compare_to: "refs/heads/main"
         paths:
           - epub/**/*
