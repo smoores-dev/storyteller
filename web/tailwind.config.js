@@ -13,6 +13,22 @@ const tailwindConfig = {
       "2xl": "$mantine-breakpoint-xl",
     },
     extend: {
+      keyframes: {
+        "swap-right": {
+          "0%": { transform: "translateX(15%) scale(70%)", zIndex: "10" },
+          "50%": { transform: "translateX(38%) scale(80%)", zIndex: "30" },
+          "100%": { transform: "translateX(15%) scale(80%)", zIndex: "30" },
+        },
+        "swap-left": {
+          "0%": { transform: "translateX(-15%) scale(70%)" },
+          "50%": { transform: "translateX(-38%) scale(70%)" },
+          "100%": { transform: "translateX(-15%) scale(70%)" },
+        },
+      },
+      animation: {
+        "swap-right": "swap-right 0.5s ease-in-out both",
+        "swap-left": "swap-left 0.5s ease-in-out both",
+      },
       fontFamily: {
         sans: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
         heading: ["var(--font-young-serif)"],
