@@ -189,12 +189,14 @@ export function AppShell({ children, version }: Props) {
                   label="Home"
                   active={pathname === "/"}
                 />
-                <Title
-                  order={4}
-                  className="flex items-center gap-2 px-2 py-2 font-sans text-base font-normal"
-                >
-                  <IconBooks /> Collections
-                </Title>
+                <NavLink
+                  onClick={close}
+                  component={NextLink}
+                  href="/books"
+                  leftSection={<IconBooks />}
+                  label="Books"
+                  active={pathname === "/books"}
+                />
                 <NavLink
                   className="pl-11"
                   onClick={close}

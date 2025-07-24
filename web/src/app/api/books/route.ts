@@ -1,5 +1,5 @@
 import { withHasPermission } from "@/auth/auth"
-import { getBooks } from "@/database/books"
+import { getAlignedReadaloudBooks, getBooks } from "@/database/books"
 import { NextResponse } from "next/server"
 
 /**
@@ -11,7 +11,9 @@ export const GET = withHasPermission("bookList")(async (request) => {
   const url = request.nextUrl
   const alignedOnly = url.searchParams.get("synced")
 
-  const books = await getBooks(null, alignedOnly !== null)
+  const books = alignedOnly
+    ? await getAlignedReadaloudBooks(request.auth.user.id)
+    : await getBooks(null, request.auth.user.id)
 
   return NextResponse.json(
     books.map((book) => ({

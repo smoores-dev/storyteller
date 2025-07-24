@@ -24,7 +24,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
 
-  const book = await getBook(bookUuid)
+  const book = await getBook(bookUuid, request.auth.user.id)
   if (!book) return new Response(null, { status: 404 })
 
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"

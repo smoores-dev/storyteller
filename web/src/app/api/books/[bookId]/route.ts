@@ -12,12 +12,12 @@ type Params = Promise<{
  * @desc '
  */
 export const GET = withHasPermission<Params>("bookRead")(async (
-  _request,
+  request,
   context,
 ) => {
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
-  const book = await getBook(bookUuid)
+  const book = await getBook(bookUuid, request.auth.user.id)
   if (!book) {
     return Response.json(
       { message: `Could not find book with id ${bookId}` },

@@ -28,6 +28,8 @@ import { mkdir, rename } from "node:fs/promises"
 const server = new Server({
   path: "/api/v2/books/upload",
   datastore: new FileStore({ directory: UPLOADS_DIR }),
+  // TODO: check user permissions on specific book id here
+  // ?: Is _req a NextRequest? Does it have auth.user?
   onUploadFinish: async (_req, upload) => {
     if (!upload.metadata) {
       return {

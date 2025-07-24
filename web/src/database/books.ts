@@ -299,11 +299,8 @@ export async function createBook(
   return book
 }
 
-export async function getBooks(
-  bookUuids: UUID[] | null = null,
-  alignedOnly = false,
-) {
-  const books = await db
+export function booksQuery(userId?: UUID) {
+  return db
     .selectFrom("book")
     .selectAll("book")
     .select((eb) => [
@@ -426,23 +423,52 @@ export async function getBooks(
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),
     ])
-    .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids))
+    .$if(!!userId, (qb) =>
+      qb
+        .leftJoin("bookToCollection", "book.uuid", "bookToCollection.bookUuid")
+        .leftJoin(
+          "collection",
+          "collection.uuid",
+          "bookToCollection.collectionUuid",
+        )
+        .leftJoin(
+          "collectionToUser",
+          "collectionToUser.collectionUuid",
+          "bookToCollection.collectionUuid",
+        )
+        .where((eb) =>
+          eb.or([
+            // The $if condition ensures that this only runs when userId
+            // is not null
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            eb("collectionToUser.userId", "=", userId!),
+            eb("collection.public", "=", true),
+            eb("collection.public", "is", null),
+          ]),
+        ),
+    )
+}
+
+export async function getAlignedReadaloudBooks(userId?: UUID) {
+  return await booksQuery(userId)
+    .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
+    .where("readaloud.status", "=", "ALIGNED")
+    .execute()
+}
+
+export async function getBooks(bookUuids: UUID[] | null = null, userId?: UUID) {
+  const books = await booksQuery(userId)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids!))
     .execute()
 
-  if (!alignedOnly) return books
-
-  return books.filter((book) => {
-    return (
-      book.processingTask?.type === ProcessingTaskType.SYNC_CHAPTERS &&
-      book.processingTask.status === ProcessingTaskStatus.COMPLETED
-    )
-  })
+  return books
 }
 
 export type BookWithRelations = NonNullable<Awaited<ReturnType<typeof getBook>>>
 
-export async function getBook(uuid: UUID) {
-  const [book] = await getBooks([uuid])
+export async function getBook(uuid: UUID, userId?: UUID) {
+  const [book] = await getBooks([uuid], userId)
   return book ?? null
 }
 

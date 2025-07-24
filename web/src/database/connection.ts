@@ -33,7 +33,13 @@ try {
 }
 
 export const db = new Kysely<DB>({
-  // log: ['query', 'error'],
+  // log(event) {
+  //   console.log(event.query.sql)
+  //   console.log(event.query.parameters)
+  //   if (event.level === "error") {
+  //     console.log(event.error)
+  //   }
+  // },
   dialect: new SqliteDialect({ database: sqlite }),
   plugins: [
     new CamelCasePlugin(),
