@@ -16,21 +16,25 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
 
   const { update, relations, from } = body
 
-  if (from.length > 3) {
+  const books = await getBooks(from, request.auth.user.id)
+
+  if (books.length !== from.length) {
+    return Response.json({ message: "Not found" }, { status: 404 })
+  }
+
+  if (books.length > 3) {
     return Response.json(
       { message: "Failed to merge books: more than three books specified" },
       { status: 405 },
     )
   }
 
-  if (from.length < 2) {
+  if (books.length < 2) {
     return Response.json(
       { message: "Failed to merge books: must specify at least two books" },
       { status: 405 },
     )
   }
-
-  const books = await getBooks(from)
 
   const counts = {
     readaloud: 0,

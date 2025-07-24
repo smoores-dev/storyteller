@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { BookDetail, Invite, InviteRequest, Settings, User } from "@/apiModels"
+import {
+  BookDetail,
+  Invite,
+  InviteRequest,
+  Settings,
+  Shelves,
+  User,
+} from "@/apiModels"
 import { UUID } from "@/uuid"
 import { UserPermissionSet } from "@/database/users"
 import { BookEvent } from "@/events"
@@ -137,6 +144,9 @@ export const api = createApi({
           includeAssets,
         },
       }),
+    }),
+    getShelves: build.query<Shelves, void>({
+      query: () => "/shelves",
     }),
     listBooks: build.query<BookDetail[], void>({
       query: () => "/books",
@@ -508,6 +518,7 @@ export const {
   useDeleteInviteMutation,
   useDeleteUserMutation,
   useGetCurrentUserQuery,
+  useGetShelvesQuery,
   useListAuthorsQuery,
   useListBooksQuery,
   useListCollectionsQuery,

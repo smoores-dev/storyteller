@@ -24,7 +24,7 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
   const bookUuid = await getBookUuid(bookId)
   const range = request.headers.get("Range")?.valueOf()
   const ifRange = request.headers.get("If-Range")?.valueOf()
-  const book = await getBook(bookUuid)
+  const book = await getBook(bookUuid, request.auth.user.id)
 
   if (!book?.readaloud?.filepath) {
     return Response.json(

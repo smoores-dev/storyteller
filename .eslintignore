@@ -7,19 +7,20 @@ work-dist
 
 node_modules
 
-assets
-cache
+/assets
+/cache
+/dev-data
 
 mobile/ios
 mobile/android
 
-epub/index.js
-epub/index.d.ts
-epub/node.js
-epub/node.d.ts
-epub/index.test.d.ts
+/epub/index.js
+/epub/index.d.ts
+/epub/node.js
+/epub/node.d.ts
+/epub/index.test.d.ts
 
-fs/index.js
-fs/index.d.ts
+/fs/index.js
+/fs/index.d.ts
 
-web/whisper-builds
+/web/whisper-builds

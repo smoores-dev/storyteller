@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic"
  * @desc Use the `alignedOnly` param to limit results to books that
  *       have been aligned by Storyteller successfully.
  */
-export const GET = withHasPermission("bookList")(async () => {
-  const books = await getBooks(null)
+export const GET = withHasPermission("bookList")(async (request) => {
+  const books = await getBooks(null, request.auth.user.id)
 
   return NextResponse.json(
     await Promise.all(
@@ -36,7 +36,11 @@ export const DELETE = withHasPermission("bookDelete")(async (request) => {
     books: UUID[]
     includeAssets?: "all" | "internal"
   }
-  const books = await getBooks(bookUuids)
+  const books = await getBooks(bookUuids, request.auth.user.id)
+
+  if (books.length !== bookUuids.length) {
+    return Response.json({ message: "Not found" }, { status: 404 })
+  }
 
   for (const book of books) {
     await deleteBook(book.uuid)
