@@ -41,8 +41,9 @@ export function BookList({ collectionUuid }: Props) {
     }),
   })
 
-  const { books, onFilterChange, filter, sort, onSortChange } =
-    useFilterSortedBooks(collectionBooks ?? [])
+  const { books, onFilterChange, sort, onSortChange } = useFilterSortedBooks(
+    collectionBooks ?? [],
+  )
 
   const [selected, setSelected] = useState(() => new Set<UUID>())
   const [isEditing, setIsEditing] = useState(false)
@@ -52,7 +53,7 @@ export function BookList({ collectionUuid }: Props) {
       {canListBooks && (
         <Stack>
           <Group>
-            <Search value={filter} onValueChange={onFilterChange} />
+            <Search onValueChange={onFilterChange} />
             <Sort value={sort} onValueChange={onSortChange} />
           </Group>
           <CollectionToolbar

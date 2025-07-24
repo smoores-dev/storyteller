@@ -49,14 +49,16 @@ export function useFilterSortedBooks(books: BookDetail[]) {
         findAllMatches: true,
         ignoreDiacritics: true,
         keys: ["title", "authors.name"],
+        threshold: 0.4,
       }),
     [books],
   )
   const [search, setSearch] = useState("")
-  const filtered = useMemo(
-    () => (search === "" ? books : fuse.search(search).map((f) => f.item)),
-    [books, fuse, search],
-  )
+  const filtered = useMemo(() => {
+    if (search === "") return books
+    const results = fuse.search(search)
+    return results.map((f) => f.item)
+  }, [books, fuse, search])
 
   const [sort, setSort] = useState<BookSort>(["title", "asc"])
   const sorted = useMemo(

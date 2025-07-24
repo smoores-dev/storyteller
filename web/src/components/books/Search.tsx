@@ -3,23 +3,24 @@ import { IconX } from "@tabler/icons-react"
 import { startTransition, useRef } from "react"
 
 interface Props {
-  value: string
   onValueChange: (value: string) => void
 }
 
-export function Search({ value, onValueChange }: Props) {
+export function Search({ onValueChange }: Props) {
   const ref = useRef<HTMLInputElement | null>(null)
 
   return (
     <TextInput
       ref={ref}
       placeholder="Search"
-      value={value}
       rightSection={
         <ActionIcon
           variant="subtle"
           onClick={() => {
-            ref.current?.focus()
+            if (ref.current) {
+              ref.current.focus()
+              ref.current.value = ""
+            }
             startTransition(() => {
               onValueChange("")
             })

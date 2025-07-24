@@ -26,8 +26,9 @@ export function AddBooksModal({ isOpen, collection, onClose }: Props) {
     }),
   })
 
-  const { books, onFilterChange, filter, sort, onSortChange } =
-    useFilterSortedBooks(potentialBooks ?? [])
+  const { books, onFilterChange, sort, onSortChange } = useFilterSortedBooks(
+    potentialBooks ?? [],
+  )
 
   const [addBooksToCollections, { isLoading }] =
     useAddBooksToCollectionsMutation()
@@ -50,7 +51,7 @@ export function AddBooksModal({ isOpen, collection, onClose }: Props) {
     >
       <Stack className="h-full">
         <Group>
-          <Search value={filter} onValueChange={onFilterChange} />
+          <Search onValueChange={onFilterChange} />
           <Sort value={sort} onValueChange={onSortChange} />
         </Group>
         <BookGrid
