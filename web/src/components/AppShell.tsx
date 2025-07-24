@@ -22,6 +22,7 @@ import {
   Text,
   Image,
   PasswordInput,
+  Box,
 } from "@mantine/core"
 import {
   IconUser,
@@ -138,9 +139,9 @@ export function AppShell({ children, version }: Props) {
         header={{ height: 100 }}
         padding="md"
         navbar={{
-          width: 200,
+          width: 40,
           breakpoint: "sm",
-          collapsed: { mobile: !opened, desktop: !opened },
+          collapsed: { mobile: !opened },
         }}
       >
         <AppShellHeader>
@@ -151,7 +152,7 @@ export function AppShell({ children, version }: Props) {
                 color="st-orange"
                 onClick={toggle}
                 size="md"
-                className="ml-4"
+                className="visible ml-4 md:invisible"
               />
             )}
             <Anchor component={NextLink} href="/">
@@ -174,86 +175,99 @@ export function AppShell({ children, version }: Props) {
           </Group>
         </AppShellHeader>
         {currentUser && (
-          <AppShellNavbar>
-            <Text c="black" my="sm" px="sm">
-              Version: {version}
-            </Text>
-            <CurrentBookProgress />
-            {permissions?.bookCreate || permissions?.bookList ? (
-              <>
-                <NavLink
-                  onClick={close}
-                  component={NextLink}
-                  href="/"
-                  leftSection={<IconHome />}
-                  label="Home"
-                  active={pathname === "/"}
-                />
-                <NavLink
-                  onClick={close}
-                  component={NextLink}
-                  href="/books"
-                  leftSection={<IconBooks />}
-                  label="Books"
-                  active={pathname === "/books"}
-                />
-                <NavLink
-                  className="pl-11"
-                  onClick={close}
-                  component={NextLink}
-                  href={`/collections/none`}
-                  label={<span className="italic">Uncollected</span>}
-                  active={pathname === `/collections/none`}
-                />
-                {collections?.map((collection) => (
+          <AppShellNavbar className="group/navbar overflow-x-hidden transition-[width] md:w-10 md:hover:w-[200px]">
+            <Box className="md:w-[200px]">
+              <Text
+                c="black"
+                my="sm"
+                px="sm"
+                className="invisible group-hover/navbar:visible"
+              >
+                Version: {version}
+              </Text>
+              <CurrentBookProgress />
+              {permissions?.bookCreate || permissions?.bookList ? (
+                <>
                   <NavLink
-                    className="pl-11"
-                    key={collection.uuid}
                     onClick={close}
                     component={NextLink}
-                    href={`/collections/${collection.uuid}`}
-                    label={collection.name}
-                    active={pathname === `/collections/${collection.uuid}`}
+                    href="/"
+                    leftSection={<IconHome />}
+                    label="Home"
+                    active={pathname === "/"}
                   />
-                ))}
-              </>
-            ) : null}
-            <NavLink
-              onClick={close}
-              component={NextLink}
-              href="/account"
-              leftSection={<IconUser />}
-              label="Account"
-              active={pathname === "/accounts"}
-            />
-            {permissions?.userCreate || permissions?.userList ? (
+                  <NavLink
+                    onClick={close}
+                    component={NextLink}
+                    href="/books"
+                    leftSection={<IconBooks />}
+                    label="Books"
+                    active={pathname === "/books"}
+                  />
+                  <NavLink
+                    onClick={close}
+                    component={NextLink}
+                    href={`/collections/none`}
+                    leftSection={
+                      <Box className="h-6 w-6 text-center italic">U</Box>
+                    }
+                    label={<span className="italic">Uncollected</span>}
+                    active={pathname === `/collections/none`}
+                  />
+                  {collections?.map((collection) => (
+                    <NavLink
+                      key={collection.uuid}
+                      onClick={close}
+                      component={NextLink}
+                      leftSection={
+                        <Box className="h-6 w-6 text-center">
+                          {collection.name[0]}
+                        </Box>
+                      }
+                      href={`/collections/${collection.uuid}`}
+                      label={collection.name}
+                      active={pathname === `/collections/${collection.uuid}`}
+                    />
+                  ))}
+                </>
+              ) : null}
               <NavLink
                 onClick={close}
                 component={NextLink}
-                href="/users"
-                leftSection={<IconUsers />}
-                label="Users"
-                active={pathname === "/users"}
+                href="/account"
+                leftSection={<IconUser />}
+                label="Account"
+                active={pathname === "/accounts"}
               />
-            ) : null}
-            {permissions?.settingsUpdate ? (
+              {permissions?.userCreate || permissions?.userList ? (
+                <NavLink
+                  onClick={close}
+                  component={NextLink}
+                  href="/users"
+                  leftSection={<IconUsers />}
+                  label="Users"
+                  active={pathname === "/users"}
+                />
+              ) : null}
+              {permissions?.settingsUpdate ? (
+                <NavLink
+                  onClick={close}
+                  component={NextLink}
+                  href="/settings"
+                  leftSection={<IconSettings />}
+                  label="Settings"
+                  active={pathname === "/settings"}
+                />
+              ) : null}
               <NavLink
                 onClick={close}
-                component={NextLink}
-                href="/settings"
-                leftSection={<IconSettings />}
-                label="Settings"
-                active={pathname === "/settings"}
+                component="a"
+                href="/logout"
+                leftSection={<IconLogout />}
+                label="Logout"
+                active={pathname === "/logout"}
               />
-            ) : null}
-            <NavLink
-              onClick={close}
-              component="a"
-              href="/logout"
-              leftSection={<IconLogout />}
-              label="Logout"
-              active={pathname === "/logout"}
-            />
+            </Box>
           </AppShellNavbar>
         )}
         <AppShellMain className="*:ml-8">{children}</AppShellMain>

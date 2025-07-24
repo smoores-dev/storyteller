@@ -20,20 +20,20 @@ export function BookThumbnailImage({ book, height, width }: Props) {
           width,
         }}
       >
-        <EbookCoverImage
-          book={book}
-          height={height}
-          width={width}
-          className="absolute z-20 -translate-x-[10%] scale-[80%] transition-transform group-hover/thumbnail:-translate-x-[15%] group-hover/thumbnail:scale-[70%]"
-        />
         <AudiobookCoverImage
           book={book}
           height={width}
           width={width}
-          className="absolute z-10 translate-x-[10%] scale-[80%] transition-transform group-hover/thumbnail:translate-x-[15%] group-hover/thumbnail:scale-[70%]"
+          className="hover:animate-swap-right peer absolute z-10 translate-x-[10%] scale-[80%] transition-transform group-hover/thumbnail:translate-x-[15%] group-hover/thumbnail:scale-[70%]"
           style={{
             top: `calc((${height} - ${width}) / 2)`,
           }}
+        />
+        <EbookCoverImage
+          book={book}
+          height={height}
+          width={width}
+          className="peer-hover:animate-swap-left absolute z-20 -translate-x-[10%] scale-[80%] transition-transform group-hover/thumbnail:-translate-x-[15%] group-hover/thumbnail:scale-[70%]"
         />
       </Box>
     )
