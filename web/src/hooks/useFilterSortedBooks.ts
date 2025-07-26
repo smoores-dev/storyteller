@@ -1,6 +1,8 @@
 import { BookDetail } from "@/apiModels"
-import { useMemo, useState } from "react"
+import { Dispatch, SetStateAction, useCallback, useMemo, useState } from "react"
 import Fuse from "fuse.js"
+import { UUID } from "@/uuid"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 export type BookSortKey = "title" | "author" | "align-time" | "create-time"
 export type SortDirection = "asc" | "desc"
@@ -42,7 +44,33 @@ function createComparisonTitle(title: string, locale: Intl.Locale) {
   return lower
 }
 
-export function useFilterSortedBooks(books: BookDetail[]) {
+export interface FilterSortOptions {
+  onSearchChange: (value: string) => void
+  search: string
+  sort: BookSort
+  onSortChange: Dispatch<SetStateAction<BookSort>>
+  filters: {
+    visible: boolean
+    showFilters: () => void
+    hideFilters: () => void
+    collections: (UUID | "none")[] | null
+    onCollectionsChange: (values: (UUID | "none")[] | null) => void
+    tags: (UUID | "none")[] | null
+    onTagsChange: (values: (UUID | "none")[] | null) => void
+    series: UUID[] | null
+    onSeriesChange: (values: UUID[] | null) => void
+    bookTypes: ("ebook" | "audiobook" | "readaloud")[] | null
+    onBookTypesChange: (
+      values: ("ebook" | "audiobook" | "readaloud")[] | null,
+    ) => void
+    reset: () => void
+  }
+}
+
+export function useFilterSortedBooks(books: BookDetail[]): {
+  books: BookDetail[]
+  options: FilterSortOptions
+} {
   const fuse = useMemo(
     () =>
       new Fuse(books, {
@@ -54,11 +82,86 @@ export function useFilterSortedBooks(books: BookDetail[]) {
     [books],
   )
   const [search, setSearch] = useState("")
-  const filtered = useMemo(() => {
+  const searched = useMemo(() => {
     if (search === "") return books
     const results = fuse.search(search)
     return results.map((f) => f.item)
   }, [books, fuse, search])
+
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const setSearchParam = useCallback(
+    (name: string, values: string[] | null) => {
+      const updated = new URLSearchParams(searchParams.toString())
+      if (values === null) {
+        updated.delete(name)
+      } else {
+        updated.set(name, values.join(","))
+      }
+      router.push(`${pathname}?${updated.toString()}`)
+    },
+    [pathname, router, searchParams],
+  )
+
+  const clearSearchParams = useCallback(() => {
+    router.push(pathname)
+  }, [pathname, router])
+
+  const collections = (searchParams.get("collections")?.split(",") ?? null) as
+    | (UUID | "none")[]
+    | null
+
+  const tags = (searchParams.get("tags")?.split(",") ?? null) as
+    | (UUID | "none")[]
+    | null
+
+  const series = (searchParams.get("series")?.split(",") ?? null) as
+    | UUID[]
+    | null
+
+  const bookTypes = (searchParams.get("bookTypes")?.split(",") ?? null) as
+    | ("ebook" | "audiobook" | "readaloud")[]
+    | null
+
+  const [showFilters, setShowFilters] = useState(
+    !!(collections || tags || series || bookTypes),
+  )
+
+  const filtered = useMemo(
+    () =>
+      searched.filter((book) => {
+        if (collections) {
+          if (
+            !book.collections.some((c) => collections.includes(c.uuid)) &&
+            !(!book.collections.length && collections.includes("none"))
+          ) {
+            return false
+          }
+        }
+        if (tags) {
+          if (
+            !book.tags.some((t) => tags.includes(t.uuid)) &&
+            !(!book.tags.length && tags.includes("none"))
+          ) {
+            return false
+          }
+        }
+        if (series) {
+          if (!book.series.some((s) => series.includes(s.uuid))) {
+            return false
+          }
+        }
+        if (bookTypes) {
+          if (!bookTypes.some((type) => !!book[type])) {
+            return false
+          }
+        }
+        return true
+      }),
+    [bookTypes, collections, searched, series, tags],
+  )
 
   const [sort, setSort] = useState<BookSort>(["title", "asc"])
   const sorted = useMemo(
@@ -119,9 +222,37 @@ export function useFilterSortedBooks(books: BookDetail[]) {
 
   return {
     books: sorted,
-    onFilterChange: setSearch,
-    filter: search,
-    sort,
-    onSortChange: setSort,
+    options: {
+      onSearchChange: setSearch,
+      search: search,
+      sort,
+      onSortChange: setSort,
+      filters: {
+        visible: showFilters,
+        showFilters: () => {
+          setShowFilters(true)
+        },
+        hideFilters: () => {
+          setShowFilters(false)
+        },
+        collections,
+        onCollectionsChange: (values) => {
+          setSearchParam("collections", values)
+        },
+        tags,
+        onTagsChange: (values) => {
+          setSearchParam("tags", values)
+        },
+        series,
+        onSeriesChange: (values) => {
+          setSearchParam("series", values)
+        },
+        bookTypes,
+        onBookTypesChange: (values) => {
+          setSearchParam("bookTypes", values)
+        },
+        reset: clearSearchParams,
+      },
+    },
   }
 }

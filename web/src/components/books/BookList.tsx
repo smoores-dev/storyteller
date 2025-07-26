@@ -1,16 +1,15 @@
 "use client"
 
-import { Group, Stack, Text } from "@mantine/core"
+import { Stack, Text } from "@mantine/core"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
 import { usePermission } from "@/hooks/usePermission"
-import { Search } from "./Search"
-import { Sort } from "./Sort"
 import { UUID } from "@/uuid"
 import { useState } from "react"
 import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
 import { BookGrid } from "./BookGrid"
 import { useListBooksQuery, useListCollectionsQuery } from "@/store/api"
 import { AddBooksMenu } from "./AddBooksMenu"
+import { FilterSort } from "../collections/FilterSort"
 
 interface Props {
   collectionUuid?: UUID | null
@@ -41,9 +40,7 @@ export function BookList({ collectionUuid }: Props) {
     }),
   })
 
-  const { books, onFilterChange, sort, onSortChange } = useFilterSortedBooks(
-    collectionBooks ?? [],
-  )
+  const { books, options } = useFilterSortedBooks(collectionBooks ?? [])
 
   const [selected, setSelected] = useState(() => new Set<UUID>())
   const [isEditing, setIsEditing] = useState(false)
@@ -52,10 +49,7 @@ export function BookList({ collectionUuid }: Props) {
     <>
       {canListBooks && (
         <Stack>
-          <Group>
-            <Search onValueChange={onFilterChange} />
-            <Sort value={sort} onValueChange={onSortChange} />
-          </Group>
+          <FilterSort options={options} />
           <CollectionToolbar
             collection={collection}
             books={books}

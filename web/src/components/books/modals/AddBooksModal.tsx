@@ -1,6 +1,5 @@
 import { BookGrid } from "@/components/books/BookGrid"
-import { Search } from "@/components/books/Search"
-import { Sort } from "@/components/books/Sort"
+import { FilterSort } from "@/components/collections/FilterSort"
 import { Collection } from "@/database/collections"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
 import {
@@ -26,9 +25,7 @@ export function AddBooksModal({ isOpen, collection, onClose }: Props) {
     }),
   })
 
-  const { books, onFilterChange, sort, onSortChange } = useFilterSortedBooks(
-    potentialBooks ?? [],
-  )
+  const { books, options } = useFilterSortedBooks(potentialBooks ?? [])
 
   const [addBooksToCollections, { isLoading }] =
     useAddBooksToCollectionsMutation()
@@ -50,10 +47,7 @@ export function AddBooksModal({ isOpen, collection, onClose }: Props) {
       }}
     >
       <Stack className="h-full">
-        <Group>
-          <Search onValueChange={onFilterChange} />
-          <Sort value={sort} onValueChange={onSortChange} />
-        </Group>
+        <FilterSort options={options} />
         <BookGrid
           className="flex-grow overflow-y-auto"
           books={books}
