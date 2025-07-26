@@ -38,7 +38,7 @@ type Props = {
   locator: ReadiumLocator
 }
 
-const forwardNavKeyCodes = [93, 117]
+const forwardNavKeyCodes = [93]
 const backwardNavKeyCodes = [92]
 
 export function Epub({ book, locator }: Props) {
