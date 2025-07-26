@@ -65,7 +65,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       ["./plugins/withAndroidJetifier.ts"],
-      ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93, 117] }],
+      ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93] }],
       [
         "./plugins/withPods.ts",
         {
