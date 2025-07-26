@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "2.0.0-0",
+  "version": "2.0.0-1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,7 +17,7 @@
     "test": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller --test",
     "test:watch": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller --test --watch",
     "test:all": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
-    "build": "yarn build:sqlite-ext && yarn build:worker && yarn build:migrate && next build",
+    "build": "yarn build:sqlite-ext && yarn build:worker && next build",
     "build:sqlite-ext": "gcc -g -fPIC -rdynamic -shared sqlite/uuid.c -o sqlite/uuid.c.so",
     "build:autoimport": "esbuild src/assets/autoimport/worker.ts --conditions=@storyteller --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=autoimport-dist/",
     "build:worker": "esbuild src/work/worker.ts --conditions=@storyteller --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",

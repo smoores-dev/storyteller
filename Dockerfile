@@ -37,7 +37,6 @@ COPY --from=builder /app/web/.next/static ./.next/standalone/web/.next/static
 COPY --from=builder /app/web/sqlite/uuid.c.so ./.next/standalone/web/sqlite/uuid.c.so
 
 # Copy SQL migrations
-COPY --from=builder /app/web/migrate-dist ./.next/standalone/web/migrate-dist
 COPY --from=builder /app/web/migrations ./.next/standalone/web/migrations
 
 # WASM files aren't statically imported, so esbuild doesn't find them and they need to be manually copied over
