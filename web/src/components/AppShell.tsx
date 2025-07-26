@@ -175,7 +175,7 @@ export function AppShell({ children, version }: Props) {
           </Group>
         </AppShellHeader>
         {currentUser && (
-          <AppShellNavbar className="group/navbar overflow-x-hidden transition-[width] md:w-10 md:hover:w-[200px]">
+          <AppShellNavbar className="group/navbar border-r-st-orange-100 overflow-x-hidden border-r-2 transition-[width] md:w-10 md:hover:w-[200px]">
             <Box className="md:w-[200px]">
               <Text
                 c="black"

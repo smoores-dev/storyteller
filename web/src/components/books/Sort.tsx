@@ -1,7 +1,6 @@
 import { BookSort, BookSortKey } from "@/hooks/useFilterSortedBooks"
 import { useCombobox, Combobox, InputBase, Group, Text } from "@mantine/core"
 import { IconArrowDown, IconArrowUp } from "@tabler/icons-react"
-import { Dispatch, SetStateAction } from "react"
 
 const optionLabels: Record<BookSortKey, string> = {
   title: "Title",
@@ -12,7 +11,7 @@ const optionLabels: Record<BookSortKey, string> = {
 
 interface Props {
   value: BookSort
-  onValueChange: Dispatch<SetStateAction<BookSort>>
+  onValueChange: (values: BookSort) => void
 }
 
 export function Sort({ value, onValueChange }: Props) {
@@ -26,13 +25,12 @@ export function Sort({ value, onValueChange }: Props) {
     <Combobox
       store={combobox}
       withinPortal={false}
-      onOptionSubmit={(value) => {
-        onValueChange((prev) => {
-          if (prev[0] === value) {
-            return [value, prev[1] === "asc" ? "desc" : "asc"]
-          }
-          return [value as BookSortKey, "asc"]
-        })
+      onOptionSubmit={(submitted) => {
+        if (value[0] === submitted) {
+          onValueChange([submitted, value[1] === "asc" ? "desc" : "asc"])
+          return
+        }
+        onValueChange([submitted as BookSortKey, "asc"])
         combobox.closeDropdown()
       }}
     >

@@ -55,14 +55,14 @@ export function BookDetail({ bookUuid }: Props) {
           <Text>by {book.authors.map((author) => author.name).join(", ")}</Text>
           <Group>
             {book.tags.map((tag) => (
-              <Group
-                gap={8}
-                className="rounded-full bg-gray-100 px-3 py-1 text-sm"
+              <Link
+                href={`/books?tags=${tag.uuid}`}
+                className="flex flex-row items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm hover:bg-gray-200"
                 key={tag.uuid}
               >
                 <IconTagFilled size={12} />
                 {tag.name}
-              </Group>
+              </Link>
             ))}
           </Group>
           <Group>
