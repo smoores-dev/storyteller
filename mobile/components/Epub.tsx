@@ -1,4 +1,6 @@
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
+import { DeviceEventEmitter } from "react-native"
+
 import { Platform, Pressable, StyleSheet, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -36,6 +38,9 @@ type Props = {
   locator: ReadiumLocator
 }
 
+const forwardNavKeyCodes = [93, 117]
+const backwardNavKeyCodes = [92]
+
 export function Epub({ book, locator }: Props) {
   useKeepAwake()
 
@@ -71,6 +76,21 @@ export function Epub({ book, locator }: Props) {
   const epubViewRef = useRef<EPUBViewRef | null>(null)
 
   const { isPlaying } = useAudioBook()
+
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(
+      "storyteller:keydown",
+      (event) => {
+        if (forwardNavKeyCodes.includes(event.keyCode)) {
+          epubViewRef.current?.goForward()
+        } else if (backwardNavKeyCodes.includes(event.keyCode)) {
+          epubViewRef.current?.goBackward()
+        }
+      },
+    )
+
+    return () => listener.remove()
+  }, [])
 
   return (
     <View

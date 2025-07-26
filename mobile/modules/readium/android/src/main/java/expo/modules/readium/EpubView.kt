@@ -9,6 +9,8 @@ import android.graphics.PointF
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.KeyEvent
+import android.view.KeyEvent.ACTION_DOWN
 import android.webkit.JavascriptInterface
 import androidx.annotation.ColorInt
 import androidx.fragment.app.FragmentActivity

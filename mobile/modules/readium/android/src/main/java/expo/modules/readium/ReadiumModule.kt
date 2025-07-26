@@ -142,6 +142,16 @@ class ReadiumModule : Module() {
                 view.pendingProps.bookId = prop
             }
 
+            AsyncFunction("goForward") { view: EpubView ->
+                val navigator = view.navigator ?: return@AsyncFunction
+                navigator.goForward(animated = false)
+            }
+
+            AsyncFunction("goBackward") { view: EpubView ->
+                val navigator = view.navigator ?: return@AsyncFunction
+                navigator.goBackward(animated = false)
+            }
+
             Prop("locator") { view: EpubView, prop: Map<String, Any> ->
                 val locator = Locator.fromJSON(JSONObject(prop)) ?: return@Prop
 
