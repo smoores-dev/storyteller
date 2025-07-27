@@ -73,4 +73,4 @@ RUN wget https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-CMD ["node", "server.js"]
+CMD ["node", "--enable-source-maps", "server.js"]

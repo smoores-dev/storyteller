@@ -21,11 +21,15 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
   },
-  webpack: (config) => {
+  webpack: (config, { isServer, dev }) => {
     config.resolve.conditionNames = [
       "@storyteller",
       ...(config.resolve.conditionNames ?? ["..."]),
     ]
+
+    if (isServer && !dev) {
+      config.devtool = "source-map"
+    }
 
     return config
   },
