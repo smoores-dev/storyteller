@@ -97,6 +97,12 @@ async function migrateFile(path: string) {
   logger.info(contents)
   const statements = splitQuery(contents, sqliteSplitterOptions) as string[]
 
+  // Foreign keys can't be disabled within a transaction,
+  // so we have to run these outside the transaction
+  if (contents.includes("PRAGMA foreign_keys = 0;")) {
+    await sql`PRAGMA foreign_keys = 0`.execute(db)
+  }
+
   await db.transaction().execute(async (tr) => {
     for (const statement of statements) {
       try {
@@ -108,6 +114,10 @@ ${statement}`)
       }
     }
   })
+
+  if (contents.includes("PRAGMA foreign_keys = 1;")) {
+    await sql`PRAGMA foreign_keys = 1`.execute(db)
+  }
 
   await createMigration(hash, basename(path))
   return true
