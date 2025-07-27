@@ -1,5 +1,6 @@
 import { UUID } from "@/uuid"
 import { db } from "./connection"
+import { getStatuses } from "./statuses"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -55,6 +56,12 @@ export async function upsertPosition(
   const locatorString = JSON.stringify(locator)
 
   const upserted = await db.transaction().execute(async (tr) => {
+    const { statusUuid } = await tr
+      .selectFrom("book")
+      .select(["statusUuid"])
+      .where("uuid", "=", bookUuid)
+      .executeTakeFirstOrThrow()
+
     const existing = await tr
       .selectFrom("position")
       .select(["timestamp"])
@@ -62,22 +69,41 @@ export async function upsertPosition(
       .executeTakeFirst()
 
     if (!existing) {
-      await db
+      await tr
         .insertInto("position")
         .values({ userId, bookUuid, locator: locatorString, timestamp })
         .execute()
+    } else {
+      if (existing.timestamp > timestamp) return false
 
-      return true
+      await tr
+        .updateTable("position")
+        .set({ locator: locatorString, timestamp })
+        .where("userId", "=", userId)
+        .where("bookUuid", "=", bookUuid)
+        .execute()
     }
 
-    if (existing.timestamp > timestamp) return false
+    const statuses = await getStatuses()
+    /* eslint-disable @typescript-eslint/no-non-null-assertion */
+    const toRead = statuses.find((status) => status.name === "To read")!
+    const reading = statuses.find((status) => status.name === "Reading")!
+    const read = statuses.find((status) => status.name === "Read")!
+    /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
-    await db
-      .updateTable("position")
-      .set({ locator: locatorString, timestamp })
-      .where("userId", "=", userId)
-      .where("bookUuid", "=", bookUuid)
-      .execute()
+    if (
+      statusUuid === toRead.uuid &&
+      (locator.locations?.totalProgression ?? 0) < 0.98
+    ) {
+      await tr.updateTable("book").set({ statusUuid: reading.uuid }).execute()
+    }
+    if (
+      statusUuid === toRead.uuid ||
+      (statusUuid === reading.uuid &&
+        (locator.locations?.totalProgression ?? 0) >= 0.98)
+    ) {
+      await tr.updateTable("book").set({ statusUuid: read.uuid }).execute()
+    }
 
     return true
   })
