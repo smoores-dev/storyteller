@@ -417,12 +417,12 @@ export function SettingsForm({ settings }: Props) {
         <NumberInput
           label="Number of audio tracks to transcode in parallel"
           description="Transcoding one track will use on CPU core"
-          {...form.getInputProps("parallel_transcodes")}
+          {...form.getInputProps("parallelTranscodes")}
         />
         <NumberInput
           label="Number of audio tracks to transcribe in parallel"
           description="Transcribing one track will use up to 4 CPU cores (when using CPU-based transcription)"
-          {...form.getInputProps("parallel_transcribes")}
+          {...form.getInputProps("parallelTranscribes")}
         />
         <Box className="mb-3 text-sm opacity-70">
           <p>
@@ -433,7 +433,7 @@ export function SettingsForm({ settings }: Props) {
         </Box>
         <NumberInput
           label="Number of CPU cores to allocate for building whisper.cpp locally"
-          {...form.getInputProps("parallel_whisper_build")}
+          {...form.getInputProps("parallelWhisperBuild")}
         />
       </Fieldset>
       <Fieldset legend="Authentication providers">
@@ -577,20 +577,20 @@ export function SettingsForm({ settings }: Props) {
         </Stack>
       </Fieldset>
       <Fieldset legend="Email settings">
-        <TextInput label="SMTP host" {...form.getInputProps("smtp_host")} />
+        <TextInput label="SMTP host" {...form.getInputProps("smtpHost")} />
         <TextInput
           label="SMTP port"
           type="number"
-          {...form.getInputProps("smtp_port")}
+          {...form.getInputProps("smtpPort")}
         />
-        <TextInput label="SMTP from" {...form.getInputProps("smtp_from")} />
+        <TextInput label="SMTP from" {...form.getInputProps("smtpFrom")} />
         <TextInput
           label="SMTP username"
-          {...form.getInputProps("smtp_username")}
+          {...form.getInputProps("smtpUsername")}
         />
         <PasswordInput
           label="SMTP password"
-          {...form.getInputProps("smtp_password")}
+          {...form.getInputProps("smtpPassword")}
         />
         <Checkbox
           label="SMTP - Enable SSL?"
@@ -602,11 +602,11 @@ export function SettingsForm({ settings }: Props) {
               connect over the internet, keep SSL enabled!
             </>
           }
-          {...form.getInputProps("smtp_ssl", { type: "checkbox" })}
+          {...form.getInputProps("smtpSsl", { type: "checkbox" })}
         />
         <Checkbox
           label="SMTP - Reject self-signed TLS certs?"
-          {...(form.getInputProps("smtp_reject_unauthorized"),
+          {...(form.getInputProps("smtpRejectUnauthorized"),
           { type: "checkbox" })}
         />
       </Fieldset>
