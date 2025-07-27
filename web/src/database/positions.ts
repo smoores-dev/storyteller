@@ -65,7 +65,8 @@ export async function upsertPosition(
     const existing = await tr
       .selectFrom("position")
       .select(["timestamp"])
-      .where("userId", "=", bookUuid)
+      .where("userId", "=", userId)
+      .where("bookUuid", "=", bookUuid)
       .executeTakeFirst()
 
     if (!existing) {
