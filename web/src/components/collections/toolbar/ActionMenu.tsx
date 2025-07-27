@@ -10,6 +10,7 @@ import { DeleteBooksItem } from "./actionMenuItems/DeleteBooksItem"
 import { AddTagsToBooksItem } from "./actionMenuItems/AddTagsToBooksItem"
 import { RemoveTagsFromBooksItem } from "./actionMenuItems/RemoveTagsFromBooksItem"
 import { UpdateReadingStatusItem } from "./actionMenuItems/UpdateReadingStatusItem"
+import { BeginProcessingItem } from "./actionMenuItems/BeginProcessingItem"
 
 interface Props {
   selected: Set<UUID>
@@ -42,6 +43,7 @@ export function ActionMenu({ selected, onClear }: Props) {
           <AddTagsToBooksItem selected={selected} />
           <RemoveTagsFromBooksItem selected={selected} />
           <UpdateReadingStatusItem selected={selected} />
+          <BeginProcessingItem selected={selected} />
           <DeleteBooksItem selected={selected} onCommit={onClear} />
         </MenuDropdown>
       </Menu>
