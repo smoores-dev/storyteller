@@ -163,11 +163,14 @@ END;
 INSERT INTO
   user (user_permission_uuid, email, invite_key)
 SELECT
-  user_permission_uuid,
-  email,
-  key
+  invite.user_permission_uuid,
+  invite.email,
+  invite.key
 FROM
-  invite;
+  invite
+  LEFT JOIN user ON user.email = invite.email
+WHERE
+  user.email IS NULL;
 
 DROP TABLE invite;
 
