@@ -1,4 +1,3 @@
-import { getBooks, updateBook } from "../books"
 import * as legacyPaths from "@/assets/legacy/paths"
 import * as paths from "@/assets/paths"
 import * as legacyCovers from "@/assets/legacy/covers"
@@ -13,6 +12,138 @@ import {
   DATA_DIR,
   TEXT_DIR,
 } from "@/directories"
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
+
+async function getBooks() {
+  return await db
+    .selectFrom("book")
+    .selectAll("book")
+    .select((eb) => [
+      jsonArrayFrom(
+        eb
+          .selectFrom("author")
+          .innerJoin("authorToBook", "authorToBook.authorUuid", "author.uuid")
+          .select([
+            "author.uuid",
+            "author.id",
+            "author.name",
+            "author.fileAs",
+            "authorToBook.role",
+            "author.createdAt",
+            "author.updatedAt",
+          ])
+          .whereRef("authorToBook.bookUuid", "=", "book.uuid"),
+      ).as("authors"),
+      jsonArrayFrom(
+        eb
+          .selectFrom("series")
+          .innerJoin("bookToSeries", "bookToSeries.seriesUuid", "series.uuid")
+          .select([
+            "series.uuid",
+            "series.name",
+            "bookToSeries.featured",
+            "bookToSeries.position",
+            "series.createdAt",
+            "series.updatedAt",
+          ])
+          .whereRef("bookToSeries.bookUuid", "=", "book.uuid"),
+      ).as("series"),
+      jsonArrayFrom(
+        eb
+          .selectFrom("tag")
+          .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
+          .select(["tag.uuid", "tag.name", "tag.createdAt", "tag.updatedAt"])
+          .whereRef("bookToTag.bookUuid", "=", "book.uuid"),
+      ).as("tags"),
+      jsonArrayFrom(
+        eb
+          .selectFrom("collection")
+          .innerJoin(
+            "bookToCollection",
+            "bookToCollection.collectionUuid",
+            "collection.uuid",
+          )
+          .select([
+            "collection.uuid",
+            "collection.name",
+            "collection.description",
+            "collection.public",
+            "collection.importPath",
+            "collection.createdAt",
+            "collection.updatedAt",
+          ])
+          .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
+      ).as("collections"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("processingTask")
+          .select([
+            "processingTask.uuid",
+            "processingTask.progress",
+            "processingTask.status",
+            "processingTask.type",
+            "processingTask.createdAt",
+            "processingTask.updatedAt",
+          ])
+          .whereRef("processingTask.bookUuid", "=", "book.uuid")
+          .orderBy("processingTask.updatedAt", "desc")
+          .limit(1),
+      ).as("processingTask"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("status")
+          .select([
+            "status.uuid",
+            "status.name",
+            "status.createdAt",
+            "status.updatedAt",
+          ])
+          .whereRef("status.uuid", "=", "book.statusUuid"),
+      ).as("status"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("ebook")
+          .select([
+            "ebook.uuid",
+            "ebook.filepath",
+            "ebook.missing",
+            "ebook.createdAt",
+            "ebook.updatedAt",
+          ])
+          .whereRef("ebook.bookUuid", "=", "book.uuid"),
+      ).as("ebook"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("audiobook")
+          .select([
+            "audiobook.uuid",
+            "audiobook.filepath",
+            "audiobook.missing",
+            "audiobook.createdAt",
+            "audiobook.updatedAt",
+          ])
+          .whereRef("audiobook.bookUuid", "=", "book.uuid"),
+      ).as("audiobook"),
+      jsonObjectFrom(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call
+        eb
+          // @ts-expect-error This is the name for this table during this migration
+          .selectFrom("alignedBook")
+          // @ts-expect-error This is the name for this table during this migration
+          .select([
+            "alignedBook.uuid",
+            "alignedBook.filepath",
+            "alignedBook.missing",
+            "alignedBook.status",
+            "alignedBook.createdAt",
+            "alignedBook.updatedAt",
+          ])
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          .whereRef("alignedBook.bookUuid", "=", "book.uuid"),
+      ).as("alignedBook"),
+    ])
+    .execute()
+}
 
 export default async function migrate() {
   logger.info("Migrating to new directory structure! Welcome to v2!")
@@ -21,7 +152,7 @@ export default async function migrate() {
 
   const books = await getBooks()
 
-  for (let book of books) {
+  for (const book of books) {
     logger.info(`Migrating ${book.title}…`)
 
     let newBookDir = paths.getInternalBookDirectory(book)
@@ -30,9 +161,16 @@ export default async function migrate() {
       logger.info(`Created parent new folder: ${newBookDir}`)
     } catch (e) {
       if (e instanceof Error && "code" in e && e.code === "EEXIST") {
-        book = await updateBook(book.uuid, {
-          suffix: paths.getDefaultSuffix(book.uuid),
-        })
+        await db
+          .updateTable("book")
+          .set({
+            suffix: paths.getDefaultSuffix(book.uuid),
+          })
+          .where("uuid", "=", book.uuid)
+          .execute()
+
+        book.suffix = paths.getDefaultSuffix(book.uuid)
+
         newBookDir = paths.getInternalBookDirectory(book)
         try {
           mkdirSync(newBookDir)
