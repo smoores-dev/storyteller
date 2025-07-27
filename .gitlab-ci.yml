@@ -11,8 +11,8 @@ check:
   tags: [saas-linux-large-amd64]
   rules:
     - if:
-        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || ('$CI_COMMIT_BRANCH
-        == "main"' && '$CI_COMMIT_TAG == null'))
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
   script:
     - yarn
     - yarn check
@@ -22,8 +22,8 @@ check-versions:
   stage: check
   rules:
     - if:
-        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || ('$CI_COMMIT_BRANCH
-        == "main"' && '$CI_COMMIT_TAG == null'))
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
   script:
     - git fetch origin main --depth 1
     - ./scripts/check-versions.sh
@@ -34,8 +34,8 @@ check-docs:
   tags: [saas-linux-large-amd64]
   rules:
     - if:
-        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || ('$CI_COMMIT_BRANCH
-        == "main"' && '$CI_COMMIT_TAG == null'))
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
       changes:
         - docs/**/*
   script:
@@ -48,8 +48,8 @@ test-web:
   tags: [saas-linux-large-amd64]
   rules:
     - if:
-        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || ('$CI_COMMIT_BRANCH
-        == "main"' && '$CI_COMMIT_TAG == null'))
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
       changes:
         - web/**/*
   script:
@@ -62,8 +62,8 @@ test-epub:
   tags: [saas-linux-large-amd64]
   rules:
     - if:
-        ('$CI_PIPELINE_SOURCE == "merge_request_event"' || ('$CI_COMMIT_BRANCH
-        == "main"' && '$CI_COMMIT_TAG == null'))
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
       changes:
         - epub/**/*
   script:
