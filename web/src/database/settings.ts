@@ -1,7 +1,6 @@
 import { update } from "@/assets/autoimport/listen"
 import { db } from "./connection"
 import { Settings } from "./settingsTypes"
-import { logger } from "@/logging"
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
   let details = settings.transcriptionEngine ?? "whisper.cpp"
@@ -35,8 +34,6 @@ export async function getSettings(): Promise<Settings> {
     .selectFrom("settings")
     .select(["name", "value"])
     .execute()
-
-  logger.info(rows)
 
   const result = rows.reduce(
     (acc, row) => ({
