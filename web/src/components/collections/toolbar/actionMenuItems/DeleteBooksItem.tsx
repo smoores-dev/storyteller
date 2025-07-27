@@ -15,7 +15,7 @@ import {
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { IconBooksOff } from "@tabler/icons-react"
-import { Fragment, useMemo } from "react"
+import { TitleSummary } from "./TitleSummary"
 
 const EMPTY_BOOKS: BookDetail[] = []
 
@@ -38,47 +38,6 @@ export function DeleteBooksItem({ selected, onCommit }: Props) {
 
   const [deleteBooks] = useDeleteBooksMutation()
 
-  const titleSummary = useMemo(() => {
-    if (books.length > 3) {
-      return (
-        <>
-          {books.slice(0, 3).map((book, i, array) => (
-            <Fragment key={book.uuid}>
-              <strong>{book.title}</strong>
-              {i !== array.length - 1 ? ", " : ""}
-            </Fragment>
-          ))}
-          , and {books.length - 3} more
-        </>
-      )
-    }
-
-    if (books.length > 2) {
-      return (
-        <>
-          {books.slice(0, 2).map((book, i, array) => (
-            <Fragment key={book.uuid}>
-              <strong key={book.uuid}>{book.title}</strong>
-              {i !== array.length - 1 ? ", " : ""}
-            </Fragment>
-          ))}
-          , and {books[2]?.title}
-        </>
-      )
-    }
-
-    if (books.length > 1) {
-      return (
-        <>
-          <strong>{books[0]?.title}</strong> and{" "}
-          <strong>{books[1]?.title}</strong>
-        </>
-      )
-    }
-
-    return <strong>{books[0]?.title}</strong>
-  }, [books])
-
   const form = useForm({
     initialValues: {
       includeAssets: "" as "" | "all" | "internal",
@@ -99,7 +58,9 @@ export function DeleteBooksItem({ selected, onCommit }: Props) {
         size="sm"
       >
         <Stack>
-          <Text>Are you sure you want to delete {titleSummary}?</Text>
+          <Text>
+            Are you sure you want to delete <TitleSummary books={books} />?
+          </Text>
           <form
             className="flex flex-col gap-4"
             onSubmit={form.onSubmit(async ({ includeAssets }) => {
