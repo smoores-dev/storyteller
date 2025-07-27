@@ -26,7 +26,6 @@ import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { headers as nextHeaders } from "next/headers"
 import { getCurrentUserSession } from "@/database/users"
 import { PHASE_PRODUCTION_BUILD } from "next/constants"
-import { logger } from "@/logging"
 
 declare module "next-auth" {
   interface Session {
@@ -136,14 +135,22 @@ export const config: NextAuthConfig = {
     },
   },
   basePath: "/api/v2/auth",
+  trustHost: true,
 }
 
 async function syncProviders() {
   if (process.env["NEXT_PHASE"] === PHASE_PRODUCTION_BUILD) return
 
   const settings = await getSettings()
-  logger.info(settings)
-  const additionalProviders = settings.authProviders.map((provider) => {
+
+  // The very first time the server starts up after running the migration
+  // that adds this setting, syncProviders will run before the setting
+  // has been added. This will mean that authProviders is undefined just
+  // that one time. Functionally this is no different from the initial value
+  // (an empty array), so we just allow it to be undefined in that one
+  // instance.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const additionalProviders = settings.authProviders?.map((provider) => {
     if (provider.kind === "built-in") {
       const providerFactory = Providers[provider.id] as (
         config: OAuthUserConfig<unknown>,
@@ -234,7 +241,7 @@ export async function createUserToken(
     callbackUrl: "/",
   })
   const req = new Request(url, { method: "POST", headers, body: params })
-  await Auth(req, { ...config, raw, skipCSRFCheck, trustHost: true })
+  await Auth(req, { ...config, raw, skipCSRFCheck })
   const session = await getCurrentUserSession(usernameOrEmail)
 
   return {
