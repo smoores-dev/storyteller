@@ -106,7 +106,7 @@ export default async function migrate() {
     try {
       epub = await Epub.from(syncedFilepath)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      createdAt = (await stat(syncedFilepath)).ctime
+      createdAt = (await stat(syncedFilepath)).mtime
         .toISOString()
         .replaceAll("T", " ")
         .split(".")[0]!
@@ -115,7 +115,7 @@ export default async function migrate() {
       try {
         epub = await Epub.from(originalFilepath)
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        createdAt = (await stat(originalFilepath)).ctime
+        createdAt = (await stat(originalFilepath)).mtime
           .toISOString()
           .replaceAll("T", " ")
           .split(".")[0]!
