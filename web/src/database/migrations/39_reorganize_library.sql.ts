@@ -68,7 +68,6 @@ async function getBooks() {
             "collection.name",
             "collection.description",
             "collection.public",
-            "collection.importPath",
             "collection.createdAt",
             "collection.updatedAt",
           ])
