@@ -74,7 +74,7 @@ export async function upsertPosition(
         .values({ userId, bookUuid, locator: locatorString, timestamp })
         .execute()
     } else {
-      if (existing.timestamp > timestamp) return false
+      if (existing.timestamp >= timestamp) return false
 
       await tr
         .updateTable("position")
