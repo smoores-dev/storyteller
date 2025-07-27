@@ -1,9 +1,10 @@
 import { getEpubFilepath, getEpubAlignedFilepath } from "@/assets/legacy/paths"
-import { BookUpdate, SeriesRelation, updateBook } from "../books"
+import { BookUpdate, SeriesRelation } from "../books"
 import { Epub } from "@smoores/epub/node"
 import { db } from "../connection"
 import { stat } from "node:fs/promises"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
+import { syncRelations } from "../relations"
 
 async function getBooks() {
   return await db
@@ -180,7 +181,39 @@ export default async function migrate() {
         update.alignedAt = entry.value
       }
     }
-    await updateBook(book.uuid, update, { series })
+
+    if (update) {
+      await db
+        .updateTable("book")
+        .set(update)
+        .where("uuid", "=", book.uuid)
+        .execute()
+    }
+
+    await syncRelations({
+      entityUuid: book.uuid,
+      relations: series,
+      relatedTable: "series",
+      relationTable: "bookToSeries",
+      relatedPrimaryKeyColumn: "uuid",
+      identifierColumn: "name",
+      relatedForeignKeyColumn: "bookToSeries.seriesUuid",
+      entityForeignKeyColumn: "bookToSeries.bookUuid",
+      extractRelatedValues: (values) => ({
+        name: values.name ?? "",
+        description: values.description,
+      }),
+      extractRelationValues: (seriesUuid, values) => ({
+        seriesUuid: seriesUuid,
+        bookUuid: book.uuid,
+        position: values.position,
+        featured: values.featured,
+      }),
+      extractRelationUpdateValues: (values) => ({
+        position: values.position,
+        featured: values.featured,
+      }),
+    })
 
     await db
       .updateTable("book")

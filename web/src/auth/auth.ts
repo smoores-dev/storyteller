@@ -25,6 +25,7 @@ import { cookies } from "next/headers"
 import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { headers as nextHeaders } from "next/headers"
 import { getCurrentUserSession } from "@/database/users"
+import { PHASE_PRODUCTION_BUILD } from "next/constants"
 
 declare module "next-auth" {
   interface Session {
@@ -137,7 +138,7 @@ export const config: NextAuthConfig = {
 }
 
 async function syncProviders() {
-  if (process.env["NEXT_PHASE"] === "phase-production-build") return
+  if (process.env["NEXT_PHASE"] === PHASE_PRODUCTION_BUILD) return
 
   const settings = await getSettings()
   const additionalProviders = settings.authProviders.map((provider) => {

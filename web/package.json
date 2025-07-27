@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "2.0.0-6",
+  "version": "2.0.0-7",
   "private": true,
   "type": "module",
   "scripts": {
@@ -82,7 +82,6 @@
     "wink-eng-lite-web-model": "^1.8.0",
     "wink-nlp": "^2.3.0"
   },
-  "packageManager": "yarn@4.1.1",
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.44.1",
     "@tsconfig/strictest": "^2.0.5",
