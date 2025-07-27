@@ -7,7 +7,8 @@ CREATE TABLE migration (
 CREATE TABLE IF NOT EXISTS "book" (
   uuid TEXT PRIMARY KEY DEFAULT (uuid ()),
   id INTEGER,
-  /* Maintain the old integer ids to avoid breaking changes */ title TEXT NOT NULL,
+  /* Maintain the old integer ids to avoid breaking changes */
+  title TEXT NOT NULL,
   epub_filename TEXT,
   audio_filename TEXT,
   audio_filetype TEXT NOT NULL DEFAULT 'mp4',
