@@ -12,11 +12,11 @@ export async function getCurrentlyReading(userId: UUID) {
     .innerJoin("status", "status.uuid", "book.statusUuid")
     .where("status.name", "=", "Reading")
     .whereRef(
-      "position.createdAt",
+      "position.updatedAt",
       ">",
       sql`datetime('now', '-0000-01-00 00:00:00.000')`,
     )
-    .orderBy("position.createdAt", "desc")
+    .orderBy("position.updatedAt", "desc")
     .orderBy("book.updatedAt", "desc")
     .limit(10)
     .execute()
@@ -39,7 +39,7 @@ export async function getNextUp(userId: UUID) {
         .onRef("position.bookUuid", "=", "prequel.uuid")
         .on("position.userId", "=", userId),
     )
-    .orderBy("position.createdAt", "desc")
+    .orderBy("position.updatedAt", "desc")
     .orderBy("prequel.updatedAt", "desc")
     .orderBy("book.createdAt", "desc")
     .limit(10)
