@@ -137,6 +137,8 @@ export const config: NextAuthConfig = {
 }
 
 async function syncProviders() {
+  if (process.env["NEXT_PHASE"] === "phase-production-build") return
+
   const settings = await getSettings()
   const additionalProviders = settings.authProviders.map((provider) => {
     if (provider.kind === "built-in") {

@@ -25,6 +25,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG CI_COMMIT_TAG
 ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
+ENV SQLITE_NATIVE_BINDING=/app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+
+RUN yarn workspace @smoores/epub build:esm
 RUN yarn build:web
 
 FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS runner
