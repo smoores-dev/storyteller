@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "2.0.0-14",
+  "version": "2.0.0-15",
   "private": true,
   "type": "module",
   "scripts": {
@@ -65,7 +65,7 @@
     "memoize": "^10.0.0",
     "mime-types": "^3.0.1",
     "music-metadata": "^11.6.0",
-    "next": "^15.1.2",
+    "next": "15.4.2-canary.18",
     "next-auth": "^5.0.0-beta.28",
     "nodemailer": "^6.9.13",
     "pino": "^9.5.0",
