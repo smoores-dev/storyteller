@@ -33,6 +33,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
     })
       .use(Tus, {
         endpoint: "/api/v2/books/upload",
+        withCredentials: true,
       })
       .use(BookThumbnailGenerator, {
         thumbnailFactories: {
@@ -52,7 +53,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
     new Uppy({
       restrictions: { allowedFileTypes: ["video/mp4", "audio/*", ".m4b"] },
     })
-      .use(Tus, { endpoint: "/api/v2/books/upload" })
+      .use(Tus, { endpoint: "/api/v2/books/upload", withCredentials: true })
       .use(BookThumbnailGenerator, {
         thumbnailFactories: {
           "video/*,audio/*,.m4b": async (file) => {
