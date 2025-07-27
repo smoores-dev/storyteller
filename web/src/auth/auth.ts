@@ -26,6 +26,7 @@ import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { headers as nextHeaders } from "next/headers"
 import { getCurrentUserSession } from "@/database/users"
 import { PHASE_PRODUCTION_BUILD } from "next/constants"
+import { logger } from "@/logging"
 
 declare module "next-auth" {
   interface Session {
@@ -141,6 +142,7 @@ async function syncProviders() {
   if (process.env["NEXT_PHASE"] === PHASE_PRODUCTION_BUILD) return
 
   const settings = await getSettings()
+  logger.info(settings)
   const additionalProviders = settings.authProviders.map((provider) => {
     if (provider.kind === "built-in") {
       const providerFactory = Providers[provider.id] as (
