@@ -13,6 +13,8 @@ import {
 import { DB } from "./schema"
 import { BooleanPlugin } from "./plugins/booleanPlugin"
 import { DatePlugin } from "./plugins/datePlugin"
+import { PHASE_PRODUCTION_BUILD } from "next/constants"
+import { Database } from "better-sqlite3"
 
 const DATABASE_URL = join(
   DATA_DIR,
@@ -22,14 +24,19 @@ const DATABASE_URL = join(
 const UUID_EXT_PATH = join(cwd(), "sqlite", "uuid.c")
 
 mkdirSync(DATA_DIR, { recursive: true })
-const sqlite = createDatabase()
+const sqlite: Database =
+  process.env["NEXT_PHASE"] === PHASE_PRODUCTION_BUILD
+    ? (null as unknown as Database)
+    : createDatabase()
 
-sqlite.pragma("journal_mode = WAL")
+if (process.env["NEXT_PHASE"] !== PHASE_PRODUCTION_BUILD) {
+  sqlite.pragma("journal_mode = WAL")
 
-try {
-  sqlite.loadExtension(UUID_EXT_PATH)
-} catch (e) {
-  logger.error(e)
+  try {
+    sqlite.loadExtension(UUID_EXT_PATH)
+  } catch (e) {
+    logger.error(e)
+  }
 }
 
 export const db = new Kysely<DB>({
