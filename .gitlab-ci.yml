@@ -124,9 +124,10 @@ publish-web-amd64:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --push -f
-      Dockerfile --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest
-      --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max
-      --tag $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA .
+      Dockerfile --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64:latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA .
 
 publish-web-arm64:
   image: docker:24.0.5
@@ -143,9 +144,10 @@ publish-web-arm64:
     - docker buildx create --use --driver=docker-container gitlab-ci
   script:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --push -f
-      Dockerfile --cache-from type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest
-      --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/cache:latest,mode=max
-      --tag $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA .
+      Dockerfile --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64:latest --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64:latest,mode=max --tag
+      $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA .
 
 publish-web-multiarch:
   image: docker:24.0.5
