@@ -4,6 +4,7 @@ import { open } from "node:fs/promises"
 import { basename } from "node:path"
 import { Epub } from "@smoores/epub/node"
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
+import { getAudioCoverImaage } from "@/process/processEpub"
 
 export const dynamic = "force-dynamic"
 
@@ -35,7 +36,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const file = await open(coverFilepath!)
 
-      // @ts-expect-error NextResponse handles Node Streams just fine
+      // @ts-expect-error Response handles Node Streams just fine
       return new Response(file.createReadStream(), {
         headers: {
           // If we got here, this is definitely defined
@@ -45,7 +46,14 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       })
     } catch {
       const audioDirectory = book.audiobook?.filepath
-      if (!audioDirectory) return new Response(null, { status: 404 })
+      if (!audioDirectory) {
+        if (book.readaloud?.filepath) {
+          const epub = await Epub.from(book.readaloud.filepath)
+          const audioCoverImage = await getAudioCoverImaage(epub)
+          if (audioCoverImage) return new Response(audioCoverImage)
+        }
+        return new Response(null, { status: 404 })
+      }
 
       const coverImage = await getFirstCoverImage(audioDirectory)
       if (!coverImage) return new Response(null, { status: 404 })
@@ -53,7 +61,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     }
   }
 
-  const epubFilepath = book.ebook?.filepath
+  const epubFilepath = book.readaloud?.filepath ?? book.ebook?.filepath
   if (!epubFilepath) return new Response(null, { status: 404 })
 
   const epub = await Epub.from(epubFilepath)
