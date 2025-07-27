@@ -148,7 +148,11 @@ export function Epub({ book, locator }: Props) {
           onHighlightTap={(event) => {
             setSelection({
               x: event.nativeEvent.x,
-              y: event.nativeEvent.y,
+              // coordinates are relative to the epub view — we need to bump
+              // up by the bottom inset on Android due to Edge-to-Edge
+              y:
+                event.nativeEvent.y +
+                Platform.select({ android: insets.bottom, default: 0 }),
               locator: locator,
             })
             setActiveHighlight(
