@@ -1,6 +1,5 @@
 import { UUID } from "@/uuid"
 import { db } from "./connection"
-import { getStatuses } from "./statuses"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -85,7 +84,7 @@ export async function upsertPosition(
         .execute()
     }
 
-    const statuses = await getStatuses()
+    const statuses = await tr.selectFrom("status").selectAll().execute()
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
     const toRead = statuses.find((status) => status.name === "To read")!
     const reading = statuses.find((status) => status.name === "Reading")!
