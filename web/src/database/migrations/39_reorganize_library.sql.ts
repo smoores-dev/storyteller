@@ -105,7 +105,6 @@ async function getBooks() {
           .select([
             "ebook.uuid",
             "ebook.filepath",
-            "ebook.missing",
             "ebook.createdAt",
             "ebook.updatedAt",
           ])
@@ -117,7 +116,6 @@ async function getBooks() {
           .select([
             "audiobook.uuid",
             "audiobook.filepath",
-            "audiobook.missing",
             "audiobook.createdAt",
             "audiobook.updatedAt",
           ])
@@ -132,7 +130,6 @@ async function getBooks() {
           .select([
             "alignedBook.uuid",
             "alignedBook.filepath",
-            "alignedBook.missing",
             "alignedBook.status",
             "alignedBook.createdAt",
             "alignedBook.updatedAt",
