@@ -7,7 +7,7 @@ import {
 } from "@/apiModels/models/ProcessingStatus"
 import { BookEvents } from "@/events"
 import { DB } from "./schema"
-import { Insertable, Selectable, Updateable } from "kysely"
+import { Insertable, Selectable, sql, Updateable } from "kysely"
 import { Epub } from "@smoores/epub/node"
 import { NewAuthor } from "./authors"
 import { NewSeries } from "./series"
@@ -169,7 +169,7 @@ export async function createBook(
 ) {
   const { uuid } = await db
     .insertInto("book")
-    .values(insert)
+    .values({ ...insert, id: sql`ABS(RANDOM()) % 9007199254740990 + 1` })
     .returning(["uuid as uuid"])
     .executeTakeFirstOrThrow()
 
