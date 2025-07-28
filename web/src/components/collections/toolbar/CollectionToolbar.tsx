@@ -33,6 +33,7 @@ export function CollectionToolbar({
         leftSection={isEditing ? <IconEditOff /> : <IconEdit />}
         onClick={() => {
           setIsEditing((value) => !value)
+          setSelected(new Set())
         }}
       >
         {isEditing ? "Done" : "Edit"}
