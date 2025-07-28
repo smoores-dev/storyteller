@@ -97,9 +97,8 @@ export async function writeMetadataToEpub(
     await epub.setLanguage(new Intl.Locale(book.language))
   }
 
-  const epubAuthors = await epub.getCreators()
-  for (let i = 0; i < epubAuthors.length; i++) {
-    await epub.removeCreator(i)
+  for (const _ of await epub.getCreators()) {
+    await epub.removeCreator(0)
   }
 
   for (const author of book.authors) {
