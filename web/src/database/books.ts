@@ -447,6 +447,7 @@ export function booksQuery(userId?: UUID) {
           ]),
         ),
     )
+    .groupBy("book.uuid")
 }
 
 export async function getAlignedReadaloudBooks(userId?: UUID) {
