@@ -6,8 +6,7 @@ import { Epub } from "@smoores/epub/node"
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
 import { getAudioCoverImage } from "@/process/processEpub"
 import contentDisposition from "content-disposition"
-import { extension, lookup } from "mime-types"
-import { createReadableStreamFromReadable } from "@remix-run/node"
+import { extension } from "mime-types"
 
 export const dynamic = "force-dynamic"
 
@@ -61,30 +60,13 @@ export const GET = withHasPermission<Params>("bookRead")(async (
         return new Response(null, { status: 404 })
       }
 
-      const customAudioCover = await getAudioCoverFilepath(book)
-      if (customAudioCover) {
-        return new Response(
-          createReadableStreamFromReadable(
-            (await open(customAudioCover)).createReadStream(),
-          ),
-          {
-            headers: {
-              "Content-Type": lookup(customAudioCover) || "image/jpeg",
-              "Content-Disposition": contentDisposition(
-                basename(customAudioCover),
-              ),
-            },
-          },
-        )
-      }
-
       const coverImage = await getFirstCoverImage(audioDirectory)
       if (!coverImage) return new Response(null, { status: 404 })
       return new Response(coverImage.data, {
         headers: {
           "Content-Type": coverImage.format,
           "Content-Disposition": contentDisposition(
-            `Cover${extension(coverImage.format) || ".jpg"}`,
+            `Cover.${extension(coverImage.format) || ".jpg"}`,
           ),
         },
       })
