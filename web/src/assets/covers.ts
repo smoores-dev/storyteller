@@ -9,6 +9,7 @@ import {
 } from "@/audio"
 import { parseFile, selectCover } from "music-metadata"
 import { getProcessedAudioFiles } from "./fs"
+import { getProcessedAudioFilepath } from "./paths"
 
 export type AudioFile = {
   filename: string
@@ -118,6 +119,6 @@ export async function writeCoverToAudio(
 
   const processedTracks = await getProcessedAudioFiles(book)
   for (const track of processedTracks) {
-    await setCoverImage(join(book.audiobook.filepath, track), coverPath)
+    await setCoverImage(join(getProcessedAudioFilepath(book), track), coverPath)
   }
 }
