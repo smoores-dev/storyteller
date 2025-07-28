@@ -27,7 +27,7 @@ export async function getFirstCoverImage(directory: string) {
     const coverImage = selectCover(common.picture)
     if (!coverImage) return null
 
-    return coverImage.data
+    return { data: coverImage.data, format: coverImage.format }
   } catch {
     return null
   }

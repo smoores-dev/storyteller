@@ -2,6 +2,7 @@ import {
   ProcessingTaskStatus,
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
+import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
 import { getProcessedAudioFiles, deleteProcessed } from "@/assets/fs"
 import {
   getTranscriptionsFilepath,
@@ -34,7 +35,9 @@ import { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import type { RecognitionResult } from "echogarden/dist/api/Recognition"
+import { extension } from "mime-types"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { basename } from "node:path"
 import { MessagePort } from "node:worker_threads"
 
 export async function transcribeBook(
@@ -274,7 +277,34 @@ export default async function processBook({
           },
         )
 
-        await writeMetadataToEpub(book, epub)
+        const coverFilepath = await getAudioCoverFilepath(book)
+        let audioCover: File | null = null
+        if (coverFilepath) {
+          audioCover = new File(
+            [await readFile(coverFilepath)],
+            basename(coverFilepath),
+          )
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          const coverImage = await getFirstCoverImage(book.audiobook!.filepath)
+          if (coverImage) {
+            audioCover = new File(
+              [coverImage.data],
+              `Audio Cover.${extension(coverImage.format) || ".jpg"}`,
+            )
+          }
+        }
+
+        logger.info(
+          `Writing metadata to aligned readaloud file (title: ${book.title})`,
+        )
+        await writeMetadataToEpub(book, epub, {
+          includeAlignmentMetadata: true,
+          ...(audioCover && { audioCover }),
+        })
+        logger.info(
+          `Successfully wrote metadata to file (title: ${await epub.getTitle()}`,
+        )
 
         await epub.writeToFile(getInternalEpubAlignedFilepath(book))
         await epub.close()

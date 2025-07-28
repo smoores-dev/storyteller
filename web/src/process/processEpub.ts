@@ -104,8 +104,7 @@ export async function writeMetadataToEpub(
   for (const author of book.authors) {
     await epub.addCreator({
       name: author.name,
-      fileAs: author.fileAs,
-      role: author.role ?? "aut",
+      ...(author.role && { role: author.role }),
     })
   }
 
