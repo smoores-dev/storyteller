@@ -49,6 +49,7 @@ export function BeginProcessingItem({ selected }: Props) {
           <form
             className="flex flex-col gap-4"
             onSubmit={form.onSubmit(async ({ restart }) => {
+              close()
               for (const book of books) {
                 await processBook({
                   uuid: book.uuid,
@@ -74,7 +75,7 @@ export function BeginProcessingItem({ selected }: Props) {
               <Button variant="subtle" onClick={close}>
                 Cancel
               </Button>
-              <Button type="submit">Delete</Button>
+              <Button type="submit">Start</Button>
             </Group>
           </form>
         </Stack>
