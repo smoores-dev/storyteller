@@ -25,24 +25,24 @@ export function CurrentBookProgress() {
       <Image
         component={NextImage}
         className="rounded-r-md"
-        h={150}
-        w={98}
-        height={150}
-        width={98}
+        h={75}
+        w={49}
+        height={75}
+        width={49}
         alt=""
         aria-hidden
         src={getCoverUrl(currentBook.uuid)}
       />
       <Stack className="mb-1 self-stretch" gap={2} justify="flex-end">
-        <Title order={3} size="md">
+        <Title order={3} size="sm">
           {currentBook.title}
         </Title>
 
-        <Text size="sm">{userFriendlyTaskType}</Text>
+        <Text size="xs">{userFriendlyTaskType}</Text>
       </Stack>
       <RingProgress
         className="absolute right-2 top-2"
-        size={40}
+        size={30}
         thickness={4}
         roundCaps
         rootColor="st-orange.2"
