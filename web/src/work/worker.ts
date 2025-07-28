@@ -257,12 +257,22 @@ export default async function processBook({
         )
         await synchronizer.syncBook(onProgress)
 
-        book = await updateBook(bookUuid, {
-          alignedByStorytellerVersion: getCurrentVersion(),
-          // We need UTC with integer seconds, but toISOString gives UTC with ms
-          alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
-          alignedWith: formatTranscriptionEngineDetails(settings),
-        })
+        book = await updateBook(
+          bookUuid,
+          {
+            alignedByStorytellerVersion: getCurrentVersion(),
+            // We need UTC with integer seconds, but toISOString gives UTC with ms
+            alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
+            alignedWith: formatTranscriptionEngineDetails(settings),
+          },
+          {
+            readaloud: {
+              // TODO: support writing this to user-defined lib
+              filepath: getInternalEpubAlignedFilepath(book),
+              status: "ALIGNED",
+            },
+          },
+        )
 
         await writeMetadataToEpub(book, epub)
 
