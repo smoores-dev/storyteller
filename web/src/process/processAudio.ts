@@ -1,7 +1,4 @@
-import { UUID } from "@/uuid"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
-import { extension } from "mime-types"
-import { parseFile, selectCover } from "music-metadata"
 import {
   mkdir,
   mkdtemp,
@@ -35,25 +32,10 @@ import {
   getProcessedAudioFilepath,
   getTranscriptionsFilepath,
 } from "@/assets/paths"
-import { AudioFile, persistCustomAudioCover } from "@/assets/covers"
+import { AudioFile } from "@/assets/covers"
 import { logger } from "@/logging"
 import { Book, BookWithRelations } from "@/database/books"
 import { getProcessedAudioFiles } from "@/assets/fs"
-
-export async function extractCover(bookUuid: UUID, trackPath: string) {
-  const { common } = await parseFile(trackPath)
-  const coverImage = selectCover(common.picture)
-  if (!coverImage) return
-
-  const ext = extension(coverImage.format)
-  if (!ext)
-    logger.error(
-      `Failed to extract cover image; unknown mime type ${coverImage.format}`,
-    )
-
-  const coverFilename = `Audio Cover.${ext}`
-  await persistCustomAudioCover(bookUuid, coverFilename, coverImage.data)
-}
 
 function determineExtension(codec: string | null, inputFilename: string) {
   if (codec === "libmp3lame") {

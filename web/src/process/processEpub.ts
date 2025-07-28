@@ -23,8 +23,8 @@ export async function getFullText(epub: Epub) {
 
 interface WriteMetadataToEpubOptions {
   includeAlignmentMetadata?: boolean
-  textCover?: File
-  audioCover?: File
+  textCover?: File | undefined
+  audioCover?: File | undefined
 }
 
 async function getAudioCoverItem(epub: Epub) {
@@ -34,7 +34,7 @@ async function getAudioCoverItem(epub: Epub) {
   )
 }
 
-export async function getAudioCoverImaage(epub: Epub) {
+export async function getAudioCoverImage(epub: Epub) {
   const coverImageItem = await getAudioCoverItem(epub)
   if (coverImageItem) {
     return epub.readItemContents(coverImageItem.id)

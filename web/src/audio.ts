@@ -354,6 +354,31 @@ function commonFfmpegArguments(
   return args
 }
 
+export async function setCoverImage(audioPath: string, coverPath: string) {
+  const command = "ffmpeg"
+  const args = [
+    "-i",
+    quotePath(audioPath),
+    "-i",
+    quotePath(coverPath),
+    "-map",
+    "0:a",
+    "-map",
+    "1:v",
+    "-c",
+    "copy",
+    "-disposition:v:0",
+    "attached_pic",
+    "-metadata:s:v",
+    'title="Album cover"',
+    "-metadata:s:v",
+    'comment="Cover (front)"',
+    quotePath(audioPath),
+  ]
+
+  await execCmd(`${command} ${args.join(" ")}`)
+}
+
 export async function transcodeTrack(
   path: string,
   destination: string,

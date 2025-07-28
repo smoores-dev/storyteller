@@ -312,7 +312,20 @@ export const api = createApi({
       }
     >({
       query: ({ update, textCover, audioCover }) => {
+        const updatedFields = Object.entries({
+          ...update,
+          textCover,
+          audioCover,
+        }).reduce<string[]>(
+          (acc, [field, value]) => (value != null ? [...acc, field] : acc),
+          [],
+        )
         const body = new FormData()
+
+        for (const field of updatedFields) {
+          body.append("fields", field)
+        }
+
         if (update.title != null) {
           body.append("title", update.title)
         }
