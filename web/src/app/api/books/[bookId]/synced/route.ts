@@ -1,10 +1,11 @@
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
 import { FileHandle, open } from "node:fs/promises"
-import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 import { Epub } from "@smoores/epub/node"
 import contentDisposition from "content-disposition"
+import { logger } from "@/logging"
+import { createReadableStreamFromReadable } from "@remix-run/node"
 
 export const dynamic = "force-dynamic"
 
@@ -30,8 +31,10 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
     )
   }
 
-  const range = request.headers.get("Range")?.valueOf()
   const ifRange = request.headers.get("If-Range")?.valueOf()
+  const range = request.headers.get("Range")?.valueOf()
+  const rangesString = range?.replace("bytes=", "")
+  const rangeStrings = rangesString?.split(",")
 
   const filepath = book.readaloud.filepath
   const epub = await Epub.from(filepath)
@@ -62,18 +65,21 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
 
   const partialResponse =
     range?.startsWith("bytes=") &&
+    // We're only supporting single ranges for now
+    rangeStrings?.length === 1 &&
     (!ifRange || ifRange === etag || ifRange === lastModified)
 
   if (partialResponse) {
-    // partialResponse is only true if the range exists
+    // We already ensured that rangeStrings has a length of 1
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const rangesString = range!.replace("bytes=", "")
-    const rangeStrings = rangesString.split(",")
-    const ranges = rangeStrings.map((rangeString) =>
-      rangeString.trim().split("-"),
-    )
+    const firstRangeString = rangeStrings[0]!
+
+    const [startString, endString] = firstRangeString.trim().split("-") as [
+      string,
+      string,
+    ]
+
     try {
-      const [[startString, endString]] = ranges as [[string, string]]
       const parsedStart = parseInt(startString.trim(), 10)
       if (!Number.isNaN(parsedStart)) {
         start = parsedStart
@@ -82,20 +88,26 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
       if (!Number.isNaN(parsedEnd)) {
         end = parsedEnd
       }
-    } catch (_) {
+    } catch {
       // If the ranges weren't valid, then leave the defaults
     }
   }
 
-  if (end > stats.size - 1) {
-    return new NextResponse(null, {
+  if (start > stats.size - 1) {
+    return new Response(null, {
       status: 416,
       headers: { "Content-Range": `bytes */${stats.size}` },
     })
   }
 
-  // @ts-expect-error NextResponse handle Node.js ReadStreams just fine
-  return new NextResponse(file.createReadStream({ start, end }), {
+  const readStream = file.createReadStream({ start, end })
+  readStream.on("error", (e) => {
+    logger.error(e)
+  })
+
+  const readableStream = createReadableStreamFromReadable(readStream)
+
+  return new Response(readableStream, {
     status: partialResponse ? 206 : 200,
     headers: {
       "Content-Disposition": contentDisposition(`${title}.epub`, {
@@ -103,10 +115,10 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
       }),
       "Content-Type": "application/epub+zip",
       "Content-Length": `${end - start + 1}`,
+      "Accept-Ranges": "bytes",
       "Last-Modified": new Date(stats.mtime).toISOString(),
       Etag: etag,
       ...(partialResponse && {
-        "Accept-Ranges": "bytes",
         "Content-Range": `bytes ${start}-${end}/${stats.size}`,
       }),
     },
