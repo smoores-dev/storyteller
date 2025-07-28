@@ -26,8 +26,8 @@ const tailwindConfig = {
         },
       },
       animation: {
-        "swap-right": "swap-right 0.5s ease-in-out both",
-        "swap-left": "swap-left 0.5s ease-in-out both",
+        "swap-right": "swap-right 0.5s ease-in-out 0.25s both",
+        "swap-left": "swap-left 0.5s ease-in-out 0.25s both",
       },
       fontFamily: {
         sans: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
