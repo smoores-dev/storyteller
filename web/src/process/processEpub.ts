@@ -2,6 +2,7 @@ import { Epub } from "@smoores/epub/node"
 import { BookWithRelations } from "@/database/books"
 import { extension, lookup } from "mime-types"
 import { parseBuffer, selectCover } from "music-metadata"
+import { extname } from "node:path"
 
 export async function readEpub(book: BookWithRelations) {
   if (!book.ebook?.filepath) {
@@ -109,7 +110,9 @@ export async function writeMetadataToEpub(
   }
 
   if (textCover) {
-    const ext = extension(textCover.type)
+    const ext = textCover.name
+      ? extname(textCover.name) || extension(textCover.type)
+      : extension(textCover.type)
     const arrayBuffer = await textCover.arrayBuffer()
     const data = new Uint8Array(arrayBuffer)
 
@@ -118,7 +121,9 @@ export async function writeMetadataToEpub(
   }
 
   if (audioCover) {
-    const ext = extension(audioCover.type)
+    const ext = audioCover.name
+      ? extname(audioCover.name) || extension(audioCover.type)
+      : extension(audioCover.type)
     const arrayBuffer = await audioCover.arrayBuffer()
     const data = new Uint8Array(arrayBuffer)
 
