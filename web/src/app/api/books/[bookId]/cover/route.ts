@@ -4,9 +4,10 @@ import { open } from "node:fs/promises"
 import { basename, extname } from "node:path"
 import { Epub } from "@smoores/epub/node"
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
-import { getAudioCoverImaage } from "@/process/processEpub"
+import { getAudioCoverImage } from "@/process/processEpub"
 import contentDisposition from "content-disposition"
-import { extension } from "mime-types"
+import { extension, lookup } from "mime-types"
+import { createReadableStreamFromReadable } from "@remix-run/node"
 
 export const dynamic = "force-dynamic"
 
@@ -54,10 +55,27 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       if (!audioDirectory) {
         if (book.readaloud?.filepath) {
           const epub = await Epub.from(book.readaloud.filepath)
-          const audioCoverImage = await getAudioCoverImaage(epub)
+          const audioCoverImage = await getAudioCoverImage(epub)
           if (audioCoverImage) return new Response(audioCoverImage)
         }
         return new Response(null, { status: 404 })
+      }
+
+      const customAudioCover = await getAudioCoverFilepath(book)
+      if (customAudioCover) {
+        return new Response(
+          createReadableStreamFromReadable(
+            (await open(customAudioCover)).createReadStream(),
+          ),
+          {
+            headers: {
+              "Content-Type": lookup(customAudioCover) || "image/jpeg",
+              "Content-Disposition": contentDisposition(
+                basename(customAudioCover),
+              ),
+            },
+          },
+        )
       }
 
       const coverImage = await getFirstCoverImage(audioDirectory)

@@ -108,30 +108,26 @@ export async function originalAudioExists(book: BookWithRelations) {
 }
 
 export async function deleteProcessed(book: BookWithRelations) {
-  await Promise.all([
-    rm(getProcessedAudioFilepath(book), {
-      recursive: true,
-      force: true,
-    }),
-    rm(getTranscriptionsFilepath(book), {
-      recursive: true,
-      force: true,
-    }),
-  ])
+  await rm(getProcessedAudioFilepath(book), {
+    recursive: true,
+    force: true,
+  })
+  await rm(getTranscriptionsFilepath(book), {
+    recursive: true,
+    force: true,
+  })
 }
 
 export async function deleteOriginals(book: BookWithRelations) {
-  await Promise.all([
-    ...(book.ebook ? [rm(book.ebook.filepath, { force: true })] : []),
-    ...(book.audiobook
-      ? [
-          rm(book.audiobook.filepath, {
-            recursive: true,
-            force: true,
-          }),
-        ]
-      : []),
-  ])
+  if (book.ebook) {
+    await rm(book.ebook.filepath, { force: true })
+  }
+  if (book.audiobook) {
+    await rm(book.audiobook.filepath, {
+      recursive: true,
+      force: true,
+    })
+  }
 }
 
 export async function deleteAssets(
@@ -143,9 +139,9 @@ export async function deleteAssets(
     return
   }
 
-  await Promise.all([
-    deleteProcessed(book),
-    deleteOriginals(book),
-    ...(book.readaloud?.filepath ? [rm(book.readaloud.filepath)] : []),
-  ])
+  await rm(getInternalBookDirectory(book), { recursive: true, force: true })
+  if (book.readaloud?.filepath) {
+    await rm(book.readaloud.filepath)
+  }
+  await deleteOriginals(book)
 }

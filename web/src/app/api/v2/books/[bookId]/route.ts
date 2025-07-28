@@ -1,8 +1,10 @@
+import { writeCoverToAudio } from "@/assets/covers"
 import { deleteAssets } from "@/assets/fs"
 import {
   persistCustomEpubCover,
   persistCustomAudioCover,
 } from "@/assets/legacy/covers"
+import { getInternalBookDirectory } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
   AuthorRelation,
@@ -18,6 +20,8 @@ import { isProcessing, isQueued } from "@/work/distributor"
 import { Epub } from "@smoores/epub/node"
 import { extension } from "mime-types"
 import { NextResponse } from "next/server"
+import { rename } from "node:fs/promises"
+import { extname, join } from "node:path"
 
 function isIso8601(dateString: string) {
   return dateString === new Date(dateString).toISOString()
@@ -41,29 +45,25 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
   const formData = await request.formData()
-  const title = formData.get("title")?.valueOf()
-  if (typeof title !== "string") {
+  const fields = new Set(
+    formData.getAll("fields").map((entry) => entry.valueOf() as string),
+  )
+  const title = formData.get("title")?.valueOf() as string | undefined
+
+  if (!title && fields.has("title")) {
     return NextResponse.json(
-      { message: "Book must have a title" },
+      { message: "Title must be a non-empty string" },
       { status: 405 },
     )
   }
 
-  const language = formData.get("language")?.valueOf() ?? null
-  if (typeof language !== "string" && language !== null) {
-    return NextResponse.json(
-      {
-        message: "Invalid language",
-      },
-      { status: 405 },
-    )
-  }
+  const language =
+    (formData.get("language")?.valueOf() as string | undefined) ?? null
 
-  const publicationDate = formData.get("publicationDate")?.valueOf() ?? null
-  if (
-    (typeof publicationDate !== "string" && publicationDate !== null) ||
-    (publicationDate && !isIso8601(publicationDate))
-  ) {
+  const publicationDate =
+    (formData.get("publicationDate")?.valueOf() as string | undefined) ?? null
+
+  if (publicationDate && !isIso8601(publicationDate)) {
     return NextResponse.json(
       {
         message: "Invalid publicationDate",
@@ -72,10 +72,10 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const statusUuid = formData.get("statusUuid")?.valueOf()
-  if (typeof statusUuid !== "string") {
+  const statusUuid = formData.get("statusUuid")?.valueOf() as UUID | undefined
+  if (!statusUuid && fields.has("statusUuid")) {
     return NextResponse.json(
-      { message: "Book must have a status" },
+      { message: "Status must not be undefined" },
       { status: 405 },
     )
   }
@@ -94,34 +94,76 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     .getAll("collections")
     .map((entry) => entry.valueOf() as UUID)
 
+  const book = await getBook(bookUuid, request.auth.user.id)
+  if (!book) {
+    return Response.json({ message: `Could not find book with id ${bookUuid}` })
+  }
+
   const updated = await updateBook(
     bookUuid,
-    { title, language, statusUuid: statusUuid as UUID, publicationDate },
-    { authors, series, collections, tags },
+    {
+      // We already confirmed that these are non-null above, if they're in
+      // the fields array
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      ...(fields.has("title") && { title: title! }),
+      ...(fields.has("language") && { language }),
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      ...(fields.has("statusUuid") && { statusUuid: statusUuid! }),
+      ...(fields.has("publicationDate") && { publicationDate }),
+    },
+    {
+      ...(fields.has("authors") && { authors }),
+      ...(fields.has("series") && { series }),
+      ...(fields.has("collections") && { collections }),
+      ...(fields.has("tags") && { tags }),
+    },
   )
+
+  if (book.title !== updated.title) {
+    await rename(
+      getInternalBookDirectory(book),
+      getInternalBookDirectory(updated),
+    )
+  }
 
   const textCover = formData.get("textCover")?.valueOf()
   if (typeof textCover === "object") {
     const textCoverFile = textCover as File
-    const ext = extension(textCoverFile.type)
-    const arrayBuffer = await textCoverFile.arrayBuffer()
-    const data = new Uint8Array(arrayBuffer)
-    await persistCustomEpubCover(bookUuid, `Cover.${ext}`, data)
+    if (updated.ebook) {
+      const epub = await Epub.from(updated.ebook.filepath)
+      await writeMetadataToEpub(updated, epub, { textCover: textCoverFile })
+      await epub.writeToFile(updated.ebook.filepath)
+      await epub.close()
+    } else {
+      const ext = extname(textCoverFile.name) || extension(textCoverFile.type)
+      const arrayBuffer = await textCoverFile.arrayBuffer()
+      const data = new Uint8Array(arrayBuffer)
+      await persistCustomEpubCover(bookUuid, `Cover.${ext}`, data)
+    }
   }
 
   const audioCover = formData.get("audioCover")?.valueOf()
   if (typeof audioCover === "object") {
     const audioCoverFile = audioCover as File
-    const ext = extension(audioCoverFile.type)
+    const ext = extname(audioCoverFile.name) || extension(audioCoverFile.type)
     const arrayBuffer = await audioCoverFile.arrayBuffer()
     const data = new Uint8Array(arrayBuffer)
     await persistCustomAudioCover(bookUuid, `Audio Cover.${ext}`, data)
+    if (updated.audiobook) {
+      await writeCoverToAudio(
+        updated,
+        join(updated.audiobook.filepath, `Audio Cover.${ext}`),
+      )
+    }
   }
 
   if (updated.readaloud?.filepath) {
     const alignedEpubPath = updated.readaloud.filepath
     const epub = await Epub.from(alignedEpubPath)
-    await writeMetadataToEpub(updated, epub)
+    await writeMetadataToEpub(updated, epub, {
+      textCover: textCover as File | undefined,
+      audioCover: audioCover as File | undefined,
+    })
     await epub.writeToFile(alignedEpubPath)
     await epub.close()
   }

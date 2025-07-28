@@ -28,7 +28,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
     new Uppy({
       restrictions: {
         maxNumberOfFiles: 1,
-        allowedFileTypes: ["application/epub+zip"],
+        allowedFileTypes: ["application/epub+zip", ".epub"],
       },
     })
       .use(Tus, {

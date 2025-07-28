@@ -2,8 +2,13 @@ import { readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
 import { UUID } from "@/uuid"
 import { BookWithRelations, getBookOrThrow } from "@/database/books"
-import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
+import {
+  COVER_IMAGE_FILE_EXTENSIONS,
+  isAudioFile,
+  setCoverImage,
+} from "@/audio"
 import { parseFile, selectCover } from "music-metadata"
+import { getProcessedAudioFiles } from "./fs"
 
 export type AudioFile = {
   filename: string
@@ -96,4 +101,23 @@ export async function getCustomAudioCover(book: BookWithRelations) {
 
   const buffer = await readFile(filepath)
   return new Uint8Array(buffer)
+}
+
+export async function writeCoverToAudio(
+  book: BookWithRelations,
+  coverPath: string,
+) {
+  if (!book.audiobook) return
+  const entries = await readdir(book.audiobook.filepath, { recursive: true })
+
+  const tracks = entries.filter((entry) => isAudioFile(entry))
+
+  for (const track of tracks) {
+    await setCoverImage(join(book.audiobook.filepath, track), coverPath)
+  }
+
+  const processedTracks = await getProcessedAudioFiles(book)
+  for (const track of processedTracks) {
+    await setCoverImage(join(book.audiobook.filepath, track), coverPath)
+  }
 }
