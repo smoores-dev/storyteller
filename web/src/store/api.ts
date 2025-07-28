@@ -270,9 +270,11 @@ export const api = createApi({
       query: ({ uuid, restart }) => ({
         url: `/books/${uuid}/process`,
         method: "POST",
-        params: {
-          restart,
-        },
+        ...(restart && {
+          params: {
+            restart,
+          },
+        }),
       }),
     }),
     cancelProcessing: build.mutation<void, { uuid: UUID }>({
