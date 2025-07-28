@@ -1701,15 +1701,17 @@ export class Epub {
           "Failed to parse EPUB: found no metadata element in package document",
         )
 
-      let creatorCount = 0
-      let metadataIndex = 0
+      let creatorCount: null | number = null
+      let metadataIndex: null | number = null
       for (const meta of Epub.getXmlChildren(metadata)) {
         if (creatorCount === index) break
-        metadataIndex++
+        metadataIndex = metadataIndex === null ? 0 : metadataIndex + 1
         if (Epub.isXmlTextNode(meta)) continue
         if (Epub.getXmlElementName(meta) !== `dc:${type}`) continue
-        creatorCount++
+        creatorCount = creatorCount === null ? 0 : creatorCount + 1
       }
+
+      if (metadataIndex === null) return
 
       const [removed] = Epub.getXmlChildren(metadata).splice(metadataIndex, 1)
 
