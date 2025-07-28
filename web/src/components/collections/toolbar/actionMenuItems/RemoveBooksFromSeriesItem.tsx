@@ -19,9 +19,8 @@ export function RemoveBooksFromSeriesItem({ selected }: Props) {
       series: result.data
         ? Array.from(
             result.data
+              .filter((book) => selected.has(book.uuid))
               .reduce((acc, book) => {
-                if (!selected.has(book.uuid)) return acc
-
                 book.series.forEach((series) => {
                   acc.set(series.uuid, series)
                 })
