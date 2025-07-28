@@ -19,6 +19,7 @@ import {
 } from "@tabler/icons-react"
 import { IconReadaloud } from "../icons/IconReadaloud"
 import { StatusInput } from "./edit/StatusInput"
+import { BookStatus } from "./BookStatus"
 
 interface Props {
   bookUuid: UUID
@@ -118,6 +119,8 @@ export function BookDetail({ bookUuid }: Props) {
           </Group>
         </Stack>
       </Group>
+
+      <BookStatus bookUuid={book.uuid} />
 
       <Stack className="rounded bg-gray-100 p-4" gap={4}>
         {book.readaloud && (
