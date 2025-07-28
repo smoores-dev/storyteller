@@ -291,17 +291,42 @@ const hasCoverArt = memoize(async function hasCoverArt(path: string) {
   }
 })
 
-async function commonFfmpegArguments(
+async function constructExtractCoverArtCommand(
   source: string,
+  destExtension: string,
+) {
+  if (destExtension === ".wav" || !(await hasCoverArt(source))) {
+    return ""
+  }
+
+  const command = "ffmpeg"
+  const args = [
+    "-nostdin",
+    "-i",
+    quotePath(source),
+    "-map",
+    "0:v",
+    "-c:v",
+    "copy",
+    "-vframes",
+    "1",
+    "-f",
+    "image2",
+    "-update",
+    "1",
+    "pipe:1",
+  ]
+
+  return `${command} ${args.join(" ")} | `
+}
+
+function commonFfmpegArguments(
   sourceExtension: string,
   destExtension: string,
   codec: string | null,
   bitrate: string | null,
 ) {
-  const args =
-    destExtension !== ".wav" && (await hasCoverArt(source))
-      ? ["-c:v copy", "-map 0:v", "-disposition:v:0", "attached_pic"]
-      : ["-vn"]
+  const args = ["-vn"]
 
   if (codec) {
     args.push(
@@ -348,17 +373,16 @@ export async function transcodeTrack(
     "-nostdin",
     "-i",
     quotePath(path),
-    ...(await commonFfmpegArguments(
-      path,
-      sourceExtension,
-      destExtension,
-      codec,
-      bitrate,
-    )),
+    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
     `"${destination}"`,
   ]
 
-  await execCmd(`${command} ${args.join(" ")}`)
+  const coverArtCommand = await constructExtractCoverArtCommand(
+    path,
+    destExtension,
+  )
+
+  await execCmd(`${coverArtCommand}${command} ${args.join(" ")}`)
 }
 
 export async function splitTrack(
@@ -382,16 +406,15 @@ export async function splitTrack(
     to,
     "-i",
     quotePath(path),
-    ...(await commonFfmpegArguments(
-      path,
-      sourceExtension,
-      destExtension,
-      codec,
-      bitrate,
-    )),
+    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
     `"${destination}"`,
   ]
 
-  await execCmd(`${command} ${args.join(" ")}`)
+  const coverArtCommand = await constructExtractCoverArtCommand(
+    path,
+    destExtension,
+  )
+
+  await execCmd(`${coverArtCommand}${command} ${args.join(" ")}`)
   return true
 }
