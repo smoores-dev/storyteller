@@ -69,7 +69,7 @@ export function BookDetail({ bookUuid }: Props) {
           <Group>
             {book.collections.map((collection) => (
               <Link
-                href={`/collection/${collection.uuid}`}
+                href={`/collections/${collection.uuid}`}
                 className="flex flex-row items-center gap-2 rounded bg-gray-100 px-3 py-1 hover:bg-gray-200"
                 key={collection.uuid}
               >
