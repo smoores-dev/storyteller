@@ -125,7 +125,8 @@ export async function getPosition(userId: UUID, bookUuid: UUID) {
     result && {
       userId,
       bookUuid,
-      locator: JSON.parse(result.locator) as ReadiumLocator,
+      // This seems to be automatically parsed by kysely?
+      locator: result.locator as unknown as ReadiumLocator,
       timestamp: result.timestamp,
     }
   )
