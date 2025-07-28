@@ -1,9 +1,6 @@
 import { writeCoverToAudio } from "@/assets/covers"
 import { deleteAssets } from "@/assets/fs"
-import {
-  persistCustomEpubCover,
-  persistCustomAudioCover,
-} from "@/assets/legacy/covers"
+import { persistCustomAudioCover } from "@/assets/covers"
 import { getInternalBookDirectory } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -134,11 +131,6 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       await writeMetadataToEpub(updated, epub, { textCover: textCoverFile })
       await epub.writeToFile(updated.ebook.filepath)
       await epub.close()
-    } else {
-      const ext = extname(textCoverFile.name) || extension(textCoverFile.type)
-      const arrayBuffer = await textCoverFile.arrayBuffer()
-      const data = new Uint8Array(arrayBuffer)
-      await persistCustomEpubCover(bookUuid, `Cover.${ext}`, data)
     }
   }
 
@@ -148,11 +140,11 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     const ext = extname(audioCoverFile.name) || extension(audioCoverFile.type)
     const arrayBuffer = await audioCoverFile.arrayBuffer()
     const data = new Uint8Array(arrayBuffer)
-    await persistCustomAudioCover(bookUuid, `Audio Cover.${ext}`, data)
+    await persistCustomAudioCover(bookUuid, `Audio Cover${ext}`, data)
     if (updated.audiobook) {
       await writeCoverToAudio(
         updated,
-        join(updated.audiobook.filepath, `Audio Cover.${ext}`),
+        join(updated.audiobook.filepath, `Audio Cover${ext}`),
       )
     }
   }
