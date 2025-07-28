@@ -40,7 +40,7 @@ export function BookThumbnail({ book, link, onClick }: Props) {
           )}
           {book.processingTask && book.processingStatus === "processing" && (
             <RingProgress
-              className="absolute right-0 top-0 [&>svg]:[filter:drop-shadow(0_0_4px_rgba(0,0,0,1))]"
+              className="absolute right-0 top-0 z-40 [&>svg]:[filter:drop-shadow(0_0_4px_rgba(0,0,0,1))]"
               size={40}
               thickness={4}
               roundCaps
