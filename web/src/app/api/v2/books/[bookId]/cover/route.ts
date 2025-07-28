@@ -1,10 +1,12 @@
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
 import { open } from "node:fs/promises"
-import { basename } from "node:path"
+import { basename, extname } from "node:path"
 import { Epub } from "@smoores/epub/node"
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
 import { getAudioCoverImaage } from "@/process/processEpub"
+import contentDisposition from "content-disposition"
+import { extension } from "mime-types"
 
 export const dynamic = "force-dynamic"
 
@@ -41,7 +43,10 @@ export const GET = withHasPermission<Params>("bookRead")(async (
         headers: {
           // If we got here, this is definitely defined
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          "Content-Disposition": `attachment; filename="${basename(coverFilepath!)}"`,
+          "Content-Disposition": contentDisposition(basename(coverFilepath!), {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            fallback: `Cover${extname(coverFilepath!)}`,
+          }),
         },
       })
     } catch {
@@ -57,7 +62,14 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
       const coverImage = await getFirstCoverImage(audioDirectory)
       if (!coverImage) return new Response(null, { status: 404 })
-      return new Response(coverImage)
+      return new Response(coverImage.data, {
+        headers: {
+          "Content-Type": coverImage.format,
+          "Content-Disposition": contentDisposition(
+            `Cover${extension(coverImage.format) || ".jpg"}`,
+          ),
+        },
+      })
     }
   }
 
