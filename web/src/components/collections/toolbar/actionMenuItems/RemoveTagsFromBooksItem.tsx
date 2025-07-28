@@ -16,9 +16,8 @@ export function RemoveTagsFromBooksItem({ selected }: Props) {
       tags: result.data
         ? Array.from(
             result.data
+              .filter((book) => selected.has(book.uuid))
               .reduce((acc, book) => {
-                if (!selected.has(book.uuid)) return acc
-
                 book.tags.forEach((tag) => {
                   acc.set(tag.uuid, tag)
                 })

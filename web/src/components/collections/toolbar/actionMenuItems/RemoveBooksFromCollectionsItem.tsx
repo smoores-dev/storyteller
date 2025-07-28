@@ -21,6 +21,7 @@ export function RemoveBooksFromCollectionsItem({ selected }: Props) {
       collections: result.data
         ? Array.from(
             result.data
+              .filter((book) => selected.has(book.uuid))
               .reduce((acc, book) => {
                 book.collections.forEach((collection) => {
                   acc.set(collection.uuid, collection)
