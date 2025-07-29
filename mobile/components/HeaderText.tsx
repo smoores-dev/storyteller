@@ -7,6 +7,7 @@ export function HeaderText({ children, ...props }: TextProps) {
   return (
     <Text
       {...props}
+      maxFontSizeMultiplier={1}
       style={[{ fontFamily: "YoungSerif" }, props.style, { color: foreground }]}
     >
       {children}

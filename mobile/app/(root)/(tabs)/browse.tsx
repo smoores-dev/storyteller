@@ -37,6 +37,7 @@ export default function Browse() {
         <>
           <ScrollView
             style={styles.bookLinks}
+            contentContainerStyle={styles.scrollViewContainer}
             refreshControl={
               <RefreshControl
                 refreshing={loading}
@@ -123,5 +124,8 @@ const styles = StyleSheet.create({
   bookLinks: {
     width: "100%",
     paddingLeft: 24,
+  },
+  scrollViewContainer: {
+    gap: spacing[2],
   },
 })

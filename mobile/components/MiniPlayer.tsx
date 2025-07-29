@@ -327,6 +327,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
             }}
           >
             <UIText
+              maxFontSizeMultiplier={1.25}
               numberOfLines={1}
               style={{
                 ...fontSizes.sm,
@@ -343,6 +344,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
               }}
             >
               <UIText
+                maxFontSizeMultiplier={1.25}
                 numberOfLines={1}
                 style={{
                   ...fontSizes.sm,
@@ -350,7 +352,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
               >
                 {formattedProgress}
               </UIText>
-              <UIText style={fontSizes.sm}>
+              <UIText maxFontSizeMultiplier={1.25} style={fontSizes.sm}>
                 {Math.round(
                   (locator?.locator.locations?.totalProgression ?? 0) * 100,
                 )}

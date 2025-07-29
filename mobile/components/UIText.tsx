@@ -5,7 +5,11 @@ export function UIText({ children, ...props }: TextProps) {
   const { foreground } = useColorTheme()
 
   return (
-    <Text {...props} style={[{ color: foreground }, props.style]}>
+    <Text
+      maxFontSizeMultiplier={2}
+      {...props}
+      style={[{ color: foreground }, props.style]}
+    >
       {children}
     </Text>
   )

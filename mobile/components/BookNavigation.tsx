@@ -43,6 +43,7 @@ export function BookNavigation({ mode, topInset, onOutsideTap }: Props) {
             }}
           >
             <UIText
+              maxFontSizeMultiplier={1}
               style={
                 selectedTab === BookNavTab.TABLE_OF_CONTENTS &&
                 styles.selectedTab
@@ -58,6 +59,7 @@ export function BookNavigation({ mode, topInset, onOutsideTap }: Props) {
             }}
           >
             <UIText
+              maxFontSizeMultiplier={1}
               style={selectedTab === BookNavTab.BOOKMARKS && styles.selectedTab}
             >
               Bookmarks
@@ -70,6 +72,7 @@ export function BookNavigation({ mode, topInset, onOutsideTap }: Props) {
             }}
           >
             <UIText
+              maxFontSizeMultiplier={1}
               style={
                 selectedTab === BookNavTab.HIGHLIGHTS && styles.selectedTab
               }

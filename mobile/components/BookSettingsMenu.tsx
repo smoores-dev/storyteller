@@ -54,7 +54,7 @@ export function BookSettingsMenu({ bookId }: Props) {
               (Platform.OS === "android" ? 32 + 34 : 0)),
         }}
         contentContainerStyle={{
-          paddingBottom: spacing[6],
+          paddingBottom: spacing[10],
         }}
       >
         <ReadingSettings bookId={bookId} />

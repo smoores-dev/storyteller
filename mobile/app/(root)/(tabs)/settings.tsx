@@ -126,7 +126,9 @@ export default function Settings() {
             </ButtonGroup>
           </View>
           <View style={[styles.field, { gap: spacing[2] }]}>
-            <UIText style={styles.label}>Long break</UIText>
+            <UIText maxFontSizeMultiplier={1} style={styles.label}>
+              Long break
+            </UIText>
             <Slider
               style={styles.slider}
               start={1}
@@ -145,12 +147,14 @@ export default function Settings() {
                 )
               }}
             />
-            <UIText style={{ flexBasis: 30 }}>
+            <UIText maxFontSizeMultiplier={1} style={{ flexBasis: 30 }}>
               {preferences.automaticRewind.afterBreak}s
             </UIText>
           </View>
           <View style={[styles.field, { gap: spacing[2] }]}>
-            <UIText style={styles.label}>Interruption</UIText>
+            <UIText maxFontSizeMultiplier={1} style={styles.label}>
+              Interruption
+            </UIText>
             <Slider
               style={styles.slider}
               start={1}
@@ -169,7 +173,7 @@ export default function Settings() {
                 )
               }}
             />
-            <UIText style={{ flexBasis: 30 }}>
+            <UIText maxFontSizeMultiplier={1} style={{ flexBasis: 30 }}>
               {preferences.automaticRewind.afterInterruption}s
             </UIText>
           </View>

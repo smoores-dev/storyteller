@@ -153,6 +153,7 @@ const styles = StyleSheet.create({
   optionsGroup: {
     gap: spacing[1],
     margin: spacing[1],
+    flexWrap: "wrap",
   },
   optionText: {
     ...fontSizes.xs,
