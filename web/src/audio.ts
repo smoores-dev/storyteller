@@ -357,6 +357,8 @@ function commonFfmpegArguments(
 export async function setCoverImage(audioPath: string, coverPath: string) {
   const command = "ffmpeg"
   const args = [
+    "-nostdin",
+    "-y",
     "-i",
     quotePath(audioPath),
     "-i",

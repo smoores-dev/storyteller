@@ -95,7 +95,12 @@ const credentialsProvider = Credentials({
 export const config: NextAuthConfig = {
   providers: [credentialsProvider],
   cookies: {
-    sessionToken: { name: "st_token" },
+    sessionToken: {
+      name: "st_token",
+      ...(process.env["AUTH_URL"] && {
+        options: { domain: new URL(process.env["AUTH_URL"]).hostname },
+      }),
+    },
   },
   session: {
     maxAge,
