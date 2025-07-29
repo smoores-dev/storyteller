@@ -7,7 +7,7 @@ import { LoginForm } from "@/components/login/LoginForm"
 import { Token } from "@/apiModels"
 import { Title } from "@mantine/core"
 import { createAuthedApiClient } from "@/authedApiClient"
-import { nextAuth } from "@/auth/auth"
+import { fromDate, maxAge, nextAuth } from "@/auth/auth"
 import { AuthError } from "next-auth"
 
 export default async function Login() {
@@ -40,6 +40,7 @@ export default async function Login() {
         domain: domain,
         sameSite: "lax",
         httpOnly: true,
+        expires: fromDate(maxAge),
       })
     } catch {
       return "failed"
