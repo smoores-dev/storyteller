@@ -63,14 +63,14 @@ function readSecretKey() {
   return process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
 }
 
-function fromDate(time: number, date = Date.now()) {
+export function fromDate(time: number, date = Date.now()) {
   return new Date(date + time * 1000)
 }
 
 const adapter = KyselyAdapter(db)
 
 // 30 days
-const maxAge = 30 * 24 * 60 * 60
+export const maxAge = 30 * 24 * 60 * 60
 
 const credentialsProvider = Credentials({
   credentials: {
