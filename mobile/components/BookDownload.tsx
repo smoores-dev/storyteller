@@ -70,15 +70,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 40,
   },
   details: {
     flexDirection: "column",
     flex: 1,
-    height: 136,
     marginRight: 24,
     justifyContent: "space-between",
     paddingVertical: 8,
+    gap: spacing["1.5"],
   },
   bookInfo: {},
   title: {

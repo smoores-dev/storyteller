@@ -65,7 +65,10 @@ export default function Home() {
           <BrowseIcon focused />
         </ContextMenu>
       </View>
-      <ScrollView style={styles.bookLinks}>
+      <ScrollView
+        contentContainerStyle={styles.scrollViewContainer}
+        style={styles.bookLinks}
+      >
         {bookIds.map((bookId) => (
           <BookLink key={bookId} bookId={bookId} />
         ))}
@@ -148,6 +151,9 @@ const styles = StyleSheet.create({
   bookLinks: {
     width: "100%",
     paddingLeft: 24,
+  },
+  scrollViewContainer: {
+    gap: spacing[2],
   },
   logLink: {
     position: "absolute",

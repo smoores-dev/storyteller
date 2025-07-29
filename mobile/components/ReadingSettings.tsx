@@ -48,7 +48,9 @@ export function ReadingSettings({ bookId }: Props) {
     <View>
       <UIText style={styles.subheading}>Colors</UIText>
       <View style={styles.field}>
-        <UIText style={styles.label}>Dark mode</UIText>
+        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+          Dark mode
+        </UIText>
         <ButtonGroup
           value={preferences.darkMode}
           onChange={(value: boolean | "auto") =>
@@ -60,13 +62,13 @@ export function ReadingSettings({ bookId }: Props) {
           }
         >
           <ButtonGroupButton value={false}>
-            <UIText>Light</UIText>
+            <UIText maxFontSizeMultiplier={1}>Light</UIText>
           </ButtonGroupButton>
           <ButtonGroupButton value={"auto"}>
-            <UIText>Device</UIText>
+            <UIText maxFontSizeMultiplier={1}>Device</UIText>
           </ButtonGroupButton>
           <ButtonGroupButton value={true}>
-            <UIText>Dark</UIText>
+            <UIText maxFontSizeMultiplier={1}>Dark</UIText>
           </ButtonGroupButton>
         </ButtonGroup>
       </View>
@@ -190,7 +192,10 @@ export function ReadingSettings({ bookId }: Props) {
                 )
               }}
             >
-              <UIText style={dirty ? styles.disabled : styles.pressable}>
+              <UIText
+                maxFontSizeMultiplier={1.5}
+                style={dirty ? styles.disabled : styles.pressable}
+              >
                 Set as defaults
               </UIText>
             </Pressable>
@@ -207,6 +212,7 @@ export function ReadingSettings({ bookId }: Props) {
               }}
             >
               <UIText
+                maxFontSizeMultiplier={1.5}
                 style={
                   preferences.typography === defaultPreferences.typography
                     ? styles.disabled
@@ -238,7 +244,9 @@ export function ReadingSettings({ bookId }: Props) {
       </View>
 
       <View style={[styles.field, { gap: spacing[2] }]}>
-        <UIText style={styles.label}>Font scaling</UIText>
+        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+          Font scaling
+        </UIText>
         <Slider
           style={styles.slider}
           start={0.7}
@@ -262,10 +270,14 @@ export function ReadingSettings({ bookId }: Props) {
             dispatch(action)
           }}
         />
-        <UIText>{formatNumber(preferences.typography.scale, 2)}x</UIText>
+        <UIText maxFontSizeMultiplier={1}>
+          {formatNumber(preferences.typography.scale, 2)}x
+        </UIText>
       </View>
       <View style={[styles.field, { gap: spacing[2] }]}>
-        <UIText style={styles.label}>Line height</UIText>
+        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+          Line height
+        </UIText>
         <Slider
           style={styles.slider}
           start={1.0}
@@ -289,12 +301,14 @@ export function ReadingSettings({ bookId }: Props) {
             dispatch(action)
           }}
         />
-        <UIText style={{ flexGrow: 1 }}>
+        <UIText maxFontSizeMultiplier={1} style={{ flexGrow: 1 }}>
           {formatNumber(preferences.typography.lineHeight, 2)}x
         </UIText>
       </View>
       <View style={styles.field}>
-        <UIText style={styles.label}>Text alignment</UIText>
+        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+          Text alignment
+        </UIText>
         <ButtonGroup
           value={preferences.typography.alignment}
           onChange={(value: "justify" | "left") => {
@@ -314,15 +328,17 @@ export function ReadingSettings({ bookId }: Props) {
           }}
         >
           <ButtonGroupButton value="justify">
-            <UIText>Justify</UIText>
+            <UIText maxFontSizeMultiplier={1}>Justify</UIText>
           </ButtonGroupButton>
           <ButtonGroupButton value="left">
-            <UIText>Left</UIText>
+            <UIText maxFontSizeMultiplier={1}>Left</UIText>
           </ButtonGroupButton>
         </ButtonGroup>
       </View>
       <View style={styles.field}>
-        <UIText style={styles.label}>Font family</UIText>
+        <UIText maxFontSizeMultiplier={1.25} style={styles.label}>
+          Font family
+        </UIText>
         <Select
           placeholder={{}}
           darkTheme={dark}
@@ -400,6 +416,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    flexWrap: "wrap",
   },
   bookTypographyHeaderContainer: {},
   typographyControls: { flexDirection: "row", justifyContent: "space-between" },
