@@ -1,11 +1,8 @@
-import { ApiClientError } from "@/apiClient"
 import { BookDetail } from "@/apiModels"
-import { redirect } from "next/navigation"
-import { createAuthedApiClient } from "@/authedApiClient"
-import { logger } from "@/logging"
 import { Stack, Text, Title } from "@mantine/core"
 import { BookStatus } from "@/components/books/BookStatus"
 import { BookEditForm } from "@/components/books/edit/BookEditForm"
+import { fetchApiRoute } from "@/app/fetchApiRoute"
 
 type Props = {
   params: Promise<{
@@ -18,35 +15,7 @@ export default async function BookEditPage(props: Props) {
 
   const { uuid } = params
 
-  const client = await createAuthedApiClient()
-
-  let book: BookDetail | null = null
-
-  try {
-    book = await client.getBookDetails(uuid)
-  } catch (e) {
-    if (e instanceof ApiClientError && e.statusCode === 401) {
-      return redirect("/login")
-    }
-
-    if (e instanceof ApiClientError && e.statusCode === 403) {
-      return (
-        <>
-          <Title order={2}>Forbidden</Title>
-          <p>You don&apos;t have permission to see this page</p>
-        </>
-      )
-    }
-
-    logger.error(e)
-
-    return (
-      <>
-        <Title order={2}>API is down</Title>
-        <p>Storyteller couldn&apos;t connect to the Storyteller API</p>
-      </>
-    )
-  }
+  const book = await fetchApiRoute<BookDetail>(`/books/${uuid}`)
 
   return (
     <Stack gap={24}>
@@ -78,7 +47,7 @@ export default async function BookEditPage(props: Props) {
           )}
         </Stack>
       )}
-      <BookEditForm bookUuid={book.uuid} />
+      <BookEditForm book={book} />
     </Stack>
   )
 }

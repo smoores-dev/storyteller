@@ -1,15 +1,28 @@
 "use client"
 
-import { useGetShelvesQuery, useListBooksQuery } from "@/store/api"
+import { api, useGetShelvesQuery } from "@/store/api"
 import { Stack } from "@mantine/core"
 import { Shelf } from "./Shelf"
 import { useMemo, useState } from "react"
 import { UUID } from "@/uuid"
 import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
+import { BookDetail, Shelves } from "@/apiModels"
+import { useInitialData } from "@/hooks/useInitialData"
 
-export function BookShelves() {
-  // Kick this off, since it's used everywhere
-  useListBooksQuery()
+interface Props {
+  shelves: Shelves
+  books: BookDetail[]
+}
+
+export function BookShelves({
+  shelves: initialShelves,
+  books: initialBooks,
+}: Props) {
+  useInitialData(
+    api.util.upsertQueryData("getShelves", undefined, initialShelves),
+  )
+  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
+
   const { data: shelves } = useGetShelvesQuery()
 
   const [selected, setSelected] = useState(() => new Set<UUID>())

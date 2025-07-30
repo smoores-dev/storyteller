@@ -1,11 +1,17 @@
-import { redirect } from "next/navigation"
-import { apiHost, proxyRootPath } from "../../../apiHost"
-import { ApiClient } from "@/apiClient"
+import { redirect, unauthorized } from "next/navigation"
 import { cookies, headers } from "next/headers"
-import { getCookieDomain } from "@/cookies"
+import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { Title } from "@mantine/core"
 import { AcceptInviteForm } from "@/components/invites/AcceptInviteForm"
-import { nextAuth } from "@/auth/auth"
+import { createUserToken, hashPassword, nextAuth } from "@/auth/auth"
+import { fetchApiRoute } from "@/app/fetchApiRoute"
+import { Invite, InviteAccept } from "@/apiModels"
+import { PublicProvider } from "@auth/core/types"
+import {
+  verifyInvite,
+  createCredentialsAccount,
+  acceptInvite,
+} from "@/database/users"
 
 export const dynamic = "force-dynamic"
 
@@ -17,8 +23,7 @@ type Props = {
 
 export default async function InvitePage(props: Props) {
   const { inviteKey } = await props.params
-  const client = new ApiClient(apiHost, proxyRootPath)
-  const invite = await client.getInvite(inviteKey)
+  const invite = await fetchApiRoute<Invite>(`/invites/${inviteKey}`)
 
   async function acceptCredentialsInvite(data: FormData) {
     "use server"
@@ -30,22 +35,22 @@ export default async function InvitePage(props: Props) {
 
     const cookieOrigin = (await headers()).get("Origin")
     const domain = getCookieDomain(cookieOrigin)
+    const secure = getCookieSecure(cookieOrigin)
 
-    const client = new ApiClient(apiHost, proxyRootPath)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const token = (await client.acceptInvite({
+    const token = await verifyAndAcceptInvite({
       email: invite.email,
       name,
       username,
       password,
       inviteKey: inviteKey,
-    }))!
+    })
 
     const cookieStore = await cookies()
     cookieStore.set("st_token", token.access_token, {
-      secure: true,
+      secure,
       domain,
       sameSite: "lax",
+      expires: token.expires_in,
     })
 
     redirect("/")
@@ -64,7 +69,8 @@ export default async function InvitePage(props: Props) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { credentials: _, ...providers } = await client.listProviders()
+  const { credentials: _, ...providers } =
+    await fetchApiRoute<Record<string, PublicProvider>>("/auth/providers")
 
   return (
     <>
@@ -79,4 +85,24 @@ export default async function InvitePage(props: Props) {
       />
     </>
   )
+}
+
+async function verifyAndAcceptInvite(invite: InviteAccept) {
+  const verified = await verifyInvite(invite.email, invite.inviteKey)
+  if (!verified) {
+    unauthorized()
+  }
+
+  const hashedPassword = await hashPassword(invite.password)
+
+  await acceptInvite(invite.email, invite.inviteKey)
+
+  await createCredentialsAccount(
+    invite.username,
+    invite.name,
+    invite.email,
+    hashedPassword,
+  )
+
+  return await createUserToken(invite.username, invite.password)
 }

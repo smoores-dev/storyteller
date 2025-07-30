@@ -8,4 +8,4 @@ SELECT
 FROM
   user
 WHERE
-  user.invite_accepted is null;
+  user.invite_accepted is not null;

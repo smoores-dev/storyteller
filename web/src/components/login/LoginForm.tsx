@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Button, PasswordInput, Stack, TextInput } from "@mantine/core"
 import type { PublicProvider } from "@auth/core/types"
 import { IconArrowLeft } from "@tabler/icons-react"
+import { useAppDispatch } from "@/store/appState"
+import { api } from "@/store/api"
 
 type Props = {
   credentialsLoginAction: (
@@ -18,6 +20,7 @@ export function LoginForm({
   oauthLoginAction,
   providers,
 }: Props) {
+  const dispatch = useAppDispatch()
   const [showCredentials, setShowCredentials] = useState(!providers.length)
 
   const [errorState, setErrorState] = useState<"bad-creds" | "failed" | null>(
@@ -36,7 +39,16 @@ export function LoginForm({
           Sign in with password
         </Button>
         {providers.map((provider) => (
-          <form key={provider.id} action={() => oauthLoginAction(provider.id)}>
+          <form
+            key={provider.id}
+            action={async () => {
+              // We don't have to worry about the cache invalidation
+              // shenanigans below for oauth login, because we get
+              // redirected to another domain entirely, triggering
+              // a full load of the layout when we redirect back
+              await oauthLoginAction(provider.id)
+            }}
+          >
             <Button variant="outline" type="submit">
               <span>Sign in with {provider.name}</span>
             </Button>
@@ -70,9 +82,19 @@ export function LoginForm({
       <form
         action={async (formData) => {
           setErrorState(null)
-          const error = await credentialsLoginAction(formData)
-          if (error) {
-            setErrorState(error)
+          try {
+            const error = await credentialsLoginAction(formData)
+            if (error) {
+              setErrorState(error)
+            }
+          } catch (e) {
+            // Next.js uses thrown errors to trigger redirects.
+            // We want to follow the redirect, but _first_ (after
+            // successfully logging in), we want to invalidate
+            // the current user cache, so that we retrieve the
+            // new current user and update the sidebar.
+            dispatch(api.util.invalidateTags(["CurrentUser"]))
+            throw e
           }
         }}
       >
