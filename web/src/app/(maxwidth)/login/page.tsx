@@ -1,14 +1,13 @@
-import { ApiClient } from "@/apiClient"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost, proxyRootPath } from "../../apiHost"
+import { apiHost } from "../../apiHost"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { LoginForm } from "@/components/login/LoginForm"
-import { Token } from "@/apiModels"
 import { Title } from "@mantine/core"
-import { createAuthedApiClient } from "@/authedApiClient"
-import { fromDate, maxAge, nextAuth } from "@/auth/auth"
+import { nextAuth } from "@/auth/auth"
 import { AuthError } from "next-auth"
+import { fetchApiRoute } from "@/app/fetchApiRoute"
+import { PublicProvider } from "@auth/core/types"
 
 export default async function Login() {
   async function credentialsLogin(data: FormData) {
@@ -26,12 +25,29 @@ export default async function Login() {
       const secure = getCookieSecure(cookieOrigin)
       const domain = getCookieDomain(cookieOrigin)
 
-      const client = new ApiClient(apiHost, proxyRootPath)
-      let token: Token
-      try {
-        token = await client.login({ usernameOrEmail, password })
-      } catch {
-        return "bad-creds"
+      const formData = new FormData()
+      formData.set("usernameOrEmail", usernameOrEmail)
+      formData.set("password", password)
+
+      const url = new URL(`/api/v2/token`, apiHost)
+
+      const response = await fetch(url, {
+        method: "POST",
+        cache: "no-store",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        if (response.status === 405) {
+          return "bad-creds"
+        }
+        return "failed"
+      }
+
+      const token = (await response.json()) as {
+        access_token: string
+        expires_in: number
+        token_type: string
       }
 
       const cookieStore = await cookies()
@@ -40,7 +56,7 @@ export default async function Login() {
         domain: domain,
         sameSite: "lax",
         httpOnly: true,
-        expires: fromDate(maxAge),
+        expires: token.expires_in,
       })
     } catch {
       return "failed"
@@ -62,9 +78,8 @@ export default async function Login() {
     }
   }
 
-  const client = await createAuthedApiClient()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { credentials: _, ...providers } = await client.listProviders()
+  const { credentials: _, ...providers } =
+    await fetchApiRoute<Record<string, PublicProvider>>("/auth/providers")
 
   return (
     <>

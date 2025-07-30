@@ -5,17 +5,33 @@ import { InviteStatus } from "./InviteStatus"
 import { CreateInviteForm } from "./CreateInviteForm"
 import { List, Title } from "@mantine/core"
 import {
+  api,
   useGetCurrentUserQuery,
   useListInvitesQuery,
   useListUsersQuery,
 } from "@/store/api"
+import { Invite, User } from "@/apiModels"
+import { useInitialData } from "@/hooks/useInitialData"
 
-export function UsersList() {
+interface Props {
+  users: User[]
+  invites: Invite[]
+}
+
+export function UsersList({
+  users: initialUsers,
+  invites: initialInvites,
+}: Props) {
   const { permissions } = useGetCurrentUserQuery(undefined, {
     selectFromResult: (result) => ({
       permissions: result.data?.permissions,
     }),
   })
+
+  useInitialData(
+    api.util.upsertQueryData("listInvites", undefined, initialInvites),
+  )
+  useInitialData(api.util.upsertQueryData("listUsers", undefined, initialUsers))
 
   const { data: invites } = useListInvitesQuery()
   const { data: users } = useListUsersQuery()

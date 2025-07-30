@@ -7,16 +7,20 @@ import { UUID } from "@/uuid"
 import { useState } from "react"
 import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
 import { BookGrid } from "./BookGrid"
-import { useListBooksQuery, useListCollectionsQuery } from "@/store/api"
+import { api, useListBooksQuery, useListCollectionsQuery } from "@/store/api"
 import { AddBooksMenu } from "./AddBooksMenu"
 import { FilterSort } from "../collections/FilterSort"
+import { BookDetail } from "@/apiModels"
+import { useInitialData } from "@/hooks/useInitialData"
 
 interface Props {
   collectionUuid?: UUID | null
+  books: BookDetail[]
 }
 
-export function BookList({ collectionUuid }: Props) {
+export function BookList({ collectionUuid, books: initialBooks }: Props) {
   const canListBooks = usePermission("bookList")
+  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
 
   const { collectionBooks } = useListBooksQuery(undefined, {
     selectFromResult: (result) => ({

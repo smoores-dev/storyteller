@@ -1,15 +1,18 @@
+import { User } from "@/apiModels"
+import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { config, hashPassword, nextAuth } from "@/auth/auth"
-import { createAuthedApiClient } from "@/authedApiClient"
 import { getAccounts, updateUser } from "@/database/users"
 import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
 import { AuthError } from "next-auth"
 import { revalidatePath } from "next/cache"
+import { PublicProvider } from "@auth/core/types"
 
 export default async function AccountPage() {
-  const client = await createAuthedApiClient()
-  const currentUser = await client.getCurrentUser()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { credentials: _, ...providersMap } = await client.listProviders()
+  const currentUser = await fetchApiRoute<User>("/user")
+
+  const { credentials: _, ...providersMap } =
+    await fetchApiRoute<Record<string, PublicProvider>>("/auth/providers")
+
   const providers = Object.values(providersMap)
   const linkedAccounts = await getAccounts(currentUser.id)
 
@@ -78,47 +81,53 @@ export default async function AccountPage() {
           </Button>
         </Stack>
       </form>
-      <Title order={3} className="my-4">
-        Linked accounts
-      </Title>
-      {linkedAccounts
-        .filter((account) => account.provider !== "credentials")
-        .map((account) => (
-          <form
-            key={account.provider}
-            action={async function unlink() {
-              "use server"
-              await config.adapter?.unlinkAccount?.(account)
-              revalidatePath("/account")
-            }}
-          >
-            <Button variant="outline" type="submit">
-              <span>Unlink from {providersMap[account.provider]?.name}</span>
-            </Button>
-          </form>
-        ))}
-      {unlinkedProviders.map((provider) => (
-        <form
-          key={provider.id}
-          action={async function oauthLogin() {
-            "use server"
-            try {
-              await nextAuth.signIn(provider.id, { redirectTo: "/account" })
-            } catch (error) {
-              if (error instanceof AuthError) {
-                console.error(error)
-                return
-              }
+      {providers.length ? (
+        <>
+          <Title order={3} className="my-4">
+            Linked accounts
+          </Title>
+          {linkedAccounts
+            .filter((account) => account.provider !== "credentials")
+            .map((account) => (
+              <form
+                key={account.provider}
+                action={async function unlink() {
+                  "use server"
+                  await config.adapter?.unlinkAccount?.(account)
+                  revalidatePath("/account")
+                }}
+              >
+                <Button variant="outline" type="submit">
+                  <span>
+                    Unlink from {providersMap[account.provider]?.name}
+                  </span>
+                </Button>
+              </form>
+            ))}
+          {unlinkedProviders.map((provider) => (
+            <form
+              key={provider.id}
+              action={async function oauthLogin() {
+                "use server"
+                try {
+                  await nextAuth.signIn(provider.id, { redirectTo: "/account" })
+                } catch (error) {
+                  if (error instanceof AuthError) {
+                    console.error(error)
+                    return
+                  }
 
-              throw error
-            }
-          }}
-        >
-          <Button variant="outline" type="submit">
-            <span>Link with {provider.name}</span>
-          </Button>
-        </form>
-      ))}
+                  throw error
+                }
+              }}
+            >
+              <Button variant="outline" type="submit">
+                <span>Link with {provider.name}</span>
+              </Button>
+            </form>
+          ))}
+        </>
+      ) : null}
     </>
   )
 }

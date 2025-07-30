@@ -6,6 +6,10 @@ import { ColorSchemeScript } from "@mantine/core"
 import "./globals.css"
 import { getCurrentVersion } from "@/versions"
 import StoreProvider from "@/components/StoreProvider"
+import { fetchApiRoute } from "./fetchApiRoute"
+import { User } from "@/apiModels"
+import { Metadata } from "next"
+import { CollectionWithRelations } from "@/database/collections"
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -19,17 +23,30 @@ const youngSerif = Young_Serif({
   variable: "--font-young-serif",
 })
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Storyteller",
   description: "A simple tool for syncing audiobooks and ebooks",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const version = getCurrentVersion()
+  let currentUser: User | undefined = undefined
+  try {
+    currentUser = await fetchApiRoute<User | undefined>("/user")
+  } catch {
+    // pass
+  }
+
+  let collections: CollectionWithRelations[] = []
+  try {
+    collections = await fetchApiRoute<CollectionWithRelations[]>("/collections")
+  } catch {
+    // pass
+  }
 
   return (
     <html
@@ -42,7 +59,13 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <StoreProvider>
-          <AppShell version={version}>{children}</AppShell>
+          <AppShell
+            version={version}
+            currentUser={currentUser}
+            collections={collections}
+          >
+            {children}
+          </AppShell>
         </StoreProvider>
       </body>
     </html>

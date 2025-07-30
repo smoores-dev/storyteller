@@ -38,8 +38,16 @@ import { usePathname } from "next/navigation"
 import { CurrentBookProgress } from "./layout/CurrentBookProgress"
 import dayjs from "dayjs"
 import customParseFormat from "dayjs/plugin/customParseFormat"
-import { useGetCurrentUserQuery, useListCollectionsQuery } from "@/store/api"
+import {
+  api,
+  useGetCurrentUserQuery,
+  useListCollectionsQuery,
+} from "@/store/api"
 import { usePermissions } from "@/hooks/usePermissions"
+import { User } from "@/apiModels"
+import { useInitialData } from "@/hooks/useInitialData"
+import { skipToken } from "@reduxjs/toolkit/query"
+import { CollectionWithRelations } from "@/database/collections"
 
 dayjs.extend(customParseFormat)
 
@@ -123,11 +131,33 @@ const theme = createTheme({
 interface Props {
   version: string
   children: ReactNode
+  currentUser: User | undefined
+  collections: CollectionWithRelations[]
 }
 
-export function AppShell({ children, version }: Props) {
+export function AppShell({
+  children,
+  version,
+  currentUser: initialCurrentUser,
+  collections: initialCollections,
+}: Props) {
   const [opened, { close, toggle }] = useDisclosure(false)
   const pathname = usePathname()
+
+  useInitialData(
+    initialCurrentUser
+      ? api.util.upsertQueryData(
+          "getCurrentUser",
+          undefined,
+          initialCurrentUser,
+        )
+      : skipToken,
+  )
+
+  useInitialData(
+    api.util.upsertQueryData("listCollections", undefined, initialCollections),
+  )
+
   const { data: currentUser } = useGetCurrentUserQuery()
   const permissions = usePermissions()
   const { data: collections } = useListCollectionsQuery()

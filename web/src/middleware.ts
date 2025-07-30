@@ -1,14 +1,12 @@
-import { ApiClient } from "@/apiClient"
 import { NextRequest, NextResponse } from "next/server"
-import { apiHost, proxyRootPath } from "./app/apiHost"
 import { nextAuth } from "./auth/auth"
+import { getUserCount } from "./database/users"
 
 export async function middleware(request: NextRequest) {
   const isInitPage = request.nextUrl.pathname.startsWith("/init")
 
-  const client = new ApiClient(apiHost, proxyRootPath)
+  const needsInit = (await getUserCount()) === 0
 
-  const needsInit = await client.needsInit()
   if (needsInit && !isInitPage) {
     return NextResponse.redirect(new URL("/init", request.url))
   }

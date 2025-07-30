@@ -1,9 +1,9 @@
-import { ApiClient } from "@/apiClient"
-import { getCookieDomain } from "@/cookies"
+import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost, proxyRootPath } from "../../apiHost"
 import { Button, PasswordInput, TextInput, Title } from "@mantine/core"
+import { createAdminUser } from "@/database/users"
+import { createUserToken, hashPassword } from "@/auth/auth"
 
 export default function InitPage() {
   async function init(data: FormData) {
@@ -16,22 +16,27 @@ export default function InitPage() {
     if (!fullName || !username || !password || !email) return
 
     const cookieOrigin = (await headers()).get("Origin")
+    const secure = getCookieSecure(cookieOrigin)
     const domain = getCookieDomain(cookieOrigin)
 
-    const client = new ApiClient(apiHost, proxyRootPath)
-    const token = await client.createAdminUser({
-      email: email,
-      fullName,
-      username,
-      password,
-    })
+    const hashedPassword = await hashPassword(password)
+
+    try {
+      await createAdminUser(username, fullName, email, hashedPassword)
+    } catch {
+      redirect("/")
+    }
+
+    const token = await createUserToken(username, password)
 
     const cookieStore = await cookies()
-    cookieStore.set(
-      "st_token",
-      Buffer.from(JSON.stringify(token)).toString("base64"),
-      { secure: true, domain, sameSite: "lax" },
-    )
+    cookieStore.set("st_token", token.access_token, {
+      secure,
+      domain: domain,
+      sameSite: "lax",
+      httpOnly: true,
+      expires: token.expires_in,
+    })
 
     redirect("/")
   }

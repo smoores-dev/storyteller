@@ -5,7 +5,6 @@ import { useForm } from "@mantine/form"
 import { Button, Group, Stack, Textarea, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
 import { AuthorRelation, SeriesRelation } from "@/database/books"
-import { UUID } from "@/uuid"
 import { StatusInput } from "./StatusInput"
 import { CoverImageInput } from "./CoverImageInput"
 import { AuthorsInput } from "./AuthorsInput"
@@ -18,7 +17,6 @@ import {
   useCreateCollectionMutation,
   useGetCurrentUserQuery,
   useListAuthorsQuery,
-  useListBooksQuery,
   useListCollectionsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
@@ -26,12 +24,13 @@ import {
   useListUsersQuery,
   useUpdateBookMutation,
 } from "@/store/api"
+import { BookDetail } from "@/apiModels"
 
 type Props = {
-  bookUuid: UUID
+  book: BookDetail
 }
 
-export function BookEditForm({ bookUuid }: Props) {
+export function BookEditForm({ book }: Props) {
   const { data: currentUser } = useGetCurrentUserQuery()
 
   const [createCollection] = useCreateCollectionMutation()
@@ -46,57 +45,33 @@ export function BookEditForm({ bookUuid }: Props) {
   const { data: authors = [] } = useListAuthorsQuery()
   const { data: users = [] } = useListUsersQuery()
 
-  const { book } = useListBooksQuery(undefined, {
-    selectFromResult: (result) => ({
-      book: result.data?.find((b) => b.uuid === bookUuid),
-    }),
-  })
+  // useInitialData(api.util.upsertQueryData(''))
+
+  // const { book } = useListBooksQuery(undefined, {
+  //   selectFromResult: (result) => ({
+  //     book: result.data?.find((b) => b.uuid === bookUuid),
+  //   }),
+  // })
 
   const form = useForm({
-    initialValues: book
-      ? {
-          title: book.title,
-          language: book.language,
-          authors: book.authors as AuthorRelation[],
-          series: book.series as SeriesRelation[],
-          statusUuid: book.statusUuid,
-          collections: book.collections.map((collection) => collection.uuid),
-          publicationDate:
-            book.publicationDate && new Date(book.publicationDate),
-          rating: book.rating,
-          description: book.description,
-          narrator: book.narrator,
-          tags: book.tags.map((tag) => tag.name),
-          textCover: null as File | null,
-          audioCover: null as File | null,
-        }
-      : {
-          title: "",
-          language: null,
-          authors: [],
-          series: [],
-          statusUuid: "" as UUID,
-          collections: [],
-          publicationDate: null,
-          rating: null,
-          description: null,
-          narrator: null,
-          tags: [],
-          textCover: null,
-          audioCover: null,
-        },
-    enhanceGetInputProps: (payload) => {
-      if (!payload.form.initialized) {
-        return { disabled: true }
-      }
-
-      return {}
+    initialValues: {
+      title: book.title,
+      language: book.language,
+      authors: book.authors as AuthorRelation[],
+      series: book.series as SeriesRelation[],
+      statusUuid: book.statusUuid,
+      collections: book.collections.map((collection) => collection.uuid),
+      publicationDate: book.publicationDate && new Date(book.publicationDate),
+      rating: book.rating,
+      description: book.description,
+      narrator: book.narrator,
+      tags: book.tags.map((tag) => tag.name),
+      textCover: null as File | null,
+      audioCover: null as File | null,
     },
   })
 
   useLayoutEffect(() => {
-    if (!book) return
-
     form.initialize({
       title: book.title,
       language: book.language,
@@ -125,8 +100,6 @@ export function BookEditForm({ bookUuid }: Props) {
   } = form.values
 
   const [savedState, setSavedState] = useState<SaveState>(SaveState.CLEAN)
-
-  if (!book) return "Loading…"
 
   return (
     <>

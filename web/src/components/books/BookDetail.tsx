@@ -2,11 +2,9 @@
 
 import {
   getDownloadUrl,
-  useListBooksQuery,
   useListStatusesQuery,
   useUpdateBookMutation,
 } from "@/store/api"
-import { UUID } from "@/uuid"
 import { Anchor, Group, Spoiler, Stack, Text, Title } from "@mantine/core"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 import Link from "next/link"
@@ -20,22 +18,15 @@ import {
 import { IconReadaloud } from "../icons/IconReadaloud"
 import { StatusInput } from "./edit/StatusInput"
 import { BookStatus } from "./BookStatus"
+import { BookDetail as Book } from "@/apiModels"
 
 interface Props {
-  bookUuid: UUID
+  book: Book
 }
 
-export function BookDetail({ bookUuid }: Props) {
-  const { book } = useListBooksQuery(undefined, {
-    selectFromResult: (result) => ({
-      book: result.data?.find((b) => b.uuid === bookUuid),
-    }),
-  })
-
+export function BookDetail({ book }: Props) {
   const { data: statuses = [] } = useListStatusesQuery()
   const [updateBook] = useUpdateBookMutation()
-
-  if (!book) return "Loading..."
 
   return (
     <Stack>
@@ -94,7 +85,7 @@ export function BookDetail({ bookUuid }: Props) {
         <StatusInput
           value={book.statusUuid}
           onChange={async (value) => {
-            await updateBook({ update: { uuid: bookUuid, statusUuid: value } })
+            await updateBook({ update: { uuid: book.uuid, statusUuid: value } })
           }}
           options={statuses}
         />
@@ -102,17 +93,17 @@ export function BookDetail({ bookUuid }: Props) {
           <Text className="self-end">Download</Text>
           <Group className="bg-st-orange-50 self-end px-4 py-2">
             {book.readaloud && (
-              <Anchor href={getDownloadUrl(bookUuid, "readaloud")}>
+              <Anchor href={getDownloadUrl(book.uuid, "readaloud")}>
                 <IconReadaloud />
               </Anchor>
             )}
             {book.ebook && (
-              <Anchor href={getDownloadUrl(bookUuid, "ebook")}>
+              <Anchor href={getDownloadUrl(book.uuid, "ebook")}>
                 <IconBook2 />
               </Anchor>
             )}
             {book.audiobook && (
-              <Anchor href={getDownloadUrl(bookUuid, "audiobook")}>
+              <Anchor href={getDownloadUrl(book.uuid, "audiobook")}>
                 <IconHeadphonesFilled />
               </Anchor>
             )}

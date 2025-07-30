@@ -39,6 +39,7 @@ export const api = createApi({
     "Series",
     "Collections",
     "Tags",
+    "CurrentUser",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -101,6 +102,7 @@ export const api = createApi({
     }),
     getCurrentUser: build.query<User, void>({
       query: () => "/user",
+      providesTags: () => ["CurrentUser"],
     }),
     updateSettings: build.mutation({
       query: (settings: Settings) => ({
