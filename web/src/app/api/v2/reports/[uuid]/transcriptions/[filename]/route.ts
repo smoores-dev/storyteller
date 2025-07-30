@@ -1,7 +1,9 @@
-import { getTranscriptionsFilepath } from "@/assets/paths"
+import {
+  getTranscriptionsFilepath,
+  getTranscriptionFilename,
+} from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"
-import { getTranscriptionFilename } from "@/process/processAudio"
 import { UUID } from "@/uuid"
 import { readFile } from "node:fs/promises"
 

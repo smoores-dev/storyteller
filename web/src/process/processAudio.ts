@@ -30,6 +30,7 @@ import { randomUUID } from "node:crypto"
 import {
   getInternalOriginalAudioFilepath,
   getProcessedAudioFilepath,
+  getTranscriptionFilename,
   getTranscriptionsFilepath,
 } from "@/assets/paths"
 import { AudioFile } from "@/assets/covers"
@@ -374,12 +375,6 @@ export async function processAudiobook(
   )
 
   return audioFiles
-}
-
-export function getTranscriptionFilename(audioFilepath: string) {
-  const ext = extname(audioFilepath)
-  const bare = basename(audioFilepath, ext)
-  return `${bare}.json`
 }
 
 export async function getTranscriptions(book: Book) {

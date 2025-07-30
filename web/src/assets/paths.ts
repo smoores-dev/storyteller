@@ -1,7 +1,7 @@
 import { Book } from "@/database/books"
 import { ASSETS_DIR } from "@/directories"
 import { UUID } from "@/uuid"
-import { join } from "node:path"
+import { basename, extname, join } from "node:path"
 
 const base62Chars =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -109,4 +109,10 @@ export function getTranscriptionsFilepath(book: Book, filename = "") {
 
 export function getAlignmentReportFilepath(book: Book) {
   return join(getInternalBookDirectory(book), ".storyteller", "report.json")
+}
+
+export function getTranscriptionFilename(audioFilepath: string) {
+  const ext = extname(audioFilepath)
+  const bare = basename(audioFilepath, ext)
+  return `${bare}.json`
 }
