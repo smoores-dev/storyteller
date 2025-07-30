@@ -91,16 +91,8 @@ export function getInternalEpubFilepath(book: Book) {
   )
 }
 
-export function getInternalEpubIndexPath(book: Book) {
-  return join(getInternalEpubDirectory(book), ".storyteller-index.json")
-}
-
 export function getInternalAudioDirectory(book: Book) {
   return join(getInternalBookDirectory(book), "audio")
-}
-
-export function getInternalAudioIndexPath(book: Book) {
-  return join(getInternalAudioDirectory(book), ".storyteller-index.json")
 }
 
 export function getInternalOriginalAudioFilepath(book: Book, filename = "") {
@@ -113,4 +105,8 @@ export function getProcessedAudioFilepath(book: Book, filename = "") {
 
 export function getTranscriptionsFilepath(book: Book, filename = "") {
   return join(getInternalBookDirectory(book), "transcriptions", filename)
+}
+
+export function getAlignmentReportFilepath(book: Book) {
+  return join(getInternalBookDirectory(book), ".storyteller", "report.json")
 }

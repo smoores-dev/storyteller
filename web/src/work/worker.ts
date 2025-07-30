@@ -8,6 +8,7 @@ import {
   getTranscriptionsFilepath,
   getProcessedAudioFilepath,
   getInternalEpubAlignedFilepath,
+  getAlignmentReportFilepath,
 } from "@/assets/paths"
 import { Book, getBookOrThrow, updateBook } from "@/database/books"
 import {
@@ -259,6 +260,14 @@ export default async function processBook({
           transcriptions,
         )
         await synchronizer.syncBook(onProgress)
+
+        await mkdir(getAlignmentReportFilepath(book), { recursive: true })
+
+        await writeFile(
+          getAlignmentReportFilepath(book),
+          JSON.stringify(synchronizer.report, null, 2),
+          { encoding: "utf-8" },
+        )
 
         book = await updateBook(
           bookUuid,
