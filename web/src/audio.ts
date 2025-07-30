@@ -5,6 +5,7 @@ import { extname } from "node:path"
 import { copyFile } from "node:fs/promises"
 import { logger } from "./logging"
 import { promisify } from "util"
+import { randomUUID } from "node:crypto"
 
 const execPromise = promisify(exec)
 
@@ -355,6 +356,9 @@ function commonFfmpegArguments(
 }
 
 export async function setCoverImage(audioPath: string, coverPath: string) {
+  const ext = extname(audioPath)
+  const tmpName = `/tmp/${randomUUID()}${ext}`
+
   const command = "ffmpeg"
   const args = [
     "-nostdin",
@@ -375,10 +379,15 @@ export async function setCoverImage(audioPath: string, coverPath: string) {
     'title="Album cover"',
     "-metadata:s:v",
     'comment="Cover (front)"',
-    quotePath(audioPath),
+    tmpName,
   ]
 
-  await execCmd(`${command} ${args.join(" ")}`)
+  const mvCommand = "mv"
+  const mvArgs = [tmpName, quotePath(audioPath)]
+
+  await execCmd(
+    `${command} ${args.join(" ")} && ${mvCommand} ${mvArgs.join(" ")}`,
+  )
 }
 
 export async function transcodeTrack(
