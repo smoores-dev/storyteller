@@ -52,12 +52,12 @@ const server = new Server({
 
     const collectionUuid = upload.metadata["collection"] as UUID | undefined
 
-    const isEpub = filetype === "application/epub+zip"
+    const isEpub = filetype !== false && filetype.startsWith("application/epub")
     const isAudiobook = isAudioFile(filename)
     if (!isEpub && !isAudiobook) {
       return {
         status_code: 405,
-        body: "Invalid upload type. Expected application/epub+zip, audio/*, or video/mp4.",
+        body: "Invalid upload type. Expected application/epub, audio/*, or video/mp4.",
       }
     }
 
