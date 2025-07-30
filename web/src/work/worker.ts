@@ -9,6 +9,7 @@ import {
   getProcessedAudioFilepath,
   getInternalEpubAlignedFilepath,
   getAlignmentReportFilepath,
+  getTranscriptionFilename,
 } from "@/assets/paths"
 import { Book, getBookOrThrow, updateBook } from "@/database/books"
 import {
@@ -19,11 +20,7 @@ import {
 import { formatTranscriptionEngineDetails } from "@/database/settings"
 import { Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
-import {
-  getTranscriptionFilename,
-  getTranscriptions,
-  processAudiobook,
-} from "@/process/processAudio"
+import { getTranscriptions, processAudiobook } from "@/process/processAudio"
 import {
   getFullText,
   readEpub,
