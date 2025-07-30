@@ -101,12 +101,45 @@ export function concatTranscriptions(
   )
 }
 
+interface AudioFileContext {
+  start: number
+  end: number
+  filepath: string
+}
+
+interface ChapterReport {
+  href: string
+
+  transcriptionOffset: number
+  transcriptionContext: {
+    before: string
+    after: string
+  }
+
+  firstMatchedSentenceId: number
+  firstMatchedSentenceContext: {
+    prevSentence: string | null
+    matchedSentence: string
+    nextSentence: string | null
+  }
+
+  audioFiles: AudioFileContext[]
+}
+
+interface Report {
+  chapters: ChapterReport[]
+}
+
 export class Synchronizer {
   private transcription: StorytellerTranscription
 
   private totalDuration = 0
 
   private syncedChapters: SyncedChapter[] = []
+
+  public report: Report = {
+    chapters: [],
+  }
 
   constructor(
     public epub: Epub,
@@ -271,6 +304,55 @@ export class Synchronizer {
     })
   }
 
+  private addChapterReport(
+    chapter: ManifestItem,
+    chapterSentences: string[],
+    sentenceRanges: SentenceRange[],
+    startSentence: number,
+    transcriptionOffset: number,
+  ) {
+    this.report.chapters.push({
+      href: chapter.href,
+      transcriptionOffset,
+      transcriptionContext: {
+        before: this.transcription.transcript.slice(
+          Math.max(0, transcriptionOffset - 30),
+          transcriptionOffset,
+        ),
+        after: this.transcription.transcript.slice(
+          transcriptionOffset,
+          Math.min(
+            transcriptionOffset + 30,
+            this.transcription.transcript.length - 1,
+          ),
+        ),
+      },
+      firstMatchedSentenceId: startSentence,
+      firstMatchedSentenceContext: {
+        prevSentence: chapterSentences[startSentence - 1] ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        matchedSentence: chapterSentences[startSentence]!,
+        nextSentence: chapterSentences[startSentence + 1] ?? null,
+      },
+
+      audioFiles: sentenceRanges.reduce<AudioFileContext[]>((acc, range) => {
+        const existing = acc.find(
+          (context) => context.filepath === range.audiofile,
+        )
+        if (existing) {
+          existing.end = range.end
+          return acc
+        }
+        acc.push({
+          filepath: range.audiofile,
+          start: range.start,
+          end: range.end,
+        })
+        return acc
+      }, []),
+    })
+  }
+
   private async syncChapter(
     startSentence: number,
     chapterId: string,
@@ -320,6 +402,14 @@ export class Synchronizer {
       startOffset: transcriptionOffset,
       endOffset: endTranscriptionOffset,
     })
+
+    this.addChapterReport(
+      chapter,
+      chapterSentences,
+      expanded,
+      startSentence,
+      transcriptionOffset,
+    )
 
     return {
       lastSentenceRange: expanded[expanded.length - 1] ?? null,
