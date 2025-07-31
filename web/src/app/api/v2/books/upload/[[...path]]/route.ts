@@ -17,6 +17,7 @@ import { Epub } from "@smoores/epub/node"
 import { basename, dirname, extname } from "node:path"
 import { UUID } from "@/uuid"
 import {
+  getInternalBookDirectory,
   getInternalEpubAlignedFilepath,
   getInternalEpubFilepath,
   getInternalOriginalAudioFilepath,
@@ -76,6 +77,12 @@ const server = new Server({
         let update: BookUpdate | null = null
         const series: SeriesRelation[] = []
 
+        const title = await epub.getTitle()
+        if (title) {
+          update ??= {}
+          update.title = title
+        }
+
         const publicationDate = await epub.getPublicationDate()
         if (publicationDate) {
           update ??= {}
@@ -134,7 +141,7 @@ const server = new Server({
           }
         }
 
-        await updateBook(book.uuid, update, {
+        const updated = await updateBook(book.uuid, update, {
           series,
           ...(isAligned
             ? {
@@ -147,6 +154,14 @@ const server = new Server({
         })
 
         await persistEpub(book, uploadPath, isAligned)
+
+        // If the audio was uploaded/processed first, it's going to
+        // potentially have an arbitrary book directory name. Better
+        // to use the one from the ebook
+        await rename(
+          getInternalBookDirectory(book),
+          getInternalBookDirectory(updated),
+        )
       } else {
         book = await createBookFromEpub(
           epub,
