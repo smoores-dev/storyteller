@@ -35,7 +35,7 @@ import { AsyncSemaphore } from "@esfx/async-semaphore"
 import type { RecognitionResult } from "echogarden/dist/api/Recognition"
 import { extension } from "mime-types"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { basename } from "node:path"
+import { basename, dirname } from "node:path"
 import { MessagePort } from "node:worker_threads"
 
 export async function transcribeBook(
@@ -258,7 +258,9 @@ export default async function processBook({
         )
         await synchronizer.syncBook(onProgress)
 
-        await mkdir(getAlignmentReportFilepath(book), { recursive: true })
+        await mkdir(dirname(getAlignmentReportFilepath(book)), {
+          recursive: true,
+        })
 
         await writeFile(
           getAlignmentReportFilepath(book),
