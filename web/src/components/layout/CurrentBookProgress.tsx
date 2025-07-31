@@ -1,4 +1,3 @@
-import NextImage from "next/image"
 import { Group, Image, RingProgress, Stack, Text, Title } from "@mantine/core"
 import { ProcessingTaskTypes } from "../books/BookStatus"
 import { getCoverUrl, useListBooksQuery } from "@/store/api"
@@ -23,12 +22,9 @@ export function CurrentBookProgress() {
   return (
     <Group wrap="nowrap" className="bg-st-orange-50 relative">
       <Image
-        component={NextImage}
         className="rounded-r-md"
         h={75}
         w={49}
-        height={75}
-        width={49}
         alt=""
         aria-hidden
         src={getCoverUrl(currentBook.uuid)}

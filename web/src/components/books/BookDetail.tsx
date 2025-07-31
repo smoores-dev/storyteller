@@ -76,7 +76,7 @@ export function BookDetail({ book }: Props) {
               showLabel="Show more"
               hideLabel="Hide"
             >
-              {book.description}
+              <div dangerouslySetInnerHTML={{ __html: book.description }} />
             </Spoiler>
           )}
         </Stack>

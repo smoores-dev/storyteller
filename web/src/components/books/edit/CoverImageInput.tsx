@@ -1,6 +1,5 @@
 import { Tabs, FileButton, Button, Image, Text } from "@mantine/core"
 import { UseFormReturnType } from "@mantine/form"
-import NextImage from "next/image"
 import { useMemo } from "react"
 
 function CoverInput({
@@ -26,9 +25,6 @@ function CoverInput({
         >
           <Image
             className="rounded"
-            component={NextImage}
-            height={height * 3}
-            width={64 * 3}
             h={height * 3}
             w={64 * 3}
             src={coverUrl}

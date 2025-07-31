@@ -24,6 +24,12 @@ function isIso8601(dateString: string) {
   return dateString === new Date(dateString).toISOString()
 }
 
+function getField<Value>(formData: FormData, field: string) {
+  const stringified = formData.get(field)?.valueOf() as string | undefined
+  if (stringified === undefined) return stringified
+  return JSON.parse(stringified) as Value
+}
+
 export const dynamic = "force-dynamic"
 
 type Params = Promise<{
@@ -45,7 +51,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const fields = new Set(
     formData.getAll("fields").map((entry) => entry.valueOf() as string),
   )
-  const title = formData.get("title")?.valueOf() as string | undefined
+  const title = getField<string>(formData, "title")
 
   if (!title && fields.has("title")) {
     return NextResponse.json(
@@ -54,13 +60,18 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const language =
-    (formData.get("language")?.valueOf() as string | undefined) ?? null
+  const language = getField<string | null>(formData, "language") ?? null
+  const description = getField<string | null>(formData, "description") ?? null
+  const rating = getField<number | null>(formData, "rating") ?? null
 
   const publicationDate =
-    (formData.get("publicationDate")?.valueOf() as string | undefined) ?? null
+    getField<string | null>(formData, "publicationDate") ?? null
 
-  if (publicationDate && !isIso8601(publicationDate)) {
+  if (
+    publicationDate &&
+    fields.has("publicationDate") &&
+    !isIso8601(publicationDate)
+  ) {
     return NextResponse.json(
       {
         message: "Invalid publicationDate",
@@ -69,7 +80,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const statusUuid = formData.get("statusUuid")?.valueOf() as UUID | undefined
+  const statusUuid = getField<UUID>(formData, "statusUuid")
   if (!statusUuid && fields.has("statusUuid")) {
     return NextResponse.json(
       { message: "Status must not be undefined" },
@@ -104,6 +115,8 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       ...(fields.has("title") && { title: title! }),
       ...(fields.has("language") && { language }),
+      ...(fields.has("description") && { description }),
+      ...(fields.has("rating") && { rating }),
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       ...(fields.has("statusUuid") && { statusUuid: statusUuid! }),
       ...(fields.has("publicationDate") && { publicationDate }),
@@ -124,7 +137,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   }
 
   const textCover = formData.get("textCover")?.valueOf()
-  if (typeof textCover === "object") {
+  if (typeof textCover === "object" && fields.has("textCover")) {
     const textCoverFile = textCover as File
     if (updated.ebook) {
       const epub = await Epub.from(updated.ebook.filepath)
@@ -135,7 +148,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   }
 
   const audioCover = formData.get("audioCover")?.valueOf()
-  if (typeof audioCover === "object") {
+  if (typeof audioCover === "object" && fields.has("audioCover")) {
     const audioCoverFile = audioCover as File
     const ext = extname(audioCoverFile.name) || extension(audioCoverFile.type)
     const arrayBuffer = await audioCoverFile.arrayBuffer()
@@ -149,7 +162,10 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     }
   }
 
-  if (updated.readaloud?.filepath) {
+  if (
+    updated.readaloud?.filepath &&
+    (fields.has("textCover") || fields.has("audioCover"))
+  ) {
     const alignedEpubPath = updated.readaloud.filepath
     const epub = await Epub.from(alignedEpubPath)
     await writeMetadataToEpub(updated, epub, {

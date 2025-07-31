@@ -308,6 +308,8 @@ export const api = createApi({
           series?: SeriesRelation[]
           collections?: UUID[]
           tags?: string[]
+          rating?: number | null
+          description?: string | null
         }
         textCover?: File | null
         audioCover?: File | null
@@ -328,18 +330,12 @@ export const api = createApi({
           body.append("fields", field)
         }
 
-        if (update.title != null) {
-          body.append("title", update.title)
-        }
-        if (update.language != null) {
-          body.append("language", update.language)
-        }
-        if (update.publicationDate) {
-          body.append("publicationDate", update.publicationDate)
-        }
-        if (update.statusUuid != null) {
-          body.append("statusUuid", update.statusUuid)
-        }
+        body.append("title", JSON.stringify(update.title))
+        body.append("language", JSON.stringify(update.language))
+        body.append("publicationDate", JSON.stringify(update.publicationDate))
+        body.append("statusUuid", JSON.stringify(update.statusUuid))
+        body.append("description", JSON.stringify(update.description))
+        body.append("rating", JSON.stringify(update.rating))
 
         if (update.tags) {
           for (const tag of update.tags) {

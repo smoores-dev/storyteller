@@ -23,7 +23,6 @@ import { useForm } from "@mantine/form"
 import { IconBook } from "@tabler/icons-react"
 import { useMemo, useState } from "react"
 import { BookDetail } from "@/apiModels"
-import NextImage from "next/image"
 
 interface Props {
   selected: Set<UUID>
@@ -156,9 +155,6 @@ export function AddBooksToSeriesItem({ selected }: Props) {
 
                     <Box className="h-10 w-8">
                       <Image
-                        component={NextImage}
-                        height={40}
-                        width={32}
                         alt=""
                         className="h-full rounded-md"
                         aria-hidden
