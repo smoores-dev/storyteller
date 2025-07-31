@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "2.0.0-51",
+  "version": "2.0.0-52",
   "private": true,
   "type": "module",
   "scripts": {
