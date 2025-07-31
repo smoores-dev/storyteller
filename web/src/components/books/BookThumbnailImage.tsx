@@ -1,8 +1,9 @@
 import { BookDetail } from "@/apiModels"
 import { getCoverUrl } from "@/store/api"
-import { Box, Image } from "@mantine/core"
-import NextImage from "next/image"
-import { HTMLProps } from "react"
+import { Box, Image, Stack } from "@mantine/core"
+import { IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
+import { HTMLProps, useState } from "react"
+import cx from "classnames"
 
 interface Props {
   book: BookDetail
@@ -68,18 +69,29 @@ function EbookCoverImage({
 }: Props & {
   className?: string | undefined
 }) {
+  const [failed, setFailed] = useState(false)
   return (
-    <Box {...(className && { className })} style={{ height, width }}>
-      <Image
-        className="group-hover:border-st-orange-300 h-full rounded-md group-hover:border-2"
-        component={NextImage}
-        height={225}
-        width={147}
-        alt=""
-        aria-hidden
-        src={getCoverUrl(book.uuid)}
-      />
-    </Box>
+    <Stack
+      className={cx(
+        "group-hover:border-st-orange-300 items-center justify-center rounded-md bg-slate-200 group-hover:border-2",
+        className,
+      )}
+      style={{ height, width }}
+    >
+      {failed ? (
+        <IconBookFilled size={64} />
+      ) : (
+        <Image
+          className="shrink-0 rounded-md"
+          alt=""
+          aria-hidden
+          src={getCoverUrl(book.uuid)}
+          onError={() => {
+            setFailed(true)
+          }}
+        />
+      )}
+    </Stack>
   )
 }
 
@@ -93,17 +105,28 @@ function AudiobookCoverImage({
   className?: string | undefined
   style?: HTMLProps<HTMLDivElement>["style"]
 }) {
+  const [failed, setFailed] = useState(false)
   return (
-    <Box {...(className && { className })} style={{ height, width, ...style }}>
-      <Image
-        className="group-hover:border-st-orange-300 h-full rounded-md bg-slate-200 group-hover:border-2"
-        component={NextImage}
-        height={147}
-        width={147}
-        alt={book.title}
-        aria-hidden
-        src={getCoverUrl(book.uuid, true)}
-      />
-    </Box>
+    <Stack
+      className={cx(
+        "group-hover:border-st-orange-300 items-center justify-center rounded-md bg-slate-200 group-hover:border-2",
+        className,
+      )}
+      style={{ height, width, ...style }}
+    >
+      {failed ? (
+        <IconHeadphonesFilled size={64} />
+      ) : (
+        <Image
+          className="shrink-0 rounded-md"
+          alt=""
+          aria-hidden
+          src={getCoverUrl(book.uuid, true)}
+          onError={() => {
+            setFailed(true)
+          }}
+        />
+      )}
+    </Stack>
   )
 }

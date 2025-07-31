@@ -33,7 +33,11 @@ export async function getFirstCoverImage(directory: string) {
     const coverImage = selectCover(common.picture)
     if (!coverImage) return null
 
-    return { data: coverImage.data, format: coverImage.format }
+    return {
+      data: coverImage.data,
+      format: coverImage.format,
+      audiofile: join(directory, firstTrack),
+    }
   } catch {
     return null
   }
@@ -117,8 +121,15 @@ export async function writeCoverToAudio(
     await setCoverImage(join(book.audiobook.filepath, track), coverPath)
   }
 
-  const processedTracks = await getProcessedAudioFiles(book)
-  for (const track of processedTracks) {
-    await setCoverImage(join(getProcessedAudioFilepath(book), track), coverPath)
+  try {
+    const processedTracks = await getProcessedAudioFiles(book)
+    for (const track of processedTracks) {
+      await setCoverImage(
+        join(getProcessedAudioFilepath(book), track),
+        coverPath,
+      )
+    }
+  } catch {
+    // We might not have any processed audio files yet, which is fine
   }
 }

@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react"
 import { useForm } from "@mantine/form"
-import { Button, Group, Stack, Textarea, TextInput } from "@mantine/core"
+import { Button, Group, Stack, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
 import { AuthorRelation, SeriesRelation } from "@/database/books"
 import { StatusInput } from "./StatusInput"
@@ -25,6 +25,7 @@ import {
   useUpdateBookMutation,
 } from "@/store/api"
 import { BookDetail } from "@/apiModels"
+import { ContentEditable } from "./ContentEditable"
 
 type Props = {
   book: BookDetail
@@ -183,11 +184,11 @@ export function BookEditForm({ book }: Props) {
               {...form.getInputProps("narrator")}
               value={form.values.narrator ?? ""}
             />
-            <Textarea
+            <ContentEditable
               className="m-0"
               label="Description"
               {...form.getInputProps("description")}
-              value={form.values.description ?? ""}
+              value={form.values.description}
             />
             <AuthorsInput
               values={bookAuthors}
