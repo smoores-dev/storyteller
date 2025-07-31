@@ -1,6 +1,6 @@
 import { BookDetail } from "@/apiModels"
 import { getCoverUrl } from "@/store/api"
-import { Box, Image, Stack } from "@mantine/core"
+import { Box, Image, px, Stack } from "@mantine/core"
 import { IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
 import { HTMLProps, useState } from "react"
 import cx from "classnames"
@@ -85,7 +85,11 @@ function EbookCoverImage({
           className="shrink-0 rounded-md"
           alt=""
           aria-hidden
-          src={getCoverUrl(book.uuid)}
+          src={getCoverUrl(book.uuid, {
+            height: px(height) as number,
+            width: px(width) as number,
+          })}
+          loading="lazy"
           onError={() => {
             setFailed(true)
           }}
@@ -121,7 +125,12 @@ function AudiobookCoverImage({
           className="shrink-0 rounded-md"
           alt=""
           aria-hidden
-          src={getCoverUrl(book.uuid, true)}
+          src={getCoverUrl(book.uuid, {
+            height: px(height) as number,
+            width: px(width) as number,
+            audio: true,
+          })}
+          loading="lazy"
           onError={() => {
             setFailed(true)
           }}

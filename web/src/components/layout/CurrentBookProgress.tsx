@@ -27,7 +27,7 @@ export function CurrentBookProgress() {
         w={49}
         alt=""
         aria-hidden
-        src={getCoverUrl(currentBook.uuid)}
+        src={getCoverUrl(currentBook.uuid, { width: 49, height: 75 })}
       />
       <Stack className="mb-1 self-stretch" gap={2} justify="flex-end">
         <Title order={3} size="sm">

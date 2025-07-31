@@ -163,6 +163,9 @@ export const api = createApi({
           // in which case `cacheDataLoaded` will throw
         }
 
+        // Handle SSR
+        if (typeof EventSource === "undefined") return
+
         const eventSource = new EventSource("/api/v2/books/events")
 
         eventSource.addEventListener("message", (m: MessageEvent<string>) => {
@@ -561,10 +564,23 @@ export function getDownloadUrl(
   return `/api/v2/books/${bookUuid}/files?${searchParams.toString()}`
 }
 
-export function getCoverUrl(bookUuid: string, audio = false) {
+export function getCoverUrl(
+  bookUuid: string,
+  {
+    height,
+    width,
+    audio = false,
+  }: { height?: number; width?: number; audio?: boolean } = {},
+) {
   const searchParams = new URLSearchParams()
   if (audio) {
     searchParams.append("audio", "true")
+  }
+  if (height) {
+    searchParams.append("h", height.toString())
+  }
+  if (width) {
+    searchParams.append("w", width.toString())
   }
   return `/api/v2/books/${bookUuid}/cover?${searchParams.toString()}`
 }

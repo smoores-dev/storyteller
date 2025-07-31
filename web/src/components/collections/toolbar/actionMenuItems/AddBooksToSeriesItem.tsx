@@ -158,7 +158,10 @@ export function AddBooksToSeriesItem({ selected }: Props) {
                         alt=""
                         className="h-full rounded-md"
                         aria-hidden
-                        src={getCoverUrl(book.bookUuid)}
+                        src={getCoverUrl(book.bookUuid, {
+                          height: 40,
+                          width: 32,
+                        })}
                       ></Image>
                     </Box>
                     <Text>{book.title}</Text>

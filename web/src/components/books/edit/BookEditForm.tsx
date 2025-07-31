@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react"
 import { useForm } from "@mantine/form"
-import { Button, Group, Stack, TextInput } from "@mantine/core"
+import { Button, Group, px, Stack, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
 import { AuthorRelation, SeriesRelation } from "@/database/books"
 import { StatusInput } from "./StatusInput"
@@ -156,8 +156,15 @@ export function BookEditForm({ book }: Props) {
             }
             textCover={textCover}
             audioCover={audioCover}
-            textFallback={getCoverUrl(book.uuid)}
-            audioFallback={getCoverUrl(book.uuid, true)}
+            textFallback={getCoverUrl(book.uuid, {
+              height: px(98 * 3) as number,
+              width: px(64 * 3) as number,
+            })}
+            audioFallback={getCoverUrl(book.uuid, {
+              height: px(64 * 3) as number,
+              width: px(64 * 3) as number,
+              audio: true,
+            })}
             getInputProps={form.getInputProps}
           />
           <Stack gap={32} className="grow">
