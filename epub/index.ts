@@ -1,5 +1,6 @@
 import {
   type Entry,
+  ERR_DUPLICATED_NAME,
   Uint8ArrayReader,
   Uint8ArrayWriter,
   ZipReader,
@@ -2360,16 +2361,34 @@ export class Epub {
     }
 
     const mimetypeReader = new Uint8ArrayReader(await mimetypeEntry.getData())
-    await this.zipWriter.add(mimetypeEntry.filename, mimetypeReader, {
-      level: 0,
-      extendedTimestamp: false,
-    })
+    try {
+      await this.zipWriter.add(mimetypeEntry.filename, mimetypeReader, {
+        level: 0,
+        extendedTimestamp: false,
+      })
+    } catch (e) {
+      if (e instanceof Error && e.message === ERR_DUPLICATED_NAME) {
+        throw new Error(
+          `Failed to add file "${mimetypeEntry.filename}" to zip archive: ${e.message}`,
+        )
+      }
+      throw e
+    }
 
     await Promise.all(
       this.entries.map(async (entry) => {
         if (entry.filename === "mimetype") return
         const reader = new Uint8ArrayReader(await entry.getData())
-        return this.zipWriter.add(entry.filename, reader)
+        try {
+          return this.zipWriter.add(entry.filename, reader)
+        } catch (e) {
+          if (e instanceof Error && e.message === ERR_DUPLICATED_NAME) {
+            throw new Error(
+              `Failed to add file "${entry.filename}" to zip archive: ${e.message}`,
+            )
+          }
+          throw e
+        }
       }),
     )
 
