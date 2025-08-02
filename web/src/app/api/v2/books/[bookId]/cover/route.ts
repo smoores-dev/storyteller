@@ -141,6 +141,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"
   if (audio) {
+    let file!: FileHandle
     const coverFilepath = await getAudioCoverFilepath(book)
     try {
       // This actually might be undefined, but if it is, we want to
@@ -185,9 +186,9 @@ export const GET = withHasPermission<Params>("bookRead")(async (
           const epub = await Epub.from(book.readaloud.filepath)
           const audioCoverImage = await getAudioCoverImage(epub)
           if (audioCoverImage) {
-            const cacheHeaders = await createCacheHeaders(
-              await open(book.readaloud.filepath),
-            )
+            const readaloudFile = await open(book.readaloud.filepath)
+            const cacheHeaders = await createCacheHeaders(readaloudFile)
+            await readaloudFile.close()
 
             if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
               return notModified
@@ -246,6 +247,8 @@ export const GET = withHasPermission<Params>("bookRead")(async (
           ),
         },
       })
+    } finally {
+      await file.close()
     }
   }
 
@@ -257,7 +260,9 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   const coverImage = await epub.getCoverImage()
   if (!coverImage) return new Response(null, { status: 404 })
 
-  const cacheHeaders = await createCacheHeaders(await open(epubFilepath))
+  const epubFile = await open(epubFilepath)
+  const cacheHeaders = await createCacheHeaders(epubFile)
+  await epubFile.close()
 
   if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
     return notModified
