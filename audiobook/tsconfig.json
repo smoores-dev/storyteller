@@ -1,0 +1,22 @@
+{
+  "extends": ["@tsconfig/strictest"],
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "incremental": true,
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ESNext"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../fs"
+    },
+    {
+      "path": "../path"
+    }
+  ]
+}

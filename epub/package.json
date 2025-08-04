@@ -8,6 +8,7 @@
   "exports": {
     ".": {
       "@storyteller": "./index.ts",
+      "@storyteller-node": "./node.ts",
       "import": "./index.js",
       "require": "./node.cjs",
       "types": "./index.d.ts",
@@ -53,15 +54,14 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@einheit/path-resolve": "^1.2.0",
     "@smoores/fs": "workspace:^",
+    "@smoores/path": "workspace:^",
     "@zip.js/zip.js": "^2.0.0",
     "async-mutex": "^0.5.0",
     "fast-xml-parser": "^4.0.0",
     "mem": "^8.0.0",
     "mime-types": "^3.0.1",
-    "nanoid": "^5.1.5",
-    "path-dirname": "^1.0.2"
+    "nanoid": "^5.1.5"
   },
   "publishConfig": {
     "access": "public"

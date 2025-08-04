@@ -2,12 +2,8 @@ import { readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
 import { UUID } from "@/uuid"
 import { BookWithRelations, getBookOrThrow } from "@/database/books"
-import {
-  COVER_IMAGE_FILE_EXTENSIONS,
-  isAudioFile,
-  setCoverImage,
-} from "@/audio"
-import { parseFile, selectCover } from "music-metadata"
+import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
+import { Audiobook } from "@smoores/audiobook"
 import { getProcessedAudioFiles } from "./fs"
 import { getProcessedAudioFilepath } from "./paths"
 
@@ -29,13 +25,13 @@ export async function getFirstCoverImage(directory: string) {
   if (!firstTrack) return null
 
   try {
-    const { common } = await parseFile(join(directory, firstTrack))
-    const coverImage = selectCover(common.picture)
+    const audiobook = await Audiobook.from(join(directory, firstTrack))
+    const coverImage = await audiobook.getCoverArt()
     if (!coverImage) return null
 
     return {
-      data: coverImage.data,
-      format: coverImage.format,
+      data: coverImage.data.toByteArray(),
+      format: coverImage.mimeType,
       audiofile: join(directory, firstTrack),
     }
   } catch {
@@ -113,22 +109,23 @@ export async function writeCoverToAudio(
   coverPath: string,
 ) {
   if (!book.audiobook) return
-  const entries = await readdir(book.audiobook.filepath, { recursive: true })
+  const directory = book.audiobook.filepath
+  const entries = await readdir(directory, { recursive: true })
 
-  const tracks = entries.filter((entry) => isAudioFile(entry))
-
-  for (const track of tracks) {
-    await setCoverImage(join(book.audiobook.filepath, track), coverPath)
-  }
+  const tracks = entries
+    .filter((entry) => isAudioFile(entry))
+    .map((track) => join(directory, track))
+  const audiobook = await Audiobook.from(tracks)
+  await audiobook.setCoverArt(coverPath)
+  await audiobook.save()
 
   try {
-    const processedTracks = await getProcessedAudioFiles(book)
-    for (const track of processedTracks) {
-      await setCoverImage(
-        join(getProcessedAudioFilepath(book), track),
-        coverPath,
-      )
-    }
+    const processedTracks = (await getProcessedAudioFiles(book)).map((track) =>
+      join(getProcessedAudioFilepath(book), track),
+    )
+    const processedAudiobook = await Audiobook.from(processedTracks)
+    await processedAudiobook.setCoverArt(coverPath)
+    await processedAudiobook.save()
   } catch {
     // We might not have any processed audio files yet, which is fine
   }

@@ -27,7 +27,7 @@
         "name": "next"
       }
     ],
-    "customConditions": ["@storyteller"],
+    "customConditions": ["@storyteller-node"],
     "paths": {
       "@/*": ["./src/*"]
     },
@@ -42,8 +42,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     ".next/types/**/*.ts",
-    "postcss.config.js",
-    "../epub/path-dirname.d.ts"
+    "postcss.config.js"
   ],
   "exclude": ["migrations/node_modules", ".next", "tsbuild", "work-dist"],
   "references": [
@@ -52,6 +51,9 @@
     },
     {
       "path": "../fs"
+    },
+    {
+      "path": "../audiobook"
     }
   ]
 }

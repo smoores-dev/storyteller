@@ -15,12 +15,23 @@ mobile/ios
 mobile/android
 
 /epub/index.js
+/epub/index.cjs
 /epub/index.d.ts
 /epub/node.js
+/epub/node.cjs
 /epub/node.d.ts
 /epub/index.test.d.ts
 
 /fs/index.js
+/fs/index.cjs
 /fs/index.d.ts
+
+/audiobook/src/**/*.js
+/audiobook/src/**/*.cjs
+/audiobook/src/**/*.d.ts
+
+/path/index.js
+/path/index.cjs
+/path/index.d.ts
 
 /web/whisper-builds
