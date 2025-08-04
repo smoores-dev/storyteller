@@ -107,7 +107,12 @@ module.exports = {
       rules: reactTypescriptConfig.rules,
     },
     {
-      files: ["epub/**/*.ts", "fs/**/*.ts"],
+      files: [
+        "epub/**/*.ts",
+        "audiobook/**/*.ts",
+        "fs/**/*.ts",
+        "path/**/*.ts",
+      ],
       extends: ["plugin:@typescript-eslint/strict-type-checked"],
       parser: "@typescript-eslint/parser",
       parserOptions: {

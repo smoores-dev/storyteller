@@ -8,7 +8,9 @@
     "docs/",
     "mobile/",
     "fs/",
-    "epub/"
+    "epub/",
+    "audiobook/",
+    "path/"
   ],
   "scripts": {
     "build:docs": "yarn workspace @storyteller/docs build",
@@ -28,6 +30,7 @@
     "fix:lint": "eslint --fix .",
     "fix": "concurrently -P 'npm:fix:*'",
     "postinstall": "husky",
+    "test:audiobook": "yarn workspace @smoores/audiobook test",
     "test:epub": "yarn workspace @smoores/epub test",
     "test:web": "yarn workspace @storyteller/web test:all",
     "test": "concurrently -P 'npm:test:*'"

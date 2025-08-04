@@ -15,6 +15,12 @@
     },
     {
       "path": "epub"
+    },
+    {
+      "path": "audiobook"
+    },
+    {
+      "path": "path"
     }
   ]
 }

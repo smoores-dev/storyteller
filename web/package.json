@@ -35,6 +35,7 @@
     "@reduxjs/toolkit": "^2.8.2",
     "@remix-run/node": "^2.17.0",
     "@scalar/nextjs-openapi": "^0.1.17",
+    "@smoores/audiobook": "workspace:^",
     "@smoores/epub": "workspace:*",
     "@smoores/fs": "workspace:*",
     "@tabler/icons-react": "^3.26.0",

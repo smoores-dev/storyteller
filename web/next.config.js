@@ -8,7 +8,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  transpilePackages: ["@smoores/epub", "smoores/fs"],
+  transpilePackages: [
+    "@smoores/epub",
+    "@smoores/fs",
+    "@smoores/path",
+    "@smoores/audiobook",
+  ],
   serverExternalPackages: [
     "piscina",
     "@mapbox/node-pre-gyp",
@@ -22,10 +27,17 @@ const nextConfig = {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
   },
   webpack: (config, { isServer, dev }) => {
-    config.resolve.conditionNames = [
-      "@storyteller",
-      ...(config.resolve.conditionNames ?? ["..."]),
-    ]
+    if (isServer) {
+      config.resolve.conditionNames = [
+        "@storyteller-node",
+        ...(config.resolve.conditionNames ?? ["..."]),
+      ]
+    } else {
+      config.resolve.conditionNames = [
+        "@storyteller",
+        ...(config.resolve.conditionNames ?? ["..."]),
+      ]
+    }
 
     if (isServer && !dev) {
       config.devtool = "source-map"

@@ -8875,12 +8875,42 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smoores/audiobook@workspace:^, @smoores/audiobook@workspace:audiobook":
+  version: 0.0.0-use.local
+  resolution: "@smoores/audiobook@workspace:audiobook"
+  dependencies:
+    "@einheit/path-resolve": "npm:^1.2.0"
+    "@smoores/fs": "workspace:^"
+    "@smoores/path": "workspace:^"
+    "@swc/cli": "npm:^0.5.2"
+    "@swc/core": "npm:^1.10.0"
+    "@tsconfig/strictest": "npm:^2.0.5"
+    "@types/mime-types": "npm:^2"
+    "@types/node": "npm:^22.10.1"
+    "@zip.js/zip.js": "npm:^2.7.71"
+    async-mutex: "npm:^0.5.0"
+    fast-xml-parser: "npm:^4.0.0"
+    markdown-toc: "npm:^1.2.0"
+    mem: "npm:^8.0.0"
+    mime-types: "npm:^3.0.1"
+    nanoid: "npm:^5.1.5"
+    node-taglib-sharp: "npm:^6.0.1"
+    path-dirname: "npm:^1.0.2"
+    remark-toc: "npm:^9.0.0"
+    tsx: "npm:^4.19.2"
+    typedoc: "npm:^0.28.4"
+    typedoc-plugin-markdown: "npm:^4.6.3"
+    typedoc-plugin-remark: "npm:^1.2.0"
+    typescript: "npm:^5.8.3"
+  languageName: unknown
+  linkType: soft
+
 "@smoores/epub@workspace:*, @smoores/epub@workspace:epub":
   version: 0.0.0-use.local
   resolution: "@smoores/epub@workspace:epub"
   dependencies:
-    "@einheit/path-resolve": "npm:^1.2.0"
     "@smoores/fs": "workspace:^"
+    "@smoores/path": "workspace:^"
     "@swc/cli": "npm:^0.5.2"
     "@swc/core": "npm:^1.10.0"
     "@tsconfig/strictest": "npm:^2.0.5"
@@ -8893,7 +8923,6 @@ __metadata:
     mem: "npm:^8.0.0"
     mime-types: "npm:^3.0.1"
     nanoid: "npm:^5.1.5"
-    path-dirname: "npm:^1.0.2"
     remark-toc: "npm:^9.0.0"
     tsx: "npm:^4.19.2"
     typedoc: "npm:^0.28.4"
@@ -8906,6 +8935,16 @@ __metadata:
 "@smoores/fs@workspace:*, @smoores/fs@workspace:^, @smoores/fs@workspace:fs":
   version: 0.0.0-use.local
   resolution: "@smoores/fs@workspace:fs"
+  dependencies:
+    "@swc/cli": "npm:^0.5.2"
+    "@swc/core": "npm:^1.10.0"
+    "@tsconfig/strictest": "npm:^2.0.5"
+  languageName: unknown
+  linkType: soft
+
+"@smoores/path@workspace:^, @smoores/path@workspace:path":
+  version: 0.0.0-use.local
+  resolution: "@smoores/path@workspace:path"
   dependencies:
     "@swc/cli": "npm:^0.5.2"
     "@swc/core": "npm:^1.10.0"
@@ -9046,6 +9085,7 @@ __metadata:
     "@reduxjs/toolkit": "npm:^2.8.2"
     "@remix-run/node": "npm:^2.17.0"
     "@scalar/nextjs-openapi": "npm:^0.1.17"
+    "@smoores/audiobook": "workspace:^"
     "@smoores/epub": "workspace:*"
     "@smoores/fs": "workspace:*"
     "@tabler/icons-react": "npm:^3.26.0"
@@ -11398,6 +11438,13 @@ __metadata:
   version: 2.7.40
   resolution: "@zip.js/zip.js@npm:2.7.40"
   checksum: 10c0/b4f535380070ad8179af9ecf019234de5a30a52d75af6496a468e7640b85cf0cda2d9afd5c6a281364cbc5fa0567b1d97fcb621f038b502dcdebb43af6be86b5
+  languageName: node
+  linkType: hard
+
+"@zip.js/zip.js@npm:^2.7.71":
+  version: 2.7.71
+  resolution: "@zip.js/zip.js@npm:2.7.71"
+  checksum: 10c0/e2fc85afe9a58a7813a363139a92ef160a1e0c4e69f68578743e1677ec87057507ddedc90a456b382182fba4c377e49c6d609d1318992df3d524012b1897270b
   languageName: node
   linkType: hard
 
@@ -19456,6 +19503,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"invert-kv@npm:^3.0.0":
+  version: 3.0.1
+  resolution: "invert-kv@npm:3.0.1"
+  checksum: 10c0/a3d90951a635e35dea9c9a5fd749e981e9c54e8a362ad80b2253dad03b9257314b7c4e4d250d61bcd79698ccd5f4c6b0c750cd991bb5ce16352bf830e77ea64b
+  languageName: node
+  linkType: hard
+
 "ioredis@npm:^5.4.1":
   version: 5.6.1
   resolution: "ioredis@npm:5.6.1"
@@ -20955,6 +21009,15 @@ __metadata:
   dependencies:
     set-getter: "npm:^0.1.0"
   checksum: 10c0/f9768b7d2a6a2643ba2a06accfaebbad86226d896994e41d362e47f279de44b10890d8ddc5151acf60cd5bf22f55bde82f1eb153fb879a478907e927f5efbaeb
+  languageName: node
+  linkType: hard
+
+"lcid@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "lcid@npm:3.1.1"
+  dependencies:
+    invert-kv: "npm:^3.0.0"
+  checksum: 10c0/43a39c39d92d756b9671691bb36ac2667c44c4a7e30f55403dc9c98ca4e7bba8c2b35599e8d7967163d65c1697e0d136596e9a9b9bccbd2292caf915c77416a4
   languageName: node
   linkType: hard
 
@@ -24033,6 +24096,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-taglib-sharp@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "node-taglib-sharp@npm:6.0.1"
+  dependencies:
+    iconv-lite: "npm:^0.6.3"
+    os-locale: "npm:^6.0.2"
+    uuid: "npm:^8.3.2"
+  checksum: 10c0/819071e66882bb2747ad93943a5b935cbd1f117f28d33c3f84a323a77427c35a0a2c096b30b15837371b7e50fa119279949397a5435d9e80f9b5c70ba907265a
+  languageName: node
+  linkType: hard
+
 "nodemailer@npm:^6.9.13":
   version: 6.9.13
   resolution: "nodemailer@npm:6.9.13"
@@ -24545,6 +24619,15 @@ __metadata:
     string-width: "npm:^7.2.0"
     strip-ansi: "npm:^7.1.0"
   checksum: 10c0/7d9291255db22e293ea164f520b6042a3e906576ab06c9cf408bf9ef5664ba0a9f3bd258baa4ada058cfcc2163ef9b6696d51237a866682ce33295349ba02c3a
+  languageName: node
+  linkType: hard
+
+"os-locale@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "os-locale@npm:6.0.2"
+  dependencies:
+    lcid: "npm:^3.1.1"
+  checksum: 10c0/15778a074367ff91ab7a3701f374fca8897cdea39e5c542c4df58a6ada0b811f0e98eb0e3a5401ca7dcf29bd20f37c9786864dbe051b363c56ecd2f481f90254
   languageName: node
   linkType: hard
 

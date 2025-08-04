@@ -8,12 +8,11 @@ import {
 } from "@zip.js/zip.js"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize from "mem"
-import dirname from "path-dirname"
-import resolve from "@einheit/path-resolve"
 import { lookup } from "mime-types"
 import { Mutex } from "async-mutex"
 import he from "he"
 import { nanoid } from "nanoid"
+import { dirname, resolve } from "@smoores/path"
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
