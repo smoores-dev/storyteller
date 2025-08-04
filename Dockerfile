@@ -12,6 +12,8 @@ COPY web/package.json ./web/package.json
 
 COPY fs/package.json ./fs/package.json
 COPY epub/package.json ./epub/package.json
+COPY path/package.json ./path/package.json
+COPY audiobook/package.json ./audiobook/package.json
 
 RUN yarn workspaces focus @storyteller/web
 
@@ -31,6 +33,7 @@ ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 ENV SQLITE_NATIVE_BINDING=/app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 
 RUN yarn workspace @smoores/epub build:esm
+RUN yarn workspace @smoores/audiobook build:esm
 RUN yarn build:web
 
 FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS runner
