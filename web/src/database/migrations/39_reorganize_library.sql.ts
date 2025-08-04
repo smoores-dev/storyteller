@@ -2,7 +2,7 @@ import * as legacyPaths from "@/assets/legacy/paths"
 import * as paths from "@/assets/paths"
 import * as legacyCovers from "@/assets/legacy/covers"
 import { mkdirSync, renameSync, rmdirSync, rmSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { dirname, extname, join } from "node:path"
 import { db } from "../connection"
 import { logger } from "@/logging"
 import {
@@ -13,6 +13,8 @@ import {
   TEXT_DIR,
 } from "@/directories"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
+import { Epub } from "@smoores/epub"
+import { readFile } from "node:fs/promises"
 
 async function getBooks() {
   return await db
@@ -202,7 +204,9 @@ export default async function migrate() {
         .where("bookUuid", "=", book.uuid)
         .execute()
 
-      logger.info("Migrated original ebook")
+      if (book.ebook) {
+        book.ebook.filepath = newEpubFilepath
+      }
     } catch (e) {
       if (e instanceof Error && "code" in e && e.code === "ENOENT") {
         logger.info("Skipped original ebook (missing)")
@@ -224,6 +228,10 @@ export default async function migrate() {
         })
         .where("bookUuid", "=", book.uuid)
         .execute()
+
+      if (book.audiobook) {
+        book.audiobook.filepath = newAudioDir
+      }
 
       logger.info("Migrated original audio files")
     } catch (e) {
@@ -290,6 +298,11 @@ export default async function migrate() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         .execute()
 
+      if (book.alignedBook) {
+        // @ts-expect-error This is what the table was called briefly
+        book.alignedBook.filepath = newAlignedDir
+      }
+
       logger.info("Migrated aligned ebook")
     } catch (e) {
       if (e instanceof Error && "code" in e && e.code === "ENOENT") {
@@ -304,10 +317,34 @@ export default async function migrate() {
       const legacyEpubCover = await legacyCovers.getEpubCoverFilepath(book.uuid)
       const epubCoverName = await legacyCovers.getEpubCoverFilename(book.uuid)
       if (legacyEpubCover && epubCoverName) {
-        renameSync(
-          legacyEpubCover,
-          join(paths.getInternalEpubDirectory(book), epubCoverName),
+        const newEpubCoverPath = join(
+          paths.getInternalEpubDirectory(book),
+          epubCoverName,
         )
+        renameSync(legacyEpubCover, newEpubCoverPath)
+
+        if (book.ebook) {
+          const ext = extname(epubCoverName)
+          const epub = await Epub.from(book.ebook.filepath)
+          const prevCoverItem = await epub.getCoverImageItem()
+          await epub.setCoverImage(
+            prevCoverItem?.href ?? `images/cover${ext}`,
+            await readFile(newEpubCoverPath),
+          )
+          await epub.close()
+        }
+        // @ts-expect-error This is what the table was called briefly
+        if (book.alignedBook?.filepath) {
+          const ext = extname(epubCoverName)
+          // @ts-expect-error This is what the table was called briefly
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          const epub = await Epub.from(book.alignedBook.filepath)
+          const prevCoverItem = await epub.getCoverImageItem()
+          await epub.setCoverImage(
+            prevCoverItem?.href ?? `images/cover${ext}`,
+            await readFile(newEpubCoverPath),
+          )
+        }
       }
 
       logger.info("Migrated ebook cover")
