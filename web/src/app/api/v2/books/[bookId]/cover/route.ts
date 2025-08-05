@@ -234,7 +234,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       : coverImage.data)
 
   if (height && width) {
-    await writeCachedCoverImage(book.uuid, "audio", height, width, coverImage)
+    await writeCachedCoverImage(book.uuid, "text", height, width, coverImage)
   }
 
   const ext = extname(coverImage.filename)

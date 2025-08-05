@@ -123,8 +123,9 @@ export function getCoverImageCacheDirectory(uuid: UUID) {
 
 export function getCachedCoverImageDirectory(
   uuid: UUID,
+  kind: "audio" | "text",
   height: number,
   width: number,
 ) {
-  return join(getCoverImageCacheDirectory(uuid), `${height}x${width}`)
+  return join(getCoverImageCacheDirectory(uuid), kind, `${height}x${width}`)
 }
