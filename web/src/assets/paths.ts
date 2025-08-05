@@ -1,5 +1,5 @@
 import { Book } from "@/database/books"
-import { ASSETS_DIR } from "@/directories"
+import { ASSETS_DIR, IMAGE_CACHE_DIR } from "@/directories"
 import { UUID } from "@/uuid"
 import { basename, extname, join } from "node:path"
 
@@ -115,4 +115,16 @@ export function getTranscriptionFilename(audioFilepath: string) {
   const ext = extname(audioFilepath)
   const bare = basename(audioFilepath, ext)
   return `${bare}.json`
+}
+
+export function getCoverImageCacheDirectory(uuid: UUID) {
+  return join(IMAGE_CACHE_DIR, uuid)
+}
+
+export function getCachedCoverImageDirectory(
+  uuid: UUID,
+  height: number,
+  width: number,
+) {
+  return join(getCoverImageCacheDirectory(uuid), `${height}x${width}`)
 }

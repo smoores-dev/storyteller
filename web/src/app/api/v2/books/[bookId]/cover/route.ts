@@ -1,14 +1,13 @@
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
-import { FileHandle, open } from "node:fs/promises"
-import { extname } from "node:path"
+import { open } from "node:fs/promises"
+import { basename, extname } from "node:path"
 import { Epub } from "@smoores/epub/node"
-import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
-import { getAudioCoverImage } from "@/process/processEpub"
+import { getAudioCover } from "@/assets/covers"
 import contentDisposition from "content-disposition"
-import { extension, lookup } from "mime-types"
-import { createReadableStreamFromReadable } from "@remix-run/node"
 import { createHash } from "node:crypto"
+import { Stats } from "node:fs"
+import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
 
 let _sharp: typeof import("sharp") | undefined
 
@@ -97,8 +96,7 @@ function hasChanged(
   return false
 }
 
-async function createCacheHeaders(file: FileHandle) {
-  const stats = await file.stat()
+function createCacheHeaders(stats: Stats) {
   const lastModified = new Date(stats.mtime).toISOString()
   const etagBase = `${stats.mtime.valueOf()}-${stats.size}`
   const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
@@ -141,153 +139,113 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"
   if (audio) {
-    let file!: FileHandle
-    const coverFilepath = await getAudioCoverFilepath(book)
-    try {
-      // This actually might be undefined, but if it is, we want to
-      // throw so that we end up in the catch block
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const file = await open(coverFilepath!)
-      const cacheHeaders = await createCacheHeaders(file)
+    const cachedImage = await getCachedCoverImage(
+      book.uuid,
+      "audio",
+      height,
+      width,
+    )
+    const coverImage = cachedImage ?? (await getAudioCover(book))
+    if (!coverImage) return new Response(null, { status: 404 })
 
-      if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
-        return notModified
-      }
+    const cacheHeaders = createCacheHeaders(coverImage.stats)
 
-      const result =
-        height && width
-          ? await optimizeImage({
-              buffer: await file.readFile(),
-              height,
-              width,
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              contentType: lookup(coverFilepath!) || ".jpg",
-            })
-          : createReadableStreamFromReadable(file.createReadStream())
-
-      return new Response(result, {
-        headers: {
-          ...cacheHeaders,
-          "Content-Disposition": contentDisposition(
-            // If we got here, this is definitely defined
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            `${book.title} audio cover${extname(coverFilepath!)}`,
-            {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              fallback: `audio cover${extname(coverFilepath!)}`,
-            },
-          ),
-        },
-      })
-    } catch {
-      const audioDirectory = book.audiobook?.filepath
-      if (!audioDirectory) {
-        if (book.readaloud?.filepath) {
-          const epub = await Epub.from(book.readaloud.filepath)
-          const audioCoverImage = await getAudioCoverImage(epub)
-          if (audioCoverImage) {
-            const readaloudFile = await open(book.readaloud.filepath)
-            const cacheHeaders = await createCacheHeaders(readaloudFile)
-            await readaloudFile.close()
-
-            if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
-              return notModified
-            }
-
-            const result =
-              height && width
-                ? await optimizeImage({
-                    buffer: Buffer.from(audioCoverImage),
-                    height,
-                    width,
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    contentType: lookup(coverFilepath!) || ".jpg",
-                  })
-                : audioCoverImage
-
-            return new Response(result, {
-              headers: cacheHeaders,
-            })
-          }
-        }
-        return new Response(null, { status: 404 })
-      }
-
-      const coverImage = await getFirstCoverImage(audioDirectory)
-      if (!coverImage) return new Response(null, { status: 404 })
-
-      const cacheHeaders = await createCacheHeaders(
-        await open(coverImage.audiofile),
-      )
-
-      if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
-        return notModified
-      }
-
-      const result =
-        height && width
-          ? await optimizeImage({
-              buffer: Buffer.from(coverImage.data),
-              height,
-              width,
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              contentType: coverImage.format,
-            })
-          : coverImage.data
-
-      return new Response(result, {
-        headers: {
-          ...cacheHeaders,
-          "Content-Type": coverImage.format,
-          "Content-Disposition": contentDisposition(
-            `${book.title} audio cover.${extension(coverImage.format) || "jpg"}`,
-            {
-              fallback: `audio cover.${extension(coverImage.format) || "jpg"}`,
-            },
-          ),
-        },
-      })
-    } finally {
-      await file.close()
+    if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
+      return notModified
     }
+
+    const result =
+      cachedImage?.data ??
+      (height && width
+        ? await optimizeImage({
+            buffer: coverImage.data,
+            height,
+            width,
+            contentType: coverImage.mimeType,
+          })
+        : coverImage.data)
+
+    if (height && width) {
+      await writeCachedCoverImage(book.uuid, "audio", height, width, coverImage)
+    }
+
+    const ext = extname(coverImage.filename)
+
+    return new Response(result, {
+      headers: {
+        ...cacheHeaders,
+        "Content-Disposition": contentDisposition(
+          `${book.title} audio cover${ext}`,
+          {
+            fallback: `audio cover${ext}`,
+          },
+        ),
+      },
+    })
   }
 
   const epubFilepath = book.readaloud?.filepath ?? book.ebook?.filepath
   if (!epubFilepath) return new Response(null, { status: 404 })
 
-  const epub = await Epub.from(epubFilepath)
-  const coverImageItem = await epub.getCoverImageItem()
-  const coverImage = await epub.getCoverImage()
-  if (!coverImage) return new Response(null, { status: 404 })
+  const cachedImage = await getCachedCoverImage(
+    book.uuid,
+    "text",
+    height,
+    width,
+  )
 
-  const epubFile = await open(epubFilepath)
-  const cacheHeaders = await createCacheHeaders(epubFile)
-  await epubFile.close()
+  let coverImage = cachedImage
+
+  if (!coverImage) {
+    if (!epubFilepath) return new Response(null, { status: 404 })
+    const epub = await Epub.from(epubFilepath)
+    const coverImageItem = await epub.getCoverImageItem()
+    if (!coverImageItem) return new Response(null, { status: 404 })
+    const data = await epub.getCoverImage()
+    if (!data) return new Response(null, { status: 404 })
+
+    const epubFile = await open(epubFilepath)
+    const stats = await epubFile.stat()
+    await epubFile.close()
+
+    coverImage = {
+      filename: basename(coverImageItem.href),
+      mimeType: coverImageItem.mediaType ?? "image/jpeg",
+      data: Buffer.from(data),
+      stats,
+    }
+  }
+
+  const cacheHeaders = createCacheHeaders(coverImage.stats)
 
   if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
     return notModified
   }
 
   const result =
-    height && width
+    cachedImage?.data ??
+    (height && width
       ? await optimizeImage({
-          buffer: Buffer.from(coverImage),
+          buffer: Buffer.from(coverImage.data),
           height,
           width,
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          contentType: lookup(coverImageItem!.href) || ".jpg",
+          contentType: coverImage.mimeType,
         })
-      : coverImage
+      : coverImage.data)
+
+  if (height && width) {
+    await writeCachedCoverImage(book.uuid, "audio", height, width, coverImage)
+  }
+
+  const ext = extname(coverImage.filename)
 
   return new Response(result, {
     headers: {
       ...cacheHeaders,
       "Content-Disposition": contentDisposition(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        `${book.title} ebook cover${extname(coverImageItem!.href)}`,
+        `${book.title} ebook cover${ext}`,
         {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          fallback: `ebook cover${extname(coverImageItem!.href)}`,
+          fallback: `ebook cover${ext}`,
         },
       ),
     },

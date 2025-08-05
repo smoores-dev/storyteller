@@ -1,5 +1,7 @@
 import { Book, BookWithRelations, updateBook } from "@/database/books"
 import {
+  getCachedCoverImageDirectory,
+  getCoverImageCacheDirectory,
   getDefaultSuffix,
   getInternalBookDirectory,
   getInternalEpubAlignedFilepath,
@@ -8,9 +10,19 @@ import {
   getProcessedAudioFilepath,
   getTranscriptionsFilepath,
 } from "./paths"
-import { mkdir, readdir, rename, rm, stat } from "node:fs/promises"
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises"
 import { isAudioFile } from "@/audio"
-import { dirname } from "node:path"
+import { dirname, join } from "node:path"
+import { Stats } from "node:fs"
+import { UUID } from "@/uuid"
 
 export async function getProcessedAudioFiles(book: Book) {
   const directory = getProcessedAudioFilepath(book)
@@ -144,4 +156,49 @@ export async function deleteAssets(
     await rm(book.readaloud.filepath)
   }
   await deleteOriginals(book)
+}
+
+export async function getCachedCoverImage(
+  uuid: UUID,
+  kind: "text" | "audio",
+  height: number,
+  width: number,
+) {
+  try {
+    const dir = getCachedCoverImageDirectory(uuid, height, width)
+    const infoJSON = await readFile(join(dir, kind, "info.json"), {
+      encoding: "utf-8",
+    })
+    const { filename, mimeType, stats } = JSON.parse(infoJSON) as {
+      filename: string
+      mimeType: string
+      stats: Stats
+    }
+    const data = await readFile(join(dir, kind, filename))
+    return { filename, stats, mimeType, data }
+  } catch {
+    return null
+  }
+}
+
+export async function writeCachedCoverImage(
+  uuid: UUID,
+  kind: "text" | "audio",
+  height: number,
+  width: number,
+  image: { filename: string; mimeType: string; stats: Stats; data: Buffer },
+) {
+  const infoJSON = JSON.stringify({
+    filename: image.filename,
+    mimeType: image.mimeType,
+    stats: image.stats,
+  })
+  const dir = getCachedCoverImageDirectory(uuid, height, width)
+  await writeFile(join(dir, kind, "info.json"), infoJSON, { encoding: "utf-8" })
+  await writeFile(join(dir, kind, image.filename), image.data)
+}
+
+export async function deleteCachedCoverImages(uuid: UUID) {
+  const dir = getCoverImageCacheDirectory(uuid)
+  await rm(dir, { recursive: true, force: true })
 }

@@ -1,7 +1,6 @@
 import { Epub } from "@smoores/epub/node"
 import { BookWithRelations } from "@/database/books"
 import { extension, lookup } from "mime-types"
-import { parseBuffer, selectCover } from "music-metadata"
 import { extname } from "node:path"
 
 export async function readEpub(book: BookWithRelations) {
@@ -27,39 +26,11 @@ interface WriteMetadataToEpubOptions {
   audioCover?: File | undefined
 }
 
-async function getAudioCoverItem(epub: Epub) {
+export async function getAudioCoverItem(epub: Epub) {
   const manifest = await epub.getManifest()
   return Object.values(manifest).find((item) =>
     item.properties?.includes("stoyteller:audio-cover-image"),
   )
-}
-
-export async function getAudioCoverImage(epub: Epub) {
-  const coverImageItem = await getAudioCoverItem(epub)
-  if (coverImageItem) {
-    return epub.readItemContents(coverImageItem.id)
-  }
-
-  const manifest = await epub.getManifest()
-  // TODO: Would be better to get the first audio file that
-  // actually corresponds to a media overlay
-  const firstAudioItem = Object.values(manifest).find((item) =>
-    item.mediaType?.startsWith("audio/"),
-  )
-  if (!firstAudioItem) return null
-
-  const audio = await epub.readItemContents(firstAudioItem.id)
-  try {
-    const { common } = await parseBuffer(audio)
-    const coverImage = selectCover(common.picture)
-    if (!coverImage) return null
-
-    return coverImage.data
-  } catch {
-    // Storyteller used to produce audio files with broken metadata
-    // that music-metadata couldn't read.
-    return null
-  }
 }
 
 async function setAudioCoverImage(epub: Epub, href: string, data: Uint8Array) {
