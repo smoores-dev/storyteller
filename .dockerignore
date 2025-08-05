@@ -12,6 +12,14 @@
 /epub/index.js
 /epub/index.d.ts
 /epub/tsconfig.tsbuildinfo
+!/path
+/path/index.js
+/path/index.cjs
+/path/index.d.ts
+!/audiobook
+/audiobook/src/**/*.js
+/audiobook/src/**/*.cjs
+/audiobook/src/**/*.d.ts
 !/web
 !/docker-scripts
 !/scripts
