@@ -42,6 +42,10 @@ async function optimizeImage({
   width: number
   height?: number
 }): Promise<Buffer> {
+  // scale up images for hi-res displays
+  height = height && Math.round(height * 1.5)
+  width = Math.round(width * 1.5)
+
   const quality = 75
   const sharp = await getSharp()
   const transformer = sharp(buffer)

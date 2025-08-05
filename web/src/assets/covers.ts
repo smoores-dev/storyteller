@@ -175,7 +175,7 @@ export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
   const stats = await file.stat()
   await file.close()
   return {
-    filename: coverArt.filename,
+    filename: coverArt.filename || `Cover.${extension(coverArt.mimeType)}`,
     mimeType: coverArt.mimeType,
     stats,
     data: Buffer.from(coverArt.data.toByteArray()),
