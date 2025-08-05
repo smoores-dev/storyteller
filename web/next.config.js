@@ -39,6 +39,13 @@ const nextConfig = {
           ...(config.resolve.conditionNames ?? ["..."]),
         ]
       }
+    } else {
+      if (isServer) {
+        config.resolve.conditionNames = [
+          "node",
+          ...(config.resolve.conditionNames ?? ["..."]),
+        ]
+      }
     }
 
     if (isServer && !dev) {
