@@ -97,8 +97,8 @@ function hasChanged(
 }
 
 function createCacheHeaders(stats: Stats) {
-  const lastModified = new Date(stats.mtime).toISOString()
-  const etagBase = `${stats.mtime.valueOf()}-${stats.size}`
+  const lastModified = new Date(stats.mtimeMs).toISOString()
+  const etagBase = `${Math.round(stats.mtimeMs)}-${stats.size}`
   const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
 
   return {

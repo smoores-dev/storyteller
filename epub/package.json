@@ -16,6 +16,7 @@
     },
     "./node": {
       "@storyteller": "./node.ts",
+      "@storyteller-node": "./node.ts",
       "import": "./node.js",
       "require": "./node.cjs",
       "types": "./node.d.ts"

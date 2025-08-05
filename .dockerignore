@@ -5,18 +5,24 @@
 !/.yarnrc.yml
 !/.yarn
 !/fs
+/fs/node_modules
 /fs/index.js
 /fs/index.d.ts
 /fs/tsconfig.tsbuildinfo
 !/epub
+/epub/__fixtures__/
+/epub/node_modules
 /epub/index.js
 /epub/index.d.ts
 /epub/tsconfig.tsbuildinfo
 !/path
+/path/node_modules
 /path/index.js
 /path/index.cjs
 /path/index.d.ts
 !/audiobook
+/audiobook/src/__fixtures__/
+/audiobook/node_modules
 /audiobook/src/**/*.js
 /audiobook/src/**/*.cjs
 /audiobook/src/**/*.d.ts
@@ -27,7 +33,8 @@
 /web/node_modules
 /web/tsbuild
 /web/work-dist
-/web/src/__fixtures/
+/web/whisper-builds
+/web/src/__fixtures__/
 /web/.env.local
 __tests__
 

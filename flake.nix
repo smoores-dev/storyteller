@@ -53,7 +53,7 @@
             inherit inputs pkgs;
             modules = [
               (
-                { pkgs, config, ... }:
+                { pkgs, ... }:
                 {
                   # This is your devenv configuration
                   packages = [
