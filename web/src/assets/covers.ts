@@ -8,7 +8,7 @@ import { getProcessedAudioFiles } from "./fs"
 import { getProcessedAudioFilepath } from "./paths"
 import { Epub } from "@smoores/epub/node"
 import { getAudioCoverItem } from "@/process/processEpub"
-import { lookup } from "mime-types"
+import { extension, lookup } from "mime-types"
 
 export type AudioFile = {
   filename: string
@@ -208,7 +208,9 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
   const stats = await file.stat()
   await file.close()
   return {
-    filename: firstCover.picture.filename,
+    filename:
+      firstCover.picture.filename ||
+      `Cover.${extension(firstCover.picture.mimeType)}`,
     mimeType: firstCover.picture.mimeType,
     stats,
     data: Buffer.from(firstCover.picture.data.toByteArray()),
