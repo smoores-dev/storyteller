@@ -9,16 +9,16 @@
     ".": {
       "@storyteller": "./src/index.ts",
       "@storyteller-node": "./src/node/index.ts",
-      "import": "./src/index.js",
-      "require": "./src/node.cjs",
-      "types": "./src/index.d.ts",
-      "node": "./src/node/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/node.cjs",
+      "types": "./dist/index.d.ts",
+      "node": "./dist/node/index.js"
     },
     "./node": {
       "@storyteller": "./src/node/index.ts",
-      "import": "./src/node/index.js",
-      "require": "./src/node/index.cjs",
-      "types": "./src/node/index.d.ts"
+      "import": "./dist/node/index.js",
+      "require": "./dist/node/index.cjs",
+      "types": "./dist/node/index.d.ts"
     }
   },
   "files": [
