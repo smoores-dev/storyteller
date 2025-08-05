@@ -8,6 +8,7 @@ import contentDisposition from "content-disposition"
 import { createHash } from "node:crypto"
 import { Stats } from "node:fs"
 import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
+import { lookup } from "mime-types"
 
 let _sharp: typeof import("sharp") | undefined
 
@@ -43,8 +44,8 @@ async function optimizeImage({
   height?: number
 }): Promise<Buffer> {
   // scale up images for hi-res displays
-  height = height && Math.round(height * 1.5)
-  width = Math.round(width * 1.5)
+  height = height && Math.round(height * 2)
+  width = Math.round(width * 2)
 
   const quality = 75
   const sharp = await getSharp()
@@ -170,6 +171,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
         : coverImage.data)
 
     if (height && width) {
+      coverImage.data = result
       await writeCachedCoverImage(book.uuid, "audio", height, width, coverImage)
     }
 
@@ -214,7 +216,9 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
     coverImage = {
       filename: basename(coverImageItem.href),
-      mimeType: coverImageItem.mediaType ?? "image/jpeg",
+      mimeType:
+        coverImageItem.mediaType ??
+        (lookup(coverImageItem.href) || "image/jpeg"),
       data: Buffer.from(data),
       stats,
     }
@@ -238,6 +242,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       : coverImage.data)
 
   if (height && width) {
+    coverImage.data = result
     await writeCachedCoverImage(book.uuid, "text", height, width, coverImage)
   }
 
