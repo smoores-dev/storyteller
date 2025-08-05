@@ -194,6 +194,7 @@ export async function writeCachedCoverImage(
     stats: image.stats,
   })
   const dir = getCachedCoverImageDirectory(uuid, height, width)
+  await mkdir(join(dir, kind), { recursive: true })
   await writeFile(join(dir, kind, "info.json"), infoJSON, { encoding: "utf-8" })
   await writeFile(join(dir, kind, image.filename), image.data)
 }
