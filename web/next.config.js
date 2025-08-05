@@ -26,6 +26,12 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
   },
+  /**
+   *
+   * @param {import('webpack').Configuration} config
+   * @param {*} param1
+   * @returns
+   */
   webpack: (config, { isServer, dev }) => {
     if (dev) {
       if (isServer) {
@@ -39,13 +45,16 @@ const nextConfig = {
           ...(config.resolve.conditionNames ?? ["..."]),
         ]
       }
-    } else {
-      if (isServer) {
-        config.resolve.conditionNames = [
-          "node",
-          ...(config.resolve.conditionNames ?? ["..."]),
-        ]
+
+      config.resolve.extensionAlias = {
+        ...config.resolve.extensionAlias,
+        ".js": [".ts", ".js"],
       }
+    } else if (isServer) {
+      config.resolve.conditionNames = [
+        "node",
+        ...(config.resolve.conditionNames ?? ["..."]),
+      ]
     }
 
     if (isServer && !dev) {

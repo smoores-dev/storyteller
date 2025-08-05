@@ -56,13 +56,13 @@ async function findValidAudioCoverFile(directory: string) {
       name.toLowerCase() === "cover" &&
       COVER_IMAGE_FILE_EXTENSIONS.includes(ext)
     ) {
-      cover = entry
+      cover = join(directory, entry)
     }
     if (
       name.toLowerCase() === "audio cover" &&
       COVER_IMAGE_FILE_EXTENSIONS.includes(ext)
     ) {
-      audioCover = entry
+      audioCover = join(directory, entry)
     }
     if (ext === ".epub") {
       epub = entry
