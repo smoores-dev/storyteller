@@ -27,16 +27,18 @@ const nextConfig = {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
   },
   webpack: (config, { isServer, dev }) => {
-    if (isServer) {
-      config.resolve.conditionNames = [
-        "@storyteller-node",
-        ...(config.resolve.conditionNames ?? ["..."]),
-      ]
-    } else {
-      config.resolve.conditionNames = [
-        "@storyteller",
-        ...(config.resolve.conditionNames ?? ["..."]),
-      ]
+    if (dev) {
+      if (isServer) {
+        config.resolve.conditionNames = [
+          "@storyteller-node",
+          ...(config.resolve.conditionNames ?? ["..."]),
+        ]
+      } else {
+        config.resolve.conditionNames = [
+          "@storyteller",
+          ...(config.resolve.conditionNames ?? ["..."]),
+        ]
+      }
     }
 
     if (isServer && !dev) {
