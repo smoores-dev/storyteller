@@ -165,8 +165,8 @@ export async function getCachedCoverImage(
   width: number,
 ) {
   try {
-    const dir = getCachedCoverImageDirectory(uuid, height, width)
-    const infoJSON = await readFile(join(dir, kind, "info.json"), {
+    const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
+    const infoJSON = await readFile(join(dir, "info.json"), {
       encoding: "utf-8",
     })
     const { filename, mimeType, stats } = JSON.parse(infoJSON) as {
@@ -174,7 +174,7 @@ export async function getCachedCoverImage(
       mimeType: string
       stats: Stats
     }
-    const data = await readFile(join(dir, kind, filename))
+    const data = await readFile(join(dir, filename))
     return { filename, stats, mimeType, data }
   } catch {
     return null
@@ -193,10 +193,10 @@ export async function writeCachedCoverImage(
     mimeType: image.mimeType,
     stats: image.stats,
   })
-  const dir = getCachedCoverImageDirectory(uuid, height, width)
-  await mkdir(join(dir, kind), { recursive: true })
-  await writeFile(join(dir, kind, "info.json"), infoJSON, { encoding: "utf-8" })
-  await writeFile(join(dir, kind, image.filename), image.data)
+  const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
+  await mkdir(join(dir), { recursive: true })
+  await writeFile(join(dir, "info.json"), infoJSON, { encoding: "utf-8" })
+  await writeFile(join(dir, image.filename), image.data)
 }
 
 export async function deleteCachedCoverImages(uuid: UUID) {
