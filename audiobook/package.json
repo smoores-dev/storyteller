@@ -22,13 +22,13 @@
     }
   },
   "files": [
-    "src/**/*.js",
-    "src/**/*.cjs",
-    "src/**/*.d.ts"
+    "dist/**/*.js",
+    "dist/**/*.cjs",
+    "dist/**/*.d.ts"
   ],
   "scripts": {
-    "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs && yarn swc ./node.ts -o ./node.cjs --no-swcrc --config-file .swcrc-cjs",
-    "build:esm": "yarn swc ./index.ts -o ./index.js && yarn swc ./node.ts -o ./node.js",
+    "build:cjs": "yarn swc src/ --strip-leading-paths -d dist --no-swcrc --out-file-extension cjs --config-file .swcrc-cjs",
+    "build:esm": "yarn swc src/ --strip-leading-paths -d dist",
     "build": "yarn tsc && yarn build:esm && yarn build:cjs",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",

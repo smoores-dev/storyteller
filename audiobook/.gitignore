@@ -1,6 +1,4 @@
-src/**/*.js
-src/**/*.cjs
-src/**/*.d.ts
+dist/
 
 src/__fixtures__/__output__
 
