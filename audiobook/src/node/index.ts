@@ -1,4 +1,4 @@
-import { extname } from "@smoores/path"
+import { basename, extname } from "@smoores/path"
 import { AudiobookEntry } from "./entry.js"
 import { streamFile } from "@smoores/fs"
 import {
@@ -90,7 +90,9 @@ export class Audiobook extends BaseAudiobook {
 
   override async setCoverArt(picture: string | IPicture): Promise<void> {
     if (typeof picture === "string") {
+      const filename = basename(picture)
       picture = Picture.fromPath(picture)
+      picture.filename = filename
     }
     return super.setCoverArt(picture)
   }
