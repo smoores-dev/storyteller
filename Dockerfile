@@ -15,7 +15,7 @@ COPY epub/package.json ./epub/package.json
 COPY path/package.json ./path/package.json
 COPY audiobook/package.json ./audiobook/package.json
 
-RUN yarn workspaces focus @storyteller/web @storyteller/epub @storyteller/audiobook @storyteller/fs @storyteller/path
+RUN yarn workspaces focus @storyteller/web @smoores/epub @smoores/audiobook @smoores/fs @smoores/path
 
 COPY docker-scripts/ ./scripts/
 

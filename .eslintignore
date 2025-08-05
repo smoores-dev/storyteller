@@ -26,9 +26,7 @@ mobile/android
 /fs/index.cjs
 /fs/index.d.ts
 
-/audiobook/src/**/*.js
-/audiobook/src/**/*.cjs
-/audiobook/src/**/*.d.ts
+/audiobook/dist/
 
 /path/index.js
 /path/index.cjs
