@@ -1,3 +1,4 @@
+import { deleteCachedCoverImages } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
   BookRelationsUpdate,
@@ -65,6 +66,8 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
     ...relations,
     books: toMerge.map((b) => b.uuid),
   })
+
+  await deleteCachedCoverImages(merged.uuid)
 
   return Response.json(merged)
 })

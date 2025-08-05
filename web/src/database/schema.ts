@@ -33,7 +33,7 @@ export interface Audiobook {
   filepath: string
   missing: Generated<boolean>
   updatedAt: Generated<string>
-  uuid: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface Author {
@@ -123,7 +123,7 @@ export interface Ebook {
   filepath: string
   missing: Generated<boolean>
   updatedAt: Generated<string>
-  uuid: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface Migration {
@@ -162,7 +162,7 @@ export interface Readaloud {
   missing: Generated<boolean>
   status: Generated<string>
   updatedAt: Generated<string>
-  uuid: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface Series {

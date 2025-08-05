@@ -1,5 +1,5 @@
 import { writeCoverToAudio } from "@/assets/covers"
-import { deleteAssets } from "@/assets/fs"
+import { deleteAssets, deleteCachedCoverImages } from "@/assets/fs"
 import { persistCustomAudioCover } from "@/assets/covers"
 import { getInternalBookDirectory } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
@@ -174,6 +174,10 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     })
     await epub.writeToFile(alignedEpubPath)
     await epub.close()
+  }
+
+  if (fields.has("textCover") || fields.has("audioCover")) {
+    await deleteCachedCoverImages(updated.uuid)
   }
 
   return NextResponse.json(updated)
