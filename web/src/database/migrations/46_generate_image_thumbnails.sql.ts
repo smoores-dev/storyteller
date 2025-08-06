@@ -38,18 +38,23 @@ export default async function migrate() {
       147,
     )
     if (!cachedEbookCover) {
-      const epubCover = await getEpubCover(book)
-      if (epubCover) {
-        logger.info(`Generating ebook thumbnail image for ${book.title}`)
-        const optimized = await optimizeImage({
-          buffer: epubCover.data,
-          height: 225,
-          width: 147,
-          contentType: epubCover.mimeType,
-        })
+      try {
+        const epubCover = await getEpubCover(book)
+        if (epubCover) {
+          logger.info(`Generating ebook thumbnail image for ${book.title}`)
+          const optimized = await optimizeImage({
+            buffer: epubCover.data,
+            height: 225,
+            width: 147,
+            contentType: epubCover.mimeType,
+          })
 
-        epubCover.data = optimized
-        await writeCachedCoverImage(book.uuid, "text", 225, 147, epubCover)
+          epubCover.data = optimized
+          await writeCachedCoverImage(book.uuid, "text", 225, 147, epubCover)
+        }
+      } catch (e) {
+        logger.error(`Failed to generate ebook thumbnail for ${book.title}`)
+        logger.error(e)
       }
     }
   }
