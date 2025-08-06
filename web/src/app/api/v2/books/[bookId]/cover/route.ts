@@ -1,14 +1,11 @@
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
-import { open } from "node:fs/promises"
-import { basename, extname } from "node:path"
-import { Epub } from "@smoores/epub/node"
-import { getAudioCover } from "@/assets/covers"
+import { extname } from "node:path"
+import { getAudioCover, getEpubCover } from "@/assets/covers"
 import contentDisposition from "content-disposition"
 import { createHash } from "node:crypto"
 import { Stats } from "node:fs"
 import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
-import { lookup } from "mime-types"
 
 let _sharp: typeof import("sharp") | undefined
 
@@ -17,7 +14,7 @@ const WEBP = "image/webp"
 const PNG = "image/png"
 const JPEG = "image/jpeg"
 
-export async function getSharp() {
+async function getSharp() {
   if (_sharp) {
     return _sharp
   }
@@ -32,7 +29,7 @@ export async function getSharp() {
   return _sharp
 }
 
-async function optimizeImage({
+export async function optimizeImage({
   buffer,
   contentType,
   width,
@@ -200,29 +197,8 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     width,
   )
 
-  let coverImage = cachedImage
-
-  if (!coverImage) {
-    if (!epubFilepath) return new Response(null, { status: 404 })
-    const epub = await Epub.from(epubFilepath)
-    const coverImageItem = await epub.getCoverImageItem()
-    if (!coverImageItem) return new Response(null, { status: 404 })
-    const data = await epub.getCoverImage()
-    if (!data) return new Response(null, { status: 404 })
-
-    const epubFile = await open(epubFilepath)
-    const stats = await epubFile.stat()
-    await epubFile.close()
-
-    coverImage = {
-      filename: basename(coverImageItem.href),
-      mimeType:
-        coverImageItem.mediaType ??
-        (lookup(coverImageItem.href) || "image/jpeg"),
-      data: Buffer.from(data),
-      stats,
-    }
-  }
+  const coverImage = cachedImage ?? (await getEpubCover(book))
+  if (!coverImage) return new Response(null, { status: 404 })
 
   const cacheHeaders = createCacheHeaders(coverImage.stats)
 
