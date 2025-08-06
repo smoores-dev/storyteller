@@ -528,6 +528,7 @@ export class Epub {
     const zipEntries = await zipReader.getEntries()
     const epubEntries = zipEntries.map((entry) => new EpubEntry(entry))
     const epub = new this(epubEntries, () => zipReader.close())
+    await epub.verifyVersion3()
     return epub
   }
 
@@ -610,6 +611,31 @@ export class Epub {
     this.rootfile = rootfile[":@"]["@_full-path"]
 
     return this.rootfile
+  }
+
+  private async verifyVersion3() {
+    const packageDocument = await this.getPackageDocument()
+    const opfPackageElement = Epub.findXmlChildByName(
+      "opf:package",
+      packageDocument,
+    )
+    if (opfPackageElement) {
+      throw new Error(
+        `This appears to be an EPUB 2 document. This library only supports EPUB 3 documents.`,
+      )
+    }
+    const packageElement = Epub.findXmlChildByName("package", packageDocument)
+    if (!packageElement) {
+      throw new Error(
+        "Failed to parse EPUB: Found no package element in package document",
+      )
+    }
+    const version = packageElement[":@"]?.["@_version"]
+    if (version !== "3.0") {
+      throw new Error(
+        `This appears to be an EPUB 2 document. This library only supports EPUB 3 documents.`,
+      )
+    }
   }
 
   private async getPackageDocument() {
