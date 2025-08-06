@@ -231,6 +231,30 @@ export async function getAudioCover(book: BookWithRelations) {
   return null
 }
 
+export async function getEpubCover(book: BookWithRelations) {
+  const epubFilepath = book.readaloud?.filepath ?? book.ebook?.filepath
+  if (!epubFilepath) return null
+
+  if (!epubFilepath) return null
+  const epub = await Epub.from(epubFilepath)
+  const coverImageItem = await epub.getCoverImageItem()
+  if (!coverImageItem) return null
+  const data = await epub.getCoverImage()
+  if (!data) return null
+
+  const epubFile = await open(epubFilepath)
+  const stats = await epubFile.stat()
+  await epubFile.close()
+
+  return {
+    filename: basename(coverImageItem.href),
+    mimeType:
+      coverImageItem.mediaType ?? (lookup(coverImageItem.href) || "image/jpeg"),
+    data: Buffer.from(data) as Buffer,
+    stats,
+  }
+}
+
 export async function writeCoverToAudio(
   book: BookWithRelations,
   coverPath: string,
