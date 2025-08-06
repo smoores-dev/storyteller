@@ -9,6 +9,7 @@ import {
 import { getDefaultStatus } from "@/database/statuses"
 import { logger } from "@/logging"
 import { UUID } from "@/uuid"
+import { Audiobook } from "@smoores/audiobook"
 import { Epub } from "@smoores/epub/node"
 import { readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
@@ -149,18 +150,33 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             }),
           },
         )
-      } else {
-        // If there's no ebook or readaloud, there must be an audiobook
+      } else if (bookPath.audiobook) {
+        const audiobookPath = bookPath.audiobook
+        const entries = await readdir(audiobookPath)
+        const audiobook = await Audiobook.from(
+          entries
+            .filter((entry) => isAudioFile(entry))
+            .map((relativePath) => join(audiobookPath, relativePath)),
+        )
+
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const title = basename(bookPath.audiobook!)
+        const title = await audiobook.getTitle()
+        const description = await audiobook.getDescription()
+        const authors = await audiobook.getAuthors()
         const defaultStatus = await getDefaultStatus()
 
         await createBook(
-          { title, statusUuid: defaultStatus.uuid },
+          {
+            title: title ?? basename(audiobookPath),
+            description,
+            statusUuid: defaultStatus.uuid,
+          },
           {
             ...(collectionUuid && { collections: [collectionUuid] }),
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            audiobook: { filepath: bookPath.audiobook! },
+            audiobook: { filepath: audiobookPath },
+            ...(authors.length && {
+              authors: authors.map((name) => ({ name, fileAs: name })),
+            }),
           },
         )
       }

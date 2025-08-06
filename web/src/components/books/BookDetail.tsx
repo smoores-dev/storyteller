@@ -5,7 +5,7 @@ import {
   useListStatusesQuery,
   useUpdateBookMutation,
 } from "@/store/api"
-import { Anchor, Group, Spoiler, Stack, Text, Title } from "@mantine/core"
+import { Anchor, Box, Group, Spoiler, Stack, Text, Title } from "@mantine/core"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 import Link from "next/link"
 import {
@@ -31,7 +31,9 @@ export function BookDetail({ book }: Props) {
   return (
     <Stack>
       <Group gap={48} align="flex-start">
-        <BookThumbnailImage book={book} height="20rem" width="13.0625rem" />
+        <Box h="20rem">
+          <BookThumbnailImage book={book} height="20rem" width="13.0625rem" />
+        </Box>
         <Stack className="mt-6 grow basis-[400px]">
           <Group>
             <Title className="font-sans" order={2}>
