@@ -17,17 +17,22 @@ export default async function migrate() {
       147,
     )
     if (!cachedAudioCover) {
-      const audioCover = await getAudioCover(book)
-      if (audioCover) {
-        logger.info(`Generating audio thumbnail image for ${book.title}`)
-        const optimized = await optimizeImage({
-          buffer: audioCover.data,
-          height: 147,
-          width: 147,
-          contentType: audioCover.mimeType,
-        })
-        audioCover.data = optimized
-        await writeCachedCoverImage(book.uuid, "audio", 147, 147, audioCover)
+      try {
+        const audioCover = await getAudioCover(book)
+        if (audioCover) {
+          logger.info(`Generating audio thumbnail image for ${book.title}`)
+          const optimized = await optimizeImage({
+            buffer: audioCover.data,
+            height: 147,
+            width: 147,
+            contentType: audioCover.mimeType,
+          })
+          audioCover.data = optimized
+          await writeCachedCoverImage(book.uuid, "audio", 147, 147, audioCover)
+        }
+      } catch (e) {
+        logger.error(`Failed to generate audiobook thumbnail for ${book.title}`)
+        logger.error(e)
       }
     }
 
