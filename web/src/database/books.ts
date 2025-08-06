@@ -454,6 +454,11 @@ export async function getAlignedReadaloudBooks(userId?: UUID) {
   return await booksQuery(userId)
     .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
     .where("readaloud.status", "=", "ALIGNED")
+    .orderBy("readaloud.createdAt", "desc")
+    // Fallback to auto-incrementing rowid
+    // to break ties in createdAt (which can happen
+    // for migrated books)
+    .orderBy(sql`book.rowid`, "desc")
     .execute()
 }
 
