@@ -26,6 +26,26 @@ export abstract class BaseAudiobookEntry {
     file.tag.title = title
   }
 
+  async getDescription(): Promise<string | null> {
+    const file = await this.getFile()
+    return file.tag.description
+  }
+
+  async setDescription(description: string): Promise<void> {
+    const file = await this.getFile()
+    file.tag.description = description
+  }
+
+  async getAuthors(): Promise<string[]> {
+    const file = await this.getFile()
+    return file.tag.performers
+  }
+
+  async setAuthors(authors: string[]): Promise<void> {
+    const file = await this.getFile()
+    file.tag.performers = authors
+  }
+
   async getCoverArt(): Promise<IPicture | null> {
     const file = await this.getFile()
 
@@ -67,6 +87,7 @@ export interface AudiobookMetadata {
   description?: string
   coverArt?: IPicture
   chapters?: AudiobookChapter[]
+  authors?: string[]
 }
 
 export abstract class BaseAudiobook {
@@ -107,6 +128,38 @@ export abstract class BaseAudiobook {
     this.metadata.title = title
 
     await this.setValue((entry) => entry.setTitle(title))
+  }
+
+  async getDescription(): Promise<string | null> {
+    if (this.metadata.description) {
+      return this.metadata.description
+    }
+    const description = await this.getFirstValue((entry) =>
+      entry.getDescription(),
+    )
+    if (description) this.metadata.description = description
+    return description
+  }
+
+  async setDescription(description: string): Promise<void> {
+    this.metadata.description = description
+
+    await this.setValue((entry) => entry.setDescription(description))
+  }
+
+  async getAuthors(): Promise<string[]> {
+    if (this.metadata.authors) {
+      return this.metadata.authors
+    }
+    const authors = await this.getFirstValue((entry) => entry.getAuthors())
+    if (authors) this.metadata.authors = authors
+    return authors ?? []
+  }
+
+  async setAuthors(authors: string[]): Promise<void> {
+    this.metadata.authors = authors
+
+    await this.setValue((entry) => entry.setAuthors(authors))
   }
 
   async getCoverArt(): Promise<IPicture | null> {

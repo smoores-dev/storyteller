@@ -26,6 +26,7 @@ import { persistAudio, persistEpub } from "@/assets/fs"
 import { getDefaultStatus } from "@/database/statuses"
 import { mkdir, rename } from "node:fs/promises"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
+import { Audiobook } from "@smoores/audiobook/node"
 
 const mutex = new AsyncSemaphore(1)
 
@@ -208,13 +209,26 @@ const server = new Server({
         } else {
           const defaultStatus = await getDefaultStatus()
 
+          const audiobook = await Audiobook.from(filename)
+          const title = await audiobook.getTitle()
+          const description = await audiobook.getDescription()
+          const authors = await audiobook.getAuthors()
+
           book = await createBook(
             {
               uuid: bookUuid,
-              title: basename(filename, extname(filename)),
+              title: title ?? basename(filename, extname(filename)),
+              description,
               statusUuid: defaultStatus.uuid,
             },
-            { ...(collectionUuid && { collections: [collectionUuid] }) },
+            {
+              ...(collectionUuid && {
+                collections: [collectionUuid],
+              }),
+              ...(authors.length && {
+                authors: authors.map((name) => ({ name, fileAs: name })),
+              }),
+            },
           )
 
           await persistAudio(book, uploadPath, relativePath)
