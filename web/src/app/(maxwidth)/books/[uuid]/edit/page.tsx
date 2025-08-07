@@ -1,8 +1,9 @@
 import { BookDetail } from "@/apiModels"
-import { Stack, Text, Title } from "@mantine/core"
-import { BookStatus } from "@/components/books/BookStatus"
+import { Anchor, Stack, Text, Title } from "@mantine/core"
 import { BookEditForm } from "@/components/books/edit/BookEditForm"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
+import Link from "next/link"
+import { IconArrowNarrowLeft } from "@tabler/icons-react"
 
 type Props = {
   params: Promise<{
@@ -19,8 +20,14 @@ export default async function BookEditPage(props: Props) {
 
   return (
     <Stack gap={24}>
+      <Anchor
+        component={Link}
+        href={`/books/${uuid}`}
+        className="flex items-center gap-2"
+      >
+        <IconArrowNarrowLeft size={20} /> Back
+      </Anchor>
       <Title order={2}>{book.title}</Title>
-      <BookStatus bookUuid={book.uuid} />
       {(book.alignedAt ||
         book.alignedWith ||
         book.alignedByStorytellerVersion) && (

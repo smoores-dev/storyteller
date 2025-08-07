@@ -13,7 +13,7 @@ import {
 import { DB } from "./schema"
 import { BooleanPlugin } from "./plugins/booleanPlugin"
 import { DatePlugin } from "./plugins/datePlugin"
-import { PHASE_PRODUCTION_BUILD } from "next/constants"
+import { PHASE_PRODUCTION_BUILD } from "next/constants.js"
 import { Database } from "better-sqlite3"
 
 const DATABASE_URL = join(

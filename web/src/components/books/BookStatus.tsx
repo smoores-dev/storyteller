@@ -5,11 +5,7 @@ import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
 import { ProcessingTaskStatus } from "@/apiModels/models/ProcessingStatus"
 import { Paper, Group, Stack, Box, Text, Button, Progress } from "@mantine/core"
 import { UUID } from "@/uuid"
-import {
-  getDownloadUrl,
-  useListBooksQuery,
-  useProcessBookMutation,
-} from "@/store/api"
+import { useListBooksQuery, useProcessBookMutation } from "@/store/api"
 import { usePermissions } from "@/hooks/usePermissions"
 
 type Props = {
@@ -45,24 +41,17 @@ export function BookStatus({ bookUuid }: Props) {
 
   if (!permissions?.bookRead) return null
 
+  if (aligned) return null
+
   return (
-    <Paper className="max-w-[600px]">
+    <Paper>
       <Group justify="space-between" wrap="nowrap" align="flex-end">
+        <BookOptions aligned={aligned} book={book} />
         {book.readaloud || (book.ebook && book.audiobook) ? (
           <Stack justify="space-between" className="grow">
-            {aligned ? (
-              permissions.bookDownload && (
-                <a
-                  href={getDownloadUrl(book.uuid, "readaloud")}
-                  className="text-st-orange-600 underline"
-                  download={`${book.title}.epub`}
-                >
-                  Download
-                </a>
-              )
-            ) : book.processingTask ? (
+            {book.processingTask ? (
               book.processingStatus === "queued" ? (
-                "Queued"
+                "Queued for alignment"
               ) : (
                 <Box>
                   {userFriendlyTaskType}
@@ -78,12 +67,13 @@ export function BookStatus({ bookUuid }: Props) {
               )
             ) : permissions.bookProcess ? (
               <Button
+                variant="outline"
                 className="self-start"
                 onClick={() => {
                   void processBook({ uuid: book.uuid })
                 }}
               >
-                Start processing
+                Create readaloud
               </Button>
             ) : (
               <Text>Unprocessed</Text>
@@ -93,7 +83,6 @@ export function BookStatus({ bookUuid }: Props) {
           // Just to keep the actions in the same place
           <Box />
         )}
-        <BookOptions aligned={aligned} book={book} />
       </Group>
     </Paper>
   )
