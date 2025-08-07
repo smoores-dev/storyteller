@@ -28,6 +28,8 @@ import {
 import { BookDetail } from "@/apiModels"
 import { ContentEditable } from "./ContentEditable"
 import { NarratorsInput } from "./NarratorsInput"
+import { DeleteBookModal } from "../modals/DeleteBookModal"
+import { useDisclosure } from "@mantine/hooks"
 
 type Props = {
   book: BookDetail
@@ -49,14 +51,6 @@ export function BookEditForm({ book }: Props) {
   const { data: authors = [] } = useListAuthorsQuery()
   const { data: users = [] } = useListUsersQuery()
 
-  // useInitialData(api.util.upsertQueryData(''))
-
-  // const { book } = useListBooksQuery(undefined, {
-  //   selectFromResult: (result) => ({
-  //     book: result.data?.find((b) => b.uuid === bookUuid),
-  //   }),
-  // })
-
   const form = useForm({
     initialValues: {
       title: book.title,
@@ -75,6 +69,8 @@ export function BookEditForm({ book }: Props) {
     },
   })
 
+  const [opened, { open, close }] = useDisclosure()
+
   const {
     textCover,
     audioCover,
@@ -88,6 +84,7 @@ export function BookEditForm({ book }: Props) {
 
   return (
     <>
+      <DeleteBookModal book={book} isOpen={opened} onClose={close} />
       {savedState === SaveState.ERROR && (
         <p>Failed to update. Check your server logs for details.</p>
       )}
@@ -220,7 +217,14 @@ export function BookEditForm({ book }: Props) {
           </Stack>
         </Group>
 
-        <Group justify="flex-end" className="sticky bottom-0 z-10 bg-white p-6">
+        <Group
+          justify="space-between"
+          className="sticky bottom-0 z-10 bg-white p-6"
+        >
+          <Button onClick={open} color="red" variant="outline">
+            Delete book
+          </Button>
+
           <Button type="submit" disabled={savedState === SaveState.LOADING}>
             {savedState === SaveState.SAVED ? "Saved!" : "Update"}
           </Button>
