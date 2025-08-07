@@ -14,7 +14,7 @@ export default async function BookEditPage(props: Props) {
 
   const { uuid } = params
 
-  const book = await fetchApiRoute<Book>(`/books/${uuid}`)
+  const books = await fetchApiRoute<Book[]>("/books")
 
-  return <BookDetail book={book} />
+  return <BookDetail bookUuid={uuid} books={books} />
 }

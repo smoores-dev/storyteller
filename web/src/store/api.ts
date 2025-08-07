@@ -333,12 +333,24 @@ export const api = createApi({
           body.append("fields", field)
         }
 
-        body.append("title", JSON.stringify(update.title))
-        body.append("language", JSON.stringify(update.language))
-        body.append("publicationDate", JSON.stringify(update.publicationDate))
-        body.append("statusUuid", JSON.stringify(update.statusUuid))
-        body.append("description", JSON.stringify(update.description))
-        body.append("rating", JSON.stringify(update.rating))
+        if (updatedFields.includes("title")) {
+          body.append("title", JSON.stringify(update.title))
+        }
+        if (updatedFields.includes("language")) {
+          body.append("language", JSON.stringify(update.language))
+        }
+        if (updatedFields.includes("publicationDate")) {
+          body.append("publicationDate", JSON.stringify(update.publicationDate))
+        }
+        if (updatedFields.includes("statusUuid")) {
+          body.append("statusUuid", JSON.stringify(update.statusUuid))
+        }
+        if (updatedFields.includes("description")) {
+          body.append("description", JSON.stringify(update.description))
+        }
+        if (updatedFields.includes("rating")) {
+          body.append("rating", JSON.stringify(update.rating))
+        }
 
         if (update.tags) {
           for (const tag of update.tags) {
