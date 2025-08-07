@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { useForm } from "@mantine/form"
 import { Button, Group, px, Stack, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
@@ -18,6 +18,7 @@ import {
   useGetCurrentUserQuery,
   useListAuthorsQuery,
   useListCollectionsQuery,
+  useListNarratorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
@@ -26,6 +27,7 @@ import {
 } from "@/store/api"
 import { BookDetail } from "@/apiModels"
 import { ContentEditable } from "./ContentEditable"
+import { NarratorsInput } from "./NarratorsInput"
 
 type Props = {
   book: BookDetail
@@ -41,6 +43,7 @@ export function BookEditForm({ book }: Props) {
 
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
+  const { data: narrators = [] } = useListNarratorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
   const { data: series = [] } = useListSeriesQuery()
   const { data: authors = [] } = useListAuthorsQuery()
@@ -65,31 +68,12 @@ export function BookEditForm({ book }: Props) {
       publicationDate: book.publicationDate && new Date(book.publicationDate),
       rating: book.rating,
       description: book.description,
-      narrator: book.narrator,
+      narrators: book.narrators.map((narrator) => narrator.name),
       tags: book.tags.map((tag) => tag.name),
       textCover: null as File | null,
       audioCover: null as File | null,
     },
   })
-
-  useLayoutEffect(() => {
-    form.initialize({
-      title: book.title,
-      language: book.language,
-      authors: book.authors as AuthorRelation[],
-      series: book.series as SeriesRelation[],
-      statusUuid: book.statusUuid,
-      collections: book.collections.map((collection) => collection.uuid),
-      publicationDate: book.publicationDate && new Date(book.publicationDate),
-      rating: book.rating,
-      description: book.description,
-      narrator: book.narrator,
-      tags: book.tags.map((tag) => tag.name),
-      textCover: null as File | null,
-      audioCover: null as File | null,
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [book])
 
   const {
     textCover,
@@ -185,11 +169,9 @@ export function BookEditForm({ book }: Props) {
               valueFormat="YYYY-MM-DD"
               {...form.getInputProps("publicationDate")}
             />
-            <TextInput
-              className="m-0"
-              label="Narrator"
-              {...form.getInputProps("narrator")}
-              value={form.values.narrator ?? ""}
+            <NarratorsInput
+              narrators={narrators}
+              {...form.getInputProps("narrators")}
             />
             <ContentEditable
               className="m-0"

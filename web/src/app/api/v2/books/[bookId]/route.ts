@@ -1,4 +1,4 @@
-import { writeCoverToAudio } from "@/assets/covers"
+import { writeMetadataToAudiobook } from "@/assets/covers"
 import { deleteAssets, deleteCachedCoverImages } from "@/assets/fs"
 import { persistCustomAudioCover } from "@/assets/covers"
 import { getInternalBookDirectory } from "@/assets/paths"
@@ -88,11 +88,17 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const tags = formData.getAll("tags").map((entry) => entry.valueOf() as string)
+  const tags = formData
+    .getAll("tags")
+    .map((entry) => JSON.parse(entry.valueOf() as string) as string)
 
   const authors = formData
     .getAll("authors")
     .map((entry) => JSON.parse(entry.valueOf() as string) as AuthorRelation)
+
+  const narrators = formData
+    .getAll("narrators")
+    .map((entry) => JSON.parse(entry.valueOf() as string) as string)
 
   const series = formData
     .getAll("series")
@@ -123,6 +129,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     },
     {
       ...(fields.has("authors") && { authors }),
+      ...(fields.has("narrators") && { narrators }),
       ...(fields.has("series") && { series }),
       ...(fields.has("collections") && { collections }),
       ...(fields.has("tags") && { tags }),
@@ -155,7 +162,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     const data = new Uint8Array(arrayBuffer)
     await persistCustomAudioCover(bookUuid, `Audio Cover${ext}`, data)
     if (updated.audiobook) {
-      await writeCoverToAudio(
+      await writeMetadataToAudiobook(
         updated,
         join(updated.audiobook.filepath, `Audio Cover${ext}`),
       )

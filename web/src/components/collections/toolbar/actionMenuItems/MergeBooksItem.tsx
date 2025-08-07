@@ -2,16 +2,22 @@ import { BookDetail } from "@/apiModels"
 import { BookThumbnailImage } from "@/components/books/BookThumbnailImage"
 import { AuthorsInput } from "@/components/books/edit/AuthorsInput"
 import { CollectionsInput } from "@/components/books/edit/CollectionsInput"
+import { NarratorsInput } from "@/components/books/edit/NarratorsInput"
 import { SeriesInput } from "@/components/books/edit/SeriesInput"
 import { StatusInput } from "@/components/books/edit/StatusInput"
 import { TagsInput } from "@/components/books/edit/TagsInput"
-import { AuthorRelation, SeriesRelation } from "@/database/books"
+import {
+  AuthorRelation,
+  NarratorRelation,
+  SeriesRelation,
+} from "@/database/books"
 import {
   useCreateCollectionMutation,
   useGetCurrentUserQuery,
   useListAuthorsQuery,
   useListBooksQuery,
   useListCollectionsQuery,
+  useListNarratorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
@@ -57,6 +63,7 @@ export function MergeBooksItem({ selected }: Props) {
   const { data: currentUser } = useGetCurrentUserQuery()
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
+  const { data: narrators = [] } = useListNarratorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
   const { data: series = [] } = useListSeriesQuery()
   const { data: authors = [] } = useListAuthorsQuery()
@@ -139,7 +146,8 @@ export function MergeBooksItem({ selected }: Props) {
           audiobook?.description) ??
         null,
       narrator:
-        (audiobook?.narrator || readaloud?.narrator || ebook?.narrator) ?? null,
+        (audiobook?.narrators || readaloud?.narrators || ebook?.narrators) ??
+        ([] as NarratorRelation[]),
       tags: initialTags,
     },
   })
@@ -303,14 +311,12 @@ export function MergeBooksItem({ selected }: Props) {
                   ))}
               </Stack>
               <Stack gap={4}>
-                <TextInput
-                  className="m-0"
-                  label="Narrator"
-                  {...form.getInputProps("narrator")}
-                  value={form.values.narrator ?? ""}
+                <NarratorsInput
+                  narrators={narrators}
+                  {...form.getInputProps("narrators")}
                 />
                 {books
-                  .filter((book) => book.narrator)
+                  .filter((book) => book.narrators.length)
                   .map((book) => (
                     <Button
                       key={book.uuid}
@@ -320,10 +326,15 @@ export function MergeBooksItem({ selected }: Props) {
                         inner: "justify-start",
                       }}
                       onClick={() => {
-                        form.setFieldValue("narrator", book.narrator)
+                        form.setFieldValue(
+                          "narrators",
+                          book.narrators.map((narrator) => narrator.name),
+                        )
                       }}
                     >
-                      {book.narrator}
+                      {book.narrators
+                        .map((narrator) => narrator.name)
+                        .join(", ")}
                     </Button>
                   ))}
               </Stack>

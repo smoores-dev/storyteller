@@ -1,10 +1,16 @@
-import { getEpubFilepath, getEpubAlignedFilepath } from "@/assets/legacy/paths"
+import {
+  getEpubFilepath,
+  getEpubAlignedFilepath,
+  getOriginalAudioFilepath,
+} from "@/assets/legacy/paths"
 import { BookUpdate, SeriesRelation } from "../books"
 import { Epub } from "@smoores/epub/node"
 import { db } from "../connection"
-import { stat } from "node:fs/promises"
+import { readdir, stat } from "node:fs/promises"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 import { syncRelations } from "../relations"
+import { isAudioFile } from "@/audio"
+import { Audiobook } from "@smoores/audiobook/node"
 
 async function getBooks() {
   return await db
@@ -128,6 +134,18 @@ export default async function migrate() {
       }
     }
 
+    const audioDirectory = getOriginalAudioFilepath(book.uuid)
+    const entries = await readdir(audioDirectory)
+
+    const firstTrack = entries.find((entry) => isAudioFile(entry))
+    const audiobook =
+      firstTrack === undefined
+        ? undefined
+        : await Audiobook.from(getOriginalAudioFilepath(book.uuid, firstTrack))
+
+    const narrators = (await audiobook?.getNarrators()) ?? []
+    audiobook?.close()
+
     const publicationDate = await epub.getPublicationDate()
     if (publicationDate) {
       update ??= {}
@@ -226,6 +244,25 @@ export default async function migrate() {
         position: values.position,
         featured: values.featured,
       }),
+    })
+
+    await syncRelations({
+      entityUuid: book.uuid,
+      relations: narrators.map((name) => ({ name })),
+      relatedTable: "narrator",
+      relationTable: "bookToNarrator",
+      relatedPrimaryKeyColumn: "uuid",
+      identifierColumn: "name",
+      relatedForeignKeyColumn: "bookToNarrator.narratorUuid",
+      entityForeignKeyColumn: "bookToNarrator.bookUuid",
+      extractRelatedValues: (values) => ({
+        name: values.name ?? "",
+      }),
+      extractRelationValues: (narratorUuid) => ({
+        narratorUuid,
+        bookUuid: book.uuid,
+      }),
+      extractRelationUpdateValues: () => ({}),
     })
 
     await db

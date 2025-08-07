@@ -30,6 +30,7 @@ export async function getFirstCoverImage(directory: string) {
   try {
     const audiobook = await Audiobook.from(join(directory, firstTrack))
     const coverImage = await audiobook.getCoverArt()
+    audiobook.close()
     if (!coverImage) return null
 
     return {
@@ -255,7 +256,7 @@ export async function getEpubCover(book: BookWithRelations) {
   }
 }
 
-export async function writeCoverToAudio(
+export async function writeMetadataToAudiobook(
   book: BookWithRelations,
   coverPath: string,
 ) {
@@ -268,15 +269,31 @@ export async function writeCoverToAudio(
     .map((track) => join(directory, track))
   const audiobook = await Audiobook.from(tracks)
   await audiobook.setCoverArt(coverPath)
+  await audiobook.setAuthors(book.authors.map((author) => author.name))
+  await audiobook.setNarrators(book.narrators.map((narrator) => narrator.name))
+  await audiobook.setTitle(book.title)
+  if (book.description) {
+    await audiobook.setDescription(book.description)
+  }
   await audiobook.save()
+  audiobook.close()
 
   try {
     const processedTracks = (await getProcessedAudioFiles(book)).map((track) =>
       join(getProcessedAudioFilepath(book), track),
     )
     const processedAudiobook = await Audiobook.from(processedTracks)
-    await processedAudiobook.setCoverArt(coverPath)
+    await audiobook.setCoverArt(coverPath)
+    await audiobook.setAuthors(book.authors.map((author) => author.name))
+    await audiobook.setNarrators(
+      book.narrators.map((narrator) => narrator.name),
+    )
+    await audiobook.setTitle(book.title)
+    if (book.description) {
+      await audiobook.setDescription(book.description)
+    }
     await processedAudiobook.save()
+    audiobook.close()
   } catch {
     // We might not have any processed audio files yet, which is fine
   }

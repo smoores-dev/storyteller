@@ -46,6 +46,16 @@ export abstract class BaseAudiobookEntry {
     file.tag.performers = authors
   }
 
+  async getNarrators(): Promise<string[]> {
+    const file = await this.getFile()
+    return file.tag.composers
+  }
+
+  async setNarrators(narrators: string[]): Promise<void> {
+    const file = await this.getFile()
+    file.tag.composers = narrators
+  }
+
   async getCoverArt(): Promise<IPicture | null> {
     const file = await this.getFile()
 
@@ -88,6 +98,7 @@ export interface AudiobookMetadata {
   coverArt?: IPicture
   chapters?: AudiobookChapter[]
   authors?: string[]
+  narrators?: string[]
 }
 
 export abstract class BaseAudiobook {
@@ -160,6 +171,21 @@ export abstract class BaseAudiobook {
     this.metadata.authors = authors
 
     await this.setValue((entry) => entry.setAuthors(authors))
+  }
+
+  async getNarrators(): Promise<string[]> {
+    if (this.metadata.narrators) {
+      return this.metadata.narrators
+    }
+    const narrators = await this.getFirstValue((entry) => entry.getNarrators())
+    if (narrators) this.metadata.narrators = narrators
+    return narrators ?? []
+  }
+
+  async setNarrators(narrators: string[]): Promise<void> {
+    this.metadata.narrators = narrators
+
+    await this.setValue((entry) => entry.setNarrators(narrators))
   }
 
   async getCoverArt(): Promise<IPicture | null> {

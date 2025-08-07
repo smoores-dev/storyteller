@@ -40,6 +40,7 @@ export const api = createApi({
     "Collections",
     "Tags",
     "CurrentUser",
+    "Narrators",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -311,6 +312,7 @@ export const api = createApi({
           series?: SeriesRelation[]
           collections?: UUID[]
           tags?: string[]
+          narrators?: string[]
           rating?: number | null
           description?: string | null
         }
@@ -354,7 +356,13 @@ export const api = createApi({
 
         if (update.tags) {
           for (const tag of update.tags) {
-            body.append("tags", tag)
+            body.append("tags", JSON.stringify(tag))
+          }
+        }
+
+        if (update.narrators) {
+          for (const narrator of update.narrators) {
+            body.append("narrators", JSON.stringify(narrator))
           }
         }
 
@@ -390,6 +398,7 @@ export const api = createApi({
           body,
         }
       },
+      invalidatesTags: ["Authors", "Narrators", "Series", "Tags"],
     }),
     listStatuses: build.query<Status[], void>({
       query: () => `/statuses`,
@@ -404,6 +413,14 @@ export const api = createApi({
         authors?.map((author) => ({ type: "Authors", id: author.uuid })) ?? [
           "Authors",
         ],
+    }),
+    listNarrators: build.query<Author[], void>({
+      query: () => "/narrators",
+      providesTags: (narrators) =>
+        narrators?.map((narrator) => ({
+          type: "Narrators",
+          id: narrator.uuid,
+        })) ?? ["Narrators"],
     }),
     listSeries: build.query<Series[], void>({
       query: () => "/series",
@@ -551,6 +568,7 @@ export const {
   useListBooksQuery,
   useListCollectionsQuery,
   useListInvitesQuery,
+  useListNarratorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
