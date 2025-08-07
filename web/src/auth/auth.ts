@@ -154,35 +154,36 @@ async function syncProviders() {
   // that one time. Functionally this is no different from the initial value
   // (an empty array), so we just allow it to be undefined in that one
   // instance.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  const additionalProviders = settings.authProviders?.map((provider) => {
-    if (provider.kind === "built-in") {
-      const providerFactory = Providers[provider.id] as (
-        config: OAuthUserConfig<unknown>,
-      ) => OIDCConfig<unknown>
+  const additionalProviders =
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    settings.authProviders?.map((provider) => {
+      if (provider.kind === "built-in") {
+        const providerFactory = Providers[provider.id] as (
+          config: OAuthUserConfig<unknown>,
+        ) => OIDCConfig<unknown>
 
-      return providerFactory({
+        return providerFactory({
+          clientId: provider.clientId,
+          clientSecret: provider.clientSecret,
+          ...(provider.issuer && { issuer: provider.issuer }),
+        })
+      }
+
+      return {
+        id: provider.name
+          .toLowerCase()
+          .replaceAll(/ +/g, "-")
+          .replaceAll(/[^a-zA-Z0-9-]/g, ""),
+        name: provider.name,
+        type: provider.type,
         clientId: provider.clientId,
         clientSecret: provider.clientSecret,
-        ...(provider.issuer && { issuer: provider.issuer }),
-      })
-    }
-
-    return {
-      id: provider.name
-        .toLowerCase()
-        .replaceAll(/ +/g, "-")
-        .replaceAll(/[^a-zA-Z0-9-]/g, ""),
-      name: provider.name,
-      type: provider.type,
-      clientId: provider.clientId,
-      clientSecret: provider.clientSecret,
-      issuer: provider.issuer,
-      ...(provider.type === "oidc" && {
-        checks: ["pkce" as const, "state" as const],
-      }),
-    }
-  })
+        issuer: provider.issuer,
+        ...(provider.type === "oidc" && {
+          checks: ["pkce" as const, "state" as const],
+        }),
+      }
+    }) ?? []
 
   config.providers = [credentialsProvider, ...additionalProviders]
 }
