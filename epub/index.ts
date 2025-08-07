@@ -614,6 +614,20 @@ export class Epub {
     return this.rootfile
   }
 
+  private migratePackageDocument(packageDocument: ParsedXml) {
+    for (const element of packageDocument) {
+      if (Epub.isXmlTextNode(element)) continue
+      const elementName = Epub.getXmlElementName(element)
+      if (elementName.startsWith("opf:")) {
+        element[elementName.replace("opf:", "") as ElementName] =
+          Epub.getXmlChildren(element)
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete element[elementName]
+        this.migratePackageDocument(Epub.getXmlChildren(element))
+      }
+    }
+  }
+
   private async getPackageDocument() {
     const rootfile = await this.getRootfile()
     const packageDocumentString = await this.getFileData(rootfile, "utf-8")
@@ -643,7 +657,9 @@ export class Epub {
       )
     }
 
-    return packageElement
+    this.migratePackageDocument(packageDocument)
+
+    return packageElement as XmlElement<"package">
   }
 
   /**
