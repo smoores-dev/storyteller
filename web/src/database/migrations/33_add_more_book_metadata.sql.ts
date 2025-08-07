@@ -191,6 +191,21 @@ export default async function migrate() {
         })
       }
 
+      if (entry.properties["name"] === "calibre:series") {
+        const name = entry.properties["content"]
+        if (!name) continue
+
+        const position = metadata.find(
+          (e) => e.properties["name"] === "calibre:series_index",
+        )?.properties["content"]
+
+        series.push({
+          name: name,
+          featured: true,
+          ...(position && { position: parseFloat(position) }),
+        })
+      }
+
       if (
         entry.properties["property"] === "storyteller:version" &&
         entry.value
