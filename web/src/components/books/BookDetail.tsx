@@ -1,7 +1,9 @@
 "use client"
 
 import {
+  api,
   getDownloadUrl,
+  useListBooksQuery,
   useListStatusesQuery,
   useUpdateBookMutation,
 } from "@/store/api"
@@ -19,14 +21,26 @@ import { IconReadaloud } from "../icons/IconReadaloud"
 import { StatusInput } from "./edit/StatusInput"
 import { BookStatus } from "./BookStatus"
 import { BookDetail as Book } from "@/apiModels"
+import { UUID } from "@/uuid"
+import { useInitialData } from "@/hooks/useInitialData"
 
 interface Props {
-  book: Book
+  bookUuid: UUID
+  books: Book[]
 }
 
-export function BookDetail({ book }: Props) {
+export function BookDetail({ bookUuid, books: initialBooks }: Props) {
+  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
+
+  const { book } = useListBooksQuery(undefined, {
+    selectFromResult: (result) => ({
+      book: result.data?.find((book) => book.uuid === bookUuid),
+    }),
+  })
   const { data: statuses = [] } = useListStatusesQuery()
   const [updateBook] = useUpdateBookMutation()
+
+  if (!book) return null
 
   return (
     <Stack>

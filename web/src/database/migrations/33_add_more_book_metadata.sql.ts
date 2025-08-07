@@ -100,8 +100,10 @@ export default async function migrate() {
   for (const book of books) {
     let update: BookUpdate | null = null
     const series: SeriesRelation[] = []
+    const tags: string[] = []
     let epub: Epub
     let createdAt: string
+    let aligned = false
     const syncedFilepath = getEpubAlignedFilepath(book.uuid)
     try {
       epub = await Epub.from(syncedFilepath)
@@ -110,6 +112,8 @@ export default async function migrate() {
         .toISOString()
         .replaceAll("T", " ")
         .split(".")[0]!
+
+      aligned = true
     } catch {
       const originalFilepath = getEpubFilepath(book.uuid)
       try {
@@ -134,6 +138,11 @@ export default async function migrate() {
     if (description) {
       update ??= {}
       update.description = description
+    }
+
+    const subjects = await epub.getSubjects()
+    for (const subject of subjects) {
+      tags.push(typeof subject === "string" ? subject : subject.value)
     }
 
     const metadata = await epub.getMetadata()
@@ -180,6 +189,10 @@ export default async function migrate() {
         update ??= {}
         update.alignedAt = entry.value
       }
+    }
+
+    if (book.alignedAt === null && update?.alignedAt === null && aligned) {
+      book.alignedAt = createdAt
     }
 
     if (update) {
