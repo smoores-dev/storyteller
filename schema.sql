@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS "book" (
   aligned_with TEXT,
   description TEXT,
   rating REAL,
-  narrator TEXT,
   status_uuid TEXT REFERENCES status (uuid),
   suffix TEXT NOT NULL DEFAULT ''
 );
@@ -496,6 +495,41 @@ CREATE TABLE audiobook (
 CREATE TRIGGER audiobook_update_trigger AFTER
 UPDATE ON audiobook FOR EACH ROW BEGIN
 UPDATE audiobook
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE narrator (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER narrator_update_trigger AFTER
+UPDATE ON narrator FOR EACH ROW BEGIN
+UPDATE narrator
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE book_to_narrator (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL,
+  narrator_uuid TEXT NOT NULL,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (narrator_uuid) REFERENCES narrator (uuid)
+);
+
+CREATE TRIGGER book_to_narrator_update_trigger AFTER
+UPDATE ON book_to_narrator FOR EACH ROW BEGIN
+UPDATE book_to_narrator
 SET
   updated_at = CURRENT_TIMESTAMP
 WHERE

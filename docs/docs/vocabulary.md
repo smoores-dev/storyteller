@@ -41,6 +41,15 @@ publications.
 | Allowed value | xsd:string                                                                                                                                                    |
 | Example       | `<meta property="storyteller:media-overlays-transcription-engine">whisper.cpp:tiny</meta>`                                                                    |
 
+### 2.4 narrator
+
+|               |                                                                    |
+| ------------- | ------------------------------------------------------------------ |
+| Name          | narrator                                                           |
+| Description   | The name of a narrator for the audio rendition of this publication |
+| Allowed value | xsd:string                                                         |
+| Example       | `<meta property="storyteller:narrator">Tanya Eby</meta>`           |
+
 ## 3. Manifest Properties Vocabulary
 
 ### 3.1 audio-cover-image

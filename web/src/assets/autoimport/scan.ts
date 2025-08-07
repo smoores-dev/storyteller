@@ -164,6 +164,8 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         const description = await audiobook.getDescription()
         const authors = await audiobook.getAuthors()
         const defaultStatus = await getDefaultStatus()
+        const narrators = await audiobook.getNarrators()
+        audiobook.close()
 
         await createBook(
           {
@@ -176,6 +178,9 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             audiobook: { filepath: audiobookPath },
             ...(authors.length && {
               authors: authors.map((name) => ({ name, fileAs: name })),
+            }),
+            ...(narrators.length && {
+              narrators: narrators,
             }),
           },
         )

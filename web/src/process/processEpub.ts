@@ -133,6 +133,14 @@ export async function writeMetadataToEpub(
     }
   }
 
+  for (const narrator of book.narrators) {
+    await epub.addMetadata({
+      type: "meta",
+      properties: { property: "storyteller:narrator" },
+      value: narrator.name,
+    })
+  }
+
   await epub.setPackageVocabularyPrefix(
     "storyteller",
     "https://storyteller-platform.gitlab.io/storyteller/docs/vocabulary",

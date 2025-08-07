@@ -63,7 +63,6 @@ export interface Book {
   description: string | null
   id: number | null
   language: Generated<string | null>
-  narrator: string | null
   publicationDate: string | null
   rating: number | null
   statusUuid: import("@/uuid").UUID
@@ -78,6 +77,12 @@ export interface BookToCollection {
   collectionUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+}
+
+export interface BookToNarrator {
+  bookUuid: import("@/uuid").UUID
+  narratorUuid: import("@/uuid").UUID
   uuid: Generated<import("@/uuid").UUID>
 }
 
@@ -132,6 +137,13 @@ export interface Migration {
   id: Generated<number>
   name: string
   updatedAt: Generated<string>
+}
+
+export interface Narrator {
+  createdAt: Generated<string>
+  name: string
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface Position {
@@ -264,12 +276,14 @@ export interface DB {
   authorToBook: AuthorToBook
   book: Book
   bookToCollection: BookToCollection
+  bookToNarrator: BookToNarrator
   bookToSeries: BookToSeries
   bookToTag: BookToTag
   collection: Collection
   collectionToUser: CollectionToUser
   ebook: Ebook
   migration: Migration
+  narrator: Narrator
   position: Position
   processingTask: ProcessingTask
   readaloud: Readaloud

@@ -193,12 +193,18 @@ const server = new Server({
         let book = await getBook(bookUuid)
 
         if (book) {
+          const audiobook = await Audiobook.from(uploadPath)
+          const narrators = await audiobook.getNarrators()
+          audiobook.close()
           const filepath = getInternalOriginalAudioFilepath(book, relativePath)
 
           await mkdir(dirname(filepath), { recursive: true })
 
           if (!book.audiobook) {
             book = await updateBook(bookUuid, null, {
+              ...(!book.narrators.length && {
+                narrators: narrators,
+              }),
               audiobook: {
                 filepath: getInternalOriginalAudioFilepath(book),
               },
@@ -213,6 +219,8 @@ const server = new Server({
           const title = await audiobook.getTitle()
           const description = await audiobook.getDescription()
           const authors = await audiobook.getAuthors()
+          const narrators = await audiobook.getNarrators()
+          audiobook.close()
 
           book = await createBook(
             {
@@ -227,6 +235,9 @@ const server = new Server({
               }),
               ...(authors.length && {
                 authors: authors.map((name) => ({ name, fileAs: name })),
+              }),
+              ...(narrators.length && {
+                narrators: narrators,
               }),
             },
           )
