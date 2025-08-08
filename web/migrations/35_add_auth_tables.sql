@@ -87,7 +87,7 @@ CREATE TABLE temp_book_to_status (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (status_uuid) REFERENCES status (uuid),
+  FOREIGN KEY (status_uuid) REFERENCES status (uuid)
 );
 
 INSERT INTO
