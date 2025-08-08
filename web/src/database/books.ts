@@ -13,6 +13,7 @@ import { NewAuthor } from "./authors"
 import { NewSeries } from "./series"
 import { syncRelations } from "./relations"
 import { NewNarrator } from "./narrators"
+import { getMetadataFromEpub } from "@/process/processEpub"
 
 /**
  * This function only exists to support old clients that haven't
@@ -120,64 +121,25 @@ export async function createBookFromEpub(
     collections?: UUID[]
   } = {},
 ) {
-  const epubTitle = await epub.getTitle()
-  const authors = await epub.getCreators()
-  const language = await epub.getLanguage()
   const metadata = await epub.getMetadata()
-  const subjects = await epub.getSubjects()
-
-  const tags = subjects.map((subject) =>
-    typeof subject === "string" ? subject : subject.value,
-  )
 
   const narrators = metadata
     .filter((entry) => entry.properties["property"] === "storyteller:narrator")
     .map((entry) => entry.value)
     .filter((name): name is string => !!name)
 
-  const storytellerVersion = await epub.findMetadataItem(
-    (item) =>
-      item.properties["property"] === "storyteller:version" && !!item.value,
-  )
-  const storytellerMediaOverlaysModified = await epub.findMetadataItem(
-    (item) =>
-      item.properties["property"] === "storyteller:media-overlays-modified" &&
-      !!item.value,
-  )
-  const storytellerMediaOverlaysEngine = await epub.findMetadataItem(
-    (item) =>
-      item.properties["property"] === "storyteller:media-overlays-engine" &&
-      !!item.value,
-  )
-  const epubCollections = await epub.getCollections()
+  const { update, relations: epubRelations } = await getMetadataFromEpub(epub)
 
   return await createBook(
     {
       uuid,
-      title: epubTitle ?? title,
-      language: language?.toString() ?? null,
-      alignedByStorytellerVersion: storytellerVersion?.value ?? null,
-      alignedAt: storytellerMediaOverlaysModified?.value ?? null,
-      alignedWith: storytellerMediaOverlaysEngine?.value ?? null,
+      title: update?.title ?? title,
     },
     {
       ...relations,
+      ...epubRelations,
       narrators: narrators.concat(relations.narrators ?? []),
-      authors: authors
-        .map<AuthorRelation>((author) => ({
-          name: author.name,
-          role: author.role ?? null,
-          fileAs: author.fileAs ?? author.name,
-        }))
-        .concat(relations.authors ?? []),
-      tags,
-      series: epubCollections
-        .filter((c) => c.type === "series")
-        .map((series, i) => ({
-          name: series.name,
-          featured: i === 0,
-          ...(series.position && { position: parseFloat(series.position) }),
-        })),
+      authors: epubRelations.authors?.concat(relations.authors ?? []) ?? [],
     },
   )
 }

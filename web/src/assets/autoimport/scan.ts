@@ -12,6 +12,10 @@ import { Audiobook } from "@smoores/audiobook"
 import { Epub } from "@smoores/epub/node"
 import { readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
+import { writeCachedCoverImage } from "../fs"
+import { getAudioCover, getEpubCover } from "../covers"
+import { optimizeImage } from "@/app/api/v2/books/[bookId]/cover/route"
+import { getMetadataFromEpub } from "@/process/processEpub"
 
 export async function scan(importPath: string, collectionUuid: UUID | null) {
   const allBooks = await getBooks()
@@ -129,7 +133,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const epub = await Epub.from((bookPath.readaloud ?? bookPath.ebook)!)
 
-        await createBookFromEpub(
+        const created = await createBookFromEpub(
           epub,
           {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -149,6 +153,25 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             }),
           },
         )
+
+        const coverImage = await getEpubCover(created)
+        if (coverImage) {
+          const optimized = await optimizeImage({
+            buffer: coverImage.data,
+            height: 225,
+            width: 147,
+            contentType: coverImage.mimeType,
+          })
+
+          coverImage.data = optimized
+          await writeCachedCoverImage(
+            created.uuid,
+            "text",
+            225,
+            147,
+            coverImage,
+          )
+        }
       } else if (bookPath.audiobook) {
         const audiobookPath = bookPath.audiobook
         const entries = await readdir(audiobookPath)
@@ -165,7 +188,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         const narrators = await audiobook.getNarrators()
         audiobook.close()
 
-        await createBook(
+        const created = await createBook(
           {
             title: title ?? basename(audiobookPath),
             description,
@@ -181,6 +204,25 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             }),
           },
         )
+
+        const coverImage = await getAudioCover(created)
+        if (coverImage) {
+          const optimized = await optimizeImage({
+            buffer: coverImage.data,
+            height: 147,
+            width: 147,
+            contentType: coverImage.mimeType,
+          })
+
+          coverImage.data = optimized
+          await writeCachedCoverImage(
+            created.uuid,
+            "audio",
+            147,
+            147,
+            coverImage,
+          )
+        }
       }
       continue
     }
@@ -202,52 +244,21 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         `Found new ebook file for ${book.title} at ${bookPath.ebook}. Importing metadata.`,
       )
       const epub = await Epub.from(bookPath.ebook)
-      const publicationDate = await epub.getPublicationDate()
-      if (publicationDate) {
-        update ??= {}
-        update.publicationDate = publicationDate.toISOString()
-      }
+      const {
+        update: ebookUpdate,
+        relations: { tags, series },
+      } = await getMetadataFromEpub(epub)
 
-      const description = await epub.getDescription()
-      if (description) {
-        update ??= {}
-        update.description = description
-      }
+      update = ebookUpdate
 
-      const metadata = await epub.getMetadata()
-
-      for (const entry of metadata) {
-        if (
-          entry.properties["property"] === "belongs-to-collection" &&
-          entry.value
-        ) {
-          const typeEntry = metadata.find(
-            (e) =>
-              e.properties["refines"] === `#${entry.id}` &&
-              entry.properties["property"] === "collection-type",
-          )?.value
-
-          if (typeEntry !== "series") continue
-
-          const position = metadata.find(
-            (e) =>
-              e.properties["refines"] === `#${entry.id}` &&
-              entry.properties["property"] === "group-position",
-          )?.value
-
-          relations.series ??= []
-          relations.series.push({
-            name: entry.value,
-            featured: true,
-            ...(position && { position: parseFloat(position) }),
-          })
-        }
-      }
-
-      relations.ebook = {
-        filepath: bookPath.ebook,
-        missing: false,
-      }
+      Object.assign(relations, {
+        tags,
+        series,
+        ebook: {
+          filepath: bookPath.ebook,
+          missing: false,
+        },
+      })
     }
 
     if (book.ebook?.filepath) {
@@ -270,6 +281,19 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
       logger.info(
         `Found new audiobook file(s) for ${book.title} at ${bookPath.audiobook}. Importing.`,
       )
+
+      if (!book.narrators.length) {
+        const audiobookPath = bookPath.audiobook
+        const entries = await readdir(audiobookPath)
+        const audiobook = await Audiobook.from(
+          entries
+            .filter((entry) => isAudioFile(entry))
+            .map((relativePath) => join(audiobookPath, relativePath)),
+        )
+        relations.narrators = await audiobook.getNarrators()
+        audiobook.close()
+      }
+
       relations.audiobook = {
         filepath: bookPath.audiobook,
         missing: false,
@@ -296,70 +320,26 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         `Found new readaloud book file for ${book.title} at ${bookPath.readaloud}. Importing metadata.`,
       )
       const epub = await Epub.from(bookPath.readaloud)
-      const publicationDate = await epub.getPublicationDate()
-      if (publicationDate) {
-        update ??= {}
-        update.publicationDate = publicationDate.toISOString()
+      const {
+        update: readaloudUpdate,
+        relations: { tags, series },
+      } = await getMetadataFromEpub(epub)
+
+      if (!update) {
+        update = readaloudUpdate
+      } else {
+        Object.assign(update, readaloudUpdate)
       }
 
-      const description = await epub.getDescription()
-      if (description) {
-        update ??= {}
-        update.description = description
-      }
-
-      const metadata = await epub.getMetadata()
-
-      for (const entry of metadata) {
-        if (
-          entry.properties["property"] === "belongs-to-collection" &&
-          entry.value
-        ) {
-          const typeEntry = metadata.find(
-            (e) =>
-              e.properties["refines"] === `#${entry.id}` &&
-              entry.properties["property"] === "collection-type",
-          )?.value
-
-          if (typeEntry !== "series") continue
-
-          const position = metadata.find(
-            (e) =>
-              e.properties["refines"] === `#${entry.id}` &&
-              entry.properties["property"] === "group-position",
-          )?.value
-
-          relations.series ??= []
-          relations.series.push({
-            name: entry.value,
-            featured: true,
-            ...(position && { position: parseFloat(position) }),
-          })
-        }
-
-        if (
-          entry.properties["property"] === "storyteller:version" &&
-          entry.value
-        ) {
-          update ??= {}
-          update.alignedByStorytellerVersion = entry.value
-        }
-
-        if (
-          entry.properties["property"] ===
-            "storyteller:media-overlays-modified" &&
-          entry.value
-        ) {
-          update ??= {}
-          update.alignedAt = entry.value
-        }
-      }
-
-      relations.readaloud = {
-        filepath: bookPath.readaloud,
-        missing: false,
-        status: "ALIGNED",
-      }
+      Object.assign(relations, {
+        tags,
+        series,
+        readaloud: {
+          filepath: bookPath.readaloud,
+          missing: false,
+          status: "ALIGNED",
+        },
+      })
     }
 
     if (book.readaloud?.filepath) {
@@ -376,6 +356,32 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
           }
         }
       }
+    }
+
+    const epubCover = await getEpubCover(book)
+    if (epubCover) {
+      const optimized = await optimizeImage({
+        buffer: epubCover.data,
+        height: 225,
+        width: 147,
+        contentType: epubCover.mimeType,
+      })
+
+      epubCover.data = optimized
+      await writeCachedCoverImage(book.uuid, "text", 225, 147, epubCover)
+    }
+
+    const audioCover = await getAudioCover(book)
+    if (audioCover) {
+      const optimized = await optimizeImage({
+        buffer: audioCover.data,
+        height: 147,
+        width: 147,
+        contentType: audioCover.mimeType,
+      })
+
+      audioCover.data = optimized
+      await writeCachedCoverImage(book.uuid, "audio", 147, 147, audioCover)
     }
 
     await updateBook(book.uuid, update, relations)

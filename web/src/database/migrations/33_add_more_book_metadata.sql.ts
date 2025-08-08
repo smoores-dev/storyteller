@@ -3,7 +3,6 @@ import {
   getEpubAlignedFilepath,
   getOriginalAudioFilepath,
 } from "@/assets/legacy/paths"
-import { BookUpdate, SeriesRelation } from "../books"
 import { Epub } from "@smoores/epub/node"
 import { db } from "../connection"
 import { readdir, stat } from "node:fs/promises"
@@ -12,6 +11,7 @@ import { syncRelations } from "../relations"
 import { isAudioFile } from "@/audio"
 import { Audiobook } from "@smoores/audiobook/node"
 import { logger } from "@/logging"
+import { getMetadataFromEpub } from "@/process/processEpub"
 
 async function getBooks() {
   return await db
@@ -94,9 +94,6 @@ async function getBooks() {
 export default async function migrate() {
   const books = await getBooks()
   for (const book of books) {
-    let update: BookUpdate | null = null
-    const series: SeriesRelation[] = []
-    const tags: string[] = []
     let epub: Epub
     let createdAt: string
     let aligned = false
@@ -138,82 +135,14 @@ export default async function migrate() {
       const narrators = (await audiobook?.getNarrators()) ?? []
       audiobook?.close()
 
-      const publicationDate = await epub.getPublicationDate()
-      if (publicationDate) {
-        update ??= {}
-        update.publicationDate = publicationDate.toISOString()
-      }
+      const {
+        update,
+        relations: { tags = [], series = [] },
+      } = await getMetadataFromEpub(epub)
 
-      const description = await epub.getDescription()
-      if (description) {
-        update ??= {}
-        update.description = description
-      }
-
-      const subjects = await epub.getSubjects()
-      for (const subject of subjects) {
-        tags.push(typeof subject === "string" ? subject : subject.value)
-      }
-
-      const metadata = await epub.getMetadata()
-
-      for (const entry of metadata) {
-        if (
-          entry.properties["property"] === "belongs-to-collection" &&
-          entry.value
-        ) {
-          const typeEntry = metadata.find(
-            (e) =>
-              e.properties["refines"] === `#${entry.id}` &&
-              e.properties["property"] === "collection-type",
-          )?.value
-
-          if (typeEntry !== "series") continue
-
-          const position = metadata.find(
-            (e) =>
-              e.properties["refines"] === `#${entry.id}` &&
-              e.properties["property"] === "group-position",
-          )?.value
-
-          series.push({
-            name: entry.value,
-            featured: true,
-            ...(position && { position: parseFloat(position) }),
-          })
-        }
-
-        if (entry.properties["name"] === "calibre:series") {
-          const name = entry.properties["content"]
-          if (!name) continue
-
-          const position = metadata.find(
-            (e) => e.properties["name"] === "calibre:series_index",
-          )?.properties["content"]
-
-          series.push({
-            name: name,
-            featured: true,
-            ...(position && { position: parseFloat(position) }),
-          })
-        }
-
-        if (
-          entry.properties["property"] === "storyteller:version" &&
-          entry.value
-        ) {
-          update ??= {}
-          update.alignedByStorytellerVersion = entry.value
-        }
-
-        if (
-          entry.properties["property"] ===
-            "storyteller:media-overlays-modified" &&
-          entry.value
-        ) {
-          update ??= {}
-          update.alignedAt = entry.value
-        }
+      if (update) {
+        delete update.title
+        delete update.language
       }
 
       if (book.alignedAt === null && update?.alignedAt === null && aligned) {
