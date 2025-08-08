@@ -4,11 +4,9 @@ import { NextRequest } from "next/server"
 import { withHasPermission } from "@/auth/auth"
 import { UPLOADS_DIR } from "@/directories"
 import {
-  BookUpdate,
   createBook,
   createBookFromEpub,
   getBook,
-  SeriesRelation,
   updateBook,
 } from "@/database/books"
 import { lookup } from "mime-types"
@@ -26,6 +24,7 @@ import { persistAudio, persistEpub } from "@/assets/fs"
 import { mkdir, rename } from "node:fs/promises"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { Audiobook } from "@smoores/audiobook/node"
+import { getMetadataFromEpub } from "@/process/processEpub"
 
 const mutex = new AsyncSemaphore(1)
 
@@ -81,84 +80,20 @@ const server = new Server({
 
         let book = await getBook(bookUuid)
         if (book) {
-          let update: BookUpdate | null = null
-          const series: SeriesRelation[] = []
-
-          const title = await epub.getTitle()
-          if (title) {
-            update ??= {}
-            update.title = title
-          }
-
-          const publicationDate = await epub.getPublicationDate()
-          if (publicationDate) {
-            update ??= {}
-            update.publicationDate = publicationDate.toISOString()
-          }
-
-          const description = await epub.getDescription()
-          if (description) {
-            update ??= {}
-            update.description = description
-          }
-
-          const metadata = await epub.getMetadata()
-
-          for (const entry of metadata) {
-            if (
-              entry.properties["property"] === "belongs-to-collection" &&
-              entry.value
-            ) {
-              const typeEntry = metadata.find(
-                (e) =>
-                  e.properties["refines"] === `#${entry.id}` &&
-                  entry.properties["property"] === "collection-type",
-              )?.value
-
-              if (typeEntry !== "series") continue
-
-              const position = metadata.find(
-                (e) =>
-                  e.properties["refines"] === `#${entry.id}` &&
-                  entry.properties["property"] === "group-position",
-              )?.value
-
-              series.push({
-                name: entry.value,
-                featured: true,
-                ...(position && { position: parseFloat(position) }),
-              })
-            }
-
-            if (
-              entry.properties["property"] === "storyteller:version" &&
-              entry.value
-            ) {
-              update ??= {}
-              update.alignedByStorytellerVersion = entry.value
-            }
-
-            if (
-              entry.properties["property"] ===
-                "storyteller:media-overlays-modified" &&
-              entry.value
-            ) {
-              update ??= {}
-              update.alignedAt = entry.value
-            }
-          }
-
-          const updated = await updateBook(book.uuid, update, {
-            series,
-            ...(isAligned
+          const { update, relations } = await getMetadataFromEpub(epub)
+          Object.assign(
+            relations,
+            isAligned
               ? {
                   readaloud: {
                     status: "ALIGNED",
                     filepath: getInternalEpubAlignedFilepath(book),
                   },
                 }
-              : { ebook: { filepath: getInternalEpubFilepath(book) } }),
-          })
+              : { ebook: { filepath: getInternalEpubFilepath(book) } },
+          )
+
+          const updated = await updateBook(book.uuid, update, relations)
 
           await persistEpub(book, uploadPath, isAligned)
 

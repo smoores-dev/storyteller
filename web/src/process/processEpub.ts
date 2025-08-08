@@ -1,5 +1,10 @@
 import { Epub } from "@smoores/epub/node"
-import { BookWithRelations } from "@/database/books"
+import {
+  AuthorRelation,
+  BookRelationsUpdate,
+  BookUpdate,
+  BookWithRelations,
+} from "@/database/books"
 import { extension, lookup } from "mime-types"
 import { extname } from "node:path"
 
@@ -52,6 +57,113 @@ async function setAudioCoverImage(epub: Epub, href: string, data: Uint8Array) {
     },
     data,
   )
+}
+
+export async function getMetadataFromEpub(epub: Epub): Promise<{
+  update: BookUpdate | null
+  relations: BookRelationsUpdate
+}> {
+  let update: BookUpdate | null = null
+
+  const title = await epub.getTitle()
+  if (title) {
+    update ??= {}
+    update.title = title
+  }
+
+  const publicationDate = await epub.getPublicationDate()
+  if (publicationDate) {
+    update ??= {}
+    update.publicationDate = publicationDate.toISOString()
+  }
+
+  const language = await epub.getLanguage()
+  if (language) {
+    update ??= {}
+    update.language = language.toString()
+  }
+
+  const description = await epub.getDescription()
+  if (description) {
+    update ??= {}
+    update.description = description
+  }
+
+  const subjects = await epub.getSubjects()
+  const tags = subjects.map((subject) =>
+    typeof subject === "string" ? subject : subject.value,
+  )
+
+  const creators = await epub.getCreators()
+  const authors = creators.map<AuthorRelation>((author) => ({
+    name: author.name,
+    role: author.role ?? null,
+    fileAs: author.fileAs ?? author.name,
+  }))
+
+  const metadata = await epub.getMetadata()
+
+  const epubCollections = await epub.getCollections()
+  const series = epubCollections
+    .filter((c) => c.type === "series")
+    .map((series, i) => ({
+      name: series.name,
+      featured: i === 0,
+      ...(series.position && { position: parseFloat(series.position) }),
+    }))
+
+  const storytellerVersion = await epub.findMetadataItem(
+    (item) =>
+      item.properties["property"] === "storyteller:version" && !!item.value,
+  )
+  if (storytellerVersion?.value) {
+    update ??= {}
+    update.alignedByStorytellerVersion = storytellerVersion.value
+  }
+  const storytellerMediaOverlaysModified = await epub.findMetadataItem(
+    (item) =>
+      item.properties["property"] === "storyteller:media-overlays-modified" &&
+      !!item.value,
+  )
+  if (storytellerMediaOverlaysModified?.value) {
+    update ??= {}
+    update.alignedAt = storytellerMediaOverlaysModified.value
+  }
+  const storytellerMediaOverlaysEngine = await epub.findMetadataItem(
+    (item) =>
+      item.properties["property"] === "storyteller:media-overlays-engine" &&
+      !!item.value,
+  )
+  if (storytellerMediaOverlaysEngine?.value) {
+    update ??= {}
+    update.alignedWith = storytellerMediaOverlaysEngine.value
+  }
+
+  for (const entry of metadata) {
+    if (entry.properties["name"] === "calibre:series") {
+      const name = entry.properties["content"]
+      if (!name) continue
+
+      const position = metadata.find(
+        (e) => e.properties["name"] === "calibre:series_index",
+      )?.properties["content"]
+
+      series.push({
+        name: name,
+        featured: true,
+        ...(position && { position: parseFloat(position) }),
+      })
+    }
+  }
+
+  return {
+    update,
+    relations: {
+      ...(!!tags.length && { tags }),
+      ...(!!series.length && { series }),
+      ...(!!authors.length && { authors }),
+    },
+  }
 }
 
 export async function writeMetadataToEpub(

@@ -1361,13 +1361,13 @@ export class Epub {
         const type = metadata.find(
           (e) =>
             e.properties["refines"] === `#${entry.id ?? ""}` &&
-            entry.properties["property"] === "collection-type",
+            e.properties["property"] === "collection-type",
         )?.value
 
         const position = metadata.find(
           (e) =>
             e.properties["refines"] === `#${entry.id ?? ""}` &&
-            entry.properties["property"] === "group-position",
+            e.properties["property"] === "group-position",
         )?.value
 
         collections.push({
