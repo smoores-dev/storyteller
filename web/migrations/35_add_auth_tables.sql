@@ -205,7 +205,7 @@ CREATE TABLE book_to_status (
 );
 
 INSERT INTO
-  temp_book_to_status (
+  book_to_status (
     uuid,
     book_uuid,
     status_uuid,
