@@ -6,7 +6,6 @@ import {
   getBooks,
   updateBook,
 } from "@/database/books"
-import { getDefaultStatus } from "@/database/statuses"
 import { logger } from "@/logging"
 import { UUID } from "@/uuid"
 import { Audiobook } from "@smoores/audiobook"
@@ -163,7 +162,6 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         const title = await audiobook.getTitle()
         const description = await audiobook.getDescription()
         const authors = await audiobook.getAuthors()
-        const defaultStatus = await getDefaultStatus()
         const narrators = await audiobook.getNarrators()
         audiobook.close()
 
@@ -171,7 +169,6 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
           {
             title: title ?? basename(audiobookPath),
             description,
-            statusUuid: defaultStatus.uuid,
           },
           {
             ...(collectionUuid && { collections: [collectionUuid] }),

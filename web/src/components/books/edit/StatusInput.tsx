@@ -4,7 +4,7 @@ import { Combobox, InputBase, Group, Text, useCombobox } from "@mantine/core"
 
 interface Props {
   disabled?: boolean | undefined
-  value: UUID
+  value?: UUID | undefined
   onChange: (uuid: UUID) => void
   options: Status[]
   className?: string | undefined

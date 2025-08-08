@@ -60,12 +60,17 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   }
 
   const [first, ...toMerge] = books
-  // We already checked that the length is greater than one above
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const merged = await updateBook(first!.uuid, update, {
-    ...relations,
-    books: toMerge.map((b) => b.uuid),
-  })
+  const merged = await updateBook(
+    // We already checked that the length is greater than one above
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    first!.uuid,
+    update,
+    {
+      ...relations,
+      books: toMerge.map((b) => b.uuid),
+    },
+    request.auth.user.id,
+  )
 
   await deleteCachedCoverImages(merged.uuid)
 

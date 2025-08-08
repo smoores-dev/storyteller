@@ -80,8 +80,8 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const statusUuid = getField<UUID>(formData, "statusUuid")
-  if (!statusUuid && fields.has("statusUuid")) {
+  const status = getField<UUID>(formData, "status")
+  if (!status && fields.has("status")) {
     return NextResponse.json(
       { message: "Status must not be undefined" },
       { status: 405 },
@@ -123,8 +123,6 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       ...(fields.has("language") && { language }),
       ...(fields.has("description") && { description }),
       ...(fields.has("rating") && { rating }),
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      ...(fields.has("statusUuid") && { statusUuid: statusUuid! }),
       ...(fields.has("publicationDate") && { publicationDate }),
     },
     {
@@ -133,7 +131,12 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       ...(fields.has("series") && { series }),
       ...(fields.has("collections") && { collections }),
       ...(fields.has("tags") && { tags }),
+      ...(fields.has("status") && {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        status: { statusUuid: status!, userId: request.auth.user.id },
+      }),
     },
+    request.auth.user.id,
   )
 
   if (book.title !== updated.title) {

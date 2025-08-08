@@ -57,7 +57,7 @@ export function BookEditForm({ book }: Props) {
       language: book.language,
       authors: book.authors as AuthorRelation[],
       series: book.series as SeriesRelation[],
-      statusUuid: book.statusUuid,
+      status: book.status?.uuid,
       collections: book.collections.map((collection) => collection.uuid),
       publicationDate: book.publicationDate && new Date(book.publicationDate),
       rating: book.rating,
@@ -77,7 +77,7 @@ export function BookEditForm({ book }: Props) {
     authors: bookAuthors,
     series: bookSeries,
     collections: bookCollections,
-    statusUuid,
+    status,
   } = form.values
 
   const [savedState, setSavedState] = useState<SaveState>(SaveState.CLEAN)
@@ -120,7 +120,7 @@ export function BookEditForm({ book }: Props) {
         })}
       >
         <StatusInput
-          value={statusUuid}
+          value={status}
           onChange={(value) => {
             form.setFieldValue("statusUuid", value)
           }}

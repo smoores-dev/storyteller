@@ -76,9 +76,17 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
                 <IconPencil />
               </Link>
             </Group>
-            <Text>
-              by {book.authors.map((author) => author.name).join(", ")}
-            </Text>
+            <Stack className="gap-1">
+              <Text>
+                by {book.authors.map((author) => author.name).join(", ")}
+              </Text>
+              {!!book.narrators.length && (
+                <Text>
+                  narrated by{" "}
+                  {book.narrators.map((author) => author.name).join(", ")}
+                </Text>
+              )}
+            </Stack>
             <Group>
               {book.tags.map((tag) => (
                 <Link
@@ -118,10 +126,10 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
         <BookStatus bookUuid={book.uuid} />
         <Group className="items-end justify-between">
           <StatusInput
-            value={book.statusUuid}
+            value={book.status?.uuid}
             onChange={async (value) => {
               await updateBook({
-                update: { uuid: book.uuid, statusUuid: value },
+                update: { uuid: book.uuid, status: value },
               })
             }}
             options={statuses}

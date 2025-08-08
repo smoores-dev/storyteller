@@ -79,6 +79,38 @@ FROM
 
 DROP TABLE position;
 
+CREATE TABLE temp_book_to_status (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL,
+  status_uuid TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (status_uuid) REFERENCES status (uuid),
+);
+
+INSERT INTO
+  temp_book_to_status (
+    uuid,
+    book_uuid,
+    status_uuid,
+    user_id,
+    created_at,
+    updated_at
+  )
+SELECT
+  uuid,
+  book_uuid,
+  status_uuid,
+  user_uuid,
+  created_at,
+  updated_at
+FROM
+  book_to_status;
+
+DROP TABLE book_to_status;
+
 DROP TABLE user;
 
 ALTER TABLE authjs_user
@@ -153,6 +185,49 @@ DROP TABLE temp_position;
 CREATE TRIGGER IF NOT EXISTS position_update_trigger AFTER
 UPDATE ON position FOR EACH ROW BEGIN
 UPDATE position
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE book_to_status (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL,
+  status_uuid TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (status_uuid) REFERENCES status (uuid),
+  FOREIGN KEY (user_id) REFERENCES user (id)
+);
+
+INSERT INTO
+  temp_book_to_status (
+    uuid,
+    book_uuid,
+    status_uuid,
+    user_id,
+    created_at,
+    updated_at
+  )
+SELECT
+  uuid,
+  book_uuid,
+  status_uuid,
+  user_uuid,
+  created_at,
+  updated_at
+FROM
+  temp_book_to_status;
+
+DROP TABLE temp_book_to_status;
+
+CREATE TRIGGER book_to_status_update_trigger AFTER
+UPDATE ON book_to_status FOR EACH ROW BEGIN
+UPDATE book_to_status
 SET
   updated_at = CURRENT_TIMESTAMP
 WHERE

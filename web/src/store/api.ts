@@ -306,7 +306,7 @@ export const api = createApi({
           uuid: BookUpdate["uuid"]
           title?: BookUpdate["title"]
           language?: BookUpdate["language"]
-          statusUuid?: BookUpdate["statusUuid"]
+          status?: UUID | undefined
           publicationDate?: BookUpdate["publicationDate"]
           authors?: AuthorRelation[]
           series?: SeriesRelation[]
@@ -326,7 +326,8 @@ export const api = createApi({
           textCover,
           audioCover,
         }).reduce<string[]>(
-          (acc, [field, value]) => (value != null ? [...acc, field] : acc),
+          (acc, [field, value]) =>
+            value !== undefined ? [...acc, field] : acc,
           [],
         )
         const body = new FormData()
@@ -344,8 +345,8 @@ export const api = createApi({
         if (updatedFields.includes("publicationDate")) {
           body.append("publicationDate", JSON.stringify(update.publicationDate))
         }
-        if (updatedFields.includes("statusUuid")) {
-          body.append("statusUuid", JSON.stringify(update.statusUuid))
+        if (updatedFields.includes("status")) {
+          body.append("status", JSON.stringify(update.status))
         }
         if (updatedFields.includes("description")) {
           body.append("description", JSON.stringify(update.description))

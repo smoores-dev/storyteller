@@ -132,9 +132,9 @@ export function MergeBooksItem({ selected }: Props) {
         audiobook?.series ??
         ([] as SeriesRelation[]),
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      statusUuid: (readaloud?.statusUuid ??
-        ebook?.statusUuid ??
-        audiobook?.statusUuid)!,
+      statusUuid: (readaloud?.status?.uuid ??
+        ebook?.status?.uuid ??
+        audiobook?.status?.uuid)!,
       collections: initialCollections,
       publicationDate: initialPublicationDate
         ? new Date(initialPublicationDate)

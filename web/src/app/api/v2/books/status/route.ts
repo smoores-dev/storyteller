@@ -10,7 +10,7 @@ export const PUT = withHasPermission("bookUpdate")(async (request) => {
 
   const { books, status } = body
 
-  await updateStatusForBooks(status, books)
+  await updateStatusForBooks(status, books, request.auth.user.id)
 
   return new Response(null, { status: 204 })
 })

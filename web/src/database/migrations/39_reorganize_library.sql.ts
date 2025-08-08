@@ -92,17 +92,6 @@ async function getBooks() {
       ).as("processingTask"),
       jsonObjectFrom(
         eb
-          .selectFrom("status")
-          .select([
-            "status.uuid",
-            "status.name",
-            "status.createdAt",
-            "status.updatedAt",
-          ])
-          .whereRef("status.uuid", "=", "book.statusUuid"),
-      ).as("status"),
-      jsonObjectFrom(
-        eb
           .selectFrom("ebook")
           .select([
             "ebook.uuid",

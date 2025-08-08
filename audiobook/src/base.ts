@@ -1,5 +1,11 @@
 import { IPicture, PictureType, type File } from "node-taglib-sharp"
 
+function splitNames(names: string[]): string[] {
+  return names.flatMap((entry) =>
+    entry.split(/[;,/]/).map((name) => name.trim()),
+  )
+}
+
 export abstract class BaseAudiobookEntry {
   abstract filename: string
   protected abstract file: File | null
@@ -38,22 +44,50 @@ export abstract class BaseAudiobookEntry {
 
   async getAuthors(): Promise<string[]> {
     const file = await this.getFile()
-    return file.tag.performers
+
+    // This is where the most accurate artist data
+    // often lives, but sometimes it's empty
+    const albumArtists = file.tag.albumArtists
+    if (albumArtists.length) {
+      return splitNames(albumArtists)
+    }
+
+    // This is the second best option. It's more
+    // often populated, but also more likely to
+    // have junk data, including narrators or even
+    // other metadata
+    const artists = file.tag.performers
+    return splitNames(artists)
   }
 
   async setAuthors(authors: string[]): Promise<void> {
     const file = await this.getFile()
+    // Other tools may attempt to find authors
+    // in both of these places, so we just set
+    // both
+    file.tag.albumArtists = authors
     file.tag.performers = authors
   }
 
   async getNarrators(): Promise<string[]> {
     const file = await this.getFile()
-    return file.tag.composers
+    // Sometimes narrators are stored in the
+    // composers tag, sometimes in conductor
+    const composers = file.tag.composers
+    if (composers.length) {
+      return splitNames(composers)
+    }
+    // Some tools treat this tag as the
+    // "performer" tag, and store narrators
+    // here
+    const conductor = file.tag.conductor
+    return splitNames([conductor])
   }
 
   async setNarrators(narrators: string[]): Promise<void> {
     const file = await this.getFile()
     file.tag.composers = narrators
+    file.tag.conductor = narrators.join(";")
   }
 
   async getCoverArt(): Promise<IPicture | null> {

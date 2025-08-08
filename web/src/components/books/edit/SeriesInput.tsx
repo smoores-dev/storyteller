@@ -32,7 +32,11 @@ export function SeriesInput({
   return (
     <Stack gap={4} className="my-4">
       {values.map((s, i) => (
-        <Fieldset key={s.uuid ?? i} legend="Series" className="relative">
+        <Fieldset
+          key={s.uuid ?? i}
+          legend="Series"
+          className="relative flex flex-col gap-4"
+        >
           <Autocomplete
             label="Name"
             data={series.map((s) => s.name)}
@@ -43,6 +47,7 @@ export function SeriesInput({
             {...getInputProps(`series.${i}.featured`, {
               type: "checkbox",
             })}
+            description="Whether this is the primary series for this book."
           />
           <NumberInput
             label="Position"

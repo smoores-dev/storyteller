@@ -1,13 +1,18 @@
 import { Button, Group, MultiSelect, Stack } from "@mantine/core"
 import { Search } from "../books/Search"
 import { Sort } from "../books/Sort"
-import { FilterSortOptions } from "@/hooks/useFilterSortedBooks"
+import {
+  createComparisonTitle,
+  FilterSortOptions,
+} from "@/hooks/useFilterSortedBooks"
 import { UUID } from "@/uuid"
 import {
   useListCollectionsQuery,
   useListSeriesQuery,
+  useListStatusesQuery,
   useListTagsQuery,
 } from "@/store/api"
+import { useMemo } from "react"
 
 interface Props {
   options: FilterSortOptions
@@ -19,6 +24,31 @@ export function FilterSort({
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
   const { data: series = [] } = useListSeriesQuery()
+  const { data: statuses = [] } = useListStatusesQuery()
+
+  const sortedTags = useMemo(
+    () =>
+      tags.slice().sort((a, b) => {
+        const aName = a.name.toLowerCase()
+        const bName = b.name.toLowerCase()
+        if (aName < bName) return -1
+        if (aName > bName) return 1
+        return 0
+      }),
+    [tags],
+  )
+
+  const sortedSeries = useMemo(
+    () =>
+      series.slice().sort((a, b) => {
+        const aName = createComparisonTitle(a.name, new Intl.Locale("en-US"))
+        const bName = createComparisonTitle(b.name, new Intl.Locale("en-US"))
+        if (aName < bName) return -1
+        if (aName > bName) return 1
+        return 0
+      }),
+    [series],
+  )
 
   return (
     <Stack gap={0} align="start">
@@ -30,6 +60,7 @@ export function FilterSort({
         <>
           <Group>
             <MultiSelect
+              searchable
               label="Collections"
               placeholder="Any collection"
               data={collections
@@ -46,9 +77,10 @@ export function FilterSort({
               }}
             />
             <MultiSelect
+              searchable
               label="Tags"
               placeholder="Any tag"
-              data={tags
+              data={sortedTags
                 .map((tag) => ({
                   label: tag.name,
                   value: tag.uuid as string,
@@ -60,9 +92,10 @@ export function FilterSort({
               }}
             />
             <MultiSelect
+              searchable
               label="Series"
               placeholder="Any series"
-              data={series.map((s) => ({
+              data={sortedSeries.map((s) => ({
                 label: s.name,
                 value: s.uuid,
               }))}
@@ -74,6 +107,21 @@ export function FilterSort({
               }}
             />
             <MultiSelect
+              label="Status"
+              placeholder="Any status"
+              data={statuses.map((s) => ({
+                label: s.name,
+                value: s.uuid,
+              }))}
+              value={filters.statuses ?? []}
+              onChange={(values) => {
+                filters.onStatusesChange(
+                  !values.length ? null : (values as UUID[]),
+                )
+              }}
+            />
+            <MultiSelect
+              searchable
               label="Book type"
               placeholder="Any type"
               data={[
@@ -86,6 +134,10 @@ export function FilterSort({
                   value: "audiobook",
                 },
                 {
+                  label: "Ebook & Audiobook only",
+                  value: "ebook-audiobook",
+                },
+                {
                   label: "Readaloud",
                   value: "readaloud",
                 },
@@ -95,7 +147,12 @@ export function FilterSort({
                 filters.onBookTypesChange(
                   !values.length
                     ? null
-                    : (values as ("ebook" | "audiobook" | "readaloud")[]),
+                    : (values as (
+                        | "ebook"
+                        | "audiobook"
+                        | "ebook-audiobook"
+                        | "readaloud"
+                      )[]),
                 )
               }}
             />
