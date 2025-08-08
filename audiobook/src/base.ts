@@ -81,6 +81,7 @@ export abstract class BaseAudiobookEntry {
     // "performer" tag, and store narrators
     // here
     const conductor = file.tag.conductor
+    if (!conductor) return []
     return splitNames([conductor])
   }
 
