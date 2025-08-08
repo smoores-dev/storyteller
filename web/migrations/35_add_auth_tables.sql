@@ -217,7 +217,7 @@ SELECT
   uuid,
   book_uuid,
   status_uuid,
-  user_uuid,
+  user_id,
   created_at,
   updated_at
 FROM
