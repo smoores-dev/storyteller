@@ -65,7 +65,6 @@ export interface Book {
   language: Generated<string | null>
   publicationDate: string | null
   rating: number | null
-  statusUuid: import("@/uuid").UUID
   suffix: Generated<string>
   title: string
   updatedAt: Generated<string>
@@ -93,6 +92,15 @@ export interface BookToSeries {
   position: number | null
   seriesUuid: import("@/uuid").UUID
   updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+}
+
+export interface BookToStatus {
+  bookUuid: import("@/uuid").UUID
+  createdAt: Generated<string>
+  statusUuid: import("@/uuid").UUID
+  updatedAt: Generated<string>
+  userId: import("@/uuid").UUID
   uuid: Generated<import("@/uuid").UUID>
 }
 
@@ -278,6 +286,7 @@ export interface DB {
   bookToCollection: BookToCollection
   bookToNarrator: BookToNarrator
   bookToSeries: BookToSeries
+  bookToStatus: BookToStatus
   bookToTag: BookToTag
   collection: Collection
   collectionToUser: CollectionToUser

@@ -1,4 +1,4 @@
-import { List, Checkbox } from "@mantine/core"
+import { List, Checkbox, Text } from "@mantine/core"
 import { BookThumbnail } from "./BookThumbnail"
 import { BookDetail } from "@/apiModels"
 import { UUID } from "@/uuid"
@@ -20,35 +20,38 @@ export function BookGrid({
   onSelect,
 }: Props) {
   return (
-    <List
-      listStyleType="none"
-      className={cx("mt-8 flex flex-row flex-wrap gap-6", className)}
-    >
-      {books.map((book, index) => (
-        <List.Item
-          style={{ zIndex: books.length - index }}
-          key={book.uuid}
-          className="relative"
-          classNames={{ itemWrapper: "block" }}
-        >
-          {isSelecting && (
-            <Checkbox
-              className="absolute left-1 top-1 z-50"
-              checked={selected.has(book.uuid)}
-              onChange={() => {
+    <>
+      <Text className="mt-4 text-sm">{books.length} books</Text>
+      <List
+        listStyleType="none"
+        className={cx("relative flex flex-row flex-wrap gap-6", className)}
+      >
+        {books.map((book, index) => (
+          <List.Item
+            style={{ zIndex: books.length - index }}
+            key={book.uuid}
+            className="relative"
+            classNames={{ itemWrapper: "block" }}
+          >
+            {isSelecting && (
+              <Checkbox
+                className="absolute left-1 top-1 z-50"
+                checked={selected.has(book.uuid)}
+                onChange={() => {
+                  onSelect(book.uuid)
+                }}
+              />
+            )}
+            <BookThumbnail
+              book={book}
+              link={!isSelecting}
+              onClick={() => {
                 onSelect(book.uuid)
               }}
             />
-          )}
-          <BookThumbnail
-            book={book}
-            link={!isSelecting}
-            onClick={() => {
-              onSelect(book.uuid)
-            }}
-          />
-        </List.Item>
-      ))}
-    </List>
+          </List.Item>
+        ))}
+      </List>
+    </>
   )
 }

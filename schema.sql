@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS "book" (
   aligned_with TEXT,
   description TEXT,
   rating REAL,
-  status_uuid TEXT REFERENCES status (uuid),
   suffix TEXT NOT NULL DEFAULT ''
 );
 
@@ -536,3 +535,15 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
+CREATE TABLE book_to_status (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL,
+  status_uuid TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (status_uuid) REFERENCES status (uuid),
+  FOREIGN KEY (user_id) REFERENCES user (id)
+);

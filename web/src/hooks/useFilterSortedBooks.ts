@@ -30,7 +30,7 @@ const articlesByLanguage: Record<string, string[]> = {
   // nl: ["de ", "het ", "een "],
 }
 
-function createComparisonTitle(title: string, locale: Intl.Locale) {
+export function createComparisonTitle(title: string, locale: Intl.Locale) {
   const lower = title.toLowerCase()
   const articles = articlesByLanguage[locale.language]
 
@@ -59,9 +59,15 @@ export interface FilterSortOptions {
     onTagsChange: (values: (UUID | "none")[] | null) => void
     series: UUID[] | null
     onSeriesChange: (values: UUID[] | null) => void
-    bookTypes: ("ebook" | "audiobook" | "readaloud")[] | null
+    statuses: UUID[] | null
+    onStatusesChange: (values: UUID[] | null) => void
+    bookTypes:
+      | ("ebook" | "audiobook" | "ebook-audiobook" | "readaloud")[]
+      | null
     onBookTypesChange: (
-      values: ("ebook" | "audiobook" | "readaloud")[] | null,
+      values:
+        | ("ebook" | "audiobook" | "ebook-audiobook" | "readaloud")[]
+        | null,
     ) => void
     reset: () => void
   }
@@ -76,7 +82,7 @@ export function useFilterSortedBooks(books: BookDetail[]): {
       new Fuse(books, {
         findAllMatches: true,
         ignoreDiacritics: true,
-        keys: ["title", "authors.name"],
+        keys: ["title", "authors.name", "description", "narrators.name"],
         threshold: 0.4,
       }),
     [books],
@@ -121,8 +127,12 @@ export function useFilterSortedBooks(books: BookDetail[]): {
     | UUID[]
     | null
 
+  const statuses = (searchParams.get("statuses")?.split(",") ?? null) as
+    | UUID[]
+    | null
+
   const bookTypes = (searchParams.get("bookTypes")?.split(",") ?? null) as
-    | ("ebook" | "audiobook" | "readaloud")[]
+    | ("ebook" | "audiobook" | "ebook-audiobook" | "readaloud")[]
     | null
 
   const [showFilters, setShowFilters] = useState(
@@ -154,7 +164,13 @@ export function useFilterSortedBooks(books: BookDetail[]): {
           }
         }
         if (bookTypes) {
-          if (!bookTypes.some((type) => !!book[type])) {
+          if (
+            !bookTypes.some((type) =>
+              type === "ebook-audiobook"
+                ? !!book.ebook && !!book.audiobook
+                : !!book[type],
+            )
+          ) {
             return false
           }
         }
@@ -246,6 +262,10 @@ export function useFilterSortedBooks(books: BookDetail[]): {
         series,
         onSeriesChange: (values) => {
           setSearchParam("series", values)
+        },
+        statuses,
+        onStatusesChange: (values) => {
+          setSearchParam("statuses", values)
         },
         bookTypes,
         onBookTypesChange: (values) => {

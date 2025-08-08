@@ -4,6 +4,7 @@ import {
   AnyColumnWithTable,
   AnyColumn,
   Generated,
+  Transaction,
 } from "kysely"
 import { DB } from "./schema"
 import { UUID } from "@/uuid"
@@ -68,6 +69,7 @@ export async function syncRelations<
   RelatedFKColumn extends AnyColumnWithTable<DB, RelationTable>,
   EntityFKColumn extends AnyColumnWithTable<DB, RelationTable>,
 >({
+  tr,
   entityUuid,
   relations,
   relatedTable,
@@ -80,6 +82,7 @@ export async function syncRelations<
   extractRelationValues,
   extractRelationUpdateValues,
 }: {
+  tr?: Transaction<DB>
   entityUuid: UUID
   relations: Array<Partial<Insertable<DB[RelatedTable] & DB[RelationTable]>>>
   relatedTable: RelatedTable
@@ -99,6 +102,7 @@ export async function syncRelations<
     values: Omit<Insertable<DB[RelatedTable] & DB[RelationTable]>, PK>,
   ) => Partial<InsertObject<DB, RelationTable>>
 }) {
+  const ex = tr ?? db
   const relatedPrimaryKeys: unknown[] = []
   for (const relationValues of relations) {
     const { [relatedPrimaryKeyColumn]: relatedPrimaryKey, ...values } =
@@ -106,7 +110,7 @@ export async function syncRelations<
 
     if (!relatedPrimaryKey) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      let existing = (await db
+      let existing = (await ex
         .selectFrom(relatedTable)
         // @ts-expect-error too much ts
         .select([relatedPrimaryKeyColumn])
@@ -119,7 +123,7 @@ export async function syncRelations<
         | undefined
 
       if (!existing) {
-        existing = (await db
+        existing = (await ex
           .insertInto(relatedTable)
           .values(extractRelatedValues(values))
           .returning([
@@ -131,7 +135,7 @@ export async function syncRelations<
         >
       }
 
-      await db
+      await ex
         .insertInto(relationTable)
         .values(
           extractRelationValues(existing[relatedPrimaryKeyColumn], values),
@@ -144,7 +148,7 @@ export async function syncRelations<
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    await db
+    await ex
       .updateTable(relatedTable)
       // @ts-expect-error too much ts
       .set(extractRelatedValues(values))
@@ -154,7 +158,7 @@ export async function syncRelations<
       .execute()
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    await db
+    await ex
       .updateTable(relationTable)
       // @ts-expect-error too much ts
       .set(extractRelationUpdateValues(values))
@@ -169,7 +173,7 @@ export async function syncRelations<
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  await db
+  await ex
     .deleteFrom(relationTable)
     // @ts-expect-error too much ts
     .where(entityForeignKeyColumn, "=", entityUuid)
@@ -179,7 +183,7 @@ export async function syncRelations<
     .execute()
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  await db
+  await ex
     .deleteFrom(relatedTable)
     // @ts-expect-error too much ts
     .whereRef(relatedPrimaryKeyColumn, "not in", (eb) =>

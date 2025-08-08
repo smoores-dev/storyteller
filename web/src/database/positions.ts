@@ -56,9 +56,9 @@ export async function upsertPosition(
 
   const upserted = await db.transaction().execute(async (tr) => {
     const { statusUuid } = await tr
-      .selectFrom("book")
+      .selectFrom("bookToStatus")
       .select(["statusUuid"])
-      .where("uuid", "=", bookUuid)
+      .where("bookUuid", "=", bookUuid)
       .executeTakeFirstOrThrow()
 
     const existing = await tr
@@ -95,14 +95,24 @@ export async function upsertPosition(
       statusUuid === toRead.uuid &&
       (locator.locations?.totalProgression ?? 0) < 0.98
     ) {
-      await tr.updateTable("book").set({ statusUuid: reading.uuid }).execute()
+      await tr
+        .updateTable("bookToStatus")
+        .set({ statusUuid: reading.uuid })
+        .where("bookToStatus.bookUuid", "=", bookUuid)
+        .where("bookToStatus.userId", "=", userId)
+        .execute()
     }
     if (
       statusUuid === toRead.uuid ||
       (statusUuid === reading.uuid &&
         (locator.locations?.totalProgression ?? 0) >= 0.98)
     ) {
-      await tr.updateTable("book").set({ statusUuid: read.uuid }).execute()
+      await tr
+        .updateTable("bookToStatus")
+        .set({ statusUuid: read.uuid })
+        .where("bookToStatus.bookUuid", "=", bookUuid)
+        .where("bookToStatus.userId", "=", userId)
+        .execute()
     }
 
     return true

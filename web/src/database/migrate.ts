@@ -17,8 +17,8 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "39_reorganize_library.sql": (
     await import("./migrations/39_reorganize_library.sql")
   ).default,
-  "46_generate_image_thumbnails.sql": (
-    await import("./migrations/46_generate_image_thumbnails.sql")
+  "45_generate_image_thumbnails.sql": (
+    await import("./migrations/45_generate_image_thumbnails.sql")
   ).default,
 }
 

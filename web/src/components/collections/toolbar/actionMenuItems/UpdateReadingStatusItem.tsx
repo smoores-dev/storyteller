@@ -33,8 +33,12 @@ export function UpdateReadingStatusItem({ selected }: Props) {
       statuses.map((status) => [status.uuid, 0]),
     )
     for (const book of books) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      statusCounts.set(book.statusUuid, statusCounts.get(book.statusUuid)! + 1)
+      statusCounts.set(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        book.status!.uuid,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        statusCounts.get(book.status!.uuid)! + 1,
+      )
     }
     return Array.from(statusCounts.entries()).reduce(
       ([accUuid, accCount], [uuid, count]) => {

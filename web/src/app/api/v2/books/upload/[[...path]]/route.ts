@@ -23,7 +23,6 @@ import {
   getInternalOriginalAudioFilepath,
 } from "@/assets/paths"
 import { persistAudio, persistEpub } from "@/assets/fs"
-import { getDefaultStatus } from "@/database/statuses"
 import { mkdir, rename } from "node:fs/promises"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { Audiobook } from "@smoores/audiobook/node"
@@ -213,8 +212,6 @@ const server = new Server({
 
           await rename(uploadPath, filepath)
         } else {
-          const defaultStatus = await getDefaultStatus()
-
           const audiobook = await Audiobook.from(filename)
           const title = await audiobook.getTitle()
           const description = await audiobook.getDescription()
@@ -227,7 +224,6 @@ const server = new Server({
               uuid: bookUuid,
               title: title ?? basename(filename, extname(filename)),
               description,
-              statusUuid: defaultStatus.uuid,
             },
             {
               ...(collectionUuid && {

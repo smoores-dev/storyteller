@@ -132,8 +132,55 @@ WHERE
 
 END;
 
-ALTER TABLE book
-ADD COLUMN status_uuid TEXT REFERENCES status (uuid);
+CREATE TABLE book_to_status (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL,
+  status_uuid TEXT NOT NULL,
+  user_uuid TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (status_uuid) REFERENCES status (uuid),
+  FOREIGN KEY (user_uuid) REFERENCES user (uuid)
+);
+
+CREATE TRIGGER book_to_status_update_trigger AFTER
+UPDATE ON book_to_status FOR EACH ROW BEGIN
+UPDATE book_to_status
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+INSERT INTO
+  book_to_status (book_uuid, status_uuid, user_uuid)
+SELECT
+  book.uuid,
+  status.uuid,
+  user.uuid
+FROM
+  book
+  CROSS JOIN user
+  LEFT JOIN position ON book.uuid = position.book_uuid
+  AND user.uuid = position.user_uuid
+  INNER JOIN status ON status.is_default = 1
+WHERE
+  position.uuid IS NULL;
+
+INSERT INTO
+  book_to_status (book_uuid, status_uuid, user_uuid)
+SELECT
+  position.book_uuid,
+  status.uuid,
+  position.user_uuid
+FROM
+  position
+  INNER JOIN status ON CASE
+    WHEN json_extract (position.locator, '$.locations.totalProgression') < 0.98 THEN 'Reading'
+    ELSE 'Read'
+  END = status.name;
 
 UPDATE book
 SET

@@ -9,7 +9,8 @@ export async function getCurrentlyReading(userId: UUID) {
         .onRef("position.bookUuid", "=", "book.uuid")
         .on("position.userId", "=", userId),
     )
-    .innerJoin("status", "status.uuid", "book.statusUuid")
+    .innerJoin("bookToStatus", "book.uuid", "bookToStatus.bookUuid")
+    .innerJoin("status", "status.uuid", "bookToStatus.statusUuid")
     .where("status.name", "=", "Reading")
     .whereRef("position.updatedAt", ">", sql`datetime('now', '-1 month')`)
     .orderBy("position.updatedAt", "desc")
@@ -28,9 +29,10 @@ export async function getNextUp(userId: UUID) {
       join.onRef("bookToSeries.position", ">", "prequelToSeries.position"),
     )
     .innerJoin("book as prequel", "prequelToSeries.bookUuid", "prequel.uuid")
+    .innerJoin("bookToStatus", "prequel.uuid", "bookToStatus.bookUuid")
     .innerJoin("status", (join) =>
       join
-        .onRef("status.uuid", "=", "prequel.statusUuid")
+        .onRef("status.uuid", "=", "bookToStatus.statusUuid")
         .on("status.name", "=", "Read"),
     )
     .leftJoin("position", (join) =>
@@ -60,9 +62,10 @@ export async function getRecentlyAdded(userId: UUID) {
 
 export async function getStartReading(userId: UUID) {
   return await booksQuery(userId)
+    .innerJoin("bookToStatus", "book.uuid", "bookToStatus.bookUuid")
     .innerJoin("status", (join) =>
       join
-        .onRef("status.uuid", "=", "book.statusUuid")
+        .onRef("status.uuid", "=", "bookToStatus.statusUuid")
         .on("status.name", "=", "To read"),
     )
     .orderBy("book.createdAt", "desc")
