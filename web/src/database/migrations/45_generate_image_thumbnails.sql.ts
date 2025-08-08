@@ -1,6 +1,6 @@
 import { getAudioCover, getEpubCover } from "@/assets/covers"
 import { getBooks } from "../books"
-import { optimizeImage } from "@/app/api/v2/books/[bookId]/cover/route"
+import { optimizeImage } from "@/images"
 import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
 import { logger } from "@/logging"
 

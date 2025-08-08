@@ -1,5 +1,5 @@
 import { Epub } from "@smoores/epub/node"
-import {
+import type {
   AuthorRelation,
   BookRelationsUpdate,
   BookUpdate,

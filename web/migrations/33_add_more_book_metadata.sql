@@ -182,17 +182,6 @@ FROM
     ELSE 'Read'
   END = status.name;
 
-UPDATE book
-SET
-  status_uuid = (
-    SELECT
-      uuid
-    FROM
-      status
-    WHERE
-      is_default = 1
-  );
-
 DROP TABLE IF EXISTS tag;
 
 CREATE TABLE tag (
