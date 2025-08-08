@@ -14,7 +14,7 @@ import { readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 import { writeCachedCoverImage } from "../fs"
 import { getAudioCover, getEpubCover } from "../covers"
-import { optimizeImage } from "@/app/api/v2/books/[bookId]/cover/route"
+import { optimizeImage } from "@/images"
 import { getMetadataFromEpub } from "@/process/processEpub"
 
 export async function scan(importPath: string, collectionUuid: UUID | null) {
