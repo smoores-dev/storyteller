@@ -85,9 +85,18 @@ export function BookThumbnail({ book, link, onClick }: Props) {
         )}{" "}
         {book.title}
       </Text>
-      <Text className="max-w-[9.1875rem] bg-white pb-2 text-sm">
-        {book.authors[0]?.name}
-      </Text>
+      {link ? (
+        <Link
+          className="hover:text-st-orange-600 max-w-[9.1875rem] bg-white pb-2 text-sm hover:underline"
+          href={`/books?authors=${book.authors[0]?.uuid}`}
+        >
+          {book.authors[0]?.name}
+        </Link>
+      ) : (
+        <Text className="max-w-[9.1875rem] bg-white pb-2 text-sm">
+          {book.authors[0]?.name}
+        </Text>
+      )}
     </Stack>
   )
 

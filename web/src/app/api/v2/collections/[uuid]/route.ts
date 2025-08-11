@@ -1,5 +1,9 @@
 import { withHasPermission } from "@/auth/auth"
-import { getCollection, updateCollection } from "@/database/collections"
+import {
+  deleteCollection,
+  getCollection,
+  updateCollection,
+} from "@/database/collections"
 import { UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
@@ -43,4 +47,16 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   })
 
   return Response.json(updated)
+})
+
+export const DELETE = withHasPermission<Params>("bookUpdate")(async (
+  request,
+  context,
+) => {
+  const user = request.auth.user
+  const { uuid } = await context.params
+
+  await deleteCollection(uuid, user.id)
+
+  return new Response(null, { status: 204 })
 })

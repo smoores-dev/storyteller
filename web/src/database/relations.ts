@@ -108,33 +108,31 @@ export async function syncRelations<
     const { [relatedPrimaryKeyColumn]: relatedPrimaryKey, ...values } =
       relationValues
 
-    if (!relatedPrimaryKey) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      let existing = (await ex
-        .selectFrom(relatedTable)
-        // @ts-expect-error too much ts
-        .select([relatedPrimaryKeyColumn])
-        // @ts-expect-error too much ts
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        .where(identifierColumn, "=", values[identifierColumn])
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        .executeTakeFirst()) as
-        | Record<PK, ColumnType<DB, RelatedTable, PK>>
-        | undefined
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    let existing = (await ex
+      .selectFrom(relatedTable)
+      // @ts-expect-error too much ts
+      .select([relatedPrimaryKeyColumn])
+      // @ts-expect-error too much ts
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      .where(identifierColumn, "=", values[identifierColumn])
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      .executeTakeFirst()) as
+      | Record<PK, ColumnType<DB, RelatedTable, PK>>
+      | undefined
 
-      if (!existing) {
-        existing = (await ex
-          .insertInto(relatedTable)
-          .values(extractRelatedValues(values))
-          .returning([
-            `${relatedPrimaryKeyColumn} as ${relatedPrimaryKeyColumn}`,
-          ])
-          .executeTakeFirstOrThrow()) as unknown as Record<
-          PK,
-          ColumnType<DB, RelatedTable, PK>
-        >
-      }
+    if (!relatedPrimaryKey && !existing) {
+      existing = (await ex
+        .insertInto(relatedTable)
+        .values(extractRelatedValues(values))
+        .returning([`${relatedPrimaryKeyColumn} as ${relatedPrimaryKeyColumn}`])
+        .executeTakeFirstOrThrow()) as unknown as Record<
+        PK,
+        ColumnType<DB, RelatedTable, PK>
+      >
+    }
 
+    if (existing && existing[relatedPrimaryKeyColumn] === relatedPrimaryKey) {
       await ex
         .insertInto(relationTable)
         .values(
@@ -142,34 +140,46 @@ export async function syncRelations<
         )
         .execute()
 
-      relatedPrimaryKeys.push(existing[relatedPrimaryKeyColumn])
+      if (relatedPrimaryKey) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        await ex
+          .deleteFrom(relationTable)
+          // @ts-expect-error too much ts
+          .where(entityForeignKeyColumn, "=", entityUuid)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          .where(relatedForeignKeyColumn, "=", relatedPrimaryKey)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          .execute()
+      }
 
-      continue
+      relatedPrimaryKeys.push(existing[relatedPrimaryKeyColumn])
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    await ex
-      .updateTable(relatedTable)
-      // @ts-expect-error too much ts
-      .set(extractRelatedValues(values))
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      .where("uuid", "=", relatedPrimaryKey)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      .execute()
+    if (!existing) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await ex
+        .updateTable(relatedTable)
+        // @ts-expect-error too much ts
+        .set(extractRelatedValues(values))
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        .where("uuid", "=", relatedPrimaryKey)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        .execute()
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    await ex
-      .updateTable(relationTable)
-      // @ts-expect-error too much ts
-      .set(extractRelationUpdateValues(values))
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      .where(relatedForeignKeyColumn, "=", relatedPrimaryKey)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      .where(entityForeignKeyColumn, "=", entityUuid)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      .execute()
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await ex
+        .updateTable(relationTable)
+        // @ts-expect-error too much ts
+        .set(extractRelationUpdateValues(values))
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        .where(relatedForeignKeyColumn, "=", relatedPrimaryKey)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        .where(entityForeignKeyColumn, "=", entityUuid)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        .execute()
 
-    relatedPrimaryKeys.push(relatedPrimaryKey)
+      relatedPrimaryKeys.push(relatedPrimaryKey)
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -186,7 +196,7 @@ export async function syncRelations<
   await ex
     .deleteFrom(relatedTable)
     // @ts-expect-error too much ts
-    .whereRef(relatedPrimaryKeyColumn, "not in", (eb) =>
+    .where(relatedPrimaryKeyColumn, "not in", (eb) =>
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       eb.selectFrom(relationTable).select([relatedForeignKeyColumn]),
     )

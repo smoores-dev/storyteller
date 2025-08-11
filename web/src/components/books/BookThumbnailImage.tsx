@@ -1,9 +1,10 @@
 import { BookDetail } from "@/apiModels"
 import { getCoverUrl } from "@/store/api"
 import { Box, Image, px, Stack } from "@mantine/core"
-import { IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
-import { HTMLProps, useState } from "react"
+import { Icon, IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
+import { HTMLProps, Ref, useEffect, useRef, useState } from "react"
 import cx from "classnames"
+import { twMerge } from "tailwind-merge"
 
 interface Props {
   book: BookDetail
@@ -61,28 +62,54 @@ export function BookThumbnailImage({ book, height, width }: Props) {
   return null
 }
 
-function EbookCoverImage({
+export function EbookCoverImage({
   book,
   className,
   height,
   width,
+  style,
 }: Props & {
   className?: string | undefined
+  style?: HTMLProps<HTMLDivElement>["style"]
 }) {
+  const imageRef = useRef<HTMLImageElement | null>(null)
+  const [showImage, setShowImage] = useState(false)
+
+  useEffect(() => {
+    function loadImageIfNearScreen() {
+      if (!imageRef.current) return
+
+      const imageRect = imageRef.current.getBoundingClientRect()
+      const isNearScreen =
+        imageRect.top - (window.screenTop + window.innerHeight) < 200 &&
+        window.screenTop - imageRect.bottom < 200
+
+      setShowImage(isNearScreen)
+    }
+    loadImageIfNearScreen()
+    document.addEventListener("scroll", loadImageIfNearScreen)
+    return () => {
+      document.removeEventListener("scroll", loadImageIfNearScreen)
+    }
+  }, [])
+
   const [failed, setFailed] = useState(false)
   return (
     <Stack
-      className={cx(
-        "group-hover:border-st-orange-300 items-center justify-center rounded-md bg-slate-200 group-hover:border-2",
-        className,
+      className={twMerge(
+        cx(
+          "group-hover:border-st-orange-300 items-center justify-center overflow-hidden rounded-md bg-slate-200 group-hover:border-2",
+          className,
+        ),
       )}
-      style={{ height, width }}
+      style={{ height, width, ...style }}
     >
-      {failed ? (
-        <IconBookFilled size={64} />
+      {failed || !showImage ? (
+        <IconBookFilled ref={imageRef as Ref<Icon>} size={64} />
       ) : (
         <Image
-          className="shrink-0 rounded-md"
+          ref={imageRef}
+          className="shrink-0"
           alt=""
           aria-hidden
           src={getCoverUrl(book.uuid, {
@@ -99,7 +126,7 @@ function EbookCoverImage({
   )
 }
 
-function AudiobookCoverImage({
+export function AudiobookCoverImage({
   book,
   className,
   height,
@@ -109,20 +136,43 @@ function AudiobookCoverImage({
   className?: string | undefined
   style?: HTMLProps<HTMLDivElement>["style"]
 }) {
+  const imageRef = useRef<HTMLImageElement | null>(null)
+  const [showImage, setShowImage] = useState(false)
+
+  useEffect(() => {
+    function loadImageIfNearScreen() {
+      if (!imageRef.current) return
+
+      const imageRect = imageRef.current.getBoundingClientRect()
+      const isNearScreen =
+        imageRect.top - (window.screenTop + window.innerHeight) < 200 &&
+        window.screenTop - imageRect.bottom < 200
+
+      setShowImage(isNearScreen)
+    }
+    loadImageIfNearScreen()
+    document.addEventListener("scroll", loadImageIfNearScreen)
+    return () => {
+      document.removeEventListener("scroll", loadImageIfNearScreen)
+    }
+  }, [])
+
   const [failed, setFailed] = useState(false)
   return (
     <Stack
-      className={cx(
-        "group-hover:border-st-orange-300 items-center justify-center rounded-md bg-slate-200 group-hover:border-2",
-        className,
+      className={twMerge(
+        cx(
+          "group-hover:border-st-orange-300 items-center justify-center overflow-hidden rounded-md bg-slate-200 group-hover:border-2",
+          className,
+        ),
       )}
       style={{ height, width, ...style }}
     >
-      {failed ? (
-        <IconHeadphonesFilled size={64} />
+      {failed || !showImage ? (
+        <IconHeadphonesFilled ref={imageRef as Ref<Icon>} size={64} />
       ) : (
         <Image
-          className="shrink-0 rounded-md"
+          className="shrink-0"
           alt=""
           aria-hidden
           src={getCoverUrl(book.uuid, {

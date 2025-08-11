@@ -1,0 +1,72 @@
+"use client"
+
+import { useInitialData } from "@/hooks/useInitialData"
+import { Series } from "@/database/series"
+import { api, useListBooksQuery, useListSeriesQuery } from "@/store/api"
+import { BookDetail } from "@/apiModels"
+import { usePermission } from "@/hooks/usePermission"
+import { useMemo } from "react"
+import { useFilterSortedSeries } from "@/hooks/useFilterSortedSeries"
+import { Group, Stack, Text } from "@mantine/core"
+import { Search } from "../books/Search"
+import { Sort } from "../books/Sort"
+import { SeriesGrid } from "./SeriesGrid"
+
+interface Props {
+  series: Series[]
+  books: BookDetail[]
+}
+
+export function SeriesList({
+  series: initialSeries,
+  books: initialBooks,
+}: Props) {
+  const canListBooks = usePermission("bookList")
+  useInitialData(
+    api.util.upsertQueryData("listSeries", undefined, initialSeries),
+  )
+  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
+
+  const { data: books } = useListBooksQuery()
+  const { data: allSeries } = useListSeriesQuery()
+
+  const seriesWithBooks = useMemo(
+    () =>
+      allSeries?.map((s) => ({
+        ...s,
+        books:
+          books
+            ?.map((b) => {
+              const found = b.series.find((bs) => bs.uuid === s.uuid)
+              if (!found) return null
+              return {
+                bookUuid: b.uuid,
+                position: found.position,
+                featured: found.featured,
+              }
+            })
+            .filter((b) => !!b) ?? [],
+      })) ?? [],
+    [books, allSeries],
+  )
+
+  const { series, options } = useFilterSortedSeries(seriesWithBooks)
+
+  return (
+    <>
+      {canListBooks && (
+        <Stack>
+          <Group>
+            <Search onValueChange={options.onSearchChange} />
+            <Sort value={options.sort} onValueChange={options.onSortChange} />
+          </Group>
+          {series.length ? (
+            <SeriesGrid series={series} />
+          ) : (
+            <Text>There’s nothing here!</Text>
+          )}
+        </Stack>
+      )}
+    </>
+  )
+}

@@ -31,6 +31,8 @@ import {
   IconUsers,
   IconHome,
   IconBooks,
+  IconBook2,
+  IconPlus,
 } from "@tabler/icons-react"
 import { ReactNode } from "react"
 import { useDisclosure } from "@mantine/hooks"
@@ -48,6 +50,7 @@ import { User } from "@/apiModels"
 import { useInitialData } from "@/hooks/useInitialData"
 import { skipToken } from "@reduxjs/toolkit/query"
 import { CollectionWithRelations } from "@/database/collections"
+import { CreateCollectionModal } from "./collections/CreateCollectionModal"
 
 dayjs.extend(customParseFormat)
 
@@ -142,6 +145,10 @@ export function AppShell({
   collections: initialCollections,
 }: Props) {
   const [opened, { close, toggle }] = useDisclosure(false)
+  const [
+    isCreateCollectionOpen,
+    { close: closeCreateCollection, open: openCreateCollection },
+  ] = useDisclosure(false)
   const pathname = usePathname()
 
   useInitialData(
@@ -230,7 +237,7 @@ export function AppShell({
                     onClick={close}
                     component={NextLink}
                     href="/books"
-                    leftSection={<IconBooks />}
+                    leftSection={<IconBook2 />}
                     label="Books"
                     active={pathname === "/books"}
                   />
@@ -259,6 +266,20 @@ export function AppShell({
                       active={pathname === `/collections/${collection.uuid}`}
                     />
                   ))}
+                  <NavLink
+                    component="button"
+                    onClick={openCreateCollection}
+                    leftSection={<IconPlus />}
+                    label="New collection"
+                  />
+                  <NavLink
+                    onClick={close}
+                    component={NextLink}
+                    href="/series"
+                    leftSection={<IconBooks />}
+                    label="Series"
+                    active={pathname === "/series"}
+                  />
                 </>
               ) : null}
               <NavLink
@@ -300,7 +321,13 @@ export function AppShell({
             </Box>
           </AppShellNavbar>
         )}
-        <AppShellMain className="*:ml-8">{children}</AppShellMain>
+        <AppShellMain className="*:ml-8">
+          <CreateCollectionModal
+            isOpen={isCreateCollectionOpen}
+            onClose={closeCreateCollection}
+          />
+          {children}
+        </AppShellMain>
       </MantineAppShell>
     </MantineProvider>
   )

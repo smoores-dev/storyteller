@@ -53,17 +53,15 @@ export function SeriesInput({
             label="Position"
             {...getInputProps(`series.${i}.position`)}
           />
-          {i > 0 && (
-            <ActionIcon
-              variant="subtle"
-              className="absolute right-4 top-0"
-              onClick={() => {
-                removeSeries(i)
-              }}
-            >
-              <IconTrash color="red" />
-            </ActionIcon>
-          )}
+          <ActionIcon
+            variant="subtle"
+            className="absolute right-4 top-0"
+            onClick={() => {
+              removeSeries(i)
+            }}
+          >
+            <IconTrash color="red" />
+          </ActionIcon>
         </Fieldset>
       ))}
       <Button

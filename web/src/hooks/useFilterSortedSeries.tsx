@@ -1,0 +1,107 @@
+import { NewSeriesRelation, Series } from "@/database/series"
+import {
+  BookSort,
+  createComparisonTitle,
+  FilterSortOptions,
+} from "./useFilterSortedBooks"
+import Fuse from "fuse.js"
+import { useCallback, useMemo, useState } from "react"
+import { useListBooksQuery } from "@/store/api"
+
+export type SeriesWithBooks = Series & { books: NewSeriesRelation[] }
+
+export function useFilterSortedSeries(series: SeriesWithBooks[]): {
+  series: SeriesWithBooks[]
+  options: Omit<FilterSortOptions, "filters">
+} {
+  const { data: books } = useListBooksQuery()
+  const bookMap = useMemo(
+    () => new Map(books?.map((book) => [book.uuid, book])),
+    [books],
+  )
+
+  const getFirstBook = useCallback(
+    (s: SeriesWithBooks) => {
+      const firstBook = s.books[0]
+      return firstBook && bookMap.get(firstBook.bookUuid)
+    },
+    [bookMap],
+  )
+
+  const fuse = useMemo(
+    () =>
+      new Fuse(series, {
+        findAllMatches: true,
+        ignoreDiacritics: true,
+        keys: ["title", "authors.name", "description", "narrators.name"],
+        threshold: 0.4,
+      }),
+    [series],
+  )
+  const [search, setSearch] = useState("")
+  const searched = useMemo(() => {
+    if (search === "") return series
+    const results = fuse.search(search)
+    return results.map((f) => f.item)
+  }, [series, fuse, search])
+
+  const [sort, setSort] = useState<BookSort>(["title", "asc"])
+  const sorted = useMemo(
+    () =>
+      searched.toSorted((a, b) => {
+        const first = sort[1] === "asc" ? a : b
+        const second = sort[1] === "asc" ? b : a
+        switch (sort[0]) {
+          case "title": {
+            const firstTitle = createComparisonTitle(
+              first.name,
+              new Intl.Locale(getFirstBook(first)?.language ?? "en"),
+            )
+            const secondTitle = createComparisonTitle(
+              second.name,
+              new Intl.Locale(getFirstBook(second)?.language ?? "en"),
+            )
+            return firstTitle > secondTitle
+              ? 1
+              : firstTitle < secondTitle
+                ? -1
+                : 0
+          }
+          case "author": {
+            const firstAuthor = getFirstBook(first)?.authors[0]
+            if (!firstAuthor) return -1
+            const secondAuthor = getFirstBook(second)?.authors[0]
+            if (!secondAuthor) return 1
+            return firstAuthor.name.toLowerCase() >
+              secondAuthor.name.toLowerCase()
+              ? 1
+              : firstAuthor.name.toLowerCase() < secondAuthor.name.toLowerCase()
+                ? -1
+                : 0
+          }
+          case "align-time": {
+            return 0
+          }
+          case "create-time": {
+            const firstAlignedAt = first.createdAt
+            const secondAlignedAt = second.createdAt
+            return (
+              new Date(firstAlignedAt).valueOf() -
+              new Date(secondAlignedAt).valueOf()
+            )
+          }
+        }
+      }),
+    [getFirstBook, searched, sort],
+  )
+
+  return {
+    series: sorted,
+    options: {
+      onSearchChange: setSearch,
+      search: search,
+      sort,
+      onSortChange: setSort,
+    },
+  }
+}

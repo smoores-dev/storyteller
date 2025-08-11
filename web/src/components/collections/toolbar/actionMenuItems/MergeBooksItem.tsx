@@ -12,8 +12,6 @@ import {
   SeriesRelation,
 } from "@/database/books"
 import {
-  useCreateCollectionMutation,
-  useGetCurrentUserQuery,
   useListAuthorsQuery,
   useListBooksQuery,
   useListCollectionsQuery,
@@ -21,7 +19,6 @@ import {
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
-  useListUsersQuery,
   useMergeBooksMutation,
 } from "@/store/api"
 import { UUID } from "@/uuid"
@@ -39,7 +36,7 @@ import { DateInput } from "@mantine/dates"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { IconArrowMerge } from "@tabler/icons-react"
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 
 const EMPTY_BOOKS: BookDetail[] = []
 
@@ -52,22 +49,19 @@ export function MergeBooksItem({ selected }: Props) {
 
   const [mergeBooks] = useMergeBooksMutation()
 
-  const { books } = useListBooksQuery(undefined, {
-    selectFromResult: (result) => ({
-      books:
-        result.data?.filter((book) => selected.has(book.uuid)) ?? EMPTY_BOOKS,
-    }),
-  })
+  const { data: allBooks = EMPTY_BOOKS } = useListBooksQuery()
 
-  const [createCollection] = useCreateCollectionMutation()
-  const { data: currentUser } = useGetCurrentUserQuery()
+  const books = useMemo(
+    () => allBooks.filter((book) => selected.has(book.uuid)),
+    [allBooks, selected],
+  )
+
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
   const { data: narrators = [] } = useListNarratorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
   const { data: series = [] } = useListSeriesQuery()
   const { data: authors = [] } = useListAuthorsQuery()
-  const { data: users = [] } = useListUsersQuery()
 
   const disabled = useMemo(() => {
     if (selected.size > 3) return true
@@ -151,6 +145,72 @@ export function MergeBooksItem({ selected }: Props) {
       tags: initialTags,
     },
   })
+
+  useEffect(() => {
+    form.setValues({
+      title: readaloud?.title || ebook?.title || audiobook?.title || "",
+      language:
+        (readaloud?.language || ebook?.language || audiobook?.language) ?? null,
+      authors:
+        readaloud?.authors ??
+        ebook?.authors ??
+        audiobook?.authors ??
+        ([] as AuthorRelation[]),
+      series:
+        readaloud?.series ??
+        ebook?.series ??
+        audiobook?.series ??
+        ([] as SeriesRelation[]),
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      statusUuid: (readaloud?.status?.uuid ??
+        ebook?.status?.uuid ??
+        audiobook?.status?.uuid)!,
+      collections: initialCollections,
+      publicationDate: initialPublicationDate
+        ? new Date(initialPublicationDate)
+        : null,
+      rating: (readaloud?.rating || ebook?.rating || audiobook?.rating) ?? null,
+      description:
+        (readaloud?.description ||
+          ebook?.description ||
+          audiobook?.description) ??
+        null,
+      narrator:
+        (audiobook?.narrators || readaloud?.narrators || ebook?.narrators) ??
+        ([] as NarratorRelation[]),
+      tags: initialTags,
+    })
+    // Form isn't a stable reference, but form.setValues is, I guess?
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    audiobook?.authors,
+    audiobook?.description,
+    audiobook?.language,
+    audiobook?.narrators,
+    audiobook?.rating,
+    audiobook?.series,
+    audiobook?.status?.uuid,
+    audiobook?.title,
+    ebook?.authors,
+    ebook?.description,
+    ebook?.language,
+    ebook?.narrators,
+    ebook?.rating,
+    ebook?.series,
+    ebook?.status?.uuid,
+    ebook?.title,
+    initialCollections,
+    initialPublicationDate,
+    initialTags,
+    readaloud?.authors,
+    readaloud?.description,
+    readaloud?.language,
+    readaloud?.narrators,
+    readaloud?.rating,
+    readaloud?.series,
+    readaloud?.status?.uuid,
+    readaloud?.title,
+  ])
 
   const {
     authors: bookAuthors,
@@ -427,18 +487,7 @@ export function MergeBooksItem({ selected }: Props) {
                 <CollectionsInput
                   values={bookCollections}
                   collections={collections}
-                  users={users}
                   getInputProps={form.getInputProps}
-                  onCollectionAdd={async (values) => {
-                    if (
-                      !values.public &&
-                      currentUser &&
-                      !values.users.includes(currentUser.id)
-                    ) {
-                      values.users.push(currentUser.id)
-                    }
-                    await createCollection(values)
-                  }}
                 />
                 {books
                   .filter((book) => book.collections.length)

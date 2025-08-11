@@ -463,6 +463,7 @@ export async function updateUserPermissions(
       bookList: permissions.bookList,
       bookDelete: permissions.bookDelete,
       bookDownload: permissions.bookDownload,
+      bookRead: permissions.bookRead,
       bookProcess: permissions.bookProcess,
       collectionCreate: permissions.collectionCreate,
       inviteDelete: permissions.inviteDelete,

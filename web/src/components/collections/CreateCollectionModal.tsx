@@ -1,58 +1,87 @@
 import {
-  Button,
-  Checkbox,
   Modal,
-  Text,
-  Textarea,
   TextInput,
+  Checkbox,
+  Textarea,
+  Button,
+  Text,
 } from "@mantine/core"
-import { useForm } from "@mantine/form"
 import { UserSelect } from "../books/edit/UserSelect"
-import { useRef } from "react"
-import { useListUsersQuery, useUpdateCollectionMutation } from "@/store/api"
+import { SaveState } from "../forms"
 import { ImportPathInput } from "../ImportPathInput"
-import { CollectionWithRelations } from "@/database/collections"
+import { useForm } from "@mantine/form"
+import { UUID } from "@/uuid"
+import { useRef, useState } from "react"
+import {
+  useCreateCollectionMutation,
+  useGetCurrentUserQuery,
+  useLazyListCollectionsQuery,
+  useListUsersQuery,
+} from "@/store/api"
 
 interface Props {
-  collection: CollectionWithRelations
   isOpen: boolean
   onClose: () => void
 }
 
-export function UpdateCollectionModal({ collection, isOpen, onClose }: Props) {
+export function CreateCollectionModal({ isOpen, onClose }: Props) {
   const { data: users = [] } = useListUsersQuery()
+  const { data: currentUser } = useGetCurrentUserQuery()
+
+  const [createCollection] = useCreateCollectionMutation()
+  const [refetchCollections] = useLazyListCollectionsQuery()
 
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  const [updateCollection, { isLoading, isSuccess, reset }] =
-    useUpdateCollectionMutation()
-
   const form = useForm({
     initialValues: {
-      name: collection.name,
-      public: collection.public,
-      users: collection.users.map((user) => user.id),
-      description: collection.description,
-      importPath: collection.importPath,
+      name: "",
+      public: true,
+      users: [] as UUID[],
+      description: "",
+      importPath: null as null | string,
     },
   })
 
+  const [savedState, setSavedState] = useState<SaveState>(SaveState.CLEAN)
+
   return (
-    <Modal opened={isOpen} onClose={onClose} title="Update collection" centered>
+    <Modal
+      opened={isOpen}
+      onClose={onClose}
+      title="Create a new collection"
+      centered
+    >
       <form
         className="flex flex-col gap-4"
         onSubmit={form.onSubmit(async (values, event) => {
           event?.stopPropagation()
-          await updateCollection({ uuid: collection.uuid, update: values })
+          setSavedState(SaveState.LOADING)
+          try {
+            if (
+              !values.public &&
+              currentUser &&
+              !values.users.includes(currentUser.id)
+            ) {
+              values.users.push(currentUser.id)
+            }
+
+            await createCollection(values)
+            await refetchCollections()
+          } catch {
+            setSavedState(SaveState.ERROR)
+            return
+          }
+
+          setSavedState(SaveState.SAVED)
 
           if (clearSavedTimeoutRef.current) {
             clearTimeout(clearSavedTimeoutRef.current)
           }
 
           clearSavedTimeoutRef.current = setTimeout(() => {
-            form.reset()
-            reset()
+            setSavedState(SaveState.CLEAN)
             onClose()
+            form.reset()
           }, 1000)
         })}
       >
@@ -96,9 +125,9 @@ export function UpdateCollectionModal({ collection, isOpen, onClose }: Props) {
         <Button
           className="self-end"
           type="submit"
-          disabled={!form.values.name || isLoading}
+          disabled={!form.values.name || savedState === SaveState.LOADING}
         >
-          {isSuccess ? "Saved!" : "Update"}
+          {savedState === SaveState.SAVED ? "Saved!" : "Create"}
         </Button>
       </form>
     </Modal>

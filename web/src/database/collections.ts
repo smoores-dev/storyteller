@@ -202,3 +202,32 @@ export async function removeBooksFromCollections(
     })
   })
 }
+
+export async function deleteCollection(uuid: UUID, userId: UUID) {
+  await db.transaction().execute(async (tr) => {
+    const { public: isPublic } = await tr
+      .selectFrom("collection")
+      .select(["public"])
+      .where("uuid", "=", uuid)
+      .executeTakeFirstOrThrow()
+    const hasPermission = await tr
+      .selectFrom("collectionToUser")
+      .select(["uuid"])
+      .where("collectionUuid", "=", uuid)
+      .where("userId", "=", userId)
+      .executeTakeFirst()
+
+    if (!isPublic && !hasPermission) return
+
+    await tr
+      .deleteFrom("bookToCollection")
+      .where("collectionUuid", "=", uuid)
+      .execute()
+
+    await tr
+      .deleteFrom("collectionToUser")
+      .where("collectionToUser.collectionUuid", "=", uuid)
+      .execute()
+    await tr.deleteFrom("collection").where("uuid", "=", uuid).execute()
+  })
+}

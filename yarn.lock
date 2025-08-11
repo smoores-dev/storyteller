@@ -9148,10 +9148,12 @@ __metadata:
     react-redux: "npm:^9.2.0"
     sharp: "npm:^0.34.3"
     simple-git: "npm:^3.25.0"
+    tailwind-merge: "npm:^3.3.1"
     tailwindcss: "npm:^3.4.17"
     tsx: "npm:^4.7.2"
     typescript: "npm:^5.8.3"
     typescript-plugin-css-modules: "npm:^5.0.1"
+    uuid: "npm:^11.1.0"
     wink-eng-lite-web-model: "npm:^1.8.0"
     wink-nlp: "npm:^2.3.0"
   languageName: unknown
@@ -30268,6 +30270,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tailwind-merge@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "tailwind-merge@npm:3.3.1"
+  checksum: 10c0/b84c6a78d4669fa12bf5ab8f0cdc4400a3ce0a7c006511af4af4be70bb664a27466dbe13ee9e3b31f50ddf6c51d380e8192ce0ec9effce23ca729d71a9f63818
+  languageName: node
+  linkType: hard
+
 "tailwindcss@npm:4.1.10, tailwindcss@npm:^4.0.6":
   version: 4.1.10
   resolution: "tailwindcss@npm:4.1.10"
@@ -31850,6 +31859,15 @@ __metadata:
   version: 1.0.1
   resolution: "utils-merge@npm:1.0.1"
   checksum: 10c0/02ba649de1b7ca8854bfe20a82f1dfbdda3fb57a22ab4a8972a63a34553cf7aa51bc9081cf7e001b035b88186d23689d69e71b510e610a09a4c66f68aa95b672
+  languageName: node
+  linkType: hard
+
+"uuid@npm:^11.1.0":
+  version: 11.1.0
+  resolution: "uuid@npm:11.1.0"
+  bin:
+    uuid: dist/esm/bin/uuid
+  checksum: 10c0/34aa51b9874ae398c2b799c88a127701408cd581ee89ec3baa53509dd8728cbb25826f2a038f9465f8b7be446f0fbf11558862965b18d21c993684297628d4d3
   languageName: node
   linkType: hard
 

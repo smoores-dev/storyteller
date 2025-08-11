@@ -1,10 +1,7 @@
 import { CollectionsInput } from "@/components/books/edit/CollectionsInput"
 import {
   useAddBooksToCollectionsMutation,
-  useCreateCollectionMutation,
-  useGetCurrentUserQuery,
   useListCollectionsQuery,
-  useListUsersQuery,
 } from "@/store/api"
 import { UUID } from "@/uuid"
 import { Button, MenuItem, Modal } from "@mantine/core"
@@ -17,13 +14,9 @@ interface Props {
 }
 
 export function AddBooksToCollectionsItem({ selected }: Props) {
-  const { data: currentUser } = useGetCurrentUserQuery()
-
   const [addBooksToCollections, { isLoading }] =
     useAddBooksToCollectionsMutation()
-  const [createCollection] = useCreateCollectionMutation()
 
-  const { data: users = [] } = useListUsersQuery()
   const { data: collections = [] } = useListCollectionsQuery()
 
   const [isOpen, setIsOpen] = useState(false)
@@ -61,19 +54,11 @@ export function AddBooksToCollectionsItem({ selected }: Props) {
             getInputProps={form.getInputProps}
             collections={collections}
             values={form.values.collections}
-            users={users}
-            onCollectionAdd={async (values) => {
-              if (
-                !values.public &&
-                currentUser &&
-                !values.users.includes(currentUser.id)
-              ) {
-                values.users.push(currentUser.id)
-              }
-              await createCollection(values)
-            }}
           />
-          <Button type="submit" disabled={isLoading}>
+          <Button
+            type="submit"
+            disabled={isLoading || !form.values.collections.length}
+          >
             {isLoading ? "Saving…" : "Save"}
           </Button>
         </form>

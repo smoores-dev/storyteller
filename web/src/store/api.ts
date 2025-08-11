@@ -27,6 +27,7 @@ import { Author } from "@/database/authors"
 import { NewSeries, NewSeriesRelation, Series } from "@/database/series"
 import { CollectionWithRelations } from "@/database/collections"
 import { Tag } from "@/database/tags"
+import { SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 
 export const api = createApi({
   reducerPath: "api",
@@ -428,13 +429,47 @@ export const api = createApi({
       providesTags: (series) =>
         series?.map((s) => ({ type: "Series", id: s.uuid })) ?? ["Series"],
     }),
+    updateSeries: build.mutation<
+      SeriesWithBooks,
+      {
+        uuid: UUID
+        update: {
+          name: string
+          description: string
+          relations: NewSeriesRelation[]
+        }
+      }
+    >({
+      query: ({ uuid, update }) => ({
+        url: `/series/${uuid}`,
+        method: "PUT",
+        body: update,
+      }),
+      invalidatesTags: (_result, _error, { uuid }) => [
+        { type: "Series", id: uuid },
+      ],
+    }),
+    deleteSeries: build.mutation<void, { uuid: UUID }>({
+      query: ({ uuid }) => ({
+        url: `/series/${uuid}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Series"],
+    }),
     listCollections: build.query<CollectionWithRelations[], void>({
       query: () => "/collections",
       providesTags: (collections) =>
         collections?.map((collection) => ({
           type: "Collections",
           id: collection.uuid,
-        })) ?? ["Collections"],
+        })) ?? [{ type: "Collections" }],
+    }),
+    deleteCollection: build.mutation<void, { uuid: UUID }>({
+      query: ({ uuid }) => ({
+        url: `/collections/${uuid}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Collections"],
     }),
     updateCollection: build.mutation<
       CollectionWithRelations,
@@ -561,10 +596,13 @@ export const {
   useDeleteBookAssetsMutation,
   useDeleteBookMutation,
   useDeleteBooksMutation,
+  useDeleteCollectionMutation,
   useDeleteInviteMutation,
+  useDeleteSeriesMutation,
   useDeleteUserMutation,
   useGetCurrentUserQuery,
   useGetShelvesQuery,
+  useLazyListCollectionsQuery,
   useListAuthorsQuery,
   useListBooksQuery,
   useListCollectionsQuery,
@@ -583,6 +621,7 @@ export const {
   useUpdateBookMutation,
   useUpdateCollectionMutation,
   useUpdateReadingStatusMutation,
+  useUpdateSeriesMutation,
   useUpdateSettingsMutation,
   useUpdateUserMutation,
 } = api
