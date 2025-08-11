@@ -171,10 +171,21 @@ export function AddBooksToSeriesItem({ selected }: Props) {
                         alt=""
                         className="h-full rounded-md"
                         aria-hidden
-                        src={getCoverUrl(book.bookUuid, {
-                          height: 40,
-                          width: 32,
-                        })}
+                        src={
+                          seriesBooks.find((b) => b.uuid === book.bookUuid)
+                            ?.ebook ||
+                          seriesBooks.find((b) => b.uuid === book.bookUuid)
+                            ?.readaloud
+                            ? getCoverUrl(book.bookUuid, {
+                                height: 225,
+                                width: 147,
+                              })
+                            : getCoverUrl(book.bookUuid, {
+                                height: 147,
+                                width: 147,
+                                audio: true,
+                              })
+                        }
                       ></Image>
                     </Box>
                     <Text>{book.title}</Text>

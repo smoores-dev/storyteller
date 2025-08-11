@@ -171,10 +171,19 @@ export function SeriesGrid({ series }: Props) {
                           alt=""
                           className="h-full rounded-md"
                           aria-hidden
-                          src={getCoverUrl(book.bookUuid, {
-                            height: 40,
-                            width: 32,
-                          })}
+                          src={
+                            bookMap.get(book.bookUuid)?.ebook ||
+                            bookMap.get(book.bookUuid)?.readaloud
+                              ? getCoverUrl(book.bookUuid, {
+                                  height: 225,
+                                  width: 147,
+                                })
+                              : getCoverUrl(book.bookUuid, {
+                                  height: 147,
+                                  width: 147,
+                                  audio: true,
+                                })
+                          }
                         ></Image>
                       </Box>
                       <Stack gap={0} className="grow">
