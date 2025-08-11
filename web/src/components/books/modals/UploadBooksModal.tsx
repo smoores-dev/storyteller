@@ -13,6 +13,8 @@ import { Epub } from "@smoores/epub"
 import BookThumbnailGenerator from "@/uppyPlugins/BookThumbnailGenerator/BookThumbnailGenerator"
 import { parseBlob, selectCover } from "music-metadata"
 
+import { v4 as uuidv4 } from "uuid"
+
 interface Props {
   isOpen: boolean
   onClose: () => void
@@ -181,7 +183,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
             return
           }
 
-          const bookUuid = crypto.randomUUID()
+          const bookUuid = uuidv4()
 
           function addFileMeta(file: UppyFile<Meta, Record<string, unknown>>) {
             file.meta["bookUuid"] = bookUuid

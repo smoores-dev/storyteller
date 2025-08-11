@@ -14,15 +14,12 @@ import { SaveState } from "@/components/forms"
 import { TagsInput } from "./TagsInput"
 import {
   getCoverUrl,
-  useCreateCollectionMutation,
-  useGetCurrentUserQuery,
   useListAuthorsQuery,
   useListCollectionsQuery,
   useListNarratorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
-  useListUsersQuery,
   useUpdateBookMutation,
 } from "@/store/api"
 import { BookDetail } from "@/apiModels"
@@ -36,9 +33,6 @@ type Props = {
 }
 
 export function BookEditForm({ book }: Props) {
-  const { data: currentUser } = useGetCurrentUserQuery()
-
-  const [createCollection] = useCreateCollectionMutation()
   const [updateBook] = useUpdateBookMutation()
 
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -49,7 +43,6 @@ export function BookEditForm({ book }: Props) {
   const { data: statuses = [] } = useListStatusesQuery()
   const { data: series = [] } = useListSeriesQuery()
   const { data: authors = [] } = useListAuthorsQuery()
-  const { data: users = [] } = useListUsersQuery()
 
   const form = useForm({
     initialValues: {
@@ -201,18 +194,7 @@ export function BookEditForm({ book }: Props) {
             <CollectionsInput
               values={bookCollections}
               collections={collections}
-              users={users}
               getInputProps={form.getInputProps}
-              onCollectionAdd={async (values) => {
-                if (
-                  !values.public &&
-                  currentUser &&
-                  !values.users.includes(currentUser.id)
-                ) {
-                  values.users.push(currentUser.id)
-                }
-                await createCollection(values)
-              }}
             />
           </Stack>
         </Group>

@@ -8,7 +8,7 @@ import {
 } from "@/database/books"
 import { logger } from "@/logging"
 import { UUID } from "@/uuid"
-import { Audiobook } from "@smoores/audiobook"
+import { Audiobook } from "@smoores/audiobook/node"
 import { Epub } from "@smoores/epub/node"
 import { readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"

@@ -1,3 +1,5 @@
+import { AsyncSemaphore } from "@esfx/async-semaphore"
+
 let _sharp: typeof import("sharp") | undefined
 
 const AVIF = "image/avif"
@@ -20,6 +22,8 @@ async function getSharp() {
   return _sharp
 }
 
+const lock = new AsyncSemaphore(2, 2)
+
 export async function optimizeImage({
   buffer,
   contentType,
@@ -31,40 +35,45 @@ export async function optimizeImage({
   width: number
   height?: number
 }): Promise<Buffer> {
-  // scale up images for hi-res displays
-  height = height && Math.round(height * 2)
-  width = Math.round(width * 2)
+  await lock.wait()
+  try {
+    // scale up images for hi-res displays
+    height = height && Math.round(height * 2)
+    width = Math.round(width * 2)
 
-  const quality = 75
-  const sharp = await getSharp()
-  const transformer = sharp(buffer)
-    .timeout({
-      seconds: 7,
-    })
-    .rotate()
+    const quality = 75
+    const sharp = await getSharp()
+    const transformer = sharp(buffer)
+      .timeout({
+        seconds: 7,
+      })
+      .rotate()
 
-  if (height) {
-    transformer.resize(width, height)
-  } else {
-    transformer.resize(width, undefined, {
-      withoutEnlargement: true,
-    })
+    if (height) {
+      transformer.resize(width, height)
+    } else {
+      transformer.resize(width, undefined, {
+        withoutEnlargement: true,
+      })
+    }
+
+    if (contentType === AVIF) {
+      transformer.avif({
+        quality: Math.max(quality - 20, 1),
+        effort: 3,
+      })
+    } else if (contentType === WEBP) {
+      transformer.webp({ quality })
+    } else if (contentType === PNG) {
+      transformer.png({ quality })
+    } else if (contentType === JPEG) {
+      transformer.jpeg({ quality, mozjpeg: true })
+    }
+
+    const optimizedBuffer = await transformer.toBuffer()
+
+    return optimizedBuffer
+  } finally {
+    lock.release()
   }
-
-  if (contentType === AVIF) {
-    transformer.avif({
-      quality: Math.max(quality - 20, 1),
-      effort: 3,
-    })
-  } else if (contentType === WEBP) {
-    transformer.webp({ quality })
-  } else if (contentType === PNG) {
-    transformer.png({ quality })
-  } else if (contentType === JPEG) {
-    transformer.jpeg({ quality, mozjpeg: true })
-  }
-
-  const optimizedBuffer = await transformer.toBuffer()
-
-  return optimizedBuffer
 }

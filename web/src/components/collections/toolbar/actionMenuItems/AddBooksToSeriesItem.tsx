@@ -21,7 +21,7 @@ import {
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { IconBook } from "@tabler/icons-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { BookDetail } from "@/apiModels"
 
 interface Props {
@@ -54,6 +54,19 @@ export function AddBooksToSeriesItem({ selected }: Props) {
       })),
     },
   })
+
+  useEffect(() => {
+    form.setFieldValue(
+      "relations",
+      selectedBooks.map((book, i) => ({
+        bookUuid: book.uuid,
+        position: (i + 1).toString(),
+        featured: !book.series.length,
+      })),
+    )
+    // Form isn't a stable reference, but form.setFieldValue is, I guess?
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBooks])
 
   const { series: newSeries, relations } = form.values
 
@@ -101,7 +114,7 @@ export function AddBooksToSeriesItem({ selected }: Props) {
           form.reset()
           setIsOpen(false)
         }}
-        title="Add books to collections"
+        title="Add books to series"
         centered
       >
         <form

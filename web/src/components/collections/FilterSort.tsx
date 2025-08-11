@@ -2,11 +2,13 @@ import { Button, Group, MultiSelect, Stack } from "@mantine/core"
 import { Search } from "../books/Search"
 import { Sort } from "../books/Sort"
 import {
+  BookType,
   createComparisonTitle,
   FilterSortOptions,
 } from "@/hooks/useFilterSortedBooks"
 import { UUID } from "@/uuid"
 import {
+  useListAuthorsQuery,
   useListCollectionsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
@@ -24,6 +26,7 @@ export function FilterSort({
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
   const { data: series = [] } = useListSeriesQuery()
+  const { data: authors = [] } = useListAuthorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
 
   const sortedTags = useMemo(
@@ -61,6 +64,21 @@ export function FilterSort({
           <Group>
             <MultiSelect
               searchable
+              label="Authors"
+              placeholder="Any author"
+              data={authors.map((s) => ({
+                label: s.name,
+                value: s.uuid,
+              }))}
+              value={filters.authors ?? []}
+              onChange={(values) => {
+                filters.onAuthorsChange(
+                  !values.length ? null : (values as UUID[]),
+                )
+              }}
+            />
+            <MultiSelect
+              searchable
               label="Collections"
               placeholder="Any collection"
               data={collections
@@ -78,17 +96,39 @@ export function FilterSort({
             />
             <MultiSelect
               searchable
-              label="Tags"
-              placeholder="Any tag"
-              data={sortedTags
-                .map((tag) => ({
-                  label: tag.name,
-                  value: tag.uuid as string,
-                }))
-                .concat([{ label: "Untagged", value: "none" }])}
-              value={filters.tags ?? []}
+              label="Format"
+              placeholder="Any format"
+              data={[
+                {
+                  label: "Ebook",
+                  value: "ebook",
+                },
+                {
+                  label: "Ebook only",
+                  value: "ebook-only",
+                },
+                {
+                  label: "Audiobook",
+                  value: "audiobook",
+                },
+                {
+                  label: "Audiobook only",
+                  value: "audiobook-only",
+                },
+                {
+                  label: "Readaloud",
+                  value: "readaloud",
+                },
+                {
+                  label: "Missing readaloud",
+                  value: "ebook-audiobook",
+                },
+              ]}
+              value={filters.bookTypes ?? []}
               onChange={(values) => {
-                filters.onTagsChange(!values.length ? null : (values as UUID[]))
+                filters.onBookTypesChange(
+                  !values.length ? null : (values as BookType[]),
+                )
               }}
             />
             <MultiSelect
@@ -122,38 +162,17 @@ export function FilterSort({
             />
             <MultiSelect
               searchable
-              label="Book type"
-              placeholder="Any type"
-              data={[
-                {
-                  label: "Ebook",
-                  value: "ebook",
-                },
-                {
-                  label: "Audiobook",
-                  value: "audiobook",
-                },
-                {
-                  label: "Ebook & Audiobook only",
-                  value: "ebook-audiobook",
-                },
-                {
-                  label: "Readaloud",
-                  value: "readaloud",
-                },
-              ]}
-              value={filters.bookTypes ?? []}
+              label="Tags"
+              placeholder="Any tag"
+              data={sortedTags
+                .map((tag) => ({
+                  label: tag.name,
+                  value: tag.uuid as string,
+                }))
+                .concat([{ label: "Untagged", value: "none" }])}
+              value={filters.tags ?? []}
               onChange={(values) => {
-                filters.onBookTypesChange(
-                  !values.length
-                    ? null
-                    : (values as (
-                        | "ebook"
-                        | "audiobook"
-                        | "ebook-audiobook"
-                        | "readaloud"
-                      )[]),
-                )
+                filters.onTagsChange(!values.length ? null : (values as UUID[]))
               }}
             />
           </Group>

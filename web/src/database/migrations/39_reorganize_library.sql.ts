@@ -13,7 +13,7 @@ import {
   TEXT_DIR,
 } from "@/directories"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
-import { Epub } from "@smoores/epub"
+import { Epub } from "@smoores/epub/node"
 import { readFile } from "node:fs/promises"
 
 async function getBooks() {

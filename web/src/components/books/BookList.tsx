@@ -70,7 +70,7 @@ export function BookList({ collectionUuid, books: initialBooks }: Props) {
               onSelect={(bookUuid) => {
                 setSelected((prev) => {
                   const next = new Set(prev)
-                  if (selected.has(bookUuid)) {
+                  if (prev.has(bookUuid)) {
                     next.delete(bookUuid)
                   } else {
                     next.add(bookUuid)

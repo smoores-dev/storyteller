@@ -1,15 +1,8 @@
-import {
-  getEpubFilepath,
-  getEpubAlignedFilepath,
-  getOriginalAudioFilepath,
-} from "@/assets/legacy/paths"
+import { getEpubFilepath, getEpubAlignedFilepath } from "@/assets/legacy/paths"
 import { Epub } from "@smoores/epub/node"
 import { db } from "../connection"
-import { readdir, stat } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
-import { syncRelations } from "../relations"
-import { isAudioFile } from "@/audio"
-import { Audiobook } from "@smoores/audiobook/node"
 import { logger } from "@/logging"
 import { getMetadataFromEpub } from "@/process/processEpub"
 
@@ -121,19 +114,19 @@ export default async function migrate() {
       }
     }
     try {
-      const audioDirectory = getOriginalAudioFilepath(book.uuid)
-      const entries = await readdir(audioDirectory)
+      // const audioDirectory = getOriginalAudioFilepath(book.uuid)
+      // const entries = await readdir(audioDirectory)
 
-      const firstTrack = entries.find((entry) => isAudioFile(entry))
-      const audiobook =
-        firstTrack === undefined
-          ? undefined
-          : await Audiobook.from(
-              getOriginalAudioFilepath(book.uuid, firstTrack),
-            )
+      // const firstTrack = entries.find((entry) => isAudioFile(entry))
+      // const audiobook =
+      //   firstTrack === undefined
+      //     ? undefined
+      //     : await Audiobook.from(
+      //         getOriginalAudioFilepath(book.uuid, firstTrack),
+      //       )
 
-      const narrators = (await audiobook?.getNarrators()) ?? []
-      audiobook?.close()
+      // const narrators = (await audiobook?.getNarrators()) ?? []
+      // audiobook?.close()
 
       const {
         update,
@@ -157,49 +150,51 @@ export default async function migrate() {
           .execute()
       }
 
-      await syncRelations({
-        entityUuid: book.uuid,
-        relations: series,
-        relatedTable: "series",
-        relationTable: "bookToSeries",
-        relatedPrimaryKeyColumn: "uuid",
-        identifierColumn: "name",
-        relatedForeignKeyColumn: "bookToSeries.seriesUuid",
-        entityForeignKeyColumn: "bookToSeries.bookUuid",
-        extractRelatedValues: (values) => ({
-          name: values.name ?? "",
-          description: values.description,
-        }),
-        extractRelationValues: (seriesUuid, values) => ({
-          seriesUuid: seriesUuid,
-          bookUuid: book.uuid,
-          position: values.position,
-          featured: values.featured,
-        }),
-        extractRelationUpdateValues: (values) => ({
-          position: values.position,
-          featured: values.featured,
-        }),
-      })
+      await db
+        .deleteFrom("bookToSeries")
+        .where("bookToSeries.bookUuid", "=", book.uuid)
+        .execute()
 
-      await syncRelations({
-        entityUuid: book.uuid,
-        relations: narrators.map((name) => ({ name })),
-        relatedTable: "narrator",
-        relationTable: "bookToNarrator",
-        relatedPrimaryKeyColumn: "uuid",
-        identifierColumn: "name",
-        relatedForeignKeyColumn: "bookToNarrator.narratorUuid",
-        entityForeignKeyColumn: "bookToNarrator.bookUuid",
-        extractRelatedValues: (values) => ({
-          name: values.name ?? "",
-        }),
-        extractRelationValues: (narratorUuid) => ({
-          narratorUuid,
-          bookUuid: book.uuid,
-        }),
-        extractRelationUpdateValues: () => ({}),
-      })
+      for (const s of series) {
+        let existing = await db
+          .selectFrom("series")
+          .select(["uuid"])
+          .where((eb) =>
+            s.uuid
+              ? eb.or([
+                  eb("series.name", "=", s.name),
+                  eb("series.uuid", "=", s.uuid),
+                ])
+              : eb("series.name", "=", s.name),
+          )
+          .executeTakeFirst()
+
+        existing = await db
+          .insertInto("series")
+          .values({
+            name: s.name,
+            description: s.description,
+          })
+          .returning(["uuid as uuid"])
+          .executeTakeFirstOrThrow()
+
+        await db
+          .insertInto("bookToSeries")
+          .values({
+            seriesUuid: existing.uuid,
+            bookUuid: book.uuid,
+            position: s.position,
+            featured: s.featured,
+          })
+          .execute()
+      }
+
+      await db
+        .deleteFrom("series")
+        .where("series.uuid", "not in", (eb) =>
+          eb.selectFrom("bookToSeries").select(["bookToSeries.seriesUuid"]),
+        )
+        .execute()
 
       if (tags.length) {
         await db

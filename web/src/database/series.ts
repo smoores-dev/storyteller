@@ -79,3 +79,79 @@ export async function removeBooksFromSeries(
     })
   })
 }
+
+export async function updateSeries(
+  uuid: UUID,
+  update: SeriesUpdate,
+  relations: { books?: NewSeriesRelation[] },
+) {
+  await db.transaction().execute(async (tr) => {
+    if (Object.keys(update).length) {
+      await tr
+        .updateTable("series")
+        .set(update)
+        .where("uuid", "=", uuid)
+        .execute()
+    }
+
+    await tr.deleteFrom("bookToSeries").where("seriesUuid", "=", uuid).execute()
+
+    if (relations.books) {
+      await tr
+        .insertInto("bookToSeries")
+        .values(
+          relations.books.map((relation) => ({
+            ...relation,
+            seriesUuid: uuid,
+          })),
+        )
+        .execute()
+    }
+  })
+
+  if (relations.books) {
+    const books = await getBooks(relations.books.map((book) => book.bookUuid))
+
+    books.forEach((book) => {
+      BookEvents.emit("message", {
+        type: "bookUpdated",
+        bookUuid: book.uuid,
+        payload: {
+          series: book.series,
+        },
+      })
+    })
+  }
+
+  return await db
+    .selectFrom("series")
+    .selectAll()
+    .where("uuid", "=", uuid)
+    .executeTakeFirstOrThrow()
+}
+
+export async function deleteSeries(uuid: UUID) {
+  const bookUuids = await db.transaction().execute(async (tr) => {
+    const bookUuids = await tr
+      .selectFrom("bookToSeries")
+      .select(["bookUuid"])
+      .where("seriesUuid", "=", uuid)
+      .execute()
+    await tr.deleteFrom("bookToSeries").where("seriesUuid", "=", uuid).execute()
+
+    await tr.deleteFrom("series").where("uuid", "=", uuid).execute()
+    return bookUuids
+  })
+
+  const books = await getBooks(bookUuids.map((book) => book.bookUuid))
+
+  books.forEach((book) => {
+    BookEvents.emit("message", {
+      type: "bookUpdated",
+      bookUuid: book.uuid,
+      payload: {
+        series: book.series,
+      },
+    })
+  })
+}
