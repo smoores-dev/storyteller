@@ -76,19 +76,7 @@ export function SeriesThumbnailImage({ height, width, series }: Props) {
         const book = bookMap.get(relation.bookUuid)
         if (!book) return null
         const transform = getCssTransform(orderedBooks.length, index)
-        return !!book.readaloud || !!book.ebook ? (
-          <EbookCoverImage
-            key={book.uuid}
-            className="absolute overflow-hidden rounded-none transition-transform"
-            style={{
-              zIndex: index,
-              transform,
-            }}
-            book={book}
-            height={width}
-            width={width}
-          />
-        ) : (
+        return !!book.readaloud || !!book.audiobook ? (
           <AudiobookCoverImage
             key={book.uuid}
             className="absolute rounded-none transition-transform"
@@ -99,6 +87,23 @@ export function SeriesThumbnailImage({ height, width, series }: Props) {
             book={book}
             height={width}
             width={width}
+            imageHeight={147}
+            imageWidth={147}
+          />
+        ) : (
+          <EbookCoverImage
+            key={book.uuid}
+            className="absolute overflow-hidden rounded-none transition-transform"
+            style={{
+              zIndex: index,
+              transform,
+            }}
+            book={book}
+            height={width}
+            width={width}
+            // Re-use standard image size from main book list
+            imageHeight={225}
+            imageWidth={147}
           />
         )
       })}
