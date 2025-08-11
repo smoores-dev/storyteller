@@ -75,6 +75,7 @@ export async function getCollections(userId?: UUID) {
           ]),
         ),
     )
+    .groupBy("collection.uuid")
     .execute()
 }
 

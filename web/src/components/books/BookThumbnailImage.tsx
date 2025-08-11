@@ -10,9 +10,17 @@ interface Props {
   book: BookDetail
   height: string
   width: string
+  imageHeight?: number | undefined
+  imageWidth?: number | undefined
 }
 
-export function BookThumbnailImage({ book, height, width }: Props) {
+export function BookThumbnailImage({
+  book,
+  height,
+  width,
+  imageHeight,
+  imageWidth,
+}: Props) {
   if (book.readaloud || (book.ebook && book.audiobook)) {
     return (
       <Box
@@ -26,6 +34,8 @@ export function BookThumbnailImage({ book, height, width }: Props) {
           book={book}
           height={width}
           width={width}
+          imageHeight={imageHeight}
+          imageWidth={imageWidth}
           className="hover:animate-swap-right peer absolute z-10 translate-x-[10%] scale-[80%] transition-transform group-hover/thumbnail:translate-x-[15%] group-hover/thumbnail:scale-[70%]"
           style={{
             top: `calc((${height} - ${width}) / 2)`,
@@ -35,6 +45,8 @@ export function BookThumbnailImage({ book, height, width }: Props) {
           book={book}
           height={height}
           width={width}
+          imageHeight={imageHeight}
+          imageWidth={imageWidth}
           className="peer-hover:animate-swap-left absolute z-20 -translate-x-[10%] scale-[80%] transition-transform group-hover/thumbnail:-translate-x-[15%] group-hover/thumbnail:scale-[70%]"
         />
       </Box>
@@ -42,7 +54,15 @@ export function BookThumbnailImage({ book, height, width }: Props) {
   }
 
   if (book.ebook) {
-    return <EbookCoverImage book={book} height={height} width={width} />
+    return (
+      <EbookCoverImage
+        book={book}
+        height={height}
+        width={width}
+        imageHeight={imageHeight}
+        imageWidth={imageWidth}
+      />
+    )
   }
 
   if (book.audiobook) {
@@ -52,6 +72,8 @@ export function BookThumbnailImage({ book, height, width }: Props) {
         height={width}
         width={width}
         className="relative"
+        imageHeight={imageHeight}
+        imageWidth={imageWidth}
         style={{
           top: `calc((${height} - ${width}) / 2)`,
         }}
@@ -67,6 +89,8 @@ export function EbookCoverImage({
   className,
   height,
   width,
+  imageHeight,
+  imageWidth,
   style,
 }: Props & {
   className?: string | undefined
@@ -113,8 +137,8 @@ export function EbookCoverImage({
           alt=""
           aria-hidden
           src={getCoverUrl(book.uuid, {
-            height: px(height) as number,
-            width: px(width) as number,
+            height: imageHeight ?? (px(height) as number),
+            width: imageWidth ?? (px(width) as number),
           })}
           loading="lazy"
           onError={() => {
@@ -132,6 +156,8 @@ export function AudiobookCoverImage({
   height,
   width,
   style,
+  imageHeight,
+  imageWidth,
 }: Props & {
   className?: string | undefined
   style?: HTMLProps<HTMLDivElement>["style"]
@@ -176,8 +202,8 @@ export function AudiobookCoverImage({
           alt=""
           aria-hidden
           src={getCoverUrl(book.uuid, {
-            height: px(height) as number,
-            width: px(width) as number,
+            height: imageHeight ?? (px(height) as number),
+            width: imageWidth ?? (px(width) as number),
             audio: true,
           })}
           loading="lazy"
