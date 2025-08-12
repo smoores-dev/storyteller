@@ -27,7 +27,7 @@ export default async function migrate() {
         .split(".")[0]!
 
       aligned = true
-    } catch {
+    } catch (re) {
       const originalFilepath = getEpubFilepath(book.uuid)
       try {
         epub = await Epub.from(originalFilepath)
@@ -36,7 +36,12 @@ export default async function migrate() {
           .toISOString()
           .replaceAll("T", " ")
           .split(".")[0]!
-      } catch {
+      } catch (e) {
+        logger.error(
+          `Failed to open EPUB file for book ${book.title}. Skipping.`,
+        )
+        logger.error(re)
+        logger.error(e)
         continue
       }
     }

@@ -49,6 +49,7 @@ export function AddBooksModal({ isOpen, collection, onClose }: Props) {
       <Stack className="h-full">
         <FilterSort options={options} />
         <BookGrid
+          filterSortOptions={options}
           className="flex-grow overflow-y-auto"
           books={books}
           isSelecting

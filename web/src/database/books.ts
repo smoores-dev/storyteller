@@ -7,7 +7,7 @@ import {
 } from "@/apiModels/models/ProcessingStatus"
 import { BookEvents } from "@/events"
 import { DB } from "./schema"
-import { Insertable, Selectable, sql, Updateable } from "kysely"
+import { Insertable, Selectable, sql, Transaction, Updateable } from "kysely"
 import { Epub } from "@smoores/epub/node"
 import { NewCreator } from "./creators"
 import { NewSeries } from "./series"
@@ -643,8 +643,8 @@ export async function getBookOrThrow(uuid: UUID) {
   return book
 }
 
-export async function deleteBook(bookUuid: UUID) {
-  await db.transaction().execute(async (tr) => {
+export async function deleteBook(bookUuid: UUID, tr?: Transaction<DB>) {
+  const callback = async (tr: Transaction<DB>) => {
     await tr
       .deleteFrom("processingTask")
       .where("bookUuid", "=", bookUuid)
@@ -693,7 +693,13 @@ export async function deleteBook(bookUuid: UUID) {
     await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
 
     await tr.deleteFrom("book").where("uuid", "=", bookUuid).execute()
-  })
+  }
+
+  if (tr) {
+    await callback(tr)
+  } else {
+    await db.transaction().execute(callback)
+  }
 
   BookEvents.emit("message", {
     type: "bookDeleted",
@@ -1048,7 +1054,7 @@ export async function updateBook(
         .execute()
 
       for (const bookUuid of relations.books) {
-        await deleteBook(bookUuid)
+        await deleteBook(bookUuid, tr)
       }
     }
 

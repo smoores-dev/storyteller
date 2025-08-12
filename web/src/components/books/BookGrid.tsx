@@ -1,8 +1,12 @@
-import { List, Checkbox, Text } from "@mantine/core"
+import { List, Checkbox, Text, Anchor } from "@mantine/core"
 import { BookThumbnail } from "./BookThumbnail"
 import { BookDetail } from "@/apiModels"
 import { UUID } from "@/uuid"
 import cx from "classnames"
+import {
+  createComparisonTitle,
+  FilterSortOptions,
+} from "@/hooks/useFilterSortedBooks"
 
 interface Props {
   className?: string
@@ -10,6 +14,7 @@ interface Props {
   isSelecting: boolean
   selected: Set<UUID>
   onSelect: (book: UUID) => void
+  filterSortOptions: FilterSortOptions
 }
 
 export function BookGrid({
@@ -18,19 +23,24 @@ export function BookGrid({
   isSelecting,
   selected,
   onSelect,
+  filterSortOptions,
 }: Props) {
   return (
     <>
       <Text className="mt-4 text-sm">{books.length} books</Text>
       <List
         listStyleType="none"
-        className={cx("relative flex flex-row flex-wrap gap-6", className)}
+        className={cx(
+          "relative z-10 flex flex-row flex-wrap gap-6 sm:pr-9",
+          className,
+        )}
       >
         {books.map((book, index) => (
           <List.Item
-            style={{ zIndex: books.length - index }}
+            id={book.uuid}
+            style={{ zIndex: books.length + 100 - index }}
             key={book.uuid}
-            className="relative"
+            className="scroll-mt-36"
             classNames={{ itemWrapper: "block" }}
           >
             {isSelecting && (
@@ -52,6 +62,87 @@ export function BookGrid({
           </List.Item>
         ))}
       </List>
+      <ScrollNav options={filterSortOptions} books={books} />
     </>
+  )
+}
+
+function ScrollNav({
+  options,
+  books,
+}: {
+  options: FilterSortOptions
+  books: BookDetail[]
+}) {
+  if (options.sort[0] !== "title" && options.sort[0] !== "author") return null
+
+  const letters = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+  ]
+
+  if (options.sort[1] === "desc") {
+    letters.reverse()
+  }
+
+  return (
+    <nav
+      className="bg-st-orange-50 fixed right-6 hidden flex-col items-stretch rounded-md py-1 text-center sm:flex"
+      style={{ zIndex: books.length + 1 }}
+    >
+      {letters.map((letter) => {
+        const firstBook =
+          books.find((book) =>
+            createComparisonTitle(
+              book.title,
+              new Intl.Locale(book.language ?? "en"),
+            ).startsWith(letter.toLowerCase()),
+          ) ??
+          books.findLast((book) =>
+            options.sort[1] === "asc"
+              ? createComparisonTitle(
+                  book.title,
+                  new Intl.Locale(book.language ?? "en"),
+                ) < letter.toLowerCase()
+              : createComparisonTitle(
+                  book.title,
+                  new Intl.Locale(book.language ?? "en"),
+                ) > letter.toLowerCase(),
+          )
+        return (
+          <Anchor
+            key={letter}
+            href={`#${firstBook?.uuid}`}
+            className="hover:bg-st-orange-100 rounded-md px-2 py-1 text-xs hover:no-underline"
+          >
+            {letter}
+          </Anchor>
+        )
+      })}
+    </nav>
   )
 }

@@ -35,7 +35,7 @@ export function ActionMenu({ selected, onClear }: Props) {
         </MenuTarget>
 
         <MenuDropdown>
-          <MergeBooksItem selected={selected} />
+          <MergeBooksItem selected={selected} onCommit={onClear} />
           <AddBooksToCollectionsItem selected={selected} />
           <RemoveBooksFromCollectionsItem selected={selected} />
           <AddBooksToSeriesItem selected={selected} />

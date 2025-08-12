@@ -21,10 +21,11 @@ import {
   getInternalOriginalAudioFilepath,
 } from "@/assets/paths"
 import { persistAudio, persistEpub } from "@/assets/fs"
-import { mkdir, rename } from "node:fs/promises"
+import { mkdir, readFile, rename, rm } from "node:fs/promises"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { Audiobook } from "@smoores/audiobook/node"
 import { getMetadataFromEpub } from "@/process/processEpub"
+import { logger } from "@/logging"
 
 const mutex = new AsyncSemaphore(1)
 
@@ -147,7 +148,11 @@ const server = new Server({
 
           await rename(uploadPath, filepath)
         } else {
-          const audiobook = await Audiobook.from(filename)
+          const data = await readFile(uploadPath)
+          const audiobook = await Audiobook.from({
+            data,
+            filename: relativePath,
+          })
           const title = await audiobook.getTitle()
           const description = await audiobook.getDescription()
           const authors = await audiobook.getAuthors()
@@ -176,7 +181,12 @@ const server = new Server({
           await persistAudio(book, uploadPath, relativePath)
         }
       }
+
+      await rm(`${uploadPath}.json`)
       return {}
+    } catch (e) {
+      logger.error(e)
+      throw e
     } finally {
       mutex.release()
     }

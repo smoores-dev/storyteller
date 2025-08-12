@@ -65,6 +65,7 @@ export function DeleteBooksItem({ selected, onCommit }: Props) {
             className="flex flex-col gap-4"
             onSubmit={form.onSubmit(async ({ includeAssets }) => {
               onCommit()
+
               await deleteBooks({
                 books: Array.from(selected),
                 ...(includeAssets && { includeAssets }),

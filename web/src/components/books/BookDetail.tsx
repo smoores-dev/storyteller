@@ -107,6 +107,17 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
                   ))}
                 </Text>
               )}
+              {book.series.map((s) => (
+                <Text key={s.uuid}>
+                  {s.position !== null && `Book ${s.position} of `}
+                  <Link
+                    href={`/series?search=${s.name}`}
+                    className="hover:text-st-orange-600 hover:underline"
+                  >
+                    {s.name}
+                  </Link>
+                </Text>
+              ))}
             </Stack>
             <Group>
               {book.tags.map((tag) => (
@@ -158,18 +169,27 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
           <Stack gap={4}>
             <Text className="self-end">Download</Text>
             <Group className="bg-st-orange-50 self-end px-4 py-2">
-              {book.readaloud && (
-                <Anchor href={getDownloadUrl(book.uuid, "readaloud")}>
+              {book.readaloud?.status === "ALIGNED" && (
+                <Anchor
+                  href={getDownloadUrl(book.uuid, "readaloud")}
+                  className="hover:bg-st-orange-900"
+                >
                   <IconReadaloud />
                 </Anchor>
               )}
               {book.ebook && (
-                <Anchor href={getDownloadUrl(book.uuid, "ebook")}>
+                <Anchor
+                  href={getDownloadUrl(book.uuid, "ebook")}
+                  className="hover:bg-st-orange-900"
+                >
                   <IconBook2 />
                 </Anchor>
               )}
               {book.audiobook && (
-                <Anchor href={getDownloadUrl(book.uuid, "audiobook")}>
+                <Anchor
+                  href={getDownloadUrl(book.uuid, "audiobook")}
+                  className="hover:bg-st-orange-900"
+                >
                   <IconHeadphonesFilled />
                 </Anchor>
               )}
