@@ -43,25 +43,6 @@ WHERE
 
 END;
 
-CREATE TABLE IF NOT EXISTS "creator" (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  id INTEGER,
-  name TEXT NOT NULL,
-  file_as TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER author_update_trigger AFTER
-UPDATE ON "creator" FOR EACH ROW BEGIN
-UPDATE "creator"
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
 CREATE TABLE IF NOT EXISTS "processing_task" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -152,24 +133,6 @@ WHERE
 
 END;
 
-CREATE TABLE series (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  name TEXT NOT NULL,
-  description TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER series_update_trigger AFTER
-UPDATE ON series FOR EACH ROW BEGIN
-UPDATE series
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
 CREATE TABLE book_to_series (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   series_uuid TEXT NOT NULL,
@@ -178,7 +141,7 @@ CREATE TABLE book_to_series (
   featured BOOLEAN NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (series_uuid) REFERENCES series (uuid),
+  FOREIGN KEY (series_uuid) REFERENCES "temp_series" (uuid),
   FOREIGN KEY (book_uuid) REFERENCES book (uuid)
 );
 
@@ -210,23 +173,6 @@ WHERE
 
 END;
 
-CREATE TABLE tag (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  name TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER tag_update_trigger AFTER
-UPDATE ON tag FOR EACH ROW BEGIN
-UPDATE tag
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
 CREATE TABLE book_to_tag (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   tag_uuid TEXT NOT NULL,
@@ -234,32 +180,12 @@ CREATE TABLE book_to_tag (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (tag_uuid) REFERENCES tag (uuid)
+  FOREIGN KEY (tag_uuid) REFERENCES "temp_tag" (uuid)
 );
 
 CREATE TRIGGER book_to_tag_update_trigger AFTER
 UPDATE ON book_to_tag FOR EACH ROW BEGIN
 UPDATE book_to_tag
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
-CREATE TABLE collection (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  name TEXT NOT NULL,
-  public BOOLEAN NOT NULL DEFAULT 0,
-  description TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  import_path TEXT DEFAULT NULL
-);
-
-CREATE TRIGGER collection_update_trigger AFTER
-UPDATE ON collection FOR EACH ROW BEGIN
-UPDATE collection
 SET
   updated_at = CURRENT_TIMESTAMP
 WHERE
@@ -274,7 +200,7 @@ CREATE TABLE book_to_collection (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (collection_uuid) REFERENCES collection (uuid)
+  FOREIGN KEY (collection_uuid) REFERENCES "temp_collection" (uuid)
 );
 
 CREATE TRIGGER book_to_collection_update_trigger AFTER
@@ -318,7 +244,7 @@ CREATE TABLE collection_to_user (
   collection_uuid TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (collection_uuid) REFERENCES collection (uuid),
+  FOREIGN KEY (collection_uuid) REFERENCES "temp_collection" (uuid),
   FOREIGN KEY (user_id) REFERENCES user (id)
 );
 
@@ -509,12 +435,86 @@ CREATE TABLE book_to_creator (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (creator_uuid) REFERENCES creator (uuid)
+  FOREIGN KEY (creator_uuid) REFERENCES "temp_creator" (uuid)
 );
 
 CREATE TRIGGER book_to_creator_update_trigger AFTER
 UPDATE ON book_to_creator FOR EACH ROW BEGIN
 UPDATE book_to_creator
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE creator (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  id INTEGER,
+  name TEXT NOT NULL UNIQUE,
+  file_as TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER creator_update_trigger AFTER
+UPDATE ON "creator" FOR EACH ROW BEGIN
+UPDATE "creator"
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE tag (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  name TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER tag_update_trigger AFTER
+UPDATE ON "tag" FOR EACH ROW BEGIN
+UPDATE "tag"
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE collection (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  name TEXT NOT NULL UNIQUE,
+  public BOOLEAN NOT NULL DEFAULT 0,
+  description TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  import_path TEXT DEFAULT NULL
+);
+
+CREATE TRIGGER collection_update_trigger AFTER
+UPDATE ON "collection" FOR EACH ROW BEGIN
+UPDATE "collection"
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE series (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER series_update_trigger AFTER
+UPDATE ON "series" FOR EACH ROW BEGIN
+UPDATE "series"
 SET
   updated_at = CURRENT_TIMESTAMP
 WHERE
