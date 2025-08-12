@@ -57,7 +57,10 @@ export function SeriesList({
       {canListBooks && (
         <Stack>
           <Group>
-            <Search onValueChange={options.onSearchChange} />
+            <Search
+              value={options.search}
+              onValueChange={options.onSearchChange}
+            />
             <Sort value={options.sort} onValueChange={options.onSortChange} />
           </Group>
           {series.length ? (

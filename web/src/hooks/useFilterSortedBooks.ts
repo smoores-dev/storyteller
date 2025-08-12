@@ -150,9 +150,16 @@ export function useFilterSortedBooks(books: BookDetail[]): {
     | BookType[]
     | null
 
-  const [showFilters, setShowFilters] = useState(
-    !!(collections || tags || series || bookTypes),
+  const filtersActive = !!(
+    collections ||
+    tags ||
+    series ||
+    bookTypes ||
+    authors ||
+    statuses
   )
+
+  const [showFilters, setShowFilters] = useState(false)
 
   const filtered = useMemo(
     () =>
@@ -196,19 +203,31 @@ export function useFilterSortedBooks(books: BookDetail[]): {
                   return !!book.ebook
                 }
                 case "ebook-only": {
-                  return book.ebook && !book.audiobook && !book.readaloud
+                  return (
+                    book.ebook &&
+                    !book.audiobook &&
+                    (!book.readaloud || book.readaloud.status !== "ALIGNED")
+                  )
                 }
                 case "audiobook": {
                   return !!book.audiobook
                 }
                 case "audiobook-only": {
-                  return book.audiobook && !book.ebook && !book.readaloud
+                  return (
+                    book.audiobook &&
+                    !book.ebook &&
+                    (!book.readaloud || book.readaloud.status !== "ALIGNED")
+                  )
                 }
                 case "readaloud": {
-                  return !!book.readaloud
+                  return book.readaloud?.status === "ALIGNED"
                 }
                 case "ebook-audiobook-only": {
-                  return book.ebook && book.audiobook && !book.readaloud
+                  return (
+                    book.ebook &&
+                    book.audiobook &&
+                    (!book.readaloud || book.readaloud.status !== "ALIGNED")
+                  )
                 }
               }
             })
@@ -227,6 +246,13 @@ export function useFilterSortedBooks(books: BookDetail[]): {
       filtered.toSorted((a, b) => {
         const first = sort[1] === "asc" ? a : b
         const second = sort[1] === "asc" ? b : a
+        const pubSort =
+          // It's fine to pass null here — that will result in a date at the epoch
+          // which will always sort first
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          new Date(first.publicationDate!).valueOf() -
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          new Date(second.publicationDate!).valueOf()
         switch (sort[0]) {
           case "title": {
             const firstTitle = createComparisonTitle(
@@ -241,7 +267,7 @@ export function useFilterSortedBooks(books: BookDetail[]): {
               ? 1
               : firstTitle < secondTitle
                 ? -1
-                : 0
+                : pubSort
           }
           case "author": {
             const firstAuthor = first.authors[0]
@@ -253,7 +279,7 @@ export function useFilterSortedBooks(books: BookDetail[]): {
               ? 1
               : firstAuthor.name.toLowerCase() < secondAuthor.name.toLowerCase()
                 ? -1
-                : 0
+                : pubSort
           }
           case "align-time": {
             const firstAlignedAt = first.alignedAt
@@ -268,10 +294,10 @@ export function useFilterSortedBooks(books: BookDetail[]): {
           case "create-time": {
             const firstAlignedAt = first.createdAt
             const secondAlignedAt = second.createdAt
-            return (
+            const alignSort =
               new Date(firstAlignedAt).valueOf() -
               new Date(secondAlignedAt).valueOf()
-            )
+            return alignSort === 0 ? pubSort : alignSort
           }
         }
       }),
@@ -288,11 +314,12 @@ export function useFilterSortedBooks(books: BookDetail[]): {
       sort,
       onSortChange: setSort,
       filters: {
-        visible: showFilters,
+        visible: showFilters || filtersActive,
         showFilters: () => {
           setShowFilters(true)
         },
         hideFilters: () => {
+          clearSearchParams()
           setShowFilters(false)
         },
         collections,

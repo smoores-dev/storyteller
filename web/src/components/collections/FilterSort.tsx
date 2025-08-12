@@ -21,12 +21,18 @@ interface Props {
 }
 
 export function FilterSort({
-  options: { onSearchChange, sort, onSortChange, filters },
+  options: {
+    search: initialSearch,
+    onSearchChange,
+    sort,
+    onSortChange,
+    filters,
+  },
 }: Props) {
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
   const { data: series = [] } = useListSeriesQuery()
-  const { data: authors = [] } = useListCreatorsQuery()
+  const { data: creators = [] } = useListCreatorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
 
   const sortedTags = useMemo(
@@ -56,7 +62,7 @@ export function FilterSort({
   return (
     <Stack gap={0} align="start">
       <Group>
-        <Search onValueChange={onSearchChange} />
+        <Search value={initialSearch} onValueChange={onSearchChange} />
         <Sort value={sort} onValueChange={onSortChange} />
       </Group>
       {filters.visible ? (
@@ -64,23 +70,8 @@ export function FilterSort({
           <Group>
             <MultiSelect
               searchable
-              label="Authors"
-              placeholder="Any author"
-              data={authors.map((s) => ({
-                label: s.name,
-                value: s.uuid,
-              }))}
-              value={filters.authors ?? []}
-              onChange={(values) => {
-                filters.onAuthorsChange(
-                  !values.length ? null : (values as UUID[]),
-                )
-              }}
-            />
-            <MultiSelect
-              searchable
-              label="Collections"
-              placeholder="Any collection"
+              aria-label="Collections"
+              placeholder={`Collections (${collections.length})`}
               data={collections
                 .map((collection) => ({
                   label: collection.name,
@@ -96,45 +87,38 @@ export function FilterSort({
             />
             <MultiSelect
               searchable
-              label="Format"
-              placeholder="Any format"
-              data={[
-                {
-                  label: "Ebook",
-                  value: "ebook",
-                },
-                {
-                  label: "Ebook only",
-                  value: "ebook-only",
-                },
-                {
-                  label: "Audiobook",
-                  value: "audiobook",
-                },
-                {
-                  label: "Audiobook only",
-                  value: "audiobook-only",
-                },
-                {
-                  label: "Readaloud",
-                  value: "readaloud",
-                },
-                {
-                  label: "Missing readaloud",
-                  value: "ebook-audiobook",
-                },
-              ]}
-              value={filters.bookTypes ?? []}
+              aria-label="Tags"
+              placeholder={`Tags (${tags.length})`}
+              data={sortedTags
+                .map((tag) => ({
+                  label: tag.name,
+                  value: tag.uuid as string,
+                }))
+                .concat([{ label: "Untagged", value: "none" }])}
+              value={filters.tags ?? []}
               onChange={(values) => {
-                filters.onBookTypesChange(
-                  !values.length ? null : (values as BookType[]),
+                filters.onTagsChange(!values.length ? null : (values as UUID[]))
+              }}
+            />
+            <MultiSelect
+              searchable
+              aria-label="Authors"
+              placeholder={`Authors (${creators.length})`}
+              data={creators.map((s) => ({
+                label: s.name,
+                value: s.uuid,
+              }))}
+              value={filters.authors ?? []}
+              onChange={(values) => {
+                filters.onAuthorsChange(
+                  !values.length ? null : (values as UUID[]),
                 )
               }}
             />
             <MultiSelect
               searchable
-              label="Series"
-              placeholder="Any series"
+              aria-label="Series"
+              placeholder={`Series (${series.length})`}
               data={sortedSeries.map((s) => ({
                 label: s.name,
                 value: s.uuid,
@@ -147,8 +131,45 @@ export function FilterSort({
               }}
             />
             <MultiSelect
-              label="Status"
-              placeholder="Any status"
+              searchable
+              aria-label="Format"
+              placeholder={`Format`}
+              data={[
+                {
+                  label: "Ebook",
+                  value: "ebook",
+                },
+                {
+                  label: "Audiobook",
+                  value: "audiobook",
+                },
+                {
+                  label: "Readaloud",
+                  value: "readaloud",
+                },
+                {
+                  label: "Ebook only",
+                  value: "ebook-only",
+                },
+                {
+                  label: "Audiobook only",
+                  value: "audiobook-only",
+                },
+                {
+                  label: "Missing readaloud",
+                  value: "ebook-audiobook-only",
+                },
+              ]}
+              value={filters.bookTypes ?? []}
+              onChange={(values) => {
+                filters.onBookTypesChange(
+                  !values.length ? null : (values as BookType[]),
+                )
+              }}
+            />
+            <MultiSelect
+              aria-label="Status"
+              placeholder={`Status`}
               data={statuses.map((s) => ({
                 label: s.name,
                 value: s.uuid,
@@ -158,21 +179,6 @@ export function FilterSort({
                 filters.onStatusesChange(
                   !values.length ? null : (values as UUID[]),
                 )
-              }}
-            />
-            <MultiSelect
-              searchable
-              label="Tags"
-              placeholder="Any tag"
-              data={sortedTags
-                .map((tag) => ({
-                  label: tag.name,
-                  value: tag.uuid as string,
-                }))
-                .concat([{ label: "Untagged", value: "none" }])}
-              value={filters.tags ?? []}
-              onChange={(values) => {
-                filters.onTagsChange(!values.length ? null : (values as UUID[]))
               }}
             />
           </Group>

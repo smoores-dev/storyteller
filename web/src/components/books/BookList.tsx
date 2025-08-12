@@ -64,6 +64,7 @@ export function BookList({ collectionUuid, books: initialBooks }: Props) {
           />
           {books.length ? (
             <BookGrid
+              filterSortOptions={options}
               books={books}
               isSelecting={isEditing}
               selected={selected}

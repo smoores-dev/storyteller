@@ -7,6 +7,7 @@ import {
 import Fuse from "fuse.js"
 import { useCallback, useMemo, useState } from "react"
 import { useListBooksQuery } from "@/store/api"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 
 export type SeriesWithBooks = Series & { books: NewSeriesRelation[] }
 
@@ -14,10 +15,29 @@ export function useFilterSortedSeries(series: SeriesWithBooks[]): {
   series: SeriesWithBooks[]
   options: Omit<FilterSortOptions, "filters">
 } {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   const { data: books } = useListBooksQuery()
   const bookMap = useMemo(
     () => new Map(books?.map((book) => [book.uuid, book])),
     [books],
+  )
+
+  const search = searchParams.get("search") ?? ""
+
+  const setSearchParam = useCallback(
+    (name: string, values: string[] | null) => {
+      const updated = new URLSearchParams(searchParams.toString())
+      if (values === null) {
+        updated.delete(name)
+      } else {
+        updated.set(name, values.join(","))
+      }
+      router.push(`${pathname}?${updated.toString()}`)
+    },
+    [pathname, router, searchParams],
   )
 
   const getFirstBook = useCallback(
@@ -33,12 +53,11 @@ export function useFilterSortedSeries(series: SeriesWithBooks[]): {
       new Fuse(series, {
         findAllMatches: true,
         ignoreDiacritics: true,
-        keys: ["title", "authors.name", "description", "narrators.name"],
+        keys: ["name"],
         threshold: 0.4,
       }),
     [series],
   )
-  const [search, setSearch] = useState("")
   const searched = useMemo(() => {
     if (search === "") return series
     const results = fuse.search(search)
@@ -98,7 +117,9 @@ export function useFilterSortedSeries(series: SeriesWithBooks[]): {
   return {
     series: sorted,
     options: {
-      onSearchChange: setSearch,
+      onSearchChange: (value) => {
+        setSearchParam("search", [value])
+      },
       search: search,
       sort,
       onSortChange: setSort,

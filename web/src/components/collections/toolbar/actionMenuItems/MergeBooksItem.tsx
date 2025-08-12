@@ -16,6 +16,7 @@ import {
   useListStatusesQuery,
   useListTagsQuery,
   useMergeBooksMutation,
+  useGetCurrentUserQuery,
 } from "@/store/api"
 import { UUID } from "@/uuid"
 import {
@@ -38,11 +39,13 @@ const EMPTY_BOOKS: BookDetail[] = []
 
 interface Props {
   selected: Set<UUID>
+  onCommit: () => void
 }
 
-export function MergeBooksItem({ selected }: Props) {
+export function MergeBooksItem({ selected, onCommit }: Props) {
   const [isOpen, { open, close }] = useDisclosure()
 
+  const { data: currentUser } = useGetCurrentUserQuery()
   const [mergeBooks] = useMergeBooksMutation()
 
   const { data: allBooks = EMPTY_BOOKS } = useListBooksQuery()
@@ -110,11 +113,12 @@ export function MergeBooksItem({ selected }: Props) {
       title: readaloud?.title || ebook?.title || audiobook?.title || "",
       language:
         (readaloud?.language || ebook?.language || audiobook?.language) ?? null,
-      authors:
+      authors: (
         readaloud?.authors ??
         ebook?.authors ??
         audiobook?.authors ??
-        ([] as CreatorRelation[]),
+        ([] as CreatorRelation[])
+      ).map((author) => author.name),
       creators:
         readaloud?.creators ??
         ebook?.creators ??
@@ -139,11 +143,12 @@ export function MergeBooksItem({ selected }: Props) {
           ebook?.description ||
           audiobook?.description) ??
         null,
-      narrator:
+      narrators: (
         audiobook?.narrators ??
         readaloud?.narrators ??
         ebook?.narrators ??
-        ([] as CreatorRelation[]),
+        ([] as CreatorRelation[])
+      ).map((author) => author.name),
       tags: initialTags,
     },
   })
@@ -153,11 +158,12 @@ export function MergeBooksItem({ selected }: Props) {
       title: readaloud?.title || ebook?.title || audiobook?.title || "",
       language:
         (readaloud?.language || ebook?.language || audiobook?.language) ?? null,
-      authors:
+      authors: (
         readaloud?.authors ??
         ebook?.authors ??
         audiobook?.authors ??
-        ([] as CreatorRelation[]),
+        ([] as CreatorRelation[])
+      ).map((author) => author.name),
       creators:
         readaloud?.creators ??
         ebook?.creators ??
@@ -182,11 +188,12 @@ export function MergeBooksItem({ selected }: Props) {
           ebook?.description ||
           audiobook?.description) ??
         null,
-      narrator:
+      narrators: (
         audiobook?.narrators ??
         readaloud?.narrators ??
         ebook?.narrators ??
-        ([] as CreatorRelation[]),
+        ([] as CreatorRelation[])
+      ).map((narrator) => narrator.name),
       tags: initialTags,
     })
     // Form isn't a stable reference, but form.setValues is, I guess?
@@ -255,12 +262,17 @@ export function MergeBooksItem({ selected }: Props) {
           <Text>Select which metadata you’d like to keep from each book.</Text>
           <form
             onSubmit={form.onSubmit(async (values) => {
+              onCommit()
+
               const {
                 authors,
+                creators,
+                narrators,
                 series,
                 collections,
                 tags,
                 publicationDate,
+                statusUuid,
                 ...update
               } = values
               await mergeBooks({
@@ -269,7 +281,29 @@ export function MergeBooksItem({ selected }: Props) {
                   publicationDate:
                     publicationDate && publicationDate.toISOString(),
                 },
-                relations: { creators: authors, series, collections, tags },
+                relations: {
+                  creators: [
+                    ...creators,
+                    ...authors.map((name) => ({
+                      name,
+                      fileAs: name,
+                      role: "aut",
+                    })),
+                    ...narrators.map((name) => ({
+                      name,
+                      fileAs: name,
+                      role: "nrt",
+                    })),
+                  ],
+                  ...(currentUser && {
+                    // TODO: This should probably be set in the backend,
+                    // not the frontend
+                    status: { statusUuid, userId: currentUser.id },
+                  }),
+                  series,
+                  collections,
+                  tags,
+                },
                 from: Array.from(selected),
               })
             })}
@@ -451,7 +485,10 @@ export function MergeBooksItem({ selected }: Props) {
                         inner: "justify-start",
                       }}
                       onClick={() => {
-                        form.setFieldValue("authors", book.authors)
+                        form.setFieldValue(
+                          "authors",
+                          book.authors.map((author) => author.name),
+                        )
                       }}
                     >
                       {book.authors.map((authors) => authors.name).join(", ")}
@@ -481,10 +518,10 @@ export function MergeBooksItem({ selected }: Props) {
                         inner: "justify-start",
                       }}
                       onClick={() => {
-                        form.setFieldValue("authors", book.authors)
+                        form.setFieldValue("creators", book.creators)
                       }}
                     >
-                      {book.authors.map((author) => author.name).join(", ")}
+                      {book.creators.map((author) => author.name).join(", ")}
                     </Button>
                   ))}
               </Stack>
