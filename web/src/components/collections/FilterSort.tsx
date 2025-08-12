@@ -8,7 +8,7 @@ import {
 } from "@/hooks/useFilterSortedBooks"
 import { UUID } from "@/uuid"
 import {
-  useListAuthorsQuery,
+  useListCreatorsQuery,
   useListCollectionsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
@@ -26,7 +26,7 @@ export function FilterSort({
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
   const { data: series = [] } = useListSeriesQuery()
-  const { data: authors = [] } = useListAuthorsQuery()
+  const { data: authors = [] } = useListCreatorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
 
   const sortedTags = useMemo(

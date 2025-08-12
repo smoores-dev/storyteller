@@ -22,7 +22,7 @@ export const GET = withHasPermission("bookList")(async (request) => {
       authors: book.authors.map((author) => ({
         name: author.name,
         file_as: author.fileAs,
-        role: author.role,
+        role: "aut",
       })),
       processing_status: null,
     })),

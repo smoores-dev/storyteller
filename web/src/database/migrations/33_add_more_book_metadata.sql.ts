@@ -2,91 +2,18 @@ import { getEpubFilepath, getEpubAlignedFilepath } from "@/assets/legacy/paths"
 import { Epub } from "@smoores/epub/node"
 import { db } from "../connection"
 import { stat } from "node:fs/promises"
-import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 import { logger } from "@/logging"
 import { getMetadataFromEpub } from "@/process/processEpub"
 
 async function getBooks() {
-  return await db
-    .selectFrom("book")
-    .selectAll("book")
-    .select((eb) => [
-      jsonArrayFrom(
-        eb
-          .selectFrom("author")
-          .innerJoin("authorToBook", "authorToBook.authorUuid", "author.uuid")
-          .select([
-            "author.uuid",
-            "author.id",
-            "author.name",
-            "author.fileAs",
-            "authorToBook.role",
-            "author.createdAt",
-            "author.updatedAt",
-          ])
-          .whereRef("authorToBook.bookUuid", "=", "book.uuid"),
-      ).as("authors"),
-      jsonArrayFrom(
-        eb
-          .selectFrom("series")
-          .innerJoin("bookToSeries", "bookToSeries.seriesUuid", "series.uuid")
-          .select([
-            "series.uuid",
-            "series.name",
-            "bookToSeries.featured",
-            "bookToSeries.position",
-            "series.createdAt",
-            "series.updatedAt",
-          ])
-          .whereRef("bookToSeries.bookUuid", "=", "book.uuid"),
-      ).as("series"),
-      jsonArrayFrom(
-        eb
-          .selectFrom("tag")
-          .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
-          .select(["tag.uuid", "tag.name", "tag.createdAt", "tag.updatedAt"])
-          .whereRef("bookToTag.bookUuid", "=", "book.uuid"),
-      ).as("tags"),
-      jsonArrayFrom(
-        eb
-          .selectFrom("collection")
-          .innerJoin(
-            "bookToCollection",
-            "bookToCollection.collectionUuid",
-            "collection.uuid",
-          )
-          .select([
-            "collection.uuid",
-            "collection.name",
-            "collection.description",
-            "collection.public",
-            "collection.createdAt",
-            "collection.updatedAt",
-          ])
-          .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
-      ).as("collections"),
-      jsonObjectFrom(
-        eb
-          .selectFrom("processingTask")
-          .select([
-            "processingTask.uuid",
-            "processingTask.progress",
-            "processingTask.status",
-            "processingTask.type",
-            "processingTask.createdAt",
-            "processingTask.updatedAt",
-          ])
-          .whereRef("processingTask.bookUuid", "=", "book.uuid")
-          .orderBy("processingTask.updatedAt", "desc")
-          .limit(1),
-      ).as("processingTask"),
-    ])
-    .execute()
+  return await db.selectFrom("book").selectAll("book").execute()
 }
 
 export default async function migrate() {
+  logger.info("Importing new metadata from source files")
   const books = await getBooks()
   for (const book of books) {
+    logger.info(`Importing metadata for ${book.title}`)
     let epub: Epub
     let createdAt: string
     let aligned = false
@@ -114,20 +41,6 @@ export default async function migrate() {
       }
     }
     try {
-      // const audioDirectory = getOriginalAudioFilepath(book.uuid)
-      // const entries = await readdir(audioDirectory)
-
-      // const firstTrack = entries.find((entry) => isAudioFile(entry))
-      // const audiobook =
-      //   firstTrack === undefined
-      //     ? undefined
-      //     : await Audiobook.from(
-      //         getOriginalAudioFilepath(book.uuid, firstTrack),
-      //       )
-
-      // const narrators = (await audiobook?.getNarrators()) ?? []
-      // audiobook?.close()
-
       const {
         update,
         relations: { tags = [], series = [] },
@@ -150,33 +63,23 @@ export default async function migrate() {
           .execute()
       }
 
-      await db
-        .deleteFrom("bookToSeries")
-        .where("bookToSeries.bookUuid", "=", book.uuid)
-        .execute()
-
       for (const s of series) {
         let existing = await db
           .selectFrom("series")
           .select(["uuid"])
-          .where((eb) =>
-            s.uuid
-              ? eb.or([
-                  eb("series.name", "=", s.name),
-                  eb("series.uuid", "=", s.uuid),
-                ])
-              : eb("series.name", "=", s.name),
-          )
+          .where("series.name", "=", s.name)
           .executeTakeFirst()
 
-        existing = await db
-          .insertInto("series")
-          .values({
-            name: s.name,
-            description: s.description,
-          })
-          .returning(["uuid as uuid"])
-          .executeTakeFirstOrThrow()
+        if (!existing) {
+          existing = await db
+            .insertInto("series")
+            .values({
+              name: s.name,
+              description: s.description,
+            })
+            .returning(["uuid as uuid"])
+            .executeTakeFirstOrThrow()
+        }
 
         await db
           .insertInto("bookToSeries")
@@ -188,13 +91,6 @@ export default async function migrate() {
           })
           .execute()
       }
-
-      await db
-        .deleteFrom("series")
-        .where("series.uuid", "not in", (eb) =>
-          eb.selectFrom("bookToSeries").select(["bookToSeries.seriesUuid"]),
-        )
-        .execute()
 
       if (tags.length) {
         await db

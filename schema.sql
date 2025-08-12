@@ -43,7 +43,7 @@ WHERE
 
 END;
 
-CREATE TABLE IF NOT EXISTS "author" (
+CREATE TABLE IF NOT EXISTS "creator" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
   name TEXT NOT NULL,
@@ -53,30 +53,8 @@ CREATE TABLE IF NOT EXISTS "author" (
 );
 
 CREATE TRIGGER author_update_trigger AFTER
-UPDATE ON author FOR EACH ROW BEGIN
-UPDATE author
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
-CREATE TABLE IF NOT EXISTS "author_to_book" (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  id INTEGER,
-  book_uuid TEXT NOT NULL,
-  author_uuid TEXT NOT NULL,
-  role TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (author_uuid) REFERENCES author (uuid)
-);
-
-CREATE TRIGGER author_to_book_update_trigger AFTER
-UPDATE ON author_to_book FOR EACH ROW BEGIN
-UPDATE author_to_book
+UPDATE ON "creator" FOR EACH ROW BEGIN
+UPDATE "creator"
 SET
   updated_at = CURRENT_TIMESTAMP
 WHERE
@@ -377,6 +355,28 @@ WHERE
 
 END;
 
+CREATE TABLE book_to_status (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL,
+  status_uuid TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (status_uuid) REFERENCES status (uuid),
+  FOREIGN KEY (user_id) REFERENCES user (id)
+);
+
+CREATE TRIGGER book_to_status_update_trigger AFTER
+UPDATE ON book_to_status FOR EACH ROW BEGIN
+UPDATE book_to_status
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
 CREATE TABLE account (
   id TEXT PRIMARY KEY DEFAULT (uuid ()),
   user_id TEXT NOT NULL,
@@ -501,49 +501,23 @@ WHERE
 
 END;
 
-CREATE TABLE narrator (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  name TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER narrator_update_trigger AFTER
-UPDATE ON narrator FOR EACH ROW BEGIN
-UPDATE narrator
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
-CREATE TABLE book_to_narrator (
+CREATE TABLE book_to_creator (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   book_uuid TEXT NOT NULL,
-  narrator_uuid TEXT NOT NULL,
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (narrator_uuid) REFERENCES narrator (uuid)
-);
-
-CREATE TRIGGER book_to_narrator_update_trigger AFTER
-UPDATE ON book_to_narrator FOR EACH ROW BEGIN
-UPDATE book_to_narrator
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
-CREATE TABLE book_to_status (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  book_uuid TEXT NOT NULL,
-  status_uuid TEXT NOT NULL,
-  user_id TEXT NOT NULL,
+  creator_uuid TEXT NOT NULL,
+  role TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (status_uuid) REFERENCES status (uuid),
-  FOREIGN KEY (user_id) REFERENCES user (id)
+  FOREIGN KEY (creator_uuid) REFERENCES creator (uuid)
 );
+
+CREATE TRIGGER book_to_creator_update_trigger AFTER
+UPDATE ON book_to_creator FOR EACH ROW BEGIN
+UPDATE book_to_creator
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;

@@ -1,10 +1,10 @@
-import { Narrator } from "@/database/narrators"
+import { Creator } from "@/database/creators"
 import { TagsInput as BaseTagsInput } from "@mantine/core"
 import { UseFormReturnType } from "@mantine/form"
 
 type GetInputProps = UseFormReturnType<{ narrators: string[] }>["getInputProps"]
 
-type Props = ReturnType<GetInputProps> & { narrators: Narrator[] }
+type Props = ReturnType<GetInputProps> & { narrators: Creator[] }
 
 export function NarratorsInput({ narrators, ...props }: Props) {
   return (

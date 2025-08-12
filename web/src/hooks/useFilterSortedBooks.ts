@@ -90,7 +90,13 @@ export function useFilterSortedBooks(books: BookDetail[]): {
       new Fuse(books, {
         findAllMatches: true,
         ignoreDiacritics: true,
-        keys: ["title", "authors.name", "description", "narrators.name"],
+        keys: [
+          "title",
+          "authors.name",
+          "description",
+          "narrators.name",
+          "creators.name",
+        ],
         threshold: 0.4,
       }),
     [books],

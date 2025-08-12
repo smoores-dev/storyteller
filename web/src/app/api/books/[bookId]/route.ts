@@ -31,7 +31,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     authors: book.authors.map((author) => ({
       name: author.name,
       file_as: author.fileAs,
-      role: author.role,
+      role: "aut",
     })),
     processing_status: null,
   })

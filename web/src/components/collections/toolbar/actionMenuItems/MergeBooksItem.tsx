@@ -2,20 +2,16 @@ import { BookDetail } from "@/apiModels"
 import { BookThumbnailImage } from "@/components/books/BookThumbnailImage"
 import { AuthorsInput } from "@/components/books/edit/AuthorsInput"
 import { CollectionsInput } from "@/components/books/edit/CollectionsInput"
+import { CreatorsInput } from "@/components/books/edit/CreatorsInput"
 import { NarratorsInput } from "@/components/books/edit/NarratorsInput"
 import { SeriesInput } from "@/components/books/edit/SeriesInput"
 import { StatusInput } from "@/components/books/edit/StatusInput"
 import { TagsInput } from "@/components/books/edit/TagsInput"
+import { CreatorRelation, SeriesRelation } from "@/database/books"
 import {
-  AuthorRelation,
-  NarratorRelation,
-  SeriesRelation,
-} from "@/database/books"
-import {
-  useListAuthorsQuery,
+  useListCreatorsQuery,
   useListBooksQuery,
   useListCollectionsQuery,
-  useListNarratorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
@@ -58,10 +54,9 @@ export function MergeBooksItem({ selected }: Props) {
 
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
-  const { data: narrators = [] } = useListNarratorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
   const { data: series = [] } = useListSeriesQuery()
-  const { data: authors = [] } = useListAuthorsQuery()
+  const { data: creators = [] } = useListCreatorsQuery()
 
   const disabled = useMemo(() => {
     if (selected.size > 3) return true
@@ -119,7 +114,12 @@ export function MergeBooksItem({ selected }: Props) {
         readaloud?.authors ??
         ebook?.authors ??
         audiobook?.authors ??
-        ([] as AuthorRelation[]),
+        ([] as CreatorRelation[]),
+      creators:
+        readaloud?.creators ??
+        ebook?.creators ??
+        audiobook?.creators ??
+        ([] as CreatorRelation[]),
       series:
         readaloud?.series ??
         ebook?.series ??
@@ -140,8 +140,10 @@ export function MergeBooksItem({ selected }: Props) {
           audiobook?.description) ??
         null,
       narrator:
-        (audiobook?.narrators || readaloud?.narrators || ebook?.narrators) ??
-        ([] as NarratorRelation[]),
+        audiobook?.narrators ??
+        readaloud?.narrators ??
+        ebook?.narrators ??
+        ([] as CreatorRelation[]),
       tags: initialTags,
     },
   })
@@ -155,7 +157,12 @@ export function MergeBooksItem({ selected }: Props) {
         readaloud?.authors ??
         ebook?.authors ??
         audiobook?.authors ??
-        ([] as AuthorRelation[]),
+        ([] as CreatorRelation[]),
+      creators:
+        readaloud?.creators ??
+        ebook?.creators ??
+        audiobook?.creators ??
+        ([] as CreatorRelation[]),
       series:
         readaloud?.series ??
         ebook?.series ??
@@ -176,14 +183,17 @@ export function MergeBooksItem({ selected }: Props) {
           audiobook?.description) ??
         null,
       narrator:
-        (audiobook?.narrators || readaloud?.narrators || ebook?.narrators) ??
-        ([] as NarratorRelation[]),
+        audiobook?.narrators ??
+        readaloud?.narrators ??
+        ebook?.narrators ??
+        ([] as CreatorRelation[]),
       tags: initialTags,
     })
     // Form isn't a stable reference, but form.setValues is, I guess?
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     audiobook?.authors,
+    audiobook?.creators,
     audiobook?.description,
     audiobook?.language,
     audiobook?.narrators,
@@ -192,6 +202,7 @@ export function MergeBooksItem({ selected }: Props) {
     audiobook?.status?.uuid,
     audiobook?.title,
     ebook?.authors,
+    ebook?.creators,
     ebook?.description,
     ebook?.language,
     ebook?.narrators,
@@ -203,6 +214,7 @@ export function MergeBooksItem({ selected }: Props) {
     initialPublicationDate,
     initialTags,
     readaloud?.authors,
+    readaloud?.creators,
     readaloud?.description,
     readaloud?.language,
     readaloud?.narrators,
@@ -213,7 +225,7 @@ export function MergeBooksItem({ selected }: Props) {
   ])
 
   const {
-    authors: bookAuthors,
+    creators: bookCreators,
     series: bookSeries,
     collections: bookCollections,
     statusUuid,
@@ -257,7 +269,7 @@ export function MergeBooksItem({ selected }: Props) {
                   publicationDate:
                     publicationDate && publicationDate.toISOString(),
                 },
-                relations: { authors, series, collections, tags },
+                relations: { creators: authors, series, collections, tags },
                 from: Array.from(selected),
               })
             })}
@@ -372,7 +384,7 @@ export function MergeBooksItem({ selected }: Props) {
               </Stack>
               <Stack gap={4}>
                 <NarratorsInput
-                  narrators={narrators}
+                  narrators={creators}
                   {...form.getInputProps("narrators")}
                 />
                 {books
@@ -425,15 +437,38 @@ export function MergeBooksItem({ selected }: Props) {
               </Stack>
               <Stack gap={4}>
                 <AuthorsInput
-                  values={bookAuthors}
+                  authors={creators}
+                  {...form.getInputProps("authors")}
+                />
+                {books
+                  .filter((book) => book.authors.length)
+                  .map((book) => (
+                    <Button
+                      key={book.uuid}
+                      variant="outline"
+                      className="border-gray-200 bg-gray-100 font-normal text-gray-800"
+                      classNames={{
+                        inner: "justify-start",
+                      }}
+                      onClick={() => {
+                        form.setFieldValue("authors", book.authors)
+                      }}
+                    >
+                      {book.authors.map((authors) => authors.name).join(", ")}
+                    </Button>
+                  ))}
+              </Stack>
+              <Stack gap={4}>
+                <CreatorsInput
+                  values={bookCreators}
                   getInputProps={form.getInputProps}
-                  removeAuthor={(i) => {
-                    form.removeListItem("authors", i)
+                  removeCreator={(i) => {
+                    form.removeListItem("creators", i)
                   }}
-                  addAuthor={(author) => {
-                    form.insertListItem("authors", author)
+                  addCreator={(creator) => {
+                    form.insertListItem("creators", creator)
                   }}
-                  authors={authors}
+                  creators={creators}
                 />
                 {books
                   .filter((book) => book.authors.length)

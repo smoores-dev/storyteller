@@ -9,9 +9,8 @@ import { BookEvents } from "@/events"
 import { DB } from "./schema"
 import { Insertable, Selectable, sql, Updateable } from "kysely"
 import { Epub } from "@smoores/epub/node"
-import { NewAuthor } from "./authors"
+import { NewCreator } from "./creators"
 import { NewSeries } from "./series"
-import { NewNarrator } from "./narrators"
 import { getMetadataFromEpub } from "@/process/processEpub"
 
 /**
@@ -38,9 +37,9 @@ export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
   return uuid
 }
 
-export type AuthorToBook = Selectable<DB["authorToBook"]>
-export type NewAuthorToBook = Insertable<DB["authorToBook"]>
-export type AuthorToBookUpdate = Updateable<DB["authorToBook"]>
+export type BookToCreator = Selectable<DB["bookToCreator"]>
+export type NewBookToCreator = Insertable<DB["bookToCreator"]>
+export type BookToCreatorUpdate = Updateable<DB["bookToCreator"]>
 
 export type ProcessingStatus = {
   currentTask: ProcessingTaskType
@@ -63,23 +62,16 @@ export type BookToSeries = Selectable<DB["bookToSeries"]>
 export type NewBookToSeries = Insertable<DB["bookToSeries"]>
 export type BookToSeriesUpdate = Updateable<DB["bookToSeries"]>
 
-export type BookToNarrator = Selectable<DB["bookToNarrator"]>
-export type NewBookToNarrator = Insertable<DB["bookToNarrator"]>
-export type BookToNarratorUpdate = Updateable<DB["bookToNarrator"]>
-
 export type BookToStatus = Selectable<DB["bookToStatus"]>
 export type NewBookToStatus = Insertable<DB["bookToStatus"]>
 export type BookToStatusUpdate = Updateable<DB["bookToStatus"]>
 
-export type AuthorRelation = NewAuthor &
-  Omit<NewAuthorToBook, "authorUuid" | "bookUuid">
+export type CreatorRelation = NewCreator &
+  Omit<NewBookToCreator, "creatorUuid" | "bookUuid">
 export type SeriesRelation = NewSeries &
   Omit<NewBookToSeries, "bookUuid" | "seriesUuid">
 export type TagRelation = NewTag & NewBookToTag
 export type StatusRelation = Omit<NewBookToStatus, "bookUuid">
-
-export type NarratorRelation = NewNarrator &
-  Omit<NewBookToNarrator, "narratorUuid" | "bookUuid">
 
 export type NewEbook = Insertable<DB["ebook"]>
 export type Ebook = Selectable<DB["ebook"]>
@@ -111,7 +103,7 @@ export async function createBookFromEpub(
     title: string
   },
   relations: {
-    authors?: AuthorRelation[]
+    creators?: CreatorRelation[]
     narrators?: string[]
     series?: SeriesRelation[]
     ebook?: EbookRelation
@@ -137,8 +129,12 @@ export async function createBookFromEpub(
     {
       ...relations,
       ...epubRelations,
-      narrators: narrators.concat(relations.narrators ?? []),
-      authors: epubRelations.authors?.concat(relations.authors ?? []) ?? [],
+      creators:
+        epubRelations.creators
+          ?.concat(relations.creators ?? [])
+          .concat(
+            narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
+          ) ?? [],
     },
   )
 }
@@ -146,8 +142,7 @@ export async function createBookFromEpub(
 export async function createBook(
   insert: NewBook,
   relations: {
-    authors?: AuthorRelation[]
-    narrators?: string[]
+    creators?: CreatorRelation[]
     tags?: string[]
     series?: SeriesRelation[]
     ebook?: EbookRelation
@@ -166,111 +161,39 @@ export async function createBook(
 
     uuid = row.uuid
 
-    if (relations.authors) {
-      for (const author of relations.authors) {
+    if (relations.creators) {
+      for (const creator of relations.creators) {
         let existing = await tr
-          .selectFrom("author")
+          .selectFrom("creator")
           .select(["uuid"])
           .where((eb) =>
-            author.uuid
+            creator.uuid
               ? eb.or([
-                  eb("author.name", "=", author.name),
-                  eb("author.uuid", "=", author.uuid),
+                  eb("creator.name", "=", creator.name),
+                  eb("creator.uuid", "=", creator.uuid),
                 ])
-              : eb("author.name", "=", author.name),
+              : eb("creator.name", "=", creator.name),
           )
           .executeTakeFirst()
 
         if (!existing) {
           existing = await tr
-            .insertInto("author")
+            .insertInto("creator")
             .values({
-              name: author.name,
-              fileAs: author.fileAs,
+              name: creator.name,
+              fileAs: creator.fileAs,
             })
             .returning(["uuid as uuid"])
             .executeTakeFirstOrThrow()
         }
 
         await tr
-          .insertInto("authorToBook")
+          .insertInto("bookToCreator")
           .values({
-            authorUuid: existing.uuid,
+            creatorUuid: existing.uuid,
             bookUuid: uuid,
-            role: author.role,
+            role: creator.role,
           })
-          .execute()
-      }
-    }
-
-    if (relations.narrators) {
-      const narrators = relations.narrators
-      if (narrators.length) {
-        await tr
-          .insertInto("narrator")
-          .columns(["name"])
-          .expression((eb) =>
-            eb
-              .selectFrom(() =>
-                narrators
-                  .map((narrator) =>
-                    tr
-                      .selectNoFrom([eb.val(narrator).as("name")])
-                      .where((web) =>
-                        web.not(
-                          web.exists(
-                            web
-                              .selectFrom("narrator")
-                              .select([web.lit(1).as("one")])
-                              .where("narrator.name", "=", narrator),
-                          ),
-                        ),
-                      ),
-                  )
-                  .reduce((acc, expr) => acc.unionAll(expr))
-                  .as("values"),
-              )
-              .selectAll(),
-          )
-          .execute()
-
-        await tr
-          .insertInto("bookToNarrator")
-          .columns(["bookUuid", "narratorUuid"])
-          .expression((eb) =>
-            eb
-              .selectFrom(() =>
-                narrators
-                  .map((narrator) =>
-                    eb
-                      .selectFrom("narrator")
-                      .select([
-                        eb.val(uuid).as("bookUuid"),
-                        "narrator.uuid as narratorUuid",
-                      ])
-                      .where("narrator.name", "=", narrator)
-                      .where((web) =>
-                        web.not(
-                          web.exists(
-                            web
-                              .selectFrom("bookToNarrator")
-                              .select([web.lit(1).as("one")])
-                              .innerJoin(
-                                "narrator",
-                                "narrator.uuid",
-                                "narratorUuid",
-                              )
-                              .where("bookUuid", "=", uuid)
-                              .where("narrator.name", "=", narrator),
-                          ),
-                        ),
-                      ),
-                  )
-                  .reduce((acc, expr) => acc.unionAll(expr))
-                  .as("values"),
-              )
-              .selectAll(),
-          )
           .execute()
       }
     }
@@ -481,37 +404,66 @@ export function booksQuery(userId?: UUID) {
     .select((eb) => [
       jsonArrayFrom(
         eb
-          .selectFrom("author")
+          .selectFrom("creator")
           .distinct()
-          .innerJoin("authorToBook", "authorToBook.authorUuid", "author.uuid")
+          .innerJoin(
+            "bookToCreator",
+            "bookToCreator.creatorUuid",
+            "creator.uuid",
+          )
           .select([
-            "author.uuid",
-            "author.id",
-            "author.name",
-            "author.fileAs",
-            "authorToBook.role",
-            "author.createdAt",
-            "author.updatedAt",
+            "creator.uuid",
+            "creator.id",
+            "creator.name",
+            "creator.fileAs",
+            "creator.createdAt",
+            "creator.updatedAt",
           ])
-          .whereRef("authorToBook.bookUuid", "=", "book.uuid"),
+          .whereRef("bookToCreator.bookUuid", "=", "book.uuid")
+          .where("bookToCreator.role", "=", "aut"),
       ).as("authors"),
       jsonArrayFrom(
         eb
-          .selectFrom("narrator")
+          .selectFrom("creator")
           .distinct()
           .innerJoin(
-            "bookToNarrator",
-            "bookToNarrator.narratorUuid",
-            "narrator.uuid",
+            "bookToCreator",
+            "bookToCreator.creatorUuid",
+            "creator.uuid",
           )
           .select([
-            "narrator.uuid",
-            "narrator.name",
-            "narrator.createdAt",
-            "narrator.updatedAt",
+            "creator.uuid",
+            "creator.id",
+            "creator.name",
+            "creator.fileAs",
+            "creator.createdAt",
+            "creator.updatedAt",
           ])
-          .whereRef("bookToNarrator.bookUuid", "=", "book.uuid"),
+          .whereRef("bookToCreator.bookUuid", "=", "book.uuid")
+          .where("bookToCreator.role", "=", "nrt"),
       ).as("narrators"),
+      jsonArrayFrom(
+        eb
+          .selectFrom("creator")
+          .distinct()
+          .innerJoin(
+            "bookToCreator",
+            "bookToCreator.creatorUuid",
+            "creator.uuid",
+          )
+          .select([
+            "creator.uuid",
+            "creator.id",
+            "creator.name",
+            "creator.fileAs",
+            "bookToCreator.role",
+            "creator.createdAt",
+            "creator.updatedAt",
+          ])
+          .whereRef("bookToCreator.bookUuid", "=", "book.uuid")
+          .where("bookToCreator.role", "!=", "nrt")
+          .where("bookToCreator.role", "!=", "aut"),
+      ).as("creators"),
       jsonArrayFrom(
         eb
           .selectFrom("series")
@@ -692,43 +644,56 @@ export async function getBookOrThrow(uuid: UUID) {
 }
 
 export async function deleteBook(bookUuid: UUID) {
-  await db
-    .deleteFrom("processingTask")
-    .where("bookUuid", "=", bookUuid)
-    .execute()
+  await db.transaction().execute(async (tr) => {
+    await tr
+      .deleteFrom("processingTask")
+      .where("bookUuid", "=", bookUuid)
+      .execute()
 
-  await db.deleteFrom("authorToBook").where("bookUuid", "=", bookUuid).execute()
+    await tr
+      .deleteFrom("bookToCreator")
+      .where("bookUuid", "=", bookUuid)
+      .execute()
 
-  await db
-    .deleteFrom("author")
-    .whereRef("author.uuid", "not in", (eb) =>
-      eb.selectFrom("authorToBook").select(["authorUuid"]),
-    )
-    .execute()
+    await tr
+      .deleteFrom("creator")
+      .whereRef("creator.uuid", "not in", (eb) =>
+        eb.selectFrom("bookToCreator").select(["creatorUuid"]),
+      )
+      .execute()
 
-  await db.deleteFrom("bookToSeries").where("bookUuid", "=", bookUuid).execute()
+    await tr
+      .deleteFrom("bookToSeries")
+      .where("bookUuid", "=", bookUuid)
+      .execute()
 
-  await db
-    .deleteFrom("series")
-    .whereRef("series.uuid", "not in", (eb) =>
-      eb.selectFrom("bookToSeries").select(["seriesUuid"]),
-    )
-    .execute()
+    await tr
+      .deleteFrom("series")
+      .whereRef("series.uuid", "not in", (eb) =>
+        eb.selectFrom("bookToSeries").select(["seriesUuid"]),
+      )
+      .execute()
 
-  await db.deleteFrom("bookToTag").where("bookUuid", "=", bookUuid).execute()
+    await tr.deleteFrom("bookToTag").where("bookUuid", "=", bookUuid).execute()
 
-  await db
-    .deleteFrom("bookToCollection")
-    .where("bookUuid", "=", bookUuid)
-    .execute()
+    await tr
+      .deleteFrom("bookToStatus")
+      .where("bookUuid", "=", bookUuid)
+      .execute()
 
-  await db.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
+    await tr
+      .deleteFrom("bookToCollection")
+      .where("bookUuid", "=", bookUuid)
+      .execute()
 
-  await db.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
-  await db.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
-  await db.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
+    await tr.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
 
-  await db.deleteFrom("book").where("uuid", "=", bookUuid).execute()
+    await tr.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
+    await tr.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
+    await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
+
+    await tr.deleteFrom("book").where("uuid", "=", bookUuid).execute()
+  })
 
   BookEvents.emit("message", {
     type: "bookDeleted",
@@ -738,8 +703,7 @@ export async function deleteBook(bookUuid: UUID) {
 }
 
 export type BookRelationsUpdate = {
-  authors?: AuthorRelation[]
-  narrators?: string[]
+  creators?: CreatorRelation[]
   series?: SeriesRelation[]
   collections?: UUID[]
   tags?: string[]
@@ -765,13 +729,13 @@ export async function updateBook(
         .execute()
     }
 
-    if (relations.authors) {
+    if (relations.creators) {
       await tr
-        .deleteFrom("authorToBook")
-        .where("authorToBook.bookUuid", "=", uuid)
+        .deleteFrom("bookToCreator")
+        .where("bookToCreator.bookUuid", "=", uuid)
         .execute()
 
-      for (const author of relations.authors) {
+      for (const author of relations.creators) {
         let existing = await tr
           .selectFrom("series")
           .select(["uuid"])
@@ -787,7 +751,7 @@ export async function updateBook(
 
         if (!existing) {
           existing = await tr
-            .insertInto("author")
+            .insertInto("creator")
             .values({
               name: author.name,
               fileAs: author.fileAs,
@@ -797,9 +761,9 @@ export async function updateBook(
         }
 
         await tr
-          .insertInto("authorToBook")
+          .insertInto("bookToCreator")
           .values({
-            authorUuid: existing.uuid,
+            creatorUuid: existing.uuid,
             bookUuid: uuid,
             role: author.role,
           })
@@ -807,96 +771,9 @@ export async function updateBook(
       }
 
       await tr
-        .deleteFrom("author")
-        .where("author.uuid", "not in", (eb) =>
-          eb.selectFrom("authorToBook").select(["authorToBook.authorUuid"]),
-        )
-        .execute()
-    }
-
-    if (relations.narrators) {
-      const narrators = relations.narrators
-      if (narrators.length) {
-        await tr
-          .insertInto("narrator")
-          .columns(["name"])
-          .expression((eb) =>
-            eb
-              .selectFrom(() =>
-                narrators
-                  .map((narrator) =>
-                    tr
-                      .selectNoFrom([eb.val(narrator).as("name")])
-                      .where((web) =>
-                        web.not(
-                          web.exists(
-                            web
-                              .selectFrom("narrator")
-                              .select([web.lit(1).as("one")])
-                              .where("narrator.name", "=", narrator),
-                          ),
-                        ),
-                      ),
-                  )
-                  .reduce((acc, expr) => acc.unionAll(expr))
-                  .as("values"),
-              )
-              .selectAll(),
-          )
-          .execute()
-
-        await tr
-          .insertInto("bookToNarrator")
-          .columns(["bookUuid", "narratorUuid"])
-          .expression((eb) =>
-            eb
-              .selectFrom(() =>
-                narrators
-                  .map((narrator) =>
-                    eb
-                      .selectFrom("narrator")
-                      .select([
-                        eb.val(uuid).as("bookUuid"),
-                        "narrator.uuid as narratorUuid",
-                      ])
-                      .where("narrator.name", "=", narrator)
-                      .where((web) =>
-                        web.not(
-                          web.exists(
-                            web
-                              .selectFrom("bookToNarrator")
-                              .select([web.lit(1).as("one")])
-                              .innerJoin(
-                                "narrator",
-                                "narrator.uuid",
-                                "narratorUuid",
-                              )
-                              .where("bookUuid", "=", uuid)
-                              .where("narrator.name", "=", narrator),
-                          ),
-                        ),
-                      ),
-                  )
-                  .reduce((acc, expr) => acc.unionAll(expr))
-                  .as("values"),
-              )
-              .selectAll(),
-          )
-          .execute()
-      }
-
-      await tr
-        .deleteFrom("bookToNarrator")
-        .where("bookUuid", "=", uuid)
-        .where((web) =>
-          web(
-            "narratorUuid",
-            "not in",
-            web
-              .selectFrom("narrator")
-              .select(["uuid"])
-              .where("narrator.name", "in", narrators),
-          ),
+        .deleteFrom("creator")
+        .where("creator.uuid", "not in", (eb) =>
+          eb.selectFrom("bookToCreator").select(["bookToCreator.creatorUuid"]),
         )
         .execute()
     }

@@ -4,7 +4,7 @@ import { useRef, useState } from "react"
 import { useForm } from "@mantine/form"
 import { Button, Group, px, Stack, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
-import { AuthorRelation, SeriesRelation } from "@/database/books"
+import { CreatorRelation, SeriesRelation } from "@/database/books"
 import { StatusInput } from "./StatusInput"
 import { CoverImageInput } from "./CoverImageInput"
 import { AuthorsInput } from "./AuthorsInput"
@@ -14,9 +14,8 @@ import { SaveState } from "@/components/forms"
 import { TagsInput } from "./TagsInput"
 import {
   getCoverUrl,
-  useListAuthorsQuery,
+  useListCreatorsQuery,
   useListCollectionsQuery,
-  useListNarratorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
@@ -27,6 +26,7 @@ import { ContentEditable } from "./ContentEditable"
 import { NarratorsInput } from "./NarratorsInput"
 import { DeleteBookModal } from "../modals/DeleteBookModal"
 import { useDisclosure } from "@mantine/hooks"
+import { CreatorsInput } from "./CreatorsInput"
 
 type Props = {
   book: BookDetail
@@ -39,16 +39,16 @@ export function BookEditForm({ book }: Props) {
 
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: tags = [] } = useListTagsQuery()
-  const { data: narrators = [] } = useListNarratorsQuery()
   const { data: statuses = [] } = useListStatusesQuery()
   const { data: series = [] } = useListSeriesQuery()
-  const { data: authors = [] } = useListAuthorsQuery()
+  const { data: creators = [] } = useListCreatorsQuery()
 
   const form = useForm({
     initialValues: {
       title: book.title,
       language: book.language,
-      authors: book.authors as AuthorRelation[],
+      authors: book.authors.map((author) => author.name),
+      creators: book.creators as CreatorRelation[],
       series: book.series as SeriesRelation[],
       status: book.status?.uuid,
       collections: book.collections.map((collection) => collection.uuid),
@@ -67,7 +67,7 @@ export function BookEditForm({ book }: Props) {
   const {
     textCover,
     audioCover,
-    authors: bookAuthors,
+    creators: bookCreators,
     series: bookSeries,
     collections: bookCollections,
     status,
@@ -160,7 +160,7 @@ export function BookEditForm({ book }: Props) {
               {...form.getInputProps("publicationDate")}
             />
             <NarratorsInput
-              narrators={narrators}
+              narrators={creators}
               {...form.getInputProps("narrators")}
             />
             <ContentEditable
@@ -170,15 +170,19 @@ export function BookEditForm({ book }: Props) {
               value={form.values.description}
             />
             <AuthorsInput
-              values={bookAuthors}
+              authors={creators}
+              {...form.getInputProps("authors")}
+            />
+            <CreatorsInput
+              values={bookCreators}
               getInputProps={form.getInputProps}
-              removeAuthor={(i) => {
-                form.removeListItem("authors", i)
+              removeCreator={(i) => {
+                form.removeListItem("creators", i)
               }}
-              addAuthor={(author) => {
-                form.insertListItem("authors", author)
+              addCreator={(creator) => {
+                form.insertListItem("creators", creator)
               }}
-              authors={authors}
+              creators={creators}
             />
             <SeriesInput
               values={bookSeries}

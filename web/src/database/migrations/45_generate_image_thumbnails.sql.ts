@@ -1,13 +1,58 @@
 import { getAudioCover, getEpubCover } from "@/assets/covers"
-import { getBooks } from "../books"
 import { optimizeImage } from "@/images"
 import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
 import { logger } from "@/logging"
+import { db } from "../connection"
+import { jsonObjectFrom } from "kysely/helpers/sqlite"
+import { BookWithRelations } from "../books"
+
+async function getBooks() {
+  return await db
+    .selectFrom("book")
+    .selectAll("book")
+    .select((eb) => [
+      jsonObjectFrom(
+        eb
+          .selectFrom("ebook")
+          .select([
+            "ebook.uuid",
+            "ebook.filepath",
+            "ebook.createdAt",
+            "ebook.updatedAt",
+          ])
+          .whereRef("ebook.bookUuid", "=", "book.uuid"),
+      ).as("ebook"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("audiobook")
+          .select([
+            "audiobook.uuid",
+            "audiobook.filepath",
+            "audiobook.createdAt",
+            "audiobook.updatedAt",
+          ])
+          .whereRef("audiobook.bookUuid", "=", "book.uuid"),
+      ).as("audiobook"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("readaloud")
+          .select([
+            "readaloud.uuid",
+            "readaloud.filepath",
+            "readaloud.status",
+            "readaloud.createdAt",
+            "readaloud.updatedAt",
+          ])
+          .whereRef("readaloud.bookUuid", "=", "book.uuid"),
+      ).as("alignedBook"),
+    ])
+    .execute()
+}
 
 export default async function migrate() {
   logger.info("Pre-generating thumbnail images for books...")
 
-  const books = await getBooks()
+  const books = (await getBooks()) as unknown as BookWithRelations[]
 
   for (const book of books) {
     const cachedAudioCover = await getCachedCoverImage(
