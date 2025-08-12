@@ -254,13 +254,12 @@ export function SeriesGrid({ series }: Props) {
       </Text>
       <List
         listStyleType="none"
-        className={"relative flex flex-row flex-wrap gap-6"}
+        className={"relative z-10 flex flex-row flex-wrap gap-6"}
       >
         {series.map((s, index) => (
           <List.Item
             style={{ zIndex: series.length - index }}
             key={s.uuid}
-            className="relative"
             classNames={{ itemWrapper: "block" }}
           >
             <SeriesThumbnail

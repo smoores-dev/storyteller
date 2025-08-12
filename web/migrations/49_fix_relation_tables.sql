@@ -16,7 +16,7 @@ INSERT INTO
 SELECT
   *
 FROM
-  book_to_collection;
+  temp_book_to_collection;
 
 DROP TABLE temp_book_to_collection;
 
@@ -39,7 +39,7 @@ INSERT INTO
 SELECT
   *
 FROM
-  book_to_creator;
+  temp_book_to_creator;
 
 DROP TABLE temp_book_to_creator;
 
@@ -63,7 +63,7 @@ INSERT INTO
 SELECT
   *
 FROM
-  book_to_series;
+  temp_book_to_series;
 
 DROP TABLE temp_book_to_series;
 
@@ -85,6 +85,6 @@ INSERT INTO
 SELECT
   *
 FROM
-  book_to_tag;
+  temp_book_to_tag;
 
 DROP TABLE temp_book_to_tag;

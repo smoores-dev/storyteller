@@ -38,9 +38,9 @@ export function BookGrid({
         {books.map((book, index) => (
           <List.Item
             id={book.uuid}
-            style={{ zIndex: books.length + 100 - index }}
+            style={{ zIndex: books.length - index }}
             key={book.uuid}
-            className="scroll-mt-36"
+            className="relative scroll-mt-36"
             classNames={{ itemWrapper: "block" }}
           >
             {isSelecting && (
