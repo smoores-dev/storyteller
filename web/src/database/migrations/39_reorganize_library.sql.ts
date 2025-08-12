@@ -12,7 +12,7 @@ import {
   DATA_DIR,
   TEXT_DIR,
 } from "@/directories"
-import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
+import { jsonObjectFrom } from "kysely/helpers/sqlite"
 import { Epub } from "@smoores/epub/node"
 import { readFile } from "node:fs/promises"
 
@@ -21,75 +21,6 @@ async function getBooks() {
     .selectFrom("book")
     .selectAll("book")
     .select((eb) => [
-      jsonArrayFrom(
-        eb
-          .selectFrom("author")
-          .innerJoin("authorToBook", "authorToBook.authorUuid", "author.uuid")
-          .select([
-            "author.uuid",
-            "author.id",
-            "author.name",
-            "author.fileAs",
-            "authorToBook.role",
-            "author.createdAt",
-            "author.updatedAt",
-          ])
-          .whereRef("authorToBook.bookUuid", "=", "book.uuid"),
-      ).as("authors"),
-      jsonArrayFrom(
-        eb
-          .selectFrom("series")
-          .innerJoin("bookToSeries", "bookToSeries.seriesUuid", "series.uuid")
-          .select([
-            "series.uuid",
-            "series.name",
-            "bookToSeries.featured",
-            "bookToSeries.position",
-            "series.createdAt",
-            "series.updatedAt",
-          ])
-          .whereRef("bookToSeries.bookUuid", "=", "book.uuid"),
-      ).as("series"),
-      jsonArrayFrom(
-        eb
-          .selectFrom("tag")
-          .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
-          .select(["tag.uuid", "tag.name", "tag.createdAt", "tag.updatedAt"])
-          .whereRef("bookToTag.bookUuid", "=", "book.uuid"),
-      ).as("tags"),
-      jsonArrayFrom(
-        eb
-          .selectFrom("collection")
-          .innerJoin(
-            "bookToCollection",
-            "bookToCollection.collectionUuid",
-            "collection.uuid",
-          )
-          .select([
-            "collection.uuid",
-            "collection.name",
-            "collection.description",
-            "collection.public",
-            "collection.createdAt",
-            "collection.updatedAt",
-          ])
-          .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
-      ).as("collections"),
-      jsonObjectFrom(
-        eb
-          .selectFrom("processingTask")
-          .select([
-            "processingTask.uuid",
-            "processingTask.progress",
-            "processingTask.status",
-            "processingTask.type",
-            "processingTask.createdAt",
-            "processingTask.updatedAt",
-          ])
-          .whereRef("processingTask.bookUuid", "=", "book.uuid")
-          .orderBy("processingTask.updatedAt", "desc")
-          .limit(1),
-      ).as("processingTask"),
       jsonObjectFrom(
         eb
           .selectFrom("ebook")

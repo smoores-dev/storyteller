@@ -1,13 +1,13 @@
 import { withHasPermission } from "@/auth/auth"
-import { getAuthors } from "@/database/authors"
+import { getCreators } from "@/database/creators"
 import { NextResponse } from "next/server"
 
 /**
- * @summary List all authors
+ * @summary List all creators
  * @desc '
  */
 export const GET = withHasPermission("bookList")(async () => {
-  const authors = await getAuthors()
+  const creators = await getCreators()
 
-  return NextResponse.json(authors)
+  return NextResponse.json(creators)
 })

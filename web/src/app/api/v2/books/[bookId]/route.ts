@@ -4,7 +4,7 @@ import { persistCustomAudioCover } from "@/assets/covers"
 import { getInternalBookDirectory } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
-  AuthorRelation,
+  CreatorRelation,
   deleteBook,
   getBook,
   getBookUuid,
@@ -92,13 +92,29 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     .getAll("tags")
     .map((entry) => JSON.parse(entry.valueOf() as string) as string)
 
-  const authors = formData
-    .getAll("authors")
-    .map((entry) => JSON.parse(entry.valueOf() as string) as AuthorRelation)
+  const creators = formData
+    .getAll("creators")
+    .map((entry) => JSON.parse(entry.valueOf() as string) as CreatorRelation)
 
   const narrators = formData
     .getAll("narrators")
     .map((entry) => JSON.parse(entry.valueOf() as string) as string)
+
+  if (fields.has("narrators")) {
+    creators.push(
+      ...narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
+    )
+  }
+
+  const authors = formData
+    .getAll("authors")
+    .map((entry) => JSON.parse(entry.valueOf() as string) as string)
+
+  if (fields.has("authors")) {
+    creators.push(
+      ...authors.map((name) => ({ name, fileAs: name, role: "aut" })),
+    )
+  }
 
   const series = formData
     .getAll("series")
@@ -126,8 +142,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       ...(fields.has("publicationDate") && { publicationDate }),
     },
     {
-      ...(fields.has("authors") && { authors }),
-      ...(fields.has("narrators") && { narrators }),
+      ...(fields.has("creators") && { creators }),
       ...(fields.has("series") && { series }),
       ...(fields.has("collections") && { collections }),
       ...(fields.has("tags") && { tags }),

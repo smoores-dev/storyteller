@@ -197,7 +197,11 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             ...(collectionUuid && { collections: [collectionUuid] }),
             audiobook: { filepath: audiobookPath },
             ...(authors.length && {
-              authors: authors.map((name) => ({ name, fileAs: name })),
+              authors: authors.map((name) => ({
+                name,
+                fileAs: name,
+                role: "aut",
+              })),
             }),
             ...(narrators.length && {
               narrators: narrators,
@@ -290,7 +294,14 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             .filter((entry) => isAudioFile(entry))
             .map((relativePath) => join(audiobookPath, relativePath)),
         )
-        relations.narrators = await audiobook.getNarrators()
+        relations.creators ??= []
+        relations.creators.push(
+          ...(await audiobook.getNarrators()).map((name) => ({
+            name,
+            fileAs: name,
+            role: "nrt",
+          })),
+        )
         audiobook.close()
       }
 

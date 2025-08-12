@@ -36,25 +36,6 @@ export interface Audiobook {
   uuid: Generated<import("@/uuid").UUID>
 }
 
-export interface Author {
-  createdAt: Generated<string>
-  fileAs: string
-  id: number | null
-  name: string
-  updatedAt: Generated<string>
-  uuid: Generated<import("@/uuid").UUID>
-}
-
-export interface AuthorToBook {
-  authorUuid: import("@/uuid").UUID
-  bookUuid: import("@/uuid").UUID
-  createdAt: Generated<string>
-  id: number | null
-  role: string | null
-  updatedAt: Generated<string>
-  uuid: Generated<import("@/uuid").UUID>
-}
-
 export interface Book {
   alignedAt: string | null
   alignedByStorytellerVersion: string | null
@@ -79,9 +60,12 @@ export interface BookToCollection {
   uuid: Generated<import("@/uuid").UUID>
 }
 
-export interface BookToNarrator {
+export interface BookToCreator {
   bookUuid: import("@/uuid").UUID
-  narratorUuid: import("@/uuid").UUID
+  createdAt: Generated<string>
+  creatorUuid: import("@/uuid").UUID
+  role: string | null
+  updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
 
@@ -130,6 +114,15 @@ export interface CollectionToUser {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface Creator {
+  createdAt: Generated<string>
+  fileAs: string
+  id: number | null
+  name: string
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+}
+
 export interface Ebook {
   bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
@@ -145,13 +138,6 @@ export interface Migration {
   id: Generated<number>
   name: string
   updatedAt: Generated<string>
-}
-
-export interface Narrator {
-  createdAt: Generated<string>
-  name: string
-  updatedAt: Generated<string>
-  uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface Position {
@@ -280,19 +266,17 @@ export interface VerificationToken {
 export interface DB {
   account: Account
   audiobook: Audiobook
-  author: Author
-  authorToBook: AuthorToBook
   book: Book
   bookToCollection: BookToCollection
-  bookToNarrator: BookToNarrator
+  bookToCreator: BookToCreator
   bookToSeries: BookToSeries
   bookToStatus: BookToStatus
   bookToTag: BookToTag
   collection: Collection
   collectionToUser: CollectionToUser
+  creator: Creator
   ebook: Ebook
   migration: Migration
-  narrator: Narrator
   position: Position
   processingTask: ProcessingTask
   readaloud: Readaloud

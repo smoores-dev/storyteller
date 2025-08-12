@@ -1,6 +1,6 @@
 import { Epub } from "@smoores/epub/node"
 import type {
-  AuthorRelation,
+  CreatorRelation,
   BookRelationsUpdate,
   BookUpdate,
   BookWithRelations,
@@ -94,10 +94,10 @@ export async function getMetadataFromEpub(epub: Epub): Promise<{
     typeof subject === "string" ? subject : subject.value,
   )
 
-  const creators = await epub.getCreators()
-  const authors = creators.map<AuthorRelation>((author) => ({
+  const epubCreators = await epub.getCreators()
+  const creators = epubCreators.map<CreatorRelation>((author) => ({
     name: author.name,
-    role: author.role ?? null,
+    role: author.role ?? "aut",
     fileAs: author.fileAs ?? author.name,
   }))
 
@@ -161,7 +161,7 @@ export async function getMetadataFromEpub(epub: Epub): Promise<{
     relations: {
       ...(!!tags.length && { tags }),
       ...(!!series.length && { series }),
-      ...(!!authors.length && { authors }),
+      ...(!!creators.length && { creators }),
     },
   }
 }
@@ -187,7 +187,21 @@ export async function writeMetadataToEpub(
   for (const author of book.authors) {
     await epub.addCreator({
       name: author.name,
-      ...(author.role && { role: author.role }),
+      role: "aut",
+    })
+  }
+
+  for (const narrator of book.narrators) {
+    await epub.addCreator({
+      name: narrator.name,
+      role: "nrt",
+    })
+  }
+
+  for (const creator of book.creators) {
+    await epub.addCreator({
+      name: creator.name,
+      ...(creator.role && { role: creator.role }),
     })
   }
 

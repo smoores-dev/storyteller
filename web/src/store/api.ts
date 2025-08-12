@@ -17,13 +17,13 @@ import {
 } from "@/apiModels/models/ProcessingStatus"
 import { ProcessingTask } from "@/database/processingTasks"
 import {
-  AuthorRelation,
+  CreatorRelation,
   BookRelationsUpdate,
   BookUpdate,
   SeriesRelation,
 } from "@/database/books"
 import { Status } from "@/database/statuses"
-import { Author } from "@/database/authors"
+import { Creator } from "@/database/creators"
 import { NewSeries, NewSeriesRelation, Series } from "@/database/series"
 import { CollectionWithRelations } from "@/database/collections"
 import { Tag } from "@/database/tags"
@@ -36,12 +36,11 @@ export const api = createApi({
     "Invites",
     "Users",
     "Statuses",
-    "Authors",
+    "Creators",
     "Series",
     "Collections",
     "Tags",
     "CurrentUser",
-    "Narrators",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -309,7 +308,8 @@ export const api = createApi({
           language?: BookUpdate["language"]
           status?: UUID | undefined
           publicationDate?: BookUpdate["publicationDate"]
-          authors?: AuthorRelation[]
+          authors?: string[]
+          creators?: CreatorRelation[]
           series?: SeriesRelation[]
           collections?: UUID[]
           tags?: string[]
@@ -374,6 +374,12 @@ export const api = createApi({
           }
         }
 
+        if (update.creators) {
+          for (const creator of update.creators) {
+            body.append("creators", JSON.stringify(creator))
+          }
+        }
+
         if (update.series) {
           for (const series of update.series) {
             body.append("series", JSON.stringify(series))
@@ -400,7 +406,7 @@ export const api = createApi({
           body,
         }
       },
-      invalidatesTags: ["Authors", "Narrators", "Series", "Tags"],
+      invalidatesTags: ["Creators", "Series", "Tags"],
     }),
     listStatuses: build.query<Status[], void>({
       query: () => `/statuses`,
@@ -409,20 +415,13 @@ export const api = createApi({
           "Statuses",
         ],
     }),
-    listAuthors: build.query<Author[], void>({
-      query: () => "/authors",
-      providesTags: (authors) =>
-        authors?.map((author) => ({ type: "Authors", id: author.uuid })) ?? [
-          "Authors",
-        ],
-    }),
-    listNarrators: build.query<Author[], void>({
-      query: () => "/narrators",
-      providesTags: (narrators) =>
-        narrators?.map((narrator) => ({
-          type: "Narrators",
-          id: narrator.uuid,
-        })) ?? ["Narrators"],
+    listCreators: build.query<Creator[], void>({
+      query: () => "/creators",
+      providesTags: (creators) =>
+        creators?.map((creator) => ({
+          type: "Creators",
+          id: creator.uuid,
+        })) ?? ["Creators"],
     }),
     listSeries: build.query<Series[], void>({
       query: () => "/series",
@@ -603,11 +602,10 @@ export const {
   useGetCurrentUserQuery,
   useGetShelvesQuery,
   useLazyListCollectionsQuery,
-  useListAuthorsQuery,
+  useListCreatorsQuery,
   useListBooksQuery,
   useListCollectionsQuery,
   useListInvitesQuery,
-  useListNarratorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
