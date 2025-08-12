@@ -78,12 +78,33 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
             </Group>
             <Stack className="gap-1">
               <Text>
-                by {book.authors.map((author) => author.name).join(", ")}
+                by{" "}
+                {book.authors.map((author, index) => (
+                  <span key={author.uuid}>
+                    <Link
+                      href={`/books?authors=${author.uuid}`}
+                      className="hover:text-st-orange-600 hover:underline"
+                    >
+                      {author.name}
+                    </Link>
+                    {index < book.authors.length - 1 && ", "}
+                  </span>
+                ))}
               </Text>
               {!!book.narrators.length && (
                 <Text>
                   narrated by{" "}
-                  {book.narrators.map((author) => author.name).join(", ")}
+                  {book.narrators.map((narrator, index) => (
+                    <span key={narrator.uuid}>
+                      <Link
+                        href={`/books?authors=${narrator.uuid}`}
+                        className="hover:text-st-orange-600 hover:underline"
+                      >
+                        {narrator.name}
+                      </Link>
+                      {index < book.authors.length - 1 && ", "}
+                    </span>
+                  ))}
                 </Text>
               )}
             </Stack>
