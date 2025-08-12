@@ -40,7 +40,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
   }[] = []
 
   for (const entry of entries) {
-    if (!entry.isFile()) continue
+    if (!entry.isFile() && !entry.isSymbolicLink()) continue
     const ext = extname(entry.name)
     if (ext === ".epub") {
       ebookPaths.push(join(entry.parentPath, entry.name))
