@@ -731,15 +731,15 @@ export async function updateBook(
 
       for (const author of relations.creators) {
         let existing = await tr
-          .selectFrom("series")
+          .selectFrom("creator")
           .select(["uuid"])
           .where((eb) =>
             author.uuid
               ? eb.or([
-                  eb("series.name", "=", author.name),
-                  eb("series.uuid", "=", author.uuid),
+                  eb("creator.name", "=", author.name),
+                  eb("creator.uuid", "=", author.uuid),
                 ])
-              : eb("series.name", "=", author.name),
+              : eb("creator.name", "=", author.name),
           )
           .executeTakeFirst()
 
