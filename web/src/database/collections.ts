@@ -1,4 +1,4 @@
-import { Insertable, Selectable, Updateable } from "kysely"
+import { Insertable, Selectable, Transaction, Updateable } from "kysely"
 import { DB } from "./schema"
 import { db } from "./connection"
 import { BookEvents } from "@/events"
@@ -13,8 +13,12 @@ export type CollectionUpdate = Updateable<DB["collection"]>
 
 export type CollectionWithRelations = Awaited<ReturnType<typeof getCollection>>
 
-export async function getCollection(uuid: UUID, userId?: UUID) {
-  const collection = await db
+export async function getCollection(
+  uuid: UUID,
+  userId?: UUID,
+  tr?: Transaction<DB>,
+) {
+  const collection = await (tr ?? db)
     .selectFrom("collection")
     .selectAll("collection")
     .select((eb) => [
@@ -83,27 +87,29 @@ export async function createCollection(
   insert: NewCollection,
   relations: { users?: UUID[] } = {},
 ) {
-  const { uuid } = await db
-    .insertInto("collection")
-    .values(insert)
-    .returning(["uuid as uuid"])
-    .executeTakeFirstOrThrow()
+  return await db.transaction().execute(async (tr) => {
+    const { uuid } = await tr
+      .insertInto("collection")
+      .values(insert)
+      .returning(["uuid as uuid"])
+      .executeTakeFirstOrThrow()
 
-  const collection = await getCollection(uuid)
+    const collection = await getCollection(uuid, undefined, tr)
 
-  if (!collection.public && relations.users) {
-    await db
-      .insertInto("collectionToUser")
-      .values(
-        relations.users.map((user) => ({
-          collectionUuid: collection.uuid,
-          userId: user,
-        })),
-      )
-      .execute()
-  }
+    if (!collection.public && relations.users) {
+      await tr
+        .insertInto("collectionToUser")
+        .values(
+          relations.users.map((user) => ({
+            collectionUuid: collection.uuid,
+            userId: user,
+          })),
+        )
+        .execute()
+    }
 
-  return collection
+    return collection
+  })
 }
 
 export async function updateCollection(
@@ -111,34 +117,36 @@ export async function updateCollection(
   update: CollectionUpdate,
   relations: { users?: UUID[] } = {},
 ) {
-  if (Object.keys(update).length) {
-    await db
-      .updateTable("collection")
-      .set(update)
-      .where("uuid", "=", uuid)
-      .execute()
-  }
-  const collection = await getCollection(uuid)
+  const collection = await db.transaction().execute(async (tr) => {
+    if (Object.keys(update).length) {
+      await tr
+        .updateTable("collection")
+        .set(update)
+        .where("uuid", "=", uuid)
+        .execute()
+    }
+    const collection = await getCollection(uuid, undefined, tr)
 
-  if (!collection.public && relations.users) {
-    await db
-      .deleteFrom("collectionToUser")
-      .where("collectionUuid", "=", uuid)
-      .execute()
+    if (!collection.public && relations.users) {
+      await tr
+        .deleteFrom("collectionToUser")
+        .where("collectionUuid", "=", uuid)
+        .execute()
 
-    await db
-      .insertInto("collectionToUser")
-      .values(
-        relations.users.map((user) => ({
-          collectionUuid: collection.uuid,
-          userId: user,
-        })),
-      )
-      .execute()
-  }
+      await tr
+        .insertInto("collectionToUser")
+        .values(
+          relations.users.map((user) => ({
+            collectionUuid: collection.uuid,
+            userId: user,
+          })),
+        )
+        .execute()
+    }
 
+    return collection
+  })
   await updateAutoimport(uuid)
-
   return collection
 }
 
