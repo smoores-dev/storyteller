@@ -133,28 +133,6 @@ WHERE
 
 END;
 
-CREATE TABLE book_to_series (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  series_uuid TEXT NOT NULL,
-  book_uuid TEXT NOT NULL,
-  position REAL,
-  featured BOOLEAN NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (series_uuid) REFERENCES "temp_series" (uuid),
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid)
-);
-
-CREATE TRIGGER book_to_series_update_trigger AFTER
-UPDATE ON book_to_series FOR EACH ROW BEGIN
-UPDATE book_to_series
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
 CREATE TABLE status (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   name TEXT NOT NULL,
@@ -166,46 +144,6 @@ CREATE TABLE status (
 CREATE TRIGGER status_update_trigger AFTER
 UPDATE ON status FOR EACH ROW BEGIN
 UPDATE status
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
-CREATE TABLE book_to_tag (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  tag_uuid TEXT NOT NULL,
-  book_uuid TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (tag_uuid) REFERENCES "temp_tag" (uuid)
-);
-
-CREATE TRIGGER book_to_tag_update_trigger AFTER
-UPDATE ON book_to_tag FOR EACH ROW BEGIN
-UPDATE book_to_tag
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
-CREATE TABLE book_to_collection (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  collection_uuid TEXT NOT NULL,
-  book_uuid TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (collection_uuid) REFERENCES "temp_collection" (uuid)
-);
-
-CREATE TRIGGER book_to_collection_update_trigger AFTER
-UPDATE ON book_to_collection FOR EACH ROW BEGIN
-UPDATE book_to_collection
 SET
   updated_at = CURRENT_TIMESTAMP
 WHERE
@@ -427,27 +365,6 @@ WHERE
 
 END;
 
-CREATE TABLE book_to_creator (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  book_uuid TEXT NOT NULL,
-  creator_uuid TEXT NOT NULL,
-  role TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
-  FOREIGN KEY (creator_uuid) REFERENCES "temp_creator" (uuid)
-);
-
-CREATE TRIGGER book_to_creator_update_trigger AFTER
-UPDATE ON book_to_creator FOR EACH ROW BEGIN
-UPDATE book_to_creator
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
 CREATE TABLE creator (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -521,3 +438,46 @@ WHERE
   uuid = OLD.uuid;
 
 END;
+
+CREATE TABLE book_to_collection (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  collection_uuid TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (collection_uuid) REFERENCES collection (uuid)
+);
+
+CREATE TABLE book_to_creator (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  book_uuid TEXT NOT NULL,
+  creator_uuid TEXT NOT NULL,
+  role TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (creator_uuid) REFERENCES "creator" (uuid)
+);
+
+CREATE TABLE book_to_series (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  series_uuid TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  position REAL,
+  featured BOOLEAN NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (series_uuid) REFERENCES "series" (uuid),
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid)
+);
+
+CREATE TABLE book_to_tag (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  tag_uuid TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid),
+  FOREIGN KEY (tag_uuid) REFERENCES "tag" (uuid)
+);

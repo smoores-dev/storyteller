@@ -729,17 +729,17 @@ export async function updateBook(
         .where("bookToCreator.bookUuid", "=", uuid)
         .execute()
 
-      for (const author of relations.creators) {
+      for (const creator of relations.creators) {
         let existing = await tr
           .selectFrom("creator")
           .select(["uuid"])
           .where((eb) =>
-            author.uuid
+            creator.uuid
               ? eb.or([
-                  eb("creator.name", "=", author.name),
-                  eb("creator.uuid", "=", author.uuid),
+                  eb("creator.name", "=", creator.name),
+                  eb("creator.uuid", "=", creator.uuid),
                 ])
-              : eb("creator.name", "=", author.name),
+              : eb("creator.name", "=", creator.name),
           )
           .executeTakeFirst()
 
@@ -747,8 +747,8 @@ export async function updateBook(
           existing = await tr
             .insertInto("creator")
             .values({
-              name: author.name,
-              fileAs: author.fileAs,
+              name: creator.name,
+              fileAs: creator.fileAs,
             })
             .returning(["uuid as uuid"])
             .executeTakeFirstOrThrow()
@@ -759,7 +759,7 @@ export async function updateBook(
           .values({
             creatorUuid: existing.uuid,
             bookUuid: uuid,
-            role: author.role,
+            role: creator.role,
           })
           .execute()
       }
