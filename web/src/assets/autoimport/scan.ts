@@ -124,7 +124,6 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         (bookPath.readaloud && bookPath.readaloud === book.readaloud?.filepath),
     )
 
-    // TODO: wrap in transaction?
     if (!book) {
       logger.info(
         `Found a new book! Importing from ${JSON.stringify(bookPath)}`,
@@ -297,7 +296,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             .filter((entry) => isAudioFile(entry))
             .map((relativePath) => join(audiobookPath, relativePath)),
         )
-        relations.creators ??= []
+        relations.creators ??= book.creators
         relations.creators.push(
           ...(await audiobook.getNarrators()).map((name) => ({
             name,
