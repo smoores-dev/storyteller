@@ -35,7 +35,7 @@ export async function getNextUp(userId: UUID) {
     .innerJoin("book as prequel", "prequelToSeries.bookUuid", "prequel.uuid")
     .innerJoin("bookToStatus", (join) =>
       join
-        .onRef("book.uuid", "=", "bookToStatus.bookUuid")
+        .onRef("prequel.uuid", "=", "bookToStatus.bookUuid")
         .on("bookToStatus.userId", "=", userId),
     )
     .innerJoin("status", (join) =>
