@@ -20,6 +20,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "45_generate_image_thumbnails.sql": (
     await import("./migrations/45_generate_image_thumbnails.sql")
   ).default,
+  "47_restructure_creators.sql": (
+    await import("./migrations/47_restructure_creators.sql")
+  ).default,
 }
 
 async function isFirstStartup() {

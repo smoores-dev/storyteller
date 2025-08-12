@@ -112,13 +112,6 @@ export async function createBookFromEpub(
     collections?: UUID[]
   } = {},
 ) {
-  const metadata = await epub.getMetadata()
-
-  const narrators = metadata
-    .filter((entry) => entry.properties["property"] === "storyteller:narrator")
-    .map((entry) => entry.value)
-    .filter((name): name is string => !!name)
-
   const { update, relations: epubRelations } = await getMetadataFromEpub(epub)
 
   return await createBook(
@@ -129,12 +122,7 @@ export async function createBookFromEpub(
     {
       ...relations,
       ...epubRelations,
-      creators:
-        epubRelations.creators
-          ?.concat(relations.creators ?? [])
-          .concat(
-            narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
-          ) ?? [],
+      creators: epubRelations.creators?.concat(relations.creators ?? []) ?? [],
     },
   )
 }
