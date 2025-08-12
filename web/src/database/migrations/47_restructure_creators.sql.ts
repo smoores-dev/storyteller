@@ -59,7 +59,7 @@ export default async function migrate() {
     const audioDirectory = book.audiobook?.filepath
     if (!audioDirectory) continue
 
-    logger.info(`Imorting narrators for ${book.title}`)
+    logger.info(`Importing narrators for ${book.title}`)
 
     const entries = await readdir(audioDirectory)
 

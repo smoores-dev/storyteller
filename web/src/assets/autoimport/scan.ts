@@ -3,6 +3,7 @@ import {
   BookUpdate,
   createBook,
   createBookFromEpub,
+  CreatorRelation,
   getBooks,
   updateBook,
 } from "@/database/books"
@@ -123,6 +124,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         (bookPath.readaloud && bookPath.readaloud === book.readaloud?.filepath),
     )
 
+    // TODO: wrap in transaction?
     if (!book) {
       logger.info(
         `Found a new book! Importing from ${JSON.stringify(bookPath)}`,
@@ -188,6 +190,14 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         const narrators = await audiobook.getNarrators()
         audiobook.close()
 
+        const creators: CreatorRelation[] = []
+        creators.push(
+          ...authors.map((name) => ({ name, fileAs: name, role: "aut" })),
+        )
+        creators.push(
+          ...narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
+        )
+
         const created = await createBook(
           {
             title: title ?? basename(audiobookPath),
@@ -196,15 +206,8 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
           {
             ...(collectionUuid && { collections: [collectionUuid] }),
             audiobook: { filepath: audiobookPath },
-            ...(authors.length && {
-              authors: authors.map((name) => ({
-                name,
-                fileAs: name,
-                role: "aut",
-              })),
-            }),
-            ...(narrators.length && {
-              narrators: narrators,
+            ...(creators.length && {
+              creators,
             }),
           },
         )
