@@ -74,7 +74,9 @@ export function DeleteBookModal({ isOpen, onClose, book }: Props) {
             <Button variant="subtle" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Delete</Button>
+            <Button color="red" type="submit">
+              Delete
+            </Button>
           </Group>
         </form>
       </Stack>

@@ -71,7 +71,8 @@ FROM
 
 INSERT INTO
   aligned_book (book_uuid)
-SELECT
+SELECT DISTINCT
   book.uuid
 FROM
-  book;
+  book
+  INNER JOIN processing_task ON processing_task.book_uuid = book.uuid;
