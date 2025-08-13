@@ -103,9 +103,6 @@ export async function createBookFromEpub(
     title: string
   },
   relations: {
-    creators?: CreatorRelation[]
-    narrators?: string[]
-    series?: SeriesRelation[]
     ebook?: EbookRelation
     audiobook?: AudiobookRelation
     readaloud?: AlignedBookRelation
@@ -122,7 +119,6 @@ export async function createBookFromEpub(
     {
       ...relations,
       ...epubRelations,
-      creators: epubRelations.creators?.concat(relations.creators ?? []) ?? [],
     },
   )
 }
