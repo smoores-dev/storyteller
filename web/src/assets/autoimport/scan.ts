@@ -128,7 +128,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
   for (const ebookPath of ebookPaths) {
     if (handledEbookPaths.has(ebookPath)) continue
 
-    const dir = dirname(ebookPath)
+    const dir = `${dirname(ebookPath)}/`
     const additionalEbookPaths = ebookPaths.filter(
       (path) => path.startsWith(dir) && path !== ebookPath,
     )
