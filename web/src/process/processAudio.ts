@@ -28,7 +28,6 @@ import { detectVoiceActivity } from "echogarden"
 import { streamFile } from "@smoores/fs"
 import { randomUUID } from "node:crypto"
 import {
-  getInternalOriginalAudioFilepath,
   getProcessedAudioFilepath,
   getTranscriptionFilename,
   getTranscriptionsFilepath,
@@ -353,7 +352,7 @@ export async function processAudiobook(
 
   await Promise.all(
     filenames.map(async (filename, index) => {
-      const filepath = getInternalOriginalAudioFilepath(book, filename)
+      const filepath = join(originalAudioDirectory, filename)
 
       const processed = await processFile(
         book,
