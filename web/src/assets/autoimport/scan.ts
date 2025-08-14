@@ -162,7 +162,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
     }
 
     const nestedAudiobookPaths = audiobookPaths.filter((path) =>
-      path.startsWith(dir),
+      `${path}/`.startsWith(dir),
     )
 
     // TODO: log audiobook files that don't get handled?
