@@ -311,7 +311,7 @@ export default async function processBook({
           ...(audioCover && { audioCover }),
         })
         logger.info(
-          `Successfully wrote metadata to file (title: ${await epub.getTitle()}`,
+          `Successfully wrote metadata to file (title: ${await epub.getTitle()})`,
         )
 
         await epub.writeToFile(getInternalEpubAlignedFilepath(book))
@@ -336,6 +336,6 @@ export default async function processBook({
       return
     }
   }
-  logger.info(`Completed synchronizing book ${bookRefForLog})`)
+  logger.info(`Completed synchronizing book ${bookRefForLog}`)
   port.postMessage({ type: "processingCompleted", bookUuid })
 }
