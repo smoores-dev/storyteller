@@ -268,12 +268,12 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
           if (audioCover) {
             const optimized = await optimizeImage({
               buffer: Buffer.from(audioCover.data),
-              height: 225,
+              height: 147,
               width: 147,
               contentType: audioCover.mimeType,
             })
 
-            await writeCachedCoverImage(created.uuid, "text", 225, 147, {
+            await writeCachedCoverImage(created.uuid, "audio", 147, 147, {
               ...audioCover,
               data: optimized,
             })
