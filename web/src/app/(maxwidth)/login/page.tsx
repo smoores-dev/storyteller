@@ -38,7 +38,7 @@ export default async function Login() {
       })
 
       if (!response.ok) {
-        if (response.status === 405) {
+        if (response.status === 401) {
           return "bad-creds"
         }
         return "failed"
