@@ -486,8 +486,8 @@ export async function getCurrentUserSession(usernameOrEmail: string) {
     .innerJoin("user", "user.id", "session.userId")
     .where((eb) =>
       eb.or([
-        eb("user.username", "=", usernameOrEmail),
-        eb("user.email", "=", usernameOrEmail),
+        eb("user.username", "=", usernameOrEmail.toLowerCase()),
+        eb("user.email", "=", usernameOrEmail.toLowerCase()),
       ]),
     )
     .orderBy("session.createdAt", "desc")
