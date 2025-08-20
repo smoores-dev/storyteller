@@ -23,6 +23,6 @@ export async function POST(request: NextRequest) {
     if (e instanceof CredentialsSignin) {
       return new Response(null, { status: 401 })
     }
-    return new Response(null, { status: 500 })
+    throw e
   }
 }
