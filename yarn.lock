@@ -5728,6 +5728,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@esfx/async-lockable@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@esfx/async-lockable@npm:1.0.0"
+  dependencies:
+    "@esfx/cancelable": "npm:^1.0.0"
+    "@esfx/disposable": "npm:^1.0.0"
+  checksum: 10c0/44998858da47e55811059bf5d64cac2f1343e6a1bde18af0bec9a99df3735cc3d2188eed7900b0e9a692eb056af18dea49e6dfd89bee290acf19884a1046f2a8
+  languageName: node
+  linkType: hard
+
+"@esfx/async-mutex@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@esfx/async-mutex@npm:1.0.0"
+  dependencies:
+    "@esfx/async-lockable": "npm:^1.0.0"
+    "@esfx/async-waitqueue": "npm:^1.0.0"
+    "@esfx/cancelable": "npm:^1.0.0"
+    "@esfx/disposable": "npm:^1.0.0"
+  checksum: 10c0/ed29501dda5e8929fc058f8771a78709020e2eec45b0ab95acb7ae7bca4f876430f53fcb165e974bfa418975eec913513663acd30463625a6ac16edc0cda388c
+  languageName: node
+  linkType: hard
+
 "@esfx/async-semaphore@npm:^1.0.0":
   version: 1.0.0
   resolution: "@esfx/async-semaphore@npm:1.0.0"
@@ -9075,6 +9097,7 @@ __metadata:
   dependencies:
     "@dotenvx/dotenvx": "npm:^1.44.1"
     "@echogarden/espeak-ng-emscripten": "npm:^0.3.3"
+    "@esfx/async-mutex": "npm:^1.0.0"
     "@esfx/async-semaphore": "npm:^1.0.0"
     "@hello-pangea/dnd": "npm:^18.0.1"
     "@mantine/carousel": "npm:^7.0.0"

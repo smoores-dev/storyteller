@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "2.0.0-108",
+  "version": "2.0.0-109",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@echogarden/espeak-ng-emscripten": "^0.3.3",
+    "@esfx/async-mutex": "^1.0.0",
     "@esfx/async-semaphore": "^1.0.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@mantine/carousel": "^7.0.0",
