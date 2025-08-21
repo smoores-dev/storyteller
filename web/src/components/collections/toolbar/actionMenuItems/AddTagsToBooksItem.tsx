@@ -13,7 +13,9 @@ interface Props {
 export function AddTagsToBooksItem({ selected }: Props) {
   const [addTagsToBooks, { isLoading }] = useAddTagsToBooksMutation()
 
-  const { data: tags = [] } = useListTagsQuery()
+  const { data: tags = [], refetch } = useListTagsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  })
 
   const [isOpen, { open, close }] = useDisclosure()
 
@@ -41,6 +43,7 @@ export function AddTagsToBooksItem({ selected }: Props) {
               tags: values.tags,
               books: Array.from(selected),
             })
+            await refetch()
 
             form.reset()
             close()

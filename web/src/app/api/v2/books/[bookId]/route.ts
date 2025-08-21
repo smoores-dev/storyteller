@@ -1,7 +1,14 @@
 import { writeMetadataToAudiobook } from "@/assets/covers"
 import { deleteAssets, deleteCachedCoverImages } from "@/assets/fs"
 import { persistCustomAudioCover } from "@/assets/covers"
-import { getInternalBookDirectory } from "@/assets/paths"
+import {
+  getInternalBookDirectory,
+  getInternalReadaloudFilepath,
+  getInternalEpubFilepath,
+  getInternalOriginalAudioFilepath,
+  getInternalEpubDirectory,
+  getInternalReadaloudDirectory,
+} from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
   CreatorRelation,
@@ -159,6 +166,31 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       getInternalBookDirectory(book),
       getInternalBookDirectory(updated),
     )
+    if (updated.ebook?.filepath === getInternalEpubFilepath(book)) {
+      await rename(
+        join(getInternalEpubDirectory(updated), `${book.title}.epub`),
+        getInternalEpubFilepath(updated),
+      )
+    }
+    if (updated.readaloud?.filepath === getInternalReadaloudFilepath(book)) {
+      await rename(
+        join(getInternalReadaloudDirectory(updated), `${book.title}.epub`),
+        getInternalReadaloudFilepath(updated),
+      )
+    }
+    await updateBook(updated.uuid, null, {
+      ...(updated.ebook?.filepath === getInternalEpubFilepath(book) && {
+        ebook: { filepath: getInternalEpubFilepath(updated) },
+      }),
+      ...(updated.audiobook?.filepath ===
+        getInternalOriginalAudioFilepath(book) && {
+        audiobook: { filepath: getInternalOriginalAudioFilepath(updated) },
+      }),
+      ...(updated.readaloud?.filepath ===
+        getInternalReadaloudFilepath(book) && {
+        readaloud: { filepath: getInternalReadaloudFilepath(updated) },
+      }),
+    })
   }
 
   const textCover = formData.get("textCover")?.valueOf()

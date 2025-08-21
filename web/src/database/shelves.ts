@@ -33,6 +33,16 @@ export async function getNextUp(userId: UUID) {
       join.onRef("bookToSeries.position", ">", "prequelToSeries.position"),
     )
     .innerJoin("book as prequel", "prequelToSeries.bookUuid", "prequel.uuid")
+    .innerJoin("bookToStatus as prequelToStatus", (join) =>
+      join
+        .onRef("prequel.uuid", "=", "prequelToStatus.bookUuid")
+        .on("prequelToStatus.userId", "=", userId),
+    )
+    .innerJoin("status as prequelStatus", (join) =>
+      join
+        .onRef("prequelStatus.uuid", "=", "prequelToStatus.statusUuid")
+        .on("prequelStatus.name", "=", "Read"),
+    )
     .innerJoin("bookToStatus", (join) =>
       join
         .onRef("prequel.uuid", "=", "bookToStatus.bookUuid")
@@ -41,7 +51,7 @@ export async function getNextUp(userId: UUID) {
     .innerJoin("status", (join) =>
       join
         .onRef("status.uuid", "=", "bookToStatus.statusUuid")
-        .on("status.name", "=", "Read"),
+        .on("status.name", "=", "To read"),
     )
     .leftJoin("position", (join) =>
       join
@@ -53,6 +63,8 @@ export async function getNextUp(userId: UUID) {
     // to break ties in updatedAt (which can happen
     // for migrated books)
     .orderBy(sql`position.rowid`, "desc")
+    .orderBy("bookToSeries.position", "asc")
+    .groupBy("bookToSeries.seriesUuid")
     .limit(10)
     .execute()
 }

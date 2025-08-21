@@ -4,7 +4,7 @@ import { IconArrowDown, IconArrowUp } from "@tabler/icons-react"
 
 const optionLabels: Record<BookSortKey, string> = {
   title: "Title",
-  author: "Author name",
+  author: "Author",
   "align-time": "Last aligned",
   "create-time": "Created",
 }

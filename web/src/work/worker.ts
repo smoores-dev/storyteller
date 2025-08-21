@@ -7,7 +7,7 @@ import { getProcessedAudioFiles, deleteProcessed } from "@/assets/fs"
 import {
   getTranscriptionsFilepath,
   getProcessedAudioFilepath,
-  getInternalEpubAlignedFilepath,
+  getInternalReadaloudFilepath,
   getAlignmentReportFilepath,
   getTranscriptionFilename,
 } from "@/assets/paths"
@@ -279,7 +279,7 @@ export default async function processBook({
           {
             readaloud: {
               // TODO: support writing this to user-defined lib
-              filepath: getInternalEpubAlignedFilepath(book),
+              filepath: getInternalReadaloudFilepath(book),
               status: "ALIGNED",
             },
           },
@@ -314,7 +314,7 @@ export default async function processBook({
           `Successfully wrote metadata to file (title: ${await epub.getTitle()})`,
         )
 
-        await epub.writeToFile(getInternalEpubAlignedFilepath(book))
+        await epub.writeToFile(getInternalReadaloudFilepath(book))
         await epub.close()
       }
 

@@ -5,9 +5,11 @@ import { Carousel } from "@mantine/carousel"
 import { BookThumbnail } from "./BookThumbnail"
 
 import "@mantine/carousel/styles.css"
+import Link from "next/link"
 
 interface Props {
   label: string
+  href?: string
   books: BookDetail[]
   isSelecting: boolean
   selected: Set<UUID>
@@ -16,6 +18,7 @@ interface Props {
 
 export function Shelf({
   label,
+  href,
   books,
   isSelecting,
   selected,
@@ -25,7 +28,18 @@ export function Shelf({
 
   return (
     <Stack>
-      <Title order={3}>{label}</Title>
+      <Title order={3}>
+        {href ? (
+          <Link
+            className="hover:decoration-st-orange-600 hover:underline"
+            href={href}
+          >
+            {label}
+          </Link>
+        ) : (
+          label
+        )}
+      </Title>
       <Carousel
         height={303}
         align="start"

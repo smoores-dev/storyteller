@@ -1,5 +1,6 @@
 import { SeriesRelation } from "@/database/books"
 import {
+  useLazyListSeriesQuery,
   useListBooksQuery,
   useRemoveBooksFromSeriesMutation,
 } from "@/store/api"
@@ -36,6 +37,8 @@ export function RemoveBooksFromSeriesItem({ selected }: Props) {
   const [removeBooksFromSeries, { isLoading }] =
     useRemoveBooksFromSeriesMutation()
 
+  const [refetchSeries] = useLazyListSeriesQuery()
+
   const [isOpen, setIsOpen] = useState(false)
 
   const form = useForm({
@@ -62,6 +65,7 @@ export function RemoveBooksFromSeriesItem({ selected }: Props) {
               series: values.series,
               books: Array.from(selected),
             })
+            await refetchSeries()
 
             form.reset()
             setIsOpen(false)

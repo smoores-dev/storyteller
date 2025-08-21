@@ -17,7 +17,12 @@ export function AddBooksToCollectionsItem({ selected }: Props) {
   const [addBooksToCollections, { isLoading }] =
     useAddBooksToCollectionsMutation()
 
-  const { data: collections = [] } = useListCollectionsQuery()
+  const { data: collections = [], refetch } = useListCollectionsQuery(
+    undefined,
+    {
+      refetchOnMountOrArgChange: true,
+    },
+  )
 
   const [isOpen, setIsOpen] = useState(false)
 
@@ -45,6 +50,7 @@ export function AddBooksToCollectionsItem({ selected }: Props) {
               collections: values.collections,
               books: Array.from(selected),
             })
+            await refetch()
 
             form.reset()
             setIsOpen(false)

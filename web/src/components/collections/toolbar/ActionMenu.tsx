@@ -11,6 +11,12 @@ import { AddTagsToBooksItem } from "./actionMenuItems/AddTagsToBooksItem"
 import { RemoveTagsFromBooksItem } from "./actionMenuItems/RemoveTagsFromBooksItem"
 import { UpdateReadingStatusItem } from "./actionMenuItems/UpdateReadingStatusItem"
 import { BeginProcessingItem } from "./actionMenuItems/BeginProcessingItem"
+import {
+  useLazyListCollectionsQuery,
+  useLazyListCreatorsQuery,
+  useLazyListSeriesQuery,
+  useLazyListTagsQuery,
+} from "@/store/api"
 
 interface Props {
   selected: Set<UUID>
@@ -18,7 +24,19 @@ interface Props {
 }
 
 export function ActionMenu({ selected, onClear }: Props) {
+  const [refetchCollections] = useLazyListCollectionsQuery()
+  const [refetchCreators] = useLazyListCreatorsQuery()
+  const [refetchSeries] = useLazyListSeriesQuery()
+  const [refetchTags] = useLazyListTagsQuery()
   const disabled = selected.size === 0
+
+  function onCommit() {
+    onClear()
+    void refetchCollections()
+    void refetchCreators()
+    void refetchSeries()
+    void refetchTags()
+  }
 
   return (
     <>
@@ -35,7 +53,7 @@ export function ActionMenu({ selected, onClear }: Props) {
         </MenuTarget>
 
         <MenuDropdown>
-          <MergeBooksItem selected={selected} onCommit={onClear} />
+          <MergeBooksItem selected={selected} onCommit={onCommit} />
           <AddBooksToCollectionsItem selected={selected} />
           <RemoveBooksFromCollectionsItem selected={selected} />
           <AddBooksToSeriesItem selected={selected} />
@@ -44,7 +62,7 @@ export function ActionMenu({ selected, onClear }: Props) {
           <RemoveTagsFromBooksItem selected={selected} />
           <UpdateReadingStatusItem selected={selected} />
           <BeginProcessingItem selected={selected} />
-          <DeleteBooksItem selected={selected} onCommit={onClear} />
+          <DeleteBooksItem selected={selected} onCommit={onCommit} />
         </MenuDropdown>
       </Menu>
     </>

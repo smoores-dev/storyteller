@@ -34,7 +34,7 @@ import {
   IconBook2,
   IconPlus,
 } from "@tabler/icons-react"
-import { ReactNode } from "react"
+import { ReactNode, useEffect } from "react"
 import { useDisclosure } from "@mantine/hooks"
 import { usePathname } from "next/navigation"
 import { CurrentBookProgress } from "./layout/CurrentBookProgress"
@@ -51,6 +51,8 @@ import { useInitialData } from "@/hooks/useInitialData"
 import { skipToken } from "@reduxjs/toolkit/query"
 import { CollectionWithRelations } from "@/database/collections"
 import { CreateCollectionModal } from "./collections/CreateCollectionModal"
+import { IntersectionObserverProvider } from "@/hooks/useIntersectionObserver"
+import { useAppDispatch } from "@/store/appState"
 
 dayjs.extend(customParseFormat)
 
@@ -144,6 +146,17 @@ export function AppShell({
   currentUser: initialCurrentUser,
   collections: initialCollections,
 }: Props) {
+  const dispatch = useAppDispatch()
+
+  // TODO: Probably we should just make the init page a
+  // client component like the login page so that we can
+  // invalidate the tags there, instead of this weird workaround
+  useEffect(() => {
+    if (initialCurrentUser) {
+      dispatch(api.util.invalidateTags(["CurrentUser"]))
+    }
+  }, [dispatch, initialCurrentUser])
+
   const [opened, { close, toggle }] = useDisclosure(false)
   const [
     isCreateCollectionOpen,
@@ -170,165 +183,169 @@ export function AppShell({
   const { data: collections } = useListCollectionsQuery()
 
   return (
-    <MantineProvider theme={theme} defaultColorScheme="light">
-      <MantineAppShell
-        withBorder={false}
-        header={{ height: 100 }}
-        padding="md"
-        navbar={{
-          width: 40,
-          breakpoint: "sm",
-          collapsed: { mobile: !opened },
-        }}
-      >
-        <AppShellHeader>
-          <Group align="center">
-            {currentUser && (
-              <Burger
-                opened={opened}
-                color="st-orange"
-                onClick={toggle}
-                size="md"
-                className="visible ml-4 md:invisible"
-              />
-            )}
-            <Anchor component={NextLink} href="/">
-              <Group>
-                <Image
-                  component={NextImage}
-                  h={80}
-                  w={80}
-                  height={80}
-                  width={80}
-                  src="/Storyteller_Logo.png"
-                  alt=""
-                  aria-hidden
+    <IntersectionObserverProvider
+      options={{ rootMargin: "200px 0px 200px 0px" }}
+    >
+      <MantineProvider theme={theme} defaultColorScheme="light">
+        <MantineAppShell
+          withBorder={false}
+          header={{ height: 100 }}
+          padding="md"
+          navbar={{
+            width: 40,
+            breakpoint: "sm",
+            collapsed: { mobile: !opened },
+          }}
+        >
+          <AppShellHeader>
+            <Group align="center">
+              {currentUser && (
+                <Burger
+                  opened={opened}
+                  color="st-orange"
+                  onClick={toggle}
+                  size="md"
+                  className="visible ml-4 md:invisible"
                 />
-                <Title size="h1" className="text-black">
-                  Storyteller
-                </Title>
-              </Group>
-            </Anchor>
-          </Group>
-        </AppShellHeader>
-        {currentUser && (
-          <AppShellNavbar className="group/navbar border-r-st-orange-100 overflow-x-hidden border-r-2 transition-[width] md:w-10 md:hover:w-[200px]">
-            <Box className="md:w-[200px]">
-              <Text
-                c="black"
-                my="sm"
-                px="sm"
-                className="invisible group-hover/navbar:visible"
-              >
-                Version: {version}
-              </Text>
-              <CurrentBookProgress />
-              {permissions?.bookCreate || permissions?.bookList ? (
-                <>
-                  <NavLink
-                    onClick={close}
-                    component={NextLink}
-                    href="/"
-                    leftSection={<IconHome />}
-                    label="Home"
-                    active={pathname === "/"}
+              )}
+              <Anchor component={NextLink} href="/">
+                <Group>
+                  <Image
+                    component={NextImage}
+                    h={80}
+                    w={80}
+                    height={80}
+                    width={80}
+                    src="/Storyteller_Logo.png"
+                    alt=""
+                    aria-hidden
                   />
-                  <NavLink
-                    onClick={close}
-                    component={NextLink}
-                    href="/books"
-                    leftSection={<IconBook2 />}
-                    label="Books"
-                    active={pathname === "/books"}
-                  />
-                  <NavLink
-                    onClick={close}
-                    component={NextLink}
-                    href={`/collections/none`}
-                    leftSection={
-                      <Box className="h-6 w-6 text-center italic">U</Box>
-                    }
-                    label={<span className="italic">Uncollected</span>}
-                    active={pathname === `/collections/none`}
-                  />
-                  {collections?.map((collection) => (
+                  <Title size="h1" className="text-black">
+                    Storyteller
+                  </Title>
+                </Group>
+              </Anchor>
+            </Group>
+          </AppShellHeader>
+          {currentUser && (
+            <AppShellNavbar className="group/navbar border-r-st-orange-100 overflow-x-hidden border-r-2 transition-[width] md:w-10 md:hover:w-[200px]">
+              <Box className="md:w-[200px]">
+                <Text
+                  c="black"
+                  my="sm"
+                  px="sm"
+                  className="invisible group-hover/navbar:visible"
+                >
+                  Version: {version}
+                </Text>
+                <CurrentBookProgress />
+                {permissions?.bookCreate || permissions?.bookList ? (
+                  <>
                     <NavLink
-                      key={collection.uuid}
                       onClick={close}
                       component={NextLink}
-                      leftSection={
-                        <Box className="h-6 w-6 text-center">
-                          {collection.name[0]}
-                        </Box>
-                      }
-                      href={`/collections/${collection.uuid}`}
-                      label={collection.name}
-                      active={pathname === `/collections/${collection.uuid}`}
+                      href="/"
+                      leftSection={<IconHome />}
+                      label="Home"
+                      active={pathname === "/"}
                     />
-                  ))}
-                  <NavLink
-                    component="button"
-                    onClick={openCreateCollection}
-                    leftSection={<IconPlus />}
-                    label="New collection"
-                  />
+                    <NavLink
+                      onClick={close}
+                      component={NextLink}
+                      href="/books"
+                      leftSection={<IconBook2 />}
+                      label="Books"
+                      active={pathname === "/books"}
+                    />
+                    <NavLink
+                      onClick={close}
+                      component={NextLink}
+                      href={`/collections/none`}
+                      leftSection={
+                        <Box className="h-6 w-6 text-center italic">U</Box>
+                      }
+                      label={<span className="italic">Uncollected</span>}
+                      active={pathname === `/collections/none`}
+                    />
+                    {collections?.map((collection) => (
+                      <NavLink
+                        key={collection.uuid}
+                        onClick={close}
+                        component={NextLink}
+                        leftSection={
+                          <Box className="h-6 w-6 text-center">
+                            {collection.name[0]}
+                          </Box>
+                        }
+                        href={`/collections/${collection.uuid}`}
+                        label={collection.name}
+                        active={pathname === `/collections/${collection.uuid}`}
+                      />
+                    ))}
+                    <NavLink
+                      component="button"
+                      onClick={openCreateCollection}
+                      leftSection={<IconPlus />}
+                      label="New collection"
+                    />
+                    <NavLink
+                      onClick={close}
+                      component={NextLink}
+                      href="/series"
+                      leftSection={<IconBooks />}
+                      label="Series"
+                      active={pathname === "/series"}
+                    />
+                  </>
+                ) : null}
+                <NavLink
+                  onClick={close}
+                  component={NextLink}
+                  href="/account"
+                  leftSection={<IconUser />}
+                  label="Account"
+                  active={pathname === "/accounts"}
+                />
+                {permissions?.userCreate || permissions?.userList ? (
                   <NavLink
                     onClick={close}
                     component={NextLink}
-                    href="/series"
-                    leftSection={<IconBooks />}
-                    label="Series"
-                    active={pathname === "/series"}
+                    href="/users"
+                    leftSection={<IconUsers />}
+                    label="Users"
+                    active={pathname === "/users"}
                   />
-                </>
-              ) : null}
-              <NavLink
-                onClick={close}
-                component={NextLink}
-                href="/account"
-                leftSection={<IconUser />}
-                label="Account"
-                active={pathname === "/accounts"}
-              />
-              {permissions?.userCreate || permissions?.userList ? (
+                ) : null}
+                {permissions?.settingsUpdate ? (
+                  <NavLink
+                    onClick={close}
+                    component={NextLink}
+                    href="/settings"
+                    leftSection={<IconSettings />}
+                    label="Settings"
+                    active={pathname === "/settings"}
+                  />
+                ) : null}
                 <NavLink
                   onClick={close}
-                  component={NextLink}
-                  href="/users"
-                  leftSection={<IconUsers />}
-                  label="Users"
-                  active={pathname === "/users"}
+                  component="a"
+                  href="/logout"
+                  leftSection={<IconLogout />}
+                  label="Logout"
+                  active={pathname === "/logout"}
                 />
-              ) : null}
-              {permissions?.settingsUpdate ? (
-                <NavLink
-                  onClick={close}
-                  component={NextLink}
-                  href="/settings"
-                  leftSection={<IconSettings />}
-                  label="Settings"
-                  active={pathname === "/settings"}
-                />
-              ) : null}
-              <NavLink
-                onClick={close}
-                component="a"
-                href="/logout"
-                leftSection={<IconLogout />}
-                label="Logout"
-                active={pathname === "/logout"}
-              />
-            </Box>
-          </AppShellNavbar>
-        )}
-        <AppShellMain className="*:ml-8">
-          <CreateCollectionModal
-            isOpen={isCreateCollectionOpen}
-            onClose={closeCreateCollection}
-          />
-          {children}
-        </AppShellMain>
-      </MantineAppShell>
-    </MantineProvider>
+              </Box>
+            </AppShellNavbar>
+          )}
+          <AppShellMain className="*:ml-8">
+            <CreateCollectionModal
+              isOpen={isCreateCollectionOpen}
+              onClose={closeCreateCollection}
+            />
+            {children}
+          </AppShellMain>
+        </MantineAppShell>
+      </MantineProvider>
+    </IntersectionObserverProvider>
   )
 }

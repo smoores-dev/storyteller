@@ -37,11 +37,21 @@ export function BookEditForm({ book }: Props) {
 
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const { data: collections = [] } = useListCollectionsQuery()
-  const { data: tags = [] } = useListTagsQuery()
-  const { data: statuses = [] } = useListStatusesQuery()
-  const { data: series = [] } = useListSeriesQuery()
-  const { data: creators = [] } = useListCreatorsQuery()
+  const { data: collections = [] } = useListCollectionsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  })
+  const { data: tags = [] } = useListTagsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  })
+  const { data: statuses = [] } = useListStatusesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  })
+  const { data: series = [] } = useListSeriesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  })
+  const { data: creators = [] } = useListCreatorsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  })
 
   const form = useForm({
     initialValues: {

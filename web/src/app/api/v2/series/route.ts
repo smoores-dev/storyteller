@@ -6,8 +6,8 @@ import { NextResponse } from "next/server"
  * @summary List all series
  * @desc '
  */
-export const GET = withHasPermission("bookList")(async () => {
-  const series = await getSeries()
+export const GET = withHasPermission("bookList")(async (request) => {
+  const series = await getSeries(request.auth.user.id)
 
   return NextResponse.json(series)
 })

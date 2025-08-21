@@ -1,5 +1,9 @@
 import { SeriesRelation } from "@/database/books"
-import { useListBooksQuery, useRemoveTagsFromBooksMutation } from "@/store/api"
+import {
+  useLazyListTagsQuery,
+  useListBooksQuery,
+  useRemoveTagsFromBooksMutation,
+} from "@/store/api"
 import { UUID } from "@/uuid"
 import { Button, MenuItem, Modal, MultiSelect } from "@mantine/core"
 import { useForm } from "@mantine/form"
@@ -30,6 +34,8 @@ export function RemoveTagsFromBooksItem({ selected }: Props) {
     }),
   })
 
+  const [refetchTags] = useLazyListTagsQuery()
+
   const [removeTagsFromBooks, { isLoading }] = useRemoveTagsFromBooksMutation()
 
   const [isOpen, { close, open }] = useDisclosure()
@@ -58,6 +64,8 @@ export function RemoveTagsFromBooksItem({ selected }: Props) {
               tags: values.tags,
               books: Array.from(selected),
             })
+
+            await refetchTags()
 
             form.reset()
             close()

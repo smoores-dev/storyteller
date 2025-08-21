@@ -1,10 +1,11 @@
 import { BookDetail } from "@/apiModels"
 import { getCoverUrl } from "@/store/api"
 import { Box, Image, px, Stack } from "@mantine/core"
-import { Icon, IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
-import { HTMLProps, Ref, useEffect, useRef, useState } from "react"
+import { IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
+import { HTMLProps, useCallback, useState } from "react"
 import cx from "classnames"
 import { twMerge } from "tailwind-merge"
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
 
 interface Props {
   book: BookDetail
@@ -96,26 +97,16 @@ export function EbookCoverImage({
   className?: string | undefined
   style?: HTMLProps<HTMLDivElement>["style"]
 }) {
-  const imageRef = useRef<HTMLImageElement | null>(null)
   const [showImage, setShowImage] = useState(false)
 
-  useEffect(() => {
-    function loadImageIfNearScreen() {
-      if (!imageRef.current) return
+  const intersectionCallback = useCallback(
+    (entry: IntersectionObserverEntry) => {
+      setShowImage(entry.isIntersecting)
+    },
+    [],
+  )
 
-      const imageRect = imageRef.current.getBoundingClientRect()
-      const isNearScreen =
-        imageRect.top - (window.screenTop + window.innerHeight) < 200 &&
-        window.screenTop - imageRect.bottom < 200
-
-      setShowImage(isNearScreen)
-    }
-    loadImageIfNearScreen()
-    document.addEventListener("scroll", loadImageIfNearScreen)
-    return () => {
-      document.removeEventListener("scroll", loadImageIfNearScreen)
-    }
-  }, [])
+  const ref = useIntersectionObserver(intersectionCallback)
 
   const [failed, setFailed] = useState(false)
   return (
@@ -129,10 +120,16 @@ export function EbookCoverImage({
       style={{ height, width, ...style }}
     >
       {failed || !showImage ? (
-        <IconBookFilled ref={imageRef as Ref<Icon>} size={64} />
+        <IconBookFilled
+          ref={(icon) => {
+            // This is just typed wrong, see https://github.com/tabler/tabler-icons/pull/1394
+            ref(icon as SVGSVGElement | null)
+          }}
+          size={64}
+        />
       ) : (
         <Image
-          ref={imageRef}
+          ref={ref}
           className="shrink-0"
           alt=""
           aria-hidden
@@ -162,26 +159,16 @@ export function AudiobookCoverImage({
   className?: string | undefined
   style?: HTMLProps<HTMLDivElement>["style"]
 }) {
-  const imageRef = useRef<HTMLImageElement | null>(null)
   const [showImage, setShowImage] = useState(false)
 
-  useEffect(() => {
-    function loadImageIfNearScreen() {
-      if (!imageRef.current) return
+  const intersectionCallback = useCallback(
+    (entry: IntersectionObserverEntry) => {
+      setShowImage(entry.isIntersecting)
+    },
+    [],
+  )
 
-      const imageRect = imageRef.current.getBoundingClientRect()
-      const isNearScreen =
-        imageRect.top - (window.screenTop + window.innerHeight) < 200 &&
-        window.screenTop - imageRect.bottom < 200
-
-      setShowImage(isNearScreen)
-    }
-    loadImageIfNearScreen()
-    document.addEventListener("scroll", loadImageIfNearScreen)
-    return () => {
-      document.removeEventListener("scroll", loadImageIfNearScreen)
-    }
-  }, [])
+  const ref = useIntersectionObserver(intersectionCallback)
 
   const [failed, setFailed] = useState(false)
   return (
@@ -195,9 +182,15 @@ export function AudiobookCoverImage({
       style={{ height, width, ...style }}
     >
       {failed || !showImage ? (
-        <IconHeadphonesFilled ref={imageRef as Ref<Icon>} size={64} />
+        <IconHeadphonesFilled
+          ref={(icon) => {
+            ref(icon as SVGSVGElement | null)
+          }}
+          size={64}
+        />
       ) : (
         <Image
+          ref={ref}
           className="shrink-0"
           alt=""
           aria-hidden

@@ -33,7 +33,9 @@ const EMPTY_BOOKS: BookDetail[] = []
 export function AddBooksToSeriesItem({ selected }: Props) {
   const [addBooksToSeries, { isLoading }] = useAddBooksToSeriesMutation()
 
-  const { data: series = [] } = useListSeriesQuery()
+  const { data: series = [], refetch } = useListSeriesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  })
 
   const { data: books = EMPTY_BOOKS } = useListBooksQuery()
 
@@ -129,6 +131,8 @@ export function AddBooksToSeriesItem({ selected }: Props) {
                 position: parseFloat(r.position),
               })),
             })
+
+            await refetch()
 
             form.reset()
             setIsOpen(false)

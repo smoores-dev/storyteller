@@ -278,22 +278,7 @@ export async function createUser(
 ) {
   const { uuid } = await db
     .insertInto("userPermission")
-    .values({
-      bookCreate: permissions.bookCreate,
-      bookUpdate: permissions.bookUpdate,
-      bookList: permissions.bookList,
-      bookDelete: permissions.bookDelete,
-      bookDownload: permissions.bookDownload,
-      bookProcess: permissions.bookProcess,
-      inviteDelete: permissions.inviteDelete,
-      inviteList: permissions.inviteList,
-      settingsUpdate: permissions.settingsUpdate,
-      userCreate: permissions.userCreate,
-      userList: permissions.userList,
-      userRead: permissions.userRead,
-      userDelete: permissions.userDelete,
-      userUpdate: permissions.userUpdate,
-    })
+    .values(permissions)
     .returning(["uuid as uuid"])
     .executeTakeFirstOrThrow()
 

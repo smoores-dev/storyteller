@@ -73,13 +73,13 @@ export function getInternalEpubDirectory(book: Book) {
   return join(getInternalBookDirectory(book), "text")
 }
 
-export function getInternalEpubAlignedDirectory(book: Book) {
+export function getInternalReadaloudDirectory(book: Book) {
   return join(getInternalBookDirectory(book), "aligned")
 }
 
-export function getInternalEpubAlignedFilepath(book: Book) {
+export function getInternalReadaloudFilepath(book: Book) {
   return join(
-    getInternalEpubAlignedDirectory(book),
+    getInternalReadaloudDirectory(book),
     getSafeFilepathSegment(book.title, ".epub"),
   )
 }

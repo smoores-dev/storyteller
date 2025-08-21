@@ -1001,13 +1001,20 @@ export async function updateBook(
       if (existing) {
         await tr
           .updateTable("readaloud")
-          .set({ filepath: relations.readaloud.filepath })
+          .set({
+            filepath: relations.readaloud.filepath,
+            status: relations.readaloud.status,
+          })
           .where("uuid", "=", existing.uuid)
           .execute()
       } else {
         await tr
           .insertInto("readaloud")
-          .values({ bookUuid: uuid, filepath: relations.readaloud.filepath })
+          .values({
+            bookUuid: uuid,
+            filepath: relations.readaloud.filepath,
+            status: relations.readaloud.status,
+          })
           .execute()
       }
     }
