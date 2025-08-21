@@ -95,6 +95,12 @@ const theme = createTheme({
         className: "text-st-orange-50 py-4",
       },
     }),
+    AppShellNavbar: AppShellNavbar.extend({
+      defaultProps: {
+        className:
+          "group/navbar border-r-st-orange-100 overflow-x-hidden border-r-2 md:w-10 md:transition-[width] md:hover:w-[200px]",
+      },
+    }),
     Burger: Burger.extend({
       defaultProps: {
         className: "pb-[0.625rem]",
@@ -228,13 +234,13 @@ export function AppShell({
             </Group>
           </AppShellHeader>
           {currentUser && (
-            <AppShellNavbar className="group/navbar border-r-st-orange-100 overflow-x-hidden border-r-2 transition-[width] md:w-10 md:hover:w-[200px]">
+            <AppShellNavbar>
               <Box className="md:w-[200px]">
                 <Text
                   c="black"
                   my="sm"
                   px="sm"
-                  className="invisible group-hover/navbar:visible"
+                  className="md:invisible md:group-hover/navbar:visible"
                 >
                   Version: {version}
                 </Text>
