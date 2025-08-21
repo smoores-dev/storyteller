@@ -256,8 +256,16 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             const narrators = await audiobook.getNarrators()
             audiobook.close()
 
+            const creators: CreatorRelation[] = [
+              ...created.creators,
+              ...created.authors.map((author) => ({
+                ...author,
+                role: "aut",
+              })),
+            ]
+
             await updateBook(created.uuid, null, {
-              creators: (created.creators as CreatorRelation[]).concat(
+              creators: creators.concat(
                 narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
               ),
             })
