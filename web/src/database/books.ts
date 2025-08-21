@@ -114,6 +114,7 @@ export async function createBookFromEpub(
   return await createBook(
     {
       uuid,
+      ...update,
       title: update?.title ?? title,
     },
     {
