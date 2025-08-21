@@ -5,12 +5,15 @@ import { UUID } from "@/uuid"
 import { watch } from "node:fs"
 import debounce from "debounce"
 import { scan } from "./scan"
+import { AsyncMutex } from "@esfx/async-mutex"
 
 function startWatcher(
   collection: UUID | null,
   importPath: string,
   controller: AbortController,
 ) {
+  const mutex = new AsyncMutex()
+
   scan(importPath, collection).catch((e: unknown) => {
     logger.error(
       `Encountered an error scanning for new book files in ${importPath}`,
@@ -21,16 +24,23 @@ function startWatcher(
   watch(
     importPath,
     { recursive: true, signal: controller.signal },
-    debounce(() => {
+    debounce(async () => {
       logger.info(
         `Detected a change in ${importPath}, scanning for new book files...`,
       )
-      scan(importPath, collection).catch((e: unknown) => {
-        logger.error(
-          `Encountered an error scanning for new book files in ${importPath}`,
-        )
-        logger.error(e)
-      })
+
+      await mutex.lock()
+
+      try {
+        scan(importPath, collection).catch((e: unknown) => {
+          logger.error(
+            `Encountered an error scanning for new book files in ${importPath}`,
+          )
+          logger.error(e)
+        })
+      } finally {
+        mutex.unlock()
+      }
     }, 5_000),
   )
 }
