@@ -11,8 +11,41 @@ export type SeriesUpdate = Updateable<DB["series"]>
 
 export type NewSeriesRelation = Omit<NewBookToSeries, "seriesUuid">
 
-export async function getSeries() {
-  return await db.selectFrom("series").selectAll().execute()
+export async function getSeries(userId?: UUID) {
+  return await db
+    .selectFrom("series")
+    .$if(!!userId, (qb) =>
+      qb
+        .innerJoin("bookToSeries", "bookToSeries.seriesUuid", "series.uuid")
+        .leftJoin(
+          "bookToCollection",
+          "bookToSeries.bookUuid",
+          "bookToCollection.bookUuid",
+        )
+        .leftJoin(
+          "collection",
+          "collection.uuid",
+          "bookToCollection.collectionUuid",
+        )
+        .leftJoin(
+          "collectionToUser",
+          "collectionToUser.collectionUuid",
+          "bookToCollection.collectionUuid",
+        )
+        .where((eb) =>
+          eb.or([
+            // The $if condition ensures that this only runs when userId
+            // is not null
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            eb("collectionToUser.userId", "=", userId!),
+            eb("collection.public", "=", true),
+            eb("collection.public", "is", null),
+          ]),
+        ),
+    )
+    .groupBy("series.uuid")
+    .selectAll("series")
+    .execute()
 }
 
 export async function addBooksToSeries(
@@ -61,11 +94,20 @@ export async function removeBooksFromSeries(
   seriesUuids: UUID[],
   bookUuids: UUID[],
 ) {
-  await db
-    .deleteFrom("bookToSeries")
-    .where("bookUuid", "in", bookUuids)
-    .where("seriesUuid", "in", seriesUuids)
-    .execute()
+  await db.transaction().execute(async (tr) => {
+    await tr
+      .deleteFrom("bookToSeries")
+      .where("bookUuid", "in", bookUuids)
+      .where("seriesUuid", "in", seriesUuids)
+      .execute()
+
+    await tr
+      .deleteFrom("series")
+      .where("series.uuid", "not in", (eb) =>
+        eb.selectFrom("bookToSeries").select(["bookToSeries.seriesUuid"]),
+      )
+      .execute()
+  })
 
   const books = await getBooks(bookUuids)
 

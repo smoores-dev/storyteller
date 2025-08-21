@@ -77,7 +77,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
               </Link>
             </Group>
             <Stack className="gap-1">
-              <Text>
+              <Text className="text-sm">
                 by{" "}
                 {book.authors.map((author, index) => (
                   <span key={author.uuid}>
@@ -92,7 +92,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
                 ))}
               </Text>
               {!!book.narrators.length && (
-                <Text>
+                <Text className="text-sm">
                   narrated by{" "}
                   {book.narrators.map((narrator, index) => (
                     <span key={narrator.uuid}>
@@ -108,7 +108,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
                 </Text>
               )}
               {book.series.map((s) => (
-                <Text key={s.uuid}>
+                <Text className="text-sm" key={s.uuid}>
                   {s.position !== null && `Book ${s.position} of `}
                   <Link
                     href={`/series?search=${s.name}`}
@@ -119,30 +119,34 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
                 </Text>
               ))}
             </Stack>
-            <Group>
-              {book.tags.map((tag) => (
-                <Link
-                  href={`/books?tags=${tag.uuid}`}
-                  className="flex flex-row items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm hover:bg-gray-200"
-                  key={tag.uuid}
-                >
-                  <IconTagFilled size={12} />
-                  {tag.name}
-                </Link>
-              ))}
-            </Group>
-            <Group>
-              {book.collections.map((collection) => (
-                <Link
-                  href={`/collections/${collection.uuid}`}
-                  className="flex flex-row items-center gap-2 rounded bg-gray-100 px-3 py-1 hover:bg-gray-200"
-                  key={collection.uuid}
-                >
-                  <IconBooks size={16} />
-                  {collection.name}
-                </Link>
-              ))}
-            </Group>
+            {!!book.tags.length && (
+              <Group>
+                {book.tags.map((tag) => (
+                  <Link
+                    href={`/books?tags=${tag.uuid}`}
+                    className="flex flex-row items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm hover:bg-gray-200"
+                    key={tag.uuid}
+                  >
+                    <IconTagFilled size={12} />
+                    {tag.name}
+                  </Link>
+                ))}
+              </Group>
+            )}
+            {!!book.collections.length && (
+              <Group>
+                {book.collections.map((collection) => (
+                  <Link
+                    href={`/collections/${collection.uuid}`}
+                    className="flex flex-row items-center gap-2 rounded bg-gray-100 px-3 py-1 hover:bg-gray-200"
+                    key={collection.uuid}
+                  >
+                    <IconBooks size={16} />
+                    {collection.name}
+                  </Link>
+                ))}
+              </Group>
+            )}
             {book.description && (
               <Spoiler
                 className="max-w-prose"
@@ -172,7 +176,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
               {book.readaloud?.status === "ALIGNED" && (
                 <Anchor
                   href={getDownloadUrl(book.uuid, "readaloud")}
-                  className="hover:bg-st-orange-900"
+                  className="hover:bg-st-orange-200 rounded-md"
                 >
                   <IconReadaloud />
                 </Anchor>
@@ -180,7 +184,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
               {book.ebook && (
                 <Anchor
                   href={getDownloadUrl(book.uuid, "ebook")}
-                  className="hover:bg-st-orange-900"
+                  className="hover:bg-st-orange-200 rounded-md"
                 >
                   <IconBook2 />
                 </Anchor>
@@ -188,7 +192,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
               {book.audiobook && (
                 <Anchor
                   href={getDownloadUrl(book.uuid, "audiobook")}
-                  className="hover:bg-st-orange-900"
+                  className="hover:bg-st-orange-200 rounded-md"
                 >
                   <IconHeadphonesFilled />
                 </Anchor>

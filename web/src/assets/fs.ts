@@ -4,7 +4,7 @@ import {
   getCoverImageCacheDirectory,
   getDefaultSuffix,
   getInternalBookDirectory,
-  getInternalEpubAlignedFilepath,
+  getInternalReadaloudFilepath,
   getInternalEpubFilepath,
   getInternalOriginalAudioFilepath,
   getProcessedAudioFilepath,
@@ -37,7 +37,7 @@ export async function persistEpub(
   aligned?: boolean,
 ) {
   const filepath = aligned
-    ? getInternalEpubAlignedFilepath(book)
+    ? getInternalReadaloudFilepath(book)
     : getInternalEpubFilepath(book)
 
   try {

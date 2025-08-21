@@ -9,14 +9,13 @@ import {
   getBook,
   updateBook,
 } from "@/database/books"
-import { lookup } from "mime-types"
-import { isAudioFile } from "@/audio"
+import { isAudioFile, lookupAudioMime } from "@/audio"
 import { Epub } from "@smoores/epub/node"
 import { basename, dirname, extname } from "node:path"
 import { UUID } from "@/uuid"
 import {
   getInternalBookDirectory,
-  getInternalEpubAlignedFilepath,
+  getInternalReadaloudFilepath,
   getInternalEpubFilepath,
   getInternalOriginalAudioFilepath,
 } from "@/assets/paths"
@@ -26,6 +25,7 @@ import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { Audiobook } from "@smoores/audiobook/node"
 import { getMetadataFromEpub } from "@/process/processEpub"
 import { logger } from "@/logging"
+import { lookup } from "mime-types"
 
 const mutex = new AsyncSemaphore(1)
 
@@ -55,7 +55,10 @@ const server = new Server({
         return { status_code: 405, body: "Missing required metadata: filename" }
       }
 
-      const filetype = upload.metadata["filetype"] ?? lookup(filename)
+      const filetype =
+        upload.metadata["filetype"] ??
+        lookupAudioMime(filename) ??
+        lookup(filename)
 
       const collectionUuid = upload.metadata["collection"] as UUID | undefined
 
@@ -88,7 +91,7 @@ const server = new Server({
               ? {
                   readaloud: {
                     status: "ALIGNED",
-                    filepath: getInternalEpubAlignedFilepath(book),
+                    filepath: getInternalReadaloudFilepath(book),
                   },
                 }
               : { ebook: { filepath: getInternalEpubFilepath(book) } },

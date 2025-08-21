@@ -30,7 +30,7 @@ export function CurrentBookProgress() {
         src={getCoverUrl(currentBook.uuid, { width: 49, height: 75 })}
       />
       <Stack className="mb-1 self-stretch" gap={2} justify="flex-end">
-        <Title order={3} size="sm">
+        <Title order={3} size="sm" className="font-sans">
           {currentBook.title}
         </Title>
 

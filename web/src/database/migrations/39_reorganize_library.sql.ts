@@ -198,10 +198,10 @@ export default async function migrate() {
     }
 
     try {
-      mkdirSync(paths.getInternalEpubAlignedDirectory(book))
+      mkdirSync(paths.getInternalReadaloudDirectory(book))
 
       const legacyAlignedDir = legacyPaths.getEpubAlignedFilepath(book.uuid)
-      const newAlignedDir = paths.getInternalEpubAlignedFilepath(book)
+      const newAlignedDir = paths.getInternalReadaloudFilepath(book)
       renameSync(legacyAlignedDir, newAlignedDir)
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call

@@ -103,6 +103,9 @@ export function useFilterSortedBooks(books: BookDetail[]): {
   )
   const search = searchParams.get("search") ?? ""
 
+  const sortString = searchParams.get("sort") ?? "title,asc"
+  const sort = sortString.split(",") as BookSort
+
   const searched = useMemo(() => {
     if (search === "") return books
     const results = fuse.search(search)
@@ -240,7 +243,6 @@ export function useFilterSortedBooks(books: BookDetail[]): {
     [authors, bookTypes, collections, searched, series, statuses, tags],
   )
 
-  const [sort, setSort] = useState<BookSort>(["title", "asc"])
   const sorted = useMemo(
     () =>
       filtered.toSorted((a, b) => {
@@ -312,7 +314,10 @@ export function useFilterSortedBooks(books: BookDetail[]): {
       },
       search: search,
       sort,
-      onSortChange: setSort,
+      onSortChange: (value) => {
+        value = typeof value === "function" ? value(sort) : value
+        setSearchParam("sort", [value.join(",")])
+      },
       filters: {
         visible: showFilters || filtersActive,
         showFilters: () => {

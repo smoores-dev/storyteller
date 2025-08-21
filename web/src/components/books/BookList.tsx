@@ -12,15 +12,20 @@ import { AddBooksMenu } from "./AddBooksMenu"
 import { FilterSort } from "../collections/FilterSort"
 import { BookDetail } from "@/apiModels"
 import { useInitialData } from "@/hooks/useInitialData"
+import { skipToken } from "@reduxjs/toolkit/query"
 
 interface Props {
   collectionUuid?: UUID | null
-  books: BookDetail[]
+  books?: BookDetail[]
 }
 
 export function BookList({ collectionUuid, books: initialBooks }: Props) {
   const canListBooks = usePermission("bookList")
-  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
+  useInitialData(
+    initialBooks
+      ? api.util.upsertQueryData("listBooks", undefined, initialBooks)
+      : skipToken,
+  )
 
   const { collectionBooks } = useListBooksQuery(undefined, {
     selectFromResult: (result) => ({
@@ -35,7 +40,6 @@ export function BookList({ collectionUuid, books: initialBooks }: Props) {
     }),
   })
 
-  // TODO: Should this just be passed in as a prop?
   const { collection } = useListCollectionsQuery(undefined, {
     selectFromResult: (result) => ({
       collection: result.data?.find(
