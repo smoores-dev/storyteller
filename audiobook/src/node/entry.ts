@@ -1,5 +1,5 @@
-import { Entry, Uint8ArrayWriter } from "@zip.js/zip.js"
-import { Uint8ArrayEntry } from "../entry.js"
+import { type Entry, Uint8ArrayWriter } from "@zip.js/zip.js"
+import { type Uint8ArrayEntry } from "../entry.js"
 import { File } from "node-taglib-sharp"
 import { readFile } from "node:fs/promises"
 import { streamFile } from "@smoores/fs"

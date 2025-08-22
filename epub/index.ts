@@ -1075,6 +1075,41 @@ export class Epub {
   }
 
   /**
+   * Remove a subject from the EPUB metadata.
+   *
+   * Removes the subject at the provided index. This index
+   * refers to the array returned by `epub.getSubjects()`.
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-opf-dccreator
+   */
+  async removeSubject(index: number) {
+    await this.withPackage((packageElement) => {
+      const metadata = Epub.findXmlChildByName(
+        "metadata",
+        Epub.getXmlChildren(packageElement),
+      )
+      if (!metadata)
+        throw new Error(
+          "Failed to parse EPUB: found no metadata element in package document",
+        )
+
+      let subjectCount: null | number = null
+      let metadataIndex: null | number = null
+      for (const meta of Epub.getXmlChildren(metadata)) {
+        if (subjectCount === index) break
+        metadataIndex = metadataIndex === null ? 0 : metadataIndex + 1
+        if (Epub.isXmlTextNode(meta)) continue
+        if (Epub.getXmlElementName(meta) !== "dc:subject") continue
+        subjectCount = subjectCount === null ? 0 : subjectCount + 1
+      }
+
+      if (metadataIndex === null) return
+
+      Epub.getXmlChildren(metadata).splice(metadataIndex, 1)
+    })
+  }
+
+  /**
    * Retrieve the list of subjects for this EPUB.
    *
    * Subjects without associated authority and term metadata
@@ -1258,7 +1293,8 @@ export class Epub {
           refinement.properties["property"] === "title-type",
       )
       return {
-        title: entry.value,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        title: entry.value!,
         type: titleType?.value ?? null,
       }
     })
@@ -1375,7 +1411,7 @@ export class Epub {
     })
   }
 
-  async setTitles(entries: { title: string; type: string }[]) {
+  async setTitles(entries: { title: string; type: string | null }[]) {
     await this.withPackage((packageElement) => {
       const metadata = Epub.findXmlChildByName(
         "metadata",
@@ -1406,20 +1442,30 @@ export class Epub {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const entry = entries[i]!
         const id = `title-${(i + 1).toString()}`
-        const titleMeta = Epub.createXmlElement("dc:title", { id }, [
-          Epub.createXmlTextNode(entry.title),
-        ])
-        const titleTypeMeta = Epub.createXmlElement(
-          "meta",
-          { refines: `#${id}`, property: "title-type" },
-          [Epub.createXmlTextNode(entry.type)],
+
+        metadataEntries.push(
+          Epub.createXmlElement("dc:title", { id }, [
+            Epub.createXmlTextNode(entry.title),
+          ]),
         )
-        const displaySequenceMeta = Epub.createXmlElement(
-          "meta",
-          { refines: `#${id}`, property: "display-seq" },
-          [Epub.createXmlTextNode((i + 1).toString())],
+
+        if (entry.type) {
+          metadataEntries.push(
+            Epub.createXmlElement(
+              "meta",
+              { refines: `#${id}`, property: "title-type" },
+              [Epub.createXmlTextNode(entry.type)],
+            ),
+          )
+        }
+
+        metadataEntries.push(
+          Epub.createXmlElement(
+            "meta",
+            { refines: `#${id}`, property: "display-seq" },
+            [Epub.createXmlTextNode((i + 1).toString())],
+          ),
         )
-        metadataEntries.push(titleMeta, titleTypeMeta, displaySequenceMeta)
       }
     })
   }

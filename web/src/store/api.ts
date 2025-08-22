@@ -305,6 +305,7 @@ export const api = createApi({
         update: {
           uuid: BookUpdate["uuid"]
           title?: BookUpdate["title"]
+          subtitle?: BookUpdate["subtitle"]
           language?: BookUpdate["language"]
           status?: UUID | undefined
           publicationDate?: BookUpdate["publicationDate"]
@@ -339,6 +340,9 @@ export const api = createApi({
 
         if (updatedFields.includes("title")) {
           body.append("title", JSON.stringify(update.title))
+        }
+        if (updatedFields.includes("subtitle")) {
+          body.append("subtitle", JSON.stringify(update.subtitle))
         }
         if (updatedFields.includes("language")) {
           body.append("language", JSON.stringify(update.language))

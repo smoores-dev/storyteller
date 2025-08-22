@@ -1,8 +1,8 @@
 import {
-  IStream,
+  type IStream,
   SeekOrigin,
   ByteVector,
-  IFileAbstraction,
+  type IFileAbstraction,
 } from "node-taglib-sharp"
 
 export class Uint8ArrayStream implements IStream {

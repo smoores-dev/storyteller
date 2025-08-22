@@ -73,6 +73,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 ENV SQLITE_NATIVE_BINDING=/app/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 ENV STORYTELLER_WORKER=worker.cjs
+ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.cjs
 
 WORKDIR /app/.next/standalone/web
 

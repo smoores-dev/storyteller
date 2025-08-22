@@ -1,6 +1,4 @@
-import { writeMetadataToAudiobook } from "@/assets/covers"
-import { deleteAssets, deleteCachedCoverImages } from "@/assets/fs"
-import { persistCustomAudioCover } from "@/assets/covers"
+import { deleteAssets } from "@/assets/fs"
 import {
   getInternalBookDirectory,
   getInternalReadaloudFilepath,
@@ -18,14 +16,12 @@ import {
   SeriesRelation,
   updateBook,
 } from "@/database/books"
-import { writeMetadataToEpub } from "@/process/processEpub"
 import { UUID } from "@/uuid"
 import { isProcessing, isQueued } from "@/work/distributor"
-import { Epub } from "@smoores/epub/node"
-import { extension } from "mime-types"
+import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 import { NextResponse } from "next/server"
 import { rename } from "node:fs/promises"
-import { extname, join } from "node:path"
+import { join } from "node:path"
 
 function isIso8601(dateString: string) {
   return dateString === new Date(dateString).toISOString()
@@ -68,6 +64,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   }
 
   const language = getField<string | null>(formData, "language") ?? null
+  const subtitle = getField<string | null>(formData, "subtitle") ?? null
   const description = getField<string | null>(formData, "description") ?? null
   const rating = getField<number | null>(formData, "rating") ?? null
 
@@ -143,6 +140,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       // the fields array
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       ...(fields.has("title") && { title: title! }),
+      ...(fields.has("subtitle") && { subtitle: subtitle }),
       ...(fields.has("language") && { language }),
       ...(fields.has("description") && { description }),
       ...(fields.has("rating") && { rating }),
@@ -194,48 +192,13 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   }
 
   const textCover = formData.get("textCover")?.valueOf()
-  if (typeof textCover === "object" && fields.has("textCover")) {
-    const textCoverFile = textCover as File
-    if (updated.ebook) {
-      const epub = await Epub.from(updated.ebook.filepath)
-      await writeMetadataToEpub(updated, epub, { textCover: textCoverFile })
-      await epub.writeToFile(updated.ebook.filepath)
-      await epub.close()
-    }
-  }
-
   const audioCover = formData.get("audioCover")?.valueOf()
-  if (typeof audioCover === "object" && fields.has("audioCover")) {
-    const audioCoverFile = audioCover as File
-    const ext = extname(audioCoverFile.name) || extension(audioCoverFile.type)
-    const arrayBuffer = await audioCoverFile.arrayBuffer()
-    const data = new Uint8Array(arrayBuffer)
-    await persistCustomAudioCover(bookUuid, `Audio Cover${ext}`, data)
-    if (updated.audiobook) {
-      await writeMetadataToAudiobook(
-        updated,
-        join(updated.audiobook.filepath, `Audio Cover${ext}`),
-      )
-    }
-  }
 
-  if (
-    updated.readaloud?.filepath &&
-    (fields.has("textCover") || fields.has("audioCover"))
-  ) {
-    const alignedEpubPath = updated.readaloud.filepath
-    const epub = await Epub.from(alignedEpubPath)
-    await writeMetadataToEpub(updated, epub, {
-      textCover: textCover as File | undefined,
-      audioCover: audioCover as File | undefined,
-    })
-    await epub.writeToFile(alignedEpubPath)
-    await epub.close()
-  }
-
-  if (fields.has("textCover") || fields.has("audioCover")) {
-    await deleteCachedCoverImages(updated.uuid)
-  }
+  void queueWritesToFiles(
+    book.uuid,
+    textCover as File | undefined,
+    audioCover as File | undefined,
+  )
 
   return NextResponse.json(updated)
 })

@@ -181,9 +181,63 @@ export async function writeMetadataToEpub(
     audioCover,
   }: WriteMetadataToEpubOptions = {},
 ) {
-  await epub.setTitle(book.title)
+  const titles = await epub.getTitles()
+
+  let titleSet = false
+  let subtitleSet = false
+
+  for (const title of titles) {
+    if (title.type === "main") {
+      title.title = book.title
+      titleSet = true
+    }
+    if (title.type === "subtitle" && book.subtitle) {
+      title.title = book.subtitle
+      subtitleSet = true
+    }
+  }
+
+  if (!titleSet) {
+    await epub.setTitles([
+      { title: book.title, type: "main" },
+      ...(book.subtitle ? [{ title: book.subtitle, type: "subtitle" }] : []),
+    ])
+  } else {
+    if (!subtitleSet && book.subtitle) {
+      titles.push({ title: book.subtitle, type: "subtitle" })
+    }
+    await epub.setTitles(titles)
+  }
+
+  if (book.publicationDate) {
+    await epub.setPublicationDate(new Date(book.publicationDate))
+  }
+
+  if (book.description) {
+    await epub.setDescription(book.description)
+  }
+
   if (book.language) {
     await epub.setLanguage(new Intl.Locale(book.language))
+  }
+
+  for (const _ of await epub.getSubjects()) {
+    await epub.removeSubject(0)
+  }
+
+  for (const tag of book.tags) {
+    await epub.addSubject(tag.name)
+  }
+
+  for (const _ of await epub.getCollections()) {
+    await epub.removeCollection(0)
+  }
+
+  for (const series of book.series) {
+    await epub.addCollection({
+      name: series.name,
+      ...(series.position !== null && { position: series.position.toString() }),
+    })
   }
 
   for (const _ of await epub.getCreators()) {

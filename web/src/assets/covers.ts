@@ -272,6 +272,9 @@ export async function writeMetadataToAudiobook(
   await audiobook.setAuthors(book.authors.map((author) => author.name))
   await audiobook.setNarrators(book.narrators.map((narrator) => narrator.name))
   await audiobook.setTitle(book.title)
+  if (book.subtitle) {
+    await audiobook.setSubtitle(book.subtitle)
+  }
   if (book.description) {
     await audiobook.setDescription(book.description)
   }

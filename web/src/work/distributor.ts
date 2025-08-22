@@ -71,8 +71,9 @@ if (globalThis.alignmentPiscina) {
     // source typescript files for our own packages (e.g. @smoores/epub)
     ...(process.env.NODE_ENV === "development" && {
       env: {
+        ...process.env,
         NODE_OPTIONS:
-          "--conditions=@storyteller --experimental-transform-types",
+          "--conditions=@storyteller-node --experimental-transform-types",
       },
     }),
   })
