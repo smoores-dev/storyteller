@@ -298,6 +298,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const title = await audiobook.getTitle()
+        const subtitle = await audiobook.getSubtitle()
         const description = await audiobook.getDescription()
         const authors = await audiobook.getAuthors()
         const narrators = await audiobook.getNarrators()
@@ -314,6 +315,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         const created = await createBook(
           {
             title: title ?? basename(audiobookPath),
+            subtitle,
             description,
           },
           {

@@ -71,6 +71,12 @@ export async function getMetadataFromEpub(epub: Epub): Promise<{
     update.title = title
   }
 
+  const subtitle = await epub.getSubtitle()
+  if (subtitle) {
+    update ??= {}
+    update.subtitle = subtitle
+  }
+
   const publicationDate = await epub.getPublicationDate()
   if (publicationDate) {
     update ??= {}

@@ -56,6 +56,7 @@ export function BookEditForm({ book }: Props) {
   const form = useForm({
     initialValues: {
       title: book.title,
+      subtitle: book.subtitle,
       language: book.language,
       authors: book.authors.map((author) => author.name),
       creators: book.creators as CreatorRelation[],
@@ -155,6 +156,11 @@ export function BookEditForm({ book }: Props) {
             <TextInput
               className="m-0"
               label="Title"
+              {...form.getInputProps("title")}
+            />
+            <TextInput
+              className="m-0"
+              label="Subtitle"
               {...form.getInputProps("title")}
             />
             <TagsInput tags={tags} {...form.getInputProps("tags")} />

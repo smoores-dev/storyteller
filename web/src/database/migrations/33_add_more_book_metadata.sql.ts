@@ -53,6 +53,9 @@ export default async function migrate() {
 
       if (update) {
         delete update.title
+        // This one doesn't actually exist in the table yet — it's added
+        // by a later migration
+        delete update.subtitle
         delete update.language
       }
 
