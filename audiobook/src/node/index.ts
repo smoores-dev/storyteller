@@ -9,9 +9,9 @@ import {
   ZipWriter,
 } from "@zip.js/zip.js"
 import { BaseAudiobook } from "../base.js"
-import { Uint8ArrayEntry } from "../entry.js"
+import { type Uint8ArrayEntry } from "../entry.js"
 import { writeFile } from "node:fs/promises"
-import { IPicture, Picture } from "node-taglib-sharp"
+import { type IPicture, Picture } from "node-taglib-sharp"
 
 export class Audiobook extends BaseAudiobook {
   protected constructor(

@@ -36,6 +36,7 @@ src/__fixtures__/__output__/*
 *.so
 
 work-dist
+file-write-dist
 migrate-dist
 autoimport-dist
 
