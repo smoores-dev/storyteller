@@ -157,6 +157,7 @@ const server = new Server({
             filename: relativePath,
           })
           const title = await audiobook.getTitle()
+          const subtitle = await audiobook.getSubtitle()
           const description = await audiobook.getDescription()
           const authors = await audiobook.getAuthors()
           const narrators = await audiobook.getNarrators()
@@ -166,6 +167,7 @@ const server = new Server({
             {
               uuid: bookUuid,
               title: title ?? basename(filename, extname(filename)),
+              subtitle,
               description,
             },
             {

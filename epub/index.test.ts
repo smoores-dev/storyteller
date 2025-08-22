@@ -392,4 +392,30 @@ void describe("Epub", () => {
     assert.strictEqual((await epub.getLanguage())?.toString(), "en-GB")
     assert.deepStrictEqual(await epub.getCreators(), [{ name: "Creator" }])
   })
+
+  void it("can set various title types", async () => {
+    const epub = await Epub.create({
+      title: "Title",
+      language: new Intl.Locale("en-US"),
+      identifier: "1",
+    })
+
+    await epub.setTitles([
+      {
+        title: "Main title",
+        type: "main",
+      },
+      {
+        title: "Subtitle",
+        type: "subtitle",
+      },
+    ])
+
+    assert.strictEqual(await epub.getTitle(), "Main title")
+    assert.strictEqual(await epub.getTitle(true), "Main title, Subtitle")
+    assert.deepStrictEqual(await epub.getTitles(), [
+      { title: "Main title", type: "main" },
+      { title: "Subtitle", type: "subtitle" },
+    ])
+  })
 })

@@ -46,6 +46,7 @@ export interface Book {
   language: Generated<string | null>
   publicationDate: string | null
   rating: number | null
+  subtitle: string | null
   suffix: Generated<string>
   title: string
   updatedAt: Generated<string>

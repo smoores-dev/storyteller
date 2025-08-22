@@ -32,6 +32,16 @@ export abstract class BaseAudiobookEntry {
     file.tag.title = title
   }
 
+  async getSubtitle(): Promise<string | null> {
+    const file = await this.getFile()
+    return file.tag.subtitle
+  }
+
+  async setSubtitle(subtitle: string): Promise<void> {
+    const file = await this.getFile()
+    file.tag.subtitle = subtitle
+  }
+
   async getDescription(): Promise<string | null> {
     const file = await this.getFile()
     return file.tag.description
@@ -129,6 +139,7 @@ export interface AudiobookChapter {
 
 export interface AudiobookMetadata {
   title?: string
+  subtitle?: string
   description?: string
   coverArt?: IPicture
   chapters?: AudiobookChapter[]
@@ -174,6 +185,22 @@ export abstract class BaseAudiobook {
     this.metadata.title = title
 
     await this.setValue((entry) => entry.setTitle(title))
+  }
+
+  async getSubtitle(): Promise<string | null> {
+    if (this.metadata.subtitle) {
+      return this.metadata.subtitle
+    }
+
+    const subtitle = await this.getFirstValue((entry) => entry.getSubtitle())
+    if (subtitle) this.metadata.subtitle = subtitle
+    return subtitle
+  }
+
+  async setSubtitle(subtitle: string): Promise<void> {
+    this.metadata.subtitle = subtitle
+
+    await this.setValue((entry) => entry.setSubtitle(subtitle))
   }
 
   async getDescription(): Promise<string | null> {

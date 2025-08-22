@@ -38,7 +38,7 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
 
   const filepath = book.readaloud.filepath
   const epub = await Epub.from(filepath)
-  const title = await epub.getTitle(true)
+  const title = await epub.getTitle()
   const normalizedTitle =
     title
       ?.normalize("NFD")

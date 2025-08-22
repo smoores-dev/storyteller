@@ -311,7 +311,7 @@ export default async function processBook({
           ...(audioCover && { audioCover }),
         })
         logger.info(
-          `Successfully wrote metadata to file (title: ${await epub.getTitle()})`,
+          `Successfully wrote metadata to file (title: ${await epub.getTitle(true)})`,
         )
 
         await epub.writeToFile(getInternalReadaloudFilepath(book))

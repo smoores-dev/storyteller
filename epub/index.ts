@@ -1165,16 +1165,51 @@ export class Epub {
   /**
    * Retrieve the title of the Epub.
    *
-   * @param short Optional - whether to return only the first title segment
+   * @param main Optional - whether to return only the first title segment
    *  if multiple are found. Otherwise, will follow the spec to combine title
    *  segments
    *
    * @link https://www.w3.org/TR/epub-33/#sec-opf-dctitle
    */
-  async getTitle(short = false) {
+  async getTitle(expanded = false) {
+    const entries = await this.getTitles()
+
+    if (!expanded) {
+      const mainEntry = entries.find((entry) => entry.type === "main")
+      if (mainEntry) return mainEntry.title
+
+      const shortEntry = entries.find((entry) => entry.type === "short")
+      if (shortEntry) return shortEntry.title
+
+      return entries[0]?.title ?? null
+    }
+
+    const expandedEntry = entries.find((entry) => entry.type === "expanded")
+    if (expandedEntry) return expandedEntry.title
+
+    return entries.map((entry) => entry.title).join(", ")
+  }
+
+  /**
+   * Retrieve the subtitle of the Epub, if it exists.
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-opf-dctitle
+   */
+  async getSubtitle() {
+    const entries = await this.getTitles()
+
+    const subtitleEntry = entries.find((entry) => entry.type === "subtitle")
+    return subtitleEntry?.title ?? null
+  }
+
+  /**
+   * Retrieve all title entries of the Epub.
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-opf-dctitle
+   */
+  async getTitles() {
     const metadata = await this.getMetadata()
     const titleEntries = metadata.filter((entry) => entry.type === "dc:title")
-    if (titleEntries.length === 1 || short) return titleEntries[0]?.value
 
     const titleRefinements = metadata.filter(
       (entry) =>
@@ -1183,20 +1218,6 @@ export class Epub {
         (entry.properties["property"] === "title-type" ||
           entry.properties["property"] === "display-seq"),
     )
-
-    const expandedTitle = titleEntries.find((titleEntry) => {
-      if (!titleEntry.id) return false
-
-      const refinement = titleRefinements.find(
-        (refinement) =>
-          refinement.properties["property"] === "title-type" &&
-          refinement.properties["refines"]?.slice(1) === titleEntry.id,
-      )
-
-      return refinement?.value === "expanded"
-    })
-
-    if (expandedTitle) return expandedTitle.value
 
     const sortedTitleParts = titleEntries
       .filter(
@@ -1228,9 +1249,19 @@ export class Epub {
         return sortA - sortB
       })
 
-    return (sortedTitleParts.length === 0 ? titleEntries : sortedTitleParts)
-      .map((entry) => entry.value)
-      .join(", ")
+    return (
+      sortedTitleParts.length === 0 ? titleEntries : sortedTitleParts
+    ).map((entry) => {
+      const titleType = titleRefinements.find(
+        (refinement) =>
+          refinement.properties["refines"]?.slice(1) === entry.id &&
+          refinement.properties["property"] === "title-type",
+      )
+      return {
+        title: entry.value,
+        type: titleType?.value ?? null,
+      }
+    })
   }
 
   /**
@@ -1307,11 +1338,10 @@ export class Epub {
   /**
    * Set the title of the Epub.
    *
-   * If a title already exists, only the first title metadata
-   * entry will be modified to match the new value.
+   * This will replace all existing dc:title elements with
+   * this title. It will be given title-type "main".
    *
-   * If no title currently exists, a single title metadata entry
-   * will be created.
+   * To set specific titles and their types, use epub.setTitles().
    *
    * @link https://www.w3.org/TR/epub-33/#sec-opf-dctitle
    */
@@ -1341,6 +1371,55 @@ export class Epub {
         )
       } else {
         titleElement["dc:title"] = [Epub.createXmlTextNode(title)]
+      }
+    })
+  }
+
+  async setTitles(entries: { title: string; type: string }[]) {
+    await this.withPackage((packageElement) => {
+      const metadata = Epub.findXmlChildByName(
+        "metadata",
+        Epub.getXmlChildren(packageElement),
+      )
+
+      if (!metadata) {
+        throw new Error(
+          "Failed to parse EPUB: found no metadata element in package document",
+        )
+      }
+
+      const metadataEntries = Epub.getXmlChildren(metadata)
+      for (let i = metadataEntries.length - 1; i >= 0; i--) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const meta = metadataEntries[i]!
+        if (Epub.isXmlTextNode(meta)) continue
+        if (
+          Epub.getXmlElementName(meta) === "dc:title" ||
+          meta[":@"]?.["@_property"] === "title-type" ||
+          meta[":@"]?.["@_property"] === "display-seq"
+        ) {
+          metadataEntries.splice(i, 1)
+        }
+      }
+
+      for (let i = 0; i < entries.length; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const entry = entries[i]!
+        const id = `title-${(i + 1).toString()}`
+        const titleMeta = Epub.createXmlElement("dc:title", { id }, [
+          Epub.createXmlTextNode(entry.title),
+        ])
+        const titleTypeMeta = Epub.createXmlElement(
+          "meta",
+          { refines: `#${id}`, property: "title-type" },
+          [Epub.createXmlTextNode(entry.type)],
+        )
+        const displaySequenceMeta = Epub.createXmlElement(
+          "meta",
+          { refines: `#${id}`, property: "display-seq" },
+          [Epub.createXmlTextNode((i + 1).toString())],
+        )
+        metadataEntries.push(titleMeta, titleTypeMeta, displaySequenceMeta)
       }
     })
   }
