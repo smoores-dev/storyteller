@@ -161,7 +161,7 @@ export function BookEditForm({ book }: Props) {
             <TextInput
               className="m-0"
               label="Subtitle"
-              {...form.getInputProps("title")}
+              {...form.getInputProps("subtitle")}
             />
             <TagsInput tags={tags} {...form.getInputProps("tags")} />
             <TextInput
