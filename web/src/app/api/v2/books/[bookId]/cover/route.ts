@@ -1,13 +1,15 @@
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
 import { extname } from "node:path"
-import { getAudioCover, getEpubCover } from "@/assets/covers"
+import {
+  getExtractedAudiobookCover,
+  getExtractedEbookCover,
+} from "@/assets/covers"
 import contentDisposition from "content-disposition"
 import { createHash } from "node:crypto"
 import { Stats } from "node:fs"
 import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
 import { optimizeImage } from "@/images"
-import { AsyncSemaphore } from "@esfx/async-semaphore"
 
 function hasChanged(
   currentHeaders: Awaited<ReturnType<typeof createCacheHeaders>>,
@@ -43,8 +45,6 @@ function createCacheHeaders(stats: Stats) {
 
 export const dynamic = "force-dynamic"
 
-const lock = new AsyncSemaphore(2, 2)
-
 type Params = Promise<{
   bookId: string
 }>
@@ -73,86 +73,18 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   const notModified = new Response(null, { status: 304 })
 
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"
-  if (audio) {
-    const cachedImage = await getCachedCoverImage(
-      book.uuid,
-      "audio",
-      height,
-      width,
-    )
-    let coverImage: {
-      filename: string
-      stats: Stats
-      mimeType: string
-      data: Buffer
-    } | null = null
-    if (!cachedImage) await lock.wait()
-    try {
-      coverImage = cachedImage ?? (await getAudioCover(book))
-    } finally {
-      if (!cachedImage) lock.release()
-    }
-    if (!coverImage) return new Response(null, { status: 404 })
-
-    const cacheHeaders = createCacheHeaders(coverImage.stats)
-
-    if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
-      return notModified
-    }
-
-    const result =
-      cachedImage?.data ??
-      (height && width
-        ? await optimizeImage({
-            buffer: coverImage.data,
-            height,
-            width,
-            contentType: coverImage.mimeType,
-          })
-        : coverImage.data)
-
-    if (height && width) {
-      coverImage.data = result
-      await writeCachedCoverImage(book.uuid, "audio", height, width, coverImage)
-    }
-
-    const ext = extname(coverImage.filename)
-
-    return new Response(result, {
-      headers: {
-        ...cacheHeaders,
-        "Content-Disposition": contentDisposition(
-          `${book.title} audio cover${ext}`,
-          {
-            fallback: `audio cover${ext}`,
-          },
-        ),
-      },
-    })
-  }
-
-  const epubFilepath = book.readaloud?.filepath ?? book.ebook?.filepath
-  if (!epubFilepath) return new Response(null, { status: 404 })
-
   const cachedImage = await getCachedCoverImage(
     book.uuid,
-    "text",
+    audio ? "audio" : "text",
     height,
     width,
   )
 
-  let coverImage: {
-    filename: string
-    stats: Stats
-    mimeType: string
-    data: Buffer
-  } | null = null
-  if (!cachedImage) await lock.wait()
-  try {
-    coverImage = cachedImage ?? (await getEpubCover(book))
-  } finally {
-    if (!cachedImage) lock.release()
-  }
+  const coverImage =
+    cachedImage ??
+    (audio
+      ? await getExtractedAudiobookCover(book)
+      : await getExtractedEbookCover(book))
 
   if (!coverImage) return new Response(null, { status: 404 })
 
@@ -166,7 +98,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     cachedImage?.data ??
     (height && width
       ? await optimizeImage({
-          buffer: Buffer.from(coverImage.data),
+          buffer: coverImage.data,
           height,
           width,
           contentType: coverImage.mimeType,
@@ -175,18 +107,26 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
   if (height && width) {
     coverImage.data = result
-    await writeCachedCoverImage(book.uuid, "text", height, width, coverImage)
+    await writeCachedCoverImage(
+      book.uuid,
+      audio ? "audio" : "text",
+      height,
+      width,
+      coverImage,
+    )
   }
 
   const ext = extname(coverImage.filename)
+
+  const dispositionName = audio ? `audio cover${ext}` : `ebook cover${ext}`
 
   return new Response(result, {
     headers: {
       ...cacheHeaders,
       "Content-Disposition": contentDisposition(
-        `${book.title} ebook cover${ext}`,
+        `${book.title} ${dispositionName}`,
         {
-          fallback: `ebook cover${ext}`,
+          fallback: dispositionName,
         },
       ),
     },

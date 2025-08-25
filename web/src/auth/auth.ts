@@ -3,6 +3,7 @@ import { hash, verify as verifyPassword } from "argon2"
 import {
   Permission,
   UserPermissionSet,
+  UserWithPermissions,
   acceptInvite,
   getInvite,
   getUserByUsernameOrEmail,
@@ -21,11 +22,13 @@ import { UUID } from "../uuid"
 import { randomUUID } from "node:crypto"
 import { getSettings } from "../database/settings"
 import { Providers } from "./providers"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { headers as nextHeaders } from "next/headers"
 import { getCurrentUserSession } from "@/database/users"
 import { PHASE_PRODUCTION_BUILD } from "next/constants"
+import { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
+import { notFound, redirect } from "next/navigation"
 
 declare module "next-auth" {
   interface Session {
@@ -308,8 +311,8 @@ export async function authenticateUser(
   return user
 }
 
-function extractTokenFromHeader(request: NextRequest) {
-  const bearer = request.headers.get("Authorization")
+function extractTokenFromHeader(h: ReadonlyHeaders) {
+  const bearer = h.get("Authorization")
   if (!bearer) return null
 
   const match = bearer.match(/Bearer (.*)/)
@@ -344,7 +347,7 @@ export function withUser<
   ) => Promise<Response> | Response,
 ): AppRouteHandlerFn {
   return async function (request, context) {
-    const token = extractTokenFromHeader(request)
+    const token = extractTokenFromHeader(request.headers)
     if (token) {
       request.cookies.set("st_token", token)
     }
@@ -379,7 +382,7 @@ export function withHasPermission<
     ) => Promise<Response> | Response,
   ): AppRouteHandlerFn {
     return async function (request, context) {
-      const token = extractTokenFromHeader(request)
+      const token = extractTokenFromHeader(request.headers)
       if (token) {
         request.cookies.set("st_token", token)
       }
@@ -412,4 +415,29 @@ export function hasPermission(
   user: Session["user"] | undefined,
 ) {
   return !!user?.permissions?.[permission]
+}
+
+export async function assertHasPermission(permission: Permission) {
+  const cookieStore = await cookies()
+  const authTokenCookie = cookieStore.get("st_token")
+
+  const authTokenHeader = extractTokenFromHeader(await headers())
+
+  const authToken = authTokenCookie?.value ?? authTokenHeader
+
+  if (!authToken) {
+    redirect("/login")
+  }
+
+  const sessionAndUser = await adapter.getSessionAndUser?.(authToken)
+
+  if (!sessionAndUser) {
+    redirect("/login")
+  }
+
+  const user = sessionAndUser.user as UserWithPermissions
+
+  if (!user.permissions?.[permission]) {
+    notFound()
+  }
 }

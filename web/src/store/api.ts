@@ -41,6 +41,7 @@ export const api = createApi({
     "Collections",
     "Tags",
     "CurrentUser",
+    "Authors",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -410,7 +411,7 @@ export const api = createApi({
           body,
         }
       },
-      invalidatesTags: ["Creators", "Series", "Tags"],
+      invalidatesTags: ["Creators", "Authors", "Series", "Tags"],
     }),
     listStatuses: build.query<Status[], void>({
       query: () => `/statuses`,
@@ -426,6 +427,14 @@ export const api = createApi({
           type: "Creators",
           id: creator.uuid,
         })) ?? ["Creators"],
+    }),
+    listAuthors: build.query<Creator[], void>({
+      query: () => "/creators?role=aut",
+      providesTags: (creators) =>
+        creators?.map((creator) => ({
+          type: "Authors",
+          id: creator.uuid,
+        })) ?? ["Authors"],
     }),
     listSeries: build.query<Series[], void>({
       query: () => "/series",
@@ -609,6 +618,7 @@ export const {
   useLazyListCreatorsQuery,
   useLazyListSeriesQuery,
   useLazyListTagsQuery,
+  useListAuthorsQuery,
   useListCreatorsQuery,
   useListBooksQuery,
   useListCollectionsQuery,

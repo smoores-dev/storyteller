@@ -6,22 +6,17 @@ import { Shelf } from "./Shelf"
 import { useMemo, useState } from "react"
 import { UUID } from "@/uuid"
 import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
-import { BookDetail, Shelves } from "@/apiModels"
+import { Shelves } from "@/apiModels"
 import { useInitialData } from "@/hooks/useInitialData"
 
 interface Props {
   shelves: Shelves
-  books: BookDetail[]
 }
 
-export function BookShelves({
-  shelves: initialShelves,
-  books: initialBooks,
-}: Props) {
+export function BookShelves({ shelves: initialShelves }: Props) {
   useInitialData(
     api.util.upsertQueryData("getShelves", undefined, initialShelves),
   )
-  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
 
   const { data: shelves } = useGetShelvesQuery()
   const { data: statuses } = useListStatusesQuery()

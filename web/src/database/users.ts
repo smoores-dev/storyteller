@@ -19,6 +19,10 @@ export type User = Selectable<DB["user"]>
 export type NewUser = Insertable<DB["user"]>
 export type UserUpdate = Updateable<DB["user"]>
 
+export type UserWithPermissions = NonNullable<
+  Awaited<ReturnType<typeof getUser>>
+>
+
 export async function getUserByUsernameOrEmail(usernameOrEmail: string) {
   const row = await db
     .selectFrom("user")

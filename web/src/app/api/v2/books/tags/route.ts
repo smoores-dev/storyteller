@@ -1,6 +1,7 @@
 import { withHasPermission } from "@/auth/auth"
 import { addTagsToBooks, removeTagsFromBooks } from "@/database/tags"
 import { UUID } from "@/uuid"
+import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 
 export const POST = withHasPermission("bookUpdate")(async (request) => {
   const body = (await request.json()) as {
@@ -9,6 +10,10 @@ export const POST = withHasPermission("bookUpdate")(async (request) => {
   }
   const { tags, books } = body
   await addTagsToBooks(books, tags)
+
+  for (const book of books) {
+    void queueWritesToFiles(book)
+  }
 
   return new Response(null, { status: 204 })
 })

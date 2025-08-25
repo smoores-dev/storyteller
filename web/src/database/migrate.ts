@@ -23,6 +23,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "47_restructure_creators.sql": (
     await import("./migrations/47_restructure_creators.sql")
   ).default,
+  "53_pre_extract_cover_art.sql": (
+    await import("./migrations/53_pre_extract_cover_art.sql")
+  ).default,
 }
 
 async function isFirstStartup() {

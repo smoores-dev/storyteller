@@ -17,7 +17,12 @@ import { Epub } from "@smoores/epub/node"
 import { readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 import { writeCachedCoverImage } from "../fs"
-import { getAudioCover, getEpubCover } from "../covers"
+import {
+  getAudioCover,
+  getEpubCover,
+  writeExtractedAudiobookCover,
+  writeExtractedEbookCover,
+} from "../covers"
 import { optimizeImage } from "@/images"
 import { getMetadataFromEpub } from "@/process/processEpub"
 
@@ -227,6 +232,11 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
 
         const coverImage = await getEpubCover(created)
         if (coverImage) {
+          await writeExtractedEbookCover(
+            created,
+            coverImage.filename,
+            coverImage.data,
+          )
           const optimized = await optimizeImage({
             buffer: coverImage.data,
             height: 225,
@@ -329,6 +339,11 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
 
         const coverImage = await getAudioCover(created)
         if (coverImage) {
+          await writeExtractedAudiobookCover(
+            created,
+            coverImage.filename,
+            coverImage.data,
+          )
           const optimized = await optimizeImage({
             buffer: coverImage.data,
             height: 147,
@@ -484,6 +499,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
 
     const epubCover = await getEpubCover(book)
     if (epubCover) {
+      await writeExtractedEbookCover(book, epubCover.filename, epubCover.data)
       const optimized = await optimizeImage({
         buffer: epubCover.data,
         height: 225,
@@ -497,6 +513,11 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
 
     const audioCover = await getAudioCover(book)
     if (audioCover) {
+      await writeExtractedAudiobookCover(
+        book,
+        audioCover.filename,
+        audioCover.data,
+      )
       const optimized = await optimizeImage({
         buffer: audioCover.data,
         height: 147,

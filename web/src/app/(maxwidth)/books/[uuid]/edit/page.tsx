@@ -4,6 +4,7 @@ import { BookEditForm } from "@/components/books/edit/BookEditForm"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import Link from "next/link"
 import { IconArrowNarrowLeft } from "@tabler/icons-react"
+import { assertHasPermission } from "@/auth/auth"
 
 type Props = {
   params: Promise<{
@@ -17,6 +18,7 @@ export default async function BookEditPage(props: Props) {
   const { uuid } = params
 
   const book = await fetchApiRoute<BookDetail>(`/books/${uuid}`)
+  await assertHasPermission("bookUpdate")
 
   return (
     <Stack gap={24}>

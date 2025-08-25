@@ -1,3 +1,7 @@
+import {
+  writeExtractedAudiobookCover,
+  writeExtractedEbookCover,
+} from "@/assets/covers"
 import { deleteAssets } from "@/assets/fs"
 import {
   getInternalBookDirectory,
@@ -191,14 +195,25 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     })
   }
 
-  const textCover = formData.get("textCover")?.valueOf()
-  const audioCover = formData.get("audioCover")?.valueOf()
+  const textCover = formData.get("textCover")?.valueOf() as File | undefined
+  const audioCover = formData.get("audioCover")?.valueOf() as File | undefined
 
-  void queueWritesToFiles(
-    book.uuid,
-    textCover as File | undefined,
-    audioCover as File | undefined,
-  )
+  if (textCover) {
+    await writeExtractedEbookCover(
+      updated,
+      textCover.name,
+      await textCover.bytes(),
+    )
+  }
+  if (audioCover) {
+    await writeExtractedAudiobookCover(
+      updated,
+      audioCover.name,
+      await audioCover.bytes(),
+    )
+  }
+
+  void queueWritesToFiles(book.uuid, textCover, audioCover)
 
   return NextResponse.json(updated)
 })

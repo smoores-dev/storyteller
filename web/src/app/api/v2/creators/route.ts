@@ -7,7 +7,8 @@ import { NextResponse } from "next/server"
  * @desc '
  */
 export const GET = withHasPermission("bookList")(async (request) => {
-  const creators = await getCreators(request.auth.user.id)
+  const role = request.nextUrl.searchParams.get("role") ?? undefined
+  const creators = await getCreators(request.auth.user.id, role)
 
   return NextResponse.json(creators)
 })

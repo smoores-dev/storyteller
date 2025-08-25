@@ -129,3 +129,11 @@ export function getCachedCoverImageDirectory(
 ) {
   return join(getCoverImageCacheDirectory(uuid), kind, `${height}x${width}`)
 }
+
+export function getAudiobookCoverDirectory(book: Book) {
+  return join(getInternalBookDirectory(book), "audiobook cover")
+}
+
+export function getEbookCoverDirectory(book: Book) {
+  return join(getInternalBookDirectory(book), "ebook cover")
+}

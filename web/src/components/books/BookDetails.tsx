@@ -1,7 +1,6 @@
 "use client"
 
 import {
-  api,
   getDownloadUrl,
   useListBooksQuery,
   useListStatusesQuery,
@@ -29,20 +28,15 @@ import {
 import { IconReadaloud } from "../icons/IconReadaloud"
 import { StatusInput } from "./edit/StatusInput"
 import { BookStatus } from "./BookStatus"
-import { BookDetail as Book } from "@/apiModels"
 import { UUID } from "@/uuid"
-import { useInitialData } from "@/hooks/useInitialData"
 import { DeleteBookModal } from "./modals/DeleteBookModal"
 import { useDisclosure } from "@mantine/hooks"
 
 interface Props {
   bookUuid: UUID
-  books: Book[]
 }
 
-export function BookDetail({ bookUuid, books: initialBooks }: Props) {
-  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
-
+export function BookDetails({ bookUuid }: Props) {
   const [opened, { open, close }] = useDisclosure()
 
   const { book } = useListBooksQuery(undefined, {
@@ -72,6 +66,11 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
                 )}{" "}
                 {book.title}
               </Title>
+              {book.subtitle && (
+                <Title className="font-sans" order={3}>
+                  {book.subtitle}
+                </Title>
+              )}
               <Link href={`/books/${book.uuid}/edit`}>
                 <IconPencil />
               </Link>
@@ -176,7 +175,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
               {book.readaloud?.status === "ALIGNED" && (
                 <Anchor
                   href={getDownloadUrl(book.uuid, "readaloud")}
-                  className="hover:bg-st-orange-200 rounded-md"
+                  className="hover:bg-st-orange-100 rounded-md"
                 >
                   <IconReadaloud />
                 </Anchor>
@@ -184,7 +183,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
               {book.ebook && (
                 <Anchor
                   href={getDownloadUrl(book.uuid, "ebook")}
-                  className="hover:bg-st-orange-200 rounded-md"
+                  className="hover:bg-st-orange-100 rounded-md"
                 >
                   <IconBook2 />
                 </Anchor>
@@ -192,7 +191,7 @@ export function BookDetail({ bookUuid, books: initialBooks }: Props) {
               {book.audiobook && (
                 <Anchor
                   href={getDownloadUrl(book.uuid, "audiobook")}
-                  className="hover:bg-st-orange-200 rounded-md"
+                  className="hover:bg-st-orange-100 rounded-md"
                 >
                   <IconHeadphonesFilled />
                 </Anchor>

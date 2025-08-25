@@ -7,9 +7,21 @@ export type Creator = Selectable<DB["creator"]>
 export type NewCreator = Insertable<DB["creator"]>
 export type CreatorUpdate = Updateable<DB["creator"]>
 
-export async function getCreators(userId?: UUID) {
+export async function getCreators(userId?: UUID, role?: string | undefined) {
   return db
     .selectFrom("creator")
+    .$if(!!role, (qb) =>
+      qb
+        .innerJoin(
+          "bookToCreator as roleCheck",
+          "roleCheck.creatorUuid",
+          "creator.uuid",
+        )
+        // The $if condition ensures that this only runs when role
+        // is not null
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        .where("roleCheck.role", "=", role!),
+    )
     .$if(!!userId, (qb) =>
       qb
         .innerJoin("bookToCreator", "bookToCreator.creatorUuid", "creator.uuid")

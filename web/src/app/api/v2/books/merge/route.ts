@@ -1,3 +1,9 @@
+import {
+  getAudioCover,
+  getEpubCover,
+  writeExtractedAudiobookCover,
+  writeExtractedEbookCover,
+} from "@/assets/covers"
 import { deleteCachedCoverImages } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -7,6 +13,7 @@ import {
   updateBook,
 } from "@/database/books"
 import { UUID } from "@/uuid"
+import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 
 export const POST = withHasPermission("bookCreate")(async (request) => {
   const body = (await request.json()) as {
@@ -73,6 +80,22 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   )
 
   await deleteCachedCoverImages(merged.uuid)
+
+  const ebookCover = await getEpubCover(merged)
+  if (ebookCover) {
+    await writeExtractedEbookCover(merged, ebookCover.filename, ebookCover.data)
+  }
+
+  const audioCover = await getAudioCover(merged)
+  if (audioCover) {
+    await writeExtractedAudiobookCover(
+      merged,
+      audioCover.filename,
+      audioCover.data,
+    )
+  }
+
+  void queueWritesToFiles(merged.uuid)
 
   return Response.json(merged)
 })
