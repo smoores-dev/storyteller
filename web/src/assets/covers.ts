@@ -319,11 +319,11 @@ export async function writeExtractedEbookCover(
   filename: string,
   data: Uint8Array,
 ) {
+  const ebookCoverDir = getEbookCoverDirectory(book)
   const existing = await getExtractedEbookCover(book)
   if (existing) {
-    await rm(existing.filename)
+    await rm(join(ebookCoverDir, existing.filename))
   }
-  const ebookCoverDir = getEbookCoverDirectory(book)
   await mkdir(ebookCoverDir, { recursive: true })
   await writeFile(join(ebookCoverDir, filename), data)
 }
@@ -333,11 +333,11 @@ export async function writeExtractedAudiobookCover(
   filename: string,
   data: Uint8Array,
 ) {
+  const audiobookCoverDir = getAudiobookCoverDirectory(book)
   const existing = await getExtractedEbookCover(book)
   if (existing) {
-    await rm(existing.filename)
+    await rm(join(audiobookCoverDir, existing.filename))
   }
-  const audiobookCoverDir = getAudiobookCoverDirectory(book)
   await mkdir(audiobookCoverDir, { recursive: true })
   await writeFile(join(audiobookCoverDir, filename), data)
 }
