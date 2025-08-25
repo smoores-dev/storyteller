@@ -7,10 +7,8 @@ export async function register() {
     try {
       await migrate()
     } catch (err) {
-      logger.error(
-        "Failed to run database migrations — Storyteller may not work properly!",
-      )
-      logger.error(err)
+      logger.error("Failed to run database migrations — Aborting startup")
+      throw err
     }
     try {
       await listen()
