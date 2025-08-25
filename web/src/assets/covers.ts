@@ -334,7 +334,7 @@ export async function writeExtractedAudiobookCover(
   data: Uint8Array,
 ) {
   const audiobookCoverDir = getAudiobookCoverDirectory(book)
-  const existing = await getExtractedEbookCover(book)
+  const existing = await getExtractedAudiobookCover(book)
   if (existing) {
     await rm(join(audiobookCoverDir, existing.filename))
   }
