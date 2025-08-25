@@ -6,6 +6,11 @@ import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
 import { AuthError } from "next-auth"
 import { revalidatePath } from "next/cache"
 import { PublicProvider } from "@auth/core/types"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Account",
+}
 
 export default async function AccountPage() {
   const currentUser = await fetchApiRoute<User>("/user")

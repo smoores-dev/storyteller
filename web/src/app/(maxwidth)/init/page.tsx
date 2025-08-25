@@ -4,6 +4,11 @@ import { redirect } from "next/navigation"
 import { Button, PasswordInput, TextInput, Title } from "@mantine/core"
 import { createAdminUser } from "@/database/users"
 import { createUserToken, hashPassword } from "@/auth/auth"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Setup",
+}
 
 export default function InitPage() {
   async function init(data: FormData) {

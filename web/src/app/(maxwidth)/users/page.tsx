@@ -2,8 +2,13 @@ import { UsersList } from "@/components/users/UsersList"
 import { Stack, Title } from "@mantine/core"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { Invite, User } from "@/apiModels"
+import { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "Users & Invites",
+}
 
 export default async function UsersPage() {
   const users = await fetchApiRoute<User[]>("/users")

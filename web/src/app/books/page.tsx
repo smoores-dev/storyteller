@@ -1,6 +1,11 @@
 import { BookList } from "@/components/books/BookList"
 import { Title } from "@mantine/core"
 import { assertHasPermission } from "@/auth/auth"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Books",
+}
 
 export const dynamic = "force-dynamic"
 

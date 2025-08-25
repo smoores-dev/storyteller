@@ -8,6 +8,11 @@ import { nextAuth } from "@/auth/auth"
 import { AuthError } from "next-auth"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { PublicProvider } from "@auth/core/types"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Login",
+}
 
 export default async function Login() {
   async function credentialsLogin(data: FormData) {

@@ -24,7 +24,10 @@ const youngSerif = Young_Serif({
 })
 
 export const metadata: Metadata = {
-  title: "Storyteller",
+  title: {
+    template: "%s | Storyteller",
+    default: "Storyteller",
+  },
   description: "A simple tool for syncing audiobooks and ebooks",
 }
 
