@@ -12,6 +12,7 @@ import {
   createCredentialsAccount,
   acceptInvite,
 } from "@/database/users"
+import { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
 
@@ -19,6 +20,10 @@ type Props = {
   params: Promise<{
     inviteKey: string
   }>
+}
+
+export const metadata: Metadata = {
+  title: "Accept Invite",
 }
 
 export default async function InvitePage(props: Props) {

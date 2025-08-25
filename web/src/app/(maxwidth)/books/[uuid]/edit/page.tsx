@@ -5,11 +5,22 @@ import { fetchApiRoute } from "@/app/fetchApiRoute"
 import Link from "next/link"
 import { IconArrowNarrowLeft } from "@tabler/icons-react"
 import { assertHasPermission } from "@/auth/auth"
+import type { Metadata } from "next"
 
 type Props = {
   params: Promise<{
     uuid: string
   }>
+}
+
+export const generateMetadata = async ({
+  params,
+}: Props): Promise<Metadata> => {
+  const { uuid } = await params
+  const book = await fetchApiRoute<BookDetail>(`/books/${uuid}`)
+  return {
+    title: `✏️ ${book.title} | Books`,
+  }
 }
 
 export default async function BookEditPage(props: Props) {
