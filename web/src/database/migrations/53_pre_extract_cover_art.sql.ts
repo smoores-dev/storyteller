@@ -228,14 +228,12 @@ export default async function migrate() {
   for (const book of books) {
     logger.info(`Extracting ebook cover for ${book.title}`)
     const ebookCover = await getEpubCover(book)
-    logger.info("Writing extracted ebook cover")
     if (ebookCover) {
       await writeExtractedEbookCover(book, ebookCover.filename, ebookCover.data)
     }
 
     logger.info(`Extracting audiobook cover for ${book.title}`)
     const audiobookCover = await getAudioCover(book)
-    logger.info("Writing extracted audiobook cover")
     if (audiobookCover) {
       await writeExtractedAudiobookCover(
         book,
