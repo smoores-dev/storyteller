@@ -4,28 +4,14 @@ import { Stack, Text, Title } from "@mantine/core"
 import { IconBooks } from "@tabler/icons-react"
 import { BookList } from "../books/BookList"
 import { CollectionSettings } from "./CollectionSettings"
-import { CollectionWithRelations } from "@/database/collections"
-import { BookDetail } from "@/apiModels"
-import { api, useListCollectionsQuery } from "@/store/api"
-import { useInitialData } from "@/hooks/useInitialData"
+import { useListCollectionsQuery } from "@/store/api"
 import { UUID } from "@/uuid"
 
 interface Props {
   collectionUuid: UUID | null
-  collections: CollectionWithRelations[]
-  books: BookDetail[]
 }
 
-export function CollectionDetails({
-  collectionUuid,
-  collections,
-  books,
-}: Props) {
-  useInitialData(api.util.upsertQueryData("listBooks", undefined, books))
-  useInitialData(
-    api.util.upsertQueryData("listCollections", undefined, collections),
-  )
-
+export function CollectionDetails({ collectionUuid }: Props) {
   const { collection } = useListCollectionsQuery(undefined, {
     selectFromResult: (result) => ({
       collection: result.data?.find(

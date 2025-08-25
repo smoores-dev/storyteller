@@ -8,11 +8,11 @@ import {
 } from "@/hooks/useFilterSortedBooks"
 import { UUID } from "@/uuid"
 import {
-  useListCreatorsQuery,
   useListCollectionsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
+  useListAuthorsQuery,
 } from "@/store/api"
 import { useMemo } from "react"
 
@@ -38,7 +38,7 @@ export function FilterSort({
   const { data: series = [] } = useListSeriesQuery(undefined, {
     refetchOnMountOrArgChange: true,
   })
-  const { data: creators = [] } = useListCreatorsQuery(undefined, {
+  const { data: authors = [] } = useListAuthorsQuery(undefined, {
     refetchOnMountOrArgChange: true,
   })
   const { data: statuses = [] } = useListStatusesQuery(undefined, {
@@ -113,8 +113,8 @@ export function FilterSort({
             <MultiSelect
               searchable
               aria-label="Authors"
-              placeholder={`Authors (${creators.length})`}
-              data={creators.map((s) => ({
+              placeholder={`Authors (${authors.length})`}
+              data={authors.map((s) => ({
                 label: s.name,
                 value: s.uuid,
               }))}

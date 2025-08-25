@@ -1,7 +1,7 @@
-import { BookDetail } from "@/components/books/BookDetail"
+import { BookDetails } from "@/components/books/BookDetails"
 import { UUID } from "@/uuid"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { BookDetail as Book } from "@/apiModels"
+import { BookDetail } from "@/apiModels"
 
 type Props = {
   params: Promise<{
@@ -13,8 +13,7 @@ export default async function BookEditPage(props: Props) {
   const params = await props.params
 
   const { uuid } = params
+  await fetchApiRoute<BookDetail>(`/books/${uuid}`)
 
-  const books = await fetchApiRoute<Book[]>("/books")
-
-  return <BookDetail bookUuid={uuid} books={books} />
+  return <BookDetails bookUuid={uuid} />
 }

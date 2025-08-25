@@ -2,33 +2,23 @@
 
 import { Stack, Text } from "@mantine/core"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
-import { usePermission } from "@/hooks/usePermission"
 import { UUID } from "@/uuid"
 import { useState } from "react"
 import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
 import { BookGrid } from "./BookGrid"
-import { api, useListBooksQuery, useListCollectionsQuery } from "@/store/api"
+import { useListBooksQuery, useListCollectionsQuery } from "@/store/api"
 import { AddBooksMenu } from "./AddBooksMenu"
 import { FilterSort } from "../collections/FilterSort"
-import { BookDetail } from "@/apiModels"
-import { useInitialData } from "@/hooks/useInitialData"
-import { skipToken } from "@reduxjs/toolkit/query"
+import { BookGridSkeleton } from "./BookGridSkeleton"
 
 interface Props {
   collectionUuid?: UUID | null
-  books?: BookDetail[]
 }
 
-export function BookList({ collectionUuid, books: initialBooks }: Props) {
-  const canListBooks = usePermission("bookList")
-  useInitialData(
-    initialBooks
-      ? api.util.upsertQueryData("listBooks", undefined, initialBooks)
-      : skipToken,
-  )
-
-  const { collectionBooks } = useListBooksQuery(undefined, {
+export function BookList({ collectionUuid }: Props) {
+  const { collectionBooks, isLoading } = useListBooksQuery(undefined, {
     selectFromResult: (result) => ({
+      isLoading: result.isUninitialized || result.isLoading,
       collectionBooks:
         typeof collectionUuid === "string"
           ? result.data?.filter((book) =>
@@ -54,52 +44,48 @@ export function BookList({ collectionUuid, books: initialBooks }: Props) {
   const [isEditing, setIsEditing] = useState(false)
 
   return (
-    <>
-      {canListBooks && (
+    <Stack>
+      <FilterSort options={options} />
+      <CollectionToolbar
+        collection={collection}
+        books={books}
+        selected={selected}
+        setSelected={setSelected}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+      />
+      {isLoading ? (
+        <BookGridSkeleton />
+      ) : books.length ? (
+        <BookGrid
+          filterSortOptions={options}
+          books={books}
+          isSelecting={isEditing}
+          selected={selected}
+          onSelect={(bookUuid) => {
+            setSelected((prev) => {
+              const next = new Set(prev)
+              if (prev.has(bookUuid)) {
+                next.delete(bookUuid)
+              } else {
+                next.add(bookUuid)
+              }
+              return next
+            })
+          }}
+        />
+      ) : collectionUuid === null ? (
+        <Text>There’s nothing here! Congrats on being so well organized!</Text>
+      ) : (
         <Stack>
-          <FilterSort options={options} />
-          <CollectionToolbar
+          <Text>There’s nothing here!</Text>
+          <AddBooksMenu
+            className="self-start"
+            variant="filled"
             collection={collection}
-            books={books}
-            selected={selected}
-            setSelected={setSelected}
-            isEditing={isEditing}
-            setIsEditing={setIsEditing}
           />
-          {books.length ? (
-            <BookGrid
-              filterSortOptions={options}
-              books={books}
-              isSelecting={isEditing}
-              selected={selected}
-              onSelect={(bookUuid) => {
-                setSelected((prev) => {
-                  const next = new Set(prev)
-                  if (prev.has(bookUuid)) {
-                    next.delete(bookUuid)
-                  } else {
-                    next.add(bookUuid)
-                  }
-                  return next
-                })
-              }}
-            />
-          ) : collectionUuid === null ? (
-            <Text>
-              There’s nothing here! Congrats on being so well organized!
-            </Text>
-          ) : (
-            <Stack>
-              <Text>There’s nothing here!</Text>
-              <AddBooksMenu
-                className="self-start"
-                variant="filled"
-                collection={collection}
-              />
-            </Stack>
-          )}
         </Stack>
       )}
-    </>
+    </Stack>
   )
 }

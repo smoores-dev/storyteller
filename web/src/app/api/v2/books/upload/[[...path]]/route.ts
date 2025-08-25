@@ -26,6 +26,12 @@ import { Audiobook } from "@smoores/audiobook/node"
 import { getMetadataFromEpub } from "@/process/processEpub"
 import { logger } from "@/logging"
 import { lookup } from "mime-types"
+import {
+  getAudioCover,
+  getEpubCover,
+  writeExtractedAudiobookCover,
+  writeExtractedEbookCover,
+} from "@/assets/covers"
 
 const mutex = new AsyncSemaphore(1)
 
@@ -119,6 +125,24 @@ const server = new Server({
 
           await persistEpub(book, uploadPath, isAligned)
         }
+        const epubCover = await getEpubCover(book)
+        if (epubCover) {
+          await writeExtractedEbookCover(
+            book,
+            epubCover.filename,
+            epubCover.data,
+          )
+        }
+        if (isAligned) {
+          const audioCover = await getAudioCover(book)
+          if (audioCover) {
+            await writeExtractedAudiobookCover(
+              book,
+              audioCover.filename,
+              audioCover.data,
+            )
+          }
+        }
       }
 
       if (isAudiobook) {
@@ -184,6 +208,15 @@ const server = new Server({
           )
 
           await persistAudio(book, uploadPath, relativePath)
+        }
+
+        const audioCover = await getAudioCover(book)
+        if (audioCover) {
+          await writeExtractedAudiobookCover(
+            book,
+            audioCover.filename,
+            audioCover.data,
+          )
         }
       }
 

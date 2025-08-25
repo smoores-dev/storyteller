@@ -43,6 +43,7 @@ export const db = new Kysely<DB>({
   // log(event) {
   //   console.log(event.query.sql)
   //   console.log(event.query.parameters)
+  //   console.log(`Completed in ${event.queryDurationMillis}ms`)
   //   if (event.level === "error") {
   //     console.log(event.error)
   //   }

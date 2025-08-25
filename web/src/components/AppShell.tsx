@@ -47,8 +47,6 @@ import {
 } from "@/store/api"
 import { usePermissions } from "@/hooks/usePermissions"
 import { User } from "@/apiModels"
-import { useInitialData } from "@/hooks/useInitialData"
-import { skipToken } from "@reduxjs/toolkit/query"
 import { CollectionWithRelations } from "@/database/collections"
 import { CreateCollectionModal } from "./collections/CreateCollectionModal"
 import { IntersectionObserverProvider } from "@/hooks/useIntersectionObserver"
@@ -170,23 +168,12 @@ export function AppShell({
   ] = useDisclosure(false)
   const pathname = usePathname()
 
-  useInitialData(
-    initialCurrentUser
-      ? api.util.upsertQueryData(
-          "getCurrentUser",
-          undefined,
-          initialCurrentUser,
-        )
-      : skipToken,
-  )
-
-  useInitialData(
-    api.util.upsertQueryData("listCollections", undefined, initialCollections),
-  )
-
-  const { data: currentUser } = useGetCurrentUserQuery()
-  const permissions = usePermissions()
-  const { data: collections } = useListCollectionsQuery()
+  const { data: liveCurrentUser } = useGetCurrentUserQuery()
+  const currentUser = liveCurrentUser ?? initialCurrentUser
+  const livePermissions = usePermissions()
+  const permissions = livePermissions ?? currentUser?.permissions
+  const { data: liveCollections } = useListCollectionsQuery()
+  const collections = liveCollections ?? initialCollections
 
   return (
     <IntersectionObserverProvider
@@ -273,7 +260,7 @@ export function AppShell({
                       label={<span className="italic">Uncollected</span>}
                       active={pathname === `/collections/none`}
                     />
-                    {collections?.map((collection) => (
+                    {collections.map((collection) => (
                       <NavLink
                         key={collection.uuid}
                         onClick={close}

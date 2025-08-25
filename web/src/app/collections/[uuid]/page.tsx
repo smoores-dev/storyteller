@@ -1,7 +1,6 @@
-import { BookDetail } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { CollectionDetails } from "@/components/collections/CollectionDetails"
-import { Collection, CollectionWithRelations } from "@/database/collections"
+import { Collection } from "@/database/collections"
 import { UUID } from "@/uuid"
 
 interface Props {
@@ -15,15 +14,6 @@ export default async function CollectionPage({ params }: Props) {
     uuid === "none"
       ? null
       : await fetchApiRoute<Collection>(`/collections/${uuid}`)
-  const books = await fetchApiRoute<BookDetail[]>("/books")
-  const collections =
-    await fetchApiRoute<CollectionWithRelations[]>("/collections")
 
-  return (
-    <CollectionDetails
-      collectionUuid={collection?.uuid ?? null}
-      books={books}
-      collections={collections}
-    />
-  )
+  return <CollectionDetails collectionUuid={collection?.uuid ?? null} />
 }

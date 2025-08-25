@@ -1,14 +1,9 @@
-import {
-  persistCustomAudioCover,
-  writeMetadataToAudiobook,
-} from "@/assets/covers"
+import { writeMetadataToAudiobook } from "@/assets/covers"
 import { deleteCachedCoverImages } from "@/assets/fs"
 import { getBookOrThrow } from "@/database/books"
 import { writeMetadataToEpub } from "@/process/processEpub"
 import { UUID } from "@/uuid"
 import { Epub } from "@smoores/epub/node"
-import { extension } from "mime-types"
-import { extname, join } from "node:path"
 import { MessagePort } from "node:worker_threads"
 
 interface TransferableFile {
@@ -55,17 +50,7 @@ export default async function writeMetadataToFiles({
   }
 
   if (book.audiobook) {
-    let ext = ""
-    if (audioCover) {
-      ext = extname(audioCover.name) || extension(audioCover.type) || ".jpeg"
-      const arrayBuffer = await audioCover.arrayBuffer()
-      const data = new Uint8Array(arrayBuffer)
-      await persistCustomAudioCover(bookUuid, `Audio Cover${ext}`, data)
-    }
-    await writeMetadataToAudiobook(
-      book,
-      ext && join(book.audiobook.filepath, `Audio Cover${ext}`),
-    )
+    await writeMetadataToAudiobook(book, audioCover)
   }
 
   if (book.readaloud?.filepath) {

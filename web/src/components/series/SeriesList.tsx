@@ -1,10 +1,6 @@
 "use client"
 
-import { useInitialData } from "@/hooks/useInitialData"
-import { Series } from "@/database/series"
-import { api, useListBooksQuery, useListSeriesQuery } from "@/store/api"
-import { BookDetail } from "@/apiModels"
-import { usePermission } from "@/hooks/usePermission"
+import { useListBooksQuery, useListSeriesQuery } from "@/store/api"
 import { useMemo } from "react"
 import { useFilterSortedSeries } from "@/hooks/useFilterSortedSeries"
 import { Group, Stack, Text } from "@mantine/core"
@@ -12,21 +8,7 @@ import { Search } from "../books/Search"
 import { Sort } from "../books/Sort"
 import { SeriesGrid } from "./SeriesGrid"
 
-interface Props {
-  series: Series[]
-  books: BookDetail[]
-}
-
-export function SeriesList({
-  series: initialSeries,
-  books: initialBooks,
-}: Props) {
-  const canListBooks = usePermission("bookList")
-  useInitialData(
-    api.util.upsertQueryData("listSeries", undefined, initialSeries),
-  )
-  useInitialData(api.util.upsertQueryData("listBooks", undefined, initialBooks))
-
+export function SeriesList() {
   const { data: books } = useListBooksQuery()
   const { data: allSeries } = useListSeriesQuery()
 
@@ -53,23 +35,16 @@ export function SeriesList({
   const { series, options } = useFilterSortedSeries(seriesWithBooks)
 
   return (
-    <>
-      {canListBooks && (
-        <Stack>
-          <Group>
-            <Search
-              value={options.search}
-              onValueChange={options.onSearchChange}
-            />
-            <Sort value={options.sort} onValueChange={options.onSortChange} />
-          </Group>
-          {series.length ? (
-            <SeriesGrid series={series} />
-          ) : (
-            <Text>There’s nothing here!</Text>
-          )}
-        </Stack>
+    <Stack>
+      <Group>
+        <Search value={options.search} onValueChange={options.onSearchChange} />
+        <Sort value={options.sort} onValueChange={options.onSortChange} />
+      </Group>
+      {series.length ? (
+        <SeriesGrid series={series} />
+      ) : (
+        <Text>There’s nothing here!</Text>
       )}
-    </>
+    </Stack>
   )
 }
