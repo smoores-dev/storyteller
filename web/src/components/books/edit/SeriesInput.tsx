@@ -43,11 +43,10 @@ export function SeriesInput({
             {...getInputProps(`series.${i}.name`)}
           />
           <Checkbox
-            label="Featured"
+            label="Featured / Primary Series"
             {...getInputProps(`series.${i}.featured`, {
               type: "checkbox",
             })}
-            description="Whether this is the primary series for this book."
           />
           <NumberInput
             label="Position"

@@ -9,6 +9,7 @@ import {
   Image,
   List,
   Modal,
+  NumberInput,
   Stack,
   Text,
   TextInput,
@@ -25,6 +26,7 @@ import {
 import { ContentEditable } from "../books/edit/ContentEditable"
 import { IconTrash } from "@tabler/icons-react"
 import { InlineBookSearch } from "./InlineBookSearch"
+import Link from "next/link"
 
 interface Props {
   series: SeriesWithBooks[]
@@ -59,6 +61,23 @@ export function SeriesGrid({ series }: Props) {
     },
   })
 
+  const bookList = useMemo(
+    () =>
+      [
+        ...form.values.relations.map((r, i) => ({
+          ...r,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          title: bookMap.get(r.bookUuid)!.title,
+          index: i,
+        })),
+      ].sort(
+        (a, b) =>
+          parseFloat(a.position?.toString() ?? "0") -
+          parseFloat(b.position?.toString() ?? "0"),
+      ),
+    [bookMap, form.values.relations],
+  )
+
   useEffect(() => {
     form.setValues({
       name: selectedSeries?.name ?? "",
@@ -84,7 +103,7 @@ export function SeriesGrid({ series }: Props) {
         >
           <Stack>
             <Text>
-              Are you sure you want to delete the collection{" "}
+              Are you sure you want to delete the series{" "}
               <strong>{selectedSeries?.name}</strong>?
             </Text>
             <form
@@ -156,16 +175,75 @@ export function SeriesGrid({ series }: Props) {
               />
               <Fieldset legend="Books">
                 <Stack className="gap-4">
-                  {form.values.relations.map((book, index) => (
+                  {bookList.map((book) => (
                     <Group key={book.bookUuid}>
-                      <TextInput
-                        className="w-10"
+                      <NumberInput
+                        className="w-14"
+                        // this makes the "up" arrow move the book "up" the series, which feels slightly more intuitive
+                        step={-1}
                         classNames={{
-                          input: "p-0 text-center bg-transparent",
+                          input: "pl-1 text-center bg-transparent",
                         }}
-                        {...form.getInputProps(`relations.${index}.position`)}
-                      />
+                        {...form.getInputProps(
+                          `relations.${book.index}.position`,
+                        )}
+                        onValueChange={(value) => {
+                          const currentPosition = parseFloat(
+                            book.position?.toString() ?? "0",
+                          )
+                          const newPosition = value.floatValue
 
+                          if (newPosition === currentPosition || !newPosition) {
+                            return
+                          }
+
+                          const relations = [...form.values.relations]
+                          const isMovingUp = newPosition < currentPosition
+
+                          if (isMovingUp) {
+                            // increment positions of books at or above target position
+                            relations.forEach((relation, index) => {
+                              if (index === book.index) return
+
+                              const relationPosition = parseFloat(
+                                relation.position?.toString() ?? "0",
+                              )
+                              if (
+                                relationPosition >= newPosition &&
+                                relationPosition < currentPosition
+                              ) {
+                                form.setFieldValue(
+                                  `relations.${index}.position`,
+                                  (relationPosition + 1).toString(),
+                                )
+                              }
+                            })
+                          } else {
+                            // decrement positions of books between current and target
+                            relations.forEach((relation, index) => {
+                              if (index === book.index) return
+
+                              const relationPosition = parseFloat(
+                                relation.position?.toString() ?? "0",
+                              )
+                              if (
+                                relationPosition > currentPosition &&
+                                relationPosition <= newPosition
+                              ) {
+                                form.setFieldValue(
+                                  `relations.${index}.position`,
+                                  (relationPosition - 1).toString(),
+                                )
+                              }
+                            })
+                          }
+
+                          form.setFieldValue(
+                            `relations.${book.index}.position`,
+                            newPosition.toString(),
+                          )
+                        }}
+                      />
                       <Box className="h-10 w-8">
                         <Image
                           alt=""
@@ -187,16 +265,28 @@ export function SeriesGrid({ series }: Props) {
                         ></Image>
                       </Box>
                       <Stack gap={0} className="grow">
-                        <Text>{bookMap.get(book.bookUuid)?.title}</Text>
+                        <Text>
+                          <Link
+                            href={`/books/${book.bookUuid}`}
+                            className="hover:text-st-orange-600 hover:underline"
+                          >
+                            {bookMap.get(book.bookUuid)?.title}
+                          </Link>
+                        </Text>
                         <Text size="xs">
-                          {bookMap.get(book.bookUuid)?.authors[0]?.name}
+                          <Link
+                            href={`/books?authors=${bookMap.get(book.bookUuid)?.authors[0]?.uuid}`}
+                            className="hover:text-st-orange-600 hover:underline"
+                          >
+                            {bookMap.get(book.bookUuid)?.authors[0]?.name}
+                          </Link>
                         </Text>
                       </Stack>
                       <ActionIcon
                         variant="subtle"
                         className="self-center"
                         onClick={() => {
-                          form.removeListItem("relations", index)
+                          form.removeListItem("relations", book.index)
                         }}
                       >
                         <IconTrash color="red" />
@@ -204,8 +294,9 @@ export function SeriesGrid({ series }: Props) {
                     </Group>
                   ))}
                   <InlineBookSearch
+                    booksToExclude={bookList.map((b) => b.bookUuid)}
                     onValueChange={(book) => {
-                      const last = form.values.relations.at(-1)
+                      const last = bookList.at(-1)
                       const relation = {
                         bookUuid: book.uuid,
                         featured: last ? last.featured : true,

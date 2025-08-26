@@ -1,5 +1,5 @@
 import { Selectable, Insertable, Updateable } from "kysely"
-import { DB } from "./schema"
+import { BookToSeries, DB } from "./schema"
 import { db } from "./connection"
 import { getBooks, NewBookToSeries } from "./books"
 import { BookEvents } from "@/events"
@@ -127,7 +127,7 @@ export async function updateSeries(
   update: SeriesUpdate,
   relations: { books?: NewSeriesRelation[] },
 ) {
-  await db.transaction().execute(async (tr) => {
+  const affectedBooks = await db.transaction().execute(async (tr) => {
     if (Object.keys(update).length) {
       await tr
         .updateTable("series")
@@ -136,10 +136,15 @@ export async function updateSeries(
         .execute()
     }
 
-    await tr.deleteFrom("bookToSeries").where("seriesUuid", "=", uuid).execute()
+    let insertedBooks: Pick<BookToSeries, "bookUuid">[] = []
+    const deletedSeries = await tr
+      .deleteFrom("bookToSeries")
+      .where("seriesUuid", "=", uuid)
+      .returning(["bookToSeries.bookUuid"])
+      .execute()
 
     if (relations.books) {
-      await tr
+      insertedBooks = await tr
         .insertInto("bookToSeries")
         .values(
           relations.books.map((relation) => ({
@@ -147,12 +152,18 @@ export async function updateSeries(
             seriesUuid: uuid,
           })),
         )
+        .returning(["bookToSeries.bookUuid"])
         .execute()
     }
+
+    return new Set([
+      ...deletedSeries.map((b) => b.bookUuid),
+      ...insertedBooks.map((b) => b.bookUuid),
+    ])
   })
 
-  if (relations.books) {
-    const books = await getBooks(relations.books.map((book) => book.bookUuid))
+  if (affectedBooks.size) {
+    const books = await getBooks(Array.from(affectedBooks))
 
     books.forEach((book) => {
       BookEvents.emit("message", {
