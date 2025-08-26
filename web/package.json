@@ -19,7 +19,7 @@
     "test:watch": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller-node --test --watch",
     "test:all": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller-node --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
     "build": "yarn build:sqlite-ext && yarn build:worker && yarn build:file-write-worker && next build",
-    "build:sqlite-ext": "gcc -g -fPIC -rdynamic -shared sqlite/uuid.c -o sqlite/uuid.c.so",
+    "build:sqlite-ext": "bash ./build-sqlite-ext.sh",
     "build:autoimport": "esbuild src/assets/autoimport/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=autoimport-dist/",
     "build:worker": "esbuild src/work/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",
     "build:file-write-worker": "esbuild src/writeToFiles/fileWriteWorker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=file-write-dist/",
