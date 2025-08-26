@@ -1,5 +1,6 @@
 import { BookDetail } from "@/apiModels"
 import { getCoverUrl, useListBooksQuery } from "@/store/api"
+import { UUID } from "@/uuid"
 import {
   Box,
   Combobox,
@@ -10,13 +11,15 @@ import {
   Text,
   useCombobox,
 } from "@mantine/core"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 interface Props {
   onValueChange: (book: BookDetail) => void
+  /** Books to exclude from the series search results. Usually the books already in the series. */
+  booksToExclude?: UUID[]
 }
 
-export function InlineBookSearch({ onValueChange }: Props) {
+export function InlineBookSearch({ onValueChange, booksToExclude }: Props) {
   const { data: books } = useListBooksQuery()
 
   const [search, setSearch] = useState("")
@@ -26,6 +29,25 @@ export function InlineBookSearch({ onValueChange }: Props) {
       combobox.resetSelectedOption()
     },
   })
+
+  const filteredBookOptions = useMemo(() => {
+    return books
+      ?.filter(
+        (book) =>
+          !booksToExclude?.includes(book.uuid) &&
+          (book.title.toLowerCase().includes(search.toLowerCase()) ||
+            book.authors
+              .map(({ name }) => name)
+              .join(" ")
+              .toLowerCase()
+              .includes(search.toLowerCase())),
+      )
+      .map((book) => (
+        <Combobox.Option value={book.uuid} key={book.uuid}>
+          <BookItem book={book} />
+        </Combobox.Option>
+      ))
+  }, [books, booksToExclude, search])
 
   return (
     <Combobox
@@ -53,23 +75,7 @@ export function InlineBookSearch({ onValueChange }: Props) {
       </Combobox.Target>
 
       <Combobox.Dropdown>
-        <Combobox.Options>
-          {books
-            ?.filter(
-              (book) =>
-                book.title.toLowerCase().includes(search.toLowerCase()) ||
-                book.authors
-                  .map(({ name }) => name)
-                  .join(" ")
-                  .toLowerCase()
-                  .includes(search.toLowerCase()),
-            )
-            .map((book) => (
-              <Combobox.Option value={book.uuid} key={book.uuid}>
-                <BookItem book={book} />
-              </Combobox.Option>
-            ))}
-        </Combobox.Options>
+        <Combobox.Options>{filteredBookOptions}</Combobox.Options>
       </Combobox.Dropdown>
     </Combobox>
   )

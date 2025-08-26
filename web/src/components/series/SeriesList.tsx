@@ -27,7 +27,12 @@ export function SeriesList() {
                 featured: found.featured,
               }
             })
-            .filter((b) => !!b) ?? [],
+            .filter((b) => !!b)
+            .sort(
+              (a, b) =>
+                parseFloat(a.position?.toString() ?? "0") -
+                parseFloat(b.position?.toString() ?? "0"),
+            ) ?? [],
       })) ?? [],
     [books, allSeries],
   )

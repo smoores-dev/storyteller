@@ -108,6 +108,15 @@ export function AddBooksToSeriesItem({ selected }: Props) {
     [books, newSeries, relations, seriesBooks],
   )
 
+  const seriesWithoutSelectedBooks = useMemo(
+    () =>
+      series.filter(
+        (s) =>
+          !selectedBooks.some((b) => b.series.some((bs) => bs.uuid === s.uuid)),
+      ),
+    [series, selectedBooks],
+  )
+
   return (
     <>
       <Modal
@@ -141,11 +150,13 @@ export function AddBooksToSeriesItem({ selected }: Props) {
           <Stack gap={4} className="my-4">
             <Autocomplete
               label="Series"
-              data={series.map((s) => s.name)}
+              data={seriesWithoutSelectedBooks.map((s) => s.name)}
               {...form.getInputProps(`series.name`)}
               value={newSeries?.name ?? ""}
               onChange={(name) => {
-                const newSeries = series.find((s) => s.name === name)
+                const newSeries = seriesWithoutSelectedBooks.find(
+                  (s) => s.name === name,
+                )
                 form.setFieldValue("series", newSeries ?? { name })
               }}
             />
@@ -176,10 +187,8 @@ export function AddBooksToSeriesItem({ selected }: Props) {
                         className="h-full rounded-md"
                         aria-hidden
                         src={
-                          seriesBooks.find((b) => b.uuid === book.bookUuid)
-                            ?.ebook ||
-                          seriesBooks.find((b) => b.uuid === book.bookUuid)
-                            ?.readaloud
+                          books.find((b) => b.uuid === book.bookUuid)?.ebook ||
+                          books.find((b) => b.uuid === book.bookUuid)?.readaloud
                             ? getCoverUrl(book.bookUuid, {
                                 height: 225,
                                 width: 147,
