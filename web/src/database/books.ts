@@ -182,24 +182,6 @@ export async function createBook(
 
     uuid = row.uuid
 
-    const status = await tr
-      .selectFrom("status")
-      .selectAll("status")
-      .where("isDefault", "=", true)
-      .executeTakeFirstOrThrow()
-
-    const users = await tr.selectFrom("user").select(["id"]).execute()
-    await tr
-      .insertInto("bookToStatus")
-      .values(
-        users.map((user) => ({
-          userId: user.id,
-          bookUuid: uuid,
-          statusUuid: status.uuid,
-        })),
-      )
-      .execute()
-
     if (relations.creators) {
       for (const creator of relations.creators) {
         let existing = await tr
