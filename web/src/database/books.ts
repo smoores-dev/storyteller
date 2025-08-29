@@ -9,9 +9,13 @@ import { BookEvents } from "@/events"
 import { DB } from "./schema"
 import { Insertable, Selectable, sql, Transaction, Updateable } from "kysely"
 import { Epub } from "@smoores/epub/node"
+import { Audiobook as AudiobookAsset } from "@smoores/audiobook/node"
 import { NewCreator } from "./creators"
 import { NewSeries } from "./series"
-import { getMetadataFromEpub } from "@/process/processEpub"
+import {
+  getMetadataFromAudiobook,
+  getMetadataFromEpub,
+} from "@/assets/metadata"
 
 /**
  * This function only exists to support old clients that haven't
@@ -124,6 +128,38 @@ export async function createBookFromEpub(
   )
 }
 
+export async function createBookFromAudiobook(
+  audiobook: AudiobookAsset,
+  {
+    uuid,
+    title,
+  }: {
+    uuid?: UUID
+    title: string
+  },
+  relations: {
+    ebook?: EbookRelation
+    audiobook?: AudiobookRelation
+    readaloud?: AlignedBookRelation
+    collections?: UUID[]
+  } = {},
+) {
+  const { update, relations: audiobookRelations } =
+    await getMetadataFromAudiobook(audiobook)
+
+  return await createBook(
+    {
+      uuid,
+      ...update,
+      title: update?.title ?? title,
+    },
+    {
+      ...relations,
+      ...audiobookRelations,
+    },
+  )
+}
+
 export async function createBook(
   insert: NewBook,
   relations: {
@@ -145,6 +181,24 @@ export async function createBook(
       .executeTakeFirstOrThrow()
 
     uuid = row.uuid
+
+    const status = await tr
+      .selectFrom("status")
+      .selectAll("status")
+      .where("isDefault", "=", true)
+      .executeTakeFirstOrThrow()
+
+    const users = await tr.selectFrom("user").select(["id"]).execute()
+    await tr
+      .insertInto("bookToStatus")
+      .values(
+        users.map((user) => ({
+          userId: user.id,
+          bookUuid: uuid,
+          statusUuid: status.uuid,
+        })),
+      )
+      .execute()
 
     if (relations.creators) {
       for (const creator of relations.creators) {
@@ -960,7 +1014,10 @@ export async function updateBook(
       if (existing) {
         await tr
           .updateTable("ebook")
-          .set({ filepath: relations.ebook.filepath })
+          .set({
+            filepath: relations.ebook.filepath,
+            missing: relations.ebook.missing,
+          })
           .where("uuid", "=", existing.uuid)
           .execute()
       } else {
@@ -981,7 +1038,10 @@ export async function updateBook(
       if (existing) {
         await tr
           .updateTable("audiobook")
-          .set({ filepath: relations.audiobook.filepath })
+          .set({
+            filepath: relations.audiobook.filepath,
+            missing: relations.audiobook.missing,
+          })
           .where("uuid", "=", existing.uuid)
           .execute()
       } else {
@@ -1005,6 +1065,7 @@ export async function updateBook(
           .set({
             filepath: relations.readaloud.filepath,
             status: relations.readaloud.status,
+            missing: relations.readaloud.missing,
           })
           .where("uuid", "=", existing.uuid)
           .execute()

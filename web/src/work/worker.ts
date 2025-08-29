@@ -4,6 +4,7 @@ import {
 } from "@/apiModels/models/ProcessingStatus"
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
 import { getProcessedAudioFiles, deleteProcessed } from "@/assets/fs"
+import { writeMetadataToEpub } from "@/assets/metadata"
 import {
   getTranscriptionsFilepath,
   getProcessedAudioFilepath,
@@ -21,11 +22,7 @@ import { formatTranscriptionEngineDetails } from "@/database/settings"
 import { Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { getTranscriptions, processAudiobook } from "@/process/processAudio"
-import {
-  getFullText,
-  readEpub,
-  writeMetadataToEpub,
-} from "@/process/processEpub"
+import { getFullText, readEpub } from "@/process/processEpub"
 import { getInitialPrompt } from "@/process/prompt"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { installWhisper, transcribeTrack } from "@/transcribe"

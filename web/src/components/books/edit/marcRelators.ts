@@ -1,7 +1,7 @@
 /**
  * MARC including Author and Narrator
  */
-export const creatorRelators = [
+export const marcRelators = [
   { label: "Abridger", value: "abr" },
   { label: "Actor", value: "act" },
   { label: "Adapter", value: "adp" },
@@ -307,21 +307,21 @@ export const creatorRelators = [
 ] as const
 
 /**
- * Possible role for a creator
+ * All possible MARC relators
  */
-export type Role = (typeof creatorRelators)[number]["value"]
+export type Role = (typeof marcRelators)[number]["value"]
 
 export const isRole = (role: string): role is Role =>
-  creatorRelators.some((r) => r.value === role)
+  marcRelators.some((r) => r.value === role)
 
 /**
  * Possible role for a creator, excluding Author and Narrator
  */
-export type MarcRole = Exclude<Role, "aut" | "nrt">
+export type CreatorRole = Exclude<Role, "aut" | "nrt">
 
 /**
  * All possible MARC relators, excluding Author and Narrator
  */
-export const marcRelators = creatorRelators.filter(
+export const creatorRelators = marcRelators.filter(
   (r) => r.value !== "aut" && r.value !== "nrt",
-) as { value: MarcRole; label: string }[]
+) as { value: CreatorRole; label: string }[]

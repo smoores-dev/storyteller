@@ -1,7 +1,9 @@
-import { writeMetadataToAudiobook } from "@/assets/covers"
 import { deleteCachedCoverImages } from "@/assets/fs"
 import { getBookOrThrow } from "@/database/books"
-import { writeMetadataToEpub } from "@/process/processEpub"
+import {
+  writeMetadataToEpub,
+  writeMetadataToAudiobook,
+} from "@/assets/metadata"
 import { UUID } from "@/uuid"
 import { Epub } from "@smoores/epub/node"
 import { MessagePort } from "node:worker_threads"

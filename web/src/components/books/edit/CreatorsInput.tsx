@@ -10,7 +10,7 @@ import {
 } from "@mantine/core"
 import { UseFormReturnType } from "@mantine/form"
 import { IconPlus, IconTrash } from "@tabler/icons-react"
-import { marcRelators } from "./marcRelators"
+import { creatorRelators } from "./marcRelators"
 
 interface Props {
   values: CreatorRelation[]
@@ -44,7 +44,7 @@ export function CreatorsInput({
           />
           <Select
             searchable
-            data={marcRelators}
+            data={creatorRelators}
             label="Role"
             {...getInputProps(`creators.${i}.role`)}
           />

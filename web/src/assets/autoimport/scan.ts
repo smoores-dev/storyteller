@@ -1,12 +1,8 @@
 import { isAudioFile } from "@/audio"
 import {
-  Book,
-  BookRelationsUpdate,
   BookUpdate,
-  BookWithRelations,
-  createBook,
+  createBookFromAudiobook,
   createBookFromEpub,
-  CreatorRelation,
   getBooks,
   updateBook,
 } from "@/database/books"
@@ -24,74 +20,12 @@ import {
   writeExtractedEbookCover,
 } from "../covers"
 import { optimizeImage } from "@/images"
-import { getMetadataFromEpub } from "@/process/processEpub"
-
-function keepMissingMetadata(book: Book, incoming: BookUpdate | null) {
-  if (!incoming) return null
-
-  const keep: BookUpdate = {}
-  if (book.title === "" && incoming.title) {
-    keep.title = incoming.title
-  }
-  if (book.description === null && incoming.description) {
-    keep.description = incoming.description
-  }
-  if (book.language === null && incoming.language) {
-    keep.language = incoming.language
-  }
-  if (book.publicationDate === null && incoming.publicationDate) {
-    keep.publicationDate = incoming.publicationDate
-  }
-  if (book.alignedAt === null && incoming.alignedAt) {
-    keep.alignedAt = incoming.alignedAt
-  }
-  if (
-    book.alignedByStorytellerVersion === null &&
-    incoming.alignedByStorytellerVersion
-  ) {
-    keep.alignedByStorytellerVersion = incoming.alignedByStorytellerVersion
-  }
-  if (book.alignedWith === null && incoming.alignedWith) {
-    keep.alignedWith = incoming.alignedWith
-  }
-  return keep
-}
-
-function keepMissingRelations(
-  book: BookWithRelations,
-  incoming: BookRelationsUpdate,
-) {
-  const keep: BookRelationsUpdate = {}
-  const incomingAuthors = incoming.creators?.filter(
-    (creator) => creator.role === "aut",
-  )
-  const incomingNarrators = incoming.creators?.filter(
-    (creator) => creator.role === "nrt",
-  )
-  const incomingCreators = incoming.creators?.filter(
-    (creator) => creator.role !== "aut" && creator.role !== "nrt",
-  )
-  if (book.authors.length === 0 && incomingAuthors?.length) {
-    keep.creators ??= []
-    keep.creators.push(...incomingAuthors)
-  }
-  if (book.narrators.length === 0 && incomingNarrators?.length) {
-    keep.creators ??= []
-    keep.creators.push(...incomingNarrators)
-  }
-  if (book.creators.length === 0 && incomingCreators?.length) {
-    keep.creators ??= []
-    keep.creators.push(...incomingCreators)
-  }
-  if (book.series.length === 0 && incoming.series?.length) {
-    keep.series = incoming.series
-  }
-  if (book.tags.length === 0 && incoming.tags?.length) {
-    keep.tags = incoming.tags
-  }
-
-  return keep
-}
+import {
+  getMetadataFromAudiobook,
+  getMetadataFromEpub,
+  keepMissingMetadata,
+  keepMissingRelations,
+} from "../metadata"
 
 export async function scan(importPath: string, collectionUuid: UUID | null) {
   const allBooks = await getBooks()
@@ -251,35 +185,23 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         }
 
         if (bookPath.audiobook) {
-          // Narrators are much more likely to be defined in
-          // the audiobook than the ebook, so we fallback to
-          // looking in there if they're missing
-          if (!created.narrators.length) {
-            const audiobookPath = bookPath.audiobook
-            const entries = await readdir(audiobookPath)
-            const audiobook = await Audiobook.from(
-              entries
-                .filter((entry) => isAudioFile(entry))
-                .map((relativePath) => join(audiobookPath, relativePath)),
-            )
+          const audiobookPath = bookPath.audiobook
+          const entries = await readdir(audiobookPath)
+          const audiobook = await Audiobook.from(
+            entries
+              .filter((entry) => isAudioFile(entry))
+              .map((relativePath) => join(audiobookPath, relativePath)),
+          )
 
-            const narrators = await audiobook.getNarrators()
-            audiobook.close()
+          const { update: audiobookUpdate, relations: audiobookRelations } =
+            await getMetadataFromAudiobook(audiobook)
 
-            const creators: CreatorRelation[] = [
-              ...created.creators,
-              ...created.authors.map((author) => ({
-                ...author,
-                role: "aut" as const,
-              })),
-            ]
+          audiobook.close()
 
-            await updateBook(created.uuid, null, {
-              creators: creators.concat(
-                narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
-              ),
-            })
-          }
+          const update = keepMissingMetadata(created, audiobookUpdate)
+          const relations = keepMissingRelations(created, audiobookRelations)
+
+          await updateBook(created.uuid, update, relations)
 
           const audioCover = await getAudioCover(created)
 
@@ -306,44 +228,17 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
             .map((relativePath) => join(audiobookPath, relativePath)),
         )
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const title = await audiobook.getTitle()
-        const subtitle = await audiobook.getSubtitle()
-        const description = await audiobook.getDescription()
-        const authors = await audiobook.getAuthors()
-        const narrators = await audiobook.getNarrators()
-        audiobook.close()
-
-        const creators: CreatorRelation[] = []
-        creators.push(
-          ...authors.map((name) => ({
-            name,
-            fileAs: name,
-            role: "aut" as const,
-          })),
-        )
-        creators.push(
-          ...narrators.map((name) => ({
-            name,
-            fileAs: name,
-            role: "nrt" as const,
-          })),
-        )
-
-        const created = await createBook(
+        const created = await createBookFromAudiobook(
+          audiobook,
           {
-            title: title ?? basename(audiobookPath),
-            subtitle,
-            description,
+            title: basename(audiobookPath),
           },
           {
             ...(collectionUuid && { collections: [collectionUuid] }),
             audiobook: { filepath: audiobookPath },
-            ...(creators.length && {
-              creators,
-            }),
           },
         )
+        audiobook.close()
 
         const coverImage = await getAudioCover(created)
         if (coverImage) {
@@ -424,29 +319,29 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
         `Found new audiobook file(s) for ${book.title} at ${bookPath.audiobook}. Importing.`,
       )
 
-      if (!book.narrators.length) {
-        const audiobookPath = bookPath.audiobook
-        const entries = await readdir(audiobookPath)
-        const audiobook = await Audiobook.from(
-          entries
-            .filter((entry) => isAudioFile(entry))
-            .map((relativePath) => join(audiobookPath, relativePath)),
-        )
-        relations.creators ??= book.creators
-        relations.creators.push(
-          ...(await audiobook.getNarrators()).map((name) => ({
-            name,
-            fileAs: name,
-            role: "nrt" as const,
-          })),
-        )
-        audiobook.close()
+      const audiobookPath = bookPath.audiobook
+      const entries = await readdir(audiobookPath)
+      const audiobook = await Audiobook.from(
+        entries
+          .filter((entry) => isAudioFile(entry))
+          .map((relativePath) => join(audiobookPath, relativePath)),
+      )
+      const { update: audiobookUpdate, relations: audiobookRelations } =
+        await getMetadataFromAudiobook(audiobook)
+      audiobook.close()
+
+      if (!update) {
+        update = keepMissingMetadata(book, audiobookUpdate)
+      } else {
+        Object.assign(update, keepMissingMetadata(book, audiobookUpdate))
       }
 
-      relations.audiobook = {
-        filepath: bookPath.audiobook,
-        missing: false,
-      }
+      Object.assign(relations, {
+        ...keepMissingRelations(book, audiobookRelations),
+        audiobook: {
+          filepath: bookPath.audiobook,
+        },
+      })
     }
 
     if (book.audiobook?.filepath) {
