@@ -270,7 +270,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
               ...created.creators,
               ...created.authors.map((author) => ({
                 ...author,
-                role: "aut",
+                role: "aut" as const,
               })),
             ]
 
@@ -316,10 +316,18 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
 
         const creators: CreatorRelation[] = []
         creators.push(
-          ...authors.map((name) => ({ name, fileAs: name, role: "aut" })),
+          ...authors.map((name) => ({
+            name,
+            fileAs: name,
+            role: "aut" as const,
+          })),
         )
         creators.push(
-          ...narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
+          ...narrators.map((name) => ({
+            name,
+            fileAs: name,
+            role: "nrt" as const,
+          })),
         )
 
         const created = await createBook(
@@ -429,7 +437,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
           ...(await audiobook.getNarrators()).map((name) => ({
             name,
             fileAs: name,
-            role: "nrt",
+            role: "nrt" as const,
           })),
         )
         audiobook.close()

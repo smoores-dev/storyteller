@@ -2,12 +2,13 @@ import { Selectable, Insertable, Updateable } from "kysely"
 import { DB } from "./schema"
 import { db } from "./connection"
 import { UUID } from "@/uuid"
+import { Role } from "@/components/books/edit/marcRelators"
 
 export type Creator = Selectable<DB["creator"]>
 export type NewCreator = Insertable<DB["creator"]>
 export type CreatorUpdate = Updateable<DB["creator"]>
 
-export async function getCreators(userId?: UUID, role?: string | undefined) {
+export async function getCreators(userId?: UUID, role?: Role | undefined) {
   return db
     .selectFrom("creator")
     .$if(!!role, (qb) =>

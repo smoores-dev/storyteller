@@ -44,7 +44,9 @@ export abstract class BaseAudiobookEntry {
 
   async getDescription(): Promise<string | null> {
     const file = await this.getFile()
-    return file.tag.description
+    // it's almost never able to get the description,
+    // as it should look for ©des
+    return file.tag.description || file.tag.comment || null
   }
 
   async setDescription(description: string): Promise<void> {
@@ -125,6 +127,26 @@ export abstract class BaseAudiobookEntry {
     file.tag.pictures = pictures
   }
 
+  async getPublisher(): Promise<string | null> {
+    const file = await this.getFile()
+    return file.tag.publisher
+  }
+
+  async setPublisher(publisher: string): Promise<void> {
+    const file = await this.getFile()
+    file.tag.publisher = publisher
+  }
+
+  async getReleased(): Promise<string | null> {
+    const file = await this.getFile()
+    return file.tag.year.toString()
+  }
+
+  async setReleased(released: string): Promise<void> {
+    const file = await this.getFile()
+    file.tag.year = parseInt(released)
+  }
+
   save(): void {
     this.file?.save()
   }
@@ -145,6 +167,8 @@ export interface AudiobookMetadata {
   chapters?: AudiobookChapter[]
   authors?: string[]
   narrators?: string[]
+  publisher?: string
+  released?: string
 }
 
 export abstract class BaseAudiobook {
@@ -264,5 +288,35 @@ export abstract class BaseAudiobook {
     this.metadata.coverArt = picture
 
     await this.setValue((entry) => entry.setCoverArt(picture))
+  }
+
+  async getPublisher(): Promise<string | null> {
+    if (this.metadata.publisher) {
+      return this.metadata.publisher
+    }
+    const publisher = await this.getFirstValue((entry) => entry.getPublisher())
+    if (publisher) this.metadata.publisher = publisher
+    return publisher
+  }
+
+  async setPublisher(publisher: string): Promise<void> {
+    this.metadata.publisher = publisher
+
+    await this.setValue((entry) => entry.setPublisher(publisher))
+  }
+
+  async getReleased(): Promise<string | null> {
+    if (this.metadata.released) {
+      return this.metadata.released
+    }
+    const released = await this.getFirstValue((entry) => entry.getReleased())
+    if (released) this.metadata.released = released
+    return released
+  }
+
+  async setReleased(released: string): Promise<void> {
+    this.metadata.released = released
+
+    await this.setValue((entry) => entry.setReleased(released))
   }
 }

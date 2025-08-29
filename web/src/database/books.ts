@@ -1061,6 +1061,7 @@ export async function updateBook(
   })
 
   const book = await getBook(uuid, userId)
+
   if (!book) throw new Error(`Failed to retrieve book with uuid ${uuid}`)
 
   BookEvents.emit("message", {

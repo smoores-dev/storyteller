@@ -110,7 +110,11 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
 
   if (fields.has("narrators")) {
     creators.push(
-      ...narrators.map((name) => ({ name, fileAs: name, role: "nrt" })),
+      ...narrators.map((name) => ({
+        name,
+        fileAs: name,
+        role: "nrt" as const,
+      })),
     )
   }
 
@@ -120,7 +124,11 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
 
   if (fields.has("authors")) {
     creators.push(
-      ...authors.map((name) => ({ name, fileAs: name, role: "aut" })),
+      ...authors.map((name) => ({
+        name,
+        fileAs: name,
+        role: "aut" as const,
+      })),
     )
   }
 

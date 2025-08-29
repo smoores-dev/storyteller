@@ -4,6 +4,7 @@ import { NextRequest } from "next/server"
 import { withHasPermission } from "@/auth/auth"
 import { UPLOADS_DIR } from "@/directories"
 import {
+  BookRelationsUpdate,
   createBook,
   createBookFromEpub,
   getBook,
@@ -20,7 +21,7 @@ import {
   getInternalOriginalAudioFilepath,
 } from "@/assets/paths"
 import { persistAudio, persistEpub } from "@/assets/fs"
-import { mkdir, readFile, rename, rm } from "node:fs/promises"
+import { mkdir, rename, rm } from "node:fs/promises"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { Audiobook } from "@smoores/audiobook/node"
 import { getMetadataFromEpub } from "@/process/processEpub"
@@ -32,12 +33,30 @@ import {
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
+import { randomBytes } from "node:crypto"
+
+/* the default naming func found in @tus/server */
+const defaultNamingFunc = () => randomBytes(16).toString("hex")
 
 const mutex = new AsyncSemaphore(1)
 
 const server = new Server({
   path: "/api/v2/books/upload",
   datastore: new FileStore({ directory: UPLOADS_DIR }),
+  // makes sure Audiobook.createFile() works, as it needs to find a filetype
+  namingFunction(_req, metadata) {
+    if (!metadata?.["filename"]) {
+      return defaultNamingFunc()
+    }
+
+    const extension = extname(metadata["filename"])
+
+    if (!extension) {
+      return defaultNamingFunc()
+    }
+
+    return `${defaultNamingFunc()}${extension}`
+  },
   // TODO: check user permissions on specific book id here
   // ?: Is _req a NextRequest? Does it have auth.user?
   onUploadFinish: async (_req, upload) => {
@@ -47,7 +66,6 @@ const server = new Server({
         body: "Missing required file metadata: bookId, filename, filetype (optional)",
       }
     }
-
     await mutex.wait()
 
     try {
@@ -105,7 +123,7 @@ const server = new Server({
 
           const updated = await updateBook(book.uuid, update, relations)
 
-          await persistEpub(book, uploadPath, isAligned)
+          book = await persistEpub(updated, uploadPath, isAligned)
 
           // If the audio was uploaded/processed first, it's going to
           // potentially have an arbitrary book directory name. Better
@@ -123,8 +141,10 @@ const server = new Server({
             },
           )
 
-          await persistEpub(book, uploadPath, isAligned)
+          const newBook = await persistEpub(book, uploadPath, isAligned)
+          book = newBook
         }
+
         const epubCover = await getEpubCover(book)
         if (epubCover) {
           await writeExtractedEbookCover(
@@ -156,6 +176,9 @@ const server = new Server({
 
         if (book) {
           const audiobook = await Audiobook.from(uploadPath)
+          const description = await audiobook.getDescription()
+          const authors = await audiobook.getAuthors()
+          const subtitle = await audiobook.getSubtitle()
           const narrators = await audiobook.getNarrators()
           audiobook.close()
           const filepath = getInternalOriginalAudioFilepath(book, relativePath)
@@ -163,30 +186,71 @@ const server = new Server({
           await mkdir(dirname(filepath), { recursive: true })
 
           if (!book.audiobook) {
-            book = await updateBook(bookUuid, null, {
-              ...(!book.narrators.length && {
-                narrators: narrators,
-              }),
-              audiobook: {
-                filepath: getInternalOriginalAudioFilepath(book),
+            book = await updateBook(
+              bookUuid,
+              {
+                subtitle: book.subtitle ?? subtitle,
+                description: book.description ?? description,
               },
-            })
+              {
+                ...(!book.narrators.length &&
+                  narrators.length && {
+                    // kinda messy
+                    creators: [
+                      ...(book.authors.length
+                        ? book.authors.map((auth) => ({
+                            ...auth,
+                            role: "aut" as const,
+                          }))
+                        : authors.map((name) => ({
+                            name,
+                            fileAs: name,
+                            role: "aut" as const,
+                          }))),
+                      ...narrators.map((name) => ({
+                        name,
+                        fileAs: name,
+                        role: "nrt" as const,
+                      })),
+                    ],
+                  }),
+                audiobook: {
+                  filepath: getInternalOriginalAudioFilepath(book),
+                },
+              },
+            )
           }
 
           await rename(uploadPath, filepath)
         } else {
-          const data = await readFile(uploadPath)
-          const audiobook = await Audiobook.from({
-            data,
-            filename: relativePath,
-          })
+          const audiobook = await Audiobook.from(uploadPath)
           const title = await audiobook.getTitle()
           const subtitle = await audiobook.getSubtitle()
           const description = await audiobook.getDescription()
           const authors = await audiobook.getAuthors()
           const narrators = await audiobook.getNarrators()
+
           audiobook.close()
 
+          const relations = {
+            ...(collectionUuid && {
+              collections: [collectionUuid],
+            }),
+            ...(narrators.length && {
+              creators: [
+                ...authors.map((name) => ({
+                  name,
+                  fileAs: name,
+                  role: "aut" as const,
+                })),
+                ...narrators.map((name) => ({
+                  name,
+                  fileAs: name,
+                  role: "nrt" as const,
+                })),
+              ],
+            }),
+          } satisfies BookRelationsUpdate
           book = await createBook(
             {
               uuid: bookUuid,
@@ -194,20 +258,12 @@ const server = new Server({
               subtitle,
               description,
             },
-            {
-              ...(collectionUuid && {
-                collections: [collectionUuid],
-              }),
-              ...(authors.length && {
-                authors: authors.map((name) => ({ name, fileAs: name })),
-              }),
-              ...(narrators.length && {
-                narrators: narrators,
-              }),
-            },
+            relations,
           )
 
-          await persistAudio(book, uploadPath, relativePath)
+          const updated = await persistAudio(book, uploadPath, relativePath)
+          // so we can get the cover
+          book = updated
         }
 
         const audioCover = await getAudioCover(book)

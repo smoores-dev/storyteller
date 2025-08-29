@@ -1,0 +1,5 @@
+releases:
+  "@smoores/audiobook": patch
+
+declined:
+  - "@storyteller/web"
