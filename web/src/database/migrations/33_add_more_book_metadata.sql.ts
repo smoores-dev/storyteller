@@ -3,7 +3,7 @@ import { Epub } from "@smoores/epub/node"
 import { db } from "../connection"
 import { stat } from "node:fs/promises"
 import { logger } from "@/logging"
-import { getMetadataFromEpub } from "@/process/processEpub"
+import { getMetadataFromEpub } from "@/assets/metadata"
 
 async function getBooks() {
   return await db.selectFrom("book").selectAll("book").execute()

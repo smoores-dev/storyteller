@@ -4,14 +4,9 @@ import { UUID } from "@/uuid"
 import { Book, BookWithRelations, getBookOrThrow } from "@/database/books"
 import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
 import { Audiobook } from "@smoores/audiobook/node"
-import { getProcessedAudioFiles } from "./fs"
-import {
-  getAudiobookCoverDirectory,
-  getEbookCoverDirectory,
-  getProcessedAudioFilepath,
-} from "./paths"
+import { getAudiobookCoverDirectory, getEbookCoverDirectory } from "./paths"
 import { Epub } from "@smoores/epub/node"
-import { getAudioCoverItem } from "@/process/processEpub"
+import { getAudioCoverItem } from "@/assets/metadata"
 import { extension, lookup } from "mime-types"
 
 export type AudioFile = {
@@ -340,64 +335,4 @@ export async function writeExtractedAudiobookCover(
   }
   await mkdir(audiobookCoverDir, { recursive: true })
   await writeFile(join(audiobookCoverDir, filename), data)
-}
-
-export async function writeMetadataToAudiobook(
-  book: BookWithRelations,
-  cover?: File | undefined,
-) {
-  if (!book.audiobook) return
-  const directory = book.audiobook.filepath
-  const entries = await readdir(directory, { recursive: true })
-
-  const tracks = entries
-    .filter((entry) => isAudioFile(entry))
-    .map((track) => join(directory, track))
-  const audiobook = await Audiobook.from(tracks)
-  let coverPath: null | string = null
-  if (cover) {
-    const ext = extname(cover.name) || extension(cover.type) || ".jpeg"
-    const arrayBuffer = await cover.arrayBuffer()
-    const data = new Uint8Array(arrayBuffer)
-    await persistCustomAudioCover(book.uuid, `Audio Cover${ext}`, data)
-
-    coverPath = join(book.audiobook.filepath, `Audio Cover${ext}`)
-    await audiobook.setCoverArt(coverPath)
-  }
-  await audiobook.setAuthors(book.authors.map((author) => author.name))
-  await audiobook.setNarrators(book.narrators.map((narrator) => narrator.name))
-  await audiobook.setTitle(book.title)
-  if (book.subtitle) {
-    await audiobook.setSubtitle(book.subtitle)
-  }
-  if (book.description) {
-    await audiobook.setDescription(book.description)
-  }
-  await audiobook.save()
-  audiobook.close()
-
-  try {
-    const processedTracks = (await getProcessedAudioFiles(book)).map((track) =>
-      join(getProcessedAudioFilepath(book), track),
-    )
-    const processedAudiobook = await Audiobook.from(processedTracks)
-    if (coverPath) {
-      await audiobook.setCoverArt(coverPath)
-    }
-    await audiobook.setAuthors(book.authors.map((author) => author.name))
-    await audiobook.setNarrators(
-      book.narrators.map((narrator) => narrator.name),
-    )
-    await audiobook.setTitle(book.title)
-    if (book.subtitle) {
-      await audiobook.setSubtitle(book.subtitle)
-    }
-    if (book.description) {
-      await audiobook.setDescription(book.description)
-    }
-    await processedAudiobook.save()
-    audiobook.close()
-  } catch {
-    // We might not have any processed audio files yet, which is fine
-  }
 }
