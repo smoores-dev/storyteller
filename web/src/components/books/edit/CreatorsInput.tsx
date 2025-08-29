@@ -1,16 +1,16 @@
-import { Creator } from "@/database/creators"
 import { CreatorRelation } from "@/database/books"
+import { Creator } from "@/database/creators"
 import {
-  Fieldset,
-  Autocomplete,
   ActionIcon,
+  Autocomplete,
   Button,
-  Stack,
+  Fieldset,
   Select,
+  Stack,
 } from "@mantine/core"
 import { UseFormReturnType } from "@mantine/form"
-import { IconTrash, IconPlus } from "@tabler/icons-react"
-import { marceRelators } from "./marcRelators"
+import { IconPlus, IconTrash } from "@tabler/icons-react"
+import { marcRelators } from "./marcRelators"
 
 interface Props {
   values: CreatorRelation[]
@@ -44,7 +44,7 @@ export function CreatorsInput({
           />
           <Select
             searchable
-            data={marceRelators}
+            data={marcRelators}
             label="Role"
             {...getInputProps(`creators.${i}.role`)}
           />
@@ -67,7 +67,7 @@ export function CreatorsInput({
         onClick={() => {
           addCreator({
             name: "",
-            role: "",
+            role: null,
             fileAs: "",
           })
         }}

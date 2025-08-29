@@ -18,7 +18,9 @@ export class AudiobookEntry extends BaseAudiobookEntry {
 
   override async createFile(): Promise<File> {
     if (typeof this.entry === "string") {
-      return File.createFromPath(this.entry)
+      const file = File.createFromPath(this.entry)
+
+      return file
     }
 
     const data = await this.readData()

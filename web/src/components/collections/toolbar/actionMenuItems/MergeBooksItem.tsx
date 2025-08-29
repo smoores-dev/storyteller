@@ -297,12 +297,12 @@ export function MergeBooksItem({ selected, onCommit }: Props) {
                     ...authors.map((name) => ({
                       name,
                       fileAs: name,
-                      role: "aut",
+                      role: "aut" as const,
                     })),
                     ...narrators.map((name) => ({
                       name,
                       fileAs: name,
-                      role: "nrt",
+                      role: "nrt" as const,
                     })),
                   ],
                   ...(currentUser && {

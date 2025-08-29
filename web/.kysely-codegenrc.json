@@ -12,6 +12,7 @@
       "book_to_creator.creator_uuid": "import(\"@/uuid\").UUID",
       "book_to_creator.book_uuid": "import(\"@/uuid\").UUID",
       "book_to_creator.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "book_to_creator.role": "import(\"@/components/books/edit/marcRelators\").Role | null",
       "book.status_uuid": "import(\"@/uuid\").UUID",
       "book.uuid": "Generated<import(\"@/uuid\").UUID>",
       "book_to_collection.book_uuid": "import(\"@/uuid\").UUID",

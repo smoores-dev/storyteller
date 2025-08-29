@@ -47,8 +47,7 @@ export async function persistEpub(
       book = await updateBook(book.uuid, {
         suffix: getDefaultSuffix(book.uuid),
       })
-      await persistEpub(book, tmpPath, aligned)
-      return
+      return persistEpub(book, tmpPath, aligned)
     }
 
     throw e
@@ -57,7 +56,7 @@ export async function persistEpub(
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
   await rename(tmpPath, filepath)
-  await updateBook(book.uuid, null, {
+  return updateBook(book.uuid, null, {
     ...(aligned
       ? {
           readaloud: {
@@ -82,8 +81,7 @@ export async function persistAudio(
       book = await updateBook(book.uuid, {
         suffix: getDefaultSuffix(book.uuid),
       })
-      await persistAudio(book, tmpPath, relativePath)
-      return
+      return persistAudio(book, tmpPath, relativePath)
     }
 
     throw e
@@ -92,7 +90,10 @@ export async function persistAudio(
   const directory = getInternalOriginalAudioFilepath(book)
   await mkdir(directory, { recursive: true })
   await rename(tmpPath, filepath)
-  await updateBook(book.uuid, null, { audiobook: { filepath: directory } })
+  const updated = await updateBook(book.uuid, null, {
+    audiobook: { filepath: directory },
+  })
+  return updated
 }
 
 export async function originalEpubExists(book: BookWithRelations) {

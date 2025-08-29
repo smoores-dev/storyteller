@@ -7,6 +7,7 @@ import type {
 } from "@/database/books"
 import { extension, lookup } from "mime-types"
 import { extname } from "node:path"
+import { isRole } from "@/components/books/edit/marcRelators"
 
 export async function readEpub(book: BookWithRelations) {
   if (!book.ebook?.filepath) {
@@ -103,7 +104,7 @@ export async function getMetadataFromEpub(epub: Epub): Promise<{
   const epubCreators = await epub.getCreators()
   const creators = epubCreators.map<CreatorRelation>((author) => ({
     name: author.name,
-    role: author.role ?? "aut",
+    role: author.role && isRole(author.role) ? author.role : "aut",
     fileAs: author.fileAs ?? author.name,
   }))
 

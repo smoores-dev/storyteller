@@ -1,4 +1,7 @@
-export const marceRelators = [
+/**
+ * MARC including Author and Narrator
+ */
+export const creatorRelators = [
   { label: "Abridger", value: "abr" },
   { label: "Actor", value: "act" },
   { label: "Adapter", value: "adp" },
@@ -22,6 +25,7 @@ export const marceRelators = [
   { label: "Auctioneer", value: "auc" },
   { label: "Audio engineer", value: "aue" },
   { label: "Audio producer", value: "aup" },
+  { label: "Author", value: "aut" },
   { label: "Author in quotations or text abstracts", value: "aqt" },
   { label: "Author of dialog", value: "aud" },
   { label: "Autographer", value: "ato" },
@@ -179,6 +183,7 @@ export const marceRelators = [
   { label: "Music programmer", value: "mup" },
   { label: "Musical director", value: "msd" },
   { label: "Musician", value: "mus" },
+  { label: "Narrator", value: "nrt" },
   { label: "News anchor", value: "nan" },
   { label: "Onscreen participant", value: "onp" },
   { label: "Onscreen presenter", value: "osp" },
@@ -299,4 +304,24 @@ export const marceRelators = [
   { label: "Writer of preface", value: "wpr" },
   { label: "Writer of supplementary textual content", value: "wst" },
   { label: "Writer of television story", value: "wts" },
-]
+] as const
+
+/**
+ * Possible role for a creator
+ */
+export type Role = (typeof creatorRelators)[number]["value"]
+
+export const isRole = (role: string): role is Role =>
+  creatorRelators.some((r) => r.value === role)
+
+/**
+ * Possible role for a creator, excluding Author and Narrator
+ */
+export type MarcRole = Exclude<Role, "aut" | "nrt">
+
+/**
+ * All possible MARC relators, excluding Author and Narrator
+ */
+export const marcRelators = creatorRelators.filter(
+  (r) => r.value !== "aut" && r.value !== "nrt",
+) as { value: MarcRole; label: string }[]

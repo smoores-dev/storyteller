@@ -65,7 +65,7 @@ export interface BookToCreator {
   bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
   creatorUuid: import("@/uuid").UUID
-  role: string | null
+  role: import("@/components/books/edit/marcRelators").Role | null
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
