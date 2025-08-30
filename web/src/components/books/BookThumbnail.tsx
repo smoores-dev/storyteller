@@ -29,10 +29,10 @@ export function BookThumbnail({ book, link, onClick }: Props) {
   return (
     <Box className="group" onClick={link ? undefined : onClick}>
       <Stack gap={2} className="group h-[18.9375rem]">
-        <Stack className="mb-1 h-[14.0625rem] flex-col justify-center">
+        <Stack className="relative mb-1 h-[14.0625rem] flex-col justify-center">
           <Container
             href={`/books/${book.uuid}`}
-            className="relative block h-[14.0625rem] w-[9.1875rem]"
+            className="block h-[14.0625rem] w-[9.1875rem]"
           >
             <BookThumbnailImage
               height="14.0625rem"
@@ -61,31 +61,35 @@ export function BookThumbnail({ book, link, onClick }: Props) {
                 ]}
               />
             )}
-            {book.processingStatus && (
-              <Tooltip
-                position="right"
-                label={
-                  book.processingStatus === "queued"
-                    ? "Remove from queue"
-                    : "Stop processing"
-                }
-              >
-                <ActionIcon
-                  className="absolute right-[6px] top-[6px] hidden rounded-full group-hover:block"
-                  color="red"
-                  onClick={() => cancelProcessing({ uuid: book.uuid })}
-                >
-                  <IconProgressX
-                    aria-label={
-                      book.processingStatus === "queued"
-                        ? "Remove from queue"
-                        : "Stop processing"
-                    }
-                  />
-                </ActionIcon>
-              </Tooltip>
-            )}
           </Container>
+          {book.processingStatus && (
+            <Tooltip
+              position="right"
+              label={
+                book.processingStatus === "queued"
+                  ? "Remove from queue"
+                  : "Stop processing"
+              }
+            >
+              <ActionIcon
+                className="absolute right-[6px] top-[6px] z-50 hidden rounded-full group-hover:block"
+                color="red"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  void cancelProcessing({ uuid: book.uuid })
+                }}
+              >
+                <IconProgressX
+                  aria-label={
+                    book.processingStatus === "queued"
+                      ? "Remove from queue"
+                      : "Stop processing"
+                  }
+                />
+              </ActionIcon>
+            </Tooltip>
+          )}
         </Stack>
         <TextContainer
           href={`/books/${book.uuid}`}

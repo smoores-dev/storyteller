@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/web",
-  "version": "2.0.0-123",
+  "version": "2.0.0-124",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "db:migrate:test": "dotenvx run --env-file=.env.local -- yarn db:migrate:reset && STORYTELLER_DB_FILENAME=test.db yarn db:migrate",
     "db:dump-schema:internal": "sqlite3 ${STORYTELLER_DATA_DIR}/storyteller.db .schema > ../schema.sql",
     "db:dump-schema": "dotenvx --quiet run --env-file=.env.local -- yarn db:dump-schema:internal",
-    "dev": "yarn build:sqlite-ext && yarn dev:worker && yarn dev:file-write-worker && STORYTELLER_WORKER=worker.js STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.js PORT=8001 next dev",
+    "dev": "yarn build:epub:esm && yarn build:audiobook:esm && yarn build:sqlite-ext && yarn build:worker && yarn build:file-write-worker && PORT=8001 next dev",
     "dev:autoimport": "esbuild src/assets/autoimport/worker.ts --bundle --platform=node --packages=external --sourcemap=inline --format=esm --outdir=autoimport-dist/",
     "dev:worker": "esbuild src/work/worker.ts --bundle --platform=node --packages=external --sourcemap=inline --format=esm --outdir=work-dist/",
     "dev:file-write-worker": "esbuild src/writeToFiles/fileWriteWorker.ts --bundle --platform=node --packages=external --sourcemap=inline --format=esm --outdir=file-write-dist/",
@@ -19,6 +19,8 @@
     "test:watch": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller-node --test --watch",
     "test:all": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller-node --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
     "build": "yarn build:sqlite-ext && yarn build:worker && yarn build:file-write-worker && next build",
+    "build:audiobook:esm": "yarn workspace @smoores/audiobook build:esm",
+    "build:epub:esm": "yarn workspace @smoores/epub build:esm",
     "build:sqlite-ext": "bash ./build-sqlite-ext.sh",
     "build:autoimport": "esbuild src/assets/autoimport/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=autoimport-dist/",
     "build:worker": "esbuild src/work/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@echogarden/vosk --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",
