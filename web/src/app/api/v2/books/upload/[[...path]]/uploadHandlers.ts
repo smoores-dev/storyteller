@@ -52,7 +52,11 @@ export async function handleEpubExistingBook(
   const update = keepMissingMetadata(book, epubUpdate)
   const relations = keepMissingRelations(book, epubRelations)
 
-  const updated = await updateBook(book.uuid, update, relations)
+  const updated = await updateBook(
+    book.uuid,
+    { ...update, ...(epubUpdate?.title && { title: epubUpdate.title }) },
+    relations,
+  )
 
   const persisted = await persistEpub(updated, uploadPath, isAligned)
 
@@ -60,8 +64,8 @@ export async function handleEpubExistingBook(
   // potentially have an arbitrary book directory name. Better
   // to use the one from the ebook
   await rename(
+    getInternalBookDirectory(book),
     getInternalBookDirectory(persisted),
-    getInternalBookDirectory(updated),
   )
 
   return persisted
