@@ -10,13 +10,13 @@ Because we rely on open specifications, such as the EPUB 3 Media Overlay spec,
 you can use each part of the Storyteller platform alongside other software as
 well! You’re not locked in.
 
-**The alignment server** serves a REST API that powers the mobile apps, as well
-as a web interface for managing your Storyteller instance and library of aligned
-books. This is the component responsible for actually aligning audiobooks and
-ebooks.
+**The server** serves a REST API that powers the mobile apps, as well as a web
+interface for managing your Storyteller instance and library of ebooks,
+audiobooks, and readaloud books. This is the component responsible for actually
+aligning audiobooks and ebooks.
 
-**The mobile apps** provide an actual reading and listening experience for the
-aligned books produced by Storyteller.
+**The mobile apps** provide a reading and listening experience for ebooks,
+audiobooks, and the readaloud books produced by Storyteller.
 
 As an instance administrator, you'll need to run the Storyteller alignment
 server. You and your users can connect to your instance from the mobile apps, or
@@ -40,10 +40,11 @@ a machine that will be able to run Storyteller!
 
 If you don't, or you'd rather not have to go through the hassle of managing your
 own server (it can be fun, really!), you can also create a Storyteller instance
-on [PikaPods](https://www.pikapods.com/pods?run=storyteller). PikaPods is a
-service for running open source apps like Storyteller. It's a paid service, and
-they share profits with open source maintainers, so every PikaPods instance
-helps support future Storyteller development.
+on [PikaPods](https://www.pikapods.com/pods?run=storyteller) or
+[ElfHosted](https://store.elfhosted.com/product/storyteller/). PikaPods and
+ElfHosted are services for running open source apps like Storyteller. They're
+paid services, and they share profits with open source maintainers, so every
+PikaPods/ElfHosted instance helps support future Storyteller development.
 
 But if you think you would be interested in self-hosting, and you're just not
 sure how to get started, don't hesitate to reach out for help!
@@ -54,10 +55,10 @@ started.
 
 ## How to run the Storyteller alignment server
 
-The Storyteller alignment server (also referred to as the “backend server” or
-the “web server”) is published as a Docker image on the GitLab Container
-Registry. You can manually use the Docker command line interface to pull the
-image, create a container, and start it with a command like the following:
+The Storyteller server (also referred to as the “backend server” or the “web
+server”) is published as a Docker image on the GitLab Container Registry. You
+can manually use the Docker command line interface to pull the image, create a
+container, and start it with a command like the following:
 
 ```bash
 # Storyteller requires a secret key for authentication
@@ -87,8 +88,9 @@ database files and any uploaded or aligned book files will be stored in
     If that’s a bunch of gibberish to you, no worries! You can read through our
     [introduction to Docker for self-hosters](/docs/intro/intro-to-docker), ask
     questions in our [Discord server](https://discord.gg/KhSvFqcrza), or, as
-    a last resort, [run Storyteller on PikaPods](https://www.pikapods.com/pods?run=storyteller),
-    where PikaPods will do all of the hard work for you!
+    a last resort, [run Storyteller on PikaPods](https://www.pikapods.com/pods?run=storyteller)
+    or [ElfHosted](https://store.elfhosted.com/product/storyteller/),
+    where they will do all of the hard work for you!
 
 </details>
 
@@ -99,8 +101,8 @@ that docker command doesn’t exactly roll off the tongue. We recommend using
 Docker Compose, a system for declaratively configuring Docker containers, for
 actually managing your Storyteller instance long-term. To do so, create a new,
 empty folder called “storyteller” (it can be called anything you like, but
-storyteller or Storyteller will probably be easiest to remember!) and create a
-file within it called `compose.yaml`. This will be our Docker compose
+“storyteller” or “Storyteller” will probably be easiest to remember!) and create
+a file within it called `compose.yaml`. This will be our Docker compose
 configuration file.
 
 To start, here’s how we could configure Docker compose to run the Storyteller

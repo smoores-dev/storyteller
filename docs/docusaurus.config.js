@@ -161,6 +161,10 @@ const config = {
         additionalLanguages: ["bash"],
       },
     }),
+  future: {
+    experimental_faster: true,
+    v4: true,
+  },
 }
 
 module.exports = config
