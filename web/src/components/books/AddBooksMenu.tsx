@@ -1,9 +1,15 @@
 import { Collection } from "@/database/collections"
 import { Button, ButtonVariant, Menu } from "@mantine/core"
-import { IconBooks, IconBookUpload, IconCirclePlus } from "@tabler/icons-react"
+import {
+  IconBooks,
+  IconBookUpload,
+  IconCirclePlus,
+  IconFileImport,
+} from "@tabler/icons-react"
 import { AddBooksModal } from "./modals/AddBooksModal"
 import { useState } from "react"
 import { UploadBooksModal } from "./modals/UploadBooksModal"
+import { ImportServerBooksModal } from "./modals/ImportServerBooksModal"
 
 interface Props {
   className?: string
@@ -14,43 +20,30 @@ interface Props {
 export function AddBooksMenu({ className, variant, collection }: Props) {
   const [isAddBooksModalOpen, setIsAddBooksModalOpen] = useState(false)
   const [isUploadBooksModalOpen, setIsUploadBooksModalOpen] = useState(false)
-
-  if (!collection) {
-    return (
-      <>
-        <UploadBooksModal
-          isOpen={isUploadBooksModalOpen}
-          onClose={() => {
-            setIsUploadBooksModalOpen(false)
-          }}
-        />
-        <Button
-          {...(className && { className })}
-          variant={variant ?? "light"}
-          leftSection={<IconBookUpload />}
-          onClick={() => {
-            setIsUploadBooksModalOpen(true)
-          }}
-        >
-          Upload books
-        </Button>
-      </>
-    )
-  }
+  const [isImportBooksModalOpen, setIsImportBooksModalOpen] = useState(false)
 
   return (
     <>
-      <AddBooksModal
-        isOpen={isAddBooksModalOpen}
-        onClose={() => {
-          setIsAddBooksModalOpen(false)
-        }}
-        collection={collection}
-      />
+      {collection && (
+        <AddBooksModal
+          isOpen={isAddBooksModalOpen}
+          onClose={() => {
+            setIsAddBooksModalOpen(false)
+          }}
+          collection={collection}
+        />
+      )}
       <UploadBooksModal
         isOpen={isUploadBooksModalOpen}
         onClose={() => {
           setIsUploadBooksModalOpen(false)
+        }}
+        collection={collection}
+      />
+      <ImportServerBooksModal
+        isOpen={isImportBooksModalOpen}
+        onClose={() => {
+          setIsImportBooksModalOpen(false)
         }}
         collection={collection}
       />
@@ -75,13 +68,23 @@ export function AddBooksMenu({ className, variant, collection }: Props) {
             Upload books
           </Menu.Item>
           <Menu.Item
-            leftSection={<IconBooks />}
+            leftSection={<IconFileImport />}
             onClick={() => {
-              setIsAddBooksModalOpen(true)
+              setIsImportBooksModalOpen(true)
             }}
           >
-            Add from library
+            Import books from server
           </Menu.Item>
+          {collection && (
+            <Menu.Item
+              leftSection={<IconBooks />}
+              onClick={() => {
+                setIsAddBooksModalOpen(true)
+              }}
+            >
+              Add from library
+            </Menu.Item>
+          )}
         </Menu.Dropdown>
       </Menu>
     </>
