@@ -468,3 +468,15 @@ CREATE INDEX idx_ebook_book ON ebook (book_uuid);
 CREATE INDEX idx_audiobook_book ON audiobook (book_uuid);
 
 CREATE INDEX idx_readaloud_book ON readaloud (book_uuid);
+
+CREATE TABLE IF NOT EXISTS "processing_task" (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  id INTEGER,
+  type TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  status TEXT NOT NULL,
+  progress REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid)
+);

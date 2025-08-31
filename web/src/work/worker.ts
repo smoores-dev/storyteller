@@ -4,9 +4,9 @@ import { writeMetadataToEpub } from "@/assets/metadata"
 import {
   getTranscriptionsFilepath,
   getProcessedAudioFilepath,
-  getInternalReadaloudFilepath,
   getAlignmentReportFilepath,
   getTranscriptionFilename,
+  getReadaloudFilepath,
 } from "@/assets/paths"
 import {
   Book,
@@ -239,8 +239,7 @@ export default async function processBook({
         const settings = await getSettings()
 
         book = await updateReadaloud({
-          // TODO: support writing this to user-defined lib
-          filepath: getInternalReadaloudFilepath(book),
+          filepath: getReadaloudFilepath(book, settings),
           status: "ALIGNED",
           currentStage: stage,
           stageProgress: 1,
@@ -284,7 +283,11 @@ export default async function processBook({
           `Successfully wrote metadata to file (title: ${await epub.getTitle(true)})`,
         )
 
-        await epub.writeToFile(getInternalReadaloudFilepath(book))
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const readaloudFilepath = book.readaloud!.filepath!
+        const readaloudDirectory = dirname(readaloudFilepath)
+        await mkdir(readaloudDirectory, { recursive: true })
+        await epub.writeToFile(readaloudFilepath)
         await epub.close()
       }
     } catch (e) {
