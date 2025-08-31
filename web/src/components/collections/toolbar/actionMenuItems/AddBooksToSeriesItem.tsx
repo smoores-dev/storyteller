@@ -1,3 +1,4 @@
+import { BookWithRelations } from "@/database/books"
 import { NewSeries } from "@/database/series"
 import {
   getCoverUrl,
@@ -22,13 +23,12 @@ import {
 import { useForm } from "@mantine/form"
 import { IconBook } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
-import { BookDetail } from "@/apiModels"
 
 interface Props {
   selected: Set<UUID>
 }
 
-const EMPTY_BOOKS: BookDetail[] = []
+const EMPTY_BOOKS: BookWithRelations[] = []
 
 export function AddBooksToSeriesItem({ selected }: Props) {
   const [addBooksToSeries, { isLoading }] = useAddBooksToSeriesMutation()
@@ -127,6 +127,7 @@ export function AddBooksToSeriesItem({ selected }: Props) {
         }}
         title="Add books to series"
         centered
+        size="lg"
       >
         <form
           className="flex flex-col gap-4"
@@ -164,10 +165,10 @@ export function AddBooksToSeriesItem({ selected }: Props) {
             <Fieldset legend="Books">
               <Stack className="gap-4">
                 {bookList.map((book) => (
-                  <Group key={book.bookUuid}>
+                  <Group key={book.bookUuid} className="flex-nowrap">
                     {book.type === "relation" ? (
                       <TextInput
-                        className="w-10"
+                        className="w-10 shrink-0"
                         classNames={{
                           input: "p-0 text-center bg-transparent",
                         }}
@@ -181,7 +182,7 @@ export function AddBooksToSeriesItem({ selected }: Props) {
                       </Text>
                     )}
 
-                    <Box className="h-10 w-8">
+                    <Box className="h-10 w-8 shrink-0">
                       <Image
                         alt=""
                         className="h-full rounded-md"

@@ -1,7 +1,6 @@
 import { withHasPermission } from "@/auth/auth"
 import { deleteBook, getBooks } from "@/database/books"
 import { NextResponse } from "next/server"
-import { isProcessing, isQueued } from "@/work/distributor"
 import { UUID } from "@/uuid"
 import { deleteAssets } from "@/assets/fs"
 
@@ -15,20 +14,7 @@ export const dynamic = "force-dynamic"
 export const GET = withHasPermission("bookList")(async (request) => {
   const books = await getBooks(null, request.auth.user.id)
 
-  return NextResponse.json(
-    await Promise.all(
-      books.map((book) => {
-        return {
-          ...book,
-          processingStatus: isProcessing(book.uuid)
-            ? "processing"
-            : isQueued(book.uuid)
-              ? "queued"
-              : null,
-        }
-      }),
-    ),
-  )
+  return NextResponse.json(books)
 })
 
 export const DELETE = withHasPermission("bookDelete")(async (request) => {

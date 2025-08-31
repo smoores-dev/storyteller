@@ -1,4 +1,4 @@
-import { BookDetail } from "@/apiModels"
+import { BookWithRelations } from "@/database/books"
 import { getCoverUrl, useListBooksQuery } from "@/store/api"
 import { UUID } from "@/uuid"
 import {
@@ -14,7 +14,7 @@ import {
 import { useMemo, useState } from "react"
 
 interface Props {
-  onValueChange: (book: BookDetail) => void
+  onValueChange: (book: BookWithRelations) => void
   /** Books to exclude from the series search results. Usually the books already in the series. */
   booksToExclude?: UUID[]
 }
@@ -81,7 +81,7 @@ export function InlineBookSearch({ onValueChange, booksToExclude }: Props) {
   )
 }
 
-function BookItem({ book }: { book: BookDetail }) {
+function BookItem({ book }: { book: BookWithRelations }) {
   return (
     <Group>
       <Box className="h-10 w-8">

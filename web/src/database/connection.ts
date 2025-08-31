@@ -75,6 +75,7 @@ export const db = new Kysely<DB>({
         "userList",
         "userRead",
         "userUpdate",
+        "restartPending",
       ],
     }),
   ],

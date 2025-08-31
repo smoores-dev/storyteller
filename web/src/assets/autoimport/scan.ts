@@ -156,6 +156,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
               readaloud: {
                 filepath: bookPath.readaloud,
                 status: "ALIGNED",
+                currentStage: "SPLIT_TRACKS",
               },
             }),
             ...(bookPath.audiobook && {
@@ -395,6 +396,7 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
           relations.readaloud = {
             filepath: book.readaloud.filepath,
             missing: true,
+            currentStage: book.readaloud.currentStage,
           }
         }
       }

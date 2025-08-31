@@ -1,16 +1,17 @@
 import { List, Checkbox, Text, Anchor } from "@mantine/core"
 import { BookThumbnail } from "./BookThumbnail"
-import { BookDetail } from "@/apiModels"
+
 import { UUID } from "@/uuid"
 import cx from "classnames"
 import {
   createComparisonTitle,
   FilterSortOptions,
 } from "@/hooks/useFilterSortedBooks"
+import { BookWithRelations } from "@/database/books"
 
 interface Props {
   className?: string
-  books: BookDetail[]
+  books: BookWithRelations[]
   isSelecting: boolean
   selected: Set<UUID>
   onSelect: (book: UUID) => void
@@ -72,7 +73,7 @@ function ScrollNav({
   books,
 }: {
   options: FilterSortOptions
-  books: BookDetail[]
+  books: BookWithRelations[]
 }) {
   if (options.sort[0] !== "title" && options.sort[0] !== "author") return null
 

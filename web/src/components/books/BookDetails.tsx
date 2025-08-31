@@ -2,27 +2,33 @@
 
 import {
   getDownloadUrl,
+  useCancelProcessingMutation,
   useListBooksQuery,
   useListStatusesQuery,
   useUpdateBookMutation,
 } from "@/store/api"
 import {
+  ActionIcon,
   Anchor,
   Box,
   Button,
   Group,
+  RingProgress,
   Spoiler,
   Stack,
   Text,
   Title,
+  Tooltip,
 } from "@mantine/core"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 import Link from "next/link"
 import {
   IconBook2,
   IconBooks,
+  IconDotsCircleHorizontal,
   IconHeadphonesFilled,
   IconPencil,
+  IconProgressX,
   IconTagFilled,
 } from "@tabler/icons-react"
 import { IconReadaloud } from "../icons/IconReadaloud"
@@ -46,6 +52,7 @@ export function BookDetails({ bookUuid }: Props) {
   })
   const { data: statuses = [] } = useListStatusesQuery()
   const [updateBook] = useUpdateBookMutation()
+  const [cancelProcessing] = useCancelProcessingMutation()
 
   if (!book) return null
 
@@ -55,13 +62,64 @@ export function BookDetails({ bookUuid }: Props) {
 
       <Stack>
         <Group gap={48} align="flex-start">
-          <Box h="20rem">
+          <Box h="20rem" className="group relative">
             <BookThumbnailImage book={book} height="20rem" width="13.0625rem" />
+            {book.readaloud?.status === "QUEUED" && (
+              <IconDotsCircleHorizontal
+                size={40}
+                color="white"
+                className="absolute right-0 top-0 z-40 [filter:drop-shadow(0_0_1px_rgba(0,0,0,1))]"
+              />
+            )}
+            {book.readaloud?.status === "PROCESSING" && (
+              <RingProgress
+                className="absolute right-0 top-0 z-40 [&>svg]:[filter:drop-shadow(0_0_1px_rgba(0,0,0,1))]"
+                size={40}
+                thickness={4}
+                roundCaps
+                rootColor="white"
+                sections={[
+                  {
+                    value: book.readaloud.stageProgress * 100,
+                    color: "st-orange",
+                  },
+                ]}
+              />
+            )}
+            {(book.readaloud?.status === "QUEUED" ||
+              book.readaloud?.status === "PROCESSING") && (
+              <Tooltip
+                position="right"
+                label={
+                  book.readaloud.status === "QUEUED"
+                    ? "Remove from queue"
+                    : "Stop processing"
+                }
+              >
+                <ActionIcon
+                  className="absolute right-[6px] top-[6px] z-50 hidden rounded-full group-hover:block"
+                  color="red"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    void cancelProcessing({ uuid: book.uuid })
+                  }}
+                >
+                  <IconProgressX
+                    aria-label={
+                      book.readaloud.status === "QUEUED"
+                        ? "Remove from queue"
+                        : "Stop processing"
+                    }
+                  />
+                </ActionIcon>
+              </Tooltip>
+            )}
           </Box>
           <Stack className="mt-6 grow basis-[400px]">
             <Group>
               <Title className="font-sans" order={2}>
-                {book.readaloud?.status === "ALIGNED" && (
+                {!!book.readaloud?.filepath && (
                   <IconReadaloud className="text-st-orange-600 -mb-4 -ml-2 -mr-1 -mt-6 inline-block h-10 w-10" />
                 )}{" "}
                 {book.title}
@@ -172,7 +230,7 @@ export function BookDetails({ bookUuid }: Props) {
           <Stack gap={4}>
             <Text className="self-end">Download</Text>
             <Group className="bg-st-orange-50 self-end px-4 py-2">
-              {book.readaloud?.status === "ALIGNED" && (
+              {!!book.readaloud?.filepath && (
                 <Anchor
                   href={getDownloadUrl(book.uuid, "readaloud")}
                   className="hover:bg-st-orange-100 rounded-md"

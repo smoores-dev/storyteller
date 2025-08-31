@@ -143,6 +143,7 @@ export function SeriesGrid({ series }: Props) {
           }}
           title="Add books to series"
           centered
+          size="lg"
         >
           <form
             className="flex flex-col gap-4"
@@ -176,9 +177,9 @@ export function SeriesGrid({ series }: Props) {
               <Fieldset legend="Books">
                 <Stack className="gap-4">
                   {bookList.map((book) => (
-                    <Group key={book.bookUuid}>
+                    <Group key={book.bookUuid} className="flex-nowrap">
                       <NumberInput
-                        className="w-14"
+                        className="w-14 shrink-0"
                         // this makes the "up" arrow move the book "up" the series, which feels slightly more intuitive
                         step={-1}
                         classNames={{
@@ -244,7 +245,7 @@ export function SeriesGrid({ series }: Props) {
                           )
                         }}
                       />
-                      <Box className="h-10 w-8">
+                      <Box className="h-10 w-8 shrink-0">
                         <Image
                           alt=""
                           className="h-full rounded-md"

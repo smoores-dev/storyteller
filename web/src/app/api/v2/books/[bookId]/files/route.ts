@@ -1,29 +1,67 @@
+import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import { getBookUuid, getBook, BookWithRelations } from "@/database/books"
 import { logger } from "@/logging"
 import { createReadableStreamFromReadable } from "@remix-run/node"
+import { PortablePath } from "@yarnpkg/fslib"
+import { ZipFS } from "@yarnpkg/libzip"
 import contentDisposition from "content-disposition"
+import { lookup } from "mime-types"
 import { createHash } from "node:crypto"
-import { FileHandle, open } from "node:fs/promises"
+import { createReadStream } from "node:fs"
+import { FileHandle, open, readdir } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { extname, join } from "node:path"
+import { pipeline } from "node:stream/promises"
 
 type Params = Promise<{
   bookId: string
 }>
 
-function determineFilepath(
+function determineFormat(
   book: BookWithRelations,
   format: "readaloud" | "audiobook" | "ebook" | null,
 ) {
-  if (!format) {
-    const filepath =
-      book.readaloud?.filepath ??
-      book.audiobook?.filepath ??
-      book.ebook?.filepath
+  return (
+    format ??
+    (book.readaloud && "readaloud") ??
+    (book.audiobook && "audiobook") ??
+    (book.ebook && "ebook")
+  )
+}
 
+async function getFilepath(
+  book: BookWithRelations,
+  format: "readaloud" | "audiobook" | "ebook",
+) {
+  const filepath = book[format]?.filepath
+
+  if (!filepath) return null
+
+  if (format !== "audiobook") {
     return filepath
   }
 
-  return book[format]?.filepath
+  const entries = await readdir(filepath, { recursive: true })
+  const audioFiles = entries.filter(
+    (entry) => isAudioFile(entry) || isZipArchive(entry),
+  )
+  if (audioFiles.length === 1) {
+    // We just confirmed there was one of these
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return join(filepath, audioFiles[0]!)
+  }
+
+  const zipFilepath = join(tmpdir(), "storyteller-downloads")
+  const zipFs = new ZipFS(zipFilepath as PortablePath, { create: true })
+  for (const audioFile of audioFiles) {
+    await pipeline(
+      createReadStream(join(filepath, audioFile)),
+      zipFs.createWriteStream(audioFile as PortablePath),
+    )
+  }
+  zipFs.saveAndClose()
+  return zipFilepath
 }
 
 /**
@@ -51,26 +89,40 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   const rangesString = range?.replace("bytes=", "")
   const rangeStrings = rangesString?.split(",")
 
-  const format = request.nextUrl.searchParams.get("format") as
+  const optionalFormat = request.nextUrl.searchParams.get("format") as
     | "readaloud"
     | "ebook"
     | "audiobook"
     | null
 
-  const filepath = determineFilepath(book, format)
-  if (!filepath) return new Response(null, { status: 404 })
+  const format = determineFormat(book, optionalFormat)
+  if (!format) {
+    return Response.json(
+      { message: `Book with id ${bookId} has no valid formats` },
+      { status: 404 },
+    )
+  }
 
   const normalizedTitle = book.title
     .normalize("NFD")
     .replaceAll(/\p{Diacritic}/gu, "")
     .replaceAll(/[^a-zA-Z0-9-_.~!#$&'()*+,/:;=?@[\] ]/gu, "")
 
+  const filepath = await getFilepath(book, format)
+
+  if (!filepath) {
+    return Response.json(
+      { message: `Could not open ${format} for book with id ${bookId}` },
+      { status: 404 },
+    )
+  }
+
   let file: FileHandle
   try {
     file = await open(filepath)
-  } catch (_) {
+  } catch {
     return Response.json(
-      { message: `Could not find book with id ${bookId}` },
+      { message: `Could not open ${format} for book with id ${bookId}` },
       { status: 404 },
     )
   }
@@ -130,10 +182,13 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   return new Response(readableStream, {
     status: partialResponse ? 206 : 200,
     headers: {
-      "Content-Disposition": contentDisposition(`${book.title}.epub`, {
-        fallback: `${normalizedTitle}.epub`,
-      }),
-      "Content-Type": "application/epub+zip",
+      "Content-Disposition": contentDisposition(
+        `${book.title}${extname(filepath)}`,
+        {
+          fallback: `${normalizedTitle}${extname(filepath)}`,
+        },
+      ),
+      "Content-Type": lookup(filepath) as string,
       "Content-Length": `${end - start + 1}`,
       "Accept-Ranges": "bytes",
       "Last-Modified": new Date(stats.mtime).toISOString(),

@@ -6,6 +6,7 @@ import {
   PositionConflictError,
   upsertPosition,
 } from "@/database/positions"
+import { UUID } from "@/uuid"
 import { NextResponse } from "next/server"
 
 type Params = Promise<{
@@ -26,7 +27,12 @@ export const POST = withHasPermission<Params>("bookRead")(async (
 ) => {
   const body = (await request.json()) as Position
   const { bookId } = await context.params
-  const bookUuid = await getBookUuid(bookId)
+  let bookUuid: UUID
+  try {
+    bookUuid = await getBookUuid(bookId)
+  } catch {
+    return Response.json({ message: "Book not found" }, { status: 404 })
+  }
   const user = request.auth.user
 
   try {

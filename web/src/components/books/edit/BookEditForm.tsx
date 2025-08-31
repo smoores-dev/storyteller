@@ -4,7 +4,11 @@ import { useRef, useState } from "react"
 import { useForm } from "@mantine/form"
 import { Button, Group, px, Stack, TextInput } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
-import { CreatorRelation, SeriesRelation } from "@/database/books"
+import {
+  BookWithRelations,
+  CreatorRelation,
+  SeriesRelation,
+} from "@/database/books"
 import { StatusInput } from "./StatusInput"
 import { CoverImageInput } from "./CoverImageInput"
 import { AuthorsInput } from "./AuthorsInput"
@@ -21,7 +25,7 @@ import {
   useListTagsQuery,
   useUpdateBookMutation,
 } from "@/store/api"
-import { BookDetail } from "@/apiModels"
+
 import { ContentEditable } from "./ContentEditable"
 import { NarratorsInput } from "./NarratorsInput"
 import { DeleteBookModal } from "../modals/DeleteBookModal"
@@ -29,7 +33,7 @@ import { useDisclosure } from "@mantine/hooks"
 import { CreatorsInput } from "./CreatorsInput"
 
 type Props = {
-  book: BookDetail
+  book: BookWithRelations
 }
 
 export function BookEditForm({ book }: Props) {

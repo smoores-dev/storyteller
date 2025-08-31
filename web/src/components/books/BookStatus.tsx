@@ -2,7 +2,6 @@
 
 import { BookOptions } from "./BookOptions"
 import { ProcessingFailedMessage } from "./ProcessingFailedMessage"
-import { ProcessingTaskStatus } from "@/apiModels/models/ProcessingStatus"
 import { Paper, Group, Stack, Box, Text, Button, Progress } from "@mantine/core"
 import { UUID } from "@/uuid"
 import { useListBooksQuery, useProcessBookMutation } from "@/store/api"
@@ -14,7 +13,7 @@ type Props = {
 
 export const ProcessingTaskTypes = {
   SYNC_CHAPTERS: "Synchronizing chapters",
-  SPLIT_CHAPTERS: "Pre-processing audio",
+  SPLIT_TRACKS: "Pre-processing audio",
   TRANSCRIBE_CHAPTERS: "Transcribing tracks",
 }
 
@@ -31,13 +30,11 @@ export function BookStatus({ bookUuid }: Props) {
 
   if (!book) return null
 
-  const aligned = book.readaloud?.status === "ALIGNED"
+  const aligned = !!book.readaloud?.filepath
 
   const userFriendlyTaskType =
-    book.processingTask &&
-    ProcessingTaskTypes[
-      book.processingTask.type as keyof typeof ProcessingTaskTypes
-    ]
+    book.readaloud?.currentStage &&
+    ProcessingTaskTypes[book.readaloud.currentStage]
 
   if (!permissions?.bookRead) return null
 
@@ -49,19 +46,18 @@ export function BookStatus({ bookUuid }: Props) {
         <BookOptions aligned={aligned} book={book} />
         {book.readaloud || (book.ebook && book.audiobook) ? (
           <Stack justify="space-between" className="grow">
-            {book.processingTask ? (
-              book.processingStatus === "queued" ? (
+            {book.readaloud?.status ? (
+              book.readaloud.status === "QUEUED" ? (
                 "Queued for alignment"
               ) : (
                 <Box>
                   {userFriendlyTaskType}
-                  {book.processingStatus === "processing" ? "" : " (stopped)"}
-                  {book.processingTask.status ===
-                    ProcessingTaskStatus.IN_ERROR && (
+                  {book.readaloud.status === "STOPPED" ? " (stopped)" : ""}
+                  {book.readaloud.status === "ERROR" && (
                     <ProcessingFailedMessage />
                   )}
                   <Progress
-                    value={Math.floor(book.processingTask.progress * 100)}
+                    value={Math.floor(book.readaloud.stageProgress * 100)}
                   />
                 </Box>
               )

@@ -86,12 +86,12 @@ export type Audiobook = Selectable<DB["audiobook"]>
 export type AudiobookUpdate = Updateable<DB["audiobook"]>
 
 export type NewAlignedBook = Insertable<DB["readaloud"]>
-export type AlignedBook = Selectable<DB["readaloud"]>
-export type AlignedBookUpdate = Updateable<DB["readaloud"]>
+export type Readaloud = Selectable<DB["readaloud"]>
+export type ReadaloudUpdated = Updateable<DB["readaloud"]>
 
 export type EbookRelation = Omit<NewEbook, "bookUuid">
 export type AudiobookRelation = Omit<NewAudiobook, "bookUuid">
-export type AlignedBookRelation = Omit<NewAlignedBook, "bookUuid">
+export type ReadaloudRelation = Omit<NewAlignedBook, "bookUuid">
 
 export type Book = Selectable<DB["book"]>
 export type NewBook = Insertable<DB["book"]>
@@ -109,7 +109,7 @@ export async function createBookFromEpub(
   relations: {
     ebook?: EbookRelation
     audiobook?: AudiobookRelation
-    readaloud?: AlignedBookRelation
+    readaloud?: ReadaloudRelation
     collections?: UUID[]
   } = {},
 ) {
@@ -140,7 +140,7 @@ export async function createBookFromAudiobook(
   relations: {
     ebook?: EbookRelation
     audiobook?: AudiobookRelation
-    readaloud?: AlignedBookRelation
+    readaloud?: ReadaloudRelation
     collections?: UUID[]
   } = {},
 ) {
@@ -168,7 +168,7 @@ export async function createBook(
     series?: SeriesRelation[]
     ebook?: EbookRelation
     audiobook?: AudiobookRelation
-    readaloud?: AlignedBookRelation
+    readaloud?: ReadaloudRelation
     collections?: UUID[]
   } = {},
 ) {
@@ -409,10 +409,7 @@ export async function createBook(
   BookEvents.emit("message", {
     type: "bookCreated",
     bookUuid: book.uuid,
-    payload: {
-      ...book,
-      processingStatus: null,
-    },
+    payload: book,
   })
 
   return book
@@ -528,21 +525,6 @@ export function booksQuery(userId?: UUID) {
           ])
           .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
       ).as("collections"),
-      jsonObjectFrom(
-        eb
-          .selectFrom("processingTask")
-          .select([
-            "processingTask.uuid",
-            "processingTask.progress",
-            "processingTask.status",
-            "processingTask.type",
-            "processingTask.createdAt",
-            "processingTask.updatedAt",
-          ])
-          .whereRef("processingTask.bookUuid", "=", "book.uuid")
-          .orderBy("processingTask.updatedAt", "desc")
-          .limit(1),
-      ).as("processingTask"),
       ...(userId
         ? [
             jsonObjectFrom(
@@ -597,6 +579,10 @@ export function booksQuery(userId?: UUID) {
             "readaloud.filepath",
             "readaloud.missing",
             "readaloud.status",
+            "readaloud.currentStage",
+            "readaloud.stageProgress",
+            "readaloud.queuePosition",
+            "readaloud.restartPending",
             "readaloud.createdAt",
             "readaloud.updatedAt",
           ])
@@ -633,13 +619,45 @@ export function booksQuery(userId?: UUID) {
 export async function getAlignedReadaloudBooks(userId?: UUID) {
   return await booksQuery(userId)
     .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
-    .where("readaloud.status", "=", "ALIGNED")
+    .where("readaloud.filepath", "is not", null)
     .orderBy("readaloud.createdAt", "desc")
     // Fallback to auto-incrementing rowid
     // to break ties in createdAt (which can happen
     // for migrated books)
     .orderBy(sql`book.rowid`, "desc")
     .execute()
+}
+
+export async function getQueuedBooks() {
+  return await booksQuery()
+    .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
+    .where((qb) =>
+      qb.or([
+        qb("readaloud.status", "=", "QUEUED"),
+        qb("readaloud.status", "=", "PROCESSING"),
+      ]),
+    )
+    .orderBy("readaloud.queuePosition", "asc")
+    .execute()
+}
+
+export async function getNextQueuePosition() {
+  const book = await booksQuery()
+    .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
+    .where((qb) =>
+      qb.or([
+        qb("readaloud.status", "=", "QUEUED"),
+        qb("readaloud.status", "=", "PROCESSING"),
+      ]),
+    )
+    .orderBy("readaloud.queuePosition", "desc")
+    .limit(1)
+    .executeTakeFirst()
+
+  if (!book) return 0
+
+  const latestPosition = book.readaloud?.queuePosition ?? 0
+  return latestPosition + 1
 }
 
 export async function getBooks(bookUuids: UUID[] | null = null, userId?: UUID) {
@@ -666,11 +684,6 @@ export async function getBookOrThrow(uuid: UUID) {
 
 export async function deleteBook(bookUuid: UUID, tr?: Transaction<DB>) {
   const callback = async (tr: Transaction<DB>) => {
-    await tr
-      .deleteFrom("processingTask")
-      .where("bookUuid", "=", bookUuid)
-      .execute()
-
     await tr
       .deleteFrom("bookToCreator")
       .where("bookUuid", "=", bookUuid)
@@ -736,7 +749,7 @@ export type BookRelationsUpdate = {
   tags?: string[]
   ebook?: EbookRelation
   audiobook?: AudiobookRelation
-  readaloud?: AlignedBookRelation
+  readaloud?: ReadaloudRelation
   books?: UUID[]
   status?: StatusRelation
 }
@@ -834,6 +847,14 @@ export async function updateBook(
             })
             .returning(["uuid as uuid"])
             .executeTakeFirstOrThrow()
+        }
+
+        if (series.featured) {
+          await tr
+            .updateTable("bookToSeries")
+            .set({ featured: false })
+            .where("bookUuid", "=", uuid)
+            .execute()
         }
 
         await tr
@@ -996,10 +1017,7 @@ export async function updateBook(
       if (existing) {
         await tr
           .updateTable("ebook")
-          .set({
-            filepath: relations.ebook.filepath,
-            missing: relations.ebook.missing,
-          })
+          .set(relations.ebook)
           .where("uuid", "=", existing.uuid)
           .execute()
       } else {
@@ -1020,10 +1038,7 @@ export async function updateBook(
       if (existing) {
         await tr
           .updateTable("audiobook")
-          .set({
-            filepath: relations.audiobook.filepath,
-            missing: relations.audiobook.missing,
-          })
+          .set(relations.audiobook)
           .where("uuid", "=", existing.uuid)
           .execute()
       } else {
@@ -1044,21 +1059,13 @@ export async function updateBook(
       if (existing) {
         await tr
           .updateTable("readaloud")
-          .set({
-            filepath: relations.readaloud.filepath,
-            status: relations.readaloud.status,
-            missing: relations.readaloud.missing,
-          })
+          .set(relations.readaloud)
           .where("uuid", "=", existing.uuid)
           .execute()
       } else {
         await tr
           .insertInto("readaloud")
-          .values({
-            bookUuid: uuid,
-            filepath: relations.readaloud.filepath,
-            status: relations.readaloud.status,
-          })
+          .values({ bookUuid: uuid, ...relations.readaloud })
           .execute()
       }
     }

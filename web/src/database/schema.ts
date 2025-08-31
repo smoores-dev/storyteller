@@ -151,23 +151,18 @@ export interface Position {
   uuid: Generated<import("@/uuid").UUID>
 }
 
-export interface ProcessingTask {
-  bookUuid: import("@/uuid").UUID
-  createdAt: Generated<string>
-  id: number | null
-  progress: Generated<number>
-  status: import("@/apiModels/models/ProcessingStatus").ProcessingTaskStatus
-  type: import("@/apiModels/models/ProcessingStatus").ProcessingTaskType
-  updatedAt: Generated<string>
-  uuid: Generated<import("@/uuid").UUID>
-}
-
 export interface Readaloud {
   bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
+  currentStage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
   filepath: string | null
   missing: Generated<boolean>
-  status: Generated<string>
+  queuePosition: number | null
+  restartPending: boolean | null
+  stageProgress: Generated<number>
+  status: Generated<
+    "CREATED" | "QUEUED" | "PROCESSING" | "STOPPED" | "ERROR" | "ALIGNED"
+  >
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
@@ -279,7 +274,6 @@ export interface DB {
   ebook: Ebook
   migration: Migration
   position: Position
-  processingTask: ProcessingTask
   readaloud: Readaloud
   series: Series
   session: Session

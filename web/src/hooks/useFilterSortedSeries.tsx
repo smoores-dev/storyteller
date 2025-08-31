@@ -109,6 +109,16 @@ export function useFilterSortedSeries(series: SeriesWithBooks[]): {
               new Date(secondAlignedAt).valueOf()
             )
           }
+          case "publish-date": {
+            // It's fine to pass null here — that will result in a date at the epoch
+            // which will always sort first
+            return (
+              // @ts-expect-error Date allows undefined
+              new Date(getFirstBook(first)?.publicationDate).valueOf() -
+              // @ts-expect-error Date allows undefined
+              new Date(getFirstBook(second)?.publicationDate).valueOf()
+            )
+          }
         }
       }),
     [getFirstBook, searched, sort],

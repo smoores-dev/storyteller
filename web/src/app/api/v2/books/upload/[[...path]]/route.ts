@@ -4,7 +4,7 @@ import { NextRequest } from "next/server"
 import { withHasPermission } from "@/auth/auth"
 import { UPLOADS_DIR } from "@/directories"
 import { getBook } from "@/database/books"
-import { isAudioFile, lookupAudioMime } from "@/audio"
+import { isAudioFile, isZipArchive, lookupAudioMime } from "@/audio"
 import { Epub } from "@smoores/epub/node"
 import { extname } from "node:path"
 import { UUID } from "@/uuid"
@@ -80,7 +80,7 @@ const server = new Server({
 
       const isEpub =
         filetype !== false && filetype.startsWith("application/epub")
-      const isAudiobook = isAudioFile(filename)
+      const isAudiobook = isAudioFile(filename) || isZipArchive(filename)
       if (!isEpub && !isAudiobook) {
         return {
           status_code: 405,

@@ -62,6 +62,7 @@ export async function persistEpub(
           readaloud: {
             filepath,
             status: "ALIGNED",
+            currentStage: "SPLIT_TRACKS",
           },
         }
       : { ebook: { filepath } }),

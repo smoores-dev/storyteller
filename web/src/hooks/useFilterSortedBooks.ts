@@ -1,10 +1,15 @@
-import { BookDetail } from "@/apiModels"
 import { Dispatch, SetStateAction, useCallback, useMemo, useState } from "react"
 import Fuse from "fuse.js"
 import { UUID } from "@/uuid"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { BookWithRelations } from "@/database/books"
 
-export type BookSortKey = "title" | "author" | "align-time" | "create-time"
+export type BookSortKey =
+  | "title"
+  | "author"
+  | "align-time"
+  | "create-time"
+  | "publish-date"
 export type SortDirection = "asc" | "desc"
 export type BookSort = [BookSortKey, SortDirection]
 
@@ -77,8 +82,8 @@ export interface FilterSortOptions {
   }
 }
 
-export function useFilterSortedBooks(books: BookDetail[]): {
-  books: BookDetail[]
+export function useFilterSortedBooks(books: BookWithRelations[]): {
+  books: BookWithRelations[]
   options: FilterSortOptions
 } {
   const router = useRouter()
@@ -207,9 +212,7 @@ export function useFilterSortedBooks(books: BookDetail[]): {
                 }
                 case "ebook-only": {
                   return (
-                    book.ebook &&
-                    !book.audiobook &&
-                    (!book.readaloud || book.readaloud.status !== "ALIGNED")
+                    book.ebook && !book.audiobook && !book.readaloud?.filepath
                   )
                 }
                 case "audiobook": {
@@ -217,19 +220,15 @@ export function useFilterSortedBooks(books: BookDetail[]): {
                 }
                 case "audiobook-only": {
                   return (
-                    book.audiobook &&
-                    !book.ebook &&
-                    (!book.readaloud || book.readaloud.status !== "ALIGNED")
+                    book.audiobook && !book.ebook && !book.readaloud?.filepath
                   )
                 }
                 case "readaloud": {
-                  return book.readaloud?.status === "ALIGNED"
+                  return !!book.readaloud?.filepath
                 }
                 case "ebook-audiobook-only": {
                   return (
-                    book.ebook &&
-                    book.audiobook &&
-                    (!book.readaloud || book.readaloud.status !== "ALIGNED")
+                    book.ebook && book.audiobook && !book.readaloud?.filepath
                   )
                 }
               }
@@ -294,12 +293,15 @@ export function useFilterSortedBooks(books: BookDetail[]): {
             )
           }
           case "create-time": {
-            const firstAlignedAt = first.createdAt
-            const secondAlignedAt = second.createdAt
-            const alignSort =
-              new Date(firstAlignedAt).valueOf() -
-              new Date(secondAlignedAt).valueOf()
-            return alignSort === 0 ? pubSort : alignSort
+            const firstCreatedAt = first.createdAt
+            const secondCreatedAt = second.createdAt
+            const createdSort =
+              new Date(firstCreatedAt).valueOf() -
+              new Date(secondCreatedAt).valueOf()
+            return createdSort === 0 ? pubSort : createdSort
+          }
+          case "publish-date": {
+            return pubSort
           }
         }
       }),

@@ -47,6 +47,19 @@ export function SeriesInput({
             {...getInputProps(`series.${i}.featured`, {
               type: "checkbox",
             })}
+            onChange={(e) => {
+              const checked = e.currentTarget.checked
+              for (let j = 0; j < values.length; j++) {
+                const onChange = getInputProps(`series.${j}.featured`)
+                  .onChange as (c: boolean) => void
+
+                onChange(false)
+              }
+              const onChange = getInputProps(`series.${i}.featured`)
+                .onChange as (c: boolean) => void
+
+              onChange(checked)
+            }}
           />
           <NumberInput
             label="Position"

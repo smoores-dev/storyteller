@@ -1,4 +1,4 @@
-import { BookDetail } from "@/apiModels"
+import { BookWithRelations } from "@/database/books"
 import { useDeleteBookMutation } from "@/store/api"
 import {
   Modal,
@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation"
 interface Props {
   isOpen: boolean
   onClose: () => void
-  book: BookDetail
+  book: BookWithRelations
 }
 
 export function DeleteBookModal({ isOpen, onClose, book }: Props) {

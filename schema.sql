@@ -44,28 +44,6 @@ WHERE
 
 END;
 
-CREATE TABLE IF NOT EXISTS "processing_task" (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  id INTEGER,
-  type TEXT NOT NULL,
-  book_uuid TEXT NOT NULL,
-  status TEXT NOT NULL,
-  progress REAL NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid)
-);
-
-CREATE TRIGGER processing_task_update_trigger AFTER
-UPDATE ON processing_task FOR EACH ROW BEGIN
-UPDATE processing_task
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
 CREATE TABLE IF NOT EXISTS "user_permission" (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   id INTEGER,
@@ -295,7 +273,11 @@ CREATE TABLE IF NOT EXISTS "readaloud" (
   status TEXT NOT NULL DEFAULT 'CREATED',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  missing INTEGER NOT NULL DEFAULT 0
+  missing INTEGER NOT NULL DEFAULT 0,
+  current_stage TEXT,
+  stage_progress INTEGER NOT NULL DEFAULT 0,
+  queue_position INTEGER,
+  restart_pending INTEGER
 );
 
 CREATE TRIGGER aligned_book_update_trigger AFTER
@@ -480,8 +462,6 @@ CREATE INDEX idx_book_to_series_book ON book_to_series (book_uuid);
 CREATE INDEX idx_book_to_tag_book ON book_to_tag (book_uuid);
 
 CREATE INDEX idx_book_to_status_book_user ON book_to_status (book_uuid, user_id);
-
-CREATE INDEX idx_processing_task_book_updated ON processing_task (book_uuid, updated_at DESC);
 
 CREATE INDEX idx_ebook_book ON ebook (book_uuid);
 

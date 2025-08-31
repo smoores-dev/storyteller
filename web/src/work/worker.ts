@@ -1,7 +1,3 @@
-import {
-  ProcessingTaskStatus,
-  ProcessingTaskType,
-} from "@/apiModels/models/ProcessingStatus"
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
 import { getProcessedAudioFiles, deleteProcessed } from "@/assets/fs"
 import { writeMetadataToEpub } from "@/assets/metadata"
@@ -12,13 +8,17 @@ import {
   getAlignmentReportFilepath,
   getTranscriptionFilename,
 } from "@/assets/paths"
-import { Book, getBookOrThrow, updateBook } from "@/database/books"
 import {
-  NewProcessingTask,
-  PROCESSING_TASK_ORDER,
-  type ProcessingTask,
-} from "@/database/processingTasks"
-import { formatTranscriptionEngineDetails } from "@/database/settings"
+  Book,
+  BookWithRelations,
+  getBookOrThrow,
+  ReadaloudRelation,
+  updateBook,
+} from "@/database/books"
+import {
+  formatTranscriptionEngineDetails,
+  getSettings,
+} from "@/database/settings"
 import { Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { getTranscriptions, processAudiobook } from "@/process/processAudio"
@@ -33,7 +33,7 @@ import type { RecognitionResult } from "echogarden"
 import { extension } from "mime-types"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { basename, dirname } from "node:path"
-import { MessagePort } from "node:worker_threads"
+import { type MessagePort } from "node:worker_threads"
 
 export async function transcribeBook(
   book: Book,
@@ -107,104 +107,74 @@ export async function transcribeBook(
   return transcriptions
 }
 
-export function determineRemainingTasks(
-  bookUuid: UUID,
-  processingTasks: ProcessingTask[],
-): Array<Omit<NewProcessingTask, "id">> {
-  const sortedTasks = [...processingTasks].sort(
-    (taskA, taskB) =>
-      PROCESSING_TASK_ORDER[taskA.type] - PROCESSING_TASK_ORDER[taskB.type],
-  )
-
-  if (sortedTasks.length === 0) {
-    return Object.entries(PROCESSING_TASK_ORDER)
-      .sort(([, orderA], [, orderB]) => orderA - orderB)
-      .map(([type]) => ({
-        type: type as ProcessingTaskType,
-        status: ProcessingTaskStatus.STARTED,
-        progress: 0,
-        bookUuid,
-      }))
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const lastCompletedTaskIndex = sortedTasks.findLastIndex(
-    (task) => task.status === ProcessingTaskStatus.COMPLETED,
-  )
-
-  return (sortedTasks as Omit<NewProcessingTask, "id">[])
-    .slice(lastCompletedTaskIndex + 1)
-    .concat(
-      Object.entries(PROCESSING_TASK_ORDER)
-        .sort(([, orderA], [, orderB]) => orderA - orderB)
-        .slice(sortedTasks.length)
-        .map(([type]) => ({
-          type: type as ProcessingTaskType,
-          status: ProcessingTaskStatus.STARTED,
-          progress: 0,
-          bookUuid,
-        })),
-    )
-}
+const STAGES = ["SPLIT_TRACKS", "TRANSCRIBE_CHAPTERS", "SYNC_CHAPTERS"] as const
 
 export default async function processBook({
   bookUuid,
   restart,
-  settings,
   port,
 }: {
   bookUuid: UUID
   restart: boolean
-  settings: Settings
   port: MessagePort
 }) {
-  port.postMessage({ type: "processingStarted", bookUuid })
+  /**
+   * Post a message to the main thread containing a readaloud
+   * update for this book.
+   *
+   * @remarks
+   *
+   * We have the main thread manage these updates so that it can
+   * trigger the BookEvents emitter on the main thread, and update
+   * subscribers (i.e. the web client).
+   */
+  async function updateReadaloud(readaloud: ReadaloudRelation) {
+    const promise = new Promise<BookWithRelations>((resolve) => {
+      port.once("message", resolve)
+    })
+
+    port.postMessage(readaloud)
+
+    return await promise
+  }
+
   let book = await getBookOrThrow(bookUuid)
 
   if (restart) {
     await deleteProcessed(book)
+    book = await updateReadaloud({
+      status: "PROCESSING",
+      currentStage: "SPLIT_TRACKS",
+      stageProgress: 0,
+    })
+  } else {
+    book = await updateReadaloud({
+      status: "PROCESSING",
+      currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+      stageProgress: 0,
+    })
   }
-
-  const currentTasks: ProcessingTask[] = await new Promise((resolve) => {
-    port.once("message", resolve)
-  })
-
-  // const currentTasks = await getProcessingTasksForBook(bookUuid)
-  const remainingTasks = determineRemainingTasks(bookUuid, currentTasks)
 
   // get book info from db
   // book reference to use in log
   const bookRefForLog = `"${book.title}" (uuid: ${bookUuid})`
 
-  logger.info(
-    `Found ${remainingTasks.length} remaining tasks for book ${bookRefForLog}`,
-  )
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const stageIndex = STAGES.indexOf(book.readaloud!.currentStage)
+  const remainingStages = STAGES.slice(stageIndex)
 
-  for (const task of remainingTasks) {
-    port.postMessage({
-      type: "taskTypeUpdated",
-      bookUuid,
-      payload: {
-        taskUuid: task.uuid,
-        taskType: task.type,
-        taskStatus: task.status,
-      },
-    })
-
-    const taskUuid: UUID = await new Promise((resolve) => {
-      port.once("message", resolve)
-    })
-
+  for (const stage of remainingStages) {
     const onProgress = (progress: number) => {
-      port.postMessage({
-        type: "taskProgressUpdated",
-        bookUuid,
-        payload: { taskUuid, progress },
+      void updateReadaloud({
+        status: "PROCESSING",
+        currentStage: stage,
+        stageProgress: progress,
       })
     }
 
     try {
-      if (task.type === ProcessingTaskType.SPLIT_CHAPTERS) {
+      if (stage === "SPLIT_TRACKS") {
+        const settings = await getSettings()
         logger.info("Pre-processing...")
         await processAudiobook(
           book,
@@ -216,7 +186,7 @@ export default async function processBook({
         )
       }
 
-      if (task.type === ProcessingTaskType.TRANSCRIBE_CHAPTERS) {
+      if (stage === "TRANSCRIBE_CHAPTERS") {
         logger.info("Transcribing...")
         const epub = await readEpub(book)
         const title = await epub.getTitle()
@@ -232,10 +202,11 @@ export default async function processBook({
             ? await getInitialPrompt(title ?? "", fullText)
             : null
 
+        const settings = await getSettings()
         await transcribeBook(book, initialPrompt, locale, settings, onProgress)
       }
 
-      if (task.type === ProcessingTaskType.SYNC_CHAPTERS) {
+      if (stage === "SYNC_CHAPTERS") {
         const epub = await readEpub(book)
         const audioFiles = await getProcessedAudioFiles(book)
         book = await getBookOrThrow(bookUuid)
@@ -265,22 +236,24 @@ export default async function processBook({
           { encoding: "utf-8" },
         )
 
-        book = await updateBook(
-          bookUuid,
-          {
-            alignedByStorytellerVersion: getCurrentVersion(),
-            // We need UTC with integer seconds, but toISOString gives UTC with ms
-            alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
-            alignedWith: formatTranscriptionEngineDetails(settings),
-          },
-          {
-            readaloud: {
-              // TODO: support writing this to user-defined lib
-              filepath: getInternalReadaloudFilepath(book),
-              status: "ALIGNED",
-            },
-          },
-        )
+        const settings = await getSettings()
+
+        book = await updateReadaloud({
+          // TODO: support writing this to user-defined lib
+          filepath: getInternalReadaloudFilepath(book),
+          status: "ALIGNED",
+          currentStage: stage,
+          stageProgress: 1,
+          queuePosition: 0,
+          restartPending: null,
+        })
+
+        book = await updateBook(bookUuid, {
+          alignedByStorytellerVersion: getCurrentVersion(),
+          // We need UTC with integer seconds, but toISOString gives UTC with ms
+          alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
+          alignedWith: formatTranscriptionEngineDetails(settings),
+        })
 
         const coverFilepath = await getAudioCoverFilepath(book)
         let audioCover: File | null = null
@@ -314,25 +287,19 @@ export default async function processBook({
         await epub.writeToFile(getInternalReadaloudFilepath(book))
         await epub.close()
       }
-
-      port.postMessage({
-        type: "taskCompleted",
-        bookUuid,
-        payload: { taskUuid },
-      })
     } catch (e) {
       logger.error(
-        `Encountered error while running task "${task.type}" for book ${bookUuid}`,
+        `Encountered error while running task "${stage}" for book ${bookUuid}`,
       )
       console.error(e)
-      port.postMessage({
-        type: "processingFailed",
-        bookUuid,
-        payload: { taskUuid },
+      await updateReadaloud({
+        status: "ERROR",
+        currentStage: stage,
+        queuePosition: null,
+        restartPending: null,
       })
       return
     }
   }
   logger.info(`Completed synchronizing book ${bookRefForLog}`)
-  port.postMessage({ type: "processingCompleted", bookUuid })
 }

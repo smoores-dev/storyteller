@@ -1,23 +1,18 @@
 import { UUID } from "@/uuid"
 import { join } from "node:path"
 import Piscina from "piscina"
-import { MessageChannel } from "node:worker_threads"
 import { cwd } from "node:process"
-import {
-  ProcessingTaskStatus,
-  ProcessingTaskType,
-} from "@/apiModels/models/ProcessingStatus"
-import { BaseEvent, BookEvents } from "@/events"
-import {
-  createProcessingTask,
-  getProcessingTasksForBook,
-  resetProcessingTasksForBook,
-  updateTaskProgress,
-  updateTaskStatus,
-} from "@/database/processingTasks"
-import { getSettings } from "@/database/settings"
 import type processBook from "./worker"
 import { logger } from "@/logging"
+import {
+  ReadaloudRelation,
+  BookWithRelations,
+  getBookOrThrow,
+  getNextQueuePosition,
+  updateBook,
+} from "@/database/books"
+import { AsyncMutex } from "@esfx/async-mutex"
+import { MessageChannel } from "node:worker_threads"
 
 /**
  * Next.js app directory seems to have a bug where, in production,
@@ -32,7 +27,6 @@ declare global {
   // variables declared with const/let cannot be added to the global scope
   /* eslint-disable no-var */
   var controllers: Map<UUID, AbortController> | undefined
-  var queue: { bookUuid: UUID; restart: boolean }[] | undefined
   var alignmentPiscina: Piscina | undefined
   /* eslint-enable no-var */
 }
@@ -43,14 +37,6 @@ if (globalThis.controllers) {
 } else {
   controllers = new Map()
   globalThis.controllers = controllers
-}
-
-let queue: { bookUuid: UUID; restart: boolean }[]
-if (globalThis.queue) {
-  queue = globalThis.queue
-} else {
-  queue = []
-  globalThis.queue = queue
 }
 
 const filename = join(
@@ -66,26 +52,14 @@ if (globalThis.alignmentPiscina) {
   alignmentPiscina = new Piscina({
     filename,
     maxThreads: 1,
-    // In dev, we don't bundle packages in the worker.
-    // These flags allow us to import directly from the
-    // source typescript files for our own packages (e.g. @smoores/epub)
-    ...(process.env.NODE_ENV === "development" && {
-      env: {
-        ...process.env,
-        NODE_OPTIONS:
-          "--disable-warning=ExperimentalWarning --experimental-transform-types",
-      },
-    }),
   })
+  logger.debug("new Piscina instance", alignmentPiscina.maxThreads)
   globalThis.alignmentPiscina = alignmentPiscina
 }
 
 export function cancelProcessing(bookUuid: UUID) {
   const abortController = controllers.get(bookUuid)
   if (!abortController) {
-    const index = queue.findIndex((enqueued) => bookUuid === enqueued.bookUuid)
-    if (index === -1) return
-    queue.splice(index, 1)
     return
   }
 
@@ -93,67 +67,51 @@ export function cancelProcessing(bookUuid: UUID) {
   if (controllers.has(bookUuid)) controllers.delete(bookUuid)
 }
 
+const mutex = new AsyncMutex()
+
 export async function startProcessing(bookUuid: UUID, restart: boolean) {
   if (controllers.has(bookUuid)) return
 
-  const settings = await getSettings()
+  await mutex.lock()
+  let book: BookWithRelations
+  let abortController: AbortController
+  try {
+    const position = await getNextQueuePosition()
+    book = await getBookOrThrow(bookUuid)
+    await updateBook(bookUuid, null, {
+      readaloud: {
+        status: "QUEUED",
+        currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        queuePosition: position,
+        restartPending: restart,
+      },
+    })
+
+    abortController = new AbortController()
+  } finally {
+    mutex.unlock()
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!book || !abortController) {
+    logger.error("Failed to enqueue book for processing")
+    return
+  }
+
+  controllers.set(bookUuid, abortController)
 
   const { port1, port2 } = new MessageChannel()
 
-  port2.on("message", async (event: BookProcessingEvent) => {
-    BookEvents.emit("message", event)
-
-    if (event.type === "processingStarted") {
-      const index = queue.findIndex(
-        ({ bookUuid }) => bookUuid === event.bookUuid,
-      )
-      queue.splice(index, 1)
-      await resetProcessingTasksForBook(event.bookUuid)
-      const currentTasks = await getProcessingTasksForBook(event.bookUuid)
-      port2.postMessage(currentTasks)
-    }
-    if (event.type === "taskTypeUpdated") {
-      const { taskUuid, taskType, taskStatus } = event.payload
-      const returnUuid =
-        taskUuid ??
-        (await createProcessingTask(
-          taskType,
-          ProcessingTaskStatus.STARTED,
-          event.bookUuid,
-        ))
-
-      if (taskStatus !== ProcessingTaskStatus.STARTED) {
-        await updateTaskStatus(returnUuid, ProcessingTaskStatus.STARTED)
-      }
-      port2.postMessage(returnUuid)
-    }
-    if (event.type === "taskProgressUpdated") {
-      const { progress, taskUuid } = event.payload
-      await updateTaskProgress(taskUuid, progress)
-    }
-    if (event.type === "taskCompleted") {
-      const { taskUuid } = event.payload
-      await updateTaskStatus(taskUuid, ProcessingTaskStatus.COMPLETED)
-    }
-    if (event.type === "processingFailed") {
-      const { taskUuid } = event.payload
-      await updateTaskStatus(taskUuid, ProcessingTaskStatus.IN_ERROR)
-    }
+  port2.on("message", async (message: ReadaloudRelation) => {
+    const updated = await updateBook(bookUuid, null, {
+      readaloud: message,
+    })
+    port2.postMessage(updated)
   })
-
-  queue.push({ bookUuid, restart })
-  BookEvents.emit("message", {
-    type: "processingQueued",
-    bookUuid,
-    payload: undefined,
-  })
-
-  const abortController = new AbortController()
-  controllers.set(bookUuid, abortController)
 
   try {
     await alignmentPiscina.run(
-      { bookUuid, restart, settings, port: port1 } satisfies Parameters<
+      { bookUuid, restart, port: port1 } satisfies Parameters<
         typeof processBook
       >[0],
       { transferList: [port1], signal: abortController.signal },
@@ -161,13 +119,28 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
       logger.info(`Processing for book ${bookUuid} aborted by user`)
-      BookEvents.emit("message", {
-        type: "processingStopped",
-        bookUuid,
-        payload: undefined,
+
+      const book = await getBookOrThrow(bookUuid)
+      await updateBook(bookUuid, null, {
+        readaloud: {
+          status: "STOPPED",
+          currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+          queuePosition: null,
+          restartPending: null,
+        },
       })
       return
     }
+
+    const book = await getBookOrThrow(bookUuid)
+    await updateBook(bookUuid, null, {
+      readaloud: {
+        status: "ERROR",
+        currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        queuePosition: null,
+        restartPending: null,
+      },
+    })
 
     logger.error(`Processing for book ${bookUuid} failed unexpectedly`)
     logger.error(err)
@@ -175,28 +148,3 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
     if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
 }
-
-export function isProcessing(bookUuid: UUID) {
-  return controllers.has(bookUuid) && !isQueued(bookUuid)
-}
-
-export function isQueued(bookUuid: UUID) {
-  return queue.some((enqueued) => enqueued.bookUuid === bookUuid)
-}
-
-export type BookProcessingEvent =
-  | BaseEvent<"processingQueued">
-  | BaseEvent<"processingStopped">
-  | BaseEvent<"processingStarted">
-  | BaseEvent<"processingCompleted">
-  | BaseEvent<"taskCompleted", { taskUuid: UUID }>
-  | BaseEvent<"processingFailed", { taskUuid: UUID }>
-  | BaseEvent<"taskProgressUpdated", { taskUuid: UUID; progress: number }>
-  | BaseEvent<
-      "taskTypeUpdated",
-      {
-        taskUuid: UUID | undefined
-        taskType: ProcessingTaskType
-        taskStatus: ProcessingTaskStatus
-      }
-    >

@@ -1,8 +1,8 @@
-import { BookDetail } from "@/apiModels"
+import { BookWithRelations } from "@/database/books"
 import { Fragment } from "react"
 
 interface Props {
-  books: BookDetail[]
+  books: BookWithRelations[]
 }
 
 export function TitleSummary({ books }: Props) {
@@ -29,7 +29,7 @@ export function TitleSummary({ books }: Props) {
             {i !== array.length - 1 ? ", " : ""}
           </Fragment>
         ))}
-        , and {books[2]?.title}
+        , and <strong>{books[2]?.title}</strong>
       </>
     )
   }

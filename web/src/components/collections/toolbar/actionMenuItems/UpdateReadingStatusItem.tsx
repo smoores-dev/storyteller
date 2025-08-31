@@ -1,5 +1,5 @@
-import { BookDetail } from "@/apiModels"
 import { StatusInput } from "@/components/books/edit/StatusInput"
+import { BookWithRelations } from "@/database/books"
 import {
   useListBooksQuery,
   useListStatusesQuery,
@@ -12,7 +12,7 @@ import { useDisclosure } from "@mantine/hooks"
 import { IconBook2 } from "@tabler/icons-react"
 import { useLayoutEffect, useMemo } from "react"
 
-const EMPTY_BOOKS: BookDetail[] = []
+const EMPTY_BOOKS: BookWithRelations[] = []
 
 interface Props {
   selected: Set<UUID>

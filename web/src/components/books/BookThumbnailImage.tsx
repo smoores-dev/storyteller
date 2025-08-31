@@ -1,4 +1,3 @@
-import { BookDetail } from "@/apiModels"
 import { getCoverUrl } from "@/store/api"
 import { Box, Image, px, Stack } from "@mantine/core"
 import { IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
@@ -6,9 +5,10 @@ import { HTMLProps, useCallback, useState } from "react"
 import cx from "classnames"
 import { twMerge } from "tailwind-merge"
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
+import { BookWithRelations } from "@/database/books"
 
 interface Props {
-  book: BookDetail
+  book: BookWithRelations
   height: string
   width: string
   imageHeight?: number | undefined

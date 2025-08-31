@@ -101,6 +101,10 @@ export function isAudioFile(filenameOrExt: string): boolean {
   return AUDIO_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))
 }
 
+export function isZipArchive(filenameOrExt: string): boolean {
+  return filenameOrExt.endsWith(".zip")
+}
+
 /**
  * Determine the mime type for a given audio file. If multiple possible
  * mime types exist for an extension, will always return the audio-specific

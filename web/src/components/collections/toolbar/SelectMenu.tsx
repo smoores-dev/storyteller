@@ -1,11 +1,11 @@
-import { BookDetail } from "@/apiModels"
+import { BookWithRelations } from "@/database/books"
 import { UUID } from "@/uuid"
 import { Menu, MenuTarget, Button, MenuDropdown, MenuItem } from "@mantine/core"
 import { IconCheckbox, IconChevronDown } from "@tabler/icons-react"
 import { SetStateAction } from "react"
 
 interface Props {
-  books: BookDetail[]
+  books: BookWithRelations[]
   setSelected: (action: SetStateAction<Set<UUID>>) => void
 }
 

@@ -6,18 +6,15 @@ export function CurrentBookProgress() {
   const { currentBook } = useListBooksQuery(undefined, {
     selectFromResult: (result) => ({
       currentBook: result.data?.find(
-        (book) => book.processingStatus === "processing",
+        (book) => book.readaloud?.status === "PROCESSING",
       ),
     }),
   })
 
-  if (!currentBook) return null
+  if (!currentBook?.readaloud) return null
 
   const userFriendlyTaskType =
-    currentBook.processingTask &&
-    ProcessingTaskTypes[
-      currentBook.processingTask.type as keyof typeof ProcessingTaskTypes
-    ]
+    ProcessingTaskTypes[currentBook.readaloud.currentStage]
 
   return (
     <Group wrap="nowrap" className="bg-st-orange-50 relative">
@@ -44,8 +41,7 @@ export function CurrentBookProgress() {
         rootColor="st-orange.2"
         sections={[
           {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            value: currentBook.processingTask!.progress * 100,
+            value: currentBook.readaloud.stageProgress * 100,
             color: "st-orange.8",
           },
         ]}
