@@ -27,8 +27,14 @@ import {
   keepMissingRelations,
 } from "../metadata"
 
-export async function scan(importPath: string, collectionUuid: UUID | null) {
+export async function scan(
+  importPath: string,
+  collectionUuid: UUID | null,
+  signal: AbortSignal,
+) {
   const allBooks = await getBooks()
+  if (signal.aborted) return
+
   const books = collectionUuid
     ? allBooks.filter((book) =>
         book.collections.some((c) => c.uuid === collectionUuid),
@@ -39,6 +45,8 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
     recursive: true,
     withFileTypes: true,
   })
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (signal.aborted) return
 
   const ebookPaths: string[] = []
   const audiobookPathsSet = new Set<string>()
@@ -76,6 +84,9 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
 
     // TODO: log ebook files that don't get handled?
     for (const path of [ebookPath, ...additionalEbookPaths]) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (signal.aborted) return
+
       if (plainEbookPath && readaloudPath) break
       try {
         const epub = await Epub.from(path)
@@ -125,6 +136,9 @@ export async function scan(importPath: string, collectionUuid: UUID | null) {
   }
 
   for (const bookPath of bookPaths) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (signal.aborted) return
+
     const book = books.find(
       (book) =>
         (bookPath.ebook && bookPath.ebook === book.ebook?.filepath) ||

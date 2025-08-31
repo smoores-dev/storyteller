@@ -7,19 +7,39 @@ import debounce from "debounce"
 import { scan } from "./scan"
 import { AsyncMutex } from "@esfx/async-mutex"
 
+const entryLocks = new Map<string, AsyncMutex>()
+
 function startWatcher(
   collection: UUID | null,
   importPath: string,
   controller: AbortController,
 ) {
-  const mutex = new AsyncMutex()
+  let entryLock = entryLocks.get(importPath)
 
-  scan(importPath, collection).catch((e: unknown) => {
-    logger.error(
-      `Encountered an error scanning for new book files in ${importPath}`,
-    )
-    logger.error(e)
-  })
+  if (!entryLock) {
+    entryLock = new AsyncMutex()
+    entryLocks.set(importPath, entryLock)
+  }
+
+  if (!entryLock.tryLock()) {
+    return
+  }
+
+  const scanLock = new AsyncMutex()
+
+  // This will always succeed, we just created the lock
+  scanLock.tryLock()
+
+  scan(importPath, collection, controller.signal)
+    .catch((e: unknown) => {
+      logger.error(
+        `Encountered an error scanning for new book files in ${importPath}`,
+      )
+      logger.error(e)
+    })
+    .finally(() => {
+      scanLock.unlock()
+    })
 
   watch(
     importPath,
@@ -29,20 +49,26 @@ function startWatcher(
         `Detected a change in ${importPath}, scanning for new book files...`,
       )
 
-      await mutex.lock()
+      await scanLock.lock()
 
-      try {
-        scan(importPath, collection).catch((e: unknown) => {
+      scan(importPath, collection, controller.signal)
+        .catch((e: unknown) => {
           logger.error(
             `Encountered an error scanning for new book files in ${importPath}`,
           )
           logger.error(e)
         })
-      } finally {
-        mutex.unlock()
-      }
+        .finally(() => {
+          scanLock.unlock()
+        })
     }, 5_000),
   )
+    .on("close", () => {
+      entryLock.unlock()
+    })
+    .on("error", () => {
+      entryLock.unlock()
+    })
 }
 
 let rootController = new AbortController()
@@ -78,11 +104,11 @@ export async function listen() {
 
 export async function update(uuid: UUID | null) {
   if (!uuid) {
+    const rootImportPath = await getSetting("importPath")
     logger.info("Cancelling watcher for root import path")
     rootController.abort()
     rootController = new AbortController()
 
-    const rootImportPath = await getSetting("importPath")
     if (rootImportPath) {
       logger.info(
         `Starting new watcher for root import path, ${rootImportPath}`,
