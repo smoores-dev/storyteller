@@ -169,6 +169,9 @@ async function syncProviders() {
           clientId: provider.clientId,
           clientSecret: provider.clientSecret,
           ...(provider.issuer && { issuer: provider.issuer }),
+          ...(provider.id === "google" && {
+            authorization: { params: { scope: "openid profile" } },
+          }),
         })
       }
 
