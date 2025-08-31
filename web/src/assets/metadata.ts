@@ -15,6 +15,7 @@ import { extname, join } from "node:path"
 import { persistCustomAudioCover } from "./covers"
 import { getProcessedAudioFiles } from "./fs"
 import { getProcessedAudioFilepath } from "./paths"
+import { logger } from "@/logging"
 
 export function keepMissingMetadata(book: Book, incoming: BookUpdate | null) {
   if (!incoming) return null
@@ -104,7 +105,14 @@ export async function getMetadataFromEpub(epub: Epub): Promise<{
   const publicationDate = await epub.getPublicationDate()
   if (publicationDate) {
     update ??= {}
-    update.publicationDate = publicationDate.toISOString()
+    try {
+      update.publicationDate = publicationDate.toISOString()
+    } catch (e) {
+      logger.info(
+        `Failed to parse publication date from EPUB: ${publicationDate.toString()}`,
+      )
+      logger.info(e)
+    }
   }
 
   const language = await epub.getLanguage()
