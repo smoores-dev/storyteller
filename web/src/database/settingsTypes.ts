@@ -79,4 +79,10 @@ export type Settings = {
   parallelWhisperBuild: number
   authProviders: AuthProvider[]
   importPath: string | null
+  readaloudLocationType:
+    | "SUFFIX"
+    | "SIBLING_FOLDER"
+    | "INTERNAL"
+    | "CUSTOM_FOLDER"
+  readaloudLocation: string
 }

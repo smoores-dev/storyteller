@@ -39,8 +39,8 @@ export async function getSettings(): Promise<Settings> {
     (acc, row) => ({
       ...acc,
       [row.name]:
-        // Kysely seems to auto-parse JSON arrays, so we need to guard
-        // against values that have already been parsed
+        // We configured Kysely to auto-parse JSON objects and arrays,
+        // so we need to guard against values that have already been parsed
         typeof row.value === "string"
           ? (JSON.parse(row.value) as Settings[keyof Settings])
           : row.value,

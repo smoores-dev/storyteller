@@ -1,7 +1,8 @@
-import { Book } from "@/database/books"
+import { Book, BookWithRelations } from "@/database/books"
+import { Settings } from "@/database/settingsTypes"
 import { ASSETS_DIR, IMAGE_CACHE_DIR } from "@/directories"
 import { UUID } from "@/uuid"
-import { basename, extname, join } from "node:path"
+import { basename, dirname, extname, join } from "node:path"
 
 const base62Chars =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -82,6 +83,46 @@ export function getInternalReadaloudFilepath(book: Book) {
     getInternalReadaloudDirectory(book),
     getSafeFilepathSegment(book.title, ".epub"),
   )
+}
+
+export function getReadaloudFilepath(
+  book: BookWithRelations,
+  settings: Settings,
+) {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const ebookFilepath = book.ebook!.filepath
+  if (ebookFilepath === getInternalEpubFilepath(book)) {
+    return getInternalReadaloudFilepath(book)
+  }
+
+  const ebookFolder = dirname(ebookFilepath)
+  switch (settings.readaloudLocationType) {
+    case "SUFFIX": {
+      return join(
+        ebookFolder,
+        getSafeFilepathSegment(
+          book.title,
+          `${settings.readaloudLocation}.epub`,
+        ),
+      )
+    }
+    case "SIBLING_FOLDER": {
+      return join(
+        ebookFolder,
+        settings.readaloudLocation,
+        getSafeFilepathSegment(book.title, ".epub"),
+      )
+    }
+    case "CUSTOM_FOLDER": {
+      return join(
+        settings.readaloudLocation,
+        getSafeFilepathSegment(book.title, ".epub"),
+      )
+    }
+    case "INTERNAL": {
+      return getInternalReadaloudFilepath(book)
+    }
+  }
 }
 
 export function getInternalEpubFilepath(book: Book) {
