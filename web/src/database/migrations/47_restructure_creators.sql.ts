@@ -69,8 +69,15 @@ export default async function migrate() {
         ? undefined
         : await Audiobook.from(join(audioDirectory, firstTrack))
 
-    const narrators = (await audiobook?.getNarrators()) ?? []
-    audiobook?.close()
+    let narrators: string[] = []
+    try {
+      narrators = (await audiobook?.getNarrators()) ?? []
+    } catch (e) {
+      logger.error(`Failed to read narrators from audiobook, skipping`)
+      logger.error(e)
+    } finally {
+      audiobook?.close()
+    }
 
     for (const narrator of narrators) {
       let existing = await db
