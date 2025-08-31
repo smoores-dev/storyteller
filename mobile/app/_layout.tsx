@@ -112,7 +112,7 @@ export default function Layout() {
 
   return (
     <GestureHandlerRootView>
-      <KeyboardProvider>
+      <KeyboardProvider navigationBarTranslucent>
         <Provider store={store}>
           <AudioBookProvider>
             <StorytellerProvider>

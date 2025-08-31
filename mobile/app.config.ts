@@ -64,6 +64,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         },
       ],
+      [
+        "react-native-edge-to-edge",
+        {
+          android: {
+            parentTheme: "Default",
+            enforceNavigationBarContrast: false,
+          },
+        },
+      ],
       ["./plugins/withAndroidJetifier.ts"],
       ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93] }],
       [
