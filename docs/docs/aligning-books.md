@@ -39,7 +39,7 @@ hardware.
 
 If you have a CUDA- or ROCm-capable GPU, and would like to use that rather than
 your CPU for transcription, check out the
-[instructions in the Getting Started Guide](/docs/intro/getting-started#gpus).
+[instructions in the Getting Started Guide](/docs/intro/getting-started#gpu-acceleration).
 
 :::
 

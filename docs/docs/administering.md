@@ -12,8 +12,7 @@ straightforward to administer, but there are a few things worth keeping in mind.
 When you first run the Storyteller backend, the web interface will prompt you to
 create an admin user. This user will be saved in the database and given all
 permissions in the system. After creating the admin user, you will be prompted
-to sign in with your new username and password. Make sure you use your username,
-not your email address!
+to sign in with your new username (or email address) and password.
 
 ## Inviting users
 
@@ -62,6 +61,47 @@ $ docker exec -it <container-name-or-id> scripts/reset-password.sh --username <u
 # With an email
 $ docker exec -it <container-name-or-id> scripts/reset-password.sh --email <email>
 ```
+
+## OAuth/OIDC configuration
+
+If you don’t have any idea what OAuth or OIDC are, you can probably skip this
+section!
+
+### Configuring a provider
+
+If you’d like to set up an OAuth provider for Storyteller, you can do so in the
+`Authentication Providers` section of the settings page.
+
+Storyteller supports a large number of built-in providers, like Auth0, Keycloak,
+etc. Since you’re self-hosting, though, you'll likely want to set up a custom
+provider with a self-hosted auth service like Authelia.
+
+Follow the guidelines for your chosen provider to obtain a client ID and client
+secret. Set the callback URL in your provider’s settings to the one provided by
+the Storyteller settings.
+
+:::info Callback URLs
+
+Your provider’s callback URL is tied to the provider’s name in the Storyteller
+settings. If you change the provider’s name, don’t forget to update the callback
+URL in the provider’s settings!
+
+:::
+
+### Linking accounts
+
+Once you’ve configured a provider, you can link your existing account to your
+profile from your provider. Navigate to the Account page on your Storyteller
+instance, and click the “Link to &lt;Your provider&gt;” button. Follow the OAuth
+flow and sign in with your provider. You will be redirected back to Storyteller,
+and now you'll be able to sign in with OAuth in the future!
+
+### Signing in with OAuth
+
+After one or more OAuth/OIDC providers have been configured, the log in page
+will display a log in option for each one. Clicking one of the buttons will
+initiate the log in flow for that provider. You will still be able to log in
+with your username and password if needed.
 
 ## Audio settings
 
