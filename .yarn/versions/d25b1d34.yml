@@ -1,7 +1,0 @@
-releases:
-  "@smoores/epub": patch
-
-declined:
-  - "@smoores/audiobook"
-  - "@smoores/path"
-  - "@storyteller/web"

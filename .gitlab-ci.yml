@@ -181,7 +181,7 @@ publish-web-multiarch:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - docker buildx imagetools create --tag
-      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA --tag $CI_REGISTRY_IMAGE:beta
+      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA --tag $CI_REGISTRY_IMAGE:latest
       --tag $CI_REGISTRY_IMAGE:web-v2 --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
       $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA
       $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA
