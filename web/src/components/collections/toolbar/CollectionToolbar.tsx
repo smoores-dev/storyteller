@@ -1,4 +1,3 @@
-import { BookDetail } from "@/apiModels"
 import { UUID } from "@/uuid"
 import { Group, Button } from "@mantine/core"
 import { IconEditOff, IconEdit } from "@tabler/icons-react"
@@ -7,10 +6,11 @@ import { SelectMenu } from "./SelectMenu"
 import { ActionMenu } from "./ActionMenu"
 import { Collection } from "@/database/collections"
 import { AddBooksMenu } from "@/components/books/AddBooksMenu"
+import { BookWithRelations } from "@/database/books"
 
 interface Props {
   collection?: Collection | undefined
-  books: BookDetail[]
+  books: BookWithRelations[]
   selected: Set<UUID>
   setSelected: (action: SetStateAction<Set<UUID>>) => void
   isEditing: boolean

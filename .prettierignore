@@ -15,6 +15,7 @@ tsbuild
 
 __fixtures__
 /web/work-dist
+/web/file-write-dist
 /web/whisper-builds
 
 mobile/android

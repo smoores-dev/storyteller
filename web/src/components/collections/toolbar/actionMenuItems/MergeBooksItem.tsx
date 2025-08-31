@@ -1,4 +1,3 @@
-import { BookDetail } from "@/apiModels"
 import { BookThumbnailImage } from "@/components/books/BookThumbnailImage"
 import { AuthorsInput } from "@/components/books/edit/AuthorsInput"
 import { CollectionsInput } from "@/components/books/edit/CollectionsInput"
@@ -7,7 +6,11 @@ import { NarratorsInput } from "@/components/books/edit/NarratorsInput"
 import { SeriesInput } from "@/components/books/edit/SeriesInput"
 import { StatusInput } from "@/components/books/edit/StatusInput"
 import { TagsInput } from "@/components/books/edit/TagsInput"
-import { CreatorRelation, SeriesRelation } from "@/database/books"
+import {
+  BookWithRelations,
+  CreatorRelation,
+  SeriesRelation,
+} from "@/database/books"
 import {
   useListCreatorsQuery,
   useListBooksQuery,
@@ -35,7 +38,7 @@ import { useDisclosure } from "@mantine/hooks"
 import { IconArrowMerge } from "@tabler/icons-react"
 import { useEffect, useMemo } from "react"
 
-const EMPTY_BOOKS: BookDetail[] = []
+const EMPTY_BOOKS: BookWithRelations[] = []
 
 interface Props {
   selected: Set<UUID>

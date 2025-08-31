@@ -52,30 +52,51 @@ export async function addBooksToSeries(
   series: NewSeries,
   relations: NewSeriesRelation[],
 ) {
-  let existing = await db
-    .selectFrom("series")
-    .select(["uuid"])
-    .where("name", "=", series.name)
-    .executeTakeFirst()
+  await db.transaction().execute(async (tr) => {
+    let existing = await tr
+      .selectFrom("series")
+      .select(["uuid"])
+      .where("name", "=", series.name)
+      .executeTakeFirst()
 
-  if (!existing) {
-    existing = await db
-      .insertInto("series")
-      .values(series)
-      .returning(["uuid as uuid"])
-      .executeTakeFirstOrThrow()
-  }
+    if (!existing) {
+      existing = await tr
+        .insertInto("series")
+        .values(series)
+        .returning(["uuid as uuid"])
+        .executeTakeFirstOrThrow()
+    }
 
-  await db
-    .insertInto("bookToSeries")
-    .values(
-      relations.map((relation) => ({
-        bookUuid: relation.bookUuid,
-        seriesUuid: existing.uuid,
-        position: relation.position,
-      })),
+    const withNewFeatured = relations.filter(
+      (relation) => relation.featured && relation.uuid,
     )
-    .execute()
+
+    if (withNewFeatured[0]?.featured) {
+      await tr
+        .updateTable("bookToSeries")
+        .set({ featured: false })
+        .where(
+          "bookToSeries.bookUuid",
+          "in",
+          // uuid is filtered for above
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          withNewFeatured.map(({ uuid }) => uuid!),
+        )
+        .execute()
+    }
+
+    await tr
+      .insertInto("bookToSeries")
+      .values(
+        relations.map((relation) => ({
+          bookUuid: relation.bookUuid,
+          seriesUuid: existing.uuid,
+          position: relation.position,
+          featured: relation.featured,
+        })),
+      )
+      .execute()
+  })
 
   const books = await getBooks(relations.map((relation) => relation.bookUuid))
 

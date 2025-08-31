@@ -1,4 +1,3 @@
-import { BookDetail } from "@/apiModels"
 import { Anchor, Stack, Text, Title } from "@mantine/core"
 import { BookEditForm } from "@/components/books/edit/BookEditForm"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
@@ -6,6 +5,7 @@ import Link from "next/link"
 import { IconArrowNarrowLeft } from "@tabler/icons-react"
 import { assertHasPermission } from "@/auth/auth"
 import type { Metadata } from "next"
+import { BookWithRelations } from "@/database/books"
 
 type Props = {
   params: Promise<{
@@ -17,7 +17,7 @@ export const generateMetadata = async ({
   params,
 }: Props): Promise<Metadata> => {
   const { uuid } = await params
-  const book = await fetchApiRoute<BookDetail>(`/books/${uuid}`)
+  const book = await fetchApiRoute<BookWithRelations>(`/books/${uuid}`)
   return {
     title: `✏️ ${book.title} | Books`,
   }
@@ -28,7 +28,7 @@ export default async function BookEditPage(props: Props) {
 
   const { uuid } = params
 
-  const book = await fetchApiRoute<BookDetail>(`/books/${uuid}`)
+  const book = await fetchApiRoute<BookWithRelations>(`/books/${uuid}`)
   await assertHasPermission("bookUpdate")
 
   return (

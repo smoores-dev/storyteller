@@ -21,7 +21,6 @@ import {
   updateBook,
 } from "@/database/books"
 import { UUID } from "@/uuid"
-import { isProcessing, isQueued } from "@/work/distributor"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 import { NextResponse } from "next/server"
 import { rename } from "node:fs/promises"
@@ -198,7 +197,10 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       }),
       ...(updated.readaloud?.filepath ===
         getInternalReadaloudFilepath(book) && {
-        readaloud: { filepath: getInternalReadaloudFilepath(updated) },
+        readaloud: {
+          filepath: getInternalReadaloudFilepath(updated),
+          currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        },
       }),
     })
   }
@@ -244,14 +246,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     )
   }
 
-  return NextResponse.json({
-    ...book,
-    processingStatus: isProcessing(book.uuid)
-      ? "processing"
-      : isQueued(book.uuid)
-        ? "queued"
-        : null,
-  })
+  return NextResponse.json(book)
 })
 
 /**

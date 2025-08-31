@@ -9130,6 +9130,8 @@ __metadata:
     "@uppy/react": "npm:^4.3.0"
     "@uppy/tus": "npm:^4.2.2"
     "@uppy/utils": "npm:^6.1.5"
+    "@yarnpkg/fslib": "npm:^3.1.2"
+    "@yarnpkg/libzip": "npm:^3.2.1"
     "@zip.js/zip.js": "npm:^2.7.40"
     argon2: "npm:^0.40.1"
     autoprefixer: "npm:^10.4.20"
@@ -9932,6 +9934,13 @@ __metadata:
   dependencies:
     "@types/ms": "npm:*"
   checksum: 10c0/5dcd465edbb5a7f226e9a5efd1f399c6172407ef5840686b73e3608ce135eeca54ae8037dcd9f16bdb2768ac74925b820a8b9ecc588a58ca09eca6acabe33e2f
+  languageName: node
+  linkType: hard
+
+"@types/emscripten@npm:^1.39.6":
+  version: 1.40.1
+  resolution: "@types/emscripten@npm:1.40.1"
+  checksum: 10c0/0d6cd29e551f85ba49a0e7d58de16c857960d40e57553e7cc2860b7d80c4210c992ed292998ec3fd3bdc3b41d96541e91d01a6c232106ac0ad79b4710e87f38d
   languageName: node
   linkType: hard
 
@@ -11449,6 +11458,28 @@ __metadata:
   version: 4.2.2
   resolution: "@xtuc/long@npm:4.2.2"
   checksum: 10c0/8582cbc69c79ad2d31568c412129bf23d2b1210a1dfb60c82d5a1df93334da4ee51f3057051658569e2c196d8dc33bc05ae6b974a711d0d16e801e1d0647ccd1
+  languageName: node
+  linkType: hard
+
+"@yarnpkg/fslib@npm:^3.1.2":
+  version: 3.1.2
+  resolution: "@yarnpkg/fslib@npm:3.1.2"
+  dependencies:
+    tslib: "npm:^2.4.0"
+  checksum: 10c0/fc19a2b62abfda45eabe08b05335ddbfafd27110657c1faa7b2924ecf1ff99118398e4af7706b9d78703956f99e1fba4666ec3be90174009ee94307fb5608b06
+  languageName: node
+  linkType: hard
+
+"@yarnpkg/libzip@npm:^3.2.1":
+  version: 3.2.1
+  resolution: "@yarnpkg/libzip@npm:3.2.1"
+  dependencies:
+    "@types/emscripten": "npm:^1.39.6"
+    "@yarnpkg/fslib": "npm:^3.1.2"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    "@yarnpkg/fslib": ^3.1.2
+  checksum: 10c0/067b57953fe6f7f624b4ca0cabdeb117eaed351ec7c7571551e0380f5b396260fe0350812ab9d003238f01b37398c878d3d1b6b944654d39484a98aa38db3283
   languageName: node
   linkType: hard
 

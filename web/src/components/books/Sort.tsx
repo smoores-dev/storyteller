@@ -7,6 +7,7 @@ const optionLabels: Record<BookSortKey, string> = {
   author: "Author",
   "align-time": "Last aligned",
   "create-time": "Created",
+  "publish-date": "Published",
 }
 
 interface Props {
@@ -26,11 +27,17 @@ export function Sort({ value, onValueChange }: Props) {
       store={combobox}
       withinPortal={false}
       onOptionSubmit={(submitted) => {
-        if (value[0] === submitted) {
-          onValueChange([submitted, value[1] === "asc" ? "desc" : "asc"])
+        const sortKey = submitted as BookSortKey
+        if (value[0] === sortKey) {
+          onValueChange([sortKey, value[1] === "asc" ? "desc" : "asc"])
           return
         }
-        onValueChange([submitted as BookSortKey, "asc"])
+        onValueChange([
+          sortKey,
+          ["publish-date", "create-time", "align-time"].includes(sortKey)
+            ? "desc"
+            : "asc",
+        ])
         combobox.closeDropdown()
       }}
     >

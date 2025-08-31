@@ -2,6 +2,7 @@
 tsbuild
 
 work-dist
+file-write-dist
 
 .next
 

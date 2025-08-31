@@ -6,7 +6,6 @@ export { CancelablePromise, CancelError } from "./core/CancelablePromise"
 export { OpenAPI } from "./core/OpenAPI"
 export type { OpenAPIConfig } from "./core/OpenAPI"
 
-export type { BookDetail } from "./models/BookDetail"
 export type { Invite } from "./models/Invite"
 export type { InviteAccept } from "./models/InviteAccept"
 export type { InviteRequest } from "./models/InviteRequest"

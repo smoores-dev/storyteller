@@ -1,4 +1,4 @@
-import { BookDetail } from "@/apiModels"
+import { BookWithRelations } from "@/database/books"
 import {
   useCancelProcessingMutation,
   useDeleteBookAssetsMutation,
@@ -13,7 +13,7 @@ import {
 } from "@tabler/icons-react"
 
 type Props = {
-  book: BookDetail
+  book: BookWithRelations
   aligned: boolean
 }
 
@@ -22,7 +22,10 @@ export function ProcessingItems({ book, aligned }: Props) {
   const [cancelProcessing] = useCancelProcessingMutation()
   const [deleteBookAssets] = useDeleteBookAssetsMutation()
 
-  if (book.processingStatus === null) {
+  if (
+    book.readaloud?.status !== "QUEUED" &&
+    book.readaloud?.status !== "PROCESSING"
+  ) {
     return (
       <Menu position="left-start">
         <Menu.Target>
@@ -95,7 +98,7 @@ export function ProcessingItems({ book, aligned }: Props) {
     <Tooltip
       position="right"
       label={
-        book.processingStatus === "queued"
+        book.readaloud.status === "QUEUED"
           ? "Remove from queue"
           : "Stop processing"
       }
@@ -107,7 +110,7 @@ export function ProcessingItems({ book, aligned }: Props) {
       >
         <IconProgressX
           aria-label={
-            book.processingStatus === "queued"
+            book.readaloud.status === "QUEUED"
               ? "Remove from queue"
               : "Stop processing"
           }

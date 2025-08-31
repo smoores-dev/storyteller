@@ -13,10 +13,11 @@ import {
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { TitleSummary } from "./TitleSummary"
-import { BookDetail } from "@/apiModels"
-import { IconProgress } from "@tabler/icons-react"
 
-const EMPTY_BOOKS: BookDetail[] = []
+import { IconProgress } from "@tabler/icons-react"
+import { BookWithRelations } from "@/database/books"
+
+const EMPTY_BOOKS: BookWithRelations[] = []
 
 interface Props {
   selected: Set<UUID>

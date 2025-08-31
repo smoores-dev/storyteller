@@ -6,16 +6,17 @@ import {
   Tooltip,
   Text,
 } from "@mantine/core"
-import { BookDetail } from "@/apiModels"
+
 import Link from "next/link"
 import { IconDotsCircleHorizontal, IconProgressX } from "@tabler/icons-react"
 import { useCancelProcessingMutation } from "@/store/api"
 import { IconReadaloud } from "../icons/IconReadaloud"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 import cx from "classnames"
+import { BookWithRelations } from "@/database/books"
 
 interface Props {
-  book: BookDetail
+  book: BookWithRelations
   link?: boolean
   onClick?: () => void
 }
@@ -39,34 +40,35 @@ export function BookThumbnail({ book, link, onClick }: Props) {
               width="9.1875rem"
               book={book}
             />
-            {book.processingStatus === "queued" && (
+            {book.readaloud?.status === "QUEUED" && (
               <IconDotsCircleHorizontal
                 size={40}
                 color="white"
-                className="absolute right-0 top-0 [filter:drop-shadow(0_0_4px_rgba(0,0,0,1))]"
+                className="absolute right-0 top-0 z-40 [filter:drop-shadow(0_0_1px_rgba(0,0,0,1))]"
               />
             )}
-            {book.processingTask && book.processingStatus === "processing" && (
+            {book.readaloud?.status === "PROCESSING" && (
               <RingProgress
-                className="absolute right-0 top-0 z-40 [&>svg]:[filter:drop-shadow(0_0_4px_rgba(0,0,0,1))]"
+                className="absolute right-0 top-0 z-40 [&>svg]:[filter:drop-shadow(0_0_1px_rgba(0,0,0,1))]"
                 size={40}
                 thickness={4}
                 roundCaps
                 rootColor="white"
                 sections={[
                   {
-                    value: book.processingTask.progress * 100,
+                    value: book.readaloud.stageProgress * 100,
                     color: "st-orange",
                   },
                 ]}
               />
             )}
           </Container>
-          {book.processingStatus && (
+          {(book.readaloud?.status === "QUEUED" ||
+            book.readaloud?.status === "PROCESSING") && (
             <Tooltip
               position="right"
               label={
-                book.processingStatus === "queued"
+                book.readaloud.status === "QUEUED"
                   ? "Remove from queue"
                   : "Stop processing"
               }
@@ -82,7 +84,7 @@ export function BookThumbnail({ book, link, onClick }: Props) {
               >
                 <IconProgressX
                   aria-label={
-                    book.processingStatus === "queued"
+                    book.readaloud.status === "QUEUED"
                       ? "Remove from queue"
                       : "Stop processing"
                   }
@@ -95,7 +97,7 @@ export function BookThumbnail({ book, link, onClick }: Props) {
           href={`/books/${book.uuid}`}
           className="line-clamp-2 max-w-[9.1875rem] bg-white text-sm font-semibold group-hover:line-clamp-none"
         >
-          {book.readaloud?.status === "ALIGNED" && (
+          {!!book.readaloud?.filepath && (
             <IconReadaloud className="text-st-orange-600 -mx-1 -mb-2 -mt-3 inline-block h-6 w-6" />
           )}{" "}
           {book.title}

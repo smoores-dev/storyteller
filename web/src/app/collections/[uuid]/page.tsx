@@ -12,9 +12,12 @@ export const generateMetadata = async ({
   params,
 }: Props): Promise<Metadata> => {
   const { uuid } = await params
-  const collection = await fetchApiRoute<Collection>(`/collections/${uuid}`)
+  const collection =
+    uuid === "none"
+      ? null
+      : await fetchApiRoute<Collection>(`/collections/${uuid}`)
   return {
-    title: `${collection.name} | Collections`,
+    title: collection ? `${collection.name} | Collections` : "Uncollected",
   }
 }
 

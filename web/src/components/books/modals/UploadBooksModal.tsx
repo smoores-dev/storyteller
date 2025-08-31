@@ -53,7 +53,15 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
 
   const [audioUppy] = useState(() =>
     new Uppy({
-      restrictions: { allowedFileTypes: ["video/mp4", "audio/*", ".m4b"] },
+      restrictions: {
+        allowedFileTypes: [
+          "video/mp4",
+          "audio/*",
+          "application/zip",
+          ".m4b",
+          ".zip",
+        ],
+      },
     })
       .use(Tus, { endpoint: "/api/v2/books/upload", withCredentials: true })
       .use(BookThumbnailGenerator, {

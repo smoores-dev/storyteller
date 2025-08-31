@@ -1,9 +1,9 @@
-import { BookDetail } from "@/apiModels"
 import { usePermissions } from "@/hooks/usePermissions"
 import { ProcessingItems } from "./ProcessingItems"
+import { BookWithRelations } from "@/database/books"
 
 type Props = {
-  book: BookDetail
+  book: BookWithRelations
   aligned: boolean
 }
 
@@ -12,9 +12,11 @@ export function BookOptions({ book, aligned }: Props) {
 
   return (
     <>
-      {permissions?.bookProcess && book.processingTask && (
-        <ProcessingItems aligned={aligned} book={book} />
-      )}
+      {permissions?.bookProcess &&
+        book.readaloud &&
+        book.readaloud.status !== "CREATED" && (
+          <ProcessingItems aligned={aligned} book={book} />
+        )}
     </>
   )
 }

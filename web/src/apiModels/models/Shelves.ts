@@ -1,8 +1,8 @@
-import { BookDetail } from "./BookDetail"
+import { BookWithRelations } from "@/database/books"
 
 export interface Shelves {
-  currentlyReading: BookDetail[]
-  nextUp: BookDetail[]
-  recentlyAdded: BookDetail[]
-  startReading: BookDetail[]
+  currentlyReading: BookWithRelations[]
+  nextUp: BookWithRelations[]
+  recentlyAdded: BookWithRelations[]
+  startReading: BookWithRelations[]
 }

@@ -1,26 +1,15 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import {
-  BookDetail,
-  Invite,
-  InviteRequest,
-  Settings,
-  Shelves,
-  User,
-} from "@/apiModels"
+import { Invite, InviteRequest, Settings, Shelves, User } from "@/apiModels"
 import { UUID } from "@/uuid"
 import { UserPermissionSet } from "@/database/users"
 import { BookEvent } from "@/events"
-import {
-  ProcessingTaskStatus,
-  ProcessingTaskType,
-} from "@/apiModels/models/ProcessingStatus"
-import { ProcessingTask } from "@/database/processingTasks"
 import {
   CreatorRelation,
   BookRelationsUpdate,
   BookUpdate,
   SeriesRelation,
+  BookWithRelations,
 } from "@/database/books"
 import { Status } from "@/database/statuses"
 import { Creator } from "@/database/creators"
@@ -152,7 +141,7 @@ export const api = createApi({
     getShelves: build.query<Shelves, void>({
       query: () => "/shelves",
     }),
-    listBooks: build.query<BookDetail[], void>({
+    listBooks: build.query<BookWithRelations[], void>({
       query: () => "/books",
       onCacheEntryAdded: async (
         _,
@@ -194,72 +183,6 @@ export const api = createApi({
                   Object.assign(draftBook, event.payload)
                   return
                 }
-                case "processingQueued": {
-                  draftBook.processingStatus = "queued"
-                  draftBook.processingTask = {
-                    type: ProcessingTaskType.SPLIT_CHAPTERS,
-                    progress: 0,
-                    status: ProcessingTaskStatus.STARTED,
-                  } as ProcessingTask
-                  return
-                }
-                case "processingCompleted": {
-                  draftBook.processingStatus = null
-                  draftBook.processingTask = {
-                    type: ProcessingTaskType.SYNC_CHAPTERS,
-                    progress: 1,
-                    status: ProcessingTaskStatus.COMPLETED,
-                  } as ProcessingTask
-                  return
-                }
-                case "processingStopped": {
-                  draftBook.processingStatus = null
-                  draftBook.processingTask = {
-                    type:
-                      draftBook.processingTask?.type ??
-                      ProcessingTaskType.SPLIT_CHAPTERS,
-                    progress: draftBook.processingTask?.progress ?? 0,
-                    status:
-                      draftBook.processingTask?.status ??
-                      ProcessingTaskStatus.STARTED,
-                  } as ProcessingTask
-                  return
-                }
-                case "processingFailed": {
-                  draftBook.processingStatus = null
-                  draftBook.processingTask = {
-                    ...draftBook.processingTask,
-                    status: ProcessingTaskStatus.IN_ERROR,
-                  } as ProcessingTask
-                  return
-                }
-                case "processingStarted": {
-                  draftBook.processingStatus = "processing"
-                  draftBook.processingTask = {
-                    type: ProcessingTaskType.SPLIT_CHAPTERS,
-                    progress: 0,
-                    status: ProcessingTaskStatus.STARTED,
-                  } as ProcessingTask
-                  return
-                }
-                case "taskProgressUpdated": {
-                  draftBook.processingStatus = "processing"
-                  draftBook.processingTask = {
-                    ...draftBook.processingTask,
-                    progress: event.payload.progress,
-                    status: ProcessingTaskStatus.STARTED,
-                  } as ProcessingTask
-                  return
-                }
-                case "taskTypeUpdated": {
-                  draftBook.processingStatus = "processing"
-                  draftBook.processingTask = {
-                    ...draftBook.processingTask,
-                    type: event.payload.taskType,
-                    status: ProcessingTaskStatus.STARTED,
-                  } as ProcessingTask
-                  return
-                }
                 default: {
                   return
                 }
@@ -291,7 +214,7 @@ export const api = createApi({
       }),
     }),
     mergeBooks: build.mutation<
-      BookDetail,
+      BookWithRelations,
       { update: BookUpdate; relations: BookRelationsUpdate; from: UUID[] }
     >({
       query: (body) => ({
@@ -301,7 +224,7 @@ export const api = createApi({
       }),
     }),
     updateBook: build.mutation<
-      BookDetail,
+      BookWithRelations,
       {
         update: {
           uuid: BookUpdate["uuid"]

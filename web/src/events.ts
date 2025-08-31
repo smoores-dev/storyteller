@@ -1,7 +1,6 @@
 import { EventEmitter } from "node:events"
-import { BookProcessingEvent } from "./work/distributor"
 import { UUID } from "./uuid"
-import { BookDetail } from "./apiModels"
+import { BookWithRelations } from "./database/books"
 
 export type BaseEvent<Type extends string, Payload = void> = {
   type: Type
@@ -10,16 +9,19 @@ export type BaseEvent<Type extends string, Payload = void> = {
 }
 
 export type BookUpdatePayload = Partial<
-  Omit<BookDetail, "originalFilesExist" | "processingTask" | "processingStatus">
+  Omit<
+    BookWithRelations,
+    "originalFilesExist" | "processingTask" | "processingStatus"
+  >
 >
 
-export type BookDetailMessage =
-  | BaseEvent<"bookCreated", BookDetail>
+export type BookWithRelationsMessage =
+  | BaseEvent<"bookCreated", BookWithRelations>
   | BaseEvent<"bookDeleted">
   | BaseEvent<"bookUpdated", BookUpdatePayload>
   | BaseEvent<"bookCacheDeleted">
 
-export type BookEvent = BookProcessingEvent | BookDetailMessage
+export type BookEvent = BookWithRelationsMessage
 
 /**
  * Next.js app directory seems to have a bug where, in production,

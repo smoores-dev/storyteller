@@ -3,6 +3,8 @@ export async function register() {
     const { listen } = await import("./assets/autoimport/listen")
     const { logger } = await import("./logging")
     const { migrate } = await import("./database/migrate")
+    const { getQueuedBooks } = await import("./database/books")
+    const { startProcessing } = await import("./work/distributor")
 
     try {
       await migrate()
@@ -14,6 +16,20 @@ export async function register() {
       await listen()
     } catch (err) {
       logger.error("Failed to initiate filesystem listener")
+      logger.error(err)
+    }
+
+    try {
+      const queue = await getQueuedBooks()
+      if (queue.length) {
+        logger.info("Restoring processing queue...")
+      }
+      for (const book of queue) {
+        logger.info(`Adding ${book.title} to the queue`)
+        void startProcessing(book.uuid, book.readaloud?.restartPending ?? false)
+      }
+    } catch (err) {
+      logger.error("Failed to restart processing queue")
       logger.error(err)
     }
   }

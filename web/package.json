@@ -51,6 +51,8 @@
     "@uppy/react": "^4.3.0",
     "@uppy/tus": "^4.2.2",
     "@uppy/utils": "^6.1.5",
+    "@yarnpkg/fslib": "^3.1.2",
+    "@yarnpkg/libzip": "^3.2.1",
     "@zip.js/zip.js": "^2.7.40",
     "argon2": "^0.40.1",
     "axios": " 1.6.7",

@@ -8,6 +8,7 @@ import {
   writeExtractedEbookCover,
 } from "@/assets/covers"
 import { logger } from "@/logging"
+import { BookWithRelations } from "../books"
 
 function booksQuery(userId?: UUID) {
   return db
@@ -120,8 +121,11 @@ function booksQuery(userId?: UUID) {
           .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
       ).as("collections"),
       jsonObjectFrom(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call
         eb
+          // @ts-expect-error Table has been dropped
           .selectFrom("processingTask")
+          // @ts-expect-error Table has been dropped
           .select([
             "processingTask.uuid",
             "processingTask.progress",
@@ -130,8 +134,11 @@ function booksQuery(userId?: UUID) {
             "processingTask.createdAt",
             "processingTask.updatedAt",
           ])
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           .whereRef("processingTask.bookUuid", "=", "book.uuid")
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           .orderBy("processingTask.updatedAt", "desc")
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           .limit(1),
       ).as("processingTask"),
       ...(userId
@@ -227,13 +234,13 @@ export default async function migrate() {
 
   for (const book of books) {
     logger.info(`Extracting ebook cover for ${book.title}`)
-    const ebookCover = await getEpubCover(book)
+    const ebookCover = await getEpubCover(book as BookWithRelations)
     if (ebookCover) {
       await writeExtractedEbookCover(book, ebookCover.filename, ebookCover.data)
     }
 
     logger.info(`Extracting audiobook cover for ${book.title}`)
-    const audiobookCover = await getAudioCover(book)
+    const audiobookCover = await getAudioCover(book as BookWithRelations)
     if (audiobookCover) {
       await writeExtractedAudiobookCover(
         book,

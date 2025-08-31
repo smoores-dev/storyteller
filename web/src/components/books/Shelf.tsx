@@ -1,4 +1,3 @@
-import { BookDetail } from "@/apiModels"
 import { UUID } from "@/uuid"
 import { Checkbox, Stack, Title } from "@mantine/core"
 import { Carousel } from "@mantine/carousel"
@@ -6,11 +5,12 @@ import { BookThumbnail } from "./BookThumbnail"
 
 import "@mantine/carousel/styles.css"
 import Link from "next/link"
+import { BookWithRelations } from "@/database/books"
 
 interface Props {
   label: string
   href?: string
-  books: BookDetail[]
+  books: BookWithRelations[]
   isSelecting: boolean
   selected: Set<UUID>
   onSelect: (book: UUID) => void
