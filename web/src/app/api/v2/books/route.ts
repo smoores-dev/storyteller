@@ -10,7 +10,7 @@ import {
 import { NextResponse } from "next/server"
 import { UUID } from "@/uuid"
 import { deleteAssets } from "@/assets/fs"
-import { basename, extname } from "path"
+import { basename, delimiter, dirname, extname } from "path"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { Epub } from "@smoores/epub/node"
 import { logger } from "@/logging"
@@ -135,7 +135,9 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
 
   if (audio.length) {
     const audiobook = await Audiobook.from(audio)
-    const audioDirectory = longestPrefix(audio)
+    const audioDirectory =
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      audio.length === 1 ? dirname(audio[0]!) : longestPrefix(audio)
 
     if (!book) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -176,10 +178,11 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
 })
 
 function longestPrefix(paths: string[]) {
-  const firstPath = paths[0]
-  if (!firstPath || paths.length == 1) return firstPath || ""
+  const pathsSegments = paths.map((path) => path.split(delimiter))
+  const firstPath = pathsSegments[0]
+  if (!firstPath || paths.length === 1) return firstPath?.join(delimiter) ?? ""
   let i = 0
-  while (firstPath[i] && paths.every((w) => w[i] === firstPath[i])) i++
+  while (firstPath[i] && pathsSegments.every((w) => w[i] === firstPath[i])) i++
 
-  return firstPath.slice(0, i)
+  return firstPath.slice(0, i).join(delimiter)
 }
