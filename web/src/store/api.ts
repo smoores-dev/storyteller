@@ -223,6 +223,16 @@ export const api = createApi({
         body,
       }),
     }),
+    createBook: build.mutation<
+      BookWithRelations,
+      { collection: UUID | undefined; paths: string[] }
+    >({
+      query: (body) => ({
+        url: `/books`,
+        method: "POST",
+        body,
+      }),
+    }),
     updateBook: build.mutation<
       BookWithRelations,
       {
@@ -526,6 +536,7 @@ export const {
   useAddBooksToSeriesMutation,
   useAddTagsToBooksMutation,
   useCancelProcessingMutation,
+  useCreateBookMutation,
   useCreateCollectionMutation,
   useCreateInviteMutation,
   useDeleteBookAssetsMutation,
