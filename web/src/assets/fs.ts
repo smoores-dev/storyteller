@@ -89,7 +89,7 @@ export async function persistAudio(
     throw e
   }
 
-  const directory = getInternalOriginalAudioFilepath(book)
+  const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
   await rename(tmpPath, filepath)
   const updated = await updateBook(book.uuid, null, {

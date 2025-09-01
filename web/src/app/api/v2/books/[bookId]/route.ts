@@ -7,9 +7,9 @@ import {
   getInternalBookDirectory,
   getInternalReadaloudFilepath,
   getInternalEpubFilepath,
-  getInternalOriginalAudioFilepath,
   getInternalEpubDirectory,
   getInternalReadaloudDirectory,
+  getInternalAudioDirectory,
 } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -191,9 +191,8 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       ...(updated.ebook?.filepath === getInternalEpubFilepath(book) && {
         ebook: { filepath: getInternalEpubFilepath(updated) },
       }),
-      ...(updated.audiobook?.filepath ===
-        getInternalOriginalAudioFilepath(book) && {
-        audiobook: { filepath: getInternalOriginalAudioFilepath(updated) },
+      ...(updated.audiobook?.filepath === getInternalAudioDirectory(book) && {
+        audiobook: { filepath: getInternalAudioDirectory(updated) },
       }),
       ...(updated.readaloud?.filepath ===
         getInternalReadaloudFilepath(book) && {

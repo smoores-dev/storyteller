@@ -259,7 +259,7 @@ export function BookDetails({ bookUuid }: Props) {
         </Group>
 
         <Stack className="rounded bg-gray-100 p-4" gap={4}>
-          {book.readaloud && (
+          {book.readaloud?.filepath && (
             <Text>
               <span className="font-bold">Readaloud file path:</span>{" "}
               {book.readaloud.filepath}
