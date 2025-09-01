@@ -221,6 +221,12 @@ export async function scan(
           const audioCover = await getAudioCover(created)
 
           if (audioCover) {
+            await writeExtractedAudiobookCover(
+              created,
+              audioCover.filename,
+              audioCover.data,
+            )
+
             const optimized = await optimizeImage({
               buffer: Buffer.from(audioCover.data),
               height: 147,

@@ -21,6 +21,12 @@ import {
   keepMissingRelations,
 } from "@/assets/metadata"
 import { Audiobook } from "@smoores/audiobook/node"
+import {
+  getAudioCover,
+  getEpubCover,
+  writeExtractedAudiobookCover,
+  writeExtractedEbookCover,
+} from "@/assets/covers"
 
 export const dynamic = "force-dynamic"
 
@@ -131,6 +137,11 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
         ...(collection && { collections: [collection] }),
       })
     }
+
+    const coverImage = await getEpubCover(book)
+    if (coverImage) {
+      await writeExtractedEbookCover(book, coverImage.filename, coverImage.data)
+    }
   }
 
   if (audio.length) {
@@ -165,6 +176,16 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
         ...(collection && { collections: [collection] }),
       })
     }
+
+    const audioCover = await getAudioCover(book)
+
+    if (audioCover) {
+      await writeExtractedAudiobookCover(
+        book,
+        audioCover.filename,
+        audioCover.data,
+      )
+    }
   }
 
   if (!book) {
@@ -182,7 +203,11 @@ function longestPrefix(paths: string[]) {
   const firstPath = pathsSegments[0]
   if (!firstPath || paths.length === 1) return firstPath?.join(delimiter) ?? ""
   let i = 0
-  while (firstPath[i] && pathsSegments.every((w) => w[i] === firstPath[i])) i++
+  while (
+    firstPath[i] !== undefined &&
+    pathsSegments.every((w) => w[i] === firstPath[i])
+  )
+    i++
 
   return firstPath.slice(0, i).join(delimiter)
 }
