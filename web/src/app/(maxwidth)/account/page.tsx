@@ -1,6 +1,6 @@
 import { User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { config, hashPassword, nextAuth } from "@/auth/auth"
+import { createConfig, hashPassword, nextAuth } from "@/auth/auth"
 import { getAccounts, updateUser } from "@/database/users"
 import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
 import { AuthError } from "next-auth"
@@ -98,6 +98,7 @@ export default async function AccountPage() {
                 key={account.provider}
                 action={async function unlink() {
                   "use server"
+                  const config = await createConfig(undefined)
                   await config.adapter?.unlinkAccount?.(account)
                   revalidatePath("/account")
                 }}

@@ -26,7 +26,6 @@ import { cookies, headers } from "next/headers"
 import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { headers as nextHeaders } from "next/headers"
 import { getCurrentUserSession } from "@/database/users"
-import { PHASE_PRODUCTION_BUILD } from "next/constants"
 import { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
 import { notFound, redirect } from "next/navigation"
 
@@ -95,108 +94,93 @@ const credentialsProvider = Credentials({
   },
 })
 
-export const config: NextAuthConfig = {
-  providers: [credentialsProvider],
-  cookies: {
-    sessionToken: {
-      name: "st_token",
-      ...(process.env["AUTH_URL"] && {
-        options: { domain: new URL(process.env["AUTH_URL"]).hostname },
-      }),
-    },
-  },
-  session: {
-    maxAge,
-  },
-  pages: {
-    signIn: "/login",
-  },
-  secret: readSecretKey(),
-  adapter,
-  jwt: {
-    encode() {
-      return ""
-    },
-    decode() {
-      return null
-    },
-  },
-  callbacks: {
-    session({ session, user }) {
-      return {
-        ...session,
-        user,
-      }
-    },
-    async signIn({ user, credentials }) {
-      if (credentials) {
-        const sessionToken = randomUUID()
-        const sessionExpiry = fromDate(maxAge)
-        await adapter.createSession?.({
-          sessionToken,
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          userId: user.id!,
-          expires: sessionExpiry,
-        })
-      }
-      return true
-    },
-  },
-  basePath: "/api/v2/auth",
-  trustHost: true,
-}
-
-async function syncProviders() {
-  if (process.env["NEXT_PHASE"] === PHASE_PRODUCTION_BUILD) return
-
+export async function createConfig(
+  request: NextRequest | undefined,
+): Promise<NextAuthConfig> {
   const settings = await getSettings()
 
-  // The very first time the server starts up after running the migration
-  // that adds this setting, syncProviders will run before the setting
-  // has been added. This will mean that authProviders is undefined just
-  // that one time. Functionally this is no different from the initial value
-  // (an empty array), so we just allow it to be undefined in that one
-  // instance.
-  const additionalProviders =
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    settings.authProviders?.map((provider) => {
-      if (provider.kind === "built-in") {
-        const providerFactory = Providers[provider.id] as (
-          config: OAuthUserConfig<unknown>,
-        ) => OIDCConfig<unknown>
+  const additionalProviders = settings.authProviders.map((provider) => {
+    if (provider.kind === "built-in") {
+      const providerFactory = Providers[provider.id] as (
+        config: OAuthUserConfig<unknown>,
+      ) => OIDCConfig<unknown>
 
-        return providerFactory({
-          clientId: provider.clientId,
-          clientSecret: provider.clientSecret,
-          ...(provider.issuer && { issuer: provider.issuer }),
-          ...(provider.id === "google" && {
-            authorization: { params: { scope: "openid profile" } },
-          }),
-        })
-      }
-
-      return {
-        id: provider.name
-          .toLowerCase()
-          .replaceAll(/ +/g, "-")
-          .replaceAll(/[^a-zA-Z0-9-]/g, ""),
-        name: provider.name,
-        type: provider.type,
+      return providerFactory({
         clientId: provider.clientId,
         clientSecret: provider.clientSecret,
-        issuer: provider.issuer,
-        ...(provider.type === "oidc" && {
-          checks: ["pkce" as const, "state" as const],
+        ...(provider.issuer && { issuer: provider.issuer }),
+      })
+    }
+
+    return {
+      id: provider.name
+        .toLowerCase()
+        .replaceAll(/ +/g, "-")
+        .replaceAll(/[^a-zA-Z0-9-]/g, ""),
+      name: provider.name,
+      type: provider.type,
+      clientId: provider.clientId,
+      clientSecret: provider.clientSecret,
+      issuer: provider.issuer,
+      ...(provider.type === "oidc" && {
+        checks: ["pkce" as const, "state" as const],
+      }),
+    }
+  })
+
+  const providers = [credentialsProvider, ...additionalProviders]
+
+  const config: NextAuthConfig = {
+    providers,
+    cookies: {
+      sessionToken: {
+        name: "st_token",
+        ...(process.env["AUTH_URL"] && {
+          options: { domain: new URL(process.env["AUTH_URL"]).hostname },
         }),
-      }
-    }) ?? []
+      },
+    },
+    session: {
+      maxAge,
+    },
+    pages: {
+      signIn: "/login",
+    },
+    secret: readSecretKey(),
+    adapter,
+    jwt: {
+      encode() {
+        return ""
+      },
+      decode() {
+        return null
+      },
+    },
+    callbacks: {
+      session({ session, user }) {
+        return {
+          ...session,
+          user,
+        }
+      },
+      async signIn({ user, credentials }) {
+        if (credentials) {
+          const sessionToken = randomUUID()
+          const sessionExpiry = fromDate(maxAge)
+          await adapter.createSession?.({
+            sessionToken,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            userId: user.id!,
+            expires: sessionExpiry,
+          })
+        }
+        return true
+      },
+    },
+    basePath: "/api/v2/auth",
+    trustHost: true,
+  }
 
-  config.providers = [credentialsProvider, ...additionalProviders]
-}
-
-await syncProviders()
-
-async function createConfig(request: NextRequest | undefined) {
   if (!request?.nextUrl.pathname.includes("/auth/callback")) {
     return config
   }
@@ -225,17 +209,13 @@ async function createConfig(request: NextRequest | undefined) {
   }
 }
 
-export let nextAuth = NextAuth(createConfig)
-
-export async function refreshNextAuth() {
-  await syncProviders()
-  nextAuth = NextAuth(createConfig)
-}
+export const nextAuth = NextAuth(createConfig)
 
 export async function createUserToken(
   usernameOrEmail: string,
   password: string,
 ) {
+  const config = await createConfig(undefined)
   const headers = new Headers(await nextHeaders())
   const signInURL = createActionURL(
     "callback",

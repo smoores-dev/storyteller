@@ -28,9 +28,10 @@ import { ImportPathInput } from "../ImportPathInput"
 
 interface Props {
   settings: Settings
+  authUrl?: string | undefined
 }
 
-export function SettingsForm({ settings }: Props) {
+export function SettingsForm({ settings, authUrl }: Props) {
   const [saved, setSaved] = useState(false)
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -569,15 +570,17 @@ export function SettingsForm({ settings }: Props) {
                   {...form.getInputProps(`authProviders.${i}.name`)}
                 />
               )}
+
+              <Text>
+                Set callback URL to {authUrl ?? state.webUrl}
+                /api/v2/auth/callback/
+                {(provider.kind === "custom" ? provider.name : provider.id)
+                  .toLowerCase()
+                  .replaceAll(/ +/g, "-")
+                  .replaceAll(/[^a-zA-Z0-9-]/g, "")}
+              </Text>
               {provider.kind === "custom" && (
                 <>
-                  <Text>
-                    Set callback URL to {state.webUrl}/api/v2/auth/callback/
-                    {provider.name
-                      .toLowerCase()
-                      .replaceAll(/ +/g, "-")
-                      .replaceAll(/[^a-zA-Z0-9-]/g, "")}
-                  </Text>
                   <Select
                     label="Provider type"
                     required
