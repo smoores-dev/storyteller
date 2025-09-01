@@ -145,6 +145,7 @@ export interface AlternateScript {
 export interface DcCreator {
   name: string
   role?: string
+  roleScheme?: string
   fileAs?: string
   alternateScripts?: AlternateScript[]
 }
@@ -1667,6 +1668,9 @@ export class Epub {
         entry.properties["property"] === "file-as" ? "fileAs" : "role"
 
       creator[prop] = entry.value
+      if (prop === "role" && entry.properties["scheme"]) {
+        creator.roleScheme = entry.properties["scheme"]
+      }
     })
 
     return creators
@@ -1740,7 +1744,11 @@ export class Epub {
     if (creator.role) {
       await this.addMetadata({
         type: "meta",
-        properties: { refines: `#${creatorId}`, property: "role" },
+        properties: {
+          refines: `#${creatorId}`,
+          property: "role",
+          ...(creator.roleScheme && { scheme: creator.roleScheme }),
+        },
         value: creator.role,
       })
     }
