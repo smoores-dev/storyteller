@@ -358,6 +358,7 @@ export async function writeMetadataToEpub(
     await epub.addCreator({
       name: author.name,
       role: "aut",
+      roleScheme: "marc:relators",
     })
   }
 
@@ -365,13 +366,14 @@ export async function writeMetadataToEpub(
     await epub.addCreator({
       name: narrator.name,
       role: "nrt",
+      roleScheme: "marc:relators",
     })
   }
 
   for (const creator of book.creators) {
     await epub.addCreator({
       name: creator.name,
-      ...(creator.role && { role: creator.role }),
+      ...(creator.role && { role: creator.role, scheme: "marc:relator" }),
     })
   }
 
