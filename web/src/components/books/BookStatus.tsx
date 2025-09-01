@@ -38,8 +38,6 @@ export function BookStatus({ bookUuid }: Props) {
 
   if (!permissions?.bookRead) return null
 
-  if (aligned) return null
-
   return (
     <Paper>
       <Group justify="space-between" wrap="nowrap" align="flex-end">
