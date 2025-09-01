@@ -12,11 +12,12 @@ export const metadata: Metadata = {
 
 export default async function SettingsPage() {
   const settings = await fetchApiRoute<Settings>("/settings")
+  const authUrl = process.env["AUTH_URL"]
 
   return (
     <>
       <Title order={2}>Settings</Title>
-      <SettingsForm settings={settings} />
+      <SettingsForm settings={settings} authUrl={authUrl} />
     </>
   )
 }
