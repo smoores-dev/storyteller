@@ -26,6 +26,16 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
   },
+  turbopack: {
+    resolveAlias: {
+      "@smoores/epub": "../epub/index.ts",
+      "@smoores/epub/node": "../epub/node.ts",
+      "@smoores/fs": "../fs/index.ts",
+      "@smoores/path": "../path/index.ts",
+      "@smoores/audiobook": "../audiobook/index.ts",
+      "@smoores/audiobook/node": "../audiobook/src/node/index.ts",
+    },
+  },
   /**
    *
    * @param {import('webpack').Configuration} config
@@ -33,30 +43,6 @@ const nextConfig = {
    * @returns
    */
   webpack: (config, { isServer, dev }) => {
-    if (dev) {
-      if (isServer) {
-        config.resolve.conditionNames = [
-          "@storyteller-node",
-          ...(config.resolve.conditionNames ?? ["..."]),
-        ]
-      } else {
-        config.resolve.conditionNames = [
-          "@storyteller",
-          ...(config.resolve.conditionNames ?? ["..."]),
-        ]
-      }
-
-      config.resolve.extensionAlias = {
-        ...config.resolve.extensionAlias,
-        ".js": [".ts", ".js"],
-      }
-    } else if (isServer) {
-      config.resolve.conditionNames = [
-        "node",
-        ...(config.resolve.conditionNames ?? ["..."]),
-      ]
-    }
-
     if (isServer && !dev) {
       config.devtool = "source-map"
     }

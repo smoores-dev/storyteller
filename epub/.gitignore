@@ -9,3 +9,5 @@ index.test.d.ts
 __fixtures__/__output__
 
 gen/
+
+dist/

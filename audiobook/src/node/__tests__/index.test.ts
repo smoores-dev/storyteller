@@ -1,5 +1,5 @@
 import { describe, it } from "node:test"
-import { Audiobook } from "../index.js"
+import { Audiobook } from "../index.ts"
 import assert from "node:assert"
 import { copyFile, mkdir } from "node:fs/promises"
 import { Picture } from "node-taglib-sharp"

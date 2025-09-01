@@ -3,7 +3,7 @@
     "composite": true,
     "allowJs": true,
     "emitDeclarationOnly": true,
-    "module": "ESNext",
+    "module": "preserve",
     "target": "ES2022",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
     "strict": true,
     "isolatedModules": true,
     "noFallthroughCasesInSwitch": true,
@@ -34,7 +35,7 @@
     "outDir": "tsbuild",
     "noEmit": false
   },
-  "extends": ["@tsconfig/strictest"],
+  "extends": ["@tsconfig/strictest/tsconfig.json"],
   "include": [
     "./next-env.d.ts",
     "src/**/*.js",

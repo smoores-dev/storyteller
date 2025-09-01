@@ -1,0 +1,17 @@
+{
+  "name": "@storyteller/tsup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.js",
+      "import": "./index.js"
+    }
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  }
+}

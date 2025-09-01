@@ -2,17 +2,20 @@
   "extends": ["@tsconfig/strictest/tsconfig.json"],
   "compilerOptions": {
     "composite": true,
-    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "esModuleInterop": true,
     "incremental": true,
     "module": "Node16",
     "moduleResolution": "Node16",
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
-    "lib": ["ESNext"],
+    "allowJs": true,
     "tsBuildInfoFile": "tsconfig.tsbuildinfo",
     "outDir": "dist"
   },
-  "include": ["index.ts", "index.test.ts"]
+  "include": [
+    "tsup.default.config.js",
+    "rewriteRelativeImportExtensionsPlugin.js",
+    "index.js"
+  ]
 }

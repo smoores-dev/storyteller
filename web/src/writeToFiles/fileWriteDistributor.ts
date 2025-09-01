@@ -54,7 +54,7 @@ if (globalThis.fileWritePiscina) {
       env: {
         ...process.env,
         NODE_OPTIONS:
-          "--disable-warning=ExperimentalWarning --experimental-transform-types",
+          "--conditions=@storyteller-node --disable-warning=ExperimentalWarning --experimental-transform-types",
       },
     }),
   })

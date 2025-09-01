@@ -84,3 +84,5 @@ flake.*
 /web/migrations/29_insert_deepgrapm_settings.sql
 /web/migrations/30_insert_parellelization_settings.sql
 /web/migrations/31_insert_parallel_whisper_build_setting.sql
+
+**/dist

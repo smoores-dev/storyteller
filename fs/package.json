@@ -5,26 +5,30 @@
   "module": "index.js",
   "types": "index.d.ts",
   "exports": {
-    "@storyteller": "./index.ts",
-    "@storyteller-node": "./index.ts",
-    "import": "./index.js",
-    "require": "./index.cjs",
-    "types": "./index.d.ts"
+    ".": {
+      "@storyteller": "./index.ts",
+      "@storyteller-node": "./index.ts",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
   },
   "files": [
-    "index.js",
-    "index.cjs",
-    "index.d.ts"
+    "dist/"
   ],
   "scripts": {
-    "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs",
-    "build:esm": "yarn swc ./index.ts -o ./index.js",
-    "build": "yarn build:esm && yarn build:cjs"
+    "build": "tsup"
   },
   "devDependencies": {
-    "@swc/cli": "^0.5.2",
-    "@swc/core": "^1.10.0",
-    "@tsconfig/strictest": "^2.0.5"
+    "@storyteller/tsup": "workspace:^",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.0"
   },
   "publishConfig": {
     "access": "public"

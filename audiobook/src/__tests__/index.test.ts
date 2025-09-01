@@ -1,5 +1,5 @@
 import { describe, it } from "node:test"
-import { Audiobook } from "../index.js"
+import { Audiobook } from "../index.ts"
 import assert from "node:assert"
 import { Picture } from "node-taglib-sharp"
 import { streamFile } from "@smoores/fs"
