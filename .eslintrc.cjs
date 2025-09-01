@@ -65,7 +65,7 @@ module.exports = {
       env: { browser: false, node: true, commonjs: true },
     },
     {
-      files: ["lint-staged.config.js"],
+      files: ["lint-staged.config.js", "config/**/*.js"],
       parserOptions: { sourceType: "module" },
     },
     { files: ["docs/sidebars.js"], env: { commonjs: true } },

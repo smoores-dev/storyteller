@@ -34,3 +34,9 @@ mobile/android
 /path/index.d.ts
 
 /web/whisper-builds
+
+**/*tsup*config.ts
+
+**/dist
+
+**/node_modules

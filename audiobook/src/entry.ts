@@ -1,7 +1,7 @@
 import { Uint8ArrayWriter, type Entry } from "@zip.js/zip.js"
-import { Uint8ArrayFileAbstraction } from "./taglib/Uint8ArrayFileAbstraction.js"
+import { Uint8ArrayFileAbstraction } from "./taglib/Uint8ArrayFileAbstraction.ts"
 import { File } from "node-taglib-sharp"
-import { BaseAudiobookEntry } from "./base.js"
+import { BaseAudiobookEntry } from "./base.ts"
 
 export interface Uint8ArrayEntry {
   filename: string

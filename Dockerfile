@@ -8,14 +8,15 @@ RUN wget https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
 COPY .yarn/cache ./.yarn/cache
-COPY web/package.json ./web/package.json
 
+COPY web/package.json ./web/package.json
 COPY fs/package.json ./fs/package.json
 COPY epub/package.json ./epub/package.json
 COPY path/package.json ./path/package.json
 COPY audiobook/package.json ./audiobook/package.json
+COPY config/tsup/package.json ./config/tsup/package.json
 
-RUN yarn workspaces focus @storyteller/web @smoores/epub @smoores/audiobook @smoores/fs @smoores/path
+RUN yarn install
 
 COPY docker-scripts/ ./scripts/
 
@@ -32,11 +33,7 @@ ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
 ENV SQLITE_NATIVE_BINDING=/app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 
-RUN yarn workspace @smoores/fs build:esm
-RUN yarn workspace @smoores/path build:esm
-RUN yarn workspace @smoores/epub build:esm
-RUN yarn workspace @smoores/audiobook build:esm
-RUN yarn build:web
+RUN yarn workspaces foreach -Rpt --from @storyteller/web run build
 
 FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS runner
 

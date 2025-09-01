@@ -1,5 +1,5 @@
 {
-  "extends": ["@tsconfig/strictest"],
+  "extends": ["@tsconfig/strictest/tsconfig.json"],
   "compilerOptions": {
     "composite": true,
     "emitDeclarationOnly": true,
@@ -8,9 +8,15 @@
     "moduleResolution": "Node16",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ESNext"]
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "lib": ["ESNext"],
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
+    "outDir": "dist",
+    "customConditions": ["@storyteller"]
   },
-  "include": ["index.ts", "node.ts", "index.test.ts", "./path-dirname.d.ts"],
+  "include": ["./**/*.ts", "!tsup.config.ts"],
+  "exclude": ["dist", "tsup.config.ts"],
   "references": [
     {
       "path": "../fs"

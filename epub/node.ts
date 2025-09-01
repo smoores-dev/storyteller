@@ -1,5 +1,5 @@
 import { dirname } from "node:path"
-import { Epub as BaseEpub } from "./index.js"
+import { Epub as BaseEpub } from "./index.ts"
 import { mkdir, writeFile } from "node:fs/promises"
 import { streamFile } from "@smoores/fs"
 
@@ -17,7 +17,7 @@ export type {
   XmlElement,
   XmlTextNode,
   ManifestItem,
-} from "./index.js"
+} from "./index.ts"
 
 export class Epub extends BaseEpub {
   static override create(

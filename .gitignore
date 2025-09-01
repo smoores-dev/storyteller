@@ -22,7 +22,7 @@ node_modules
 !.yarn/versions
 
 .eslintcache
-tsconfig.tsbuildinfo
+**/*tsconfig.tsbuildinfo
 
 tsbuild
 

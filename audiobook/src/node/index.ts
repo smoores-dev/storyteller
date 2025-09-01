@@ -1,5 +1,5 @@
 import { basename, extname } from "@smoores/path"
-import { AudiobookEntry } from "./entry.js"
+import { AudiobookEntry } from "./entry.ts"
 import { streamFile } from "@smoores/fs"
 import {
   ERR_DUPLICATED_NAME,
@@ -8,8 +8,8 @@ import {
   ZipReader,
   ZipWriter,
 } from "@zip.js/zip.js"
-import { BaseAudiobook } from "../base.js"
-import { type Uint8ArrayEntry } from "../entry.js"
+import { BaseAudiobook } from "../base.ts"
+import { type Uint8ArrayEntry } from "../entry.ts"
 import { writeFile } from "node:fs/promises"
 import { type IPicture, Picture } from "node-taglib-sharp"
 

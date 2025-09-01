@@ -1,0 +1,8 @@
+releases:
+  "@smoores/audiobook": minor
+  "@smoores/epub": minor
+  "@smoores/fs": minor
+  "@smoores/path": minor
+
+declined:
+  - "@storyteller/web"

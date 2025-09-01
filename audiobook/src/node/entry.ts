@@ -1,10 +1,10 @@
 import { type Entry, Uint8ArrayWriter } from "@zip.js/zip.js"
-import { type Uint8ArrayEntry } from "../entry.js"
+import { type Uint8ArrayEntry } from "../entry.ts"
 import { File } from "node-taglib-sharp"
 import { readFile } from "node:fs/promises"
 import { streamFile } from "@smoores/fs"
-import { BaseAudiobookEntry } from "../base.js"
-import { Uint8ArrayFileAbstraction } from "../taglib/Uint8ArrayFileAbstraction.js"
+import { BaseAudiobookEntry } from "../base.ts"
+import { Uint8ArrayFileAbstraction } from "../taglib/Uint8ArrayFileAbstraction.ts"
 
 export class AudiobookEntry extends BaseAudiobookEntry {
   filename: string

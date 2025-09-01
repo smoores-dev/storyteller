@@ -9,45 +9,47 @@
     ".": {
       "@storyteller": "./index.ts",
       "@storyteller-node": "./node.ts",
-      "import": "./index.js",
-      "require": "./node.cjs",
-      "types": "./index.d.ts",
-      "node": "./node.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./node": {
       "@storyteller": "./node.ts",
       "@storyteller-node": "./node.ts",
-      "import": "./node.js",
-      "require": "./node.cjs",
-      "types": "./node.d.ts"
+      "import": {
+        "types": "./dist/node.d.ts",
+        "default": "./dist/node.js"
+      },
+      "require": {
+        "types": "./dist/node.d.cts",
+        "default": "./dist/node.cjs"
+      }
     }
   },
   "files": [
-    "index.js",
-    "node.js",
-    "node.cjs",
-    "index.cjs",
-    "index.d.ts",
-    "node.d.ts"
+    "dist/"
   ],
   "scripts": {
-    "build:cjs": "yarn swc ./index.ts -o ./index.cjs --no-swcrc --config-file .swcrc-cjs && yarn swc ./node.ts -o ./node.cjs --no-swcrc --config-file .swcrc-cjs",
-    "build:esm": "yarn swc ./index.ts -o ./index.js && yarn swc ./node.ts -o ./node.js",
-    "build": "yarn tsc && yarn build:esm && yarn build:cjs",
+    "build": "tsup",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",
     "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
-    "test": "tsx --test",
-    "test:watch": "tsx --test --watch"
+    "test": "tsx -C @storyteller --test index.test.ts",
+    "test:watch": "tsx -C @storyteller --test --watch index.test.ts"
   },
   "devDependencies": {
-    "@swc/cli": "^0.5.2",
-    "@swc/core": "^1.10.0",
+    "@storyteller/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/mime-types": "^2",
     "@types/node": "^22.10.1",
     "markdown-toc": "^1.2.0",
     "remark-toc": "^9.0.0",
+    "tsup": "^8.5.0",
     "tsx": "^4.19.2",
     "typedoc": "^0.28.4",
     "typedoc-plugin-markdown": "^4.6.3",
