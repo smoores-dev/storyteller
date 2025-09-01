@@ -47,6 +47,8 @@ export function BookStatus({ bookUuid }: Props) {
             {book.readaloud?.status ? (
               book.readaloud.status === "QUEUED" ? (
                 "Queued for alignment"
+              ) : book.readaloud.status === "ALIGNED" ? (
+                "Aligned"
               ) : (
                 <Box>
                   {userFriendlyTaskType}
