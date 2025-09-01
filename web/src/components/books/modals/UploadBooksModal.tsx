@@ -15,6 +15,11 @@ import { parseBlob, selectCover } from "music-metadata"
 
 import { v4 as uuidv4 } from "uuid"
 
+const tusEndpoint =
+  typeof window === "undefined"
+    ? "/api/v2/books/upload"
+    : new URL("/api/v2/books/upload", window.location.origin).toString()
+
 interface Props {
   isOpen: boolean
   onClose: () => void
@@ -34,7 +39,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
       },
     })
       .use(Tus, {
-        endpoint: "/api/v2/books/upload",
+        endpoint: tusEndpoint,
         withCredentials: true,
       })
       .use(BookThumbnailGenerator, {
@@ -63,7 +68,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
         ],
       },
     })
-      .use(Tus, { endpoint: "/api/v2/books/upload", withCredentials: true })
+      .use(Tus, { endpoint: tusEndpoint, withCredentials: true })
       .use(BookThumbnailGenerator, {
         thumbnailFactories: {
           "video/*,audio/*,.m4b": async (file) => {
