@@ -10,6 +10,7 @@ import {
   getInternalEpubDirectory,
   getInternalReadaloudDirectory,
   getInternalAudioDirectory,
+  getSafeFilepathSegment,
 } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -177,13 +178,19 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
     if (updated.ebook?.filepath === getInternalEpubFilepath(book)) {
       await rename(
-        join(getInternalEpubDirectory(updated), `${book.title}.epub`),
+        join(
+          getInternalEpubDirectory(updated),
+          getSafeFilepathSegment(book.title, ".epub"),
+        ),
         getInternalEpubFilepath(updated),
       )
     }
     if (updated.readaloud?.filepath === getInternalReadaloudFilepath(book)) {
       await rename(
-        join(getInternalReadaloudDirectory(updated), `${book.title}.epub`),
+        join(
+          getInternalReadaloudDirectory(updated),
+          getSafeFilepathSegment(book.title, ".epub"),
+        ),
         getInternalReadaloudFilepath(updated),
       )
     }
