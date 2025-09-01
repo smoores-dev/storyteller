@@ -67,6 +67,14 @@ $ docker exec -it <container-name-or-id> scripts/reset-password.sh --email <emai
 If you don’t have any idea what OAuth or OIDC are, you can probably skip this
 section!
 
+### Setting the `AUTH_URL` environment variable
+
+In order to use OAuth, you _must_ set the `AUTH_URL` environment variable in
+your container. It should be set to your Storyteller server’s origin (scheme +
+hostname), with the path `/api/v2/auth`. So if you access your Storyteller
+instance at `https://storyteller.example.com`, then you should set `AUTH_URL` to
+`https://storyteller.example.com/api/v2/auth`.
+
 ### Configuring a provider
 
 If you’d like to set up an OAuth provider for Storyteller, you can do so in the
