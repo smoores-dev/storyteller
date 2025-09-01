@@ -1,6 +1,6 @@
 {
   "name": "@smoores/epub",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "module": "index.js",
   "types": "index.d.ts",
