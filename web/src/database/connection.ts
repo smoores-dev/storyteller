@@ -31,6 +31,7 @@ const sqlite: Database =
 
 if (process.env["NEXT_PHASE"] !== PHASE_PRODUCTION_BUILD) {
   sqlite.pragma("journal_mode = WAL")
+  sqlite.pragma("busy_timeout = 5000")
 
   try {
     sqlite.loadExtension(UUID_EXT_PATH)
@@ -40,14 +41,15 @@ if (process.env["NEXT_PHASE"] !== PHASE_PRODUCTION_BUILD) {
 }
 
 export const db = new Kysely<DB>({
-  // log(event) {
-  //   console.log(event.query.sql)
-  //   console.log(event.query.parameters)
-  //   console.log(`Completed in ${event.queryDurationMillis}ms`)
-  //   if (event.level === "error") {
-  //     console.log(event.error)
-  //   }
-  // },
+  log(event) {
+    // console.log(event.query.sql)
+    // console.log(event.query.parameters)
+    // console.log(`Completed in ${event.queryDurationMillis}ms`)
+    if (event.level === "error") {
+      logger.error(event.query.sql)
+      logger.error(event.error)
+    }
+  },
   dialect: new SqliteDialect({ database: sqlite }),
   plugins: [
     new CamelCasePlugin(),
