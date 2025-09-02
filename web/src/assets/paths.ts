@@ -40,13 +40,13 @@ export function getDefaultSuffix(uuid: UUID) {
 function sanitizeFilename(title: string): string {
   return title
     .replace(/[/\\:*?"<>|]/g, "-") // Windows illegal chars
-    .replace(/\s+/g, " ") // normalize whitespace
-    .trim()
-    .replace(/[. ]+$/, "") // no trailing dot or space
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .trim() // Trim trailing whitespace
+    .replace(/[.]+$/, "") // No trailing dots
 }
 
 function truncate(input: string, byteLimit: number, suffix = ""): string {
-  const normalized = input.normalize("NFC") // ensure consistent encoding
+  const normalized = input.normalize("NFC")
   const encoder = new TextEncoder()
 
   let result = ""
