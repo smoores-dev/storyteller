@@ -35,7 +35,10 @@ export async function scan(
   signal: AbortSignal,
 ) {
   const allBooks = await getBooks()
-  if (signal.aborted) return
+  if (signal.aborted) {
+    logger.info("Scanning aborted")
+    return
+  }
 
   const books = collectionUuid
     ? allBooks.filter((book) =>
@@ -48,7 +51,10 @@ export async function scan(
     withFileTypes: true,
   })
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (signal.aborted) return
+  if (signal.aborted) {
+    logger.info("Scanning aborted")
+    return
+  }
 
   const ebookPaths: string[] = []
   const audiobookPathsSet = new Set<string>()
@@ -87,7 +93,10 @@ export async function scan(
     // TODO: log ebook files that don't get handled?
     for (const path of [ebookPath, ...additionalEbookPaths]) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (signal.aborted) return
+      if (signal.aborted) {
+        logger.info("Scanning aborted")
+        return
+      }
 
       if (plainEbookPath && readaloudPath) break
       try {
@@ -139,7 +148,10 @@ export async function scan(
 
   for (const bookPath of bookPaths) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (signal.aborted) return
+    if (signal.aborted) {
+      logger.info("Scanning aborted")
+      return
+    }
 
     const book = books.find(
       (book) =>

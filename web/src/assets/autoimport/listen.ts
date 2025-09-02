@@ -48,6 +48,11 @@ function startWatcher(
     importPath,
     { recursive: true, signal: controller.signal },
     debounce(async () => {
+      if (controller.signal.aborted) {
+        logger.info("Detected a change, but scanning is aborted. Ignoring.")
+        return
+      }
+
       logger.info(
         `Detected a change in ${importPath}, scanning for new book files...`,
       )
