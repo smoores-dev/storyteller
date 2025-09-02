@@ -41,7 +41,7 @@ export function SeriesList() {
 
   return (
     <Stack>
-      <Group>
+      <Group className="mt-2">
         <Search value={options.search} onValueChange={options.onSearchChange} />
         <Sort value={options.sort} onValueChange={options.onSortChange} />
       </Group>
