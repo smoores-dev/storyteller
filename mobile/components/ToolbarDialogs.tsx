@@ -1,11 +1,13 @@
-import { SpeedMenu } from "./SpeedMenu"
-import { useAppSelector, useAppDispatch } from "../store/appState"
+import { Platform } from "react-native"
+
+import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { getOpenDialog } from "../store/selectors/toolbarSelectors"
 import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
+
 import { BookNavigation } from "./BookNavigation"
 import { BookSettingsMenu } from "./BookSettingsMenu"
-import { Platform } from "react-native"
+import { SpeedMenu } from "./SpeedMenu"
 
 interface Props {
   mode: "text" | "audio"

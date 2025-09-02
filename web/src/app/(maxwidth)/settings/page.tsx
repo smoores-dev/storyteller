@@ -1,8 +1,9 @@
-import { Settings } from "@/apiModels"
-import { SettingsForm } from "@/components/settings/SettingsForm"
 import { Title } from "@mantine/core"
+import { type Metadata } from "next"
+
+import { type Settings } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import type { Metadata } from "next"
+import { SettingsForm } from "@/components/settings/SettingsForm"
 
 export const dynamic = "force-dynamic"
 

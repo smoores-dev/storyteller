@@ -1,4 +1,4 @@
-import { defaultOptions } from "@storyteller/tsup"
+import { defaultOptions } from "@storyteller-platform/tsup"
 import { defineConfig } from "tsup"
 
 export default defineConfig({

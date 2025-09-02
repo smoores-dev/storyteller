@@ -1,7 +1,8 @@
-import { User } from "@/apiModels"
-import { UUID } from "@/uuid"
 import { MultiSelect } from "@mantine/core"
-import { UseFormReturnType } from "@mantine/form"
+import { type UseFormReturnType } from "@mantine/form"
+
+import { type User } from "@/apiModels"
+import { type UUID } from "@/uuid"
 
 type InputProps = ReturnType<
   UseFormReturnType<{ users: UUID[] }>["getInputProps"]

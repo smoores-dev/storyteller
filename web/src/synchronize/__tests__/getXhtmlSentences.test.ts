@@ -1,7 +1,9 @@
-import { ParsedXml, XmlNode } from "@smoores/epub"
-import { describe, it } from "node:test"
-import { getXHtmlSentences } from "../getXhtmlSentences"
 import { strict as assert } from "node:assert/strict"
+import { describe, it } from "node:test"
+
+import { type ParsedXml, type XmlNode } from "@storyteller-platform/epub"
+
+import { getXHtmlSentences } from "../getXhtmlSentences"
 
 void describe("getXhtmlSentences", () => {
   void it("gets sentences from a text node", () => {

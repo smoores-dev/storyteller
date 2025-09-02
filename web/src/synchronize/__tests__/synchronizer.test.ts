@@ -1,11 +1,14 @@
-import { describe, it } from "node:test"
-import { Epub, XmlElement } from "@smoores/epub/node"
-import { join } from "node:path"
-import { Synchronizer } from "../synchronizer"
-import transcription from "../../__fixtures__/transcriptions/mobydick_001_002_melville.json"
-import { StorytellerTranscription } from "../getSentenceRanges"
 import assert from "node:assert"
-import { TimelineEntry } from "echogarden/dist/utilities/Timeline"
+import { join } from "node:path"
+import { describe, it } from "node:test"
+
+import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
+
+import { Epub, type XmlElement } from "@storyteller-platform/epub/node"
+
+import transcription from "../../__fixtures__/transcriptions/mobydick_001_002_melville.json"
+import { type StorytellerTranscription } from "../getSentenceRanges"
+import { Synchronizer } from "../synchronizer"
 
 const stTranscription: StorytellerTranscription = {
   transcript: transcription.transcript,

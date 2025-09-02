@@ -1,3 +1,19 @@
+import {
+  Button,
+  Group,
+  MenuItem,
+  Modal,
+  Stack,
+  Text,
+  TextInput,
+  Textarea,
+} from "@mantine/core"
+import { DateInput } from "@mantine/dates"
+import { useForm } from "@mantine/form"
+import { useDisclosure } from "@mantine/hooks"
+import { IconArrowMerge } from "@tabler/icons-react"
+import { useEffect, useMemo } from "react"
+
 import { BookThumbnailImage } from "@/components/books/BookThumbnailImage"
 import { AuthorsInput } from "@/components/books/edit/AuthorsInput"
 import { CollectionsInput } from "@/components/books/edit/CollectionsInput"
@@ -7,36 +23,21 @@ import { SeriesInput } from "@/components/books/edit/SeriesInput"
 import { StatusInput } from "@/components/books/edit/StatusInput"
 import { TagsInput } from "@/components/books/edit/TagsInput"
 import {
-  BookWithRelations,
-  CreatorRelation,
-  SeriesRelation,
+  type BookWithRelations,
+  type CreatorRelation,
+  type SeriesRelation,
 } from "@/database/books"
 import {
-  useListCreatorsQuery,
+  useGetCurrentUserQuery,
   useListBooksQuery,
   useListCollectionsQuery,
+  useListCreatorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
   useMergeBooksMutation,
-  useGetCurrentUserQuery,
 } from "@/store/api"
-import { UUID } from "@/uuid"
-import {
-  Button,
-  Group,
-  MenuItem,
-  Modal,
-  Stack,
-  Text,
-  Textarea,
-  TextInput,
-} from "@mantine/core"
-import { DateInput } from "@mantine/dates"
-import { useForm } from "@mantine/form"
-import { useDisclosure } from "@mantine/hooks"
-import { IconArrowMerge } from "@tabler/icons-react"
-import { useEffect, useMemo } from "react"
+import { type UUID } from "@/uuid"
 
 const EMPTY_BOOKS: BookWithRelations[] = []
 

@@ -14,13 +14,14 @@
  *
  * @module @auth/kysely-adapter
  */
-import { Insertable, Kysely } from "kysely"
-
 import { type Adapter } from "@auth/core/adapters"
-import { DB } from "./schema"
-import { getUser, getUserByAccount, getUserByUsernameOrEmail } from "./users"
-import { UUID } from "@/uuid"
+import { type Insertable, type Kysely } from "kysely"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
+
+import { type UUID } from "@/uuid"
+
+import { type DB } from "./schema"
+import { getUser, getUserByAccount, getUserByUsernameOrEmail } from "./users"
 
 export function KyselyAdapter(db: Kysely<DB>): Adapter {
   return {

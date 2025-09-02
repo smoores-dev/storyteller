@@ -1,6 +1,3 @@
-import { usePermissions } from "@/hooks/usePermissions"
-import { useDeleteBooksMutation, useListBooksQuery } from "@/store/api"
-import { UUID } from "@/uuid"
 import {
   Button,
   Group,
@@ -14,8 +11,13 @@ import {
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { IconBooksOff } from "@tabler/icons-react"
+
+import { type BookWithRelations } from "@/database/books"
+import { usePermissions } from "@/hooks/usePermissions"
+import { useDeleteBooksMutation, useListBooksQuery } from "@/store/api"
+import { type UUID } from "@/uuid"
+
 import { TitleSummary } from "./TitleSummary"
-import { BookWithRelations } from "@/database/books"
 
 const EMPTY_BOOKS: BookWithRelations[] = []
 

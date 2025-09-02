@@ -1,6 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit"
-import { RootState } from "../appState"
-import { Highlight } from "../slices/bookshelfSlice"
+
+import { type RootState } from "../appState"
+import { type Highlight } from "../slices/bookshelfSlice"
 
 export function getBookshelfBook(state: RootState, bookId: number) {
   return state.bookshelf.entities[bookId] ?? null

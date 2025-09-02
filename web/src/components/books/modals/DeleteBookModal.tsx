@@ -1,16 +1,17 @@
-import { BookWithRelations } from "@/database/books"
-import { useDeleteBookMutation } from "@/store/api"
 import {
-  Modal,
-  Stack,
-  RadioGroup,
-  Radio,
-  Group,
   Button,
+  Group,
+  Modal,
+  Radio,
+  RadioGroup,
+  Stack,
   Text,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { useRouter } from "next/navigation"
+
+import { type BookWithRelations } from "@/database/books"
+import { useDeleteBookMutation } from "@/store/api"
 
 interface Props {
   isOpen: boolean

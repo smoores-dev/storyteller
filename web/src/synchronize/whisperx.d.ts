@@ -1,4 +1,4 @@
-import { PyObject, PyList, PyDict } from "pymport"
+import { type PyDict, type PyList, type PyObject } from "pymport"
 
 type SingleWordSegment = PyDict<{
   word: string

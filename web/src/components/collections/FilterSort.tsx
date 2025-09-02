@@ -3,24 +3,25 @@ import {
   Group,
   MultiSelect,
   Stack,
-  TextInputProps,
+  type TextInputProps,
 } from "@mantine/core"
-import { Search } from "../books/Search"
-import { Sort } from "../books/Sort"
+import { useMemo } from "react"
+
+import { Search } from "@/components/books/Search"
+import { Sort } from "@/components/books/Sort"
 import {
-  BookType,
+  type BookType,
+  type FilterSortOptions,
   createComparisonTitle,
-  FilterSortOptions,
 } from "@/hooks/useFilterSortedBooks"
-import { UUID } from "@/uuid"
 import {
+  useListAuthorsQuery,
   useListCollectionsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
-  useListAuthorsQuery,
 } from "@/store/api"
-import { useMemo } from "react"
+import { type UUID } from "@/uuid"
 
 interface Props {
   options: FilterSortOptions

@@ -1,6 +1,6 @@
 import { withHasPermission } from "@/auth/auth"
 import { updateStatusForBooks } from "@/database/statuses"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 
 export const PUT = withHasPermission("bookUpdate")(async (request) => {
   const body = (await request.json()) as {

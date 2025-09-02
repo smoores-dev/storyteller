@@ -1,6 +1,7 @@
-import { Tag } from "@/database/tags"
 import { TagsInput as BaseTagsInput } from "@mantine/core"
-import { UseFormReturnType } from "@mantine/form"
+import { type UseFormReturnType } from "@mantine/form"
+
+import { type Tag } from "@/database/tags"
 
 type GetInputProps = UseFormReturnType<{ tags: string[] }>["getInputProps"]
 

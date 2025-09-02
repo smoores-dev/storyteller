@@ -1,4 +1,5 @@
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
+
 import { db } from "./connection"
 
 export type ReadiumLocation = {

@@ -1,8 +1,8 @@
 import {
-  type IStream,
-  SeekOrigin,
   ByteVector,
   type IFileAbstraction,
+  type IStream,
+  SeekOrigin,
 } from "node-taglib-sharp"
 
 export class Uint8ArrayStream implements IStream {
@@ -75,6 +75,7 @@ export class Uint8ArrayStream implements IStream {
   write(buffer: Uint8Array, bufferOffset: number, length: number): number {
     if (buffer instanceof ByteVector) {
       // As far as I know, we have no choice here, despite deprecation
+      /* eslint-disable-next-line @typescript-eslint/no-deprecated */
       buffer = buffer.toByteArray()
     }
     if (!this.canWrite) {

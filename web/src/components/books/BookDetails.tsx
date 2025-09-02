@@ -1,13 +1,6 @@
 "use client"
 
 import {
-  getDownloadUrl,
-  useCancelProcessingMutation,
-  useListBooksQuery,
-  useListStatusesQuery,
-  useUpdateBookMutation,
-} from "@/store/api"
-import {
   ActionIcon,
   Anchor,
   Box,
@@ -20,8 +13,7 @@ import {
   Title,
   Tooltip,
 } from "@mantine/core"
-import { BookThumbnailImage } from "./BookThumbnailImage"
-import Link from "next/link"
+import { useDisclosure } from "@mantine/hooks"
 import {
   IconBook2,
   IconBooks,
@@ -31,12 +23,22 @@ import {
   IconProgressX,
   IconTagFilled,
 } from "@tabler/icons-react"
-import { IconReadaloud } from "../icons/IconReadaloud"
-import { StatusInput } from "./edit/StatusInput"
+import Link from "next/link"
+
+import { IconReadaloud } from "@/components/icons/IconReadaloud"
+import {
+  getDownloadUrl,
+  useCancelProcessingMutation,
+  useListBooksQuery,
+  useListStatusesQuery,
+  useUpdateBookMutation,
+} from "@/store/api"
+import { type UUID } from "@/uuid"
+
 import { BookStatus } from "./BookStatus"
-import { UUID } from "@/uuid"
+import { BookThumbnailImage } from "./BookThumbnailImage"
+import { StatusInput } from "./edit/StatusInput"
 import { DeleteBookModal } from "./modals/DeleteBookModal"
-import { useDisclosure } from "@mantine/hooks"
 
 interface Props {
   bookUuid: UUID

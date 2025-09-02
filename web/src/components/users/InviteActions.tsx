@@ -1,11 +1,12 @@
-import { Invite } from "@/apiModels"
+import { ActionIcon, Stack, Tooltip } from "@mantine/core"
+import { IconReload, IconTrash } from "@tabler/icons-react"
+
+import { type Invite } from "@/apiModels"
 import {
   useDeleteInviteMutation,
   useGetCurrentUserQuery,
   useResendInviteMutation,
 } from "@/store/api"
-import { ActionIcon, Stack, Tooltip } from "@mantine/core"
-import { IconReload, IconTrash } from "@tabler/icons-react"
 
 type Props = {
   invite: Invite

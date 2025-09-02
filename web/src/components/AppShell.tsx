@@ -1,56 +1,57 @@
 "use client"
 
-import NextImage from "next/image"
-
-import NextLink from "next/link"
 import {
-  MantineProvider,
+  Anchor,
   AppShell as MantineAppShell,
   AppShellHeader,
-  AppShellNavbar,
   AppShellMain,
-  createTheme,
-  MantineColorsTuple,
-  Burger,
-  NavLink,
-  Title,
-  Anchor,
-  Group,
-  Fieldset,
-  TextInput,
-  NativeSelect,
-  Text,
-  Image,
-  PasswordInput,
+  AppShellNavbar,
   Box,
+  Burger,
+  Fieldset,
+  Group,
+  Image,
+  type MantineColorsTuple,
+  MantineProvider,
+  NativeSelect,
+  NavLink,
+  PasswordInput,
+  Text,
+  TextInput,
+  Title,
+  createTheme,
 } from "@mantine/core"
-import {
-  IconUser,
-  IconSettings,
-  IconLogout,
-  IconUsers,
-  IconHome,
-  IconBooks,
-  IconBook2,
-  IconPlus,
-} from "@tabler/icons-react"
-import { ReactNode, useEffect } from "react"
 import { useDisclosure } from "@mantine/hooks"
-import { usePathname } from "next/navigation"
-import { CurrentBookProgress } from "./layout/CurrentBookProgress"
+import {
+  IconBook2,
+  IconBooks,
+  IconHome,
+  IconLogout,
+  IconPlus,
+  IconSettings,
+  IconUser,
+  IconUsers,
+} from "@tabler/icons-react"
 import dayjs from "dayjs"
 import customParseFormat from "dayjs/plugin/customParseFormat"
+import NextImage from "next/image"
+import NextLink from "next/link"
+import { usePathname } from "next/navigation"
+import { type ReactNode, useEffect } from "react"
+
+import { type User } from "@/apiModels"
+import { type CollectionWithRelations } from "@/database/collections"
+import { IntersectionObserverProvider } from "@/hooks/useIntersectionObserver"
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   api,
   useGetCurrentUserQuery,
   useListCollectionsQuery,
 } from "@/store/api"
-import { usePermissions } from "@/hooks/usePermissions"
-import { User } from "@/apiModels"
-import { CollectionWithRelations } from "@/database/collections"
-import { CreateCollectionModal } from "./collections/CreateCollectionModal"
-import { IntersectionObserverProvider } from "@/hooks/useIntersectionObserver"
 import { useAppDispatch } from "@/store/appState"
+
+import { CreateCollectionModal } from "./collections/CreateCollectionModal"
+import { CurrentBookProgress } from "./layout/CurrentBookProgress"
 
 dayjs.extend(customParseFormat)
 

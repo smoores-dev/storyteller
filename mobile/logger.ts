@@ -1,9 +1,9 @@
+import * as FileSystem from "expo-file-system"
 import {
   consoleTransport,
   fileAsyncTransport,
   logger as logs,
 } from "react-native-logs"
-import * as FileSystem from "expo-file-system"
 
 type Logger = ReturnType<typeof logs.createLogger>
 type StrongLogger = Logger & {

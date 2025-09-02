@@ -1,11 +1,13 @@
-import { SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import { Box } from "@mantine/core"
 import { useMemo } from "react"
+
+import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
+import { useListBooksQuery } from "@/store/api"
+
 import {
   AudiobookCoverImage,
   EbookCoverImage,
 } from "../books/BookThumbnailImage"
-import { useListBooksQuery } from "@/store/api"
 
 interface Props {
   height: string

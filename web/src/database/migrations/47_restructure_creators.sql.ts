@@ -1,10 +1,14 @@
-import { db } from "../connection"
 import { readdir } from "node:fs/promises"
-import { jsonObjectFrom } from "kysely/helpers/sqlite"
-import { logger } from "@/logging"
-import { isAudioFile } from "@/audio"
 import { join } from "node:path"
-import { Audiobook } from "@smoores/audiobook/node"
+
+import { jsonObjectFrom } from "kysely/helpers/sqlite"
+
+import { Audiobook } from "@storyteller-platform/audiobook/node"
+
+import { isAudioFile } from "@/audio"
+import { logger } from "@/logging"
+
+import { db } from "../connection"
 
 async function getBooks() {
   return await db

@@ -1,5 +1,5 @@
 import { withHasPermission } from "@/auth/auth"
-import { getBookUuid, getBook } from "@/database/books"
+import { getBook, getBookUuid } from "@/database/books"
 
 export const dynamic = "force-dynamic"
 

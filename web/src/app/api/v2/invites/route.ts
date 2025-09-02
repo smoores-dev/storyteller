@@ -1,10 +1,12 @@
-import { InviteRequest } from "@/apiModels"
+import { randomBytes } from "node:crypto"
+
+import { NextResponse } from "next/server"
+
+import { type InviteRequest } from "@/apiModels"
 import { withHasPermission } from "@/auth/auth"
 import { createUser, getInvites } from "@/database/users"
 import { sendInvite } from "@/invites"
 import { logger } from "@/logging"
-import { NextResponse } from "next/server"
-import { randomBytes } from "node:crypto"
 
 export const dynamic = "force-dynamic"
 

@@ -1,6 +1,6 @@
-import { User } from "@/apiModels"
+import { type User } from "@/apiModels"
 import { withUser } from "@/auth/auth"
-import { getUser, updateUser, UserPermissionSet } from "@/database/users"
+import { type UserPermissionSet, getUser, updateUser } from "@/database/users"
 
 export const dynamic = "force-dynamic"
 

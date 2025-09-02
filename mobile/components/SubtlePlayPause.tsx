@@ -1,9 +1,10 @@
+import { useWindowDimensions } from "react-native"
 import { Pressable } from "react-native-gesture-handler"
+import TrackPlayer from "react-native-track-player"
+
 import { useAudioBook } from "../hooks/useAudioBook"
 import { useAppDispatch } from "../store/appState"
-import TrackPlayer from "react-native-track-player"
 import { playerPlayed } from "../store/slices/bookshelfSlice"
-import { useWindowDimensions } from "react-native"
 
 interface Props {
   automaticRewind: boolean

@@ -1,17 +1,19 @@
 import { configureStore } from "@reduxjs/toolkit"
 import createSagaMiddleware from "redux-saga"
-import { librarySlice } from "./slices/librarySlice"
-import { bookshelfSlice } from "./slices/bookshelfSlice"
-import { authSlice } from "./slices/authSlice"
-import { apiSlice } from "./slices/apiSlice"
-import { rootSaga } from "./sagas/rootSaga"
-import { startupSlice } from "./slices/startupSlice"
+
 import { logger } from "../logger"
-import { loggingMiddleware } from "./middleware/logging"
+
 import { crashReportingMiddleware } from "./middleware/crashReporting"
+import { loggingMiddleware } from "./middleware/logging"
+import { rootSaga } from "./sagas/rootSaga"
+import { apiSlice } from "./slices/apiSlice"
+import { authSlice } from "./slices/authSlice"
+import { bookshelfSlice } from "./slices/bookshelfSlice"
+import { librarySlice } from "./slices/librarySlice"
 import { loggingSlice } from "./slices/loggingSlice"
-import { toolbarSlice } from "./slices/toolbarSlice"
 import { preferencesSlice } from "./slices/preferencesSlice"
+import { startupSlice } from "./slices/startupSlice"
+import { toolbarSlice } from "./slices/toolbarSlice"
 
 const sagaMiddleware = createSagaMiddleware({
   onError(error, errorInfo) {

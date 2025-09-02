@@ -1,5 +1,5 @@
-import { Tabs, FileButton, Button, Image, Text } from "@mantine/core"
-import { UseFormReturnType } from "@mantine/form"
+import { Button, FileButton, Image, Tabs, Text } from "@mantine/core"
+import { type UseFormReturnType } from "@mantine/form"
 import { useMemo } from "react"
 
 function CoverInput({

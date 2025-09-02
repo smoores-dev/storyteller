@@ -1,16 +1,17 @@
-import { StatusInput } from "@/components/books/edit/StatusInput"
-import { BookWithRelations } from "@/database/books"
-import {
-  useListBooksQuery,
-  useListStatusesQuery,
-  useUpdateReadingStatusMutation,
-} from "@/store/api"
-import { UUID } from "@/uuid"
 import { Button, MenuItem, Modal } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { IconBook2 } from "@tabler/icons-react"
 import { useLayoutEffect, useMemo } from "react"
+
+import { StatusInput } from "@/components/books/edit/StatusInput"
+import { type BookWithRelations } from "@/database/books"
+import {
+  useListBooksQuery,
+  useListStatusesQuery,
+  useUpdateReadingStatusMutation,
+} from "@/store/api"
+import { type UUID } from "@/uuid"
 
 const EMPTY_BOOKS: BookWithRelations[] = []
 

@@ -1,39 +1,41 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { basename, dirname } from "node:path"
+import { type MessagePort } from "node:worker_threads"
+
+import { AsyncSemaphore } from "@esfx/async-semaphore"
+import { type RecognitionResult } from "echogarden"
+import { extension } from "mime-types"
+
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
-import { getProcessedAudioFiles, deleteProcessed } from "@/assets/fs"
+import { deleteProcessed, getProcessedAudioFiles } from "@/assets/fs"
 import { writeMetadataToEpub } from "@/assets/metadata"
 import {
-  getTranscriptionsFilepath,
-  getProcessedAudioFilepath,
   getAlignmentReportFilepath,
-  getTranscriptionFilename,
+  getProcessedAudioFilepath,
   getReadaloudFilepath,
+  getTranscriptionFilename,
+  getTranscriptionsFilepath,
 } from "@/assets/paths"
 import {
-  Book,
-  BookRelationsUpdate,
-  BookUpdate,
-  BookWithRelations,
+  type Book,
+  type BookRelationsUpdate,
+  type BookUpdate,
+  type BookWithRelations,
   getBookOrThrow,
 } from "@/database/books"
 import {
   formatTranscriptionEngineDetails,
   getSettings,
 } from "@/database/settings"
-import { Settings } from "@/database/settingsTypes"
+import { type Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { getTranscriptions, processAudiobook } from "@/process/processAudio"
 import { getFullText, readEpub } from "@/process/processEpub"
 import { getInitialPrompt } from "@/process/prompt"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { installWhisper, transcribeTrack } from "@/transcribe"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
-import { AsyncSemaphore } from "@esfx/async-semaphore"
-import type { RecognitionResult } from "echogarden"
-import { extension } from "mime-types"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { basename, dirname } from "node:path"
-import { type MessagePort } from "node:worker_threads"
 
 export async function transcribeBook(
   book: Book,

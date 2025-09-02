@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
+
 import { nextAuth } from "./auth/auth"
 import { getUserCount } from "./database/users"
 

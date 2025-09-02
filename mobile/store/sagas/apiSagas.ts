@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { call, put, takeEvery } from "redux-saga/effects"
-import { apiBaseUrlChanged, apiSlice } from "../slices/apiSlice"
 import { router } from "expo-router"
+import { call, put, takeEvery } from "redux-saga/effects"
+
 import { ApiClient } from "../../apiClient"
 import { joinUrlPaths } from "../../urls"
+import { apiBaseUrlChanged, apiSlice } from "../slices/apiSlice"
 
 /**
  * Determines whether to append /api to the base URL entered by the user,

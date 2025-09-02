@@ -1,7 +1,8 @@
+import { NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { createCollection, getCollections } from "@/database/collections"
-import { UUID } from "@/uuid"
-import { NextResponse } from "next/server"
+import { type UUID } from "@/uuid"
 
 /**
  * @summary List all collections

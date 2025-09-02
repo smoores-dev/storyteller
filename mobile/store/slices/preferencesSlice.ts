@@ -1,11 +1,13 @@
-import { PayloadAction, createSlice } from "@reduxjs/toolkit"
-import { HighlightTint } from "../../colors"
+import { type PayloadAction, createSlice } from "@reduxjs/toolkit"
 import deepmerge from "deepmerge"
-import { WritableDraft } from "immer/dist/internal"
+import { type WritableDraft } from "immer/dist/internal"
+
+import { type HighlightTint } from "../../colors"
 import {
   colors,
   computeForegroundSecondary,
 } from "../../components/ui/tokens/colors"
+
 import { bookshelfSlice } from "./bookshelfSlice"
 
 type ColorTheme = {

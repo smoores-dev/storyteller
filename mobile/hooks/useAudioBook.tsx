@@ -1,6 +1,6 @@
 import {
+  type ReactNode,
   createContext,
-  ReactNode,
   useContext,
   useEffect,
   useMemo,
@@ -9,18 +9,19 @@ import {
 } from "react"
 import TrackPlayer, {
   Event,
-  usePlaybackState,
   State,
+  usePlaybackState,
   useProgress,
   useTrackPlayerEvents,
 } from "react-native-track-player"
+
 import { useAppSelector } from "../store/appState"
 import {
   getCurrentlyPlayingBook,
   getIsAudioLoading,
 } from "../store/selectors/bookshelfSelectors"
-import { BookshelfTrack } from "../store/slices/bookshelfSlice"
 import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
+import { type BookshelfTrack } from "../store/slices/bookshelfSlice"
 
 const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 

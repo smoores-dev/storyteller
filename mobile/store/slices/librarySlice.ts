@@ -1,7 +1,9 @@
-import { PayloadAction, createSlice } from "@reduxjs/toolkit"
-import { BookAuthor, BookDetail } from "../../apiModels"
-import { bookshelfSlice } from "./bookshelfSlice"
+import { type PayloadAction, createSlice } from "@reduxjs/toolkit"
+
+import { type BookAuthor, type BookDetail } from "../../apiModels"
+
 import { apiSlice } from "./apiSlice"
+import { bookshelfSlice } from "./bookshelfSlice"
 
 export type LibraryBook =
   | {

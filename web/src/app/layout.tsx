@@ -1,15 +1,16 @@
+import { ColorSchemeScript } from "@mantine/core"
+import { type Metadata } from "next"
 import { Inter, Young_Serif } from "next/font/google"
 
+import { type User } from "@/apiModels"
 import { AppShell } from "@/components/AppShell"
-import { ColorSchemeScript } from "@mantine/core"
-
-import "./globals.css"
-import { getCurrentVersion } from "@/versions"
 import StoreProvider from "@/components/StoreProvider"
+import { type CollectionWithRelations } from "@/database/collections"
+import { getCurrentVersion } from "@/versions"
+
 import { fetchApiRoute } from "./fetchApiRoute"
-import { User } from "@/apiModels"
-import { Metadata } from "next"
-import { CollectionWithRelations } from "@/database/collections"
+import "./globals.css"
+
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",

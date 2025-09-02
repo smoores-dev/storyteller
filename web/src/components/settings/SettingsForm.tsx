@@ -1,8 +1,5 @@
 "use client"
 
-import { Settings } from "@/apiModels"
-import { useRef, useState } from "react"
-import { useForm } from "@mantine/form"
 import {
   ActionIcon,
   Anchor,
@@ -21,10 +18,15 @@ import {
   Text,
   TextInput,
 } from "@mantine/core"
+import { useForm } from "@mantine/form"
 import { IconPlus, IconTrash } from "@tabler/icons-react"
-import { AuthProviderInput } from "./AuthProviderInput"
+import { useRef, useState } from "react"
+
+import { type Settings } from "@/apiModels"
+import { ImportPathInput } from "@/components/ImportPathInput"
 import { useListCollectionsQuery, useUpdateSettingsMutation } from "@/store/api"
-import { ImportPathInput } from "../ImportPathInput"
+
+import { AuthProviderInput } from "./AuthProviderInput"
 
 interface Props {
   settings: Settings

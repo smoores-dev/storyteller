@@ -1,11 +1,12 @@
-import { UUID } from "@/uuid"
-import { Checkbox, Stack, Title } from "@mantine/core"
 import { Carousel } from "@mantine/carousel"
-import { BookThumbnail } from "./BookThumbnail"
-
 import "@mantine/carousel/styles.css"
+import { Checkbox, Stack, Title } from "@mantine/core"
 import Link from "next/link"
-import { BookWithRelations } from "@/database/books"
+
+import { type BookWithRelations } from "@/database/books"
+import { type UUID } from "@/uuid"
+
+import { BookThumbnail } from "./BookThumbnail"
 
 interface Props {
   label: string

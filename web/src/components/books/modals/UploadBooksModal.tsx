@@ -1,19 +1,19 @@
-import { Collection } from "@/database/collections"
 import { Button, Modal, Text } from "@mantine/core"
-import { useMemo, useState } from "react"
-import Uppy, { Meta, UppyFile } from "@uppy/core"
-import Tus from "@uppy/tus"
+import Uppy, { type Meta, type UppyFile } from "@uppy/core"
+import "@uppy/core/dist/style.min.css"
+import "@uppy/dashboard/dist/style.min.css"
 import Dashboard from "@uppy/react/lib/Dashboard"
 import useUppyEvent from "@uppy/react/lib/useUppyEvent"
 import useUppyState from "@uppy/react/lib/useUppyState"
-
-import "@uppy/core/dist/style.min.css"
-import "@uppy/dashboard/dist/style.min.css"
-import { Epub } from "@smoores/epub"
-import BookThumbnailGenerator from "@/uppyPlugins/BookThumbnailGenerator/BookThumbnailGenerator"
+import Tus from "@uppy/tus"
 import { parseBlob, selectCover } from "music-metadata"
-
+import { useMemo, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
+
+import { Epub } from "@storyteller-platform/epub"
+
+import { type Collection } from "@/database/collections"
+import BookThumbnailGenerator from "@/uppyPlugins/BookThumbnailGenerator/BookThumbnailGenerator"
 
 const tusEndpoint =
   typeof window === "undefined"

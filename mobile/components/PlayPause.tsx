@@ -1,11 +1,12 @@
-import { ActivityIndicator, Pressable, ViewProps } from "react-native"
+import { ActivityIndicator, Pressable, type ViewProps } from "react-native"
+import TrackPlayer from "react-native-track-player"
+
+import { useAudioBook } from "../hooks/useAudioBook"
+import { useColorTheme } from "../hooks/useColorTheme"
 import { PauseIcon } from "../icons/PauseIcon"
 import { PlayIcon } from "../icons/PlayIcon"
-import TrackPlayer from "react-native-track-player"
-import { useColorTheme } from "../hooks/useColorTheme"
 import { useAppDispatch } from "../store/appState"
 import { playerPlayed } from "../store/slices/bookshelfSlice"
-import { useAudioBook } from "../hooks/useAudioBook"
 
 type Props = {
   style?: ViewProps["style"]

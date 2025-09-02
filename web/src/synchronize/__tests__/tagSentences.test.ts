@@ -1,7 +1,9 @@
-import { describe, it } from "node:test"
-import { Epub, ParsedXml } from "@smoores/epub"
-import { appendTextNode, tagSentences } from "../tagSentences"
 import assert from "node:assert"
+import { describe, it } from "node:test"
+
+import { Epub, type ParsedXml } from "@storyteller-platform/epub"
+
+import { appendTextNode, tagSentences } from "../tagSentences"
 
 void describe("appendTextNode", () => {
   void it("can append text nodes to empty parents", () => {
@@ -299,13 +301,13 @@ void describe("tagSentences", () => {
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"
       epub:prefix="z3998: http://www.daisy.org/z3998/2012/vocab/structure/#" lang="en" xml:lang="en">
-    
+
   <head>
     <link href="../styles/9781534431010.css" rel="stylesheet" type="text/css" />
     <link href="../styles/SS_global.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="../../Styles/storyteller-readaloud.css" type="text/css" />
   </head>
-    
+
   <body>
     <blockquote class="blockquotelet">
       <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak" /></p>
@@ -319,7 +321,7 @@ void describe("tagSentences", () => {
       <p class="blockin">I hoped you’d come.</p>
     </blockquote>
   </body>
-    
+
 </html>
     `) as ParsedXml
 
@@ -329,13 +331,13 @@ void describe("tagSentences", () => {
       Epub.xhtmlBuilder.build(output),
       /* xml */ `
 <?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="z3998: http://www.daisy.org/z3998/2012/vocab/structure/#" lang="en" xml:lang="en">
-    
+
   <head>
     <link href="../styles/9781534431010.css" rel="stylesheet" type="text/css"/>
     <link href="../styles/SS_global.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" href="../../Styles/storyteller-readaloud.css" type="text/css"/>
   </head>
-    
+
   <body>
     <blockquote class="blockquotelet">
       <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak"/></p>
@@ -349,7 +351,7 @@ void describe("tagSentences", () => {
       <p class="blockin"><span id="chapter_one-sentence4">I hoped you’d come.</span></p>
     </blockquote>
   </body>
-    
+
 </html>`,
     )
   })

@@ -4,9 +4,9 @@ import {
   type AsyncThunkPayloadCreator,
   createAsyncThunk,
 } from "@reduxjs/toolkit"
-
-import { AppStore } from "./store"
 import { useDispatch, useSelector, useStore } from "react-redux"
+
+import { type AppStore } from "./store"
 
 export type RootState = ReturnType<AppStore["getState"]>
 export type AppDispatch = AppStore["dispatch"]

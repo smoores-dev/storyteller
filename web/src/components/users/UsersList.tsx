@@ -1,17 +1,19 @@
 "use client"
 
-import { UserStatus } from "./UserStatus"
-import { InviteStatus } from "./InviteStatus"
-import { CreateInviteForm } from "./CreateInviteForm"
 import { List, Title } from "@mantine/core"
+
+import { type Invite, type User } from "@/apiModels"
+import { useInitialData } from "@/hooks/useInitialData"
 import {
   api,
   useGetCurrentUserQuery,
   useListInvitesQuery,
   useListUsersQuery,
 } from "@/store/api"
-import { Invite, User } from "@/apiModels"
-import { useInitialData } from "@/hooks/useInitialData"
+
+import { CreateInviteForm } from "./CreateInviteForm"
+import { InviteStatus } from "./InviteStatus"
+import { UserStatus } from "./UserStatus"
 
 interface Props {
   users: User[]

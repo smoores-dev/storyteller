@@ -1,5 +1,9 @@
-import { Body_login_token_post, BookDetail, Token } from "./apiModels"
-import { ReadiumLocator } from "./modules/readium/src/Readium.types"
+import {
+  type Body_login_token_post,
+  type BookDetail,
+  type Token,
+} from "./apiModels"
+import { type ReadiumLocator } from "./modules/readium/src/Readium.types"
 import { joinUrlPaths } from "./urls"
 
 AbortSignal.timeout ??= function timeout(ms) {

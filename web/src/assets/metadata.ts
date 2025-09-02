@@ -1,21 +1,25 @@
+import { readdir } from "node:fs/promises"
+import { extname, join } from "node:path"
+
+import { extension, lookup } from "mime-types"
+
+import { Audiobook } from "@storyteller-platform/audiobook"
+import { type Epub } from "@storyteller-platform/epub/node"
+
 import { isAudioFile } from "@/audio"
 import { isRole } from "@/components/books/edit/marcRelators"
 import {
-  Book,
-  BookRelationsUpdate,
-  BookUpdate,
-  BookWithRelations,
-  CreatorRelation,
+  type Book,
+  type BookRelationsUpdate,
+  type BookUpdate,
+  type BookWithRelations,
+  type CreatorRelation,
 } from "@/database/books"
-import { Audiobook } from "@smoores/audiobook"
-import { Epub } from "@smoores/epub/node"
-import { extension, lookup } from "mime-types"
-import { readdir } from "node:fs/promises"
-import { extname, join } from "node:path"
+import { logger } from "@/logging"
+
 import { persistCustomAudioCover } from "./covers"
 import { getProcessedAudioFiles } from "./fs"
 import { getProcessedAudioFilepath } from "./paths"
-import { logger } from "@/logging"
 
 export function keepMissingMetadata(book: Book, incoming: BookUpdate | null) {
   if (!incoming) return null
@@ -447,7 +451,7 @@ export async function writeMetadataToEpub(
 
 export async function writeMetadataToAudiobook(
   book: BookWithRelations,
-  cover?: File | undefined,
+  cover?: File,
 ) {
   if (!book.audiobook) return
   const directory = book.audiobook.filepath

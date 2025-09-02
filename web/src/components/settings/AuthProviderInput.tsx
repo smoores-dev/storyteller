@@ -1,6 +1,7 @@
-import { UUID } from "@/uuid"
-import { Combobox, Group, Text, useCombobox, TextInput } from "@mantine/core"
+import { Combobox, Group, Text, TextInput, useCombobox } from "@mantine/core"
 import { useMemo, useState } from "react"
+
+import { type UUID } from "@/uuid"
 
 const Providers = [
   { value: "42-school", label: "42School" },

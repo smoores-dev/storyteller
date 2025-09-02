@@ -1,12 +1,15 @@
-import { Stack, withLayoutContext } from "expo-router"
 import {
+  type EventMapBase,
+  type NavigationState,
+} from "@react-navigation/native"
+import {
+  // Import the types
+  type StackNavigationOptions,
+  TransitionPresets,
   // Import the creation function
   createStackNavigator,
-  // Import the types
-  StackNavigationOptions,
-  TransitionPresets,
 } from "@react-navigation/stack"
-import { EventMapBase, NavigationState } from "@react-navigation/native"
+import { Stack, withLayoutContext } from "expo-router"
 import { Platform } from "react-native"
 
 const { Navigator } = createStackNavigator()

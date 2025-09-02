@@ -1,6 +1,7 @@
+import { NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { getAlignedReadaloudBooks, getBooks } from "@/database/books"
-import { NextResponse } from "next/server"
 
 /**
  * @summary deprecated - List all books in the library

@@ -1,27 +1,28 @@
-import { Collection } from "@/database/collections"
 import {
-  DirectoryEntry,
-  DirectoryFileEntry,
-  listDirectoryAction,
-} from "@/actions/listDirectoryAction"
-import { useEffect, useMemo, useState } from "react"
-import { matchSorter } from "match-sorter"
-import {
-  Pill,
-  Combobox,
-  useCombobox,
-  TextInput,
-  Group,
-  Text,
-  Stack,
   Button,
+  Combobox,
+  Group,
   Modal,
+  Pill,
+  Stack,
+  Text,
+  TextInput,
+  useCombobox,
 } from "@mantine/core"
-import { formatBytes } from "@/strings"
 import { IconCheck, IconFile, IconFolder } from "@tabler/icons-react"
 import cx from "classnames"
+import { matchSorter } from "match-sorter"
 import { lookup } from "mime-types"
+import { useEffect, useMemo, useState } from "react"
+
+import {
+  type DirectoryEntry,
+  type DirectoryFileEntry,
+  listDirectoryAction,
+} from "@/actions/listDirectoryAction"
+import { type Collection } from "@/database/collections"
 import { useCreateBookMutation } from "@/store/api"
+import { formatBytes } from "@/strings"
 
 function dirname(path: string) {
   const segments = path.split("/")

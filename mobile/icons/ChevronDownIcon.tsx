@@ -1,4 +1,5 @@
 import { Path, Svg } from "react-native-svg"
+
 import { useColorTheme } from "../hooks/useColorTheme"
 
 export function ChevronDownIcon() {

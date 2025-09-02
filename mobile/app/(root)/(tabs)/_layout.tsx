@@ -2,10 +2,10 @@ import { Tabs } from "expo-router"
 import { Platform } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
+import { useColorTheme } from "../../../hooks/useColorTheme"
 import { BookshelfIcon } from "../../../icons/BookshelfIcon"
 import { BrowseIcon } from "../../../icons/BrowseIcon"
 import { SettingsIcon } from "../../../icons/SettingsIcon"
-import { useColorTheme } from "../../../hooks/useColorTheme"
 
 export default function TabLayout() {
   const { foreground } = useColorTheme()

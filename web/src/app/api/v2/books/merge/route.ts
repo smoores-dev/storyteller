@@ -7,12 +7,12 @@ import {
 import { deleteCachedCoverImages } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
-  BookRelationsUpdate,
-  BookUpdate,
+  type BookRelationsUpdate,
+  type BookUpdate,
   getBooks,
   updateBook,
 } from "@/database/books"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 
 export const POST = withHasPermission("bookCreate")(async (request) => {

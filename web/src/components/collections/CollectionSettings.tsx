@@ -1,5 +1,4 @@
 "use client"
-import { UUID } from "@/uuid"
 import {
   ActionIcon,
   Button,
@@ -8,22 +7,25 @@ import {
   Modal,
   Stack,
   Text,
-  Textarea,
   TextInput,
+  Textarea,
   useModalsStack,
 } from "@mantine/core"
+import { useForm } from "@mantine/form"
 import { IconSettings } from "@tabler/icons-react"
+import { useRouter } from "next/navigation"
 import { useEffect, useRef } from "react"
+
 import {
   useDeleteCollectionMutation,
   useListCollectionsQuery,
   useListUsersQuery,
   useUpdateCollectionMutation,
 } from "@/store/api"
-import { useForm } from "@mantine/form"
-import { useRouter } from "next/navigation"
-import { UserSelect } from "../books/edit/UserSelect"
+import { type UUID } from "@/uuid"
+
 import { ImportPathInput } from "../ImportPathInput"
+import { UserSelect } from "../books/edit/UserSelect"
 
 interface Props {
   uuid: UUID

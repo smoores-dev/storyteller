@@ -1,6 +1,7 @@
+import { NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { getTags } from "@/database/tags"
-import { NextResponse } from "next/server"
 
 /**
  * @summary List all tags

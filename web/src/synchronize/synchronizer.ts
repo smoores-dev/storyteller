@@ -1,21 +1,29 @@
 import { readFile } from "node:fs/promises"
 import { basename, dirname, parse, relative } from "node:path/posix"
+
+import { type RecognitionResult } from "echogarden/dist/api/Recognition"
 import memoize from "memoize"
-import { Epub, ManifestItem, ParsedXml } from "@smoores/epub/node"
-import { getTrackDuration, lookupAudioMime } from "@/audio"
+
 import {
-  SentenceRange,
-  StorytellerTranscription,
+  Epub,
+  type ManifestItem,
+  type ParsedXml,
+} from "@storyteller-platform/epub/node"
+
+import { getTrackDuration, lookupAudioMime } from "@/audio"
+import { logger } from "@/logging"
+
+import { findNearestMatch } from "./fuzzy"
+import {
+  type SentenceRange,
+  type StorytellerTranscription,
   expandEmptySentenceRanges,
   getChapterDuration,
   getSentenceRanges,
   interpolateSentenceRanges,
 } from "./getSentenceRanges"
-import { tagSentences } from "./tagSentences"
 import { getXHtmlSentences } from "./getXhtmlSentences"
-import type { RecognitionResult } from "echogarden/dist/api/Recognition"
-import { findNearestMatch } from "./fuzzy"
-import { logger } from "@/logging"
+import { tagSentences } from "./tagSentences"
 
 const OFFSET_SEARCH_WINDOW_SIZE = 5000
 

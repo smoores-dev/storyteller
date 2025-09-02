@@ -1,6 +1,7 @@
-import { BookSort, BookSortKey } from "@/hooks/useFilterSortedBooks"
-import { useCombobox, Combobox, InputBase, Group, Text } from "@mantine/core"
+import { Combobox, Group, InputBase, Text, useCombobox } from "@mantine/core"
 import { IconArrowDown, IconArrowUp } from "@tabler/icons-react"
+
+import { type BookSort, type BookSortKey } from "@/hooks/useFilterSortedBooks"
 
 const optionLabels: Record<BookSortKey, string> = {
   title: "Title",

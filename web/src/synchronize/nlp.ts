@@ -1,5 +1,5 @@
-import wink from "wink-nlp"
 import model from "wink-eng-lite-web-model"
+import wink from "wink-nlp"
 
 const nlp = wink(model)
 const { its, as } = nlp

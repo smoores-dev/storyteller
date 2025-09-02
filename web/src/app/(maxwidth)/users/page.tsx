@@ -1,8 +1,9 @@
-import { UsersList } from "@/components/users/UsersList"
 import { Stack, Title } from "@mantine/core"
+import { type Metadata } from "next"
+
+import { type Invite, type User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { Invite, User } from "@/apiModels"
-import { Metadata } from "next"
+import { UsersList } from "@/components/users/UsersList"
 
 export const dynamic = "force-dynamic"
 

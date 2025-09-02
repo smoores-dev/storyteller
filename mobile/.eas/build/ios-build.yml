@@ -5,7 +5,7 @@ build:
 
     - run:
         name: Focus install
-        command: yarn workspaces focus @storyteller/mobile
+        command: yarn workspaces focus @storyteller-platform/mobile
 
     - eas/resolve_build_config
 
@@ -14,7 +14,7 @@ build:
 
     - run:
         name: Prebuild
-        command: yarn workspace @storyteller/mobile expo prebuild --no-install -p ios
+        command: yarn workspace @storyteller-platform/mobile expo prebuild --no-install -p ios
         env:
           APPLE_TEAM_ID: ${ steps.resolve_apple_team_id_from_credentials.apple_team_id }
           EXPO_IMAGE_UTILS_NO_SHARP: "1"

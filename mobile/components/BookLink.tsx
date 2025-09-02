@@ -1,19 +1,21 @@
 import { Image, Pressable, StyleSheet, View } from "react-native"
-import { UIText } from "./UIText"
-import { DownloadedIcon } from "../icons/DownloadedIcon"
+import ContextMenu from "react-native-context-menu-view"
+
 import { BookOpenIcon } from "../icons/BookOpenIcon"
-import { PlayIcon } from "../icons/PlayIcon"
+import { DownloadedIcon } from "../icons/DownloadedIcon"
 import { MoreHorizontalIcon } from "../icons/MoreHorizontalIcon"
-import { ProgressBar } from "./ProgressBar"
+import { PlayIcon } from "../icons/PlayIcon"
+import { logger } from "../logger"
 import { useAppDispatch, useAppSelector } from "../store/appState"
-import { bookshelfSlice } from "../store/slices/bookshelfSlice"
+import { getLocalBookCoverUrl } from "../store/persistence/files"
 import {
   getBookshelfBook,
   getLocator,
 } from "../store/selectors/bookshelfSelectors"
-import ContextMenu from "react-native-context-menu-view"
-import { getLocalBookCoverUrl } from "../store/persistence/files"
-import { logger } from "../logger"
+import { bookshelfSlice } from "../store/slices/bookshelfSlice"
+
+import { ProgressBar } from "./ProgressBar"
+import { UIText } from "./UIText"
 import { spacing } from "./ui/tokens/spacing"
 
 type Props = {

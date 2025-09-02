@@ -1,4 +1,4 @@
-import { Permission } from "@/database/users"
+import { type Permission } from "@/database/users"
 import { useGetCurrentUserQuery } from "@/store/api"
 
 export function usePermission(permission: Permission) {

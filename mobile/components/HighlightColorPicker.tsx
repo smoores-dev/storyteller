@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, View, ViewStyle } from "react-native"
-import { HighlightTint, highlightTints } from "../colors"
+import { Pressable, StyleSheet, View, type ViewStyle } from "react-native"
+
+import { type HighlightTint, highlightTints } from "../colors"
 import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {

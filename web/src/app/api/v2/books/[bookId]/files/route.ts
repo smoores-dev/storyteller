@@ -1,18 +1,20 @@
-import { isAudioFile, isZipArchive } from "@/audio"
-import { withHasPermission } from "@/auth/auth"
-import { getBookUuid, getBook, BookWithRelations } from "@/database/books"
-import { logger } from "@/logging"
-import { createReadableStreamFromReadable } from "@remix-run/node"
-import { PortablePath } from "@yarnpkg/fslib"
-import { ZipFS } from "@yarnpkg/libzip"
-import contentDisposition from "content-disposition"
-import { lookup } from "mime-types"
 import { createHash } from "node:crypto"
 import { createReadStream } from "node:fs"
-import { FileHandle, open, readdir } from "node:fs/promises"
+import { type FileHandle, open, readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { extname, join } from "node:path"
 import { pipeline } from "node:stream/promises"
+
+import { createReadableStreamFromReadable } from "@remix-run/node"
+import { type PortablePath } from "@yarnpkg/fslib"
+import { ZipFS } from "@yarnpkg/libzip"
+import contentDisposition from "content-disposition"
+import { lookup } from "mime-types"
+
+import { isAudioFile, isZipArchive } from "@/audio"
+import { withHasPermission } from "@/auth/auth"
+import { type BookWithRelations, getBook, getBookUuid } from "@/database/books"
+import { logger } from "@/logging"
 
 type Params = Promise<{
   bookId: string

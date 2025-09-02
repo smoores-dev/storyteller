@@ -1,17 +1,19 @@
+import Slider from "@react-native-community/slider"
+import { MinusCircle, PlusCircle } from "lucide-react-native"
 import { StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { UIText } from "./UIText"
-import { useAppDispatch, useAppSelector } from "../store/appState"
+
 import { useColorTheme } from "../hooks/useColorTheme"
+import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
 import { preferencesSlice } from "../store/slices/preferencesSlice"
-import { Stack } from "./ui/Stack"
-import { spacing } from "./ui/tokens/spacing"
-import { Group } from "./ui/Group"
+
+import { UIText } from "./UIText"
 import { Button } from "./ui/Button"
-import { MinusCircle, PlusCircle } from "lucide-react-native"
-import Slider from "@react-native-community/slider"
+import { Group } from "./ui/Group"
+import { Stack } from "./ui/Stack"
 import { fontSizes } from "./ui/tokens/fontSizes"
+import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
   bookId: number
@@ -80,8 +82,10 @@ export function SpeedMenu({ bookId, topInset, onOutsideTap }: Props) {
             maximumTrackTintColor={surface}
             thumbImage={
               dark
-                ? require("../assets/slider-thumb-image-white.png")
-                : require("../assets/slider-thumb-image-black.png")
+                ? /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+                  require("../assets/slider-thumb-image-white.png")
+                : /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+                  require("../assets/slider-thumb-image-black.png")
             }
             onValueChange={(newValue) => {
               dispatch(

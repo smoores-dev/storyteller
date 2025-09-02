@@ -1,5 +1,5 @@
 {
-  "name": "@smoores/fs",
+  "name": "@storyteller-platform/fs",
   "version": "0.1.1",
   "type": "module",
   "module": "index.js",
@@ -25,7 +25,7 @@
     "build": "tsup"
   },
   "devDependencies": {
-    "@storyteller/tsup": "workspace:^",
+    "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/node": "^22.0.0",
     "tsup": "^8.5.0"

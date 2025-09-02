@@ -1,7 +1,8 @@
-import { api } from "@/store/api"
-import { useAppDispatch } from "@/store/appState"
-import { skipToken, SkipToken } from "@reduxjs/toolkit/query"
+import { type SkipToken, skipToken } from "@reduxjs/toolkit/query"
 import { useRef } from "react"
+
+import { type api } from "@/store/api"
+import { useAppDispatch } from "@/store/appState"
 
 export function useInitialData<
   Endpoint extends Parameters<typeof api.util.upsertQueryData>[0],

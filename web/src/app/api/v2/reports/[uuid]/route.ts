@@ -1,8 +1,9 @@
+import { readFile } from "node:fs/promises"
+
 import { getAlignmentReportFilepath } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"
-import { UUID } from "@/uuid"
-import { readFile } from "node:fs/promises"
+import { type UUID } from "@/uuid"
 
 type Params = Promise<{
   uuid: UUID

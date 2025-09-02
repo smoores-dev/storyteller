@@ -1,8 +1,9 @@
+import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
+
 import { getTrackDuration } from "@/audio"
 
-import { tokenizeSentences } from "./nlp"
 import { findNearestMatch } from "./fuzzy"
-import type { TimelineEntry } from "echogarden/dist/utilities/Timeline"
+import { tokenizeSentences } from "./nlp"
 
 export type StorytellerTimelineEntry = TimelineEntry & {
   audiofile: string

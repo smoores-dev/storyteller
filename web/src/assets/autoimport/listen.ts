@@ -1,11 +1,14 @@
+import { watch } from "node:fs"
+
+import { AsyncMutex } from "@esfx/async-mutex"
+import debounce from "debounce"
+
 import { getCollection, getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
-import { UUID } from "@/uuid"
-import { watch } from "node:fs"
-import debounce from "debounce"
+import { type UUID } from "@/uuid"
+
 import { scan } from "./scan"
-import { AsyncMutex } from "@esfx/async-mutex"
 
 const entryLocks = new Map<string, AsyncMutex>()
 

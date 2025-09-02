@@ -1,4 +1,4 @@
-import { PyObject } from "pymport"
+import { type PyObject } from "pymport"
 
 export type FuzzySearch = PyObject<{
   find_near_matches: (

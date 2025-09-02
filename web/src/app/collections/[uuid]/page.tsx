@@ -1,8 +1,9 @@
+import { type Metadata } from "next"
+
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { CollectionDetails } from "@/components/collections/CollectionDetails"
-import { Collection } from "@/database/collections"
-import { UUID } from "@/uuid"
-import type { Metadata } from "next"
+import { type Collection } from "@/database/collections"
+import { type UUID } from "@/uuid"
 
 interface Props {
   params: Promise<{ uuid: UUID | "none" }>

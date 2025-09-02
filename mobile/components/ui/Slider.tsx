@@ -1,7 +1,9 @@
 import BaseSlider from "@react-native-community/slider"
-import { colors } from "./tokens/colors"
+import { Platform, type StyleProp, type ViewStyle } from "react-native"
+
 import { useColorTheme } from "../../hooks/useColorTheme"
-import { Platform, StyleProp, ViewStyle } from "react-native"
+
+import { colors } from "./tokens/colors"
 
 interface Props {
   style?: StyleProp<ViewStyle>
@@ -36,6 +38,7 @@ export function Slider({
       }}
       {...(Platform.OS === "ios"
         ? {
+            /* eslint-disable-next-line @typescript-eslint/no-require-imports */
             thumbImage: require("../../assets/slider-thumb-image.png"),
           }
         : { thumbTintColor: colors.primary9 })}

@@ -1,9 +1,3 @@
-import { BookWithRelations } from "@/database/books"
-import {
-  useCancelProcessingMutation,
-  useDeleteBookAssetsMutation,
-  useProcessBookMutation,
-} from "@/store/api"
 import { ActionIcon, Menu, Text, Tooltip } from "@mantine/core"
 import {
   IconProgress,
@@ -11,6 +5,13 @@ import {
   IconReload,
   IconTrash,
 } from "@tabler/icons-react"
+
+import { type BookWithRelations } from "@/database/books"
+import {
+  useCancelProcessingMutation,
+  useDeleteBookAssetsMutation,
+  useProcessBookMutation,
+} from "@/store/api"
 
 type Props = {
   book: BookWithRelations

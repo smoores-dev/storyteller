@@ -1,7 +1,7 @@
 import { requireNativeViewManager } from "expo-modules-core"
 import * as React from "react"
 
-import { EPUBViewProps, EPUBViewRef } from "./Readium.types"
+import { type EPUBViewProps, type EPUBViewRef } from "./Readium.types"
 
 const NativeView: React.ComponentType<
   React.PropsWithoutRef<EPUBViewProps> & React.RefAttributes<EPUBViewRef>

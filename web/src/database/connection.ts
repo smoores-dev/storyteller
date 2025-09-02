@@ -1,20 +1,22 @@
-import { DATA_DIR } from "@/directories"
+import { mkdirSync } from "node:fs"
 import { join } from "node:path"
 import { cwd } from "node:process"
-import Db from "better-sqlite3"
-import { logger } from "@/logging"
-import { mkdirSync } from "node:fs"
+
+import Db, { type Database } from "better-sqlite3"
 import {
   CamelCasePlugin,
   Kysely,
   ParseJSONResultsPlugin,
   SqliteDialect,
 } from "kysely"
-import { DB } from "./schema"
+import { PHASE_PRODUCTION_BUILD } from "next/constants.js"
+
+import { DATA_DIR } from "@/directories"
+import { logger } from "@/logging"
+
 import { BooleanPlugin } from "./plugins/booleanPlugin"
 import { DatePlugin } from "./plugins/datePlugin"
-import { PHASE_PRODUCTION_BUILD } from "next/constants.js"
-import { Database } from "better-sqlite3"
+import { type DB } from "./schema"
 
 const DATABASE_URL = join(
   DATA_DIR,

@@ -1,6 +1,7 @@
-import { createUserToken } from "@/auth/auth"
-import { NextRequest } from "next/server"
+import { type NextRequest } from "next/server"
 import { CredentialsSignin } from "next-auth"
+
+import { createUserToken } from "@/auth/auth"
 
 export const dynamic = "force-dynamic"
 

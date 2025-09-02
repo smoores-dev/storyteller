@@ -1,11 +1,12 @@
-import { ReactNode, useEffect } from "react"
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native"
+import { SplashScreen, useRouter } from "expo-router"
+import { type ReactNode, useEffect } from "react"
+
+import { activeBackgroundColor } from "../design"
+import { useColorTheme } from "../hooks/useColorTheme"
+import { useAppSelector } from "../store/appState"
 import { getStartupStatus } from "../store/selectors/startupSelectors"
 import { StartupStatus } from "../store/slices/startupSlice"
-import { SplashScreen, useRouter } from "expo-router"
-import { useAppSelector } from "../store/appState"
-import { useColorTheme } from "../hooks/useColorTheme"
-import { activeBackgroundColor } from "../design"
 
 export function StorytellerProvider({ children }: { children: ReactNode }) {
   const router = useRouter()

@@ -1,11 +1,12 @@
 import { Anchor, Stack, Text, Title } from "@mantine/core"
-import { BookEditForm } from "@/components/books/edit/BookEditForm"
-import { fetchApiRoute } from "@/app/fetchApiRoute"
-import Link from "next/link"
 import { IconArrowNarrowLeft } from "@tabler/icons-react"
+import { type Metadata } from "next"
+import Link from "next/link"
+
+import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { assertHasPermission } from "@/auth/auth"
-import type { Metadata } from "next"
-import { BookWithRelations } from "@/database/books"
+import { BookEditForm } from "@/components/books/edit/BookEditForm"
+import { type BookWithRelations } from "@/database/books"
 
 type Props = {
   params: Promise<{

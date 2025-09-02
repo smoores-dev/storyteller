@@ -1,5 +1,3 @@
-import { useListBooksQuery, useProcessBookMutation } from "@/store/api"
-import { UUID } from "@/uuid"
 import {
   Button,
   Group,
@@ -12,10 +10,13 @@ import {
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
-import { TitleSummary } from "./TitleSummary"
-
 import { IconProgress } from "@tabler/icons-react"
-import { BookWithRelations } from "@/database/books"
+
+import { type BookWithRelations } from "@/database/books"
+import { useListBooksQuery, useProcessBookMutation } from "@/store/api"
+import { type UUID } from "@/uuid"
+
+import { TitleSummary } from "./TitleSummary"
 
 const EMPTY_BOOKS: BookWithRelations[] = []
 

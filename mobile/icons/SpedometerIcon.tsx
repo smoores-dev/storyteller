@@ -1,4 +1,5 @@
 import { Circle, Ellipse, Svg } from "react-native-svg"
+
 import { useColorTheme } from "../hooks/useColorTheme"
 
 export function SpedometerIcon() {

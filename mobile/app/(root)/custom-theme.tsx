@@ -1,33 +1,34 @@
+import { useRouter } from "expo-router"
+import { useMemo, useState } from "react"
 import { StyleSheet } from "react-native"
+import { ScrollView } from "react-native-gesture-handler"
+import {
+  ReanimatedLogLevel,
+  configureReanimatedLogger,
+} from "react-native-reanimated"
 import ColorPicker, {
   HueSlider,
+  InputWidget,
   Panel1,
   Preview,
-  InputWidget,
 } from "reanimated-color-picker"
+
 import { HeaderText } from "../../components/HeaderText"
-import { fontSizes } from "../../components/ui/tokens/fontSizes"
-import { spacing } from "../../components/ui/tokens/spacing"
-import { UIText } from "../../components/UIText"
-import { ScrollView } from "react-native-gesture-handler"
-import { useMemo, useState } from "react"
-import { useColorTheme } from "../../hooks/useColorTheme"
 import { ThemeOverrideProvider } from "../../components/ThemeOverrideProvider"
-import { TextInput } from "../../components/ui/TextInput"
-import {
-  configureReanimatedLogger,
-  ReanimatedLogLevel,
-} from "react-native-reanimated"
-import { Group } from "../../components/ui/Group"
+import { UIText } from "../../components/UIText"
 import { Button } from "../../components/ui/Button"
-import { useAppDispatch } from "../../store/appState"
-import { preferencesSlice } from "../../store/slices/preferencesSlice"
 import { ButtonGroup, ButtonGroupButton } from "../../components/ui/ButtonGroup"
-import { useRouter } from "expo-router"
+import { Group } from "../../components/ui/Group"
+import { TextInput } from "../../components/ui/TextInput"
 import {
   computeForegroundSecondary,
   computeSurface,
 } from "../../components/ui/tokens/colors"
+import { fontSizes } from "../../components/ui/tokens/fontSizes"
+import { spacing } from "../../components/ui/tokens/spacing"
+import { useColorTheme } from "../../hooks/useColorTheme"
+import { useAppDispatch } from "../../store/appState"
+import { preferencesSlice } from "../../store/slices/preferencesSlice"
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,

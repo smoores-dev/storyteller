@@ -1,15 +1,17 @@
-import { Collection } from "@/database/collections"
-import { Button, ButtonVariant, Menu } from "@mantine/core"
+import { Button, type ButtonVariant, Menu } from "@mantine/core"
 import {
-  IconBooks,
   IconBookUpload,
+  IconBooks,
   IconCirclePlus,
   IconFileImport,
 } from "@tabler/icons-react"
-import { AddBooksModal } from "./modals/AddBooksModal"
 import { useState } from "react"
-import { UploadBooksModal } from "./modals/UploadBooksModal"
+
+import { type Collection } from "@/database/collections"
+
+import { AddBooksModal } from "./modals/AddBooksModal"
 import { ImportServerBooksModal } from "./modals/ImportServerBooksModal"
+import { UploadBooksModal } from "./modals/UploadBooksModal"
 
 interface Props {
   className?: string

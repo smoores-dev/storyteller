@@ -1,33 +1,35 @@
+import { intervalToDuration, isFuture, isPast } from "date-fns"
 import { Link } from "expo-router"
-import { PixelRatio, StyleSheet, View } from "react-native"
-import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
-  getCurrentlyPlayingBook,
-  getLocator,
-  getSleepTimer,
-} from "../store/selectors/bookshelfSelectors"
-import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
-import { bookshelfSlice } from "../store/slices/bookshelfSlice"
-import { ReadiumLocator } from "../modules/readium/src/Readium.types"
-import { getOpenDialog } from "../store/selectors/toolbarSelectors"
-import {
+  BookOpen,
   Bookmark,
   BookmarkCheck,
-  BookOpen,
   CaseSensitive,
   ClockFading,
   Gauge,
   Headphones,
   TableOfContents,
 } from "lucide-react-native"
-import { useColorTheme } from "../hooks/useColorTheme"
-import { Button } from "./ui/Button"
-import { UIText } from "./UIText"
-import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
-import { spacing } from "./ui/tokens/spacing"
-import ContextMenu from "react-native-context-menu-view"
-import { intervalToDuration, isFuture, isPast } from "date-fns"
 import { useEffect, useState } from "react"
+import { PixelRatio, StyleSheet, View } from "react-native"
+import ContextMenu from "react-native-context-menu-view"
+
+import { useColorTheme } from "../hooks/useColorTheme"
+import { type ReadiumLocator } from "../modules/readium/src/Readium.types"
+import { useAppDispatch, useAppSelector } from "../store/appState"
+import {
+  getCurrentlyPlayingBook,
+  getLocator,
+  getSleepTimer,
+} from "../store/selectors/bookshelfSelectors"
+import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
+import { getOpenDialog } from "../store/selectors/toolbarSelectors"
+import { bookshelfSlice } from "../store/slices/bookshelfSlice"
+import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
+
+import { UIText } from "./UIText"
+import { Button } from "./ui/Button"
+import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
   mode: "audio" | "text"

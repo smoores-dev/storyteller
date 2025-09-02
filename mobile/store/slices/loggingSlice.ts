@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit"
+
 import { logger } from "../../logger"
 
 type LoggingSliceState = {

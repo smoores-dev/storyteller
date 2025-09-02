@@ -1,36 +1,40 @@
+import { rename } from "node:fs/promises"
+import { join } from "node:path"
+
+import { NextResponse } from "next/server"
+
 import {
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
 import { deleteAssets } from "@/assets/fs"
 import {
-  getInternalBookDirectory,
-  getInternalReadaloudFilepath,
-  getInternalEpubFilepath,
-  getInternalEpubDirectory,
-  getInternalReadaloudDirectory,
   getInternalAudioDirectory,
+  getInternalBookDirectory,
+  getInternalEpubDirectory,
+  getInternalEpubFilepath,
+  getInternalReadaloudDirectory,
+  getInternalReadaloudFilepath,
   getSafeFilepathSegment,
 } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
-  CreatorRelation,
+  type CreatorRelation,
+  type SeriesRelation,
   deleteBook,
   getBook,
   getBookUuid,
-  SeriesRelation,
   updateBook,
 } from "@/database/books"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
-import { NextResponse } from "next/server"
-import { rename } from "node:fs/promises"
-import { join } from "node:path"
 
 function isIso8601(dateString: string) {
   return dateString === new Date(dateString).toISOString()
 }
 
+// This is just a convenience to avoid type casting at the call site
+/* eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters */
 function getField<Value>(formData: FormData, field: string) {
   const stringified = formData.get(field)?.valueOf() as string | undefined
   if (stringified === undefined) return stringified

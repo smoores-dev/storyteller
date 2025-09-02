@@ -1,7 +1,9 @@
-import { TextInput as BaseTextInput } from "react-native-gesture-handler"
-import { ComponentProps } from "react"
+import { type ComponentProps } from "react"
 import { StyleSheet } from "react-native"
+import { TextInput as BaseTextInput } from "react-native-gesture-handler"
+
 import { useColorTheme } from "../../hooks/useColorTheme"
+
 import { spacing } from "./tokens/spacing"
 
 export function TextInput(props: ComponentProps<BaseTextInput>) {

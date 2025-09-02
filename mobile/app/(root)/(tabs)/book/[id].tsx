@@ -1,13 +1,13 @@
 import { useLocalSearchParams } from "expo-router"
 
 import { Epub } from "../../../../components/Epub"
+import { useIsFocused } from "../../../../hooks/useIsFocused"
+import { useIsNotBackground } from "../../../../hooks/useIsNotBackground"
 import { useAppSelector } from "../../../../store/appState"
 import {
   getBookshelfBook,
   getLocator,
 } from "../../../../store/selectors/bookshelfSelectors"
-import { useIsFocused } from "../../../../hooks/useIsFocused"
-import { useIsNotBackground } from "../../../../hooks/useIsNotBackground"
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams() as { id: string }

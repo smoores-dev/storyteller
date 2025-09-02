@@ -1,15 +1,14 @@
-import { InviteAccept } from "@/apiModels"
-import { createUserToken, hashPassword, withHasPermission } from "@/auth/auth"
+import { type NextRequest, NextResponse } from "next/server"
 
+import { type InviteAccept } from "@/apiModels"
+import { createUserToken, hashPassword, withHasPermission } from "@/auth/auth"
 import {
+  type UserPermissionSet,
   acceptInvite,
   createCredentialsAccount,
   getUsers,
-  UserPermissionSet,
   verifyInvite,
 } from "@/database/users"
-
-import { NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 

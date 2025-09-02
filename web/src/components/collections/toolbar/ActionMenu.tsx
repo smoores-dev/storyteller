@@ -1,12 +1,14 @@
+import { Button, Menu, MenuDropdown, MenuTarget } from "@mantine/core"
+import { IconChevronDown, IconClick } from "@tabler/icons-react"
+
 import {
   useLazyListCollectionsQuery,
   useLazyListCreatorsQuery,
   useLazyListSeriesQuery,
   useLazyListTagsQuery,
 } from "@/store/api"
-import { UUID } from "@/uuid"
-import { Button, Menu, MenuDropdown, MenuTarget } from "@mantine/core"
-import { IconChevronDown, IconClick } from "@tabler/icons-react"
+import { type UUID } from "@/uuid"
+
 import { AddBooksToCollectionsItem } from "./actionMenuItems/AddBooksToCollectionsItem"
 import { AddBooksToSeriesItem } from "./actionMenuItems/AddBooksToSeriesItem"
 import { AddTagsToBooksItem } from "./actionMenuItems/AddTagsToBooksItem"

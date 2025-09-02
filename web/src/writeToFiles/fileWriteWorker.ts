@@ -1,12 +1,14 @@
+import { type MessagePort } from "node:worker_threads"
+
+import { Epub } from "@storyteller-platform/epub/node"
+
 import { deleteCachedCoverImages } from "@/assets/fs"
-import { getBookOrThrow } from "@/database/books"
 import {
-  writeMetadataToEpub,
   writeMetadataToAudiobook,
+  writeMetadataToEpub,
 } from "@/assets/metadata"
-import { UUID } from "@/uuid"
-import { Epub } from "@smoores/epub/node"
-import { MessagePort } from "node:worker_threads"
+import { getBookOrThrow } from "@/database/books"
+import { type UUID } from "@/uuid"
 
 interface TransferableFile {
   name: string

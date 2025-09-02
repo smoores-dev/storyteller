@@ -1,12 +1,13 @@
 import {
-  ReactElement,
+  type ReactElement,
   cloneElement,
   createContext,
   useContext,
   useMemo,
 } from "react"
 import { StyleSheet, View } from "react-native"
-import { Button, ButtonProps } from "./Button"
+
+import { Button, type ButtonProps } from "./Button"
 
 type ButtonGroupContextValue = {
   onPress: (value: unknown) => void

@@ -1,9 +1,11 @@
-import { Selectable } from "kysely"
-import { DB } from "./schema"
-import { db } from "./connection"
-import { UUID } from "@/uuid"
-import { getBooks } from "./books"
+import { type Selectable } from "kysely"
+
 import { BookEvents } from "@/events"
+import { type UUID } from "@/uuid"
+
+import { getBooks } from "./books"
+import { db } from "./connection"
+import { type DB } from "./schema"
 
 export type Tag = Selectable<DB["tag"]>
 

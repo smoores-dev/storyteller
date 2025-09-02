@@ -1,12 +1,14 @@
-import { Pressable, StyleSheet, TouchableOpacity, View } from "react-native"
-import { TableOfContents } from "./TableOfContents"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useState } from "react"
-import { UIText } from "./UIText"
+import { Pressable, StyleSheet, TouchableOpacity, View } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+
+import { useColorTheme } from "../hooks/useColorTheme"
+
 import { Bookmarks } from "./Bookmarks"
 import { Highlights } from "./Highlights"
-import { useColorTheme } from "../hooks/useColorTheme"
+import { TableOfContents } from "./TableOfContents"
 import { TrackLisk } from "./TrackList"
+import { UIText } from "./UIText"
 
 type Props = {
   mode: "text" | "audio"

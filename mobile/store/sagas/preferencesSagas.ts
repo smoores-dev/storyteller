@@ -1,4 +1,8 @@
+import * as Fonts from "expo-font"
 import { all, call, put, select, takeEvery } from "redux-saga/effects"
+
+import { readBookIds } from "../persistence/books"
+import { listCustomFontUrls } from "../persistence/fonts"
 import {
   readBookPreferences,
   readGlobalPreferences,
@@ -6,18 +10,15 @@ import {
   writeGlobalPreferences,
 } from "../persistence/preferences"
 import {
-  PreferencesState,
+  getBookPreferences,
+  getGlobalPreferences,
+} from "../selectors/preferencesSelectors"
+import {
+  type PreferencesState,
   defaultPreferences,
   parseCustomFont,
   preferencesSlice,
 } from "../slices/preferencesSlice"
-import { readBookIds } from "../persistence/books"
-import {
-  getBookPreferences,
-  getGlobalPreferences,
-} from "../selectors/preferencesSelectors"
-import { listCustomFontUrls } from "../persistence/fonts"
-import * as Fonts from "expo-font"
 
 export function* hydratePreferences() {
   const globalPreferences =

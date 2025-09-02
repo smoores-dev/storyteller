@@ -1,13 +1,14 @@
 import * as BackgroundFetch from "expo-background-fetch"
 import * as TaskManager from "expo-task-manager"
+
+import { ApiClientError } from "../apiClient"
+import { getApiClient } from "../store/selectors/apiSelectors"
 import {
   getBookshelfBookIds,
   getLocator,
 } from "../store/selectors/bookshelfSelectors"
-import { store } from "../store/store"
-import { getApiClient } from "../store/selectors/apiSelectors"
-import { ApiClientError } from "../apiClient"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
+import { store } from "../store/store"
 
 const BACKGROUND_POSITION_SYNC_TASK = "background-position-sync"
 

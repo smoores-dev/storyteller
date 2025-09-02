@@ -1,10 +1,11 @@
 import { Button, Group, MultiSelect, Text } from "@mantine/core"
-import { UseFormReturnType } from "@mantine/form"
-import { IconPlus } from "@tabler/icons-react"
-import { Collection } from "@/database/collections"
-import { usePermission } from "@/hooks/usePermission"
-import { CreateCollectionModal } from "@/components/collections/CreateCollectionModal"
+import { type UseFormReturnType } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
+import { IconPlus } from "@tabler/icons-react"
+
+import { CreateCollectionModal } from "@/components/collections/CreateCollectionModal"
+import { type Collection } from "@/database/collections"
+import { usePermission } from "@/hooks/usePermission"
 
 interface Props {
   values: string[]

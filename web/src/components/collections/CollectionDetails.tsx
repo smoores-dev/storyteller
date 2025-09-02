@@ -2,10 +2,13 @@
 
 import { Stack, Text, Title } from "@mantine/core"
 import { IconBooks } from "@tabler/icons-react"
-import { BookList } from "../books/BookList"
-import { CollectionSettings } from "./CollectionSettings"
+
 import { useListCollectionsQuery } from "@/store/api"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
+
+import { BookList } from "../books/BookList"
+
+import { CollectionSettings } from "./CollectionSettings"
 
 interface Props {
   collectionUuid: UUID | null

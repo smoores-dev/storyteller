@@ -1,15 +1,17 @@
-import { View, Pressable } from "react-native"
+import { Pressable, View } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
+
+import { highlightTints, highlightUnderlines } from "../colors"
+import { useColorTheme } from "../hooks/useColorTheme"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
+
 import { UIText } from "./UIText"
-import { highlightTints, highlightUnderlines } from "../colors"
-import { useColorTheme } from "../hooks/useColorTheme"
 import { Stack } from "./ui/Stack"
 import { colors } from "./ui/tokens/colors"
-import { spacing } from "./ui/tokens/spacing"
 import { fontSizes } from "./ui/tokens/fontSizes"
+import { spacing } from "./ui/tokens/spacing"
 
 export function Highlights() {
   const book = useAppSelector(getCurrentlyPlayingBook)

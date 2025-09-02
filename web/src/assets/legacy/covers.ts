@@ -1,12 +1,14 @@
 import { readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
+
+import { type UUID } from "@/uuid"
+
 import {
-  getAudioIndexPath,
   getAudioDirectory,
+  getAudioIndexPath,
   getEpubDirectory,
   getEpubIndexPath,
 } from "./paths"
-import { UUID } from "@/uuid"
 
 export type AudioFile = {
   filename: string

@@ -1,10 +1,13 @@
-import { UUID } from "@/uuid"
-import { join } from "node:path"
-import Piscina, { transferableSymbol, valueSymbol } from "piscina"
-import { cwd } from "node:process"
-import type writeMetadataToFiles from "./fileWriteWorker"
 import { availableParallelism } from "node:os"
+import { join } from "node:path"
+import { cwd } from "node:process"
 import { MessageChannel } from "node:worker_threads"
+
+import Piscina, { transferableSymbol, valueSymbol } from "piscina"
+
+import { type UUID } from "@/uuid"
+
+import type writeMetadataToFiles from "./fileWriteWorker"
 
 /**
  * Next.js app directory seems to have a bug where, in production,
@@ -49,7 +52,7 @@ if (globalThis.fileWritePiscina) {
     maxThreads: Math.max(1, availableParallelism() / 2 - 2),
     // In dev, we don't bundle packages in the worker.
     // These flags allow us to import directly from the
-    // source typescript files for our own packages (e.g. @smoores/epub)
+    // source typescript files for our own packages (e.g. @storyteller-platform/epub)
     ...(process.env.NODE_ENV === "development" && {
       env: {
         ...process.env,
@@ -69,8 +72,8 @@ export function cancelProcessing(bookUuid: UUID) {
 
 export async function queueWritesToFiles(
   bookUuid: UUID,
-  textCover?: File | undefined,
-  audioCover?: File | undefined,
+  textCover?: File,
+  audioCover?: File,
 ) {
   if (fileWriteQueue.includes(bookUuid)) return
 

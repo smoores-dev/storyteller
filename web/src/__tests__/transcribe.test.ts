@@ -1,10 +1,12 @@
+import assert from "assert"
+import { writeFile } from "fs/promises"
 import { describe, it } from "node:test"
 import { join } from "path"
-import { transcribeTrack } from "@/transcribe"
-import assert from "assert"
+
 import { setGlobalOption } from "echogarden/dist/api/GlobalOptions"
-import { writeFile } from "fs/promises"
-import { Settings } from "@/apiModels"
+
+import { type Settings } from "@/apiModels"
+import { transcribeTrack } from "@/transcribe"
 
 setGlobalOption("logLevel", "error")
 
@@ -46,7 +48,7 @@ void describe("transcribe", () => {
       3.871,
     )
     assert.deepStrictEqual(
-      transcription.wordTimeline[0]?.text,
+      transcription.wordTimeline[0].text,
       " This is a LibraVox recording.",
     )
   })

@@ -1,7 +1,8 @@
+import { NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { getSettings, updateSettings } from "@/database/settings"
-import { Settings } from "@/database/settingsTypes"
-import { NextResponse } from "next/server"
+import { type Settings } from "@/database/settingsTypes"
 
 export const dynamic = "force-dynamic"
 

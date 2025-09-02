@@ -1,86 +1,36 @@
-import {
-  select,
-  takeEvery,
-  put,
-  call,
-  takeLatest,
-  ActionPattern,
-  actionChannel,
-  flush,
-  fork,
-  take,
-} from "redux-saga/effects"
-import { ActionMatchingPattern } from "@redux-saga/types"
-import {
-  getLocalBookArchiveUrl,
-  getBooksDirectoryUrl,
-  getBookArchivesDirectoryUrl,
-  getLocalBookExtractedUrl,
-  ensureCoversDirectory,
-  getLocalBookCoverUrl,
-  getLocalAudioBookCoverUrl,
-  getLocalBookFileUrl,
-  deleteLocalBookFiles,
-  getOldLocalBookCoverUrl,
-  getOldLocalAudioBookCoverUrl,
-  getBookCoversDirectoryUrl,
-  getAudioBookCoversDirectoryUrl,
-} from "../persistence/files"
-import { getApiClient } from "../selectors/apiSelectors"
-import { getLibraryBook } from "../selectors/librarySelectors"
-import {
-  BookshelfTrack,
-  BookshelfBook,
-  bookshelfSlice,
-  playerPositionUpdated,
-  playerPaused,
-  localBookImported,
-  playerPositionSeeked,
-  playerTotalPositionSeeked,
-  playerTrackChanged,
-  nextTrackPressed,
-  prevTrackPressed,
-  playerPlayed,
-  nextFragmentPressed,
-  previousFragmentPressed,
-} from "../slices/bookshelfSlice"
-import { librarySlice } from "../slices/librarySlice"
-import * as FileSystem from "expo-file-system"
+import { type ActionMatchingPattern } from "@redux-saga/types"
+import { isPast } from "date-fns"
 import { Audio } from "expo-av"
-import {
-  deleteBook,
-  deleteBookmark,
-  deleteHighlight,
-  readBookIds,
-  readBookmarks,
-  readHighlights,
-  readLocators,
-  writeBook,
-  writeBookmark,
-  writeHighlight,
-  writeLocator,
-} from "../persistence/books"
+import * as FileSystem from "expo-file-system"
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake"
+import { router } from "expo-router"
 import TrackPlayer, {
-  AddTrack,
+  type AddTrack,
   PitchAlgorithm,
 } from "react-native-track-player"
 import {
-  getBookshelfBook,
-  getBookshelfBookIds,
-  getCurrentlyPlayingBook,
-  getLocator,
-  getSleepTimer,
-} from "../selectors/bookshelfSelectors"
-import { router } from "expo-router"
-import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake"
-import {
   END,
-  EventChannel,
-  FlushableChannel,
-  TakeableChannel,
+  type EventChannel,
+  type FlushableChannel,
+  type TakeableChannel,
   buffers,
   eventChannel,
 } from "redux-saga"
+import {
+  type ActionPattern,
+  actionChannel,
+  call,
+  flush,
+  fork,
+  put,
+  select,
+  take,
+  takeEvery,
+  takeLatest,
+} from "redux-saga/effects"
+
+import { ApiClientError } from "../../apiClient"
+import { type BookAuthor } from "../../apiModels"
 import { logger } from "../../logger"
 import {
   extractArchive,
@@ -94,18 +44,69 @@ import {
   openPublication,
 } from "../../modules/readium"
 import {
-  ReadiumContributor,
-  ReadiumLocalizedString,
-  TimestampedLocator,
+  type ReadiumContributor,
+  type ReadiumLocalizedString,
+  type TimestampedLocator,
 } from "../../modules/readium/src/Readium.types"
-import { BookAuthor } from "../../apiModels"
-import { preferencesSlice } from "../slices/preferencesSlice"
+import {
+  deleteBook,
+  deleteBookmark,
+  deleteHighlight,
+  readBookIds,
+  readBookmarks,
+  readHighlights,
+  readLocators,
+  writeBook,
+  writeBookmark,
+  writeHighlight,
+  writeLocator,
+} from "../persistence/books"
+import {
+  deleteLocalBookFiles,
+  ensureCoversDirectory,
+  getAudioBookCoversDirectoryUrl,
+  getBookArchivesDirectoryUrl,
+  getBookCoversDirectoryUrl,
+  getBooksDirectoryUrl,
+  getLocalAudioBookCoverUrl,
+  getLocalBookArchiveUrl,
+  getLocalBookCoverUrl,
+  getLocalBookExtractedUrl,
+  getLocalBookFileUrl,
+  getOldLocalAudioBookCoverUrl,
+  getOldLocalBookCoverUrl,
+} from "../persistence/files"
+import { getApiClient } from "../selectors/apiSelectors"
+import {
+  getBookshelfBook,
+  getBookshelfBookIds,
+  getCurrentlyPlayingBook,
+  getLocator,
+  getSleepTimer,
+} from "../selectors/bookshelfSelectors"
+import { getLibraryBook } from "../selectors/librarySelectors"
 import {
   getBookPlayerSpeed,
   getGlobalPreferences,
 } from "../selectors/preferencesSelectors"
-import { ApiClientError } from "../../apiClient"
-import { isPast } from "date-fns"
+import {
+  type BookshelfBook,
+  type BookshelfTrack,
+  bookshelfSlice,
+  localBookImported,
+  nextFragmentPressed,
+  nextTrackPressed,
+  playerPaused,
+  playerPlayed,
+  playerPositionSeeked,
+  playerPositionUpdated,
+  playerTotalPositionSeeked,
+  playerTrackChanged,
+  prevTrackPressed,
+  previousFragmentPressed,
+} from "../slices/bookshelfSlice"
+import { librarySlice } from "../slices/librarySlice"
+import { preferencesSlice } from "../slices/preferencesSlice"
 
 export function createDownloadChannel(
   pauseState: FileSystem.DownloadPauseState,

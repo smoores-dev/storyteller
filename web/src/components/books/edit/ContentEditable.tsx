@@ -1,6 +1,6 @@
 import { InputBase } from "@mantine/core"
-import { FocusEventHandler, useLayoutEffect, useRef } from "react"
 import cx from "classnames"
+import { type FocusEventHandler, useLayoutEffect, useRef } from "react"
 
 interface BaseProps {
   className?: string

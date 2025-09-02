@@ -1,10 +1,11 @@
-import { getAudioCover, getEpubCover } from "@/assets/covers"
-import { optimizeImage } from "@/images"
-import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
-import { logger } from "@/logging"
-import { db } from "../connection"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
-import { BookWithRelations } from "../books"
+
+import { getAudioCover, getEpubCover } from "@/assets/covers"
+import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
+import { type BookWithRelations } from "@/database/books"
+import { db } from "@/database/connection"
+import { optimizeImage } from "@/images"
+import { logger } from "@/logging"
 
 async function getBooks() {
   return await db

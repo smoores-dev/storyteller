@@ -1,8 +1,9 @@
-import { Book, BookWithRelations } from "@/database/books"
-import { Settings } from "@/database/settingsTypes"
-import { ASSETS_DIR, IMAGE_CACHE_DIR } from "@/directories"
-import { UUID } from "@/uuid"
 import { basename, dirname, extname, join } from "node:path"
+
+import { type Book, type BookWithRelations } from "@/database/books"
+import { type Settings } from "@/database/settingsTypes"
+import { ASSETS_DIR, IMAGE_CACHE_DIR } from "@/directories"
+import { type UUID } from "@/uuid"
 
 const base62Chars =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

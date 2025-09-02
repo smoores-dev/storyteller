@@ -1,13 +1,14 @@
+import { Button, MenuItem, Modal } from "@mantine/core"
+import { useForm } from "@mantine/form"
+import { IconBooks } from "@tabler/icons-react"
+import { useState } from "react"
+
 import { CollectionsInput } from "@/components/books/edit/CollectionsInput"
 import {
   useAddBooksToCollectionsMutation,
   useListCollectionsQuery,
 } from "@/store/api"
-import { UUID } from "@/uuid"
-import { Button, MenuItem, Modal } from "@mantine/core"
-import { useForm } from "@mantine/form"
-import { IconBooks } from "@tabler/icons-react"
-import { useState } from "react"
+import { type UUID } from "@/uuid"
 
 interface Props {
   selected: Set<UUID>

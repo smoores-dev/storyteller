@@ -1,3 +1,9 @@
+import { mkdir, rename } from "node:fs/promises"
+import { basename, dirname, extname } from "node:path"
+
+import { type Audiobook } from "@storyteller-platform/audiobook/node"
+import { type Epub } from "@storyteller-platform/epub/node"
+
 import { persistAudio, persistEpub } from "@/assets/fs"
 import {
   getMetadataFromAudiobook,
@@ -10,16 +16,12 @@ import {
   getInternalOriginalAudioFilepath,
 } from "@/assets/paths"
 import {
-  BookWithRelations,
+  type BookWithRelations,
   createBookFromAudiobook,
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
-import { UUID } from "@/uuid"
-import { Audiobook } from "@smoores/audiobook/node"
-import { Epub } from "@smoores/epub/node"
-import { mkdir, rename } from "node:fs/promises"
-import { basename, dirname, extname } from "node:path"
+import { type UUID } from "@/uuid"
 
 export async function handleEpubNewBook(
   bookUuid: UUID,

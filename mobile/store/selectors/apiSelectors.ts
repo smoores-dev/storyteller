@@ -1,7 +1,9 @@
 import { createSelector } from "@reduxjs/toolkit"
-import { RootState } from "../appState"
-import { getAccessToken } from "./authSelectors"
+
 import { ApiClient } from "../../apiClient"
+import { type RootState } from "../appState"
+
+import { getAccessToken } from "./authSelectors"
 
 export function getApiBaseUrl(state: RootState) {
   return state.api.baseUrl

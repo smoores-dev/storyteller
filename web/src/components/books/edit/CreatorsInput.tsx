@@ -1,5 +1,3 @@
-import { CreatorRelation } from "@/database/books"
-import { Creator } from "@/database/creators"
 import {
   ActionIcon,
   Autocomplete,
@@ -8,8 +6,12 @@ import {
   Select,
   Stack,
 } from "@mantine/core"
-import { UseFormReturnType } from "@mantine/form"
+import { type UseFormReturnType } from "@mantine/form"
 import { IconPlus, IconTrash } from "@tabler/icons-react"
+
+import { type CreatorRelation } from "@/database/books"
+import { type Creator } from "@/database/creators"
+
 import { creatorRelators } from "./marcRelators"
 
 interface Props {

@@ -1,24 +1,27 @@
+import assert from "node:assert"
+import { exec as execCallback } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import { mkdir } from "node:fs/promises"
+import { dirname, join } from "node:path"
 import { describe, it } from "node:test"
+import { promisify } from "node:util"
+
+import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
+
+import { Epub } from "@storyteller-platform/epub/node"
+
+import { getTrackDuration } from "@/audio"
+
+import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
+import mobyDickTranscription from "../../__fixtures__/transcriptions/mobydick_001_002_melville.json"
 import {
-  SentenceRange,
-  StorytellerTranscription,
+  type SentenceRange,
+  type StorytellerTranscription,
   getChapterDuration,
   getSentenceRanges,
   interpolateSentenceRanges,
 } from "../getSentenceRanges"
-import { dirname, join } from "node:path"
-import { exec as execCallback } from "node:child_process"
-
-import mobyDickTranscription from "../../__fixtures__/transcriptions/mobydick_001_002_melville.json"
-import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
-import { Epub } from "@smoores/epub/node"
 import { tokenizeSentences } from "../nlp"
-import assert from "node:assert"
-import type { TimelineEntry } from "echogarden/dist/utilities/Timeline"
-import { promisify } from "node:util"
-import { randomUUID } from "node:crypto"
-import { mkdir } from "node:fs/promises"
-import { getTrackDuration } from "@/audio"
 
 const exec = promisify(execCallback)
 

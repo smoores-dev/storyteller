@@ -1,8 +1,14 @@
-import { NativeSyntheticEvent, StyleProp, ViewStyle } from "react-native"
-import { Highlight } from "../../../store/slices/bookshelfSlice"
-import type { UUID } from "crypto"
-import { HighlightTint } from "../../../colors"
-import { CustomFont } from "../../../store/slices/preferencesSlice"
+import { type UUID } from "crypto"
+
+import {
+  type NativeSyntheticEvent,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native"
+
+import { type HighlightTint } from "../../../colors"
+import { type Highlight } from "../../../store/slices/bookshelfSlice"
+import { type CustomFont } from "../../../store/slices/preferencesSlice"
 
 export type ReadiumLocation = {
   fragments?: string[]

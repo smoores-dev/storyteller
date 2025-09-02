@@ -1,12 +1,13 @@
-import { User } from "@/apiModels"
+import { type PublicProvider } from "@auth/core/types"
+import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
+import { type Metadata } from "next"
+import { revalidatePath } from "next/cache"
+import { AuthError } from "next-auth"
+
+import { type User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { createConfig, hashPassword, nextAuth } from "@/auth/auth"
 import { getAccounts, updateUser } from "@/database/users"
-import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
-import { AuthError } from "next-auth"
-import { revalidatePath } from "next/cache"
-import { PublicProvider } from "@auth/core/types"
-import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Account",

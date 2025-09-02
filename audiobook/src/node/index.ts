@@ -1,6 +1,5 @@
-import { basename, extname } from "@smoores/path"
-import { AudiobookEntry } from "./entry.ts"
-import { streamFile } from "@smoores/fs"
+import { writeFile } from "node:fs/promises"
+
 import {
   ERR_DUPLICATED_NAME,
   Uint8ArrayReader,
@@ -8,10 +7,15 @@ import {
   ZipReader,
   ZipWriter,
 } from "@zip.js/zip.js"
+import { type IPicture, Picture } from "node-taglib-sharp"
+
+import { streamFile } from "@storyteller-platform/fs"
+import { basename, extname } from "@storyteller-platform/path"
+
 import { BaseAudiobook } from "../base.ts"
 import { type Uint8ArrayEntry } from "../entry.ts"
-import { writeFile } from "node:fs/promises"
-import { type IPicture, Picture } from "node-taglib-sharp"
+
+import { AudiobookEntry } from "./entry.ts"
 
 export class Audiobook extends BaseAudiobook {
   protected constructor(
@@ -68,7 +72,7 @@ export class Audiobook extends BaseAudiobook {
           const data = await entry.getData()
           const reader = new Uint8ArrayReader(data)
           try {
-            return zipWriter.add(entry.filename, reader)
+            return await zipWriter.add(entry.filename, reader)
           } catch (e) {
             if (e instanceof Error && e.message === ERR_DUPLICATED_NAME) {
               throw new Error(

@@ -1,14 +1,15 @@
+import { Button, Group, Modal, Stack } from "@mantine/core"
+import { useState } from "react"
+
 import { BookGrid } from "@/components/books/BookGrid"
 import { FilterSort } from "@/components/collections/FilterSort"
-import { Collection } from "@/database/collections"
+import { type Collection } from "@/database/collections"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
 import {
   useAddBooksToCollectionsMutation,
   useListBooksQuery,
 } from "@/store/api"
-import { UUID } from "@/uuid"
-import { Button, Group, Modal, Stack } from "@mantine/core"
-import { useState } from "react"
+import { type UUID } from "@/uuid"
 
 interface Props {
   isOpen: boolean

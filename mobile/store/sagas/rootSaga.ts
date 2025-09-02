@@ -1,36 +1,37 @@
 import { all, call, fork } from "redux-saga/effects"
+
+import {
+  clearServerSaga,
+  serverUpdateCommittedSaga,
+  serverUpdatedSaga,
+} from "./apiSagas"
 import { loginSaga, logoutSaga } from "./authSagas"
-import { startupSaga } from "./startupSaga"
-import { requestLibrarySaga } from "./librarySagas"
 import {
   deactivateKeepAwakeSaga,
   deleteBookSaga,
   deleteBookmarkSaga,
   deleteHighlightSaga,
   downloadBookSaga,
+  fragmentSkipSaga,
   loadTrackPlayerSaga,
+  manualTrackSeekSaga,
   persistLocatorSaga,
+  playerPlaySaga,
   relocateToTrackPositionSaga,
   seekToLocatorSaga,
+  sleepTimerSaga,
+  syncPositionsSaga,
+  updatePlayerSpeedSaga,
   writeBookmarkSaga,
   writeHighlightSaga,
-  updatePlayerSpeedSaga,
-  syncPositionsSaga,
-  manualTrackSeekSaga,
-  playerPlaySaga,
-  fragmentSkipSaga,
-  sleepTimerSaga,
 } from "./bookshelfSagas"
-import {
-  clearServerSaga,
-  serverUpdateCommittedSaga,
-  serverUpdatedSaga,
-} from "./apiSagas"
+import { requestLibrarySaga } from "./librarySagas"
 import { syncDebug } from "./loggingSagas"
 import {
   writeBookPreferencesSaga,
   writeGlobalPreferencesSaga,
 } from "./preferencesSagas"
+import { startupSaga } from "./startupSaga"
 
 export function* rootSaga() {
   yield fork(serverUpdatedSaga)

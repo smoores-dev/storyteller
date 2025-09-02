@@ -1,14 +1,15 @@
-import { SeriesRelation } from "@/database/books"
+import { Button, MenuItem, Modal, MultiSelect } from "@mantine/core"
+import { useForm } from "@mantine/form"
+import { IconBookOff } from "@tabler/icons-react"
+import { useState } from "react"
+
+import { type SeriesRelation } from "@/database/books"
 import {
   useLazyListSeriesQuery,
   useListBooksQuery,
   useRemoveBooksFromSeriesMutation,
 } from "@/store/api"
-import { UUID } from "@/uuid"
-import { Button, MenuItem, Modal, MultiSelect } from "@mantine/core"
-import { useForm } from "@mantine/form"
-import { IconBookOff } from "@tabler/icons-react"
-import { useState } from "react"
+import { type UUID } from "@/uuid"
 
 interface Props {
   selected: Set<UUID>
