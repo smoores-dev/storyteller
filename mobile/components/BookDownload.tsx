@@ -1,15 +1,17 @@
+import { DownloadCloud } from "lucide-react-native"
 import { Image, StyleSheet, View } from "react-native"
-import { UIText } from "./UIText"
+
 import { useAppDispatch, useAppSelector } from "../store/appState"
+import { getApiClient } from "../store/selectors/apiSelectors"
 import {
   getIsBookDownloading,
   getLibraryBook,
 } from "../store/selectors/librarySelectors"
-import { getApiClient } from "../store/selectors/apiSelectors"
 import { librarySlice } from "../store/slices/librarySlice"
+
 import { DownloadingIndicator } from "./DownloadingIndicator"
+import { UIText } from "./UIText"
 import { Button } from "./ui/Button"
-import { DownloadCloud } from "lucide-react-native"
 import { spacing } from "./ui/tokens/spacing"
 
 type Props = {

@@ -1,14 +1,16 @@
-import { withHasPermission } from "@/auth/auth"
-import { getBook, getBookUuid } from "@/database/books"
+import { createHash } from "node:crypto"
+import { type Stats } from "node:fs"
 import { extname } from "node:path"
+
+import contentDisposition from "content-disposition"
+
 import {
   getExtractedAudiobookCover,
   getExtractedEbookCover,
 } from "@/assets/covers"
-import contentDisposition from "content-disposition"
-import { createHash } from "node:crypto"
-import { Stats } from "node:fs"
 import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
+import { withHasPermission } from "@/auth/auth"
+import { getBook, getBookUuid } from "@/database/books"
 import { optimizeImage } from "@/images"
 
 function hasChanged(

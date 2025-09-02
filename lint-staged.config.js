@@ -8,7 +8,7 @@ const config = {
     () => "yarn prettier --write schema.sql",
   ],
   "epub/*": () => [
-    "yarn workspace @smoores/epub readme",
+    "yarn workspace @storyteller-platform/epub readme",
     "git add epub/README.md",
   ],
 }

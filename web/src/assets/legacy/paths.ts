@@ -1,6 +1,7 @@
-import { AUDIO_DIR, TEXT_DIR } from "@/directories"
-import { UUID } from "@/uuid"
 import { join } from "node:path"
+
+import { AUDIO_DIR, TEXT_DIR } from "@/directories"
+import { type UUID } from "@/uuid"
 
 export function getEpubDirectory(bookUuid: UUID) {
   return join(TEXT_DIR, bookUuid)

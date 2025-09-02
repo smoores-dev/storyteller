@@ -1,19 +1,21 @@
 import {
-  Stack,
+  ActionIcon,
   Box,
   RingProgress,
-  ActionIcon,
-  Tooltip,
+  Stack,
   Text,
+  Tooltip,
 } from "@mantine/core"
-
-import Link from "next/link"
 import { IconDotsCircleHorizontal, IconProgressX } from "@tabler/icons-react"
-import { useCancelProcessingMutation } from "@/store/api"
-import { IconReadaloud } from "../icons/IconReadaloud"
-import { BookThumbnailImage } from "./BookThumbnailImage"
 import cx from "classnames"
-import { BookWithRelations } from "@/database/books"
+import Link from "next/link"
+
+import { type BookWithRelations } from "@/database/books"
+import { useCancelProcessingMutation } from "@/store/api"
+
+import { IconReadaloud } from "../icons/IconReadaloud"
+
+import { BookThumbnailImage } from "./BookThumbnailImage"
 
 interface Props {
   book: BookWithRelations

@@ -1,5 +1,6 @@
-import { bagOfWords } from "@/synchronize/nlp"
 import { readFile, writeFile } from "node:fs/promises"
+
+import { bagOfWords } from "@/synchronize/nlp"
 
 async function readDict() {
   let dict = ""

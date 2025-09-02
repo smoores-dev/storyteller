@@ -1,10 +1,10 @@
 import { withHasPermission } from "@/auth/auth"
 import {
+  type NewSeriesRelation,
   deleteSeries,
-  NewSeriesRelation,
   updateSeries,
 } from "@/database/series"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 
 type Params = Promise<{
   uuid: UUID

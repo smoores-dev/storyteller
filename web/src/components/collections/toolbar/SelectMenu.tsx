@@ -1,8 +1,9 @@
-import { BookWithRelations } from "@/database/books"
-import { UUID } from "@/uuid"
 import { Button, Menu, MenuDropdown, MenuItem, MenuTarget } from "@mantine/core"
 import { IconCheckbox, IconChevronDown } from "@tabler/icons-react"
-import { SetStateAction } from "react"
+import { type SetStateAction } from "react"
+
+import { type BookWithRelations } from "@/database/books"
+import { type UUID } from "@/uuid"
 
 interface Props {
   books: BookWithRelations[]

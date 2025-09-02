@@ -1,6 +1,7 @@
+import { type NextRequest, NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { deleteInvite, getInvite } from "@/database/users"
-import { NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 

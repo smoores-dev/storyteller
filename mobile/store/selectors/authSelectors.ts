@@ -1,4 +1,4 @@
-import { RootState } from "../appState"
+import { type RootState } from "../appState"
 
 export function getAccessToken(state: RootState) {
   return state.auth.accessToken

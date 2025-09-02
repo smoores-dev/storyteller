@@ -1,19 +1,22 @@
-import { UUID } from "@/uuid"
 import { join } from "node:path"
-import Piscina from "piscina"
 import { cwd } from "node:process"
-import type processBook from "./worker"
-import { logger } from "@/logging"
+import { MessageChannel } from "node:worker_threads"
+
+import { AsyncMutex } from "@esfx/async-mutex"
+import Piscina from "piscina"
+
 import {
-  BookWithRelations,
+  type BookRelationsUpdate,
+  type BookUpdate,
+  type BookWithRelations,
   getBookOrThrow,
   getNextQueuePosition,
   updateBook,
-  BookUpdate,
-  BookRelationsUpdate,
 } from "@/database/books"
-import { AsyncMutex } from "@esfx/async-mutex"
-import { MessageChannel } from "node:worker_threads"
+import { logger } from "@/logging"
+import { type UUID } from "@/uuid"
+
+import type processBook from "./worker"
 
 /**
  * Next.js app directory seems to have a bug where, in production,
@@ -55,7 +58,7 @@ if (globalThis.alignmentPiscina) {
     maxThreads: 1,
     // In dev, we don't bundle packages in the worker.
     // These flags allow us to import directly from the
-    // source typescript files for our own packages (e.g. @smoores/epub)
+    // source typescript files for our own packages (e.g. @storyteller-platform/epub)
     ...(process.env.NODE_ENV === "development" && {
       env: {
         ...process.env,

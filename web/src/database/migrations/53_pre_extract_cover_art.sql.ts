@@ -1,14 +1,15 @@
-import { UUID } from "@/uuid"
-import { db } from "../connection"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
+
 import {
   getAudioCover,
   getEpubCover,
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
+import { type BookWithRelations } from "@/database/books"
+import { db } from "@/database/connection"
 import { logger } from "@/logging"
-import { BookWithRelations } from "../books"
+import { type UUID } from "@/uuid"
 
 function booksQuery(userId?: UUID) {
   return db

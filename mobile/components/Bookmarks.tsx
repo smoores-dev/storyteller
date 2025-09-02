@@ -1,13 +1,15 @@
-import { View, Pressable } from "react-native"
+import { Pressable, View } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
+
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
+
 import { UIText } from "./UIText"
 import { Stack } from "./ui/Stack"
-import { spacing } from "./ui/tokens/spacing"
 import { colors } from "./ui/tokens/colors"
 import { fontSizes } from "./ui/tokens/fontSizes"
+import { spacing } from "./ui/tokens/spacing"
 
 export function Bookmarks() {
   const book = useAppSelector(getCurrentlyPlayingBook)

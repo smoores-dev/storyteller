@@ -1,4 +1,5 @@
-import { PayloadAction, createSlice } from "@reduxjs/toolkit"
+import { type PayloadAction, createSlice } from "@reduxjs/toolkit"
+
 import { bookshelfSlice } from "./bookshelfSlice"
 
 export enum ToolbarDialog {

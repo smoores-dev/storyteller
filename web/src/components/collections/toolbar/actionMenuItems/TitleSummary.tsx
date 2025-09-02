@@ -1,5 +1,6 @@
-import { BookWithRelations } from "@/database/books"
 import { Fragment } from "react"
+
+import { type BookWithRelations } from "@/database/books"
 
 interface Props {
   books: BookWithRelations[]

@@ -1,4 +1,4 @@
-import { BookWithRelations } from "@/database/books"
+import { type BookWithRelations } from "@/database/books"
 
 export interface Shelves {
   currentlyReading: BookWithRelations[]

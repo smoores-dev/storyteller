@@ -1,37 +1,42 @@
-import { useRef, useState, useEffect } from "react"
-import { DeviceEventEmitter } from "react-native"
-
-import { Platform, Pressable, StyleSheet, View } from "react-native"
+import { useKeepAwake } from "expo-keep-awake"
+import { Link, Tabs } from "expo-router"
+import { ChevronLeft } from "lucide-react-native"
+import { useEffect, useRef, useState } from "react"
+import {
+  DeviceEventEmitter,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { Link, Tabs } from "expo-router"
-import { useKeepAwake } from "expo-keep-awake"
-import {
-  BookshelfBook,
-  Highlight,
-  bookshelfSlice,
-} from "../store/slices/bookshelfSlice"
+import { deepEquals } from "../deepEquals"
+import { useAudioBook } from "../hooks/useAudioBook"
+import { useColorTheme } from "../hooks/useColorTheme"
 import { EPUBView } from "../modules/readium"
 import {
-  EPUBViewRef,
-  ReadiumLocator,
+  type EPUBViewRef,
+  type ReadiumLocator,
 } from "../modules/readium/src/Readium.types"
-import { MiniPlayer } from "./MiniPlayer"
-import { useAudioBook } from "../hooks/useAudioBook"
-import { Toolbar } from "./Toolbar"
-import { ToolbarDialogs } from "./ToolbarDialogs"
 import { useAppDispatch, useAppSelector } from "../store/appState"
-import { SelectionMenu } from "./SelectionMenu"
-import { useColorTheme } from "../hooks/useColorTheme"
 import {
   getFilledBookPreferences,
   getGlobalPreferences,
 } from "../store/selectors/preferencesSelectors"
-import { Group } from "./ui/Group"
-import { ChevronLeft } from "lucide-react-native"
-import { spacing } from "./ui/tokens/spacing"
+import {
+  type BookshelfBook,
+  type Highlight,
+  bookshelfSlice,
+} from "../store/slices/bookshelfSlice"
+
+import { MiniPlayer } from "./MiniPlayer"
+import { SelectionMenu } from "./SelectionMenu"
 import { SubtlePlayPause } from "./SubtlePlayPause"
-import { deepEquals } from "../deepEquals"
+import { Toolbar } from "./Toolbar"
+import { ToolbarDialogs } from "./ToolbarDialogs"
+import { Group } from "./ui/Group"
+import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
   book: BookshelfBook

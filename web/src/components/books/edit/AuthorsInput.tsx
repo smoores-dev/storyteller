@@ -1,6 +1,7 @@
-import { Creator } from "@/database/creators"
 import { TagsInput as BaseTagsInput } from "@mantine/core"
-import { UseFormReturnType } from "@mantine/form"
+import { type UseFormReturnType } from "@mantine/form"
+
+import { type Creator } from "@/database/creators"
 
 type GetInputProps = UseFormReturnType<{ authors: string[] }>["getInputProps"]
 

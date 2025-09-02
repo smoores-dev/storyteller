@@ -1,9 +1,10 @@
 "use client"
 
-import { Invite } from "@/apiModels"
-import { TextInput, PasswordInput, Button, Stack } from "@mantine/core"
+import { type PublicProvider } from "@auth/core/types"
+import { Button, PasswordInput, Stack, TextInput } from "@mantine/core"
 import { useState } from "react"
-import type { PublicProvider } from "@auth/core/types"
+
+import { type Invite } from "@/apiModels"
 
 interface Props {
   credentialsAction: (formData: FormData) => Promise<void>

@@ -1,5 +1,3 @@
-import { SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
-import { SeriesThumbnail } from "./SeriesThumbnail"
 import {
   ActionIcon,
   Box,
@@ -16,17 +14,22 @@ import {
   useModalsStack,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
+import { IconTrash } from "@tabler/icons-react"
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+
+import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import {
   getCoverUrl,
   useDeleteSeriesMutation,
   useListBooksQuery,
   useUpdateSeriesMutation,
 } from "@/store/api"
+
 import { ContentEditable } from "../books/edit/ContentEditable"
-import { IconTrash } from "@tabler/icons-react"
+
 import { InlineBookSearch } from "./InlineBookSearch"
-import Link from "next/link"
+import { SeriesThumbnail } from "./SeriesThumbnail"
 
 interface Props {
   series: SeriesWithBooks[]

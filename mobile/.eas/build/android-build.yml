@@ -5,13 +5,13 @@ build:
 
     - run:
         name: Focus install
-        command: yarn workspaces focus @storyteller/mobile
+        command: yarn workspaces focus @storyteller-platform/mobile
 
     - eas/resolve_build_config
 
     - run:
         name: Prebuild
-        command: yarn workspace @storyteller/mobile expo prebuild -p android
+        command: yarn workspace @storyteller-platform/mobile expo prebuild -p android
 
     - eas/inject_android_credentials
 

@@ -1,4 +1,8 @@
 import { Slot, SplashScreen } from "expo-router"
+import { useEffect } from "react"
+import { AppState, type AppStateStatus, Platform } from "react-native"
+import { GestureHandlerRootView } from "react-native-gesture-handler"
+import { KeyboardProvider } from "react-native-keyboard-controller"
 import {
   SafeAreaProvider,
   initialWindowMetrics,
@@ -9,17 +13,14 @@ import TrackPlayer, {
   IOSCategory,
   IOSCategoryMode,
 } from "react-native-track-player"
-import { KeyboardProvider } from "react-native-keyboard-controller"
 import { Provider } from "react-redux"
-import { store } from "../store/store"
+
 import { PlaybackService } from "../audio/PlaybackService"
 import { StorytellerProvider } from "../components/StorytellerProvider"
-import { useEffect } from "react"
-import { AppState, AppStateStatus, Platform } from "react-native"
-import { logger } from "../logger"
-import "../tasks/backgroundFetchSyncPositions"
-import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { AudioBookProvider } from "../hooks/useAudioBook"
+import { logger } from "../logger"
+import { store } from "../store/store"
+import "../tasks/backgroundFetchSyncPositions"
 
 TrackPlayer.registerPlaybackService(() => PlaybackService)
 

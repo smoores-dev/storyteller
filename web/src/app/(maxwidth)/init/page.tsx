@@ -1,10 +1,11 @@
-import { getCookieDomain, getCookieSecure } from "@/cookies"
-import { headers, cookies } from "next/headers"
-import { redirect } from "next/navigation"
 import { Button, PasswordInput, TextInput, Title } from "@mantine/core"
-import { createAdminUser } from "@/database/users"
+import { type Metadata } from "next"
+import { cookies, headers } from "next/headers"
+import { redirect } from "next/navigation"
+
 import { createUserToken, hashPassword } from "@/auth/auth"
-import type { Metadata } from "next"
+import { getCookieDomain, getCookieSecure } from "@/cookies"
+import { createAdminUser } from "@/database/users"
 
 export const metadata: Metadata = {
   title: "Setup",

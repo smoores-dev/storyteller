@@ -1,10 +1,14 @@
+import { mkdirSync, renameSync, rmSync, rmdirSync } from "node:fs"
+import { readFile } from "node:fs/promises"
+import { dirname, extname, join } from "node:path"
+
+import { jsonObjectFrom } from "kysely/helpers/sqlite"
+
+import { Epub } from "@storyteller-platform/epub/node"
+
+import * as legacyCovers from "@/assets/legacy/covers"
 import * as legacyPaths from "@/assets/legacy/paths"
 import * as paths from "@/assets/paths"
-import * as legacyCovers from "@/assets/legacy/covers"
-import { mkdirSync, renameSync, rmdirSync, rmSync } from "node:fs"
-import { dirname, extname, join } from "node:path"
-import { db } from "../connection"
-import { logger } from "@/logging"
 import {
   ASSETS_DIR,
   AUDIO_DIR,
@@ -12,9 +16,9 @@ import {
   DATA_DIR,
   TEXT_DIR,
 } from "@/directories"
-import { jsonObjectFrom } from "kysely/helpers/sqlite"
-import { Epub } from "@smoores/epub/node"
-import { readFile } from "node:fs/promises"
+import { logger } from "@/logging"
+
+import { db } from "../connection"
 
 async function getBooks() {
   return await db

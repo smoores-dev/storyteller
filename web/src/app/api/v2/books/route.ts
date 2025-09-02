@@ -1,32 +1,35 @@
-import { withHasPermission } from "@/auth/auth"
-import {
-  BookWithRelations,
-  createBookFromAudiobook,
-  createBookFromEpub,
-  deleteBook,
-  getBooks,
-  updateBook,
-} from "@/database/books"
-import { NextResponse } from "next/server"
-import { UUID } from "@/uuid"
-import { deleteAssets } from "@/assets/fs"
 import { basename, delimiter, dirname, extname } from "path"
-import { isAudioFile, isZipArchive } from "@/audio"
-import { Epub } from "@smoores/epub/node"
-import { logger } from "@/logging"
-import {
-  getMetadataFromAudiobook,
-  getMetadataFromEpub,
-  keepMissingMetadata,
-  keepMissingRelations,
-} from "@/assets/metadata"
-import { Audiobook } from "@smoores/audiobook/node"
+
+import { NextResponse } from "next/server"
+
+import { Audiobook } from "@storyteller-platform/audiobook/node"
+import { Epub } from "@storyteller-platform/epub/node"
+
 import {
   getAudioCover,
   getEpubCover,
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
+import { deleteAssets } from "@/assets/fs"
+import {
+  getMetadataFromAudiobook,
+  getMetadataFromEpub,
+  keepMissingMetadata,
+  keepMissingRelations,
+} from "@/assets/metadata"
+import { isAudioFile, isZipArchive } from "@/audio"
+import { withHasPermission } from "@/auth/auth"
+import {
+  type BookWithRelations,
+  createBookFromAudiobook,
+  createBookFromEpub,
+  deleteBook,
+  getBooks,
+  updateBook,
+} from "@/database/books"
+import { logger } from "@/logging"
+import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
 

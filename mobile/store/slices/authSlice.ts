@@ -1,4 +1,4 @@
-import { PayloadAction, createAction, createSlice } from "@reduxjs/toolkit"
+import { type PayloadAction, createAction, createSlice } from "@reduxjs/toolkit"
 
 export enum AuthenticationState {
   AUTHENTICATED = "AUTHENTICATED",

@@ -1,13 +1,15 @@
-import { RecognitionResult, recognize, setGlobalOption } from "echogarden"
-import { join } from "node:path"
-import { WHISPER_BUILD_DIR } from "./directories"
-import { mkdir, stat } from "node:fs/promises"
-import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 import { exec as execCb, spawn } from "node:child_process"
+import { mkdir, stat } from "node:fs/promises"
+import { join } from "node:path"
 import { promisify } from "node:util"
-import { WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
+
+import { type RecognitionResult, recognize, setGlobalOption } from "echogarden"
+import { type WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
+import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
+
+import { type Settings, type WhisperModel } from "./database/settingsTypes"
+import { WHISPER_BUILD_DIR } from "./directories"
 import { logger } from "./logging"
-import { Settings, WhisperModel } from "./database/settingsTypes"
 
 const exec = promisify(execCb)
 

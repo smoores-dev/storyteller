@@ -1,8 +1,10 @@
-import { SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import { Box, Stack, UnstyledButton } from "@mantine/core"
 import Link from "next/link"
-import { SeriesThumbnailImage } from "./SeriesThumbnailImages"
+
+import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import { useListBooksQuery } from "@/store/api"
+
+import { SeriesThumbnailImage } from "./SeriesThumbnailImages"
 
 interface Props {
   series: SeriesWithBooks

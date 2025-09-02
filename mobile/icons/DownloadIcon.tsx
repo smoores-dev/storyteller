@@ -1,5 +1,6 @@
-import { StyleProp, View, ViewStyle } from "react-native"
+import { type StyleProp, View, type ViewStyle } from "react-native"
 import { G, Path, Svg } from "react-native-svg"
+
 import { useColorTheme } from "../hooks/useColorTheme"
 
 export function DownloadIcon({ style }: { style?: StyleProp<ViewStyle> }) {

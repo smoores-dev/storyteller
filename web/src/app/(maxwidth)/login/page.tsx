@@ -1,14 +1,16 @@
+import { type PublicProvider } from "@auth/core/types"
+import { Title } from "@mantine/core"
+import { type Metadata } from "next"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { apiHost } from "../../apiHost"
-import { getCookieDomain, getCookieSecure } from "@/cookies"
-import { LoginForm } from "@/components/login/LoginForm"
-import { Title } from "@mantine/core"
-import { nextAuth } from "@/auth/auth"
 import { AuthError } from "next-auth"
+
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { PublicProvider } from "@auth/core/types"
-import type { Metadata } from "next"
+import { nextAuth } from "@/auth/auth"
+import { LoginForm } from "@/components/login/LoginForm"
+import { getCookieDomain, getCookieSecure } from "@/cookies"
+
+import { apiHost } from "../../apiHost"
 
 export const metadata: Metadata = {
   title: "Login",

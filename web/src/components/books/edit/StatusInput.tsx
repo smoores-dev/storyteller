@@ -1,6 +1,7 @@
-import { Status } from "@/database/statuses"
-import { UUID } from "@/uuid"
-import { Combobox, InputBase, Group, Text, useCombobox } from "@mantine/core"
+import { Combobox, Group, InputBase, Text, useCombobox } from "@mantine/core"
+
+import { type Status } from "@/database/statuses"
+import { type UUID } from "@/uuid"
 
 interface Props {
   disabled?: boolean | undefined

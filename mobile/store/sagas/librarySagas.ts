@@ -1,25 +1,27 @@
-import * as FileSystem from "expo-file-system"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import type * as FileSystem from "expo-file-system"
 import { call, put, select, spawn, take, takeEvery } from "redux-saga/effects"
-import { getApiClient } from "../selectors/apiSelectors"
-import { LibraryBook, librarySlice } from "../slices/librarySlice"
-import { authSlice } from "../slices/authSlice"
+
+import { type BookDetail } from "../../apiModels"
+import { logger } from "../../logger"
 import {
-  Generated,
+  getPositions,
+  locateLink,
+  openPublication,
+} from "../../modules/readium"
+import { getApiClient } from "../selectors/apiSelectors"
+import { authSlice } from "../slices/authSlice"
+import { bookshelfSlice } from "../slices/bookshelfSlice"
+import { type LibraryBook, librarySlice } from "../slices/librarySlice"
+
+import {
+  type Generated,
   createDownloadChannel,
   extractBookArchive,
   parseLocalizedString,
   readiumToStorytellerAuthors,
   runDownload,
 } from "./bookshelfSagas"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { logger } from "../../logger"
-import { BookDetail } from "../../apiModels"
-import {
-  getPositions,
-  locateLink,
-  openPublication,
-} from "../../modules/readium"
-import { bookshelfSlice } from "../slices/bookshelfSlice"
 
 export function* hydrateExistingDownloads() {
   const allKeys = (yield call(AsyncStorage.getAllKeys)) as Awaited<

@@ -1,7 +1,9 @@
+import { type Metadata } from "next"
+
+import { type Shelves } from "@/apiModels"
 import { BookShelves } from "@/components/books/BookShelves"
+
 import { fetchApiRoute } from "./fetchApiRoute"
-import { Shelves } from "@/apiModels"
-import type { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
 

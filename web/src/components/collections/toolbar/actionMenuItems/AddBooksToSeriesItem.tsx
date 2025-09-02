@@ -1,28 +1,29 @@
-import { BookWithRelations } from "@/database/books"
-import { NewSeries } from "@/database/series"
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Fieldset,
+  Group,
+  Image,
+  MenuItem,
+  Modal,
+  Stack,
+  Text,
+  TextInput,
+} from "@mantine/core"
+import { useForm } from "@mantine/form"
+import { IconBook } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+
+import { type BookWithRelations } from "@/database/books"
+import { type NewSeries } from "@/database/series"
 import {
   getCoverUrl,
   useAddBooksToSeriesMutation,
   useListBooksQuery,
   useListSeriesQuery,
 } from "@/store/api"
-import { UUID } from "@/uuid"
-import {
-  Autocomplete,
-  Button,
-  Fieldset,
-  MenuItem,
-  Modal,
-  Stack,
-  Group,
-  Box,
-  Text,
-  TextInput,
-  Image,
-} from "@mantine/core"
-import { useForm } from "@mantine/form"
-import { IconBook } from "@tabler/icons-react"
-import { useEffect, useMemo, useState } from "react"
+import { type UUID } from "@/uuid"
 
 interface Props {
   selected: Set<UUID>

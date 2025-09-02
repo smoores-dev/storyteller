@@ -1,17 +1,17 @@
 import { Stack } from "expo-router"
 import { useState } from "react"
-import { View, StyleSheet } from "react-native"
+import { StyleSheet, View } from "react-native"
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller"
 
+import { HeaderText } from "../../../components/HeaderText"
 import { UIText } from "../../../components/UIText"
-import { useAppDispatch } from "../../../store/appState"
-import { apiBaseUrlChanged } from "../../../store/slices/apiSlice"
-import { TextInput } from "../../../components/ui/TextInput"
 import { Button } from "../../../components/ui/Button"
+import { TextInput } from "../../../components/ui/TextInput"
+import { fontSizes } from "../../../components/ui/tokens/fontSizes"
 import { spacing } from "../../../components/ui/tokens/spacing"
 import { useColorTheme } from "../../../hooks/useColorTheme"
-import { fontSizes } from "../../../components/ui/tokens/fontSizes"
-import { HeaderText } from "../../../components/HeaderText"
+import { useAppDispatch } from "../../../store/appState"
+import { apiBaseUrlChanged } from "../../../store/slices/apiSlice"
 
 const styles = StyleSheet.create({
   container: {

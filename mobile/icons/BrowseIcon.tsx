@@ -1,4 +1,5 @@
 import { ClipPath, Defs, G, Path, Rect, Svg } from "react-native-svg"
+
 import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {

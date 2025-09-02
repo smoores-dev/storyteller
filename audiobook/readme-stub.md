@@ -1,4 +1,4 @@
-# @smoores/epub
+# @storyteller-platform/epub
 
 A Node.js library for inspecting, modifying, and creating EPUB 3 publications.
 
@@ -24,19 +24,19 @@ A Node.js library for inspecting, modifying, and creating EPUB 3 publications.
 npm:
 
 ```sh
-npm install @smoores/epub
+npm install @storyteller-platform/epub
 ```
 
 yarn:
 
 ```sh
-yarn add @smoores/epub
+yarn add @storyteller-platform/epub
 ```
 
 deno:
 
 ```sh
-deno install npm:@smoores/epub
+deno install npm:@storyteller-platform/epub
 ```
 
 ## About
@@ -73,9 +73,9 @@ readers will encounter the manifest items by simply turning pages one at a time.
 
 ### What this library does
 
-`@smoores/epub` provides an API to interact with the metadata, manifest, and
-spine of the EPUB publication. There are higher level APIs that mostly abstract
-away the implementation details of the EPUB specification, like
+`@storyteller-platform/epub` provides an API to interact with the metadata,
+manifest, and spine of the EPUB publication. There are higher level APIs that
+mostly abstract away the implementation details of the EPUB specification, like
 `epub.setTitle(title: string)` and `epub.getCreators()`, as well as lower level
 APIs like `epub.writeItemContents(path: string, contents: Uint8Array)` and
 `epub.addMetadata(entry: MetadataEntry)`, which require some understanding of
@@ -95,7 +95,7 @@ scratch.
 ### Reading from a file
 
 ```ts
-import { Epub } from "@smoores/epub"
+import { Epub } from "@storyteller-platform/epub"
 
 const epub = await Epub.from("path/to/book.epub")
 console.log(await epub.getTitle())
@@ -114,7 +114,7 @@ incrementally after creation.
 ```ts
 import { randomUUID } from "node:crypto"
 
-import { Epub } from "@smoores/epub"
+import { Epub } from "@storyteller-platform/epub"
 
 const epub = await Epub.create({
   title: "S'mores For Everyone",
@@ -129,7 +129,7 @@ const epub = await Epub.create({
 ### Adding a chapter
 
 ```ts
-import { Epub, ManifestItem } from "@smoores/epub"
+import { Epub, ManifestItem } from "@storyteller-platform/epub"
 
 const epub = await Epub.from("path/to/book.epub")
 
@@ -177,7 +177,7 @@ await epub.addSpineItem(manifestItem.id)
 ### Writing to disk
 
 ```ts
-import { Epub } from "@smoores/epub"
+import { Epub } from "@storyteller-platform/epub"
 
 const epub = await Epub.from("path/to/book.epub")
 await epub.setTitle("S'mores for Everyone")
@@ -190,7 +190,7 @@ await epub.writeToFile("path/to/updated.epub")
 ```ts
 import { randomUUID } from "node:crypto"
 
-import { Epub } from "@smoores/epub"
+import { Epub } from "@storyteller-platform/epub"
 
 const epub = await Epub.create({
   title: "S'mores For Everyone",

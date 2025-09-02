@@ -1,8 +1,10 @@
-import { UUID } from "@/uuid"
-import { db } from "./connection"
-import { Insertable, Selectable, Updateable } from "kysely"
-import { DB } from "./schema"
+import { type Insertable, type Selectable, type Updateable } from "kysely"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
+
+import { type UUID } from "@/uuid"
+
+import { db } from "./connection"
+import { type DB } from "./schema"
 
 export type UserPermission = Selectable<DB["userPermission"]>
 export type NewUserPermission = Insertable<DB["userPermission"]>

@@ -1,11 +1,13 @@
+import { stat } from "node:fs/promises"
+import { resolve } from "node:path"
+
 import {
   getEpubAlignedFilepath,
   getEpubFilepath,
   getOriginalAudioFilepath,
 } from "@/assets/legacy/paths"
+
 import { db } from "../connection"
-import { stat } from "node:fs/promises"
-import { resolve } from "node:path"
 
 export default async function migrate() {
   const books = await db.selectFrom("book").select(["uuid"]).execute()

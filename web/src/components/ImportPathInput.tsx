@@ -1,5 +1,6 @@
 import { Button, Fieldset, Switch } from "@mantine/core"
-import { ReactNode, useState } from "react"
+import { type ReactNode, useState } from "react"
+
 import { ServerFilePicker } from "./books/modals/ServerFilePicker"
 
 interface Props {

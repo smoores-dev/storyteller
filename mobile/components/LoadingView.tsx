@@ -1,4 +1,5 @@
 import { ActivityIndicator, View } from "react-native"
+
 import { useColorTheme } from "../hooks/useColorTheme"
 
 export function LoadingView() {

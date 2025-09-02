@@ -1,16 +1,17 @@
+import { router } from "expo-router"
 import * as SecureStore from "expo-secure-store"
 import { call, put, select, takeEvery } from "redux-saga/effects"
+
+import { ApiClient } from "../../apiClient"
+import { type Token } from "../../apiModels"
+import { logger } from "../../logger"
+import { getApiBaseUrl } from "../selectors/apiSelectors"
+import { apiSlice } from "../slices/apiSlice"
 import {
   authSlice,
   loginButtonTapped,
   loginCredentialsHydrated,
 } from "../slices/authSlice"
-import { getApiBaseUrl } from "../selectors/apiSelectors"
-import { ApiClient } from "../../apiClient"
-import { apiSlice } from "../slices/apiSlice"
-import { router } from "expo-router"
-import { logger } from "../../logger"
-import { Token } from "../../apiModels"
 
 export function* loginSaga() {
   yield takeEvery(

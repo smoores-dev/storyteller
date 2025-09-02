@@ -1,8 +1,13 @@
-import type { DefinePluginOpts, UIPluginOptions, Uppy } from "@uppy/core"
-import { UIPlugin } from "@uppy/core"
+import {
+  type DefinePluginOpts,
+  UIPlugin,
+  type UIPluginOptions,
+  type Uppy,
+} from "@uppy/core"
+import { type Body, type Meta, type UppyFile } from "@uppy/utils/lib/UppyFile"
 import dataURItoBlob from "@uppy/utils/lib/dataURItoBlob"
 import isObjectURL from "@uppy/utils/lib/isObjectURL"
-import type { Body, Meta, UppyFile } from "@uppy/utils/lib/UppyFile"
+
 import { locale } from "./locale"
 
 declare module "@uppy/core" {

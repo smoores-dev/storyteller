@@ -1,11 +1,13 @@
-import { View, Pressable } from "react-native"
-import { ScrollView } from "react-native-gesture-handler"
-import { UIText } from "./UIText"
 import { useRef } from "react"
-import { useAppDispatch } from "../store/appState"
-import { playerTrackChanged } from "../store/slices/bookshelfSlice"
+import { Pressable, View } from "react-native"
+import { ScrollView } from "react-native-gesture-handler"
+
 import { activeBackgroundColor } from "../design"
 import { useAudioBook } from "../hooks/useAudioBook"
+import { useAppDispatch } from "../store/appState"
+import { playerTrackChanged } from "../store/slices/bookshelfSlice"
+
+import { UIText } from "./UIText"
 
 export function TrackLisk() {
   const ref = useRef<null | ScrollView>(null)

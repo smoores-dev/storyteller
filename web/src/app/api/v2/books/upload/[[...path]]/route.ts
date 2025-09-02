@@ -1,25 +1,29 @@
-import { Server } from "@tus/server"
-import { FileStore } from "@tus/file-store"
-import { NextRequest } from "next/server"
-import { withHasPermission } from "@/auth/auth"
-import { UPLOADS_DIR } from "@/directories"
-import { getBook } from "@/database/books"
-import { isAudioFile, isZipArchive, lookupAudioMime } from "@/audio"
-import { Epub } from "@smoores/epub/node"
-import { extname } from "node:path"
-import { UUID } from "@/uuid"
+import { randomBytes } from "node:crypto"
 import { rm } from "node:fs/promises"
+import { extname } from "node:path"
+
 import { AsyncSemaphore } from "@esfx/async-semaphore"
-import { Audiobook } from "@smoores/audiobook/node"
-import { logger } from "@/logging"
+import { FileStore } from "@tus/file-store"
+import { Server } from "@tus/server"
 import { lookup } from "mime-types"
+import { type NextRequest } from "next/server"
+
+import { Audiobook } from "@storyteller-platform/audiobook/node"
+import { Epub } from "@storyteller-platform/epub/node"
+
 import {
   getAudioCover,
   getEpubCover,
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
-import { randomBytes } from "node:crypto"
+import { isAudioFile, isZipArchive, lookupAudioMime } from "@/audio"
+import { withHasPermission } from "@/auth/auth"
+import { getBook } from "@/database/books"
+import { UPLOADS_DIR } from "@/directories"
+import { logger } from "@/logging"
+import { type UUID } from "@/uuid"
+
 import {
   handleAudiobookExistingBook,
   handleAudiobookNewBook,

@@ -1,22 +1,33 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { Invite, InviteRequest, Settings, Shelves, User } from "@/apiModels"
-import { UUID } from "@/uuid"
-import { UserPermissionSet } from "@/database/users"
-import { BookEvent } from "@/events"
+
 import {
-  CreatorRelation,
-  BookRelationsUpdate,
-  BookUpdate,
-  SeriesRelation,
-  BookWithRelations,
+  type Invite,
+  type InviteRequest,
+  type Settings,
+  type Shelves,
+  type User,
+} from "@/apiModels"
+import {
+  type BookRelationsUpdate,
+  type BookUpdate,
+  type BookWithRelations,
+  type CreatorRelation,
+  type SeriesRelation,
 } from "@/database/books"
-import { Status } from "@/database/statuses"
-import { Creator } from "@/database/creators"
-import { NewSeries, NewSeriesRelation, Series } from "@/database/series"
-import { CollectionWithRelations } from "@/database/collections"
-import { Tag } from "@/database/tags"
-import { SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
+import { type CollectionWithRelations } from "@/database/collections"
+import { type Creator } from "@/database/creators"
+import {
+  type NewSeries,
+  type NewSeriesRelation,
+  type Series,
+} from "@/database/series"
+import { type Status } from "@/database/statuses"
+import { type Tag } from "@/database/tags"
+import { type UserPermissionSet } from "@/database/users"
+import { type BookEvent } from "@/events"
+import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
+import { type UUID } from "@/uuid"
 
 export const api = createApi({
   reducerPath: "api",
@@ -145,6 +156,8 @@ export const api = createApi({
       query: () => "/books",
       onCacheEntryAdded: async (
         _,
+        // This is safe to use unbound
+        /* eslint-disable-next-line @typescript-eslint/unbound-method */
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
       ) => {
         try {

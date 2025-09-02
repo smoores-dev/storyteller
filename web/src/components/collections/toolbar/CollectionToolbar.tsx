@@ -1,10 +1,12 @@
-import { AddBooksMenu } from "@/components/books/AddBooksMenu"
-import { BookWithRelations } from "@/database/books"
-import { Collection } from "@/database/collections"
-import { UUID } from "@/uuid"
 import { Button, Group } from "@mantine/core"
 import { IconEdit, IconEditOff } from "@tabler/icons-react"
-import { SetStateAction } from "react"
+import { type SetStateAction } from "react"
+
+import { AddBooksMenu } from "@/components/books/AddBooksMenu"
+import { type BookWithRelations } from "@/database/books"
+import { type Collection } from "@/database/collections"
+import { type UUID } from "@/uuid"
+
 import { ActionMenu } from "./ActionMenu"
 import { SelectMenu } from "./SelectMenu"
 

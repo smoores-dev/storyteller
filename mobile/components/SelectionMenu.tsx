@@ -1,3 +1,6 @@
+import { type UUID } from "node:crypto"
+
+import Clipboard from "@react-native-clipboard/clipboard"
 import {
   Pressable,
   StyleSheet,
@@ -5,16 +8,16 @@ import {
   View,
   useWindowDimensions,
 } from "react-native"
-import Clipboard from "@react-native-clipboard/clipboard"
 import uuid from "react-native-uuid"
-import { ReadiumLocator } from "../modules/readium/src/Readium.types"
-import { useAppDispatch } from "../store/appState"
-import { Highlight, bookshelfSlice } from "../store/slices/bookshelfSlice"
-import { TrashIcon } from "../icons/TrashIcon"
-import { HighlightColorPicker } from "./HighlightColorPicker"
+
 import { useColorTheme } from "../hooks/useColorTheme"
 import { CopyIcon } from "../icons/CopyIcon"
-import type { UUID } from "node:crypto"
+import { TrashIcon } from "../icons/TrashIcon"
+import { type ReadiumLocator } from "../modules/readium/src/Readium.types"
+import { useAppDispatch } from "../store/appState"
+import { type Highlight, bookshelfSlice } from "../store/slices/bookshelfSlice"
+
+import { HighlightColorPicker } from "./HighlightColorPicker"
 
 type Props = {
   bookId: number

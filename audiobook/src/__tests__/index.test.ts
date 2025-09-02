@@ -1,8 +1,11 @@
-import { describe, it } from "node:test"
-import { Audiobook } from "../index.ts"
 import assert from "node:assert"
+import { describe, it } from "node:test"
+
 import { Picture } from "node-taglib-sharp"
-import { streamFile } from "@smoores/fs"
+
+import { streamFile } from "@storyteller-platform/fs"
+
+import { Audiobook } from "../index.ts"
 
 void describe("Audiobook", () => {
   void it("can be created from a file", async () => {

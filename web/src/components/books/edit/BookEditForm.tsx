@@ -1,36 +1,38 @@
 "use client"
 
-import { useRef, useState } from "react"
-import { useForm } from "@mantine/form"
-import { Button, Group, px, Stack, TextInput } from "@mantine/core"
+import { Button, Group, Stack, TextInput, px } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
-import {
-  BookWithRelations,
-  CreatorRelation,
-  SeriesRelation,
-} from "@/database/books"
-import { StatusInput } from "./StatusInput"
-import { CoverImageInput } from "./CoverImageInput"
-import { AuthorsInput } from "./AuthorsInput"
-import { SeriesInput } from "./SeriesInput"
-import { CollectionsInput } from "./CollectionsInput"
+import { useForm } from "@mantine/form"
+import { useDisclosure } from "@mantine/hooks"
+import { useRef, useState } from "react"
+
 import { SaveState } from "@/components/forms"
-import { TagsInput } from "./TagsInput"
+import {
+  type BookWithRelations,
+  type CreatorRelation,
+  type SeriesRelation,
+} from "@/database/books"
 import {
   getCoverUrl,
-  useListCreatorsQuery,
   useListCollectionsQuery,
+  useListCreatorsQuery,
   useListSeriesQuery,
   useListStatusesQuery,
   useListTagsQuery,
   useUpdateBookMutation,
 } from "@/store/api"
 
-import { ContentEditable } from "./ContentEditable"
-import { NarratorsInput } from "./NarratorsInput"
 import { DeleteBookModal } from "../modals/DeleteBookModal"
-import { useDisclosure } from "@mantine/hooks"
+
+import { AuthorsInput } from "./AuthorsInput"
+import { CollectionsInput } from "./CollectionsInput"
+import { ContentEditable } from "./ContentEditable"
+import { CoverImageInput } from "./CoverImageInput"
 import { CreatorsInput } from "./CreatorsInput"
+import { NarratorsInput } from "./NarratorsInput"
+import { SeriesInput } from "./SeriesInput"
+import { StatusInput } from "./StatusInput"
+import { TagsInput } from "./TagsInput"
 
 type Props = {
   book: BookWithRelations

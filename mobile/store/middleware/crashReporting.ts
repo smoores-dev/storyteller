@@ -1,4 +1,5 @@
-import { Middleware } from "@reduxjs/toolkit"
+import { type Middleware } from "@reduxjs/toolkit"
+
 import { logger } from "../../logger"
 
 export const crashReportingMiddleware: Middleware =

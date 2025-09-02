@@ -1,12 +1,13 @@
 import {
+  type ElementName,
   Epub,
-  ElementName,
-  ParsedXml,
-  XmlElement,
-  XmlNode,
-} from "@smoores/epub"
-import { BLOCKS } from "./semantics"
+  type ParsedXml,
+  type XmlElement,
+  type XmlNode,
+} from "@storyteller-platform/epub"
+
 import { getXHtmlSentences } from "./getXhtmlSentences"
+import { BLOCKS } from "./semantics"
 
 type Mark = {
   elementName: ElementName

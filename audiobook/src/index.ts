@@ -1,7 +1,9 @@
 import { Uint8ArrayReader, ZipReader } from "@zip.js/zip.js"
-import { extname } from "@smoores/path"
-import { AudiobookEntry, Uint8ArrayEntry } from "./entry.ts"
-import { AudiobookMetadata, BaseAudiobook } from "./base.ts"
+
+import { extname } from "@storyteller-platform/path"
+
+import { type AudiobookMetadata, BaseAudiobook } from "./base.ts"
+import { AudiobookEntry, type Uint8ArrayEntry } from "./entry.ts"
 
 export class Audiobook extends BaseAudiobook {
   protected constructor(

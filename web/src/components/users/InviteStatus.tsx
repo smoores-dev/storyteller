@@ -1,8 +1,10 @@
-import { Invite } from "@/apiModels"
-import { InviteActions } from "./InviteActions"
-import { useLayoutEffect, useState } from "react"
 import { Box, Group, Paper, Stack, Title } from "@mantine/core"
 import Link from "next/link"
+import { useLayoutEffect, useState } from "react"
+
+import { type Invite } from "@/apiModels"
+
+import { InviteActions } from "./InviteActions"
 
 type Props = {
   invite: Invite

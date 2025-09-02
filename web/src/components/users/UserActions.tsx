@@ -1,7 +1,8 @@
-import { User } from "@/apiModels"
-import { useDeleteUserMutation, useGetCurrentUserQuery } from "@/store/api"
 import { ActionIcon, Stack, Tooltip } from "@mantine/core"
 import { IconPencil, IconTrash } from "@tabler/icons-react"
+
+import { type User } from "@/apiModels"
+import { useDeleteUserMutation, useGetCurrentUserQuery } from "@/store/api"
 
 type Props = {
   user: User

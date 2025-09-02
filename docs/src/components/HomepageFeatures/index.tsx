@@ -1,10 +1,13 @@
-import React from "react"
-import clsx from "clsx"
-import styles from "./styles.module.css"
 import Link from "@docusaurus/Link"
-import SyncSvg from "@site/static/img/ebook-audiobook-sync.svg"
 import DevicesSvg from "@site/static/img/devices.svg"
+import SyncSvg from "@site/static/img/ebook-audiobook-sync.svg"
 import LibrarySvg from "@site/static/img/library.svg"
+import clsx from "clsx"
+// This is used as a value, but only implicitly
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import React from "react"
+
+import styles from "./styles.module.css"
 
 type FeatureItem = {
   title: string

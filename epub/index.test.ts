@@ -1,15 +1,17 @@
-import { join } from "node:path"
-import { describe, it } from "node:test"
-import {
-  Epub,
-  MetadataEntry,
-  ParsedXml,
-  XmlElement,
-  XmlTextNode,
-} from "./node.js"
 import assert from "node:assert"
 import { stat } from "node:fs/promises"
-import { streamFile } from "@smoores/fs"
+import { join } from "node:path"
+import { describe, it } from "node:test"
+
+import { streamFile } from "@storyteller-platform/fs"
+
+import {
+  Epub,
+  type MetadataEntry,
+  type ParsedXml,
+  type XmlElement,
+  type XmlTextNode,
+} from "./node.js"
 
 void describe("xhtml parsing", () => {
   void it("can handle self-closing stop nodes", () => {

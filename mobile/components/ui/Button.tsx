@@ -1,14 +1,16 @@
+import { StyleSheet, View } from "react-native"
 import {
   BorderlessButton,
-  BorderlessButtonProps,
+  type BorderlessButtonProps,
   RectButton,
-  RectButtonProps,
+  type RectButtonProps,
 } from "react-native-gesture-handler"
-import { colors } from "./tokens/colors"
-import { ThemeOverrideProvider } from "../ThemeOverrideProvider"
+
 import { useColorTheme } from "../../hooks/useColorTheme"
+import { ThemeOverrideProvider } from "../ThemeOverrideProvider"
+
+import { colors } from "./tokens/colors"
 import { spacing } from "./tokens/spacing"
-import { StyleSheet, View } from "react-native"
 
 export type ButtonProps = {
   variant?: "primary" | "secondary"

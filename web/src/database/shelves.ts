@@ -1,6 +1,8 @@
-import { UUID } from "@/uuid"
-import { booksQuery } from "./books"
 import { sql } from "kysely"
+
+import { type UUID } from "@/uuid"
+
+import { booksQuery } from "./books"
 
 export async function getCurrentlyReading(userId: UUID) {
   return await booksQuery(userId)

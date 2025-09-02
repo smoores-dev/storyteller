@@ -1,31 +1,33 @@
-import { isAudioFile } from "@/audio"
-import {
-  BookUpdate,
-  createBookFromAudiobook,
-  createBookFromEpub,
-  getBooks,
-  updateBook,
-} from "@/database/books"
-import { logger } from "@/logging"
-import { UUID } from "@/uuid"
-import { Audiobook } from "@smoores/audiobook/node"
-import { Epub } from "@smoores/epub/node"
 import { readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
-import { writeCachedCoverImage } from "../fs"
+
+import { Audiobook } from "@storyteller-platform/audiobook/node"
+import { Epub } from "@storyteller-platform/epub/node"
+
 import {
   getAudioCover,
   getEpubCover,
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
-} from "../covers"
-import { optimizeImage } from "@/images"
+} from "@/assets/covers"
+import { writeCachedCoverImage } from "@/assets/fs"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
   keepMissingMetadata,
   keepMissingRelations,
-} from "../metadata"
+} from "@/assets/metadata"
+import { isAudioFile } from "@/audio"
+import {
+  type BookUpdate,
+  createBookFromAudiobook,
+  createBookFromEpub,
+  getBooks,
+  updateBook,
+} from "@/database/books"
+import { optimizeImage } from "@/images"
+import { logger } from "@/logging"
+import { type UUID } from "@/uuid"
 
 export async function scan(
   importPath: string,

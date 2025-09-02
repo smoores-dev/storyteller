@@ -1,10 +1,10 @@
 import { withHasPermission } from "@/auth/auth"
 import {
+  type UserPermissionSet,
   deleteUser,
   updateUserPermissions,
-  UserPermissionSet,
 } from "@/database/users"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
 

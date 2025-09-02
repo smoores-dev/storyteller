@@ -1,13 +1,14 @@
-import { Collection } from "@/database/collections"
-import {
-  useListBooksQuery,
-  useRemoveBooksFromCollectionsMutation,
-} from "@/store/api"
-import { UUID } from "@/uuid"
 import { Button, MenuItem, Modal, MultiSelect } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { IconBooks } from "@tabler/icons-react"
+
+import { type Collection } from "@/database/collections"
+import {
+  useListBooksQuery,
+  useRemoveBooksFromCollectionsMutation,
+} from "@/store/api"
+import { type UUID } from "@/uuid"
 
 const EMPTY_COLLECTIONS: Collection[] = []
 

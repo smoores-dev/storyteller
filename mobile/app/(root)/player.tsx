@@ -1,36 +1,37 @@
 import { router } from "expo-router"
-import { Image, Platform, Pressable, StyleSheet, View } from "react-native"
-import { ChevronDownIcon } from "../../icons/ChevronDownIcon"
-import { useAppDispatch, useAppSelector } from "../../store/appState"
-import { UIText } from "../../components/UIText"
-import { HeaderText } from "../../components/HeaderText"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { Image, Platform, Pressable, StyleSheet, View } from "react-native"
 import TrackPlayer, {
-  useTrackPlayerEvents,
   Event,
+  useTrackPlayerEvents,
 } from "react-native-track-player"
-import { ProgressBar } from "../../components/ProgressBar"
-import { formatTime, useAudioBook } from "../../hooks/useAudioBook"
+
+import { seekBackward, seekForward } from "../../audio/PlaybackService"
+import { HeaderText } from "../../components/HeaderText"
+import { LoadingView } from "../../components/LoadingView"
 import { PlayPause } from "../../components/PlayPause"
-import { PrevIcon } from "../../icons/PrevIcon"
-import { NextIcon } from "../../icons/NextIcon"
+import { ProgressBar } from "../../components/ProgressBar"
+import { Toolbar } from "../../components/Toolbar"
+import { ToolbarDialogs } from "../../components/ToolbarDialogs"
+import { UIText } from "../../components/UIText"
+import { fontSizes } from "../../components/ui/tokens/fontSizes"
+import { spacing } from "../../components/ui/tokens/spacing"
+import { formatTime, useAudioBook } from "../../hooks/useAudioBook"
+import { useColorTheme } from "../../hooks/useColorTheme"
+import { ChevronDownIcon } from "../../icons/ChevronDownIcon"
 import { JumpBackwardFifteenIcon } from "../../icons/JumpBackwardFifteenIcon"
 import { JumpForwardFifteenIcon } from "../../icons/JumpForwardFifteenIcon"
+import { NextIcon } from "../../icons/NextIcon"
+import { PrevIcon } from "../../icons/PrevIcon"
+import { isSameChapter } from "../../links"
+import { areLocatorsEqual } from "../../modules/readium"
+import { useAppDispatch, useAppSelector } from "../../store/appState"
+import { getLocalAudioBookCoverUrl } from "../../store/persistence/files"
 import {
   getCurrentlyPlayingBook,
   getLocator,
 } from "../../store/selectors/bookshelfSelectors"
-import { getLocalAudioBookCoverUrl } from "../../store/persistence/files"
-import { LoadingView } from "../../components/LoadingView"
-import { Toolbar } from "../../components/Toolbar"
-import { ToolbarDialogs } from "../../components/ToolbarDialogs"
-import { areLocatorsEqual } from "../../modules/readium"
-import { isSameChapter } from "../../links"
-import { seekBackward, seekForward } from "../../audio/PlaybackService"
 import { playerPositionSeeked } from "../../store/slices/bookshelfSlice"
-import { spacing } from "../../components/ui/tokens/spacing"
-import { useColorTheme } from "../../hooks/useColorTheme"
-import { fontSizes } from "../../components/ui/tokens/fontSizes"
 import { throttle } from "../../throttle"
 
 const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]

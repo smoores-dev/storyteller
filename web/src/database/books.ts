@@ -1,21 +1,30 @@
-import { UUID } from "@/uuid"
-import { db } from "./connection"
-import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 import {
-  ProcessingTaskType,
-  ProcessingTaskStatus,
+  type Insertable,
+  type Selectable,
+  type Transaction,
+  type Updateable,
+  sql,
+} from "kysely"
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
+
+import { type Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook/node"
+import { type Epub } from "@storyteller-platform/epub/node"
+
+import {
+  type ProcessingTaskStatus,
+  type ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
-import { BookEvents } from "@/events"
-import { DB } from "./schema"
-import { Insertable, Selectable, sql, Transaction, Updateable } from "kysely"
-import { Epub } from "@smoores/epub/node"
-import { Audiobook as AudiobookAsset } from "@smoores/audiobook/node"
-import { NewCreator } from "./creators"
-import { NewSeries } from "./series"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
 } from "@/assets/metadata"
+import { BookEvents } from "@/events"
+import { type UUID } from "@/uuid"
+
+import { db } from "./connection"
+import { type NewCreator } from "./creators"
+import { type DB } from "./schema"
+import { type NewSeries } from "./series"
 
 /**
  * This function only exists to support old clients that haven't

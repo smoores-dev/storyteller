@@ -5,8 +5,6 @@ import Atlassian from "next-auth/providers/atlassian"
 import Auth0 from "next-auth/providers/auth0"
 import Authentik from "next-auth/providers/authentik"
 import AzureADB2C from "next-auth/providers/azure-ad-b2c"
-import AzureAD from "next-auth/providers/azure-ad"
-import AzureDevops from "next-auth/providers/azure-devops"
 import BankIDNorway from "next-auth/providers/bankid-no"
 import Battlenet from "next-auth/providers/battlenet"
 import BeyondIdentity from "next-auth/providers/beyondidentity"
@@ -101,8 +99,6 @@ export const Providers = {
   auth0: Auth0,
   authentik: Authentik,
   "azure-ad-b2c": AzureADB2C,
-  "azure-ad": AzureAD,
-  "azure-devops": AzureDevops,
   "bankid-no": BankIDNorway,
   battlenet: Battlenet,
   beyondidentity: BeyondIdentity,

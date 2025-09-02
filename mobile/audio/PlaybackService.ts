@@ -1,11 +1,12 @@
 import TrackPlayer, { Event, State } from "react-native-track-player"
-import { store } from "../store/store"
+
+import { getGlobalPreferences } from "../store/selectors/preferencesSelectors"
 import {
   playerPaused,
   playerPlayed,
   playerPositionUpdated,
 } from "../store/slices/bookshelfSlice"
-import { getGlobalPreferences } from "../store/selectors/preferencesSelectors"
+import { store } from "../store/store"
 
 export async function seekBackward(interval: number) {
   const { position: currentPosition } = await TrackPlayer.getProgress()

@@ -1,14 +1,14 @@
 import {
-  AnyColumn,
-  KyselyPlugin,
+  type AnyColumn,
+  type KyselyPlugin,
   OperationNodeTransformer,
-  PluginTransformQueryArgs,
-  PluginTransformResultArgs,
-  PrimitiveValueListNode,
-  QueryResult,
-  RootOperationNode,
-  UnknownRow,
-  ValueNode,
+  type PluginTransformQueryArgs,
+  type PluginTransformResultArgs,
+  type PrimitiveValueListNode,
+  type QueryResult,
+  type RootOperationNode,
+  type UnknownRow,
+  type ValueNode,
 } from "kysely"
 
 class SqliteBooleanTransformer extends OperationNodeTransformer {

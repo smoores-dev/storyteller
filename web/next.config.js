@@ -9,10 +9,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   transpilePackages: [
-    "@smoores/epub",
-    "@smoores/fs",
-    "@smoores/path",
-    "@smoores/audiobook",
+    "@storyteller-platform/epub",
+    "@storyteller-platform/fs",
+    "@storyteller-platform/path",
+    "@storyteller-platform/audiobook",
   ],
   serverExternalPackages: [
     "piscina",
@@ -28,12 +28,12 @@ const nextConfig = {
   },
   turbopack: {
     resolveAlias: {
-      "@smoores/epub": "../epub/index.ts",
-      "@smoores/epub/node": "../epub/node.ts",
-      "@smoores/fs": "../fs/index.ts",
-      "@smoores/path": "../path/index.ts",
-      "@smoores/audiobook": "../audiobook/index.ts",
-      "@smoores/audiobook/node": "../audiobook/src/node/index.ts",
+      "@storyteller-platform/epub": "../epub/index.ts",
+      "@storyteller-platform/epub/node": "../epub/node.ts",
+      "@storyteller-platform/fs": "../fs/index.ts",
+      "@storyteller-platform/path": "../path/index.ts",
+      "@storyteller-platform/audiobook": "../audiobook/index.ts",
+      "@storyteller-platform/audiobook/node": "../audiobook/src/node/index.ts",
     },
   },
   /**

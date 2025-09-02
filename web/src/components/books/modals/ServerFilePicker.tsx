@@ -1,19 +1,21 @@
 import {
-  DirectoryEntry,
+  Button,
+  Combobox,
+  Group,
+  Stack,
+  Text,
+  TextInput,
+  useCombobox,
+} from "@mantine/core"
+import { matchSorter } from "match-sorter"
+import { useEffect, useMemo, useState } from "react"
+
+import {
+  type DirectoryEntry,
   listDirectoryAction,
 } from "@/actions/listDirectoryAction"
-import { useEffect, useMemo, useState } from "react"
-import { matchSorter } from "match-sorter"
+
 import { FolderIcon } from "../../icons/FolderIcon"
-import {
-  Combobox,
-  useCombobox,
-  TextInput,
-  Group,
-  Text,
-  Stack,
-  Button,
-} from "@mantine/core"
 
 function dirname(path: string) {
   const segments = path.split("/")

@@ -1,11 +1,14 @@
-import { basename, extname, join } from "node:path"
-import { db } from "./connection"
-import { cwd } from "node:process"
-import { readFile, readdir } from "node:fs/promises"
 import { createHash } from "node:crypto"
-import { logger } from "@/logging"
+import { readFile, readdir } from "node:fs/promises"
+import { basename, extname, join } from "node:path"
+import { cwd } from "node:process"
+
 import { splitQuery, sqliteSplitterOptions } from "dbgate-query-splitter"
 import { sql } from "kysely"
+
+import { logger } from "@/logging"
+
+import { db } from "./connection"
 
 const jsMigrations: Record<string, () => Promise<void>> = {
   "33_add_more_book_metadata.sql": (

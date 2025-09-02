@@ -1,13 +1,15 @@
+import { type UUID } from "crypto"
+
 import AsyncStorage from "@react-native-async-storage/async-storage"
+
+import { type BookDetail } from "../../apiModels"
 import { exists } from "../../exists"
-import { BookDetail } from "../../apiModels"
-import {
-  ReadiumLocator,
-  TimestampedLocator,
-} from "../../modules/readium/src/Readium.types"
-import { BookshelfBook, Highlight } from "../slices/bookshelfSlice"
 import { areLocatorsEqual } from "../../modules/readium"
-import type { UUID } from "crypto"
+import {
+  type ReadiumLocator,
+  type TimestampedLocator,
+} from "../../modules/readium/src/Readium.types"
+import { type BookshelfBook, type Highlight } from "../slices/bookshelfSlice"
 
 export type Book = BookDetail & { downloaded?: boolean }
 

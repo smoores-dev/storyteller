@@ -1,10 +1,11 @@
-import { TagsInput } from "@/components/books/edit/TagsInput"
-import { useAddTagsToBooksMutation, useListTagsQuery } from "@/store/api"
-import { UUID } from "@/uuid"
 import { Button, MenuItem, Modal } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { IconTags } from "@tabler/icons-react"
+
+import { TagsInput } from "@/components/books/edit/TagsInput"
+import { useAddTagsToBooksMutation, useListTagsQuery } from "@/store/api"
+import { type UUID } from "@/uuid"
 
 interface Props {
   selected: Set<UUID>

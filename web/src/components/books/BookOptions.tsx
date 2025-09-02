@@ -1,6 +1,7 @@
+import { type BookWithRelations } from "@/database/books"
 import { usePermissions } from "@/hooks/usePermissions"
+
 import { ProcessingItems } from "./ProcessingItems"
-import { BookWithRelations } from "@/database/books"
 
 type Props = {
   book: BookWithRelations

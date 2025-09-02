@@ -1,13 +1,21 @@
-import { mkdir, open, readdir, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdir, open, readFile, readdir, rm, writeFile } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
-import { UUID } from "@/uuid"
-import { Book, BookWithRelations, getBookOrThrow } from "@/database/books"
-import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
-import { Audiobook } from "@smoores/audiobook/node"
-import { getAudiobookCoverDirectory, getEbookCoverDirectory } from "./paths"
-import { Epub } from "@smoores/epub/node"
-import { getAudioCoverItem } from "@/assets/metadata"
+
 import { extension, lookup } from "mime-types"
+
+import { Audiobook } from "@storyteller-platform/audiobook/node"
+import { Epub } from "@storyteller-platform/epub/node"
+
+import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
+import {
+  type Book,
+  type BookWithRelations,
+  getBookOrThrow,
+} from "@/database/books"
+import { type UUID } from "@/uuid"
+
+import { getAudioCoverItem } from "./metadata"
+import { getAudiobookCoverDirectory, getEbookCoverDirectory } from "./paths"
 
 export type AudioFile = {
   filename: string
@@ -33,6 +41,7 @@ export async function getFirstCoverImage(directory: string) {
     if (!coverImage) return null
 
     return {
+      /* eslint-disable-next-line @typescript-eslint/no-deprecated */
       data: coverImage.data.toByteArray(),
       format: coverImage.mimeType,
       audiofile: join(directory, firstTrack),
@@ -178,6 +187,7 @@ export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
     filename: coverArt.filename || `Cover.${extension(coverArt.mimeType)}`,
     mimeType: coverArt.mimeType,
     stats,
+    /* eslint-disable-next-line @typescript-eslint/no-deprecated */
     data: Buffer.from(coverArt.data.toByteArray()),
   }
 }
@@ -213,6 +223,7 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
       `Cover.${extension(firstCover.picture.mimeType)}`,
     mimeType: firstCover.picture.mimeType,
     stats,
+    /* eslint-disable-next-line @typescript-eslint/no-deprecated */
     data: Buffer.from(firstCover.picture.data.toByteArray()),
   }
 }

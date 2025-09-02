@@ -1,33 +1,42 @@
-import { hash, verify as verifyPassword } from "argon2"
+import { randomUUID } from "node:crypto"
+import { readFileSync } from "node:fs"
 
+import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
+import { hash, verify as verifyPassword } from "argon2"
+import { add } from "date-fns/fp/add"
+import { type ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
+import { cookies, headers, headers as nextHeaders } from "next/headers"
+import { notFound, redirect } from "next/navigation"
+import { type NextRequest, NextResponse } from "next/server"
+import NextAuth, {
+  type DefaultSession,
+  type NextAuthConfig,
+  type NextAuthRequest,
+  type Session,
+} from "next-auth"
 import {
-  Permission,
-  UserPermissionSet,
-  UserWithPermissions,
+  type OAuth2Config,
+  type OAuthUserConfig,
+  type OIDCConfig,
+} from "next-auth/providers"
+import Credentials from "next-auth/providers/credentials"
+
+import { KyselyAdapter } from "@/database/authAdapter"
+import { db } from "@/database/connection"
+import { getSettings } from "@/database/settings"
+import {
+  type Permission,
+  type UserPermissionSet,
+  type UserWithPermissions,
   acceptInvite,
+  getCurrentUserSession,
   getInvite,
   getUserByUsernameOrEmail,
   updateUserByEmail,
-} from "../database/users"
-import { add } from "date-fns/fp/add"
-import { NextRequest, NextResponse } from "next/server"
-import { readFileSync } from "node:fs"
-import NextAuth, { type DefaultSession, NextAuthConfig } from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import { KyselyAdapter } from "../database/authAdapter"
-import { db } from "../database/connection"
-import { Session, NextAuthRequest } from "next-auth"
-import { OAuth2Config, OAuthUserConfig, OIDCConfig } from "next-auth/providers"
-import { UUID } from "../uuid"
-import { randomUUID } from "node:crypto"
-import { getSettings } from "../database/settings"
+} from "@/database/users"
+import { type UUID } from "@/uuid"
+
 import { Providers } from "./providers"
-import { cookies, headers } from "next/headers"
-import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
-import { headers as nextHeaders } from "next/headers"
-import { getCurrentUserSession } from "@/database/users"
-import { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
-import { notFound, redirect } from "next/navigation"
 
 declare module "next-auth" {
   interface Session {
@@ -202,6 +211,8 @@ export async function createConfig(
     providers: config.providers.map(
       (provider) =>
         ({
+          // We never actually pass a function here
+          /* eslint-disable-next-line @typescript-eslint/no-misused-spread */
           ...provider,
           allowDangerousEmailAccountLinking: true,
         }) as OAuth2Config<unknown>,

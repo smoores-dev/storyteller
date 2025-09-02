@@ -1,9 +1,9 @@
-import { BookDetails } from "@/components/books/BookDetails"
-import { UUID } from "@/uuid"
-import { fetchApiRoute } from "@/app/fetchApiRoute"
+import { type Metadata } from "next"
 
-import type { Metadata } from "next"
-import { BookWithRelations } from "@/database/books"
+import { fetchApiRoute } from "@/app/fetchApiRoute"
+import { BookDetails } from "@/components/books/BookDetails"
+import { type BookWithRelations } from "@/database/books"
+import { type UUID } from "@/uuid"
 
 type Props = {
   params: Promise<{

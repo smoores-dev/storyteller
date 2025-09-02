@@ -1,18 +1,20 @@
 import {
-  View,
+  Platform,
   Pressable,
   ScrollView,
-  useWindowDimensions,
   StyleSheet,
-  Platform,
+  View,
+  useWindowDimensions,
 } from "react-native"
-import { appColor } from "../design"
-import { toolbarSlice } from "../store/slices/toolbarSlice"
-import { ReadingSettings } from "./ReadingSettings"
-import { UIText } from "./UIText"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+
+import { appColor } from "../design"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { useAppDispatch } from "../store/appState"
+import { toolbarSlice } from "../store/slices/toolbarSlice"
+
+import { ReadingSettings } from "./ReadingSettings"
+import { UIText } from "./UIText"
 import { spacing } from "./ui/tokens/spacing"
 
 type Props = {

@@ -1,13 +1,14 @@
-import { List, Checkbox, Text, Anchor } from "@mantine/core"
-import { BookThumbnail } from "./BookThumbnail"
-
-import { UUID } from "@/uuid"
+import { Anchor, Checkbox, List, Text } from "@mantine/core"
 import cx from "classnames"
+
+import { type BookWithRelations } from "@/database/books"
 import {
+  type FilterSortOptions,
   createComparisonTitle,
-  FilterSortOptions,
 } from "@/hooks/useFilterSortedBooks"
-import { BookWithRelations } from "@/database/books"
+import { type UUID } from "@/uuid"
+
+import { BookThumbnail } from "./BookThumbnail"
 
 interface Props {
   className?: string

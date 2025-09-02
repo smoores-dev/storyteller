@@ -1,16 +1,18 @@
-import { View, Pressable } from "react-native"
-import { ScrollView } from "react-native-gesture-handler"
-import { UIText } from "./UIText"
-import { locateLink } from "../modules/readium"
 import { useRef } from "react"
-import { useAppSelector, useAppDispatch } from "../store/appState"
+import { Pressable, View } from "react-native"
+import { ScrollView } from "react-native-gesture-handler"
+
+import { activeBackgroundColor } from "../design"
+import { isSameChapter } from "../links"
+import { locateLink } from "../modules/readium"
+import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getCurrentlyPlayingBook,
   getLocator,
 } from "../store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "../store/slices/bookshelfSlice"
-import { isSameChapter } from "../links"
-import { activeBackgroundColor } from "../design"
+
+import { UIText } from "./UIText"
 
 export function TableOfContents() {
   const ref = useRef<null | ScrollView>(null)

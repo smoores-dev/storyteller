@@ -1,16 +1,14 @@
-// Import the native module. On web, it will be resolved to Readium.web.ts
-// and on native platforms to Readium.ts
+import {
+  type EPUBViewProps,
+  type EPUBViewRef,
+  type ReadiumClip,
+  type ReadiumLink,
+  type ReadiumLocator,
+  type ReadiumManifest,
+  type ReadiumTextFragment,
+} from "./src/Readium.types"
 import ReadiumModule from "./src/ReadiumModule"
 export { default as ReadiumView } from "./src/ReadiumView"
-import {
-  EPUBViewProps,
-  EPUBViewRef,
-  ReadiumManifest,
-  ReadiumLink,
-  ReadiumClip,
-  ReadiumTextFragment,
-  ReadiumLocator,
-} from "./src/Readium.types"
 import EPUBView from "./src/ReadiumView"
 
 export async function extractArchive(archiveUrl: string, extractedUrl: string) {

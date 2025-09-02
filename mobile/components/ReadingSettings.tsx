@@ -1,28 +1,30 @@
-import { Slider } from "./ui/Slider"
+import { dequal } from "dequal"
+import { Link } from "expo-router"
+import { PlusIcon } from "lucide-react-native"
+import { useMemo } from "react"
 import { Pressable, StyleSheet, View } from "react-native"
 import Select from "react-native-picker-select"
-import { dequal } from "dequal"
+
 import { formatNumber } from "../formatting"
-import {
-  defaultPreferences,
-  preferencesSlice,
-} from "../store/slices/preferencesSlice"
-import { ButtonGroup, ButtonGroupButton } from "./ui/ButtonGroup"
-import { HighlightColorPicker } from "./HighlightColorPicker"
-import { UIText } from "./UIText"
 import { useColorTheme } from "../hooks/useColorTheme"
 import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getFilledBookPreferences,
   getGlobalPreferences,
 } from "../store/selectors/preferencesSelectors"
-import { useMemo } from "react"
+import {
+  defaultPreferences,
+  preferencesSlice,
+} from "../store/slices/preferencesSlice"
+
+import { FontLoader } from "./FontLoader"
+import { HighlightColorPicker } from "./HighlightColorPicker"
+import { UIText } from "./UIText"
+import { ButtonGroup, ButtonGroupButton } from "./ui/ButtonGroup"
+import { Slider } from "./ui/Slider"
 import { colors } from "./ui/tokens/colors"
 import { fontSizes } from "./ui/tokens/fontSizes"
 import { spacing } from "./ui/tokens/spacing"
-import { PlusIcon } from "lucide-react-native"
-import { Link } from "expo-router"
-import { FontLoader } from "./FontLoader"
 
 type Props = {
   bookId?: number

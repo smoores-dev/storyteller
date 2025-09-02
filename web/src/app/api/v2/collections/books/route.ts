@@ -3,7 +3,7 @@ import {
   addBooksToCollections,
   removeBooksFromCollections,
 } from "@/database/collections"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 
 export const POST = withHasPermission("bookUpdate")(async (request) => {
   const body = (await request.json()) as {

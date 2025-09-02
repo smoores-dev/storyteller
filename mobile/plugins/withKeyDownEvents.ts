@@ -1,5 +1,5 @@
 // plugin/src/index.js
-import { ExpoConfig } from "expo/config"
+import { type ExpoConfig } from "expo/config"
 import { withMainActivity } from "expo/config-plugins"
 
 export default function withKeyDownEvents(

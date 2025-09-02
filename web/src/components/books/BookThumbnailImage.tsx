@@ -1,11 +1,12 @@
-import { getCoverUrl } from "@/store/api"
-import { Box, Image, px, Stack } from "@mantine/core"
+import { Box, Image, Stack, px } from "@mantine/core"
 import { IconBookFilled, IconHeadphonesFilled } from "@tabler/icons-react"
-import { HTMLProps, useCallback, useState } from "react"
 import cx from "classnames"
+import { type HTMLProps, useCallback, useState } from "react"
 import { twMerge } from "tailwind-merge"
+
+import { type BookWithRelations } from "@/database/books"
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
-import { BookWithRelations } from "@/database/books"
+import { getCoverUrl } from "@/store/api"
 
 interface Props {
   book: BookWithRelations

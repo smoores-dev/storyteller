@@ -1,4 +1,5 @@
-import { Epub, ParsedXml } from "@smoores/epub"
+import { Epub, type ParsedXml } from "@storyteller-platform/epub"
+
 import { tokenizeSentences } from "./nlp"
 import { BLOCKS } from "./semantics"
 

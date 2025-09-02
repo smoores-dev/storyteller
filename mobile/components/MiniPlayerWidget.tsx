@@ -1,17 +1,19 @@
-import { StyleSheet, View, Image, Pressable, Platform } from "react-native"
-import { formatTime, useAudioBook } from "../hooks/useAudioBook"
-import { useAppDispatch, useAppSelector } from "../store/appState"
-import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
-import { useColorTheme } from "../hooks/useColorTheme"
-import { useState, useEffect, useMemo } from "react"
-import { ProgressBar } from "./ProgressBar"
-import { playerPositionSeeked } from "../store/slices/bookshelfSlice"
 import { Link } from "expo-router"
+import { useEffect, useMemo, useState } from "react"
+import { Image, Platform, Pressable, StyleSheet, View } from "react-native"
+
+import { formatTime, useAudioBook } from "../hooks/useAudioBook"
+import { useColorTheme } from "../hooks/useColorTheme"
+import { useAppDispatch, useAppSelector } from "../store/appState"
 import { getLocalAudioBookCoverUrl } from "../store/persistence/files"
-import { UIText } from "./UIText"
+import { getCurrentlyPlayingBook } from "../store/selectors/bookshelfSelectors"
+import { playerPositionSeeked } from "../store/slices/bookshelfSlice"
+
 import { PlayPause } from "./PlayPause"
-import { spacing } from "./ui/tokens/spacing"
+import { ProgressBar } from "./ProgressBar"
+import { UIText } from "./UIText"
 import { fontSizes } from "./ui/tokens/fontSizes"
+import { spacing } from "./ui/tokens/spacing"
 
 export function MiniPlayerWidget() {
   const { foreground, background } = useColorTheme()

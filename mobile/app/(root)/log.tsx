@@ -1,7 +1,8 @@
+import * as FileSystem from "expo-file-system"
 import { useEffect, useState } from "react"
 import { ScrollView, StyleSheet } from "react-native"
+
 import { LoadingView } from "../../components/LoadingView"
-import * as FileSystem from "expo-file-system"
 import { UIText } from "../../components/UIText"
 
 export default function LogModal() {

@@ -1,4 +1,4 @@
-import { ActionIcon, TextInput, TextInputProps } from "@mantine/core"
+import { ActionIcon, TextInput, type TextInputProps } from "@mantine/core"
 import { IconX } from "@tabler/icons-react"
 import { startTransition, useRef } from "react"
 
@@ -21,7 +21,7 @@ export function Search({
       placeholder="Search"
       className="my-0"
       defaultValue={initialValue}
-      classNames={{ ...classNames }}
+      {...(classNames && { classNames })}
       rightSection={
         <ActionIcon
           variant="subtle"

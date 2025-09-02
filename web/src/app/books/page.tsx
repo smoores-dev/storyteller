@@ -1,7 +1,8 @@
-import { BookList } from "@/components/books/BookList"
 import { Title } from "@mantine/core"
+import { type Metadata } from "next"
+
 import { assertHasPermission } from "@/auth/auth"
-import type { Metadata } from "next"
+import { BookList } from "@/components/books/BookList"
 
 export const metadata: Metadata = {
   title: "Books",

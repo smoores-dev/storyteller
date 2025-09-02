@@ -1,7 +1,8 @@
-import { CACHE_DIR } from "@/directories"
-import { UUID } from "@/uuid"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
+
+import { CACHE_DIR } from "@/directories"
+import { type UUID } from "@/uuid"
 
 export function getSyncCachePath(bookUuid: UUID) {
   return join(CACHE_DIR, `${bookUuid}.json`)

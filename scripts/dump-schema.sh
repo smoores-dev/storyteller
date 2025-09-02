@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-yarn workspace @storyteller/web db:dump-schema
+yarn workspace @storyteller-platform/web db:dump-schema
 
 yarn prettier --write schema.sql
 

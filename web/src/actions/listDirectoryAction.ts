@@ -1,8 +1,9 @@
 "use server"
 
-import { nextAuth, hasPermission } from "@/auth/auth"
 import { readdir, stat } from "fs/promises"
 import { join } from "node:path"
+
+import { hasPermission, nextAuth } from "@/auth/auth"
 
 export type DirectoryFileEntry = {
   name: string

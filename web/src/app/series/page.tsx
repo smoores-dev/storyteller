@@ -1,7 +1,8 @@
 import { Title } from "@mantine/core"
-import { SeriesList } from "@/components/series/SeriesList"
+import { type Metadata } from "next"
+
 import { assertHasPermission } from "@/auth/auth"
-import type { Metadata } from "next"
+import { SeriesList } from "@/components/series/SeriesList"
 
 export const dynamic = "force-dynamic"
 

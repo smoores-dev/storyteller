@@ -1,6 +1,7 @@
 import { update } from "@/assets/autoimport/listen"
+
 import { db } from "./connection"
-import { Settings } from "./settingsTypes"
+import { type Settings } from "./settingsTypes"
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
   let details = settings.transcriptionEngine ?? "whisper.cpp"

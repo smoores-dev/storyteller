@@ -1,4 +1,4 @@
-import { Providers } from "@/auth/providers"
+import { type Providers } from "@/auth/providers"
 
 export type TranscriptionEngine =
   | "whisper.cpp"

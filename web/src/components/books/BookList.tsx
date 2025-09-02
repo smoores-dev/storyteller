@@ -1,12 +1,14 @@
 "use client"
 
-import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
-import { useListBooksQuery, useListCollectionsQuery } from "@/store/api"
-import { UUID } from "@/uuid"
 import { Stack, Text } from "@mantine/core"
 import { useState } from "react"
-import { FilterSort } from "../collections/FilterSort"
-import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
+
+import { FilterSort } from "@/components/collections/FilterSort"
+import { CollectionToolbar } from "@/components/collections/toolbar/CollectionToolbar"
+import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
+import { useListBooksQuery, useListCollectionsQuery } from "@/store/api"
+import { type UUID } from "@/uuid"
+
 import { AddBooksMenu } from "./AddBooksMenu"
 import { BookGrid } from "./BookGrid"
 import { BookGridSkeleton } from "./BookGridSkeleton"

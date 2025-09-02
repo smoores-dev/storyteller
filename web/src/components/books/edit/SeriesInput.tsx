@@ -1,16 +1,17 @@
-import { Series } from "@/database/series"
-import { SeriesRelation } from "@/database/books"
 import {
-  Fieldset,
-  Autocomplete,
   ActionIcon,
+  Autocomplete,
   Button,
   Checkbox,
+  Fieldset,
   NumberInput,
   Stack,
 } from "@mantine/core"
-import { UseFormReturnType } from "@mantine/form"
-import { IconTrash, IconPlus } from "@tabler/icons-react"
+import { type UseFormReturnType } from "@mantine/form"
+import { IconPlus, IconTrash } from "@tabler/icons-react"
+
+import { type SeriesRelation } from "@/database/books"
+import { type Series } from "@/database/series"
 
 interface Props {
   values: SeriesRelation[]

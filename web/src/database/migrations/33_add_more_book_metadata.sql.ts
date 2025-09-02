@@ -1,9 +1,11 @@
-import { getEpubFilepath, getEpubAlignedFilepath } from "@/assets/legacy/paths"
-import { Epub } from "@smoores/epub/node"
-import { db } from "../connection"
 import { stat } from "node:fs/promises"
-import { logger } from "@/logging"
+
+import { Epub } from "@storyteller-platform/epub/node"
+
+import { getEpubAlignedFilepath, getEpubFilepath } from "@/assets/legacy/paths"
 import { getMetadataFromEpub } from "@/assets/metadata"
+import { db } from "@/database/connection"
+import { logger } from "@/logging"
 
 async function getBooks() {
   return await db.selectFrom("book").selectAll("book").execute()

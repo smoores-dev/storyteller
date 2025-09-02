@@ -1,13 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {
-  PreferencesState,
-  BookPreferences,
-  defaultPreferences,
-} from "../slices/preferencesSlice"
+
 import {
   computeForegroundSecondary,
   computeSurface,
 } from "../../components/ui/tokens/colors"
+import {
+  type BookPreferences,
+  type PreferencesState,
+  defaultPreferences,
+} from "../slices/preferencesSlice"
 
 export async function readGlobalPreferences(): Promise<null | Omit<
   PreferencesState,

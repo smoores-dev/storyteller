@@ -1,28 +1,30 @@
-import { Book, BookWithRelations, updateBook } from "@/database/books"
-import {
-  getCachedCoverImageDirectory,
-  getCoverImageCacheDirectory,
-  getDefaultSuffix,
-  getInternalBookDirectory,
-  getInternalReadaloudFilepath,
-  getInternalEpubFilepath,
-  getInternalOriginalAudioFilepath,
-  getProcessedAudioFilepath,
-  getTranscriptionsFilepath,
-} from "./paths"
+import { type Stats } from "node:fs"
 import {
   mkdir,
-  readdir,
   readFile,
+  readdir,
   rename,
   rm,
   stat,
   writeFile,
 } from "node:fs/promises"
-import { isAudioFile } from "@/audio"
 import { dirname, join } from "node:path"
-import { Stats } from "node:fs"
-import { UUID } from "@/uuid"
+
+import { isAudioFile } from "@/audio"
+import { type Book, type BookWithRelations, updateBook } from "@/database/books"
+import { type UUID } from "@/uuid"
+
+import {
+  getCachedCoverImageDirectory,
+  getCoverImageCacheDirectory,
+  getDefaultSuffix,
+  getInternalBookDirectory,
+  getInternalEpubFilepath,
+  getInternalOriginalAudioFilepath,
+  getInternalReadaloudFilepath,
+  getProcessedAudioFilepath,
+  getTranscriptionsFilepath,
+} from "./paths"
 
 export async function getProcessedAudioFiles(book: Book) {
   const directory = getProcessedAudioFilepath(book)

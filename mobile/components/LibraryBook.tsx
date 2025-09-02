@@ -1,8 +1,9 @@
 import { useAppSelector } from "../store/appState"
-import { getLibraryBook } from "../store/selectors/librarySelectors"
 import { getIsBookInBookshelf } from "../store/selectors/bookshelfSelectors"
-import { BookLink } from "./BookLink"
+import { getLibraryBook } from "../store/selectors/librarySelectors"
+
 import { BookDownload } from "./BookDownload"
+import { BookLink } from "./BookLink"
 
 type Props = {
   bookId: number

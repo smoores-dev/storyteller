@@ -1,33 +1,35 @@
+import { FastForward, Rewind } from "lucide-react-native"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Image, Platform, Pressable, StyleSheet, View } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+
+import { formatTimeHuman, useAudioBook } from "../hooks/useAudioBook"
+import { useColorTheme } from "../hooks/useColorTheme"
+import { isSameChapter } from "../links"
+import { useAppDispatch, useAppSelector } from "../store/appState"
 import {
   getLocalAudioBookCoverUrl,
   getLocalBookCoverUrl,
 } from "../store/persistence/files"
-import { ProgressBar } from "./ProgressBar"
-import { PlayPause } from "./PlayPause"
+import { getLocator } from "../store/selectors/bookshelfSelectors"
+import { getBookPreferences } from "../store/selectors/preferencesSelectors"
 import {
-  BookshelfBook,
+  type BookshelfBook,
   bookshelfSlice,
   nextFragmentPressed,
   playerPositionSeeked,
   playerTotalPositionSeeked,
   previousFragmentPressed,
 } from "../store/slices/bookshelfSlice"
-import { UIText } from "./UIText"
-import { useState, useMemo, useEffect, useRef } from "react"
-import { useAudioBook, formatTimeHuman } from "../hooks/useAudioBook"
-import { isSameChapter } from "../links"
-import { useAppSelector, useAppDispatch } from "../store/appState"
-import { getLocator } from "../store/selectors/bookshelfSelectors"
-import { getBookPreferences } from "../store/selectors/preferencesSelectors"
-import { spacing } from "./ui/tokens/spacing"
 import { preferencesSlice } from "../store/slices/preferencesSlice"
-import { fontSizes } from "./ui/tokens/fontSizes"
-import { FastForward, Rewind } from "lucide-react-native"
-import { useColorTheme } from "../hooks/useColorTheme"
-import { Button } from "./ui/Button"
 import { throttle } from "../throttle"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+
+import { PlayPause } from "./PlayPause"
+import { ProgressBar } from "./ProgressBar"
+import { UIText } from "./UIText"
+import { Button } from "./ui/Button"
+import { fontSizes } from "./ui/tokens/fontSizes"
+import { spacing } from "./ui/tokens/spacing"
 
 // Roughly the number of "positions" that fit in a
 // standard paperback book page

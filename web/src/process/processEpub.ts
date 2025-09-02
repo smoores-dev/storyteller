@@ -1,5 +1,6 @@
-import { Epub } from "@smoores/epub/node"
-import type { BookWithRelations } from "@/database/books"
+import { Epub } from "@storyteller-platform/epub/node"
+
+import { type BookWithRelations } from "@/database/books"
 
 export async function readEpub(book: BookWithRelations) {
   if (!book.ebook?.filepath) {

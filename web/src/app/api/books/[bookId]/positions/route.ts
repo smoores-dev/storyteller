@@ -1,13 +1,14 @@
+import { NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { getBookUuid } from "@/database/books"
 import {
-  getPosition,
-  Position,
+  type Position,
   PositionConflictError,
+  getPosition,
   upsertPosition,
 } from "@/database/positions"
-import { UUID } from "@/uuid"
-import { NextResponse } from "next/server"
+import { type UUID } from "@/uuid"
 
 type Params = Promise<{
   bookId: string

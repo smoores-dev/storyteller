@@ -1,7 +1,8 @@
+import { NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { getInvite } from "@/database/users"
 import { sendInvite } from "@/invites"
-import { NextResponse } from "next/server"
 
 type Params = Promise<{
   inviteKey: string

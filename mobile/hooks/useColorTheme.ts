@@ -1,11 +1,12 @@
+import { useContext } from "react"
 import { useColorScheme } from "react-native"
+
+import { ThemeOverrideContext } from "../components/ThemeOverrideProvider"
 import { useAppSelector } from "../store/appState"
 import {
   getColorTheme,
   getDarkMode,
 } from "../store/selectors/preferencesSelectors"
-import { useContext } from "react"
-import { ThemeOverrideContext } from "../components/ThemeOverrideProvider"
 
 export function useColorTheme() {
   const colorScheme = useColorScheme()

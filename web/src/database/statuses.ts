@@ -1,8 +1,10 @@
-import { Insertable, Selectable } from "kysely"
-import { db } from "./connection"
-import { DB } from "./schema"
-import { UUID } from "@/uuid"
+import { type Insertable, type Selectable } from "kysely"
+
 import { BookEvents } from "@/events"
+import { type UUID } from "@/uuid"
+
+import { db } from "./connection"
+import { type DB } from "./schema"
 
 export type Status = Selectable<DB["status"]>
 export type NewStatus = Insertable<DB["status"]>

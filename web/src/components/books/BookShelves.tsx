@@ -1,13 +1,16 @@
 "use client"
 
-import { api, useGetShelvesQuery, useListStatusesQuery } from "@/store/api"
 import { Stack, Text } from "@mantine/core"
-import { Shelf } from "./Shelf"
 import { useMemo, useState } from "react"
-import { UUID } from "@/uuid"
-import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
-import { Shelves } from "@/apiModels"
+
+import { type Shelves } from "@/apiModels"
 import { useInitialData } from "@/hooks/useInitialData"
+import { api, useGetShelvesQuery, useListStatusesQuery } from "@/store/api"
+import { type UUID } from "@/uuid"
+
+import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
+
+import { Shelf } from "./Shelf"
 
 interface Props {
   shelves: Shelves

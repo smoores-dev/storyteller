@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
-import { apiHost } from "./apiHost"
 import { notFound, redirect } from "next/navigation"
+
+import { apiHost } from "./apiHost"
 
 export async function fetchApiRoute<Result>(endpoint: string) {
   const cookieStore = await cookies()

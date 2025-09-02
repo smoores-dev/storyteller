@@ -1,22 +1,24 @@
-import { PlusIcon } from "lucide-react-native"
-import { Button } from "./ui/Button"
-import { colors } from "./ui/tokens/colors"
-import { spacing } from "./ui/tokens/spacing"
-import { UIText } from "./UIText"
 import * as DocumentPicker from "expo-document-picker"
 import * as FileSystem from "expo-file-system"
+import * as Fonts from "expo-font"
+import { PlusIcon } from "lucide-react-native"
+import { useState } from "react"
+import { View } from "react-native"
+
+import { useColorTheme } from "../hooks/useColorTheme"
+import { useAppDispatch } from "../store/appState"
 import {
   ensureFontsDirectory,
   getCustomFontUrl,
 } from "../store/persistence/fonts"
-import { useAppDispatch } from "../store/appState"
 import { preferencesSlice } from "../store/slices/preferencesSlice"
-import * as Fonts from "expo-font"
-import { useState } from "react"
-import { View } from "react-native"
-import { TextInput } from "./ui/TextInput"
-import { useColorTheme } from "../hooks/useColorTheme"
+
 import { HeaderText } from "./HeaderText"
+import { UIText } from "./UIText"
+import { Button } from "./ui/Button"
+import { TextInput } from "./ui/TextInput"
+import { colors } from "./ui/tokens/colors"
+import { spacing } from "./ui/tokens/spacing"
 
 export function FontLoader() {
   const { background, surface } = useColorTheme()

@@ -1,11 +1,14 @@
 "use client"
 
-import { useListBooksQuery, useListSeriesQuery } from "@/store/api"
-import { useMemo } from "react"
-import { useFilterSortedSeries } from "@/hooks/useFilterSortedSeries"
 import { Group, Stack, Text } from "@mantine/core"
+import { useMemo } from "react"
+
+import { useFilterSortedSeries } from "@/hooks/useFilterSortedSeries"
+import { useListBooksQuery, useListSeriesQuery } from "@/store/api"
+
 import { Search } from "../books/Search"
 import { Sort } from "../books/Sort"
+
 import { SeriesGrid } from "./SeriesGrid"
 
 export function SeriesList() {

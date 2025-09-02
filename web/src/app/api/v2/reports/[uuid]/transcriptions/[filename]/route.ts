@@ -1,11 +1,12 @@
+import { readFile } from "node:fs/promises"
+
 import {
-  getTranscriptionsFilepath,
   getTranscriptionFilename,
+  getTranscriptionsFilepath,
 } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"
-import { UUID } from "@/uuid"
-import { readFile } from "node:fs/promises"
+import { type UUID } from "@/uuid"
 
 type Params = Promise<{
   uuid: UUID

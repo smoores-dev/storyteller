@@ -1,14 +1,19 @@
-import { PitchAlgorithm, ResourceObject } from "react-native-track-player"
-import { BookAuthor } from "../../apiModels"
-import { PayloadAction, createAction, createSlice } from "@reduxjs/toolkit"
+import { type UUID } from "crypto"
+
+import { type PayloadAction, createAction, createSlice } from "@reduxjs/toolkit"
 import {
-  ReadiumLocator,
-  ReadiumManifest,
-  TimestampedLocator,
-} from "../../modules/readium/src/Readium.types"
+  type PitchAlgorithm,
+  type ResourceObject,
+} from "react-native-track-player"
+
+import { type BookAuthor } from "../../apiModels"
+import { type HighlightTint } from "../../colors"
 import { areLocatorsEqual } from "../../modules/readium"
-import type { UUID } from "crypto"
-import { HighlightTint } from "../../colors"
+import {
+  type ReadiumLocator,
+  type ReadiumManifest,
+  type TimestampedLocator,
+} from "../../modules/readium/src/Readium.types"
 
 export type BookshelfTrack = {
   bookId: number

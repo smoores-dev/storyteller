@@ -1,6 +1,7 @@
+import { NextResponse } from "next/server"
+
 import { withHasPermission } from "@/auth/auth"
 import { getStatuses } from "@/database/statuses"
-import { NextResponse } from "next/server"
 
 /**
  * @summary List all book statuses

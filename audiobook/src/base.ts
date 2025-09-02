@@ -1,4 +1,4 @@
-import { type IPicture, PictureType, type File } from "node-taglib-sharp"
+import { type File, type IPicture, PictureType } from "node-taglib-sharp"
 
 function splitNames(names: string[]): string[] {
   return names.flatMap((entry) =>

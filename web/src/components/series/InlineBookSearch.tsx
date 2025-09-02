@@ -1,6 +1,3 @@
-import { BookWithRelations } from "@/database/books"
-import { getCoverUrl, useListBooksQuery } from "@/store/api"
-import { UUID } from "@/uuid"
 import {
   Box,
   Combobox,
@@ -12,6 +9,10 @@ import {
   useCombobox,
 } from "@mantine/core"
 import { useMemo, useState } from "react"
+
+import { type BookWithRelations } from "@/database/books"
+import { getCoverUrl, useListBooksQuery } from "@/store/api"
+import { type UUID } from "@/uuid"
 
 interface Props {
   onValueChange: (book: BookWithRelations) => void

@@ -4,7 +4,7 @@ import {
   getCollection,
   updateCollection,
 } from "@/database/collections"
-import { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
 

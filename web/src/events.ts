@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events"
-import { UUID } from "./uuid"
-import { BookWithRelations } from "./database/books"
+
+import { type BookWithRelations } from "./database/books"
+import { type UUID } from "./uuid"
 
 export type BaseEvent<Type extends string, Payload = void> = {
   type: Type

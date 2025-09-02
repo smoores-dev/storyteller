@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { type PublicProvider } from "@auth/core/types"
 import { Button, PasswordInput, Stack, TextInput } from "@mantine/core"
-import type { PublicProvider } from "@auth/core/types"
 import { IconArrowLeft } from "@tabler/icons-react"
-import { useAppDispatch } from "@/store/appState"
+import { useState } from "react"
+
 import { api } from "@/store/api"
+import { useAppDispatch } from "@/store/appState"
 
 type Props = {
   credentialsLoginAction: (

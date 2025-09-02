@@ -1,11 +1,13 @@
 import { exec } from "node:child_process"
-import memoize from "memoize"
-import { quotePath } from "./shell"
-import { extname } from "node:path"
-import { copyFile } from "node:fs/promises"
-import { logger } from "./logging"
-import { promisify } from "util"
 import { randomUUID } from "node:crypto"
+import { copyFile } from "node:fs/promises"
+import { extname } from "node:path"
+import { promisify } from "util"
+
+import memoize from "memoize"
+
+import { logger } from "./logging"
+import { quotePath } from "./shell"
 
 const execPromise = promisify(exec)
 

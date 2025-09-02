@@ -1,8 +1,9 @@
+import { readFile, writeFile } from "node:fs/promises"
+import { join } from "node:path"
+
 import { withDangerousMod } from "@expo/config-plugins"
 import { mergeContents } from "@expo/config-plugins/build/utils/generateCode"
-import { ExpoConfig } from "expo/config"
-import { writeFile, readFile } from "node:fs/promises"
-import { join } from "node:path"
+import { type ExpoConfig } from "expo/config"
 
 export default function withPods(
   config: ExpoConfig,

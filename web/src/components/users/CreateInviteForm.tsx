@@ -1,17 +1,18 @@
-import { useCallback, useState, MouseEvent } from "react"
-import { useForm } from "@mantine/form"
 import {
-  Stack,
-  TextInput,
-  Button,
-  MultiSelect,
   Box,
-  Text,
+  Button,
   Group,
+  MultiSelect,
+  Stack,
+  Text,
+  TextInput,
 } from "@mantine/core"
-import { UserPermissionSet } from "@/database/users"
-import { useCreateInviteMutation } from "@/store/api"
+import { useForm } from "@mantine/form"
+import { type MouseEvent, useCallback, useState } from "react"
+
+import { type UserPermissionSet } from "@/database/users"
 import { usePermission } from "@/hooks/usePermission"
+import { useCreateInviteMutation } from "@/store/api"
 
 export const ADMIN_PERMISSIONS: Array<keyof UserPermissionSet> = [
   "bookCreate",

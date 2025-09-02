@@ -1,23 +1,25 @@
 import {
-  Modal,
-  TextInput,
-  Checkbox,
-  Textarea,
   Button,
+  Checkbox,
+  Modal,
   Text,
+  TextInput,
+  Textarea,
 } from "@mantine/core"
-import { UserSelect } from "../books/edit/UserSelect"
-import { SaveState } from "../forms"
-import { ImportPathInput } from "../ImportPathInput"
 import { useForm } from "@mantine/form"
-import { UUID } from "@/uuid"
 import { useRef, useState } from "react"
+
 import {
   useCreateCollectionMutation,
   useGetCurrentUserQuery,
   useLazyListCollectionsQuery,
   useListUsersQuery,
 } from "@/store/api"
+import { type UUID } from "@/uuid"
+
+import { ImportPathInput } from "../ImportPathInput"
+import { UserSelect } from "../books/edit/UserSelect"
+import { SaveState } from "../forms"
 
 interface Props {
   isOpen: boolean

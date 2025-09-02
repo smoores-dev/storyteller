@@ -1,18 +1,19 @@
-import { redirect, unauthorized } from "next/navigation"
-import { cookies, headers } from "next/headers"
-import { getCookieDomain, getCookieSecure } from "@/cookies"
+import { type PublicProvider } from "@auth/core/types"
 import { Title } from "@mantine/core"
-import { AcceptInviteForm } from "@/components/invites/AcceptInviteForm"
-import { createUserToken, hashPassword, nextAuth } from "@/auth/auth"
+import { type Metadata } from "next"
+import { cookies, headers } from "next/headers"
+import { redirect, unauthorized } from "next/navigation"
+
+import { type Invite, type InviteAccept } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { Invite, InviteAccept } from "@/apiModels"
-import { PublicProvider } from "@auth/core/types"
+import { createUserToken, hashPassword, nextAuth } from "@/auth/auth"
+import { AcceptInviteForm } from "@/components/invites/AcceptInviteForm"
+import { getCookieDomain, getCookieSecure } from "@/cookies"
 import {
-  verifyInvite,
-  createCredentialsAccount,
   acceptInvite,
+  createCredentialsAccount,
+  verifyInvite,
 } from "@/database/users"
-import { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
 

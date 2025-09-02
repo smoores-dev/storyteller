@@ -1,14 +1,17 @@
-import { describe, it } from "node:test"
-import { dirname, join } from "node:path"
-import { randomUUID } from "node:crypto"
-import { processFile } from "../processAudio"
-import { mkdir, readdir } from "node:fs/promises"
 import assert from "node:assert"
-import { getProcessedAudioFilepath, shortenUuid } from "@/assets/paths"
-import { getAudioCoverFilepath } from "@/assets/covers"
-import { AsyncSemaphore } from "@esfx/async-semaphore"
-import { BookWithRelations } from "@/database/books"
+import { randomUUID } from "node:crypto"
+import { mkdir, readdir } from "node:fs/promises"
 import { availableParallelism } from "node:os"
+import { dirname, join } from "node:path"
+import { describe, it } from "node:test"
+
+import { AsyncSemaphore } from "@esfx/async-semaphore"
+
+import { getAudioCoverFilepath } from "@/assets/covers"
+import { getProcessedAudioFilepath, shortenUuid } from "@/assets/paths"
+import { type BookWithRelations } from "@/database/books"
+
+import { processFile } from "../processAudio"
 
 void describe("processFile", () => {
   void it("can process mpeg4 files", async () => {

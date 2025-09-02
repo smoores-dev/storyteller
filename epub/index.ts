@@ -1,18 +1,19 @@
 import {
-  type Entry,
   ERR_DUPLICATED_NAME,
+  type Entry,
   Uint8ArrayReader,
   Uint8ArrayWriter,
   ZipReader,
   ZipWriter,
 } from "@zip.js/zip.js"
+import { Mutex } from "async-mutex"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
+import he from "he"
 import memoize from "mem"
 import { lookup } from "mime-types"
-import { Mutex } from "async-mutex"
-import he from "he"
 import { nanoid } from "nanoid"
-import { dirname, resolve } from "@smoores/path"
+
+import { dirname, resolve } from "@storyteller-platform/path"
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
@@ -177,7 +178,7 @@ export type PackageElement = XmlElement<"package"> | XmlElement<"opf:package">
  * Example usage:
  *
  * ```ts
- * import { Epub, getBody, findByName, textContent } from '@smoores/epub';
+ * import { Epub, getBody, findByName, textContent } from '@storyteller-platform/epub';
  *
  * const epub = await Epub.from('./path/to/book.epub');
  * const title = await epub.getTitle();
@@ -552,7 +553,7 @@ export class Epub {
   private async getFileData(path: string, encoding: "utf-8"): Promise<string>
   private async getFileData(
     path: string,
-    encoding?: "utf-8" | undefined,
+    encoding?: "utf-8",
   ): Promise<string | Uint8Array> {
     const containerEntry = this.getEntry(path)
 
@@ -2431,7 +2432,7 @@ export class Epub {
         if (entry.filename === "mimetype") return
         const reader = new Uint8ArrayReader(await entry.getData())
         try {
-          return this.zipWriter.add(entry.filename, reader)
+          return await this.zipWriter.add(entry.filename, reader)
         } catch (e) {
           if (e instanceof Error && e.message === ERR_DUPLICATED_NAME) {
             throw new Error(

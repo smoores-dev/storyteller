@@ -1,11 +1,18 @@
-import { Insertable, Selectable, Transaction, Updateable } from "kysely"
-import { DB } from "./schema"
-import { db } from "./connection"
-import { BookEvents } from "@/events"
-import { UUID } from "@/uuid"
-import { getBooks } from "./books"
+import {
+  type Insertable,
+  type Selectable,
+  type Transaction,
+  type Updateable,
+} from "kysely"
 import { jsonArrayFrom } from "kysely/helpers/sqlite"
+
 import { update as updateAutoimport } from "@/assets/autoimport/listen"
+import { BookEvents } from "@/events"
+import { type UUID } from "@/uuid"
+
+import { getBooks } from "./books"
+import { db } from "./connection"
+import { type DB } from "./schema"
 
 export type Collection = Selectable<DB["collection"]>
 export type NewCollection = Insertable<DB["collection"]>

@@ -1,8 +1,9 @@
 import { AnimatedCircularProgress } from "react-native-circular-progress"
+
+import { useColorTheme } from "../hooks/useColorTheme"
+import { ArrowDownIcon } from "../icons/ArrowDownIcon"
 import { useAppSelector } from "../store/appState"
 import { getBookDownloadProgress } from "../store/selectors/librarySelectors"
-import { ArrowDownIcon } from "../icons/ArrowDownIcon"
-import { useColorTheme } from "../hooks/useColorTheme"
 
 type Props = {
   bookId: number

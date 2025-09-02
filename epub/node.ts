@@ -1,22 +1,24 @@
-import { dirname } from "node:path"
-import { Epub as BaseEpub } from "./index.ts"
 import { mkdir, writeFile } from "node:fs/promises"
-import { streamFile } from "@smoores/fs"
+import { dirname } from "node:path"
+
+import { streamFile } from "@storyteller-platform/fs"
+
+import { Epub as BaseEpub } from "./index.ts"
 
 export type {
-  ElementName,
-  XmlNode,
-  MetadataEntry,
-  EpubMetadata,
-  DcSubject,
   AlternateScript,
-  DcCreator,
-  DublinCore,
   Collection,
+  DcCreator,
+  DcSubject,
+  DublinCore,
+  ElementName,
+  EpubMetadata,
+  ManifestItem,
+  MetadataEntry,
   ParsedXml,
   XmlElement,
+  XmlNode,
   XmlTextNode,
-  ManifestItem,
 } from "./index.ts"
 
 export class Epub extends BaseEpub {

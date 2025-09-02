@@ -1,5 +1,5 @@
 {
-  "name": "@smoores/epub",
+  "name": "@storyteller-platform/epub",
   "version": "0.2.1",
   "type": "module",
   "module": "index.js",
@@ -43,7 +43,7 @@
     "test:watch": "tsx -C @storyteller --test --watch index.test.ts"
   },
   "devDependencies": {
-    "@storyteller/tsup": "workspace:^",
+    "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/mime-types": "^2",
     "@types/node": "^22.10.1",
@@ -57,8 +57,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@smoores/fs": "workspace:^",
-    "@smoores/path": "workspace:^",
+    "@storyteller-platform/fs": "workspace:^",
+    "@storyteller-platform/path": "workspace:^",
     "@zip.js/zip.js": "^2.0.0",
     "async-mutex": "^0.5.0",
     "fast-xml-parser": "^4.0.0",

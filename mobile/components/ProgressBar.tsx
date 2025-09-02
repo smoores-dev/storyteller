@@ -1,7 +1,9 @@
-import { StyleProp, StyleSheet, View, ViewStyle } from "react-native"
-import { Slider } from "./ui/Slider"
+import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native"
+
 import { appColor } from "../design"
 import { useColorTheme } from "../hooks/useColorTheme"
+
+import { Slider } from "./ui/Slider"
 
 type Props = {
   style?: StyleProp<ViewStyle>

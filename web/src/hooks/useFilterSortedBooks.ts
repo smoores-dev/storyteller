@@ -1,8 +1,15 @@
-import { Dispatch, SetStateAction, useCallback, useMemo, useState } from "react"
 import Fuse from "fuse.js"
-import { UUID } from "@/uuid"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { BookWithRelations } from "@/database/books"
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useMemo,
+  useState,
+} from "react"
+
+import { type BookWithRelations } from "@/database/books"
+import { type UUID } from "@/uuid"
 
 export type BookSortKey =
   | "title"

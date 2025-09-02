@@ -1,6 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit"
-import { RootState } from "../appState"
 import deepmerge from "deepmerge"
+
+import { type RootState } from "../appState"
 
 export function getGlobalPreferences(state: RootState) {
   return state.preferences

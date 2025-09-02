@@ -1,5 +1,3 @@
-import { User } from "@/apiModels"
-import { UserActions } from "./UserActions"
 import {
   Box,
   Button,
@@ -9,15 +7,19 @@ import {
   Stack,
   Title,
 } from "@mantine/core"
+import { useForm } from "@mantine/form"
 import { useState } from "react"
+
+import { type User } from "@/apiModels"
+import { type UserPermissionSet } from "@/database/users"
+import { useUpdateUserMutation } from "@/store/api"
+
 import {
   ADMIN_PERMISSIONS,
   BASIC_PERMISSIONS,
   PERMISSIONS_VALUES,
 } from "./CreateInviteForm"
-import { useForm } from "@mantine/form"
-import { UserPermissionSet } from "@/database/users"
-import { useUpdateUserMutation } from "@/store/api"
+import { UserActions } from "./UserActions"
 
 type Props = {
   user: User

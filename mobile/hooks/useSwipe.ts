@@ -1,4 +1,4 @@
-import { GestureResponderEvent, useWindowDimensions } from "react-native"
+import { type GestureResponderEvent, useWindowDimensions } from "react-native"
 
 export function useSwipe(
   onSwipeLeft?: () => void,

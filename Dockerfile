@@ -33,7 +33,7 @@ ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
 ENV SQLITE_NATIVE_BINDING=/app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 
-RUN yarn workspaces foreach -Rpt --from @storyteller/web run build
+RUN yarn workspaces foreach -Rpt --from @storyteller-platform/web run build
 
 FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS runner
 

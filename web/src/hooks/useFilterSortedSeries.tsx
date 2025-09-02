@@ -1,13 +1,15 @@
-import { NewSeriesRelation, Series } from "@/database/series"
-import {
-  BookSort,
-  createComparisonTitle,
-  FilterSortOptions,
-} from "./useFilterSortedBooks"
 import Fuse from "fuse.js"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
+
+import { type NewSeriesRelation, type Series } from "@/database/series"
 import { useListBooksQuery } from "@/store/api"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+
+import {
+  type BookSort,
+  type FilterSortOptions,
+  createComparisonTitle,
+} from "./useFilterSortedBooks"
 
 export type SeriesWithBooks = Series & { books: NewSeriesRelation[] }
 
