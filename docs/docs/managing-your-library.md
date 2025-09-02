@@ -213,7 +213,7 @@ updating the status (to be read, currently reading, read) for the book.
 
 To access the remainder of the editable metadata, you click on the pencil.
 
-::: info Writing edits to files
+:::info Writing edits to files
 
 Any edits made on this page will be propogated to all existing version of the
 book. If you have pointed your auto-import function to an external folder where
@@ -270,7 +270,7 @@ user that you’ve invited to your Storyteller server. Collections can also be
 made private. Private collections are only visible to their creators and any
 users that have been explicitly invited to the collection by its creator.
 
-::: info Permissions
+:::info Permissions
 
 Book permissions are determined by collections. A user can see any book that
 belongs to a collection that they can see, as well as any book that does not
@@ -313,7 +313,7 @@ collection that also include the “science fiction” tag.
 For large collections, an alphabet jumper is available to quickly move through
 the list of books.
 
-::: info Pro-tip
+:::info Pro-tip
 
 If you have a favorite view, consider saving it as a bookmark, so you can get
 right to it. Ex:. https://your.sever.here.net/books?sort=align-time%2Cdesc for
