@@ -1,4 +1,10 @@
-import { Button, Group, MultiSelect, Stack } from "@mantine/core"
+import {
+  Button,
+  Group,
+  MultiSelect,
+  Stack,
+  TextInputProps,
+} from "@mantine/core"
 import { Search } from "../books/Search"
 import { Sort } from "../books/Sort"
 import {
@@ -18,6 +24,9 @@ import { useMemo } from "react"
 
 interface Props {
   options: FilterSortOptions
+  classNames?: {
+    search?: TextInputProps["classNames"]
+  }
 }
 
 export function FilterSort({
@@ -28,6 +37,7 @@ export function FilterSort({
     onSortChange,
     filters,
   },
+  classNames,
 }: Props) {
   const { data: collections = [] } = useListCollectionsQuery(undefined, {
     refetchOnMountOrArgChange: true,
@@ -70,14 +80,18 @@ export function FilterSort({
   )
 
   return (
-    <Stack gap={0} align="start">
-      <Group>
-        <Search value={initialSearch} onValueChange={onSearchChange} />
+    <Stack className="gap-y-1" align="start">
+      <Group className="gap-1">
+        <Search
+          value={initialSearch}
+          onValueChange={onSearchChange}
+          classNames={classNames?.search}
+        />
         <Sort value={sort} onValueChange={onSortChange} />
       </Group>
       {filters.visible ? (
         <>
-          <Group>
+          <Group className="gap-1">
             <MultiSelect
               searchable
               aria-label="Collections"
@@ -192,7 +206,7 @@ export function FilterSort({
               }}
             />
           </Group>
-          <Group className="mt-4">
+          <Group>
             <Button
               size="compact-sm"
               variant="subtle"

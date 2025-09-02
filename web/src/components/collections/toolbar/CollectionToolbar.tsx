@@ -1,12 +1,12 @@
-import { UUID } from "@/uuid"
-import { Group, Button } from "@mantine/core"
-import { IconEditOff, IconEdit } from "@tabler/icons-react"
-import { SetStateAction } from "react"
-import { SelectMenu } from "./SelectMenu"
-import { ActionMenu } from "./ActionMenu"
-import { Collection } from "@/database/collections"
 import { AddBooksMenu } from "@/components/books/AddBooksMenu"
 import { BookWithRelations } from "@/database/books"
+import { Collection } from "@/database/collections"
+import { UUID } from "@/uuid"
+import { Button, Group } from "@mantine/core"
+import { IconEdit, IconEditOff } from "@tabler/icons-react"
+import { SetStateAction } from "react"
+import { ActionMenu } from "./ActionMenu"
+import { SelectMenu } from "./SelectMenu"
 
 interface Props {
   collection?: Collection | undefined
@@ -26,17 +26,17 @@ export function CollectionToolbar({
   setIsEditing,
 }: Props) {
   return (
-    <Group>
+    <Group className="w-max flex-nowrap gap-2 [&>*]:shrink-0">
       <Button
         variant="light"
-        className="self-start"
+        className={`w-fit self-start ${isEditing ? "!pr-1" : ""}`}
         leftSection={isEditing ? <IconEditOff /> : <IconEdit />}
         onClick={() => {
           setIsEditing((value) => !value)
           setSelected(new Set())
         }}
       >
-        {isEditing ? "Done" : "Edit"}
+        {isEditing ? <span className="sr-only">Done</span> : "Edit"}
       </Button>
       {isEditing && (
         <>

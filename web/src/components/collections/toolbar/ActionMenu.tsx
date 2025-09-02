@@ -1,22 +1,22 @@
-import { UUID } from "@/uuid"
-import { Menu, MenuTarget, Button, MenuDropdown } from "@mantine/core"
-import { IconCheckbox, IconChevronDown } from "@tabler/icons-react"
-import { AddBooksToCollectionsItem } from "./actionMenuItems/AddBooksToCollectionsItem"
-import { RemoveBooksFromCollectionsItem } from "./actionMenuItems/RemoveBooksFromCollectionsItem"
-import { AddBooksToSeriesItem } from "./actionMenuItems/AddBooksToSeriesItem"
-import { RemoveBooksFromSeriesItem } from "./actionMenuItems/RemoveBooksFromSeriesItem"
-import { MergeBooksItem } from "./actionMenuItems/MergeBooksItem"
-import { DeleteBooksItem } from "./actionMenuItems/DeleteBooksItem"
-import { AddTagsToBooksItem } from "./actionMenuItems/AddTagsToBooksItem"
-import { RemoveTagsFromBooksItem } from "./actionMenuItems/RemoveTagsFromBooksItem"
-import { UpdateReadingStatusItem } from "./actionMenuItems/UpdateReadingStatusItem"
-import { BeginProcessingItem } from "./actionMenuItems/BeginProcessingItem"
 import {
   useLazyListCollectionsQuery,
   useLazyListCreatorsQuery,
   useLazyListSeriesQuery,
   useLazyListTagsQuery,
 } from "@/store/api"
+import { UUID } from "@/uuid"
+import { Button, Menu, MenuDropdown, MenuTarget } from "@mantine/core"
+import { IconChevronDown, IconClick } from "@tabler/icons-react"
+import { AddBooksToCollectionsItem } from "./actionMenuItems/AddBooksToCollectionsItem"
+import { AddBooksToSeriesItem } from "./actionMenuItems/AddBooksToSeriesItem"
+import { AddTagsToBooksItem } from "./actionMenuItems/AddTagsToBooksItem"
+import { BeginProcessingItem } from "./actionMenuItems/BeginProcessingItem"
+import { DeleteBooksItem } from "./actionMenuItems/DeleteBooksItem"
+import { MergeBooksItem } from "./actionMenuItems/MergeBooksItem"
+import { RemoveBooksFromCollectionsItem } from "./actionMenuItems/RemoveBooksFromCollectionsItem"
+import { RemoveBooksFromSeriesItem } from "./actionMenuItems/RemoveBooksFromSeriesItem"
+import { RemoveTagsFromBooksItem } from "./actionMenuItems/RemoveTagsFromBooksItem"
+import { UpdateReadingStatusItem } from "./actionMenuItems/UpdateReadingStatusItem"
 
 interface Props {
   selected: Set<UUID>
@@ -44,7 +44,7 @@ export function ActionMenu({ selected, onClear }: Props) {
         <MenuTarget>
           <Button
             variant="light"
-            leftSection={<IconCheckbox />}
+            leftSection={<IconClick />}
             rightSection={<IconChevronDown size={16} />}
             disabled={disabled}
           >

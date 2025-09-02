@@ -1,14 +1,14 @@
 "use client"
 
-import { Stack, Text } from "@mantine/core"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
-import { UUID } from "@/uuid"
-import { useState } from "react"
-import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
-import { BookGrid } from "./BookGrid"
 import { useListBooksQuery, useListCollectionsQuery } from "@/store/api"
-import { AddBooksMenu } from "./AddBooksMenu"
+import { UUID } from "@/uuid"
+import { Stack, Text } from "@mantine/core"
+import { useState } from "react"
 import { FilterSort } from "../collections/FilterSort"
+import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
+import { AddBooksMenu } from "./AddBooksMenu"
+import { BookGrid } from "./BookGrid"
 import { BookGridSkeleton } from "./BookGridSkeleton"
 
 interface Props {
@@ -44,16 +44,21 @@ export function BookList({ collectionUuid }: Props) {
   const [isEditing, setIsEditing] = useState(false)
 
   return (
-    <Stack>
-      <FilterSort options={options} />
-      <CollectionToolbar
-        collection={collection}
-        books={books}
-        selected={selected}
-        setSelected={setSelected}
-        isEditing={isEditing}
-        setIsEditing={setIsEditing}
+    <Stack className="relative mt-4">
+      <FilterSort
+        options={options}
+        classNames={{ search: { root: "w-1/2 md:w-auto" } }}
       />
+      <Stack className="sticky top-24 z-20 gap-x-0 gap-y-1 overflow-x-scroll bg-white pb-2 pt-1">
+        <CollectionToolbar
+          collection={collection}
+          books={books}
+          selected={selected}
+          setSelected={setSelected}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+        />
+      </Stack>
       {isLoading ? (
         <BookGridSkeleton />
       ) : books.length ? (

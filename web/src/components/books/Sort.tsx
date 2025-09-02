@@ -43,7 +43,7 @@ export function Sort({ value, onValueChange }: Props) {
     >
       <Combobox.Target>
         <InputBase
-          className="w-48"
+          className="w-40 whitespace-nowrap md:w-48"
           component="button"
           type="button"
           pointer
@@ -56,9 +56,9 @@ export function Sort({ value, onValueChange }: Props) {
           <Group justify="space-between" wrap="nowrap">
             <Text>{optionLabels[value[0]]}</Text>
             {value[1] === "asc" ? (
-              <IconArrowDown size={16} />
+              <IconArrowDown size={16} className="-ml-4" />
             ) : (
-              <IconArrowUp size={16} />
+              <IconArrowUp size={16} className="-ml-4" />
             )}
           </Group>
         </InputBase>
