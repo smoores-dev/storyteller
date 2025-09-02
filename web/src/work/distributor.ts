@@ -5,11 +5,12 @@ import { cwd } from "node:process"
 import type processBook from "./worker"
 import { logger } from "@/logging"
 import {
-  ReadaloudRelation,
   BookWithRelations,
   getBookOrThrow,
   getNextQueuePosition,
   updateBook,
+  BookUpdate,
+  BookRelationsUpdate,
 } from "@/database/books"
 import { AsyncMutex } from "@esfx/async-mutex"
 import { MessageChannel } from "node:worker_threads"
@@ -112,12 +113,20 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
 
   const { port1, port2 } = new MessageChannel()
 
-  port2.on("message", async (message: ReadaloudRelation) => {
-    const updated = await updateBook(bookUuid, null, {
-      readaloud: message,
-    })
-    port2.postMessage(updated)
-  })
+  port2.on(
+    "message",
+    async (message: {
+      update: BookUpdate | null
+      relations: BookRelationsUpdate
+    }) => {
+      const updated = await updateBook(
+        bookUuid,
+        message.update,
+        message.relations,
+      )
+      port2.postMessage(updated)
+    },
+  )
 
   try {
     await alignmentPiscina.run(

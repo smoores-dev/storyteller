@@ -10,10 +10,10 @@ import {
 } from "@/assets/paths"
 import {
   Book,
+  BookRelationsUpdate,
+  BookUpdate,
   BookWithRelations,
   getBookOrThrow,
-  ReadaloudRelation,
-  updateBook,
 } from "@/database/books"
 import {
   formatTranscriptionEngineDetails,
@@ -128,12 +128,15 @@ export default async function processBook({
    * trigger the BookEvents emitter on the main thread, and update
    * subscribers (i.e. the web client).
    */
-  async function updateReadaloud(readaloud: ReadaloudRelation) {
+  async function updateBook(
+    update: BookUpdate | null,
+    relations: BookRelationsUpdate = {},
+  ) {
     const promise = new Promise<BookWithRelations>((resolve) => {
       port.once("message", resolve)
     })
 
-    port.postMessage(readaloud)
+    port.postMessage({ update, relations })
 
     return await promise
   }
@@ -142,16 +145,20 @@ export default async function processBook({
 
   if (restart) {
     await deleteProcessed(book)
-    book = await updateReadaloud({
-      status: "PROCESSING",
-      currentStage: "SPLIT_TRACKS",
-      stageProgress: 0,
+    book = await updateBook(null, {
+      readaloud: {
+        status: "PROCESSING",
+        currentStage: "SPLIT_TRACKS",
+        stageProgress: 0,
+      },
     })
   } else {
-    book = await updateReadaloud({
-      status: "PROCESSING",
-      currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
-      stageProgress: 0,
+    book = await updateBook(null, {
+      readaloud: {
+        status: "PROCESSING",
+        currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        stageProgress: 0,
+      },
     })
   }
 
@@ -165,10 +172,12 @@ export default async function processBook({
 
   for (const stage of remainingStages) {
     const onProgress = (progress: number) => {
-      void updateReadaloud({
-        status: "PROCESSING",
-        currentStage: stage,
-        stageProgress: progress,
+      void updateBook(null, {
+        readaloud: {
+          status: "PROCESSING",
+          currentStage: stage,
+          stageProgress: progress,
+        },
       })
     }
 
@@ -238,16 +247,18 @@ export default async function processBook({
 
         const settings = await getSettings()
 
-        book = await updateReadaloud({
-          filepath: getReadaloudFilepath(book, settings),
-          status: "ALIGNED",
-          currentStage: stage,
-          stageProgress: 1,
-          queuePosition: 0,
-          restartPending: null,
+        book = await updateBook(null, {
+          readaloud: {
+            filepath: getReadaloudFilepath(book, settings),
+            status: "ALIGNED",
+            currentStage: stage,
+            stageProgress: 1,
+            queuePosition: 0,
+            restartPending: null,
+          },
         })
 
-        book = await updateBook(bookUuid, {
+        book = await updateBook({
           alignedByStorytellerVersion: getCurrentVersion(),
           // We need UTC with integer seconds, but toISOString gives UTC with ms
           alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
@@ -295,11 +306,13 @@ export default async function processBook({
         `Encountered error while running task "${stage}" for book ${bookUuid}`,
       )
       console.error(e)
-      await updateReadaloud({
-        status: "ERROR",
-        currentStage: stage,
-        queuePosition: null,
-        restartPending: null,
+      await updateBook(null, {
+        readaloud: {
+          status: "ERROR",
+          currentStage: stage,
+          queuePosition: null,
+          restartPending: null,
+        },
       })
       return
     }
