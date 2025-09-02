@@ -175,12 +175,15 @@ const server = new Server({
         }
       }
 
-      await rm(`${uploadPath}.json`)
       return {}
     } catch (e) {
       logger.error(e)
       throw e
     } finally {
+      if (upload.storage?.path) {
+        await rm(upload.storage.path, { force: true })
+        await rm(`${upload.storage.path}.json`, { force: true })
+      }
       mutex.release()
     }
   },

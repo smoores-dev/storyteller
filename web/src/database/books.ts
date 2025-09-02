@@ -25,6 +25,7 @@ import { db } from "./connection"
 import { type NewCreator } from "./creators"
 import { type DB } from "./schema"
 import { type NewSeries } from "./series"
+import { getDefaultStatus } from "./statuses"
 
 /**
  * This function only exists to support old clients that haven't
@@ -418,7 +419,7 @@ export async function createBook(
   BookEvents.emit("message", {
     type: "bookCreated",
     bookUuid: book.uuid,
-    payload: book,
+    payload: { ...book, status: await getDefaultStatus() },
   })
 
   return book

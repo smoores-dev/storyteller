@@ -18,11 +18,15 @@ import {
   getCachedCoverImageDirectory,
   getCoverImageCacheDirectory,
   getDefaultSuffix,
+  getInternalAudioDirectory,
   getInternalBookDirectory,
+  getInternalEpubDirectory,
   getInternalEpubFilepath,
   getInternalOriginalAudioFilepath,
+  getInternalReadaloudDirectory,
   getInternalReadaloudFilepath,
   getProcessedAudioFilepath,
+  getSafeFilepathSegment,
   getTranscriptionsFilepath,
 } from "./paths"
 
@@ -31,6 +35,64 @@ export async function getProcessedAudioFiles(book: Book) {
 
   const entries = await readdir(directory, { recursive: true })
   return entries.filter((path) => isAudioFile(path))
+}
+
+export async function renameBookAssets(
+  book: BookWithRelations,
+  updated: BookWithRelations,
+) {
+  if (book.title !== updated.title) {
+    try {
+      await rename(
+        getInternalBookDirectory(book),
+        getInternalBookDirectory(updated),
+      )
+    } catch (e) {
+      if (e instanceof Error && "code" in e && e.code === "EEXIST") {
+        updated = await updateBook(updated.uuid, {
+          suffix: getDefaultSuffix(updated.uuid),
+        })
+        return renameBookAssets(book, updated)
+      }
+
+      throw e
+    }
+    if (updated.ebook?.filepath === getInternalEpubFilepath(book)) {
+      await rename(
+        join(
+          getInternalEpubDirectory(updated),
+          getSafeFilepathSegment(book.title, ".epub"),
+        ),
+        getInternalEpubFilepath(updated),
+      )
+    }
+    if (updated.readaloud?.filepath === getInternalReadaloudFilepath(book)) {
+      await rename(
+        join(
+          getInternalReadaloudDirectory(updated),
+          getSafeFilepathSegment(book.title, ".epub"),
+        ),
+        getInternalReadaloudFilepath(updated),
+      )
+    }
+    return await updateBook(updated.uuid, null, {
+      ...(updated.ebook?.filepath === getInternalEpubFilepath(book) && {
+        ebook: { filepath: getInternalEpubFilepath(updated) },
+      }),
+      ...(updated.audiobook?.filepath === getInternalAudioDirectory(book) && {
+        audiobook: { filepath: getInternalAudioDirectory(updated) },
+      }),
+      ...(updated.readaloud?.filepath ===
+        getInternalReadaloudFilepath(book) && {
+        readaloud: {
+          filepath: getInternalReadaloudFilepath(updated),
+          currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        },
+      }),
+    })
+  }
+
+  return updated
 }
 
 export async function persistEpub(

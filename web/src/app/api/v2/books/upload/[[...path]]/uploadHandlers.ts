@@ -12,7 +12,7 @@ import {
   keepMissingRelations,
 } from "@/assets/metadata"
 import {
-  getInternalBookDirectory,
+  getInternalAudioDirectory,
   getInternalOriginalAudioFilepath,
 } from "@/assets/paths"
 import {
@@ -62,15 +62,17 @@ export async function handleEpubExistingBook(
 
   const persisted = await persistEpub(updated, uploadPath, isAligned)
 
-  // If the audio was uploaded/processed first, it's going to
+  // The audio was uploaded/processed first, and it's going to
   // potentially have an arbitrary book directory name. Better
   // to use the one from the ebook
   await rename(
-    getInternalBookDirectory(book),
-    getInternalBookDirectory(persisted),
+    getInternalAudioDirectory(book),
+    getInternalAudioDirectory(persisted),
   )
 
-  return persisted
+  return await updateBook(persisted.uuid, null, {
+    audiobook: { filepath: getInternalAudioDirectory(persisted) },
+  })
 }
 
 export async function handleAudiobookNewBook(
