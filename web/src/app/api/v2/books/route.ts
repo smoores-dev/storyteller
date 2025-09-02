@@ -1,4 +1,4 @@
-import { basename, delimiter, dirname, extname } from "path"
+import { basename, delimiter, dirname, extname } from "node:path"
 
 import { NextResponse } from "next/server"
 

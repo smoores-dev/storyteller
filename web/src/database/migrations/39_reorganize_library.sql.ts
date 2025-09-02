@@ -9,6 +9,7 @@ import { Epub } from "@storyteller-platform/epub/node"
 import * as legacyCovers from "@/assets/legacy/covers"
 import * as legacyPaths from "@/assets/legacy/paths"
 import * as paths from "@/assets/paths"
+import { db } from "@/database/connection"
 import {
   ASSETS_DIR,
   AUDIO_DIR,
@@ -17,8 +18,6 @@ import {
   TEXT_DIR,
 } from "@/directories"
 import { logger } from "@/logging"
-
-import { db } from "../connection"
 
 async function getBooks() {
   return await db
@@ -134,6 +133,7 @@ export default async function migrate() {
     } catch (e) {
       if (e instanceof Error && "code" in e && e.code === "ENOENT") {
         logger.info("Skipped original ebook (missing)")
+        await db.deleteFrom("ebook").where("bookUuid", "=", book.uuid).execute()
       } else {
         logger.error(`Failed to migrate original ebook`)
         logger.error(e)
@@ -161,6 +161,10 @@ export default async function migrate() {
     } catch (e) {
       if (e instanceof Error && "code" in e && e.code === "ENOENT") {
         logger.info("Skipped original audio files (missing)")
+        await db
+          .deleteFrom("audiobook")
+          .where("bookUuid", "=", book.uuid)
+          .execute()
       } else {
         logger.error(`Failed to migrate original audio files`)
         logger.error(e)
@@ -231,6 +235,15 @@ export default async function migrate() {
     } catch (e) {
       if (e instanceof Error && "code" in e && e.code === "ENOENT") {
         logger.info("Skipped aligned ebook (missing)")
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        await db
+          // @ts-expect-error This was briefly named aligned_book
+          .deleteFrom("alignedBook")
+          // @ts-expect-error This was briefly named aligned_book
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          .where("bookUuid", "=", book.uuid)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          .execute()
       } else {
         logger.error(`Failed to migrate aligned ebook`)
         logger.error(e)

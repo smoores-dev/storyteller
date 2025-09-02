@@ -1,22 +1,10 @@
-import { rename } from "node:fs/promises"
-import { join } from "node:path"
-
 import { NextResponse } from "next/server"
 
 import {
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
-import { deleteAssets } from "@/assets/fs"
-import {
-  getInternalAudioDirectory,
-  getInternalBookDirectory,
-  getInternalEpubDirectory,
-  getInternalEpubFilepath,
-  getInternalReadaloudDirectory,
-  getInternalReadaloudFilepath,
-  getSafeFilepathSegment,
-} from "@/assets/paths"
+import { deleteAssets, renameBookAssets } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
   type CreatorRelation,
@@ -149,7 +137,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     return Response.json({ message: `Could not find book with id ${bookUuid}` })
   }
 
-  const updated = await updateBook(
+  let updated = await updateBook(
     bookUuid,
     {
       // We already confirmed that these are non-null above, if they're in
@@ -175,45 +163,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     request.auth.user.id,
   )
 
-  if (book.title !== updated.title) {
-    await rename(
-      getInternalBookDirectory(book),
-      getInternalBookDirectory(updated),
-    )
-    if (updated.ebook?.filepath === getInternalEpubFilepath(book)) {
-      await rename(
-        join(
-          getInternalEpubDirectory(updated),
-          getSafeFilepathSegment(book.title, ".epub"),
-        ),
-        getInternalEpubFilepath(updated),
-      )
-    }
-    if (updated.readaloud?.filepath === getInternalReadaloudFilepath(book)) {
-      await rename(
-        join(
-          getInternalReadaloudDirectory(updated),
-          getSafeFilepathSegment(book.title, ".epub"),
-        ),
-        getInternalReadaloudFilepath(updated),
-      )
-    }
-    await updateBook(updated.uuid, null, {
-      ...(updated.ebook?.filepath === getInternalEpubFilepath(book) && {
-        ebook: { filepath: getInternalEpubFilepath(updated) },
-      }),
-      ...(updated.audiobook?.filepath === getInternalAudioDirectory(book) && {
-        audiobook: { filepath: getInternalAudioDirectory(updated) },
-      }),
-      ...(updated.readaloud?.filepath ===
-        getInternalReadaloudFilepath(book) && {
-        readaloud: {
-          filepath: getInternalReadaloudFilepath(updated),
-          currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
-        },
-      }),
-    })
-  }
+  updated = await renameBookAssets(book, updated)
 
   const textCover = formData.get("textCover")?.valueOf() as File | undefined
   const audioCover = formData.get("audioCover")?.valueOf() as File | undefined

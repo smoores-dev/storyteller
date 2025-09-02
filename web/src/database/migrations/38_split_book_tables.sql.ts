@@ -6,8 +6,7 @@ import {
   getEpubFilepath,
   getOriginalAudioFilepath,
 } from "@/assets/legacy/paths"
-
-import { db } from "../connection"
+import { db } from "@/database/connection"
 
 export default async function migrate() {
   const books = await db.selectFrom("book").select(["uuid"]).execute()
