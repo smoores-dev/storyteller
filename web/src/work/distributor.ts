@@ -119,6 +119,7 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
   port2.on(
     "message",
     async (message: {
+      requestId: UUID
       update: BookUpdate | null
       relations: BookRelationsUpdate
     }) => {
@@ -127,7 +128,7 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
         message.update,
         message.relations,
       )
-      port2.postMessage(updated)
+      port2.postMessage({ requestId: message.requestId, book: updated })
     },
   )
 
