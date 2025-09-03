@@ -48,7 +48,11 @@ export async function renameBookAssets(
         getInternalBookDirectory(updated),
       )
     } catch (e) {
-      if (e instanceof Error && "code" in e && e.code === "EEXIST") {
+      if (
+        e instanceof Error &&
+        "code" in e &&
+        (e.code === "EEXIST" || e.code === "ENOTEMPTY")
+      ) {
         updated = await updateBook(updated.uuid, {
           suffix: getDefaultSuffix(updated.uuid),
         })
