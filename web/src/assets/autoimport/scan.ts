@@ -34,6 +34,7 @@ export async function scan(
   collectionUuid: UUID | null,
   signal: AbortSignal,
 ) {
+  logger.info(`Starting new scan for ${importPath}`)
   const allBooks = await getBooks()
   if (signal.aborted) {
     logger.info("Scanning aborted")
@@ -46,10 +47,21 @@ export async function scan(
       )
     : allBooks
 
+  const knownPaths = new Set(
+    books.flatMap((book) => [
+      book.ebook?.filepath,
+      book.audiobook?.filepath,
+      book.readaloud?.filepath,
+    ]),
+  )
+
+  logger.info("Starting recursive directory scan...")
   const entries = await readdir(importPath, {
     recursive: true,
     withFileTypes: true,
   })
+  logger.info(`Found ${entries.length} files recursively`)
+
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (signal.aborted) {
     logger.info("Scanning aborted")
@@ -64,22 +76,30 @@ export async function scan(
     readaloud?: string
   }[] = []
 
+  logger.info("Searching for new epub and audio files...")
   for (const entry of entries) {
     if (!entry.isFile() && !entry.isSymbolicLink()) continue
     const ext = extname(entry.name)
     if (ext === ".epub") {
-      ebookPaths.push(join(entry.parentPath, entry.name))
+      const fullPath = join(entry.parentPath, entry.name)
+      if (knownPaths.has(fullPath)) continue
+      ebookPaths.push(fullPath)
     }
     if (isAudioFile(ext)) {
+      if (knownPaths.has(entry.parentPath)) continue
       audiobookPathsSet.add(entry.parentPath)
     }
   }
+  logger.info(
+    `Found ${ebookPaths.length} new ebook files and ${audiobookPathsSet.size} new audiobook folders`,
+  )
 
   const audiobookPaths = Array.from(audiobookPathsSet)
 
   const handledEbookPaths = new Set<string>()
   const handledAudiobookPaths = new Set<string>()
 
+  logger.info("Checking ebooks for adjacent readalouds and audio...")
   for (const ebookPath of ebookPaths) {
     if (handledEbookPaths.has(ebookPath)) continue
 
@@ -139,13 +159,19 @@ export async function scan(
       })
     }
   }
+  logger.info(`Found ${bookPaths.length} total book folders.`)
 
+  logger.info("Checking for standalone audiobooks...")
   for (const audiobookPath of audiobookPaths) {
     if (handledAudiobookPaths.has(audiobookPath)) continue
 
     bookPaths.push({ audiobook: audiobookPath })
   }
+  logger.info(
+    `Found ${bookPaths.filter((paths) => !paths.ebook && !paths.readaloud).length} standalone audiobooks`,
+  )
 
+  logger.info("Searching found book folders for new books...")
   for (const bookPath of bookPaths) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (signal.aborted) {

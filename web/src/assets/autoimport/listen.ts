@@ -53,9 +53,15 @@ function startWatcher(
         return
       }
 
-      logger.info(
-        `Detected a change in ${importPath}, scanning for new book files...`,
-      )
+      if (scanLock.isLocked) {
+        logger.info(
+          `Detected a change in ${importPath} but previous scan is still running, queuing to run after.`,
+        )
+      } else {
+        logger.info(
+          `Detected a change in ${importPath}, scanning for new book files...`,
+        )
+      }
 
       await scanLock.lock()
 
