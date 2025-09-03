@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { basename, dirname } from "node:path"
 import { type MessagePort } from "node:worker_threads"
@@ -134,11 +135,19 @@ export default async function processBook({
     update: BookUpdate | null,
     relations: BookRelationsUpdate = {},
   ) {
+    const requestId = randomUUID()
     const promise = new Promise<BookWithRelations>((resolve) => {
-      port.once("message", resolve)
+      port.once(
+        "message",
+        (message: { requestId: UUID; book: BookWithRelations }) => {
+          if (message.requestId === requestId) {
+            resolve(message.book)
+          }
+        },
+      )
     })
 
-    port.postMessage({ update, relations })
+    port.postMessage({ requestId, update, relations })
 
     return await promise
   }
