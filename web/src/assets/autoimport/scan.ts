@@ -47,12 +47,9 @@ export async function scan(
       )
     : allBooks
 
-  const knownPaths = new Set(
-    books.flatMap((book) => [
-      book.ebook?.filepath,
-      book.audiobook?.filepath,
-      book.readaloud?.filepath,
-    ]),
+  const knownEbookPaths = new Set(books.map((book) => book.ebook?.filepath))
+  const knownReadaloudPaths = new Set(
+    books.map((book) => book.readaloud?.filepath),
   )
 
   logger.info("Starting recursive directory scan...")
@@ -82,16 +79,14 @@ export async function scan(
     const ext = extname(entry.name)
     if (ext === ".epub") {
       const fullPath = join(entry.parentPath, entry.name)
-      if (knownPaths.has(fullPath)) continue
       ebookPaths.push(fullPath)
     }
     if (isAudioFile(ext)) {
-      if (knownPaths.has(entry.parentPath)) continue
       audiobookPathsSet.add(entry.parentPath)
     }
   }
   logger.info(
-    `Found ${ebookPaths.length} new ebook files and ${audiobookPathsSet.size} new audiobook folders`,
+    `Found ${ebookPaths.length} ebook files and ${audiobookPathsSet.size} audiobook folders`,
   )
 
   const audiobookPaths = Array.from(audiobookPathsSet)
@@ -119,6 +114,19 @@ export async function scan(
       }
 
       if (plainEbookPath && readaloudPath) break
+
+      // If we already have this path in the db,
+      // we know which format it is, so we don't
+      // need to inspect it
+      if (knownEbookPaths.has(path)) {
+        plainEbookPath = path
+        continue
+      }
+      if (knownReadaloudPaths.has(path)) {
+        readaloudPath = path
+        continue
+      }
+
       try {
         const epub = await Epub.from(path)
         const manifest = await epub.getManifest()
@@ -159,7 +167,6 @@ export async function scan(
       })
     }
   }
-  logger.info(`Found ${bookPaths.length} total book folders.`)
 
   logger.info("Checking for standalone audiobooks...")
   for (const audiobookPath of audiobookPaths) {
@@ -167,9 +174,8 @@ export async function scan(
 
     bookPaths.push({ audiobook: audiobookPath })
   }
-  logger.info(
-    `Found ${bookPaths.filter((paths) => !paths.ebook && !paths.readaloud).length} standalone audiobooks`,
-  )
+
+  logger.info(`Found ${bookPaths.length} book folders.`)
 
   logger.info("Searching found book folders for new books...")
   for (const bookPath of bookPaths) {
