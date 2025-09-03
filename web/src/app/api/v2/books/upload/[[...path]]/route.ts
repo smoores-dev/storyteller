@@ -39,6 +39,11 @@ const mutex = new AsyncSemaphore(1)
 const server = new Server({
   path: "/api/v2/books/upload",
   respectForwardedHeaders: true,
+  onResponseError(_req, err) {
+    logger.error(`Upload server encountered error`)
+    logger.error(err)
+    return undefined
+  },
   datastore: new FileStore({ directory: UPLOADS_DIR }),
   // makes sure Audiobook.createFile() works, as it needs to find a filetype
   namingFunction(_req, metadata) {
