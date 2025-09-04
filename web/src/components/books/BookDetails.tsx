@@ -155,13 +155,8 @@ export function BookDetails({ bookUuid }: Props) {
                   narrated by{" "}
                   {book.narrators.map((narrator, index) => (
                     <span key={narrator.uuid}>
-                      <Link
-                        href={`/books?authors=${narrator.uuid}`}
-                        className="hover:text-st-orange-600 hover:underline"
-                      >
-                        {narrator.name}
-                      </Link>
-                      {index < book.authors.length - 1 && ", "}
+                      {narrator.name}
+                      {index < book.narrators.length - 1 && ", "}
                     </span>
                   ))}
                 </Text>
