@@ -1,10 +1,16 @@
-import { type Insertable, type Selectable, type Updateable } from "kysely"
+import {
+  type Insertable,
+  type Selectable,
+  type Transaction,
+  type Updateable,
+} from "kysely"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
 import { type UUID } from "@/uuid"
 
 import { db } from "./connection"
 import { type DB } from "./schema"
+import { getDefaultStatus } from "./statuses"
 
 export type UserPermission = Selectable<DB["userPermission"]>
 export type NewUserPermission = Insertable<DB["userPermission"]>
@@ -25,8 +31,11 @@ export type UserWithPermissions = NonNullable<
   Awaited<ReturnType<typeof getUser>>
 >
 
-export async function getUserByUsernameOrEmail(usernameOrEmail: string) {
-  const row = await db
+export async function getUserByUsernameOrEmail(
+  usernameOrEmail: string,
+  tr?: Transaction<DB>,
+) {
+  const row = await (tr ?? db)
     .selectFrom("user")
     .selectAll("user")
     .select((eb) => [
@@ -105,8 +114,8 @@ export async function getUserByAccount(
   return row ?? null
 }
 
-export async function getUser(id: UUID) {
-  const row = await db
+export async function getUser(id: UUID, tr?: Transaction<DB>) {
+  const row = await (tr ?? db)
     .selectFrom("user")
     .selectAll("user")
     .select((eb) => [
@@ -195,90 +204,97 @@ export async function createAdminUser(
   email: string,
   hashedPassword: string,
 ) {
-  const { uuid } = await db
-    .insertInto("userPermission")
-    .columns([
-      "bookCreate",
-      "bookDelete",
-      "bookRead",
-      "bookProcess",
-      "bookDownload",
-      "bookUpdate",
-      "bookList",
-      "collectionCreate",
-      "inviteList",
-      "inviteDelete",
-      "userCreate",
-      "userList",
-      "userRead",
-      "userDelete",
-      "userUpdate",
-      "settingsUpdate",
-    ])
-    .expression((eb) =>
-      db
-        .selectNoFrom([
-          eb.lit(1).as("bookCreate"),
-          eb.lit(1).as("bookDelete"),
-          eb.lit(1).as("bookRead"),
-          eb.lit(1).as("bookProcess"),
-          eb.lit(1).as("bookDownload"),
-          eb.lit(1).as("bookUpdate"),
-          eb.lit(1).as("bookList"),
-          eb.lit(1).as("collectionCreate"),
-          eb.lit(1).as("inviteList"),
-          eb.lit(1).as("inviteDelete"),
-          eb.lit(1).as("userCreate"),
-          eb.lit(1).as("userList"),
-          eb.lit(1).as("userRead"),
-          eb.lit(1).as("userDelete"),
-          eb.lit(1).as("userUpdate"),
-          eb.lit(1).as("settingsUpdate"),
-        ])
-        .where((web) =>
-          web.not(
-            web.exists(web.selectFrom("userPermission").select(["uuid"])),
+  await db.transaction().execute(async (tr) => {
+    const { uuid } = await tr
+      .insertInto("userPermission")
+      .columns([
+        "bookCreate",
+        "bookDelete",
+        "bookRead",
+        "bookProcess",
+        "bookDownload",
+        "bookUpdate",
+        "bookList",
+        "collectionCreate",
+        "inviteList",
+        "inviteDelete",
+        "userCreate",
+        "userList",
+        "userRead",
+        "userDelete",
+        "userUpdate",
+        "settingsUpdate",
+      ])
+      .expression((eb) =>
+        tr
+          .selectNoFrom([
+            eb.lit(1).as("bookCreate"),
+            eb.lit(1).as("bookDelete"),
+            eb.lit(1).as("bookRead"),
+            eb.lit(1).as("bookProcess"),
+            eb.lit(1).as("bookDownload"),
+            eb.lit(1).as("bookUpdate"),
+            eb.lit(1).as("bookList"),
+            eb.lit(1).as("collectionCreate"),
+            eb.lit(1).as("inviteList"),
+            eb.lit(1).as("inviteDelete"),
+            eb.lit(1).as("userCreate"),
+            eb.lit(1).as("userList"),
+            eb.lit(1).as("userRead"),
+            eb.lit(1).as("userDelete"),
+            eb.lit(1).as("userUpdate"),
+            eb.lit(1).as("settingsUpdate"),
+          ])
+          .where((web) =>
+            web.not(
+              web.exists(web.selectFrom("userPermission").select(["uuid"])),
+            ),
           ),
-        ),
-    )
-    .returning(["uuid"])
-    .executeTakeFirstOrThrow()
+      )
+      .returning(["uuid"])
+      .executeTakeFirstOrThrow()
 
-  await db
-    .insertInto("user")
-    .values({
-      username: username.toLowerCase(),
-      name,
-      email,
-      hashedPassword,
-      userPermissionUuid: uuid,
-    })
-    .execute()
+    await tr
+      .insertInto("user")
+      .values({
+        username: username.toLowerCase(),
+        name,
+        email,
+        hashedPassword,
+        userPermissionUuid: uuid,
+      })
+      .execute()
+  })
 }
 
 export async function deleteUser(userId: UUID) {
-  await db.deleteFrom("position").where("userId", "=", userId).execute()
+  await db.transaction().execute(async (tr) => {
+    await tr.deleteFrom("position").where("userId", "=", userId).execute()
 
-  await db.deleteFrom("account").where("userId", "=", userId).execute()
+    await tr.deleteFrom("account").where("userId", "=", userId).execute()
 
-  await db.deleteFrom("session").where("userId", "=", userId).execute()
+    await tr.deleteFrom("session").where("userId", "=", userId).execute()
 
-  await db.deleteFrom("bookToStatus").where("userId", "=", userId).execute()
+    await tr.deleteFrom("bookToStatus").where("userId", "=", userId).execute()
 
-  await db.deleteFrom("collectionToUser").where("userId", "=", userId).execute()
+    await tr
+      .deleteFrom("collectionToUser")
+      .where("userId", "=", userId)
+      .execute()
 
-  const { userPermissionUuid } = await db
-    .selectFrom("user")
-    .select(["userPermissionUuid"])
-    .where("id", "=", userId)
-    .executeTakeFirstOrThrow()
+    const { userPermissionUuid } = await tr
+      .selectFrom("user")
+      .select(["userPermissionUuid"])
+      .where("id", "=", userId)
+      .executeTakeFirstOrThrow()
 
-  await db.deleteFrom("user").where("id", "=", userId).execute()
+    await tr.deleteFrom("user").where("id", "=", userId).execute()
 
-  await db
-    .deleteFrom("userPermission")
-    .where("uuid", "=", userPermissionUuid)
-    .execute()
+    await tr
+      .deleteFrom("userPermission")
+      .where("uuid", "=", userPermissionUuid)
+      .execute()
+  })
 }
 
 export async function createUser(
@@ -286,56 +302,87 @@ export async function createUser(
   inviteKey: string,
   permissions: UserPermissionSet,
 ) {
-  const { uuid } = await db
-    .insertInto("userPermission")
-    .values(permissions)
-    .returning(["uuid as uuid"])
-    .executeTakeFirstOrThrow()
+  await db.transaction().execute(async (tr) => {
+    const { uuid } = await tr
+      .insertInto("userPermission")
+      .values(permissions)
+      .returning(["uuid as uuid"])
+      .executeTakeFirstOrThrow()
 
-  await db
-    .insertInto("user")
-    .values({
-      email,
-      inviteKey,
-      userPermissionUuid: uuid,
-    })
-    .execute()
+    const { userId } = await tr
+      .insertInto("user")
+      .values({
+        email,
+        inviteKey,
+        userPermissionUuid: uuid,
+      })
+      .returning(["id as userId"])
+      .executeTakeFirstOrThrow()
+
+    const defaultStatus = await getDefaultStatus(tr)
+
+    await tr
+      .insertInto("bookToStatus")
+      .columns(["bookUuid", "userId", "statusUuid"])
+      .expression((eb) =>
+        eb
+          .selectFrom("book")
+          .select((eb) => [
+            "book.uuid",
+            eb.val(userId).as("userId"),
+            eb.val(defaultStatus.uuid).as("statusUuid"),
+          ]),
+      )
+      .execute()
+  })
 }
 
 export async function updateUserByEmail(email: string, update: UserUpdate) {
-  const existingUser = await getUserByUsernameOrEmail(email)
-  if (!existingUser)
-    throw new Error(`Failed to update user, no user exists with email ${email}`)
+  await db.transaction().execute(async (tr) => {
+    const existingUser = await getUserByUsernameOrEmail(email, tr)
+    if (!existingUser)
+      throw new Error(
+        `Failed to update user, no user exists with email ${email}`,
+      )
 
-  if (!existingUser.hashedPassword && update.hashedPassword) {
-    await createCredentialsAccount(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      update.username ?? existingUser.username!,
-      update.name ?? existingUser.name,
-      update.email ?? existingUser.email,
-      update.hashedPassword,
-    )
-  }
+    if (!existingUser.hashedPassword && update.hashedPassword) {
+      await createCredentialsAccount(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        update.username ?? existingUser.username!,
+        update.name ?? existingUser.name,
+        update.email ?? existingUser.email,
+        update.hashedPassword,
+        tr,
+      )
+    }
 
-  await db.updateTable("user").set(update).where("email", "=", email).execute()
+    await tr
+      .updateTable("user")
+      .set(update)
+      .where("email", "=", email)
+      .execute()
+  })
 }
 
 export async function updateUser(id: UUID, update: UserUpdate) {
-  const existingUser = await getUser(id)
-  if (!existingUser)
-    throw new Error(`Failed to update user, no user exists with id ${id}`)
+  await db.transaction().execute(async (tr) => {
+    const existingUser = await getUser(id, tr)
+    if (!existingUser)
+      throw new Error(`Failed to update user, no user exists with id ${id}`)
 
-  if (!existingUser.hashedPassword && update.hashedPassword) {
-    await createCredentialsAccount(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      update.username ?? existingUser.username!,
-      update.name ?? existingUser.name,
-      update.email ?? existingUser.email,
-      update.hashedPassword,
-    )
-  }
+    if (!existingUser.hashedPassword && update.hashedPassword) {
+      await createCredentialsAccount(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        update.username ?? existingUser.username!,
+        update.name ?? existingUser.name,
+        update.email ?? existingUser.email,
+        update.hashedPassword,
+        tr,
+      )
+    }
 
-  await db.updateTable("user").set(update).where("id", "=", id).execute()
+    await tr.updateTable("user").set(update).where("id", "=", id).execute()
+  })
 }
 
 export async function acceptInvite(email: string, inviteKey: string) {
@@ -354,23 +401,32 @@ export async function createCredentialsAccount(
   name: string | null,
   email: string,
   hashedPassword: string,
+  tr?: Transaction<DB>,
 ) {
-  const { id } = await db
-    .updateTable("user")
-    .set({ username, name, hashedPassword })
-    .where("email", "=", email)
-    .returning("id as id")
-    .executeTakeFirstOrThrow()
+  async function callback(tr: Transaction<DB>) {
+    const { id } = await tr
+      .updateTable("user")
+      .set({ username, name, hashedPassword })
+      .where("email", "=", email)
+      .returning("id as id")
+      .executeTakeFirstOrThrow()
 
-  await db
-    .insertInto("account")
-    .values({
-      userId: id,
-      type: "credentials",
-      provider: "credentials",
-      providerAccountId: id,
-    })
-    .execute()
+    await tr
+      .insertInto("account")
+      .values({
+        userId: id,
+        type: "credentials",
+        provider: "credentials",
+        providerAccountId: id,
+      })
+      .execute()
+  }
+  if (tr) {
+    await callback(tr)
+    return
+  }
+
+  await db.transaction().execute(callback)
 }
 
 export async function getAccounts(id: UUID) {
@@ -443,35 +499,37 @@ export async function updateUserPermissions(
   userUuid: UUID,
   permissions: UserPermissionUpdate,
 ) {
-  const { userPermissionUuid } = await db
-    .selectFrom("userPermission")
-    .select(["userPermission.uuid as userPermissionUuid"])
-    .innerJoin("user", "user.userPermissionUuid", "userPermission.uuid")
-    .where("user.id", "=", userUuid)
-    .executeTakeFirstOrThrow()
+  await db.transaction().execute(async (tr) => {
+    const { userPermissionUuid } = await tr
+      .selectFrom("userPermission")
+      .select(["userPermission.uuid as userPermissionUuid"])
+      .innerJoin("user", "user.userPermissionUuid", "userPermission.uuid")
+      .where("user.id", "=", userUuid)
+      .executeTakeFirstOrThrow()
 
-  await db
-    .updateTable("userPermission")
-    .set({
-      bookCreate: permissions.bookCreate,
-      bookUpdate: permissions.bookUpdate,
-      bookList: permissions.bookList,
-      bookDelete: permissions.bookDelete,
-      bookDownload: permissions.bookDownload,
-      bookRead: permissions.bookRead,
-      bookProcess: permissions.bookProcess,
-      collectionCreate: permissions.collectionCreate,
-      inviteDelete: permissions.inviteDelete,
-      inviteList: permissions.inviteList,
-      settingsUpdate: permissions.settingsUpdate,
-      userCreate: permissions.userCreate,
-      userList: permissions.userList,
-      userRead: permissions.userRead,
-      userDelete: permissions.userDelete,
-      userUpdate: permissions.userUpdate,
-    })
-    .where("uuid", "=", userPermissionUuid)
-    .execute()
+    await tr
+      .updateTable("userPermission")
+      .set({
+        bookCreate: permissions.bookCreate,
+        bookUpdate: permissions.bookUpdate,
+        bookList: permissions.bookList,
+        bookDelete: permissions.bookDelete,
+        bookDownload: permissions.bookDownload,
+        bookRead: permissions.bookRead,
+        bookProcess: permissions.bookProcess,
+        collectionCreate: permissions.collectionCreate,
+        inviteDelete: permissions.inviteDelete,
+        inviteList: permissions.inviteList,
+        settingsUpdate: permissions.settingsUpdate,
+        userCreate: permissions.userCreate,
+        userList: permissions.userList,
+        userRead: permissions.userRead,
+        userDelete: permissions.userDelete,
+        userUpdate: permissions.userUpdate,
+      })
+      .where("uuid", "=", userPermissionUuid)
+      .execute()
+  })
 }
 
 export async function getCurrentUserSession(usernameOrEmail: string) {
