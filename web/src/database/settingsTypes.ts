@@ -85,4 +85,5 @@ export type Settings = {
     | "INTERNAL"
     | "CUSTOM_FOLDER"
   readaloudLocation: string
+  maxUploadChunkSize: number | null
 }

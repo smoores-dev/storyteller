@@ -15,6 +15,7 @@ import {
   PasswordInput,
   Select,
   Stack,
+  Switch,
   Text,
   TextInput,
 } from "@mantine/core"
@@ -77,6 +78,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
     importPath: settings.importPath,
     readaloudLocationType: settings.readaloudLocationType,
     readaloudLocation: settings.readaloudLocation,
+    maxUploadChunkSize: settings.maxUploadChunkSize,
   }
 
   const form = useForm({
@@ -657,6 +659,31 @@ export function SettingsForm({ settings, authUrl }: Props) {
           >
             Add provider
           </Button>
+        </Stack>
+      </Fieldset>
+      <Fieldset legend="Upload settings">
+        <Stack>
+          <Switch
+            label="Enable max chunk size"
+            description="Don’t enable this unless you’re running into maximum request size issues with your reverse proxy or hosting provider."
+            checked={state.maxUploadChunkSize !== null}
+            onChange={(event) => {
+              const value = event.currentTarget.checked
+              if (value) {
+                form.setFieldValue("maxUploadChunkSize", 100_000_000)
+              } else {
+                form.setFieldValue("maxUploadChunkSize", null)
+              }
+            }}
+          />
+          {state.maxUploadChunkSize !== null && (
+            <NumberInput
+              label="Max chunk size"
+              description="Size in bytes. Default is 100MB, which is Cloudfare’s maximum request size."
+              value={state.maxUploadChunkSize}
+              {...form.getInputProps("maxUploadChunkSize")}
+            />
+          )}
         </Stack>
       </Fieldset>
       <Fieldset legend="Email settings">

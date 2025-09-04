@@ -42,6 +42,7 @@ export const api = createApi({
     "Tags",
     "CurrentUser",
     "Authors",
+    "MaxUploadChunkSize",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -106,12 +107,19 @@ export const api = createApi({
       query: () => "/user",
       providesTags: () => ["CurrentUser"],
     }),
+    getMaxUploadChunkSize: build.query<number | null, void>({
+      query: () => "/settings/maxUploadChunkSize",
+      transformResponse: (body: { maxUploadChunkSize: number | null }) =>
+        body.maxUploadChunkSize,
+      providesTags: () => ["MaxUploadChunkSize"],
+    }),
     updateSettings: build.mutation({
       query: (settings: Settings) => ({
         url: "/settings",
         method: "PUT",
         body: settings,
       }),
+      invalidatesTags: ["MaxUploadChunkSize"],
     }),
     deleteBook: build.mutation<
       void,
@@ -560,6 +568,7 @@ export const {
   useDeleteSeriesMutation,
   useDeleteUserMutation,
   useGetCurrentUserQuery,
+  useGetMaxUploadChunkSizeQuery,
   useGetShelvesQuery,
   useLazyListCollectionsQuery,
   useLazyListCreatorsQuery,

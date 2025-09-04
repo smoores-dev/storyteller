@@ -7,12 +7,13 @@ import useUppyEvent from "@uppy/react/lib/useUppyEvent"
 import useUppyState from "@uppy/react/lib/useUppyState"
 import Tus from "@uppy/tus"
 import { parseBlob, selectCover } from "music-metadata"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
 import { Epub } from "@storyteller-platform/epub"
 
 import { type Collection } from "@/database/collections"
+import { useGetMaxUploadChunkSizeQuery } from "@/store/api"
 import BookThumbnailGenerator from "@/uppyPlugins/BookThumbnailGenerator/BookThumbnailGenerator"
 
 const tusEndpoint =
@@ -27,11 +28,13 @@ interface Props {
 }
 
 export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
+  const { data: maxUploadChunkSize, isLoading } =
+    useGetMaxUploadChunkSizeQuery()
   const [isEpubAligned, setIsEpubAligned] = useState(false)
   const [isEpubComplete, setIsEpubComplete] = useState(false)
   const [isAudioComplete, setIsAudioComplete] = useState(false)
 
-  const [epubUppy] = useState(() =>
+  const [epubUppy, setEpubUppy] = useState(() =>
     new Uppy({
       restrictions: {
         maxNumberOfFiles: 1,
@@ -41,6 +44,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
       .use(Tus, {
         endpoint: tusEndpoint,
         withCredentials: true,
+        ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
       })
       .use(BookThumbnailGenerator, {
         thumbnailFactories: {
@@ -56,7 +60,37 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
       }),
   )
 
-  const [audioUppy] = useState(() =>
+  useEffect(() => {
+    if (!isLoading) {
+      setEpubUppy(
+        new Uppy({
+          restrictions: {
+            maxNumberOfFiles: 1,
+            allowedFileTypes: ["application/epub+zip", ".epub"],
+          },
+        })
+          .use(Tus, {
+            endpoint: tusEndpoint,
+            withCredentials: true,
+            ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
+          })
+          .use(BookThumbnailGenerator, {
+            thumbnailFactories: {
+              "application/epub+zip": async (file) => {
+                const arrayBuffer = await file.data.arrayBuffer()
+                const data = new Uint8Array(arrayBuffer)
+                const epub = await Epub.from(data)
+                const coverData = await epub.getCoverImage()
+                if (!coverData) return null
+                return new Blob([coverData])
+              },
+            },
+          }),
+      )
+    }
+  }, [isLoading, maxUploadChunkSize])
+
+  const [audioUppy, setAudioUppy] = useState(() =>
     new Uppy({
       restrictions: {
         allowedFileTypes: [
@@ -68,7 +102,11 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
         ],
       },
     })
-      .use(Tus, { endpoint: tusEndpoint, withCredentials: true })
+      .use(Tus, {
+        endpoint: tusEndpoint,
+        withCredentials: true,
+        ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
+      })
       .use(BookThumbnailGenerator, {
         thumbnailFactories: {
           "video/*,audio/*,.m4b": async (file) => {
@@ -81,6 +119,40 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
         },
       }),
   )
+
+  useEffect(() => {
+    if (!isLoading) {
+      setAudioUppy(
+        new Uppy({
+          restrictions: {
+            allowedFileTypes: [
+              "video/mp4",
+              "audio/*",
+              "application/zip",
+              ".m4b",
+              ".zip",
+            ],
+          },
+        })
+          .use(Tus, {
+            endpoint: tusEndpoint,
+            withCredentials: true,
+            ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
+          })
+          .use(BookThumbnailGenerator, {
+            thumbnailFactories: {
+              "video/*,audio/*,.m4b": async (file) => {
+                const { common } = await parseBlob(file.data)
+                const coverImage = selectCover(common.picture)
+                if (!coverImage) return null
+
+                return new Blob([coverImage.data])
+              },
+            },
+          }),
+      )
+    }
+  }, [isLoading, maxUploadChunkSize])
 
   useUppyEvent(epubUppy, "file-added", async (file) => {
     const arrayBuffer = await file.data.arrayBuffer()
