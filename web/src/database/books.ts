@@ -389,11 +389,7 @@ export async function createBook(
       }
     }
 
-    const defaultStatus = await tr
-      .selectFrom("status")
-      .select(["uuid"])
-      .where("isDefault", "=", true)
-      .executeTakeFirstOrThrow()
+    const defaultStatus = await getDefaultStatus(tr)
 
     await tr
       .insertInto("bookToStatus")

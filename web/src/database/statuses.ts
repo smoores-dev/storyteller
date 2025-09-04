@@ -1,4 +1,4 @@
-import { type Insertable, type Selectable } from "kysely"
+import { type Insertable, type Selectable, type Transaction } from "kysely"
 
 import { BookEvents } from "@/events"
 import { type UUID } from "@/uuid"
@@ -21,8 +21,8 @@ export async function getStatus(uuid: UUID) {
     .executeTakeFirstOrThrow()
 }
 
-export async function getDefaultStatus() {
-  return db
+export async function getDefaultStatus(tr?: Transaction<DB>) {
+  return (tr ?? db)
     .selectFrom("status")
     .selectAll("status")
     .where("isDefault", "=", true)
