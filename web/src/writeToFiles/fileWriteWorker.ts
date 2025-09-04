@@ -68,10 +68,19 @@ export default async function writeMetadataToFiles({
   }
 
   if (book.readaloud?.filepath) {
-    const epub = await Epub.from(book.readaloud.filepath)
-    await writeMetadataToEpub(book, epub, { textCover, audioCover })
-    await epub.writeToFile(book.readaloud.filepath)
-    await epub.close()
+    let epub: Epub | null = null
+    try {
+      epub = await Epub.from(book.readaloud.filepath)
+      await writeMetadataToEpub(book, epub, { textCover, audioCover })
+      await epub.writeToFile(book.readaloud.filepath)
+    } catch (e) {
+      logger.error(
+        `Failed to write metadata to readaloud ${book.title} ${book.suffix}, skipping`,
+      )
+      logger.error(e)
+    } finally {
+      await epub?.close()
+    }
   }
 
   if (textCover || audioCover) {
