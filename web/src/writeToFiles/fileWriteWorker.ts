@@ -8,6 +8,7 @@ import {
   writeMetadataToEpub,
 } from "@/assets/metadata"
 import { getBookOrThrow } from "@/database/books"
+import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 interface TransferableFile {
@@ -47,10 +48,19 @@ export default async function writeMetadataToFiles({
     )
 
   if (book.ebook) {
-    const epub = await Epub.from(book.ebook.filepath)
-    await writeMetadataToEpub(book, epub, { textCover })
-    await epub.writeToFile(book.ebook.filepath)
-    await epub.close()
+    let epub: Epub | null = null
+    try {
+      epub = await Epub.from(book.ebook.filepath)
+      await writeMetadataToEpub(book, epub, { textCover })
+      await epub.writeToFile(book.ebook.filepath)
+    } catch (e) {
+      logger.error(
+        `Failed to write metadata to epub ${book.title} ${book.suffix}, skipping`,
+      )
+      logger.error(e)
+    } finally {
+      await epub?.close()
+    }
   }
 
   if (book.audiobook) {

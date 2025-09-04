@@ -66,17 +66,27 @@ export function keepMissingRelations(
   const incomingCreators = incoming.creators?.filter(
     (creator) => creator.role !== "aut" && creator.role !== "nrt",
   )
+
+  keep.creators = []
+
   if (book.authors.length === 0 && incomingAuthors?.length) {
-    keep.creators ??= []
     keep.creators.push(...incomingAuthors)
+  } else {
+    keep.creators.push(
+      ...book.authors.map((author) => ({ ...author, role: "aut" as const })),
+    )
   }
   if (book.narrators.length === 0 && incomingNarrators?.length) {
-    keep.creators ??= []
     keep.creators.push(...incomingNarrators)
+  } else {
+    keep.creators.push(
+      ...book.narrators.map((author) => ({ ...author, role: "nrt" as const })),
+    )
   }
   if (book.creators.length === 0 && incomingCreators?.length) {
-    keep.creators ??= []
     keep.creators.push(...incomingCreators)
+  } else {
+    keep.creators.push(...book.creators)
   }
   if (book.series.length === 0 && incoming.series?.length) {
     keep.series = incoming.series
@@ -460,7 +470,6 @@ export async function writeMetadataToAudiobook(
   const tracks = entries
     .filter((entry) => isAudioFile(entry))
     .map((track) => join(directory, track))
-  const audiobook = await Audiobook.from(tracks)
   let coverPath: null | string = null
   if (cover) {
     const ext = extname(cover.name) || extension(cover.type) || ".jpeg"
@@ -469,25 +478,12 @@ export async function writeMetadataToAudiobook(
     await persistCustomAudioCover(book.uuid, `Audio Cover${ext}`, data)
 
     coverPath = join(book.audiobook.filepath, `Audio Cover${ext}`)
-    await audiobook.setCoverArt(coverPath)
   }
-  await audiobook.setAuthors(book.authors.map((author) => author.name))
-  await audiobook.setNarrators(book.narrators.map((narrator) => narrator.name))
-  await audiobook.setTitle(book.title)
-  if (book.subtitle) {
-    await audiobook.setSubtitle(book.subtitle)
-  }
-  if (book.description) {
-    await audiobook.setDescription(book.description)
-  }
-  await audiobook.save()
-  audiobook.close()
+
+  let audiobook: Audiobook | null = null
 
   try {
-    const processedTracks = (await getProcessedAudioFiles(book)).map((track) =>
-      join(getProcessedAudioFilepath(book), track),
-    )
-    const processedAudiobook = await Audiobook.from(processedTracks)
+    audiobook = await Audiobook.from(tracks)
     if (coverPath) {
       await audiobook.setCoverArt(coverPath)
     }
@@ -502,8 +498,39 @@ export async function writeMetadataToAudiobook(
     if (book.description) {
       await audiobook.setDescription(book.description)
     }
+    await audiobook.save()
+  } catch (e) {
+    logger.error(
+      `Failed to write metadata to audiobook ${book.title} ${book.suffix}, skipping`,
+    )
+    logger.error(e)
+  } finally {
+    audiobook?.close()
+  }
+
+  try {
+    const processedTracks = (await getProcessedAudioFiles(book)).map((track) =>
+      join(getProcessedAudioFilepath(book), track),
+    )
+    const processedAudiobook = await Audiobook.from(processedTracks)
+    if (coverPath) {
+      await processedAudiobook.setCoverArt(coverPath)
+    }
+    await processedAudiobook.setAuthors(
+      book.authors.map((author) => author.name),
+    )
+    await processedAudiobook.setNarrators(
+      book.narrators.map((narrator) => narrator.name),
+    )
+    await processedAudiobook.setTitle(book.title)
+    if (book.subtitle) {
+      await processedAudiobook.setSubtitle(book.subtitle)
+    }
+    if (book.description) {
+      await processedAudiobook.setDescription(book.description)
+    }
     await processedAudiobook.save()
-    audiobook.close()
+    processedAudiobook.close()
   } catch {
     // We might not have any processed audio files yet, which is fine
   }
