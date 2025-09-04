@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto"
 import { createReadStream } from "node:fs"
-import { type FileHandle, open, readdir } from "node:fs/promises"
+import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { extname, join } from "node:path"
+import { dirname, extname, join } from "node:path"
 import { pipeline } from "node:stream/promises"
 
 import { createReadableStreamFromReadable } from "@remix-run/node"
@@ -54,9 +54,15 @@ async function getFilepath(
     return join(filepath, audioFiles[0]!)
   }
 
-  const zipFilepath = join(tmpdir(), "storyteller-downloads")
+  const zipFilepath = join(
+    tmpdir(),
+    "storyteller-downloads",
+    `${book.uuid}.zip`,
+  )
+  await mkdir(dirname(zipFilepath), { recursive: true })
   const zipFs = new ZipFS(zipFilepath as PortablePath, { create: true })
   for (const audioFile of audioFiles) {
+    zipFs.mkdirpSync(dirname(audioFile) as PortablePath)
     await pipeline(
       createReadStream(join(filepath, audioFile)),
       zipFs.createWriteStream(audioFile as PortablePath),

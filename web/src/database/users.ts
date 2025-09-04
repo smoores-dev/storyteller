@@ -263,6 +263,10 @@ export async function deleteUser(userId: UUID) {
 
   await db.deleteFrom("session").where("userId", "=", userId).execute()
 
+  await db.deleteFrom("bookToStatus").where("userId", "=", userId).execute()
+
+  await db.deleteFrom("collectionToUser").where("userId", "=", userId).execute()
+
   const { userPermissionUuid } = await db
     .selectFrom("user")
     .select(["userPermissionUuid"])
