@@ -107,10 +107,11 @@ export const api = createApi({
       query: () => "/user",
       providesTags: () => ["CurrentUser"],
     }),
-    getMaxUploadChunkSize: build.query<number | null, void>({
+    getMaxUploadChunkSize: build.query<
+      { maxUploadChunkSize: number | null; overriden: boolean },
+      void
+    >({
       query: () => "/settings/maxUploadChunkSize",
-      transformResponse: (body: { maxUploadChunkSize: number | null }) =>
-        body.maxUploadChunkSize,
       providesTags: () => ["MaxUploadChunkSize"],
     }),
     updateSettings: build.mutation({
