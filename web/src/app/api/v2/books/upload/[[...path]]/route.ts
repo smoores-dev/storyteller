@@ -40,6 +40,11 @@ const server = new Server({
   path: "/api/v2/books/upload",
   respectForwardedHeaders: true,
   onResponseError(_req, err) {
+    // These are expected, this just means that the file
+    // is being uploaded for the first time
+    if ("status_code" in err && err.status_code === 404) {
+      return undefined
+    }
     logger.error(`Upload server encountered error`)
     logger.error(err)
     return undefined

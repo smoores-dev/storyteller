@@ -137,14 +137,13 @@ export default async function processBook({
   ) {
     const requestId = randomUUID()
     const promise = new Promise<BookWithRelations>((resolve) => {
-      port.once(
-        "message",
-        (message: { requestId: UUID; book: BookWithRelations }) => {
-          if (message.requestId === requestId) {
-            resolve(message.book)
-          }
-        },
-      )
+      function listener(message: { requestId: UUID; book: BookWithRelations }) {
+        if (message.requestId === requestId) {
+          port.off("message", listener)
+          resolve(message.book)
+        }
+      }
+      port.on("message", listener)
     })
 
     port.postMessage({ requestId, update, relations })
