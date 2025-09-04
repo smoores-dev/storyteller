@@ -1,4 +1,4 @@
-import { readdir, stat } from "node:fs/promises"
+import { mkdir, readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 
 import { Audiobook } from "@storyteller-platform/audiobook/node"
@@ -17,6 +17,7 @@ import {
   keepMissingMetadata,
   keepMissingRelations,
 } from "@/assets/metadata"
+import { getDefaultSuffix, getInternalBookDirectory } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import {
   type BookUpdate,
@@ -203,7 +204,7 @@ export async function scan(
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const epub = await Epub.from((bookPath.readaloud ?? bookPath.ebook)!)
 
-        const created = await createBookFromEpub(
+        let created = await createBookFromEpub(
           epub,
           {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -224,6 +225,16 @@ export async function scan(
             }),
           },
         )
+
+        try {
+          await mkdir(getInternalBookDirectory(created))
+        } catch (e) {
+          if (e instanceof Error && "code" in e && e.code === "EEXIST") {
+            created = await updateBook(created.uuid, {
+              suffix: getDefaultSuffix(created.uuid),
+            })
+          }
+        }
 
         const coverImage = await getEpubCover(created)
         if (coverImage) {
@@ -295,7 +306,7 @@ export async function scan(
             .map((relativePath) => join(audiobookPath, relativePath)),
         )
 
-        const created = await createBookFromAudiobook(
+        let created = await createBookFromAudiobook(
           audiobook,
           {
             title: basename(audiobookPath),
@@ -306,6 +317,16 @@ export async function scan(
           },
         )
         audiobook.close()
+
+        try {
+          await mkdir(getInternalBookDirectory(created))
+        } catch (e) {
+          if (e instanceof Error && "code" in e && e.code === "EEXIST") {
+            created = await updateBook(created.uuid, {
+              suffix: getDefaultSuffix(created.uuid),
+            })
+          }
+        }
 
         const coverImage = await getAudioCover(created)
         if (coverImage) {
