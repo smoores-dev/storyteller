@@ -28,11 +28,12 @@ interface Props {
 }
 
 export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
-  const { data: maxUploadChunkSize, isLoading } =
-    useGetMaxUploadChunkSizeQuery()
+  const { data, isLoading } = useGetMaxUploadChunkSizeQuery()
   const [isEpubAligned, setIsEpubAligned] = useState(false)
   const [isEpubComplete, setIsEpubComplete] = useState(false)
   const [isAudioComplete, setIsAudioComplete] = useState(false)
+
+  const maxUploadChunkSize = data?.maxUploadChunkSize
 
   const [epubUppy, setEpubUppy] = useState(() =>
     new Uppy({

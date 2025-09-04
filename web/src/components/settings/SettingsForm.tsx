@@ -25,7 +25,11 @@ import { useRef, useState } from "react"
 
 import { type Settings } from "@/apiModels"
 import { ImportPathInput } from "@/components/ImportPathInput"
-import { useListCollectionsQuery, useUpdateSettingsMutation } from "@/store/api"
+import {
+  useGetMaxUploadChunkSizeQuery,
+  useListCollectionsQuery,
+  useUpdateSettingsMutation,
+} from "@/store/api"
 
 import { AuthProviderInput } from "./AuthProviderInput"
 
@@ -37,6 +41,8 @@ interface Props {
 export function SettingsForm({ settings, authUrl }: Props) {
   const [saved, setSaved] = useState(false)
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const { data: maxUploadChunkSize } = useGetMaxUploadChunkSizeQuery()
 
   const { data: collections } = useListCollectionsQuery()
 
@@ -78,7 +84,8 @@ export function SettingsForm({ settings, authUrl }: Props) {
     importPath: settings.importPath,
     readaloudLocationType: settings.readaloudLocationType,
     readaloudLocation: settings.readaloudLocation,
-    maxUploadChunkSize: settings.maxUploadChunkSize,
+    maxUploadChunkSize:
+      maxUploadChunkSize?.maxUploadChunkSize ?? settings.maxUploadChunkSize,
   }
 
   const form = useForm({
@@ -663,9 +670,18 @@ export function SettingsForm({ settings, authUrl }: Props) {
       </Fieldset>
       <Fieldset legend="Upload settings">
         <Stack>
+          {maxUploadChunkSize?.overriden && (
+            <Text className="text-sm">
+              Your max chunk size is overriden via the environment variable{" "}
+              <code>STORYTELLER_MAX_UPLOAD_CHUNK_SIZE</code>. Change that
+              environment variable to change the value, or unset it to configure
+              the value here in the settings.
+            </Text>
+          )}
           <Switch
             label="Enable max chunk size"
             description="Don’t enable this unless you’re running into maximum request size issues with your reverse proxy or hosting provider."
+            disabled={maxUploadChunkSize?.overriden ?? false}
             checked={state.maxUploadChunkSize !== null}
             onChange={(event) => {
               const value = event.currentTarget.checked
@@ -680,6 +696,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
             <NumberInput
               label="Max chunk size"
               description="Size in bytes. Default is 100MB, which is Cloudfare’s maximum request size."
+              disabled={maxUploadChunkSize?.overriden ?? false}
               value={state.maxUploadChunkSize}
               {...form.getInputProps("maxUploadChunkSize")}
             />
