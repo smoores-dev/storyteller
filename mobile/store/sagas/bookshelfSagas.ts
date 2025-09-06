@@ -672,7 +672,10 @@ export function* syncPositionsSaga() {
     typeof getApiClient
   >
 
-  if (!apiClient?.isAuthenticated()) return
+  if (!apiClient?.isAuthenticated()) {
+    logger.debug(`API client is not authenticated, not starting position sync`)
+    return
+  }
 
   const pollChannel = eventChannel((emit) => {
     const interval = setInterval(() => {
@@ -686,6 +689,7 @@ export function* syncPositionsSaga() {
   })
 
   yield takeEvery(pollChannel, function* () {
+    logger.debug(`Starting new position sync attempt`)
     const bookIds = (yield select(getBookshelfBookIds)) as ReturnType<
       typeof getBookshelfBookIds
     >
@@ -694,9 +698,17 @@ export function* syncPositionsSaga() {
         getLocator,
         bookId,
       )) as ReturnType<typeof getLocator>
+      logger.debug(`Timestamped locator for ${bookId}:`)
+      logger.debug(timestampedLocator)
       if (!timestampedLocator) continue
       const { timestamp, locator } = timestampedLocator
       try {
+        logger.debug(`Calling syncPosition`)
+        logger.debug({
+          bookId,
+          locator,
+          timestamp,
+        })
         yield call(
           [apiClient, apiClient.syncPosition],
           bookId,
@@ -705,22 +717,31 @@ export function* syncPositionsSaga() {
         )
       } catch (e) {
         if (e instanceof ApiClientError && e.statusCode === 409) {
+          logger.debug(
+            `Received 409 from syncPosition, calling getSyncedPosition`,
+          )
           try {
             const newPosition = (yield call(
               [apiClient, apiClient.getSyncedPosition],
               bookId,
             )) as Awaited<ReturnType<typeof apiClient.getSyncedPosition>>
 
+            logger.debug(`Received new position`)
+            logger.debug(newPosition)
             yield put(
               bookshelfSlice.actions.bookPositionSynced({
                 bookId,
                 locator: newPosition,
               }),
             )
-          } catch {
+          } catch (getError) {
+            logger.debug(`Failed to get new position`)
+            logger.debug(getError)
             // Ignore any errors here; we'll retry in ten seconds anyway
           }
         }
+        logger.debug(`Failed to call syncPosition`)
+        logger.debug(e)
       }
     }
   })
