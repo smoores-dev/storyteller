@@ -1,9 +1,7 @@
 import { type Metadata } from "next"
 
-import { type Shelves } from "@/apiModels"
+import { assertHasPermission } from "@/auth/auth"
 import { BookShelves } from "@/components/books/BookShelves"
-
-import { fetchApiRoute } from "./fetchApiRoute"
 
 export const dynamic = "force-dynamic"
 
@@ -12,10 +10,11 @@ export const metadata: Metadata = {
 }
 
 export default async function Home() {
-  const shelves = await fetchApiRoute<Shelves>("/shelves")
+  await assertHasPermission("bookList")
+
   return (
     <>
-      <BookShelves shelves={shelves} />
+      <BookShelves />
     </>
   )
 }

@@ -3,25 +3,18 @@
 import { Stack, Text } from "@mantine/core"
 import { useMemo, useState } from "react"
 
-import { type Shelves } from "@/apiModels"
-import { useInitialData } from "@/hooks/useInitialData"
-import { api, useGetShelvesQuery, useListStatusesQuery } from "@/store/api"
+import { CollectionToolbar } from "@/components/collections/toolbar/CollectionToolbar"
+import { type BookWithRelations } from "@/database/books"
+import { useListBooksQuery, useListStatusesQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
 
-import { CollectionToolbar } from "../collections/toolbar/CollectionToolbar"
-
+import { BookGridSkeleton } from "./BookGridSkeleton"
 import { Shelf } from "./Shelf"
 
-interface Props {
-  shelves: Shelves
-}
+const EMPTY_BOOKS: BookWithRelations[] = []
 
-export function BookShelves({ shelves: initialShelves }: Props) {
-  useInitialData(
-    api.util.upsertQueryData("getShelves", undefined, initialShelves),
-  )
-
-  const { data: shelves } = useGetShelvesQuery()
+export function BookShelves() {
+  const { data: books = EMPTY_BOOKS, isLoading } = useListBooksQuery()
   const { data: statuses } = useListStatusesQuery()
   const toReadStatus =
     statuses?.find((status) => status.name === "To read") ?? null
@@ -31,17 +24,87 @@ export function BookShelves({ shelves: initialShelves }: Props) {
   const [selected, setSelected] = useState(() => new Set<UUID>())
   const [isEditing, setIsEditing] = useState(false)
 
-  const allShelfBooks = useMemo(() => {
-    if (!shelves) return []
-    return [
-      ...shelves.currentlyReading,
-      ...shelves.nextUp,
-      ...shelves.recentlyAdded,
-      ...shelves.startReading,
-    ]
-  }, [shelves])
+  const currentlyReading = useMemo(() => {
+    return books
+      .filter((book) => book.status?.name === "Reading")
+      .sort(
+        (a, b) => (a.position?.timestamp ?? 0) - (b.position?.timestamp ?? 0),
+      )
+  }, [books])
 
-  if (!shelves) return null
+  const nextUp = useMemo(() => {
+    const latestReadInSeries = new Map<UUID, BookWithRelations>()
+    const resultSet = new Set<UUID>()
+    for (const book of books) {
+      if (!book.series.length) continue
+
+      const series = book.series
+      for (const s of series) {
+        const latestRead = latestReadInSeries.get(s.uuid)
+        if (!latestRead) {
+          if (book.status?.name === "Read") {
+            latestReadInSeries.set(s.uuid, book)
+            continue
+          } else {
+            continue
+          }
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const latestSeriesPos = latestRead.series.find(
+          (ls) => ls.uuid === s.uuid,
+        )!.position
+        if ((latestSeriesPos ?? 0) < (s.position ?? 0)) {
+          if (book.status?.name === "Read") {
+            latestReadInSeries.set(s.uuid, book)
+          } else if (!resultSet.has(book.uuid)) {
+            resultSet.add(book.uuid)
+          }
+        }
+      }
+    }
+
+    return books
+      .filter((book) => resultSet.has(book.uuid))
+      .sort((a, b) => {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const latestA = a.series
+          .map((s) => latestReadInSeries.get(s.uuid))
+          .filter((book) => !!book)[0]!
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const latestB = b.series
+          .map((s) => latestReadInSeries.get(s.uuid))
+          .filter((book) => !!book)[0]!
+
+        return (
+          (latestA.position?.timestamp ?? 0) -
+          (latestB.position?.timestamp ?? 0)
+        )
+      })
+  }, [books])
+
+  const startReading = useMemo(() => {
+    return books
+      .filter((book) => book.status?.name === "To read")
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf(),
+      )
+  }, [books])
+
+  const recentlyAdded = useMemo(() => {
+    return books
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf(),
+      )
+  }, [books])
+
+  const allShelfBooks = useMemo(
+    () => [...currentlyReading, ...nextUp, ...startReading, ...recentlyAdded],
+    [currentlyReading, nextUp, recentlyAdded, startReading],
+  )
 
   return (
     <Stack>
@@ -52,87 +115,89 @@ export function BookShelves({ shelves: initialShelves }: Props) {
         isEditing={isEditing}
         setIsEditing={setIsEditing}
       />
-      {!shelves.currentlyReading.length &&
-        !shelves.nextUp.length &&
-        !shelves.startReading.length &&
-        !shelves.recentlyAdded.length && (
-          <Text>
-            There’s nothing here! Upload a book or configure an automatic import
-            folder in the settings to get started.
-          </Text>
-        )}
-      <Shelf
-        label="Currently reading"
-        href={`/books?statuses=${readingStatus?.uuid}`}
-        books={shelves.currentlyReading}
-        isSelecting={isEditing}
-        selected={selected}
-        onSelect={(uuid) => {
-          setSelected((prev) => {
-            const next = new Set(prev)
-            if (selected.has(uuid)) {
-              next.delete(uuid)
-            } else {
-              next.add(uuid)
-            }
-            return next
-          })
-        }}
-      />
-      <Shelf
-        label="Next up"
-        href="/series"
-        books={shelves.nextUp}
-        isSelecting={isEditing}
-        selected={selected}
-        onSelect={(uuid) => {
-          setSelected((prev) => {
-            const next = new Set(prev)
-            if (selected.has(uuid)) {
-              next.delete(uuid)
-            } else {
-              next.add(uuid)
-            }
-            return next
-          })
-        }}
-      />
-      <Shelf
-        label="Start reading"
-        href={`/books?statuses=${toReadStatus?.uuid}&sort=create-time,desc`}
-        books={shelves.startReading}
-        isSelecting={isEditing}
-        selected={selected}
-        onSelect={(uuid) => {
-          setSelected((prev) => {
-            const next = new Set(prev)
-            if (selected.has(uuid)) {
-              next.delete(uuid)
-            } else {
-              next.add(uuid)
-            }
-            return next
-          })
-        }}
-      />
-      <Shelf
-        label="Recently added"
-        href={`/books?sort=create-time,desc`}
-        books={shelves.recentlyAdded}
-        isSelecting={isEditing}
-        selected={selected}
-        onSelect={(uuid) => {
-          setSelected((prev) => {
-            const next = new Set(prev)
-            if (selected.has(uuid)) {
-              next.delete(uuid)
-            } else {
-              next.add(uuid)
-            }
-            return next
-          })
-        }}
-      />
+      {isLoading ? (
+        <BookGridSkeleton />
+      ) : books.length ? (
+        <>
+          <Shelf
+            label="Currently reading"
+            href={`/books?statuses=${readingStatus?.uuid}`}
+            books={currentlyReading}
+            isSelecting={isEditing}
+            selected={selected}
+            onSelect={(uuid) => {
+              setSelected((prev) => {
+                const next = new Set(prev)
+                if (selected.has(uuid)) {
+                  next.delete(uuid)
+                } else {
+                  next.add(uuid)
+                }
+                return next
+              })
+            }}
+          />
+          <Shelf
+            label="Next up in series"
+            href="/series"
+            books={nextUp}
+            isSelecting={isEditing}
+            selected={selected}
+            onSelect={(uuid) => {
+              setSelected((prev) => {
+                const next = new Set(prev)
+                if (selected.has(uuid)) {
+                  next.delete(uuid)
+                } else {
+                  next.add(uuid)
+                }
+                return next
+              })
+            }}
+          />
+          <Shelf
+            label="Start reading"
+            href={`/books?statuses=${toReadStatus?.uuid}&sort=create-time,desc`}
+            books={startReading}
+            isSelecting={isEditing}
+            selected={selected}
+            onSelect={(uuid) => {
+              setSelected((prev) => {
+                const next = new Set(prev)
+                if (selected.has(uuid)) {
+                  next.delete(uuid)
+                } else {
+                  next.add(uuid)
+                }
+                return next
+              })
+            }}
+          />
+          <Shelf
+            label="Recently added"
+            href={`/books?sort=create-time,desc`}
+            books={recentlyAdded}
+            isSelecting={isEditing}
+            selected={selected}
+            onSelect={(uuid) => {
+              setSelected((prev) => {
+                const next = new Set(prev)
+                if (selected.has(uuid)) {
+                  next.delete(uuid)
+                } else {
+                  next.add(uuid)
+                }
+                return next
+              })
+            }}
+          />
+        </>
+      ) : (
+        <Text>
+          There’s nothing here! Upload a book or configure an automatic import
+          folder in the settings to get started.
+        </Text>
+      )}
     </Stack>
   )
 }

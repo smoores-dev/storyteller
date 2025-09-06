@@ -551,6 +551,20 @@ export function booksQuery(userId?: UUID) {
                 .whereRef("bookToStatus.bookUuid", "=", "book.uuid")
                 .where("bookToStatus.userId", "=", userId),
             ).as("status"),
+            jsonObjectFrom(
+              eb
+                .selectFrom("position")
+                .distinct()
+                .select([
+                  "position.uuid",
+                  "position.locator",
+                  "position.timestamp",
+                  "position.createdAt",
+                  "position.updatedAt",
+                ])
+                .whereRef("position.bookUuid", "=", "book.uuid")
+                .where("position.userId", "=", userId),
+            ).as("position"),
           ]
         : []),
       jsonObjectFrom(
