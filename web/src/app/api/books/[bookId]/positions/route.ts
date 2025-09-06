@@ -8,6 +8,7 @@ import {
   getPosition,
   upsertPosition,
 } from "@/database/positions"
+import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 type Params = Promise<{
@@ -28,10 +29,13 @@ export const POST = withHasPermission<Params>("bookRead")(async (
 ) => {
   const body = (await request.json()) as Position
   const { bookId } = await context.params
+  logger.debug(`/api/books/${bookId}/positions`)
   let bookUuid: UUID
   try {
     bookUuid = await getBookUuid(bookId)
+    logger.debug(`Got book UUID: ${bookUuid}`)
   } catch {
+    logger.debug(`No book with id ${bookId}, returning 404`)
     return Response.json({ message: "Book not found" }, { status: 404 })
   }
 
@@ -40,14 +44,18 @@ export const POST = withHasPermission<Params>("bookRead")(async (
     await upsertPosition(user.id, bookUuid, body.locator, body.timestamp)
   } catch (e) {
     if (e instanceof PositionConflictError) {
+      logger.debug(`Encountered conflict error, returning 409`)
       return NextResponse.json(
         { message: "Position already exists with a later timestamp" },
         { status: 409 },
       )
     }
+    logger.debug(`Failed to update position for book ${bookUuid}`)
+    logger.debug(e)
     throw e
   }
 
+  logger.debug("Position updated successfully, returning 204")
   return new Response(null, { status: 204 })
 })
 
