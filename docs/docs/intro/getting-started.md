@@ -124,6 +124,21 @@ This will be easier to maintain and modify as you administer your Storyteller
 instance. You can make whatever changes you need, such as choosing a different
 mount location for the volume or a different port for the service to run on.
 
+To run the container with Docker Compose, we use the `compose` subcommand for
+Docker. Here is a quick summary of some useful commands:
+
+- The command `docker compose up` will create and start all containers in the
+  `compose.yaml` file (ours only has one, `web`). You can add the `-d` flag to
+  run the containers in the background.
+- `docker compose down` will stop _and remove_ all containers.
+- `docker compose start` and `docker compose stop` can be used to start and stop
+  the container, without removing and recreating it.
+- `docker compose pull` will pull the latest images for all containers in the
+  `compose.yaml`.
+- `docker compose logs` will display the logs for the containers. You can add
+  the `-f` flag to "follow" the logs — they will stream live from the container
+  until you press `Ctrl+C` to stop them.
+
 ## Secrets
 
 :::warning Do not skip this step
