@@ -1,3 +1,4 @@
+import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { db } from "./connection"
@@ -53,6 +54,13 @@ export async function upsertPosition(
   locator: ReadiumLocator,
   timestamp: number,
 ) {
+  logger.debug("upsertPosition(...)")
+  logger.debug({
+    userId,
+    bookUuid,
+    locator,
+    timestamp,
+  })
   const locatorString = JSON.stringify(locator)
 
   const upserted = await db.transaction().execute(async (tr) => {
@@ -60,7 +68,12 @@ export async function upsertPosition(
       .selectFrom("bookToStatus")
       .select(["statusUuid"])
       .where("bookUuid", "=", bookUuid)
+      .where("userId", "=", userId)
       .executeTakeFirstOrThrow()
+
+    logger.debug({
+      statusUuid,
+    })
 
     const existing = await tr
       .selectFrom("position")
@@ -69,13 +82,22 @@ export async function upsertPosition(
       .where("bookUuid", "=", bookUuid)
       .executeTakeFirst()
 
+    logger.debug(existing)
+
     if (!existing) {
       await tr
         .insertInto("position")
         .values({ userId, bookUuid, locator: locatorString, timestamp })
         .execute()
+
+      logger.debug("No existing position, created new row")
     } else {
-      if (existing.timestamp > timestamp) return false
+      if (existing.timestamp > timestamp) {
+        logger.debug(
+          "Existing position is newer than incoming position, aborting",
+        )
+        return false
+      }
 
       await tr
         .updateTable("position")
@@ -83,6 +105,8 @@ export async function upsertPosition(
         .where("userId", "=", userId)
         .where("bookUuid", "=", bookUuid)
         .execute()
+
+      logger.debug("Updated existing position")
     }
 
     const statuses = await tr.selectFrom("status").selectAll().execute()
@@ -96,6 +120,9 @@ export async function upsertPosition(
       statusUuid === toRead.uuid &&
       (locator.locations?.totalProgression ?? 0) < 0.98
     ) {
+      logger.debug(
+        'Status is "To read" and progression is less than 98%, setting to "Reading"',
+      )
       await tr
         .updateTable("bookToStatus")
         .set({ statusUuid: reading.uuid })
@@ -108,6 +135,9 @@ export async function upsertPosition(
       (statusUuid === reading.uuid &&
         (locator.locations?.totalProgression ?? 0) >= 0.98)
     ) {
+      logger.debug(
+        'Status is "To read" or "Reading" and progression is greater than 98%, setting to "Read"',
+      )
       await tr
         .updateTable("bookToStatus")
         .set({ statusUuid: read.uuid })
@@ -120,6 +150,9 @@ export async function upsertPosition(
   })
 
   if (!upserted) {
+    logger.debug(
+      "Existing position is newer than incoming position, throwing conflict error",
+    )
     throw new PositionConflictError()
   }
 }

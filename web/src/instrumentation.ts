@@ -6,6 +6,8 @@ export async function register() {
     const { getQueuedBooks } = await import("./database/books")
     const { startProcessing } = await import("./work/distributor")
 
+    logger.debug("Debug logging enabled")
+
     try {
       await migrate()
     } catch (err) {
