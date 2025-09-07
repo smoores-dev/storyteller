@@ -1,3 +1,4 @@
+import { Stack, Title } from "@mantine/core"
 import { type Metadata } from "next"
 
 import { assertHasPermission } from "@/auth/auth"
@@ -13,8 +14,11 @@ export default async function Home() {
   await assertHasPermission("bookList")
 
   return (
-    <>
+    <Stack>
+      <Title order={2} size="h3">
+        Home
+      </Title>
       <BookShelves />
-    </>
+    </Stack>
   )
 }
