@@ -5,7 +5,7 @@ import {
   Stack,
   type TextInputProps,
 } from "@mantine/core"
-import { useMemo } from "react"
+import { type Ref, useMemo } from "react"
 
 import { Search } from "@/components/books/Search"
 import { Sort } from "@/components/books/Sort"
@@ -28,6 +28,7 @@ interface Props {
   classNames?: {
     search?: TextInputProps["classNames"]
   }
+  ref?: Ref<HTMLDivElement | null>
 }
 
 export function FilterSort({
@@ -39,6 +40,7 @@ export function FilterSort({
     filters,
   },
   classNames,
+  ref,
 }: Props) {
   const { data: collections = [] } = useListCollectionsQuery(undefined, {
     refetchOnMountOrArgChange: true,
@@ -81,7 +83,7 @@ export function FilterSort({
   )
 
   return (
-    <Stack className="gap-y-1" align="start">
+    <Stack ref={ref} className="gap-y-1" align="start" id="filter-sort">
       <Group className="gap-1">
         <Search
           value={initialSearch}

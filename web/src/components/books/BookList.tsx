@@ -3,8 +3,6 @@
 import { Stack, Text } from "@mantine/core"
 import { useState } from "react"
 
-import { FilterSort } from "@/components/collections/FilterSort"
-import { CollectionToolbar } from "@/components/collections/toolbar/CollectionToolbar"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
 import { useListBooksQuery, useListCollectionsQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
@@ -46,21 +44,7 @@ export function BookList({ collectionUuid }: Props) {
   const [isEditing, setIsEditing] = useState(false)
 
   return (
-    <Stack className="relative mt-4">
-      <FilterSort
-        options={options}
-        classNames={{ search: { root: "w-1/2 md:w-auto" } }}
-      />
-      <Stack className="sticky top-24 z-20 gap-x-0 gap-y-1 overflow-x-scroll bg-white pb-2 pt-1">
-        <CollectionToolbar
-          collection={collection}
-          books={books}
-          selected={selected}
-          setSelected={setSelected}
-          isEditing={isEditing}
-          setIsEditing={setIsEditing}
-        />
-      </Stack>
+    <Stack className="relative mt-4 h-full">
       {isLoading ? (
         <BookGridSkeleton />
       ) : books.length ? (
@@ -69,17 +53,11 @@ export function BookList({ collectionUuid }: Props) {
           books={books}
           isSelecting={isEditing}
           selected={selected}
-          onSelect={(bookUuid) => {
-            setSelected((prev) => {
-              const next = new Set(prev)
-              if (prev.has(bookUuid)) {
-                next.delete(bookUuid)
-              } else {
-                next.add(bookUuid)
-              }
-              return next
-            })
-          }}
+          collection={collection}
+          setSelected={setSelected}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          showCollectionToolbar
         />
       ) : collectionUuid === null ? (
         <Text>There’s nothing here! Congrats on being so well organized!</Text>

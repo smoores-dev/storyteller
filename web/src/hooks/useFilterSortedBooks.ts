@@ -327,41 +327,55 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
         value = typeof value === "function" ? value(sort) : value
         setSearchParam("sort", [value.join(",")])
       },
-      filters: {
-        visible: showFilters || filtersActive,
-        showFilters: () => {
-          setShowFilters(true)
-        },
-        hideFilters: () => {
-          clearSearchParams()
-          setShowFilters(false)
-        },
-        collections,
-        onCollectionsChange: (values) => {
-          setSearchParam("collections", values)
-        },
-        tags,
-        onTagsChange: (values) => {
-          setSearchParam("tags", values)
-        },
-        series,
-        onSeriesChange: (values) => {
-          setSearchParam("series", values)
-        },
-        statuses,
-        onStatusesChange: (values) => {
-          setSearchParam("statuses", values)
-        },
-        authors,
-        onAuthorsChange: (values) => {
-          setSearchParam("authors", values)
-        },
-        bookTypes,
-        onBookTypesChange: (values) => {
-          setSearchParam("bookTypes", values)
-        },
-        reset: clearSearchParams,
-      },
+      filters: useMemo(
+        () => ({
+          visible: showFilters || filtersActive,
+          showFilters: () => {
+            setShowFilters(true)
+          },
+          hideFilters: () => {
+            clearSearchParams()
+            setShowFilters(false)
+          },
+          collections,
+          onCollectionsChange: (values) => {
+            setSearchParam("collections", values)
+          },
+          tags,
+          onTagsChange: (values) => {
+            setSearchParam("tags", values)
+          },
+          series,
+          onSeriesChange: (values) => {
+            setSearchParam("series", values)
+          },
+          statuses,
+          onStatusesChange: (values) => {
+            setSearchParam("statuses", values)
+          },
+          authors,
+          onAuthorsChange: (values) => {
+            setSearchParam("authors", values)
+          },
+          bookTypes,
+          onBookTypesChange: (values) => {
+            setSearchParam("bookTypes", values)
+          },
+          reset: clearSearchParams,
+        }),
+        [
+          authors,
+          bookTypes,
+          clearSearchParams,
+          collections,
+          filtersActive,
+          series,
+          setSearchParam,
+          showFilters,
+          statuses,
+          tags,
+        ],
+      ),
     },
   }
 }
