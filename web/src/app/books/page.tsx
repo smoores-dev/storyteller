@@ -15,7 +15,9 @@ export default async function Books() {
 
   return (
     <>
-      <Title order={2}>Books</Title>
+      <Title order={2} size="h3">
+        Books
+      </Title>
       <BookList />
     </>
   )

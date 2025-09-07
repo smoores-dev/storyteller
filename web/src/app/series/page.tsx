@@ -14,7 +14,9 @@ export default async function SeriesPage() {
   await assertHasPermission("bookList")
   return (
     <>
-      <Title order={2}>Series</Title>
+      <Title order={2} size="h3">
+        Series
+      </Title>
       <SeriesList />
     </>
   )

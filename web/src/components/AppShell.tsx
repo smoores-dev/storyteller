@@ -182,8 +182,8 @@ export function AppShell({
     >
       <MantineProvider theme={theme} defaultColorScheme="light">
         <MantineAppShell
+          className="h-full"
           withBorder={false}
-          header={{ height: 100 }}
           padding="md"
           navbar={{
             width: 40,
@@ -191,38 +191,28 @@ export function AppShell({
             collapsed: { mobile: !opened },
           }}
         >
-          <AppShellHeader>
-            <Group align="center">
-              {currentUser && (
-                <Burger
-                  opened={opened}
-                  color="st-orange"
-                  onClick={toggle}
-                  size="md"
-                  className="visible ml-4 md:invisible"
-                />
-              )}
-              <Anchor component={NextLink} href="/">
-                <Group>
-                  <Image
-                    component={NextImage}
-                    h={80}
-                    w={80}
-                    height={80}
-                    width={80}
-                    src="/Storyteller_Logo.png"
-                    alt=""
-                    aria-hidden
-                  />
-                  <Title size="h1" className="text-black">
-                    Storyteller
-                  </Title>
-                </Group>
-              </Anchor>
-            </Group>
-          </AppShellHeader>
           {currentUser && (
             <AppShellNavbar>
+              <Group align="center" className="mt-16 md:mt-3">
+                <Anchor component={NextLink} href="/">
+                  <Group className="flex-nowrap" gap={2}>
+                    <Image
+                      component={NextImage}
+                      h={40}
+                      w={40}
+                      height={40}
+                      width={40}
+                      src="/Storyteller_Logo.png"
+                      alt=""
+                      aria-hidden
+                    />
+                    <Title size="h3" className="text-black">
+                      Storyteller
+                    </Title>
+                  </Group>
+                </Anchor>
+              </Group>
+
               <Box className="md:w-[200px]">
                 <Text
                   c="black"
@@ -331,7 +321,17 @@ export function AppShell({
               </Box>
             </AppShellNavbar>
           )}
-          <AppShellMain className="*:ml-8">
+          <AppShellMain className="h-full *:ml-8">
+            {currentUser && (
+              <Burger
+                opened={opened}
+                color="st-orange"
+                onClick={toggle}
+                size="md"
+                className="visible absolute -left-7 top-4 z-[200] ml-4 md:invisible"
+              />
+            )}
+
             <CreateCollectionModal
               isOpen={isCreateCollectionOpen}
               onClose={closeCreateCollection}

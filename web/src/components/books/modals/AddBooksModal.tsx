@@ -2,7 +2,6 @@ import { Button, Group, Modal, Stack } from "@mantine/core"
 import { useState } from "react"
 
 import { BookGrid } from "@/components/books/BookGrid"
-import { FilterSort } from "@/components/collections/FilterSort"
 import { type Collection } from "@/database/collections"
 import { useFilterSortedBooks } from "@/hooks/useFilterSortedBooks"
 import {
@@ -48,24 +47,16 @@ export function AddBooksModal({ isOpen, collection, onClose }: Props) {
       }}
     >
       <Stack className="h-full">
-        <FilterSort options={options} />
         <BookGrid
+          collection={collection}
+          setSelected={setSelected}
+          isEditing={false}
+          setIsEditing={() => {}}
           filterSortOptions={options}
           className="flex-grow overflow-y-auto"
           books={books}
           isSelecting
           selected={selected}
-          onSelect={(bookUuid) => {
-            setSelected((prev) => {
-              const next = new Set(prev)
-              if (selected.has(bookUuid)) {
-                next.delete(bookUuid)
-              } else {
-                next.add(bookUuid)
-              }
-              return next
-            })
-          }}
         />
         <Group justify="flex-end">
           <Button

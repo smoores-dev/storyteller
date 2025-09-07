@@ -25,15 +25,17 @@ export function CollectionDetails({ collectionUuid }: Props) {
 
   return (
     <Stack gap={24}>
-      <Title order={2} className="flex items-center gap-2 px-2 py-2">
+      <Title order={2} size="h3" className="flex items-center gap-2 px-2 py-2">
         <IconBooks size={30} /> {collection?.name ?? "Uncollected"}{" "}
         {collection && <CollectionSettings uuid={collection.uuid} />}
       </Title>
-      <Text>
-        {collection
-          ? collection.description
-          : "Books that have not yet been added to any collections."}
-      </Text>
+      {(!collection || collection.description) && (
+        <Text>
+          {collection
+            ? collection.description
+            : "Books that have not yet been added to any collections."}
+        </Text>
+      )}
       <BookList collectionUuid={collection?.uuid ?? null} />
     </Stack>
   )

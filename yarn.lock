@@ -9726,6 +9726,7 @@ __metadata:
     "@types/nodemailer": "npm:^6"
     "@types/react": "npm:^19.0.0"
     "@types/react-dom": "npm:^19.0.0"
+    "@types/react-window": "npm:^1"
     "@uppy/core": "npm:^4.4.6"
     "@uppy/dashboard": "npm:^4.3.4"
     "@uppy/react": "npm:^4.3.0"
@@ -9772,6 +9773,7 @@ __metadata:
     react-circular-progressbar: "npm:^2.2.0"
     react-dom: "npm:^19.0.0"
     react-redux: "npm:^9.2.0"
+    react-window: "npm:^2.1.0"
     sharp: "npm:^0.34.3"
     simple-git: "npm:^3.25.0"
     tailwind-merge: "npm:^3.3.1"
@@ -11113,6 +11115,15 @@ __metadata:
     "@types/history": "npm:^4.7.11"
     "@types/react": "npm:*"
   checksum: 10c0/1f7eee61981d2f807fa01a34a0ef98ebc0774023832b6611a69c7f28fdff01de5a38cabf399f32e376bf8099dcb7afaf724775bea9d38870224492bea4cb5737
+  languageName: node
+  linkType: hard
+
+"@types/react-window@npm:^1":
+  version: 1.8.8
+  resolution: "@types/react-window@npm:1.8.8"
+  dependencies:
+    "@types/react": "npm:*"
+  checksum: 10c0/2170a3957752603e8b994840c5d31b72ddf94c427c0f42b0175b343cc54f50fe66161d8871e11786ec7a59906bd33861945579a3a8f745455a3744268ec1069f
   languageName: node
   linkType: hard
 
@@ -28524,6 +28535,16 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
   checksum: 10c0/3a924db59259a6e3b834dcddc12a8661b43dcdaa1b43c41c732e0548bb2761e9a53dbc6db4e0d9e237728b4869e42c25e5417408b0391aec290c90874733a09f
+  languageName: node
+  linkType: hard
+
+"react-window@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "react-window@npm:2.1.0"
+  peerDependencies:
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+  checksum: 10c0/9d72050f017effa884eeb86a08ba94d0a703e035b46da3652c1bc82750ee719706e1d16d0af41969960f0bbb4194840600cbf007a07d2c2a5a8f56e0c2d1dbdc
   languageName: node
   linkType: hard
 

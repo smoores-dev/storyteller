@@ -61,7 +61,7 @@ export default async function RootLayout({
       <head>
         <ColorSchemeScript />
       </head>
-      <body suppressHydrationWarning>
+      <body className="h-dvh" suppressHydrationWarning>
         <StoreProvider>
           <AppShell
             version={version}
