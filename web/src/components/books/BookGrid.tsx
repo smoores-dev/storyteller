@@ -100,6 +100,7 @@ export function BookGrid({
           filterSortRef,
           showCollectionToolbar,
         }}
+        overscanCount={5}
         rowCount={rowCount + 1}
         rowHeight={rowHeight}
         onResize={({ width }) => {

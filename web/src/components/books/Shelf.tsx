@@ -1,7 +1,8 @@
 import { Carousel } from "@mantine/carousel"
 import "@mantine/carousel/styles.css"
-import { Checkbox, Stack, Title } from "@mantine/core"
+import { Checkbox, Stack, Title, px } from "@mantine/core"
 import Link from "next/link"
+import { useEffect, useRef, useState } from "react"
 
 import { type BookWithRelations } from "@/database/books"
 import { type UUID } from "@/uuid"
@@ -25,10 +26,31 @@ export function Shelf({
   selected,
   onSelect,
 }: Props) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [columnCount, setColumnCount] = useState(1)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const observer = new ResizeObserver((entries) => {
+      const [entry] = entries
+      if (!entry) return
+      setColumnCount(
+        Math.floor(entry.contentRect.width / (px("10.6875rem") as number)),
+      )
+    })
+
+    observer.observe(containerRef.current)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
   if (!books.length) return null
 
   return (
-    <Stack>
+    <Stack ref={containerRef}>
       <Title order={3}>
         {href ? (
           <Link
@@ -46,6 +68,7 @@ export function Shelf({
         align="start"
         slideSize="w-[9.1875rem]"
         slideGap="md"
+        slidesToScroll={columnCount}
         withIndicators
         classNames={{
           indicators: "!bottom-0",
