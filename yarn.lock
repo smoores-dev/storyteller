@@ -9498,9 +9498,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storyteller-platform/audiobooklib@workspace:^, @storyteller-platform/audiobooklib@workspace:audiobook":
+"@storyteller-platform/audiobook@workspace:^, @storyteller-platform/audiobook@workspace:audiobook":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/audiobooklib@workspace:audiobook"
+  resolution: "@storyteller-platform/audiobook@workspace:audiobook"
   dependencies:
     "@einheit/path-resolve": "npm:^1.2.0"
     "@storyteller-platform/fs": "workspace:^"
@@ -9709,7 +9709,7 @@ __metadata:
     "@reduxjs/toolkit": "npm:^2.8.2"
     "@remix-run/node": "npm:^2.17.0"
     "@scalar/nextjs-openapi": "npm:^0.1.17"
-    "@storyteller-platform/audiobooklib": "workspace:^"
+    "@storyteller-platform/audiobook": "workspace:^"
     "@storyteller-platform/epub": "workspace:*"
     "@storyteller-platform/fs": "workspace:*"
     "@tabler/icons-react": "npm:^3.26.0"

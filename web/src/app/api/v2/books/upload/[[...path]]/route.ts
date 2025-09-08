@@ -8,7 +8,7 @@ import { Server } from "@tus/server"
 import { lookup } from "mime-types"
 import { type NextRequest } from "next/server"
 
-import { Audiobook } from "@storyteller-platform/audiobooklib/node"
+import { Audiobook } from "@storyteller-platform/audiobook/node"
 import { Epub } from "@storyteller-platform/epub/node"
 
 import {

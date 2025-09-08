@@ -2,7 +2,7 @@ import { basename, delimiter, dirname, extname } from "node:path"
 
 import { NextResponse } from "next/server"
 
-import { Audiobook } from "@storyteller-platform/audiobooklib/node"
+import { Audiobook } from "@storyteller-platform/audiobook/node"
 import { Epub } from "@storyteller-platform/epub/node"
 
 import {

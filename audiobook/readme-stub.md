@@ -1,4 +1,4 @@
-# @storyteller-platform/audiobooklib
+# @storyteller-platform/audiobook
 
 A Node.js library for inspecting, modifying, and creating audiobooks.
 
@@ -24,19 +24,19 @@ A Node.js library for inspecting, modifying, and creating audiobooks.
 npm:
 
 ```sh
-npm install @storyteller-platform/audiobooklib
+npm install @storyteller-platform/audiobook
 ```
 
 yarn:
 
 ```sh
-yarn add @storyteller-platform/audiobooklib
+yarn add @storyteller-platform/audiobook
 ```
 
 deno:
 
 ```sh
-deno install npm:@storyteller-platform/audiobooklib
+deno install npm:@storyteller-platform/audiobook
 ```
 
 ## About
@@ -58,10 +58,10 @@ to separate lists of entities).
 
 ### What this library does
 
-`@storyteller-platform/audiobooklib` provides an API to interact with the
-metadata, of an audiobook publication. It provides a consistent interface that
-attempts to abstract away differences in metadata representations across audio
-formats and publishers.
+`@storyteller-platform/audiobook` provides an API to interact with the metadata,
+of an audiobook publication. It provides a consistent interface that attempts to
+abstract away differences in metadata representations across audio formats and
+publishers.
 
 ## Usage
 
@@ -72,7 +72,7 @@ or already in memory as a typed array.
 ### Reading from a single file
 
 ```ts
-import { Audiobook } from "@storyteller-platform/audiobooklib/node"
+import { Audiobook } from "@storyteller-platform/audiobook/node"
 
 const audiobook = await Audiobook.from("path/to/book.m4b")
 console.log(await audiobook.getTitle())
@@ -81,7 +81,7 @@ console.log(await audiobook.getTitle())
 ### Reading from a set of files
 
 ```ts
-import { Audiobook } from "@storyteller-platform/audiobooklib/node"
+import { Audiobook } from "@storyteller-platform/audiobook/node"
 
 const audiobook = await Audiobook.from([
   "path/to/track1.mp3",
@@ -95,7 +95,7 @@ console.log(await audiobook.getTitle())
 ### Reading from an array
 
 ```ts
-import { Audiobook } from "@storyteller-platform/audiobooklib"
+import { Audiobook } from "@storyteller-platform/audiobook"
 
 const audioData: Uint8Array = await requestAudioData()
 
@@ -110,7 +110,7 @@ console.log(await audiobook.getTitle())
 ### Writing to disk
 
 ```ts
-import { Audiobook } from "@storyteller-platform/audiobooklib/node"
+import { Audiobook } from "@storyteller-platform/audiobook/node"
 
 const audiobook = await Audiobook.from("path/to/audiobook.m4b")
 await audiobook.setTitle("S'mores for Everyone")
@@ -122,7 +122,7 @@ audiobook.close()
 ### Writing to a byte array
 
 ```ts
-import { Audiobook } from "@storyteller-platform/audiobooklib"
+import { Audiobook } from "@storyteller-platform/audiobook"
 
 const audioData: Uint8Array = await requestAudioData()
 

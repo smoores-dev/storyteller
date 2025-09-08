@@ -3,7 +3,7 @@ import { basename, extname, join } from "node:path"
 
 import { extension, lookup } from "mime-types"
 
-import { Audiobook } from "@storyteller-platform/audiobooklib/node"
+import { Audiobook } from "@storyteller-platform/audiobook/node"
 import { Epub } from "@storyteller-platform/epub/node"
 
 import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
