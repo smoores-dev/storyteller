@@ -30,5 +30,11 @@ export default async function CollectionPage({ params }: Props) {
       ? null
       : await fetchApiRoute<Collection>(`/collections/${uuid}`)
 
-  return <CollectionDetails collectionUuid={collection?.uuid ?? null} />
+  return (
+    <CollectionDetails
+      name={collection?.name ?? null}
+      description={collection?.description ?? null}
+      collectionUuid={collection?.uuid ?? null}
+    />
+  )
 }

@@ -357,6 +357,14 @@ export async function writeMetadataToEpub(
     await epub.removeCollection(0)
   }
 
+  // There was a bug in previous versions of @storyteller-platform/epub
+  // where removing collections did not properly remove their corresponding
+  // group-position properties, so we clear them all out to remove
+  // any junk
+  await epub.removeMetadata(
+    (item) => item.properties["property"] === "group-position",
+  )
+
   for (const series of book.series) {
     await epub.addCollection({
       name: series.name,
@@ -368,11 +376,23 @@ export async function writeMetadataToEpub(
     await epub.removeCreator(0)
   }
 
+  // There was a bug in previous versions of @storyteller-platform/epub
+  // where removing creators did not properly remove their corresponding
+  // role or file-as properties, so we clear them all out to remove
+  // any junk
+  await epub.removeMetadata(
+    (item) =>
+      (item.properties["property"] === "role" &&
+        item.properties["scheme"] === "marc:relators") ||
+      item.properties["property"] === "file-as",
+  )
+
   for (const author of book.authors) {
     await epub.addCreator({
       name: author.name,
       role: "aut",
       roleScheme: "marc:relators",
+      fileAs: author.fileAs,
     })
   }
 
@@ -381,6 +401,7 @@ export async function writeMetadataToEpub(
       name: narrator.name,
       role: "nrt",
       roleScheme: "marc:relators",
+      fileAs: narrator.fileAs,
     })
   }
 
@@ -388,8 +409,21 @@ export async function writeMetadataToEpub(
     await epub.addCreator({
       name: creator.name,
       ...(creator.role && { role: creator.role, scheme: "marc:relator" }),
+      fileAs: creator.fileAs,
     })
   }
+
+  // There was a bug in previous versions of Storyteller where we
+  // unintentionally stored narrators in a custom metadata property,
+  // instead of as creators with nrt roles
+  await epub.removeMetadata(
+    (item) => item.properties["property"] === "stortyeller:narrator",
+  )
+
+  // There was a bug in previous versions of @storyteller-platform/epub
+  // where collections were incorrectly stored in `<belongs-to-collection>`
+  // elements, instead of `<meta>` elements
+  await epub.removeMetadata((item) => item.type === "belongs-to-collection")
 
   if (textCover) {
     const ext = textCover.name
@@ -443,14 +477,6 @@ export async function writeMetadataToEpub(
         value: book.alignedWith,
       })
     }
-  }
-
-  for (const narrator of book.narrators) {
-    await epub.addMetadata({
-      type: "meta",
-      properties: { property: "storyteller:narrator" },
-      value: narrator.name,
-    })
   }
 
   await epub.setPackageVocabularyPrefix(

@@ -1,0 +1,3 @@
+releases:
+  "@storyteller-platform/epub": patch
+  "@storyteller-platform/web": patch

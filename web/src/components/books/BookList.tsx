@@ -48,17 +48,20 @@ export function BookList({ collectionUuid }: Props) {
       {isLoading ? (
         <BookGridSkeleton />
       ) : books.length ? (
-        <BookGrid
-          filterSortOptions={options}
-          books={books}
-          isSelecting={isEditing}
-          selected={selected}
-          collection={collection}
-          setSelected={setSelected}
-          isEditing={isEditing}
-          setIsEditing={setIsEditing}
-          showCollectionToolbar
-        />
+        <>
+          <Text className="text-xs">{books.length} books</Text>
+          <BookGrid
+            filterSortOptions={options}
+            books={books}
+            isSelecting={isEditing}
+            selected={selected}
+            collection={collection}
+            setSelected={setSelected}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            showCollectionToolbar
+          />
+        </>
       ) : collectionUuid === null ? (
         <Text>There’s nothing here! Congrats on being so well organized!</Text>
       ) : (

@@ -1,4 +1,4 @@
-import { Box, List, Skeleton, Stack, Text } from "@mantine/core"
+import { Box, List, Skeleton, Stack } from "@mantine/core"
 
 export function BookThumbnailSkeleton() {
   return (
@@ -24,7 +24,9 @@ export function BookThumbnailSkeleton() {
 export function BookGridSkeleton() {
   return (
     <>
-      <Text className="mt-4 text-sm">…</Text>
+      <Box className="h-40">
+        <Skeleton radius="md" height="9rem" width="30.5rem" />
+      </Box>
       <List
         listStyleType="none"
         className="relative z-10 flex flex-row flex-wrap gap-6 sm:pr-9"

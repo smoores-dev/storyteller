@@ -377,6 +377,42 @@ void describe("Epub", () => {
     })
   })
 
+  void it("can remove the first collection", async () => {
+    const epub = await Epub.create(
+      {
+        title: "Title",
+        language: new Intl.Locale("en-US"),
+        identifier: "1",
+      },
+      [
+        {
+          id: "collection-1",
+          properties: {
+            property: "belongs-to-collection",
+          },
+          value: "Collection One",
+          type: "meta",
+        },
+        {
+          id: "collection-2",
+          properties: {
+            property: "belongs-to-collection",
+          },
+          value: "Collection Two",
+          type: "meta",
+        },
+      ],
+    )
+
+    await epub.removeCollection(0)
+
+    const collections = await epub.getCollections()
+    assert.equal(collections.length, 1)
+    assert.deepStrictEqual(collections[0], {
+      name: "Collection Two",
+    })
+  })
+
   void it("can handle simultaneous package document updates", async () => {
     const epub = await Epub.create({
       title: "Title",
