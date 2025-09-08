@@ -1,7 +1,7 @@
 import { mkdir, rename } from "node:fs/promises"
 import { basename, dirname, extname } from "node:path"
 
-import { type Audiobook } from "@storyteller-platform/audiobook/node"
+import { type Audiobook } from "@storyteller-platform/audiobooklib/node"
 import { type Epub } from "@storyteller-platform/epub/node"
 
 import { persistAudio, persistEpub } from "@/assets/fs"

@@ -31,7 +31,7 @@
     "fix:lint": "eslint --fix .",
     "fix": "concurrently -P 'npm:fix:*'",
     "postinstall": "husky",
-    "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",
+    "test:audiobook": "yarn workspace @storyteller-platform/audiobooklib test",
     "test:epub": "yarn workspace @storyteller-platform/epub test",
     "test:web": "yarn workspace @storyteller-platform/web test:all",
     "test": "concurrently -P 'npm:test:*'"

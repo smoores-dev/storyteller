@@ -12,7 +12,7 @@ const nextConfig = {
     "@storyteller-platform/epub",
     "@storyteller-platform/fs",
     "@storyteller-platform/path",
-    "@storyteller-platform/audiobook",
+    "@storyteller-platform/audiobooklib",
   ],
   serverExternalPackages: [
     "piscina",
@@ -32,8 +32,9 @@ const nextConfig = {
       "@storyteller-platform/epub/node": "../epub/node.ts",
       "@storyteller-platform/fs": "../fs/index.ts",
       "@storyteller-platform/path": "../path/index.ts",
-      "@storyteller-platform/audiobook": "../audiobook/src/index.ts",
-      "@storyteller-platform/audiobook/node": "../audiobook/src/node/index.ts",
+      "@storyteller-platform/audiobooklib": "../audiobook/src/index.ts",
+      "@storyteller-platform/audiobooklib/node":
+        "../audiobook/src/node/index.ts",
     },
   },
   /**

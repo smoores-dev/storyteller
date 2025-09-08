@@ -2,8 +2,8 @@
   "name": "@storyteller-platform/path",
   "version": "0.1.0",
   "type": "module",
-  "module": "index.js",
-  "types": "index.d.ts",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "@storyteller": "./index.ts",
@@ -22,7 +22,8 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsup"
+    "build": "tsup",
+    "prepack": "yarn build"
   },
   "devDependencies": {
     "@storyteller-platform/tsup": "workspace:^",
