@@ -417,7 +417,7 @@ export async function writeMetadataToEpub(
   // unintentionally stored narrators in a custom metadata property,
   // instead of as creators with nrt roles
   await epub.removeMetadata(
-    (item) => item.properties["property"] === "stortyeller:narrator",
+    (item) => item.properties["property"] === "storyteller:narrator",
   )
 
   // There was a bug in previous versions of @storyteller-platform/epub
