@@ -1,6 +1,0 @@
-declined:
-  - "@storyteller-platform/audiobooklib"
-  - "@storyteller-platform/epub"
-  - "@storyteller-platform/fs"
-  - "@storyteller-platform/path"
-  - "@storyteller-platform/web"
