@@ -95,7 +95,9 @@ scratch.
 ### Reading from a file
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+// If you want to read or write to disk, import from the `/node`
+// export
+import { Epub } from "@storyteller-platform/epub/node"
 
 const epub = await Epub.from("path/to/book.epub")
 console.log(await epub.getTitle())
@@ -177,7 +179,7 @@ await epub.addSpineItem(manifestItem.id)
 ### Writing to disk
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller-platform/epub/node"
 
 const epub = await Epub.from("path/to/book.epub")
 await epub.setTitle("S'mores for Everyone")
@@ -206,8 +208,9 @@ For more details about using the API, see the [API documentation](#epub).
 ## Development
 
 This package lives in the
-[Storyteller monorepo](https://gitlab.com/smoores/storyteller), and is developed
-alongside the [Storyteller platform](https://smoores.gitlab.io/storyteller).
+[Storyteller monorepo](https://gitlab.com/storyteller-platform/storyteller), and
+is developed alongside the
+[Storyteller platform](https://storyteller-platform.gitlab.io/storyteller).
 
 To get started with developing in the Storyteller monorepo, check out the
-[development guides in the docs](https://smoores.gitlab.io/storyteller/docs/category/development).
+[development guides in the docs](https://storyteller-platform.gitlab.io/storyteller/docs/category/development).

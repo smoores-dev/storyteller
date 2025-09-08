@@ -338,9 +338,9 @@ publish-audiobook:
   script:
     - yarn
     - yarn check:types
-    - yarn workspace @storyteller-platform/audiobook build
+    - yarn workspace @storyteller-platform/audiobooklib build
     - yarn config set npmAuthToken $NPM_PUBLISH_TOKEN
-    - yarn workspace @storyteller-platform/audiobook npm publish
+    - yarn workspace @storyteller-platform/audiobooklib npm publish
 
 prerelease-audiobook:
   stage: prerelease
@@ -379,8 +379,8 @@ release-audiobook:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/audiobook"
-          url: "https://npmjs.com/package/@storyteller-platform/audiobook"
+        - name: "NPM package for @storyteller-platform/audiobooklib"
+          url: "https://npmjs.com/package/@storyteller-platform/audiobooklib"
 
 publish-path:
   image: node:22

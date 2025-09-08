@@ -8,7 +8,6 @@ import {
 } from "@zip.js/zip.js"
 import { Mutex } from "async-mutex"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
-import he from "he"
 import memoize from "mem"
 import { lookup } from "mime-types"
 import { nanoid } from "nanoid"
@@ -1314,7 +1313,7 @@ export class Epub {
   async setDescription(description: string) {
     await this.replaceMetadata(({ type }) => type === "dc:description", {
       type: "dc:description",
-      value: he.encode(description),
+      value: description,
       properties: {},
     })
   }
@@ -1333,8 +1332,7 @@ export class Epub {
       (entry) => entry.type === "dc:description",
     )
     if (!descriptionEntry?.value) return null
-    const escaped = descriptionEntry.value
-    return he.decode(escaped)
+    return descriptionEntry.value
   }
 
   /**

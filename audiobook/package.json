@@ -1,8 +1,10 @@
 {
-  "name": "@storyteller-platform/audiobook",
-  "version": "0.1.1",
+  "name": "@storyteller-platform/audiobooklib",
+  "version": "0.1.0",
   "type": "module",
   "license": "MIT",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "@storyteller": "./src/index.ts",
@@ -36,9 +38,10 @@
     "build": "tsup",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",
-    "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
+    "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/node.md >> README.md && tail -n +2 gen/entry.md >> README.md && tail -n +2 gen/base.md >> README.md && tail -n +2 gen/node/entry.md >> README.md",
     "test": "rm -rf src/__fixtures__/__output__ && tsx -C @storyteller --test src/**/*.test.ts",
-    "test:watch": "tsx --test --watch  -C @storyteller --test src/**/*.test.ts"
+    "test:watch": "tsx --test --watch  -C @storyteller --test src/**/*.test.ts",
+    "prepack": "yarn build"
   },
   "devDependencies": {
     "@storyteller-platform/tsup": "workspace:^",
