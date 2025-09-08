@@ -26,7 +26,6 @@ export function Sort({ value, onValueChange }: Props) {
   return (
     <Combobox
       store={combobox}
-      withinPortal={false}
       onOptionSubmit={(submitted) => {
         const sortKey = submitted as BookSortKey
         if (value[0] === sortKey) {

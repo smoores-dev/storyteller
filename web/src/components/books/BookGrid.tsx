@@ -172,7 +172,7 @@ function BookGridItem({
 }: RowComponentProps<RowProps>) {
   if (index === 0) {
     return (
-      <div className="z-30" style={style}>
+      <div style={style}>
         <FilterSort
           ref={filterSortRef}
           options={filterSortOptions}
