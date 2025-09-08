@@ -31,5 +31,9 @@ export const DELETE = withHasPermission("bookUpdate")(async (request) => {
   const { series, books } = body
   await removeBooksFromSeries(series, books)
 
+  for (const book of books) {
+    void queueWritesToFiles(book)
+  }
+
   return new Response(null, { status: 204 })
 })
