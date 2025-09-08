@@ -35,10 +35,10 @@ export async function scan(
   collectionUuid: UUID | null,
   signal: AbortSignal,
 ) {
-  logger.info(`Starting new scan for ${importPath}`)
+  logger.debug(`Starting new scan for ${importPath}`)
   const allBooks = await getBooks()
   if (signal.aborted) {
-    logger.info("Scanning aborted")
+    logger.debug("Scanning aborted")
     return
   }
 
@@ -53,16 +53,16 @@ export async function scan(
     books.map((book) => book.readaloud?.filepath),
   )
 
-  logger.info("Starting recursive directory scan...")
+  logger.debug("Starting recursive directory scan...")
   const entries = await readdir(importPath, {
     recursive: true,
     withFileTypes: true,
   })
-  logger.info(`Found ${entries.length} files recursively`)
+  logger.debug(`Found ${entries.length} files recursively`)
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (signal.aborted) {
-    logger.info("Scanning aborted")
+    logger.debug("Scanning aborted")
     return
   }
 
@@ -74,7 +74,7 @@ export async function scan(
     readaloud?: string
   }[] = []
 
-  logger.info("Searching for new epub and audio files...")
+  logger.debug("Searching for new epub and audio files...")
   for (const entry of entries) {
     if (!entry.isFile() && !entry.isSymbolicLink()) continue
     const ext = extname(entry.name)
@@ -86,7 +86,7 @@ export async function scan(
       audiobookPathsSet.add(entry.parentPath)
     }
   }
-  logger.info(
+  logger.debug(
     `Found ${ebookPaths.length} ebook files and ${audiobookPathsSet.size} audiobook folders`,
   )
 
@@ -95,7 +95,7 @@ export async function scan(
   const handledEbookPaths = new Set<string>()
   const handledAudiobookPaths = new Set<string>()
 
-  logger.info("Checking ebooks for adjacent readalouds and audio...")
+  logger.debug("Checking ebooks for adjacent readalouds and audio...")
   for (const ebookPath of ebookPaths) {
     if (handledEbookPaths.has(ebookPath)) continue
 
@@ -110,7 +110,7 @@ export async function scan(
     for (const path of [ebookPath, ...additionalEbookPaths]) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (signal.aborted) {
-        logger.info("Scanning aborted")
+        logger.debug("Scanning aborted")
         return
       }
 
@@ -169,20 +169,20 @@ export async function scan(
     }
   }
 
-  logger.info("Checking for standalone audiobooks...")
+  logger.debug("Checking for standalone audiobooks...")
   for (const audiobookPath of audiobookPaths) {
     if (handledAudiobookPaths.has(audiobookPath)) continue
 
     bookPaths.push({ audiobook: audiobookPath })
   }
 
-  logger.info(`Found ${bookPaths.length} book folders.`)
+  logger.debug(`Found ${bookPaths.length} book folders.`)
 
-  logger.info("Searching found book folders for new books...")
+  logger.debug("Searching found book folders for new books...")
   for (const bookPath of bookPaths) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (signal.aborted) {
-      logger.info("Scanning aborted")
+      logger.debug("Scanning aborted")
       return
     }
 
@@ -195,7 +195,7 @@ export async function scan(
     )
 
     if (!book) {
-      logger.info(
+      logger.debug(
         `Found a new book! Importing from ${JSON.stringify(bookPath)}`,
       )
 
@@ -368,7 +368,7 @@ export async function scan(
     const relations: Parameters<typeof updateBook>[2] = {}
 
     if (bookPath.ebook && !book.ebook) {
-      logger.info(
+      logger.debug(
         `Found new ebook file for ${book.title} at ${bookPath.ebook}. Importing metadata.`,
       )
       const epub = await Epub.from(bookPath.ebook)
@@ -391,7 +391,7 @@ export async function scan(
         await stat(book.ebook.filepath)
       } catch (e) {
         if (e instanceof Error && "code" in e && e.code === "ENOENT") {
-          logger.info(
+          logger.debug(
             `Ebook file for ${book.title} is missing, was ${book.ebook.filepath}`,
           )
           relations.ebook = {
@@ -403,7 +403,7 @@ export async function scan(
     }
 
     if (bookPath.audiobook && !book.audiobook) {
-      logger.info(
+      logger.debug(
         `Found new audiobook file(s) for ${book.title} at ${bookPath.audiobook}. Importing.`,
       )
 
@@ -437,7 +437,7 @@ export async function scan(
         await stat(book.audiobook.filepath)
       } catch (e) {
         if (e instanceof Error && "code" in e && e.code === "ENOENT") {
-          logger.info(
+          logger.debug(
             `Audiobook file for ${book.title} is missing, was ${book.audiobook.filepath}`,
           )
           relations.audiobook = {
@@ -449,7 +449,7 @@ export async function scan(
     }
 
     if (bookPath.readaloud && !book.readaloud) {
-      logger.info(
+      logger.debug(
         `Found new readaloud book file for ${book.title} at ${bookPath.readaloud}. Importing metadata.`,
       )
       const epub = await Epub.from(bookPath.readaloud)
@@ -477,7 +477,7 @@ export async function scan(
         await stat(book.readaloud.filepath)
       } catch (e) {
         if (e instanceof Error && "code" in e && e.code === "ENOENT") {
-          logger.info(
+          logger.debug(
             `Readaloud book file for ${book.title} is missing, was ${book.readaloud.filepath}`,
           )
           relations.readaloud = {

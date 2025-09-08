@@ -64,9 +64,11 @@ type QuestionMark = "?"
 export type ElementName =
   `${Letter | Uppercase<Letter> | QuestionMark}${string}`
 
+type PropertyPrefix = "@_"
+
 /** An XML element */
 export type XmlElement<Name extends ElementName = ElementName> = {
-  ":@"?: Record<string, string>
+  ":@"?: Record<`${PropertyPrefix}${string}`, string>
 } & {
   [key in Name]: ParsedXml
 }
@@ -1105,7 +1107,7 @@ export class Epub {
         subjectCount = subjectCount === null ? 0 : subjectCount + 1
       }
 
-      if (metadataIndex === null) return
+      if (subjectCount === null || metadataIndex === null) return
 
       Epub.getXmlChildren(metadata).splice(metadataIndex, 1)
     })
@@ -1443,7 +1445,7 @@ export class Epub {
       for (let i = 0; i < entries.length; i++) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const entry = entries[i]!
-        const id = `title-${(i + 1).toString()}`
+        const id = nanoid()
 
         metadataEntries.push(
           Epub.createXmlElement("dc:title", { id }, [
@@ -1547,9 +1549,11 @@ export class Epub {
       Epub.getXmlChildren(metadata).splice(
         metadataIndex,
         0,
-        Epub.createXmlElement("belongs-to-collection", { id: collectionId }, [
-          Epub.createXmlTextNode(collection.name),
-        ]),
+        Epub.createXmlElement(
+          "meta",
+          { id: collectionId, property: "belongs-to-collection" },
+          [Epub.createXmlTextNode(collection.name)],
+        ),
       )
     })
 
@@ -1593,16 +1597,18 @@ export class Epub {
           "Failed to parse EPUB: found no metadata element in package document",
         )
 
-      let collectionCount = 0
-      let metadataIndex = 0
+      let collectionCount: number | null = null
+      let metadataIndex: number | null = null
       for (const meta of Epub.getXmlChildren(metadata)) {
         if (collectionCount === index) break
-        metadataIndex++
+        metadataIndex = metadataIndex === null ? 0 : metadataIndex + 1
         if (Epub.isXmlTextNode(meta)) continue
         if (Epub.getXmlElementName(meta) !== "meta") continue
         if (meta[":@"]?.["@_property"] !== "belongs-to-collection") continue
-        collectionCount++
+        collectionCount = collectionCount === null ? 0 : collectionCount + 1
       }
+
+      if (collectionCount === null || metadataIndex === null) return
 
       const [removed] = Epub.getXmlChildren(metadata).splice(metadataIndex, 1)
 
@@ -1611,7 +1617,7 @@ export class Epub {
         const newChildren = Epub.getXmlChildren(metadata).filter((node) => {
           if (Epub.isXmlTextNode(node)) return true
           if (Epub.getXmlElementName(node) !== "meta") return true
-          if (node[":@"]?.["refines"] !== `#${id}`) return true
+          if (node[":@"]?.["@_refines"] !== `#${id}`) return true
           return false
         })
         Epub.replaceXmlChildren(metadata, newChildren)
@@ -1809,7 +1815,7 @@ export class Epub {
         creatorCount = creatorCount === null ? 0 : creatorCount + 1
       }
 
-      if (metadataIndex === null) return
+      if (creatorCount === null || metadataIndex === null) return
 
       const [removed] = Epub.getXmlChildren(metadata).splice(metadataIndex, 1)
 
@@ -1818,7 +1824,7 @@ export class Epub {
         const newChildren = Epub.getXmlChildren(metadata).filter((node) => {
           if (Epub.isXmlTextNode(node)) return true
           if (Epub.getXmlElementName(node) !== "meta") return true
-          if (node[":@"]?.["refines"] !== `#${id}`) return true
+          if (node[":@"]?.["@_refines"] !== `#${id}`) return true
           return false
         })
         Epub.replaceXmlChildren(metadata, newChildren)
@@ -2376,6 +2382,43 @@ export class Epub {
         metadataElement.metadata.push(newElement)
       } else {
         metadataElement.metadata.splice(oldEntryIndex, 1, newElement)
+      }
+    })
+  }
+
+  /**
+   * Remove one or more metadata entries.
+   *
+   * The `predicate` argument will be used to determine which entries
+   * to remove. The all metadata entries that match the
+   * predicate will be removed.
+   *
+   * @param predicate Calls predicate once for each metadata entry,
+   *  removing any for which it returns true
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-pkg-metadata
+   */
+  async removeMetadata(predicate: (entry: MetadataEntry) => boolean) {
+    await this.withPackage((packageElement) => {
+      const metadataElement = Epub.findXmlChildByName(
+        "metadata",
+        Epub.getXmlChildren(packageElement),
+      )
+      if (!metadataElement) {
+        throw new Error(
+          "Failed to parse EPUB: found no metadata element in package document",
+        )
+      }
+
+      const metadataEntries = Epub.getXmlChildren(metadataElement)
+      for (let i = metadataEntries.length - 1; i >= 0; i--) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const meta = metadataEntries[i]!
+        const item = Epub.parseMetadataItem(meta)
+        if (!item) continue
+        if (predicate(item)) {
+          metadataEntries.splice(i, 1)
+        }
       }
     })
   }

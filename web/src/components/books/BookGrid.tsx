@@ -55,7 +55,7 @@ export function BookGrid({
   showCollectionToolbar = false,
 }: Props) {
   const [columnCount, setColumnCount] = useState(1)
-  const [filtersSize, setFiltersSize] = useState(0)
+  const [filtersSize, setFiltersSize] = useState(px("4.875rem") as number)
   const filterSortRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<ListImperativeAPI | null>(null)
   const rowCount = useMemo(
@@ -114,7 +114,7 @@ export function BookGrid({
       >
         {showCollectionToolbar && (
           <div className="sticky top-0 h-0" style={{ marginTop: filtersSize }}>
-            <Stack className="z-20 w-full gap-x-0 gap-y-1 overflow-x-scroll bg-white pb-2 pt-1">
+            <Stack className="w-full gap-x-0 gap-y-1 overflow-x-scroll bg-white pb-2 pt-1">
               <CollectionToolbar
                 collection={collection}
                 books={books}
@@ -172,7 +172,7 @@ function BookGridItem({
 }: RowComponentProps<RowProps>) {
   if (index === 0) {
     return (
-      <div style={style}>
+      <div className="z-30" style={style}>
         <FilterSort
           ref={filterSortRef}
           options={filterSortOptions}
