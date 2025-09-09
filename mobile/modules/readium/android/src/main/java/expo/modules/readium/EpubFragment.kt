@@ -83,6 +83,7 @@ class EpubFragment(
                     "fonts/OpenDyslexic.otf",
                     "fonts/Literata_500Medium.ttf"
                 )
+                shouldApplyInsetsPadding = false
 
                 addFontFamilyDeclaration(FontFamily("OpenDyslexic")) {
                     addFontFace {

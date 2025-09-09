@@ -26,8 +26,10 @@ import { throttle } from "../throttle"
 
 import { PlayPause } from "./PlayPause"
 import { ProgressBar } from "./ProgressBar"
+import { SubtlePlayPause } from "./SubtlePlayPause"
 import { UIText } from "./UIText"
 import { Button } from "./ui/Button"
+import { HideableView } from "./ui/HideableView"
 import { fontSizes } from "./ui/tokens/fontSizes"
 import { spacing } from "./ui/tokens/spacing"
 
@@ -38,9 +40,10 @@ const PAPERBACK_PAGE_SCALE = 3
 type Props = {
   book: BookshelfBook
   automaticRewind: boolean
+  hidden: boolean
 }
 
-export function MiniPlayer({ book, automaticRewind }: Props) {
+export function MiniPlayer({ book, hidden, automaticRewind }: Props) {
   const insets = useSafeAreaInsets()
   const { foreground } = useColorTheme()
   const locator = useAppSelector((state) => getLocator(state, book.id))
@@ -206,143 +209,137 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
 
   return (
     bookPrefs && (
-      <View
-        style={[
-          styles.container,
-          Platform.select({
-            android: {
-              marginBottom: insets.bottom,
-            },
-            default: {},
-          }),
-        ]}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: spacing[2],
-          }}
+      <View>
+        <HideableView
+          hidden={hidden}
+          style={[
+            styles.container,
+            Platform.select({
+              android: {
+                marginBottom: Math.max(insets.bottom, spacing["1"]),
+              },
+              default: {
+                paddingBottom:
+                  insets.bottom === 0 ? spacing["1"] : spacing["3"],
+              },
+            }),
+          ]}
         >
-          <ProgressBar
+          <View
             style={{
-              flexGrow: 1,
-              // marginRight: spacing[2],
-              ...(bookPrefs?.detailView?.scope === "book" ||
-              Platform.OS === "android"
-                ? undefined
-                : { marginTop: -18, marginBottom: -18 }),
+              flexDirection: "row",
+              alignItems: "center",
+              gap: spacing[2],
             }}
-            start={progressStart}
-            stop={progressEnd}
-            progress={eagerProgress}
-            onProgressChange={
-              bookPrefs?.detailView?.scope === "book"
-                ? undefined
-                : (value) => {
-                    setEagerProgress(value)
-                    if (bookPrefs?.detailView?.mode === "audio") {
-                      if (bookPrefs?.detailView?.scope === "book") {
-                        dispatch(playerTotalPositionSeeked({ progress: value }))
+          >
+            <ProgressBar
+              style={{
+                flexGrow: 1,
+                // marginRight: spacing[2],
+                ...(bookPrefs?.detailView?.scope === "book" ||
+                Platform.OS === "android"
+                  ? undefined
+                  : { marginTop: -18, marginBottom: -18 }),
+              }}
+              start={progressStart}
+              stop={progressEnd}
+              progress={eagerProgress}
+              onProgressChange={
+                bookPrefs?.detailView?.scope === "book"
+                  ? undefined
+                  : (value) => {
+                      setEagerProgress(value)
+                      if (bookPrefs?.detailView?.mode === "audio") {
+                        if (bookPrefs?.detailView?.scope === "book") {
+                          dispatch(
+                            playerTotalPositionSeeked({ progress: value }),
+                          )
+                        } else {
+                          dispatch(playerPositionSeeked({ progress: value }))
+                        }
                       } else {
-                        dispatch(playerPositionSeeked({ progress: value }))
+                        const nextLocator = chapterPositions[value - 1]
+                        if (nextLocator === undefined) return
+                        dispatch(
+                          bookshelfSlice.actions.bookRelocated({
+                            bookId: book.id,
+                            locator: {
+                              locator: nextLocator,
+                              timestamp: Date.now(),
+                            },
+                          }),
+                        )
                       }
-                    } else {
-                      const nextLocator = chapterPositions[value - 1]
-                      if (nextLocator === undefined) return
-                      dispatch(
-                        bookshelfSlice.actions.bookRelocated({
-                          bookId: book.id,
-                          locator: {
-                            locator: nextLocator,
-                            timestamp: Date.now(),
-                          },
-                        }),
-                      )
                     }
-                  }
-            }
-          />
-          <Button
-            chromeless
-            onPress={() => {
-              dispatch(previousFragmentPressed())
-            }}
-          >
-            <Rewind color={foreground} fill={foreground} size={spacing[2.5]} />
-          </Button>
-          <View style={{ width: spacing[4] }}>
-            <PlayPause automaticRewind={automaticRewind} />
-          </View>
-          <Button
-            chromeless
-            onPress={() => {
-              dispatch(nextFragmentPressed())
-            }}
-          >
-            <FastForward
-              color={foreground}
-              fill={foreground}
-              size={spacing[2.5]}
+              }
             />
-          </Button>
-        </View>
-
-        <View style={styles.details}>
-          <Pressable
-            style={{
-              width: spacing[5],
-            }}
-            onPress={() => {
-              dispatch(
-                preferencesSlice.actions.bookDetailPressed({
-                  bookId: book.id,
-                }),
-              )
-            }}
-          >
-            <Image
-              style={{
-                margin: "auto",
-                height: 40,
-                width: bookPrefs.detailView?.mode === "audio" ? 40 : 26,
-                borderRadius: 4,
-              }}
-              source={{
-                uri:
-                  bookPrefs.detailView?.mode === "audio"
-                    ? getLocalAudioBookCoverUrl(book.id)
-                    : getLocalBookCoverUrl(book.id),
-              }}
-            />
-          </Pressable>
-          <Pressable
-            style={{
-              flex: 1,
-            }}
-            onPress={() => {
-              dispatch(
-                preferencesSlice.actions.bookDetailPressed({
-                  bookId: book.id,
-                }),
-              )
-            }}
-          >
-            <UIText
-              maxFontSizeMultiplier={1.25}
-              numberOfLines={1}
-              style={{
-                ...fontSizes.sm,
-                fontWeight: 600,
+            <Button
+              chromeless
+              onPress={() => {
+                dispatch(previousFragmentPressed())
               }}
             >
-              {title}
-            </UIText>
-            <View
+              <Rewind
+                color={foreground}
+                fill={foreground}
+                size={spacing[2.5]}
+              />
+            </Button>
+            <View style={{ width: spacing[4] }}>
+              <PlayPause automaticRewind={automaticRewind} />
+            </View>
+            <Button
+              chromeless
+              onPress={() => {
+                dispatch(nextFragmentPressed())
+              }}
+            >
+              <FastForward
+                color={foreground}
+                fill={foreground}
+                size={spacing[2.5]}
+              />
+            </Button>
+          </View>
+
+          <View style={styles.details}>
+            <Pressable
               style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
+                width: spacing[5],
+              }}
+              onPress={() => {
+                dispatch(
+                  preferencesSlice.actions.bookDetailPressed({
+                    bookId: book.id,
+                  }),
+                )
+              }}
+            >
+              <Image
+                style={{
+                  margin: "auto",
+                  height: 40,
+                  width: bookPrefs.detailView?.mode === "audio" ? 40 : 26,
+                  borderRadius: 4,
+                }}
+                source={{
+                  uri:
+                    bookPrefs.detailView?.mode === "audio"
+                      ? getLocalAudioBookCoverUrl(book.id)
+                      : getLocalBookCoverUrl(book.id),
+                }}
+              />
+            </Pressable>
+            <Pressable
+              style={{
+                flex: 1,
+              }}
+              onPress={() => {
+                dispatch(
+                  preferencesSlice.actions.bookDetailPressed({
+                    bookId: book.id,
+                  }),
+                )
               }}
             >
               <UIText
@@ -350,19 +347,38 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
                 numberOfLines={1}
                 style={{
                   ...fontSizes.sm,
+                  fontWeight: 600,
                 }}
               >
-                {formattedProgress}
+                {title}
               </UIText>
-              <UIText maxFontSizeMultiplier={1.25} style={fontSizes.sm}>
-                {Math.round(
-                  (locator?.locator.locations?.totalProgression ?? 0) * 100,
-                )}
-                %
-              </UIText>
-            </View>
-          </Pressable>
-        </View>
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <UIText
+                  maxFontSizeMultiplier={1.25}
+                  numberOfLines={1}
+                  style={{
+                    ...fontSizes.sm,
+                  }}
+                >
+                  {formattedProgress}
+                </UIText>
+                <UIText maxFontSizeMultiplier={1.25} style={fontSizes.sm}>
+                  {Math.round(
+                    (locator?.locator.locations?.totalProgression ?? 0) * 100,
+                  )}
+                  %
+                </UIText>
+              </View>
+            </Pressable>
+          </View>
+        </HideableView>
+        {hidden && <SubtlePlayPause automaticRewind={automaticRewind} />}
       </View>
     )
   )
@@ -370,10 +386,7 @@ export function MiniPlayer({ book, automaticRewind }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    left: spacing["1.5"],
-    right: spacing["1.5"],
-    bottom: spacing[4],
+    paddingHorizontal: spacing["1.5"],
     zIndex: 3,
   },
   details: {

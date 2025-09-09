@@ -204,6 +204,11 @@ class EPUBView: ExpoView {
                 defaults: EPUBDefaults(
                     publisherStyles: false
                 ),
+                contentInset: [
+                    .compact: (top: 0, bottom: 0),
+                    .regular: (top: 0, bottom: 0),
+                    .unspecified: (top: 0, bottom: 0)
+                ],
                 decorationTemplates: templates,
                 fontFamilyDeclarations: fontFamilyDeclarations
             ),

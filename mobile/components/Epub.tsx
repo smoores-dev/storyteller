@@ -32,10 +32,10 @@ import {
 
 import { MiniPlayer } from "./MiniPlayer"
 import { SelectionMenu } from "./SelectionMenu"
-import { SubtlePlayPause } from "./SubtlePlayPause"
 import { Toolbar } from "./Toolbar"
 import { ToolbarDialogs } from "./ToolbarDialogs"
 import { Group } from "./ui/Group"
+import { HideableView } from "./ui/HideableView"
 import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
@@ -72,6 +72,7 @@ export function Epub({ book, locator }: Props) {
     y: number
     locator: ReadiumLocator
   } | null>(null)
+  const [toolbarHeight, setToolbarHeight] = useState(0)
 
   const dispatch = useAppDispatch()
 
@@ -98,23 +99,29 @@ export function Epub({ book, locator }: Props) {
   }, [])
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: background },
-        {
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-        },
-      ]}
-    >
+    <View style={[styles.container, { backgroundColor: background }]}>
       <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+      <HideableView hidden={!showInterface}>
+        <Group
+          style={[styles.toolbar, { paddingTop: insets.top }]}
+          onLayout={(event) => {
+            setToolbarHeight(event.nativeEvent.layout.height)
+          }}
+        >
+          <Link href="/" replace asChild>
+            <Pressable hitSlop={20}>
+              <ChevronLeft color={foreground} />
+            </Pressable>
+          </Link>
+          <Toolbar mode="text" activeBookmarks={activeBookmarks} />
+        </Group>
+      </HideableView>
       <ToolbarDialogs mode="text" topInset={insets.top + 6} />
       {selection && (
         <SelectionMenu
           bookId={book.id}
           x={selection.x}
-          y={selection.y}
+          y={selection.y + toolbarHeight}
           locator={selection.locator}
           existingHighlight={activeHighlight}
           onClose={() => {
@@ -125,14 +132,7 @@ export function Epub({ book, locator }: Props) {
       )}
       <View
         style={{
-          position: "absolute",
-          top: insets.top + 12,
-          bottom: Platform.select({
-            android: 70 + insets.bottom,
-            default: 70,
-          }),
-          left: 0,
-          right: 0,
+          flex: 1,
           zIndex: 1,
         }}
       >
@@ -153,11 +153,7 @@ export function Epub({ book, locator }: Props) {
           onHighlightTap={(event) => {
             setSelection({
               x: event.nativeEvent.x,
-              // coordinates are relative to the epub view — we need to bump
-              // up by the bottom inset on Android due to Edge-to-Edge
-              y:
-                event.nativeEvent.y +
-                Platform.select({ android: insets.bottom, default: 0 }),
+              y: event.nativeEvent.y,
               locator: locator,
             })
             setActiveHighlight(
@@ -252,21 +248,11 @@ export function Epub({ book, locator }: Props) {
           isPlaying={isPlaying}
         />
       </View>
-      {showInterface ? (
-        <>
-          <Group style={[styles.backButton, { top: insets.top + 6 }]}>
-            <Link href="/" replace asChild>
-              <Pressable hitSlop={20}>
-                <ChevronLeft color={foreground} />
-              </Pressable>
-            </Link>
-            <Toolbar mode="text" activeBookmarks={activeBookmarks} />
-          </Group>
-          <MiniPlayer book={book} automaticRewind={!locatorIsFromEpub} />
-        </>
-      ) : (
-        <SubtlePlayPause automaticRewind={!locatorIsFromEpub} />
-      )}
+      <MiniPlayer
+        hidden={!showInterface}
+        book={book}
+        automaticRewind={!locatorIsFromEpub}
+      />
     </View>
   )
 }
@@ -277,32 +263,11 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   epub: { flex: 1 },
-  backButton: {
-    left: spacing[2],
+  toolbar: {
+    paddingHorizontal: spacing["2"],
     justifyContent: "space-between",
-    position: "absolute",
     flexDirection: "row",
     alignItems: "center",
-    right: spacing[2],
-    zIndex: 3,
-  },
-  toolbarWrapper: {
-    flexDirection: "row",
-    position: "absolute",
-    right: 12,
-    zIndex: 3,
-    alignItems: "flex-end",
-  },
-  playerStatus: {
-    position: "absolute",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 24,
-    bottom: 27,
-    left: 12,
-    right: 16,
     zIndex: 3,
   },
 })

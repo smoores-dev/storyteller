@@ -1,4 +1,3 @@
-import { useWindowDimensions } from "react-native"
 import { Pressable } from "react-native-gesture-handler"
 import TrackPlayer from "react-native-track-player"
 
@@ -12,7 +11,6 @@ interface Props {
 
 export function SubtlePlayPause({ automaticRewind }: Props) {
   const { isPlaying } = useAudioBook()
-  const dimensions = useWindowDimensions()
 
   const dispatch = useAppDispatch()
 
@@ -20,7 +18,7 @@ export function SubtlePlayPause({ automaticRewind }: Props) {
     <Pressable
       style={{
         position: "absolute",
-        top: dimensions.height - 100,
+        top: 0,
         left: 0,
         right: 0,
         bottom: 0,

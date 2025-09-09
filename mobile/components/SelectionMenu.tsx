@@ -8,6 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import uuid from "react-native-uuid"
 
 import { useColorTheme } from "../hooks/useColorTheme"
@@ -37,6 +38,7 @@ export function SelectionMenu({
   onClose,
 }: Props) {
   const dimensions = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const { background } = useColorTheme()
   const dispatch = useAppDispatch()
 
@@ -52,7 +54,11 @@ export function SelectionMenu({
       <View
         style={[
           styles.menu,
-          { backgroundColor: background, top: y + 16, left: leftOffset },
+          {
+            backgroundColor: background,
+            top: Math.max(y - 40, insets.top),
+            left: leftOffset,
+          },
         ]}
       >
         <HighlightColorPicker
