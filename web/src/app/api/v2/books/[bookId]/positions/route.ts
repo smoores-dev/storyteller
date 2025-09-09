@@ -26,6 +26,9 @@ export const POST = withHasPermission<Params>("bookRead")(async (
   request,
   context,
 ) => {
+  if (process.env["STORYTELLER_DEMO_MODE"]) {
+    return new Response(null, { status: 403 })
+  }
   const body = (await request.json()) as Position
   const { bookId } = await context.params
   let bookUuid: UUID
