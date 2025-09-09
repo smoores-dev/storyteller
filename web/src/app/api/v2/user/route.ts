@@ -38,6 +38,10 @@ export const GET = withUser((request) => {
 })
 
 export const PUT = withUser(async (request) => {
+  if (process.env["STORYTELLER_DEMO_MODE"]) {
+    return new Response(null, { status: 403 })
+  }
+
   const user = request.auth.user
 
   const update = (await request.json()) as User
