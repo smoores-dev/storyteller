@@ -67,6 +67,7 @@ export default async function RootLayout({
             version={version}
             currentUser={currentUser}
             collections={collections}
+            demoMode={!!process.env["STORYTELLER_DEMO_MODE"]}
           >
             {children}
           </AppShell>

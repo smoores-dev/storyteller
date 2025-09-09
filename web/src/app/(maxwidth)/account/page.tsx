@@ -2,6 +2,7 @@ import { type PublicProvider } from "@auth/core/types"
 import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
 import { type Metadata } from "next"
 import { revalidatePath } from "next/cache"
+import { forbidden } from "next/navigation"
 import { AuthError } from "next-auth"
 
 import { type User } from "@/apiModels"
@@ -15,6 +16,13 @@ export const metadata: Metadata = {
 
 export default async function AccountPage() {
   const currentUser = await fetchApiRoute<User>("/user")
+
+  if (
+    process.env["STORYTELLER_DEMO_MODE"] &&
+    !currentUser.permissions?.userCreate
+  ) {
+    forbidden()
+  }
 
   const { credentials: _, ...providersMap } =
     await fetchApiRoute<Record<string, PublicProvider>>("/auth/providers")

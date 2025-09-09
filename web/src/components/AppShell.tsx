@@ -139,6 +139,7 @@ const theme = createTheme({
 })
 
 interface Props {
+  demoMode?: boolean
   version: string
   children: ReactNode
   currentUser: User | undefined
@@ -146,6 +147,7 @@ interface Props {
 }
 
 export function AppShell({
+  demoMode,
   children,
   version,
   currentUser: initialCurrentUser,
@@ -282,14 +284,16 @@ export function AppShell({
                     />
                   </>
                 ) : null}
-                <NavLink
-                  onClick={close}
-                  component={NextLink}
-                  href="/account"
-                  leftSection={<IconUser />}
-                  label="Account"
-                  active={pathname === "/accounts"}
-                />
+                {!demoMode || permissions?.userCreate ? (
+                  <NavLink
+                    onClick={close}
+                    component={NextLink}
+                    href="/account"
+                    leftSection={<IconUser />}
+                    label="Account"
+                    active={pathname === "/accounts"}
+                  />
+                ) : null}
                 {permissions?.userCreate || permissions?.userList ? (
                   <NavLink
                     onClick={close}

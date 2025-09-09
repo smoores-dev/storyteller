@@ -25,6 +25,7 @@ const nextConfig = {
   outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../.."),
   experimental: {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
+    authInterrupts: true,
   },
   turbopack: {
     resolveAlias: {
