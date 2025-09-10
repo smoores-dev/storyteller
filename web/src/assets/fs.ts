@@ -1,9 +1,9 @@
 import { type Stats } from "node:fs"
 import {
+  copyFile,
   mkdir,
   readFile,
   readdir,
-  rename,
   rm,
   stat,
   writeFile,
@@ -12,6 +12,7 @@ import { dirname, join } from "node:path"
 
 import { isAudioFile } from "@/audio"
 import { type Book, type BookWithRelations, updateBook } from "@/database/books"
+import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import {
@@ -30,6 +31,22 @@ import {
   getTranscriptionsFilepath,
 } from "./paths"
 
+export async function move(source: string, destination: string) {
+  await copyFile(source, destination)
+  try {
+    await rm(source)
+  } catch (e) {
+    logger.error(`Failed to move file from ${source} to ${destination}`)
+    logger.error(e)
+    try {
+      await rm(destination)
+    } catch {
+      /* empty */
+    }
+    throw e
+  }
+}
+
 export async function getProcessedAudioFiles(book: Book) {
   const directory = getProcessedAudioFilepath(book)
 
@@ -43,7 +60,7 @@ export async function renameBookAssets(
 ) {
   if (book.title !== updated.title) {
     try {
-      await rename(
+      await move(
         getInternalBookDirectory(book),
         getInternalBookDirectory(updated),
       )
@@ -62,7 +79,7 @@ export async function renameBookAssets(
       throw e
     }
     if (updated.ebook?.filepath === getInternalEpubFilepath(book)) {
-      await rename(
+      await move(
         join(
           getInternalEpubDirectory(updated),
           getSafeFilepathSegment(book.title, ".epub"),
@@ -71,7 +88,7 @@ export async function renameBookAssets(
       )
     }
     if (updated.readaloud?.filepath === getInternalReadaloudFilepath(book)) {
-      await rename(
+      await move(
         join(
           getInternalReadaloudDirectory(updated),
           getSafeFilepathSegment(book.title, ".epub"),
@@ -123,7 +140,7 @@ export async function persistEpub(
 
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
-  await rename(tmpPath, filepath)
+  await move(tmpPath, filepath)
   return updateBook(book.uuid, null, {
     ...(aligned
       ? {
@@ -159,7 +176,7 @@ export async function persistAudio(
 
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
-  await rename(tmpPath, filepath)
+  await move(tmpPath, filepath)
   const updated = await updateBook(book.uuid, null, {
     audiobook: { filepath: directory },
   })

@@ -1,10 +1,10 @@
-import { mkdir, rename } from "node:fs/promises"
+import { mkdir } from "node:fs/promises"
 import { basename, dirname, extname } from "node:path"
 
 import { type Audiobook } from "@storyteller-platform/audiobook/node"
 import { type Epub } from "@storyteller-platform/epub/node"
 
-import { persistAudio, persistEpub } from "@/assets/fs"
+import { move, persistAudio, persistEpub } from "@/assets/fs"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
@@ -65,7 +65,7 @@ export async function handleEpubExistingBook(
   // The audio was uploaded/processed first, and it's going to
   // potentially have an arbitrary book directory name. Better
   // to use the one from the ebook
-  await rename(
+  await move(
     getInternalAudioDirectory(book),
     getInternalAudioDirectory(persisted),
   )
@@ -122,7 +122,7 @@ export async function handleAudiobookExistingBook(
     })
   }
 
-  await rename(uploadPath, filepath)
+  await move(uploadPath, filepath)
 
   return updated ?? book
 }
