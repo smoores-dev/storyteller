@@ -34,7 +34,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
       getTranscriptionsFilepath(book, transcriptionFilename),
       { encoding: "utf-8" },
     )
-    return Response.json(transcription)
+    return Response.json(JSON.parse(transcription))
   } catch {
     return Response.json(
       { message: `Could not find transcription for audio file ${filename}` },
