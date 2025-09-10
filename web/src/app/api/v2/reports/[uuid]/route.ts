@@ -26,7 +26,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     const report = await readFile(getAlignmentReportFilepath(book), {
       encoding: "utf-8",
     })
-    return Response.json(report)
+    return Response.json(JSON.parse(report))
   } catch {
     return Response.json({
       message: `Could not find report for book with id ${uuid}`,
