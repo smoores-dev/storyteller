@@ -255,6 +255,13 @@ services:
       - "8001:8001"
     secrets:
       - secret_key
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilites: [gpu]
 
 secrets:
   secret_key:
