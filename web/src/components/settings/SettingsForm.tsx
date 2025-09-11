@@ -583,8 +583,12 @@ export function SettingsForm({ settings, authUrl }: Props) {
               )}
 
               <Text>
-                Set callback URL to {authUrl ?? state.webUrl}
-                /api/v2/auth/callback/
+                Set callback URL to{" "}
+                {authUrl ??
+                  (state.webUrl
+                    ? new URL("/api/v2/auth", state.webUrl).toString()
+                    : "/api/v2/auth")}
+                /callback/
                 {(provider.kind === "custom" ? provider.name : provider.id)
                   .toLowerCase()
                   .replaceAll(/ +/g, "-")
