@@ -217,10 +217,8 @@ export function AppShell({
 
               <Box className="md:w-[200px]">
                 <Text
-                  c="black"
-                  my="sm"
                   px="sm"
-                  className="md:invisible md:group-hover/navbar:visible"
+                  className="mb-2 font-mono text-xs text-gray-500 md:invisible md:group-hover/navbar:visible"
                 >
                   Version: {version}
                 </Text>

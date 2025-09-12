@@ -1,6 +1,6 @@
 "use client"
 
-import { Stack, Text, Title } from "@mantine/core"
+import { Text, Title } from "@mantine/core"
 import { IconBooks } from "@tabler/icons-react"
 
 import { BookList } from "@/components/books/BookList"
@@ -33,7 +33,7 @@ export function CollectionDetails({
     : "Books that have not yet been added to any collections."
 
   return (
-    <Stack gap={0}>
+    <>
       <Title order={2} size="h3" className="flex items-center gap-2">
         <IconBooks size={30} />{" "}
         {collection?.name ?? initialName ?? "Uncollected"}{" "}
@@ -41,6 +41,6 @@ export function CollectionDetails({
       </Title>
       {(!collection || description) && <Text>{description}</Text>}
       <BookList collectionUuid={collection?.uuid ?? null} />
-    </Stack>
+    </>
   )
 }

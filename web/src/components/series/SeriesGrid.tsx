@@ -16,8 +16,9 @@ import {
 import { useForm } from "@mantine/form"
 import { IconTrash } from "@tabler/icons-react"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
 
+import { type BookWithRelations } from "@/database/books"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import {
   getCoverUrl,
@@ -30,6 +31,94 @@ import { ContentEditable } from "../books/edit/ContentEditable"
 
 import { InlineBookSearch } from "./InlineBookSearch"
 import { SeriesThumbnail } from "./SeriesThumbnail"
+
+const EBOOK_COVER_OPTIONS = { height: 225, width: 147 } as const
+const AUDIO_COVER_OPTIONS = { height: 147, width: 147, audio: true } as const
+
+interface BookItemProps {
+  book: {
+    bookUuid: string
+    position?: string | undefined
+    featured?: boolean | undefined
+    title: string
+    index: number
+  }
+  bookData: BookWithRelations | undefined
+  onPositionChange: (index: number, value: string) => void
+  onRemove: (index: number) => void
+}
+
+const BookItem = memo(function BookItem({
+  book,
+  bookData,
+  onPositionChange,
+  onRemove,
+}: BookItemProps) {
+  const handlePositionChange = useCallback(
+    (value: { value: string }) => {
+      onPositionChange(book.index, value.value)
+    },
+    [book.index, onPositionChange],
+  )
+
+  const handleRemove = useCallback(() => {
+    onRemove(book.index)
+  }, [book.index, onRemove])
+
+  if (!bookData) return null
+
+  return (
+    <Group key={book.bookUuid} className="flex-nowrap">
+      <NumberInput
+        className="w-14 shrink-0"
+        // this makes the "up" arrow move the book "up" the series, which feels slightly more intuitive
+        step={-1}
+        classNames={{
+          input: "pl-1 text-center bg-transparent",
+        }}
+        value={book.position ?? 0}
+        onValueChange={handlePositionChange}
+      />
+      <Box className="h-10 w-8 shrink-0">
+        <Image
+          alt=""
+          className="h-full rounded-md"
+          aria-hidden
+          src={
+            bookData.ebook || bookData.readaloud
+              ? getCoverUrl(book.bookUuid, EBOOK_COVER_OPTIONS)
+              : getCoverUrl(book.bookUuid, AUDIO_COVER_OPTIONS)
+          }
+        />
+      </Box>
+      <Stack gap={0} className="grow">
+        <Text>
+          <Link
+            href={`/books/${book.bookUuid}`}
+            className="hover:text-st-orange-600 hover:underline"
+          >
+            {bookData.title}
+          </Link>
+        </Text>
+        <Text size="xs">
+          <Link
+            href={`/books?authors=${bookData.authors[0]?.uuid}`}
+            className="hover:text-st-orange-600 hover:underline"
+          >
+            {bookData.authors[0]?.name}
+          </Link>
+        </Text>
+      </Stack>
+      <ActionIcon
+        variant="subtle"
+        className="self-center"
+        onClick={handleRemove}
+      >
+        <IconTrash color="red" />
+      </ActionIcon>
+    </Group>
+  )
+})
 
 interface Props {
   series: SeriesWithBooks[]
@@ -94,6 +183,13 @@ export function SeriesGrid({ series }: Props) {
     // Form isn't a stable reference, but form.setFieldValue is, I guess?
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSeries])
+
+  const changePosition = useCallback(
+    (index: number, value: string) => {
+      form.setFieldValue(`relations.${index}.position`, value)
+    },
+    [form],
+  )
 
   return (
     <>
@@ -180,122 +276,15 @@ export function SeriesGrid({ series }: Props) {
               <Fieldset legend="Books">
                 <Stack className="gap-4">
                   {bookList.map((book) => (
-                    <Group key={book.bookUuid} className="flex-nowrap">
-                      <NumberInput
-                        className="w-14 shrink-0"
-                        // this makes the "up" arrow move the book "up" the series, which feels slightly more intuitive
-                        step={-1}
-                        classNames={{
-                          input: "pl-1 text-center bg-transparent",
-                        }}
-                        {...form.getInputProps(
-                          `relations.${book.index}.position`,
-                        )}
-                        onValueChange={(value) => {
-                          const currentPosition = parseFloat(
-                            book.position?.toString() ?? "0",
-                          )
-                          const newPosition = value.floatValue
-
-                          if (newPosition === currentPosition || !newPosition) {
-                            return
-                          }
-
-                          const relations = [...form.values.relations]
-                          const isMovingUp = newPosition < currentPosition
-
-                          if (isMovingUp) {
-                            // increment positions of books at or above target position
-                            relations.forEach((relation, index) => {
-                              if (index === book.index) return
-
-                              const relationPosition = parseFloat(
-                                relation.position?.toString() ?? "0",
-                              )
-                              if (
-                                relationPosition >= newPosition &&
-                                relationPosition < currentPosition
-                              ) {
-                                form.setFieldValue(
-                                  `relations.${index}.position`,
-                                  (relationPosition + 1).toString(),
-                                )
-                              }
-                            })
-                          } else {
-                            // decrement positions of books between current and target
-                            relations.forEach((relation, index) => {
-                              if (index === book.index) return
-
-                              const relationPosition = parseFloat(
-                                relation.position?.toString() ?? "0",
-                              )
-                              if (
-                                relationPosition > currentPosition &&
-                                relationPosition <= newPosition
-                              ) {
-                                form.setFieldValue(
-                                  `relations.${index}.position`,
-                                  (relationPosition - 1).toString(),
-                                )
-                              }
-                            })
-                          }
-
-                          form.setFieldValue(
-                            `relations.${book.index}.position`,
-                            newPosition.toString(),
-                          )
-                        }}
-                      />
-                      <Box className="h-10 w-8 shrink-0">
-                        <Image
-                          alt=""
-                          className="h-full rounded-md"
-                          aria-hidden
-                          src={
-                            bookMap.get(book.bookUuid)?.ebook ||
-                            bookMap.get(book.bookUuid)?.readaloud
-                              ? getCoverUrl(book.bookUuid, {
-                                  height: 225,
-                                  width: 147,
-                                })
-                              : getCoverUrl(book.bookUuid, {
-                                  height: 147,
-                                  width: 147,
-                                  audio: true,
-                                })
-                          }
-                        ></Image>
-                      </Box>
-                      <Stack gap={0} className="grow">
-                        <Text>
-                          <Link
-                            href={`/books/${book.bookUuid}`}
-                            className="hover:text-st-orange-600 hover:underline"
-                          >
-                            {bookMap.get(book.bookUuid)?.title}
-                          </Link>
-                        </Text>
-                        <Text size="xs">
-                          <Link
-                            href={`/books?authors=${bookMap.get(book.bookUuid)?.authors[0]?.uuid}`}
-                            className="hover:text-st-orange-600 hover:underline"
-                          >
-                            {bookMap.get(book.bookUuid)?.authors[0]?.name}
-                          </Link>
-                        </Text>
-                      </Stack>
-                      <ActionIcon
-                        variant="subtle"
-                        className="self-center"
-                        onClick={() => {
-                          form.removeListItem("relations", book.index)
-                        }}
-                      >
-                        <IconTrash color="red" />
-                      </ActionIcon>
-                    </Group>
+                    <BookItem
+                      book={book}
+                      bookData={bookMap.get(book.bookUuid)}
+                      onPositionChange={changePosition}
+                      onRemove={() => {
+                        form.removeListItem("relations", book.index)
+                      }}
+                      key={book.bookUuid}
+                    />
                   ))}
                   <InlineBookSearch
                     booksToExclude={bookList.map((b) => b.bookUuid)}
