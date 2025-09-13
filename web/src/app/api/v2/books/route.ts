@@ -1,4 +1,4 @@
-import { basename, delimiter, dirname, extname } from "node:path"
+import { basename, dirname, extname, sep } from "node:path"
 
 import { NextResponse } from "next/server"
 
@@ -202,9 +202,9 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
 })
 
 function longestPrefix(paths: string[]) {
-  const pathsSegments = paths.map((path) => path.split(delimiter))
+  const pathsSegments = paths.map((path) => path.split(sep))
   const firstPath = pathsSegments[0]
-  if (!firstPath || paths.length === 1) return firstPath?.join(delimiter) ?? ""
+  if (!firstPath || paths.length === 1) return firstPath?.join(sep) ?? ""
   let i = 0
   while (
     firstPath[i] !== undefined &&
@@ -212,5 +212,5 @@ function longestPrefix(paths: string[]) {
   )
     i++
 
-  return firstPath.slice(0, i).join(delimiter)
+  return firstPath.slice(0, i).join(sep)
 }
