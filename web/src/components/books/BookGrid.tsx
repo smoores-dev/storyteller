@@ -59,7 +59,7 @@ export function BookGrid({
   const filterSortRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<ListImperativeAPI | null>(null)
   const rowCount = useMemo(
-    () => Math.ceil(books.length / columnCount),
+    () => (books.length === 0 ? 0 : Math.ceil(books.length / columnCount)),
     [books.length, columnCount],
   )
 
