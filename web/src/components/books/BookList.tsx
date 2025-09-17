@@ -43,11 +43,14 @@ export function BookList({ collectionUuid }: Props) {
   const [selected, setSelected] = useState(() => new Set<UUID>())
   const [isEditing, setIsEditing] = useState(false)
 
+  const shouldHide =
+    books.length === 0 && !options.search && !options.filters.visible
+
   return (
     <Stack className="relative mt-4 h-full">
       {isLoading ? (
         <BookGridSkeleton />
-      ) : books.length ? (
+      ) : !shouldHide ? (
         <>
           <Text className="text-xs">{books.length} books</Text>
           <BookGrid
