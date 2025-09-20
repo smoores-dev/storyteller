@@ -1,6 +1,6 @@
 import { type Stats } from "node:fs"
 import {
-  copyFile,
+  cp,
   mkdir,
   readFile,
   readdir,
@@ -32,7 +32,7 @@ import {
 } from "./paths"
 
 export async function move(source: string, destination: string) {
-  await copyFile(source, destination)
+  await cp(source, destination)
   try {
     await rm(source)
   } catch (e) {
