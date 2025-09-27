@@ -24,7 +24,7 @@
     "start": "./start.sh"
   },
   "dependencies": {
-    "@echogarden/espeak-ng-emscripten": "^0.3.3",
+    "@echogarden/espeak-ng-emscripten": "^0.3.5",
     "@esfx/async-mutex": "^1.0.0",
     "@esfx/async-semaphore": "^1.0.0",
     "@hello-pangea/dnd": "^18.0.1",
@@ -60,7 +60,7 @@
     "dayjs": "^1.11.13",
     "dbgate-query-splitter": "^4.11.3",
     "debounce": "^2.2.0",
-    "echogarden": "^2.3.1",
+    "echogarden": "^2.10.1",
     "embla-carousel-react": "^7.0.0",
     "fuse.js": "^7.1.0",
     "he": "^1.2.0",
