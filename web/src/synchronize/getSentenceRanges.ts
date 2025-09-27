@@ -124,18 +124,10 @@ export async function getSentenceRanges(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const [sentenceId, sentence] = sentenceEntries[sentenceIndex]!
 
-    const transcriptionWindowList: string[] = []
-
-    for (
-      let i = transcriptionWindowIndex, l = -transcriptionWindowOffset;
-      i < transcriptionSentences.length && l < sentence.length * 2;
-      i++
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const transcriptionSentence = transcriptionSentences[i]!
-      transcriptionWindowList.push(transcriptionSentence)
-    }
-
+    const transcriptionWindowList = transcriptionSentences.slice(
+      transcriptionWindowIndex,
+      transcriptionWindowIndex + 10,
+    )
     const transcriptionWindow = transcriptionWindowList
       .join("")
       .slice(transcriptionWindowOffset)
