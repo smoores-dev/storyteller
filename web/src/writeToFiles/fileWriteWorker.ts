@@ -1,6 +1,6 @@
 import { type MessagePort } from "node:worker_threads"
 
-import { Epub } from "@storyteller-platform/epub/node"
+import { Epub } from "@storyteller-platform/epub"
 
 import { deleteCachedCoverImages } from "@/assets/fs"
 import {
@@ -48,38 +48,38 @@ export default async function writeMetadataToFiles({
     )
 
   if (book.ebook) {
-    let epub: Epub | null = null
+    logger.info(`Writing metadata to epub ${book.title} ${book.suffix}`)
     try {
-      epub = await Epub.from(book.ebook.filepath)
+      using epub = await Epub.from(book.ebook.filepath)
       await writeMetadataToEpub(book, epub, { textCover })
-      await epub.writeToFile(book.ebook.filepath)
+      await epub.saveAndClose(book.ebook.filepath)
+      logger.info("Epub saved")
     } catch (e) {
       logger.error(
         `Failed to write metadata to epub ${book.title} ${book.suffix}, skipping`,
       )
       logger.error(e)
-    } finally {
-      await epub?.close()
     }
   }
 
   if (book.audiobook) {
+    logger.info(`Writing metadata to audiobook ${book.title} ${book.suffix}`)
     await writeMetadataToAudiobook(book, audioCover)
+    logger.info("Audiobook saved")
   }
 
   if (book.readaloud?.filepath) {
-    let epub: Epub | null = null
+    logger.info(`Writing metadata to readaloud ${book.title} ${book.suffix}`)
     try {
-      epub = await Epub.from(book.readaloud.filepath)
+      using epub = await Epub.from(book.readaloud.filepath)
       await writeMetadataToEpub(book, epub, { textCover, audioCover })
-      await epub.writeToFile(book.readaloud.filepath)
+      await epub.saveAndClose(book.readaloud.filepath)
+      logger.info("Readaloud saved")
     } catch (e) {
       logger.error(
         `Failed to write metadata to readaloud ${book.title} ${book.suffix}, skipping`,
       )
       logger.error(e)
-    } finally {
-      await epub?.close()
     }
   }
 

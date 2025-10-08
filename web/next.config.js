@@ -27,16 +27,6 @@ const nextConfig = {
     optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
     authInterrupts: true,
   },
-  turbopack: {
-    resolveAlias: {
-      "@storyteller-platform/epub": "../epub/index.ts",
-      "@storyteller-platform/epub/node": "../epub/node.ts",
-      "@storyteller-platform/fs": "../fs/index.ts",
-      "@storyteller-platform/path": "../path/index.ts",
-      "@storyteller-platform/audiobook": "../audiobook/src/index.ts",
-      "@storyteller-platform/audiobook/node": "../audiobook/src/node/index.ts",
-    },
-  },
   /**
    *
    * @param {import('webpack').Configuration} config

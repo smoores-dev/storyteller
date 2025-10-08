@@ -10,10 +10,9 @@ import { IconDotsCircleHorizontal, IconProgressX } from "@tabler/icons-react"
 import cx from "classnames"
 import Link from "next/link"
 
+import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations } from "@/database/books"
 import { useCancelProcessingMutation } from "@/store/api"
-
-import { IconReadaloud } from "../icons/IconReadaloud"
 
 import { BookThumbnailImage } from "./BookThumbnailImage"
 

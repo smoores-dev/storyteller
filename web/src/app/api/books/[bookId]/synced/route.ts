@@ -4,7 +4,7 @@ import { type FileHandle, open } from "node:fs/promises"
 import { createReadableStreamFromReadable } from "@remix-run/node"
 import contentDisposition from "content-disposition"
 
-import { Epub } from "@storyteller-platform/epub/node"
+import { Epub } from "@storyteller-platform/epub"
 
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
@@ -40,7 +40,7 @@ export const GET = withHasPermission<Params>("bookDownload")(async (
   const rangeStrings = rangesString?.split(",")
 
   const filepath = book.readaloud.filepath
-  const epub = await Epub.from(filepath)
+  using epub = await Epub.from(filepath)
   const title = await epub.getTitle()
   const normalizedTitle =
     title

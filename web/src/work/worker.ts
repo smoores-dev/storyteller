@@ -207,7 +207,7 @@ export default async function processBook({
 
       if (stage === "TRANSCRIBE_CHAPTERS") {
         logger.info("Transcribing...")
-        const epub = await readEpub(book)
+        using epub = await readEpub(book)
         const title = await epub.getTitle()
         book = await getBookOrThrow(bookUuid)
 
@@ -226,7 +226,7 @@ export default async function processBook({
       }
 
       if (stage === "SYNC_CHAPTERS") {
-        const epub = await readEpub(book)
+        using epub = await readEpub(book)
         const audioFiles = await getProcessedAudioFiles(book)
         book = await getBookOrThrow(bookUuid)
         const transcriptions = await getTranscriptions(book)
@@ -279,7 +279,7 @@ export default async function processBook({
         let audioCover: File | null = null
         if (coverFilepath) {
           audioCover = new File(
-            [await readFile(coverFilepath)],
+            [new Uint8Array(await readFile(coverFilepath))],
             basename(coverFilepath),
           )
         } else {
@@ -287,7 +287,7 @@ export default async function processBook({
           const coverImage = await getFirstCoverImage(book.audiobook!.filepath)
           if (coverImage) {
             audioCover = new File(
-              [coverImage.data],
+              [new Uint8Array(coverImage.data)],
               `Audio Cover.${extension(coverImage.format) || ".jpg"}`,
             )
           }
@@ -308,8 +308,7 @@ export default async function processBook({
         const readaloudFilepath = book.readaloud!.filepath!
         const readaloudDirectory = dirname(readaloudFilepath)
         await mkdir(readaloudDirectory, { recursive: true })
-        await epub.writeToFile(readaloudFilepath)
-        await epub.close()
+        await epub.saveAndClose(readaloudFilepath)
       }
     } catch (e) {
       logger.error(

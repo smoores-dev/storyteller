@@ -1,0 +1,30 @@
+diff --git a/dist/modules/src/conversion.js b/dist/modules/src/conversion.js
+index ba96cb3501c53774a1a11f1b779a4b995b245a01..57dc9260e41841e1ce5b037d21868d0aba7242b1 100644
+--- a/dist/modules/src/conversion.js
++++ b/dist/modules/src/conversion.js
+@@ -765,6 +765,8 @@ export class Conversion {
+                     ? await sink.getPacket(this._endTimestamp, { metadataOnly: true }) ?? undefined
+                     : undefined;
+                 for await (const packet of sink.packets(undefined, endPacket)) {
++                    // PATCH: see https://github.com/Vanilagy/mediabunny/issues/48
++                    packet.timestamp += firstTimestamp
+                     if (this._synchronizer.shouldWait(track.id, packet.timestamp)) {
+                         await this._synchronizer.wait(packet.timestamp);
+                     }
+diff --git a/dist/modules/src/muxer.js b/dist/modules/src/muxer.js
+index 9418d26e4d782721c059d9900af5c3322fc2c622..819ae9c9c82e1ca2e898f21fe177fd404bf10245 100644
+--- a/dist/modules/src/muxer.js
++++ b/dist/modules/src/muxer.js
+@@ -33,9 +33,9 @@ export class Muxer {
+             };
+             this.trackTimestampInfo.set(track, timestampInfo);
+         }
+-        // if (timestampInSeconds < 0) {
+-        //     throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
+-        // }
++        if (timestampInSeconds < 0) {
++            throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
++        }
+         if (isKeyFrame) {
+             timestampInfo.maxTimestampBeforeLastKeyFrame = timestampInfo.maxTimestamp;
+         }

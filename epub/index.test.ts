@@ -26,7 +26,7 @@ void describe("xhtml parsing", () => {
 
 void describe("Epub", () => {
   void it("can be created from scratch", async () => {
-    const epub = await Epub.create({
+    using epub = await Epub.create({
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -34,72 +34,65 @@ void describe("Epub", () => {
     const title = await epub.getTitle()
     assert.equal(title, "Title")
     const outputPath = join("__fixtures__", "__output__", "created.epub")
-    await epub.writeToFile(outputPath)
-    await epub.close()
+    await epub.saveAndClose(outputPath)
     const info = await stat(outputPath)
     assert.ok(info.isFile())
   })
 
   void it("strips leading and trailing whitespace from metadata values", async () => {
-    const epub = await Epub.create({
+    using epub = await Epub.create({
       title: "\n  Title\n",
       language: new Intl.Locale("en-US"),
       identifier: "1",
     })
     const title = await epub.getTitle()
     assert.equal(title, "Title")
-    await epub.close()
   })
 
   void it("collapses internal whitespace from metadata values", async () => {
-    const epub = await Epub.create({
+    using epub = await Epub.create({
       title: "Test  \tTitle",
       language: new Intl.Locale("en-US"),
       identifier: "1",
     })
     const title = await epub.getTitle()
     assert.equal(title, "Test Title")
-    await epub.close()
   })
 
   void it("can read from an archived .epub file", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(filepath)
+    using epub = await Epub.from(filepath)
     assert.ok(epub instanceof Epub)
-    await epub.close()
   })
 
   void it("can read from a data array representing a .epub file", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const data = await streamFile(filepath)
-    const epub = await Epub.from(data)
+    using epub = await Epub.from(data)
     assert.ok(epub instanceof Epub)
-    await epub.close()
   })
 
   void it("can parse the spine correctly", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(filepath)
+    using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     assert.strictEqual(spineItems.length, 12)
-    await epub.close()
   })
 
-  void it("can locate spine items", async () => {
+  void it.only("can locate spine items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(filepath)
+    using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readItemContents(
       spineItems[0]!.id,
       "utf-8",
     )
     assert.ok(coverPageData.startsWith("\n<!DOCTYPE html>"))
-    await epub.close()
   })
 
-  void it("can parse xhtml spine items", async () => {
+  void it.only("can parse xhtml spine items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(filepath)
+    using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readXhtmlItemContents(spineItems[0]!.id)
     const html = coverPageData[0] as XmlElement<"html">
@@ -110,12 +103,11 @@ void describe("Epub", () => {
     assert.ok(title)
     const titleText = (Epub.getXmlChildren(title)[0] as XmlTextNode)["#text"]
     assert.strictEqual(titleText, '"Cover"')
-    await epub.close()
   })
 
   void it("can produce text content for xhtml items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(filepath)
+    using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const chapterOneData = await epub.readXhtmlItemContents(
       spineItems[1]!.id,
@@ -126,12 +118,11 @@ void describe("Epub", () => {
         "The Project Gutenberg eBook of Moby Dick; Or, The Whale",
       ),
     )
-    await epub.close()
   })
 
   void it("can parse void xhtml tags", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(filepath)
+    using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const chapterOneData = await epub.readXhtmlItemContents(spineItems[1]!.id)
     const html = chapterOneData[1] as XmlElement<"html">
@@ -141,12 +132,11 @@ void describe("Epub", () => {
     const meta = Epub.getXmlChildren(head)[1] as XmlElement<"meta">
     assert.ok(meta)
     assert.strictEqual(meta[":@"]?.["@_charset"], "utf-8")
-    await epub.close()
   })
 
   void it("can add metadata", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(inputFilepath)
+    using epub = await Epub.from(inputFilepath)
 
     const newItem: MetadataEntry = {
       properties: { property: "example" },
@@ -161,7 +151,7 @@ void describe("Epub", () => {
   void it("replaces the correct metadata entry", async () => {
     // This is to test a regression for !106.  There is still a related issue for malformed epubs.
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(inputFilepath)
+    using epub = await Epub.from(inputFilepath)
 
     const firstValue: MetadataEntry = {
       properties: { property: "example" },
@@ -184,7 +174,7 @@ void describe("Epub", () => {
 
   void it("can write the epub to a file", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(inputFilepath)
+    using epub = await Epub.from(inputFilepath)
 
     const outputFilepath = join(
       "__fixtures__",
@@ -192,23 +182,23 @@ void describe("Epub", () => {
       "moby-dick-write-to-file.epub",
     )
 
-    await epub.writeToFile(outputFilepath)
-    await epub.close()
+    await epub.saveAndClose(outputFilepath)
     const info = await stat(outputFilepath)
     assert.ok(info.isFile())
   })
 
   void it("writes the last modified time correctly", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(inputFilepath)
+    using epub = await Epub.from(inputFilepath)
 
     const startTime = new Date()
     startTime.setMilliseconds(0)
-    await epub.writeToArray()
+    const updatedData = await epub.getArrayAndClose()
+    const updatedEpub = await Epub.from(updatedData)
     const endTime = new Date()
     endTime.setMilliseconds(1000) // Round up to next second
 
-    const writeTimeStr = (await epub.getMetadata()).find(
+    const writeTimeStr = (await updatedEpub.getMetadata()).find(
       (elem) => elem.properties["property"] === "dcterms:modified",
     )?.value
     assert.ok(writeTimeStr, "could not find last modified time")
@@ -226,7 +216,7 @@ void describe("Epub", () => {
 
   void it("can modify an xhtml item", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(inputFilepath)
+    using epub = await Epub.from(inputFilepath)
 
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readXhtmlItemContents(spineItems[0]!.id)
@@ -249,8 +239,7 @@ void describe("Epub", () => {
       "moby-dick-modify-xhtml-item.epub",
     )
 
-    await epub.writeToFile(outputFilepath)
-    await epub.close()
+    await epub.saveAndClose(outputFilepath)
 
     const updatedEpub = await Epub.from(outputFilepath)
 
@@ -274,12 +263,11 @@ void describe("Epub", () => {
     )["#text"]
 
     assert.strictEqual(updatedTitleText, "Test title")
-    await updatedEpub.close()
   })
 
   void it("can add a new manifest item", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
-    const epub = await Epub.from(filepath)
+    using epub = await Epub.from(filepath)
     const newItem = {
       id: "testitem",
       href: "testitem.xhtml",
@@ -314,11 +302,10 @@ void describe("Epub", () => {
       Epub.getXhtmlTextContent(Epub.getXhtmlBody(testData)).trim(),
       "Test contents",
     )
-    await epub.close()
   })
 
   void it("can remove a creator", async () => {
-    const epub = await Epub.create({
+    using epub = await Epub.create({
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -348,7 +335,7 @@ void describe("Epub", () => {
   })
 
   void it("can remove the first creator", async () => {
-    const epub = await Epub.create({
+    using epub = await Epub.create({
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -378,7 +365,7 @@ void describe("Epub", () => {
   })
 
   void it("can remove the first collection", async () => {
-    const epub = await Epub.create(
+    using epub = await Epub.create(
       {
         title: "Title",
         language: new Intl.Locale("en-US"),
@@ -414,7 +401,7 @@ void describe("Epub", () => {
   })
 
   void it("can handle simultaneous package document updates", async () => {
-    const epub = await Epub.create({
+    using epub = await Epub.create({
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -432,7 +419,7 @@ void describe("Epub", () => {
   })
 
   void it("can set various title types", async () => {
-    const epub = await Epub.create({
+    using epub = await Epub.create({
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",

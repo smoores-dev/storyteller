@@ -1,8 +1,11 @@
 import { mkdir, readdir, stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 
-import { Audiobook } from "@storyteller-platform/audiobook/node"
-import { Epub } from "@storyteller-platform/epub/node"
+import {
+  Audiobook,
+  type AudiobookInputs,
+} from "@storyteller-platform/audiobook"
+import { Epub } from "@storyteller-platform/epub"
 
 import {
   getAudioCover,
@@ -129,7 +132,7 @@ export async function scan(
       }
 
       try {
-        const epub = await Epub.from(path)
+        using epub = await Epub.from(path)
         const manifest = await epub.getManifest()
         const isReadaloud = Object.values(manifest).some(
           (item) => item.mediaOverlay,
@@ -202,7 +205,7 @@ export async function scan(
       if (bookPath.readaloud || bookPath.ebook) {
         // We've already confirmed that one of these is truthy above
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const epub = await Epub.from((bookPath.readaloud ?? bookPath.ebook)!)
+        using epub = await Epub.from((bookPath.readaloud ?? bookPath.ebook)!)
 
         let created = await createBookFromEpub(
           epub,
@@ -259,16 +262,18 @@ export async function scan(
         if (bookPath.audiobook) {
           const audiobookPath = bookPath.audiobook
           const entries = await readdir(audiobookPath)
-          const audiobook = await Audiobook.from(
-            entries
+          using audiobook = new Audiobook(
+            ...(entries
               .filter((entry) => isAudioFile(entry))
-              .map((relativePath) => join(audiobookPath, relativePath)),
+              .map((relativePath) =>
+                join(audiobookPath, relativePath),
+              ) as AudiobookInputs),
           )
 
           const { update: audiobookUpdate, relations: audiobookRelations } =
             await getMetadataFromAudiobook(audiobook)
 
-          audiobook.close()
+          audiobook.discardAndClose()
 
           const update = keepMissingMetadata(created, audiobookUpdate)
           const relations = keepMissingRelations(created, audiobookRelations)
@@ -300,10 +305,12 @@ export async function scan(
       } else if (bookPath.audiobook) {
         const audiobookPath = bookPath.audiobook
         const entries = await readdir(audiobookPath)
-        const audiobook = await Audiobook.from(
-          entries
+        using audiobook = new Audiobook(
+          ...(entries
             .filter((entry) => isAudioFile(entry))
-            .map((relativePath) => join(audiobookPath, relativePath)),
+            .map((relativePath) =>
+              join(audiobookPath, relativePath),
+            ) as AudiobookInputs),
         )
 
         let created = await createBookFromAudiobook(
@@ -316,7 +323,7 @@ export async function scan(
             audiobook: { filepath: audiobookPath },
           },
         )
-        audiobook.close()
+        audiobook.discardAndClose()
 
         try {
           await mkdir(getInternalBookDirectory(created))
@@ -371,7 +378,7 @@ export async function scan(
       logger.debug(
         `Found new ebook file for ${book.title} at ${bookPath.ebook}. Importing metadata.`,
       )
-      const epub = await Epub.from(bookPath.ebook)
+      using epub = await Epub.from(bookPath.ebook)
       const { update: ebookUpdate, relations: ebookRelations } =
         await getMetadataFromEpub(epub)
 
@@ -409,14 +416,18 @@ export async function scan(
 
       const audiobookPath = bookPath.audiobook
       const entries = await readdir(audiobookPath)
-      const audiobook = await Audiobook.from(
-        entries
+      using audiobook = new Audiobook(
+        ...(entries
           .filter((entry) => isAudioFile(entry))
-          .map((relativePath) => join(audiobookPath, relativePath)),
+          .map((relativePath) =>
+            join(audiobookPath, relativePath),
+          ) as AudiobookInputs),
       )
+
       const { update: audiobookUpdate, relations: audiobookRelations } =
         await getMetadataFromAudiobook(audiobook)
-      audiobook.close()
+
+      audiobook.discardAndClose()
 
       if (!update) {
         update = keepMissingMetadata(book, audiobookUpdate)
@@ -452,7 +463,7 @@ export async function scan(
       logger.debug(
         `Found new readaloud book file for ${book.title} at ${bookPath.readaloud}. Importing metadata.`,
       )
-      const epub = await Epub.from(bookPath.readaloud)
+      using epub = await Epub.from(bookPath.readaloud)
       const { update: readaloudUpdate, relations: readaloudRelations } =
         await getMetadataFromEpub(epub)
 

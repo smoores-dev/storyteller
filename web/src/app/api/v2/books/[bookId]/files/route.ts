@@ -3,14 +3,21 @@ import { createReadStream } from "node:fs"
 import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, extname, join } from "node:path"
+import { Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
 
-import { createReadableStreamFromReadable } from "@remix-run/node"
-import { type PortablePath } from "@yarnpkg/fslib"
+import { type Filename, PortablePath, ppath } from "@yarnpkg/fslib"
 import { ZipFS } from "@yarnpkg/libzip"
 import contentDisposition from "content-disposition"
 import { lookup } from "mime-types"
 
+import {
+  Audiobook,
+  type AudiobookInputs,
+} from "@storyteller-platform/audiobook"
+import { Epub } from "@storyteller-platform/epub"
+
+import { getAudioCover } from "@/assets/covers"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import { type BookWithRelations, getBook, getBookUuid } from "@/database/books"
@@ -35,6 +42,7 @@ function determineFormat(
 async function getFilepath(
   book: BookWithRelations,
   format: "readaloud" | "audiobook" | "ebook",
+  rpf: boolean,
 ) {
   const filepath = book[format]?.filepath
 
@@ -48,7 +56,8 @@ async function getFilepath(
   const audioFiles = entries.filter(
     (entry) => isAudioFile(entry) || isZipArchive(entry),
   )
-  if (audioFiles.length === 1) {
+
+  if (audioFiles.length === 1 && !rpf) {
     // We just confirmed there was one of these
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return join(filepath, audioFiles[0]!)
@@ -60,14 +69,98 @@ async function getFilepath(
     `${book.uuid}.zip`,
   )
   await mkdir(dirname(zipFilepath), { recursive: true })
-  const zipFs = new ZipFS(zipFilepath as PortablePath, { create: true })
+  const zipFs = new ZipFS(ppath.resolve(zipFilepath), { create: true })
   for (const audioFile of audioFiles) {
-    zipFs.mkdirpSync(dirname(audioFile) as PortablePath)
+    zipFs.mkdirpSync(
+      ppath.join(PortablePath.root, dirname(audioFile) as PortablePath),
+    )
     await pipeline(
       createReadStream(join(filepath, audioFile)),
-      zipFs.createWriteStream(audioFile as PortablePath),
+      zipFs.createWriteStream(
+        ppath.join(PortablePath.root, audioFile as PortablePath),
+      ),
     )
   }
+
+  if (rpf) {
+    const epubPath = book.readaloud?.filepath ?? book.ebook?.filepath
+    using epub = epubPath ? await Epub.from(epubPath) : null
+
+    using audiobook = new Audiobook(
+      ...(audioFiles.map((audioFile) =>
+        join(filepath, audioFile),
+      ) as AudiobookInputs),
+    )
+
+    const audiocover = await getAudioCover(book)
+    if (audiocover) {
+      await zipFs.writeFilePromise(
+        ppath.join(PortablePath.root, audiocover.filename as Filename),
+        audiocover.data,
+      )
+    }
+
+    await zipFs.writeJsonPromise(
+      ppath.join(PortablePath.root, "manifest.audiobook-manifest"),
+      {
+        "@context": "http:/readium.org/webpub-manifest/context.jsonld",
+        metadata: {
+          "@type": "http://schema.org/Audiobook",
+          conformsTo: "https://readium.org/webpub-manifest/profiles/audiobook",
+          identifier: epub?.getIdentifier() ?? book.audiobook?.uuid,
+          title: book.title,
+          description: book.description,
+          subject: book.tags.map((tag) => tag.name),
+          ...(book.authors.length && {
+            author:
+              book.authors.length === 1
+                ? book.authors[0]?.name
+                : book.authors.map((author) => author.name),
+          }),
+          ...(book.narrators.length && {
+            narrator:
+              book.narrators.length === 1
+                ? book.narrators[0]?.name
+                : book.narrators.map((narrator) => narrator.name),
+          }),
+          language: book.language ?? "und",
+          published: (await audiobook.getReleaseDate()) ?? undefined,
+          duration: await audiobook.getDuration(),
+        },
+        links: [
+          {
+            rel: "self",
+            href: "/manifest.audiobook-manifest",
+            type: "application/audiobook+json",
+          },
+        ],
+        readingOrder: (await audiobook.getResources()).map(
+          (resource, index) => ({
+            ...resource,
+            href: ppath.join(
+              PortablePath.root,
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              audioFiles[index]! as PortablePath,
+            ),
+          }),
+        ),
+        resources: audiocover
+          ? [
+              {
+                rel: "cover",
+                href: `/${audiocover.filename}`,
+                type: audiocover.mimeType,
+              },
+            ]
+          : [],
+        toc: (await audiobook.getChapters()).map((chapter) => ({
+          href: `${ppath.join(PortablePath.root, chapter.filename as PortablePath)}#t=${chapter.start}`,
+          title: chapter.title,
+        })),
+      },
+    )
+  }
+
   zipFs.saveAndClose()
   return zipFilepath
 }
@@ -111,12 +204,18 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     )
   }
 
+  const contentType = request.headers.get("Accept")
+
   const normalizedTitle = book.title
     .normalize("NFD")
     .replaceAll(/\p{Diacritic}/gu, "")
     .replaceAll(/[^a-zA-Z0-9-_.~!#$&'()*+,/:;=?@[\] ]/gu, "")
 
-  const filepath = await getFilepath(book, format)
+  const filepath = await getFilepath(
+    book,
+    format,
+    contentType?.includes("application/audiobook+zip") ?? false,
+  )
 
   if (!filepath) {
     return Response.json(
@@ -185,9 +284,9 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     logger.error(e)
   })
 
-  const readableStream = createReadableStreamFromReadable(readStream)
+  const readableStream = Readable.toWeb(readStream)
 
-  return new Response(readableStream, {
+  return new Response(readableStream as ReadableStream, {
     status: partialResponse ? 206 : 200,
     headers: {
       "Content-Disposition": contentDisposition(

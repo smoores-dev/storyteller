@@ -3,8 +3,12 @@ import { extname, join } from "node:path"
 
 import { extension, lookup } from "mime-types"
 
-import { Audiobook } from "@storyteller-platform/audiobook"
-import { type Epub } from "@storyteller-platform/epub/node"
+import {
+  Audiobook,
+  type AudiobookInputs,
+  getAttachedImageFromPath,
+} from "@storyteller-platform/audiobook"
+import { type Epub } from "@storyteller-platform/epub"
 
 import { isAudioFile } from "@/audio"
 import { isRole } from "@/components/books/edit/marcRelators"
@@ -207,6 +211,8 @@ export async function getMetadataFromEpub(epub: Epub): Promise<{
       })
     }
   }
+
+  epub.discardAndClose()
 
   return {
     update,
@@ -509,9 +515,9 @@ export async function writeMetadataToAudiobook(
   let audiobook: Audiobook | null = null
 
   try {
-    audiobook = await Audiobook.from(tracks)
+    audiobook = new Audiobook(...(tracks as AudiobookInputs))
     if (coverPath) {
-      await audiobook.setCoverArt(coverPath)
+      await audiobook.setCoverArt(await getAttachedImageFromPath(coverPath))
     }
     await audiobook.setAuthors(book.authors.map((author) => author.name))
     await audiobook.setNarrators(
@@ -524,23 +530,26 @@ export async function writeMetadataToAudiobook(
     if (book.description) {
       await audiobook.setDescription(book.description)
     }
-    await audiobook.save()
+    await audiobook.saveAndClose()
   } catch (e) {
     logger.error(
       `Failed to write metadata to audiobook ${book.title} ${book.suffix}, skipping`,
     )
     logger.error(e)
-  } finally {
-    audiobook?.close()
+    audiobook?.discardAndClose()
   }
+
+  let processedAudiobook: Audiobook | null = null
 
   try {
     const processedTracks = (await getProcessedAudioFiles(book)).map((track) =>
       join(getProcessedAudioFilepath(book), track),
     )
-    const processedAudiobook = await Audiobook.from(processedTracks)
+    processedAudiobook = new Audiobook(...(processedTracks as AudiobookInputs))
     if (coverPath) {
-      await processedAudiobook.setCoverArt(coverPath)
+      await processedAudiobook.setCoverArt(
+        await getAttachedImageFromPath(coverPath),
+      )
     }
     await processedAudiobook.setAuthors(
       book.authors.map((author) => author.name),
@@ -555,9 +564,9 @@ export async function writeMetadataToAudiobook(
     if (book.description) {
       await processedAudiobook.setDescription(book.description)
     }
-    await processedAudiobook.save()
-    processedAudiobook.close()
+    await processedAudiobook.saveAndClose()
   } catch {
     // We might not have any processed audio files yet, which is fine
+    processedAudiobook?.discardAndClose()
   }
 }

@@ -1,9 +1,16 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
 
+import { npath } from "@yarnpkg/fslib"
+import { ZipFS } from "@yarnpkg/libzip"
+
 import { streamFile } from "@storyteller-platform/fs"
 
-import { Epub as BaseEpub } from "./index.ts"
+import {
+  type DublinCore,
+  Epub as BaseEpub,
+  type EpubMetadata,
+} from "./index.ts"
 
 export type {
   AlternateScript,
@@ -23,15 +30,21 @@ export type {
 
 export class Epub extends BaseEpub {
   static override create(
-    ...args: Parameters<typeof BaseEpub.create>
+    dc: DublinCore,
+    additionalMetadata: EpubMetadata = [],
   ): Promise<Epub> {
-    return super.create(...args) as Promise<Epub>
+    return super.create(dc, additionalMetadata) as Promise<Epub>
   }
 
   static override async from(
     ...args: Parameters<typeof BaseEpub.from>
   ): Promise<Epub> {
     const pathOrData = args[0]
+    if (typeof pathOrData === "string") {
+      return new Epub(
+        new ZipFS(npath.toPortablePath(npath.resolve(pathOrData))),
+      )
+    }
     const fileData =
       typeof pathOrData === "string" ? await streamFile(pathOrData) : pathOrData
     return super.from(fileData) as Promise<Epub>
@@ -41,10 +54,6 @@ export class Epub extends BaseEpub {
    * Write the current contents of the Epub to a new
    * EPUB archive on disk.
    *
-   * This _does not_ close the Epub. It can continue to
-   * be modified after it has been written to disk. Use
-   * `epub.close()` to close the Epub.
-   *
    * When this method is called, the "dcterms:modified"
    * meta tag is automatically updated to the current UTC
    * timestamp.
@@ -53,14 +62,9 @@ export class Epub extends BaseEpub {
    *  parent directory does not need te exist -- the path will be
    *  recursively created.
    */
-  public async writeToFile(path: string) {
-    const data = await this.writeToArray()
-    if (!data.length)
-      throw new Error(
-        "Failed to write zip archive to file; writer returned no data",
-      )
-
+  public async saveAndClose(path: string) {
     await mkdir(dirname(path), { recursive: true })
+    const data = await this.getArrayAndClose()
     await writeFile(path, data)
   }
 }

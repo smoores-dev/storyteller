@@ -6,30 +6,7 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "@storyteller": "./src/index.ts",
-      "@storyteller-node": "./src/node/index.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    },
-    "./node": {
-      "@storyteller": "./src/node/index.ts",
-      "@storyteller-node": "./src/node/index.ts",
-      "import": {
-        "types": "./dist/node/index.d.ts",
-        "default": "./dist/node/index.js"
-      },
-      "require": {
-        "types": "./dist/node/index.d.cts",
-        "default": "./dist/node/index.cjs"
-      }
-    }
+    ".": "./src/index.ts"
   },
   "files": [
     "dist/"
@@ -46,30 +23,39 @@
   "devDependencies": {
     "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
-    "@types/mime-types": "^2",
-    "@types/node": "^22.10.1",
     "markdown-toc": "^1.2.0",
     "remark-toc": "^9.0.0",
     "tsup": "^8.5.0",
     "tsx": "^4.19.2",
-    "typedoc": "^0.28.4",
+    "typedoc": "^0.28.13",
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-remark": "^1.2.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@einheit/path-resolve": "^1.2.0",
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
-    "@zip.js/zip.js": "^2.7.71",
-    "async-mutex": "^0.5.0",
-    "fast-xml-parser": "^4.0.0",
-    "mem": "^8.0.0",
+    "@types/mime-types": "^2",
+    "@types/node": "^24.0.0",
+    "@yarnpkg/fslib": "^3.1.3",
+    "@yarnpkg/libzip": "^3.2.2",
+    "mediabunny": "patch:mediabunny@patch%3Amediabunny@patch%253Amediabunny@patch%25253Amediabunny@npm%2525253A1.23.0%252523~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%25253A%25253Aversion=1.23.0&hash=867d2d%2523~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch%253A%253Aversion=1.23.0&hash=805969%23~/.yarn/patches/mediabunny-patch-382d8f9a70.patch%3A%3Aversion=1.23.0&hash=ec3ddb#~/.yarn/patches/mediabunny-patch-2eb74f8402.patch",
     "mime-types": "^3.0.1",
-    "nanoid": "^5.1.5",
-    "node-taglib-sharp": "^6.0.1"
+    "music-metadata": "^11.9.0"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      }
+    }
   }
 }

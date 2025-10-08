@@ -5,18 +5,7 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "@storyteller": "./index.ts",
-      "@storyteller-node": "./index.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
+    ".": "./index.ts"
   },
   "files": [
     "dist/"
@@ -28,11 +17,25 @@
   "devDependencies": {
     "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.0.0",
     "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "exports": {
+      ".": {
+        "@storyteller": "./index.ts",
+        "@storyteller-node": "./index.ts",
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      }
+    }
   }
 }
