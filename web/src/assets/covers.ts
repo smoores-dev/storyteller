@@ -3,8 +3,11 @@ import { basename, extname, join } from "node:path"
 
 import { extension, lookup } from "mime-types"
 
-import { Audiobook } from "@storyteller-platform/audiobook/node"
-import { Epub } from "@storyteller-platform/epub/node"
+import {
+  Audiobook,
+  type AudiobookInputs,
+} from "@storyteller-platform/audiobook"
+import { Epub } from "@storyteller-platform/epub"
 
 import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
 import {
@@ -35,14 +38,15 @@ export async function getFirstCoverImage(directory: string) {
   if (!firstTrack) return null
 
   try {
-    const audiobook = await Audiobook.from(join(directory, firstTrack))
+    using audiobook = new Audiobook(
+      join(directory, firstTrack) as AudiobookInputs[0],
+    )
     const coverImage = await audiobook.getCoverArt()
-    audiobook.close()
+    audiobook.discardAndClose()
     if (!coverImage) return null
 
     return {
-      /* eslint-disable-next-line @typescript-eslint/no-deprecated */
-      data: coverImage.data.toByteArray(),
+      data: coverImage.data,
       format: coverImage.mimeType,
       audiofile: join(directory, firstTrack),
     }
@@ -136,16 +140,16 @@ export async function getAudioCoverFromCustomFile(book: BookWithRelations) {
 export async function getAudioCoverFromReadaloud(book: BookWithRelations) {
   if (!book.readaloud?.filepath) return null
 
-  const epub = await Epub.from(book.readaloud.filepath)
+  using epub = await Epub.from(book.readaloud.filepath)
 
   const coverImageItem = await getAudioCoverItem(epub)
   if (!coverImageItem) {
-    await epub.close()
+    epub.discardAndClose()
     return null
   }
 
   const data = await epub.readItemContents(coverImageItem.id)
-  await epub.close()
+  epub.discardAndClose()
 
   const file = await open(book.readaloud.filepath)
   const stats = await file.stat()
@@ -161,7 +165,7 @@ export async function getAudioCoverFromReadaloud(book: BookWithRelations) {
 export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
   if (!book.readaloud?.filepath) return null
 
-  const epub = await Epub.from(book.readaloud.filepath)
+  using epub = await Epub.from(book.readaloud.filepath)
 
   const manifest = await epub.getManifest()
   // TODO: Would be better to get the first audio file that
@@ -172,23 +176,22 @@ export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
   if (!firstAudioItem) return null
 
   const audio = await epub.readItemContents(firstAudioItem.id)
-  const audiobook = await Audiobook.from({
+  using audiobook = new Audiobook({
     filename: firstAudioItem.href,
     data: audio,
   })
   const coverArt = await audiobook.getCoverArt()
-  audiobook.close()
+  audiobook.discardAndClose()
   if (!coverArt) return null
 
   const file = await open(book.readaloud.filepath)
   const stats = await file.stat()
   await file.close()
   return {
-    filename: coverArt.filename || `Cover.${extension(coverArt.mimeType)}`,
+    filename: coverArt.name || `Cover.${extension(coverArt.mimeType)}`,
     mimeType: coverArt.mimeType,
     stats,
-    /* eslint-disable-next-line @typescript-eslint/no-deprecated */
-    data: Buffer.from(coverArt.data.toByteArray()),
+    data: Buffer.from(coverArt.data),
   }
 }
 
@@ -202,14 +205,13 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
     entries
       .filter((entry) => isAudioFile(entry))
       .map((relativeTrack) => join(directory, relativeTrack))
-      .map((path) =>
-        Audiobook.from(path).then(async (audiobook) => {
-          const coverArt = await audiobook.getCoverArt()
-          audiobook.close()
-          if (!coverArt) throw new Error()
-          return { audiofile: path, picture: coverArt }
-        }),
-      ),
+      .map(async (path) => {
+        using audiobook = new Audiobook(path as AudiobookInputs[0])
+        const coverArt = await audiobook.getCoverArt()
+        audiobook.discardAndClose()
+        if (!coverArt) throw new Error()
+        return { audiofile: path, image: coverArt }
+      }),
   ).catch(() => null)
 
   if (!firstCover) return null
@@ -219,12 +221,10 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
   await file.close()
   return {
     filename:
-      firstCover.picture.filename ||
-      `Cover.${extension(firstCover.picture.mimeType)}`,
-    mimeType: firstCover.picture.mimeType,
+      firstCover.image.name || `Cover.${extension(firstCover.image.mimeType)}`,
+    mimeType: firstCover.image.mimeType,
     stats,
-    /* eslint-disable-next-line @typescript-eslint/no-deprecated */
-    data: Buffer.from(firstCover.picture.data.toByteArray()),
+    data: Buffer.from(firstCover.image.data),
   }
 }
 
@@ -247,7 +247,7 @@ export async function getEpubCover(book: BookWithRelations) {
   if (!epubFilepath) return null
 
   if (!epubFilepath) return null
-  const epub = await Epub.from(epubFilepath)
+  using epub = await Epub.from(epubFilepath)
   const coverImageItem = await epub.getCoverImageItem()
   if (!coverImageItem) return null
   const data = await epub.getCoverImage()

@@ -1,0 +1,13 @@
+diff --git a/dist/modules/src/conversion.js b/dist/modules/src/conversion.js
+index 57dc9260e41841e1ce5b037d21868d0aba7242b1..59db820e922bb0458afd08dc9339f334ececa25d 100644
+--- a/dist/modules/src/conversion.js
++++ b/dist/modules/src/conversion.js
+@@ -766,7 +766,7 @@ export class Conversion {
+                     : undefined;
+                 for await (const packet of sink.packets(undefined, endPacket)) {
+                     // PATCH: see https://github.com/Vanilagy/mediabunny/issues/48
+-                    packet.timestamp += firstTimestamp
++                    packet.timestamp -= firstTimestamp
+                     if (this._synchronizer.shouldWait(track.id, packet.timestamp)) {
+                         await this._synchronizer.wait(packet.timestamp);
+                     }

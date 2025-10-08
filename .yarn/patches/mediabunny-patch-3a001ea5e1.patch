@@ -1,0 +1,17 @@
+diff --git a/dist/modules/src/muxer.js b/dist/modules/src/muxer.js
+index 819ae9c9c82e1ca2e898f21fe177fd404bf10245..9418d26e4d782721c059d9900af5c3322fc2c622 100644
+--- a/dist/modules/src/muxer.js
++++ b/dist/modules/src/muxer.js
+@@ -33,9 +33,9 @@ export class Muxer {
+             };
+             this.trackTimestampInfo.set(track, timestampInfo);
+         }
+-        if (timestampInSeconds < 0) {
+-            throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
+-        }
++        // if (timestampInSeconds < 0) {
++        //     throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
++        // }
+         if (isKeyFrame) {
+             timestampInfo.maxTimestampBeforeLastKeyFrame = timestampInfo.maxTimestamp;
+         }

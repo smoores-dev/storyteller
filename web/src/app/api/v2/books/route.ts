@@ -2,8 +2,11 @@ import { basename, dirname, extname, sep } from "node:path"
 
 import { NextResponse } from "next/server"
 
-import { Audiobook } from "@storyteller-platform/audiobook/node"
-import { Epub } from "@storyteller-platform/epub/node"
+import {
+  Audiobook,
+  type AudiobookInputs,
+} from "@storyteller-platform/audiobook"
+import { Epub } from "@storyteller-platform/epub"
 
 import {
   getAudioCover,
@@ -77,7 +80,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   let readaloud: string | null = null
   for (const epubPath of epubs) {
     try {
-      const epub = await Epub.from(epubPath)
+      using epub = await Epub.from(epubPath)
       const manifest = await epub.getManifest()
       const isReadaloud = Object.values(manifest).some(
         (item) => item.mediaOverlay,
@@ -97,7 +100,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   let book: BookWithRelations | null = null
   if (readaloud) {
     const fallbackTitle = basename(readaloud, extname(readaloud))
-    const epub = await Epub.from(readaloud)
+    using epub = await Epub.from(readaloud)
     book = await createBookFromEpub(
       epub,
       { title: fallbackTitle },
@@ -113,7 +116,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   }
 
   if (ebook) {
-    const epub = await Epub.from(ebook)
+    using epub = await Epub.from(ebook)
 
     if (!book) {
       const fallbackTitle = basename(ebook, extname(ebook))
@@ -148,7 +151,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   }
 
   if (audio.length) {
-    const audiobook = await Audiobook.from(audio)
+    using audiobook = new Audiobook(...(audio as AudiobookInputs))
     const audioDirectory =
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       audio.length === 1 ? dirname(audio[0]!) : longestPrefix(audio)

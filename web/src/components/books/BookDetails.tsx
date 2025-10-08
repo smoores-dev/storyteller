@@ -126,15 +126,15 @@ export function BookDetails({ bookUuid }: Props) {
                 )}{" "}
                 {book.title}
               </Title>
-              {book.subtitle && (
-                <Title className="font-sans" order={3}>
-                  {book.subtitle}
-                </Title>
-              )}
               <Link href={`/books/${book.uuid}/edit`}>
                 <IconPencil />
               </Link>
             </Group>
+            {book.subtitle && (
+              <Title className="font-sans" order={3}>
+                {book.subtitle}
+              </Title>
+            )}
             <Stack className="gap-1">
               <Text className="text-sm">
                 by{" "}

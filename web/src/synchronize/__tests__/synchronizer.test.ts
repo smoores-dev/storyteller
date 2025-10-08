@@ -4,11 +4,11 @@ import { describe, it } from "node:test"
 
 import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
 
-import { Epub, type XmlElement } from "@storyteller-platform/epub/node"
+import { Epub, type XmlElement } from "@storyteller-platform/epub"
 
-import transcription from "../../__fixtures__/transcriptions/mobydick_001_002_melville.json"
-import { type StorytellerTranscription } from "../getSentenceRanges"
-import { Synchronizer } from "../synchronizer"
+import transcription from "@/__fixtures__/transcriptions/mobydick_001_002_melville.json"
+import { type StorytellerTranscription } from "@/synchronize/getSentenceRanges"
+import { Synchronizer } from "@/synchronize/synchronizer"
 
 const stTranscription: StorytellerTranscription = {
   transcript: transcription.transcript,
@@ -26,7 +26,7 @@ const stTranscription: StorytellerTranscription = {
 
 void describe("Synchronizer", () => {
   void it("synchronizes an epub", async () => {
-    const epub = await Epub.from(join("src", "__fixtures__", "moby-dick.epub"))
+    using epub = await Epub.from(join("src", "__fixtures__", "moby-dick.epub"))
     const audiofiles = [
       join("src", "__fixtures__", "mp3", "mobydick_001_002_melville.mp3"),
     ]
@@ -61,6 +61,6 @@ void describe("Synchronizer", () => {
     assert.strictEqual(audio[":@"]["@_clipEnd"], "29.221s")
 
     assert.ok(manifest["audio_mobydick_001_002_melville"])
-    await epub.close()
+    epub.discardAndClose()
   })
 })

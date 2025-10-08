@@ -10,7 +10,7 @@ import { parseBlob, selectCover } from "music-metadata"
 import { useEffect, useMemo, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
-import { Epub } from "@storyteller-platform/epub"
+// import { Epub } from "@storyteller-platform/epub"
 
 import { type Collection } from "@/database/collections"
 import { useGetMaxUploadChunkSizeQuery } from "@/store/api"
@@ -35,30 +35,30 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
 
   const maxUploadChunkSize = data?.maxUploadChunkSize
 
-  const [epubUppy, setEpubUppy] = useState(() =>
-    new Uppy({
-      restrictions: {
-        maxNumberOfFiles: 1,
-        allowedFileTypes: ["application/epub+zip", ".epub"],
-      },
-    })
-      .use(Tus, {
+  const [epubUppy, setEpubUppy] = useState(
+    () =>
+      new Uppy({
+        restrictions: {
+          maxNumberOfFiles: 1,
+          allowedFileTypes: ["application/epub+zip", ".epub"],
+        },
+      }).use(Tus, {
         endpoint: tusEndpoint,
         withCredentials: true,
         ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
-      })
-      .use(BookThumbnailGenerator, {
-        thumbnailFactories: {
-          "application/epub+zip": async (file) => {
-            const arrayBuffer = await file.data.arrayBuffer()
-            const data = new Uint8Array(arrayBuffer)
-            const epub = await Epub.from(data)
-            const coverData = await epub.getCoverImage()
-            if (!coverData) return null
-            return new Blob([coverData])
-          },
-        },
       }),
+    // .use(BookThumbnailGenerator, {
+    //   thumbnailFactories: {
+    //     "application/epub+zip": async (file) => {
+    //       const arrayBuffer = await file.data.arrayBuffer()
+    //       const data = new Uint8Array(arrayBuffer)
+    //       using epub = await Epub.from(data)
+    //       const coverData = await epub.getCoverImage()
+    //       if (!coverData) return null
+    //       return new Blob([coverData])
+    //     },
+    //   },
+    // }),
   )
 
   useEffect(() => {
@@ -69,24 +69,23 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
             maxNumberOfFiles: 1,
             allowedFileTypes: ["application/epub+zip", ".epub"],
           },
-        })
-          .use(Tus, {
-            endpoint: tusEndpoint,
-            withCredentials: true,
-            ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
-          })
-          .use(BookThumbnailGenerator, {
-            thumbnailFactories: {
-              "application/epub+zip": async (file) => {
-                const arrayBuffer = await file.data.arrayBuffer()
-                const data = new Uint8Array(arrayBuffer)
-                const epub = await Epub.from(data)
-                const coverData = await epub.getCoverImage()
-                if (!coverData) return null
-                return new Blob([coverData])
-              },
-            },
-          }),
+        }).use(Tus, {
+          endpoint: tusEndpoint,
+          withCredentials: true,
+          ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
+        }),
+        // .use(BookThumbnailGenerator, {
+        //   thumbnailFactories: {
+        //     "application/epub+zip": async (file) => {
+        //       const arrayBuffer = await file.data.arrayBuffer()
+        //       const data = new Uint8Array(arrayBuffer)
+        //       using epub = await Epub.from(data)
+        //       const coverData = await epub.getCoverImage()
+        //       if (!coverData) return null
+        //       return new Blob([coverData])
+        //     },
+        //   },
+        // }),
       )
     }
   }, [isLoading, maxUploadChunkSize])
@@ -115,7 +114,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
             const coverImage = selectCover(common.picture)
             if (!coverImage) return null
 
-            return new Blob([coverImage.data])
+            return new Blob([new Uint8Array(coverImage.data)])
           },
         },
       }),
@@ -147,7 +146,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
                 const coverImage = selectCover(common.picture)
                 if (!coverImage) return null
 
-                return new Blob([coverImage.data])
+                return new Blob([new Uint8Array(coverImage.data)])
               },
             },
           }),
@@ -155,15 +154,15 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
     }
   }, [isLoading, maxUploadChunkSize])
 
-  useUppyEvent(epubUppy, "file-added", async (file) => {
-    const arrayBuffer = await file.data.arrayBuffer()
-    const data = new Uint8Array(arrayBuffer)
-    const epub = await Epub.from(data)
-    const manifest = await epub.getManifest()
-    const isAligned = Object.values(manifest).some((item) => item.mediaOverlay)
-    setIsEpubAligned(isAligned)
-    if (isAligned) audioUppy.clear()
-  })
+  // useUppyEvent(epubUppy, "file-added", async (file) => {
+  //   const arrayBuffer = await file.data.arrayBuffer()
+  //   const data = new Uint8Array(arrayBuffer)
+  //   using epub = await Epub.from(data)
+  //   const manifest = await epub.getManifest()
+  //   const isAligned = Object.values(manifest).some((item) => item.mediaOverlay)
+  //   setIsEpubAligned(isAligned)
+  //   if (isAligned) audioUppy.clear()
+  // })
 
   useUppyEvent(epubUppy, "file-removed", () => {
     setIsEpubAligned(false)

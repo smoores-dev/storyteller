@@ -122,7 +122,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
   const dispositionName = audio ? `audio cover${ext}` : `ebook cover${ext}`
 
-  return new Response(result, {
+  return new Response(new Uint8Array(result), {
     headers: {
       ...cacheHeaders,
       "Content-Disposition": contentDisposition(

@@ -28,7 +28,6 @@
         "name": "next"
       }
     ],
-    "customConditions": ["@storyteller-node"],
     "paths": {
       "@/*": ["./src/*"]
     },

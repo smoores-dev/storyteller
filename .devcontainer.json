@@ -21,7 +21,7 @@
       ]
     }
   },
-  "image": "ghcr.io/cachix/devenv:latest",
+  "image": "ghcr.io/cachix/devenv/devcontainer:latest",
   "overrideCommand": false,
   "updateContentCommand": "direnv allow\nmkdir -p ~/.local/share/nix/\necho -n '{\"extra-substituters\":{\"https://devenv.cachix.org\":true},\"extra-trusted-public-keys\":{\"devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=\":true}}' > ~/.local/share/nix/trusted-settings.json\nDIRENV_WARN_TIMEOUT=0 direnv exec ${containerWorkspaceFolder} devenv test"
 }

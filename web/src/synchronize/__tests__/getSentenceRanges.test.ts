@@ -8,20 +8,19 @@ import { promisify } from "node:util"
 
 import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
 
-import { Epub } from "@storyteller-platform/epub/node"
+import { Epub } from "@storyteller-platform/epub"
 
+import expected from "@/__fixtures__/mobydickch1_2sentenceranges.json"
+import mobyDickTranscription from "@/__fixtures__/transcriptions/mobydick_001_002_melville.json"
 import { getTrackDuration } from "@/audio"
-
-import expected from "../../__fixtures__/mobydickch1_2sentenceranges.json"
-import mobyDickTranscription from "../../__fixtures__/transcriptions/mobydick_001_002_melville.json"
 import {
   type SentenceRange,
   type StorytellerTranscription,
   getChapterDuration,
   getSentenceRanges,
   interpolateSentenceRanges,
-} from "../getSentenceRanges"
-import { tokenizeSentences } from "../nlp"
+} from "@/synchronize/getSentenceRanges"
+import { tokenizeSentences } from "@/synchronize/nlp"
 
 const exec = promisify(execCallback)
 
@@ -57,7 +56,7 @@ async function createTrack(path: string, length: number) {
 
 void describe("getSentenceRanges", () => {
   void it("accurately find sentences ranges", async () => {
-    const epub = await Epub.from(join("src", "__fixtures__", "moby-dick.epub"))
+    using epub = await Epub.from(join("src", "__fixtures__", "moby-dick.epub"))
     const spine = await epub.getSpineItems()
     const chapterOneText = await epub.readXhtmlItemContents(
       spine[1]!.id,
@@ -86,7 +85,7 @@ void describe("getSentenceRanges", () => {
     )
 
     assert.deepStrictEqual(output, expected)
-    await epub.close()
+    epub.discardAndClose()
   })
 })
 

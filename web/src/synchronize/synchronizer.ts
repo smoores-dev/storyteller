@@ -8,7 +8,7 @@ import {
   Epub,
   type ManifestItem,
   type ParsedXml,
-} from "@storyteller-platform/epub/node"
+} from "@storyteller-platform/epub"
 
 import { getTrackDuration, lookupAudioMime } from "@/audio"
 import { logger } from "@/logging"

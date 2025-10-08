@@ -58,8 +58,8 @@
                   # This is your devenv configuration
                   packages = [
                     pkgs.ffmpeg
-                    pkgs.nodejs_22
-                    (pkgs.yarn.override { nodejs = pkgs.nodejs_22; })
+                    pkgs.nodejs_24
+                    (pkgs.yarn.override { nodejs = pkgs.nodejs_24; })
                     # Order is important here — we need sqlite-interactive's
                     # sqlite3 executable to come first in the path,
                     # but we also want the development headers, which are

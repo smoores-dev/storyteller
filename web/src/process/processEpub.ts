@@ -1,4 +1,4 @@
-import { Epub } from "@storyteller-platform/epub/node"
+import { Epub } from "@storyteller-platform/epub"
 
 import { type BookWithRelations } from "@/database/books"
 

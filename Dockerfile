@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS builder
+FROM registry.gitlab.com/storyteller-platform/storyteller-base:node-24 AS builder
 
 WORKDIR /app
 
@@ -7,6 +7,7 @@ RUN wget https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
+COPY .yarn/patches ./.yarn/patches
 COPY .yarn/cache ./.yarn/cache
 
 COPY web/package.json ./web/package.json
@@ -35,7 +36,7 @@ ENV SQLITE_NATIVE_BINDING=/app/node_modules/better-sqlite3/build/Release/better_
 
 RUN yarn workspaces foreach -Rpt --from @storyteller-platform/web run build
 
-FROM registry.gitlab.com/storyteller-platform/storyteller-base:latest AS runner
+FROM registry.gitlab.com/storyteller-platform/storyteller-base:node-24 AS runner
 
 WORKDIR /app
 

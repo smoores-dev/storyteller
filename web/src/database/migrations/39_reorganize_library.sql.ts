@@ -4,7 +4,7 @@ import { dirname, extname, join } from "node:path"
 
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import { Epub } from "@storyteller-platform/epub/node"
+import { Epub } from "@storyteller-platform/epub"
 
 import * as legacyCovers from "@/assets/legacy/covers"
 import * as legacyPaths from "@/assets/legacy/paths"
@@ -262,25 +262,28 @@ export default async function migrate() {
 
         if (book.ebook) {
           const ext = extname(epubCoverName)
-          const epub = await Epub.from(book.ebook.filepath)
+          using epub = await Epub.from(book.ebook.filepath)
           const prevCoverItem = await epub.getCoverImageItem()
           await epub.setCoverImage(
             prevCoverItem?.href ?? `images/cover${ext}`,
             await readFile(newEpubCoverPath),
           )
-          await epub.close()
+          await epub.saveAndClose(book.ebook.filepath)
         }
         // @ts-expect-error This is what the table was called briefly
         if (book.alignedBook?.filepath) {
           const ext = extname(epubCoverName)
           // @ts-expect-error This is what the table was called briefly
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          const epub = await Epub.from(book.alignedBook.filepath)
+          using epub = await Epub.from(book.alignedBook.filepath)
           const prevCoverItem = await epub.getCoverImageItem()
           await epub.setCoverImage(
             prevCoverItem?.href ?? `images/cover${ext}`,
             await readFile(newEpubCoverPath),
           )
+          // @ts-expect-error This is what the table was called briefly
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          await epub.saveAndClose(book.alignedBook.filepath)
         }
       }
 

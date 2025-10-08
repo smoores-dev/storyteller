@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util"
+
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
@@ -53,6 +55,7 @@ export async function upsertPosition(
   bookUuid: UUID,
   locator: ReadiumLocator,
   timestamp: number,
+  overwriteOnEqual = false,
 ) {
   logger.debug("upsertPosition(...)")
   logger.debug({
@@ -77,7 +80,7 @@ export async function upsertPosition(
 
     const existing = await tr
       .selectFrom("position")
-      .select(["timestamp"])
+      .select(["timestamp", "locator"])
       .where("userId", "=", userId)
       .where("bookUuid", "=", bookUuid)
       .executeTakeFirst()
@@ -97,6 +100,28 @@ export async function upsertPosition(
           "Existing position is newer than incoming position, aborting",
         )
         return false
+      }
+
+      if (
+        existing.timestamp === timestamp &&
+        !isDeepStrictEqual(existing.locator, locator) &&
+        !overwriteOnEqual
+      ) {
+        logger.debug(
+          "Existing position has same timestamp as incoming position, but locator is different, aborting",
+        )
+        return false
+      }
+
+      if (
+        existing.timestamp === timestamp &&
+        isDeepStrictEqual(existing.locator, locator) &&
+        !overwriteOnEqual
+      ) {
+        logger.debug(
+          "Existing position has same timestamp as incoming, with same locator, doing nothing",
+        )
+        return true
       }
 
       await tr
@@ -131,9 +156,8 @@ export async function upsertPosition(
         .execute()
     }
     if (
-      statusUuid === toRead.uuid ||
-      (statusUuid === reading.uuid &&
-        (locator.locations?.totalProgression ?? 0) >= 0.98)
+      (statusUuid === toRead.uuid || statusUuid === reading.uuid) &&
+      (locator.locations?.totalProgression ?? 0) >= 0.98
     ) {
       logger.debug(
         'Status is "To read" or "Reading" and progression is greater than 98%, setting to "Read"',

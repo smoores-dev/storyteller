@@ -44,7 +44,9 @@ export const POST = withHasPermission<Params>("bookRead")(async (
 
   const user = request.auth.user
   try {
-    await upsertPosition(user.id, bookUuid, body.locator, body.timestamp)
+    // Maintain the legacy "overwrite on equal" behavior. Always overwrite the
+    // position, even if writing a different locator with the same timestamp.
+    await upsertPosition(user.id, bookUuid, body.locator, body.timestamp, true)
   } catch (e) {
     if (e instanceof PositionConflictError) {
       logger.debug(`Encountered conflict error, returning 409`)

@@ -32,9 +32,9 @@ import {
 } from "./paths"
 
 export async function move(source: string, destination: string) {
-  await cp(source, destination)
+  await cp(source, destination, { recursive: true })
   try {
-    await rm(source)
+    await rm(source, { recursive: true })
   } catch (e) {
     logger.error(`Failed to move file from ${source} to ${destination}`)
     logger.error(e)

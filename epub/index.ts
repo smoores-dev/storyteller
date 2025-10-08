@@ -1,18 +1,10 @@
-import {
-  ERR_DUPLICATED_NAME,
-  type Entry,
-  Uint8ArrayReader,
-  Uint8ArrayWriter,
-  ZipReader,
-  ZipWriter,
-} from "@zip.js/zip.js"
+import { PortablePath, ppath } from "@yarnpkg/fslib"
+import { DEFAULT_COMPRESSION_LEVEL, ZipFS } from "@yarnpkg/libzip"
 import { Mutex } from "async-mutex"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize from "mem"
 import { lookup } from "mime-types"
 import { nanoid } from "nanoid"
-
-import { dirname, resolve } from "@storyteller-platform/path"
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
@@ -88,40 +80,6 @@ export type ManifestItem = {
   fallback?: string | undefined
   mediaOverlay?: string | undefined
   properties?: string[] | undefined
-}
-
-class EpubEntry {
-  filename: string
-
-  private entry: Entry | null = null
-
-  private data: Uint8Array | null = null
-
-  async getData() {
-    if (this.data) return this.data
-
-    const writer = new Uint8ArrayWriter()
-    // If this.data is undefined, then this.entry must be defined.
-    // It's not clear why .getData is typed as conditional, since it
-    // seems to always be defined.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const data = await this.entry!.getData!<Uint8Array>(writer)
-    this.data = data
-    return this.data
-  }
-
-  setData(data: Uint8Array) {
-    this.data = data
-  }
-
-  constructor(entry: Entry | { filename: string; data: Uint8Array }) {
-    this.filename = entry.filename
-    if ("data" in entry) {
-      this.data = entry.data
-    } else {
-      this.entry = entry
-    }
-  }
 }
 
 export type MetadataEntry = {
@@ -216,7 +174,7 @@ export class Epub {
     stopNodes: ["*.pre", "*.script"],
     parseTagValue: false,
     updateTag(_tagName, _jPath, attrs) {
-      // There's never an attribute called "/";
+      // There's never an attribute called '/';
       // this erroneously happens sometimes when parsing
       // self-closing stop nodes with ignoreAttributes: false
       // and allowBooleanAttributes: true.
@@ -394,11 +352,7 @@ export class Epub {
     return "#text" in node
   }
 
-  private zipWriter: ZipWriter<Uint8Array>
-
-  private dataWriter: Uint8ArrayWriter
-
-  private rootfile: string | null = null
+  private rootfile: PortablePath | null = null
 
   private manifest: Record<string, ManifestItem> | null = null
 
@@ -406,13 +360,7 @@ export class Epub {
 
   private packageMutex = new Mutex()
 
-  protected constructor(
-    private entries: EpubEntry[],
-    private onClose?: () => Promise<void> | void,
-  ) {
-    this.dataWriter = new Uint8ArrayWriter()
-    this.zipWriter = new ZipWriter(this.dataWriter)
-
+  protected constructor(protected zipFs: ZipFS) {
     this.readXhtmlItemContents = memoize(
       this.readXhtmlItemContents.bind(this),
       // This isn't unnecessary, the generic here just isn't handling the
@@ -420,19 +368,6 @@ export class Epub {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       { cacheKey: ([id, as]) => `${id}:${as ?? "xhtml"}` },
     )
-  }
-
-  /**
-   * Close the Epub. Must be called before the Epub goes out
-   * of scope/is garbage collected.
-   */
-  async close() {
-    await this.onClose?.()
-    // TODO: Is it actually necessary to close the writer?
-    // It will always be empty at this point, and close will
-    // actually do more unnecessary work to produce an empty
-    // ZIP archive.
-    await this.zipWriter.close()
   }
 
   /**
@@ -455,7 +390,7 @@ export class Epub {
     }: DublinCore,
     additionalMetadata: EpubMetadata = [],
   ): Promise<Epub> {
-    const entries = []
+    const zipFs = new ZipFS()
     const encoder = new TextEncoder()
     const container = encoder.encode(`<?xml version="1.0"?>
 <container>
@@ -464,8 +399,10 @@ export class Epub {
   </rootfiles>
 </container>
 `)
-    entries.push(
-      new EpubEntry({ filename: "META-INF/container.xml", data: container }),
+    await zipFs.mkdirpPromise(ppath.join(PortablePath.root, "META-INF"))
+    await zipFs.writeFilePromise(
+      ppath.join(PortablePath.root, "META-INF", "container.xml"),
+      container,
     )
 
     const packageDocument = encoder.encode(`<?xml version="1.0"?>
@@ -478,11 +415,13 @@ export class Epub {
   </spine>
 </package>
 `)
-    entries.push(
-      new EpubEntry({ filename: "OEBPS/content.opf", data: packageDocument }),
+    await zipFs.mkdirpPromise(ppath.join(PortablePath.root, "OEBPS"))
+    await zipFs.writeFilePromise(
+      ppath.join(PortablePath.root, "OEBPS", "content.opf"),
+      packageDocument,
     )
 
-    const epub = new this(entries)
+    const epub = new this(zipFs)
     const metadata: MetadataEntry[] = [
       {
         id: "pub-id",
@@ -523,21 +462,16 @@ export class Epub {
    *        path to an EPUB file on disk, or a Uint8Array representing
    *        the data of the EPUB publication.
    */
+  // eslint-disable-next-line @typescript-eslint/require-await
   static async from(pathOrData: string | Uint8Array): Promise<Epub> {
     if (typeof pathOrData === "string") {
       throw new Error("Import from /node to construct from a file")
     }
-    const fileData = pathOrData
-    const dataReader = new Uint8ArrayReader(fileData)
-    const zipReader = new ZipReader(dataReader)
-    const zipEntries = await zipReader.getEntries()
-    const epubEntries = zipEntries.map((entry) => new EpubEntry(entry))
-    const epub = new this(epubEntries, () => zipReader.close())
+    const epub = new this(
+      // TODO: Is this cast chill?
+      new ZipFS(pathOrData as Buffer),
+    )
     return epub
-  }
-
-  private getEntry(path: string) {
-    return this.entries.find((entry) => entry.filename === path)
   }
 
   private async removeEntry(href: string) {
@@ -545,36 +479,26 @@ export class Epub {
 
     const filename = this.resolveHref(rootfile, href)
 
-    const index = this.entries.findIndex((entry) => entry.filename === filename)
-    if (index === -1) return
-    this.entries.splice(index, 1)
+    await this.zipFs.removePromise(filename)
   }
 
-  private async getFileData(path: string): Promise<Uint8Array>
-  private async getFileData(path: string, encoding: "utf-8"): Promise<string>
+  private async getFileData(path: PortablePath): Promise<Uint8Array>
   private async getFileData(
-    path: string,
+    path: PortablePath,
+    encoding: "utf-8",
+  ): Promise<string>
+  private async getFileData(
+    path: PortablePath,
     encoding?: "utf-8",
   ): Promise<string | Uint8Array> {
-    const containerEntry = this.getEntry(path)
-
-    if (!containerEntry)
-      throw new Error(
-        `Could not get file data for entry ${path}: entry not found`,
-      )
-
-    const containerContents = await containerEntry.getData()
-
-    return encoding === "utf-8"
-      ? new TextDecoder("utf-8").decode(containerContents)
-      : containerContents
+    return await this.zipFs.readFilePromise(path, encoding)
   }
 
   private async getRootfile() {
     if (this.rootfile !== null) return this.rootfile
 
     const containerString = await this.getFileData(
-      "META-INF/container.xml",
+      ppath.join(PortablePath.root, "META-INF", "container.xml"),
       "utf-8",
     )
 
@@ -607,12 +531,13 @@ export class Epub {
         node[":@"]?.["@_media-type"] === "application/oebps-package+xml",
     )
 
-    if (!rootfile?.[":@"]?.["@_full-path"])
+    const fullPath = rootfile?.[":@"]?.["@_full-path"]
+    if (!fullPath)
       throw new Error(
         "Failed to parse EPUB container.xml: Found no rootfile element",
       )
 
-    this.rootfile = rootfile[":@"]["@_full-path"]
+    this.rootfile = ppath.resolve(PortablePath.root, fullPath)
 
     return this.rootfile
   }
@@ -705,7 +630,7 @@ export class Epub {
 
       const rootfile = await this.getRootfile()
 
-      this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
+      await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
     })
   }
 
@@ -886,6 +811,36 @@ export class Epub {
       .filter((node) => !!node)
 
     return metadata
+  }
+
+  /**
+   * Retrieve the identifier from the dc:identifier element
+   * in the EPUB metadata.
+   *
+   * If there is no dc:identifier element, returns null.
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
+   */
+  async getIdentifier() {
+    const metadata = await this.getMetadata()
+    const entry = metadata.find(({ type }) => type === "dc:identifier")
+    return entry?.value ?? null
+  }
+
+  /**
+   * Set the dc:identifier metadata element with the provided string.
+   *
+   * Updates the existing dc:identifier element if one exists.
+   * Otherwise creates a new element
+   *
+   * @link https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
+   */
+  async setIdentifier(identifier: string) {
+    await this.replaceMetadata(({ type }) => type === "dc:identifier", {
+      type: "dc:identifier",
+      properties: {},
+      value: identifier,
+    })
   }
 
   /**
@@ -1969,13 +1924,9 @@ export class Epub {
   /**
    * Returns a Zip Entry path for an HREF
    */
-  private resolveHref(from: string, href: string) {
-    const startPath = dirname(from)
-    const absoluteStartPath = startPath.startsWith("/")
-      ? startPath
-      : `/${startPath}`
-
-    return resolve(absoluteStartPath, href).slice(1)
+  private resolveHref(from: PortablePath, href: string) {
+    const startPath = ppath.dirname(from)
+    return ppath.resolve(PortablePath.root, startPath, href)
   }
 
   /**
@@ -2063,27 +2014,22 @@ export class Epub {
     return Epub.getXhtmlTextContent(body)
   }
 
-  private writeEntryContents(path: string, contents: Uint8Array): void
-  private writeEntryContents(
-    path: string,
+  private async writeEntryContents(
+    path: PortablePath,
+    contents: Uint8Array,
+  ): Promise<void>
+  private async writeEntryContents(
+    path: PortablePath,
     contents: string,
     encoding: "utf-8",
-  ): void
-  private writeEntryContents(
-    path: string,
+  ): Promise<void>
+  private async writeEntryContents(
+    path: PortablePath,
     contents: Uint8Array | string,
     encoding?: "utf-8",
-  ): void {
-    const data =
-      encoding === "utf-8"
-        ? new TextEncoder().encode(contents as string)
-        : (contents as Uint8Array)
-
-    const entry = this.getEntry(path)
-
-    if (!entry) throw new Error(`Could not find file at ${path} in EPUB`)
-
-    entry.setData(data)
+  ): Promise<void> {
+    await this.zipFs.mkdirpPromise(ppath.dirname(path))
+    await this.zipFs.writeFilePromise(path, contents, encoding)
   }
 
   /**
@@ -2124,9 +2070,9 @@ export class Epub {
     memoize.clear(this.readXhtmlItemContents)
     const href = this.resolveHref(rootfile, manifestItem.href)
     if (encoding === "utf-8") {
-      this.writeEntryContents(href, contents as string, encoding)
+      await this.writeEntryContents(href, contents as string, encoding)
     } else {
-      this.writeEntryContents(href, contents as Uint8Array)
+      await this.writeEntryContents(href, contents as Uint8Array)
     }
   }
 
@@ -2229,7 +2175,9 @@ export class Epub {
           ...(item.mediaType && { "media-type": item.mediaType }),
           ...(item.fallback && { fallback: item.fallback }),
           ...(item.mediaOverlay && { "media-overlay": item.mediaOverlay }),
-          ...(item.properties && { properties: item.properties.join(" ") }),
+          ...(item.properties && {
+            properties: item.properties.join(" "),
+          }),
         }),
       )
     })
@@ -2252,7 +2200,8 @@ export class Epub {
           )
         : (contents as Uint8Array)
 
-    this.entries.push(new EpubEntry({ filename, data }))
+    await this.zipFs.mkdirpPromise(ppath.dirname(filename))
+    await this.zipFs.writeFilePromise(filename, data)
   }
 
   /**
@@ -2421,19 +2370,22 @@ export class Epub {
     })
   }
 
+  discardAndClose() {
+    this.zipFs.discardAndClose()
+    this.rootfile = null
+    this.manifest = null
+    this.spine = null
+  }
+
   /**
    * Write the current contents of the Epub to a new
    * Uint8Array.
-   *
-   * This _does not_ close the Epub. It can continue to
-   * be modified after it has been written to disk. Use
-   * `epub.close()` to close the Epub.
    *
    * When this method is called, the "dcterms:modified"
    * meta tag is automatically updated to the current UTC
    * timestamp.
    */
-  async writeToArray() {
+  async getArrayAndClose() {
     await this.replaceMetadata(
       (entry) => entry.properties["property"] === "dcterms:modified",
       {
@@ -2444,51 +2396,29 @@ export class Epub {
       },
     )
 
-    let mimetypeEntry = this.getEntry("mimetype")
-    if (!mimetypeEntry) {
-      mimetypeEntry = new EpubEntry({
-        filename: "mimetype",
-        data: new TextEncoder().encode("application/epub+zip"),
-      })
-      this.entries.push(mimetypeEntry)
-    }
-
-    const mimetypeReader = new Uint8ArrayReader(await mimetypeEntry.getData())
-    try {
-      await this.zipWriter.add(mimetypeEntry.filename, mimetypeReader, {
-        level: 0,
-        extendedTimestamp: false,
-      })
-    } catch (e) {
-      if (e instanceof Error && e.message === ERR_DUPLICATED_NAME) {
-        throw new Error(
-          `Failed to add file "${mimetypeEntry.filename}" to zip archive: ${e.message}`,
-        )
-      }
-      throw e
-    }
-
-    await Promise.all(
-      this.entries.map(async (entry) => {
-        if (entry.filename === "mimetype") return
-        const reader = new Uint8ArrayReader(await entry.getData())
-        try {
-          return await this.zipWriter.add(entry.filename, reader)
-        } catch (e) {
-          if (e instanceof Error && e.message === ERR_DUPLICATED_NAME) {
-            throw new Error(
-              `Failed to add file "${entry.filename}" to zip archive: ${e.message}`,
-            )
-          }
-          throw e
-        }
-      }),
+    // Ensure that there's a valid mimetype
+    // file
+    // @ts-expect-error There isn't an API for setting a specific
+    // compression level for a specific file, so we just set
+    // it globally before writing the mimetype file, which needs
+    // to be saved without compression
+    this.zipFs.level = 0
+    await this.zipFs.writeFilePromise(
+      ppath.join(PortablePath.root, "mimetype"),
+      "application/epub+zip",
+      "utf-8",
     )
+    // @ts-expect-error Set the compression level back to the
+    // default after writing the mimetype file
+    this.zipFs.level = DEFAULT_COMPRESSION_LEVEL
 
-    const data = await this.zipWriter.close()
-    // Reset the ZipWriter to allow further modification
-    this.dataWriter = new Uint8ArrayWriter()
-    this.zipWriter = new ZipWriter(this.dataWriter)
-    return data
+    return this.zipFs.getBufferAndClose()
+  }
+
+  [Symbol.dispose]() {
+    // @ts-expect-error internal property
+    if (this.zipFs.ready) {
+      this.discardAndClose()
+    }
   }
 }

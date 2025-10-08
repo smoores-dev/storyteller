@@ -8,8 +8,11 @@ import { Server } from "@tus/server"
 import { lookup } from "mime-types"
 import { type NextRequest } from "next/server"
 
-import { Audiobook } from "@storyteller-platform/audiobook/node"
-import { Epub } from "@storyteller-platform/epub/node"
+import {
+  Audiobook,
+  type AudiobookInputs,
+} from "@storyteller-platform/audiobook"
+import { Epub } from "@storyteller-platform/epub"
 
 import {
   getAudioCover,
@@ -107,7 +110,7 @@ const server = new Server({
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const uploadPath = upload.storage!.path
       if (isEpub) {
-        const epub = await Epub.from(uploadPath)
+        using epub = await Epub.from(uploadPath)
         const manifest = await epub.getManifest()
         const isAligned = Object.values(manifest).some(
           (item) => item.mediaOverlay,
@@ -156,7 +159,7 @@ const server = new Server({
 
         let book = await getBook(bookUuid)
 
-        const audiobook = await Audiobook.from(uploadPath)
+        using audiobook = new Audiobook(uploadPath as AudiobookInputs[0])
         if (book) {
           book = await handleAudiobookExistingBook(
             book,
@@ -173,7 +176,7 @@ const server = new Server({
             collectionUuid,
           )
         }
-        audiobook.close()
+        audiobook.discardAndClose()
 
         const audioCover = await getAudioCover(book)
         if (audioCover) {

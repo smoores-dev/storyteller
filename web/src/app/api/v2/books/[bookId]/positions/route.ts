@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server"
-
 import { withHasPermission } from "@/auth/auth"
 import { getBookUuid } from "@/database/books"
 import {
@@ -43,7 +41,7 @@ export const POST = withHasPermission<Params>("bookRead")(async (
     await upsertPosition(user.id, bookUuid, body.locator, body.timestamp)
   } catch (e) {
     if (e instanceof PositionConflictError) {
-      return NextResponse.json(
+      return Response.json(
         { message: "Position already exists with a later timestamp" },
         { status: 409 },
       )
@@ -68,7 +66,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   const position = await getPosition(user.id, bookUuid)
 
   if (!position)
-    return NextResponse.json({ message: "No position found" }, { status: 404 })
+    return Response.json({ message: "No position found" }, { status: 404 })
 
-  return NextResponse.json(position)
+  return Response.json(position)
 })

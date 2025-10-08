@@ -77,8 +77,8 @@ export function BookShelves() {
           .filter((book) => !!book)[0]!
 
         return (
-          (latestA.position?.timestamp ?? 0) -
-          (latestB.position?.timestamp ?? 0)
+          (latestB.position?.timestamp ?? 0) -
+          (latestA.position?.timestamp ?? 0)
         )
       })
   }, [books])
@@ -88,7 +88,7 @@ export function BookShelves() {
       .filter((book) => book.status?.name === "To read")
       .sort(
         (a, b) =>
-          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf(),
+          new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf(),
       )
   }, [books])
 
@@ -97,7 +97,7 @@ export function BookShelves() {
       .slice()
       .sort(
         (a, b) =>
-          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf(),
+          new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf(),
       )
   }, [books])
 
