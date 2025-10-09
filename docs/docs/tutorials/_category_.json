@@ -1,0 +1,8 @@
+{
+  "label": "Tutorials",
+  "position": 11,
+  "link": {
+    "type": "generated-index",
+    "description": "Here are some support tutorials: Basic user instructions. An introduction to Docker. Detailed instructions on GPU acceration. More to come."
+  }
+}

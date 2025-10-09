@@ -724,13 +724,20 @@ export function SettingsForm({ settings, authUrl }: Props) {
           {...form.getInputProps("smtpPassword")}
         />
         <Checkbox
-          label="SMTP - Enable SSL?"
+          label="SMTP - Force TLS?"
           className="my-4"
           description={
             <>
-              <strong>Note:</strong> Only disable SSL and self-signed cert
-              rejection if you use a locally hosted SMTP server. If you need to
-              connect over the internet, keep SSL enabled!
+              <p>
+                <strong>Note:</strong> Disabling this option does not disable
+                TLS. By default, Storyteller will use STARTTLS to negotiate a
+                TLS connection. Many SMTP servers require TLS negotiation in
+                order to establish the correct TLS version to use.
+              </p>
+              <p>
+                If you have this option enabled and see an error in your logs
+                about an incorrect TLS version, try disabling it.
+              </p>
             </>
           }
           {...form.getInputProps("smtpSsl", { type: "checkbox" })}

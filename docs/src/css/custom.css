@@ -52,3 +52,7 @@ h6,
 .navbar__title {
   font-family: "Young Serif";
 }
+
+code {
+  white-space: pre;
+}

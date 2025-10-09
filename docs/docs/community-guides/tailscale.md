@@ -1,8 +1,11 @@
-# Securely Share Your Storyteller Server with Tailscale (Non-techie friendly!)
+# Sharing with Tailscale
+
+You can securely share your Storyteller server even if you are not a tech guru
+by using Tailscale!
 
 For those of you who want to access your Storyteller server away from home — and
 maybe share with family — but want to do so safely, here are some basic
-instructions for how to do it:
+instructions for how to do it using TailScale.
 
 ## Create a Tailnet
 
@@ -68,7 +71,7 @@ will update with something like this:
 Success.
 Available within your tailnet:
 
-https://storyteller-server.lemur-dragon.ts.net/ |-- proxy
+https://storyteller-server.tail-scale.ts.net/ |-- proxy
 http://127.0.0.1:8001
 
 Serve started and running in the background. To disable the proxy, run:
@@ -81,7 +84,7 @@ You may have previously used a local IP address, such as
 `http://192.168.1.xxx:8001`, to connect to your Storyteller server in a web
 browser and the mobile apps. You should now update those URLs to the new
 Tailscale URL, which was printed as a result of the `tailscale serve` command.
-For example, `https://storyteller-server.lemur-dragon.ts.net/`.
+For example, `https://storyteller-server.tail-scale.ts.net/`.
 
 You should now be able to connect to your Storyteller server to download books
 and sync progress from any network in the world, from any device in your

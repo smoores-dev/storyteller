@@ -6,13 +6,13 @@ Storyteller v2 is finally available!
 
 Nothing! Storyteller will automatically migrate your existing library to v2, and
 you’ll have access to all of the new
-[authentication](/docs/administering#oauthoidc-configuration) and
-[library management](/docs/managing-your-library) features.
+[authentication](/docs/settings#authentication-providers) and
+[library management](/docs/managing/adding) features.
 
 ## What should I look out for?
 
-Definitely read through the [Managing your library](/docs/managing-your-library)
-docs to see what new library management features are in v2!
+Definitely read through the [Managing your library](/docs/managing/adding) docs
+to see what new library management features are in v2!
 
 ### New assets folder structure
 

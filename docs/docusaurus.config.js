@@ -93,19 +93,19 @@ const config = {
             items: [
               {
                 label: "Get started",
-                to: "/docs/intro/getting-started",
+                to: "/docs/installation/self-hosting",
               },
               {
                 label: "Administering",
-                to: "/docs/administering",
+                to: "/docs/settings",
               },
               {
                 label: "Aligning",
-                to: "/docs/aligning-books",
+                to: "/docs/managing/aligning",
               },
               {
                 label: "Reading",
-                to: "/docs/reading-your-books/storyteller-apps",
+                to: "/docs/reading/playing-readalouds",
               },
             ],
           },
@@ -118,7 +118,7 @@ const config = {
               },
               {
                 label: "Development",
-                to: "/docs/category/development",
+                to: "/docs/category/contributing",
               },
             ],
           },

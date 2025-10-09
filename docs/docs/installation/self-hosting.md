@@ -1,8 +1,10 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
-# Getting started
+# Self-hosting Storyteller
+
+---
 
 Storyteller is a _platform_ for immersive reading. We provide tools for
 creating, managing, and reading/listening to ebooks with guided narration.
@@ -18,25 +20,15 @@ aligning audiobooks and ebooks.
 **The mobile apps** provide a reading and listening experience for ebooks,
 audiobooks, and the readaloud books produced by Storyteller.
 
-As an instance administrator, you'll need to run the Storyteller alignment
-server. You and your users can connect to your instance from the mobile apps, or
-download the aligned books from the web interface.
-
-<details>
-    <summary>What does alignment mean?</summary>
-
-The process that Storyteller uses to line up the text of your ebook with the
-audio of your audiobook belongs to a category of algorithms called “forced
-alignment.” We call a book that Storyteller has processed “aligned,” and the
-process itself “alignment.”
-
-</details>
+As an instance administrator, you'll need to run the Storyteller server. You and
+your users can connect to your instance from the mobile apps, or download the
+aligned books from the web interface.
 
 :::info Minimum resources
 
 Before going further, take a moment to read the documentation on
-[minimum necessary resources](/docs/intro/resources) and make sure that you have
-a machine that will be able to run Storyteller!
+[minimum necessary resources](/docs/installation/resources) and make sure that
+you have a machine that will be able to run Storyteller!
 
 If you don't, or you'd rather not have to go through the hassle of managing your
 own server (it can be fun, really!), you can also create a Storyteller instance
@@ -53,7 +45,9 @@ started.
 
 :::
 
-## How to run the Storyteller alignment server
+---
+
+## How to run the Storyteller server
 
 The Storyteller server (also referred to as the “backend server” or the “web
 server”) is published as a Docker image on the GitLab Container Registry. You
@@ -86,13 +80,15 @@ database files and any uploaded or aligned book files will be stored in
     on the Docker documentation site](https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/).
 
     If that’s a bunch of gibberish to you, no worries! You can read through our
-    [introduction to Docker for self-hosters](/docs/intro/intro-to-docker), ask
+    [introduction to Docker for self-hosters](/docs/tutorials/docker), ask
     questions in our [Discord server](https://discord.gg/KhSvFqcrza), or, as
     a last resort, [run Storyteller on PikaPods](https://www.pikapods.com/pods?run=storyteller)
     or [ElfHosted](https://store.elfhosted.com/product/storyteller/),
     where they will do all of the hard work for you!
 
 </details>
+
+---
 
 ## Docker Compose
 
@@ -138,6 +134,8 @@ Docker. Here is a quick summary of some useful commands:
 - `docker compose logs` will display the logs for the containers. You can add
   the `-f` flag to "follow" the logs — they will stream live from the container
   until you press `Ctrl+C` to stop them.
+
+---
 
 ## Secrets
 
@@ -196,143 +194,16 @@ secrets:
     file: ./STORYTELLER_SECRET_KEY.txt
 ```
 
-## Unraid App Template
-
-If you plan on hosting Storyteller on an [Unraid](https://unraid.net) server,
-you can install Storyteller via the Community Apps Plugin. Just search for
-Storyteller and follow the instructions in the template. **Make sure to follow
-[the instructions above](#secrets) to generate a secure secret.**
-
-### Mount the app files and media files on different shares
-
-If you wish to separate your Storyteller “appdata” files from the larger media
-files, configure the volumes as follows:
-
-```
-App Data:
----------
-Container Path: /data
-Host Path: /mnt/user/appdata/storyteller
-
-Media:
-------
-Container Path: /data/assets
-Host Path: /mnt/user/media/books  # Or whatever share/path you like!
-```
-
-## GPU Acceleration
-
-The most resource-intensive part of Storyteller’s forced alignment process is
-transcription, where Storyteller uses a local or hosted AI-powered transcription
-engine to transcribe the audiobook’s contents. If you’re running Storyteller’s
-transcription locally with `whisper.cpp`, you can greatly speed up the
-transcription step by running it on a dedicated GPU, if you have one. Depending
-on your CPU and GPU, this can sometimes be a speedup of 10x or greater.
-
-### NVIDIA GPUs
-
-Storyteller can use your CUDA-enabled NVIDIA GPU to accelerate the transcription
-phase (see
-[transcription engine settings](/docs/administering#transcription-engine-settings)
-for more). In order to access your GPU from within the Docker container, you
-_must_ install the
-[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-and
-[configure docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker).
-You’ll then need to add `runtime: nvidia` to your `compose.yaml` file in the
-`web` service:
-
-```yaml
-services:
-  web:
-    image: registry.gitlab.com/storyteller-platform/storyteller:latest
-    runtime: nvidia
-    volumes:
-      - ~/Documents/Storyteller:/data:rw
-    environment:
-      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
-    ports:
-      - "8001:8001"
-    secrets:
-      - secret_key
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilites: [gpu]
-
-secrets:
-  secret_key:
-    file: ./STORYTELLER_SECRET_KEY.txt
-```
-
-### AMD GPUs
-
-Storyteller can use your ROCm-enabled AMD GPU to accelerate the transcription
-phase (see
-[transcription engine settings](/docs/administering#transcription-engine-settings)
-for more). In order to access your GPU from within the Docker container, you
-must have AMD GPU drivers installed on your host machine. You'll then need to
-pass the AMD devices through to the container in your `compose.yaml`:
-
-```yaml
-services:
-  web:
-    image: registry.gitlab.com/storyteller-platform/storyteller:latest
-    volumes:
-      - ~/Documents/Storyteller:/data:rw
-    environment:
-      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
-    ports:
-      - "8001:8001"
-    secrets:
-      - secret_key
-    devices:
-      - /dev/dri:/dev/dri
-      - /dev/kfd:/dev/kfd
-
-secrets:
-  secret_key:
-    file: ./STORYTELLER_SECRET_KEY.txt
-```
-
-#### Overriding the Radeon driver version
-
-If you have an AMD GPU that has a driver version that is unsupported by your
-Unraid AMD driver, you may be able to work around it by setting the environment
-variable `HSA_OVERRIDE_GFX_VERSION` to a supported version number. E.g. for an
-AMD Radeon RX 6700 XT, this value must be set to 10.3.0.
-
-```yaml
-services:
-  web:
-    image: registry.gitlab.com/storyteller-platform/storyteller:latest
-    volumes:
-      - ~/Documents/Storyteller:/data:rw
-    environment:
-      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
-      - HSA_OVERRIDE_GFX_VERSION=10.3.0
-    ports:
-      - "8001:8001"
-    secrets:
-      - secret_key
-    devices:
-      - /dev/dri:/dev/dri
-      - /dev/kfd:/dev/kfd
-
-secrets:
-  secret_key:
-    file: ./STORYTELLER_SECRET_KEY.txt
-```
+---
 
 ## Now what?
 
-To create your admin account and get started, head to
-[`http://localhost:8001/`](http://localhost:8001) in a browser, and continue on
-to the [administering](/docs/administering) docs!
+To create your admin account and get started, head to http://localhost:8001 in a
+browser on the server computer and continue on to the
+[settings documentation](settings.md)!
 
-Once your service is up and running, you can start
-[aligning books](/docs/aligning-books) and
-[reading them](/docs/category/reading-your-books)!
+Once your service is up and running, you can start [adding](managing/adding.md),
+[aligning](managing/aligning.md), [organizing](managing/organizing.md) and
+[reading](reading/playing-readalouds.md) all of your books and audiobooks!
+
+---
