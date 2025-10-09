@@ -1,3 +1,7 @@
+---
+sidebar_position: 113
+---
+
 # Storyteller Metadata Vocabulary
 
 ## Status of this document

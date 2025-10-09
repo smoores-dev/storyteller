@@ -220,5 +220,5 @@ database file.
 
 This is only the very basics of what is a very deep topic. But hopefully this
 gives you enough of a background to get started with running Storyteller
-yourself. Head back over to the [Getting Started](/docs/intro/getting-started)
-docs and give it a shot!
+yourself. Head back over to the
+[Getting Started](/docs/installation/self-hosting) docs and give it a shot!

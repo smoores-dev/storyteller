@@ -1,8 +1,14 @@
 ---
-sidebar_position: 1
+sidebar_position: 12
 ---
 
-# The Algorithm
+# How it works
+
+This is a deeper look at how the Storyteller system aligns audiobooks and
+ebooks. You don't need to know this in order to use Storyteller; it's just here
+for anyone interested!
+
+## The Algorithm
 
 At the core of the Storyteller system is its
 [alignment algorithm](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/web/synchronize/synchronizer.ts?ref_type=heads).
@@ -11,7 +17,7 @@ files or zip archives of audio files) and an ebook (as an epub file) and
 producing a new epub file with guided narration support. This process is known
 as forced alignment.
 
-## Background: EPUB and Media Overlays
+### Background: EPUB and Media Overlays
 
 EPUB is an open publication format for digital books. The specification can be
 found [on the w3c website](https://www.w3.org/publishing/epub3/). At its core,
@@ -39,7 +45,7 @@ The goal of the Storyteller alignment algorithm is to produce modified EPUB
 documents that include per-sentence tags that are associated with the correct
 length of audio in the provided audiobook.
 
-## Step 1: Audio pre-processing
+### Step 1: Audio pre-processing
 
 The first step of the algorithm is somewhat trivial: split chapters into
 individual audio files. Note that in this scenario, we are referring to
@@ -61,25 +67,25 @@ settings. If this is enabled, as part of this step, Storyteller will transcode
 the audio streams using the OPUS codec, which can result in dramatically reduced
 file size.
 
-## Step 2: Transcribe the audio
+### Step 2: Transcribe the audio
 
 Once we have individual tracks to work with, we begin transcription. This is the
 most resource intensive part of the process. Storyteller supports a number of
 transcription backends via
 [echogarden](https://github.com/echogarden-project/echogarden) (see the
-[transcription engine docs](/docs/administering#transcription-engine-settings)
-for more info). The transcription process is fairly standard; the only
-interesting addition to the process that Storyteller makes is to supply an
-"initial prompt" to the transcription model, outlining its task as transcribing
-an audiobook chapter and providing a list of words from the book that don't
-exist in the English dictionary as hints.
+[transcription engine docs](/docs/settings#transcription-settings) for more
+info). The transcription process is fairly standard; the only interesting
+addition to the process that Storyteller makes is to supply an "initial prompt"
+to the transcription model, outlining its task as transcribing an audiobook
+chapter and providing a list of words from the book that don't exist in the
+English dictionary as hints.
 
-## Step 3: Produce the aligned book
+### Step 3: Produce the aligned book
 
 The final step is to take the transcriptions from Whisper and actually align
 them with the text from the ebook.
 
-### Finding the chapter in the transcription
+#### Finding the chapter in the transcription
 
 The first challenge we face in the alignment system is that audiobooks are not
 1:1 audio representations of ebooks. There is often some audio-only introduction
@@ -100,7 +106,7 @@ will consider a match.
 Once we've found the transcription for a given chapter, we move on to aligning
 the individual sentences.
 
-### Marking up the sentences
+#### Marking up the sentences
 
 Earlier, we mentioned that most books don't have markup around their sentences,
 and that the Media Overlay specification requires references to specific
@@ -117,7 +123,7 @@ it's important that Storyteller doesn't break existing markup, like `strong`
 maintain this existing markup where possible. Even so, there are some edge cases
 here, and this logic is worth revisiting.
 
-### Aligning sentences
+#### Aligning sentences
 
 In order to find the actual timestamps in the transcription that map to a given
 sentence, we run a windowed search through the transcription, starting at the
@@ -135,7 +141,7 @@ To account for these gaps, after matching every sentence, we interpolate over
 the timestamps of the missing sentences. This, in theory, allows us to have a
 range for every sentence, even if some of them are only estimations.
 
-### Producing the Media Overlays
+#### Producing the Media Overlays
 
 Once we have a time range for each sentence, we produce a SMIL Media Overlay, as
 defined by the EPUB spec. This is fairly straightforward, as the overlay is

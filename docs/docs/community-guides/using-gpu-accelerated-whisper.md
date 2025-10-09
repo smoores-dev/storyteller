@@ -1,4 +1,4 @@
-# Using CoreML for hardware-accelerated transcription on macOS
+# GPU-acceleration on macOS
 
 You can compile `whisper.cpp` locally to take advantage of GPU acceleration
 avaliable on your machine. This can speed up the process of transcribing audio

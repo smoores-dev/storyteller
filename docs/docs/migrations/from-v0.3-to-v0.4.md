@@ -5,7 +5,7 @@
 All users should switch to the `latest` image tag going forward. No new versions
 will be published to the `cuda-latest` tag. You can now more easily switch your
 transcription target device with the
-[transcription engine settings](/docs/administering#transcription-engine-settings).
+[transcription engine settings](/docs/settings#transcription-settings).
 
 The way this works is that the first time the container runs a transcription job
 with a given transcription engine/build target, it will install any necessary
