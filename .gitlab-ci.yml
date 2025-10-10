@@ -236,8 +236,6 @@ publish-fs:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - yarn check:types
-    - yarn workspace @storyteller-platform/fs build
     - cd fs
     - npm install -g npm@latest
     - npm publish
@@ -292,8 +290,6 @@ publish-epub:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - yarn check:types
-    - yarn workspace @storyteller-platform/epub build
     - cd epub
     - npm install -g npm@latest
     - npm publish
@@ -348,8 +344,6 @@ publish-audiobook:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - yarn check:types
-    - yarn workspace @storyteller-platform/audiobook build
     - cd audiobook
     - npm install -g npm@latest
     - npm publish
@@ -404,8 +398,6 @@ publish-path:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - yarn check:types
-    - yarn workspace @storyteller-platform/path build
     - cd path
     - npm install -g npm@latest
     - npm publish
