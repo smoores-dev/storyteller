@@ -237,8 +237,7 @@ publish-fs:
   script:
     - yarn
     - cd fs
-    - npm install -g npm@latest
-    - npm publish
+    - yarn workspace @storyteller-platform/fs npm publish
 
 prerelease-fs:
   stage: prerelease
@@ -290,10 +289,7 @@ publish-epub:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - cd epub
-    - npm install -g npm@latest
-    - npm --version
-    - npm publish
+    - yarn workspace @storyteller-platform/epub npm publish
 
 prerelease-epub:
   stage: prerelease
@@ -346,8 +342,7 @@ publish-audiobook:
   script:
     - yarn
     - cd audiobook
-    - npm install -g npm@latest
-    - npm publish
+    - yarn workspace @storyteller-platform/audiobook npm publish
 
 prerelease-audiobook:
   stage: prerelease
@@ -400,8 +395,7 @@ publish-path:
   script:
     - yarn
     - cd path
-    - npm install -g npm@latest
-    - npm publish
+    - yarn workspace @storyteller-platform/path npm publish
 
 prerelease-path:
   stage: prerelease
