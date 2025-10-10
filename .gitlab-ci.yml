@@ -237,8 +237,6 @@ publish-fs:
   variables:
     GITLAB: "true"
   script:
-    - echo "GITLAB=$GITLAB"
-    - "[ -n $NPM_ID_TOKEN ] && echo yes || echo no"
     - yarn
     - yarn workspace @storyteller-platform/fs npm publish
 
@@ -290,6 +288,8 @@ publish-epub:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
   script:
     - yarn
     - yarn workspace @storyteller-platform/epub npm publish
@@ -342,6 +342,8 @@ publish-audiobook:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
   script:
     - yarn
     - yarn workspace @storyteller-platform/audiobook npm publish
@@ -394,6 +396,8 @@ publish-path:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
   script:
     - yarn
     - yarn workspace @storyteller-platform/path npm publish
