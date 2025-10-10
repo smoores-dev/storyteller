@@ -86,7 +86,7 @@ test-audiobook:
 
 bump-versions:
   stage: prerelease
-  image: node:22
+  image: node:24
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
@@ -118,7 +118,7 @@ bump-versions:
     - git push --tags
 
 pages:
-  image: node:22-alpine
+  image: node:24-alpine
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^docs-v?\d+\.\d+\.\d+$/'
@@ -227,16 +227,20 @@ release-web:
           url: "https://$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
 
 publish-fs:
-  image: node:22
+  image: node:24
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
   script:
     - yarn
     - yarn check:types
     - yarn workspace @storyteller-platform/fs build
-    - yarn config set npmAuthToken $NPM_PUBLISH_TOKEN
-    - yarn workspace @storyteller-platform/fs npm publish
+    - cd fs
+    - npm install -g npm@latest
+    - npm publish
 
 prerelease-fs:
   stage: prerelease
@@ -279,16 +283,20 @@ release-fs:
           url: "https://npmjs.com/package/@storyteller-platform/fs"
 
 publish-epub:
-  image: node:22
+  image: node:24
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
   script:
     - yarn
     - yarn check:types
     - yarn workspace @storyteller-platform/epub build
-    - yarn config set npmAuthToken $NPM_PUBLISH_TOKEN
-    - yarn workspace @storyteller-platform/epub npm publish
+    - cd epub
+    - npm install -g npm@latest
+    - npm publish
 
 prerelease-epub:
   stage: prerelease
@@ -331,16 +339,20 @@ release-epub:
           url: "https://npmjs.com/package/@storyteller-platform/epub"
 
 publish-audiobook:
-  image: node:22
+  image: node:24
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^audiobook-v?\d+\.\d+\.\d+/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
   script:
     - yarn
     - yarn check:types
     - yarn workspace @storyteller-platform/audiobook build
-    - yarn config set npmAuthToken $NPM_PUBLISH_TOKEN
-    - yarn workspace @storyteller-platform/audiobook npm publish
+    - cd audiobook
+    - npm install -g npm@latest
+    - npm publish
 
 prerelease-audiobook:
   stage: prerelease
@@ -383,16 +395,20 @@ release-audiobook:
           url: "https://npmjs.com/package/@storyteller-platform/audiobook"
 
 publish-path:
-  image: node:22
+  image: node:24
   stage: publish
   rules:
     - if: '$CI_COMMIT_TAG =~ /^path-v?\d+\.\d+\.\d+/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
   script:
     - yarn
     - yarn check:types
     - yarn workspace @storyteller-platform/path build
-    - yarn config set npmAuthToken $NPM_PUBLISH_TOKEN
-    - yarn workspace @storyteller-platform/path npm publish
+    - cd path
+    - npm install -g npm@latest
+    - npm publish
 
 prerelease-path:
   stage: prerelease
@@ -436,7 +452,7 @@ release-path:
 
 publish-mobile:
   stage: publish
-  image: node:22
+  image: node:24
   rules:
     - if: '$CI_COMMIT_TAG =~ /^mobile-v?\d+\.\d+\.\d+$/'
   script:
