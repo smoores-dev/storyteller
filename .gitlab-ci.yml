@@ -292,6 +292,7 @@ publish-epub:
     - yarn
     - cd epub
     - npm install -g npm@latest
+    - npm --version
     - npm publish
 
 prerelease-epub:
