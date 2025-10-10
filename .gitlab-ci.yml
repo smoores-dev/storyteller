@@ -236,7 +236,6 @@ publish-fs:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - cd fs
     - yarn workspace @storyteller-platform/fs npm publish
 
 prerelease-fs:
@@ -341,7 +340,6 @@ publish-audiobook:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - cd audiobook
     - yarn workspace @storyteller-platform/audiobook npm publish
 
 prerelease-audiobook:
@@ -394,7 +392,6 @@ publish-path:
       aud: "npm:registry.npmjs.org"
   script:
     - yarn
-    - cd path
     - yarn workspace @storyteller-platform/path npm publish
 
 prerelease-path:
