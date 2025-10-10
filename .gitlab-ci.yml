@@ -237,6 +237,8 @@ publish-fs:
   variables:
     GITLAB: "true"
   script:
+    - echo "GITLAB=$GITLAB"
+    - "[ -n $NPM_ID_TOKEN ] && echo yes || echo no"
     - yarn
     - yarn workspace @storyteller-platform/fs npm publish
 
