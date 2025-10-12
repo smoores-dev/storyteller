@@ -135,12 +135,11 @@ async function getFilepath(
           },
         ],
         readingOrder: (await audiobook.getResources()).map(
-          (resource, index) => ({
+          ({ filename, ...resource }) => ({
             ...resource,
             href: ppath.join(
               PortablePath.root,
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              audioFiles[index]! as PortablePath,
+              filename.replace(new RegExp(`^${filepath}`), "") as PortablePath,
             ),
           }),
         ),
@@ -154,7 +153,7 @@ async function getFilepath(
             ]
           : [],
         toc: (await audiobook.getChapters()).map((chapter) => ({
-          href: `${ppath.join(PortablePath.root, chapter.filename as PortablePath)}#t=${chapter.start}`,
+          href: `${ppath.join(PortablePath.root, chapter.filename.replace(new RegExp(`^${filepath}`), "") as PortablePath)}#t=${chapter.start}`,
           title: chapter.title,
         })),
       },
