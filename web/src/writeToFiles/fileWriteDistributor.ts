@@ -1,4 +1,3 @@
-import { availableParallelism } from "node:os"
 import { join } from "node:path"
 import { cwd } from "node:process"
 import { MessageChannel } from "node:worker_threads"
@@ -46,10 +45,7 @@ if (globalThis.fileWritePiscina) {
 } else {
   fileWritePiscina = new Piscina({
     filename,
-    // Try to take up "the rest" of the available cores, after
-    // subtracting half for image optimization, one for the main
-    // thread, and another for alignment
-    maxThreads: Math.max(1, availableParallelism() / 2 - 2),
+    maxThreads: 1,
     // In dev, we don't bundle packages in the worker.
     // These flags allow us to import directly from the
     // source typescript files for our own packages (e.g. @storyteller-platform/epub)
