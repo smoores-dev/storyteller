@@ -86,7 +86,7 @@ async function getFilepath(
     const epubPath = book.readaloud?.filepath ?? book.ebook?.filepath
     using epub = epubPath ? await Epub.from(epubPath) : null
 
-    using audiobook = new Audiobook(
+    using audiobook = await Audiobook.from(
       ...(audioFiles.map((audioFile) =>
         join(filepath, audioFile),
       ) as AudiobookInputs),

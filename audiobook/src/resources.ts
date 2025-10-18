@@ -1,7 +1,7 @@
 export interface AudiobookChapter {
   filename: string
   start: number | null
-  title: string
+  title: string | null
 }
 
 export interface AudiobookResource {

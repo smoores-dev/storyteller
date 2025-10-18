@@ -8,10 +8,7 @@ import { Server } from "@tus/server"
 import { lookup } from "mime-types"
 import { type NextRequest } from "next/server"
 
-import {
-  Audiobook,
-  type AudiobookInputs,
-} from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
 import {
@@ -159,7 +156,7 @@ const server = new Server({
 
         let book = await getBook(bookUuid)
 
-        using audiobook = new Audiobook(uploadPath as AudiobookInputs[0])
+        using audiobook = await Audiobook.from(uploadPath)
         if (book) {
           book = await handleAudiobookExistingBook(
             book,

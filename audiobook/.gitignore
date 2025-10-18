@@ -1,5 +1,6 @@
 dist/
 
-src/__fixtures__/__output__
+src/__fixtures__/__output__/*
+!src/__fixtures__/__output__/.keep
 
 gen/

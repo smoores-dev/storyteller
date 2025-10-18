@@ -262,7 +262,7 @@ export async function scan(
         if (bookPath.audiobook) {
           const audiobookPath = bookPath.audiobook
           const entries = await readdir(audiobookPath)
-          using audiobook = new Audiobook(
+          using audiobook = await Audiobook.from(
             ...(entries
               .filter((entry) => isAudioFile(entry))
               .map((relativePath) =>
@@ -305,7 +305,7 @@ export async function scan(
       } else if (bookPath.audiobook) {
         const audiobookPath = bookPath.audiobook
         const entries = await readdir(audiobookPath)
-        using audiobook = new Audiobook(
+        using audiobook = await Audiobook.from(
           ...(entries
             .filter((entry) => isAudioFile(entry))
             .map((relativePath) =>
@@ -416,7 +416,7 @@ export async function scan(
 
       const audiobookPath = bookPath.audiobook
       const entries = await readdir(audiobookPath)
-      using audiobook = new Audiobook(
+      using audiobook = await Audiobook.from(
         ...(entries
           .filter((entry) => isAudioFile(entry))
           .map((relativePath) =>

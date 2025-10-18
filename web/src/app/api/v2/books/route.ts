@@ -151,7 +151,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   }
 
   if (audio.length) {
-    using audiobook = new Audiobook(...(audio as AudiobookInputs))
+    using audiobook = await Audiobook.from(...(audio as AudiobookInputs))
     const audioDirectory =
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       audio.length === 1 ? dirname(audio[0]!) : longestPrefix(audio)

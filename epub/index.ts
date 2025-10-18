@@ -1,4 +1,9 @@
-import { PortablePath, ppath } from "@yarnpkg/fslib"
+import { randomUUID } from "node:crypto"
+import { rmSync } from "node:fs"
+import { cp, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+
+import { type NativePath, PortablePath, npath, ppath } from "@yarnpkg/fslib"
 import { DEFAULT_COMPRESSION_LEVEL, ZipFS } from "@yarnpkg/libzip"
 import { Mutex } from "async-mutex"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
@@ -360,7 +365,11 @@ export class Epub {
 
   private packageMutex = new Mutex()
 
-  protected constructor(protected zipFs: ZipFS) {
+  protected constructor(
+    protected zipFs: ZipFS,
+    protected zipPath: NativePath,
+    protected inputPath: string | undefined,
+  ) {
     this.readXhtmlItemContents = memoize(
       this.readXhtmlItemContents.bind(this),
       // This isn't unnecessary, the generic here just isn't handling the
@@ -378,6 +387,7 @@ export class Epub {
    * @param additionalMetadata An array of additional metadata entries
    */
   static async create(
+    path: string,
     {
       title,
       language,
@@ -390,7 +400,11 @@ export class Epub {
     }: DublinCore,
     additionalMetadata: EpubMetadata = [],
   ): Promise<Epub> {
-    const zipFs = new ZipFS()
+    const tmp = npath.join(
+      tmpdir(),
+      `storyteller-platform-epub-${randomUUID()}.epub`,
+    )
+    const zipFs = new ZipFS(npath.toPortablePath(tmp), { create: true })
     const encoder = new TextEncoder()
     const container = encoder.encode(`<?xml version="1.0"?>
 <container>
@@ -421,7 +435,7 @@ export class Epub {
       packageDocument,
     )
 
-    const epub = new this(zipFs)
+    const epub = new this(zipFs, tmp, path)
     const metadata: MetadataEntry[] = [
       {
         id: "pub-id",
@@ -464,14 +478,21 @@ export class Epub {
    */
   // eslint-disable-next-line @typescript-eslint/require-await
   static async from(pathOrData: string | Uint8Array): Promise<Epub> {
-    if (typeof pathOrData === "string") {
-      throw new Error("Import from /node to construct from a file")
-    }
-    const epub = new this(
-      // TODO: Is this cast chill?
-      new ZipFS(pathOrData as Buffer),
+    const tmp = npath.join(
+      tmpdir(),
+      `storyteller-platform-epub-${randomUUID()}.epub`,
     )
-    return epub
+    if (typeof pathOrData !== "string") {
+      await writeFile(tmp, pathOrData)
+    } else {
+      await cp(pathOrData, tmp)
+    }
+    const zipFs = new ZipFS(npath.toPortablePath(tmp))
+    return new this(
+      zipFs,
+      tmp,
+      typeof pathOrData === "string" ? pathOrData : undefined,
+    )
   }
 
   private async removeEntry(href: string) {
@@ -2375,17 +2396,22 @@ export class Epub {
     this.rootfile = null
     this.manifest = null
     this.spine = null
+
+    rmSync(this.zipPath, { recursive: true, force: true })
   }
 
   /**
    * Write the current contents of the Epub to a new
-   * Uint8Array.
+   * EPUB archive on disk.
    *
    * When this method is called, the "dcterms:modified"
    * meta tag is automatically updated to the current UTC
    * timestamp.
    */
-  async getArrayAndClose() {
+  async saveAndClose() {
+    if (!this.inputPath) {
+      throw new Error("In-memory EPUB files cannot be saved to disk")
+    }
     await this.replaceMetadata(
       (entry) => entry.properties["property"] === "dcterms:modified",
       {
@@ -2412,7 +2438,8 @@ export class Epub {
     // default after writing the mimetype file
     this.zipFs.level = DEFAULT_COMPRESSION_LEVEL
 
-    return this.zipFs.getBufferAndClose()
+    this.zipFs.saveAndClose()
+    await cp(this.zipPath, this.inputPath, { force: true })
   }
 
   [Symbol.dispose]() {

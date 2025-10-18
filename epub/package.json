@@ -8,12 +8,7 @@
   "exports": {
     ".": {
       "types": "./node.ts",
-      "browser": "./index.ts",
-      "default": "./node.ts"
-    },
-    "./node": {
-      "types": "./node.ts",
-      "default": "./node.ts"
+      "default": "./index.ts"
     }
   },
   "files": [
@@ -58,14 +53,12 @@
     "access": "public",
     "exports": {
       "import": {
-        "types": "./dist/node.d.ts",
-        "default": "./dist/node.js",
-        "browser": "./dist/index.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/node.d.cts",
-        "default": "./dist/node.cjs",
-        "browser": "./dist/index.cjs"
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
     }
   }

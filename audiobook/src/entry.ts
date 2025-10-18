@@ -1,337 +1,161 @@
 import {
-  type AttachedImage,
-  BufferTarget,
-  Conversion,
-  FLAC,
-  FlacOutputFormat,
-  type Input,
-  MP3,
-  MP4,
-  type MetadataTags,
-  Mp3OutputFormat,
-  Mp4OutputFormat,
-  OGG,
-  OggOutputFormat,
-  Output,
-  type OutputFormat,
-  WAVE,
-  WavOutputFormat,
-} from "mediabunny"
-
+  type AttachedPic,
+  type TrackInfo,
+  getTrackMetadata,
+  writeTrackMetadata,
+} from "./ffmpeg.ts"
+import { lookupAudioMime } from "./mime.ts"
 import { type AudiobookChapter, type AudiobookResource } from "./resources.ts"
-import { getWriteTags, readTagMap } from "./tagMaps.ts"
 
 export interface Uint8ArrayEntry {
   filename: string
   data: Uint8Array
 }
 
-function splitNames(names: string): string[] {
+function splitNames(names: string | undefined): string[] {
+  if (!names) return []
   return names.split(/[;,/]/).map((name) => name.trim())
 }
 
-export abstract class AudiobookEntry {
-  public abstract filename: string
-  private metadataTags: MetadataTags | null = null
-  private duration: number | null = null
-  public abstract getChapters(): Promise<AudiobookChapter[]>
+export class AudiobookEntry {
+  private info: TrackInfo | null = null
 
-  abstract getInput(): Promise<Input> | Input
-  abstract saveAndClose(): Promise<void>
+  constructor(public filename: string) {}
 
-  async getMetadataTags(): Promise<MetadataTags> {
-    if (this.metadataTags) return this.metadataTags
-
-    const input = await this.getInput()
-    this.metadataTags = await input.getMetadataTags()
-    return this.metadataTags
+  async getInfo(): Promise<TrackInfo> {
+    this.info ??= await getTrackMetadata(this.filename)
+    return this.info
   }
 
-  async getOutputFormat(): Promise<OutputFormat | null> {
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
-    switch (inputFormat) {
-      case MP3: {
-        return new Mp3OutputFormat()
-      }
-      case MP4: {
-        return new Mp4OutputFormat()
-      }
-      case WAVE: {
-        return new WavOutputFormat()
-      }
-      case OGG: {
-        return new OggOutputFormat()
-      }
-      case FLAC: {
-        return new FlacOutputFormat()
-      }
-    }
-    return null
+  async getMetadataTags(): Promise<TrackInfo["tags"]> {
+    const info = await this.getInfo()
+    return info.tags
   }
 
   async getTitle(): Promise<string | null> {
     const tags = await this.getMetadataTags()
-    if (!tags.raw) return null
-    for (const tag of readTagMap.title) {
-      if (typeof tags.raw[tag] === "string") {
-        return tags.raw[tag]
-      }
-    }
-    return null
-  }
-
-  async getTrackTitle(): Promise<string | null> {
-    const tags = await this.getMetadataTags()
-    if (!tags.raw) return null
-    for (const tag of readTagMap.trackTitle) {
-      if (typeof tags.raw[tag] === "string") {
-        return tags.raw[tag]
-      }
-    }
-    return null
+    return tags.album ?? tags.title ?? null
   }
 
   async setTitle(title: string): Promise<void> {
     const tags = await this.getMetadataTags()
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
+    tags.album = title
+  }
 
-    const writeTags = getWriteTags(inputFormat, "title")
+  async getTrackTitle(): Promise<string | null> {
+    const tags = await this.getMetadataTags()
+    return tags.title ?? null
+  }
 
-    tags.raw ??= {}
-    for (const tag of writeTags) {
-      tags.raw[tag] = title
-    }
+  async setTrackTitle(trackTitle: string): Promise<void> {
+    const tags = await this.getMetadataTags()
+    tags.title = trackTitle
   }
 
   async getSubtitle(): Promise<string | null> {
     const tags = await this.getMetadataTags()
-    if (!tags.raw) return null
-    for (const subtitleTag of readTagMap.subtitle) {
-      if (typeof tags.raw[subtitleTag] === "string") {
-        return tags.raw[subtitleTag]
-      }
-    }
-    return null
+    return tags.subtitle ?? null
   }
 
   async setSubtitle(subtitle: string): Promise<void> {
     const tags = await this.getMetadataTags()
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
-
-    const writeTags = getWriteTags(inputFormat, "subtitle")
-
-    tags.raw ??= {}
-    for (const tag of writeTags) {
-      tags.raw[tag] = subtitle
-    }
+    tags.subtitle = subtitle
   }
 
   async getDescription(): Promise<string | null> {
     const tags = await this.getMetadataTags()
-    if (!tags.raw) return null
-    for (const tag of readTagMap.description) {
-      if (typeof tags.raw[tag] === "string") {
-        return tags.raw[tag]
-      }
-    }
-    return null
+    return tags.description ?? tags.comment ?? null
   }
 
   async setDescription(description: string): Promise<void> {
     const tags = await this.getMetadataTags()
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
-
-    const writeTags = getWriteTags(inputFormat, "description")
-
-    tags.raw ??= {}
-    for (const tag of writeTags) {
-      tags.raw[tag] = description
-    }
+    tags.description = description
+    tags.comment = description
   }
 
   async getAuthors(): Promise<string[]> {
     const tags = await this.getMetadataTags()
-    if (!tags.raw) return []
-    for (const tag of readTagMap.authors) {
-      if (typeof tags.raw[tag] === "string") {
-        return splitNames(tags.raw[tag])
-      }
-    }
-    return []
+    return splitNames(tags.albumArtist ?? tags.artist)
   }
 
   async setAuthors(authors: string[]): Promise<void> {
     const tags = await this.getMetadataTags()
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
-
-    const writeTags = getWriteTags(inputFormat, "authors")
-
-    tags.raw ??= {}
-    for (const tag of writeTags) {
-      tags.raw[tag] = authors.join(";")
-    }
+    tags.artist = authors.join(";")
+    tags.albumArtist = authors.join(";")
   }
 
   async getNarrators(): Promise<string[]> {
     const tags = await this.getMetadataTags()
-    if (!tags.raw) return []
-    for (const tag of readTagMap.narrators) {
-      if (typeof tags.raw[tag] === "string") {
-        return splitNames(tags.raw[tag])
-      }
-    }
-    return []
+    return splitNames(tags.composer ?? tags.performer)
   }
 
   async setNarrators(narrators: string[]): Promise<void> {
     const tags = await this.getMetadataTags()
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
-
-    const writeTags = getWriteTags(inputFormat, "narrators")
-
-    tags.raw ??= {}
-    for (const tag of writeTags) {
-      tags.raw[tag] = narrators.join(";")
-    }
+    tags.composer = narrators.join(";")
+    tags.performer = narrators.join(";")
   }
 
-  async getCoverArt(): Promise<AttachedImage | null> {
-    const tags = await this.getMetadataTags()
+  async getCoverArt(): Promise<AttachedPic | null> {
+    const info = await this.getInfo()
 
-    return tags.images?.find((image) => image.kind === "coverFront") ?? null
+    return info.attachedPic || null
   }
 
-  async setCoverArt(picture: AttachedImage): Promise<void> {
-    const tags = await this.getMetadataTags()
-    const images = tags.images ?? []
-    const frontCover = images.find((image) => image.kind === "coverFront")
-    if (frontCover) {
-      Object.assign(frontCover, picture)
-    } else {
-      images.push(picture)
-    }
-    tags.images = images
+  async setCoverArt(picture: AttachedPic): Promise<void> {
+    const info = await this.getInfo()
+    info.attachedPic = picture
   }
 
   async getPublisher(): Promise<string | null> {
     const tags = await this.getMetadataTags()
-    if (!tags.raw) return null
-    for (const tag of readTagMap.publisher) {
-      if (typeof tags.raw[tag] === "string") {
-        return tags.raw[tag]
-      }
-    }
-    return null
+    return tags.publisher ?? null
   }
 
   async setPublisher(publisher: string): Promise<void> {
     const tags = await this.getMetadataTags()
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
-
-    const writeTags = getWriteTags(inputFormat, "publisher")
-
-    tags.raw ??= {}
-    for (const tag of writeTags) {
-      tags.raw[tag] = publisher
-    }
+    tags.publisher = publisher
   }
 
   async getReleaseDate(): Promise<Date | null> {
     const tags = await this.getMetadataTags()
-    if (!tags.raw) return null
-    for (const tag of readTagMap.releaseDate) {
-      if (typeof tags.raw[tag] === "string") {
-        return new Date(tags.raw[tag])
-      }
-    }
-    return null
+    return tags.date ? new Date(tags.date) : null
   }
 
   async setReleaseDate(date: Date): Promise<void> {
     const tags = await this.getMetadataTags()
-    const input = await this.getInput()
-    const inputFormat = await input.getFormat()
-
-    const writeTags = getWriteTags(inputFormat, "releaseDate")
-
-    tags.raw ??= {}
-    for (const tag of writeTags) {
-      tags.raw[tag] =
-        `${date.getDate().toString().padStart(2, "0")}-${date.getMonth().toString().padStart(2, "0")}-${date.getFullYear()}`
-    }
+    tags.date = `${date.getDate().toString().padStart(2, "0")}-${date.getMonth().toString().padStart(2, "0")}-${date.getFullYear()}`
   }
 
   async getDuration(): Promise<number> {
-    const input = await this.getInput()
-    this.duration ??= await input.computeDuration()
-    return this.duration
+    const info = await this.getInfo()
+    return info.duration
   }
 
   async getResource(): Promise<AudiobookResource> {
-    const input = await this.getInput()
-    this.duration ??= await input.computeDuration()
+    const duration = await this.getDuration()
     const title = (await this.getTrackTitle()) ?? null
-    const type = await input.getMimeType()
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const type = lookupAudioMime(this.filename)!
     return {
       filename: this.filename,
       title,
       type,
-      duration: this.duration,
+      duration,
       bitrate: null,
     }
   }
 
-  async getArrayAndClose(): Promise<Uint8ArrayEntry> {
-    const input = await this.getInput()
-    const outputFormat = await this.getOutputFormat()
-    if (!outputFormat) {
-      const inputFormat = await input.getFormat()
-      throw new Error(
-        `Failed to save Audiobook entry: could not find valid output format for input with format ${inputFormat.name}`,
-      )
-    }
-
-    const output = new Output({
-      format: outputFormat,
-      target: new BufferTarget(),
-    })
-
-    const tags = await this.getMetadataTags()
-
-    const conversion = await Conversion.init({
-      input,
-      output,
-      tags: {
-        // Since we only write raw metadata tags, we
-        // only copy those into the output. Otherwise
-        // the unchanged parsed metadata tags will overwrite
-        // our changes to raw!
-        raw: tags.raw ?? {},
-        images: tags.images ?? [],
-      },
-      showWarnings: false,
-    })
-
-    if (!conversion.isValid) {
-      throw new Error(
-        conversion.discardedTracks.map((track) => track.reason).join(";"),
-      )
-    }
-
-    await conversion.execute()
-    input.dispose()
-
-    return {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      data: new Uint8Array(output.target.buffer!),
+  async getChapters(): Promise<AudiobookChapter[]> {
+    const info = await this.getInfo()
+    return info.chapters.map((chapter) => ({
       filename: this.filename,
-    }
+      title: chapter.title ?? null,
+      start: chapter.startTime,
+    }))
+  }
+
+  async saveAndClose(): Promise<void> {
+    const info = await this.getInfo()
+    await writeTrackMetadata(this.filename, info.tags, info.attachedPic)
   }
 }

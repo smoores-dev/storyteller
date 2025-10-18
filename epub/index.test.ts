@@ -1,5 +1,5 @@
 import assert from "node:assert"
-import { stat } from "node:fs/promises"
+import { cp, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 
@@ -11,7 +11,7 @@ import {
   type ParsedXml,
   type XmlElement,
   type XmlTextNode,
-} from "./node.js"
+} from "./index.js"
 
 void describe("xhtml parsing", () => {
   void it("can handle self-closing stop nodes", () => {
@@ -26,21 +26,22 @@ void describe("xhtml parsing", () => {
 
 void describe("Epub", () => {
   void it("can be created from scratch", async () => {
-    using epub = await Epub.create({
+    const outputPath = join("__fixtures__", "__output__", "created.epub")
+    using epub = await Epub.create(outputPath, {
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
     })
     const title = await epub.getTitle()
     assert.equal(title, "Title")
-    const outputPath = join("__fixtures__", "__output__", "created.epub")
-    await epub.saveAndClose(outputPath)
+    await epub.saveAndClose()
     const info = await stat(outputPath)
     assert.ok(info.isFile())
   })
 
   void it("strips leading and trailing whitespace from metadata values", async () => {
-    using epub = await Epub.create({
+    const outputPath = join("__fixtures__", "__output__", "strip.epub")
+    using epub = await Epub.create(outputPath, {
       title: "\n  Title\n",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -50,7 +51,8 @@ void describe("Epub", () => {
   })
 
   void it("collapses internal whitespace from metadata values", async () => {
-    using epub = await Epub.create({
+    const outputPath = join("__fixtures__", "__output__", "collapse.epub")
+    using epub = await Epub.create(outputPath, {
       title: "Test  \tTitle",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -174,7 +176,6 @@ void describe("Epub", () => {
 
   void it("can write the epub to a file", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    using epub = await Epub.from(inputFilepath)
 
     const outputFilepath = join(
       "__fixtures__",
@@ -182,19 +183,25 @@ void describe("Epub", () => {
       "moby-dick-write-to-file.epub",
     )
 
-    await epub.saveAndClose(outputFilepath)
+    await cp(inputFilepath, outputFilepath, { force: true })
+
+    using epub = await Epub.from(outputFilepath)
+    await epub.saveAndClose()
     const info = await stat(outputFilepath)
     assert.ok(info.isFile())
   })
 
   void it("writes the last modified time correctly", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    using epub = await Epub.from(inputFilepath)
+    const outputFilepath = join("__fixtures__", "__output__", "moby-dick.epub")
+    await cp(inputFilepath, outputFilepath, { force: true })
+
+    using epub = await Epub.from(outputFilepath)
 
     const startTime = new Date()
     startTime.setMilliseconds(0)
-    const updatedData = await epub.getArrayAndClose()
-    const updatedEpub = await Epub.from(updatedData)
+    await epub.saveAndClose()
+    using updatedEpub = await Epub.from(outputFilepath)
     const endTime = new Date()
     endTime.setMilliseconds(1000) // Round up to next second
 
@@ -216,7 +223,9 @@ void describe("Epub", () => {
 
   void it("can modify an xhtml item", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
-    using epub = await Epub.from(inputFilepath)
+    const outputFilepath = join("__fixtures__", "__output__", "moby-dick.epub")
+    await cp(inputFilepath, outputFilepath, { force: true })
+    using epub = await Epub.from(outputFilepath)
 
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readXhtmlItemContents(spineItems[0]!.id)
@@ -233,13 +242,7 @@ void describe("Epub", () => {
     ;(Epub.getXmlChildren(title)[0] as XmlTextNode)["#text"] = "Test title"
     await epub.writeXhtmlItemContents(spineItems[0]!.id, coverPageData)
 
-    const outputFilepath = join(
-      "__fixtures__",
-      "__output__",
-      "moby-dick-modify-xhtml-item.epub",
-    )
-
-    await epub.saveAndClose(outputFilepath)
+    await epub.saveAndClose()
 
     const updatedEpub = await Epub.from(outputFilepath)
 
@@ -266,8 +269,11 @@ void describe("Epub", () => {
   })
 
   void it("can add a new manifest item", async () => {
-    const filepath = join("__fixtures__", "moby-dick.epub")
-    using epub = await Epub.from(filepath)
+    const inputFilepath = join("__fixtures__", "moby-dick.epub")
+    const outputFilepath = join("__fixtures__", "__output__", "moby-dick.epub")
+    await cp(inputFilepath, outputFilepath, { force: true })
+    using epub = await Epub.from(outputFilepath)
+
     const newItem = {
       id: "testitem",
       href: "testitem.xhtml",
@@ -305,7 +311,8 @@ void describe("Epub", () => {
   })
 
   void it("can remove a creator", async () => {
-    using epub = await Epub.create({
+    const outputPath = join("__fixtures__", "__output__", "removeCreator.epub")
+    using epub = await Epub.create(outputPath, {
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -335,7 +342,12 @@ void describe("Epub", () => {
   })
 
   void it("can remove the first creator", async () => {
-    using epub = await Epub.create({
+    const outputPath = join(
+      "__fixtures__",
+      "__output__",
+      "removeFirstCreator.epub",
+    )
+    using epub = await Epub.create(outputPath, {
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -365,7 +377,13 @@ void describe("Epub", () => {
   })
 
   void it("can remove the first collection", async () => {
+    const outputPath = join(
+      "__fixtures__",
+      "__output__",
+      "removeCollection.epub",
+    )
     using epub = await Epub.create(
+      outputPath,
       {
         title: "Title",
         language: new Intl.Locale("en-US"),
@@ -401,7 +419,12 @@ void describe("Epub", () => {
   })
 
   void it("can handle simultaneous package document updates", async () => {
-    using epub = await Epub.create({
+    const outputPath = join(
+      "__fixtures__",
+      "__output__",
+      "parallelUpdates.epub",
+    )
+    using epub = await Epub.create(outputPath, {
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",
@@ -419,7 +442,8 @@ void describe("Epub", () => {
   })
 
   void it("can set various title types", async () => {
-    using epub = await Epub.create({
+    const outputPath = join("__fixtures__", "__output__", "titleTypes.epub")
+    using epub = await Epub.create(outputPath, {
       title: "Title",
       language: new Intl.Locale("en-US"),
       identifier: "1",

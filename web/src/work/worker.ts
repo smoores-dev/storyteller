@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
 import { basename, dirname } from "node:path"
 import { type MessagePort } from "node:worker_threads"
 
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { type RecognitionResult } from "echogarden"
 import { extension } from "mime-types"
+
+import { Epub } from "@storyteller-platform/epub"
 
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
 import { deleteProcessed, getProcessedAudioFiles } from "@/assets/fs"
@@ -31,7 +33,7 @@ import {
 import { type Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { getTranscriptions, processAudiobook } from "@/process/processAudio"
-import { getFullText, readEpub } from "@/process/processEpub"
+import { getFullText } from "@/process/processEpub"
 import { getInitialPrompt } from "@/process/prompt"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { installWhisper, transcribeTrack } from "@/transcribe"
@@ -207,7 +209,8 @@ export default async function processBook({
 
       if (stage === "TRANSCRIBE_CHAPTERS") {
         logger.info("Transcribing...")
-        using epub = await readEpub(book)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        using epub = await Epub.from(book.ebook!.filepath)
         const title = await epub.getTitle()
         book = await getBookOrThrow(bookUuid)
 
@@ -226,7 +229,14 @@ export default async function processBook({
       }
 
       if (stage === "SYNC_CHAPTERS") {
-        using epub = await readEpub(book)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const readaloudFilepath = book.readaloud!.filepath!
+        const readaloudDirectory = dirname(readaloudFilepath)
+        await mkdir(readaloudDirectory, { recursive: true })
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        await cp(book.ebook!.filepath, readaloudFilepath, { force: true })
+
+        using epub = await Epub.from(readaloudFilepath)
         const audioFiles = await getProcessedAudioFiles(book)
         book = await getBookOrThrow(bookUuid)
         const transcriptions = await getTranscriptions(book)
@@ -304,11 +314,7 @@ export default async function processBook({
           `Successfully wrote metadata to file (title: ${await epub.getTitle(true)})`,
         )
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const readaloudFilepath = book.readaloud!.filepath!
-        const readaloudDirectory = dirname(readaloudFilepath)
-        await mkdir(readaloudDirectory, { recursive: true })
-        await epub.saveAndClose(readaloudFilepath)
+        await epub.saveAndClose()
       }
     } catch (e) {
       logger.error(

@@ -52,7 +52,7 @@ export default async function writeMetadataToFiles({
     try {
       using epub = await Epub.from(book.ebook.filepath)
       await writeMetadataToEpub(book, epub, { textCover })
-      await epub.saveAndClose(book.ebook.filepath)
+      await epub.saveAndClose()
       logger.info("Epub saved")
     } catch (e) {
       logger.error(
@@ -73,7 +73,7 @@ export default async function writeMetadataToFiles({
     try {
       using epub = await Epub.from(book.readaloud.filepath)
       await writeMetadataToEpub(book, epub, { textCover, audioCover })
-      await epub.saveAndClose(book.readaloud.filepath)
+      await epub.saveAndClose()
       logger.info("Readaloud saved")
     } catch (e) {
       logger.error(

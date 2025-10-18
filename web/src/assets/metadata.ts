@@ -491,6 +491,61 @@ export async function writeMetadataToEpub(
   )
 }
 
+function compareArray(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false
+  }
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false
+    }
+  }
+
+  return true
+}
+
+async function compareAudiobookToMetadata(
+  audiobook: Audiobook,
+  book: BookWithRelations,
+  coverPath: string | null,
+) {
+  if (coverPath) {
+    const newCoverArt = await getAttachedImageFromPath(coverPath)
+    const coverArt = await audiobook.getCoverArt()
+    if (!coverArt || !compareArray(newCoverArt.data, coverArt.data)) {
+      return false
+    }
+  }
+  const authors = await audiobook.getAuthors()
+  if (
+    authors.length !== book.authors.length ||
+    !book.authors.every((author) => authors.includes(author.name))
+  ) {
+    return false
+  }
+  const narrators = await audiobook.getNarrators()
+  if (
+    narrators.length !== book.narrators.length ||
+    !book.narrators.every((narrator) => narrators.includes(narrator.name))
+  ) {
+    return false
+  }
+  const title = await audiobook.getTitle()
+  if (title !== book.title) {
+    return false
+  }
+  const subtitle = await audiobook.getSubtitle()
+  if (subtitle !== book.subtitle) {
+    return false
+  }
+  const description = await audiobook.getDescription()
+  if (description !== book.description) {
+    return false
+  }
+  return true
+}
+
 export async function writeMetadataToAudiobook(
   book: BookWithRelations,
   cover?: File,
@@ -512,61 +567,63 @@ export async function writeMetadataToAudiobook(
     coverPath = join(book.audiobook.filepath, `Audio Cover${ext}`)
   }
 
-  let audiobook: Audiobook | null = null
-
   try {
-    audiobook = new Audiobook(...(tracks as AudiobookInputs))
-    if (coverPath) {
-      await audiobook.setCoverArt(await getAttachedImageFromPath(coverPath))
+    using audiobook = await Audiobook.from(...(tracks as AudiobookInputs))
+    if (!(await compareAudiobookToMetadata(audiobook, book, coverPath))) {
+      if (coverPath) {
+        await audiobook.setCoverArt(await getAttachedImageFromPath(coverPath))
+      }
+      await audiobook.setAuthors(book.authors.map((author) => author.name))
+      await audiobook.setNarrators(
+        book.narrators.map((narrator) => narrator.name),
+      )
+      await audiobook.setTitle(book.title)
+      if (book.subtitle) {
+        await audiobook.setSubtitle(book.subtitle)
+      }
+      if (book.description) {
+        await audiobook.setDescription(book.description)
+      }
+      await audiobook.saveAndClose()
     }
-    await audiobook.setAuthors(book.authors.map((author) => author.name))
-    await audiobook.setNarrators(
-      book.narrators.map((narrator) => narrator.name),
-    )
-    await audiobook.setTitle(book.title)
-    if (book.subtitle) {
-      await audiobook.setSubtitle(book.subtitle)
-    }
-    if (book.description) {
-      await audiobook.setDescription(book.description)
-    }
-    await audiobook.saveAndClose()
   } catch (e) {
     logger.error(
       `Failed to write metadata to audiobook ${book.title} ${book.suffix}, skipping`,
     )
     logger.error(e)
-    audiobook?.discardAndClose()
   }
-
-  let processedAudiobook: Audiobook | null = null
 
   try {
     const processedTracks = (await getProcessedAudioFiles(book)).map((track) =>
       join(getProcessedAudioFilepath(book), track),
     )
-    processedAudiobook = new Audiobook(...(processedTracks as AudiobookInputs))
-    if (coverPath) {
-      await processedAudiobook.setCoverArt(
-        await getAttachedImageFromPath(coverPath),
+    using processedAudiobook = await Audiobook.from(
+      ...(processedTracks as AudiobookInputs),
+    )
+    if (
+      !(await compareAudiobookToMetadata(processedAudiobook, book, coverPath))
+    ) {
+      if (coverPath) {
+        await processedAudiobook.setCoverArt(
+          await getAttachedImageFromPath(coverPath),
+        )
+      }
+      await processedAudiobook.setAuthors(
+        book.authors.map((author) => author.name),
       )
+      await processedAudiobook.setNarrators(
+        book.narrators.map((narrator) => narrator.name),
+      )
+      await processedAudiobook.setTitle(book.title)
+      if (book.subtitle) {
+        await processedAudiobook.setSubtitle(book.subtitle)
+      }
+      if (book.description) {
+        await processedAudiobook.setDescription(book.description)
+      }
+      await processedAudiobook.saveAndClose()
     }
-    await processedAudiobook.setAuthors(
-      book.authors.map((author) => author.name),
-    )
-    await processedAudiobook.setNarrators(
-      book.narrators.map((narrator) => narrator.name),
-    )
-    await processedAudiobook.setTitle(book.title)
-    if (book.subtitle) {
-      await processedAudiobook.setSubtitle(book.subtitle)
-    }
-    if (book.description) {
-      await processedAudiobook.setDescription(book.description)
-    }
-    await processedAudiobook.saveAndClose()
   } catch {
     // We might not have any processed audio files yet, which is fine
-    processedAudiobook?.discardAndClose()
   }
 }

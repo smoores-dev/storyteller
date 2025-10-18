@@ -1,23 +1,24 @@
-import { readFile } from "node:fs/promises"
+import { randomUUID } from "node:crypto"
+import { createReadStream, createWriteStream } from "node:fs"
+import { mkdir, readFile, readdir } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { pipeline } from "node:stream/promises"
 
-import { type PortablePath } from "@yarnpkg/fslib"
+import { PortablePath, ppath } from "@yarnpkg/fslib"
 import { ZipFS } from "@yarnpkg/libzip"
-import { type AttachedImage } from "mediabunny"
 import { lookup } from "mime-types"
 
-import { basename, extname } from "@storyteller-platform/path"
+import { basename, dirname, extname, join } from "@storyteller-platform/path"
 
-import { BufferEntry } from "./bufferEntry.ts"
-import { type AudiobookEntry, type Uint8ArrayEntry } from "./entry.ts"
-import { FileEntry } from "./fileEntry.ts"
+import { AudiobookEntry } from "./entry.ts"
+import { type AttachedPic } from "./ffmpeg.ts"
 import { type AudiobookChapter, type AudiobookResource } from "./resources.ts"
-import { ZipFSEntry } from "./zipFsEntry.ts"
 
 export interface AudiobookMetadata {
   title?: string | null
   subtitle?: string | null
   description?: string | null
-  coverArt?: AttachedImage | null
+  coverArt?: AttachedPic | null
   chapters?: AudiobookChapter[] | null
   resources?: AudiobookResource[] | null
   authors?: string[] | null
@@ -56,65 +57,61 @@ const AUDIO_FILE_EXTENSIONS = [
   ...WEBM_FILE_EXTENSIONS,
 ] as const
 
-export type AudiobookInputs =
-  | [`${string}.zip`]
-  | [`${string}.audiobook`]
-  | [
-      `${string}${(typeof AUDIO_FILE_EXTENSIONS)[number]}`,
-      ...`${string}${(typeof AUDIO_FILE_EXTENSIONS)[number]}`[],
-    ]
-  | [Uint8ArrayEntry, ...Uint8ArrayEntry[]]
+export type AudiobookInputs = [string, ...string[]]
 
 export class Audiobook {
   protected metadata: AudiobookMetadata = {}
   private inputs: AudiobookInputs
-  private entries: AudiobookEntry[]
+  private entries: AudiobookEntry[] = []
+  private tmpDir: string | undefined = undefined
+  private isZip: boolean
 
-  constructor(...inputs: AudiobookInputs) {
+  private constructor(...inputs: AudiobookInputs) {
     this.inputs = inputs
-    this.entries = this.getEntries()
-  }
 
-  private isZip() {
     const [first] = this.inputs
-    return (
+    this.isZip =
       typeof first === "string" &&
       (extname(first) === ".zip" || extname(first) === ".audiobook")
-    )
   }
 
-  private isFiles() {
-    const [first] = this.inputs
-    return typeof first === "string" && !this.isZip()
+  static async from(...inputs: AudiobookInputs) {
+    const audiobook = new Audiobook(...inputs)
+    audiobook.entries = await audiobook.getEntries()
+    return audiobook
   }
 
-  private isInMemory() {
-    const [first] = this.inputs
-    return typeof first !== "string"
-  }
-
-  private getEntries() {
-    if (this.isZip()) {
+  private async getEntries() {
+    if (this.isZip) {
       const [first] = this.inputs
+      const tmpDir = join(
+        tmpdir(),
+        `storyteller-platform-audiobook-${randomUUID()}`,
+      )
+      this.tmpDir = tmpDir
+      await mkdir(this.tmpDir, { recursive: true })
       const zipFs = new ZipFS(first as PortablePath)
       const entries = zipFs.getAllFiles()
+      for (const entry of entries) {
+        await mkdir(join(this.tmpDir, dirname(entry)), { recursive: true })
+        await pipeline(
+          zipFs.createReadStream(entry),
+          createWriteStream(join(this.tmpDir, entry)),
+        )
+      }
+      zipFs.discardAndClose()
       return entries
         .filter((entry) =>
           AUDIO_FILE_EXTENSIONS.includes(
             extname(entry) as (typeof AUDIO_FILE_EXTENSIONS)[number],
           ),
         )
-        .map((entry) => new ZipFSEntry(zipFs, entry))
-    }
-    if (this.isFiles()) {
-      return this.inputs.map((input) => new FileEntry(input as PortablePath))
-    }
-    if (this.isInMemory()) {
+        .map((entry) => new AudiobookEntry(join(tmpDir, entry)))
+    } else {
       return this.inputs.map(
-        (input) => new BufferEntry(input as Uint8ArrayEntry),
+        (input) => new AudiobookEntry(input as PortablePath),
       )
     }
-    return []
   }
 
   protected async getFirstValue<T>(
@@ -202,14 +199,14 @@ export class Audiobook {
     await this.setValue((entry) => entry.setNarrators(narrators))
   }
 
-  async getCoverArt(): Promise<AttachedImage | null> {
+  async getCoverArt(): Promise<AttachedPic | null> {
     this.metadata.coverArt ??= await this.getFirstValue((entry) =>
       entry.getCoverArt(),
     )
     return this.metadata.coverArt
   }
 
-  async setCoverArt(picture: AttachedImage): Promise<void> {
+  async setCoverArt(picture: AttachedPic): Promise<void> {
     this.metadata.coverArt = picture
 
     await this.setValue((entry) => entry.setCoverArt(picture))
@@ -292,54 +289,37 @@ export class Audiobook {
     return resources
   }
 
-  async getArraysAndClose() {
-    const output: Uint8ArrayEntry[] = []
-    for (const entry of this.entries) {
-      output.push(await entry.getArrayAndClose())
-    }
-
-    if (this.isZip()) {
-      const zipFs = (this.entries[0] as ZipFSEntry).zipFs
-      zipFs.discardAndClose()
-    }
-
-    return output
-  }
-
   async saveAndClose() {
-    if (this.isZip()) {
-      for (const entry of this.entries) {
-        await entry.saveAndClose()
+    for (const entry of this.entries) {
+      await entry.saveAndClose()
+    }
+
+    if (this.isZip) {
+      const [first] = this.inputs
+      const zipFs = new ZipFS(first as PortablePath)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const tmpDir = this.tmpDir!
+      const entries = await readdir(tmpDir, { recursive: true })
+      for (const entry of entries) {
+        await zipFs.mkdirPromise(
+          ppath.join(PortablePath.root, dirname(entry) as PortablePath),
+          { recursive: true },
+        )
+        await pipeline(
+          createReadStream(join(tmpDir, entry)),
+          zipFs.createWriteStream(
+            ppath.join(PortablePath.root, entry as PortablePath),
+          ),
+        )
       }
 
-      const zipFs = (this.entries[0] as ZipFSEntry).zipFs
       zipFs.saveAndClose()
       return
-    }
-
-    if (this.isFiles()) {
-      for (const entry of this.entries) {
-        await entry.saveAndClose()
-      }
-    }
-
-    if (this.isInMemory()) {
-      throw new Error(
-        `Cannot save in-memory Audiobooks. Use audiobook.getArraysAndClose() to access the updated array.`,
-      )
     }
   }
 
   discardAndClose() {
-    if (this.isZip()) {
-      const zipFs = (this.entries[0] as ZipFSEntry).zipFs
-      // @ts-expect-error internal property
-      if (zipFs.ready) {
-        zipFs.discardAndClose()
-      }
-    }
-
-    this.inputs = [".mp3"]
+    this.inputs = [""]
     this.entries = []
   }
 
@@ -350,9 +330,9 @@ export class Audiobook {
 
 export async function getAttachedImageFromPath(
   path: string,
-  kind: AttachedImage["kind"] = "coverFront",
+  kind: AttachedPic["kind"] = "coverFront",
   description?: string,
-): Promise<AttachedImage> {
+): Promise<AttachedPic> {
   const data = await readFile(path)
   const name = basename(path)
   const mimeType = lookup(path) || ""
