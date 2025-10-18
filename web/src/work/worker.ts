@@ -218,8 +218,8 @@ export default async function processBook({
       }
 
       if (stage === "SYNC_CHAPTERS") {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const readaloudFilepath = book.readaloud!.filepath!
+        const settings = await getSettings()
+        const readaloudFilepath = getProcessedAudioFilepath(book, settings)
         const readaloudDirectory = dirname(readaloudFilepath)
         await mkdir(readaloudDirectory, { recursive: true })
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -254,11 +254,9 @@ export default async function processBook({
           { encoding: "utf-8" },
         )
 
-        const settings = await getSettings()
-
         book = await updateBook(null, {
           readaloud: {
-            filepath: getReadaloudFilepath(book, settings),
+            filepath: readaloudFilepath,
             status: "ALIGNED",
             currentStage: stage,
             stageProgress: 1,
