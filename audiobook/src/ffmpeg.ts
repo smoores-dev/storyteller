@@ -82,7 +82,7 @@ type FfprobeStreamOutput =
         still_image: 0
         multilayer: 0
       }
-      tags: {
+      tags?: {
         encoder: string
       }
     }
@@ -117,7 +117,7 @@ type FfprobeStreamOutput =
         still_image: 0
         multilayer: 0
       }
-      tags: {
+      tags?: {
         title: string
         comment: string
       }
@@ -220,15 +220,10 @@ export async function getTrackMetadata(path: string) {
     > => !!stream.disposition.attached_pic,
   )
   const attachedPic: AttachedPic | undefined = attachedPicStream && {
-    name: attachedPicStream.tags.title,
+    name: attachedPicStream.tags?.title,
     mimeType: lookup(attachedPicStream.codec_name),
-    kind:
-      attachedPicStream.tags.comment === "Cover (front)"
-        ? ("coverFront" as const)
-        : attachedPicStream.tags.comment === "Cover (back)"
-          ? ("coverBack" as const)
-          : ("unknown" as const),
-    description: attachedPicStream.tags.comment,
+    kind: "coverFront",
+    description: attachedPicStream.tags?.comment,
     data: await execCmdBuffer("ffmpeg", [
       "-nostdin",
       "-i",
