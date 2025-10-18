@@ -276,7 +276,8 @@ export async function writeTrackMetadata(
   metadata: TrackInfo["tags"],
   attachedPic: AttachedPic | undefined,
 ) {
-  const metadataArgs = []
+  const args: string[] = []
+  const metadataArgs: string[] = []
 
   if (metadata.title) {
     metadataArgs.push(`-metadata title="${escapeQuotes(metadata.title)}"`)
@@ -339,8 +340,9 @@ export async function writeTrackMetadata(
       // Write cover art to temporary file
       await writeFile(picPath, attachedPic.data)
 
-      metadataArgs.push(`-i ${quotePath(picPath)}`)
-      metadataArgs.push(`-disposition:v:0 attached_pic`)
+      args.push(`-i ${quotePath(picPath)}`)
+      args.push(`-map 0:a -map 1:v`)
+      args.push(`-disposition:v:0 attached_pic`)
       if (attachedPic.name) {
         metadataArgs.push(
           `-metadata:s:v title="${escapeQuotes(attachedPic.name)}"`,
@@ -353,7 +355,9 @@ export async function writeTrackMetadata(
       }
     }
 
-    const cmd = `ffmpeg -i ${quotePath(path)} ${metadataArgs.join(" ")} -codec copy "${tmpPath}"`
+    args.push(...metadataArgs)
+
+    const cmd = `ffmpeg -i ${quotePath(path)} ${args.join(" ")} -codec copy "${tmpPath}"`
 
     await execCmd(cmd)
     await cp(tmpPath, path, { force: true })
