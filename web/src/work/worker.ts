@@ -219,7 +219,7 @@ export default async function processBook({
 
       if (stage === "SYNC_CHAPTERS") {
         const settings = await getSettings()
-        const readaloudFilepath = getProcessedAudioFilepath(book, settings)
+        const readaloudFilepath = getReadaloudFilepath(book, settings)
         const readaloudDirectory = dirname(readaloudFilepath)
         await mkdir(readaloudDirectory, { recursive: true })
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
