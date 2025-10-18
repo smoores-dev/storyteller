@@ -339,6 +339,7 @@ export async function writeTrackMetadata(
       // Write cover art to temporary file
       await writeFile(picPath, attachedPic.data)
 
+      metadataArgs.push(`-i ${quotePath(picPath)}`)
       metadataArgs.push(`-disposition:v:0 attached_pic`)
       if (attachedPic.name) {
         metadataArgs.push(
@@ -352,7 +353,7 @@ export async function writeTrackMetadata(
       }
     }
 
-    const cmd = `ffmpeg -i "${path}" ${metadataArgs.join(" ")} -codec copy "${tmpPath}"`
+    const cmd = `ffmpeg -i ${quotePath(path)} ${metadataArgs.join(" ")} -codec copy "${tmpPath}"`
 
     await execCmd(cmd)
     await cp(tmpPath, path, { force: true })
