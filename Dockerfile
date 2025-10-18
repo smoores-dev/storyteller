@@ -7,7 +7,6 @@ RUN wget https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
 
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
-COPY .yarn/patches ./.yarn/patches
 COPY .yarn/cache ./.yarn/cache
 
 COPY web/package.json ./web/package.json
