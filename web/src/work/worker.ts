@@ -33,8 +33,6 @@ import {
 import { type Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { getTranscriptions, processAudiobook } from "@/process/processAudio"
-import { getFullText } from "@/process/processEpub"
-import { getInitialPrompt } from "@/process/prompt"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { installWhisper, transcribeTrack } from "@/transcribe"
 import { type UUID } from "@/uuid"
@@ -42,7 +40,6 @@ import { getCurrentVersion } from "@/versions"
 
 export async function transcribeBook(
   book: Book,
-  initialPrompt: string | null,
   locale: Intl.Locale,
   settings: Settings,
   onProgress?: (progress: number) => void,
@@ -90,7 +87,6 @@ export async function transcribeBook(
         } catch (_) {
           const transcription = await transcribeTrack(
             filepath,
-            initialPrompt,
             locale,
             settings,
           )
@@ -211,21 +207,14 @@ export default async function processBook({
         logger.info("Transcribing...")
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         using epub = await Epub.from(book.ebook!.filepath)
-        const title = await epub.getTitle()
         book = await getBookOrThrow(bookUuid)
 
         const locale = book.language
           ? new Intl.Locale(book.language)
           : (await epub.getLanguage()) ?? new Intl.Locale("en-US")
 
-        const fullText = await getFullText(epub)
-        const initialPrompt =
-          locale.language === "en"
-            ? await getInitialPrompt(title ?? "", fullText)
-            : null
-
         const settings = await getSettings()
-        await transcribeBook(book, initialPrompt, locale, settings, onProgress)
+        await transcribeBook(book, locale, settings, onProgress)
       }
 
       if (stage === "SYNC_CHAPTERS") {
