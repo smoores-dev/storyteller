@@ -2,9 +2,6 @@ FROM registry.gitlab.com/storyteller-platform/storyteller-base:main AS builder
 
 WORKDIR /app
 
-# Download word list
-RUN wget https://raw.githubusercontent.com/dwyl/english-words/master/words.txt
-
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
 COPY .yarn/cache ./.yarn/cache
@@ -73,8 +70,6 @@ ENV STORYTELLER_WORKER=worker.cjs
 ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.cjs
 
 WORKDIR /app/.next/standalone/web
-
-COPY --from=builder /app/words.txt ./words.txt
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 

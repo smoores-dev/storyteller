@@ -170,7 +170,6 @@ function getWhisperCppModelId(
 
 export async function transcribeTrack(
   trackPath: string,
-  initialPrompt: string | null,
   locale: Intl.Locale,
   settings: Settings,
 ): Promise<Pick<RecognitionResult, "transcript" | "wordTimeline">> {
@@ -186,7 +185,6 @@ export async function transcribeTrack(
       engine: "whisper.cpp",
       language: locale.language,
       whisperCpp: {
-        ...(initialPrompt && { prompt: initialPrompt }),
         enableFlashAttention: true,
         model: getWhisperCppModelId(
           locale.language,
@@ -280,7 +278,6 @@ export async function transcribeTrack(
       engine: "openai-cloud",
       language: locale.language,
       openAICloud: {
-        ...(initialPrompt && { prompt: initialPrompt }),
         apiKey: settings.openAiApiKey,
         ...(settings.openAiOrganization && {
           organization: settings.openAiOrganization,
