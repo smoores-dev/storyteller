@@ -9554,7 +9554,6 @@ __metadata:
     "@yarnpkg/fslib": "npm:^3.1.3"
     "@yarnpkg/libzip": "npm:^3.2.2"
     markdown-toc: "npm:^1.2.0"
-    mediabunny: "patch:mediabunny@patch%3Amediabunny@patch%253Amediabunny@patch%25253Amediabunny@npm%2525253A1.23.0%252523~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%25253A%25253Aversion=1.23.0&hash=867d2d%2523~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch%253A%253Aversion=1.23.0&hash=805969%23~/.yarn/patches/mediabunny-patch-382d8f9a70.patch%3A%3Aversion=1.23.0&hash=ec3ddb#~/.yarn/patches/mediabunny-patch-2eb74f8402.patch"
     mime-types: "npm:^3.0.1"
     music-metadata: "npm:^11.9.0"
     remark-toc: "npm:^9.0.0"
@@ -10671,29 +10670,6 @@ __metadata:
   dependencies:
     "@types/ms": "npm:*"
   checksum: 10c0/5dcd465edbb5a7f226e9a5efd1f399c6172407ef5840686b73e3608ce135eeca54ae8037dcd9f16bdb2768ac74925b820a8b9ecc588a58ca09eca6acabe33e2f
-  languageName: node
-  linkType: hard
-
-"@types/dom-mediacapture-transform@npm:^0.1.11":
-  version: 0.1.11
-  resolution: "@types/dom-mediacapture-transform@npm:0.1.11"
-  dependencies:
-    "@types/dom-webcodecs": "npm:*"
-  checksum: 10c0/19c76d54cf31aa2a925011fc5f973dff9a10bdecfdf2285e5e568e61850a0fa2b8c9f1807a1462cbefd57ec26d32eeaa9c359117aca9d9fe7f0d6f2fff33f51e
-  languageName: node
-  linkType: hard
-
-"@types/dom-webcodecs@npm:*":
-  version: 0.1.16
-  resolution: "@types/dom-webcodecs@npm:0.1.16"
-  checksum: 10c0/f0ce7fa808b27a4db0a724f35953621d4b898e1367fbf81a0f9d3fee7f616f29804563fec5af92e4c5303ae0ff9827828d3b1b480a1334ebeb53052e8ce6d782
-  languageName: node
-  linkType: hard
-
-"@types/dom-webcodecs@npm:0.1.13":
-  version: 0.1.13
-  resolution: "@types/dom-webcodecs@npm:0.1.13"
-  checksum: 10c0/16683fd0330fdfbb867affec1c18fd493d88433a4ec66257579adc5d07b07e9492268b4401e9017b7388b13750722365b0392b375e39c84e74f564d5b4f634a4
   languageName: node
   linkType: hard
 
@@ -23350,56 +23326,6 @@ __metadata:
   version: 1.1.0
   resolution: "media-typer@npm:1.1.0"
   checksum: 10c0/7b4baa40b25964bb90e2121ee489ec38642127e48d0cc2b6baa442688d3fde6262bfdca86d6bbf6ba708784afcac168c06840c71facac70e390f5f759ac121b9
-  languageName: node
-  linkType: hard
-
-"mediabunny@npm:1.23.0":
-  version: 1.23.0
-  resolution: "mediabunny@npm:1.23.0"
-  dependencies:
-    "@types/dom-mediacapture-transform": "npm:^0.1.11"
-    "@types/dom-webcodecs": "npm:0.1.13"
-  checksum: 10c0/91a399a3a438c3d9019b85613f3992a220946897bab91e3f44988ffd4c5f48a6791e16d0db6feb0b2cc7072d5665c636f5bfd6c78ddc4d75bc7cbaf8e87d97d7
-  languageName: node
-  linkType: hard
-
-"mediabunny@patch:mediabunny@npm%3A1.23.0#~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch::version=1.23.0&hash=867d2d":
-  version: 1.23.0
-  resolution: "mediabunny@patch:mediabunny@npm%3A1.23.0#~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch::version=1.23.0&hash=867d2d"
-  dependencies:
-    "@types/dom-mediacapture-transform": "npm:^0.1.11"
-    "@types/dom-webcodecs": "npm:0.1.13"
-  checksum: 10c0/5ae00c0565fee32e56a72037ee8988ace733e2dd8b0775851be2ca7c2e5de3f8317571845e9906f502c8be5368d20b2a0a18666376eb06f5887729ef99df0a16
-  languageName: node
-  linkType: hard
-
-"mediabunny@patch:mediabunny@patch%3Amediabunny@npm%253A1.23.0%23~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%3A%3Aversion=1.23.0&hash=867d2d#~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch::version=1.23.0&hash=805969":
-  version: 1.23.0
-  resolution: "mediabunny@patch:mediabunny@patch%3Amediabunny@npm%253A1.23.0%23~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%3A%3Aversion=1.23.0&hash=867d2d#~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch::version=1.23.0&hash=805969"
-  dependencies:
-    "@types/dom-mediacapture-transform": "npm:^0.1.11"
-    "@types/dom-webcodecs": "npm:0.1.13"
-  checksum: 10c0/c5031418841389fe47c87b6fca64db64d59abc90a9ca3d059889fb52b53be3d03fd73677bf0088d416e4936aaf001361c1bd8ea7efefc3f144f1c2a3f42bbfa1
-  languageName: node
-  linkType: hard
-
-"mediabunny@patch:mediabunny@patch%3Amediabunny@patch%253Amediabunny@npm%25253A1.23.0%2523~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%253A%253Aversion=1.23.0&hash=867d2d%23~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch%3A%3Aversion=1.23.0&hash=805969#~/.yarn/patches/mediabunny-patch-382d8f9a70.patch::version=1.23.0&hash=ec3ddb":
-  version: 1.23.0
-  resolution: "mediabunny@patch:mediabunny@patch%3Amediabunny@patch%253Amediabunny@npm%25253A1.23.0%2523~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%253A%253Aversion=1.23.0&hash=867d2d%23~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch%3A%3Aversion=1.23.0&hash=805969#~/.yarn/patches/mediabunny-patch-382d8f9a70.patch::version=1.23.0&hash=ec3ddb"
-  dependencies:
-    "@types/dom-mediacapture-transform": "npm:^0.1.11"
-    "@types/dom-webcodecs": "npm:0.1.13"
-  checksum: 10c0/e05ea597762d7b0aa0495f0d73abebe47a55e73c6969ecfac8c105933b5f449e5b6876783ef4e7bf6dd95a00a905ca6ba46e4425e52661219b47f6bb50607bc8
-  languageName: node
-  linkType: hard
-
-"mediabunny@patch:mediabunny@patch%3Amediabunny@patch%253Amediabunny@patch%25253Amediabunny@npm%2525253A1.23.0%252523~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%25253A%25253Aversion=1.23.0&hash=867d2d%2523~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch%253A%253Aversion=1.23.0&hash=805969%23~/.yarn/patches/mediabunny-patch-382d8f9a70.patch%3A%3Aversion=1.23.0&hash=ec3ddb#~/.yarn/patches/mediabunny-patch-2eb74f8402.patch":
-  version: 1.23.0
-  resolution: "mediabunny@patch:mediabunny@patch%3Amediabunny@patch%253Amediabunny@patch%25253Amediabunny@npm%2525253A1.23.0%252523~/.yarn/patches/mediabunny-npm-1.23.0-0de4529523.patch%25253A%25253Aversion=1.23.0&hash=867d2d%2523~/.yarn/patches/mediabunny-patch-3a001ea5e1.patch%253A%253Aversion=1.23.0&hash=805969%23~/.yarn/patches/mediabunny-patch-382d8f9a70.patch%3A%3Aversion=1.23.0&hash=ec3ddb#~/.yarn/patches/mediabunny-patch-2eb74f8402.patch::version=1.23.0&hash=f7ca6d"
-  dependencies:
-    "@types/dom-mediacapture-transform": "npm:^0.1.11"
-    "@types/dom-webcodecs": "npm:0.1.13"
-  checksum: 10c0/1326b5a32c013db7b351f3a1ba1f8cff2536c1abe6cca380b828a730b96b031e56429f283627ed6cfe985d2e463d5197ad0e01d5ea5ed974bc31bbf87832d4b8
   languageName: node
   linkType: hard
 

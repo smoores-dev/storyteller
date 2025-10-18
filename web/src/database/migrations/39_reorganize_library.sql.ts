@@ -268,7 +268,7 @@ export default async function migrate() {
             prevCoverItem?.href ?? `images/cover${ext}`,
             await readFile(newEpubCoverPath),
           )
-          await epub.saveAndClose(book.ebook.filepath)
+          await epub.saveAndClose()
         }
         // @ts-expect-error This is what the table was called briefly
         if (book.alignedBook?.filepath) {

@@ -220,91 +220,112 @@ To get started with developing in the Storyteller monorepo, check out the
 ## Epub
 
 Defined in:
-[epub/node.ts:31](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/node.ts#L31)
+[epub/index.ts:164](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L164)
 
-### Extends
+A single EPUB instance.
 
-- `Epub`
+The entire EPUB contents will be read into memory.
+
+Example usage:
+
+```ts
+import {
+  Epub,
+  getBody,
+  findByName,
+  textContent,
+} from "@storyteller-platform/epub"
+
+const epub = await Epub.from("./path/to/book.epub")
+const title = await epub.getTitle()
+const spineItems = await epub.getSpineItems()
+const chptOne = spineItems[0]
+const chptOneXml = await epub.readXhtmlItemContents(chptOne.id)
+
+const body = getBody(chptOneXml)
+const h1 = Epub.findXmlChildByName("h1", body)
+const headingText = textContent(h1)
+
+await epub.setTitle(headingText)
+await epub.writeToFile("./path/to/updated.epub")
+await epub.close()
+```
+
+### Link
+
+https://www.w3.org/TR/epub-33/
 
 ### Constructors
 
 #### Constructor
 
-> `protected` **new Epub**(`zipFs`): [`Epub`](#epub)
+> `protected` **new Epub**(`zipFs`, `zipPath`, `inputPath`): [`Epub`](#epub)
 
 Defined in:
-[epub/index.ts:363](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L363)
+[epub/index.ts:368](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L368)
 
 ##### Parameters
 
-| Parameter | Type    |
-| --------- | ------- |
-| `zipFs`   | `ZipFS` |
+| Parameter   | Type                    |
+| ----------- | ----------------------- |
+| `zipFs`     | `ZipFS`                 |
+| `zipPath`   | `NativePath`            |
+| `inputPath` | `undefined` \| `string` |
 
 ##### Returns
 
 [`Epub`](#epub)
 
-##### Inherited from
-
-`BaseEpub.constructor`
-
 ### Properties
+
+#### inputPath
+
+> `protected` **inputPath**: `undefined` \| `string`
+
+Defined in:
+[epub/index.ts:371](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L371)
 
 #### zipFs
 
 > `protected` **zipFs**: `ZipFS`
 
 Defined in:
-[epub/index.ts:363](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L363)
+[epub/index.ts:369](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L369)
 
-##### Inherited from
+#### zipPath
 
-`BaseEpub.zipFs`
+> `protected` **zipPath**: `NativePath`
+
+Defined in:
+[epub/index.ts:370](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L370)
 
 #### xhtmlBuilder
 
 > `static` **xhtmlBuilder**: `XMLBuilder`
 
 Defined in:
-[epub/index.ts:199](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L199)
-
-##### Inherited from
-
-`BaseEpub.xhtmlBuilder`
+[epub/index.ts:204](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L204)
 
 #### xhtmlParser
 
 > `static` **xhtmlParser**: `XMLParser`
 
 Defined in:
-[epub/index.ts:167](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L167)
-
-##### Inherited from
-
-`BaseEpub.xhtmlParser`
+[epub/index.ts:172](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L172)
 
 #### xmlBuilder
 
 > `static` **xmlBuilder**: `XMLBuilder`
 
 Defined in:
-[epub/index.ts:192](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L192)
-
-##### Inherited from
-
-`BaseEpub.xmlBuilder`
+[epub/index.ts:197](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L197)
 
 #### xmlParser
 
 > `static` **xmlParser**: `XMLParser`
 
 Defined in:
-[epub/index.ts:160](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L160)
-
-##### Inherited from
-
-`BaseEpub.xmlParser`
+[epub/index.ts:165](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L165)
 
 ### Methods
 
@@ -313,22 +334,18 @@ Defined in:
 > **\[dispose\]**(): `void`
 
 Defined in:
-[epub/index.ts:2418](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2418)
+[epub/index.ts:2445](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2445)
 
 ##### Returns
 
 `void`
-
-##### Inherited from
-
-`BaseEpub.[dispose]`
 
 #### addCollection()
 
 > **addCollection**(`collection`, `index?`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1473](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1473)
+[epub/index.ts:1494](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1494)
 
 Add a collection to the EPUB metadata.
 
@@ -346,16 +363,12 @@ collections. Otherwise, it will be added to the end of the list.
 
 `Promise`\<`void`\>
 
-##### Inherited from
-
-`BaseEpub.addCollection`
-
 #### addContributor()
 
 > **addContributor**(`contributor`, `index?`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1815](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1815)
+[epub/index.ts:1836](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1836)
 
 Add a contributor to the EPUB metadata.
 
@@ -380,16 +393,12 @@ This is a convenience method for
 
 https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
-##### Inherited from
-
-`BaseEpub.addContributor`
-
 #### addCreator()
 
 > **addCreator**(`creator`, `index?`, `type?`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1660](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1660)
+[epub/index.ts:1681](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1681)
 
 Add a creator to the EPUB metadata.
 
@@ -412,10 +421,6 @@ creators. Otherwise, it will be added to the end of the list.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
-##### Inherited from
-
-`BaseEpub.addCreator`
-
 #### addManifestItem()
 
 ##### Call Signature
@@ -423,7 +428,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2142](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2142)
+[epub/index.ts:2163](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2163)
 
 Create a new manifest item and write its contents to a new entry.
 
@@ -447,16 +452,12 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
 https://www.w3.org/TR/epub-33/#sec-contentdocs
 
-###### Inherited from
-
-`BaseEpub.addManifestItem`
-
 ##### Call Signature
 
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2147](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2147)
+[epub/index.ts:2168](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2168)
 
 Create a new manifest item and write its contents to a new entry.
 
@@ -480,16 +481,12 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
 https://www.w3.org/TR/epub-33/#sec-contentdocs
 
-###### Inherited from
-
-`BaseEpub.addManifestItem`
-
 ##### Call Signature
 
 > **addManifestItem**(`item`, `contents`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2152](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2152)
+[epub/index.ts:2173](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2173)
 
 Create a new manifest item and write its contents to a new entry.
 
@@ -512,16 +509,12 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
 https://www.w3.org/TR/epub-33/#sec-contentdocs
 
-###### Inherited from
-
-`BaseEpub.addManifestItem`
-
 #### addMetadata()
 
 > **addMetadata**(`entry`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2264](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2264)
+[epub/index.ts:2285](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2285)
 
 Add a new metadata entry to the Epub.
 
@@ -543,16 +536,12 @@ useful semantic representations of metadata, use specific methods such as
 
 https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
-##### Inherited from
-
-`BaseEpub.addMetadata`
-
 #### addSpineItem()
 
 > **addSpineItem**(`manifestId`, `index?`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1869](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1869)
+[epub/index.ts:1890](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1890)
 
 Add an item to the spine of the EPUB.
 
@@ -577,16 +566,12 @@ throw an error.
 
 https://www.w3.org/TR/epub-33/#sec-spine-elem
 
-##### Inherited from
-
-`BaseEpub.addSpineItem`
-
 #### addSubject()
 
 > **addSubject**(`subject`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1006](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1006)
+[epub/index.ts:1027](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1027)
 
 Add a subject to the EPUB metadata.
 
@@ -604,10 +589,6 @@ Add a subject to the EPUB metadata.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 
-##### Inherited from
-
-`BaseEpub.addSubject`
-
 #### createXhtmlDocument()
 
 > **createXhtmlDocument**(`body`, `head?`, `language?`):
@@ -615,7 +596,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 > [`XmlElement`](#xmlelement)\<`"?xml"`\>)[]\>
 
 Defined in:
-[epub/index.ts:1970](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1970)
+[epub/index.ts:1991](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1991)
 
 Create a new XHTML document with the given body and head.
 
@@ -632,31 +613,23 @@ Create a new XHTML document with the given body and head.
 `Promise`\<([`XmlElement`](#xmlelement)\<`"html"`\> \|
 [`XmlElement`](#xmlelement)\<`"?xml"`\>)[]\>
 
-##### Inherited from
-
-`BaseEpub.createXhtmlDocument`
-
 #### discardAndClose()
 
 > **discardAndClose**(): `void`
 
 Defined in:
-[epub/index.ts:2373](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2373)
+[epub/index.ts:2394](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2394)
 
 ##### Returns
 
 `void`
-
-##### Inherited from
-
-`BaseEpub.discardAndClose`
 
 #### findAllMetadataItems()
 
 > **findAllMetadataItems**(`predicate`): `Promise`\<`object`[]\>
 
 Defined in:
-[epub/index.ts:729](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L729)
+[epub/index.ts:750](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L750)
 
 Returns the item in the metadata element's children array that matches the
 provided predicate.
@@ -670,10 +643,6 @@ provided predicate.
 ##### Returns
 
 `Promise`\<`object`[]\>
-
-##### Inherited from
-
-`BaseEpub.findAllMetadataItems`
 
 #### findMetadataItem()
 
@@ -700,7 +669,7 @@ provided predicate.
 > \}\>
 
 Defined in:
-[epub/index.ts:720](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L720)
+[epub/index.ts:741](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L741)
 
 Returns the item in the metadata element's children array that matches the
 provided predicate.
@@ -734,36 +703,12 @@ provided predicate.
 `` `Y${string}` `` \| `` `Z${string}` `` \| `` `?${string}` ``; `value`:
 `undefined` \| `string`; \}\>
 
-##### Inherited from
-
-`BaseEpub.findMetadataItem`
-
-#### getArrayAndClose()
-
-> **getArrayAndClose**(): `Promise`\<`Buffer`\<`ArrayBufferLike`\>\>
-
-Defined in:
-[epub/index.ts:2388](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2388)
-
-Write the current contents of the Epub to a new Uint8Array.
-
-When this method is called, the "dcterms:modified" meta tag is automatically
-updated to the current UTC timestamp.
-
-##### Returns
-
-`Promise`\<`Buffer`\<`ArrayBufferLike`\>\>
-
-##### Inherited from
-
-`BaseEpub.getArrayAndClose`
-
 #### getCollections()
 
 > **getCollections**(): `Promise`\<[`Collection`](#collection)[]\>
 
 Defined in:
-[epub/index.ts:1433](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1433)
+[epub/index.ts:1454](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1454)
 
 Retrieve the list of collections.
 
@@ -771,16 +716,12 @@ Retrieve the list of collections.
 
 `Promise`\<[`Collection`](#collection)[]\>
 
-##### Inherited from
-
-`BaseEpub.getCollections`
-
 #### getContributors()
 
 > **getContributors**(): `Promise`\<[`DcCreator`](#dccreator)[]\>
 
 Defined in:
-[epub/index.ts:1647](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1647)
+[epub/index.ts:1668](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1668)
 
 Retrieve the list of contributors.
 
@@ -794,16 +735,12 @@ This is a convenience method for `epub.getCreators('contributor')`.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dccontributor
 
-##### Inherited from
-
-`BaseEpub.getContributors`
-
 #### getCoverImage()
 
 > **getCoverImage**(): `Promise`\<`null` \| `Uint8Array`\<`ArrayBufferLike`\>\>
 
 Defined in:
-[epub/index.ts:909](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L909)
+[epub/index.ts:930](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L930)
 
 Retrieve the cover image data as a byte array.
 
@@ -818,17 +755,13 @@ retrieve the image manifest item, use epub.getCoverImageItem().
 
 https://www.w3.org/TR/epub-33/#sec-cover-image
 
-##### Inherited from
-
-`BaseEpub.getCoverImage`
-
 #### getCoverImageItem()
 
 > **getCoverImageItem**(): `Promise`\<`null` \|
 > [`ManifestItem`](#manifestitem)\>
 
 Defined in:
-[epub/index.ts:890](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L890)
+[epub/index.ts:911](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L911)
 
 Retrieve the cover image manifest item.
 
@@ -843,16 +776,12 @@ this item's id to epub.readItemContents, or use epub.getCoverImage() instead.
 
 https://www.w3.org/TR/epub-33/#sec-cover-image
 
-##### Inherited from
-
-`BaseEpub.getCoverImageItem`
-
 #### getCreators()
 
 > **getCreators**(`type`): `Promise`\<[`DcCreator`](#dccreator)[]\>
 
 Defined in:
-[epub/index.ts:1586](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1586)
+[epub/index.ts:1607](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1607)
 
 Retrieve the list of creators.
 
@@ -870,16 +799,12 @@ Retrieve the list of creators.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
-##### Inherited from
-
-`BaseEpub.getCreators`
-
 #### getDescription()
 
 > **getDescription**(): `Promise`\<`null` \| `string`\>
 
 Defined in:
-[epub/index.ts:1284](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1284)
+[epub/index.ts:1305](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1305)
 
 Retrieve the Epub's description as specified in its package document metadata.
 
@@ -890,16 +815,12 @@ as a string. Descriptions may include HTML markup.
 
 `Promise`\<`null` \| `string`\>
 
-##### Inherited from
-
-`BaseEpub.getDescription`
-
 #### getIdentifier()
 
 > **getIdentifier**(): `Promise`\<`null` \| `string`\>
 
 Defined in:
-[epub/index.ts:824](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L824)
+[epub/index.ts:845](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L845)
 
 Retrieve the identifier from the dc:identifier element in the EPUB metadata.
 
@@ -913,16 +834,12 @@ If there is no dc:identifier element, returns null.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
-##### Inherited from
-
-`BaseEpub.getIdentifier`
-
 #### getLanguage()
 
 > **getLanguage**(): `Promise`\<`null` \| `Locale`\>
 
 Defined in:
-[epub/index.ts:1125](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1125)
+[epub/index.ts:1146](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1146)
 
 Retrieve the Epub's language as specified in its package document metadata.
 
@@ -937,17 +854,13 @@ Intl.Locale instance.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dclanguage
 
-##### Inherited from
-
-`BaseEpub.getLanguage`
-
 #### getManifest()
 
 > **getManifest**(): `Promise`\<`Record`\<`string`,
 > [`ManifestItem`](#manifestitem)\>\>
 
 Defined in:
-[epub/index.ts:645](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L645)
+[epub/index.ts:666](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L666)
 
 Retrieve the manifest for the Epub.
 
@@ -962,16 +875,12 @@ properties.
 
 https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
-##### Inherited from
-
-`BaseEpub.getManifest`
-
 #### getMetadata()
 
 > **getMetadata**(): `Promise`\<[`EpubMetadata`](#epubmetadata)\>
 
 Defined in:
-[epub/index.ts:796](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L796)
+[epub/index.ts:817](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L817)
 
 Retrieve the metadata entries for the Epub.
 
@@ -989,17 +898,13 @@ as `getTitle()` and `getAuthors()`.
 
 https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
-##### Inherited from
-
-`BaseEpub.getMetadata`
-
 #### getPackageVocabularyPrefixes()
 
 > **getPackageVocabularyPrefixes**(): `Promise`\<`Record`\<`string`,
 > `string`\>\>
 
 Defined in:
-[epub/index.ts:1301](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1301)
+[epub/index.ts:1322](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1322)
 
 Return the set of custom vocabulary prefixes set on this publication's root
 package element.
@@ -1014,16 +919,12 @@ Returns a map from prefix to URI
 
 https://www.w3.org/TR/epub-33/#sec-prefix-attr
 
-##### Inherited from
-
-`BaseEpub.getPackageVocabularyPrefixes`
-
 #### getPublicationDate()
 
 > **getPublicationDate**(): `Promise`\<`null` \| `Date`\>
 
 Defined in:
-[epub/index.ts:946](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L946)
+[epub/index.ts:967](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L967)
 
 Retrieve the publication date from the dc:date element in the EPUB metadata as a
 Date object.
@@ -1038,16 +939,12 @@ If there is no dc:date element, returns null.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dcdate
 
-##### Inherited from
-
-`BaseEpub.getPublicationDate`
-
 #### getSpineItems()
 
 > **getSpineItems**(): `Promise`\<[`ManifestItem`](#manifestitem)[]\>
 
 Defined in:
-[epub/index.ts:1850](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1850)
+[epub/index.ts:1871](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1871)
 
 Retrieve the manifest items that make up the Epub's spine.
 
@@ -1062,16 +959,12 @@ to users by default.
 
 https://www.w3.org/TR/epub-33/#sec-spine-elem
 
-##### Inherited from
-
-`BaseEpub.getSpineItems`
-
 #### getSubjects()
 
 > **getSubjects**(): `Promise`\<(`string` \| [`DcSubject`](#dcsubject))[]\>
 
 Defined in:
-[epub/index.ts:1080](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1080)
+[epub/index.ts:1101](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1101)
 
 Retrieve the list of subjects for this EPUB.
 
@@ -1087,16 +980,12 @@ authority, and term.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 
-##### Inherited from
-
-`BaseEpub.getSubjects`
-
 #### getSubtitle()
 
 > **getSubtitle**(): `Promise`\<`null` \| `string`\>
 
 Defined in:
-[epub/index.ts:1191](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1191)
+[epub/index.ts:1212](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1212)
 
 Retrieve the subtitle of the Epub, if it exists.
 
@@ -1108,16 +997,12 @@ Retrieve the subtitle of the Epub, if it exists.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
-##### Inherited from
-
-`BaseEpub.getSubtitle`
-
 #### getTitle()
 
 > **getTitle**(`expanded`): `Promise`\<`null` \| `string`\>
 
 Defined in:
-[epub/index.ts:1167](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1167)
+[epub/index.ts:1188](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1188)
 
 Retrieve the title of the Epub.
 
@@ -1135,16 +1020,12 @@ Retrieve the title of the Epub.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
-##### Inherited from
-
-`BaseEpub.getTitle`
-
 #### getTitles()
 
 > **getTitles**(): `Promise`\<`object`[]\>
 
 Defined in:
-[epub/index.ts:1203](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1203)
+[epub/index.ts:1224](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1224)
 
 Retrieve all title entries of the Epub.
 
@@ -1156,16 +1037,12 @@ Retrieve all title entries of the Epub.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
-##### Inherited from
-
-`BaseEpub.getTitles`
-
 #### getType()
 
 > **getType**(): `Promise`\<`null` \| [`MetadataEntry`](#metadataentry)\>
 
 Defined in:
-[epub/index.ts:993](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L993)
+[epub/index.ts:1014](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1014)
 
 Retrieve the publication type from the dc:type element in the EPUB metadata.
 
@@ -1179,10 +1056,6 @@ If there is no dc:type element, returns null.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dctype
 
-##### Inherited from
-
-`BaseEpub.getType`
-
 #### readItemContents()
 
 ##### Call Signature
@@ -1190,7 +1063,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctype
 > **readItemContents**(`id`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
 Defined in:
-[epub/index.ts:1942](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1942)
+[epub/index.ts:1963](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1963)
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1208,16 +1081,12 @@ Retrieve the contents of a manifest item, given its id.
 
 https://www.w3.org/TR/epub-33/#sec-contentdocs
 
-###### Inherited from
-
-`BaseEpub.readItemContents`
-
 ##### Call Signature
 
 > **readItemContents**(`id`, `encoding`): `Promise`\<`string`\>
 
 Defined in:
-[epub/index.ts:1943](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1943)
+[epub/index.ts:1964](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1964)
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1236,10 +1105,6 @@ Retrieve the contents of a manifest item, given its id.
 
 https://www.w3.org/TR/epub-33/#sec-contentdocs
 
-###### Inherited from
-
-`BaseEpub.readItemContents`
-
 #### readXhtmlItemContents()
 
 ##### Call Signature
@@ -1247,7 +1112,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **readXhtmlItemContents**(`id`, `as?`): `Promise`\<[`ParsedXml`](#parsedxml)\>
 
 Defined in:
-[epub/index.ts:2003](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2003)
+[epub/index.ts:2024](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2024)
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1266,16 +1131,12 @@ Retrieves the contents of an XHTML item, given its manifest id.
 
 https://www.w3.org/TR/epub-33/#sec-xhtml
 
-###### Inherited from
-
-`BaseEpub.readXhtmlItemContents`
-
 ##### Call Signature
 
 > **readXhtmlItemContents**(`id`, `as`): `Promise`\<`string`\>
 
 Defined in:
-[epub/index.ts:2004](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2004)
+[epub/index.ts:2025](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2025)
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1294,16 +1155,12 @@ Retrieves the contents of an XHTML item, given its manifest id.
 
 https://www.w3.org/TR/epub-33/#sec-xhtml
 
-###### Inherited from
-
-`BaseEpub.readXhtmlItemContents`
-
 #### removeCollection()
 
 > **removeCollection**(`index`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1542](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1542)
+[epub/index.ts:1563](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1563)
 
 Remove a collection from the EPUB metadata.
 
@@ -1320,16 +1177,12 @@ returned by `epub.getCollections()`.
 
 `Promise`\<`void`\>
 
-##### Inherited from
-
-`BaseEpub.removeCollection`
-
 #### removeContributor()
 
 > **removeContributor**(`index`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1799](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1799)
+[epub/index.ts:1820](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1820)
 
 Remove a contributor from the EPUB metadata.
 
@@ -1352,16 +1205,12 @@ This is a convenience method for `epub.removeCreator(index, 'contributor')`.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
-##### Inherited from
-
-`BaseEpub.removeContributor`
-
 #### removeCreator()
 
 > **removeCreator**(`index`, `type`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1747](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1747)
+[epub/index.ts:1768](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1768)
 
 Remove a creator from the EPUB metadata.
 
@@ -1383,16 +1232,12 @@ returned by `epub.getCreators()`.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
-##### Inherited from
-
-`BaseEpub.removeCreator`
-
 #### removeManifestItem()
 
 > **removeManifestItem**(`id`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2099](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2099)
+[epub/index.ts:2120](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2120)
 
 ##### Parameters
 
@@ -1404,16 +1249,12 @@ Defined in:
 
 `Promise`\<`void`\>
 
-##### Inherited from
-
-`BaseEpub.removeManifestItem`
-
 #### removeMetadata()
 
 > **removeMetadata**(`predicate`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2348](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2348)
+[epub/index.ts:2369](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2369)
 
 Remove one or more metadata entries.
 
@@ -1434,16 +1275,12 @@ all metadata entries that match the predicate will be removed.
 
 https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
-##### Inherited from
-
-`BaseEpub.removeMetadata`
-
 #### removeSpineItem()
 
 > **removeSpineItem**(`index`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1905](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1905)
+[epub/index.ts:1926](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1926)
 
 Remove the spine item at the specified index.
 
@@ -1461,16 +1298,12 @@ Remove the spine item at the specified index.
 
 https://www.w3.org/TR/epub-33/#sec-spine-elem
 
-##### Inherited from
-
-`BaseEpub.removeSpineItem`
-
 #### removeSubject()
 
 > **removeSubject**(`index`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1043](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1043)
+[epub/index.ts:1064](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1064)
 
 Remove a subject from the EPUB metadata.
 
@@ -1491,16 +1324,12 @@ returned by `epub.getSubjects()`.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
-##### Inherited from
-
-`BaseEpub.removeSubject`
-
 #### replaceMetadata()
 
 > **replaceMetadata**(`predicate`, `entry`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2303](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2303)
+[epub/index.ts:2324](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2324)
 
 Replace a metadata entry with a new one.
 
@@ -1522,27 +1351,17 @@ first metadata entry that matches the predicate will be replaced.
 
 https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
-##### Inherited from
-
-`BaseEpub.replaceMetadata`
-
 #### saveAndClose()
 
-> **saveAndClose**(`path`): `Promise`\<`void`\>
+> **saveAndClose**(): `Promise`\<`void`\>
 
 Defined in:
-[epub/node.ts:65](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/node.ts#L65)
+[epub/index.ts:2411](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2411)
 
 Write the current contents of the Epub to a new EPUB archive on disk.
 
 When this method is called, the "dcterms:modified" meta tag is automatically
 updated to the current UTC timestamp.
-
-##### Parameters
-
-| Parameter | Type     | Description                                                                                                                     |
-| --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `path`    | `string` | The file path to write the new archive to. The parent directory does not need te exist -- the path will be recursively created. |
 
 ##### Returns
 
@@ -1553,7 +1372,7 @@ updated to the current UTC timestamp.
 > **setCoverImage**(`href`, `data`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:923](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L923)
+[epub/index.ts:944](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L944)
 
 Set the cover image for the EPUB.
 
@@ -1571,16 +1390,12 @@ then writes the provided image data to the provided href within the publication.
 
 `Promise`\<`void`\>
 
-##### Inherited from
-
-`BaseEpub.setCoverImage`
-
 #### setDescription()
 
 > **setDescription**(`description`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1268](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1268)
+[epub/index.ts:1289](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1289)
 
 Update the Epub's description metadata entry.
 
@@ -1598,16 +1413,12 @@ encoded as HTML entities.
 
 `Promise`\<`void`\>
 
-##### Inherited from
-
-`BaseEpub.setDescription`
-
 #### setIdentifier()
 
 > **setIdentifier**(`identifier`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:838](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L838)
+[epub/index.ts:859](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L859)
 
 Set the dc:identifier metadata element with the provided string.
 
@@ -1628,16 +1439,12 @@ new element
 
 https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
-##### Inherited from
-
-`BaseEpub.setIdentifier`
-
 #### setLanguage()
 
 > **setLanguage**(`locale`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1150](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1150)
+[epub/index.ts:1171](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1171)
 
 Update the Epub's language metadata entry.
 
@@ -1658,16 +1465,12 @@ element
 
 https://www.w3.org/TR/epub-33/#sec-opf-dclanguage
 
-##### Inherited from
-
-`BaseEpub.setLanguage`
-
 #### setPackageVocabularyPrefix()
 
 > **setPackageVocabularyPrefix**(`prefix`, `uri`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1319](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1319)
+[epub/index.ts:1340](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1340)
 
 Set a custom vocabulary prefix on the root package element.
 
@@ -1686,16 +1489,12 @@ Set a custom vocabulary prefix on the root package element.
 
 https://www.w3.org/TR/epub-33/#sec-prefix-attr
 
-##### Inherited from
-
-`BaseEpub.setPackageVocabularyPrefix`
-
 #### setPublicationDate()
 
 > **setPublicationDate**(`date`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:961](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L961)
+[epub/index.ts:982](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L982)
 
 Set the dc:date metadata element with the provided date.
 
@@ -1716,16 +1515,12 @@ element
 
 https://www.w3.org/TR/epub-33/#sec-opf-dcdate
 
-##### Inherited from
-
-`BaseEpub.setPublicationDate`
-
 #### setTitle()
 
 > **setTitle**(`title`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1343](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1343)
+[epub/index.ts:1364](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1364)
 
 Set the title of the Epub.
 
@@ -1748,16 +1543,12 @@ To set specific titles and their types, use epub.setTitles().
 
 https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
-##### Inherited from
-
-`BaseEpub.setTitle`
-
 #### setTitles()
 
 > **setTitles**(`entries`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:1371](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1371)
+[epub/index.ts:1392](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1392)
 
 ##### Parameters
 
@@ -1769,16 +1560,12 @@ Defined in:
 
 `Promise`\<`void`\>
 
-##### Inherited from
-
-`BaseEpub.setTitles`
-
 #### setType()
 
 > **setType**(`type`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:977](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L977)
+[epub/index.ts:998](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L998)
 
 Set the dc:type metadata element.
 
@@ -1799,16 +1586,12 @@ element.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dctype
 
-##### Inherited from
-
-`BaseEpub.setType`
-
 #### updateManifestItem()
 
 > **updateManifestItem**(`id`, `newItem`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2215](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2215)
+[epub/index.ts:2236](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2236)
 
 Update the manifest entry for an existing item.
 
@@ -1830,10 +1613,6 @@ To update the contents of an entry, use `epub.writeItemContents()` or
 
 https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
-##### Inherited from
-
-`BaseEpub.updateManifestItem`
-
 #### writeItemContents()
 
 ##### Call Signature
@@ -1841,7 +1620,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 > **writeItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2051](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2051)
+[epub/index.ts:2072](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2072)
 
 Write new contents for an existing manifest item, specified by its id.
 
@@ -1863,16 +1642,12 @@ The id must reference an existing manifest item. If creating a new item, use
 
 https://www.w3.org/TR/epub-33/#sec-contentdocs
 
-###### Inherited from
-
-`BaseEpub.writeItemContents`
-
 ##### Call Signature
 
 > **writeItemContents**(`id`, `contents`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2052](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2052)
+[epub/index.ts:2073](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2073)
 
 Write new contents for an existing manifest item, specified by its id.
 
@@ -1895,16 +1670,12 @@ The id must reference an existing manifest item. If creating a new item, use
 
 https://www.w3.org/TR/epub-33/#sec-contentdocs
 
-###### Inherited from
-
-`BaseEpub.writeItemContents`
-
 #### writeXhtmlItemContents()
 
 > **writeXhtmlItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2091](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2091)
+[epub/index.ts:2112](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2112)
 
 Write new contents for an existing XHTML item, specified by its id.
 
@@ -1926,16 +1697,12 @@ The id must reference an existing manifest item. If creating a new item, use
 
 https://www.w3.org/TR/epub-33/#sec-xhtml
 
-##### Inherited from
-
-`BaseEpub.writeXhtmlItemContents`
-
 #### addLinkToXhtmlHead()
 
 > `static` **addLinkToXhtmlHead**(`xml`, `link`): `void`
 
 Defined in:
-[epub/index.ts:229](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L229)
+[epub/index.ts:234](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L234)
 
 Given an XML structure representing a complete XHTML document, add a `link`
 element to the `head` of the document.
@@ -1956,16 +1723,13 @@ This method modifies the provided XML structure.
 
 `void`
 
-##### Inherited from
-
-`BaseEpub.addLinkToXhtmlHead`
-
 #### create()
 
-> `static` **create**(`dc`, `additionalMetadata`): `Promise`\<[`Epub`](#epub)\>
+> `static` **create**(`path`, `__namedParameters`, `additionalMetadata`):
+> `Promise`\<[`Epub`](#epub)\>
 
 Defined in:
-[epub/node.ts:32](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/node.ts#L32)
+[epub/index.ts:389](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L389)
 
 Construct an Epub instance, optionally beginning with the provided metadata.
 
@@ -1973,16 +1737,13 @@ Construct an Epub instance, optionally beginning with the provided metadata.
 
 | Parameter            | Type                            | Default value | Description                             |
 | -------------------- | ------------------------------- | ------------- | --------------------------------------- |
-| `dc`                 | [`DublinCore`](#dublincore)     | `undefined`   | -                                       |
+| `path`               | `string`                        | `undefined`   | -                                       |
+| `__namedParameters`  | [`DublinCore`](#dublincore)     | `undefined`   | -                                       |
 | `additionalMetadata` | [`EpubMetadata`](#epubmetadata) | `[]`          | An array of additional metadata entries |
 
 ##### Returns
 
 `Promise`\<[`Epub`](#epub)\>
-
-##### Overrides
-
-`BaseEpub.create`
 
 #### createXmlElement()
 
@@ -1990,7 +1751,7 @@ Construct an Epub instance, optionally beginning with the provided metadata.
 > [`XmlElement`](#xmlelement)\<`Name`\>
 
 Defined in:
-[epub/index.ts:264](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L264)
+[epub/index.ts:269](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L269)
 
 ##### Type Parameters
 
@@ -2010,16 +1771,12 @@ Defined in:
 
 [`XmlElement`](#xmlelement)\<`Name`\>
 
-##### Inherited from
-
-`BaseEpub.createXmlElement`
-
 #### createXmlTextNode()
 
 > `static` **createXmlTextNode**(`text`): [`XmlTextNode`](#xmltextnode)
 
 Defined in:
-[epub/index.ts:277](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L277)
+[epub/index.ts:282](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L282)
 
 ##### Parameters
 
@@ -2031,17 +1788,13 @@ Defined in:
 
 [`XmlTextNode`](#xmltextnode)
 
-##### Inherited from
-
-`BaseEpub.createXmlTextNode`
-
 #### findXmlChildByName()
 
 > `static` **findXmlChildByName**\<`Name`\>(`name`, `xml`, `filter?`):
 > `undefined` \| [`XmlElement`](#xmlelement)\<`Name`\>
 
 Defined in:
-[epub/index.ts:338](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L338)
+[epub/index.ts:343](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L343)
 
 Given an XML structure, find the first child matching the provided name and
 optional filter.
@@ -2064,16 +1817,12 @@ optional filter.
 
 `undefined` \| [`XmlElement`](#xmlelement)\<`Name`\>
 
-##### Inherited from
-
-`BaseEpub.findXmlChildByName`
-
 #### formatSmilDuration()
 
 > `static` **formatSmilDuration**(`duration`): `string`
 
 Defined in:
-[epub/index.ts:212](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L212)
+[epub/index.ts:217](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L217)
 
 Format a duration, provided as a number of seconds, as a SMIL clock value, to be
 used for Media Overlays.
@@ -2092,39 +1841,31 @@ used for Media Overlays.
 
 https://www.w3.org/TR/epub-33/#sec-duration
 
-##### Inherited from
-
-`BaseEpub.formatSmilDuration`
-
 #### from()
 
-> `static` **from**(...`args`): `Promise`\<[`Epub`](#epub)\>
+> `static` **from**(`pathOrData`): `Promise`\<[`Epub`](#epub)\>
 
 Defined in:
-[epub/node.ts:39](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/node.ts#L39)
+[epub/index.ts:480](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L480)
 
 Construct an Epub instance by reading an existing EPUB publication.
 
 ##### Parameters
 
-| Parameter | Type                                              |
-| --------- | ------------------------------------------------- |
-| ...`args` | \[`string` \| `Uint8Array`\<`ArrayBufferLike`\>\] |
+| Parameter    | Type                                          | Description                                                                                                                           |
+| ------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `pathOrData` | `string` \| `Uint8Array`\<`ArrayBufferLike`\> | Must be either a string representing the path to an EPUB file on disk, or a Uint8Array representing the data of the EPUB publication. |
 
 ##### Returns
 
 `Promise`\<[`Epub`](#epub)\>
-
-##### Overrides
-
-`BaseEpub.from`
 
 #### getXhtmlBody()
 
 > `static` **getXhtmlBody**(`xml`): [`ParsedXml`](#parsedxml)
 
 Defined in:
-[epub/index.ts:254](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L254)
+[epub/index.ts:259](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L259)
 
 Given an XML structure representing a complete XHTML document, return the
 sub-structure representing the children of the document's body element.
@@ -2139,16 +1880,12 @@ sub-structure representing the children of the document's body element.
 
 [`ParsedXml`](#parsedxml)
 
-##### Inherited from
-
-`BaseEpub.getXhtmlBody`
-
 #### getXhtmlTextContent()
 
 > `static` **getXhtmlTextContent**(`xml`): `string`
 
 Defined in:
-[epub/index.ts:286](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L286)
+[epub/index.ts:291](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L291)
 
 Given an XML structure representing a complete XHTML document, return a string
 representing the concatenation of all text nodes in the document.
@@ -2163,16 +1900,12 @@ representing the concatenation of all text nodes in the document.
 
 `string`
 
-##### Inherited from
-
-`BaseEpub.getXhtmlTextContent`
-
 #### getXmlChildren()
 
 > `static` **getXmlChildren**\<`Name`\>(`element`): [`ParsedXml`](#parsedxml)
 
 Defined in:
-[epub/index.ts:318](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L318)
+[epub/index.ts:323](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L323)
 
 Given an XMLElement, return a list of its children
 
@@ -2192,16 +1925,12 @@ Given an XMLElement, return a list of its children
 
 [`ParsedXml`](#parsedxml)
 
-##### Inherited from
-
-`BaseEpub.getXmlChildren`
-
 #### getXmlElementName()
 
 > `static` **getXmlElementName**\<`Name`\>(`element`): `Name`
 
 Defined in:
-[epub/index.ts:303](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L303)
+[epub/index.ts:308](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L308)
 
 Given an XMLElement, return its tag name.
 
@@ -2221,16 +1950,12 @@ Given an XMLElement, return its tag name.
 
 `Name`
 
-##### Inherited from
-
-`BaseEpub.getXmlElementName`
-
 #### isXmlTextNode()
 
 > `static` **isXmlTextNode**(`node`): `node is XmlTextNode`
 
 Defined in:
-[epub/index.ts:351](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L351)
+[epub/index.ts:356](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L356)
 
 Given an XMLNode, determine whether it represents a text node or an XML element.
 
@@ -2244,16 +1969,12 @@ Given an XMLNode, determine whether it represents a text node or an XML element.
 
 `node is XmlTextNode`
 
-##### Inherited from
-
-`BaseEpub.isXmlTextNode`
-
 #### replaceXmlChildren()
 
 > `static` **replaceXmlChildren**\<`Name`\>(`element`, `children`): `void`
 
 Defined in:
-[epub/index.ts:326](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L326)
+[epub/index.ts:331](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L331)
 
 ##### Type Parameters
 
@@ -2272,16 +1993,12 @@ Defined in:
 
 `void`
 
-##### Inherited from
-
-`BaseEpub.replaceXmlChildren`
-
 ---
 
 ## AlternateScript
 
 Defined in:
-[epub/index.ts:100](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L100)
+[epub/index.ts:105](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L105)
 
 ### Properties
 
@@ -2290,21 +2007,21 @@ Defined in:
 > **locale**: `Locale`
 
 Defined in:
-[epub/index.ts:102](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L102)
+[epub/index.ts:107](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L107)
 
 #### name
 
 > **name**: `string`
 
 Defined in:
-[epub/index.ts:101](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L101)
+[epub/index.ts:106](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L106)
 
 ---
 
 ## Collection
 
 Defined in:
-[epub/index.ts:124](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L124)
+[epub/index.ts:129](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L129)
 
 ### Properties
 
@@ -2313,14 +2030,153 @@ Defined in:
 > **name**: `string`
 
 Defined in:
-[epub/index.ts:125](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L125)
+[epub/index.ts:130](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L130)
 
 #### position?
 
 > `optional` **position**: `string`
 
 Defined in:
-[epub/index.ts:127](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L127)
+[epub/index.ts:132](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L132)
+
+#### type?
+
+> `optional` **type**: `string`
+
+Defined in:
+[epub/index.ts:131](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L131)
+
+---
+
+## DcCreator
+
+Defined in:
+[epub/index.ts:110](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L110)
+
+### Properties
+
+#### alternateScripts?
+
+> `optional` **alternateScripts**: [`AlternateScript`](#alternatescript)[]
+
+Defined in:
+[epub/index.ts:115](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L115)
+
+#### fileAs?
+
+> `optional` **fileAs**: `string`
+
+Defined in:
+[epub/index.ts:114](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L114)
+
+#### name
+
+> **name**: `string`
+
+Defined in:
+[epub/index.ts:111](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L111)
+
+#### role?
+
+> `optional` **role**: `string`
+
+Defined in:
+[epub/index.ts:112](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L112)
+
+#### roleScheme?
+
+> `optional` **roleScheme**: `string`
+
+Defined in:
+[epub/index.ts:113](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L113)
+
+---
+
+## DcSubject
+
+Defined in:
+[epub/index.ts:99](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L99)
+
+### Properties
+
+#### authority
+
+> **authority**: `string`
+
+Defined in:
+[epub/index.ts:101](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L101)
+
+#### term
+
+> **term**: `string`
+
+Defined in:
+[epub/index.ts:102](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L102)
+
+#### value
+
+> **value**: `string`
+
+Defined in:
+[epub/index.ts:100](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L100)
+
+---
+
+## DublinCore
+
+Defined in:
+[epub/index.ts:118](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L118)
+
+### Properties
+
+#### contributors?
+
+> `optional` **contributors**: [`DcCreator`](#dccreator)[]
+
+Defined in:
+[epub/index.ts:125](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L125)
+
+#### creators?
+
+> `optional` **creators**: [`DcCreator`](#dccreator)[]
+
+Defined in:
+[epub/index.ts:124](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L124)
+
+#### date?
+
+> `optional` **date**: `Date`
+
+Defined in:
+[epub/index.ts:122](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L122)
+
+#### identifier
+
+> **identifier**: `string`
+
+Defined in:
+[epub/index.ts:121](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L121)
+
+#### language
+
+> **language**: `Locale`
+
+Defined in:
+[epub/index.ts:120](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L120)
+
+#### subjects?
+
+> `optional` **subjects**: (`string` \| [`DcSubject`](#dcsubject))[]
+
+Defined in:
+[epub/index.ts:123](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L123)
+
+#### title
+
+> **title**: `string`
+
+Defined in:
+[epub/index.ts:119](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L119)
 
 #### type?
 
@@ -2331,152 +2187,13 @@ Defined in:
 
 ---
 
-## DcCreator
-
-Defined in:
-[epub/index.ts:105](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L105)
-
-### Properties
-
-#### alternateScripts?
-
-> `optional` **alternateScripts**: [`AlternateScript`](#alternatescript)[]
-
-Defined in:
-[epub/index.ts:110](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L110)
-
-#### fileAs?
-
-> `optional` **fileAs**: `string`
-
-Defined in:
-[epub/index.ts:109](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L109)
-
-#### name
-
-> **name**: `string`
-
-Defined in:
-[epub/index.ts:106](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L106)
-
-#### role?
-
-> `optional` **role**: `string`
-
-Defined in:
-[epub/index.ts:107](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L107)
-
-#### roleScheme?
-
-> `optional` **roleScheme**: `string`
-
-Defined in:
-[epub/index.ts:108](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L108)
-
----
-
-## DcSubject
-
-Defined in:
-[epub/index.ts:94](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L94)
-
-### Properties
-
-#### authority
-
-> **authority**: `string`
-
-Defined in:
-[epub/index.ts:96](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L96)
-
-#### term
-
-> **term**: `string`
-
-Defined in:
-[epub/index.ts:97](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L97)
-
-#### value
-
-> **value**: `string`
-
-Defined in:
-[epub/index.ts:95](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L95)
-
----
-
-## DublinCore
-
-Defined in:
-[epub/index.ts:113](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L113)
-
-### Properties
-
-#### contributors?
-
-> `optional` **contributors**: [`DcCreator`](#dccreator)[]
-
-Defined in:
-[epub/index.ts:120](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L120)
-
-#### creators?
-
-> `optional` **creators**: [`DcCreator`](#dccreator)[]
-
-Defined in:
-[epub/index.ts:119](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L119)
-
-#### date?
-
-> `optional` **date**: `Date`
-
-Defined in:
-[epub/index.ts:117](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L117)
-
-#### identifier
-
-> **identifier**: `string`
-
-Defined in:
-[epub/index.ts:116](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L116)
-
-#### language
-
-> **language**: `Locale`
-
-Defined in:
-[epub/index.ts:115](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L115)
-
-#### subjects?
-
-> `optional` **subjects**: (`string` \| [`DcSubject`](#dcsubject))[]
-
-Defined in:
-[epub/index.ts:118](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L118)
-
-#### title
-
-> **title**: `string`
-
-Defined in:
-[epub/index.ts:114](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L114)
-
-#### type?
-
-> `optional` **type**: `string`
-
-Defined in:
-[epub/index.ts:121](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L121)
-
----
-
 ## ElementName
 
 > **ElementName** =
 > \`$\{Letter \| Uppercase\<Letter\> \| QuestionMark\}$\{string\}\`
 
 Defined in:
-[epub/index.ts:55](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L55)
+[epub/index.ts:60](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L60)
 
 A valid name for an XML element (must start with a letter)
 
@@ -2487,7 +2204,7 @@ A valid name for an XML element (must start with a letter)
 > **EpubMetadata** = [`MetadataEntry`](#metadataentry)[]
 
 Defined in:
-[epub/index.ts:92](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L92)
+[epub/index.ts:97](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L97)
 
 ---
 
@@ -2496,7 +2213,7 @@ Defined in:
 > **ManifestItem** = `object`
 
 Defined in:
-[epub/index.ts:76](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L76)
+[epub/index.ts:81](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L81)
 
 ### Properties
 
@@ -2505,42 +2222,42 @@ Defined in:
 > `optional` **fallback**: `string`
 
 Defined in:
-[epub/index.ts:80](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L80)
+[epub/index.ts:85](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L85)
 
 #### href
 
 > **href**: `string`
 
 Defined in:
-[epub/index.ts:78](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L78)
+[epub/index.ts:83](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L83)
 
 #### id
 
 > **id**: `string`
 
 Defined in:
-[epub/index.ts:77](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L77)
+[epub/index.ts:82](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L82)
 
 #### mediaOverlay?
 
 > `optional` **mediaOverlay**: `string`
 
 Defined in:
-[epub/index.ts:81](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L81)
+[epub/index.ts:86](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L86)
 
 #### mediaType?
 
 > `optional` **mediaType**: `string`
 
 Defined in:
-[epub/index.ts:79](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L79)
+[epub/index.ts:84](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L84)
 
 #### properties?
 
 > `optional` **properties**: `string`[]
 
 Defined in:
-[epub/index.ts:82](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L82)
+[epub/index.ts:87](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L87)
 
 ---
 
@@ -2549,7 +2266,7 @@ Defined in:
 > **MetadataEntry** = `object`
 
 Defined in:
-[epub/index.ts:85](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L85)
+[epub/index.ts:90](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L90)
 
 ### Properties
 
@@ -2558,28 +2275,38 @@ Defined in:
 > `optional` **id**: `string`
 
 Defined in:
-[epub/index.ts:86](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L86)
+[epub/index.ts:91](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L91)
 
 #### properties
 
 > **properties**: `Record`\<`string`, `string`\>
 
 Defined in:
-[epub/index.ts:88](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L88)
+[epub/index.ts:93](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L93)
 
 #### type
 
 > **type**: [`ElementName`](#elementname)
 
 Defined in:
-[epub/index.ts:87](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L87)
+[epub/index.ts:92](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L92)
 
 #### value
 
 > **value**: `string` \| `undefined`
 
 Defined in:
-[epub/index.ts:89](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L89)
+[epub/index.ts:94](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L94)
+
+---
+
+## PackageElement
+
+> **PackageElement** = [`XmlElement`](#xmlelement)\<`"package"`\> \|
+> [`XmlElement`](#xmlelement)\<`"opf:package"`\>
+
+Defined in:
+[epub/index.ts:135](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L135)
 
 ---
 
@@ -2588,7 +2315,7 @@ Defined in:
 > **ParsedXml** = [`XmlNode`](#xmlnode)[]
 
 Defined in:
-[epub/index.ts:74](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L74)
+[epub/index.ts:79](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L79)
 
 An XML structure
 
@@ -2599,7 +2326,7 @@ An XML structure
 > **XmlElement**\<`Name`\> = `object` & `{ [key in Name]: ParsedXml }`
 
 Defined in:
-[epub/index.ts:61](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L61)
+[epub/index.ts:66](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L66)
 
 An XML element
 
@@ -2622,7 +2349,7 @@ An XML element
 > **XmlNode** = [`XmlElement`](#xmlelement) \| [`XmlTextNode`](#xmltextnode)
 
 Defined in:
-[epub/index.ts:71](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L71)
+[epub/index.ts:76](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L76)
 
 A valid XML node. May be either an element or a text node.
 
@@ -2633,7 +2360,7 @@ A valid XML node. May be either an element or a text node.
 > **XmlTextNode** = `object`
 
 Defined in:
-[epub/index.ts:68](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L68)
+[epub/index.ts:73](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L73)
 
 A text node in an XML document
 
@@ -2644,4 +2371,4 @@ A text node in an XML document
 > **#text**: `string`
 
 Defined in:
-[epub/index.ts:68](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L68)
+[epub/index.ts:73](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L73)

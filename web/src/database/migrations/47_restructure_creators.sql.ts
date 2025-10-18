@@ -3,10 +3,7 @@ import { join } from "node:path"
 
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import {
-  Audiobook,
-  type AudiobookInputs,
-} from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller-platform/audiobook"
 
 import { isAudioFile } from "@/audio"
 import { db } from "@/database/connection"
@@ -73,7 +70,7 @@ export default async function migrate() {
     using audiobook =
       firstTrack === undefined
         ? undefined
-        : new Audiobook(join(audioDirectory, firstTrack) as AudiobookInputs[0])
+        : await Audiobook.from(join(audioDirectory, firstTrack))
 
     let narrators: string[] = []
     try {

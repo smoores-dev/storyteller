@@ -1,12 +1,10 @@
 import { mkdir, open, readFile, readdir, rm, writeFile } from "node:fs/promises"
-import { basename, extname, join } from "node:path"
+import { tmpdir } from "node:os"
+import { basename, dirname, extname, join } from "node:path"
 
 import { extension, lookup } from "mime-types"
 
-import {
-  Audiobook,
-  type AudiobookInputs,
-} from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
 import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
@@ -38,9 +36,7 @@ export async function getFirstCoverImage(directory: string) {
   if (!firstTrack) return null
 
   try {
-    using audiobook = new Audiobook(
-      join(directory, firstTrack) as AudiobookInputs[0],
-    )
+    using audiobook = await Audiobook.from(join(directory, firstTrack))
     const coverImage = await audiobook.getCoverArt()
     audiobook.discardAndClose()
     if (!coverImage) return null
@@ -176,22 +172,32 @@ export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
   if (!firstAudioItem) return null
 
   const audio = await epub.readItemContents(firstAudioItem.id)
-  using audiobook = new Audiobook({
-    filename: firstAudioItem.href,
-    data: audio,
-  })
-  const coverArt = await audiobook.getCoverArt()
-  audiobook.discardAndClose()
-  if (!coverArt) return null
 
-  const file = await open(book.readaloud.filepath)
-  const stats = await file.stat()
-  await file.close()
-  return {
-    filename: coverArt.name || `Cover.${extension(coverArt.mimeType)}`,
-    mimeType: coverArt.mimeType,
-    stats,
-    data: Buffer.from(coverArt.data),
+  const tmpAudioPath = join(tmpdir(), "storyteller", firstAudioItem.href)
+
+  try {
+    await mkdir(dirname(tmpAudioPath), { recursive: true })
+    await writeFile(tmpAudioPath, audio)
+    using audiobook = await Audiobook.from(tmpAudioPath)
+    const coverArt = await audiobook.getCoverArt()
+    audiobook.discardAndClose()
+    if (!coverArt) return null
+
+    const file = await open(book.readaloud.filepath)
+    const stats = await file.stat()
+    await file.close()
+    return {
+      filename: coverArt.name || `Cover.${extension(coverArt.mimeType)}`,
+      mimeType: coverArt.mimeType,
+      stats,
+      data: Buffer.from(coverArt.data),
+    }
+  } finally {
+    try {
+      await rm(tmpAudioPath)
+    } catch {
+      //
+    }
   }
 }
 
@@ -206,7 +212,7 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
       .filter((entry) => isAudioFile(entry))
       .map((relativeTrack) => join(directory, relativeTrack))
       .map(async (path) => {
-        using audiobook = new Audiobook(path as AudiobookInputs[0])
+        using audiobook = await Audiobook.from(path)
         const coverArt = await audiobook.getCoverArt()
         audiobook.discardAndClose()
         if (!coverArt) throw new Error()
@@ -220,8 +226,7 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
   const stats = await file.stat()
   await file.close()
   return {
-    filename:
-      firstCover.image.name || `Cover.${extension(firstCover.image.mimeType)}`,
+    filename: `Cover.${extension(firstCover.image.mimeType)}`,
     mimeType: firstCover.image.mimeType,
     stats,
     data: Buffer.from(firstCover.image.data),
