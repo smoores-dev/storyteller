@@ -181,8 +181,8 @@ export type AttachedPic = {
   data: Uint8Array
   mimeType: string
   kind: "coverFront" | "coverBack" | "unknown"
-  name?: string
-  description?: string
+  name?: string | undefined
+  description?: string | undefined
 }
 
 function lookup(codecName: "mjpeg" | "jpeg" | "png" | "bmp" | "gif") {
