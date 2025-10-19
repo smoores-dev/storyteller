@@ -67,6 +67,7 @@
                     pkgs.sqlite-interactive
                     pkgs.sqlite
                     pkgs.git-lfs
+                    # note: readium cli will be installed via task below
                   ];
 
                   tasks."repo:init" = {
@@ -74,6 +75,10 @@
                     exec = ''
                       yarn install
                       git lfs pull
+                      
+                      # install readium cli for development using our reusable script
+                      ./web/install-readium-cli.sh 0.4.0
+                      
                       touch .devenv-initialized'';
                     status = "test -f .devenv-initialized";
                     before = [

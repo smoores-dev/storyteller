@@ -20,6 +20,7 @@ import {
   IconDotsCircleHorizontal,
   IconHeadphonesFilled,
   IconPencil,
+  IconPlayerPlay,
   IconProgressX,
   IconTagFilled,
 } from "@tabler/icons-react"
@@ -42,9 +43,10 @@ import { DeleteBookModal } from "./modals/DeleteBookModal"
 
 interface Props {
   bookUuid: UUID
+  hideReadButton?: boolean
 }
 
-export function BookDetails({ bookUuid }: Props) {
+export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const [opened, { open, close }] = useDisclosure()
 
   const { book } = useListBooksQuery(undefined, {
@@ -215,6 +217,34 @@ export function BookDetails({ bookUuid }: Props) {
         </Group>
         <BookStatus bookUuid={book.uuid} />
         <Group className="items-end justify-between">
+          {!hideReadButton && (
+            <>
+              {book.readaloud?.status === "ALIGNED" && (
+                <Link
+                  href={`/books/${book.uuid}/read?mode=readaloud`}
+                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-full px-4 py-2 text-white"
+                >
+                  <IconPlayerPlay /> Read
+                </Link>
+              )}
+              {book.readaloud?.status !== "ALIGNED" && book.ebook && (
+                <Link
+                  href={`/books/${book.uuid}/read?mode=epub`}
+                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-full px-4 py-2 text-white"
+                >
+                  <IconBook2 /> Read
+                </Link>
+              )}
+              {book.readaloud?.status !== "ALIGNED" && book.audiobook && (
+                <Link
+                  href={`/books/${book.uuid}/read?mode=audiobook`}
+                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-full px-4 py-2 text-white"
+                >
+                  <IconHeadphonesFilled /> Listen
+                </Link>
+              )}
+            </>
+          )}
           <StatusInput
             value={book.status?.uuid}
             onChange={async (value) => {

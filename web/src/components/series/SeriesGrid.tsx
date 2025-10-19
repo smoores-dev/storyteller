@@ -181,8 +181,7 @@ export function SeriesGrid({ series }: Props) {
         })) ?? [],
     })
     // Form isn't a stable reference, but form.setFieldValue is, I guess?
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSeries])
+  }, [selectedSeries]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const changePosition = useCallback(
     (index: number, value: string) => {

@@ -20,7 +20,7 @@ import { type DB } from "./schema"
 
 const DATABASE_URL = join(
   DATA_DIR,
-  process.env["STORYTELLER_DB_FILENAME"] ?? "storyteller.db",
+  process.env["STORYTELLER_DB_FILENAME"] || "storyteller.db",
 )
 
 const UUID_EXT_PATH = join(cwd(), "sqlite", "uuid.c")

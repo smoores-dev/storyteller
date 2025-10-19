@@ -54,7 +54,7 @@ export function Sort({ value, onValueChange }: Props) {
           rightSectionPointerEvents="none"
         >
           <Group justify="space-between" wrap="nowrap">
-            <Text>{optionLabels[value[0]]}</Text>
+            <Text className="whitespace-nowrap">{optionLabels[value[0]]}</Text>
             {value[1] === "asc" ? (
               <IconArrowDown size={16} className="-ml-4" />
             ) : (

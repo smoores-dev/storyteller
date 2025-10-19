@@ -5,6 +5,7 @@ export async function register() {
     const { migrate } = await import("./database/migrate")
     const { getQueuedBooks } = await import("./database/books")
     const { startProcessing } = await import("./work/distributor")
+    const { getReadiumService } = await import("./services/readiumService")
 
     logger.debug("Debug logging enabled")
 
@@ -32,6 +33,16 @@ export async function register() {
       }
     } catch (err) {
       logger.error("Failed to restart processing queue")
+      logger.error(err)
+    }
+
+    // start readium service for epub reading
+    try {
+      const readiumService = getReadiumService()
+      await readiumService.start()
+      logger.info("Readium service initialized successfully")
+    } catch (err) {
+      logger.error("Failed to start Readium service")
       logger.error(err)
     }
   }

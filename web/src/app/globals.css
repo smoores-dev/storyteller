@@ -10,3 +10,14 @@
     @apply my-3;
   }
 }
+
+/**
+  * this fixes the annoying zoom behavior in safari ios
+  */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  select,
+  textarea,
+  input {
+    font-size: 16px !important;
+  }
+}

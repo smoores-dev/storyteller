@@ -137,7 +137,9 @@ publish-web-amd64:
       alias: docker
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+(?:-\d+)?/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^web-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?|\d+)?$/'
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker context create gitlab-ci
@@ -157,7 +159,9 @@ publish-web-arm64:
       alias: docker
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+(?:-\d+)?/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^web-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?|\d+)?$/'
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker context create gitlab-ci
@@ -176,13 +180,33 @@ publish-web-multiarch:
       alias: docker
   stage: post-publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+(?:-\d+)?/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^web-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?|\d+)?$/'
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker buildx imagetools create --tag
-      $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA --tag $CI_REGISTRY_IMAGE:latest
-      --tag $CI_REGISTRY_IMAGE:web-v2 --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    # always create basic tags
+    - BASIC_TAGS="--tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA --tag
+      $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+    # check if this is a stable release (not alpha, beta, rc, experimental, etc.)
+    - |
+      if echo "$CI_COMMIT_TAG" | grep -qvE '\-(alpha|beta|rc|experimental|dev|test|preview)'; then
+        STABLE_TAGS="--tag $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:web-v2"
+      else
+        STABLE_TAGS=""
+        echo "Skipping stable tags (latest, web-v2) for prerelease version: $CI_COMMIT_TAG"
+      fi
+    # add prerelease base tag (e.g., 2.3.0-experimental for 2.3.0-experimental.4)
+    - |
+      if echo "$CI_COMMIT_TAG" | grep -qE '\-(alpha|beta|rc|experimental|dev|test|preview)\.\d+$'; then
+        PRERELEASE_BASE=$(echo "$CI_COMMIT_TAG" | sed -E 's/\.\d+$//')
+        PRERELEASE_TAGS="--tag $CI_REGISTRY_IMAGE:$PRERELEASE_BASE"
+        echo "Adding prerelease base tag: $PRERELEASE_BASE"
+      else
+        PRERELEASE_TAGS=""
+      fi
+    - docker buildx imagetools create $BASIC_TAGS $STABLE_TAGS $PRERELEASE_TAGS
       $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA
       $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA
 
@@ -190,7 +214,9 @@ prerelease-web:
   stage: prerelease
   image: alpine:latest
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+(?:-\d+)?/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^web-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?|\d+)?$/'
   script:
     - apk add curl jq
     - version=$(echo $CI_COMMIT_TAG | sed -r 's/web-//')
@@ -213,7 +239,9 @@ release-web:
     - job: prerelease-web
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^web-v?\d+\.\d+\.\d+(?:-\d+)?/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^web-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?|\d+)?$/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
@@ -230,7 +258,9 @@ publish-fs:
   image: node:24
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^fs-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
@@ -244,7 +274,9 @@ prerelease-fs:
   stage: prerelease
   image: alpine:latest
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^fs-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - apk add curl jq
     - version=$(echo $CI_COMMIT_TAG | sed -r 's/fs-//')
@@ -267,7 +299,9 @@ release-fs:
     - job: prerelease-fs
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^fs-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^fs-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
@@ -284,7 +318,9 @@ publish-epub:
   image: node:24
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^epub-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
@@ -298,7 +334,9 @@ prerelease-epub:
   stage: prerelease
   image: alpine:latest
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^epub-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - apk add curl jq
     - version=$(echo $CI_COMMIT_TAG | sed -r 's/epub-//')
@@ -321,7 +359,9 @@ release-epub:
     - job: prerelease-epub
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^epub-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^epub-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
@@ -338,7 +378,9 @@ publish-audiobook:
   image: node:24
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^audiobook-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
@@ -352,7 +394,9 @@ prerelease-audiobook:
   stage: prerelease
   image: alpine:latest
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^audiobook-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - apk add curl jq
     - version=$(echo $CI_COMMIT_TAG | sed -r 's/audiobook-//')
@@ -375,7 +419,9 @@ release-audiobook:
     - job: prerelease-audiobook
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^audiobook-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
@@ -392,7 +438,9 @@ publish-path:
   image: node:24
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^path-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^path-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
@@ -406,7 +454,9 @@ prerelease-path:
   stage: prerelease
   image: alpine:latest
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^path-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^path-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - apk add curl jq
     - version=$(echo $CI_COMMIT_TAG | sed -r 's/path-//')
@@ -429,7 +479,9 @@ release-path:
     - job: prerelease-path
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^path-v?\d+\.\d+\.\d+/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^path-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
@@ -446,7 +498,9 @@ publish-mobile:
   stage: publish
   image: node:24
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^mobile-v?\d+\.\d+\.\d+$/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mobile-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - echo $EXPO_ASC_API_KEY_BASE64 | base64 -d > $EXPO_ASC_API_KEY_PATH
     - yarn
@@ -460,7 +514,9 @@ prerelease-mobile:
   stage: prerelease
   image: alpine:latest
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^mobile-v?\d+\.\d+\.\d+$/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mobile-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - apk add curl jq
     - version=$(echo $CI_COMMIT_TAG | sed -r 's/mobile-//')
@@ -483,7 +539,9 @@ release-mobile:
     - job: prerelease-mobile
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^mobile-v?\d+\.\d+\.\d+$/'
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mobile-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:

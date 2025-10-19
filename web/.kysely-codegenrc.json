@@ -45,6 +45,7 @@
       "position.book_uuid": "import(\"@/uuid\").UUID",
       "position.user_id": "import(\"@/uuid\").UUID",
       "position.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "position.locator": "import(\"kysely\").ColumnType<import(\"@/database/positions\").ReadiumLocator, string, string>",
       "processing_task.book_uuid": "import(\"@/uuid\").UUID",
       "processing_task.status": "import('@/apiModels/models/ProcessingStatus').ProcessingTaskStatus",
       "processing_task.type": "import('@/apiModels/models/ProcessingStatus').ProcessingTaskType",
@@ -85,6 +86,19 @@
       "user_permission.user_read": "Generated<boolean>",
       "user_permission.user_update": "Generated<boolean>",
       "user_permission.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "user_reading_preferences.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "user_reading_preferences.detail_mode": "\"audio\" | \"text\" | null",
+      "user_reading_preferences.detail_scope": "\"book\" | \"chapter\" | null",
+      "user_reading_preferences.font_family": "\"publisher\" | null",
+      "user_reading_preferences.highlight_color": "\"yellow\" | \"red\" | \"green\" | \"blue\" | \"magenta\" | null",
+      "user_reading_preferences.layout": "\"paginated\" | \"scrollable\" | null",
+      "user_reading_preferences.user_id": "import(\"@/uuid\").UUID",
+      "user_reading_state.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "user_reading_state.current_book_id": "import(\"@/uuid\").UUID",
+      "user_reading_state.last_read_at": "number | null",
+      "user_reading_state.show_mini_player": "Generated<number>",
+      "user_reading_state.updated_at": "Generated<number>",
+      "user_reading_state.user_id": "import(\"@/uuid\").UUID",
       "verification_token.expires": "Date"
     }
   }

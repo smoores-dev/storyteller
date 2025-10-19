@@ -175,5 +175,13 @@ module.exports = {
         "@typescript-eslint/no-non-null-assertion": "off",
       },
     },
+    // react compiler for web
+    {
+      files: ["web/**/*.ts", "web/**/*.tsx"],
+      plugins: ["react-compiler"],
+      rules: {
+        "react-compiler/react-compiler": "error",
+      },
+    },
   ],
 }

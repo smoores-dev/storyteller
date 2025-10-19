@@ -119,6 +119,8 @@ const theme = createTheme({
         className: "my-4",
       },
       classNames: {
+        // otherwise mobile devices will zoom in on the input
+        input: "text-base md:text-sm",
         description: "text-sm",
       },
     }),
@@ -127,6 +129,8 @@ const theme = createTheme({
         className: "my-4",
       },
       classNames: {
+        // otherwise mobile devices will zoom in on the input
+        input: "text-base md:text-sm",
         description: "text-sm",
       },
     }),

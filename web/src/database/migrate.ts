@@ -29,6 +29,8 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "53_pre_extract_cover_art.sql": (
     await import("./migrations/53_pre_extract_cover_art.sql")
   ).default,
+  "59_migrate_hrefs.sql": (await import("./migrations/59_migrate_hrefs.sql"))
+    .default,
 }
 
 async function isFirstStartup() {

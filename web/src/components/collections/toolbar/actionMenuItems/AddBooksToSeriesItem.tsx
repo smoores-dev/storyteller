@@ -68,8 +68,7 @@ export function AddBooksToSeriesItem({ selected }: Props) {
       })),
     )
     // Form isn't a stable reference, but form.setFieldValue is, I guess?
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBooks])
+  }, [selectedBooks]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { series: newSeries, relations } = form.values
 

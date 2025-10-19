@@ -27,5 +27,7 @@ export default async function BookEditPage(props: Props) {
   const { uuid } = params
   await fetchApiRoute<BookWithRelations>(`/books/${uuid}`)
 
-  return <BookDetails bookUuid={uuid} />
+  const hideReadButton = !process.env["ENABLE_WEB_READER"]
+
+  return <BookDetails bookUuid={uuid} hideReadButton={hideReadButton} />
 }

@@ -199,3 +199,56 @@ export async function getPosition(userId: UUID, bookUuid: UUID) {
     }
   )
 }
+
+export function fromLegacyHref(href: string) {
+  if (URL.canParse(href)) {
+    return href
+  }
+
+  try {
+    const newUrl = new URL(href, "https://storyteller.local")
+    const newHref = newUrl.pathname.slice(1)
+    return newHref
+  } catch (err) {
+    logger.warn({ msg: "Error parsing URL", href, err })
+
+    // somethings off, use more crude algorighm
+    const newHref = href.startsWith("/") ? href.slice(1) : href
+
+    /**
+     * already encoded
+     */
+    if (decodeURIComponent(href).length < href.length) {
+      return newHref
+    }
+
+    // encode each path segment separately to preserve slashes
+    return newHref
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/")
+  }
+}
+
+export function toLegacyHref(href: string) {
+  if (URL.canParse(href)) {
+    return href
+  }
+
+  // we dont need to decode it
+  return `/${href}`
+}
+
+export function fromLegacyLocator(locator: ReadiumLocator) {
+  return {
+    ...locator,
+    href: fromLegacyHref(locator.href),
+  }
+}
+
+export function toLegacyLocator(locator: ReadiumLocator) {
+  return {
+    ...locator,
+    href: toLegacyHref(locator.href),
+  }
+}
