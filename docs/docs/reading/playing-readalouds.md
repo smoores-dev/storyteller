@@ -34,7 +34,7 @@ you'll find it on your Bookshelf, where you can start reading or listening!
 
 ## Storyteller web reader
 
-[Coming soon!](reading/web-reader.md)
+[Available under an experimental flag!](/docs/reading/web-reader)
 
 ---
 

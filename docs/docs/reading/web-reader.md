@@ -1,10 +1,39 @@
-# Storyteller Web Reader
+# Storyteller web reader
 
-Storyteller also supports reading books in the web browser. This is useful if
-you don't want to install the Storyteller mobile app, or if you want to read
-books on a computer.
+:::warning Experimental feature
+
+Note: This feature is available experimentally, and may not be stable. Please
+don't log any issues with this feature, as it might change significantly in the
+future. Direct any feedback to the dedicated channel in our
+[Discord server](https://discord.gg/KhSvFqcrza).
+
+:::
+
+Storyteller also supports reading/listening to books in the web browser, whether
+you have aligned the books in the past or not. This is useful if you don't want
+to install the Storyteller mobile app, or if you want to read books on a
+computer.
 
 <!-- ![Storyteller Web Reader](/img/web-reader.png) -->
+
+## Enabling
+
+The web reader is disabled by default for the time being. To enable it, set the
+`ENABLE_WEB_READER` environment variable to `true` in your do compose file or
+environment variables.
+
+```yaml title="compose.yaml"
+services:
+  web:
+    # ... other service configuration ...
+    environment:
+      # ... other environment variables ...
+      # highlight-next-line
+      - ENABLE_WEB_READER=true
+```
+
+Then, you can read any of your books by going to the book's page and clicking
+the "Read" or "Listen" button.
 
 ## Settings
 
@@ -73,6 +102,15 @@ Simply click `Share` on the Storyteller web interface, and select `Add to Dock`
 
 For the smoothest and most bug-free experience we recommend using a Chromium
 based browser to read your books.
+
+### Chromium based browsers (Chrome, Edge, Brave, Vivaldi, etc.)
+
+Chromium based browsers support an additional picture-in-picture mode, which
+allows you to easily pause and resume reading/listening to your book while doing
+something else. You will notice it when tabbing out of the browser and back in.
+
+This behavior is not supported in other browsers until they implement the
+[Document Picture-in-Picture API](https://developer.mozilla.org/en-US/docs/Web/API/Document_Picture-in-Picture_API).
 
 ### Safari and Webkit based browsers (e.g. Orion)
 

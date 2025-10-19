@@ -27,8 +27,6 @@ type ReadingSessionState = {
 
   mode: ReadingMode
 
-  readingContext: "miniplayer" | "reader"
-
   syncing: boolean
 
   lastPositionUpdate: number | null
@@ -44,14 +42,13 @@ const initialState: ReadingSessionState = {
   currentbook: null,
   isLoadingPublication: false,
   currentLocator: null,
-  mode: "epub",
+  mode: "readaloud",
   syncing: false,
   lastPositionUpdate: null,
   currentlyHighlightedFragment: null,
   currentSyncTimeout: null,
   activeFrameUrl: null,
   doubleClickTimeout: null,
-  readingContext: "reader",
   sleepTimer: null,
 }
 
@@ -64,11 +61,9 @@ export const readingSessionSlice = createSlice({
       state,
       action: PayloadAction<{
         book: BookWithRelations
-        readingContext: "miniplayer" | "reader"
         requestedMode?: ReadingMode | undefined
       }>,
     ) => {
-      state.readingContext = action.payload.readingContext
       state.currentbook = action.payload.book
       state.isLoadingPublication = true
 
@@ -259,9 +254,6 @@ export const selectCurrentToCLocator = createSelector(
     return null
   },
 )
-
-export const selectIsMiniplayer = (state: RootState) =>
-  state.readingSession.readingContext === "miniplayer"
 
 function getAvailableMode(book: BookWithRelations) {
   if (book.readaloud && book.readaloud.status === "ALIGNED") {

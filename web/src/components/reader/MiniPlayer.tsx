@@ -174,7 +174,6 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
       dispatch(
         readingSessionSlice.actions.startBook({
           book,
-          readingContext: "miniplayer",
         }),
       )
     }
@@ -203,18 +202,17 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
           : {}
       }
       className={cn(
-        "bg-reader-bg text-reader-text z-20 overflow-clip rounded-b-lg shadow-sm md:w-auto",
-        `min-w-[${MINI_PLAYER_WIDTH}px]`,
+        "bg-reader-bg text-reader-text z-20 w-[85%] overflow-clip rounded-b-lg shadow-sm",
+        `md:w-[400px]`,
         context === "miniplayer" &&
-          `fixed w-[85%] border ${minimizedMiniPlayer ? "-bottom-16 hover:bottom-0" : "bottom-10"}`,
+          `fixed border ${minimizedMiniPlayer ? "-bottom-16 hover:bottom-0" : "bottom-10"}`,
         showExpandedLayout && "rounded-t-lg",
       )}
     >
       <div
         className={cn(
-          showExpandedLayout ? "h-auto" : "h-0",
-          "flex flex-col items-center justify-center gap-2",
-          context === "miniplayer" && "transition-all duration-500",
+          showExpandedLayout ? "h-[450px]" : "h-0",
+          "flex flex-col items-center justify-center gap-2 transition-all duration-300",
         )}
       >
         <div className="bg-reader-bg/50 flex w-full items-center justify-end gap-1 px-4 py-2">
@@ -232,8 +230,8 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
         <div className="flex h-full w-full flex-col items-center justify-center gap-8 p-6">
           <AudiobookCoverImage
             book={book}
-            imageHeight={300}
-            imageWidth={300}
+            imageHeight={200}
+            imageWidth={200}
             width="80%"
             height="auto"
           />
@@ -282,11 +280,21 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
               tooltip="Skip backward 15 seconds"
               holdTooltip="Skip to previous chapter"
               onHold={() => {
-                dispatch(skipPartButtonHeld("previous"))
+                dispatch(
+                  skipPartButtonHeld({
+                    direction: "previous",
+                    context: "miniplayer",
+                  }),
+                )
               }}
               className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mt-1 rounded-full bg-transparent"
               onClick={() => {
-                dispatch(skipPartButtonPressed("previous"))
+                dispatch(
+                  skipPartButtonPressed({
+                    direction: "previous",
+                    context: "miniplayer",
+                  }),
+                )
               }}
             >
               <span className="sr-only">Skip backward 15 seconds</span>
@@ -326,11 +334,21 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
               tooltip="Skip forward 15 seconds"
               holdTooltip="Skip to next chapter"
               onHold={() => {
-                dispatch(skipPartButtonHeld("next"))
+                dispatch(
+                  skipPartButtonHeld({
+                    direction: "next",
+                    context: "miniplayer",
+                  }),
+                )
               }}
               className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mt-1 rounded-full bg-transparent"
               onClick={() => {
-                dispatch(skipPartButtonPressed("next"))
+                dispatch(
+                  skipPartButtonPressed({
+                    direction: "next",
+                    context: "miniplayer",
+                  }),
+                )
               }}
             >
               <span className="sr-only">Skip forward 15 seconds</span>

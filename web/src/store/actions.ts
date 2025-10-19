@@ -84,16 +84,20 @@ export const playerPositionUpdateCompleted = createAction(
   }),
 )
 
+export type SkipPartButtonPayload = {
+  direction: "next" | "previous"
+  context: "reader" | "miniplayer"
+}
 export const skipPartButtonPressed = createAction(
   "skipPartButtonPressed",
-  (payload: "next" | "previous") => ({
+  (payload: SkipPartButtonPayload) => ({
     payload,
   }),
 )
 
 export const skipPartButtonHeld = createAction(
   "skipPartButtonHeld",
-  (payload: "next" | "previous") => ({
+  (payload: SkipPartButtonPayload) => ({
     payload,
   }),
 )
