@@ -25,7 +25,9 @@ export const getReaderKeyboardHotkeys = (
     [
       "ArrowLeft",
       () => {
-        dispatch(skipPartButtonPressed("previous"))
+        dispatch(
+          skipPartButtonPressed({ direction: "previous", context: "reader" }),
+        )
       },
     ],
     [
@@ -37,7 +39,9 @@ export const getReaderKeyboardHotkeys = (
     [
       "ArrowRight",
       () => {
-        dispatch(skipPartButtonPressed("next"))
+        dispatch(
+          skipPartButtonPressed({ direction: "next", context: "reader" }),
+        )
       },
     ],
     [

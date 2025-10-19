@@ -7,6 +7,7 @@ import { getApiUrlFromResourceHref } from "@/components/reader/BookService"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 
 import {
+  type SkipPartButtonPayload,
   navItemPressed,
   skipPartButtonHeld,
   skipPartButtonPressed,
@@ -16,7 +17,6 @@ import {
   selectCurrentBook,
   selectCurrentLocator,
   selectCurrentToCLocator,
-  selectIsMiniplayer,
   selectReadingMode,
 } from "../slices/readingSessionSlice"
 
@@ -63,15 +63,14 @@ startAppListening({
   matcher: isAnyOf(skipPartButtonPressed, skipPartButtonHeld),
   effect: async (action, listenerApi) => {
     const mode = selectReadingMode(listenerApi.getState())
-    const isMiniplayer = selectIsMiniplayer(listenerApi.getState())
     const currentTocItem = selectCurrentToCLocator(listenerApi.getState())
-    const direction = action["payload"] as "next" | "previous"
+    const { direction, context } = action["payload"] as SkipPartButtonPayload
 
     const isPressed = action.type === skipPartButtonPressed.type
     const isHeld = action.type === skipPartButtonHeld.type
 
     // in miniplayer or audiobook modes, buttons control audio directly
-    if (isMiniplayer || mode === "audiobook") {
+    if (context === "miniplayer" || mode === "audiobook") {
       if (isPressed) {
         const seekAmount = direction === "next" ? 15 : -15
         AudioPlayer.seekBy(seekAmount)

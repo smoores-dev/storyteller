@@ -33,42 +33,83 @@ const getCorrespondingMark = (
   return marks?.findLast((mark) => value >= mark.position)
 }
 
-type HoverLabelProps = {
-  trackRef: React.RefObject<HTMLDivElement | null>
-  hoverValue: number
-  max: number
-  formatLabel: (value: number) => string
+type TooltipProps = {
+  elementRef: React.RefObject<HTMLElement | null>
+  content: string
   context?: "pip" | undefined
   pipWindow?: PictureInPictureWindow | null
+  // for track-based positioning (hover label)
+  trackBased?:
+    | {
+        value: number
+        max: number
+      }
+    | undefined
 }
 
-const HoverLabel = ({
-  trackRef,
-  hoverValue,
-  max,
-  formatLabel,
+const Tooltip = ({
+  elementRef,
+  content,
   context,
   pipWindow,
-}: HoverLabelProps) => {
-  if (!trackRef.current) return null
+  trackBased,
+}: TooltipProps) => {
+  if (!elementRef.current) return null
 
-  const rect = trackRef.current.getBoundingClientRect()
-  const percentage = max > 0 ? hoverValue / max : 0
-  const leftPosition = rect.left + rect.width * percentage
-  const topPosition = rect.top - 48 // -12 * 4px (tailwind spacing)
+  const rect = elementRef.current.getBoundingClientRect()
   const targetDocument =
     context === "pip" && pipWindow ? pipWindow.document : document
 
+  const leftPosition = trackBased
+    ? rect.left +
+      rect.width * (trackBased.max > 0 ? trackBased.value / trackBased.max : 0)
+    : rect.left + rect.width / 2
+
+  // check if there's enough space at the top (48px for tooltip + some margin)
+  const hasSpaceAbove = rect.top > 60
+  const topPosition = hasSpaceAbove
+    ? rect.top - 48 // -12 * 4px
+    : rect.bottom + 12 // +3 * 4px
+
   return createPortal(
     <div
-      className="bg-reader-surface-hover text-reader-text pointer-events-none fixed z-[500] -translate-x-1/2 rounded-md p-2 font-medium"
+      className="bg-reader-surface-hover text-reader-text pointer-events-none fixed z-[500] -translate-x-1/2 whitespace-nowrap rounded-md p-2 font-medium"
       style={{
         left: `${leftPosition}px`,
         top: `${topPosition}px`,
       }}
     >
-      {formatLabel(hoverValue)}
+      {content}
     </div>,
+    targetDocument.body,
+  )
+}
+
+type ThumbProps = {
+  trackRef: React.RefObject<HTMLDivElement | null>
+  percentage: number
+  context?: "pip" | undefined
+  pipWindow?: PictureInPictureWindow | null
+}
+
+const Thumb = ({ trackRef, percentage, context, pipWindow }: ThumbProps) => {
+  if (!trackRef.current) return null
+
+  const rect = trackRef.current.getBoundingClientRect()
+  const targetDocument =
+    context === "pip" && pipWindow ? pipWindow.document : document
+
+  const leftPosition = rect.left + rect.width * (percentage / 100)
+  const topPosition = rect.top + rect.height / 2
+
+  return createPortal(
+    <div
+      className="border-reader-accent bg-reader-accent pointer-events-none fixed z-[500] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+      style={{
+        left: `${leftPosition}px`,
+        top: `${topPosition}px`,
+      }}
+    />,
     targetDocument.body,
   )
 }
@@ -104,6 +145,9 @@ const CustomSlider = ({
   const trackRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [hoverValue, setHoverValue] = useState<number | null>(null)
+  const [hoveredMarkIndex, setHoveredMarkIndex] = useState<number | null>(null)
+  const [isTrackHovered, setIsTrackHovered] = useState(false)
+  const markRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   const percentage = max > 0 ? ((value - min) / (max - min)) * 100 : 0
 
@@ -188,8 +232,13 @@ const CustomSlider = ({
     [formatLabel, getValueFromEvent, isDragging, showLabel],
   )
 
+  const handleTrackMouseEnter = useCallback(() => {
+    setIsTrackHovered(true)
+  }, [])
+
   const handleTrackMouseLeave = useCallback(() => {
     setHoverValue(null)
+    setIsTrackHovered(false)
   }, [])
 
   const handleMarkClick = useCallback(
@@ -232,6 +281,13 @@ const CustomSlider = ({
     pipWindow,
   ])
 
+  // initialize markRefs array when marks change
+  useEffect(() => {
+    if (marks) {
+      markRefs.current = markRefs.current.slice(0, marks.length)
+    }
+  }, [marks])
+
   const MarkList = useMemo(() => {
     if (!marks || marks.length === 0) return null
     return (
@@ -239,19 +295,30 @@ const CustomSlider = ({
         {marks.map((mark, idx) => {
           const markPercentage = max > 0 ? (mark.position / max) * 100 : 0
           return (
-            <div
+            <button
               key={idx}
-              className="group/mark bg-reader-bg/70 border-reader-accent/70 hover:bg-reader-accent-hover pointer-events-auto absolute top-0 z-[500] h-1 w-1 -translate-x-1/2 cursor-pointer rounded-full border opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100"
+              ref={(el) => {
+                markRefs.current[idx] = el
+              }}
+              className="bg-reader-bg/70 border-reader-accent/70 hover:bg-reader-accent-hover pointer-events-auto absolute top-0 z-[500] h-1 w-1 -translate-x-1/2 cursor-pointer rounded-full border opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100"
               style={{ left: `${markPercentage}%` }}
               onClick={() => {
                 handleMarkClick(mark.position)
               }}
-            >
-              {/* mark tooltip */}
-              <div className="bg-reader-surface-hover text-reader-text absolute -top-12 left-1/2 z-[500] -translate-x-1/2 whitespace-nowrap rounded-md p-2 font-medium opacity-0 transition-opacity group-hover/mark:opacity-100">
-                {mark.title}
-              </div>
-            </div>
+              onMouseEnter={() => {
+                setHoveredMarkIndex(idx)
+              }}
+              onMouseLeave={() => {
+                setHoveredMarkIndex(null)
+              }}
+              onFocus={() => {
+                setHoveredMarkIndex(idx)
+              }}
+              onBlur={() => {
+                setHoveredMarkIndex(null)
+              }}
+              aria-label={mark.title}
+            />
           )
         })}
       </div>
@@ -259,17 +326,18 @@ const CustomSlider = ({
   }, [marks, max, handleMarkClick])
 
   return (
-    <div className="relative h-1">
+    <div className="group relative h-1">
       {/* track */}
       <div
         ref={trackRef}
-        className="bg-reader-surface-hover group relative h-1 cursor-pointer"
+        className="bg-reader-surface-hover relative h-1 cursor-pointer"
         onMouseDown={(e) => {
           handleMouseOrTouchDown(e.nativeEvent)
         }}
         onTouchStart={(e) => {
           handleMouseOrTouchDown(e.nativeEvent)
         }}
+        onMouseEnter={handleTrackMouseEnter}
         onMouseMove={(e) => {
           handleTrackMouseMove(e.nativeEvent)
         }}
@@ -284,32 +352,48 @@ const CustomSlider = ({
           style={{ width: `${percentage}%` }}
         />
 
-        {/* thumb */}
-        {!restrictToMarks && (
-          <div
-            className="border-reader-accent bg-reader-accent absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 opacity-0 transition-opacity group-hover:opacity-100"
-            style={{ left: `${percentage}%` }}
-          />
-        )}
-
         {/* hover label for free sliding */}
         {!restrictToMarks &&
           showLabel &&
           formatLabel &&
           hoverValue !== null && (
-            <HoverLabel
-              trackRef={trackRef}
-              hoverValue={hoverValue}
-              max={max}
-              formatLabel={formatLabel}
+            <Tooltip
+              elementRef={trackRef}
+              content={formatLabel(hoverValue)}
               context={context}
               pipWindow={pipWindow}
+              trackBased={{ value: hoverValue, max }}
             />
           )}
       </div>
 
       {/* marks */}
       {MarkList}
+
+      {/* thumb portal */}
+      {!restrictToMarks && isTrackHovered && trackRef.current && (
+        <Thumb
+          trackRef={trackRef}
+          percentage={percentage}
+          context={context}
+          pipWindow={pipWindow}
+        />
+      )}
+
+      {/* mark tooltip portal */}
+      {hoveredMarkIndex !== null &&
+        marks &&
+        marks[hoveredMarkIndex] &&
+        markRefs.current[hoveredMarkIndex] && (
+          <Tooltip
+            elementRef={{
+              current: markRefs.current[hoveredMarkIndex],
+            }}
+            content={marks[hoveredMarkIndex].title}
+            context={context}
+            pipWindow={pipWindow}
+          />
+        )}
     </div>
   )
 }

@@ -82,11 +82,21 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
               }
               holdTooltip="Skip to previous chapter"
               onHold={() => {
-                dispatch(skipPartButtonHeld("previous"))
+                dispatch(
+                  skipPartButtonHeld({
+                    direction: "previous",
+                    context: "reader",
+                  }),
+                )
               }}
               className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mt-1 rounded-full bg-transparent p-2"
               onClick={() => {
-                dispatch(skipPartButtonPressed("previous"))
+                dispatch(
+                  skipPartButtonPressed({
+                    direction: "previous",
+                    context: "reader",
+                  }),
+                )
               }}
             >
               <span className="sr-only">
@@ -130,11 +140,18 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
               }
               holdTooltip="Skip to next chapter"
               onHold={() => {
-                dispatch(skipPartButtonHeld("next"))
+                dispatch(
+                  skipPartButtonHeld({ direction: "next", context: "reader" }),
+                )
               }}
               className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mt-1 rounded-full bg-transparent p-2"
               onClick={() => {
-                dispatch(skipPartButtonPressed("next"))
+                dispatch(
+                  skipPartButtonPressed({
+                    direction: "next",
+                    context: "reader",
+                  }),
+                )
               }}
             >
               <span className="sr-only">

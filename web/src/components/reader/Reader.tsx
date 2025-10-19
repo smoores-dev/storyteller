@@ -20,6 +20,7 @@ import { getActiveFrame } from "@/store/readerRegistry"
 import {
   applyThemeToDocument,
   getInitialHydratedPreferences,
+  removeThemeFromDocument,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
 import {
@@ -69,6 +70,8 @@ const ReaderComponent = ({
       if (mode === "epub") {
         dispatch(readingSessionSlice.actions.closeBook())
       }
+
+      removeThemeFromDocument(document)
     }
   }, [dispatch, mode])
 
@@ -88,7 +91,6 @@ const ReaderComponent = ({
       readingSessionSlice.actions.startBook({
         book,
         requestedMode: mode ?? "epub",
-        readingContext: "reader",
       }),
     )
   }, [book, currentReadingBook?.uuid, dispatch, mode, publicationLoading])
