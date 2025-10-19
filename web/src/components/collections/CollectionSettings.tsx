@@ -66,8 +66,7 @@ export function CollectionSettings({ uuid }: Props) {
       description: collection.description,
       importPath: collection.importPath,
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collection])
+  }, [collection]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const router = useRouter()
 

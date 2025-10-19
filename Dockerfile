@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/releases ./.yarn/releases
 COPY .yarn/cache ./.yarn/cache
+COPY .yarn/patches ./.yarn/patches
 
 COPY web/package.json ./web/package.json
 COPY fs/package.json ./fs/package.json
@@ -36,6 +37,16 @@ FROM registry.gitlab.com/storyteller-platform/storyteller-base:main AS runner
 
 WORKDIR /app
 
+ARG READIUM_VERSION=0.4.0
+
+# Install Readium CLI using our script
+# note: we could also potentially copy it from their docker image
+COPY --from=builder /app/web/install-readium-cli.sh /tmp/install-readium-cli.sh
+RUN chmod +x /tmp/install-readium-cli.sh && \
+    /tmp/install-readium-cli.sh ${READIUM_VERSION} && \
+    rm /tmp/install-readium-cli.sh
+
+
 COPY --from=builder /app/web/.next/standalone ./.next/standalone
 COPY --from=builder /app/web/public ./.next/standalone/web/public
 COPY --from=builder /app/web/.next/static ./.next/standalone/web/.next/static
@@ -62,6 +73,7 @@ ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 ENV PORT=8001
 ENV HOSTNAME=0.0.0.0
 ENV STORYTELLER_DATA_DIR=/data
+ENV READIUM_PORT=9000
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
@@ -70,6 +82,11 @@ ENV STORYTELLER_WORKER=worker.cjs
 ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.cjs
 
 WORKDIR /app/.next/standalone/web
+
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8001/api/health/readium || exit 1
+
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 

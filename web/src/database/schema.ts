@@ -3,7 +3,7 @@
  * Please do not edit it manually.
  */
 
-import { type ColumnType } from "kysely"
+import type { ColumnType } from "kysely"
 
 export type Generated<T> =
   T extends ColumnType<infer S, infer I, infer U>
@@ -144,7 +144,11 @@ export interface Migration {
 export interface Position {
   bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
-  locator: string
+  locator: import("kysely").ColumnType<
+    import("@/database/positions").ReadiumLocator,
+    string,
+    string
+  >
   timestamp: number
   updatedAt: Generated<string>
   userId: import("@/uuid").UUID

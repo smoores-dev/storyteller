@@ -36,6 +36,11 @@
 /web/whisper-builds
 /web/src/__fixtures__/
 /web/.env.local
+/web/assets
+/web/image-cache
+/web/uploads
+/web/work-dist
+**/storyteller.db*
 __tests__
 !/config/tsup
 /config/tsup/node_modules

@@ -28,7 +28,7 @@ export function BookShelves() {
     return books
       .filter((book) => book.status?.name === "Reading")
       .sort(
-        (a, b) => (a.position?.timestamp ?? 0) - (b.position?.timestamp ?? 0),
+        (a, b) => (b.position?.timestamp ?? 0) - (a.position?.timestamp ?? 0),
       )
   }, [books])
 

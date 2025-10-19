@@ -17,6 +17,7 @@ import {
 } from "@/database/books"
 import { type CollectionWithRelations } from "@/database/collections"
 import { type Creator } from "@/database/creators"
+import { type Position } from "@/database/positions"
 import {
   type NewSeries,
   type NewSeriesRelation,
@@ -43,6 +44,8 @@ export const api = createApi({
     "CurrentUser",
     "Authors",
     "MaxUploadChunkSize",
+    "UserReadingPreferences",
+    "UserReadingState",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -122,6 +125,9 @@ export const api = createApi({
       }),
       invalidatesTags: ["MaxUploadChunkSize"],
     }),
+    getBook: build.query<BookWithRelations, { uuid: UUID }>({
+      query: ({ uuid }) => `/books/${uuid}`,
+    }),
     deleteBook: build.mutation<
       void,
       { uuid: UUID; includeAssets?: "all" | "internal" }
@@ -156,6 +162,16 @@ export const api = createApi({
           books,
           includeAssets,
         },
+      }),
+    }),
+    getPosition: build.query<Position, { uuid: UUID }>({
+      query: ({ uuid }) => `/books/${uuid}/positions`,
+    }),
+    updatePosition: build.mutation<void, { uuid: UUID; position: Position }>({
+      query: ({ uuid, position }) => ({
+        url: `/books/${uuid}/positions`,
+        method: "POST",
+        body: position,
       }),
     }),
     getShelves: build.query<Shelves, void>({
@@ -564,6 +580,9 @@ export const {
   useDeleteBookAssetsMutation,
   useDeleteBookMutation,
   useDeleteBooksMutation,
+  useGetPositionQuery,
+  useGetBookQuery,
+  useUpdatePositionMutation,
   useDeleteCollectionMutation,
   useDeleteInviteMutation,
   useDeleteSeriesMutation,

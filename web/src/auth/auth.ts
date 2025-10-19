@@ -434,4 +434,6 @@ export async function assertHasPermission(permission: Permission) {
   if (!user.permissions?.[permission]) {
     notFound()
   }
+
+  return user
 }

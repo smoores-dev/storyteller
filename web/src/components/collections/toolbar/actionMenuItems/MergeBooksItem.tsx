@@ -167,6 +167,8 @@ export function MergeBooksItem({ selected, onCommit }: Props) {
     },
   })
 
+  // v to make the eslint-disable-line comment stay in the correct place
+  // prettier-ignore
   useEffect(() => {
     form.setValues({
       title: readaloud?.title || ebook?.title || audiobook?.title || "",
@@ -210,9 +212,8 @@ export function MergeBooksItem({ selected, onCommit }: Props) {
       ).map((narrator) => narrator.name),
       tags: initialTags,
     })
+  }, [ // eslint-disable-line react-hooks/exhaustive-deps
     // Form isn't a stable reference, but form.setValues is, I guess?
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
     audiobook?.authors,
     audiobook?.creators,
     audiobook?.description,

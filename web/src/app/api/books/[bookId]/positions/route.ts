@@ -5,7 +5,9 @@ import { getBookUuid } from "@/database/books"
 import {
   type Position,
   PositionConflictError,
+  fromLegacyLocator,
   getPosition,
+  toLegacyLocator,
   upsertPosition,
 } from "@/database/positions"
 import { logger } from "@/logging"
@@ -46,7 +48,15 @@ export const POST = withHasPermission<Params>("bookRead")(async (
   try {
     // Maintain the legacy "overwrite on equal" behavior. Always overwrite the
     // position, even if writing a different locator with the same timestamp.
-    await upsertPosition(user.id, bookUuid, body.locator, body.timestamp, true)
+    // transform legacy locator to new format (without `/` prefix, encoded special characters)
+    const transformedLocator = fromLegacyLocator(body.locator)
+    await upsertPosition(
+      user.id,
+      bookUuid,
+      transformedLocator,
+      body.timestamp,
+      true,
+    )
   } catch (e) {
     if (e instanceof PositionConflictError) {
       logger.debug(`Encountered conflict error, returning 409`)
@@ -81,5 +91,10 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   if (!position)
     return NextResponse.json({ message: "No position found" }, { status: 404 })
 
-  return NextResponse.json(position)
+  const locator = toLegacyLocator(position.locator)
+
+  return NextResponse.json({
+    ...position,
+    locator,
+  })
 })

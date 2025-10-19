@@ -1,0 +1,152 @@
+import { type Locator } from "@readium/shared"
+import {
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconLoader2,
+  IconPlayerPauseFilled,
+  IconPlayerPlayFilled,
+} from "@tabler/icons-react"
+import classNames from "classnames"
+
+import { cn } from "@/cn"
+import { type BookWithRelations } from "@/database/books"
+import {
+  skipPartButtonHeld,
+  skipPartButtonPressed,
+  togglePlay,
+} from "@/store/actions"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
+import {
+  selectIsLoading,
+  selectIsPlaying,
+} from "@/store/slices/audioPlayerSlice"
+import { selectDetailView } from "@/store/slices/preferencesSlice"
+import { selectReadingMode } from "@/store/slices/readingSessionSlice"
+
+import { ProgressBar } from "../ProgressBar"
+import { BookInfo } from "../preferenceItems/BookInfo"
+import { HoldButton } from "../preferenceItems/HoldButton"
+
+export type TocItem = {
+  id: string
+  title: string | undefined
+  href: string
+  level: number
+  locator: Locator | null
+}
+
+type Props = {
+  book: BookWithRelations
+  className?: string
+  isVisible: boolean
+}
+
+export const ReaderFooter = ({ book, className, isVisible }: Props) => {
+  const mode = useAppSelector(selectReadingMode)
+
+  const dispatch = useAppDispatch()
+  const playing = useAppSelector(selectIsPlaying)
+  const isLoading = useAppSelector(selectIsLoading)
+  const detailView = useAppSelector((state) =>
+    selectDetailView(state, book.uuid),
+  )
+
+  return (
+    <footer
+      className={cn(
+        className,
+        "bg-reader-bg text-reader-text relative left-0 right-0 flex h-20 transform flex-col overflow-hidden shadow-lg transition-[bottom] duration-300 ease-in-out md:h-16 md:pb-0",
+        // values other than translate-y-full do not seem to work in safari
+        // possibly due to https://github.com/tailwindlabs/tailwindcss/issues/18512
+        // would be nice to only show the progressbar
+        isVisible ? "bottom-0" : "-bottom-[74px] md:-bottom-[60px]",
+      )}
+    >
+      {mode !== "epub" && (
+        <div className="w-full">
+          <ProgressBar book={book} detailView={detailView} />
+        </div>
+      )}
+
+      <div className="mx-auto flex w-full max-w-6xl grow items-center justify-between px-4 py-3">
+        <div className="mx-auto flex grow items-center gap-3 self-center">
+          <BookInfo book={book} context="reader-footer" />
+        </div>
+        {mode !== "epub" && (
+          <div className="flex items-center gap-0">
+            <HoldButton
+              tooltip={
+                mode === "audiobook"
+                  ? "Skip backward 15 seconds"
+                  : "Previous fragment"
+              }
+              holdTooltip="Skip to previous chapter"
+              onHold={() => {
+                dispatch(skipPartButtonHeld("previous"))
+              }}
+              className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mt-1 rounded-full bg-transparent p-2"
+              onClick={() => {
+                dispatch(skipPartButtonPressed("previous"))
+              }}
+            >
+              <span className="sr-only">
+                {mode === "audiobook"
+                  ? "Skip backward 15 seconds"
+                  : "Previous fragment"}
+              </span>
+              <IconArrowBackUp size={20} />
+            </HoldButton>
+
+            <button
+              className={classNames(
+                `text-reader-text hover:text-reader-accent-hover hover:bg-reader-surface-hover rounded-sm bg-transparent p-1`,
+              )}
+              onClick={() => {
+                dispatch(togglePlay())
+              }}
+            >
+              {isLoading ? (
+                <>
+                  <span className="sr-only">Buffering</span>
+                  <IconLoader2 className="animate-spin" size={24} />
+                </>
+              ) : playing ? (
+                <>
+                  <span className="sr-only">Pause</span>
+                  <IconPlayerPauseFilled size={24} />
+                </>
+              ) : (
+                <>
+                  <span className="sr-only">Play</span>
+                  <IconPlayerPlayFilled size={24} />
+                </>
+              )}
+            </button>
+            <HoldButton
+              tooltip={
+                mode === "audiobook"
+                  ? "Skip forward 15 seconds"
+                  : "Next fragment"
+              }
+              holdTooltip="Skip to next chapter"
+              onHold={() => {
+                dispatch(skipPartButtonHeld("next"))
+              }}
+              className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mt-1 rounded-full bg-transparent p-2"
+              onClick={() => {
+                dispatch(skipPartButtonPressed("next"))
+              }}
+            >
+              <span className="sr-only">
+                {mode === "audiobook"
+                  ? "Skip forward 15 seconds"
+                  : "Next fragment"}
+              </span>
+              <IconArrowForwardUp size={20} />
+            </HoldButton>
+          </div>
+        )}
+      </div>
+    </footer>
+  )
+}

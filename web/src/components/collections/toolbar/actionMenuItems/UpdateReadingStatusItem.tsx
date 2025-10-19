@@ -63,8 +63,7 @@ export function UpdateReadingStatusItem({ selected }: Props) {
     form.initialize({
       statusUuid: majorityStatus,
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [majorityStatus])
+  }, [majorityStatus]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>

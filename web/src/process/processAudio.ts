@@ -24,12 +24,7 @@ import {
   getTranscriptionsFilepath,
 } from "@/assets/paths"
 import {
-  AAC_FILE_EXTENSIONS,
   COVER_IMAGE_FILE_EXTENSIONS,
-  MP3_FILE_EXTENSIONS,
-  MPEG4_FILE_EXTENSIONS,
-  OGG_FILE_EXTENSIONS,
-  OPUS_FILE_EXTENSIONS,
   getTrackChapters,
   getTrackDuration,
   isAudioFile,
@@ -39,36 +34,7 @@ import {
 import { type Book, type BookWithRelations } from "@/database/books"
 import { logger } from "@/logging"
 import { type StorytellerTranscription } from "@/synchronize/getSentenceRanges"
-
-function determineExtension(codec: string | null, inputFilename: string) {
-  if (codec === "libmp3lame") {
-    return ".mp3"
-  }
-  // iOS doesn't support Ogg containers at all, so we
-  // need to use mp4 containers for OPUS streams
-  if (codec === "aac" || codec === "libopus") {
-    return ".mp4"
-  }
-
-  const inputExtension = extname(inputFilename)
-  if (MP3_FILE_EXTENSIONS.includes(inputExtension)) {
-    return ".mp3"
-  }
-
-  // All of these containers usually contain streams
-  // that can be stored in an MP4 container, and iOS
-  // only supports MP4 and MP3 containers
-  if (
-    MPEG4_FILE_EXTENSIONS.includes(inputExtension) ||
-    OGG_FILE_EXTENSIONS.includes(inputExtension) ||
-    OPUS_FILE_EXTENSIONS.includes(inputExtension) ||
-    AAC_FILE_EXTENSIONS.includes(inputExtension)
-  ) {
-    return ".mp4"
-  }
-
-  return inputExtension
-}
+import { determineExtension } from "@/utils/audioManifest"
 
 export async function getSafeRanges(
   filepath: string,
@@ -147,6 +113,19 @@ export async function getSafeRanges(
   return ranges
 }
 
+export function getChapterFilename(
+  prefix: string,
+  index: number,
+  extension: string,
+) {
+  const bareFilename = `${prefix}${(index + 1).toString().padStart(5, "0")}`
+  return {
+    filename: `${bareFilename}${extension}`,
+    bare_filename: bareFilename,
+    extension,
+  }
+}
+
 export async function processAudioFile(
   filepath: string,
   outDir: string,
@@ -213,8 +192,9 @@ export async function processAudioFile(
   const audioFiles: AudioFile[] = []
   await Promise.all(
     chapterRanges.map(async (chapterRange, index) => {
-      const chapterFilename = `${prefix}${(index + 1).toString().padStart(5, "0")}${outputExtension}`
-      const chapterFilepath = join(outDir, chapterFilename)
+      const chapterFilename = getChapterFilename(prefix, index, outputExtension)
+
+      const chapterFilepath = join(outDir, chapterFilename.filename)
       await semaphore.wait()
       try {
         await rm(chapterFilepath, { force: true })
@@ -230,14 +210,7 @@ export async function processAudioFile(
           bitrate,
         )
         if (wasSplit) {
-          audioFiles.push({
-            filename: chapterFilename,
-            bare_filename: chapterFilename.slice(
-              0,
-              chapterFilename.lastIndexOf("."),
-            ),
-            extension: outputExtension,
-          })
+          audioFiles.push(chapterFilename)
         }
       } finally {
         semaphore.release()
