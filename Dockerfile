@@ -84,10 +84,6 @@ ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.cjs
 WORKDIR /app/.next/standalone/web
 
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8001/api/health/readium || exit 1
-
-
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 CMD ["node", "--enable-source-maps", "server.js"]
