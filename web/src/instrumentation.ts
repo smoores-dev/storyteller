@@ -36,7 +36,10 @@ export async function register() {
       logger.error(err)
     }
 
-    // start readium service for epub reading
+    if (!process.env["STORYTELLER_READIUM_ENABLED"]) {
+      return
+    }
+
     try {
       const readiumService = getReadiumService()
       await readiumService.start()
