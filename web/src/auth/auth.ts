@@ -166,6 +166,14 @@ export async function createConfig(
       },
     },
     callbacks: {
+      redirect({ url, baseUrl }) {
+        if (new URL(url).protocol === "storyteller:") {
+          return url
+        }
+        if (url.startsWith("/")) return `${baseUrl}${url}`
+        else if (new URL(url).origin === baseUrl) return url
+        return baseUrl
+      },
       session({ session, user }) {
         return {
           ...session,

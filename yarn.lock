@@ -289,6 +289,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@auth/core@patch:@auth/core@npm%3A0.39.1#~/.yarn/patches/@auth-core-npm-0.39.1-f602231038.patch":
+  version: 0.39.1
+  resolution: "@auth/core@patch:@auth/core@npm%3A0.39.1#~/.yarn/patches/@auth-core-npm-0.39.1-f602231038.patch::version=0.39.1&hash=5ba170"
+  dependencies:
+    "@panva/hkdf": "npm:^1.2.1"
+    jose: "npm:^6.0.6"
+    oauth4webapi: "npm:^3.3.0"
+    preact: "npm:10.24.3"
+    preact-render-to-string: "npm:6.5.11"
+  peerDependencies:
+    "@simplewebauthn/browser": ^9.0.1
+    "@simplewebauthn/server": ^9.0.2
+    nodemailer: ^6.8.0
+  peerDependenciesMeta:
+    "@simplewebauthn/browser":
+      optional: true
+    "@simplewebauthn/server":
+      optional: true
+    nodemailer:
+      optional: true
+  checksum: 10c0/6135903783ebc7c48b7727167fcdf979f1831b7c5c2f41fd6f0f57730f9d245fb306f0e72657464a0cf60896ed9cc034de56ec26b3db3a133bda54dc6c172ebe
+  languageName: node
+  linkType: hard
+
 "@aws-crypto/crc32@npm:5.2.0":
   version: 5.2.0
   resolution: "@aws-crypto/crc32@npm:5.2.0"
