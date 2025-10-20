@@ -66,5 +66,8 @@
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "typescript-plugin-css-modules": "^5.0.2"
+  },
+  "resolutions": {
+    "@auth/core@npm:0.39.1": "patch:@auth/core@npm%3A0.39.1#~/.yarn/patches/@auth-core-npm-0.39.1-f602231038.patch"
   }
 }
