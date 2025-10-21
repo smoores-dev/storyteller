@@ -467,4 +467,28 @@ void describe("Epub", () => {
       { title: "Subtitle", type: "subtitle" },
     ])
   })
+
+  void it("can set series/collections", async () => {
+    const outputPath = join("__fixtures__", "__output__", "series.epub")
+    using epub = await Epub.create(outputPath, {
+      title: "Title",
+      language: new Intl.Locale("en-US"),
+      identifier: "1",
+    })
+
+    await epub.addCollection({
+      name: "Series",
+      position: "1",
+      type: "series",
+    })
+
+    await epub.saveAndClose()
+
+    using updated = await Epub.from(outputPath)
+    const collections = await updated.getCollections()
+    assert.strictEqual(collections.length, 1)
+    assert.strictEqual(collections[0]?.name, "Series")
+    assert.strictEqual(collections[0].position, "1")
+    assert.strictEqual(collections[0].type, "series")
+  })
 })

@@ -375,6 +375,7 @@ export async function writeMetadataToEpub(
     await epub.addCollection({
       name: series.name,
       ...(series.position !== null && { position: series.position.toString() }),
+      type: "series",
     })
   }
 
