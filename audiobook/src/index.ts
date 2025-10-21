@@ -1,18 +1,47 @@
 import { randomUUID } from "node:crypto"
-import { createReadStream, createWriteStream } from "node:fs"
-import { mkdir, readFile, readdir } from "node:fs/promises"
+import { createWriteStream, rmSync } from "node:fs"
+import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { pipeline } from "node:stream/promises"
+import * as util from "node:util"
 
-import { PortablePath, ppath } from "@yarnpkg/fslib"
-import { ZipFS } from "@yarnpkg/libzip"
 import { lookup } from "mime-types"
+import yauzl from "yauzl"
+import { ZipFile } from "yazl"
 
 import { basename, dirname, extname, join } from "@storyteller-platform/path"
 
 import { AudiobookEntry } from "./entry.ts"
 import { type AttachedPic } from "./ffmpeg.ts"
 import { type AudiobookChapter, type AudiobookResource } from "./resources.ts"
+
+function promisify<Arg, Options, Return>(
+  api: (
+    arg: Arg,
+    options: Options,
+    callback: (err: Error | null, result: Return) => void,
+  ) => void,
+): (arg: Arg, options: Options) => Promise<Return> {
+  return function (arg: Arg, options: Options) {
+    return new Promise(function (resolve, reject) {
+      api(arg, options, function (err, response) {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve(response)
+      })
+    })
+  }
+}
+const unzipFromPath = promisify(
+  (
+    arg: string,
+    options: yauzl.Options,
+    callback: (err: Error | null, zipfile: yauzl.ZipFile) => void,
+  ) => {
+    yauzl.open(arg, options, callback)
+  },
+)
 
 export interface AudiobookMetadata {
   title?: string | null
@@ -63,7 +92,7 @@ export class Audiobook {
   protected metadata: AudiobookMetadata = {}
   private inputs: AudiobookInputs
   private entries: AudiobookEntry[] = []
-  private tmpDir: string | undefined = undefined
+  private extractPath: string | undefined = undefined
   private isZip: boolean
 
   private constructor(...inputs: AudiobookInputs) {
@@ -84,33 +113,59 @@ export class Audiobook {
   private async getEntries() {
     if (this.isZip) {
       const [first] = this.inputs
-      const tmpDir = join(
+      const extractPath = join(
         tmpdir(),
         `storyteller-platform-audiobook-${randomUUID()}`,
       )
-      this.tmpDir = tmpDir
-      await mkdir(this.tmpDir, { recursive: true })
-      const zipFs = new ZipFS(first as PortablePath)
-      const entries = zipFs.getAllFiles()
-      for (const entry of entries) {
-        await mkdir(join(this.tmpDir, dirname(entry)), { recursive: true })
-        await pipeline(
-          zipFs.createReadStream(entry),
-          createWriteStream(join(this.tmpDir, entry)),
-        )
-      }
-      zipFs.discardAndClose()
+      this.extractPath = extractPath
+      await mkdir(this.extractPath, { recursive: true })
+      const zipfile = await unzipFromPath(first, { lazyEntries: true })
+
+      using stack = new DisposableStack()
+      stack.defer(() => {
+        zipfile.close()
+      })
+
+      const entries: string[] = []
+
+      // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+      const { promise, resolve } = Promise.withResolvers<void>()
+      zipfile.on("end", () => {
+        resolve()
+      })
+      const openReadStream = util.promisify(
+        zipfile.openReadStream.bind(zipfile),
+      )
+      zipfile.readEntry()
+      zipfile.on("entry", async (entry: yauzl.Entry) => {
+        if (entry.fileName.endsWith("/")) {
+          // Directory file names end with '/'.
+          // Note that entries for directories themselves are optional.
+          // An entry's fileName implicitly requires its parent directories to exist.
+          zipfile.readEntry()
+        } else {
+          // file entry
+          entries.push(entry.fileName)
+          const readStream = await openReadStream(entry)
+          readStream.on("end", function () {
+            zipfile.readEntry()
+          })
+          const writePath = join(extractPath, entry.fileName)
+          await mkdir(dirname(writePath), { recursive: true })
+          readStream.pipe(createWriteStream(writePath))
+        }
+      })
+      await promise
+
       return entries
         .filter((entry) =>
           AUDIO_FILE_EXTENSIONS.includes(
             extname(entry) as (typeof AUDIO_FILE_EXTENSIONS)[number],
           ),
         )
-        .map((entry) => new AudiobookEntry(join(tmpDir, entry)))
+        .map((entry) => new AudiobookEntry(join(extractPath, entry)))
     } else {
-      return this.inputs.map(
-        (input) => new AudiobookEntry(input as PortablePath),
-      )
+      return this.inputs.map((input) => new AudiobookEntry(input))
     }
   }
 
@@ -294,26 +349,48 @@ export class Audiobook {
       await entry.saveAndClose()
     }
 
-    if (this.isZip) {
+    if (this.isZip && this.extractPath) {
+      const tmpArchivePath = join(
+        tmpdir(),
+        `storyteller-platform-epub-${randomUUID()}`,
+      )
+
       const [first] = this.inputs
-      const zipFs = new ZipFS(first as PortablePath)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const tmpDir = this.tmpDir!
-      const entries = await readdir(tmpDir, { recursive: true })
+      // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+      const { promise, resolve } = Promise.withResolvers<void>()
+      const zipfile = new ZipFile()
+      const writeStream = createWriteStream(tmpArchivePath)
+      writeStream.on("close", () => {
+        resolve()
+      })
+      await using stack = new AsyncDisposableStack()
+      stack.defer(async () => {
+        writeStream.close()
+        await rm(tmpArchivePath, { force: true })
+      })
+
+      zipfile.outputStream.pipe(writeStream)
+
+      const entries = await readdir(this.extractPath, {
+        recursive: true,
+        withFileTypes: true,
+      })
+
       for (const entry of entries) {
-        await zipFs.mkdirPromise(
-          ppath.join(PortablePath.root, dirname(entry) as PortablePath),
-          { recursive: true },
-        )
-        await pipeline(
-          createReadStream(join(tmpDir, entry)),
-          zipFs.createWriteStream(
-            ppath.join(PortablePath.root, entry as PortablePath),
+        if (entry.isDirectory()) continue
+
+        zipfile.addFile(
+          join(entry.parentPath, entry.name),
+          join(entry.parentPath, entry.name).replace(
+            `${this.extractPath}/`,
+            "",
           ),
         )
       }
+      zipfile.end()
+      await promise
 
-      zipFs.saveAndClose()
+      await cp(tmpArchivePath, first)
       return
     }
   }
@@ -321,6 +398,10 @@ export class Audiobook {
   discardAndClose() {
     this.inputs = [""]
     this.entries = []
+
+    if (this.extractPath) {
+      rmSync(this.extractPath, { recursive: true })
+    }
   }
 
   [Symbol.dispose]() {
