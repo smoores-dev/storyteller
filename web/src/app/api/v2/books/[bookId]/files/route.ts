@@ -1,15 +1,13 @@
 import { createHash } from "node:crypto"
-import { createReadStream } from "node:fs"
+import { createWriteStream } from "node:fs"
 import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, extname, join } from "node:path"
 import { Readable } from "node:stream"
-import { pipeline } from "node:stream/promises"
 
-import { type Filename, PortablePath, ppath } from "@yarnpkg/fslib"
-import { ZipFS } from "@yarnpkg/libzip"
 import contentDisposition from "content-disposition"
 import { lookup } from "mime-types"
+import { ZipFile } from "yazl"
 
 import {
   Audiobook,
@@ -69,17 +67,23 @@ async function getFilepath(
     `${book.uuid}.zip`,
   )
   await mkdir(dirname(zipFilepath), { recursive: true })
-  const zipFs = new ZipFS(ppath.resolve(zipFilepath), { create: true })
+
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+  const { promise, resolve } = Promise.withResolvers<void>()
+  const zipfile = new ZipFile()
+  const writeStream = createWriteStream(zipFilepath)
+  writeStream.on("close", () => {
+    resolve()
+  })
+  using stack = new DisposableStack()
+  stack.defer(() => {
+    writeStream.close()
+  })
+
+  zipfile.outputStream.pipe(writeStream)
+
   for (const audioFile of audioFiles) {
-    zipFs.mkdirpSync(
-      ppath.join(PortablePath.root, dirname(audioFile) as PortablePath),
-    )
-    await pipeline(
-      createReadStream(join(filepath, audioFile)),
-      zipFs.createWriteStream(
-        ppath.join(PortablePath.root, audioFile as PortablePath),
-      ),
-    )
+    zipfile.addFile(join(filepath, audioFile), audioFile)
   }
 
   if (rpf) {
@@ -94,73 +98,71 @@ async function getFilepath(
 
     const audiocover = await getAudioCover(book)
     if (audiocover) {
-      await zipFs.writeFilePromise(
-        ppath.join(PortablePath.root, audiocover.filename as Filename),
-        audiocover.data,
-      )
+      zipfile.addBuffer(audiocover.data, audiocover.filename)
     }
 
-    await zipFs.writeJsonPromise(
-      ppath.join(PortablePath.root, "manifest.audiobook-manifest"),
-      {
-        "@context": "http:/readium.org/webpub-manifest/context.jsonld",
-        metadata: {
-          "@type": "http://schema.org/Audiobook",
-          conformsTo: "https://readium.org/webpub-manifest/profiles/audiobook",
-          identifier: epub?.getIdentifier() ?? book.audiobook?.uuid,
-          title: book.title,
-          description: book.description,
-          subject: book.tags.map((tag) => tag.name),
-          ...(book.authors.length && {
-            author:
-              book.authors.length === 1
-                ? book.authors[0]?.name
-                : book.authors.map((author) => author.name),
-          }),
-          ...(book.narrators.length && {
-            narrator:
-              book.narrators.length === 1
-                ? book.narrators[0]?.name
-                : book.narrators.map((narrator) => narrator.name),
-          }),
-          language: book.language ?? "und",
-          published: (await audiobook.getReleaseDate()) ?? undefined,
-          duration: await audiobook.getDuration(),
-        },
-        links: [
-          {
-            rel: "self",
-            href: "/manifest.audiobook-manifest",
-            type: "application/audiobook+json",
-          },
-        ],
-        readingOrder: (await audiobook.getResources()).map(
-          ({ filename, ...resource }) => ({
-            ...resource,
-            href: ppath.join(
-              PortablePath.root,
-              filename.replace(new RegExp(`^${filepath}`), "") as PortablePath,
-            ),
-          }),
-        ),
-        resources: audiocover
-          ? [
-              {
-                rel: "cover",
-                href: `/${audiocover.filename}`,
-                type: audiocover.mimeType,
-              },
-            ]
-          : [],
-        toc: (await audiobook.getChapters()).map((chapter) => ({
-          href: `${ppath.join(PortablePath.root, chapter.filename.replace(new RegExp(`^${filepath}`), "") as PortablePath)}#t=${chapter.start}`,
-          title: chapter.title,
-        })),
+    const manifest = {
+      "@context": "http:/readium.org/webpub-manifest/context.jsonld",
+      metadata: {
+        "@type": "http://schema.org/Audiobook",
+        conformsTo: "https://readium.org/webpub-manifest/profiles/audiobook",
+        identifier: epub?.getIdentifier() ?? book.audiobook?.uuid,
+        title: book.title,
+        description: book.description,
+        subject: book.tags.map((tag) => tag.name),
+        ...(book.authors.length && {
+          author:
+            book.authors.length === 1
+              ? book.authors[0]?.name
+              : book.authors.map((author) => author.name),
+        }),
+        ...(book.narrators.length && {
+          narrator:
+            book.narrators.length === 1
+              ? book.narrators[0]?.name
+              : book.narrators.map((narrator) => narrator.name),
+        }),
+        language: book.language ?? "und",
+        published: (await audiobook.getReleaseDate()) ?? undefined,
+        duration: await audiobook.getDuration(),
       },
+      links: [
+        {
+          rel: "self",
+          href: "/manifest.audiobook-manifest",
+          type: "application/audiobook+json",
+        },
+      ],
+      readingOrder: (await audiobook.getResources()).map(
+        ({ filename, ...resource }) => ({
+          ...resource,
+          href: join("/", filename.replace(filepath, "")),
+        }),
+      ),
+      resources: audiocover
+        ? [
+            {
+              rel: "cover",
+              href: `/${audiocover.filename}`,
+              type: audiocover.mimeType,
+            },
+          ]
+        : [],
+      toc: (await audiobook.getChapters()).map((chapter) => ({
+        href: `${join("/", chapter.filename.replace(filepath, ""))}#t=${chapter.start}`,
+        title: chapter.title,
+      })),
+    }
+
+    zipfile.addBuffer(
+      Buffer.from(JSON.stringify(manifest)),
+      "manifest.audiobook-manifest",
     )
   }
 
-  zipFs.saveAndClose()
+  zipfile.end()
+  await promise
+
   return zipFilepath
 }
 

@@ -45,13 +45,12 @@
     "@tabler/icons-react": "^3.26.0",
     "@tus/file-store": "^2.0.0",
     "@tus/server": "^2.2.0",
+    "@types/yauzl": "^2.10.3",
     "@uppy/core": "^4.4.6",
     "@uppy/dashboard": "^4.3.4",
     "@uppy/react": "^4.3.0",
     "@uppy/tus": "^4.2.2",
     "@uppy/utils": "^6.1.5",
-    "@yarnpkg/fslib": "^3.1.2",
-    "@yarnpkg/libzip": "^3.2.2",
     "@zip.js/zip.js": "^2.7.40",
     "argon2": "^0.40.1",
     "axios": " 1.6.7",
@@ -92,7 +91,9 @@
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "wink-eng-lite-web-model": "^1.8.0",
-    "wink-nlp": "^2.3.0"
+    "wink-nlp": "^2.3.0",
+    "yauzl": "^3.2.0",
+    "yazl": "^3.3.1"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.44.1",
@@ -108,6 +109,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/react-window": "^1",
+    "@types/yazl": "^3",
     "autoprefixer": "^10.4.20",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
     "esbuild": "^0.25.9",

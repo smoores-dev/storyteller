@@ -1,15 +1,57 @@
 import { randomUUID } from "node:crypto"
-import { rmSync } from "node:fs"
-import { cp, writeFile } from "node:fs/promises"
+import { createWriteStream, rmSync } from "node:fs"
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
+import * as util from "node:util"
 
-import { type NativePath, PortablePath, npath, ppath } from "@yarnpkg/fslib"
-import { DEFAULT_COMPRESSION_LEVEL, ZipFS } from "@yarnpkg/libzip"
 import { Mutex } from "async-mutex"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize from "mem"
 import { lookup } from "mime-types"
 import { nanoid } from "nanoid"
+import yauzl, { type Options } from "yauzl"
+import { ZipFile } from "yazl"
+
+import { dirname, join, resolve } from "@storyteller-platform/path"
+
+function promisify<Arg, Options, Return>(
+  api: (
+    arg: Arg,
+    options: Options,
+    callback: (err: Error | null, result: Return) => void,
+  ) => void,
+): (arg: Arg, options: Options) => Promise<Return> {
+  return function (arg: Arg, options: Options) {
+    return new Promise(function (resolve, reject) {
+      api(arg, options, function (err, response) {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve(response)
+      })
+    })
+  }
+}
+
+const unzipFromBuffer = promisify(
+  (
+    arg: Buffer,
+    options: Options,
+    callback: (err: Error | null, zipfile: yauzl.ZipFile) => void,
+  ) => {
+    yauzl.fromBuffer(arg, options, callback)
+  },
+)
+const unzipFromPath = promisify(
+  (
+    arg: string,
+    options: Options,
+    callback: (err: Error | null, zipfile: yauzl.ZipFile) => void,
+  ) => {
+    yauzl.open(arg, options, callback)
+  },
+)
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
@@ -357,7 +399,7 @@ export class Epub {
     return "#text" in node
   }
 
-  private rootfile: PortablePath | null = null
+  private rootfile: string | null = null
 
   private manifest: Record<string, ManifestItem> | null = null
 
@@ -366,8 +408,7 @@ export class Epub {
   private packageMutex = new Mutex()
 
   protected constructor(
-    protected zipFs: ZipFS,
-    protected zipPath: NativePath,
+    protected extractPath: string,
     protected inputPath: string | undefined,
   ) {
     this.readXhtmlItemContents = memoize(
@@ -400,11 +441,10 @@ export class Epub {
     }: DublinCore,
     additionalMetadata: EpubMetadata = [],
   ): Promise<Epub> {
-    const tmp = npath.join(
+    const extractPath = join(
       tmpdir(),
-      `storyteller-platform-epub-${randomUUID()}.epub`,
+      `storyteller-platform-epub-${randomUUID()}`,
     )
-    const zipFs = new ZipFS(npath.toPortablePath(tmp), { create: true })
     const encoder = new TextEncoder()
     const container = encoder.encode(`<?xml version="1.0"?>
 <container>
@@ -413,11 +453,8 @@ export class Epub {
   </rootfiles>
 </container>
 `)
-    await zipFs.mkdirpPromise(ppath.join(PortablePath.root, "META-INF"))
-    await zipFs.writeFilePromise(
-      ppath.join(PortablePath.root, "META-INF", "container.xml"),
-      container,
-    )
+    await mkdir(join(extractPath, "META-INF"), { recursive: true })
+    await writeFile(join(extractPath, "META-INF", "container.xml"), container)
 
     const packageDocument = encoder.encode(`<?xml version="1.0"?>
 <package unique-identifier="pub-id" dir="${language.textInfo.direction}" xml:lang=${language.toString()} version="3.0">
@@ -429,13 +466,10 @@ export class Epub {
   </spine>
 </package>
 `)
-    await zipFs.mkdirpPromise(ppath.join(PortablePath.root, "OEBPS"))
-    await zipFs.writeFilePromise(
-      ppath.join(PortablePath.root, "OEBPS", "content.opf"),
-      packageDocument,
-    )
+    await mkdir(join(extractPath, "OEBPS"))
+    await writeFile(join(extractPath, "OEBPS", "content.opf"), packageDocument)
 
-    const epub = new this(zipFs, tmp, path)
+    const epub = new this(extractPath, path)
     const metadata: MetadataEntry[] = [
       {
         id: "pub-id",
@@ -478,19 +512,48 @@ export class Epub {
    */
   // eslint-disable-next-line @typescript-eslint/require-await
   static async from(pathOrData: string | Uint8Array): Promise<Epub> {
-    const tmp = npath.join(
+    const extractPath = join(
       tmpdir(),
       `storyteller-platform-epub-${randomUUID()}.epub`,
     )
-    if (typeof pathOrData !== "string") {
-      await writeFile(tmp, pathOrData)
-    } else {
-      await cp(pathOrData, tmp)
-    }
-    const zipFs = new ZipFS(npath.toPortablePath(tmp))
+    const zipfile =
+      typeof pathOrData === "string"
+        ? await unzipFromPath(pathOrData, { lazyEntries: true })
+        : await unzipFromBuffer(Buffer.from(pathOrData), { lazyEntries: true })
+
+    using stack = new DisposableStack()
+    stack.defer(() => {
+      zipfile.close()
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+    const { promise, resolve } = Promise.withResolvers<void>()
+    zipfile.on("end", () => {
+      resolve()
+    })
+    const openReadStream = util.promisify(zipfile.openReadStream.bind(zipfile))
+    zipfile.readEntry()
+    zipfile.on("entry", async (entry: yauzl.Entry) => {
+      if (entry.fileName.endsWith("/")) {
+        // Directory file names end with '/'.
+        // Note that entries for directories themselves are optional.
+        // An entry's fileName implicitly requires its parent directories to exist.
+        zipfile.readEntry()
+      } else {
+        // file entry
+        const readStream = await openReadStream(entry)
+        readStream.on("end", function () {
+          zipfile.readEntry()
+        })
+        const writePath = join(extractPath, entry.fileName)
+        await mkdir(dirname(writePath), { recursive: true })
+        readStream.pipe(createWriteStream(writePath))
+      }
+    })
+    await promise
+
     return new this(
-      zipFs,
-      tmp,
+      extractPath,
       typeof pathOrData === "string" ? pathOrData : undefined,
     )
   }
@@ -500,26 +563,23 @@ export class Epub {
 
     const filename = this.resolveHref(rootfile, href)
 
-    await this.zipFs.removePromise(filename)
+    await rm(filename)
   }
 
-  private async getFileData(path: PortablePath): Promise<Uint8Array>
+  private async getFileData(path: string): Promise<Uint8Array>
+  private async getFileData(path: string, encoding: "utf-8"): Promise<string>
   private async getFileData(
-    path: PortablePath,
-    encoding: "utf-8",
-  ): Promise<string>
-  private async getFileData(
-    path: PortablePath,
+    path: string,
     encoding?: "utf-8",
   ): Promise<string | Uint8Array> {
-    return await this.zipFs.readFilePromise(path, encoding)
+    return await readFile(path, encoding)
   }
 
   private async getRootfile() {
     if (this.rootfile !== null) return this.rootfile
 
     const containerString = await this.getFileData(
-      ppath.join(PortablePath.root, "META-INF", "container.xml"),
+      join(this.extractPath, "META-INF", "container.xml"),
       "utf-8",
     )
 
@@ -558,7 +618,7 @@ export class Epub {
         "Failed to parse EPUB container.xml: Found no rootfile element",
       )
 
-    this.rootfile = ppath.resolve(PortablePath.root, fullPath)
+    this.rootfile = resolve(this.extractPath, fullPath)
 
     return this.rootfile
   }
@@ -1157,7 +1217,11 @@ export class Epub {
     // https://www.mobileread.com/forums/showthread.php?t=87928
     if (!locale || locale.toLowerCase() === "und") return null
 
-    return new Intl.Locale(locale)
+    try {
+      return new Intl.Locale(locale)
+    } catch {
+      return null
+    }
   }
 
   /**
@@ -1945,9 +2009,9 @@ export class Epub {
   /**
    * Returns a Zip Entry path for an HREF
    */
-  private resolveHref(from: PortablePath, href: string) {
-    const startPath = ppath.dirname(from)
-    return ppath.resolve(PortablePath.root, startPath, href)
+  private resolveHref(from: string, href: string) {
+    const startPath = dirname(from)
+    return resolve(this.extractPath, startPath, href)
   }
 
   /**
@@ -2036,21 +2100,21 @@ export class Epub {
   }
 
   private async writeEntryContents(
-    path: PortablePath,
+    path: string,
     contents: Uint8Array,
   ): Promise<void>
   private async writeEntryContents(
-    path: PortablePath,
+    path: string,
     contents: string,
     encoding: "utf-8",
   ): Promise<void>
   private async writeEntryContents(
-    path: PortablePath,
+    path: string,
     contents: Uint8Array | string,
     encoding?: "utf-8",
   ): Promise<void> {
-    await this.zipFs.mkdirpPromise(ppath.dirname(path))
-    await this.zipFs.writeFilePromise(path, contents, encoding)
+    await mkdir(dirname(path), { recursive: true })
+    await writeFile(path, contents, encoding)
   }
 
   /**
@@ -2221,8 +2285,8 @@ export class Epub {
           )
         : (contents as Uint8Array)
 
-    await this.zipFs.mkdirpPromise(ppath.dirname(filename))
-    await this.zipFs.writeFilePromise(filename, data)
+    await mkdir(dirname(filename), { recursive: true })
+    await writeFile(filename, data)
   }
 
   /**
@@ -2392,12 +2456,11 @@ export class Epub {
   }
 
   discardAndClose() {
-    this.zipFs.discardAndClose()
     this.rootfile = null
     this.manifest = null
     this.spine = null
 
-    rmSync(this.zipPath, { recursive: true, force: true })
+    rmSync(this.extractPath, { recursive: true, force: true })
   }
 
   /**
@@ -2422,30 +2485,50 @@ export class Epub {
       },
     )
 
-    // Ensure that there's a valid mimetype
-    // file
-    // @ts-expect-error There isn't an API for setting a specific
-    // compression level for a specific file, so we just set
-    // it globally before writing the mimetype file, which needs
-    // to be saved without compression
-    this.zipFs.level = 0
-    await this.zipFs.writeFilePromise(
-      ppath.join(PortablePath.root, "mimetype"),
-      "application/epub+zip",
-      "utf-8",
+    const tmpArchivePath = join(
+      tmpdir(),
+      `storyteller-platform-epub-${randomUUID()}`,
     )
-    // @ts-expect-error Set the compression level back to the
-    // default after writing the mimetype file
-    this.zipFs.level = DEFAULT_COMPRESSION_LEVEL
 
-    this.zipFs.saveAndClose()
-    await cp(this.zipPath, this.inputPath, { force: true })
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+    const { promise, resolve } = Promise.withResolvers<void>()
+    const zipfile = new ZipFile()
+    const writeStream = createWriteStream(tmpArchivePath)
+    writeStream.on("close", () => {
+      resolve()
+    })
+    await using stack = new AsyncDisposableStack()
+    stack.defer(async () => {
+      writeStream.close()
+      await rm(tmpArchivePath, { force: true })
+    })
+
+    zipfile.outputStream.pipe(writeStream)
+
+    zipfile.addBuffer(Buffer.from("application/epub+zip"), "mimetype", {
+      compress: false,
+    })
+
+    const entries = await readdir(this.extractPath, {
+      recursive: true,
+      withFileTypes: true,
+    })
+
+    for (const entry of entries) {
+      if (entry.name === "mimetype" || entry.isDirectory()) continue
+
+      zipfile.addFile(
+        join(entry.parentPath, entry.name),
+        join(entry.parentPath, entry.name).replace(`${this.extractPath}/`, ""),
+      )
+    }
+    zipfile.end()
+    await promise
+
+    await cp(tmpArchivePath, this.inputPath)
   }
 
   [Symbol.dispose]() {
-    // @ts-expect-error internal property
-    if (this.zipFs.ready) {
-      this.discardAndClose()
-    }
+    this.discardAndClose()
   }
 }

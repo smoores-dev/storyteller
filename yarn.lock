@@ -9946,8 +9946,8 @@ __metadata:
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/mime-types": "npm:^2"
     "@types/node": "npm:^24.0.0"
-    "@yarnpkg/fslib": "npm:^3.1.3"
-    "@yarnpkg/libzip": "npm:^3.2.2"
+    "@types/yauzl": "npm:^2.10.3"
+    "@types/yazl": "npm:^3"
     markdown-toc: "npm:^1.2.0"
     mime-types: "npm:^3.0.1"
     music-metadata: "npm:^11.9.0"
@@ -9958,6 +9958,8 @@ __metadata:
     typedoc-plugin-markdown: "npm:^4.6.3"
     typedoc-plugin-remark: "npm:^1.2.0"
     typescript: "npm:^5.9.2"
+    yauzl: "npm:^3.2.0"
+    yazl: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -9997,8 +9999,8 @@ __metadata:
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/mime-types": "npm:^2"
     "@types/node": "npm:^24.0.0"
-    "@yarnpkg/fslib": "npm:^3.1.3"
-    "@yarnpkg/libzip": "npm:^3.2.2"
+    "@types/yauzl": "npm:^2.10.3"
+    "@types/yazl": "npm:^3"
     "@zip.js/zip.js": "npm:^2.0.0"
     async-mutex: "npm:^0.5.0"
     fast-xml-parser: "npm:^4.0.0"
@@ -10013,6 +10015,8 @@ __metadata:
     typedoc-plugin-markdown: "npm:^4.6.3"
     typedoc-plugin-remark: "npm:^1.2.0"
     typescript: "npm:^5.9.2"
+    yauzl: "npm:^3.2.0"
+    yazl: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -10166,13 +10170,13 @@ __metadata:
     "@types/react": "npm:^19.0.0"
     "@types/react-dom": "npm:^19.0.0"
     "@types/react-window": "npm:^1"
+    "@types/yauzl": "npm:^2.10.3"
+    "@types/yazl": "npm:^3"
     "@uppy/core": "npm:^4.4.6"
     "@uppy/dashboard": "npm:^4.3.4"
     "@uppy/react": "npm:^4.3.0"
     "@uppy/tus": "npm:^4.2.2"
     "@uppy/utils": "npm:^6.1.5"
-    "@yarnpkg/fslib": "npm:^3.1.2"
-    "@yarnpkg/libzip": "npm:^3.2.2"
     "@zip.js/zip.js": "npm:^2.7.40"
     argon2: "npm:^0.40.1"
     autoprefixer: "npm:^10.4.20"
@@ -10226,6 +10230,8 @@ __metadata:
     vaul: "npm:^1.1.2"
     wink-eng-lite-web-model: "npm:^1.8.0"
     wink-nlp: "npm:^2.3.0"
+    yauzl: "npm:^3.2.0"
+    yazl: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -11074,13 +11080,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/emscripten@npm:^1.39.6":
-  version: 1.40.1
-  resolution: "@types/emscripten@npm:1.40.1"
-  checksum: 10c0/0d6cd29e551f85ba49a0e7d58de16c857960d40e57553e7cc2860b7d80c4210c992ed292998ec3fd3bdc3b41d96541e91d01a6c232106ac0ad79b4710e87f38d
-  languageName: node
-  linkType: hard
-
 "@types/eslint-scope@npm:^3.7.7":
   version: 3.7.7
   resolution: "@types/eslint-scope@npm:3.7.7"
@@ -11759,6 +11758,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/yauzl@npm:^2.10.3":
+  version: 2.10.3
+  resolution: "@types/yauzl@npm:2.10.3"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/f1b7c1b99fef9f2fe7f1985ef7426d0cebe48cd031f1780fcdc7451eec7e31ac97028f16f50121a59bcf53086a1fc8c856fd5b7d3e00970e43d92ae27d6b43dc
+  languageName: node
+  linkType: hard
+
+"@types/yazl@npm:^3":
+  version: 3.3.0
+  resolution: "@types/yazl@npm:3.3.0"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/6a8679d31c2274fb91677eeaa23c14912d614f627ced85b2c0e5af3a24eab49eb3d1570eae458eb1cebc070b8366fa1a944c871af28b70006c318bae4a9dcbe8
+  languageName: node
+  linkType: hard
+
 "@typescript-eslint/eslint-plugin@npm:^8.41.0":
   version: 8.41.0
   resolution: "@typescript-eslint/eslint-plugin@npm:8.41.0"
@@ -12381,28 +12398,6 @@ __metadata:
   version: 4.2.2
   resolution: "@xtuc/long@npm:4.2.2"
   checksum: 10c0/8582cbc69c79ad2d31568c412129bf23d2b1210a1dfb60c82d5a1df93334da4ee51f3057051658569e2c196d8dc33bc05ae6b974a711d0d16e801e1d0647ccd1
-  languageName: node
-  linkType: hard
-
-"@yarnpkg/fslib@npm:^3.1.2, @yarnpkg/fslib@npm:^3.1.3":
-  version: 3.1.3
-  resolution: "@yarnpkg/fslib@npm:3.1.3"
-  dependencies:
-    tslib: "npm:^2.4.0"
-  checksum: 10c0/ce4cebede6af53e445515b46ad1467e80cc7dce248de93c97ec42de1e26bae44fd766f07230152566fe4fcfba46a7496d21fa855e750c3d1036087608a56a329
-  languageName: node
-  linkType: hard
-
-"@yarnpkg/libzip@npm:^3.2.2":
-  version: 3.2.2
-  resolution: "@yarnpkg/libzip@npm:3.2.2"
-  dependencies:
-    "@types/emscripten": "npm:^1.39.6"
-    "@yarnpkg/fslib": "npm:^3.1.3"
-    tslib: "npm:^2.4.0"
-  peerDependencies:
-    "@yarnpkg/fslib": ^3.1.3
-  checksum: 10c0/40f5c63520477c9d5ed98e0ad888a5aa48f5641df883664b6892be2b4068b5489ac030123fe3569599269adc3e773a6ca890c41e033c71daf37a9fa51011784a
   languageName: node
   linkType: hard
 
@@ -13875,6 +13870,20 @@ __metadata:
     buffer-alloc-unsafe: "npm:^1.1.0"
     buffer-fill: "npm:^1.0.0"
   checksum: 10c0/09d87dd53996342ccfbeb2871257d8cdb25ce9ee2259adc95c6490200cd6e528c5fbae8f30bcc323fe8d8efb0fe541e4ac3bbe9ee3f81c6b7c4b27434cc02ab4
+  languageName: node
+  linkType: hard
+
+"buffer-crc32@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "buffer-crc32@npm:1.0.0"
+  checksum: 10c0/8b86e161cee4bb48d5fa622cbae4c18f25e4857e5203b89e23de59e627ab26beb82d9d7999f2b8de02580165f61f83f997beaf02980cdf06affd175b651921ab
+  languageName: node
+  linkType: hard
+
+"buffer-crc32@npm:~0.2.3":
+  version: 0.2.13
+  resolution: "buffer-crc32@npm:0.2.13"
+  checksum: 10c0/cb0a8ddf5cf4f766466db63279e47761eb825693eeba6a5a95ee4ec8cb8f81ede70aa7f9d8aeec083e781d47154290eb5d4d26b3f7a465ec57fb9e7d59c47150
   languageName: node
   linkType: hard
 
@@ -26708,6 +26717,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pend@npm:~1.2.0":
+  version: 1.2.0
+  resolution: "pend@npm:1.2.0"
+  checksum: 10c0/8a87e63f7a4afcfb0f9f77b39bb92374afc723418b9cb716ee4257689224171002e07768eeade4ecd0e86f1fa3d8f022994219fb45634f2dbd78c6803e452458
+  languageName: node
+  linkType: hard
+
 "picocolors@npm:^1.0.0":
   version: 1.0.0
   resolution: "picocolors@npm:1.0.0"
@@ -34924,6 +34940,25 @@ __metadata:
     y18n: "npm:^5.0.5"
     yargs-parser: "npm:^21.1.1"
   checksum: 10c0/ccd7e723e61ad5965fffbb791366db689572b80cca80e0f96aad968dfff4156cd7cd1ad18607afe1046d8241e6fb2d6c08bf7fa7bfb5eaec818735d8feac8f05
+  languageName: node
+  linkType: hard
+
+"yauzl@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "yauzl@npm:3.2.0"
+  dependencies:
+    buffer-crc32: "npm:~0.2.3"
+    pend: "npm:~1.2.0"
+  checksum: 10c0/7b40b3dc46b95761a2a764391d257a11f494d365875af73a1b48fe16d4bd103dd178612e60168d12a0e59a8ba4f6411a15a5e8871d5a5f78255d6cc1ce39ee62
+  languageName: node
+  linkType: hard
+
+"yazl@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "yazl@npm:3.3.1"
+  dependencies:
+    buffer-crc32: "npm:^1.0.0"
+  checksum: 10c0/8290dffd8afc4ea32459c0ce5d7e22af250515aa0170f289cbc896530d3cd40c5be4788b5e3e7aa5cd21889778071f424e1824faadbd257dbd5ff80fb60d1fa6
   languageName: node
   linkType: hard
 

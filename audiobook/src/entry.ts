@@ -131,8 +131,14 @@ export class AudiobookEntry {
     return info.duration
   }
 
+  async getBitRate(): Promise<number | undefined> {
+    const info = await this.getInfo()
+    return info.bitRate
+  }
+
   async getResource(): Promise<AudiobookResource> {
     const duration = await this.getDuration()
+    const bitrate = (await this.getBitRate()) ?? null
     const title = (await this.getTrackTitle()) ?? null
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const type = lookupAudioMime(this.filename)!
@@ -141,7 +147,7 @@ export class AudiobookEntry {
       title,
       type,
       duration,
-      bitrate: null,
+      bitrate,
     }
   }
 

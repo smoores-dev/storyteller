@@ -149,9 +149,9 @@ type FfprobeOutput = {
       publisher?: string
       Publisher?: string
     }
+    duration: string
+    bit_rate?: string
   }
-  duration: string
-  bit_rate?: string
   chapters: FfprobeChapterOutput[]
   streams: FfprobeStreamOutput[]
 }
@@ -208,9 +208,7 @@ export async function getTrackMetadata(path: string) {
     `ffprobe -i ${quotePath(path)} -v quiet -show_format -show_chapters -show_streams -output_format json`,
   )
 
-  const { chapters, streams, format, duration, bit_rate } = JSON.parse(
-    stdout,
-  ) as FfprobeOutput
+  const { chapters, streams, format } = JSON.parse(stdout) as FfprobeOutput
   const attachedPicStream = streams.find(
     (
       stream,
@@ -243,8 +241,11 @@ export async function getTrackMetadata(path: string) {
   }
 
   return {
-    duration: parseFloat(duration),
-    bitRate: bit_rate !== undefined ? parseFloat(bit_rate) : bit_rate,
+    duration: parseFloat(format.duration),
+    bitRate:
+      format.bit_rate !== undefined
+        ? parseFloat(format.bit_rate)
+        : format.bit_rate,
     tags: {
       title: format.tags.title ?? format.tags.Title,
       subtitle: format.tags.subtitle ?? format.tags.Subtitle,
