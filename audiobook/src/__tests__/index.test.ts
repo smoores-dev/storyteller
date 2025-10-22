@@ -88,4 +88,22 @@ void describe("Audiobook", () => {
     const cover = await actual.getCoverArt()
     assert.strictEqual(cover?.data.length, 155517)
   })
+
+  void it("preserves chapter metadata", async () => {
+    await cp(
+      "src/__fixtures__/sleepy_hollow_irving_64kb.mp3",
+      "src/__fixtures__/__output__/sleepy_hollow_irving_64kb.mp3",
+    )
+    using audiobook = await Audiobook.from(
+      "src/__fixtures__/__output__/sleepy_hollow_irving_64kb.mp3",
+    )
+    const chapters = await audiobook.getChapters()
+    await audiobook.saveAndClose()
+    using updated = await Audiobook.from(
+      "src/__fixtures__/__output__/sleepy_hollow_irving_64kb.mp3",
+    )
+    const updatedChapters = await updated.getChapters()
+
+    assert.deepStrictEqual(chapters, updatedChapters)
+  })
 })
