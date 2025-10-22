@@ -84,7 +84,7 @@ async function findValidAudioCoverFile(directory: string) {
 
 export async function getAudioCoverFilepath(book: BookWithRelations) {
   const audioDirectory = book.audiobook?.filepath
-  if (!audioDirectory) return null
+  if (!audioDirectory || book.audiobook?.missing) return null
 
   const coverFile = await findValidAudioCoverFile(audioDirectory)
 
@@ -117,7 +117,7 @@ export async function getCustomAudioCover(book: BookWithRelations) {
 }
 
 export async function getAudioCoverFromCustomFile(book: BookWithRelations) {
-  if (!book.audiobook) return null
+  if (!book.audiobook || book.audiobook.missing) return null
   const customCoverFilepath = await getAudioCoverFilepath(book)
 
   if (!customCoverFilepath) return null
@@ -134,7 +134,7 @@ export async function getAudioCoverFromCustomFile(book: BookWithRelations) {
 }
 
 export async function getAudioCoverFromReadaloud(book: BookWithRelations) {
-  if (!book.readaloud?.filepath) return null
+  if (!book.readaloud?.filepath || book.readaloud.missing) return null
 
   using epub = await Epub.from(book.readaloud.filepath)
 
@@ -159,7 +159,7 @@ export async function getAudioCoverFromReadaloud(book: BookWithRelations) {
 }
 
 export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
-  if (!book.readaloud?.filepath) return null
+  if (!book.readaloud?.filepath || book.readaloud.missing) return null
 
   using epub = await Epub.from(book.readaloud.filepath)
 
@@ -202,7 +202,7 @@ export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
 }
 
 export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
-  if (!book.audiobook) return null
+  if (!book.audiobook || book.audiobook.missing) return null
   const directory = book.audiobook.filepath
 
   const entries = await readdir(directory, { recursive: true })
@@ -248,7 +248,13 @@ export async function getAudioCover(book: BookWithRelations) {
 }
 
 export async function getEpubCover(book: BookWithRelations) {
-  const epubFilepath = book.readaloud?.filepath ?? book.ebook?.filepath
+  const epubFilepath =
+    !book.readaloud?.missing && book.readaloud?.filepath
+      ? book.readaloud.filepath
+      : !book.ebook?.missing && book.ebook
+        ? book.ebook.filepath
+        : null
+
   if (!epubFilepath) return null
 
   if (!epubFilepath) return null

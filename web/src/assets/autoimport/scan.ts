@@ -189,7 +189,7 @@ export async function scan(
       return
     }
 
-    const book = books.find(
+    let book = books.find(
       (book) =>
         (bookPath.ebook && bookPath.ebook === book.ebook?.filepath) ||
         (bookPath.audiobook &&
@@ -500,6 +500,8 @@ export async function scan(
       }
     }
 
+    book = await updateBook(book.uuid, update, relations)
+
     const epubCover = await getEpubCover(book)
     if (epubCover) {
       await writeExtractedEbookCover(book, epubCover.filename, epubCover.data)
@@ -531,8 +533,6 @@ export async function scan(
       audioCover.data = optimized
       await writeCachedCoverImage(book.uuid, "audio", 147, 147, audioCover)
     }
-
-    await updateBook(book.uuid, update, relations)
   }
 
   logger.info("Scanning complete")
