@@ -325,6 +325,15 @@ export class Audiobook {
     return chapters
   }
 
+  async setChapters(chapters: AudiobookChapter[]): Promise<void> {
+    if (this.entries.length > 1) {
+      throw new Error("Unable to set chapters for multi-file audiobook")
+    }
+
+    this.metadata.chapters = chapters
+    await this.setValue((entry) => entry.setChapters(chapters))
+  }
+
   async getResources(): Promise<AudiobookResource[]> {
     if (this.metadata.resources) return this.metadata.resources
 

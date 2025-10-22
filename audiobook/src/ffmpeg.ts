@@ -209,6 +209,16 @@ export async function getTrackMetadata(path: string) {
   )
 
   const { chapters, streams, format } = JSON.parse(stdout) as FfprobeOutput
+
+  let id3v2Version: 3 | 4 | null = null
+  if (extname(path).toLowerCase() === ".mp3") {
+    const { stderr: id3v2VersionOut } = await execPromise(
+      `ffprobe -i ${quotePath(path)} -v debug`,
+    )
+    const id3v2VersionMatch = id3v2VersionOut.match(/id3v2 ver:(3|4)/)
+    id3v2Version = (id3v2VersionMatch?.[1] as 3 | 4 | undefined) ?? null
+  }
+
   const attachedPicStream = streams.find(
     (
       stream,
@@ -241,6 +251,7 @@ export async function getTrackMetadata(path: string) {
   }
 
   return {
+    id3v2Version,
     duration: parseFloat(format.duration),
     bitRate:
       format.bit_rate !== undefined
@@ -272,13 +283,24 @@ export async function getTrackMetadata(path: string) {
   }
 }
 
-export async function writeTrackMetadata(
-  path: string,
-  metadata: TrackInfo["tags"],
-  attachedPic: AttachedPic | undefined,
-) {
+function escapeFfmetadata(str: string): string {
+  return str
+    .replaceAll(/\\/g, "\\\\")
+    .replaceAll(/=/g, "\\=")
+    .replaceAll(/;/g, "\\;")
+    .replaceAll(/#/g, "\\#")
+    .replaceAll(/\n/g, "\\n")
+}
+
+export async function writeTrackMetadata(path: string, trackInfo: TrackInfo) {
+  const { tags: metadata, id3v2Version, chapters, attachedPic } = trackInfo
+
   const args: string[] = []
   const metadataArgs: string[] = []
+
+  if (id3v2Version) {
+    metadataArgs.push(`-id3v2_version ${id3v2Version}`)
+  }
 
   if (metadata.title) {
     metadataArgs.push(`-metadata title="${escapeQuotes(metadata.title)}"`)
@@ -322,14 +344,42 @@ export async function writeTrackMetadata(
     )
   }
 
+  metadataArgs.push("-map 0:a -map_metadata 0")
+
   const ext = extname(path)
   const tmpPath = join(
     tmpdir(),
     `storyteller-platform-audiobook-${randomUUID()}${ext}`,
   )
+
+  const chapterFilePath = join(
+    tmpdir(),
+    `storyteller-platform-audiobook-${randomUUID()}.txt`,
+  )
+
   let picPath: string | null = null
 
   try {
+    let chapterFileContents = ";FFMETADATA1\n\n"
+    for (const chapter of chapters) {
+      chapterFileContents += `[CHAPTER]
+TIMEBASE=1/1000
+START=${Math.floor(chapter.startTime * 1000)}
+END=${Math.floor(chapter.endTime * 1000)}
+`
+      if (chapter.title) {
+        chapterFileContents += `TITLE=${escapeFfmetadata(chapter.title)}
+`
+      }
+
+      chapterFileContents += "\n"
+    }
+
+    await writeFile(chapterFilePath, chapterFileContents)
+
+    args.push(`-i ${chapterFilePath}`)
+    metadataArgs.push(`-map_chapters 1`)
+
     if (attachedPic) {
       // Determine file extension from mime type
       const imageExt = attachedPic.mimeType.split("/")[1]
@@ -341,9 +391,9 @@ export async function writeTrackMetadata(
       // Write cover art to temporary file
       await writeFile(picPath, attachedPic.data)
 
-      args.push(`-i ${quotePath(picPath)}`)
-      args.push(`-map 0:a -map 1:v`)
-      args.push(`-disposition:v:0 attached_pic`)
+      args.push(`-i ${picPath}`)
+      metadataArgs.push(`-map 2:v`)
+      metadataArgs.push(`-disposition:v:0 attached_pic`)
       if (attachedPic.name) {
         metadataArgs.push(
           `-metadata:s:v title="${escapeQuotes(attachedPic.name)}"`,

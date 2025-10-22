@@ -160,8 +160,31 @@ export class AudiobookEntry {
     }))
   }
 
+  async setChapters(chapters: AudiobookChapter[]): Promise<void> {
+    const info = await this.getInfo()
+    const duration = await this.getDuration()
+    const ffmpegChapters: TrackInfo["chapters"] = []
+    for (let i = 0; i < ffmpegChapters.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const chapter = chapters[i]!
+      const prevFfmpegChapter = ffmpegChapters[i - 1]
+
+      ffmpegChapters.push({
+        id: i,
+        startTime: chapter.start ?? 0,
+        title: chapter.title ?? `ch${i}`,
+        endTime: duration,
+      })
+
+      if (prevFfmpegChapter) {
+        prevFfmpegChapter.endTime = chapter.start ?? 0
+      }
+    }
+    info.chapters = ffmpegChapters
+  }
+
   async saveAndClose(): Promise<void> {
     const info = await this.getInfo()
-    await writeTrackMetadata(this.filename, info.tags, info.attachedPic)
+    await writeTrackMetadata(this.filename, info)
   }
 }
