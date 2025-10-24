@@ -64,19 +64,26 @@ export async function installWhisper(settings: Settings) {
     if (enableCuda) {
       logger.info("CUDA enabled; installing cuda toolkit")
       const cudaVersions =
-        whisperBuild === "cublas-12.6"
+        whisperBuild === "cublas-13.0"
           ? {
-              full: "12-6-local_12.6.3-560.35.05-1",
-              semver: "12.6.3",
-              majorMinor: "12.6",
-              short: "12-6",
+              full: "13-0-local_13.0.2-580.95.05-1",
+              semver: "13.0.2",
+              majorMinor: "13.0",
+              short: "13-0",
             }
-          : {
-              full: "11-8-local_11.8.0-520.61.05-1",
-              semver: "11.8.0",
-              majorMinor: "11.8",
-              short: "11-8",
-            }
+          : whisperBuild === "cublas-12.6"
+            ? {
+                full: "12-6-local_12.6.3-560.35.05-1",
+                semver: "12.6.3",
+                majorMinor: "12.6",
+                short: "12-6",
+              }
+            : {
+                full: "11-8-local_11.8.0-520.61.05-1",
+                semver: "11.8.0",
+                majorMinor: "11.8",
+                short: "11-8",
+              }
 
       logger.info("Downloading toolkit package")
       await exec(

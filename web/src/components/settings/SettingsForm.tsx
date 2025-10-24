@@ -342,6 +342,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
               <option value="cpu">CPU</option>
               <option value="cublas-11.8">cuBLAS 11.8 (NVIDIA GPU)</option>
               <option value="cublas-12.6">cuBLAS 12.6 (NVIDIA GPU)</option>
+              <option value="cublas-13.0">cuBLAS 13.0 (NVIDIA GPU)</option>
               <option value="hipblas">hipBLAS (AMD GPU)</option>
             </NativeSelect>
             <Box className="text-sm opacity-70">
