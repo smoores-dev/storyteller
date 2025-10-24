@@ -8,7 +8,12 @@ export type TranscriptionEngine =
   | "openai-cloud"
   | "deepgram"
 
-export type WhisperBuild = "cpu" | "cublas-11.8" | "cublas-12.6" | "hipblas"
+export type WhisperBuild =
+  | "cpu"
+  | "cublas-11.8"
+  | "cublas-12.6"
+  | "cublas-13.0"
+  | "hipblas"
 
 export type WhisperModel =
   | "tiny"
