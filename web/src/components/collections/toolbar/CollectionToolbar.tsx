@@ -5,6 +5,7 @@ import { type SetStateAction } from "react"
 import { AddBooksMenu } from "@/components/books/AddBooksMenu"
 import { type BookWithRelations } from "@/database/books"
 import { type Collection } from "@/database/collections"
+import { usePermissions } from "@/hooks/usePermissions"
 import { type UUID } from "@/uuid"
 
 import { ActionMenu } from "./ActionMenu"
@@ -27,6 +28,17 @@ export function CollectionToolbar({
   isEditing,
   setIsEditing,
 }: Props) {
+  const permissions = usePermissions()
+
+  if (
+    !permissions?.bookCreate &&
+    !permissions?.bookUpdate &&
+    !permissions?.bookProcess &&
+    !permissions?.bookDownload
+  ) {
+    return null
+  }
+
   return (
     <Group className="w-max flex-nowrap gap-2 [&>*]:shrink-0">
       <Button
@@ -51,7 +63,7 @@ export function CollectionToolbar({
           />
         </>
       )}
-      <AddBooksMenu collection={collection} />
+      {permissions.bookCreate && <AddBooksMenu collection={collection} />}
     </Group>
   )
 }

@@ -1,6 +1,7 @@
 import { Button, Menu, MenuDropdown, MenuTarget } from "@mantine/core"
 import { IconChevronDown, IconClick } from "@tabler/icons-react"
 
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   useLazyListCollectionsQuery,
   useLazyListCreatorsQuery,
@@ -26,6 +27,8 @@ interface Props {
 }
 
 export function ActionMenu({ selected, onClear }: Props) {
+  const permissions = usePermissions()
+
   const [refetchCollections] = useLazyListCollectionsQuery()
   const [refetchCreators] = useLazyListCreatorsQuery()
   const [refetchSeries] = useLazyListSeriesQuery()
@@ -55,16 +58,34 @@ export function ActionMenu({ selected, onClear }: Props) {
         </MenuTarget>
 
         <MenuDropdown>
-          <MergeBooksItem selected={selected} onCommit={onCommit} />
-          <AddBooksToCollectionsItem selected={selected} />
-          <RemoveBooksFromCollectionsItem selected={selected} />
-          <AddBooksToSeriesItem selected={selected} />
-          <RemoveBooksFromSeriesItem selected={selected} />
-          <AddTagsToBooksItem selected={selected} />
-          <RemoveTagsFromBooksItem selected={selected} />
+          {!!permissions?.bookUpdate && (
+            <MergeBooksItem selected={selected} onCommit={onCommit} />
+          )}
+          {!!permissions?.bookUpdate && (
+            <AddBooksToCollectionsItem selected={selected} />
+          )}
+          {!!permissions?.bookUpdate && (
+            <RemoveBooksFromCollectionsItem selected={selected} />
+          )}
+          {!!permissions?.bookUpdate && (
+            <AddBooksToSeriesItem selected={selected} />
+          )}
+          {!!permissions?.bookUpdate && (
+            <RemoveBooksFromSeriesItem selected={selected} />
+          )}
+          {!!permissions?.bookUpdate && (
+            <AddTagsToBooksItem selected={selected} />
+          )}
+          {!!permissions?.bookUpdate && (
+            <RemoveTagsFromBooksItem selected={selected} />
+          )}
           <UpdateReadingStatusItem selected={selected} />
-          <BeginProcessingItem selected={selected} />
-          <DeleteBooksItem selected={selected} onCommit={onCommit} />
+          {!!permissions?.bookProcess && (
+            <BeginProcessingItem selected={selected} />
+          )}
+          {!!permissions?.bookDelete && (
+            <DeleteBooksItem selected={selected} onCommit={onCommit} />
+          )}
         </MenuDropdown>
       </Menu>
     </>

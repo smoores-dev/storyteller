@@ -384,6 +384,15 @@ export const api = createApi({
       },
       invalidatesTags: ["Creators", "Authors", "Series", "Tags"],
     }),
+    updateStatus: build.mutation<void, { bookUuid: UUID; statusUuid: UUID }>({
+      query: ({ bookUuid, statusUuid }) => ({
+        url: `/books/${bookUuid}/status`,
+        method: "PUT",
+        body: {
+          status: statusUuid,
+        },
+      }),
+    }),
     listStatuses: build.query<Status[], void>({
       query: () => `/statuses`,
       providesTags: (statuses) =>
@@ -614,6 +623,7 @@ export const {
   useUpdateReadingStatusMutation,
   useUpdateSeriesMutation,
   useUpdateSettingsMutation,
+  useUpdateStatusMutation,
   useUpdateUserMutation,
 } = api
 
