@@ -162,16 +162,18 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
     }
 
     let runningTotal = 0
-    return playlist.map((track, idx) => {
-      const mark = {
-        title: track.title || `Track ${idx + 1}`,
-        position: runningTotal,
-        href: track.url,
-        locator: track.tocItem?.locator ?? null,
-      }
-      runningTotal += (track.duration ?? 0) / playbackSpeed
-      return mark
-    })
+    return playlist
+      .map((track, idx) => {
+        const mark = {
+          title: track.title || `Track ${idx + 1}`,
+          position: runningTotal,
+          href: track.url,
+          locator: track.tocItem?.locator ?? null,
+        }
+        runningTotal += (track.duration ?? 0) / playbackSpeed
+        return mark
+      })
+      .sort((a, b) => a.position - b.position)
   }, [playlist, playbackSpeed, detailView.mode, detailView.scope])
 
   const textBookMarks = useMemo(() => {
@@ -205,7 +207,7 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
           locator: Locator | null
         }>,
       ) ?? null
-    )
+    )?.sort((a, b) => a.position - b.position)
   }, [tocItems, detailView.mode, detailView.scope])
 
   const [chapterPositions, setChapterPositions] = useState<Locator[]>([])
@@ -326,7 +328,9 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
 
   const currentPage = currentPositionIdx + 1
 
-  const chapterProgression = currentPositionIdx
+  const chapterProgression = currentTextLocator?.locations.progression
+    ? currentTextLocator.locations.progression * chapterLength
+    : currentPositionIdx
 
   return {
     title: currentChapter?.title ?? "Unknown Chapter",

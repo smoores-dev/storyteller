@@ -57,29 +57,36 @@ const ReaderComponent = ({
   const navigatorRef = useRef<EpubNavigator | null>(null)
   const currentReadingBook = useAppSelector(selectCurrentBook)
 
+  const actualMode = useAppSelector(selectReadingMode)
+
   const isThemeApplied = useRef(false)
   if (!isThemeApplied.current) {
     const preferences = getInitialHydratedPreferences(book.uuid)
 
-    applyThemeToDocument(preferences)
+    applyThemeToDocument(preferences, document)
     isThemeApplied.current = true
   }
 
   useEffect(() => {
     return () => {
-      if (mode === "epub") {
+      if (actualMode === "epub") {
         dispatch(readingSessionSlice.actions.closeBook())
       }
 
       removeThemeFromDocument(document)
+      isThemeApplied.current = false
     }
-  }, [dispatch, mode])
+  }, [dispatch, actualMode])
 
   const publicationLoading = useAppSelector(selectIsLoadingPublication)
 
   useEffect(() => {
     // we are returning from the mini player to the same book
     if (currentReadingBook?.uuid === book.uuid) {
+      // turn syncing back on
+      dispatch(
+        readingSessionSlice.actions.setSyncing(actualMode === "readaloud"),
+      )
       return
     }
 
@@ -93,7 +100,14 @@ const ReaderComponent = ({
         requestedMode: mode ?? "epub",
       }),
     )
-  }, [book, currentReadingBook?.uuid, dispatch, mode, publicationLoading])
+  }, [
+    book,
+    currentReadingBook?.uuid,
+    dispatch,
+    actualMode,
+    mode,
+    publicationLoading,
+  ])
 
   const { isLoading: navigatorLoading, loadNavigator } = useNavigator({
     book,
@@ -160,8 +174,6 @@ const ReaderComponent = ({
     acquireWakeLock,
     currentLocator,
   ])
-
-  const actualMode = useAppSelector(selectReadingMode)
 
   const memoizedContainerRef = useMemo(() => {
     if (actualMode === "audiobook") {

@@ -150,3 +150,5 @@ export const requestHighlightUpdate = createAction(
     payload,
   }),
 )
+
+export const closeMiniPlayer = createAction("closeMiniPlayer")

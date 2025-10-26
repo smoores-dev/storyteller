@@ -33,6 +33,13 @@ export type ReadingTheme =
 
 export type ColumnMode = "auto" | "1col" | "2cols"
 
+export type EdgePosition = {
+  horizontalEdge: "left" | "right"
+  verticalEdge: "top" | "bottom"
+  horizontalOffset: number
+  verticalOffset: number
+}
+
 export type ReadingPreferences = {
   currentlyListeningBookId: UUID | null
   fontSize: number
@@ -59,6 +66,8 @@ export type ReadingPreferences = {
   syncOffset: number
   neverShowMiniPlayer: boolean
   minimizedMiniPlayer: boolean
+  pinnedMiniPlayer: boolean
+  miniPlayerPosition: EdgePosition | null
   customFontFamily: {
     url: string
     name: string
@@ -76,6 +85,8 @@ const GLOBAL_ONLY_PREFERENCES = [
   "currentlyListeningBookId",
   "minimizedMiniPlayer",
   "neverShowMiniPlayer",
+  "pinnedMiniPlayer",
+  "miniPlayerPosition",
 ] as const
 type GLOBAL_ONLY_PREFERENCE = (typeof GLOBAL_ONLY_PREFERENCES)[number]
 
@@ -111,7 +122,9 @@ export const defaultPreferences: ReadingPreferences = {
   syncOffset: 0.0,
   neverShowMiniPlayer: false,
   minimizedMiniPlayer: false,
-  volume: 1,
+  pinnedMiniPlayer: false,
+  miniPlayerPosition: null,
+  volume: 100,
   fontWeight: 400,
   customFontFamily: {
     url: "https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap",

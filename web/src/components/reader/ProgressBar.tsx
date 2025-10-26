@@ -36,7 +36,7 @@ const getCorrespondingMark = (
 type TooltipProps = {
   elementRef: React.RefObject<HTMLElement | null>
   content: string
-  context?: "pip" | undefined
+  context: "pip" | "reader-footer" | "mini-player" | undefined
   pipWindow?: PictureInPictureWindow | null
   // for track-based positioning (hover label)
   trackBased?:
@@ -88,7 +88,7 @@ const Tooltip = ({
 type ThumbProps = {
   trackRef: React.RefObject<HTMLDivElement | null>
   percentage: number
-  context?: "pip" | undefined
+  context: "pip" | "reader-footer" | "mini-player" | undefined
   pipWindow?: PictureInPictureWindow | null
 }
 
@@ -100,7 +100,7 @@ const Thumb = ({ trackRef, percentage, context, pipWindow }: ThumbProps) => {
     context === "pip" && pipWindow ? pipWindow.document : document
 
   const leftPosition = rect.left + rect.width * (percentage / 100)
-  const topPosition = rect.top + rect.height / 2
+  const topPosition = rect.top + 2
 
   return createPortal(
     <div
@@ -115,7 +115,7 @@ const Thumb = ({ trackRef, percentage, context, pipWindow }: ThumbProps) => {
 }
 
 type CustomSliderProps = {
-  context?: "pip" | undefined
+  context: "pip" | "reader-footer" | "mini-player" | undefined
   value: number
   min: number
   max: number
@@ -290,29 +290,65 @@ const CustomSlider = ({
 
   const MarkList = useMemo(() => {
     if (!marks || marks.length === 0) return null
+    const marksWithTinyMarksFilteredOut = marks
+      .map((mark, idx) => {
+        const nextMark = marks[idx + 1]
+        const startPosition = idx === 0 ? 0 : mark.position
+        const endPosition = nextMark?.position ?? max
+        const markWidth = ((endPosition - startPosition) / max) * 100
+        return {
+          ...mark,
+          originalIndex: idx,
+          tooSmall: markWidth < 0.5,
+        }
+      })
+      .filter((mark) => !mark.tooSmall)
+
     return (
-      <div className="pointer-events-none absolute inset-0">
-        {marks.map((mark, idx) => {
-          const markPercentage = max > 0 ? (mark.position / max) * 100 : 0
+      <div className="pointer-events-none absolute inset-0 h-3">
+        {marksWithTinyMarksFilteredOut.map((mark, idx) => {
+          // calculating again because we want seemlessness
+          const startPosition = mark.originalIndex === 0 ? 0 : mark.position
+          const nextMark = marksWithTinyMarksFilteredOut[idx + 1]
+          const endPosition = nextMark?.position ?? max
+          const markWidth = ((endPosition - startPosition) / max) * 100
+          const isLast =
+            mark.originalIndex === marksWithTinyMarksFilteredOut.length - 1
+
+          const style = {
+            left: `${(startPosition / max) * 100}%`,
+            width: `${markWidth}%`,
+            minWidth: mark.tooSmall ? "2px" : undefined,
+          }
+
           return (
             <button
-              key={idx}
+              key={mark.originalIndex}
+              style={style}
               ref={(el) => {
-                markRefs.current[idx] = el
+                markRefs.current[mark.originalIndex] = el
               }}
-              className="bg-reader-bg/70 border-reader-accent/70 hover:bg-reader-accent-hover pointer-events-auto absolute top-0 z-[500] h-1 w-1 -translate-x-1/2 cursor-pointer rounded-full border opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100"
-              style={{ left: `${markPercentage}%` }}
+              className={cn(
+                "group/mark pointer-events-auto absolute top-0 z-[500] h-5 cursor-pointer transition-all duration-75 hover:before:opacity-100 after:group-hover:opacity-100",
+                "before:bg-reader-accent-hover before:absolute before:-top-0.5 before:left-0 before:z-[501] before:h-2 before:opacity-0 before:transition-opacity before:content-[''] group-hover/mark:before:opacity-100",
+                !isLast &&
+                  // !isSmall &&
+                  `after:bg-reader-bg after:absolute after:right-0 after:top-0 after:h-1 after:transition-colors after:content-['']`,
+                context === "reader-footer"
+                  ? `before:w-[calc(100%-4px)] after:w-[4px]`
+                  : "before:w-[calc(100%-2px)] after:w-[2px]",
+              )}
               onClick={() => {
                 handleMarkClick(mark.position)
               }}
               onMouseEnter={() => {
-                setHoveredMarkIndex(idx)
+                setHoveredMarkIndex(mark.originalIndex)
               }}
               onMouseLeave={() => {
                 setHoveredMarkIndex(null)
               }}
               onFocus={() => {
-                setHoveredMarkIndex(idx)
+                setHoveredMarkIndex(mark.originalIndex)
               }}
               onBlur={() => {
                 setHoveredMarkIndex(null)
@@ -323,14 +359,18 @@ const CustomSlider = ({
         })}
       </div>
     )
-  }, [marks, max, handleMarkClick])
+  }, [marks, max, handleMarkClick, context])
 
   return (
-    <div className="group relative h-1">
+    <div
+      className="group relative h-1"
+      data-hovered={isTrackHovered || undefined}
+      data-mark-hovered={hoveredMarkIndex}
+    >
       {/* track */}
       <div
         ref={trackRef}
-        className="bg-reader-surface-hover relative h-1 cursor-pointer"
+        className="after:bg-reader-border/50 absolute inset-0 h-3 cursor-pointer after:absolute after:top-0 after:h-1 after:w-full after:content-['']"
         onMouseDown={(e) => {
           handleMouseOrTouchDown(e.nativeEvent)
         }}
@@ -341,15 +381,19 @@ const CustomSlider = ({
         onMouseMove={(e) => {
           handleTrackMouseMove(e.nativeEvent)
         }}
-        onMouseLeave={handleTrackMouseLeave}
+        onMouseLeave={() => {
+          handleTrackMouseLeave()
+        }}
       >
         {/* progress bar */}
         <div
           className={cn(
-            "bg-reader-accent absolute left-0 top-0 h-1 transition-all",
+            "bg-reader-accent absolute left-0 top-0 z-10 h-1 transition-all",
             isDragging ? "duration-0" : "duration-300",
           )}
-          style={{ width: `${percentage}%` }}
+          style={{
+            width: `min(${percentage}%, 100%)`,
+          }}
         />
 
         {/* hover label for free sliding */}
@@ -405,7 +449,7 @@ export const ProgressBar = ({
 }: {
   book: BookWithRelations
   detailView: ReadingPreferences["detailView"]
-  context?: "pip" | undefined
+  context: "pip" | "reader-footer" | "mini-player" | undefined
 }) => {
   const [isDragging, setIsDragging] = useState(false)
   const { total, marks, progress } = useFormattedProgress({ book })
@@ -437,7 +481,7 @@ export const ProgressBar = ({
   const handleChangeEnd = useCallback(
     (value: number) => {
       if (detailView.mode === "text") {
-        const locator = getCorrespondingMark(marks, value)?.locator
+        const locator = getCorrespondingMark(marks ?? null, value)?.locator
         if (locator) {
           dispatch(userRequestedTextNavigation({ locator }))
         }
@@ -447,6 +491,7 @@ export const ProgressBar = ({
         return
       }
 
+      // audio
       if (detailView.scope === "chapter") {
         dispatch(playerPositionSeeked({ progress: value * playbackSpeed }))
         setTimeout(() => {

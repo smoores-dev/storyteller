@@ -1,5 +1,8 @@
 import { isAnyOf } from "@reduxjs/toolkit"
 
+import { AudioPlayer } from "@/services/AudioPlayerService"
+
+import { closeMiniPlayer } from "../actions"
 import { getActiveFrame, getNavigator } from "../readerRegistry"
 import {
   applyThemeToDocument,
@@ -90,5 +93,21 @@ startAppListening({
       }
       throw error
     }
+  },
+})
+
+startAppListening({
+  matcher: isAnyOf(closeMiniPlayer),
+  effect: async (_action, listenerApi) => {
+    listenerApi.dispatch(
+      preferencesSlice.actions.updatePreference({
+        key: "currentlyListeningBookId",
+        value: null,
+        target: "global",
+      }),
+    )
+    listenerApi.dispatch(readingSessionSlice.actions.closeBook())
+    AudioPlayer.pause()
+    await AudioPlayer.replacePlaylist([])
   },
 })
