@@ -270,12 +270,15 @@ export function AppShell({
                         active={pathname === `/collections/${collection.uuid}`}
                       />
                     ))}
-                    <NavLink
-                      component="button"
-                      onClick={openCreateCollection}
-                      leftSection={<IconPlus />}
-                      label="New collection"
-                    />
+                    {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion */}
+                    {!!permissions.collectionCreate && (
+                      <NavLink
+                        component="button"
+                        onClick={openCreateCollection}
+                        leftSection={<IconPlus />}
+                        label="New collection"
+                      />
+                    )}
                     <NavLink
                       onClick={close}
                       component={NextLink}

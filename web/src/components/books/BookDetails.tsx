@@ -27,12 +27,13 @@ import {
 import Link from "next/link"
 
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   getDownloadUrl,
   useCancelProcessingMutation,
   useListBooksQuery,
   useListStatusesQuery,
-  useUpdateBookMutation,
+  useUpdateStatusMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
@@ -49,13 +50,15 @@ interface Props {
 export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const [opened, { open, close }] = useDisclosure()
 
+  const permissions = usePermissions()
+
   const { book } = useListBooksQuery(undefined, {
     selectFromResult: (result) => ({
       book: result.data?.find((book) => book.uuid === bookUuid),
     }),
   })
   const { data: statuses = [] } = useListStatusesQuery()
-  const [updateBook] = useUpdateBookMutation()
+  const [updateStatus] = useUpdateStatusMutation()
   const [cancelProcessing] = useCancelProcessingMutation()
 
   if (!book) return null
@@ -121,16 +124,18 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
             )}
           </Box>
           <Stack className="mt-6 grow basis-[400px]">
-            <Group>
+            <Group wrap="nowrap">
               <Title className="font-sans" order={2}>
                 {!!book.readaloud?.filepath && (
                   <IconReadaloud className="text-st-orange-600 -mb-4 -ml-2 -mr-1 -mt-6 inline-block h-10 w-10" />
                 )}{" "}
                 {book.title}
               </Title>
-              <Link href={`/books/${book.uuid}/edit`}>
-                <IconPencil />
-              </Link>
+              {!!permissions?.bookUpdate && (
+                <Link href={`/books/${book.uuid}/edit`}>
+                  <IconPencil />
+                </Link>
+              )}
             </Group>
             {book.subtitle && (
               <Title className="font-sans" order={3}>
@@ -217,7 +222,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
         </Group>
         <BookStatus bookUuid={book.uuid} />
         <Group className="items-end justify-between">
-          {!hideReadButton && (
+          {!!permissions?.bookDownload && !hideReadButton && (
             <>
               {book.readaloud?.status === "ALIGNED" && (
                 <Link
@@ -245,44 +250,50 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
               )}
             </>
           )}
-          <StatusInput
-            value={book.status?.uuid}
-            onChange={async (value) => {
-              await updateBook({
-                update: { uuid: book.uuid, status: value },
-              })
-            }}
-            options={statuses}
-          />
-          <Stack gap={4}>
-            <Text className="self-end">Download</Text>
-            <Group className="bg-st-orange-50 self-end px-4 py-2">
-              {!!book.readaloud?.filepath && (
-                <Anchor
-                  href={getDownloadUrl(book.uuid, "readaloud")}
-                  className="hover:bg-st-orange-100 rounded-md"
-                >
-                  <IconReadaloud />
-                </Anchor>
-              )}
-              {book.ebook && (
-                <Anchor
-                  href={getDownloadUrl(book.uuid, "ebook")}
-                  className="hover:bg-st-orange-100 rounded-md"
-                >
-                  <IconBook2 />
-                </Anchor>
-              )}
-              {book.audiobook && (
-                <Anchor
-                  href={getDownloadUrl(book.uuid, "audiobook")}
-                  className="hover:bg-st-orange-100 rounded-md"
-                >
-                  <IconHeadphonesFilled />
-                </Anchor>
-              )}
-            </Group>
-          </Stack>
+          {!!permissions?.bookDownload && (
+            <>
+              <StatusInput
+                value={book.status?.uuid}
+                onChange={async (value) => {
+                  await updateStatus({
+                    bookUuid: book.uuid,
+                    statusUuid: value,
+                  })
+                }}
+                options={statuses}
+              />
+
+              <Stack gap={4}>
+                <Text className="self-end">Download</Text>
+                <Group className="bg-st-orange-50 self-end px-4 py-2">
+                  {!!book.readaloud?.filepath && (
+                    <Anchor
+                      href={getDownloadUrl(book.uuid, "readaloud")}
+                      className="hover:bg-st-orange-100 rounded-md"
+                    >
+                      <IconReadaloud />
+                    </Anchor>
+                  )}
+                  {book.ebook && (
+                    <Anchor
+                      href={getDownloadUrl(book.uuid, "ebook")}
+                      className="hover:bg-st-orange-100 rounded-md"
+                    >
+                      <IconBook2 />
+                    </Anchor>
+                  )}
+                  {book.audiobook && (
+                    <Anchor
+                      href={getDownloadUrl(book.uuid, "audiobook")}
+                      className="hover:bg-st-orange-100 rounded-md"
+                    >
+                      <IconHeadphonesFilled />
+                    </Anchor>
+                  )}
+                </Group>
+              </Stack>
+            </>
+          )}
         </Group>
 
         <Stack className="rounded bg-gray-100 p-4" gap={4}>
@@ -325,11 +336,13 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
             </Text>
           )}
         </Stack>
-        <Group className="mt-8 justify-end">
-          <Button onClick={open} color="red">
-            Delete book
-          </Button>
-        </Group>
+        {!!permissions?.bookDelete && (
+          <Group className="mt-8 justify-end">
+            <Button onClick={open} color="red">
+              Delete book
+            </Button>
+          </Group>
+        )}
       </Stack>
     </>
   )

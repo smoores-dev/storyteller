@@ -510,22 +510,22 @@ export async function updateUserPermissions(
     await tr
       .updateTable("userPermission")
       .set({
-        bookCreate: permissions.bookCreate,
-        bookUpdate: permissions.bookUpdate,
-        bookList: permissions.bookList,
-        bookDelete: permissions.bookDelete,
-        bookDownload: permissions.bookDownload,
-        bookRead: permissions.bookRead,
-        bookProcess: permissions.bookProcess,
-        collectionCreate: permissions.collectionCreate,
-        inviteDelete: permissions.inviteDelete,
-        inviteList: permissions.inviteList,
-        settingsUpdate: permissions.settingsUpdate,
-        userCreate: permissions.userCreate,
-        userList: permissions.userList,
-        userRead: permissions.userRead,
-        userDelete: permissions.userDelete,
-        userUpdate: permissions.userUpdate,
+        bookCreate: !!permissions.bookCreate,
+        bookUpdate: !!permissions.bookUpdate,
+        bookList: !!permissions.bookList,
+        bookDelete: !!permissions.bookDelete,
+        bookDownload: !!permissions.bookDownload,
+        bookRead: !!permissions.bookRead,
+        bookProcess: !!permissions.bookProcess,
+        collectionCreate: !!permissions.collectionCreate,
+        inviteDelete: !!permissions.inviteDelete,
+        inviteList: !!permissions.inviteList,
+        settingsUpdate: !!permissions.settingsUpdate,
+        userCreate: !!permissions.userCreate,
+        userList: !!permissions.userList,
+        userRead: !!permissions.userRead,
+        userDelete: !!permissions.userDelete,
+        userUpdate: !!permissions.userUpdate,
       })
       .where("uuid", "=", userPermissionUuid)
       .execute()

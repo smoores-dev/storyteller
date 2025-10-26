@@ -4,6 +4,7 @@ import { Text, Title } from "@mantine/core"
 import { IconBooks } from "@tabler/icons-react"
 
 import { BookList } from "@/components/books/BookList"
+import { usePermissions } from "@/hooks/usePermissions"
 import { useListCollectionsQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
 
@@ -20,6 +21,7 @@ export function CollectionDetails({
   description: initialDescription,
   collectionUuid,
 }: Props) {
+  const permissions = usePermissions()
   const { collection } = useListCollectionsQuery(undefined, {
     selectFromResult: (result) => ({
       collection: result.data?.find(
@@ -37,7 +39,9 @@ export function CollectionDetails({
       <Title order={2} size="h3" className="flex items-center gap-2">
         <IconBooks size={30} />{" "}
         {collection?.name ?? initialName ?? "Uncollected"}{" "}
-        {collection && <CollectionSettings uuid={collection.uuid} />}
+        {!!permissions?.bookUpdate && collection && (
+          <CollectionSettings uuid={collection.uuid} />
+        )}
       </Title>
       {(!collection || description) && <Text>{description}</Text>}
       <BookList collectionUuid={collection?.uuid ?? null} />
