@@ -28,29 +28,26 @@ export const HoldButton = ({
 
   return (
     <Tooltip label={isHolding ? holdTooltip : tooltip} position="top" withArrow>
-      <div className="relative">
-        <button
-          {...buttonProps}
-          className={cn(className, "p-1")}
-          disabled={disabled}
-          onClick={onClick}
-          onMouseDown={startHold}
-          onMouseUp={endHold}
-          onMouseLeave={endHold}
-          onTouchStart={startHold}
-          onTouchEnd={endHold}
-        >
-          {children}
-        </button>
-        {isHolding && (
-          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-            <div
-              className="absolute bottom-0 left-0 right-0 bg-blue-500/30 transition-all duration-75 ease-linear"
-              style={{ height: `${progress}%` }}
-            />
-          </div>
-        )}
-      </div>
+      <button
+        {...buttonProps}
+        className={cn(className, "relative p-1")}
+        disabled={disabled}
+        onClick={onClick}
+        onMouseDown={startHold}
+        onMouseUp={endHold}
+        onMouseLeave={endHold}
+        onTouchStart={startHold}
+        onTouchEnd={endHold}
+      >
+        {children}
+
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-blue-500/30 transition-all duration-75 ease-linear"
+            style={{ height: `${progress}%` }}
+          />
+        </div>
+      </button>
     </Tooltip>
   )
 }

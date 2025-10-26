@@ -347,28 +347,58 @@ startAppListening({
         window,
         publication,
       )
+      console.error(
+        "No window, current locator, or publication",
+        window,
+        publication,
+      )
       return
     }
 
     const syncing = selectReadingMode(listenerApi.getState()) === "readaloud"
     if (!syncing) {
+      console.error("Not syncing")
       return
     }
 
     const resourceHref = getHrefFromActiveFrame(activeFrame)
-    if (!resourceHref) return
+    if (!resourceHref) {
+      console.error("No resource href found")
+      return
+    }
 
     // can i get away with just getting the  current guide? no, doesn't work when switching chapters
-    const guide = await getGuidesForText(publication, resourceHref)
+    let guide = await getGuidesForText(publication, resourceHref)
+
+    // TODO: bigger issue here, this is not a good solution, we should have a better way to handle this
+    // Retry up to 3 times with 2 second delays if guide not found
+    for (let attempt = 0; attempt < 2 && !guide?.[0]; attempt++) {
+      if (attempt !== 0) {
+        console.warn("Retrying to get guide", attempt + 1, "of 3")
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      guide = await getGuidesForText(publication, resourceHref)
+    }
 
     const book = selectCurrentBook(listenerApi.getState())
-    if (!book) return
+    if (!book) {
+      console.error("No book found")
+      return
+    }
+    if (!guide?.[0]) {
+      console.error("No guide found")
+      return
+    }
 
-    for (const clip of guide?.[0]?.guided?.[0]?.children ?? []) {
-      if (!clip.fragmentId) continue
+    for (const clip of guide[0].guided?.[0]?.children ?? []) {
+      if (!clip.fragmentId) {
+        console.error("No fragment ID found")
+        continue
+      }
 
       const element = window.document.getElementById(clip.fragmentId)
       if (!element) {
+        console.error("No element found for fragment", clip.fragmentId)
         continue
       }
 
@@ -383,16 +413,16 @@ startAppListening({
           listenerApi.getState(),
         )
         if (doubleClickTimeout) {
+          const selection = window.document.getSelection()
+          if (selection) {
+            selection.empty()
+          }
+
           window.clearTimeout(doubleClickTimeout)
 
           listenerApi.dispatch(
             readingSessionSlice.actions.setDoubleClickTimeout(null),
           )
-
-          const selection = window.document.getSelection()
-          if (selection) {
-            selection.empty()
-          }
 
           if (!clip.fragmentId) {
             console.error("No fragment ID found")

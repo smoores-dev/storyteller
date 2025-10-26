@@ -1,5 +1,6 @@
 import { ActionIcon, Tooltip } from "@mantine/core"
 
+import { cn } from "@/cn"
 import { type UUID } from "@/uuid"
 
 type DrawerContentType =
@@ -30,6 +31,7 @@ export type ToolProps =
     }
 
 export const ToolbarIcon = ({
+  className,
   label,
   icon,
   onClick,
@@ -37,9 +39,10 @@ export const ToolbarIcon = ({
 }: {
   label: string
   icon: React.ReactNode
-  onClick: () => void
+  onClick: (e: React.MouseEvent) => void
   /* for popover target */
   ref?: React.RefObject<HTMLButtonElement>
+  className?: string
 }) => {
   return (
     <Tooltip label={label}>
@@ -47,7 +50,10 @@ export const ToolbarIcon = ({
         ref={ref}
         variant="subtle"
         size="lg"
-        className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover flex items-center justify-center"
+        className={cn(
+          "text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover flex items-center justify-center",
+          className,
+        )}
         onClick={onClick}
       >
         {icon}

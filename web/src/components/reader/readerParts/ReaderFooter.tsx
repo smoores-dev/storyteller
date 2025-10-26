@@ -55,7 +55,7 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
     <footer
       className={cn(
         className,
-        "bg-reader-bg text-reader-text relative left-0 right-0 flex h-20 transform flex-col overflow-hidden shadow-lg transition-[bottom] duration-300 ease-in-out md:h-16 md:pb-0",
+        "bg-reader-bg text-reader-text relative left-0 right-0 flex h-20 transform flex-col shadow-lg transition-[bottom] duration-300 ease-in-out md:h-16 md:pb-0",
         // values other than translate-y-full do not seem to work in safari
         // possibly due to https://github.com/tailwindlabs/tailwindcss/issues/18512
         // would be nice to only show the progressbar
@@ -64,7 +64,11 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
     >
       {mode !== "epub" && (
         <div className="w-full">
-          <ProgressBar book={book} detailView={detailView} />
+          <ProgressBar
+            book={book}
+            detailView={detailView}
+            context="reader-footer"
+          />
         </div>
       )}
 
