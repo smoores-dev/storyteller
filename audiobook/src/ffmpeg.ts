@@ -125,7 +125,7 @@ type FfprobeStreamOutput =
 
 type FfprobeOutput = {
   format: {
-    tags: {
+    tags?: {
       title?: string
       Title?: string
       subtitle?: string
@@ -258,17 +258,17 @@ export async function getTrackMetadata(path: string) {
         ? parseFloat(format.bit_rate)
         : format.bit_rate,
     tags: {
-      title: format.tags.title ?? format.tags.Title,
-      subtitle: format.tags.subtitle ?? format.tags.Subtitle,
-      date: format.tags.date ?? format.tags.Date,
-      album: format.tags.album ?? format.tags.Album,
-      albumArtist: format.tags.album_artist ?? format.tags.Album_Artist,
-      artist: format.tags.artist ?? format.tags.Artist,
-      performer: format.tags.performer ?? format.tags.Performer,
-      composer: format.tags.composer ?? format.tags.Composer,
-      comment: format.tags.comment ?? format.tags.Comment,
-      description: format.tags.description ?? format.tags.Description,
-      publisher: format.tags.publisher ?? format.tags.Publisher,
+      title: format.tags?.title ?? format.tags?.Title,
+      subtitle: format.tags?.subtitle ?? format.tags?.Subtitle,
+      date: format.tags?.date ?? format.tags?.Date,
+      album: format.tags?.album ?? format.tags?.Album,
+      albumArtist: format.tags?.album_artist ?? format.tags?.Album_Artist,
+      artist: format.tags?.artist ?? format.tags?.Artist,
+      performer: format.tags?.performer ?? format.tags?.Performer,
+      composer: format.tags?.composer ?? format.tags?.Composer,
+      comment: format.tags?.comment ?? format.tags?.Comment,
+      description: format.tags?.description ?? format.tags?.Description,
+      publisher: format.tags?.publisher ?? format.tags?.Publisher,
     },
     chapters: chapters.map(
       (chapter) =>
