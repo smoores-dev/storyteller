@@ -702,6 +702,22 @@ export async function getBookOrThrow(uuid: UUID) {
   return book
 }
 
+export async function getBookByAudiobookFilepathPrefix(
+  audiobookFilepath: string,
+) {
+  const searchQuery = `${audiobookFilepath.replaceAll(/%/g, "\\%").replaceAll(/_/g, "\\_")}%`
+
+  return await db
+    .selectFrom("book")
+    .select(["uuid", "title"])
+    .innerJoin("audiobook", "book.uuid", "audiobook.bookUuid")
+    .select(["audiobook.filepath as audiobookFilepath"])
+    .where(
+      sql<boolean>`${sql.ref("audiobook.filepath")} LIKE ${searchQuery} ESCAPE '/'`,
+    )
+    .executeTakeFirst()
+}
+
 export async function deleteBook(bookUuid: UUID, tr?: Transaction<DB>) {
   const callback = async (tr: Transaction<DB>) => {
     await tr
