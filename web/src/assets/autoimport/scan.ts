@@ -1,5 +1,5 @@
 import { mkdir, readdir, stat } from "node:fs/promises"
-import { basename, dirname, extname, join } from "node:path"
+import { basename, dirname, extname, join, resolve } from "node:path"
 
 import {
   Audiobook,
@@ -26,6 +26,7 @@ import {
   type BookUpdate,
   createBookFromAudiobook,
   createBookFromEpub,
+  getBookByAudiobookFilepathPrefix,
   getBooks,
   updateBook,
 } from "@/database/books"
@@ -82,10 +83,22 @@ export async function scan(
     if (!entry.isFile() && !entry.isSymbolicLink()) continue
     const ext = extname(entry.name)
     if (ext === ".epub") {
+      if (resolve(entry.parentPath) === resolve(importPath)) {
+        logger.warn(
+          `Found an EPUB file that was not in a book folder: skipping. Please place all files within book-specific folders: https://storyteller-platform.gitlab.io/storyteller/docs/managing/adding#organizing-your-auto-import-folder. ${entry.parentPath}${entry.name}`,
+        )
+        continue
+      }
       const fullPath = join(entry.parentPath, entry.name)
       ebookPaths.push(fullPath)
     }
     if (isAudioFile(ext)) {
+      if (resolve(entry.parentPath) === resolve(importPath)) {
+        logger.warn(
+          `Found an audiobook file that was not in a book folder: skipping. Please place all files within book-specific folders: https://storyteller-platform.gitlab.io/storyteller/docs/managing/adding#organizing-your-auto-import-folder. ${entry.parentPath}${entry.name}`,
+        )
+        continue
+      }
       audiobookPathsSet.add(entry.parentPath)
     }
   }
@@ -260,6 +273,15 @@ export async function scan(
         }
 
         if (bookPath.audiobook) {
+          const nestedBook = await getBookByAudiobookFilepathPrefix(
+            bookPath.audiobook,
+          )
+          if (nestedBook) {
+            logger.warn(
+              `Found a new audiobook file in the folder ${bookPath.audiobook}, but the book ${nestedBook.title} already has audiobook files at ${nestedBook.audiobookFilepath}: skipping. Please place all files within book-specific folders: https://storyteller-platform.gitlab.io/storyteller/docs/managing/adding#organizing-your-auto-import-folder.`,
+            )
+            continue
+          }
           const audiobookPath = bookPath.audiobook
           const entries = await readdir(audiobookPath)
           using audiobook = await Audiobook.from(
