@@ -48,7 +48,7 @@ export function ReadingSettings({ bookId }: Props) {
 
   return (
     <View>
-      <UIText style={styles.subheading}>Colors</UIText>
+      <UIText style={styles.subheading}>Appearance</UIText>
       <View style={styles.field}>
         <UIText maxFontSizeMultiplier={1} style={styles.label}>
           Dark mode
@@ -153,6 +153,37 @@ export function ReadingSettings({ bookId }: Props) {
         <PlusIcon color={colors.primary9} size={spacing[2]} />
         <UIText style={{ color: colors.primary9 }}> Custom theme</UIText>
       </Link>
+      <View style={[styles.field, { marginBottom: spacing[0.5] }]}>
+        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+          Hide statusbar
+        </UIText>
+        <ButtonGroup
+          value={preferences.hideStatusbar.enabled}
+          onChange={(value) =>
+            dispatch(
+              preferencesSlice.actions.globalPreferencesUpdated({
+                hideStatusbar: {
+                  ...preferences.hideStatusbar,
+                  enabled: value,
+                },
+              }),
+            )
+          }
+        >
+          <ButtonGroupButton value={true}>
+            <UIText maxFontSizeMultiplier={1}>Enable</UIText>
+          </ButtonGroupButton>
+          <ButtonGroupButton value={false}>
+            <UIText maxFontSizeMultiplier={1}>Disable</UIText>
+          </ButtonGroupButton>
+        </ButtonGroup>
+      </View>
+      <View style={{ marginBottom: spacing[1.5] }}>
+        <UIText style={styles.explanation}>
+          While reading, a middle touch will hide the statusbar in addition to
+          the control interface.
+        </UIText>
+      </View>
       <View
         style={[
           styles.field,
@@ -402,6 +433,9 @@ const styles = StyleSheet.create({
     ...fontSizes["2xl"],
     fontWeight: "bold",
     marginVertical: spacing["1.5"],
+  },
+  explanation: {
+    ...fontSizes.xs,
   },
   field: {
     width: "100%",

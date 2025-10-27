@@ -27,6 +27,11 @@ export async function readGlobalPreferences(): Promise<null | Omit<
     preferences.automaticRewind = defaultPreferences.automaticRewind
   }
 
+  // Ensure that user preferences contain new hideStatusbar settings
+  if (!preferences.hideStatusbar) {
+    preferences.hideStatusbar = defaultPreferences.hideStatusbar
+  }
+
   if (preferences.typography.fontFamily === "Bookerly") {
     preferences.typography.fontFamily = "Literata"
   }
