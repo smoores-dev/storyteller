@@ -8,12 +8,13 @@ __pycache__
 /web
 /epub
 /fs
+/path
+/audiobook
+/config
 
-/assets
-/cache
-/dict
-
+/public
 /readme-assets
+/docker-scripts
 
 node_modules
 
@@ -37,6 +38,7 @@ dist
 /mobile/ios
 /mobile/android
 
+/dev-data
 storyteller.db
 storyteller.db*
 .env.local

@@ -46,6 +46,10 @@ type AutomaticRewindPreferences = {
   afterBreak: number
 }
 
+type HideStatusbarPreferences = {
+  enabled: boolean
+}
+
 export type BookPreferences = {
   typography?: Partial<TypographyPreferences>
   layout?: Partial<LayoutPreferences>
@@ -73,6 +77,7 @@ export type PreferencesState = {
   bookPreferences: Record<number, BookPreferences>
   customFonts: CustomFont[]
   automaticRewind: AutomaticRewindPreferences
+  hideStatusbar: HideStatusbarPreferences
 }
 
 export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
@@ -134,6 +139,9 @@ export const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
     enabled: true,
     afterInterruption: 3,
     afterBreak: 10,
+  },
+  hideStatusbar: {
+    enabled: true,
   },
 }
 

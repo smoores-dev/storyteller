@@ -183,13 +183,14 @@ export default function Settings() {
         <View>
           <UIText style={styles.subheading}>Logging</UIText>
           <Button
+            style={[{ marginBottom: spacing[2] }]}
             onPress={() => {
               dispatch(loggingSlice.actions.debugLoggingToggled())
             }}
           >
             <UIText>{debugEnabled ? "Disable" : "Enable"} debug logging</UIText>
           </Button>
-          <Link href="/log">
+          <Link style={{ marginBottom: spacing[2] }} href="/log">
             <UIText>View logs</UIText>
           </Link>
         </View>

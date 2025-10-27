@@ -6,6 +6,7 @@ import {
   DeviceEventEmitter,
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   View,
 } from "react-native"
@@ -66,6 +67,7 @@ export function Epub({ book, locator }: Props) {
     getFilledBookPreferences(state, book.id),
   )
   const { customFonts } = useAppSelector(getGlobalPreferences)
+  const { hideStatusbar } = useAppSelector(getGlobalPreferences)
 
   const [selection, setSelection] = useState<{
     x: number
@@ -79,6 +81,17 @@ export function Epub({ book, locator }: Props) {
   const insets = useSafeAreaInsets()
 
   const [showInterface, setShowInterface] = useState(true)
+
+  useEffect(() => {
+    if (!hideStatusbar.enabled) return
+
+    StatusBar.setHidden(!showInterface)
+
+    return () => {
+      StatusBar.setHidden(false)
+    }
+  }, [showInterface, hideStatusbar.enabled])
+
   const epubViewRef = useRef<EPUBViewRef | null>(null)
 
   const { isPlaying } = useAudioBook()
