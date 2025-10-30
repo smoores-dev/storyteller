@@ -709,7 +709,7 @@ export async function getBookByAudiobookFilepathPrefix(
 
   return await db
     .selectFrom("book")
-    .select(["uuid", "title"])
+    .select(["book.uuid", "book.title"])
     .innerJoin("audiobook", "book.uuid", "audiobook.bookUuid")
     .select(["audiobook.filepath as audiobookFilepath"])
     .where(
