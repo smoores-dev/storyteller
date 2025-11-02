@@ -5,19 +5,18 @@ import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { AuthError } from "next-auth"
 
+import { apiHost } from "@/app/apiHost"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { nextAuth } from "@/auth/auth"
+import { createConfig, nextAuth } from "@/auth/auth"
 import { LoginForm } from "@/components/login/LoginForm"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
-
-import { apiHost } from "../../apiHost"
 
 export const metadata: Metadata = {
   title: "Login",
 }
 
 export default async function Login() {
-  async function credentialsLogin(data: FormData) {
+  async function credentialsLogin(data: FormData, callbackUrl?: string) {
     "use server"
 
     try {
@@ -65,17 +64,35 @@ export default async function Login() {
         httpOnly: true,
         expires: token.expires_in,
       })
+
+      const config = await createConfig(undefined)
+      const callbacks = config.callbacks
+      const isValidRedirect =
+        !callbackUrl ||
+        !callbacks ||
+        callbacks.redirect?.({
+          url: callbackUrl,
+          baseUrl:
+            config.cookies?.sessionToken?.options?.domain ?? domain ?? "",
+        })
+
+      if (isValidRedirect) {
+        redirect(callbackUrl ?? "/")
+      }
+
+      redirect("/")
     } catch {
       return "failed"
     }
-
-    redirect("/")
   }
 
-  async function oauthLogin(providerId: string) {
+  async function oauthLogin(providerId: string, callbackUrl?: string) {
     "use server"
     try {
-      await nextAuth.signIn(providerId)
+      await nextAuth.signIn(
+        providerId,
+        callbackUrl === undefined ? callbackUrl : { redirectTo: callbackUrl },
+      )
     } catch (error) {
       if (error instanceof AuthError) {
         console.error(error)

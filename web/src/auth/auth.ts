@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { readFileSync } from "node:fs"
+import { readFile } from "node:fs/promises"
 
 import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { hash, verify as verifyPassword } from "argon2"
@@ -64,12 +64,12 @@ const DEFAULT_SECRET_KEY_FILE = "/run/secrets/secret_key"
  * update their configuration, if that's the value of the env
  * variable, we read the value from the file instead.
  */
-function readSecretKey() {
+export async function readSecretKey() {
   if (JWT_SECRET_KEY_FILE) {
-    return readFileSync(JWT_SECRET_KEY_FILE, { encoding: "utf-8" })
+    return await readFile(JWT_SECRET_KEY_FILE, { encoding: "utf-8" })
   }
   if (process.env["STORYTELLER_SECRET_KEY"] === DEFAULT_SECRET_KEY_FILE) {
-    return readFileSync(DEFAULT_SECRET_KEY_FILE, { encoding: "utf-8" })
+    return await readFile(DEFAULT_SECRET_KEY_FILE, { encoding: "utf-8" })
   }
   return process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
 }
@@ -155,7 +155,7 @@ export async function createConfig(
     pages: {
       signIn: "/login",
     },
-    secret: readSecretKey(),
+    secret: await readSecretKey(),
     adapter,
     jwt: {
       encode() {

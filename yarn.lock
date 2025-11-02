@@ -10186,7 +10186,7 @@ __metadata:
     busboy: "npm:^1.6.0"
     classnames: "npm:^2.5.1"
     content-disposition: "npm:^1.0.0"
-    date-fns: "npm:^3.6.0"
+    date-fns: "npm:^4.1.0"
     dayjs: "npm:^1.11.13"
     dbgate-query-splitter: "npm:^4.11.3"
     debounce: "npm:^2.2.0"
@@ -15642,13 +15642,6 @@ __metadata:
   dependencies:
     "@babel/runtime": "npm:^7.21.0"
   checksum: 10c0/e4b521fbf22bc8c3db332bbfb7b094fd3e7627de0259a9d17c7551e2d2702608a7307a449206065916538e384f37b181565447ce2637ae09828427aed9cb5581
-  languageName: node
-  linkType: hard
-
-"date-fns@npm:^3.6.0":
-  version: 3.6.0
-  resolution: "date-fns@npm:3.6.0"
-  checksum: 10c0/0b5fb981590ef2f8e5a3ba6cd6d77faece0ea7f7158948f2eaae7bbb7c80a8f63ae30b01236c2923cf89bb3719c33aeb150c715ea4fe4e86e37dcf06bed42fb6
   languageName: node
   linkType: hard
 

@@ -3,6 +3,7 @@
 import { type PublicProvider } from "@auth/core/types"
 import { Button, PasswordInput, Stack, TextInput } from "@mantine/core"
 import { IconArrowLeft } from "@tabler/icons-react"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 import { api } from "@/store/api"
@@ -11,8 +12,9 @@ import { useAppDispatch } from "@/store/appState"
 type Props = {
   credentialsLoginAction: (
     formData: FormData,
+    callbackUrl?: string,
   ) => Promise<"bad-creds" | "failed" | undefined>
-  oauthLoginAction: (id: string) => Promise<void>
+  oauthLoginAction: (id: string, callbackUrl?: string) => Promise<void>
   providers: PublicProvider[]
 }
 
@@ -21,6 +23,7 @@ export function LoginForm({
   oauthLoginAction,
   providers,
 }: Props) {
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const [showCredentials, setShowCredentials] = useState(!providers.length)
 
@@ -47,7 +50,10 @@ export function LoginForm({
               // shenanigans below for oauth login, because we get
               // redirected to another domain entirely, triggering
               // a full load of the layout when we redirect back
-              await oauthLoginAction(provider.id)
+              await oauthLoginAction(
+                provider.id,
+                searchParams.get("callbackUrl") ?? undefined,
+              )
             }}
           >
             <Button variant="outline" type="submit">
@@ -84,7 +90,10 @@ export function LoginForm({
         action={async (formData) => {
           setErrorState(null)
           try {
-            const error = await credentialsLoginAction(formData)
+            const error = await credentialsLoginAction(
+              formData,
+              searchParams.get("callbackUrl") ?? undefined,
+            )
             if (error) {
               setErrorState(error)
             }

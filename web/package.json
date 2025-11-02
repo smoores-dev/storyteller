@@ -58,7 +58,7 @@
     "busboy": "^1.6.0",
     "classnames": "^2.5.1",
     "content-disposition": "^1.0.0",
-    "date-fns": "^3.6.0",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "dbgate-query-splitter": "^4.11.3",
     "debounce": "^2.2.0",
