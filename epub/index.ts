@@ -540,14 +540,20 @@ export class Epub {
         // An entry's fileName implicitly requires its parent directories to exist.
         zipfile.readEntry()
       } else {
-        // file entry
+        const writePath = join(extractPath, entry.fileName)
         const readStream = await openReadStream(entry)
-        readStream.on("end", function () {
+        await mkdir(dirname(writePath), { recursive: true })
+        // file entry
+        await new Promise<void>((resolvePipe) => {
+          const writePath = join(extractPath, entry.fileName)
+          const writeStream = createWriteStream(writePath)
+          writeStream.on("finish", () => {
+            resolvePipe()
+          })
+          readStream.pipe(writeStream)
+        }).finally(() => {
           zipfile.readEntry()
         })
-        const writePath = join(extractPath, entry.fileName)
-        await mkdir(dirname(writePath), { recursive: true })
-        readStream.pipe(createWriteStream(writePath))
       }
     })
     await promise
