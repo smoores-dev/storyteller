@@ -35,3 +35,5 @@ local.envrc
 # An option to put data not in the root repo directory
 /dev-data/
 /data/
+
+/.idea/*
