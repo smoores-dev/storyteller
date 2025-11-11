@@ -64,26 +64,28 @@ export default async function Login() {
         httpOnly: true,
         expires: token.expires_in,
       })
-
-      const config = await createConfig(undefined)
-      const callbacks = config.callbacks
-      const isValidRedirect =
-        !callbackUrl ||
-        !callbacks ||
-        callbacks.redirect?.({
-          url: callbackUrl,
-          baseUrl:
-            config.cookies?.sessionToken?.options?.domain ?? domain ?? "",
-        })
-
-      if (isValidRedirect) {
-        redirect(callbackUrl ?? "/")
-      }
-
-      redirect("/")
     } catch {
       return "failed"
     }
+
+    const cookieOrigin = (await headers()).get("Origin")
+
+    const domain = getCookieDomain(cookieOrigin)
+    const config = await createConfig(undefined)
+    const callbacks = config.callbacks
+    const isValidRedirect =
+      !callbackUrl ||
+      !callbacks ||
+      callbacks.redirect?.({
+        url: callbackUrl,
+        baseUrl: config.cookies?.sessionToken?.options?.domain ?? domain ?? "",
+      })
+
+    if (isValidRedirect) {
+      redirect(callbackUrl ?? "/")
+    }
+
+    redirect("/")
   }
 
   async function oauthLogin(providerId: string, callbackUrl?: string) {
