@@ -10,6 +10,30 @@ import { parseBlob, selectCover } from "music-metadata"
 import { useEffect, useMemo, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
+const nav = typeof navigator != "undefined" ? navigator : null
+const agent = (nav && nav.userAgent) || ""
+
+const ie_edge = /Edge\/(\d+)/.exec(agent)
+const ie_upto10 = /MSIE \d/.exec(agent)
+const ie_11up = /Trident\/(?:[7-9]|\d{2,})\..*rv:(\d+)/.exec(agent)
+
+const ie = !!(ie_upto10 || ie_11up || ie_edge)
+
+// Specificall checking for deprecated value on purpose
+// eslint-disable-next-line @typescript-eslint/no-deprecated
+const safari = !ie && !!nav && /Apple Computer/.test(nav.vendor)
+// Is true for both iOS and iPadOS for convenience
+const ios = safari && (/Mobile\/\w+/.test(agent) || nav.maxTouchPoints > 2)
+
+// iOS doesn't support extension-based file types, and doesn't allow
+// _any_ file types if one is specified
+const epubFileTypes = ["application/epub+zip", ...(ios ? [] : [".epub"])]
+// iOS also doesn't know the mime type for .m4b files, so the only way
+// to allow .m4bs is to allow all file types
+const audioFileTypes = ios
+  ? null
+  : ["video/mp4", "audio/*", "application/zip", ".m4b", ".m4a", ".zip"]
+
 // import { Epub } from "@storyteller-platform/epub"
 
 import { type Collection } from "@/database/collections"
@@ -40,7 +64,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
       new Uppy({
         restrictions: {
           maxNumberOfFiles: 1,
-          allowedFileTypes: ["application/epub+zip", ".epub"],
+          allowedFileTypes: epubFileTypes,
         },
       }).use(Tus, {
         endpoint: tusEndpoint,
@@ -67,7 +91,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
         new Uppy({
           restrictions: {
             maxNumberOfFiles: 1,
-            allowedFileTypes: ["application/epub+zip", ".epub"],
+            allowedFileTypes: epubFileTypes,
           },
         }).use(Tus, {
           endpoint: tusEndpoint,
@@ -93,13 +117,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
   const [audioUppy, setAudioUppy] = useState(() =>
     new Uppy({
       restrictions: {
-        allowedFileTypes: [
-          "video/mp4",
-          "audio/*",
-          "application/zip",
-          ".m4b",
-          ".zip",
-        ],
+        allowedFileTypes: audioFileTypes,
       },
     })
       .use(Tus, {
@@ -125,13 +143,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
       setAudioUppy(
         new Uppy({
           restrictions: {
-            allowedFileTypes: [
-              "video/mp4",
-              "audio/*",
-              "application/zip",
-              ".m4b",
-              ".zip",
-            ],
+            allowedFileTypes: audioFileTypes,
           },
         })
           .use(Tus, {
