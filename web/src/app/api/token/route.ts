@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   const username = body.get("username")?.valueOf()
   const password = body.get("password")?.valueOf()
   if (typeof username !== "string" || typeof password !== "string") {
-    return new Response(null, { status: 405 })
+    return new Response(null, { status: 400 })
   }
 
   try {
@@ -24,6 +24,6 @@ export async function POST(request: NextRequest) {
     if (e instanceof CredentialsSignin) {
       return new Response(null, { status: 401 })
     }
-    return new Response(null, { status: 500 })
+    throw e
   }
 }

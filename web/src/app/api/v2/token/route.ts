@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   const usernameOrEmail = body.get("usernameOrEmail")?.valueOf()
   const password = body.get("password")?.valueOf()
   if (typeof usernameOrEmail !== "string" || typeof password !== "string") {
-    return new Response(null, { status: 405 })
+    return new Response(null, { status: 400 })
   }
 
   try {
