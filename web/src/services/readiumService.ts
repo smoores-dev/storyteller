@@ -250,7 +250,7 @@ export class ReadiumService {
 
     const filePathEncoded = this.base64Encode(fullBookPath.slice(1))
 
-    return `${filePathEncoded}/${assetPath}`
+    return `/webpub/${filePathEncoded}/${assetPath}`
   }
 
   async makeRequest(
@@ -276,6 +276,7 @@ export class ReadiumService {
       url.search = searchParams.toString()
     }
 
+    logger.debug(`[READIUM] Fetching ${url.toString()}`)
     const response = await fetch(url, init)
     logger.debug(`[READIUM] ${response.status} ${url.toString()}`)
 
@@ -305,7 +306,6 @@ export class ReadiumService {
   }
 
   isRunning(): boolean {
-    logger.debug({ msg: "CHECKING RUNNING", process: this.process })
     return (
       this.process !== null &&
       !this.process.killed &&

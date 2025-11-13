@@ -37,7 +37,7 @@ FROM registry.gitlab.com/storyteller-platform/storyteller-base:main AS runner
 
 WORKDIR /app
 
-ARG READIUM_VERSION=0.4.0
+ARG READIUM_VERSION=0.6.1
 
 # Install Readium CLI using our script
 # note: we could also potentially copy it from their docker image
