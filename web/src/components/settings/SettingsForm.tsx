@@ -402,7 +402,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
             <TextInput
               label="Region"
               withAsterisk
-              {...form.getInputProps("amazonTranscribeAccessKeyId")}
+              {...form.getInputProps("amazonTranscribeRegion")}
             />
             <TextInput
               label="Access key id"
