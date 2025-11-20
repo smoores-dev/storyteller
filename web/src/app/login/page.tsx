@@ -1,7 +1,8 @@
 import { type PublicProvider } from "@auth/core/types"
-import { Title } from "@mantine/core"
+import { Center, Image, Paper, Stack, Text, Title } from "@mantine/core"
 import { type Metadata } from "next"
 import { cookies, headers } from "next/headers"
+import NextImage from "next/image"
 import { redirect } from "next/navigation"
 import { AuthError } from "next-auth"
 
@@ -108,15 +109,31 @@ export default async function Login() {
     await fetchApiRoute<Record<string, PublicProvider>>("/auth/providers")
 
   return (
-    <>
-      <header>
-        <Title order={2}>Login</Title>
-      </header>
-      <LoginForm
-        credentialsLoginAction={credentialsLogin}
-        oauthLoginAction={oauthLogin}
-        providers={Object.values(providers)}
-      />
-    </>
+    <Center className="min-h-screen pb-36">
+      <Paper className="w-[450px] p-8">
+        <Stack className="items-stretch justify-start gap-0">
+          <Stack className="items-center gap-0 pb-8">
+            <Image
+              component={NextImage}
+              h={100}
+              w={100}
+              height={100}
+              width={100}
+              src="/Storyteller_Logo.png"
+              alt=""
+              aria-hidden
+              className="-m-3"
+            />
+            <Title order={1}>Welcome Back!</Title>
+            <Text>Login to your Storyteller server</Text>
+          </Stack>
+          <LoginForm
+            credentialsLoginAction={credentialsLogin}
+            oauthLoginAction={oauthLogin}
+            providers={Object.values(providers)}
+          />
+        </Stack>
+      </Paper>
+    </Center>
   )
 }

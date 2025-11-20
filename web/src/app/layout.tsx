@@ -1,17 +1,12 @@
-import { ColorSchemeScript } from "@mantine/core"
+import { ColorSchemeScript, MantineProvider } from "@mantine/core"
 import { type Metadata, type Viewport } from "next"
 import { Inter, Young_Serif } from "next/font/google"
 
-import { type User } from "@/apiModels"
-import { AppShell } from "@/components/AppShell"
 import StoreProvider from "@/components/StoreProvider"
 import { AudioProviderRedux } from "@/components/reader/AudioProviderRedux"
-import { MiniPlayer } from "@/components/reader/MiniPlayer"
 import { PiPProvider } from "@/components/reader/PipProvider"
-import { type CollectionWithRelations } from "@/database/collections"
-import { getCurrentVersion } from "@/versions"
+import { theme } from "@/theme/theme"
 
-import { fetchApiRoute } from "./fetchApiRoute"
 import "./globals.css"
 
 const inter = Inter({
@@ -41,28 +36,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const version = getCurrentVersion()
-  let currentUser: User | undefined = undefined
-  try {
-    currentUser = await fetchApiRoute<User | undefined>("/user")
-  } catch {
-    // pass
-  }
-
-  let collections: CollectionWithRelations[] = []
-  try {
-    collections = await fetchApiRoute<CollectionWithRelations[]>("/collections")
-  } catch {
-    // pass
-  }
-
-  const hideReader = !process.env["ENABLE_WEB_READER"]
-
   return (
     <html
       lang="en"
@@ -83,15 +61,9 @@ export default async function RootLayout({
         <StoreProvider>
           <AudioProviderRedux>
             <PiPProvider>
-              <AppShell
-                version={version}
-                currentUser={currentUser}
-                collections={collections}
-                demoMode={!!process.env["STORYTELLER_DEMO_MODE"]}
-              >
+              <MantineProvider theme={theme} defaultColorScheme="light">
                 {children}
-                {!hideReader && <MiniPlayer />}
-              </AppShell>
+              </MantineProvider>
             </PiPProvider>
           </AudioProviderRedux>
         </StoreProvider>

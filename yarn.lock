@@ -10155,7 +10155,7 @@ __metadata:
     "@storyteller-platform/audiobook": "workspace:^"
     "@storyteller-platform/epub": "workspace:*"
     "@storyteller-platform/fs": "workspace:*"
-    "@tabler/icons-react": "npm:^3.26.0"
+    "@tabler/icons-react": "npm:^3.35.0"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@tus/file-store": "npm:^2.0.0"
     "@tus/server": "npm:^2.2.0"
@@ -10651,21 +10651,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tabler/icons-react@npm:^3.26.0":
-  version: 3.26.0
-  resolution: "@tabler/icons-react@npm:3.26.0"
+"@tabler/icons-react@npm:^3.35.0":
+  version: 3.35.0
+  resolution: "@tabler/icons-react@npm:3.35.0"
   dependencies:
-    "@tabler/icons": "npm:3.26.0"
+    "@tabler/icons": "npm:3.35.0"
   peerDependencies:
     react: ">= 16"
-  checksum: 10c0/938d5a4614e740bbc55514d49d9069de35cdfc5ceebbfbe454bf4930396a0425a14c7eeeba24e439b0f9c3f2790e1c9c3c68c959267f0be6751685b88fa8b3ec
+  checksum: 10c0/8d280fcdae00916b001142ba0800ea05d8fa2acdcbd82f88a299b4141fb941237be2e826b86b1af710e038b4f8bb6f76f452c3309c29fd62398b4d5789c2b3e0
   languageName: node
   linkType: hard
 
-"@tabler/icons@npm:3.26.0":
-  version: 3.26.0
-  resolution: "@tabler/icons@npm:3.26.0"
-  checksum: 10c0/60eee2f656f3b391d22f97fd9949913ed3bf19773e6c27b755f62edb67dc3ef2d347efebf486cca012599787326b2dc6ad94d6bf9a765def87e73119b84c32ae
+"@tabler/icons@npm:3.35.0":
+  version: 3.35.0
+  resolution: "@tabler/icons@npm:3.35.0"
+  checksum: 10c0/93098828128ffed2cf412b39bd78992f93f25b22349a4e04523d2a018b7fe376ddeff105babcc3efedd707aa00b705425c7d9f598d6987552a563c62125795a2
   languageName: node
   linkType: hard
 
