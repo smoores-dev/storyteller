@@ -42,7 +42,7 @@
     "@storyteller-platform/audiobook": "workspace:^",
     "@storyteller-platform/epub": "workspace:*",
     "@storyteller-platform/fs": "workspace:*",
-    "@tabler/icons-react": "^3.26.0",
+    "@tabler/icons-react": "^3.35.0",
     "@tus/file-store": "^2.0.0",
     "@tus/server": "^2.2.0",
     "@types/yauzl": "^2.10.3",
