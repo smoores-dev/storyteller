@@ -338,9 +338,16 @@ export function SettingsForm({ settings, authUrl }: Props) {
             <NativeSelect
               label="Whisper build"
               {...form.getInputProps("whisperBuild")}
+              error={
+                state.whisperBuild === "cublas-11.8"
+                  ? "cuBLAS 11.8 is no longer supported. Please update to version 12 or 13."
+                  : undefined
+              }
             >
               <option value="cpu">CPU</option>
-              <option value="cublas-11.8">cuBLAS 11.8 (NVIDIA GPU)</option>
+              <option value="cublas-11.8" disabled>
+                cuBLAS 11.8 (NVIDIA GPU)
+              </option>
               <option value="cublas-12.6">cuBLAS 12.6 (NVIDIA GPU)</option>
               <option value="cublas-13.0">cuBLAS 13.0 (NVIDIA GPU)</option>
               <option value="hipblas">hipBLAS (AMD GPU)</option>
