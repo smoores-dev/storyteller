@@ -17,7 +17,7 @@ const WHISPER_REPO =
   process.env["STORYTELLER_WHISPER_REPO"] ??
   "https://github.com/ggerganov/whisper.cpp"
 
-const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.7.2"
+const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.8.2"
 setGlobalOption("logLevel", "error")
 
 export async function installWhisper(settings: Settings) {
@@ -29,7 +29,13 @@ export async function installWhisper(settings: Settings) {
     } as const
   }
   const repoDir = join(WHISPER_BUILD_DIR, whisperBuild)
-  const executablePath = join(WHISPER_BUILD_DIR, whisperBuild, "main")
+  const executablePath = join(
+    WHISPER_BUILD_DIR,
+    whisperBuild,
+    "build",
+    "bin",
+    "whisper-cli",
+  )
   try {
     await stat(executablePath)
     return {
@@ -61,6 +67,7 @@ export async function installWhisper(settings: Settings) {
     }
     let path = process.env["PATH"] ?? ""
     let libraryPath = process.env["LIBRARY_PATH"] ?? ""
+    let ldLibraryPath = process.env["LD_LIBRARY_PATH"] ?? ""
     if (enableCuda) {
       if (whisperBuild === "cublas-11.8") {
         throw new Error(
@@ -103,7 +110,14 @@ export async function installWhisper(settings: Settings) {
       logger.info("Installing toolkit")
       await exec(`apt-get -y install cuda-toolkit-${cudaVersions.short}`)
       path = `/usr/local/cuda-${cudaVersions.majorMinor}/bin:${path}`
-      libraryPath = `/usr/local/cuda-${cudaVersions.majorMinor}/lib64/stubs:${libraryPath}`
+      const stubsPath = `/usr/local/cuda-${cudaVersions.majorMinor}/lib64/stubs`
+      libraryPath = `${stubsPath}:${libraryPath}`
+      ldLibraryPath = `${stubsPath}:${ldLibraryPath}`
+
+      // whisper.cpp looks for libcuda.so.1, but there's only a stub for libcuda.so,
+      // so we just symlink it for the build. The actual run of the built binary
+      // will use the host's libcuda.so.1 from the NVIDIA driver
+      await exec(`ln -s ${stubsPath}/libcuda.so ${stubsPath}/libcuda.so.1`)
     } else if (whisperBuild === "hipblas") {
       logger.info("Installing ROCm and hipBLAS")
       await exec(
@@ -126,22 +140,72 @@ export async function installWhisper(settings: Settings) {
     // pipe the stdio to /dev/null, since we don't need it
     // and it can be very, very long!
     await new Promise<void>((resolve, reject) => {
-      const make = spawn("make", [`-j${settings.parallelWhisperBuild}`], {
-        cwd: repoDir,
-        shell: true,
-        stdio: ["ignore", "ignore", "ignore"],
-        env: {
-          ...process.env,
-          ...(enableCuda && {
-            WHISPER_CUDA: "1",
-            PATH: path,
-            LIBRARY_PATH: libraryPath,
-          }),
-          ...(whisperBuild === "hipblas" && {
-            GGML_HIPBLAS: "1",
-          }),
+      const make = spawn(
+        "cmake",
+        [
+          "-B",
+          "build",
+          ...(enableCuda ? ["-DGGML_CUDA=1"] : []),
+          ...(whisperBuild === "hipblas"
+            ? [
+                "-DGGML_HIPBLAS=1",
+                // "-DGGML_HIP=ON",
+                // "-DGPU_TARGETS=gfx1151",
+                // "-DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang",
+                // "-DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++",
+                // "-DCMAKE_PREFIX_PATH=/opt/rocm",
+                // "-DGGML_ROCM=1",
+              ]
+            : []),
+        ],
+        {
+          cwd: repoDir,
+          shell: true,
+          stdio: ["ignore", "ignore", "ignore"],
+          env: {
+            ...process.env,
+            ...(enableCuda && {
+              PATH: path,
+              LIBRARY_PATH: libraryPath,
+              LD_LIBRARY_PATH: ldLibraryPath,
+            }),
+          },
         },
+      )
+
+      make.on("close", (code, signal) => {
+        if (code !== 0 || signal) {
+          reject(new Error("Failed to build whisper.cpp"))
+          return
+        }
+        resolve()
       })
+    })
+
+    await new Promise<void>((resolve, reject) => {
+      const make = spawn(
+        "cmake",
+        [
+          "--build",
+          "build",
+          `-j${settings.parallelWhisperBuild}`,
+          "--config",
+          "Release",
+        ],
+        {
+          cwd: repoDir,
+          shell: true,
+          stdio: ["ignore", "ignore", "ignore"],
+          env: {
+            ...process.env,
+            ...(enableCuda && {
+              PATH: path,
+              LIBRARY_PATH: libraryPath,
+              LD_LIBRARY_PATH: ldLibraryPath,
+            }),
+          },
+        },
+      )
 
       make.on("close", (code, signal) => {
         if (code !== 0 || signal) {
