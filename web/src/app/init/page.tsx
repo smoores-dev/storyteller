@@ -86,7 +86,7 @@ export default function InitPage() {
                 withAsterisk
                 required
                 className="my-0"
-                placeholder="Neil Gaiman"
+                placeholder="N. K. Jemisin"
               />
               <TextInput
                 label="Username"
