@@ -146,6 +146,9 @@ export async function installWhisper(settings: Settings) {
           "-B",
           "build",
           ...(enableCuda ? ["-DGGML_CUDA=1"] : []),
+          ...(whisperBuild === "cublas-13.0"
+            ? ["-DCMAKE_CUDA_STANDARD=17"]
+            : []),
           ...(whisperBuild === "hipblas" ? ["-DGGML_HIP=1"] : []),
         ],
         {

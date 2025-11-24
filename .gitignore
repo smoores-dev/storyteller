@@ -37,3 +37,4 @@ local.envrc
 /data/
 
 /.idea/*
+/.helix/

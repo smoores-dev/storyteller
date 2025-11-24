@@ -67,6 +67,7 @@
                     pkgs.sqlite-interactive
                     pkgs.sqlite
                     pkgs.git-lfs
+                    pkgs.vtsls
                     # note: readium cli will be installed via task below
                   ];
 
