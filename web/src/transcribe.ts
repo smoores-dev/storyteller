@@ -146,17 +146,7 @@ export async function installWhisper(settings: Settings) {
           "-B",
           "build",
           ...(enableCuda ? ["-DGGML_CUDA=1"] : []),
-          ...(whisperBuild === "hipblas"
-            ? [
-                "-DGGML_HIPBLAS=1",
-                // "-DGGML_HIP=ON",
-                // "-DGPU_TARGETS=gfx1151",
-                // "-DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang",
-                // "-DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++",
-                // "-DCMAKE_PREFIX_PATH=/opt/rocm",
-                // "-DGGML_ROCM=1",
-              ]
-            : []),
+          ...(whisperBuild === "hipblas" ? ["-DGGML_HIP=1"] : []),
         ],
         {
           cwd: repoDir,
