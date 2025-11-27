@@ -12,6 +12,18 @@ import { createConfig, nextAuth } from "@/auth/auth"
 import { LoginForm } from "@/components/login/LoginForm"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
 
+function defaultRedirectCallback({
+  url,
+  baseUrl,
+}: {
+  url: string
+  baseUrl: string
+}) {
+  if (url.startsWith("/")) return `${baseUrl}${url}`
+  else if (new URL(url).origin === baseUrl) return url
+  return baseUrl
+}
+
 export const metadata: Metadata = {
   title: "Login",
 }
@@ -69,21 +81,24 @@ export default async function Login() {
       return "failed"
     }
 
+    if (!callbackUrl) {
+      redirect("/")
+    }
+
     const cookieOrigin = (await headers()).get("Origin")
 
     const domain = getCookieDomain(cookieOrigin)
     const config = await createConfig(undefined)
     const callbacks = config.callbacks
-    const isValidRedirect =
-      !callbackUrl ||
-      !callbacks ||
-      callbacks.redirect?.({
-        url: callbackUrl,
-        baseUrl: config.cookies?.sessionToken?.options?.domain ?? domain ?? "",
-      })
+
+    const redirectCallback = callbacks?.redirect ?? defaultRedirectCallback
+    const isValidRedirect = redirectCallback({
+      url: callbackUrl,
+      baseUrl: config.cookies?.sessionToken?.options?.domain ?? domain ?? "",
+    })
 
     if (isValidRedirect) {
-      redirect(callbackUrl ?? "/")
+      redirect(callbackUrl)
     }
 
     redirect("/")
