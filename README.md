@@ -31,7 +31,7 @@ as well as read or listen to (or both!) the resulting synced books.
 ## Contributing
 
 Please take a look at our
-[guidelines for developing Storyteller](https://storyteller-platform.gitlab.io/storyteller/docs/category/development)
+[guidelines for developing Storyteller](https://storyteller-platform.gitlab.io/storyteller/docs/category/contributing)
 before contributing.
 
 ## How it works
