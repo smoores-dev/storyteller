@@ -58,6 +58,14 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      announcementBar: {
+        id: "cve_2025_66478",
+        content:
+          'Storyteller versions prior to 2.3.21 are affected by a critical vulnerability in Next.js (CVE-2025-66478). Please upgrade to at least 2.3.21. <a target="_blank" rel="noopener noreferrer" href="https://nextjs.org/blog/CVE-2025-66478">Learn more</a>',
+        backgroundColor: "#ff4d4d",
+        textColor: "#ffffff",
+        isCloseable: true,
+      },
       // Replace with your project's social card
       image: "img/Storyteller_Logo.jpg",
       navbar: {
