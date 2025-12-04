@@ -1,5 +1,12 @@
 # Storyteller
 
+<!-- prettier-ignore -->
+> [!warning]
+> Storyteller versions prior to 2.3.21 are affected by a
+> critical vulnerability in Next.js (CVE-2025-66478). If you are running an
+> older version, please upgrade to at least 2.3.21 as soon as possible. See
+> https://nextjs.org/blog/CVE-2025-66478 for details.
+
 [![Join the chat at https://matrix.to/#/#smoores_storyteller:gitter.im](https://badges.gitter.im/Join%20Chat.svg)](https://matrix.to/#/#smoores_storyteller:gitter.im)
 
 [![Join our Discord at https://discord.gg/KhSvFqcrza](https://dcbadge.limes.pink/api/server/KhSvFqcrza)](https://discord.gg/KhSvFqcrza)
