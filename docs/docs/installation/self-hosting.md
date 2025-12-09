@@ -196,6 +196,28 @@ secrets:
 
 ---
 
+## Additional env variables for configuration
+
+Storyteller can be configured with a number of additional environment variables.
+
+| Variable Name                     | Description                                                                                                                            | Default                                    |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| AUTH_URL                          | [Required for OAuth](https://storyteller-platform.gitlab.io/storyteller/docs/settings#setting-the-auth_url-environment-variable)       | N/A                                        |
+| ENABLE_WEB_READER                 | [Enable the experimental web reader by setting to `true`.](https://storyteller-platform.gitlab.io/storyteller/docs/reading/web-reader) | `false`                                    |
+| READIUM_PORT                      | Port for the Readium server.                                                                                                           | `8002`                                     |
+| STORYTELLER_DATA_DIR              | Directory where Storyteller will store its data.                                                                                       | Current Directory (`/data` in container)   |
+| STORYTELLER_DB_DIR                | Directory where Storyteller will store its database files.                                                                             | `STORYTELLER_DATA_DIR`                     |
+| STORYTELLER_DB_FILENAME           | Filename for the Storyteller database.                                                                                                 | `storyteller.db`                           |
+| STORYTELLER_DEMO_MODE             | Enable demo mode by setting to `true`. (Used for [demo-storyteller.elfhosted.com](https://demo-storyteller.elfhosted.com))             | `false`                                    |
+| STORYTELLER_LOG_LEVEL             | Log level for Storyteller. Options are `error`, `warn`, `info`, `debug`.                                                               | `info`                                     |
+| STORYTELLER_MAX_UPLOAD_CHUNK_SIZE | Upload chunk size limit in megabytes.                                                                                                  | `10` (10 MB)                               |
+| STORYTELLER_SECRET_KEY            | The secret key for the instance. Either this or STORYTELLER_SECRET_KEY_FILE must be set.                                               | N/A                                        |
+| STORYTELLER_SECRET_KEY_FILE       | Path to a file containing the secret key for the instance. Either this or STORYTELLER_SECRET_KEY must be set.                          | N/A                                        |
+| STORYTELLER_WHISPER_REPO          | Repo to download whisper.cpp from.                                                                                                     | `https://github.com/ggerganov/whisper.cpp` |
+| STORYTELLER_WHISPER_VERSION       | Version of whisper.cpp to download.                                                                                                    | `v1.8.2`                                   |
+
+---
+
 ## Now what?
 
 To create your admin account and get started, head to http://localhost:8001 in a
