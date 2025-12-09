@@ -11,7 +11,7 @@ import {
 } from "kysely"
 import { PHASE_PRODUCTION_BUILD } from "next/constants.js"
 
-import { DATA_DIR } from "@/directories"
+import { DB_DIR } from "@/directories"
 import { logger } from "@/logging"
 
 import { BooleanPlugin } from "./plugins/booleanPlugin"
@@ -19,13 +19,13 @@ import { DatePlugin } from "./plugins/datePlugin"
 import { type DB } from "./schema"
 
 const DATABASE_URL = join(
-  DATA_DIR,
+  DB_DIR,
   process.env["STORYTELLER_DB_FILENAME"] || "storyteller.db",
 )
 
 const UUID_EXT_PATH = join(cwd(), "sqlite", "uuid.c")
 
-mkdirSync(DATA_DIR, { recursive: true })
+mkdirSync(DB_DIR, { recursive: true })
 const sqlite: Database =
   process.env["NEXT_PHASE"] === PHASE_PRODUCTION_BUILD
     ? (null as unknown as Database)
