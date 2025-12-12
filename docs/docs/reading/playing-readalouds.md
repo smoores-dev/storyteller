@@ -42,9 +42,14 @@ you'll find it on your Bookshelf, where you can start reading or listening!
 
 ### [BookFusion](https://www.bookfusion.com/)
 
-- Subscription. Very pricy if you want all-the-time access for synced books.
+- [Free and paid plans](https://www.bookfusion.com/reading/pricing)
+  - Free plan allows up to 10 books in the app at a time, synced across up to 3
+    devices.
+  - Paid plans are scaled by total storage size (note that Storyteller books
+    contain the entire audiobook, and so are sometimes large!)
 - Android, iOS, Desktop, Web
-- Has less robust audiobook features than the Storyteller mobile apps
+- Limited audio playback controls
+- Supports annotations/highlights with integrations to Notion, Obsidian, etc
 - To add a Storyteller book: Download your book via the Storyteller web
   interface. Open BookFusion and click on the "upload" button in the top right
   corner. Select your downloaded Storyteller book from your Downloads folder.
@@ -55,6 +60,8 @@ you'll find it on your Bookshelf, where you can start reading or listening!
 - [Android app](https://play.google.com/store/apps/details?id=com.colibrio.reader&hl=en_US)
   and [Web app](https://demo.colibrio.com/)
 - Focuses on preserving authors, publishers and designers original visual style.
+- No cross-device syncing
+- Limited audiobook support
 - Absolute best highlight vs page turning.
 - To add a Storyteller book: go to your Storyteller web interface, download the
   book files you wish to read, and then open the book with Colibrio by choosing
@@ -64,7 +71,7 @@ you'll find it on your Bookshelf, where you can start reading or listening!
 
 - Free and open source.
 - Reader is part of the Calibre ecosystem.
-- Their support for immersive reading is fairly new.
+- Their support for immersive reading is fairly new and limited.
 - If you are already a Calibre user this is a great choice as Calibre also has a
   server so you can use Storyteller to sync your books but continue to use
   Calibre to manage them.
