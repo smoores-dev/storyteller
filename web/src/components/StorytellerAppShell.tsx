@@ -44,7 +44,6 @@ import { CreateCollectionModal } from "./collections/CreateCollectionModal"
 import { CurrentBookProgress } from "./layout/CurrentBookProgress"
 
 dayjs.extend(customParseFormat)
-
 interface Props {
   demoMode?: boolean
   version: string
@@ -156,21 +155,27 @@ export function StorytellerAppShell({
                   label={<span className="italic">Uncollected</span>}
                   active={pathname === `/collections/none`}
                 />
-                {collections.map((collection) => (
-                  <NavLink
-                    key={collection.uuid}
-                    onClick={close}
-                    component={NextLink}
-                    leftSection={
-                      <Box className="h-6 w-6 text-center">
-                        {collection.name[0]}
-                      </Box>
-                    }
-                    href={`/collections/${collection.uuid}`}
-                    label={collection.name}
-                    active={pathname === `/collections/${collection.uuid}`}
-                  />
-                ))}
+                {collections.map((collection) => {
+                  const match = collection.name.match(
+                    /(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*?(.*)/u,
+                  )
+                  const displayIcon = match ? match[1] : collection.name[0]
+                  const displayLabel = match ? match[2] : collection.name
+
+                  return (
+                    <NavLink
+                      key={collection.uuid}
+                      onClick={close}
+                      component={NextLink}
+                      leftSection={
+                        <Box className="h-6 w-6 text-center">{displayIcon}</Box>
+                      }
+                      href={`/collections/${collection.uuid}`}
+                      label={displayLabel}
+                      active={pathname === `/collections/${collection.uuid}`}
+                    />
+                  )
+                })}
                 {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion */}
                 {!!permissions.collectionCreate && (
                   <NavLink
