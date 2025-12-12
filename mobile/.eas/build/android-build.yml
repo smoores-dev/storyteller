@@ -20,3 +20,7 @@ build:
     - eas/run_gradle
 
     - eas/find_and_upload_build_artifacts
+
+    - run:
+        name: Upload APK to GitLab
+        command: ./scripts/upload-apk-to-gitlab.sh
