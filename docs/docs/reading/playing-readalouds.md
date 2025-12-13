@@ -43,16 +43,21 @@ you'll find it on your Bookshelf, where you can start reading or listening!
 ### [BookFusion](https://www.bookfusion.com/)
 
 - [Free and paid plans](https://www.bookfusion.com/reading/pricing)
-  - Free plan allows up to 10 books in the app at a time, synced across up to 3
-    devices.
+  - Free plan allows:
+    - Unlimited local-only books
+    - Up to 10 uploaded books, synced across up to 3 devices.
   - Paid plans are scaled by total storage size (note that Storyteller books
     contain the entire audiobook, and so are sometimes large!)
 - Android, iOS, Desktop, Web
 - Limited audio playback controls
 - Supports annotations/highlights with integrations to Notion, Obsidian, etc
-- To add a Storyteller book: Download your book via the Storyteller web
-  interface. Open BookFusion and click on the "upload" button in the top right
-  corner. Select your downloaded Storyteller book from your Downloads folder.
+- To add a Storyteller book
+  - Local only: Download your book via the Storyteller web interface. Open the
+    book from your downloads and choose to open it with the BookFusion app.
+  - Saved to cloud (available for cross-device syncing): Download your book via
+    the Storyteller web interface. Open BookFusion and click on the "upload"
+    button in the top right corner. Select your downloaded Storyteller book from
+    your Downloads folder.
 
 ### [Colibrio Reader](https://www.colibrio.com/)
 
