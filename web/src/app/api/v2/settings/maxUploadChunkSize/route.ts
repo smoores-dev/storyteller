@@ -1,13 +1,14 @@
 import { withHasPermission } from "@/auth/auth"
 import { getSetting } from "@/database/settings"
+import { env } from "@/env"
 
 export const GET = withHasPermission("bookCreate")(async () => {
-  const maxUploadChunkSize = process.env["STORYTELLER_MAX_UPLOAD_CHUNK_SIZE"]
-    ? parseInt(process.env["STORYTELLER_MAX_UPLOAD_CHUNK_SIZE"], 10)
-    : await getSetting("maxUploadChunkSize")
+  const maxUploadChunkSize =
+    env.STORYTELLER_MAX_UPLOAD_CHUNK_SIZE ??
+    (await getSetting("maxUploadChunkSize"))
 
   return Response.json({
     maxUploadChunkSize,
-    overriden: !!process.env["STORYTELLER_MAX_UPLOAD_CHUNK_SIZE"],
+    overriden: !!env.STORYTELLER_MAX_UPLOAD_CHUNK_SIZE,
   })
 })

@@ -9,6 +9,7 @@ import {
 } from "date-fns"
 import { useCallback, useEffect, useState } from "react"
 
+import { env } from "@/env"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   readingSessionSlice,
@@ -74,7 +75,7 @@ const SleepTimerControl = () => {
           text={`${minutes} min`}
         />
       ))}
-      {process.env.NODE_ENV === "development" && (
+      {env.NODE_ENV === "development" && (
         <>
           <SleepTimerButton
             minutes={5}

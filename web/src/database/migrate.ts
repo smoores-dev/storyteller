@@ -6,6 +6,7 @@ import { cwd } from "node:process"
 import { splitQuery, sqliteSplitterOptions } from "dbgate-query-splitter"
 import { sql } from "kysely"
 
+import { env } from "@/env"
 import { logger } from "@/logging"
 
 import { db } from "./connection"
@@ -90,14 +91,6 @@ async function setInitialAudioCodec(options: {
   }
 }
 
-function getInitialAudioCodec() {
-  const env = process.env["STORYTELLER_INITIAL_AUDIO_CODEC"]
-  if (!env) return null
-  const match = env.match(/^(mp3|aac|opus)(?:-(16|24|32|64|96))?$/)
-  if (!match?.[1]) return null
-  return { codec: match[1], bitrate: match[2] && `${match[2]}k` }
-}
-
 async function migrateFile(path: string) {
   const contents = await readFile(path, {
     encoding: "utf-8",
@@ -142,8 +135,6 @@ export async function migrate() {
   const foundFirstStartup = await isFirstStartup()
   if (foundFirstStartup) logger.info("First startup - initializing database")
 
-  const initialCodec = getInitialAudioCodec()
-
   const migrationsDir = join(cwd(), "migrations")
   const migrationFiles = await readdir(migrationsDir)
   migrationFiles.sort()
@@ -158,8 +149,8 @@ export async function migrate() {
     }
   }
 
-  if (foundFirstStartup && initialCodec) {
-    await setInitialAudioCodec(initialCodec)
+  if (foundFirstStartup && env.STORYTELLER_INITIAL_AUDIO_CODEC) {
+    await setInitialAudioCodec(env.STORYTELLER_INITIAL_AUDIO_CODEC)
   }
 }
 

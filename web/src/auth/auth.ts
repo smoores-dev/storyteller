@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises"
 import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { hash, verify as verifyPassword } from "argon2"
 import { add } from "date-fns/fp/add"
-import { type ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
+import type { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
 import { cookies, headers, headers as nextHeaders } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { type NextRequest, NextResponse } from "next/server"
@@ -14,10 +14,10 @@ import NextAuth, {
   type NextAuthRequest,
   type Session,
 } from "next-auth"
-import {
-  type OAuth2Config,
-  type OAuthUserConfig,
-  type OIDCConfig,
+import type {
+  OAuth2Config,
+  OAuthUserConfig,
+  OIDCConfig,
 } from "next-auth/providers"
 import Credentials from "next-auth/providers/credentials"
 
@@ -34,7 +34,8 @@ import {
   getUserByUsernameOrEmail,
   updateUserByEmail,
 } from "@/database/users"
-import { type UUID } from "@/uuid"
+import { env } from "@/env"
+import type { UUID } from "@/uuid"
 
 import { Providers } from "./providers"
 
@@ -51,7 +52,7 @@ declare module "next-auth" {
   }
 }
 
-const JWT_SECRET_KEY_FILE = process.env["STORYTELLER_SECRET_KEY_FILE"]
+const JWT_SECRET_KEY_FILE = env.STORYTELLER_SECRET_KEY_FILE
 const DEFAULT_SECRET_KEY_FILE = "/run/secrets/secret_key"
 
 /**
@@ -68,10 +69,15 @@ export async function readSecretKey() {
   if (JWT_SECRET_KEY_FILE) {
     return await readFile(JWT_SECRET_KEY_FILE, { encoding: "utf-8" })
   }
-  if (process.env["STORYTELLER_SECRET_KEY"] === DEFAULT_SECRET_KEY_FILE) {
+  if (env.STORYTELLER_SECRET_KEY === DEFAULT_SECRET_KEY_FILE) {
     return await readFile(DEFAULT_SECRET_KEY_FILE, { encoding: "utf-8" })
   }
-  return process.env["STORYTELLER_SECRET_KEY"] ?? "<notsosecret>"
+  // this is mostly a type check
+  if (!env.STORYTELLER_SECRET_KEY) {
+    throw new Error("STORYTELLER_SECRET_KEY is not set")
+  }
+
+  return env.STORYTELLER_SECRET_KEY
 }
 
 export function fromDate(time: number, date = Date.now()) {
@@ -144,8 +150,8 @@ export async function createConfig(
     cookies: {
       sessionToken: {
         name: "st_token",
-        ...(process.env["AUTH_URL"] && {
-          options: { domain: new URL(process.env["AUTH_URL"]).hostname },
+        ...(env.AUTH_URL && {
+          options: { domain: new URL(env.AUTH_URL).hostname },
         }),
       },
     },
@@ -340,7 +346,7 @@ export function withUser<
     context: { params: Promise<Params> },
   ) => Promise<Response> | Response,
 ): AppRouteHandlerFn {
-  return async function (request, context) {
+  return async (request, context) => {
     const token = extractTokenFromHeader(request.headers)
     if (token) {
       request.cookies.set("st_token", token)

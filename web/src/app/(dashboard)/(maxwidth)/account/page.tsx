@@ -1,14 +1,15 @@
-import { type PublicProvider } from "@auth/core/types"
+import type { PublicProvider } from "@auth/core/types"
 import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
-import { type Metadata } from "next"
+import type { Metadata } from "next"
 import { revalidatePath } from "next/cache"
 import { forbidden } from "next/navigation"
 import { AuthError } from "next-auth"
 
-import { type User } from "@/apiModels"
+import type { User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { createConfig, hashPassword, nextAuth } from "@/auth/auth"
 import { getAccounts, updateUser } from "@/database/users"
+import { env } from "@/env"
 
 export const metadata: Metadata = {
   title: "Account",
@@ -17,10 +18,7 @@ export const metadata: Metadata = {
 export default async function AccountPage() {
   const currentUser = await fetchApiRoute<User>("/user")
 
-  if (
-    process.env["STORYTELLER_DEMO_MODE"] &&
-    !currentUser.permissions?.userCreate
-  ) {
+  if (env.STORYTELLER_DEMO_MODE && !currentUser.permissions?.userCreate) {
     forbidden()
   }
 
@@ -125,7 +123,9 @@ export default async function AccountPage() {
               action={async function oauthLogin() {
                 "use server"
                 try {
-                  await nextAuth.signIn(provider.id, { redirectTo: "/account" })
+                  await nextAuth.signIn(provider.id, {
+                    redirectTo: "/account",
+                  })
                 } catch (error) {
                   if (error instanceof AuthError) {
                     console.error(error)

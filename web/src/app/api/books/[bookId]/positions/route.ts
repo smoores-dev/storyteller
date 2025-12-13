@@ -10,8 +10,9 @@ import {
   toLegacyLocator,
   upsertPosition,
 } from "@/database/positions"
+import { env } from "@/env"
 import { logger } from "@/logging"
-import { type UUID } from "@/uuid"
+import type { UUID } from "@/uuid"
 
 type Params = Promise<{
   bookId: string
@@ -29,7 +30,7 @@ export const POST = withHasPermission<Params>("bookRead")(async (
   request,
   context,
 ) => {
-  if (process.env["STORYTELLER_DEMO_MODE"]) {
+  if (env.STORYTELLER_DEMO_MODE) {
     return new Response(null, { status: 403 })
   }
   const body = (await request.json()) as Position

@@ -1,6 +1,7 @@
-import { type User } from "@/apiModels"
+import type { User } from "@/apiModels"
 import { withUser } from "@/auth/auth"
 import { type UserPermissionSet, getUser, updateUser } from "@/database/users"
+import { env } from "@/env"
 
 export const dynamic = "force-dynamic"
 
@@ -38,7 +39,7 @@ export const GET = withUser((request) => {
 })
 
 export const PUT = withUser(async (request) => {
-  if (process.env["STORYTELLER_DEMO_MODE"]) {
+  if (env.STORYTELLER_DEMO_MODE) {
     return new Response(null, { status: 403 })
   }
 

@@ -30,6 +30,7 @@
     "fix:format": "prettier --write .",
     "fix:lint": "eslint --fix .",
     "fix": "concurrently -P 'npm:fix:*'",
+    "generate:env-docs": "tsx ./web/scripts/generate-env-docs.ts",
     "postinstall": "husky",
     "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",
     "test:epub": "yarn workspace @storyteller-platform/epub test",

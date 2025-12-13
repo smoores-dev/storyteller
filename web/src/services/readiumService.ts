@@ -3,8 +3,8 @@ import { join } from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 
 import { DATA_DIR } from "@/directories"
+import { env } from "@/env"
 import { logger } from "@/logging"
-
 export interface ReadiumServiceConfig {
   port: number
   maxRetries: number
@@ -35,7 +35,7 @@ export class ReadiumService {
       this.port.toString(),
       "--file-directory",
       "/",
-      ...(process.env["STORYTELLER_LOG_LEVEL"] === "debug" ? ["--debug"] : []),
+      ...(env.STORYTELLER_LOG_LEVEL === "debug" ? ["--debug"] : []),
       "--address",
       "localhost",
     ]
@@ -165,10 +165,7 @@ export class ReadiumService {
             `Attempting to restart Readium service (attempt ${this.retryCount}/${this.maxRetries})`,
           )
           // wait longer to ensure port is released
-          const backoffTime = Math.min(
-            1000 * Math.pow(2, this.retryCount),
-            10000,
-          )
+          const backoffTime = Math.min(1000 * 2 ** this.retryCount, 10000)
           setTimeout(() => {
             this.start().catch((err: unknown) => {
               logger.error("Failed to restart Readium service", err)
@@ -248,7 +245,7 @@ export class ReadiumService {
       ? filepath
       : join(DATA_DIR, filepath)
 
-    const filePathEncoded = this.base64Encode(fullBookPath.slice(1))
+    const filePathEncoded = ReadiumService.base64Encode(fullBookPath.slice(1))
 
     return `/webpub/${filePathEncoded}/${assetPath}`
   }
@@ -328,7 +325,7 @@ declare global {
 
 export function getReadiumService(): ReadiumService {
   if (!globalThis.readiumServiceInstance) {
-    const port = parseInt(process.env["READIUM_PORT"] || "8002", 10)
+    const port = env.READIUM_PORT
     globalThis.readiumServiceInstance = new ReadiumService({
       port,
       maxRetries: 3,

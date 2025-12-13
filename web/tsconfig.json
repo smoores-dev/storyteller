@@ -41,6 +41,7 @@
     "src/**/*.json",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "scripts/**/*.ts",
     ".next/types/**/*.ts",
     "postcss.config.js"
   ],

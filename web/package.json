@@ -42,6 +42,7 @@
     "@storyteller-platform/audiobook": "workspace:^",
     "@storyteller-platform/epub": "workspace:*",
     "@storyteller-platform/fs": "workspace:*",
+    "@t3-oss/env-nextjs": "^0.13.8",
     "@tabler/icons-react": "^3.35.0",
     "@tus/file-store": "^2.0.0",
     "@tus/server": "^2.2.0",
@@ -93,7 +94,8 @@
     "wink-eng-lite-web-model": "^1.8.0",
     "wink-nlp": "^2.3.0",
     "yauzl": "^3.2.0",
-    "yazl": "^3.3.1"
+    "yazl": "^3.3.1",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.44.1",

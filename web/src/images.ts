@@ -1,3 +1,5 @@
+import { env } from "@/env"
+
 let _sharp: typeof import("sharp") | undefined
 
 const AVIF = "image/avif"
@@ -14,7 +16,7 @@ async function getSharp() {
     // Reducing concurrency should reduce the memory usage too.
     // We more aggressively reduce in dev but also reduce in prod.
     // https://sharp.pixelplumbing.com/api-utility#concurrency
-    const divisor = process.env.NODE_ENV === "development" ? 4 : 2
+    const divisor = env.NODE_ENV === "development" ? 4 : 2
     _sharp.concurrency(Math.floor(Math.max(_sharp.concurrency() / divisor, 1)))
   }
   return _sharp

@@ -4,7 +4,8 @@ import { MessageChannel } from "node:worker_threads"
 
 import Piscina, { transferableSymbol, valueSymbol } from "piscina"
 
-import { type UUID } from "@/uuid"
+import { env } from "@/env"
+import type { UUID } from "@/uuid"
 
 import type writeMetadataToFiles from "./fileWriteWorker"
 
@@ -36,7 +37,7 @@ if (globalThis.fileWriteQueue) {
 const filename = join(
   cwd(),
   "file-write-dist",
-  process.env["STORYTELLER_FILE_WRITE_WORKER"] ?? "fileWriteWorker.cjs",
+  env.STORYTELLER_FILE_WRITE_WORKER,
 )
 
 let fileWritePiscina: Piscina
@@ -49,7 +50,7 @@ if (globalThis.fileWritePiscina) {
     // In dev, we don't bundle packages in the worker.
     // These flags allow us to import directly from the
     // source typescript files for our own packages (e.g. @storyteller-platform/epub)
-    ...(process.env.NODE_ENV === "development" && {
+    ...(env.NODE_ENV === "development" && {
       env: {
         ...process.env,
         NODE_OPTIONS:
@@ -94,7 +95,11 @@ export async function queueWritesToFiles(
     },
 
     get [valueSymbol]() {
-      return { name: this.name, type: this.type, arrayBuffer: this.arrayBuffer }
+      return {
+        name: this.name,
+        type: this.type,
+        arrayBuffer: this.arrayBuffer,
+      }
     },
   }
 
@@ -108,7 +113,11 @@ export async function queueWritesToFiles(
     },
 
     get [valueSymbol]() {
-      return { name: this.name, type: this.type, arrayBuffer: this.arrayBuffer }
+      return {
+        name: this.name,
+        type: this.type,
+        arrayBuffer: this.arrayBuffer,
+      }
     },
   }
 

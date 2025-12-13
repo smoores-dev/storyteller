@@ -1,9 +1,10 @@
 import { Title } from "@mantine/core"
-import { type Metadata } from "next"
+import type { Metadata } from "next"
 
-import { type Settings } from "@/apiModels"
+import type { Settings } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { SettingsForm } from "@/components/settings/SettingsForm"
+import { env } from "@/env"
 
 export const dynamic = "force-dynamic"
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default async function SettingsPage() {
   const settings = await fetchApiRoute<Settings>("/settings")
-  const authUrl = process.env["AUTH_URL"]
+  const authUrl = env.AUTH_URL
 
   return (
     <>

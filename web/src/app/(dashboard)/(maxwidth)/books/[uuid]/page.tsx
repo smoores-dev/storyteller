@@ -1,9 +1,10 @@
-import { type Metadata } from "next"
+import type { Metadata } from "next"
 
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { BookDetails } from "@/components/books/BookDetails"
-import { type BookWithRelations } from "@/database/books"
-import { type UUID } from "@/uuid"
+import type { BookWithRelations } from "@/database/books"
+import { env } from "@/env"
+import type { UUID } from "@/uuid"
 
 type Props = {
   params: Promise<{
@@ -27,7 +28,7 @@ export default async function BookEditPage(props: Props) {
   const { uuid } = params
   await fetchApiRoute<BookWithRelations>(`/books/${uuid}`)
 
-  const hideReadButton = !process.env["ENABLE_WEB_READER"]
+  const hideReadButton = !env.ENABLE_WEB_READER
 
   return <BookDetails bookUuid={uuid} hideReadButton={hideReadButton} />
 }
