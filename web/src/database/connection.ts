@@ -12,26 +12,27 @@ import {
 import { PHASE_PRODUCTION_BUILD } from "next/constants.js"
 
 import { DB_DIR } from "@/directories"
+import { env } from "@/env"
 import { logger } from "@/logging"
 
 import { BooleanPlugin } from "./plugins/booleanPlugin"
 import { DatePlugin } from "./plugins/datePlugin"
-import { type DB } from "./schema"
+import type { DB } from "./schema"
 
 const DATABASE_URL = join(
   DB_DIR,
-  process.env["STORYTELLER_DB_FILENAME"] || "storyteller.db",
+  env.STORYTELLER_DB_FILENAME || "storyteller.db",
 )
 
 const UUID_EXT_PATH = join(cwd(), "sqlite", "uuid.c")
 
 mkdirSync(DB_DIR, { recursive: true })
 const sqlite: Database =
-  process.env["NEXT_PHASE"] === PHASE_PRODUCTION_BUILD
+  env.NEXT_PHASE === PHASE_PRODUCTION_BUILD
     ? (null as unknown as Database)
     : createDatabase()
 
-if (process.env["NEXT_PHASE"] !== PHASE_PRODUCTION_BUILD) {
+if (env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
   sqlite.pragma("journal_mode = WAL")
   sqlite.pragma("busy_timeout = 5000")
 
@@ -88,9 +89,9 @@ export const db = new Kysely<DB>({
 function createDatabase() {
   return new Db(
     DATABASE_URL,
-    process.env["SQLITE_NATIVE_BINDING"]
+    env.SQLITE_NATIVE_BINDING
       ? {
-          nativeBinding: process.env["SQLITE_NATIVE_BINDING"],
+          nativeBinding: env.SQLITE_NATIVE_BINDING,
         }
       : undefined,
   )

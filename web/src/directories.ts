@@ -1,8 +1,10 @@
 import { join } from "node:path"
 
-export const DATA_DIR = process.env["STORYTELLER_DATA_DIR"] || process.cwd()
+import { env } from "@/env"
 
-export const DB_DIR = process.env["STORYTELLER_DB_DIR"] || DATA_DIR
+export const DATA_DIR = env.STORYTELLER_DATA_DIR
+
+export const DB_DIR = env.STORYTELLER_DB_DIR || DATA_DIR
 
 export const ASSETS_DIR = join(DATA_DIR, "assets")
 

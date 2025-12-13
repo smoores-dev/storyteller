@@ -11,6 +11,9 @@ const config = {
     "yarn workspace @storyteller-platform/epub readme",
     "git add epub/README.md",
   ],
+  "web/src/env.ts": () => "tsx ./web/scripts/generate-env-docs.ts",
+  "docs/docs/installation/self-hosting.md": () =>
+    "tsx ./web/scripts/generate-env-docs.ts --check",
 }
 
 export default config

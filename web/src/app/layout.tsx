@@ -1,10 +1,11 @@
 import { ColorSchemeScript, MantineProvider } from "@mantine/core"
-import { type Metadata, type Viewport } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter, Young_Serif } from "next/font/google"
 
 import StoreProvider from "@/components/StoreProvider"
 import { AudioProviderRedux } from "@/components/reader/AudioProviderRedux"
 import { PiPProvider } from "@/components/reader/PipProvider"
+import { env } from "@/env"
 import { theme } from "@/theme/theme"
 
 import "./globals.css"
@@ -49,13 +50,12 @@ export default function RootLayout({
     >
       <head>
         <ColorSchemeScript />
-        {process.env.NODE_ENV === "development" &&
-          process.env["ENABLE_REACT_SCAN"] === "true" && (
-            <script
-              crossOrigin="anonymous"
-              src="//unpkg.com/react-scan/dist/auto.global.js"
-            />
-          )}
+        {env.NODE_ENV === "development" && env.ENABLE_REACT_SCAN && (
+          <script
+            crossOrigin="anonymous"
+            src="//unpkg.com/react-scan/dist/auto.global.js"
+          />
+        )}
       </head>
       <body className="h-dvh" suppressHydrationWarning>
         <StoreProvider>

@@ -13,8 +13,9 @@ import {
   getNextQueuePosition,
   updateBook,
 } from "@/database/books"
+import { env } from "@/env"
 import { logger } from "@/logging"
-import { type UUID } from "@/uuid"
+import type { UUID } from "@/uuid"
 
 import type processBook from "./worker"
 
@@ -43,11 +44,7 @@ if (globalThis.controllers) {
   globalThis.controllers = controllers
 }
 
-const filename = join(
-  cwd(),
-  "work-dist",
-  process.env["STORYTELLER_WORKER"] ?? "worker.cjs",
-)
+const filename = join(cwd(), "work-dist", env.STORYTELLER_WORKER)
 
 let alignmentPiscina: Piscina
 if (globalThis.alignmentPiscina) {
@@ -59,7 +56,7 @@ if (globalThis.alignmentPiscina) {
     // In dev, we don't bundle packages in the worker.
     // These flags allow us to import directly from the
     // source typescript files for our own packages (e.g. @storyteller-platform/epub)
-    ...(process.env.NODE_ENV === "development" && {
+    ...(env.NODE_ENV === "development" && {
       env: {
         ...process.env,
         NODE_OPTIONS:

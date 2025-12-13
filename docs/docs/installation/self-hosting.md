@@ -200,6 +200,8 @@ secrets:
 
 Storyteller can be configured with a number of additional environment variables.
 
+<!-- AUTO-GENERATED-ENV-VARS-START -->
+
 | Variable Name                     | Description                                                                                                                            | Default                                    |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | AUTH_URL                          | [Required for OAuth](https://storyteller-platform.gitlab.io/storyteller/docs/settings#setting-the-auth_url-environment-variable)       | N/A                                        |
@@ -209,12 +211,15 @@ Storyteller can be configured with a number of additional environment variables.
 | STORYTELLER_DB_DIR                | Directory where Storyteller will store its database files.                                                                             | `STORYTELLER_DATA_DIR`                     |
 | STORYTELLER_DB_FILENAME           | Filename for the Storyteller database.                                                                                                 | `storyteller.db`                           |
 | STORYTELLER_DEMO_MODE             | Enable demo mode by setting to `true`. (Used for [demo-storyteller.elfhosted.com](https://demo-storyteller.elfhosted.com))             | `false`                                    |
-| STORYTELLER_LOG_LEVEL             | Log level for Storyteller. Options are `error`, `warn`, `info`, `debug`.                                                               | `info`                                     |
+| STORYTELLER_INITIAL_AUDIO_CODEC   | Initial audio codec to use. Options are `mp3`, `aac`, `opus`, `opus-16`, `opus-24`, `opus-32`, `opus-64`, `opus-96`.                   | N/A                                        |
+| STORYTELLER_LOG_LEVEL             | Log level for Storyteller. Options are `error`, `warn`, `info`, `debug`, `trace`.                                                      | `info`                                     |
 | STORYTELLER_MAX_UPLOAD_CHUNK_SIZE | Upload chunk size limit in megabytes.                                                                                                  | `10` (10 MB)                               |
 | STORYTELLER_SECRET_KEY            | The secret key for the instance. Either this or STORYTELLER_SECRET_KEY_FILE must be set.                                               | N/A                                        |
 | STORYTELLER_SECRET_KEY_FILE       | Path to a file containing the secret key for the instance. Either this or STORYTELLER_SECRET_KEY must be set.                          | N/A                                        |
 | STORYTELLER_WHISPER_REPO          | Repo to download whisper.cpp from.                                                                                                     | `https://github.com/ggerganov/whisper.cpp` |
 | STORYTELLER_WHISPER_VERSION       | Version of whisper.cpp to download.                                                                                                    | `v1.8.2`                                   |
+
+<!-- AUTO-GENERATED-ENV-VARS-END -->
 
 ---
 

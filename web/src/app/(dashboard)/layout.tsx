@@ -1,9 +1,10 @@
-import { type ReactNode } from "react"
+import type { ReactNode } from "react"
 
-import { type User } from "@/apiModels"
+import type { User } from "@/apiModels"
 import { StorytellerAppShell } from "@/components/StorytellerAppShell"
 import { MiniPlayer } from "@/components/reader/MiniPlayer"
-import { type CollectionWithRelations } from "@/database/collections"
+import type { CollectionWithRelations } from "@/database/collections"
+import { env } from "@/env"
 import { getCurrentVersion } from "@/versions"
 
 import { fetchApiRoute } from "../fetchApiRoute"
@@ -14,7 +15,7 @@ interface Props {
 
 export default async function DashboardLayout({ children }: Props) {
   const version = getCurrentVersion()
-  let currentUser: User | undefined = undefined
+  let currentUser: User | undefined
   try {
     currentUser = await fetchApiRoute<User | undefined>("/user")
   } catch {
@@ -27,14 +28,14 @@ export default async function DashboardLayout({ children }: Props) {
   } catch {
     // pass
   }
-  const hideReader = !process.env["ENABLE_WEB_READER"]
+  const hideReader = !env.ENABLE_WEB_READER
 
   return (
     <StorytellerAppShell
       version={version}
       currentUser={currentUser}
       collections={collections}
-      demoMode={!!process.env["STORYTELLER_DEMO_MODE"]}
+      demoMode={!!env.STORYTELLER_DEMO_MODE}
     >
       {children}
       {!hideReader && <MiniPlayer />}

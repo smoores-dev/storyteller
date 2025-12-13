@@ -1,10 +1,11 @@
-import pino, { type Level } from "pino"
+import pino from "pino"
 import PinoPretty from "pino-pretty"
+
+import { env } from "@/env"
 
 export const logger = pino(
   {
-    level:
-      (process.env["STORYTELLER_LOG_LEVEL"] as Level | undefined) ?? "info",
+    level: env.STORYTELLER_LOG_LEVEL,
   },
   PinoPretty({
     ignore: "pid,hostname",

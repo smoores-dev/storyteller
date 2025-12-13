@@ -10171,6 +10171,7 @@ __metadata:
     "@storyteller-platform/audiobook": "workspace:^"
     "@storyteller-platform/epub": "workspace:*"
     "@storyteller-platform/fs": "workspace:*"
+    "@t3-oss/env-nextjs": "npm:^0.13.8"
     "@tabler/icons-react": "npm:^3.35.0"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@tus/file-store": "npm:^2.0.0"
@@ -10248,6 +10249,7 @@ __metadata:
     wink-nlp: "npm:^2.3.0"
     yauzl: "npm:^3.2.0"
     yazl: "npm:^3.3.1"
+    zod: "npm:^4.1.13"
   languageName: unknown
   linkType: soft
 
@@ -10664,6 +10666,50 @@ __metadata:
   dependencies:
     defer-to-connect: "npm:^2.0.1"
   checksum: 10c0/4629d2fbb2ea67c2e9dc03af235c0991c79ebdddcbc19aed5d5732fb29ce01c13331e9b1a491584b9069bd6ecde6581dcbf871f11b7eefdebbab34de6cf2197e
+  languageName: node
+  linkType: hard
+
+"@t3-oss/env-core@npm:0.13.8":
+  version: 0.13.8
+  resolution: "@t3-oss/env-core@npm:0.13.8"
+  peerDependencies:
+    arktype: ^2.1.0
+    typescript: ">=5.0.0"
+    valibot: ^1.0.0-beta.7 || ^1.0.0
+    zod: ^3.24.0 || ^4.0.0-beta.0
+  peerDependenciesMeta:
+    arktype:
+      optional: true
+    typescript:
+      optional: true
+    valibot:
+      optional: true
+    zod:
+      optional: true
+  checksum: 10c0/429a082d3c6dff9fb020b725e0fad5a08f6b210caf367e320d3a6b1835297d497aa29eb7e39018d442b03d2aa43a3361bde7dad06d8b6d0a57068adfb65bd367
+  languageName: node
+  linkType: hard
+
+"@t3-oss/env-nextjs@npm:^0.13.8":
+  version: 0.13.8
+  resolution: "@t3-oss/env-nextjs@npm:0.13.8"
+  dependencies:
+    "@t3-oss/env-core": "npm:0.13.8"
+  peerDependencies:
+    arktype: ^2.1.0
+    typescript: ">=5.0.0"
+    valibot: ^1.0.0-beta.7 || ^1.0.0
+    zod: ^3.24.0 || ^4.0.0-beta.0
+  peerDependenciesMeta:
+    arktype:
+      optional: true
+    typescript:
+      optional: true
+    valibot:
+      optional: true
+    zod:
+      optional: true
+  checksum: 10c0/1c4b62e5f15330b9bdc42857c7a76115e74987bc065e74a061a805316330e3589c7de10a924bfbe91b375363b65187f376a92a18104ab7f75c6aaef99c7ca5c3
   languageName: node
   linkType: hard
 
@@ -35041,6 +35087,13 @@ __metadata:
   version: 3.25.67
   resolution: "zod@npm:3.25.67"
   checksum: 10c0/80a0cab3033272c4ab9312198081f0c4ea88e9673c059aa36dc32024906363729db54bdb78f3dc9d5529bd1601f74974d5a56c0a23e40c6f04a9270c9ff22336
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.1.13":
+  version: 4.1.13
+  resolution: "zod@npm:4.1.13"
+  checksum: 10c0/d7e74e82dba81a91ffc3239cd85bc034abe193a28f7087a94ab258a3e48e9a7ca4141920cac979a0d781495b48fc547777394149f26be04c3dc642f58bbc3941
   languageName: node
   linkType: hard
 

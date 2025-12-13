@@ -4,26 +4,26 @@ import { join } from "node:path"
 import { promisify } from "node:util"
 
 import { type RecognitionResult, recognize, setGlobalOption } from "echogarden"
-import { type WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
+import type { WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
 import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 
-import { type Settings, type WhisperModel } from "./database/settingsTypes"
+import { env } from "@/env"
+
+import type { Settings, WhisperModel } from "./database/settingsTypes"
 import { WHISPER_BUILD_DIR } from "./directories"
 import { logger } from "./logging"
 
 const exec = promisify(execCb)
 
-const WHISPER_REPO =
-  process.env["STORYTELLER_WHISPER_REPO"] ??
-  "https://github.com/ggerganov/whisper.cpp"
+const WHISPER_REPO = env.STORYTELLER_WHISPER_REPO
 
-const WHISPER_VERSION = process.env["STORYTELLER_WHISPER_VERSION"] ?? "v1.8.2"
+const WHISPER_VERSION = env.STORYTELLER_WHISPER_VERSION
 setGlobalOption("logLevel", "error")
 
 export async function installWhisper(settings: Settings) {
   const whisperBuild = settings.whisperBuild ?? "cpu"
   const enableCuda = whisperBuild.startsWith("cublas")
-  if (process.env.NODE_ENV === "development" && !process.env["DEV_CONTAINER"]) {
+  if (env.NODE_ENV === "development" && !env.DEV_CONTAINER) {
     return {
       build: "cpu",
     } as const

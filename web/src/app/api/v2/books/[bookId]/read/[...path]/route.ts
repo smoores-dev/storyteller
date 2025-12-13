@@ -1,16 +1,17 @@
 import { createHash } from "node:crypto"
 import { extname } from "node:path"
 
-import { type NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 
 import { assertHasPermission } from "@/auth/auth"
 import { type BookWithRelations, getBook } from "@/database/books"
 import { getSettings } from "@/database/settings"
-import { type UserWithPermissions } from "@/database/users"
+import type { UserWithPermissions } from "@/database/users"
 import { logger } from "@/logging"
 import { getReadiumService } from "@/services/readiumService"
 import { getContentTimestamp } from "@/utils/cacheBustingFetch"
-import { type UUID } from "@/uuid"
+import type { UUID } from "@/uuid"
+import { getCurrentVersion } from "@/versions"
 
 type Params = {
   bookId: UUID
@@ -171,7 +172,7 @@ export const GET = async (
   const contentTimestamp = getContentTimestamp(book)
 
   // get app version for cache busting
-  const appVersion = process.env["npm_package_version"] || "2.0.7"
+  const appVersion = getCurrentVersion()
   const cacheVersion = cacheBust || `${appVersion}-${contentTimestamp}`
 
   const etag = generateETag(bookId, path, cacheVersion, contentTimestamp)

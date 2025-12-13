@@ -13,6 +13,8 @@ const nextConfig = {
     "@storyteller-platform/fs",
     "@storyteller-platform/path",
     "@storyteller-platform/audiobook",
+    "@t3-oss/env-nextjs",
+    "@t3-oss/env-core",
   ],
   serverExternalPackages: [
     "piscina",
