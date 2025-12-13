@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto"
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
 import { basename, dirname } from "node:path"
-import { type MessagePort } from "node:worker_threads"
+import type { MessagePort } from "node:worker_threads"
 
 import { AsyncSemaphore } from "@esfx/async-semaphore"
-import { type RecognitionResult } from "echogarden"
+import type { RecognitionResult } from "echogarden"
 import { extension } from "mime-types"
 
 import { Epub } from "@storyteller-platform/epub"
@@ -30,12 +30,12 @@ import {
   formatTranscriptionEngineDetails,
   getSettings,
 } from "@/database/settings"
-import { type Settings } from "@/database/settingsTypes"
+import type { Settings } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { getTranscriptions, processAudiobook } from "@/process/processAudio"
 import { Synchronizer } from "@/synchronize/synchronizer"
 import { installWhisper, transcribeTrack } from "@/transcribe"
-import { type UUID } from "@/uuid"
+import type { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
 
 export async function transcribeBook(
@@ -44,6 +44,10 @@ export async function transcribeBook(
   settings: Settings,
   onProgress?: (progress: number) => void,
 ) {
+  if (process.env["DEBUG_TRANSCRIBE"] === "true") {
+    const inspector = await import("node:inspector")
+    inspector.open(9231, "0.0.0.0", true)
+  }
   const semaphore = new AsyncSemaphore(settings.parallelTranscribes)
   const transcriptionsPath = getTranscriptionsFilepath(book)
   await mkdir(transcriptionsPath, { recursive: true })
@@ -64,47 +68,87 @@ export async function transcribeBook(
     "transcript" | "wordTimeline"
   >[] = []
 
-  await Promise.all(
-    audioFiles.map(async (audioFile) => {
-      await semaphore.wait()
-      try {
-        const transcriptionFilepath = getTranscriptionsFilepath(
-          book,
-          getTranscriptionFilename(audioFile),
-        )
-        const filepath = getProcessedAudioFilepath(book, audioFile)
-        try {
-          const existingTranscription = await readFile(transcriptionFilepath, {
-            encoding: "utf-8",
-          })
-          logger.info(`Found existing transcription for ${filepath}`)
-          transcriptions.push(
-            JSON.parse(existingTranscription) as Pick<
-              RecognitionResult,
-              "transcript" | "wordTimeline"
-            >,
-          )
-        } catch (_) {
-          const transcription = await transcribeTrack(
-            filepath,
-            locale,
-            settings,
-          )
-          transcriptions.push(transcription)
-          await writeFile(
-            transcriptionFilepath,
-            JSON.stringify({
-              transcript: transcription.transcript,
-              wordTimeline: transcription.wordTimeline,
-            }),
-          )
+  const abortController = new AbortController()
+  const { signal } = abortController
+  const hasFailed = () => signal.aborted // <- otherwise incorrect type narrowing when checking signal.aborted
+
+  try {
+    await Promise.all(
+      audioFiles.map(async (audioFile) => {
+        await semaphore.wait()
+
+        if (hasFailed()) {
+          semaphore.release()
+          return
         }
-        onProgress?.((transcriptions.length + 1) / audioFiles.length)
-      } finally {
-        semaphore.release()
-      }
-    }),
-  )
+
+        try {
+          const transcriptionFilepath = getTranscriptionsFilepath(
+            book,
+            getTranscriptionFilename(audioFile),
+          )
+          const filepath = getProcessedAudioFilepath(book, audioFile)
+          try {
+            const existingTranscription = await readFile(
+              transcriptionFilepath,
+              {
+                encoding: "utf-8",
+                signal,
+              },
+            )
+            logger.info(`Found existing transcription for ${filepath}`)
+            transcriptions.push(
+              JSON.parse(existingTranscription) as Pick<
+                RecognitionResult,
+                "transcript" | "wordTimeline"
+              >,
+            )
+          } catch (_) {
+            if (hasFailed()) {
+              return
+            }
+
+            try {
+              const transcription = await transcribeTrack(
+                filepath,
+                locale,
+                settings,
+              )
+
+              if (hasFailed()) {
+                return
+              }
+
+              transcriptions.push(transcription)
+              await writeFile(
+                transcriptionFilepath,
+                JSON.stringify({
+                  transcript: transcription.transcript,
+                  wordTimeline: transcription.wordTimeline,
+                }),
+                { signal },
+              )
+            } catch (e) {
+              logger.error({ msg: `Failed to transcribe ${filepath}`, err: e })
+              abortController.abort(e)
+              throw e
+            }
+          }
+          onProgress?.((transcriptions.length + 1) / audioFiles.length)
+        } finally {
+          semaphore.release()
+        }
+      }),
+    )
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error(
+        `Transcription was aborted due to a failure: ${e.message}`,
+        { cause: e },
+      )
+    }
+    throw e
+  }
   return transcriptions
 }
 
@@ -304,10 +348,11 @@ export default async function processBook({
         await epub.saveAndClose()
       }
     } catch (e) {
-      logger.error(
-        `Encountered error while running task "${stage}" for book ${bookUuid}`,
-      )
-      console.error(e)
+      logger.error({
+        msg: `Encountered error while running task "${stage}" for book ${bookUuid}`,
+        err: e,
+      })
+
       await updateBook(null, {
         readaloud: {
           status: "ERROR",
@@ -316,6 +361,7 @@ export default async function processBook({
           restartPending: null,
         },
       })
+
       return
     }
   }
