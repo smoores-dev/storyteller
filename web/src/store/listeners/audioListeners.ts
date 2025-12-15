@@ -10,6 +10,10 @@ import { AudioPlayer } from "@/services/AudioPlayerService"
 
 import {
   bookLocatorChanged,
+  pauseButtonPressed,
+  pauseShortCutPressed,
+  playButtonPressed,
+  playShortCutPressed,
   playerPositionSeeked,
   playerPositionUpdated,
   playerTotalPositionSeeked,
@@ -17,7 +21,6 @@ import {
   requestHighlightUpdate,
   syncPosition,
   textNavigatedFromAudio,
-  togglePlay,
 } from "../actions"
 import { getActiveFrame, getPublication } from "../readerRegistry"
 import { selectPreference } from "../slices/preferencesSlice"
@@ -38,7 +41,6 @@ import { startAppListening } from "./listenerMiddleware"
 
 const matchBookLocatorUpdate = isAnyOf(bookLocatorChanged)
 
-// text position changed (user-initiated) → update audio to match
 startAppListening({
   matcher: matchBookLocatorUpdate,
   effect: async (action, listenerApi) => {
@@ -62,8 +64,6 @@ startAppListening({
     )
 
     if (trackIndex !== -1) {
-      // call AudioPlayer directly - does NOT dispatch playerPositionUpdated
-      // this prevents the loop back to text navigation
       await AudioPlayer.skip(trackIndex, clip.start)
       await AudioPlayer.play()
     }
@@ -265,7 +265,12 @@ startAppListening({
   },
 })
 
-const matchTogglePlay = isAnyOf(togglePlay)
+const matchTogglePlay = isAnyOf(
+  pauseButtonPressed,
+  playButtonPressed,
+  pauseShortCutPressed,
+  playShortCutPressed,
+)
 
 startAppListening({
   matcher: matchTogglePlay,

@@ -119,10 +119,6 @@ export const useNavigator = ({
                     ),
                   )
                 }
-
-                // activeFrameRef.current.iframe.contentWindow?.document.addEventListener("touchstart", (e) => {
-                //   // e.preventDefault()
-                // })
               })
             },
             scroll() {

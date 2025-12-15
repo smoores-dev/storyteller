@@ -9,8 +9,12 @@ import {
   useState,
 } from "react"
 
+import { useAppSelector } from "@/store/appState"
+import { selectPreference } from "@/store/slices/preferencesSlice"
+
 type PiPContextType = {
   isSupported: boolean
+  isDesired: boolean
   pipWindow: PictureInPictureWindow | null
   requestPipWindow: (width: number, height: number) => Promise<void>
   closePipWindow: () => void
@@ -26,6 +30,9 @@ export function PiPProvider({ children }: PiPProviderProps) {
   // Detect if the feature is available.
   const isSupported =
     typeof window !== "undefined" && "documentPictureInPicture" in window
+  const isDesired = useAppSelector((state) =>
+    selectPreference(state, "openPipOnTabOut"),
+  )
 
   // Expose pipWindow that is currently active
   const [pipWindow, setPipWindow] = useState<PictureInPictureWindow | null>(
@@ -48,7 +55,7 @@ export function PiPProvider({ children }: PiPProviderProps) {
       disallowReturnToOpener: boolean = false,
     ) => {
       // We don't want to allow multiple requests.
-      if (pipWindow != null || !isSupported) {
+      if (pipWindow != null || !isSupported || !isDesired) {
         return
       }
 
@@ -93,19 +100,20 @@ export function PiPProvider({ children }: PiPProviderProps) {
 
       setPipWindow(pip)
     },
-    [pipWindow, isSupported],
+    [pipWindow, isSupported, isDesired],
   )
 
   const value = useMemo(() => {
     {
       return {
         isSupported,
+        isDesired,
         pipWindow,
         requestPipWindow,
         closePipWindow,
       }
     }
-  }, [closePipWindow, isSupported, pipWindow, requestPipWindow])
+  }, [closePipWindow, isSupported, pipWindow, isDesired, requestPipWindow])
 
   return <PiPContext.Provider value={value}>{children}</PiPContext.Provider>
 }

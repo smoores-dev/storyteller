@@ -1,6 +1,5 @@
 import { Popover, Slider, Text } from "@mantine/core"
 import { IconMinus, IconPlus } from "@tabler/icons-react"
-import { useCallback, useState } from "react"
 
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
@@ -11,11 +10,11 @@ import {
 } from "@/store/slices/preferencesSlice"
 import { selectCurrentBook } from "@/store/slices/readingSessionSlice"
 
-import { useRegisterNavigatorClickhandler } from "../hooks/useNavigatorEvents"
+import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { ResetOrSetGlobalButton } from "./ReadingSettingsControl"
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
-import { popoverClassNames, sliderClassNames } from "./shared"
+import { popoverClassNames, sliderClassNames } from "./classNames"
 
 type Props = ToolProps
 
@@ -134,12 +133,8 @@ const SpeedControl = () => {
 
 export const PlaybackSpeedControl = (props: Props) => {
   const playbackSpeed = useAppSelector(selectPlaybackRate)
-  const [open, setOpen] = useState(false)
 
-  const closeOnClickNavigator = useCallback(() => {
-    setOpen(false)
-  }, [setOpen])
-  useRegisterNavigatorClickhandler(closeOnClickNavigator)
+  const { isOpen, closeMenu, toggleMenu } = useMenuToggle()
 
   if (props.mode === "raw") {
     return <SpeedControl />
@@ -164,22 +159,24 @@ export const PlaybackSpeedControl = (props: Props) => {
   return (
     <Popover
       withArrow
-      opened={open}
-      onDismiss={closeOnClickNavigator}
+      opened={isOpen}
+      onDismiss={closeMenu}
       classNames={popoverClassNames}
-      withinPortal={false}
+      // withinPortal={false}
+      portalProps={{
+        target: props.targetDocument?.body ?? window.document.body,
+      }}
     >
       <Popover.Target>
         <ToolbarIcon
+          targetDocument={props.targetDocument ?? window.document}
           label="Playback Speed"
           icon={
             <span suppressHydrationWarning className="text-xs">
               {playbackSpeed}x
             </span>
           }
-          onClick={() => {
-            setOpen((prev) => !prev)
-          }}
+          onClick={toggleMenu}
         />
       </Popover.Target>
       <Popover.Dropdown className="w-80">

@@ -1,7 +1,6 @@
-import { ActionIcon, Tooltip } from "@mantine/core"
 import classNames from "classnames"
-import { twMerge } from "tailwind-merge"
 
+import { cn } from "@/cn"
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
@@ -9,6 +8,8 @@ import {
   selectIsSyncing,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
+
+import { ToolbarIcon } from "./ToolbarIcon"
 
 export const ReadaloudSyncingToggle = ({
   className,
@@ -22,30 +23,23 @@ export const ReadaloudSyncingToggle = ({
   if (mode !== "readaloud") return null
 
   return (
-    <Tooltip label={`Readaloud syncing: ${syncing ? "On" : "Off"}`}>
-      <ActionIcon
-        variant="subtle"
-        size="lg"
-        className={twMerge(
-          classNames(
-            className,
-            "text-reader-text hover:bg-reader-surface-hover hover:text-reader-text relative bg-transparent",
-
-            !syncing &&
-              "before:bg-reader-text relative before:absolute before:left-1/2 before:top-1/2 before:z-[555] before:block before:h-5 before:w-0.5 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-none before:content-['']",
-          ),
-        )}
-        onClick={() => {
-          dispatch(readingSessionSlice.actions.setSyncing(!syncing))
-        }}
-      >
-        <span className="sr-only">Toggle readaloud syncing</span>
+    <ToolbarIcon
+      label={`Readaloud syncing: ${syncing ? "On" : "Off"}`}
+      icon={
         <IconReadaloud
           width={24}
           height={24}
           className={classNames(syncing && "text-reader-accent")}
         />
-      </ActionIcon>
-    </Tooltip>
+      }
+      onClick={() => {
+        dispatch(readingSessionSlice.actions.setSyncing(!syncing))
+      }}
+      className={cn(
+        !syncing &&
+          "before:bg-reader-text relative before:absolute before:left-1/2 before:top-1/2 before:z-[555] before:block before:h-5 before:w-0.5 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-none before:content-['']",
+        className,
+      )}
+    />
   )
 }

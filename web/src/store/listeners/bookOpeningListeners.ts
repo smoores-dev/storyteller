@@ -15,10 +15,10 @@ import {
   translateLocator,
   traverseToc,
 } from "@/components/reader/BookService"
-import { type BookWithRelations } from "@/database/books"
+import type { BookWithRelations } from "@/database/books"
 import { AudioPlayer, type AudioTrack } from "@/services/AudioPlayerService"
 import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
-import { type UUID } from "@/uuid"
+import type { UUID } from "@/uuid"
 
 import { syncPosition } from "../actions"
 import { api, getCoverUrl } from "../api"
@@ -62,7 +62,7 @@ async function registerMaps(
         if (!guide.guided || guide.guided.length === 0) return null
 
         const clips = guide.guided
-          .map((guide) =>
+          .flatMap((guide) =>
             guide.children?.map((child) => {
               return {
                 ...child.clip,
@@ -70,7 +70,6 @@ async function registerMaps(
               }
             }),
           )
-          .flat()
           .filter((clip) => clip !== undefined)
 
         return {
@@ -212,6 +211,16 @@ async function registerMaps(
   return { textToAudioMap, audioToTextMap }
 }
 
+export class PublicationLoadError extends Error {
+  errorType: string
+
+  constructor(message: string, errorType: string) {
+    super(message)
+    this.name = "PublicationLoadError"
+    this.errorType = errorType
+  }
+}
+
 async function loadPublication(
   book: BookWithRelations,
   mode: "epub" | "audiobook" | "readaloud",
@@ -231,28 +240,58 @@ async function loadPublication(
 
   const manifestLink = new Link({ href: "manifest.json" })
 
-  const fetched = fetcher.get(manifestLink)
-  const selfLink = (await fetched.link()).toURL(publicationUrl.toString())
-  if (!selfLink) {
-    throw new Error("Failed to get self link")
+  try {
+    const fetched = fetcher.get(manifestLink)
+    const selfLink = (await fetched.link()).toURL(publicationUrl.toString())
+    if (!selfLink) {
+      throw new PublicationLoadError(
+        "Failed to get self link",
+        "internal_error",
+      )
+    }
+    const response = await fetched.readAsJSON()
+    const manifest = Manifest.deserialize(response as string)
+    if (!manifest) {
+      throw new PublicationLoadError(
+        "Failed to deserialize manifest",
+        "internal_error",
+      )
+    }
+
+    manifest.setSelfLink(selfLink)
+
+    const publication = new Publication({
+      manifest: manifest,
+      fetcher: fetcher,
+    })
+
+    const positions = await publication.positionsFromManifest()
+    const tocItems = getTocItemsWithLocator(publication, positions)
+
+    return { publication, positions, tocItems }
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("failed with HTTP status code 404")
+    ) {
+      const errorBody = (await fetch(publicationUrl.toString(), {
+        cache: "no-cache",
+      }).then((res) => res.json().catch(() => null))) as {
+        error?: string
+        message?: string
+      } | null
+
+      if (errorBody?.error) {
+        throw new PublicationLoadError(
+          errorBody.message ?? "Failed to load book",
+          errorBody.error,
+        )
+      }
+
+      throw new PublicationLoadError("Book file not found", "book_not_found")
+    }
+    throw error
   }
-  const response = await fetched.readAsJSON()
-  const manifest = Manifest.deserialize(response as string)
-  if (!manifest) {
-    throw new Error("Failed to deserialize manifest")
-  }
-
-  manifest.setSelfLink(selfLink)
-
-  const publication = new Publication({
-    manifest: manifest,
-    fetcher: fetcher,
-  })
-
-  const positions = await publication.positionsFromManifest()
-  const tocItems = getTocItemsWithLocator(publication, positions)
-
-  return { publication, positions, tocItems }
 }
 
 function generateTracksForAudiobook(
@@ -473,7 +512,7 @@ startAppListening({
           await initializeAudioPlayer({
             tracks,
             startTrackIndex: currentTrackIndex !== -1 ? currentTrackIndex : 0,
-            startPosition: !isNaN(position) ? position : 0,
+            startPosition: !Number.isNaN(position) ? position : 0,
             playbackSpeed,
             volume,
           })
@@ -579,8 +618,37 @@ startAppListening({
       if (error instanceof Error && error.message.includes("cancelled")) {
         // eslint-disable-next-line no-console
         console.log("Book opening cancelled (user opened another book)")
+      } else if (error instanceof PublicationLoadError) {
+        console.error("Failed to load book:", error)
+        const errorType = [
+          "book_not_found",
+          "resource_not_found",
+          "service_unavailable",
+          "internal_error",
+        ].includes(error.errorType)
+          ? (error.errorType as
+              | "book_not_found"
+              | "resource_not_found"
+              | "service_unavailable"
+              | "internal_error")
+          : "internal_error"
+        listenerApi.dispatch(
+          readingSessionSlice.actions.setReaderError({
+            error: errorType,
+            message: error.message,
+          }),
+        )
       } else {
         console.error("Failed to open book:", error)
+        listenerApi.dispatch(
+          readingSessionSlice.actions.setReaderError({
+            error: "internal_error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "An unexpected error occurred",
+          }),
+        )
       }
     } finally {
       listenerApi.subscribe()

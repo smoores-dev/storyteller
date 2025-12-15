@@ -1,7 +1,7 @@
 "use client"
 
 import { useDocumentVisibility, usePrevious } from "@mantine/hooks"
-import { type EpubNavigator } from "@readium/navigator"
+import type { EpubNavigator } from "@readium/navigator"
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -12,7 +12,7 @@ import dynamic from "next/dynamic"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "@/cn"
-import { type BookWithRelations } from "@/database/books"
+import type { BookWithRelations } from "@/database/books"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import { nextPagePressed, previousPagePressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
@@ -29,6 +29,8 @@ import {
   selectCurrentBook,
   selectCurrentLocator,
   selectIsLoadingPublication,
+  selectReaderError,
+  selectReaderErrorMessage,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
 
@@ -79,6 +81,8 @@ const ReaderComponent = ({
   }, [dispatch, actualMode])
 
   const publicationLoading = useAppSelector(selectIsLoadingPublication)
+  const readerError = useAppSelector(selectReaderError)
+  const readerErrorMessage = useAppSelector(selectReaderErrorMessage)
 
   useEffect(() => {
     // we are returning from the mini player to the same book
@@ -229,6 +233,8 @@ const ReaderComponent = ({
     ) {
       setHideUi((prev) => !prev)
     }
+
+    return false
   }, [])
 
   const [hoverOverUi, setHoverOverUi] = useState(false)
@@ -246,6 +252,8 @@ const ReaderComponent = ({
       } else {
         setHoverOverUi(false)
       }
+
+      return false
     },
     [hideUi],
   )
@@ -254,12 +262,16 @@ const ReaderComponent = ({
     return !hideUi || hoverOverUi
   }, [hideUi, hoverOverUi])
 
+  const listeners = useMemo(() => {
+    return {
+      clickOrTap: [{ handler: toggleUI, priority: 90 }],
+      mouseMove: [{ handler: handleUIMouseMove, priority: 50 }],
+    }
+  }, [toggleUI, handleUIMouseMove])
+
   return (
     <>
-      <NavigatorEventsProvider
-        activeFrame={activeFrame}
-        listeners={{ clickOrTap: [toggleUI], mouseMove: [handleUIMouseMove] }}
-      >
+      <NavigatorEventsProvider activeFrame={activeFrame} listeners={listeners}>
         <div className="bg-reader-bg text-reader-text relative flex h-full max-h-[100vh] w-full max-w-[100vw] flex-col overflow-clip">
           <ReaderHeader
             book={book}
@@ -271,7 +283,7 @@ const ReaderComponent = ({
           <div
             className={classNames(
               "relative mx-auto h-full w-full flex-1 touch-manipulation md:touch-auto",
-              layout === "paginated" ? "my-4" : "-my-16",
+              layout === "paginated" ? "my-4" : "-mb-20 -mt-14",
             )}
           >
             {memoizedContainerRef}
@@ -279,6 +291,7 @@ const ReaderComponent = ({
               // no point in having navigation buttons in audiobook mode
               <>
                 <button
+                  type="button"
                   className="hover:text-reader-text absolute right-0 top-1/2 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
                   onClick={() => {
                     dispatch(nextPagePressed())
@@ -287,6 +300,7 @@ const ReaderComponent = ({
                   <IconChevronRight size={20} />
                 </button>
                 <button
+                  type="button"
                   className="hover:text-reader-text absolute left-0 top-1/2 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
                   onClick={() => {
                     dispatch(previousPagePressed())
@@ -299,13 +313,40 @@ const ReaderComponent = ({
           </div>
 
           {actualMode !== "audiobook" &&
-            (navigatorLoading || publicationLoading) && (
+            (navigatorLoading || publicationLoading) &&
+            !readerError && (
               <div className="bg-reader-bg absolute flex h-full w-full items-center justify-center">
                 <div className="text-reader-text text-lg">
                   <IconLoader2 className="animate-spin" size={20} />
                 </div>
               </div>
             )}
+
+          {readerError && (
+            <div className="bg-reader-bg absolute flex h-full w-full items-center justify-center">
+              <div className="text-reader-text mx-8 max-w-md text-center">
+                <div className="mb-4 text-xl font-semibold">
+                  {readerError === "book_not_found" && "Book Not Found"}
+                  {readerError === "resource_not_found" && "Resource Not Found"}
+                  {readerError === "service_unavailable" &&
+                    "Service Unavailable"}
+                  {readerError === "internal_error" && "Error Loading Book"}
+                </div>
+                <div className="mb-6">{readerErrorMessage}</div>
+                <button
+                  type="button"
+                  className="bg-reader-accent text-reader-surface rounded-lg px-6 py-2 hover:opacity-80"
+                  onClick={() => {
+                    dispatch(readingSessionSlice.actions.clearReaderError())
+                    window.history.back()
+                  }}
+                >
+                  Go Back
+                </button>
+              </div>
+            </div>
+          )}
+
           <ReaderFooter book={book} isVisible={showUi} />
         </div>
       </NavigatorEventsProvider>

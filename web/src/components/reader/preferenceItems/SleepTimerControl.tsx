@@ -7,7 +7,7 @@ import {
   isFuture,
   isPast,
 } from "date-fns"
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { env } from "@/env"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
@@ -16,10 +16,10 @@ import {
   selectSleepTimer,
 } from "@/store/slices/readingSessionSlice"
 
-import { useRegisterNavigatorClickhandler } from "../hooks/useNavigatorEvents"
+import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
-import { popoverClassNames } from "./shared"
+import { popoverClassNames } from "./classNames"
 
 export function formatSleepTimer(sleepTimer: number) {
   const duration = intervalToDuration({
@@ -108,12 +108,7 @@ const SleepTimerControl = () => {
 export function SleepTimerItem(props: ToolProps) {
   const formattedSleepTimer = useFormattedSleepTimer()
 
-  const [open, setOpen] = useState(false)
-  const closeOnClickNavigator = useCallback(() => {
-    setOpen(false)
-  }, [setOpen])
-
-  useRegisterNavigatorClickhandler(closeOnClickNavigator)
+  const { isOpen, closeMenu, toggleMenu } = useMenuToggle()
 
   if (props.mode === "raw") {
     return <SleepTimerControl />
@@ -139,16 +134,19 @@ export function SleepTimerItem(props: ToolProps) {
 
   return (
     <Menu
-      opened={open}
+      opened={isOpen}
       onDismiss={() => {
-        setOpen(false)
+        closeMenu()
       }}
       classNames={popoverClassNames}
       withArrow
-      withinPortal={false}
+      portalProps={{
+        target: props.targetDocument?.body ?? window.document.body,
+      }}
     >
       <Menu.Target>
         <ToolbarIcon
+          targetDocument={props.targetDocument ?? window.document}
           label="Sleep timer"
           icon={
             formattedSleepTimer ? (
@@ -157,9 +155,7 @@ export function SleepTimerItem(props: ToolProps) {
               <IconClock size={18} />
             )
           }
-          onClick={() => {
-            setOpen((prev) => !prev)
-          }}
+          onClick={toggleMenu}
         />
       </Menu.Target>
       <Menu.Dropdown className="flex flex-col">

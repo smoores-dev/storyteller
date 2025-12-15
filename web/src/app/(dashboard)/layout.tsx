@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import type { User } from "@/apiModels"
 import { StorytellerAppShell } from "@/components/StorytellerAppShell"
-import { MiniPlayer } from "@/components/reader/MiniPlayer"
+import { MiniPlayer } from "@/components/reader/MiniPlayer/MiniPlayer"
 import type { CollectionWithRelations } from "@/database/collections"
 import { env } from "@/env"
 import { getCurrentVersion } from "@/versions"

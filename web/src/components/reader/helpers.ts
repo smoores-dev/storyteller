@@ -324,6 +324,11 @@ export function isLocatorWithinViewport(
     }
   }
 
+  // don't need to check with scrolling because we will scroll to the element
+  if (scrolling) {
+    return true
+  }
+
   if (!progression) {
     return false
   }
@@ -436,7 +441,15 @@ function easeOutCubic(t: number): number {
 let currentScrollAnimation: number | null = null
 let currentScrollWindow: Window | null = null
 
-export function scrollToLocator(locator: Locator, activeFrame: FrameManager) {
+export function scrollToLocator(
+  locator: Locator,
+  activeFrame: FrameManager,
+  scrollSettings: {
+    behavior: "smooth" | "instant"
+    implementation: "native" | "custom"
+    speed: number
+  },
+) {
   try {
     const document = activeFrame.iframe.contentDocument
     if (!document) return
@@ -449,6 +462,20 @@ export function scrollToLocator(locator: Locator, activeFrame: FrameManager) {
 
     const element = window.document.getElementById(fragment)
     if (!element) return
+
+    if (scrollSettings.behavior === "instant") {
+      element.scrollIntoView({
+        behavior: "instant",
+        block: "center",
+        inline: "center",
+      })
+      return
+    }
+
+    if (scrollSettings.implementation === "native") {
+      element.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
 
     // cancel any existing scroll animation
     if (currentScrollAnimation !== null && currentScrollWindow) {
@@ -473,19 +500,20 @@ export function scrollToLocator(locator: Locator, activeFrame: FrameManager) {
     const distance = Math.abs(targetY - startY)
 
     // if already close enough, just jump there instantly
-    if (distance < 10) {
-      window.scrollTo(0, targetY)
-      return
-    }
+    // if (distance < 10) {
+    //   window.scrollTo(0, targetY)
+    //   return
+    // }
 
     const minDuration = 400
     const maxDuration = 1200
     const distanceThreshold = 2000 // distance at which we reach max duration
-    const duration = Math.min(
-      maxDuration,
-      minDuration +
-        (distance / distanceThreshold) * (maxDuration - minDuration),
-    )
+    const duration =
+      Math.min(
+        maxDuration,
+        minDuration +
+          (distance / distanceThreshold) * (maxDuration - minDuration),
+      ) / scrollSettings.speed
 
     const startTime = window.performance.now()
 

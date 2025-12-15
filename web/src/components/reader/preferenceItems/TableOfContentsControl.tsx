@@ -1,17 +1,17 @@
 import { Popover, ScrollArea, Text } from "@mantine/core"
 import { IconList } from "@tabler/icons-react"
 import classNames from "classnames"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo } from "react"
 
 import { navItemPressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { getTocItems } from "@/store/readerRegistry"
 import { selectCurrentToCLocator } from "@/store/slices/readingSessionSlice"
 
-import { useRegisterNavigatorClickhandler } from "../hooks/useNavigatorEvents"
+import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
-import { popoverClassNames } from "./shared"
+import { popoverClassNames } from "./classNames"
 
 type Props = ToolProps & { opened?: boolean }
 
@@ -67,12 +67,7 @@ const TocList = () => {
 export const TableOfContentsControl = (props: Props) => {
   const currentChapterLocator = useAppSelector(selectCurrentToCLocator)
 
-  const [open, setOpen] = useState(false)
-  const closeOnClickNavigator = useCallback(() => {
-    setOpen(false)
-  }, [setOpen])
-
-  useRegisterNavigatorClickhandler(closeOnClickNavigator)
+  const { isOpen, closeMenu, toggleMenu } = useMenuToggle()
 
   useEffect(() => {
     async function onTocOpenChange(open: boolean) {
@@ -87,21 +82,13 @@ export const TableOfContentsControl = (props: Props) => {
         }
       }
     }
-    void onTocOpenChange(props.opened ?? open)
-  }, [currentChapterLocator?.id, open, props.opened])
-
-  const onClickPopover = useCallback(() => {
-    setOpen((prev) => !prev)
-  }, [setOpen])
+    void onTocOpenChange(props.opened ?? isOpen)
+  }, [currentChapterLocator?.id, isOpen, props.opened])
 
   const onClickDrawer = useCallback(() => {
     if (props.mode !== "drawer") return
     props.openDrawer({ type: "table-of-contents" }, "Table of Contents")
   }, [props])
-
-  const onDismissPopover = useCallback(() => {
-    setOpen(false)
-  }, [setOpen])
 
   const Icon = useMemo(() => <IconList size={18} />, [])
 
@@ -122,16 +109,19 @@ export const TableOfContentsControl = (props: Props) => {
   return (
     <Popover
       withArrow
-      opened={props.opened ?? open}
-      onDismiss={onDismissPopover}
+      opened={props.opened ?? isOpen}
+      onDismiss={closeMenu}
       classNames={popoverClassNames}
-      withinPortal={false}
+      portalProps={{
+        target: props.targetDocument?.body ?? window.document.body,
+      }}
     >
       <Popover.Target>
         <ToolbarIcon
+          targetDocument={props.targetDocument ?? window.document}
           label="Table of Contents"
           icon={Icon}
-          onClick={onClickPopover}
+          onClick={toggleMenu}
         />
       </Popover.Target>
       <Popover.Dropdown>

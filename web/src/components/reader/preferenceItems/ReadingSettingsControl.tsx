@@ -8,21 +8,36 @@ import {
   Select,
   Slider,
   Stack,
+  Switch,
   Text,
   Tooltip,
 } from "@mantine/core"
 import { useDisclosure, useLocalStorage } from "@mantine/hooks"
 import { TextAlignment } from "@readium/navigator"
 import {
+  IconAdjustments,
   IconAlignJustified,
   IconAlignLeft,
+  IconArrowsMaximize,
+  IconArrowsMinimize,
+  IconArrowsTransferUpDown,
+  IconBolt,
+  IconBoxMultiple,
   IconCheck,
   IconChevronDown,
   IconCircleCheck,
   IconDotsVertical,
+  IconHighlight,
   IconInfoCircle,
+  IconLayoutGrid,
   IconLetterCase,
+  IconManualGearbox,
+  IconPalette,
   IconRefresh,
+  IconSpacingHorizontal,
+  IconTextSize,
+  IconTypeface,
+  IconWaveSine,
 } from "@tabler/icons-react"
 import classNames from "classnames"
 import { Fragment, useCallback, useState } from "react"
@@ -33,136 +48,51 @@ import {
   type FontFamily,
   type PreferencePayload,
   type ReadingPreferences,
-  type ReadingTheme,
-  type SpacingMode,
   preferencesSlice,
   selectBookPreferences,
   selectGlobalPreferences,
 } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
 
-import { useRegisterNavigatorClickhandler } from "../hooks/useNavigatorEvents"
+import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
-import { popoverClassNames, sliderClassNames } from "./shared"
-
-const themes = [
-  {
-    value: "light",
-    label: "Light",
-    bg: "bg-white border",
-    text: "text-gray-900",
-  },
-  { value: "paper", label: "Paper", bg: "bg-amber-50", text: "text-amber-900" },
-  {
-    value: "sepia",
-    label: "Sepia",
-    bg: "bg-yellow-50",
-    text: "text-yellow-900",
-  },
-  {
-    value: "auto",
-    label: "Auto",
-    bg: "bg-gradient-to-br from-white to-gray-900",
-    text: "text-gray-900",
-  },
-  { value: "dark", label: "Dark", bg: "bg-gray-900", text: "text-gray-50" },
-  {
-    value: "cattpuccin",
-    label: "Catppuccin",
-    bg: "bg-slate-700",
-    text: "text-slate-50",
-  },
-] as const satisfies {
-  value: ReadingTheme
-  label: string
-  bg: string
-  text: string
-}[]
-
-const highlightColors = [
-  {
-    value: "yellow",
-    label: "Yellow",
-    icon: "🟡",
-    className: "bg-reader-highlight-color-yellow",
-  },
-  {
-    value: "red",
-    label: "Red",
-    icon: "🟥",
-    className: "bg-reader-highlight-color-red",
-  },
-  {
-    value: "green",
-    label: "Green",
-    icon: "🟢",
-    className: "bg-reader-highlight-color-green",
-  },
-  {
-    value: "blue",
-    label: "Blue",
-    icon: "🟦",
-    className: "bg-reader-highlight-color-blue",
-  },
-  {
-    value: "magenta",
-    label: "Magenta",
-    icon: "🟪",
-    className: "bg-reader-highlight-color-magenta",
-  },
-  {
-    value: "custom",
-    label: "Custom",
-    icon: "🎨",
-    className: "bg-reader-highlight-color-custom",
-  },
-] as const satisfies {
-  value: ReadingPreferences["highlightColor"]
-  label: string
-  icon: string
-  className: string
-}[]
-
-const spacingModes = [
-  { value: "default", label: "Default", icon: "|||" },
-  { value: "tight", label: "Tight", icon: "||" },
-  { value: "balanced", label: "Balanced", icon: "| |" },
-  { value: "loose", label: "Loose", icon: "|  |" },
-] as const satisfies {
-  value: SpacingMode
-  label: string
-  icon: string
-}[]
-
-const fontFamilies = [
-  { value: "publisher", label: "Publisher's font" },
-  { value: "Literata", label: "Literata" },
-  { value: "OpenDyslexic", label: "OpenDyslexic" },
-  { value: "serif", label: "Serif" },
-  { value: "sans-serif", label: "Sans-serif" },
-  { value: "monospace", label: "Monospace" },
-  { value: "custom", label: "Custom" },
-] as const satisfies {
-  value: FontFamily
-  label: string
-}[]
+import {
+  popoverClassNames,
+  selectClassNames,
+  sliderClassNames,
+} from "./classNames"
+import {
+  fontFamilies,
+  highlightColors,
+  readingThemes,
+  spacingModes,
+} from "./prefItems"
 
 type Props = ToolProps & {
   scope: "global" | UUID
 }
 
-type SectionKey = "highlights" | "themes" | "fonts" | "layout" | "spacing"
+type SectionKey =
+  | "highlights"
+  | "themes"
+  | "fonts"
+  | "layout"
+  | "spacing"
+  | "ui"
+  | "behavior"
 
 const CollapsibleSection = ({
   title,
   defaultOpen,
   storeSectionState,
   children,
+  icon,
 }: {
   title: string
   defaultOpen: boolean
   storeSectionState: (value: boolean) => void
+  icon: React.ReactNode
   children: React.ReactNode
 }) => {
   const [isOpen, { toggle }] = useDisclosure(defaultOpen)
@@ -173,8 +103,14 @@ const CollapsibleSection = ({
           toggle()
           storeSectionState(!isOpen)
         }}
-        className="hover:bg-reader-accent/10 -mx-2 mb-1 flex items-center gap-2.5 rounded-md px-2 py-2.5 transition-all"
+        className="hover:bg-reader-accent/10 -mx-2 mb-1 flex w-full items-center justify-between gap-2.5 rounded-md px-2 py-2.5 transition-all"
       >
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="text-reader-text font-medium tracking-tight">
+            {title}
+          </span>
+        </div>
         <span
           className={cn(
             "text-reader-text transition-transform duration-200",
@@ -183,9 +119,6 @@ const CollapsibleSection = ({
           )}
         >
           <IconChevronDown size={18} strokeWidth={2.5} />
-        </span>
-        <span className="text-reader-text font-bold tracking-tight">
-          {title}
         </span>
       </button>
       <Collapse in={isOpen} animateOpacity={false}>
@@ -217,12 +150,31 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
       fonts: false,
       layout: false,
       spacing: false,
+      ui: false,
+      behavior: false,
     },
   })
 
   const setSection = (key: SectionKey, value: boolean) => {
     setSections((prev) => ({ ...prev, [key]: value }))
   }
+
+  const updatePref = useCallback(
+    <K extends keyof ReadingPreferences>(
+      key: K,
+      value: Extract<PreferencePayload, { key: K }>["value"],
+      target: Extract<PreferencePayload, { key: K }>["target"],
+    ) => {
+      dispatch(
+        preferencesSlice.actions.updatePreference({
+          key,
+          value,
+          target,
+        } as PreferencePayload),
+      )
+    },
+    [dispatch],
+  )
 
   return (
     <div className="flex flex-col gap-2">
@@ -233,6 +185,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
         storeSectionState={(value) => {
           setSection("highlights", value)
         }}
+        icon={<IconHighlight size={18} className="text-reader-text" />}
       >
         <HighlightColorPicker
           highlightColor={preferences.highlightColor}
@@ -265,13 +218,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
               { value: 1, label: "1" },
             ]}
             onChangeEnd={(value) => {
-              dispatch(
-                preferencesSlice.actions.updatePreference({
-                  key: "syncOffset",
-                  value,
-                  target: scope,
-                }),
-              )
+              updatePref("syncOffset", value, scope)
             }}
           />
         </Stack>
@@ -284,6 +231,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
         storeSectionState={(value) => {
           setSection("themes", value)
         }}
+        icon={<IconPalette size={18} className="text-reader-text" />}
       >
         <Stack>
           <ResetOrSetGlobalButton
@@ -302,7 +250,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           <ClickyPreferenceSelect
             preference={{ key: "theme", value: preferences.theme }}
             scope={scope}
-            options={themes.map((theme) => ({
+            options={readingThemes.map((theme) => ({
               value: theme.value,
               label: theme.label,
               icon: "",
@@ -319,6 +267,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
         storeSectionState={(value) => {
           setSection("fonts", value)
         }}
+        icon={<IconTypeface size={18} className="text-reader-text" />}
       >
         <Select
           label={
@@ -337,8 +286,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           }
           comboboxProps={{ withinPortal: false }}
           classNames={{
-            root: "-mb-2",
-            label: "text-reader-text mb-2 w-full",
+            ...selectClassNames,
             input: cn("text-reader-text bg-reader-bg border-reader-border", {
               "font-literata": preferences.fontFamily === "Literata",
               "font-open-dyslexic": preferences.fontFamily === "OpenDyslexic",
@@ -346,19 +294,10 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
               "font-sans-serif": preferences.fontFamily === "sans-serif",
               "font-monospace": preferences.fontFamily === "monospace",
             }),
-            dropdown: "border-reader-border bg-reader-surface text-reader-text",
-            option:
-              "text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover",
           }}
           defaultValue={preferences.fontFamily}
           onChange={(value) => {
-            dispatch(
-              preferencesSlice.actions.updatePreference({
-                key: "fontFamily",
-                value: value as FontFamily,
-                target: scope,
-              }),
-            )
+            updatePref("fontFamily", value as FontFamily, scope)
           }}
           renderOption={(option) => {
             return (
@@ -388,16 +327,14 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           <form
             className="flex flex-col gap-2"
             action={(formData) => {
-              dispatch(
-                preferencesSlice.actions.updatePreference({
-                  key: "customFontFamily",
-                  value: {
-                    ...preferences.customFontFamily,
-                    name: formData.get("name") as string,
-                    url: formData.get("url") as string,
-                  },
-                  target: scope,
-                }),
+              updatePref(
+                "customFontFamily",
+                {
+                  ...preferences.customFontFamily,
+                  name: formData.get("name") as string,
+                  url: formData.get("url") as string,
+                },
+                scope,
               )
             }}
           >
@@ -418,38 +355,19 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
                     Custom font{" "}
                   </Text>
                 </ResetOrSetGlobalButton>
-                <Tooltip
-                  withArrow
-                  closeDelay={1000}
-                  events={{
-                    touch: true,
-                    focus: true,
-                    hover: true,
-                  }}
-                  multiline
-                  classNames={{
-                    tooltip: "w-60",
-                  }}
-                  label={
-                    <>
-                      <span>
-                        You can use a custom font by adding the font URL here +
-                        name here, usually from a Google font. See{" "}
-                      </span>
-                      <a
-                        href="https://storyteller-platform.gitlab.io/storyteller/docs/reading-your-books/web-reader"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-reader-accent"
-                      >
-                        the docs
-                      </a>{" "}
-                      <span>for more information.</span>
-                    </>
-                  }
-                >
-                  <IconInfoCircle size={16} className="text-reader-text" />
-                </Tooltip>
+                <InfoTooltip>
+                  You can use a custom font by adding the font URL here + name
+                  here, usually from a Google font. See{" "}
+                  <a
+                    href="https://storyteller-platform.gitlab.io/storyteller/docs/reading-your-books/web-reader"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-reader-accent"
+                  >
+                    the docs
+                  </a>{" "}
+                  for more information.
+                </InfoTooltip>
               </div>
 
               <Button
@@ -499,13 +417,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           <Slider
             defaultValue={preferences.fontSize}
             onChangeEnd={(value) => {
-              dispatch(
-                preferencesSlice.actions.updatePreference({
-                  key: "fontSize",
-                  value,
-                  target: scope,
-                }),
-              )
+              updatePref("fontSize", value, scope)
             }}
             classNames={sliderClassNames}
             min={50}
@@ -535,13 +447,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           <Slider
             defaultValue={preferences.fontWeight}
             onChangeEnd={(value) => {
-              dispatch(
-                preferencesSlice.actions.updatePreference({
-                  key: "fontWeight",
-                  value,
-                  target: scope,
-                }),
-              )
+              updatePref("fontWeight", value, scope)
             }}
             classNames={sliderClassNames}
             min={200}
@@ -561,9 +467,112 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
         </Stack>
       </CollapsibleSection>
 
-      {/* layout section */}
+      {/* --------------------------------
+          UI section
+      -------------------------------- */}
+      <CollapsibleSection
+        title="UI"
+        icon={<IconAdjustments size={18} className="text-reader-text" />}
+        defaultOpen={sections.layout}
+        storeSectionState={(value) => {
+          setSection("layout", value)
+        }}
+      >
+        <Stack>
+          <ResetOrSetGlobalButton
+            preference={{
+              key: "footerDisplayWidth",
+              value: preferences.footerDisplayWidth,
+              globalValue: globalPreferences.footerDisplayWidth,
+            }}
+            scope={scope}
+          >
+            <Text size="sm" className="text-reader-text-secondary font-medium">
+              Footer display width
+            </Text>
+          </ResetOrSetGlobalButton>
+          <ClickyPreferenceSelect
+            preference={{
+              key: "footerDisplayWidth",
+              value: preferences.footerDisplayWidth,
+            }}
+            scope={scope}
+            options={[
+              { value: "full", label: "Full", icon: <IconArrowsMaximize /> },
+              {
+                value: "minimal",
+                label: "Minimal",
+                icon: <IconArrowsMinimize />,
+              },
+              { value: "text", label: "Fit Text", icon: <IconTextSize /> },
+            ]}
+          />
+        </Stack>
+      </CollapsibleSection>
+      {/* --------------------------------
+          Behavior
+      -------------------------------- */}
+      <CollapsibleSection
+        title="Behavior"
+        icon={<IconManualGearbox size={18} className="text-reader-text" />}
+        defaultOpen={sections.behavior}
+        storeSectionState={(value) => {
+          setSection("behavior", value)
+        }}
+      >
+        <Stack>
+          <ResetOrSetGlobalButton
+            preference={{
+              key: "skipOnTurnPage",
+              value: preferences.skipOnTurnPage,
+              globalValue: globalPreferences.skipOnTurnPage,
+            }}
+            scope={scope}
+          >
+            <Text size="sm" className="text-reader-text-secondary font-medium">
+              Skip audio when turning page
+            </Text>
+          </ResetOrSetGlobalButton>
+          <Switch
+            checked={preferences.skipOnTurnPage}
+            onChange={(value) => {
+              updatePref("skipOnTurnPage", value.currentTarget.checked, scope)
+            }}
+          />
+        </Stack>
+        <Stack>
+          <ResetOrSetGlobalButton
+            preference={{
+              key: "openPipOnTabOut",
+              value: preferences.openPipOnTabOut,
+              globalValue: globalPreferences.openPipOnTabOut,
+            }}
+            scope={scope}
+          >
+            <Text size="sm" className="text-reader-text-secondary font-medium">
+              Open Picture-In-Picture window on tab out
+            </Text>
+            <InfoTooltip>
+              On Chromium-based browsers only, when you tab out of Storyteller
+              while reading a book, a Picture-In-Picture window will open in
+              which you can control the audio playback and navigate the book.
+              Switch this off if you don&apos;t want this behavior.
+            </InfoTooltip>
+          </ResetOrSetGlobalButton>
+          <Switch
+            checked={preferences.openPipOnTabOut}
+            onChange={(value) => {
+              updatePref("openPipOnTabOut", value.currentTarget.checked, scope)
+            }}
+          />
+        </Stack>
+      </CollapsibleSection>
+      {/* --------------------------------
+          Layout 
+      -------------------------------- */}
       <CollapsibleSection
         title="Layout"
+        icon={<IconLayoutGrid size={18} className="text-reader-text" />}
         defaultOpen={sections.layout}
         storeSectionState={(value) => {
           setSection("layout", value)
@@ -586,11 +595,121 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
             preference={{ key: "layout", value: preferences.layout }}
             scope={scope}
             options={[
-              { value: "paginated", label: "Paginated", icon: "📄" },
-              { value: "scrollable", label: "Scrollable", icon: "📜" },
+              {
+                value: "paginated",
+                label: "Paginated",
+                icon: <IconBoxMultiple />,
+              },
+              {
+                value: "scrollable",
+                label: "Scrollable",
+                icon: <IconArrowsTransferUpDown />,
+              },
             ]}
           />
         </Stack>
+        {preferences.layout === "scrollable" && (
+          <Stack>
+            <ResetOrSetGlobalButton
+              preference={{
+                key: "scrollBehavior",
+                value: preferences.scrollBehavior,
+                globalValue: globalPreferences.scrollBehavior,
+              }}
+              scope={scope}
+            >
+              <Text
+                size="sm"
+                className="text-reader-text-secondary font-medium"
+              >
+                Scroll behavior
+              </Text>
+            </ResetOrSetGlobalButton>
+            <ClickyPreferenceSelect
+              preference={{
+                key: "scrollBehavior",
+                value: preferences.scrollBehavior,
+              }}
+              scope={scope}
+              options={[
+                { value: "smooth", label: "Smooth", icon: <IconWaveSine /> },
+                { value: "instant", label: "Instant", icon: <IconBolt /> },
+              ]}
+            />
+            {preferences.scrollBehavior === "smooth" && (
+              <Select
+                label={
+                  <ResetOrSetGlobalButton
+                    preference={{
+                      key: "smoothScrollImplementation",
+                      value: preferences.smoothScrollImplementation,
+                      globalValue: globalPreferences.smoothScrollImplementation,
+                    }}
+                    scope={scope}
+                  >
+                    <span className="flex items-center gap-1">
+                      Smooth scroll implementation
+                      <InfoTooltip>
+                        Custom is usually smoother, and controllable. Try native
+                        if you experience any issues.
+                      </InfoTooltip>
+                    </span>
+                  </ResetOrSetGlobalButton>
+                }
+                comboboxProps={{ withinPortal: false }}
+                classNames={selectClassNames}
+                defaultValue={preferences.smoothScrollImplementation}
+                onChange={(value) => {
+                  updatePref(
+                    "smoothScrollImplementation",
+                    value as "native" | "custom",
+                    scope,
+                  )
+                }}
+                data={[
+                  { value: "custom", label: "Custom" },
+                  { value: "native", label: "Native" },
+                ]}
+              />
+            )}
+            {preferences.scrollBehavior === "smooth" &&
+              preferences.smoothScrollImplementation === "custom" && (
+                <Stack>
+                  <ResetOrSetGlobalButton
+                    preference={{
+                      key: "smoothScrollSpeed",
+                      value: preferences.smoothScrollSpeed,
+                      globalValue: globalPreferences.smoothScrollSpeed,
+                    }}
+                    scope={scope}
+                  >
+                    <Text
+                      size="sm"
+                      className="text-reader-text-secondary font-medium"
+                    >
+                      Smooth scroll speed
+                    </Text>
+                  </ResetOrSetGlobalButton>
+                  <Slider
+                    defaultValue={preferences.smoothScrollSpeed}
+                    onChangeEnd={(value) => {
+                      updatePref("smoothScrollSpeed", value, scope)
+                    }}
+                    classNames={sliderClassNames}
+                    min={0.1}
+                    max={2}
+                    step={0.1}
+                    marks={[
+                      { value: 0.2, label: "0.2x" },
+                      { value: 0.5, label: "0.5x" },
+                      { value: 1, label: "1.0x" },
+                      { value: 2, label: "2.0x" },
+                    ]}
+                  />
+                </Stack>
+              )}
+          </Stack>
+        )}
 
         <Stack>
           <ResetOrSetGlobalButton
@@ -656,6 +775,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
         storeSectionState={(value) => {
           setSection("spacing", value)
         }}
+        icon={<IconSpacingHorizontal size={18} className="text-reader-text" />}
       >
         <Stack>
           <ResetOrSetGlobalButton
@@ -693,13 +813,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           <Slider
             defaultValue={preferences.paragraphSpacing}
             onChangeEnd={(val) => {
-              dispatch(
-                preferencesSlice.actions.updatePreference({
-                  key: "paragraphSpacing",
-                  value: val,
-                  target: scope,
-                }),
-              )
+              updatePref("paragraphSpacing", val, scope)
             }}
             classNames={sliderClassNames}
             min={0}
@@ -729,13 +843,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           <Slider
             defaultValue={preferences.lineLength}
             onChangeEnd={(val) => {
-              dispatch(
-                preferencesSlice.actions.updatePreference({
-                  key: "lineLength",
-                  value: val,
-                  target: scope,
-                }),
-              )
+              updatePref("lineLength", val, scope)
             }}
             classNames={sliderClassNames}
             min={0}
@@ -764,13 +872,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           <Slider
             defaultValue={preferences.lineHeight}
             onChangeEnd={(val) => {
-              dispatch(
-                preferencesSlice.actions.updatePreference({
-                  key: "lineHeight",
-                  value: val,
-                  target: scope,
-                }),
-              )
+              updatePref("lineHeight", val, scope)
             }}
             classNames={sliderClassNames}
             min={1}
@@ -789,12 +891,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
 }
 
 export const ReadingSettingsControl = (props: Props) => {
-  const [open, setOpen] = useState(false)
-
-  const closeOnClickNavigator = useCallback(() => {
-    setOpen(false)
-  }, [setOpen])
-  useRegisterNavigatorClickhandler(closeOnClickNavigator)
+  const { isOpen, closeMenu, toggleMenu } = useMenuToggle()
 
   if (props.mode === "raw") {
     return <ReadingSettingsContent scope={props.scope} />
@@ -820,10 +917,10 @@ export const ReadingSettingsControl = (props: Props) => {
       withArrow
       closeOnClickOutside
       trapFocus
-      opened={open}
+      opened={isOpen}
       withinPortal={false}
       onDismiss={() => {
-        setOpen(false)
+        closeMenu()
       }}
       classNames={popoverClassNames}
     >
@@ -831,9 +928,7 @@ export const ReadingSettingsControl = (props: Props) => {
         <ToolbarIcon
           label="Reader Settings"
           icon={<IconLetterCase size={18} />}
-          onClick={() => {
-            setOpen((prev) => !prev)
-          }}
+          onClick={toggleMenu}
         />
       </Popover.Target>
       <Popover.Dropdown className="border-reader-border bg-reader-surface max-h-[80vh] flex-col gap-8 overflow-y-auto overflow-x-clip">
@@ -988,7 +1083,14 @@ const HighlightColorPicker = ({
 }
 
 export const ClickyPreferenceSelect = <
-  K extends "spacing" | "layout" | "columns" | "align" | "theme",
+  K extends
+    | "spacing"
+    | "layout"
+    | "columns"
+    | "align"
+    | "theme"
+    | "scrollBehavior"
+    | "footerDisplayWidth",
 >({
   preference,
   options,
@@ -1073,7 +1175,7 @@ export const ResetOrSetGlobalButton = <K extends keyof ReadingPreferences>(
 
   return (
     <div className="relative flex w-full items-center justify-between">
-      {props.children}
+      <div className="flex items-center gap-2">{props.children}</div>
       {props.preference.globalValue !== props.preference.value && (
         <Menu withArrow withinPortal={false} classNames={popoverClassNames}>
           <Menu.Target>
@@ -1119,5 +1221,26 @@ export const ResetOrSetGlobalButton = <K extends keyof ReadingPreferences>(
         </Menu>
       )}
     </div>
+  )
+}
+
+export const InfoTooltip = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <Tooltip
+      withArrow
+      closeDelay={1000}
+      events={{
+        touch: true,
+        focus: true,
+        hover: true,
+      }}
+      multiline
+      classNames={{
+        tooltip: "w-60",
+      }}
+      label={children}
+    >
+      <IconInfoCircle size={16} className="text-reader-text" />
+    </Tooltip>
   )
 }
