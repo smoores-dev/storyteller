@@ -66,9 +66,10 @@ export const localBookImported = createAction(
   (bookId: number, archiveUrl: string) => ({ payload: { bookId, archiveUrl } }),
 )
 
-export const playerPaused = createAction("playerPaused")
-
-export const playerPlayed = createAction("playerPlayed")
+export const pauseButtonPressed = createAction("playerPaused")
+export const playButtonPressed = createAction("playerPlayed")
+export const pauseShortCutPressed = createAction("pauseShortCutPressed")
+export const playShortCutPressed = createAction("playShortCutPressed")
 
 export const playerTrackChanged = createAction(
   "playerTrackChanged",

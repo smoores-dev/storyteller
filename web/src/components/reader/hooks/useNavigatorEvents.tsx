@@ -10,19 +10,33 @@ import {
 
 import { getClientXY } from "./mouseHelpers"
 
+/**
+ * return true to stop event propagation
+ */
+type NavigatorClickHandler = (
+  event: MouseEvent | TouchEvent,
+) => boolean | undefined
+
+/**
+ * return true to stop event propagation
+ */
+type NavigatorMouseMoveHandler = (event: MouseEvent) => boolean | undefined
+
 const NavigatorEventsContext = createContext<{
   registeredHandlers: {
-    clickOrTap: ((event: MouseEvent | TouchEvent) => void)[]
-    mouseMove: ((event: MouseEvent) => void)[]
+    clickOrTap: { handler: NavigatorClickHandler; priority?: number }[]
+    mouseMove: { handler: NavigatorMouseMoveHandler; priority?: number }[]
   }
   registerClickHandler: (
-    handler: (event: MouseEvent | TouchEvent) => void,
+    handler: NavigatorClickHandler,
+    priority?: number,
   ) => void
-  unregisterClickHandler: (
-    handler: (event: MouseEvent | TouchEvent) => void,
+  unregisterClickHandler: (handler: NavigatorClickHandler) => void
+  registerMouseMoveHandler: (
+    handler: NavigatorMouseMoveHandler,
+    priority?: number,
   ) => void
-  registerMouseMoveHandler: (handler: (event: MouseEvent) => void) => void
-  unregisterMouseMoveHandler: (handler: (event: MouseEvent) => void) => void
+  unregisterMouseMoveHandler: (handler: NavigatorMouseMoveHandler) => void
 }>({
   registeredHandlers: { clickOrTap: [], mouseMove: [] },
   registerClickHandler: () => {},
@@ -43,52 +57,59 @@ export const NavigatorEventsProvider = ({
   children: React.ReactNode
   activeFrame: FrameManager | null
   listeners?: {
-    clickOrTap?: ((event: MouseEvent | TouchEvent) => void)[]
-    mouseMove?: ((event: MouseEvent) => void)[]
+    clickOrTap?: { handler: NavigatorClickHandler; priority?: number }[]
+    mouseMove?: { handler: NavigatorMouseMoveHandler; priority?: number }[]
   }
 }) => {
   const [registeredHandlers, setRegisteredHandlers] = useState<{
-    clickOrTap: ((event: MouseEvent | TouchEvent) => void)[]
-    mouseMove: ((event: MouseEvent) => void)[]
+    clickOrTap: { handler: NavigatorClickHandler; priority: number }[]
+    mouseMove: { handler: NavigatorMouseMoveHandler; priority: number }[]
   }>({
     clickOrTap: [],
     mouseMove: [],
   })
 
   const registerClickHandler = useCallback(
-    (handler: (event: MouseEvent | TouchEvent) => void) => {
+    (
+      handler: (event: MouseEvent | TouchEvent) => boolean | undefined,
+      priority: number = 100,
+    ) => {
       setRegisteredHandlers((prev) => ({
         ...prev,
-        clickOrTap: [...prev.clickOrTap, handler],
+        clickOrTap: [...prev.clickOrTap, { handler, priority }].sort(
+          (a, b) => a.priority - b.priority,
+        ),
       }))
     },
     [],
   )
   const registerMouseMoveHandler = useCallback(
-    (handler: (event: MouseEvent) => void) => {
+    (handler: NavigatorMouseMoveHandler, priority: number = 100) => {
       setRegisteredHandlers((prev) => ({
         ...prev,
-        mouseMove: [...prev.mouseMove, handler],
+        mouseMove: [...prev.mouseMove, { handler, priority }].sort(
+          (a, b) => a.priority - b.priority,
+        ),
       }))
     },
     [],
   )
 
   const unregisterClickHandler = useCallback(
-    (handler: (event: MouseEvent | TouchEvent) => void) => {
+    (handler: NavigatorClickHandler) => {
       setRegisteredHandlers((prev) => ({
         ...prev,
-        clickOrTap: prev.clickOrTap.filter((h) => h !== handler),
+        clickOrTap: prev.clickOrTap.filter((h) => h.handler !== handler),
       }))
     },
     [],
   )
 
   const unregisterMouseMoveHandler = useCallback(
-    (handler: (event: MouseEvent) => void) => {
+    (handler: NavigatorMouseMoveHandler) => {
       setRegisteredHandlers((prev) => ({
         ...prev,
-        mouseMove: prev.mouseMove.filter((h) => h !== handler),
+        mouseMove: prev.mouseMove.filter((h) => h.handler !== handler),
       }))
     },
     [],
@@ -104,7 +125,10 @@ export const NavigatorEventsProvider = ({
 
     const tapThreshold = 10 // max pixels of movement allowed to still count as a tap
     const tapTimeThresholdMs = 300
-    const uiToggleDelayMs = 350 // same as double click timeout
+    const uiToggleDelayMs = 250 // same as double click timeout
+
+    const abortController = new AbortController()
+    const { signal } = abortController
 
     function handleStart(event: MouseEvent | TouchEvent) {
       const [startX, startY] = getClientXY(event)
@@ -144,14 +168,21 @@ export const NavigatorEventsProvider = ({
           pendingTimeoutRef.current = null
         } else {
           pendingTimeoutRef.current = setTimeout(() => {
-            listeners?.clickOrTap?.forEach((handler) => {
-              handler(event)
-            })
-            registeredHandlers.clickOrTap.forEach((handler) => {
-              handler(event)
-            })
+            const allHandlersByPriority = [
+              ...(listeners?.clickOrTap ?? []),
+              ...registeredHandlers.clickOrTap,
+            ].sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100))
+
+            for (const handler of allHandlersByPriority) {
+              const shouldStopPropagation = handler.handler(event)
+              if (shouldStopPropagation) {
+                pendingTimeoutRef.current = null
+                return
+              }
+            }
             pendingTimeoutRef.current = null
           }, uiToggleDelayMs)
+          return
         }
       }
 
@@ -160,23 +191,19 @@ export const NavigatorEventsProvider = ({
       startTimeRef.current = null
     }
 
+    const wnd = activeFrame.iframe.contentWindow
     try {
-      listeners?.mouseMove?.forEach((handler) => {
-        activeFrame.iframe.contentWindow?.addEventListener("mousemove", handler)
+      listeners?.mouseMove?.forEach(({ handler }) => {
+        wnd?.addEventListener("mousemove", handler, { signal })
       })
-      registeredHandlers.mouseMove.forEach((handler) => {
-        activeFrame.iframe.contentWindow?.addEventListener("mousemove", handler)
+      registeredHandlers.mouseMove.forEach(({ handler }) => {
+        wnd?.addEventListener("mousemove", handler, { signal })
       })
-      activeFrame.iframe.contentWindow?.addEventListener(
-        "mousedown",
-        handleStart,
-      )
-      activeFrame.iframe.contentWindow?.addEventListener("mouseup", handleEnd)
-      activeFrame.iframe.contentWindow?.addEventListener(
-        "touchstart",
-        handleStart,
-      )
-      activeFrame.iframe.contentWindow?.addEventListener("touchend", handleEnd)
+
+      wnd?.addEventListener("mousedown", handleStart, { signal })
+      wnd?.addEventListener("mouseup", handleEnd, { signal })
+      wnd?.addEventListener("touchstart", handleStart, { signal })
+      wnd?.addEventListener("touchend", handleEnd, { signal })
     } catch (error) {
       // this is probably fineee
       console.warn("Error adding click handler:", error)
@@ -189,34 +216,7 @@ export const NavigatorEventsProvider = ({
       }
 
       try {
-        listeners?.mouseMove?.forEach((handler) => {
-          activeFrame.iframe.contentWindow?.removeEventListener(
-            "mousemove",
-            handler,
-          )
-        })
-        registeredHandlers.mouseMove.forEach((handler) => {
-          activeFrame.iframe.contentWindow?.removeEventListener(
-            "mousemove",
-            handler,
-          )
-        })
-        activeFrame.iframe.contentWindow?.removeEventListener(
-          "mousedown",
-          handleStart,
-        )
-        activeFrame.iframe.contentWindow?.removeEventListener(
-          "mouseup",
-          handleEnd,
-        )
-        activeFrame.iframe.contentWindow?.removeEventListener(
-          "touchstart",
-          handleStart,
-        )
-        activeFrame.iframe.contentWindow?.removeEventListener(
-          "touchend",
-          handleEnd,
-        )
+        abortController.abort()
       } catch (error) {
         // this is probably fineee
         console.warn("Error removing click handler:", error)
@@ -240,13 +240,14 @@ export const NavigatorEventsProvider = ({
 }
 
 export const useRegisterNavigatorClickhandler = (
-  handler: (event: MouseEvent | TouchEvent) => void,
+  handler: NavigatorClickHandler,
+  priority?: number,
 ) => {
   const { registerClickHandler, unregisterClickHandler } = useNavigatorEvents()
   useEffect(() => {
-    registerClickHandler(handler)
+    registerClickHandler(handler, priority)
     return () => {
       unregisterClickHandler(handler)
     }
-  }, [registerClickHandler, unregisterClickHandler, handler])
+  }, [registerClickHandler, unregisterClickHandler, handler, priority])
 }

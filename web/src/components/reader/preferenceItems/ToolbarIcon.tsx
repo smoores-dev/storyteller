@@ -24,6 +24,7 @@ type DrawerContentType =
 export type ToolProps =
   | {
       mode: "dropdown" | "raw"
+      targetDocument?: Document
     }
   | {
       mode: "drawer"
@@ -36,6 +37,7 @@ export const ToolbarIcon = ({
   icon,
   onClick,
   ref,
+  targetDocument = window.document,
 }: {
   label: string
   icon: React.ReactNode
@@ -43,9 +45,17 @@ export const ToolbarIcon = ({
   /* for popover target */
   ref?: React.RefObject<HTMLButtonElement>
   className?: string
+  targetDocument?: Document
 }) => {
   return (
-    <Tooltip label={label}>
+    <Tooltip
+      withArrow
+      classNames={{
+        tooltip: "bg-reader-surface-hover text-reader-text",
+      }}
+      label={label}
+      portalProps={{ target: targetDocument.body }}
+    >
       <ActionIcon
         ref={ref}
         variant="subtle"

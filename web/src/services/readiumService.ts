@@ -1,10 +1,26 @@
 import { type ChildProcess, execSync, spawn } from "node:child_process"
-import { join } from "node:path"
+import { isAbsolute, join, resolve } from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 
 import { DATA_DIR } from "@/directories"
 import { env } from "@/env"
 import { logger } from "@/logging"
+
+export type ReadiumServiceErrorType =
+  | "file_not_found"
+  | "file_not_found_in_book"
+  | "not_running"
+
+export class ReadiumServiceError extends Error {
+  errorType: ReadiumServiceErrorType | undefined
+
+  constructor(message: string, errorType?: ReadiumServiceErrorType) {
+    super(message)
+    this.name = "ReadiumServiceError"
+    this.errorType = errorType
+  }
+}
+
 export interface ReadiumServiceConfig {
   port: number
   maxRetries: number
@@ -241,11 +257,14 @@ export class ReadiumService {
   }
 
   private static encodePath(filepath: string, assetPath: string): string {
-    const fullBookPath = filepath.startsWith("/")
+    const fullBookPath = isAbsolute(filepath)
       ? filepath
       : join(DATA_DIR, filepath)
 
-    const filePathEncoded = ReadiumService.base64Encode(fullBookPath.slice(1))
+    // resolve the path to the absolute path
+    const resolvedPath = resolve(fullBookPath)
+
+    const filePathEncoded = ReadiumService.base64Encode(resolvedPath.slice(1))
 
     return `/webpub/${filePathEncoded}/${assetPath}`
   }
@@ -263,7 +282,10 @@ export class ReadiumService {
     init?: RequestInit,
   ): Promise<Response> {
     if (!this.process || this.process.killed) {
-      throw new Error("Readium service is not running")
+      throw new ReadiumServiceError(
+        "Readium service is not running",
+        "not_running",
+      )
     }
 
     const path = ReadiumService.encodePath(filepath, assetPath)
@@ -276,6 +298,26 @@ export class ReadiumService {
     logger.debug(`[READIUM] Fetching ${url.toString()}`)
     const response = await fetch(url, init)
     logger.debug(`[READIUM] ${response.status} ${url.toString()}`)
+
+    if (response.status >= 500) {
+      const text = await response.clone().text()
+
+      if (
+        text.includes("no such file or directory") ||
+        text.includes("failed opening file://")
+      ) {
+        throw new ReadiumServiceError(
+          "Book file not found on disk",
+          "file_not_found",
+        )
+      }
+    }
+    if (response.status === 404) {
+      throw new ReadiumServiceError(
+        "Resource not found in book",
+        "file_not_found_in_book",
+      )
+    }
 
     return response
   }

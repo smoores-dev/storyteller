@@ -1,5 +1,5 @@
-import { type FrameManager } from "@readium/navigator"
-import { type Locator } from "@readium/shared"
+import type { FrameManager } from "@readium/navigator"
+import type { Locator } from "@readium/shared"
 import {
   type PayloadAction,
   createSelector,
@@ -7,9 +7,9 @@ import {
 } from "@reduxjs/toolkit"
 
 import { isSameLocator } from "@/components/reader/locators"
-import { type BookWithRelations } from "@/database/books"
+import type { BookWithRelations } from "@/database/books"
 
-import { type RootState } from "../appState"
+import type { RootState } from "../appState"
 import {
   getPublication,
   getTocItems,
@@ -17,6 +17,13 @@ import {
 } from "../readerRegistry"
 
 export type ReadingMode = "epub" | "audiobook" | "readaloud"
+
+export type ReaderErrorType =
+  | "book_not_found"
+  | "resource_not_found"
+  | "service_unavailable"
+  | "internal_error"
+  | null
 
 type ReadingSessionState = {
   currentbook: BookWithRelations | null
@@ -36,6 +43,9 @@ type ReadingSessionState = {
 
   doubleClickTimeout: number | null
   sleepTimer: number | null
+
+  error: ReaderErrorType
+  errorMessage: string | null
 }
 
 const initialState: ReadingSessionState = {
@@ -50,6 +60,8 @@ const initialState: ReadingSessionState = {
   activeFrameUrl: null,
   doubleClickTimeout: null,
   sleepTimer: null,
+  error: null,
+  errorMessage: null,
 }
 
 export const readingSessionSlice = createSlice({
@@ -66,6 +78,8 @@ export const readingSessionSlice = createSlice({
     ) => {
       state.currentbook = action.payload.book
       state.isLoadingPublication = true
+      state.error = null
+      state.errorMessage = null
 
       const availableModes = getAvailableMode(action.payload.book)
 
@@ -82,6 +96,20 @@ export const readingSessionSlice = createSlice({
 
     setPublicationLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoadingPublication = action.payload
+    },
+
+    setReaderError: (
+      state,
+      action: PayloadAction<{ error: ReaderErrorType; message: string }>,
+    ) => {
+      state.error = action.payload.error
+      state.errorMessage = action.payload.message
+      state.isLoadingPublication = false
+    },
+
+    clearReaderError: (state) => {
+      state.error = null
+      state.errorMessage = null
     },
 
     setActiveFrame: (state, action: PayloadAction<FrameManager | null>) => {
@@ -182,6 +210,9 @@ export const selectIsLoadingPublication = (state: RootState) =>
 export const selectCurrentSyncTimeout = (state: RootState) =>
   state.readingSession.currentSyncTimeout ?? null
 
+export const selectActiveFrameUrl = (state: RootState) =>
+  state.readingSession.activeFrameUrl ?? null
+
 export const selectCurrentToCLocator = createSelector(
   selectCurrentLocator,
   (currentLocator) => {
@@ -268,3 +299,9 @@ function getAvailableMode(book: BookWithRelations) {
 
 export const selectSleepTimer = (state: RootState) =>
   state.readingSession.sleepTimer ?? null
+
+export const selectReaderError = (state: RootState) =>
+  state.readingSession.error
+
+export const selectReaderErrorMessage = (state: RootState) =>
+  state.readingSession.errorMessage

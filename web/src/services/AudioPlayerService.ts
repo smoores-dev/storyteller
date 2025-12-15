@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
-import { type TocItem } from "@/components/reader/BookService"
+import type { TocItem } from "@/components/reader/BookService"
 
-export type RepeatMode = "track" | "playlist"
+export type RepeatMode = "track" | "playlist" | "none"
 
 export type AudioTrack = {
   id: string | number
@@ -53,7 +53,7 @@ class AudioPlayerService {
     currentTime: 0,
     muted: false,
     shuffle: true,
-    repeat: "playlist",
+    repeat: "none",
     volume: 100,
     playbackRate: 1,
     trackIndex: 0,
@@ -227,16 +227,27 @@ class AudioPlayerService {
 
       if (this.state.repeat === "track") {
         await this.play()
-      } else {
+        return
+      }
+
+      if (
+        this.state.trackIndex !== this.playlist.length - 1 ||
+        this.state.repeat === "playlist"
+      ) {
         await this.skipToNext()
         await this.play()
+        return
       }
+
+      this.pause()
     })
   }
 
   private setupMediaSession() {
     if (!("mediaSession" in navigator)) {
-      console.warn("Media Session API not supported")
+      if (typeof window !== "undefined") {
+        console.warn("Media Session API not supported")
+      }
       return
     }
 

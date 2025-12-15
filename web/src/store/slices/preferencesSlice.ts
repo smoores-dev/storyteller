@@ -73,6 +73,16 @@ export type ReadingPreferences = {
     name: string
   }
   volume: number
+  scrollBehavior: "smooth" | "instant"
+  smoothScrollImplementation: "native" | "custom"
+  smoothScrollSpeed: number
+
+  // display
+  footerDisplayWidth: "full" | "minimal" | "text"
+
+  // behavior
+  skipOnTurnPage: boolean
+  openPipOnTabOut: boolean
 }
 
 // future: per-book overrides
@@ -87,6 +97,7 @@ const GLOBAL_ONLY_PREFERENCES = [
   "neverShowMiniPlayer",
   "pinnedMiniPlayer",
   "miniPlayerPosition",
+  "annotationPanel",
 ] as const
 type GLOBAL_ONLY_PREFERENCE = (typeof GLOBAL_ONLY_PREFERENCES)[number]
 
@@ -130,6 +141,16 @@ export const defaultPreferences: ReadingPreferences = {
     url: "https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap",
     name: "Crimson Text",
   },
+  scrollBehavior: "smooth",
+  smoothScrollImplementation: "custom",
+  smoothScrollSpeed: 1.0,
+
+  // display
+  footerDisplayWidth: "text",
+
+  // behavior
+  skipOnTurnPage: true,
+  openPipOnTabOut: true,
 }
 
 const initialState: PreferencesState = {
@@ -389,6 +410,8 @@ export const themes = {
     uiTextMuted: "0 0% 45.1%",
     uiAccent: "24.6 95% 53.1%",
     uiAccentHover: "20.5 90.2% 48.2%",
+    uiSelectionBackgroundColor: "20.5 90.2% 48.2%",
+    uiSelectionTextColor: "0 0% 100%",
     hightlightColor: {
       yellow: "rgba(255, 255, 0, 0.8)",
       red: "rgba(255, 0, 0, 0.8)",
@@ -409,6 +432,8 @@ export const themes = {
     uiTextMuted: "0 0% 45.1%",
     uiAccent: "24.6 95% 53.1%",
     uiAccentHover: "20.5 90.2% 48.2%",
+    uiSelectionBackgroundColor: "20.5 90.2% 48.2%",
+    uiSelectionTextColor: "0 0% 0%",
     hightlightColor: {
       yellow: "rgba(255, 255, 0, 0.3)",
       red: "rgba(255, 0, 0, 0.3)",
@@ -429,6 +454,8 @@ export const themes = {
     uiTextMuted: "0 0% 55.3%",
     uiAccent: "26 90.5% 37.1%",
     uiAccentHover: "22.7 82.5% 31.4%",
+    uiSelectionBackgroundColor: "42 31.3% 93.7%",
+    uiSelectionTextColor: "0 0% 17.6%",
     hightlightColor: {
       yellow: "rgba(255, 255, 0, 0.3)",
       red: "rgba(255, 0, 0, 0.3)",
@@ -449,6 +476,8 @@ export const themes = {
     uiTextMuted: "0 0% 47.8%",
     uiAccent: "17.5 88.3% 40.4%",
     uiAccentHover: "15 79.1% 33.7%",
+    uiSelectionBackgroundColor: "240 21.3% 12%",
+    uiSelectionTextColor: "40 23.1% 97.5%",
     hightlightColor: {
       yellow: "rgba(255, 255, 0, 0.3)",
       red: "rgba(255, 0, 0, 0.3)",
@@ -469,6 +498,8 @@ export const themes = {
     uiTextMuted: "0 0% 45.1%",
     uiAccent: "24.6 95% 53.1%",
     uiAccentHover: "20.5 90.2% 48.2%",
+    uiSelectionBackgroundColor: "20.5 90.2% 48.2%",
+    uiSelectionTextColor: "0 0% 100%",
     hightlightColor: {
       yellow: "rgba(255, 255, 0, 0.3)",
       red: "rgba(255, 0, 0, 0.3)",
@@ -486,6 +517,8 @@ export const themes = {
     uiBorder: "230.3 12.4% 49.2%",
     uiText: "227.4 68.3% 87.6%",
     uiTextSecondary: "228 39.2% 80%",
+    uiSelectionBackgroundColor: "227.4 68.3% 87.6%",
+    uiSelectionTextColor: "240 21.3% 12%",
     uiTextMuted: "227.4 26.8% 72.2%",
     uiAccent: "266.5 82.7% 79.6%",
     uiAccentHover: "266.5 82.7% 79.6%",
@@ -506,6 +539,8 @@ export const themes = {
     uiBorder: string
     uiText: string
     uiTextSecondary: string
+    uiSelectionBackgroundColor: string
+    uiSelectionTextColor: string
     uiTextMuted: string
     uiAccent: string
     uiAccentHover: string
@@ -558,6 +593,7 @@ export const readiumIfyPreferences = (
     textColor: `hsl(${theme.textColor})`,
     textAlign: preferences.align,
     fontSize: preferences.fontSize / 100,
+    linkColor: `hsl(${theme.uiAccent})`,
     /**
      * the amount of time i could have saves if i knew to set this setting!!!!!
      * for some reason we need this otherwise safari is not able to find the correct page if fontsize is not 100%
@@ -605,6 +641,8 @@ export const applyThemeToDocument = (
     ["--reader-highlight-color-blue", uiTheme.hightlightColor.blue],
     ["--reader-highlight-color-magenta", uiTheme.hightlightColor.magenta],
     ["--reader-highlight-color-custom", preferences.customHighlightColor],
+    ["--reader-selection-color", uiTheme.uiSelectionBackgroundColor],
+    ["--reader-selection-text-color", uiTheme.uiSelectionTextColor],
     [
       "--reader-highlight-color",
       preferences.highlightColor === "custom"
@@ -621,8 +659,9 @@ export const applyThemeToDocument = (
   const styles = [
     `:root {${styleProperties}}`,
 
-    `.reader-fragment {
-      cursor: pointer;
+    `::selection {
+      background-color: hsl(${uiTheme.uiSelectionBackgroundColor});
+      color: hsl(${uiTheme.uiSelectionTextColor});
     }`,
 
     // v necessary on eg safari iOS, otherwise weird blank bars

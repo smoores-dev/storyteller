@@ -5,7 +5,7 @@
  * Implements the same core methods as the iOS version but adapted for web/TypeScript.
  */
 
-import { type UUID } from "crypto"
+import type { UUID } from "crypto"
 
 import {
   type GuidedNavigationDocument,
@@ -16,6 +16,7 @@ import {
   type Publication,
 } from "@readium/shared"
 
+import type { ReadiumServiceError } from "@/services/readiumService"
 import {
   getPositions,
   getPublication,
@@ -23,7 +24,7 @@ import {
   registerPositions,
   registerResource,
 } from "@/store/readerRegistry"
-import { type ReadingMode } from "@/store/slices/readingSessionSlice"
+import type { ReadingMode } from "@/store/slices/readingSessionSlice"
 
 export type TextFragment = {
   href: string
@@ -52,6 +53,17 @@ export class BookServiceError extends Error {
     super(message)
     this.name = "BookServiceError"
   }
+}
+
+export function isReadiumServiceError(
+  error: unknown,
+): error is ReadiumServiceError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "ReadiumServiceError"
+  )
 }
 
 /**

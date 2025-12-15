@@ -82,9 +82,24 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
     isScrolling,
   )
 
+  const scrollMode = selectPreference(listenerApi.getState(), "scrollBehavior")
+  const smoothScrollImplementation = selectPreference(
+    listenerApi.getState(),
+    "smoothScrollImplementation",
+  )
+  const smoothScrollSpeed = selectPreference(
+    listenerApi.getState(),
+    "smoothScrollSpeed",
+  )
+  const scrollSettings = {
+    behavior: scrollMode,
+    implementation: smoothScrollImplementation,
+    speed: smoothScrollSpeed,
+  }
+
   if (isWithinViewport) {
     if (isScrolling) {
-      scrollToLocator(locator, activeFrame)
+      scrollToLocator(locator, activeFrame, scrollSettings)
     }
 
     return true
@@ -109,7 +124,7 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
 
         // after navigation completes, scroll to the element if in scrolling mode
         if (isScrolling && locator.locations.fragments[0]) {
-          scrollToLocator(locator, activeFrame)
+          scrollToLocator(locator, activeFrame, scrollSettings)
         }
 
         resolve(true)
@@ -145,12 +160,14 @@ startAppListening({
     if (!currentBook) return
 
     const isSyncing = selectIsSyncing(listenerApi.getState())
-
     const scrolling =
       selectPreference(listenerApi.getState(), "layout") === "scrollable"
-
     const currentTocItem = selectCurrentToCLocator(listenerApi.getState())
     const mode = selectReadingMode(listenerApi.getState())
+    const skipOnTurnPage = selectPreference(
+      listenerApi.getState(),
+      "skipOnTurnPage",
+    )
 
     if (scrolling && mode === "readaloud" && currentTocItem) {
       handleChapterSkip(
@@ -174,8 +191,10 @@ startAppListening({
         ? progressions?.end === 1
         : progressions?.start === 0) && isSyncing
 
+    const wasPlaying = AudioPlayer.getState().playing
+
     // if at end of thing
-    if (shouldPause) {
+    if (shouldPause && wasPlaying) {
       // pause if we are skipping chapters
       AudioPlayer.pause()
     }
@@ -205,6 +224,11 @@ startAppListening({
               noServer: mode === "readaloud",
             }),
           )
+          resolve()
+          return
+        }
+
+        if (!skipOnTurnPage) {
           resolve()
           return
         }
@@ -258,7 +282,7 @@ startAppListening({
       })
     })
 
-    if (isSyncing) {
+    if (isSyncing && wasPlaying) {
       await AudioPlayer.play()
     }
   },

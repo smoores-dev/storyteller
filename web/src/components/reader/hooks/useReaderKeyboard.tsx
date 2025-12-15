@@ -3,9 +3,10 @@ import { type HotkeyItem, useHotkeys } from "@mantine/hooks"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import {
   nextPagePressed,
+  pauseShortCutPressed,
+  playShortCutPressed,
   previousPagePressed,
   skipPartButtonPressed,
-  togglePlay,
 } from "@/store/actions"
 import {
   type AppDispatch,
@@ -56,7 +57,11 @@ export const getReaderKeyboardHotkeys = (
         if (mode === "epub") {
           return
         }
-        dispatch(togglePlay())
+        if (AudioPlayer.getState().playing) {
+          dispatch(pauseShortCutPressed())
+        } else {
+          dispatch(playShortCutPressed())
+        }
       },
     ],
     [

@@ -1,17 +1,16 @@
 import { Popover, Slider } from "@mantine/core"
 import { IconVolume, IconVolumeOff } from "@tabler/icons-react"
 import classNames from "classnames"
-import { useCallback, useState } from "react"
 
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectVolume } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
 
-import { useRegisterNavigatorClickhandler } from "../hooks/useNavigatorEvents"
+import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
-import { popoverClassNames, sliderClassNames } from "./shared"
+import { popoverClassNames, sliderClassNames } from "./classNames"
 
 const snapVolume = (value: number): number => {
   // snap to 0 if very close to 0
@@ -56,14 +55,9 @@ const VolumeSlider = () => {
 }
 
 export const VolumeControl = (props: ToolProps) => {
-  const [open, setOpen] = useState(false)
+  const { isOpen, closeMenu, toggleMenu } = useMenuToggle()
   const volume = useAppSelector(selectVolume)
   const isMuted = volume === 0
-
-  const closeOnClickNavigator = useCallback(() => {
-    setOpen(false)
-  }, [setOpen])
-  useRegisterNavigatorClickhandler(closeOnClickNavigator)
 
   const volumeIcon = isMuted ? (
     <IconVolumeOff size={18} />
@@ -93,21 +87,22 @@ export const VolumeControl = (props: ToolProps) => {
       position="top"
       withArrow
       shadow="md"
-      opened={open}
-      onDismiss={closeOnClickNavigator}
+      opened={isOpen}
+      onDismiss={closeMenu}
       classNames={{
         ...popoverClassNames,
         ...classNames,
       }}
-      withinPortal={false}
+      portalProps={{
+        target: props.targetDocument?.body ?? window.document.body,
+      }}
     >
       <Popover.Target>
         <ToolbarIcon
+          targetDocument={props.targetDocument ?? window.document}
           label="Volume"
           icon={volumeIcon}
-          onClick={() => {
-            setOpen((prev) => !prev)
-          }}
+          onClick={toggleMenu}
         />
       </Popover.Target>
       <Popover.Dropdown>

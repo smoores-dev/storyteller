@@ -4,6 +4,7 @@ import { extname } from "node:path"
 import type { NextRequest } from "next/server"
 
 import { assertHasPermission } from "@/auth/auth"
+import { isReadiumServiceError } from "@/components/reader/BookService"
 import { type BookWithRelations, getBook } from "@/database/books"
 import { getSettings } from "@/database/settings"
 import type { UserWithPermissions } from "@/database/users"
@@ -202,16 +203,90 @@ export const GET = async (
     abortController.abort()
   })
 
-  const response = await rwp(book, path, searchParams, {
-    headers: newHeaders,
-    signal: abortController.signal,
-    cache: request.cache,
-    keepalive: request.keepalive,
-    integrity: request.integrity,
-  })
+  let response: Response
+  try {
+    response = await rwp(book, path, searchParams, {
+      headers: newHeaders,
+      signal: abortController.signal,
+      cache: request.cache,
+      keepalive: request.keepalive,
+      integrity: request.integrity,
+    })
+  } catch (error) {
+    // don't want to use instanceof
+    if (isReadiumServiceError(error)) {
+      if (error.errorType === "file_not_found") {
+        logger.error(`Book file not found: ${book.title} (${bookId})`, error)
+        return Response.json(
+          {
+            error: "book_not_found",
+            message:
+              "The book file could not be found on disk. It may have been moved or deleted.",
+            bookId,
+          },
+          {
+            status: 404,
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+          },
+        )
+      }
+
+      if (error.errorType === "file_not_found_in_book") {
+        logger.error(`Resource not found in book: ${path}`, error)
+        return Response.json(
+          {
+            error: "resource_not_found",
+            message: "The requested resource was not found in the book.",
+            path,
+          },
+          {
+            status: 404,
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+          },
+        )
+      }
+
+      if (error.errorType === "not_running") {
+        logger.error("Readium service is not running", error)
+        return Response.json(
+          {
+            error: "service_unavailable",
+            message: "The book reading service is not available.",
+          },
+          {
+            status: 503,
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+          },
+        )
+      }
+    }
+
+    logger.error(`Unexpected error reading book resource: ${path}`, error)
+    return Response.json(
+      {
+        error: "internal_error",
+        message: "An unexpected error occurred while reading the book.",
+      },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      },
+    )
+  }
 
   if (!response.body) {
     return new Response(null, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
       status: response.status,
       statusText: response.statusText,
     })
@@ -263,6 +338,10 @@ export const GET = async (
       abortController.abort()
     },
   })
+
+  if (response.status > 300) {
+    responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate")
+  }
 
   return new Response(stream, {
     status: response.status,

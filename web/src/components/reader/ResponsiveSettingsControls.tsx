@@ -43,6 +43,7 @@ type Props = {
   isFullscreen?: boolean
   onToggleFullscreen?: () => void
   className?: string
+  targetDocument?: Document
 }
 
 export const ResponsiveSettingsControls = ({
@@ -50,6 +51,7 @@ export const ResponsiveSettingsControls = ({
   context,
   isFullscreen,
   onToggleFullscreen,
+  targetDocument = window.document,
 }: Props) => {
   const mode = useAppSelector(selectReadingMode)
   const currentBook = useAppSelector(selectCurrentBook)
@@ -71,7 +73,7 @@ export const ResponsiveSettingsControls = ({
   const iconMode =
     isMobile && context === "reader"
       ? { mode: "drawer" as const, openDrawer }
-      : { mode: "dropdown" as const }
+      : { mode: "dropdown" as const, targetDocument }
 
   const shouldShowReadaloudSyncingToggle = context === "reader"
   const shouldShowSleepTimerControl = mode !== "epub"
@@ -92,7 +94,7 @@ export const ResponsiveSettingsControls = ({
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {shouldShowReadaloudSyncingToggle && <ReadaloudSyncingToggle />}
 
         {shouldShowReadingSettingsControl && (

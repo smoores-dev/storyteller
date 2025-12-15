@@ -73,17 +73,76 @@ export const GET = withHasPermission<Params>("bookRead")(async (
           },
         })
       } catch (error) {
-        logger.error({ msg: "Failed to create audiobook manifest", err: error })
+        logger.error({
+          msg: "Failed to create audiobook manifest",
+          err: error,
+        })
+
+        if (
+          error instanceof Error &&
+          (error.message.includes("ENOENT") ||
+            error.message.includes("no such file"))
+        ) {
+          return Response.json(
+            {
+              error: "book_not_found",
+              message:
+                "Audiobook file not found on disk. It may have been moved or deleted.",
+              bookId,
+            },
+            {
+              status: 404,
+              headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+              },
+            },
+          )
+        }
+
         return Response.json(
-          { message: "Failed to create manifest" },
-          { status: 500 },
+          {
+            error: "internal_error",
+            message: "Failed to create audiobook manifest",
+          },
+          {
+            status: 500,
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+          },
         )
       }
     }
 
     // handle file requests
     const requestedFile = pathSegments.join("/")
-    const dir = await readdir(audiobookPath)
+
+    let dir: string[]
+    try {
+      dir = await readdir(audiobookPath)
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes("ENOENT") ||
+          error.message.includes("no such file"))
+      ) {
+        return Response.json(
+          {
+            error: "book_not_found",
+            message:
+              "Audiobook directory not found on disk. It may have been moved or deleted.",
+            bookId,
+          },
+          {
+            status: 404,
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+          },
+        )
+      }
+      throw error
+    }
     const m4bFiles = dir.filter((f) => extname(f).toLowerCase() === ".m4b")
 
     if (m4bFiles.length === 1) {

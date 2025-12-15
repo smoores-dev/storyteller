@@ -1,6 +1,6 @@
 import { useThrottledCallback } from "@mantine/hooks"
 import { type Locator } from "@readium/shared"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 
 import { cn } from "@/cn"
@@ -14,9 +14,8 @@ import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectPlaybackRate } from "@/store/slices/audioPlayerSlice"
 import { type ReadingPreferences } from "@/store/slices/preferencesSlice"
 
-import { usePiPWindow } from "./PipProvider"
 import { getClientXY } from "./hooks/mouseHelpers"
-import { useFormattedProgress } from "./preferenceItems/BookInfo"
+import { useFormattedProgress } from "./hooks/useFormattedProgress"
 import { formatTime } from "./preferenceItems/formatTime"
 
 const getCorrespondingMark = (
@@ -35,9 +34,8 @@ const getCorrespondingMark = (
 
 type TooltipProps = {
   elementRef: React.RefObject<HTMLElement | null>
-  content: string
-  context: "pip" | "reader-footer" | "mini-player" | undefined
-  pipWindow?: PictureInPictureWindow | null
+  targetDocument?: Document
+  children: React.ReactNode
   // for track-based positioning (hover label)
   trackBased?:
     | {
@@ -49,37 +47,37 @@ type TooltipProps = {
 
 const Tooltip = ({
   elementRef,
-  content,
-  context,
-  pipWindow,
   trackBased,
+  children,
+  targetDocument = window.document,
 }: TooltipProps) => {
   if (!elementRef.current) return null
 
   const rect = elementRef.current.getBoundingClientRect()
-  const targetDocument =
-    context === "pip" && pipWindow ? pipWindow.document : document
 
   const leftPosition = trackBased
     ? rect.left +
       rect.width * (trackBased.max > 0 ? trackBased.value / trackBased.max : 0)
     : rect.left + rect.width / 2
 
-  // check if there's enough space at the top (48px for tooltip + some margin)
+  // the bottom of the tooltip should be the top of the element + 4px
   const hasSpaceAbove = rect.top > 60
-  const topPosition = hasSpaceAbove
-    ? rect.top - 48 // -12 * 4px
-    : rect.bottom + 12 // +3 * 4px
+
+  const innerHeight = targetDocument.documentElement.clientHeight
+
+  const bottomPosition = hasSpaceAbove
+    ? innerHeight - rect.top + 4
+    : rect.bottom + 4
 
   return createPortal(
     <div
-      className="bg-reader-surface-hover text-reader-text pointer-events-none fixed z-[500] -translate-x-1/2 whitespace-nowrap rounded-md p-2 font-medium"
+      className="bg-reader-surface text-reader-text pointer-events-none fixed z-[500] -translate-x-1/2 whitespace-nowrap rounded-md font-medium"
       style={{
         left: `${leftPosition}px`,
-        top: `${topPosition}px`,
+        bottom: `${bottomPosition}px`,
       }}
     >
-      {content}
+      {children}
     </div>,
     targetDocument.body,
   )
@@ -88,23 +86,23 @@ const Tooltip = ({
 type ThumbProps = {
   trackRef: React.RefObject<HTMLDivElement | null>
   percentage: number
-  context: "pip" | "reader-footer" | "mini-player" | undefined
-  pipWindow?: PictureInPictureWindow | null
+  targetDocument?: Document
 }
 
-const Thumb = ({ trackRef, percentage, context, pipWindow }: ThumbProps) => {
+const Thumb = ({
+  trackRef,
+  percentage,
+  targetDocument = window.document,
+}: ThumbProps) => {
   if (!trackRef.current) return null
 
   const rect = trackRef.current.getBoundingClientRect()
-  const targetDocument =
-    context === "pip" && pipWindow ? pipWindow.document : document
-
   const leftPosition = rect.left + rect.width * (percentage / 100)
   const topPosition = rect.top + 2
 
   return createPortal(
     <div
-      className="border-reader-accent bg-reader-accent pointer-events-none fixed z-[500] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+      className="bg-reader-accent border-reader-border pointer-events-none fixed z-[500] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
       style={{
         left: `${leftPosition}px`,
         top: `${topPosition}px`,
@@ -115,7 +113,6 @@ const Thumb = ({ trackRef, percentage, context, pipWindow }: ThumbProps) => {
 }
 
 type CustomSliderProps = {
-  context: "pip" | "reader-footer" | "mini-player" | undefined
   value: number
   min: number
   max: number
@@ -123,10 +120,9 @@ type CustomSliderProps = {
   restrictToMarks: boolean
   onChange: (value: number) => void
   onChangeEnd: (value: number) => void
-  showLabel: boolean
-  formatLabel?: ((value: number) => string) | undefined
+  formatLabel: (value: number) => string | null
+  targetDocument?: Document
 }
-
 // @mantine/core/Slider is extremely innefficient, especially when used with marks
 // to the point of introducing noticeable lag when switching between fragments
 // hence this custom implementation
@@ -138,16 +134,14 @@ const CustomSlider = ({
   restrictToMarks,
   onChange,
   onChangeEnd,
-  showLabel,
   formatLabel,
-  context,
+  targetDocument = window.document,
 }: CustomSliderProps) => {
   const trackRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [hoverValue, setHoverValue] = useState<number | null>(null)
-  const [hoveredMarkIndex, setHoveredMarkIndex] = useState<number | null>(null)
   const [isTrackHovered, setIsTrackHovered] = useState(false)
-  const markRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const markRefs = useRef<HTMLButtonElement[]>([])
 
   const percentage = max > 0 ? ((value - min) / (max - min)) * 100 : 0
 
@@ -174,8 +168,6 @@ const CustomSlider = ({
     },
     [max, marks, restrictToMarks, value],
   )
-
-  const { pipWindow } = usePiPWindow()
 
   const handleMouseOrTouchDown = useCallback(
     (e: MouseEvent | TouchEvent) => {
@@ -224,12 +216,12 @@ const CustomSlider = ({
 
   const handleTrackMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!isDragging && showLabel && formatLabel) {
+      if (!isDragging) {
         const newValue = getValueFromEvent(e.clientX)
         setHoverValue(newValue)
       }
     },
-    [formatLabel, getValueFromEvent, isDragging, showLabel],
+    [getValueFromEvent, isDragging],
   )
 
   const handleTrackMouseEnter = useCallback(() => {
@@ -250,36 +242,34 @@ const CustomSlider = ({
   )
 
   useEffect(() => {
-    const document =
-      context === "pip" && pipWindow ? pipWindow.document : window.document
+    const abortController = new AbortController()
+    const { signal } = abortController
 
     if (isDragging) {
-      document.addEventListener("mousemove", handleMouseOrTouchMove)
-      document.addEventListener("touchmove", handleMouseOrTouchMove)
-      document.addEventListener("mouseup", handleMouseorTouchUp)
-      document.addEventListener("touchend", handleMouseorTouchUp)
-      document.addEventListener("touchcancel", handleMouseorTouchUp)
+      targetDocument.addEventListener("mousemove", handleMouseOrTouchMove, {
+        signal,
+      })
+      targetDocument.addEventListener("touchmove", handleMouseOrTouchMove, {
+        signal,
+      })
+      targetDocument.addEventListener("mouseup", handleMouseorTouchUp, {
+        signal,
+      })
+      targetDocument.addEventListener("touchend", handleMouseorTouchUp, {
+        signal,
+      })
+      targetDocument.addEventListener("touchcancel", handleMouseorTouchUp, {
+        signal,
+      })
 
       return () => {
-        document.removeEventListener("mousemove", handleMouseOrTouchMove)
-        document.removeEventListener("touchmove", handleMouseOrTouchMove)
-        document.removeEventListener("mouseup", handleMouseorTouchUp)
-        document.removeEventListener("touchend", handleMouseorTouchUp)
+        abortController.abort()
       }
     }
     return () => {
-      document.removeEventListener("mousemove", handleMouseOrTouchMove)
-      document.removeEventListener("touchmove", handleMouseOrTouchMove)
-      document.removeEventListener("mouseup", handleMouseorTouchUp)
-      document.removeEventListener("touchend", handleMouseorTouchUp)
+      abortController.abort()
     }
-  }, [
-    context,
-    handleMouseOrTouchMove,
-    handleMouseorTouchUp,
-    isDragging,
-    pipWindow,
-  ])
+  }, [handleMouseOrTouchMove, handleMouseorTouchUp, isDragging, targetDocument])
 
   // initialize markRefs array when marks change
   useEffect(() => {
@@ -288,84 +278,10 @@ const CustomSlider = ({
     }
   }, [marks])
 
-  const MarkList = useMemo(() => {
-    if (!marks || marks.length === 0) return null
-    const marksWithTinyMarksFilteredOut = marks
-      .map((mark, idx) => {
-        const nextMark = marks[idx + 1]
-        const startPosition = idx === 0 ? 0 : mark.position
-        const endPosition = nextMark?.position ?? max
-        const markWidth = ((endPosition - startPosition) / max) * 100
-        return {
-          ...mark,
-          originalIndex: idx,
-          tooSmall: markWidth < 0.5,
-        }
-      })
-      .filter((mark) => !mark.tooSmall)
-
-    return (
-      <div className="pointer-events-none absolute inset-0 h-3">
-        {marksWithTinyMarksFilteredOut.map((mark, idx) => {
-          // calculating again because we want seemlessness
-          const startPosition = mark.originalIndex === 0 ? 0 : mark.position
-          const nextMark = marksWithTinyMarksFilteredOut[idx + 1]
-          const endPosition = nextMark?.position ?? max
-          const markWidth = ((endPosition - startPosition) / max) * 100
-          const isLast =
-            mark.originalIndex === marksWithTinyMarksFilteredOut.length - 1
-
-          const style = {
-            left: `${(startPosition / max) * 100}%`,
-            width: `${markWidth}%`,
-            minWidth: mark.tooSmall ? "2px" : undefined,
-          }
-
-          return (
-            <button
-              key={mark.originalIndex}
-              style={style}
-              ref={(el) => {
-                markRefs.current[mark.originalIndex] = el
-              }}
-              className={cn(
-                "group/mark pointer-events-auto absolute top-0 z-[500] h-5 cursor-pointer transition-all duration-75 hover:before:opacity-100 after:group-hover:opacity-100",
-                "before:bg-reader-accent-hover before:absolute before:-top-0.5 before:left-0 before:z-[501] before:h-2 before:opacity-0 before:transition-opacity before:content-[''] group-hover/mark:before:opacity-100",
-                !isLast &&
-                  // !isSmall &&
-                  `after:bg-reader-bg after:absolute after:right-0 after:top-0 after:h-1 after:transition-colors after:content-['']`,
-                context === "reader-footer"
-                  ? `before:w-[calc(100%-4px)] after:w-[4px]`
-                  : "before:w-[calc(100%-2px)] after:w-[2px]",
-              )}
-              onClick={() => {
-                handleMarkClick(mark.position)
-              }}
-              onMouseEnter={() => {
-                setHoveredMarkIndex(mark.originalIndex)
-              }}
-              onMouseLeave={() => {
-                setHoveredMarkIndex(null)
-              }}
-              onFocus={() => {
-                setHoveredMarkIndex(mark.originalIndex)
-              }}
-              onBlur={() => {
-                setHoveredMarkIndex(null)
-              }}
-              aria-label={mark.title}
-            />
-          )
-        })}
-      </div>
-    )
-  }, [marks, max, handleMarkClick, context])
-
   return (
     <div
       className="group relative h-1"
       data-hovered={isTrackHovered || undefined}
-      data-mark-hovered={hoveredMarkIndex}
     >
       {/* track */}
       <div
@@ -397,47 +313,34 @@ const CustomSlider = ({
         />
 
         {/* hover label for free sliding */}
-        {!restrictToMarks &&
-          showLabel &&
-          formatLabel &&
-          hoverValue !== null && (
-            <Tooltip
-              elementRef={trackRef}
-              content={formatLabel(hoverValue)}
-              context={context}
-              pipWindow={pipWindow}
-              trackBased={{ value: hoverValue, max }}
-            />
-          )}
+        {!restrictToMarks && hoverValue !== null && (
+          <Tooltip
+            elementRef={trackRef}
+            trackBased={{ value: hoverValue, max }}
+            targetDocument={targetDocument}
+          >
+            <div className="p-2 text-sm">{formatLabel(hoverValue)}</div>
+          </Tooltip>
+        )}
       </div>
-
       {/* marks */}
-      {MarkList}
-
+      {marks && (
+        <MarkList
+          marks={marks}
+          handleMarkClick={handleMarkClick}
+          formatLabel={formatLabel}
+          max={max}
+          targetDocument={targetDocument}
+        />
+      )}
       {/* thumb portal */}
       {!restrictToMarks && isTrackHovered && trackRef.current && (
         <Thumb
           trackRef={trackRef}
           percentage={percentage}
-          context={context}
-          pipWindow={pipWindow}
+          targetDocument={targetDocument}
         />
       )}
-
-      {/* mark tooltip portal */}
-      {hoveredMarkIndex !== null &&
-        marks &&
-        marks[hoveredMarkIndex] &&
-        markRefs.current[hoveredMarkIndex] && (
-          <Tooltip
-            elementRef={{
-              current: markRefs.current[hoveredMarkIndex],
-            }}
-            content={marks[hoveredMarkIndex].title}
-            context={context}
-            pipWindow={pipWindow}
-          />
-        )}
     </div>
   )
 }
@@ -445,11 +348,11 @@ const CustomSlider = ({
 export const ProgressBar = ({
   book,
   detailView,
-  context,
+  targetDocument = window.document,
 }: {
   book: BookWithRelations
   detailView: ReadingPreferences["detailView"]
-  context: "pip" | "reader-footer" | "mini-player" | undefined
+  targetDocument?: Document
 }) => {
   const [isDragging, setIsDragging] = useState(false)
   const { total, marks, progress } = useFormattedProgress({ book })
@@ -522,8 +425,20 @@ export const ProgressBar = ({
         }))
       : null
 
-  const shouldShowLabel =
-    detailView.scope === "chapter" && detailView.mode === "audio"
+  const formatLabel = useCallback(
+    (value: number) => {
+      if (detailView.mode === "audio") {
+        return formatTime(value)
+      }
+
+      if (detailView.scope === "chapter") {
+        return null
+      }
+
+      return `p. ${value}`
+    },
+    [detailView.mode, detailView.scope],
+  )
 
   return (
     <CustomSlider
@@ -534,9 +449,145 @@ export const ProgressBar = ({
       restrictToMarks={restrictToMarks}
       onChange={handleChange}
       onChangeEnd={handleChangeEnd}
-      showLabel={shouldShowLabel}
-      formatLabel={shouldShowLabel ? formatTime : undefined}
-      context={context}
+      formatLabel={formatLabel}
+      targetDocument={targetDocument}
     />
+  )
+}
+
+const MarkList = ({
+  marks,
+  handleMarkClick,
+  max,
+  formatLabel,
+  targetDocument = window.document,
+}: {
+  marks: { position: number; title: string }[]
+  handleMarkClick: (position: number) => void
+  max: number
+  formatLabel: (value: number) => string | null
+  targetDocument?: Document
+}) => {
+  const marksWithTinyMarksFilteredOut = marks
+    .map((mark, idx) => {
+      const nextMark = marks[idx + 1]
+      const startPosition = idx === 0 ? 0 : mark.position
+      const endPosition = nextMark?.position ?? max
+      const markWidth = ((endPosition - startPosition) / max) * 100
+      return {
+        ...mark,
+        originalIndex: idx,
+        tooSmall: markWidth < 0.5,
+      }
+    })
+    .filter((mark) => !mark.tooSmall)
+
+  return (
+    <div className="pointer-events-none absolute inset-0 h-3">
+      {marksWithTinyMarksFilteredOut.map((mark, idx) => {
+        // calculating again because we want seemlessness
+        const startPosition = mark.originalIndex === 0 ? 0 : mark.position
+        const nextMark = marksWithTinyMarksFilteredOut[idx + 1]
+        const endPosition = nextMark?.position ?? max
+        const markWidth = ((endPosition - startPosition) / max) * 100
+        const isLast =
+          mark.originalIndex === marksWithTinyMarksFilteredOut.length - 1
+
+        const style = {
+          left: `${(startPosition / max) * 100}%`,
+          width: `${markWidth}%`,
+          minWidth: mark.tooSmall ? "2px" : undefined,
+        }
+
+        return (
+          <MarkButton
+            key={mark.originalIndex}
+            mark={mark}
+            style={style}
+            formatLabel={formatLabel}
+            handleMarkClick={handleMarkClick}
+            className={cn(
+              !isLast &&
+                // !isSmall &&
+                `after:bg-reader-bg after:absolute after:right-0 after:top-0 after:h-1 after:transition-colors after:content-['']`,
+            )}
+            targetDocument={targetDocument}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+const MarkButton = ({
+  mark,
+  style,
+  formatLabel,
+  handleMarkClick,
+  className,
+  targetDocument = window.document,
+}: {
+  mark: { position: number; title: string }
+  style: React.CSSProperties
+  formatLabel: (value: number) => string | null
+  handleMarkClick: (position: number) => void
+  className?: string
+  targetDocument?: Document
+}) => {
+  const [hovered, setHovered] = useState<boolean>(false)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+
+  const onMouseEnter = useCallback(() => {
+    setHovered(true)
+  }, [])
+  const onMouseLeave = useCallback(() => {
+    setHovered(false)
+  }, [])
+
+  const formattedLabel = formatLabel(mark.position)
+
+  return (
+    <>
+      <button
+        style={style}
+        ref={buttonRef}
+        className={cn(
+          "group/mark pointer-events-auto absolute top-0 z-[500] h-5 cursor-pointer transition-all duration-75 hover:before:opacity-100 after:group-hover:opacity-100",
+          "before:bg-reader-accent-hover before:absolute before:-top-0.5 before:left-0 before:z-[501] before:h-2 before:opacity-0 before:transition-opacity before:content-[''] group-hover/mark:before:opacity-100",
+
+          "before:w-[calc(100%-2px)] after:w-[2px]",
+          className,
+        )}
+        onClick={() => {
+          handleMarkClick(mark.position)
+        }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onFocus={onMouseEnter}
+        onBlur={onMouseLeave}
+        aria-label={mark.title}
+      />
+      {hovered && (
+        <Tooltip
+          targetDocument={targetDocument}
+          elementRef={{
+            current: buttonRef.current,
+          }}
+        >
+          <p className="m-0 flex flex-col gap-1 px-2 py-1">
+            <span className="text-reader-text my-0 block text-xs font-medium">
+              {mark.title}
+            </span>
+            {formattedLabel && (
+              <>
+                <span className="text-reader-text-secondary block text-[10px]">
+                  {formattedLabel}
+                </span>
+              </>
+            )}
+          </p>
+        </Tooltip>
+      )}
+    </>
   )
 }
