@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
-import { fromLegacyLocator } from "../positions"
+import { fromLegacyLocator } from "@/database/positions"
 
 void describe("getTrackInfo", () => {
   void it("can migrate a locator", () => {

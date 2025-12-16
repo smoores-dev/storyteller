@@ -11,7 +11,6 @@ import {
   getResourceHrefFromApiUrl,
 } from "@/components/reader/BookService"
 import { AudioPlayer } from "@/services/AudioPlayerService"
-
 import {
   getAudioToTextMap,
   getGuide,
@@ -21,7 +20,7 @@ import {
   getTocItems,
   registerGuide,
   registerResource,
-} from "../readerRegistry"
+} from "@/store/readerRegistry"
 
 export function findSegmentForTime(
   segments: Array<{ startTime: number; endTime: number; textHref: string }>,

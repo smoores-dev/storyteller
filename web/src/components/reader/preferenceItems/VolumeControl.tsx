@@ -2,12 +2,11 @@ import { Popover, Slider } from "@mantine/core"
 import { IconVolume, IconVolumeOff } from "@tabler/icons-react"
 import classNames from "classnames"
 
+import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectVolume } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
-
-import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import { popoverClassNames, sliderClassNames } from "./classNames"

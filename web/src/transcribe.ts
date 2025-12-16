@@ -7,10 +7,9 @@ import { type RecognitionResult, recognize, setGlobalOption } from "echogarden"
 import type { WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
 import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
 
-import { env } from "@/env"
-
 import type { Settings, WhisperModel } from "./database/settingsTypes"
 import { WHISPER_BUILD_DIR } from "./directories"
+import { env } from "./env"
 import { logger } from "./logging"
 
 const exec = promisify(execCb)

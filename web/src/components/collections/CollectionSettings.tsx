@@ -16,6 +16,8 @@ import { IconSettings } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef } from "react"
 
+import { ImportPathInput } from "@/components/ImportPathInput"
+import { UserSelect } from "@/components/books/edit/UserSelect"
 import {
   useDeleteCollectionMutation,
   useListCollectionsQuery,
@@ -23,9 +25,6 @@ import {
   useUpdateCollectionMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
-
-import { ImportPathInput } from "../ImportPathInput"
-import { UserSelect } from "../books/edit/UserSelect"
 
 interface Props {
   uuid: UUID

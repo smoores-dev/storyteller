@@ -17,11 +17,8 @@ import {
 } from "@/components/reader/BookService"
 import type { BookWithRelations } from "@/database/books"
 import { AudioPlayer, type AudioTrack } from "@/services/AudioPlayerService"
-import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
-import type { UUID } from "@/uuid"
-
-import { syncPosition } from "../actions"
-import { api, getCoverUrl } from "../api"
+import { syncPosition } from "@/store/actions"
+import { api, getCoverUrl } from "@/store/api"
 import {
   type AudioTextMap,
   type TextAudioMap,
@@ -31,16 +28,18 @@ import {
   registerPublication,
   registerTextToAudioMap,
   registerTocItems,
-} from "../readerRegistry"
+} from "@/store/readerRegistry"
 import {
   loadPerBookPreferencesFromStorage,
   preferencesSlice,
   selectPreference,
-} from "../slices/preferencesSlice"
+} from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectReadingMode,
-} from "../slices/readingSessionSlice"
+} from "@/store/slices/readingSessionSlice"
+import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
+import type { UUID } from "@/uuid"
 
 import { startAppListening } from "./listenerMiddleware"
 

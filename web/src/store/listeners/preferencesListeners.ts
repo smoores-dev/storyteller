@@ -1,20 +1,19 @@
 import { isAnyOf } from "@reduxjs/toolkit"
 
 import { AudioPlayer } from "@/services/AudioPlayerService"
-
-import { closeMiniPlayer } from "../actions"
-import { getActiveFrame, getNavigator } from "../readerRegistry"
+import { closeMiniPlayer } from "@/store/actions"
+import { getActiveFrame, getNavigator } from "@/store/readerRegistry"
 import {
   applyThemeToDocument,
   preferencesSlice,
   selectBookPreferences,
   selectEpubPreferences,
   storePreferencesInStorage,
-} from "../slices/preferencesSlice"
+} from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentBook,
-} from "../slices/readingSessionSlice"
+} from "@/store/slices/readingSessionSlice"
 
 import { startAppListening } from "./listenerMiddleware"
 

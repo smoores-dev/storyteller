@@ -1,7 +1,7 @@
 import pino from "pino"
 import PinoPretty from "pino-pretty"
 
-import { env } from "@/env"
+import { env } from "./env"
 
 export const logger = pino(
   {

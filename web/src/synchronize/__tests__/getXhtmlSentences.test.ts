@@ -3,7 +3,7 @@ import { describe, it } from "node:test"
 
 import { type ParsedXml, type XmlNode } from "@storyteller-platform/epub"
 
-import { getXHtmlSentences } from "../getXhtmlSentences"
+import { getXHtmlSentences } from "@/synchronize/getXhtmlSentences"
 
 void describe("getXhtmlSentences", () => {
   void it("gets sentences from a text node", () => {

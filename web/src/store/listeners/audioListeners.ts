@@ -7,7 +7,6 @@ import {
 } from "@/components/reader/BookService"
 import { isSameLocator } from "@/components/reader/locators"
 import { AudioPlayer } from "@/services/AudioPlayerService"
-
 import {
   bookLocatorChanged,
   pauseButtonPressed,
@@ -21,16 +20,16 @@ import {
   requestHighlightUpdate,
   syncPosition,
   textNavigatedFromAudio,
-} from "../actions"
-import { getActiveFrame, getPublication } from "../readerRegistry"
-import { selectPreference } from "../slices/preferencesSlice"
+} from "@/store/actions"
+import { getActiveFrame, getPublication } from "@/store/readerRegistry"
+import { selectPreference } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentBook,
   selectCurrentLocator,
   selectIsSyncing,
   selectReadingMode,
-} from "../slices/readingSessionSlice"
+} from "@/store/slices/readingSessionSlice"
 
 import {
   clearHighlight,

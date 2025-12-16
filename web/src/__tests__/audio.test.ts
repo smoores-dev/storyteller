@@ -2,7 +2,7 @@ import assert from "node:assert"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 
-import { getTrackDuration, isAudioFile } from "../audio"
+import { getTrackDuration, isAudioFile } from "@/audio"
 
 void describe("getTrackInfo", () => {
   void it("can get track duration from an mp3 file", async () => {

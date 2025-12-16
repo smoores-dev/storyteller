@@ -142,8 +142,9 @@ module.exports = {
           "error",
           {
             alias: {
-              "@": "./src",
+              "@": "./web/src",
             },
+            // This doesn't seem to work 100% consistently
             aliasForSubpaths: true,
           },
         ],

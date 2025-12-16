@@ -1,6 +1,7 @@
 import { Popover, Slider, Text } from "@mantine/core"
 import { IconMinus, IconPlus } from "@tabler/icons-react"
 
+import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectPlaybackRate } from "@/store/slices/audioPlayerSlice"
@@ -9,8 +10,6 @@ import {
   selectPreference,
 } from "@/store/slices/preferencesSlice"
 import { selectCurrentBook } from "@/store/slices/readingSessionSlice"
-
-import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { ResetOrSetGlobalButton } from "./ReadingSettingsControl"
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"

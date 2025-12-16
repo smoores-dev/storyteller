@@ -3,7 +3,7 @@ import { describe, it } from "node:test"
 
 import { Epub, type ParsedXml } from "@storyteller-platform/epub"
 
-import { appendTextNode, tagSentences } from "../tagSentences"
+import { appendTextNode, tagSentences } from "@/synchronize/tagSentences"
 
 void describe("appendTextNode", () => {
   void it("can append text nodes to empty parents", () => {

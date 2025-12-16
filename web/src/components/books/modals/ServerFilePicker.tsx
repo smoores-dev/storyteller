@@ -14,8 +14,7 @@ import {
   type DirectoryEntry,
   listDirectoryAction,
 } from "@/actions/listDirectoryAction"
-
-import { FolderIcon } from "../../icons/FolderIcon"
+import { FolderIcon } from "@/components/icons/FolderIcon"
 
 function dirname(path: string) {
   const segments = path.split("/")

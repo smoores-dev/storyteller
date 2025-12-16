@@ -3,12 +3,11 @@ import { IconList } from "@tabler/icons-react"
 import classNames from "classnames"
 import { useCallback, useEffect, useMemo } from "react"
 
+import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
 import { navItemPressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { getTocItems } from "@/store/readerRegistry"
 import { selectCurrentToCLocator } from "@/store/slices/readingSessionSlice"
-
-import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import { popoverClassNames } from "./classNames"

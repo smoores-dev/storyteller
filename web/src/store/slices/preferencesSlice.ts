@@ -6,9 +6,8 @@ import {
 } from "@reduxjs/toolkit"
 
 import { isSafari } from "@/components/reader/helpers"
+import { type RootState } from "@/store/appState"
 import { type UUID } from "@/uuid"
-
-import { type RootState } from "../appState"
 
 import { selectCurrentBook, selectReadingMode } from "./readingSessionSlice"
 

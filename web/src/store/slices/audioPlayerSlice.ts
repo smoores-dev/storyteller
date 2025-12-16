@@ -1,5 +1,8 @@
 import { type PayloadAction, createSlice } from "@reduxjs/toolkit"
 
+// There is obviously no "empty line within import group" here, as there's only
+// one line. Seems like a bug.
+// eslint-disable-next-line import/order
 import {
   type AudioState,
   type AudioTrack,
@@ -107,7 +110,7 @@ export const audioPlayerSlice = createSlice({
 
 export const audioPlayerReducer = audioPlayerSlice.reducer
 
-import { type RootState } from "../appState"
+import { type RootState } from "@/store/appState"
 
 export const selectAudioPlayerState = (state: RootState) => state.audioPlayer
 

@@ -1,12 +1,11 @@
 import { isPast } from "date-fns"
 
 import { AudioPlayer } from "@/services/AudioPlayerService"
-
-import { playerPositionUpdated } from "../actions"
+import { playerPositionUpdated } from "@/store/actions"
 import {
   readingSessionSlice,
   selectSleepTimer,
-} from "../slices/readingSessionSlice"
+} from "@/store/slices/readingSessionSlice"
 
 import { startAppListening } from "./listenerMiddleware"
 

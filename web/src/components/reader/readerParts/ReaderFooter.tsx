@@ -10,6 +10,10 @@ import classNames from "classnames"
 import { useEffect, useMemo, useState } from "react"
 
 import { cn } from "@/cn"
+import { ProgressBar } from "@/components/reader/ProgressBar"
+import { type ReadiumWindow } from "@/components/reader/helpers"
+import { BookInfo } from "@/components/reader/preferenceItems/BookInfo"
+import { HoldButton } from "@/components/reader/preferenceItems/HoldButton"
 import { type BookWithRelations } from "@/database/books"
 import {
   pauseButtonPressed,
@@ -31,11 +35,6 @@ import {
   selectActiveFrameUrl,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
-
-import { ProgressBar } from "../ProgressBar"
-import { type ReadiumWindow } from "../helpers"
-import { BookInfo } from "../preferenceItems/BookInfo"
-import { HoldButton } from "../preferenceItems/HoldButton"
 
 export type TocItem = {
   id: string
