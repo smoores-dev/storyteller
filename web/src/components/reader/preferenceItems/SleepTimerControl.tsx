@@ -9,14 +9,13 @@ import {
 } from "date-fns"
 import { useEffect, useState } from "react"
 
+import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
 import { env } from "@/env"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   readingSessionSlice,
   selectSleepTimer,
 } from "@/store/slices/readingSessionSlice"
-
-import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import { popoverClassNames } from "./classNames"

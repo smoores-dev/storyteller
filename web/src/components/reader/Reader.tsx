@@ -12,6 +12,7 @@ import dynamic from "next/dynamic"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "@/cn"
+import { AudiobookCoverImage } from "@/components/books/BookThumbnailImage"
 import type { BookWithRelations } from "@/database/books"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import { nextPagePressed, previousPagePressed } from "@/store/actions"
@@ -33,8 +34,6 @@ import {
   selectReaderErrorMessage,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
-
-import { AudiobookCoverImage } from "../books/BookThumbnailImage"
 
 import { usePiPWindow } from "./PipProvider"
 import { MINI_PLAYER_HEIGHT, MINI_PLAYER_WIDTH } from "./constants"

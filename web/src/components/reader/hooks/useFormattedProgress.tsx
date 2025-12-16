@@ -1,6 +1,8 @@
 import { type Locator } from "@readium/shared"
 import { useEffect, useMemo, useState } from "react"
 
+import { getPositionsForTocItem } from "@/components/reader/BookService"
+import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
 import { useAppSelector } from "@/store/appState"
 import {
@@ -18,9 +20,6 @@ import {
   selectCurrentLocator,
   selectCurrentToCLocator,
 } from "@/store/slices/readingSessionSlice"
-
-import { getPositionsForTocItem } from "../BookService"
-import { formatTimeHuman } from "../preferenceItems/formatTime"
 
 export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
   const detailView = useAppSelector((state) =>

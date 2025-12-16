@@ -1,6 +1,6 @@
 import { join } from "node:path"
 
-import { env } from "@/env"
+import { env } from "./env"
 
 export const DATA_DIR = env.STORYTELLER_DATA_DIR
 

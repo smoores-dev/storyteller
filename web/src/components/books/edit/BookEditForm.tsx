@@ -6,6 +6,7 @@ import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { useRef, useState } from "react"
 
+import { DeleteBookModal } from "@/components/books/modals/DeleteBookModal"
 import { SaveState } from "@/components/forms"
 import {
   type BookWithRelations,
@@ -21,8 +22,6 @@ import {
   useListTagsQuery,
   useUpdateBookMutation,
 } from "@/store/api"
-
-import { DeleteBookModal } from "../modals/DeleteBookModal"
 
 import { AuthorsInput } from "./AuthorsInput"
 import { CollectionsInput } from "./CollectionsInput"

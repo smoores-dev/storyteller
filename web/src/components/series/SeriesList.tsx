@@ -3,11 +3,10 @@
 import { Group, Stack, Text } from "@mantine/core"
 import { useMemo } from "react"
 
+import { Search } from "@/components/books/Search"
+import { Sort } from "@/components/books/Sort"
 import { useFilterSortedSeries } from "@/hooks/useFilterSortedSeries"
 import { useListBooksQuery, useListSeriesQuery } from "@/store/api"
-
-import { Search } from "../books/Search"
-import { Sort } from "../books/Sort"
 
 import { SeriesGrid } from "./SeriesGrid"
 

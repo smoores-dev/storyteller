@@ -43,6 +43,7 @@ import classNames from "classnames"
 import { Fragment, useCallback, useState } from "react"
 
 import { cn } from "@/cn"
+import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   type FontFamily,
@@ -53,8 +54,6 @@ import {
   selectGlobalPreferences,
 } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
-
-import { useMenuToggle } from "../hooks/useMenuToggle"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import {

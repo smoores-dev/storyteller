@@ -1,4 +1,4 @@
-import { env } from "@/env"
+import { env } from "./env"
 
 // Definition: Contains the version of the web app.
 export function getCurrentVersion() {

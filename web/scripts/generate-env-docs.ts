@@ -8,7 +8,7 @@ import { join } from "node:path"
 
 import { z } from "zod"
 
-import { documentedServerEnvVars } from "../src/envSchema"
+import { documentedServerEnvVars } from "@/envSchema"
 
 const START_MARKER = "<!-- AUTO-GENERATED-ENV-VARS-START -->"
 const END_MARKER = "<!-- AUTO-GENERATED-ENV-VARS-END -->"

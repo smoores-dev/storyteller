@@ -5,20 +5,19 @@ import { isAnyOf } from "@reduxjs/toolkit"
 
 import { getApiUrlFromResourceHref } from "@/components/reader/BookService"
 import { AudioPlayer } from "@/services/AudioPlayerService"
-
 import {
   type SkipPartButtonPayload,
   navItemPressed,
   skipPartButtonHeld,
   skipPartButtonPressed,
   userRequestedTextNavigation,
-} from "../actions"
+} from "@/store/actions"
 import {
   selectCurrentBook,
   selectCurrentLocator,
   selectCurrentToCLocator,
   selectReadingMode,
-} from "../slices/readingSessionSlice"
+} from "@/store/slices/readingSessionSlice"
 
 import { handleChapterSkip, handleFragmentSkip } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"

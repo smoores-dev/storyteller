@@ -1,4 +1,4 @@
-import { env } from "@/env"
+import { env } from "./env"
 
 let _sharp: typeof import("sharp") | undefined
 

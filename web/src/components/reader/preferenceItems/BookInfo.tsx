@@ -2,6 +2,7 @@ import { Text } from "@mantine/core"
 import Link from "next/link"
 
 import { cn } from "@/cn"
+import { useFormattedProgress } from "@/components/reader/hooks/useFormattedProgress"
 import { type BookWithRelations } from "@/database/books"
 import { getCoverUrl } from "@/store/api"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
@@ -10,8 +11,6 @@ import {
   selectDetailView,
 } from "@/store/slices/preferencesSlice"
 import { selectReadingMode } from "@/store/slices/readingSessionSlice"
-
-import { useFormattedProgress } from "../hooks/useFormattedProgress"
 
 import { ScrollingTitle } from "./ScrollingTitle"
 

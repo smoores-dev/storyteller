@@ -15,7 +15,6 @@ import {
 import { getReaderKeyboardHotkeys } from "@/components/reader/hooks/useReaderKeyboard"
 import { isSameLocator } from "@/components/reader/locators"
 import { AudioPlayer } from "@/services/AudioPlayerService"
-
 import {
   bookLocatorChanged,
   nextPagePressed,
@@ -24,15 +23,15 @@ import {
   syncPosition,
   textNavigatedFromAudio,
   userRequestedTextNavigation,
-} from "../actions"
-import type { AppDispatch, RootState } from "../appState"
+} from "@/store/actions"
+import type { AppDispatch, RootState } from "@/store/appState"
 import {
   getActiveFrame,
   getNavigator,
   getPositions,
   getPublication,
-} from "../readerRegistry"
-import { selectPreference } from "../slices/preferencesSlice"
+} from "@/store/readerRegistry"
+import { selectPreference } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentBook,
@@ -41,7 +40,7 @@ import {
   selectDoubleClickTimeout,
   selectIsSyncing,
   selectReadingMode,
-} from "../slices/readingSessionSlice"
+} from "@/store/slices/readingSessionSlice"
 
 import {
   getGuidesForText,

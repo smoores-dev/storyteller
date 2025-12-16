@@ -10,8 +10,7 @@ import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { getAudioCoverFilepath } from "@/assets/covers"
 import { getProcessedAudioFilepath, shortenUuid } from "@/assets/paths"
 import { type BookWithRelations } from "@/database/books"
-
-import { processFile } from "../processAudio"
+import { processFile } from "@/process/processAudio"
 
 void describe("processFile", () => {
   void it("can process mpeg4 files", async () => {

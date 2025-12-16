@@ -9,6 +9,9 @@ import {
 import { useForm } from "@mantine/form"
 import { useRef, useState } from "react"
 
+import { ImportPathInput } from "@/components/ImportPathInput"
+import { UserSelect } from "@/components/books/edit/UserSelect"
+import { SaveState } from "@/components/forms"
 import {
   useCreateCollectionMutation,
   useGetCurrentUserQuery,
@@ -16,10 +19,6 @@ import {
   useListUsersQuery,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
-
-import { ImportPathInput } from "../ImportPathInput"
-import { UserSelect } from "../books/edit/UserSelect"
-import { SaveState } from "../forms"
 
 interface Props {
   isOpen: boolean

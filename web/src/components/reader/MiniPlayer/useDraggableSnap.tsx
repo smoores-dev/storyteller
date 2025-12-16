@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 
-import { getClientXY } from "../hooks/mouseHelpers"
+import { getClientXY } from "@/components/reader/hooks/mouseHelpers"
 
 import {
   type EdgePosition,

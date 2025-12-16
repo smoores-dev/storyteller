@@ -3,9 +3,8 @@ import { IconChevronLeft } from "@tabler/icons-react"
 import Link from "next/link"
 
 import { cn } from "@/cn"
+import { ResponsiveSettingsControls } from "@/components/reader/ResponsiveSettingsControls"
 import { type BookWithRelations } from "@/database/books"
-
-import { ResponsiveSettingsControls } from "../ResponsiveSettingsControls"
 
 type Props = {
   book: BookWithRelations

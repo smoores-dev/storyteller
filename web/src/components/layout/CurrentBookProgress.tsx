@@ -1,9 +1,8 @@
 import { Group, Image, RingProgress, Stack, Text, Title } from "@mantine/core"
 import Link from "next/link"
 
+import { ProcessingTaskTypes } from "@/components/books/BookStatus"
 import { getCoverUrl, useListBooksQuery } from "@/store/api"
-
-import { ProcessingTaskTypes } from "../books/BookStatus"
 
 export function CurrentBookProgress() {
   const { currentBook } = useListBooksQuery(undefined, {

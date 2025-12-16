@@ -1,4 +1,4 @@
-import { NAV_BAR_WIDTH } from "../constants"
+import { NAV_BAR_WIDTH } from "@/components/reader/constants"
 
 export type EdgePosition = {
   horizontalEdge: "left" | "right"

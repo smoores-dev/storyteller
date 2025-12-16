@@ -1,15 +1,14 @@
 import { isAnyOf } from "@reduxjs/toolkit"
 
 import { isSameLocator } from "@/components/reader/locators"
-
-import { serverPositionUpdated, syncPosition } from "../actions"
-import { api } from "../api"
-import { preferencesSlice } from "../slices/preferencesSlice"
+import { serverPositionUpdated, syncPosition } from "@/store/actions"
+import { api } from "@/store/api"
+import { preferencesSlice } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentLocator,
   selectCurrentSyncTimeout,
-} from "../slices/readingSessionSlice"
+} from "@/store/slices/readingSessionSlice"
 
 import { startAppListening } from "./listenerMiddleware"
 

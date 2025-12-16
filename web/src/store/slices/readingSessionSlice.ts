@@ -8,13 +8,12 @@ import {
 
 import { isSameLocator } from "@/components/reader/locators"
 import type { BookWithRelations } from "@/database/books"
-
-import type { RootState } from "../appState"
+import type { RootState } from "@/store/appState"
 import {
   getPublication,
   getTocItems,
   registerActiveFrame,
-} from "../readerRegistry"
+} from "@/store/readerRegistry"
 
 export type ReadingMode = "epub" | "audiobook" | "readaloud"
 

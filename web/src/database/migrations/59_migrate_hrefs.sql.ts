@@ -1,6 +1,5 @@
 import { db } from "@/database/connection"
-
-import { fromLegacyLocator } from "../positions"
+import { fromLegacyLocator } from "@/database/positions"
 
 export default async function migrate() {
   const positions = await db

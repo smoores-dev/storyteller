@@ -25,6 +25,19 @@ import { usePathname } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 
 import { cn } from "@/cn"
+import { AudiobookCoverImage } from "@/components/books/BookThumbnailImage"
+import { usePiPWindow } from "@/components/reader/PipProvider"
+import PiPWindow from "@/components/reader/PipWindow"
+import { ProgressBar } from "@/components/reader/ProgressBar"
+import { ResponsiveSettingsControls } from "@/components/reader/ResponsiveSettingsControls"
+import {
+  MINI_PLAYER_CARD_HEIGHT,
+  MINI_PLAYER_WIDTH,
+  NAV_BAR_WIDTH,
+} from "@/components/reader/constants"
+import { HoldButton } from "@/components/reader/preferenceItems/HoldButton"
+import { ScrollingTitle } from "@/components/reader/preferenceItems/ScrollingTitle"
+import { ToolbarIcon } from "@/components/reader/preferenceItems/ToolbarIcon"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import {
   closeMiniPlayer,
@@ -51,20 +64,6 @@ import {
   selectCurrentBook,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
-
-import { AudiobookCoverImage } from "../../books/BookThumbnailImage"
-import { usePiPWindow } from "../PipProvider"
-import PiPWindow from "../PipWindow"
-import { ProgressBar } from "../ProgressBar"
-import { ResponsiveSettingsControls } from "../ResponsiveSettingsControls"
-import {
-  MINI_PLAYER_CARD_HEIGHT,
-  MINI_PLAYER_WIDTH,
-  NAV_BAR_WIDTH,
-} from "../constants"
-import { HoldButton } from "../preferenceItems/HoldButton"
-import { ScrollingTitle } from "../preferenceItems/ScrollingTitle"
-import { ToolbarIcon } from "../preferenceItems/ToolbarIcon"
 
 import { MiniPlayerCircle } from "./MiniPlayerCircle"
 import {

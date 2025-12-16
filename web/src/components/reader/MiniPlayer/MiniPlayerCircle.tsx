@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "@/cn"
 import { AudiobookCoverImage } from "@/components/books/BookThumbnailImage"
+import { NAV_BAR_WIDTH } from "@/components/reader/constants"
 import { type BookWithRelations } from "@/database/books"
 import { useAppSelector } from "@/store/appState"
 import {
@@ -13,8 +14,6 @@ import {
   selectIsPlaying,
 } from "@/store/slices/audioPlayerSlice"
 import { type EdgePosition } from "@/store/slices/preferencesSlice"
-
-import { NAV_BAR_WIDTH } from "../constants"
 
 import { PlayerControls } from "./MiniPlayer"
 import { type Position, edgePositionToAbsolute } from "./positionFns"
