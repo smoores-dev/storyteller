@@ -89,6 +89,17 @@ export interface FilterSortOptions {
   }
 }
 
+function safeCreateLocale(book: BookWithRelations, fallback = "en") {
+  try {
+    return new Intl.Locale(book.language ?? fallback)
+  } catch {
+    console.error(
+      `Book ${book.title} has unparseable language: "${book.language}"`,
+    )
+    return new Intl.Locale(fallback)
+  }
+}
+
 export function useFilterSortedBooks(books: BookWithRelations[]): {
   books: BookWithRelations[]
   options: FilterSortOptions
@@ -265,11 +276,11 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
           case "title": {
             const firstTitle = createComparisonTitle(
               first.title,
-              new Intl.Locale(first.language ?? "en"),
+              safeCreateLocale(first, "en"),
             )
             const secondTitle = createComparisonTitle(
               second.title,
-              new Intl.Locale(second.language ?? "en"),
+              safeCreateLocale(second, "en"),
             )
             return firstTitle > secondTitle
               ? 1
