@@ -89,9 +89,10 @@ export interface FilterSortOptions {
   }
 }
 
-function safeCreateLocale(book: BookWithRelations, fallback = "en") {
+export function safeCreateLocale(book?: BookWithRelations, fallback = "en") {
+  if (!book) return new Intl.Locale("en")
   try {
-    return new Intl.Locale(book.language ?? fallback)
+    return new Intl.Locale(book.language || fallback)
   } catch {
     console.error(
       `Book ${book.title} has unparseable language: "${book.language}"`,
