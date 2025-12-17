@@ -24,6 +24,7 @@ import { type Collection } from "@/database/collections"
 import {
   type FilterSortOptions,
   createComparisonTitle,
+  safeCreateLocale,
 } from "@/hooks/useFilterSortedBooks"
 import { type UUID } from "@/uuid"
 
@@ -271,10 +272,9 @@ function ScrollNav({
     >
       {letters.map((letter) => {
         let firstBookIndex = books.findIndex((book) =>
-          createComparisonTitle(
-            book.title,
-            new Intl.Locale(book.language ?? "en"),
-          ).startsWith(letter.toLowerCase()),
+          createComparisonTitle(book.title, safeCreateLocale(book)).startsWith(
+            letter.toLowerCase(),
+          ),
         )
 
         firstBookIndex =
@@ -282,14 +282,10 @@ function ScrollNav({
             ? firstBookIndex
             : books.findLastIndex((book) =>
                 options.sort[1] === "asc"
-                  ? createComparisonTitle(
-                      book.title,
-                      new Intl.Locale(book.language ?? "en"),
-                    ) < letter.toLowerCase()
-                  : createComparisonTitle(
-                      book.title,
-                      new Intl.Locale(book.language ?? "en"),
-                    ) > letter.toLowerCase(),
+                  ? createComparisonTitle(book.title, safeCreateLocale(book)) <
+                    letter.toLowerCase()
+                  : createComparisonTitle(book.title, safeCreateLocale(book)) >
+                    letter.toLowerCase(),
               )
 
         const firstBook = books[firstBookIndex]

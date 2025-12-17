@@ -9,6 +9,7 @@ import {
   type BookSort,
   type FilterSortOptions,
   createComparisonTitle,
+  safeCreateLocale,
 } from "./useFilterSortedBooks"
 
 export type SeriesWithBooks = Series & { books: NewSeriesRelation[] }
@@ -76,11 +77,11 @@ export function useFilterSortedSeries(series: SeriesWithBooks[]): {
           case "title": {
             const firstTitle = createComparisonTitle(
               first.name,
-              new Intl.Locale(getFirstBook(first)?.language ?? "en"),
+              safeCreateLocale(getFirstBook(first)),
             )
             const secondTitle = createComparisonTitle(
               second.name,
-              new Intl.Locale(getFirstBook(second)?.language ?? "en"),
+              safeCreateLocale(getFirstBook(second)),
             )
             return firstTitle > secondTitle
               ? 1
