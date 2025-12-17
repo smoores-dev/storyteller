@@ -99,6 +99,7 @@
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.44.1",
+    "@storyteller-platform/eslint": "workspace:*",
     "@tsconfig/strictest": "^2.0.5",
     "@types/better-sqlite3": "^7.6.11",
     "@types/busboy": "^1",
@@ -115,6 +116,7 @@
     "autoprefixer": "^10.4.20",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
     "esbuild": "^0.25.9",
+    "eslint": "^8.0.0",
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "kysely-codegen": "^0.18.5",
     "next-openapi-gen": "^0.1.2",

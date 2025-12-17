@@ -24,11 +24,13 @@
     "prepack": "yarn build"
   },
   "devDependencies": {
+    "@storyteller-platform/eslint": "workspace:*",
     "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/mime-types": "^2",
     "@types/node": "^24.0.0",
     "@types/yazl": "^3",
+    "eslint": "^8.0.0",
     "markdown-toc": "^1.2.0",
     "remark-toc": "^9.0.0",
     "tsup": "^8.5.0",

@@ -31,5 +31,16 @@
   "cmake.configureOnOpen": false,
   "[nix]": {
     "editor.defaultFormatter": "jnoortheen.nix-ide"
-  }
+  },
+  "eslint.workingDirectories": [
+    "audiobook",
+    "config/eslint",
+    "config/tsup",
+    "docs",
+    "fs",
+    "mobile",
+    "path",
+    "web",
+    "."
+  ]
 }

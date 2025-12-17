@@ -15,9 +15,11 @@
     "prepack": "yarn build"
   },
   "devDependencies": {
+    "@storyteller-platform/eslint": "workspace:*",
     "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/node": "^24.0.0",
+    "eslint": "^8.0.0",
     "tsup": "^8.5.0"
   },
   "publishConfig": {

@@ -1,0 +1,26 @@
+{
+  "name": "@storyteller-platform/eslint",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./typescript": "./typescript.cjs",
+    "./base": "./base.cjs",
+    "./react": "./react.cjs"
+  },
+  "dependencies": {
+    "@dword-design/eslint-plugin-import-alias": "^5.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.50.0",
+    "@typescript-eslint/parser": "^8.50.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0"
+  },
+  "peerDependencies": {
+    "eslint": "^8.0.0",
+    "typescript": "*"
+  }
+}
