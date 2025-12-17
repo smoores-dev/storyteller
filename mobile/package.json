@@ -69,6 +69,7 @@
     "@babel/plugin-transform-shorthand-properties": "^7.23.3",
     "@babel/plugin-transform-template-literals": "^7.23.3",
     "@expo/config-plugins": "~9.0.0",
+    "@storyteller-platform/eslint": "workspace:*",
     "@tsconfig/strictest": "^2.0.1",
     "@types/base-64": "^1.0.0",
     "@types/react": "~18.3.12",
