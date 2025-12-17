@@ -99,7 +99,7 @@ const server = new Server({
       if (!isEpub && !isAudiobook) {
         return {
           status_code: 405,
-          body: "Invalid upload type. Expected application/epub, audio/*, or video/mp4.",
+          body: `Invalid upload type. Expected application/epub+zip, audio/*, or video/mp4, received "${upload.metadata["filetype"]}" from browser and "${lookupAudioMime(filename) ?? lookup(filename)}" from extension`,
         }
       }
 
