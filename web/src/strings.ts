@@ -11,3 +11,7 @@ export function formatBytes(bytes: number) {
   if (gigabytes < 1) return `${megabytes} MB`
   return `${gigabytes.toFixed(2)} GB`
 }
+
+// source: https://gist.github.com/fabiospampinato/d6d7ec6503f403532ab7b18e99cf9808
+export const emojiRegex =
+  /(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*/gu

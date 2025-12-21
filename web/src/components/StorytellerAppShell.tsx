@@ -39,6 +39,7 @@ import {
   useListCollectionsQuery,
 } from "@/store/api"
 import { useAppDispatch } from "@/store/appState"
+import { emojiRegex } from "@/strings"
 
 import { CreateCollectionModal } from "./collections/CreateCollectionModal"
 import { CurrentBookProgress } from "./layout/CurrentBookProgress"
@@ -156,11 +157,11 @@ export function StorytellerAppShell({
                   active={pathname === `/collections/none`}
                 />
                 {collections.map((collection) => {
-                  const match = collection.name.match(
-                    /(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*?(.*)/u,
-                  )
-                  const displayIcon = match ? match[1] : collection.name[0]
-                  const displayLabel = match ? match[2] : collection.name
+                  const match = collection.name.match(emojiRegex)
+                  const displayIcon = match ? match[0] : collection.name[0]
+                  const displayLabel = match
+                    ? collection.name.slice(match[0].length)
+                    : collection.name
 
                   return (
                     <NavLink
