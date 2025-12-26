@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/epub",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "type": "module",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
