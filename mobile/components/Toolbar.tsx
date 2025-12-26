@@ -1,349 +1,75 @@
-import { intervalToDuration, isFuture, isPast } from "date-fns"
+import { skipToken } from "@reduxjs/toolkit/query"
 import { Link } from "expo-router"
-import {
-  BookOpen,
-  Bookmark,
-  BookmarkCheck,
-  CaseSensitive,
-  ClockFading,
-  Gauge,
-  Headphones,
-  TableOfContents,
-} from "lucide-react-native"
-import { useEffect, useState } from "react"
-import { PixelRatio, StyleSheet, View } from "react-native"
-import ContextMenu from "react-native-context-menu-view"
+import { BookOpen, Headphones } from "lucide-react-native"
+import { View } from "react-native"
 
-import { useColorTheme } from "../hooks/useColorTheme"
-import { type ReadiumLocator } from "../modules/readium/src/Readium.types"
-import { useAppDispatch, useAppSelector } from "../store/appState"
+import { type Bookmark } from "@/database/bookmarks"
+import { useAppSelector } from "@/store/appState"
+import { useGetBookQuery } from "@/store/localApi"
 import {
-  getCurrentlyPlayingBook,
-  getLocator,
-  getSleepTimer,
-} from "../store/selectors/bookshelfSelectors"
-import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
-import { getOpenDialog } from "../store/selectors/toolbarSelectors"
-import { bookshelfSlice } from "../store/slices/bookshelfSlice"
-import { ToolbarDialog, toolbarSlice } from "../store/slices/toolbarSlice"
+  getCurrentlyPlayingBookUuid,
+  getCurrentlyPlayingFormat,
+} from "@/store/selectors/bookshelfSelectors"
 
-import { UIText } from "./UIText"
-import { Button } from "./ui/Button"
-import { spacing } from "./ui/tokens/spacing"
+import { BookmarkItem } from "./toolbarItems/BookmarkItem"
+import { NavigationItem } from "./toolbarItems/NavigationItem"
+import { SettingsItem } from "./toolbarItems/SettingsItem"
+import { SleepTimerItem } from "./toolbarItems/SleepTimerItem"
+import { SpeedItem } from "./toolbarItems/SpeedItem"
+import { Button } from "./ui/button"
+import { Icon } from "./ui/icon"
 
 type Props = {
   mode: "audio" | "text"
-  activeBookmarks: ReadiumLocator[]
+  activeBookmarks: Bookmark[]
 }
-
-function formatSleepTimer(sleepTimer: Date) {
-  const duration = intervalToDuration({
-    start: new Date(),
-    end: sleepTimer,
-  })
-  const minutes = String(
-    (duration.minutes ?? 0) + (duration.hours ? duration.hours * 60 : 0),
-  ).padStart(2, "0")
-  const seconds = String(duration.seconds ?? 0).padStart(2, "0")
-  return `${minutes}:${seconds}`
-}
-
-const MAX_FONT_SCALE = 1.75
 
 export function Toolbar({ mode, activeBookmarks }: Props) {
-  const book = useAppSelector(getCurrentlyPlayingBook)
-  const currentLocator = useAppSelector(
-    (state) => book && getLocator(state, book.id),
+  const bookUuid = useAppSelector(getCurrentlyPlayingBookUuid)
+  const selectedFormat = useAppSelector(getCurrentlyPlayingFormat)
+  const format = selectedFormat ?? "readaloud"
+
+  const { data: book } = useGetBookQuery(
+    bookUuid ? { uuid: bookUuid } : skipToken,
   )
-  const openDialog = useAppSelector(getOpenDialog)
-  const currentSpeed = useAppSelector(
-    (state) => book && getBookPlayerSpeed(state, book.id),
-  )
-
-  const sleepTimer = useAppSelector(getSleepTimer)
-
-  const [formattedSleepTimer, setFormattedSleepTimer] = useState<string | null>(
-    sleepTimer && isFuture(sleepTimer) ? formatSleepTimer(sleepTimer) : null,
-  )
-
-  useEffect(() => {
-    if (sleepTimer) {
-      const intervalId = setInterval(() => {
-        if (isPast(sleepTimer)) {
-          clearInterval(intervalId)
-          setFormattedSleepTimer(null)
-          return
-        }
-        setFormattedSleepTimer(formatSleepTimer(sleepTimer))
-      }, 500)
-      return () => clearInterval(intervalId)
-    } else {
-      setFormattedSleepTimer(null)
-    }
-    return () => {}
-  }, [sleepTimer])
-
-  const { foreground, surface } = useColorTheme()
-
-  const dispatch = useAppDispatch()
-
   if (!book) return null
 
   return (
     <>
-      <View style={styles.toolbar}>
-        {mode === "text" && (
-          <Button
-            chromeless
-            style={[
-              styles.toolbarButton,
-              openDialog === ToolbarDialog.SETTINGS && {
-                backgroundColor: surface,
-              },
-            ]}
-            onPress={() => {
-              dispatch(
-                toolbarSlice.actions.dialogToggled({
-                  dialog: ToolbarDialog.SETTINGS,
-                }),
-              )
-            }}
-          >
-            <CaseSensitive
-              style={{ marginBottom: -2, marginTop: 2 }}
-              color={foreground}
-            />
-          </Button>
-        )}
-        <ContextMenu
-          actions={[
-            {
-              title: "Off",
-            },
-            {
-              title: "5 Mins",
-            },
-            {
-              title: "10 Mins",
-            },
-            {
-              title: "15 Mins",
-            },
-            {
-              title: "30 Mins",
-            },
-            {
-              title: "45 Mins",
-            },
-            {
-              title: "60 Mins",
-            },
-            {
-              title: "90 Mins",
-            },
-            {
-              title: "120 Mins",
-            },
-            ...(__DEV__
-              ? [{ title: "5 seconds" }, { title: "30 seconds" }]
-              : []),
-          ]}
-          onPress={({ nativeEvent }) => {
-            const sleepTimer = new Date()
-            switch (nativeEvent.index) {
-              case 0: {
-                dispatch(
-                  bookshelfSlice.actions.sleepTimerSet({ sleepTimer: null }),
-                )
-                return
-              }
-              case 1: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 5)
-                break
-              }
-              case 2: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 10)
-                break
-              }
-              case 3: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 15)
-                break
-              }
-              case 4: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 30)
-                break
-              }
-              case 5: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 45)
-                break
-              }
-              case 6: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 60)
-                break
-              }
-              case 7: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 90)
-                break
-              }
-              case 8: {
-                sleepTimer.setMinutes(sleepTimer.getMinutes() + 120)
-                break
-              }
-              case 9: {
-                sleepTimer.setSeconds(sleepTimer.getSeconds() + 5)
-                break
-              }
-              case 10: {
-                sleepTimer.setSeconds(sleepTimer.getSeconds() + 30)
-                break
-              }
-              default: {
-                return
-              }
-            }
-            dispatch(bookshelfSlice.actions.sleepTimerSet({ sleepTimer }))
-          }}
-          dropdownMenuMode
-        >
-          {formattedSleepTimer ? (
-            <Button style={styles.sleepTimerCountdownButton} chromeless>
-              <UIText
-                minimumFontScale={1}
-                maxFontSizeMultiplier={MAX_FONT_SCALE}
-              >
-                {formattedSleepTimer}
-              </UIText>
-            </Button>
-          ) : (
-            <Button style={styles.toolbarButton} chromeless>
-              <ClockFading color={foreground} />
-            </Button>
-          )}
-        </ContextMenu>
-
-        <Button
-          style={[
-            styles.toolbarButton,
-            openDialog === ToolbarDialog.SPEED && { backgroundColor: surface },
-          ]}
-          chromeless
-          onPress={() => {
-            dispatch(
-              toolbarSlice.actions.dialogToggled({
-                dialog: ToolbarDialog.SPEED,
-              }),
-            )
-          }}
-        >
-          {currentSpeed === 1 ? (
-            <Gauge color={foreground} />
-          ) : (
-            <UIText
-              minimumFontScale={1}
-              maxFontSizeMultiplier={MAX_FONT_SCALE}
-              style={styles.playbackSpeedText}
+      <View className="flex-row items-center gap-1">
+        {mode === "text" && <SettingsItem />}
+        <SleepTimerItem />
+        <SpeedItem />
+        <NavigationItem mode={mode} />
+        <BookmarkItem activeBookmarks={activeBookmarks} />
+        {format === "readaloud" &&
+          (mode === "audio" ? (
+            <Link
+              asChild
+              replace
+              href={{
+                pathname: "/read/[uuid]",
+                params: { uuid: book.uuid, format },
+              }}
             >
-              {currentSpeed}x
-            </UIText>
-          )}
-        </Button>
-
-        <Button
-          chromeless
-          style={[
-            styles.toolbarButton,
-            openDialog === ToolbarDialog.TABLE_OF_CONTENTS && {
-              backgroundColor: surface,
-            },
-          ]}
-          onPress={() => {
-            dispatch(
-              toolbarSlice.actions.dialogToggled({
-                dialog: ToolbarDialog.TABLE_OF_CONTENTS,
-              }),
-            )
-          }}
-        >
-          <TableOfContents color={foreground} />
-        </Button>
-
-        <Button
-          style={styles.toolbarButton}
-          chromeless
-          onPress={() => {
-            if (activeBookmarks.length) {
-              dispatch(
-                bookshelfSlice.actions.bookmarksRemoved({
-                  bookId: book.id,
-                  locators: activeBookmarks,
-                }),
-              )
-            } else if (currentLocator) {
-              dispatch(
-                bookshelfSlice.actions.bookmarkAdded({
-                  bookId: book.id,
-                  locator: currentLocator.locator,
-                }),
-              )
-            }
-          }}
-        >
-          {activeBookmarks.length ? (
-            <BookmarkCheck color={foreground} />
+              <Button variant="ghost" size="icon">
+                <Icon as={BookOpen} size={24} />
+              </Button>
+            </Link>
           ) : (
-            <Bookmark color={foreground} />
-          )}
-        </Button>
-
-        {mode === "audio" ? (
-          <Link
-            asChild
-            replace
-            href={{ pathname: "/book/[id]", params: { id: book.id } }}
-          >
-            <Button chromeless style={styles.toolbarButton}>
-              <BookOpen color={foreground} />
-            </Button>
-          </Link>
-        ) : (
-          <Link asChild href={{ pathname: "/player" }}>
-            <Button chromeless style={styles.toolbarButton}>
-              <Headphones color={foreground} />
-            </Button>
-          </Link>
-        )}
+            <Link
+              asChild
+              href={{
+                pathname: "/listen/[uuid]",
+                params: { uuid: book.uuid, format },
+              }}
+            >
+              <Button variant="ghost" size="icon">
+                <Icon as={Headphones} size={24} />
+              </Button>
+            </Link>
+          ))}
       </View>
     </>
   )
 }
-
-const styles = StyleSheet.create({
-  toolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing["0.5"],
-  },
-  toolbarButton: {
-    minWidth: spacing[5],
-    paddingVertical: spacing[1],
-    paddingHorizontal: "auto",
-    borderRadius: 4,
-    alignItems: "center",
-  },
-  sleepTimerCountdownButton: {
-    width:
-      48 * Math.min(Math.max(PixelRatio.getFontScale(), 1), MAX_FONT_SCALE),
-    paddingHorizontal: "auto",
-    alignItems: "center",
-  },
-  playbackSpeedText: {
-    paddingHorizontal: spacing[1],
-    fontWeight: "bold",
-  },
-  toolbarLink: {
-    marginBottom: -spacing[1.5],
-  },
-  settingsButton: {
-    marginHorizontal: 0,
-  },
-})

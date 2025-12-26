@@ -1,31 +1,28 @@
+import { View } from "react-native"
 import { AnimatedCircularProgress } from "react-native-circular-progress"
 
-import { useColorTheme } from "../hooks/useColorTheme"
-import { ArrowDownIcon } from "../icons/ArrowDownIcon"
-import { useAppSelector } from "../store/appState"
-import { getBookDownloadProgress } from "../store/selectors/librarySelectors"
+import { useColorTheme } from "@/hooks/useColorTheme"
+import { ArrowDownIcon } from "@/icons/ArrowDownIcon"
 
 type Props = {
-  bookId: number
+  className?: string | undefined
+  progress: number
 }
 
-export function DownloadingIndicator({ bookId }: Props) {
+export function DownloadingIndicator({ className, progress }: Props) {
   const { foreground } = useColorTheme()
-  const downloadProgress = useAppSelector((state) =>
-    getBookDownloadProgress(state, bookId),
-  )
-
-  const downloadFill = Math.trunc((downloadProgress ?? 0) * 100)
 
   return (
-    <AnimatedCircularProgress
-      size={24}
-      width={2}
-      fill={downloadFill}
-      rotation={0}
-      tintColor={foreground}
-    >
-      {() => <ArrowDownIcon />}
-    </AnimatedCircularProgress>
+    <View {...(className && { className })}>
+      <AnimatedCircularProgress
+        size={24}
+        width={2}
+        fill={progress}
+        rotation={0}
+        tintColor={foreground}
+      >
+        {() => <ArrowDownIcon />}
+      </AnimatedCircularProgress>
+    </View>
   )
 }

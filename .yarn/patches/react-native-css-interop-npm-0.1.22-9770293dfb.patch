@@ -1,0 +1,26 @@
+diff --git a/babel.js b/babel.js
+index 5a8a29ba204e6a2bd4a74d4a30be2329bf94eaf5..d79f57460356f97e69f6470ab0d91d19e5bad8d5 100644
+--- a/babel.js
++++ b/babel.js
+@@ -9,7 +9,7 @@ module.exports = function () {
+           importSource: "react-native-css-interop",
+         },
+       ],
+-      "react-native-reanimated/plugin",
++      "react-native-worklets/plugin",
+     ],
+   };
+ };
+diff --git a/dist/runtime/native/api.js b/dist/runtime/native/api.js
+index 5ea02d81fd0954009978e04b12542e58a954af7e..92a1af486bfe61b116d0714b95d2217788a19fc9 100644
+--- a/dist/runtime/native/api.js
++++ b/dist/runtime/native/api.js
+@@ -24,7 +24,7 @@ const cssInterop = (baseComponent, mapping) => {
+     const type = (0, unwrap_components_1.getComponentType)(baseComponent);
+     if (type === "function") {
+         component = (props) => {
+-            return (0, native_interop_1.interop)(baseComponent, configs, props, undefined);
++            return (0, native_interop_1.interop)(baseComponent, configs, props, props.ref);
+         };
+     }
+     else {

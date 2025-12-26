@@ -4,6 +4,10 @@ build:
     - eas/checkout
 
     - run:
+        name: Pre-install patch package manifest
+        command: ./scripts/pre-install.mjs
+
+    - run:
         name: Focus install
         command: yarn workspaces focus @storyteller-platform/mobile
 

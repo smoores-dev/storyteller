@@ -1,3 +1,4 @@
+import { skipToken } from "@reduxjs/toolkit/query"
 import {
   type ReactNode,
   createContext,
@@ -15,13 +16,13 @@ import TrackPlayer, {
   useTrackPlayerEvents,
 } from "react-native-track-player"
 
-import { useAppSelector } from "../store/appState"
+import { useAppSelector } from "@/store/appState"
+import { useGetBookPreferencesQuery } from "@/store/localApi"
 import {
-  getCurrentlyPlayingBook,
+  getCurrentlyPlayingBookUuid,
   getIsAudioLoading,
-} from "../store/selectors/bookshelfSelectors"
-import { getBookPlayerSpeed } from "../store/selectors/preferencesSelectors"
-import { type BookshelfTrack } from "../store/slices/bookshelfSlice"
+} from "@/store/selectors/bookshelfSelectors"
+import { type BookshelfTrack } from "@/store/slices/bookshelfSlice"
 
 const events = [Event.PlaybackState, Event.PlaybackActiveTrackChanged]
 
@@ -116,10 +117,11 @@ export function AudioBookProvider({ children }: Props) {
 
   const { state: playerState } = usePlaybackState()
 
-  const book = useAppSelector(getCurrentlyPlayingBook)
-  const rate = useAppSelector(
-    (state) => (book && getBookPlayerSpeed(state, book.id)) ?? 1,
+  const bookUuid = useAppSelector(getCurrentlyPlayingBookUuid)
+  const { data: bookPreferences } = useGetBookPreferencesQuery(
+    bookUuid ? { uuid: bookUuid } : skipToken,
   )
+  const rate = bookPreferences?.audio?.speed ?? 1
 
   // If the player has transitioned from playing
   // into buffering (or ready, which it sometimos does

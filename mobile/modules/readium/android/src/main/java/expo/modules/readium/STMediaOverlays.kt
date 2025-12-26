@@ -1,40 +1,48 @@
 package expo.modules.readium
 
 import org.readium.r2.shared.Clip
+import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.MediaOverlayNode
+import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.util.Url
+import org.readium.r2.shared.util.fromEpubHref
 import java.io.Serializable
 import java.net.URI
 
-data class TextFragment(val href: String, val fragment: String) : Serializable {
+data class TextFragment(val href: Url, val fragment: String) : Serializable {
     var locator: Locator? = null
 }
 
-class STMediaOverlays(private val nodes: List<MediaOverlayNode> = listOf()) {
+@OptIn(InternalReadiumApi::class)
+class STMediaOverlays(val link: Link, private val nodes: List<MediaOverlayNode> = listOf()) {
     fun clip(ref: String): Clip? {
         val fragmentNode = findNode(ref, this.nodes)
         return fragmentNode?.clip
     }
 
+    fun clips(): List<Clip> {
+        val nodes = collectNodes(this.nodes)
+        return nodes.map { it.clip }
+    }
+
     fun fragments(): List<TextFragment> {
         val nodes = collectNodes(this.nodes)
-        return nodes.map { it.text }.mapNotNull { text: String ->
-            val components = text.split("#")
-            if (components.count() != 2) {
-                return@mapNotNull null
-            }
-            return@mapNotNull TextFragment(href = components[0], fragment = components[1])
+        return nodes.map { it.text }.mapNotNull { text: Url ->
+            val path = text.path ?: return@mapNotNull null
+            val href = Url.fromEpubHref(path) ?: return@mapNotNull null
+            val fragment = text.fragment ?: return@mapNotNull null
+            return@mapNotNull TextFragment(href = href, fragment = fragment)
         }
     }
 
     fun fragment(clipUrl: String, position: Double): TextFragment? {
         val node = findNode(clipUrl, position, this.nodes)
         val text = node?.text ?: return null
-        val components = text.split("#")
-        if (components.count() != 2) {
-            return null
-        }
-        return TextFragment(href = components[0], fragment = components[1])
+        val path = text.path ?: return null
+        val href = Url.fromEpubHref(path) ?: return null
+        val fragment = text.fragment ?: return null
+        return TextFragment(href = href, fragment = fragment)
     }
 
     private fun collectNodes(nodes: List<MediaOverlayNode>): List<MediaOverlayNode> {
@@ -52,7 +60,7 @@ class STMediaOverlays(private val nodes: List<MediaOverlayNode> = listOf()) {
         for (node in inNodes) {
             if (node.role.contains("section"))
                 return findNode(ref, node.children)
-            else if (ref == null || node.text.contains(ref))
+            else if (ref == null || node.text.fragment == ref)
                 return node
         }
         return null

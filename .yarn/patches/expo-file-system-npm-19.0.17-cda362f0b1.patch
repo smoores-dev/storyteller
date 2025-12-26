@@ -1,0 +1,21 @@
+diff --git a/package.json b/package.json
+index f391cafaa37baac86ab1d6d9138fd62b83cfda04..cfda7453ba9a8b4cbf32e0ae8e3f829be0e865bf 100644
+--- a/package.json
++++ b/package.json
+@@ -5,6 +5,16 @@
+   "main": "src/index.ts",
+   "types": "build/index.d.ts",
+   "sideEffects": false,
++  "exports": {
++    ".": {
++      "types": "./build/index.d.ts",
++      "default": "./src/index.ts"
++    },
++    "./legacy": {
++      "types": "./build/legacy/index.d.ts",
++      "default": "./src/legacy/index.ts"
++    }
++  },
+   "scripts": {
+     "build": "expo-module build",
+     "clean": "expo-module clean",

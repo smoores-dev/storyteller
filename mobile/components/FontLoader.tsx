@@ -1,130 +1,131 @@
 import * as DocumentPicker from "expo-document-picker"
-import * as FileSystem from "expo-file-system"
+import * as FileSystem from "expo-file-system/legacy"
 import * as Fonts from "expo-font"
 import { PlusIcon } from "lucide-react-native"
 import { useState } from "react"
 import { View } from "react-native"
 
-import { useColorTheme } from "../hooks/useColorTheme"
-import { useAppDispatch } from "../store/appState"
+import { getPreference } from "@/database/preferences"
+import { useUpdateGlobalPreferenceMutation } from "@/store/localApi"
 import {
   ensureFontsDirectory,
   getCustomFontUrl,
-} from "../store/persistence/fonts"
-import { preferencesSlice } from "../store/slices/preferencesSlice"
+} from "@/store/persistence/fonts"
 
-import { HeaderText } from "./HeaderText"
-import { UIText } from "./UIText"
-import { Button } from "./ui/Button"
-import { TextInput } from "./ui/TextInput"
-import { colors } from "./ui/tokens/colors"
-import { spacing } from "./ui/tokens/spacing"
+import { Stack } from "./ui/Stack"
+import { Button } from "./ui/button"
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from "./ui/dialog"
+import { Icon } from "./ui/icon"
+import { Input } from "./ui/input"
+import { Text } from "./ui/text"
 
 export function FontLoader() {
-  const { background, surface } = useColorTheme()
-  const dispatch = useAppDispatch()
-
   const [loadedFont, setLoadedFont] =
     useState<DocumentPicker.DocumentPickerAsset | null>(null)
+
+  const [updatePreference] = useUpdateGlobalPreferenceMutation()
+
   const [showFontName, setShowFontName] = useState(false)
   const [fontName, setFontName] = useState("")
 
   return (
-    <>
-      {showFontName && (
-        <View
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "2.5%",
-            width: "95%",
-            padding: spacing["1.5"],
-            borderRadius: spacing.borderRadius,
-            borderColor: surface,
-            borderWidth: 1,
-            gap: spacing[2],
-            transform: [{ translateY: -100 }],
-            backgroundColor: background,
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          className="w-full flex-row items-center sm:w-full"
+          variant="ghost"
+          size="icon"
+          onPress={async () => {
+            const result = await DocumentPicker.getDocumentAsync({
+              type: [
+                "application/x-font-ttf",
+                "font/ttf",
+                "application/x-font-otf",
+                "font/otf",
+              ],
+              copyToCacheDirectory: true,
+            })
+
+            const newFont = result.assets?.[0]
+            if (!newFont) return
+
+            setLoadedFont(newFont)
+            setShowFontName(true)
           }}
         >
-          <HeaderText>Adding new font</HeaderText>
-          <UIText>{loadedFont?.name}</UIText>
-          <UIText>Font name:</UIText>
-          <TextInput value={fontName} onChangeText={setFontName} />
-          <View
-            style={{ flexDirection: "row", justifyContent: "space-between" }}
-          >
-            <Button
-              onPress={() => {
-                setShowFontName(false)
-                setLoadedFont(null)
-                setFontName("")
-              }}
-            >
-              <UIText>Cancel</UIText>
-            </Button>
-            <Button
-              disabled={!fontName}
-              variant="primary"
-              onPress={async () => {
-                setShowFontName(false)
-                setLoadedFont(null)
-                setFontName("")
+          <Icon as={PlusIcon} size={16} />
+          <Text> Custom font</Text>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="w-screen max-w-[400px]">
+        {showFontName && (
+          <Stack className="gap-4">
+            <Text variant="h2">Adding new font</Text>
+            <Text className="font-semibold">{loadedFont?.name}</Text>
+            <Text>Font name:</Text>
+            <Input value={fontName} onChangeText={setFontName} />
+            <View className="flex-row justify-between">
+              <DialogClose asChild>
+                <Button
+                  variant="secondary"
+                  onPress={() => {
+                    setShowFontName(false)
+                    setLoadedFont(null)
+                    setFontName("")
+                  }}
+                >
+                  <Text>Cancel</Text>
+                </Button>
+              </DialogClose>
+              <DialogClose asChild>
+                <Button
+                  disabled={!fontName}
+                  onPress={async () => {
+                    setShowFontName(false)
+                    setLoadedFont(null)
+                    setFontName("")
 
-                if (!loadedFont) return
-                const customFontUrl = getCustomFontUrl(
-                  `${fontName}.${
-                    loadedFont.mimeType?.includes("ttf") ? "ttf" : "otf"
-                  }`,
-                )
+                    if (!loadedFont) return
 
-                await ensureFontsDirectory()
+                    const type = loadedFont.mimeType?.includes("ttf")
+                      ? "ttf"
+                      : "otf"
+                    const filename = `${fontName.replaceAll(" ", "_")}.${type}`
+                    const customFontUrl = getCustomFontUrl(filename)
 
-                await FileSystem.copyAsync({
-                  from: loadedFont.uri,
-                  to: customFontUrl,
-                })
+                    await ensureFontsDirectory()
 
-                await Fonts.loadAsync({
-                  [fontName]: { uri: customFontUrl },
-                })
+                    await FileSystem.copyAsync({
+                      from: loadedFont.uri,
+                      to: customFontUrl,
+                    })
 
-                dispatch(
-                  preferencesSlice.actions.customFontLoaded({
-                    fontUrl: customFontUrl,
-                  }),
-                )
-              }}
-            >
-              <UIText>Save</UIText>
-            </Button>
-          </View>
-        </View>
-      )}
-      <Button
-        style={{ flexDirection: "row", alignItems: "center" }}
-        chromeless
-        onPress={async () => {
-          const result = await DocumentPicker.getDocumentAsync({
-            type: [
-              "application/x-font-ttf",
-              "font/ttf",
-              "application/x-font-otf",
-              "font/otf",
-            ],
-            copyToCacheDirectory: true,
-          })
+                    await Fonts.loadAsync({
+                      [fontName]: { uri: customFontUrl },
+                    })
 
-          const newFont = result.assets?.[0]
-          if (!newFont) return
+                    const currentFonts = await getPreference("customFonts")
 
-          setLoadedFont(newFont)
-          setShowFontName(true)
-        }}
-      >
-        <PlusIcon color={colors.primary9} size={spacing[2]} />
-        <UIText style={{ color: colors.primary9 }}> Custom font</UIText>
-      </Button>
-    </>
+                    await updatePreference({
+                      name: "customFonts",
+                      value: [
+                        ...currentFonts,
+                        {
+                          name: fontName,
+                          filename,
+                          type,
+                        },
+                      ],
+                    })
+                  }}
+                >
+                  <Text>Save</Text>
+                </Button>
+              </DialogClose>
+            </View>
+          </Stack>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }

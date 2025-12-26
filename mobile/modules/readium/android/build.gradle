@@ -15,7 +15,7 @@ buildscript {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
   }
 
-  ext.readium_version = '2.4.3'
+  ext.readium_version = '3.1.2'
 }
 
 project.android {
@@ -34,6 +34,9 @@ android {
   }
   lintOptions {
     abortOnError false
+  }
+  compileOptions {
+    coreLibraryDesugaringEnabled true
   }
 }
 
@@ -55,4 +58,6 @@ dependencies {
   implementation 'org.jsoup:jsoup:1.18.3'
   implementation 'com.mcxiaoke.koi:async:0.5.5'
   implementation 'com.mcxiaoke.koi:core:0.5.5'
+
+  coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
 }

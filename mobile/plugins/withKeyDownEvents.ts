@@ -47,7 +47,7 @@ export default function withKeyDownEvents(
 
   @SuppressLint("VisibleForTests")
   private fun sendKeyEvent(keyCode: Int) {
-    val context = reactNativeHost.reactInstanceManager.currentReactContext
+    val context = getReactHost().currentReactContext
     if (context != null) {
       val params = Arguments.createMap()
       params.putInt("keyCode", keyCode)

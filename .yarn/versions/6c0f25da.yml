@@ -1,0 +1,5 @@
+releases:
+  "@storyteller-platform/mobile": major
+
+declined:
+  - "@storyteller-platform/web"

@@ -5,9 +5,11 @@ import {
   useContext,
   useMemo,
 } from "react"
-import { StyleSheet, View } from "react-native"
+import { View } from "react-native"
 
-import { Button, type ButtonProps } from "./Button"
+import { cn } from "@/lib/utils"
+
+import { Button, type ButtonProps } from "./button"
 
 type ButtonGroupContextValue = {
   onPress: (value: unknown) => void
@@ -43,7 +45,7 @@ export function ButtonGroup<Value>({
 
   return (
     <ButtonGroupContext.Provider value={contextValue}>
-      <View style={styles.group}>
+      <View className="flex-row">
         {children.map((child, i) => {
           if (children.length === 1) return child
           if (i === 0 && children.length > 1) {
@@ -77,33 +79,15 @@ export function ButtonGroupButton<Value>({
   return (
     <Button
       {...props}
-      style={{
-        ...(currentValue !== value && { backgroundColor: "transparent" }),
-        // This doesn't work for some reason that I can't understand,
-        // even if we change the Button styles to use border_____Radius,
-        // too
-        ...((neighbors === "right" || neighbors === "both") && {
-          borderTopRightRadius: 0,
-          borderBottomRightRadius: 0,
-        }),
-        ...((neighbors === "left" || neighbors === "both") && {
-          borderTopLeftRadius: 0,
-          borderBottomLeftRadius: 0,
-        }),
-      }}
+      className={cn({
+        "bg-transparent": currentValue !== value,
+        "rounded-br-none rounded-tr-none":
+          neighbors === "right" || neighbors === "both",
+        "rounded-bl-none rounded-tl-none":
+          neighbors === "left" || neighbors === "both",
+      })}
       onPress={() => onPress(value)}
-      variant={currentValue === value ? "primary" : "secondary"}
+      variant={currentValue === value ? "default" : "secondary"}
     />
   )
 }
-
-const styles = StyleSheet.create({
-  group: {
-    flexDirection: "row",
-  },
-  button: {
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-})

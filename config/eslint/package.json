@@ -8,7 +8,7 @@
     "./react": "./react.cjs"
   },
   "dependencies": {
-    "@dword-design/eslint-plugin-import-alias": "^5.0.0",
+    "@dword-design/eslint-plugin-import-alias": "patch:@dword-design/eslint-plugin-import-alias@npm%3A5.1.2#~/.yarn/patches/@dword-design-eslint-plugin-import-alias-npm-5.1.2-1b47891395.patch",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "eslint-config-prettier": "^10.1.8",

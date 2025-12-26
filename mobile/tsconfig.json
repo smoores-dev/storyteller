@@ -1,5 +1,34 @@
 {
-  "compilerOptions": {},
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "allowImportingTsExtensions": true
+  },
   "extends": ["expo/tsconfig.base", "@tsconfig/strictest"],
-  "exclude": ["babel.config.js", "ios", "android"]
+  "exclude": [
+    "babel.config.js",
+    "metro.config.js",
+    "tailwind.config.js",
+    "ios",
+    "android"
+  ],
+  "references": [
+    {
+      "path": "../web"
+    },
+    {
+      "path": "../audiobook"
+    },
+    {
+      "path": "../epub"
+    },
+    {
+      "path": "../path"
+    },
+    {
+      "path": "../fs"
+    }
+  ]
 }

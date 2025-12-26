@@ -6,9 +6,8 @@ import {
   type ViewStyle,
 } from "react-native"
 
-import { type HighlightTint } from "../../../colors"
-import { type Highlight } from "../../../store/slices/bookshelfSlice"
-import { type CustomFont } from "../../../store/slices/preferencesSlice"
+import { type Highlight } from "@/database/highlights"
+import { type CustomFont } from "@/database/preferencesTypes"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -36,6 +35,7 @@ export type ReadiumLocator = {
   type: string
   title?: string
   locations?: ReadiumLocation
+  target?: number // I don't know what this is but it shows up sometimes
   text?: {
     after?: string
     before?: string
@@ -238,17 +238,17 @@ export type ReadiumManifest = {
 
 export type EPUBViewProps = {
   style: StyleProp<ViewStyle>
-  bookId: number
-  locator: ReadiumLocator
+  bookUuid: UUID
+  locator: ReadiumLocator | null
   bookmarks: ReadiumLocator[]
   highlights: Highlight[]
   colorTheme: { foreground: string; background: string }
-  fontScale?: number
-  lineHeight?: number
-  textAlign?: "justify" | "left"
-  fontFamily?: string
-  readaloudColor?: HighlightTint
-  customFonts?: CustomFont[]
+  fontScale?: number | undefined
+  lineHeight?: number | undefined
+  textAlign?: "justify" | "left" | undefined
+  fontFamily?: string | undefined
+  readaloudColor?: string | undefined
+  customFonts?: CustomFont[] | undefined
   onHighlightTap?: (
     event: NativeSyntheticEvent<{ decoration: UUID; x: number; y: number }>,
   ) => void

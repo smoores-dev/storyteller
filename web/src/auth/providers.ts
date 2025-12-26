@@ -185,3 +185,5 @@ export const Providers = {
   zoho: Zoho,
   zoom: Zoom,
 }
+
+export { type PublicProvider } from "@auth/core/types"

@@ -1,41 +1,63 @@
+import { skipToken } from "@reduxjs/toolkit/query"
+import deepmerge from "deepmerge"
 import { dequal } from "dequal"
 import { Link } from "expo-router"
-import { PlusIcon } from "lucide-react-native"
 import { useMemo } from "react"
-import { Pressable, StyleSheet, View } from "react-native"
-import Select from "react-native-picker-select"
+import { Platform, Pressable, StyleSheet, View } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { formatNumber } from "../formatting"
-import { useColorTheme } from "../hooks/useColorTheme"
-import { useAppDispatch, useAppSelector } from "../store/appState"
+import { defaultPreferences } from "@/database/preferencesTypes"
+import { formatNumber } from "@/formatting"
+import { cn } from "@/lib/utils"
 import {
-  getFilledBookPreferences,
-  getGlobalPreferences,
-} from "../store/selectors/preferencesSelectors"
-import {
-  defaultPreferences,
-  preferencesSlice,
-} from "../store/slices/preferencesSlice"
+  useGetBookPreferencesQuery,
+  useGetGlobalPreferencesQuery,
+  useSetBookPreferencesAsDefaultsMutation,
+  useUpdateBookPreferenceMutation,
+  useUpdateGlobalPreferenceMutation,
+} from "@/store/localApi"
+import { type UUID } from "@/uuid"
 
-import { FontLoader } from "./FontLoader"
-import { HighlightColorPicker } from "./HighlightColorPicker"
-import { UIText } from "./UIText"
+import { ColorPickerDialog } from "./ColorPickerDialog"
+import { LoadingView } from "./LoadingView"
 import { ButtonGroup, ButtonGroupButton } from "./ui/ButtonGroup"
-import { Slider } from "./ui/Slider"
+import { Button } from "./ui/button"
+import {
+  NativeSelectScrollView,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select"
+import { Slider } from "./ui/slider"
+import { Text } from "./ui/text"
 import { colors } from "./ui/tokens/colors"
 import { fontSizes } from "./ui/tokens/fontSizes"
 import { spacing } from "./ui/tokens/spacing"
 
 type Props = {
-  bookId?: number
+  bookUuid?: UUID
 }
 
-export function ReadingSettings({ bookId }: Props) {
-  const globalPreferences = useAppSelector(getGlobalPreferences)
-  const preferences = useAppSelector((state) =>
-    bookId === undefined
-      ? globalPreferences
-      : getFilledBookPreferences(state, bookId),
+export function ReadingSettings({ bookUuid }: Props) {
+  const { data: globalPreferences } = useGetGlobalPreferencesQuery()
+
+  const { data: bookPreferences } = useGetBookPreferencesQuery(
+    bookUuid ? { uuid: bookUuid } : skipToken,
+  )
+
+  const [updateGlobalPreference] = useUpdateGlobalPreferenceMutation()
+  const [updateBookPreference] = useUpdateBookPreferenceMutation()
+  const [setBookPreferencesAsDefaults] =
+    useSetBookPreferencesAsDefaultsMutation()
+
+  const preferences = useMemo(
+    () =>
+      bookPreferences
+        ? globalPreferences && deepmerge(globalPreferences, bookPreferences)
+        : globalPreferences,
+    [globalPreferences, bookPreferences],
   )
 
   const dirty = useMemo(
@@ -43,382 +65,344 @@ export function ReadingSettings({ bookId }: Props) {
     [globalPreferences, preferences],
   )
 
-  const { foreground, dark } = useColorTheme()
-  const dispatch = useAppDispatch()
+  const typographyPreferencesAreDefaults = useMemo(
+    () => dequal(preferences?.typography, defaultPreferences.typography),
+    [preferences?.typography],
+  )
+
+  const insets = useSafeAreaInsets()
+  const contentInsets = {
+    top: insets.top,
+    bottom: Platform.select({
+      android: insets.bottom + 24,
+      default: insets.bottom,
+    }),
+    left: 12,
+    right: 12,
+  }
+
+  if (!preferences) return <LoadingView />
 
   return (
-    <View>
-      <UIText style={styles.subheading}>Appearance</UIText>
-      <View style={styles.field}>
-        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+    <View className="mt-8">
+      <Text variant="h2">Appearance</Text>
+      <View className="my-3 w-full flex-row items-center justify-between">
+        <Text maxFontSizeMultiplier={1} className="text-lg">
           Dark mode
-        </UIText>
+        </Text>
         <ButtonGroup
           value={preferences.darkMode}
-          onChange={(value: boolean | "auto") =>
-            dispatch(
-              preferencesSlice.actions.globalPreferencesUpdated({
-                darkMode: value,
-              }),
-            )
-          }
+          onChange={(value: boolean | "auto") => {
+            updateGlobalPreference({ name: "darkMode", value })
+          }}
         >
           <ButtonGroupButton value={false}>
-            <UIText maxFontSizeMultiplier={1}>Light</UIText>
+            <Text maxFontSizeMultiplier={1}>Light</Text>
           </ButtonGroupButton>
-          <ButtonGroupButton value={"auto"}>
-            <UIText maxFontSizeMultiplier={1}>Device</UIText>
+          <ButtonGroupButton value="auto">
+            <Text maxFontSizeMultiplier={1}>Device</Text>
           </ButtonGroupButton>
           <ButtonGroupButton value={true}>
-            <UIText maxFontSizeMultiplier={1}>Dark</UIText>
+            <Text maxFontSizeMultiplier={1}>Dark</Text>
           </ButtonGroupButton>
         </ButtonGroup>
       </View>
-      <View style={styles.field}>
-        <UIText style={styles.label}>Light theme</UIText>
+      <View className="my-3 w-full flex-row items-center justify-between">
+        <Text className="text-lg">Light theme</Text>
         <Select
-          darkTheme={dark}
-          value={preferences.lightTheme}
-          useNativeAndroidPickerStyle={false}
-          placeholder={{}}
-          onValueChange={(value) => {
-            dispatch(
-              preferencesSlice.actions.globalPreferencesUpdated({
-                lightTheme: value,
-              }),
-            )
+          value={{
+            value: preferences.lightTheme,
+            label: preferences.lightTheme,
           }}
-          items={preferences.colorThemes
-            .filter(({ isDark }) => !isDark)
-            .map(({ name }) => ({
-              label: name,
-              value: name,
-            }))}
-          style={{
-            inputIOS: {
-              color: foreground,
-              alignSelf: "flex-end",
-            },
-            inputAndroid: {
-              color: foreground,
-              alignSelf: "flex-end",
-            },
-            viewContainer: {
-              flexGrow: 1,
-              justifyContent: "center",
-            },
+          onValueChange={(option) => {
+            if (!option) return
+            updateGlobalPreference({ name: "lightTheme", value: option.value })
           }}
-        />
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="" />
+          </SelectTrigger>
+          <SelectContent insets={contentInsets}>
+            <NativeSelectScrollView>
+              {preferences.colorThemes
+                .filter(({ isDark }) => !isDark)
+                .map(({ name }) => (
+                  <SelectItem key={name} label={name} value={name} />
+                ))}
+            </NativeSelectScrollView>
+          </SelectContent>
+        </Select>
       </View>
-      <View style={styles.field}>
-        <UIText style={styles.label}>Dark theme</UIText>
+      <View className="my-3 w-full flex-row items-center justify-between">
+        <Text className="text-lg">Dark theme</Text>
         <Select
-          darkTheme={dark}
-          value={preferences.darkTheme}
-          useNativeAndroidPickerStyle={false}
-          placeholder={{}}
-          onValueChange={(value) => {
-            dispatch(
-              preferencesSlice.actions.globalPreferencesUpdated({
-                darkTheme: value,
-              }),
-            )
+          value={{
+            value: preferences.darkTheme,
+            label: preferences.darkTheme,
           }}
-          items={preferences.colorThemes
-            .filter(({ isDark }) => isDark)
-            .map(({ name }) => ({
-              label: name,
-              value: name,
-            }))}
-          style={{
-            inputIOS: {
-              color: foreground,
-              alignSelf: "flex-end",
-            },
-            inputAndroid: {
-              color: foreground,
-              alignSelf: "flex-end",
-            },
-            viewContainer: {
-              flexGrow: 1,
-              justifyContent: "center",
-            },
+          onValueChange={(option) => {
+            if (!option) return
+            updateGlobalPreference({ name: "darkTheme", value: option.value })
           }}
-        />
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="" />
+          </SelectTrigger>
+          <SelectContent insets={contentInsets}>
+            <NativeSelectScrollView>
+              {preferences.colorThemes
+                .filter(({ isDark }) => isDark)
+                .map(({ name }) => (
+                  <SelectItem key={name} label={name} value={name} />
+                ))}
+            </NativeSelectScrollView>
+          </SelectContent>
+        </Select>
       </View>
-      <Link
-        href="/custom-theme"
-        style={{ flexDirection: "row", alignItems: "center" }}
-      >
-        <PlusIcon color={colors.primary9} size={spacing[2]} />
-        <UIText style={{ color: colors.primary9 }}> Custom theme</UIText>
+      <Link href="/custom-theme" asChild>
+        <Button variant="ghost">
+          <Text className="text-primary group-active:text-primary/80">
+            Manage custom themes
+          </Text>
+        </Button>
       </Link>
-      <View style={[styles.field, { marginBottom: spacing[0.5] }]}>
-        <UIText maxFontSizeMultiplier={1} style={styles.label}>
-          Hide statusbar
-        </UIText>
-        <ButtonGroup
-          value={preferences.hideStatusbar.enabled}
-          onChange={(value) =>
-            dispatch(
-              preferencesSlice.actions.globalPreferencesUpdated({
-                hideStatusbar: {
-                  ...preferences.hideStatusbar,
-                  enabled: value,
-                },
-              }),
-            )
-          }
-        >
-          <ButtonGroupButton value={true}>
-            <UIText maxFontSizeMultiplier={1}>Enable</UIText>
-          </ButtonGroupButton>
-          <ButtonGroupButton value={false}>
-            <UIText maxFontSizeMultiplier={1}>Disable</UIText>
-          </ButtonGroupButton>
-        </ButtonGroup>
-      </View>
-      <View style={{ marginBottom: spacing[1.5] }}>
-        <UIText style={styles.explanation}>
-          While reading, a middle touch will hide the statusbar in addition to
-          the control interface.
-        </UIText>
-      </View>
-      <View
-        style={[
-          styles.field,
-          { flexDirection: "column", alignItems: "flex-start" },
-        ]}
-      >
-        <UIText style={styles.label}>Readaloud color</UIText>
-        <HighlightColorPicker
-          style={{ alignSelf: "flex-end" }}
-          value={preferences.readaloudColor}
-          onChange={(color) => {
-            dispatch(
-              preferencesSlice.actions.globalPreferencesUpdated({
-                readaloudColor: color,
-              }),
-            )
+      <View className="my-3 w-full flex-col items-start">
+        <Text className="text-lg">Readaloud color</Text>
+        <ColorPickerDialog
+          key={preferences.readaloudColor}
+          initialValue={preferences.readaloudColor}
+          onSave={(value) => {
+            updateGlobalPreference({ name: "readaloudColor", value })
           }}
         />
       </View>
-      <View
-        style={
-          bookId
-            ? styles.bookTypographyHeaderContainer
-            : styles.typographyHeaderContainer
-        }
-      >
-        <UIText style={styles.subheading}>
-          Typography{!bookId && " defaults"}
-        </UIText>
-        {bookId ? (
+      <View>
+        <Text variant="h2">Typography{!bookUuid && " defaults"}</Text>
+        {bookUuid ? (
           <View style={styles.typographyControls}>
-            <Pressable
+            <Button
               disabled={dirty}
+              variant="ghost"
+              size="sm"
               onPress={() => {
-                dispatch(
-                  preferencesSlice.actions.bookPreferencesSetAsDefaults({
-                    bookId,
-                  }),
-                )
+                setBookPreferencesAsDefaults({ bookUuid })
               }}
             >
-              <UIText
+              <Text
                 maxFontSizeMultiplier={1.5}
-                style={dirty ? styles.disabled : styles.pressable}
+                className={dirty ? "opacity-50" : "text-primary"}
               >
                 Set as defaults
-              </UIText>
-            </Pressable>
-            <Pressable
-              disabled={
-                preferences.typography === defaultPreferences.typography
-              }
+              </Text>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={typographyPreferencesAreDefaults}
               onPress={() => {
-                dispatch(
-                  preferencesSlice.actions.bookTypographyPreferencesReset({
-                    bookId,
-                  }),
-                )
+                updateBookPreference({
+                  bookUuid,
+                  name: "typography",
+                  value: {},
+                })
               }}
             >
-              <UIText
+              <Text
                 maxFontSizeMultiplier={1.5}
-                style={
-                  preferences.typography === defaultPreferences.typography
-                    ? styles.disabled
-                    : styles.pressable
+                className={
+                  typographyPreferencesAreDefaults
+                    ? "opacity-50"
+                    : "text-primary"
                 }
               >
                 Reset to defaults
-              </UIText>
-            </Pressable>
+              </Text>
+            </Button>
           </View>
         ) : (
           <Pressable
-            disabled={preferences.typography === defaultPreferences.typography}
+            disabled={typographyPreferencesAreDefaults}
             onPress={() => {
-              dispatch(preferencesSlice.actions.typographyPreferencesReset())
+              updateGlobalPreference({
+                name: "typography",
+                value: defaultPreferences.typography,
+              })
             }}
           >
-            <UIText
-              style={
-                preferences.typography === defaultPreferences.typography
-                  ? styles.disabled
-                  : styles.pressable
-              }
+            <Text
+              className={cn(
+                "my-2 self-end",
+                typographyPreferencesAreDefaults
+                  ? "opacity-50"
+                  : "text-primary",
+              )}
             >
               Reset
-            </UIText>
+            </Text>
           </Pressable>
         )}
       </View>
 
-      <View style={[styles.field, { gap: spacing[2] }]}>
-        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+      <View className="my-3 w-full flex-row items-center justify-between gap-4">
+        <Text maxFontSizeMultiplier={1} className="text-lg">
           Font scaling
-        </UIText>
+        </Text>
         <Slider
-          style={styles.slider}
+          className="h-2 grow"
           start={0.7}
           stop={2}
           step={0.05}
           value={preferences.typography.scale}
           onValueChange={(value) => {
             const update = {
-              typography: {
-                ...preferences.typography,
-                // Rounding to hundredths to account for floating point errors
-                scale: Math.round(value * 100) / 100,
-              },
+              ...preferences.typography,
+              // Rounding to hundredths to account for floating point errors
+              scale: Math.round(value * 100) / 100,
             }
-            const action = bookId
-              ? preferencesSlice.actions.bookPreferencesUpdated({
-                  bookId,
-                  prefs: update,
-                })
-              : preferencesSlice.actions.globalPreferencesUpdated(update)
-            dispatch(action)
+            if (bookUuid) {
+              updateBookPreference({
+                bookUuid,
+                name: "typography",
+                value: update,
+              })
+            } else {
+              updateGlobalPreference({ name: "typography", value: update })
+            }
           }}
         />
-        <UIText maxFontSizeMultiplier={1}>
+        <Text className="text-sm" maxFontSizeMultiplier={1}>
           {formatNumber(preferences.typography.scale, 2)}x
-        </UIText>
+        </Text>
       </View>
-      <View style={[styles.field, { gap: spacing[2] }]}>
-        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+      <View className="my-3 w-full flex-row items-center justify-between gap-4">
+        <Text maxFontSizeMultiplier={1} className="text-lg">
           Line height
-        </UIText>
+        </Text>
         <Slider
-          style={styles.slider}
+          className="h-2 grow"
           start={1.0}
           stop={2.0}
           step={0.05}
           value={preferences.typography.lineHeight}
           onValueChange={(value) => {
             const update = {
-              typography: {
-                ...preferences.typography,
-                // Rounding to hundredths to account for floating point errors
-                lineHeight: Math.round(value * 100) / 100,
-              },
+              ...preferences.typography,
+              // Rounding to hundredths to account for floating point errors
+              lineHeight: Math.round(value * 100) / 100,
             }
-            const action = bookId
-              ? preferencesSlice.actions.bookPreferencesUpdated({
-                  bookId,
-                  prefs: update,
-                })
-              : preferencesSlice.actions.globalPreferencesUpdated(update)
-            dispatch(action)
+            if (bookUuid) {
+              updateBookPreference({
+                bookUuid,
+                name: "typography",
+                value: update,
+              })
+            } else {
+              updateGlobalPreference({ name: "typography", value: update })
+            }
           }}
         />
-        <UIText maxFontSizeMultiplier={1} style={{ flexGrow: 1 }}>
+        <Text maxFontSizeMultiplier={1} className="text-sm">
           {formatNumber(preferences.typography.lineHeight, 2)}x
-        </UIText>
+        </Text>
       </View>
       <View style={styles.field}>
-        <UIText maxFontSizeMultiplier={1} style={styles.label}>
+        <Text maxFontSizeMultiplier={1} className="text-lg">
           Text alignment
-        </UIText>
+        </Text>
         <ButtonGroup
           value={preferences.typography.alignment}
           onChange={(value: "justify" | "left") => {
             const update = {
-              typography: {
-                ...preferences.typography,
-                alignment: value,
-              },
+              ...preferences.typography,
+              alignment: value,
             }
-            const action = bookId
-              ? preferencesSlice.actions.bookPreferencesUpdated({
-                  bookId,
-                  prefs: update,
-                })
-              : preferencesSlice.actions.globalPreferencesUpdated(update)
-            dispatch(action)
+            if (bookUuid) {
+              updateBookPreference({
+                bookUuid,
+                name: "typography",
+                value: update,
+              })
+            } else {
+              updateGlobalPreference({ name: "typography", value: update })
+            }
           }}
         >
           <ButtonGroupButton value="justify">
-            <UIText maxFontSizeMultiplier={1}>Justify</UIText>
+            <Text maxFontSizeMultiplier={1}>Justify</Text>
           </ButtonGroupButton>
           <ButtonGroupButton value="left">
-            <UIText maxFontSizeMultiplier={1}>Left</UIText>
+            <Text maxFontSizeMultiplier={1}>Left</Text>
           </ButtonGroupButton>
         </ButtonGroup>
       </View>
       <View style={styles.field}>
-        <UIText maxFontSizeMultiplier={1.25} style={styles.label}>
+        <Text maxFontSizeMultiplier={1.25} className="text-lg">
           Font family
-        </UIText>
+        </Text>
         <Select
-          placeholder={{}}
-          darkTheme={dark}
-          value={preferences.typography.fontFamily}
-          useNativeAndroidPickerStyle={false}
-          onValueChange={(value) => {
+          value={{
+            value: preferences.typography.fontFamily,
+            label: preferences.typography.fontFamily,
+          }}
+          onValueChange={(option) => {
+            if (!option) return
             const update = {
-              typography: {
-                ...preferences.typography,
-                fontFamily: value,
-              },
+              ...preferences.typography,
+              fontFamily: option.value,
             }
-            const action = bookId
-              ? preferencesSlice.actions.bookPreferencesUpdated({
-                  bookId,
-                  prefs: update,
-                })
-              : preferencesSlice.actions.globalPreferencesUpdated(update)
-            dispatch(action)
+            if (bookUuid) {
+              updateBookPreference({
+                bookUuid,
+                name: "typography",
+                value: update,
+              })
+            } else {
+              updateGlobalPreference({ name: "typography", value: update })
+            }
           }}
-          items={[
-            { label: "Literata", value: "Literata" },
-            { label: "OpenDyslexic", value: "OpenDyslexic" },
-            ...globalPreferences.customFonts.map((font) => ({
-              label: font.name,
-              value: font.name,
-            })),
-          ]}
-          style={{
-            inputIOS: {
-              color: foreground,
-              fontFamily: preferences.typography.fontFamily,
-              alignSelf: "flex-end",
-            },
-            inputAndroid: {
-              color: foreground,
-              fontFamily: preferences.typography.fontFamily,
-              alignSelf: "flex-end",
-            },
-            viewContainer: {
-              flexGrow: 1,
-              justifyContent: "center",
-            },
-          }}
-        />
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="" />
+          </SelectTrigger>
+          <SelectContent insets={contentInsets}>
+            <NativeSelectScrollView>
+              <SelectItem label="Literata" value="Literata">
+                <Text
+                  className="select-none text-sm"
+                  style={{ fontFamily: "Literata_500Medium" }}
+                >
+                  Literata
+                </Text>
+              </SelectItem>
+              <SelectItem label="OpenDyslexic" value="OpenDyslexic">
+                <Text
+                  className="select-none text-sm"
+                  style={{ fontFamily: "OpenDyslexic-Regular" }}
+                >
+                  OpenDyslexic
+                </Text>
+              </SelectItem>
+              {preferences.customFonts.map(({ name }) => (
+                <SelectItem key={name} label={name} value={name}>
+                  <Text
+                    className="select-none text-sm"
+                    style={{ fontFamily: name }}
+                  >
+                    {name}
+                  </Text>
+                </SelectItem>
+              ))}
+            </NativeSelectScrollView>
+          </SelectContent>
+        </Select>
       </View>
-      <FontLoader />
+      <Link href="custom-fonts" asChild>
+        <Button variant="ghost">
+          <Text className="text-primary group-active:text-primary/80">
+            Manage custom fonts
+          </Text>
+        </Button>
+      </Link>
     </View>
   )
 }
@@ -462,5 +446,4 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.6,
   },
-  slider: { height: spacing[2], flexGrow: 1 },
 })

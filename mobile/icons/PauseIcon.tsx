@@ -1,7 +1,7 @@
 import { View, type ViewProps } from "react-native"
 import { G, Path, Svg } from "react-native-svg"
 
-import { useColorTheme } from "../hooks/useColorTheme"
+import { useColorTheme } from "@/hooks/useColorTheme"
 
 type Props = {
   style?: ViewProps["style"]

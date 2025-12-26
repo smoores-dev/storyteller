@@ -1,7 +1,7 @@
 import { type StyleProp, View, type ViewStyle } from "react-native"
 import Svg, { G, Path } from "react-native-svg"
 
-import { useColorTheme } from "../hooks/useColorTheme"
+import { useColorTheme } from "@/hooks/useColorTheme"
 
 export function BookOpenIcon({ style }: { style?: StyleProp<ViewStyle> }) {
   const { foreground, background } = useColorTheme()

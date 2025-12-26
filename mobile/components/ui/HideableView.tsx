@@ -6,6 +6,7 @@ export type HidableViewProps = Omit<
   "aria-hidden" | "pointerEvents" | "importantForAccessibility"
 > & {
   hidden?: boolean
+  className?: string | undefined
 }
 
 export const HideableView = memo(

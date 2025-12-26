@@ -1,0 +1,13 @@
+diff --git a/dist/rules/prefer-alias.js b/dist/rules/prefer-alias.js
+index 7e05022aea6c52f96629e8dc0fd1c3e30c8c55be..093bb39d31783a5bd74cb158a299557568ebb409 100644
+--- a/dist/rules/prefer-alias.js
++++ b/dist/rules/prefer-alias.js
+@@ -65,7 +65,7 @@ export default {
+           });
+         }
+         const importWithoutAlias = resolvePath(sourcePath, currentFile, options);
+-        if (!(_importWithoutAlias = importWithoutAlias, isParentImport(_importWithoutAlias)) && hasAlias && !options.allowSubpathWithAlias) {
++        if (!(_importWithoutAlias = importWithoutAlias, isParentImport(_importWithoutAlias)) && hasAlias && !options.aliasForSubpaths) {
+           return context.report({
+             fix: fixer => fixer.replaceTextRange([node.source.range[0] + 1, node.source.range[1] - 1], importWithoutAlias),
+             message: `Unexpected subpath import via alias '${sourcePath}'. Use '${importWithoutAlias}' instead`,

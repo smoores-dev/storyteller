@@ -5,7 +5,7 @@ export function debounce<A extends unknown[]>(
 ): ((...args: A) => void) & {
   cancel: () => void
 } {
-  let timeout: NodeJS.Timeout | null
+  let timeout: number | null
   let isCancelled = false
 
   function debounced(this: unknown, ...args: A): void {

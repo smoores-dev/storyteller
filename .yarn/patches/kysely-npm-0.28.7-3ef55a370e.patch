@@ -1,0 +1,1856 @@
+diff --git a/dist/cjs/index.d.ts b/dist/cjs/index.d.ts
+index 3b7ba06a91d22e425c175d332debe4aa6fcb4561..80f81921d86b6e594c98572955f476855c802645 100644
+--- a/dist/cjs/index.d.ts
++++ b/dist/cjs/index.d.ts
+@@ -1,224 +1,279 @@
+-export * from './kysely.js';
+-export * from './query-creator.js';
+-export * from './expression/expression.js';
+-export { ExpressionBuilder, expressionBuilder, } from './expression/expression-builder.js';
+-export * from './expression/expression-wrapper.js';
+-export * from './query-builder/where-interface.js';
+-export * from './query-builder/returning-interface.js';
+-export * from './query-builder/output-interface.js';
+-export * from './query-builder/having-interface.js';
+-export * from './query-builder/order-by-interface.js';
+-export * from './query-builder/select-query-builder.js';
+-export * from './query-builder/insert-query-builder.js';
+-export * from './query-builder/update-query-builder.js';
+-export * from './query-builder/delete-query-builder.js';
+-export * from './query-builder/no-result-error.js';
+-export * from './query-builder/join-builder.js';
+-export * from './query-builder/function-module.js';
+-export * from './query-builder/insert-result.js';
+-export * from './query-builder/delete-result.js';
+-export * from './query-builder/update-result.js';
+-export * from './query-builder/on-conflict-builder.js';
+-export * from './query-builder/aggregate-function-builder.js';
+-export * from './query-builder/case-builder.js';
+-export * from './query-builder/json-path-builder.js';
+-export * from './query-builder/merge-query-builder.js';
+-export * from './query-builder/merge-result.js';
+-export * from './query-builder/order-by-item-builder.js';
+-export * from './raw-builder/raw-builder.js';
+-export * from './raw-builder/sql.js';
+-export * from './query-executor/query-executor.js';
+-export * from './query-executor/default-query-executor.js';
+-export * from './query-executor/noop-query-executor.js';
+-export * from './query-executor/query-executor-provider.js';
+-export * from './query-compiler/default-query-compiler.js';
+-export * from './query-compiler/compiled-query.js';
+-export * from './schema/schema.js';
+-export * from './schema/create-table-builder.js';
+-export * from './schema/create-type-builder.js';
+-export * from './schema/drop-table-builder.js';
+-export * from './schema/drop-type-builder.js';
+-export * from './schema/create-index-builder.js';
+-export * from './schema/drop-index-builder.js';
+-export * from './schema/create-schema-builder.js';
+-export * from './schema/drop-schema-builder.js';
+-export * from './schema/column-definition-builder.js';
+-export * from './schema/foreign-key-constraint-builder.js';
+-export * from './schema/alter-table-builder.js';
+-export * from './schema/create-view-builder.js';
+-export * from './schema/refresh-materialized-view-builder.js';
+-export * from './schema/drop-view-builder.js';
+-export * from './schema/alter-column-builder.js';
+-export * from './dynamic/dynamic.js';
+-export * from './dynamic/dynamic-reference-builder.js';
+-export * from './dynamic/dynamic-table-builder.js';
+-export * from './driver/driver.js';
+-export * from './driver/database-connection.js';
+-export * from './driver/connection-provider.js';
+-export * from './driver/default-connection-provider.js';
+-export * from './driver/single-connection-provider.js';
+-export * from './driver/dummy-driver.js';
+-export * from './dialect/dialect.js';
+-export * from './dialect/dialect-adapter.js';
+-export * from './dialect/dialect-adapter-base.js';
+-export * from './dialect/database-introspector.js';
+-export * from './dialect/sqlite/sqlite-dialect.js';
+-export * from './dialect/sqlite/sqlite-dialect-config.js';
+-export * from './dialect/sqlite/sqlite-driver.js';
+-export * from './dialect/postgres/postgres-query-compiler.js';
+-export * from './dialect/postgres/postgres-introspector.js';
+-export * from './dialect/postgres/postgres-adapter.js';
+-export * from './dialect/mysql/mysql-dialect.js';
+-export * from './dialect/mysql/mysql-dialect-config.js';
+-export * from './dialect/mysql/mysql-driver.js';
+-export * from './dialect/mysql/mysql-query-compiler.js';
+-export * from './dialect/mysql/mysql-introspector.js';
+-export * from './dialect/mysql/mysql-adapter.js';
+-export * from './dialect/postgres/postgres-driver.js';
+-export * from './dialect/postgres/postgres-dialect-config.js';
+-export * from './dialect/postgres/postgres-dialect.js';
+-export * from './dialect/sqlite/sqlite-query-compiler.js';
+-export * from './dialect/sqlite/sqlite-introspector.js';
+-export * from './dialect/sqlite/sqlite-adapter.js';
+-export * from './dialect/mssql/mssql-adapter.js';
+-export * from './dialect/mssql/mssql-dialect-config.js';
+-export * from './dialect/mssql/mssql-dialect.js';
+-export * from './dialect/mssql/mssql-driver.js';
+-export * from './dialect/mssql/mssql-introspector.js';
+-export * from './dialect/mssql/mssql-query-compiler.js';
+-export * from './query-compiler/default-query-compiler.js';
+-export * from './query-compiler/query-compiler.js';
+-export * from './migration/migrator.js';
+-export * from './migration/file-migration-provider.js';
+-export * from './plugin/kysely-plugin.js';
+-export * from './plugin/camel-case/camel-case-plugin.js';
+-export * from './plugin/deduplicate-joins/deduplicate-joins-plugin.js';
+-export * from './plugin/with-schema/with-schema-plugin.js';
+-export * from './plugin/parse-json-results/parse-json-results-plugin.js';
+-export * from './plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js';
+-export * from './plugin/handle-empty-in-lists/handle-empty-in-lists.js';
+-export * from './operation-node/add-column-node.js';
+-export * from './operation-node/add-constraint-node.js';
+-export * from './operation-node/add-index-node.js';
+-export * from './operation-node/aggregate-function-node.js';
+-export * from './operation-node/alias-node.js';
+-export * from './operation-node/alter-column-node.js';
+-export * from './operation-node/alter-table-node.js';
+-export * from './operation-node/and-node.js';
+-export * from './operation-node/binary-operation-node.js';
+-export * from './operation-node/case-node.js';
+-export * from './operation-node/cast-node.js';
+-export * from './operation-node/check-constraint-node.js';
+-export * from './operation-node/collate-node.js';
+-export * from './operation-node/column-definition-node.js';
+-export * from './operation-node/column-node.js';
+-export * from './operation-node/column-update-node.js';
+-export * from './operation-node/common-table-expression-name-node.js';
+-export * from './operation-node/common-table-expression-node.js';
+-export * from './operation-node/constraint-node.js';
+-export * from './operation-node/create-index-node.js';
+-export * from './operation-node/create-schema-node.js';
+-export * from './operation-node/create-table-node.js';
+-export * from './operation-node/create-type-node.js';
+-export * from './operation-node/create-view-node.js';
+-export * from './operation-node/refresh-materialized-view-node.js';
+-export * from './operation-node/data-type-node.js';
+-export * from './operation-node/default-insert-value-node.js';
+-export * from './operation-node/default-value-node.js';
+-export * from './operation-node/delete-query-node.js';
+-export * from './operation-node/drop-column-node.js';
+-export * from './operation-node/drop-constraint-node.js';
+-export * from './operation-node/drop-index-node.js';
+-export * from './operation-node/drop-schema-node.js';
+-export * from './operation-node/drop-table-node.js';
+-export * from './operation-node/drop-type-node.js';
+-export * from './operation-node/drop-view-node.js';
+-export * from './operation-node/explain-node.js';
+-export * from './operation-node/fetch-node.js';
+-export * from './operation-node/foreign-key-constraint-node.js';
+-export * from './operation-node/from-node.js';
+-export * from './operation-node/function-node.js';
+-export * from './operation-node/generated-node.js';
+-export * from './operation-node/group-by-item-node.js';
+-export * from './operation-node/group-by-node.js';
+-export * from './operation-node/having-node.js';
+-export * from './operation-node/identifier-node.js';
+-export * from './operation-node/insert-query-node.js';
+-export * from './operation-node/join-node.js';
+-export * from './operation-node/json-operator-chain-node.js';
+-export * from './operation-node/json-path-leg-node.js';
+-export * from './operation-node/json-path-node.js';
+-export * from './operation-node/json-reference-node.js';
+-export * from './operation-node/limit-node.js';
+-export * from './operation-node/list-node.js';
+-export * from './operation-node/matched-node.js';
+-export * from './operation-node/merge-query-node.js';
+-export * from './operation-node/modify-column-node.js';
+-export * from './operation-node/offset-node.js';
+-export * from './operation-node/on-conflict-node.js';
+-export * from './operation-node/on-duplicate-key-node.js';
+-export * from './operation-node/on-node.js';
+-export * from './operation-node/operation-node-source.js';
+-export * from './operation-node/operation-node-transformer.js';
+-export * from './operation-node/operation-node-visitor.js';
+-export * from './operation-node/operation-node.js';
+-export * from './operation-node/operator-node.js';
+-export * from './operation-node/or-action-node.js';
+-export * from './operation-node/or-node.js';
+-export * from './operation-node/order-by-item-node.js';
+-export * from './operation-node/order-by-node.js';
+-export * from './operation-node/output-node.js';
+-export * from './operation-node/over-node.js';
+-export * from './operation-node/parens-node.js';
+-export * from './operation-node/partition-by-item-node.js';
+-export * from './operation-node/partition-by-node.js';
+-export * from './operation-node/primary-key-constraint-node.js';
+-export * from './operation-node/primitive-value-list-node.js';
+-export * from './operation-node/query-node.js';
+-export * from './operation-node/raw-node.js';
+-export * from './operation-node/reference-node.js';
+-export * from './operation-node/references-node.js';
+-export * from './operation-node/rename-column-node.js';
+-export * from './operation-node/rename-constraint-node.js';
+-export * from './operation-node/returning-node.js';
+-export * from './operation-node/schemable-identifier-node.js';
+-export * from './operation-node/select-all-node.js';
+-export * from './operation-node/select-modifier-node.js';
+-export * from './operation-node/select-query-node.js';
+-export * from './operation-node/selection-node.js';
+-export * from './operation-node/set-operation-node.js';
+-export * from './operation-node/simple-reference-expression-node.js';
+-export * from './operation-node/table-node.js';
+-export * from './operation-node/top-node.js';
+-export * from './operation-node/tuple-node.js';
+-export * from './operation-node/unary-operation-node.js';
+-export * from './operation-node/unique-constraint-node.js';
+-export * from './operation-node/update-query-node.js';
+-export * from './operation-node/using-node.js';
+-export * from './operation-node/value-list-node.js';
+-export * from './operation-node/value-node.js';
+-export * from './operation-node/values-node.js';
+-export * from './operation-node/when-node.js';
+-export * from './operation-node/where-node.js';
+-export * from './operation-node/with-node.js';
+-export * from './util/column-type.js';
+-export * from './util/compilable.js';
+-export * from './util/explainable.js';
+-export * from './util/streamable.js';
+-export * from './util/log.js';
+-export { AnyAliasedColumn, AnyAliasedColumnWithTable, AnyColumn, AnyColumnWithTable, Equals, UnknownRow, Simplify, SqlBool, Nullable, NumbersWhenDataTypeNotAvailable, NotNull, NumericString, ShallowDehydrateObject, ShallowDehydrateValue, StringsWhenDataTypeNotAvailable, } from './util/type-utils.js';
+-export * from './util/infer-result.js';
+-export { logOnce } from './util/log-once.js';
+-export { createQueryId, QueryId } from './util/query-id.js';
+-export { SelectExpression, SelectCallback, SelectArg, Selection, CallbackSelection, } from './parser/select-parser.js';
+-export { ReferenceExpression, ReferenceExpressionOrList, SimpleReferenceExpression, StringReference, ExtractTypeFromStringReference, ExtractTypeFromReferenceExpression, } from './parser/reference-parser.js';
+-export { ValueExpression, ValueExpressionOrList, } from './parser/value-parser.js';
+-export { SimpleTableReference, TableExpression, TableExpressionOrList, } from './parser/table-parser.js';
+-export { JoinReferenceExpression, JoinCallbackExpression, } from './parser/join-parser.js';
+-export { InsertObject } from './parser/insert-values-parser.js';
+-export { UpdateObject } from './parser/update-set-parser.js';
+-export { OrderByExpression, OrderByDirectionExpression, OrderByModifiers, OrderByDirection, OrderByModifiersCallbackExpression, } from './parser/order-by-parser.js';
+-export { ComparisonOperatorExpression, OperandValueExpression, OperandValueExpressionOrList, FilterObject, } from './parser/binary-operation-parser.js';
+-export { ExistsExpression } from './parser/unary-operation-parser.js';
+-export { OperandExpression, ExpressionOrFactory, } from './parser/expression-parser.js';
+-export { Collation } from './parser/collate-parser.js';
++export * from "./kysely.js";
++export * from "./query-creator.js";
++export * from "./expression/expression.js";
++export {
++  ExpressionBuilder,
++  expressionBuilder,
++} from "./expression/expression-builder.js";
++export * from "./expression/expression-wrapper.js";
++export * from "./query-builder/where-interface.js";
++export * from "./query-builder/returning-interface.js";
++export * from "./query-builder/output-interface.js";
++export * from "./query-builder/having-interface.js";
++export * from "./query-builder/order-by-interface.js";
++export * from "./query-builder/select-query-builder.js";
++export * from "./query-builder/insert-query-builder.js";
++export * from "./query-builder/update-query-builder.js";
++export * from "./query-builder/delete-query-builder.js";
++export * from "./query-builder/no-result-error.js";
++export * from "./query-builder/join-builder.js";
++export * from "./query-builder/function-module.js";
++export * from "./query-builder/insert-result.js";
++export * from "./query-builder/delete-result.js";
++export * from "./query-builder/update-result.js";
++export * from "./query-builder/on-conflict-builder.js";
++export * from "./query-builder/aggregate-function-builder.js";
++export * from "./query-builder/case-builder.js";
++export * from "./query-builder/json-path-builder.js";
++export * from "./query-builder/merge-query-builder.js";
++export * from "./query-builder/merge-result.js";
++export * from "./query-builder/order-by-item-builder.js";
++export * from "./raw-builder/raw-builder.js";
++export * from "./raw-builder/sql.js";
++export * from "./query-executor/query-executor.js";
++export * from "./query-executor/default-query-executor.js";
++export * from "./query-executor/noop-query-executor.js";
++export * from "./query-executor/query-executor-provider.js";
++export * from "./query-compiler/default-query-compiler.js";
++export * from "./query-compiler/compiled-query.js";
++export * from "./schema/schema.js";
++export * from "./schema/create-table-builder.js";
++export * from "./schema/create-type-builder.js";
++export * from "./schema/drop-table-builder.js";
++export * from "./schema/drop-type-builder.js";
++export * from "./schema/create-index-builder.js";
++export * from "./schema/drop-index-builder.js";
++export * from "./schema/create-schema-builder.js";
++export * from "./schema/drop-schema-builder.js";
++export * from "./schema/column-definition-builder.js";
++export * from "./schema/foreign-key-constraint-builder.js";
++export * from "./schema/alter-table-builder.js";
++export * from "./schema/create-view-builder.js";
++export * from "./schema/refresh-materialized-view-builder.js";
++export * from "./schema/drop-view-builder.js";
++export * from "./schema/alter-column-builder.js";
++export * from "./dynamic/dynamic.js";
++export * from "./dynamic/dynamic-reference-builder.js";
++export * from "./dynamic/dynamic-table-builder.js";
++export * from "./driver/driver.js";
++export * from "./driver/database-connection.js";
++export * from "./driver/connection-provider.js";
++export * from "./driver/default-connection-provider.js";
++export * from "./driver/single-connection-provider.js";
++export * from "./driver/dummy-driver.js";
++export * from "./dialect/dialect.js";
++export * from "./dialect/dialect-adapter.js";
++export * from "./dialect/dialect-adapter-base.js";
++export * from "./dialect/database-introspector.js";
++export * from "./dialect/sqlite/sqlite-dialect.js";
++export * from "./dialect/sqlite/sqlite-dialect-config.js";
++export * from "./dialect/sqlite/sqlite-driver.js";
++export * from "./dialect/postgres/postgres-query-compiler.js";
++export * from "./dialect/postgres/postgres-introspector.js";
++export * from "./dialect/postgres/postgres-adapter.js";
++export * from "./dialect/mysql/mysql-dialect.js";
++export * from "./dialect/mysql/mysql-dialect-config.js";
++export * from "./dialect/mysql/mysql-driver.js";
++export * from "./dialect/mysql/mysql-query-compiler.js";
++export * from "./dialect/mysql/mysql-introspector.js";
++export * from "./dialect/mysql/mysql-adapter.js";
++export * from "./dialect/postgres/postgres-driver.js";
++export * from "./dialect/postgres/postgres-dialect-config.js";
++export * from "./dialect/postgres/postgres-dialect.js";
++export * from "./dialect/sqlite/sqlite-query-compiler.js";
++export * from "./dialect/sqlite/sqlite-introspector.js";
++export * from "./dialect/sqlite/sqlite-adapter.js";
++export * from "./dialect/mssql/mssql-adapter.js";
++export * from "./dialect/mssql/mssql-dialect-config.js";
++export * from "./dialect/mssql/mssql-dialect.js";
++export * from "./dialect/mssql/mssql-driver.js";
++export * from "./dialect/mssql/mssql-introspector.js";
++export * from "./dialect/mssql/mssql-query-compiler.js";
++export * from "./query-compiler/default-query-compiler.js";
++export * from "./query-compiler/query-compiler.js";
++export * from "./migration/migrator.js";
++export * from "./plugin/kysely-plugin.js";
++export * from "./plugin/camel-case/camel-case-plugin.js";
++export * from "./plugin/deduplicate-joins/deduplicate-joins-plugin.js";
++export * from "./plugin/with-schema/with-schema-plugin.js";
++export * from "./plugin/parse-json-results/parse-json-results-plugin.js";
++export * from "./plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js";
++export * from "./plugin/handle-empty-in-lists/handle-empty-in-lists.js";
++export * from "./operation-node/add-column-node.js";
++export * from "./operation-node/add-constraint-node.js";
++export * from "./operation-node/add-index-node.js";
++export * from "./operation-node/aggregate-function-node.js";
++export * from "./operation-node/alias-node.js";
++export * from "./operation-node/alter-column-node.js";
++export * from "./operation-node/alter-table-node.js";
++export * from "./operation-node/and-node.js";
++export * from "./operation-node/binary-operation-node.js";
++export * from "./operation-node/case-node.js";
++export * from "./operation-node/cast-node.js";
++export * from "./operation-node/check-constraint-node.js";
++export * from "./operation-node/collate-node.js";
++export * from "./operation-node/column-definition-node.js";
++export * from "./operation-node/column-node.js";
++export * from "./operation-node/column-update-node.js";
++export * from "./operation-node/common-table-expression-name-node.js";
++export * from "./operation-node/common-table-expression-node.js";
++export * from "./operation-node/constraint-node.js";
++export * from "./operation-node/create-index-node.js";
++export * from "./operation-node/create-schema-node.js";
++export * from "./operation-node/create-table-node.js";
++export * from "./operation-node/create-type-node.js";
++export * from "./operation-node/create-view-node.js";
++export * from "./operation-node/refresh-materialized-view-node.js";
++export * from "./operation-node/data-type-node.js";
++export * from "./operation-node/default-insert-value-node.js";
++export * from "./operation-node/default-value-node.js";
++export * from "./operation-node/delete-query-node.js";
++export * from "./operation-node/drop-column-node.js";
++export * from "./operation-node/drop-constraint-node.js";
++export * from "./operation-node/drop-index-node.js";
++export * from "./operation-node/drop-schema-node.js";
++export * from "./operation-node/drop-table-node.js";
++export * from "./operation-node/drop-type-node.js";
++export * from "./operation-node/drop-view-node.js";
++export * from "./operation-node/explain-node.js";
++export * from "./operation-node/fetch-node.js";
++export * from "./operation-node/foreign-key-constraint-node.js";
++export * from "./operation-node/from-node.js";
++export * from "./operation-node/function-node.js";
++export * from "./operation-node/generated-node.js";
++export * from "./operation-node/group-by-item-node.js";
++export * from "./operation-node/group-by-node.js";
++export * from "./operation-node/having-node.js";
++export * from "./operation-node/identifier-node.js";
++export * from "./operation-node/insert-query-node.js";
++export * from "./operation-node/join-node.js";
++export * from "./operation-node/json-operator-chain-node.js";
++export * from "./operation-node/json-path-leg-node.js";
++export * from "./operation-node/json-path-node.js";
++export * from "./operation-node/json-reference-node.js";
++export * from "./operation-node/limit-node.js";
++export * from "./operation-node/list-node.js";
++export * from "./operation-node/matched-node.js";
++export * from "./operation-node/merge-query-node.js";
++export * from "./operation-node/modify-column-node.js";
++export * from "./operation-node/offset-node.js";
++export * from "./operation-node/on-conflict-node.js";
++export * from "./operation-node/on-duplicate-key-node.js";
++export * from "./operation-node/on-node.js";
++export * from "./operation-node/operation-node-source.js";
++export * from "./operation-node/operation-node-transformer.js";
++export * from "./operation-node/operation-node-visitor.js";
++export * from "./operation-node/operation-node.js";
++export * from "./operation-node/operator-node.js";
++export * from "./operation-node/or-action-node.js";
++export * from "./operation-node/or-node.js";
++export * from "./operation-node/order-by-item-node.js";
++export * from "./operation-node/order-by-node.js";
++export * from "./operation-node/output-node.js";
++export * from "./operation-node/over-node.js";
++export * from "./operation-node/parens-node.js";
++export * from "./operation-node/partition-by-item-node.js";
++export * from "./operation-node/partition-by-node.js";
++export * from "./operation-node/primary-key-constraint-node.js";
++export * from "./operation-node/primitive-value-list-node.js";
++export * from "./operation-node/query-node.js";
++export * from "./operation-node/raw-node.js";
++export * from "./operation-node/reference-node.js";
++export * from "./operation-node/references-node.js";
++export * from "./operation-node/rename-column-node.js";
++export * from "./operation-node/rename-constraint-node.js";
++export * from "./operation-node/returning-node.js";
++export * from "./operation-node/schemable-identifier-node.js";
++export * from "./operation-node/select-all-node.js";
++export * from "./operation-node/select-modifier-node.js";
++export * from "./operation-node/select-query-node.js";
++export * from "./operation-node/selection-node.js";
++export * from "./operation-node/set-operation-node.js";
++export * from "./operation-node/simple-reference-expression-node.js";
++export * from "./operation-node/table-node.js";
++export * from "./operation-node/top-node.js";
++export * from "./operation-node/tuple-node.js";
++export * from "./operation-node/unary-operation-node.js";
++export * from "./operation-node/unique-constraint-node.js";
++export * from "./operation-node/update-query-node.js";
++export * from "./operation-node/using-node.js";
++export * from "./operation-node/value-list-node.js";
++export * from "./operation-node/value-node.js";
++export * from "./operation-node/values-node.js";
++export * from "./operation-node/when-node.js";
++export * from "./operation-node/where-node.js";
++export * from "./operation-node/with-node.js";
++export * from "./util/column-type.js";
++export * from "./util/compilable.js";
++export * from "./util/explainable.js";
++export * from "./util/streamable.js";
++export * from "./util/log.js";
++export {
++  AnyAliasedColumn,
++  AnyAliasedColumnWithTable,
++  AnyColumn,
++  AnyColumnWithTable,
++  Equals,
++  UnknownRow,
++  Simplify,
++  SqlBool,
++  Nullable,
++  NumbersWhenDataTypeNotAvailable,
++  NotNull,
++  NumericString,
++  ShallowDehydrateObject,
++  ShallowDehydrateValue,
++  StringsWhenDataTypeNotAvailable,
++} from "./util/type-utils.js";
++export * from "./util/infer-result.js";
++export { logOnce } from "./util/log-once.js";
++export { createQueryId, QueryId } from "./util/query-id.js";
++export {
++  SelectExpression,
++  SelectCallback,
++  SelectArg,
++  Selection,
++  CallbackSelection,
++} from "./parser/select-parser.js";
++export {
++  ReferenceExpression,
++  ReferenceExpressionOrList,
++  SimpleReferenceExpression,
++  StringReference,
++  ExtractTypeFromStringReference,
++  ExtractTypeFromReferenceExpression,
++} from "./parser/reference-parser.js";
++export {
++  ValueExpression,
++  ValueExpressionOrList,
++} from "./parser/value-parser.js";
++export {
++  SimpleTableReference,
++  TableExpression,
++  TableExpressionOrList,
++} from "./parser/table-parser.js";
++export {
++  JoinReferenceExpression,
++  JoinCallbackExpression,
++} from "./parser/join-parser.js";
++export { InsertObject } from "./parser/insert-values-parser.js";
++export { UpdateObject } from "./parser/update-set-parser.js";
++export {
++  OrderByExpression,
++  OrderByDirectionExpression,
++  OrderByModifiers,
++  OrderByDirection,
++  OrderByModifiersCallbackExpression,
++} from "./parser/order-by-parser.js";
++export {
++  ComparisonOperatorExpression,
++  OperandValueExpression,
++  OperandValueExpressionOrList,
++  FilterObject,
++} from "./parser/binary-operation-parser.js";
++export { ExistsExpression } from "./parser/unary-operation-parser.js";
++export {
++  OperandExpression,
++  ExpressionOrFactory,
++} from "./parser/expression-parser.js";
++export { Collation } from "./parser/collate-parser.js";
+diff --git a/dist/cjs/index.js b/dist/cjs/index.js
+index c2dc3eb189ab131786e42858be5207747052a378..3637cbf712cba0949af9f55820ec9cfe860fe075 100644
+--- a/dist/cjs/index.js
++++ b/dist/cjs/index.js
+@@ -1,25 +1,46 @@
+ "use strict";
+-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+-    if (k2 === undefined) k2 = k;
+-    var desc = Object.getOwnPropertyDescriptor(m, k);
+-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+-      desc = { enumerable: true, get: function() { return m[k]; } };
+-    }
+-    Object.defineProperty(o, k2, desc);
+-}) : (function(o, m, k, k2) {
+-    if (k2 === undefined) k2 = k;
+-    o[k2] = m[k];
+-}));
+-var __exportStar = (this && this.__exportStar) || function(m, exports) {
+-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+-};
++var __createBinding =
++  (this && this.__createBinding) ||
++  (Object.create
++    ? function (o, m, k, k2) {
++        if (k2 === undefined) k2 = k;
++        var desc = Object.getOwnPropertyDescriptor(m, k);
++        if (
++          !desc ||
++          ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)
++        ) {
++          desc = {
++            enumerable: true,
++            get: function () {
++              return m[k];
++            },
++          };
++        }
++        Object.defineProperty(o, k2, desc);
++      }
++    : function (o, m, k, k2) {
++        if (k2 === undefined) k2 = k;
++        o[k2] = m[k];
++      });
++var __exportStar =
++  (this && this.__exportStar) ||
++  function (m, exports) {
++    for (var p in m)
++      if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p))
++        __createBinding(exports, m, p);
++  };
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.createQueryId = exports.logOnce = exports.expressionBuilder = void 0;
+ __exportStar(require("./kysely.js"), exports);
+ __exportStar(require("./query-creator.js"), exports);
+ __exportStar(require("./expression/expression.js"), exports);
+ var expression_builder_js_1 = require("./expression/expression-builder.js");
+-Object.defineProperty(exports, "expressionBuilder", { enumerable: true, get: function () { return expression_builder_js_1.expressionBuilder; } });
++Object.defineProperty(exports, "expressionBuilder", {
++  enumerable: true,
++  get: function () {
++    return expression_builder_js_1.expressionBuilder;
++  },
++});
+ __exportStar(require("./expression/expression-wrapper.js"), exports);
+ __exportStar(require("./query-builder/where-interface.js"), exports);
+ __exportStar(require("./query-builder/returning-interface.js"), exports);
+@@ -107,14 +128,25 @@ __exportStar(require("./dialect/mssql/mssql-query-compiler.js"), exports);
+ __exportStar(require("./query-compiler/default-query-compiler.js"), exports);
+ __exportStar(require("./query-compiler/query-compiler.js"), exports);
+ __exportStar(require("./migration/migrator.js"), exports);
+-__exportStar(require("./migration/file-migration-provider.js"), exports);
+ __exportStar(require("./plugin/kysely-plugin.js"), exports);
+ __exportStar(require("./plugin/camel-case/camel-case-plugin.js"), exports);
+-__exportStar(require("./plugin/deduplicate-joins/deduplicate-joins-plugin.js"), exports);
++__exportStar(
++  require("./plugin/deduplicate-joins/deduplicate-joins-plugin.js"),
++  exports,
++);
+ __exportStar(require("./plugin/with-schema/with-schema-plugin.js"), exports);
+-__exportStar(require("./plugin/parse-json-results/parse-json-results-plugin.js"), exports);
+-__exportStar(require("./plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js"), exports);
+-__exportStar(require("./plugin/handle-empty-in-lists/handle-empty-in-lists.js"), exports);
++__exportStar(
++  require("./plugin/parse-json-results/parse-json-results-plugin.js"),
++  exports,
++);
++__exportStar(
++  require("./plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js"),
++  exports,
++);
++__exportStar(
++  require("./plugin/handle-empty-in-lists/handle-empty-in-lists.js"),
++  exports,
++);
+ __exportStar(require("./operation-node/add-column-node.js"), exports);
+ __exportStar(require("./operation-node/add-constraint-node.js"), exports);
+ __exportStar(require("./operation-node/add-index-node.js"), exports);
+@@ -131,15 +163,24 @@ __exportStar(require("./operation-node/collate-node.js"), exports);
+ __exportStar(require("./operation-node/column-definition-node.js"), exports);
+ __exportStar(require("./operation-node/column-node.js"), exports);
+ __exportStar(require("./operation-node/column-update-node.js"), exports);
+-__exportStar(require("./operation-node/common-table-expression-name-node.js"), exports);
+-__exportStar(require("./operation-node/common-table-expression-node.js"), exports);
++__exportStar(
++  require("./operation-node/common-table-expression-name-node.js"),
++  exports,
++);
++__exportStar(
++  require("./operation-node/common-table-expression-node.js"),
++  exports,
++);
+ __exportStar(require("./operation-node/constraint-node.js"), exports);
+ __exportStar(require("./operation-node/create-index-node.js"), exports);
+ __exportStar(require("./operation-node/create-schema-node.js"), exports);
+ __exportStar(require("./operation-node/create-table-node.js"), exports);
+ __exportStar(require("./operation-node/create-type-node.js"), exports);
+ __exportStar(require("./operation-node/create-view-node.js"), exports);
+-__exportStar(require("./operation-node/refresh-materialized-view-node.js"), exports);
++__exportStar(
++  require("./operation-node/refresh-materialized-view-node.js"),
++  exports,
++);
+ __exportStar(require("./operation-node/data-type-node.js"), exports);
+ __exportStar(require("./operation-node/default-insert-value-node.js"), exports);
+ __exportStar(require("./operation-node/default-value-node.js"), exports);
+@@ -153,7 +194,10 @@ __exportStar(require("./operation-node/drop-type-node.js"), exports);
+ __exportStar(require("./operation-node/drop-view-node.js"), exports);
+ __exportStar(require("./operation-node/explain-node.js"), exports);
+ __exportStar(require("./operation-node/fetch-node.js"), exports);
+-__exportStar(require("./operation-node/foreign-key-constraint-node.js"), exports);
++__exportStar(
++  require("./operation-node/foreign-key-constraint-node.js"),
++  exports,
++);
+ __exportStar(require("./operation-node/from-node.js"), exports);
+ __exportStar(require("./operation-node/function-node.js"), exports);
+ __exportStar(require("./operation-node/generated-node.js"), exports);
+@@ -177,7 +221,10 @@ __exportStar(require("./operation-node/on-conflict-node.js"), exports);
+ __exportStar(require("./operation-node/on-duplicate-key-node.js"), exports);
+ __exportStar(require("./operation-node/on-node.js"), exports);
+ __exportStar(require("./operation-node/operation-node-source.js"), exports);
+-__exportStar(require("./operation-node/operation-node-transformer.js"), exports);
++__exportStar(
++  require("./operation-node/operation-node-transformer.js"),
++  exports,
++);
+ __exportStar(require("./operation-node/operation-node-visitor.js"), exports);
+ __exportStar(require("./operation-node/operation-node.js"), exports);
+ __exportStar(require("./operation-node/operator-node.js"), exports);
+@@ -190,7 +237,10 @@ __exportStar(require("./operation-node/over-node.js"), exports);
+ __exportStar(require("./operation-node/parens-node.js"), exports);
+ __exportStar(require("./operation-node/partition-by-item-node.js"), exports);
+ __exportStar(require("./operation-node/partition-by-node.js"), exports);
+-__exportStar(require("./operation-node/primary-key-constraint-node.js"), exports);
++__exportStar(
++  require("./operation-node/primary-key-constraint-node.js"),
++  exports,
++);
+ __exportStar(require("./operation-node/primitive-value-list-node.js"), exports);
+ __exportStar(require("./operation-node/query-node.js"), exports);
+ __exportStar(require("./operation-node/raw-node.js"), exports);
+@@ -205,7 +255,10 @@ __exportStar(require("./operation-node/select-modifier-node.js"), exports);
+ __exportStar(require("./operation-node/select-query-node.js"), exports);
+ __exportStar(require("./operation-node/selection-node.js"), exports);
+ __exportStar(require("./operation-node/set-operation-node.js"), exports);
+-__exportStar(require("./operation-node/simple-reference-expression-node.js"), exports);
++__exportStar(
++  require("./operation-node/simple-reference-expression-node.js"),
++  exports,
++);
+ __exportStar(require("./operation-node/table-node.js"), exports);
+ __exportStar(require("./operation-node/top-node.js"), exports);
+ __exportStar(require("./operation-node/tuple-node.js"), exports);
+@@ -226,6 +279,16 @@ __exportStar(require("./util/streamable.js"), exports);
+ __exportStar(require("./util/log.js"), exports);
+ __exportStar(require("./util/infer-result.js"), exports);
+ var log_once_js_1 = require("./util/log-once.js");
+-Object.defineProperty(exports, "logOnce", { enumerable: true, get: function () { return log_once_js_1.logOnce; } });
++Object.defineProperty(exports, "logOnce", {
++  enumerable: true,
++  get: function () {
++    return log_once_js_1.logOnce;
++  },
++});
+ var query_id_js_1 = require("./util/query-id.js");
+-Object.defineProperty(exports, "createQueryId", { enumerable: true, get: function () { return query_id_js_1.createQueryId; } });
++Object.defineProperty(exports, "createQueryId", {
++  enumerable: true,
++  get: function () {
++    return query_id_js_1.createQueryId;
++  },
++});
+diff --git a/dist/cjs/migration/file-migration-provider.d.ts b/dist/cjs/migration/file-migration-provider.d.ts
+deleted file mode 100644
+index 137936f83bf52e0bff73691db6f0fe5355828dce..0000000000000000000000000000000000000000
+--- a/dist/cjs/migration/file-migration-provider.d.ts
++++ /dev/null
+@@ -1,48 +0,0 @@
+-import { Migration, MigrationProvider } from './migrator.js';
+-/**
+- * Reads all migrations from a folder in node.js.
+- *
+- * ### Examples
+- *
+- * ```ts
+- * import { promises as fs } from 'node:fs'
+- * import path from 'node:path'
+- *
+- * new FileMigrationProvider({
+- *   fs,
+- *   path,
+- *   migrationFolder: 'path/to/migrations/folder'
+- * })
+- * ```
+- */
+-export declare class FileMigrationProvider implements MigrationProvider {
+-    #private;
+-    constructor(props: FileMigrationProviderProps);
+-    /**
+-     * Returns all migrations, old and new.
+-     *
+-     * For example if you have your migrations in a folder as separate files,
+-     * you can implement this method to return all migration in that folder
+-     * as {@link Migration} objects.
+-     *
+-     * Kysely already has a built-in {@link FileMigrationProvider} for node.js
+-     * that does exactly that.
+-     *
+-     * The keys of the returned object are migration names and values are the
+-     * migrations. The order of the migrations is determined by the alphabetical
+-     * order of the migration names. The items in the object don't need to be
+-     * sorted, they are sorted by Kysely.
+-     */
+-    getMigrations(): Promise<Record<string, Migration>>;
+-}
+-export interface FileMigrationProviderFS {
+-    readdir(path: string): Promise<string[]>;
+-}
+-export interface FileMigrationProviderPath {
+-    join(...path: string[]): string;
+-}
+-export interface FileMigrationProviderProps {
+-    fs: FileMigrationProviderFS;
+-    path: FileMigrationProviderPath;
+-    migrationFolder: string;
+-}
+diff --git a/dist/cjs/migration/file-migration-provider.js b/dist/cjs/migration/file-migration-provider.js
+deleted file mode 100644
+index 260b482e6bc928a3235897bf368a9a843a19bb6b..0000000000000000000000000000000000000000
+--- a/dist/cjs/migration/file-migration-provider.js
++++ /dev/null
+@@ -1,52 +0,0 @@
+-"use strict";
+-Object.defineProperty(exports, "__esModule", { value: true });
+-exports.FileMigrationProvider = void 0;
+-const object_utils_js_1 = require("../util/object-utils.js");
+-/**
+- * Reads all migrations from a folder in node.js.
+- *
+- * ### Examples
+- *
+- * ```ts
+- * import { promises as fs } from 'node:fs'
+- * import path from 'node:path'
+- *
+- * new FileMigrationProvider({
+- *   fs,
+- *   path,
+- *   migrationFolder: 'path/to/migrations/folder'
+- * })
+- * ```
+- */
+-class FileMigrationProvider {
+-    #props;
+-    constructor(props) {
+-        this.#props = props;
+-    }
+-    async getMigrations() {
+-        const migrations = {};
+-        const files = await this.#props.fs.readdir(this.#props.migrationFolder);
+-        for (const fileName of files) {
+-            if (fileName.endsWith('.js') ||
+-                (fileName.endsWith('.ts') && !fileName.endsWith('.d.ts')) ||
+-                fileName.endsWith('.mjs') ||
+-                (fileName.endsWith('.mts') && !fileName.endsWith('.d.mts'))) {
+-                const migration = await Promise.resolve(`${
+-                /* webpackIgnore: true */ this.#props.path.join(this.#props.migrationFolder, fileName)}`).then(s => require(s));
+-                const migrationKey = fileName.substring(0, fileName.lastIndexOf('.'));
+-                // Handle esModuleInterop export's `default` prop...
+-                if (isMigration(migration?.default)) {
+-                    migrations[migrationKey] = migration.default;
+-                }
+-                else if (isMigration(migration)) {
+-                    migrations[migrationKey] = migration;
+-                }
+-            }
+-        }
+-        return migrations;
+-    }
+-}
+-exports.FileMigrationProvider = FileMigrationProvider;
+-function isMigration(obj) {
+-    return (0, object_utils_js_1.isObject)(obj) && (0, object_utils_js_1.isFunction)(obj.up);
+-}
+diff --git a/dist/esm/index.d.ts b/dist/esm/index.d.ts
+index 3b7ba06a91d22e425c175d332debe4aa6fcb4561..80f81921d86b6e594c98572955f476855c802645 100644
+--- a/dist/esm/index.d.ts
++++ b/dist/esm/index.d.ts
+@@ -1,224 +1,279 @@
+-export * from './kysely.js';
+-export * from './query-creator.js';
+-export * from './expression/expression.js';
+-export { ExpressionBuilder, expressionBuilder, } from './expression/expression-builder.js';
+-export * from './expression/expression-wrapper.js';
+-export * from './query-builder/where-interface.js';
+-export * from './query-builder/returning-interface.js';
+-export * from './query-builder/output-interface.js';
+-export * from './query-builder/having-interface.js';
+-export * from './query-builder/order-by-interface.js';
+-export * from './query-builder/select-query-builder.js';
+-export * from './query-builder/insert-query-builder.js';
+-export * from './query-builder/update-query-builder.js';
+-export * from './query-builder/delete-query-builder.js';
+-export * from './query-builder/no-result-error.js';
+-export * from './query-builder/join-builder.js';
+-export * from './query-builder/function-module.js';
+-export * from './query-builder/insert-result.js';
+-export * from './query-builder/delete-result.js';
+-export * from './query-builder/update-result.js';
+-export * from './query-builder/on-conflict-builder.js';
+-export * from './query-builder/aggregate-function-builder.js';
+-export * from './query-builder/case-builder.js';
+-export * from './query-builder/json-path-builder.js';
+-export * from './query-builder/merge-query-builder.js';
+-export * from './query-builder/merge-result.js';
+-export * from './query-builder/order-by-item-builder.js';
+-export * from './raw-builder/raw-builder.js';
+-export * from './raw-builder/sql.js';
+-export * from './query-executor/query-executor.js';
+-export * from './query-executor/default-query-executor.js';
+-export * from './query-executor/noop-query-executor.js';
+-export * from './query-executor/query-executor-provider.js';
+-export * from './query-compiler/default-query-compiler.js';
+-export * from './query-compiler/compiled-query.js';
+-export * from './schema/schema.js';
+-export * from './schema/create-table-builder.js';
+-export * from './schema/create-type-builder.js';
+-export * from './schema/drop-table-builder.js';
+-export * from './schema/drop-type-builder.js';
+-export * from './schema/create-index-builder.js';
+-export * from './schema/drop-index-builder.js';
+-export * from './schema/create-schema-builder.js';
+-export * from './schema/drop-schema-builder.js';
+-export * from './schema/column-definition-builder.js';
+-export * from './schema/foreign-key-constraint-builder.js';
+-export * from './schema/alter-table-builder.js';
+-export * from './schema/create-view-builder.js';
+-export * from './schema/refresh-materialized-view-builder.js';
+-export * from './schema/drop-view-builder.js';
+-export * from './schema/alter-column-builder.js';
+-export * from './dynamic/dynamic.js';
+-export * from './dynamic/dynamic-reference-builder.js';
+-export * from './dynamic/dynamic-table-builder.js';
+-export * from './driver/driver.js';
+-export * from './driver/database-connection.js';
+-export * from './driver/connection-provider.js';
+-export * from './driver/default-connection-provider.js';
+-export * from './driver/single-connection-provider.js';
+-export * from './driver/dummy-driver.js';
+-export * from './dialect/dialect.js';
+-export * from './dialect/dialect-adapter.js';
+-export * from './dialect/dialect-adapter-base.js';
+-export * from './dialect/database-introspector.js';
+-export * from './dialect/sqlite/sqlite-dialect.js';
+-export * from './dialect/sqlite/sqlite-dialect-config.js';
+-export * from './dialect/sqlite/sqlite-driver.js';
+-export * from './dialect/postgres/postgres-query-compiler.js';
+-export * from './dialect/postgres/postgres-introspector.js';
+-export * from './dialect/postgres/postgres-adapter.js';
+-export * from './dialect/mysql/mysql-dialect.js';
+-export * from './dialect/mysql/mysql-dialect-config.js';
+-export * from './dialect/mysql/mysql-driver.js';
+-export * from './dialect/mysql/mysql-query-compiler.js';
+-export * from './dialect/mysql/mysql-introspector.js';
+-export * from './dialect/mysql/mysql-adapter.js';
+-export * from './dialect/postgres/postgres-driver.js';
+-export * from './dialect/postgres/postgres-dialect-config.js';
+-export * from './dialect/postgres/postgres-dialect.js';
+-export * from './dialect/sqlite/sqlite-query-compiler.js';
+-export * from './dialect/sqlite/sqlite-introspector.js';
+-export * from './dialect/sqlite/sqlite-adapter.js';
+-export * from './dialect/mssql/mssql-adapter.js';
+-export * from './dialect/mssql/mssql-dialect-config.js';
+-export * from './dialect/mssql/mssql-dialect.js';
+-export * from './dialect/mssql/mssql-driver.js';
+-export * from './dialect/mssql/mssql-introspector.js';
+-export * from './dialect/mssql/mssql-query-compiler.js';
+-export * from './query-compiler/default-query-compiler.js';
+-export * from './query-compiler/query-compiler.js';
+-export * from './migration/migrator.js';
+-export * from './migration/file-migration-provider.js';
+-export * from './plugin/kysely-plugin.js';
+-export * from './plugin/camel-case/camel-case-plugin.js';
+-export * from './plugin/deduplicate-joins/deduplicate-joins-plugin.js';
+-export * from './plugin/with-schema/with-schema-plugin.js';
+-export * from './plugin/parse-json-results/parse-json-results-plugin.js';
+-export * from './plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js';
+-export * from './plugin/handle-empty-in-lists/handle-empty-in-lists.js';
+-export * from './operation-node/add-column-node.js';
+-export * from './operation-node/add-constraint-node.js';
+-export * from './operation-node/add-index-node.js';
+-export * from './operation-node/aggregate-function-node.js';
+-export * from './operation-node/alias-node.js';
+-export * from './operation-node/alter-column-node.js';
+-export * from './operation-node/alter-table-node.js';
+-export * from './operation-node/and-node.js';
+-export * from './operation-node/binary-operation-node.js';
+-export * from './operation-node/case-node.js';
+-export * from './operation-node/cast-node.js';
+-export * from './operation-node/check-constraint-node.js';
+-export * from './operation-node/collate-node.js';
+-export * from './operation-node/column-definition-node.js';
+-export * from './operation-node/column-node.js';
+-export * from './operation-node/column-update-node.js';
+-export * from './operation-node/common-table-expression-name-node.js';
+-export * from './operation-node/common-table-expression-node.js';
+-export * from './operation-node/constraint-node.js';
+-export * from './operation-node/create-index-node.js';
+-export * from './operation-node/create-schema-node.js';
+-export * from './operation-node/create-table-node.js';
+-export * from './operation-node/create-type-node.js';
+-export * from './operation-node/create-view-node.js';
+-export * from './operation-node/refresh-materialized-view-node.js';
+-export * from './operation-node/data-type-node.js';
+-export * from './operation-node/default-insert-value-node.js';
+-export * from './operation-node/default-value-node.js';
+-export * from './operation-node/delete-query-node.js';
+-export * from './operation-node/drop-column-node.js';
+-export * from './operation-node/drop-constraint-node.js';
+-export * from './operation-node/drop-index-node.js';
+-export * from './operation-node/drop-schema-node.js';
+-export * from './operation-node/drop-table-node.js';
+-export * from './operation-node/drop-type-node.js';
+-export * from './operation-node/drop-view-node.js';
+-export * from './operation-node/explain-node.js';
+-export * from './operation-node/fetch-node.js';
+-export * from './operation-node/foreign-key-constraint-node.js';
+-export * from './operation-node/from-node.js';
+-export * from './operation-node/function-node.js';
+-export * from './operation-node/generated-node.js';
+-export * from './operation-node/group-by-item-node.js';
+-export * from './operation-node/group-by-node.js';
+-export * from './operation-node/having-node.js';
+-export * from './operation-node/identifier-node.js';
+-export * from './operation-node/insert-query-node.js';
+-export * from './operation-node/join-node.js';
+-export * from './operation-node/json-operator-chain-node.js';
+-export * from './operation-node/json-path-leg-node.js';
+-export * from './operation-node/json-path-node.js';
+-export * from './operation-node/json-reference-node.js';
+-export * from './operation-node/limit-node.js';
+-export * from './operation-node/list-node.js';
+-export * from './operation-node/matched-node.js';
+-export * from './operation-node/merge-query-node.js';
+-export * from './operation-node/modify-column-node.js';
+-export * from './operation-node/offset-node.js';
+-export * from './operation-node/on-conflict-node.js';
+-export * from './operation-node/on-duplicate-key-node.js';
+-export * from './operation-node/on-node.js';
+-export * from './operation-node/operation-node-source.js';
+-export * from './operation-node/operation-node-transformer.js';
+-export * from './operation-node/operation-node-visitor.js';
+-export * from './operation-node/operation-node.js';
+-export * from './operation-node/operator-node.js';
+-export * from './operation-node/or-action-node.js';
+-export * from './operation-node/or-node.js';
+-export * from './operation-node/order-by-item-node.js';
+-export * from './operation-node/order-by-node.js';
+-export * from './operation-node/output-node.js';
+-export * from './operation-node/over-node.js';
+-export * from './operation-node/parens-node.js';
+-export * from './operation-node/partition-by-item-node.js';
+-export * from './operation-node/partition-by-node.js';
+-export * from './operation-node/primary-key-constraint-node.js';
+-export * from './operation-node/primitive-value-list-node.js';
+-export * from './operation-node/query-node.js';
+-export * from './operation-node/raw-node.js';
+-export * from './operation-node/reference-node.js';
+-export * from './operation-node/references-node.js';
+-export * from './operation-node/rename-column-node.js';
+-export * from './operation-node/rename-constraint-node.js';
+-export * from './operation-node/returning-node.js';
+-export * from './operation-node/schemable-identifier-node.js';
+-export * from './operation-node/select-all-node.js';
+-export * from './operation-node/select-modifier-node.js';
+-export * from './operation-node/select-query-node.js';
+-export * from './operation-node/selection-node.js';
+-export * from './operation-node/set-operation-node.js';
+-export * from './operation-node/simple-reference-expression-node.js';
+-export * from './operation-node/table-node.js';
+-export * from './operation-node/top-node.js';
+-export * from './operation-node/tuple-node.js';
+-export * from './operation-node/unary-operation-node.js';
+-export * from './operation-node/unique-constraint-node.js';
+-export * from './operation-node/update-query-node.js';
+-export * from './operation-node/using-node.js';
+-export * from './operation-node/value-list-node.js';
+-export * from './operation-node/value-node.js';
+-export * from './operation-node/values-node.js';
+-export * from './operation-node/when-node.js';
+-export * from './operation-node/where-node.js';
+-export * from './operation-node/with-node.js';
+-export * from './util/column-type.js';
+-export * from './util/compilable.js';
+-export * from './util/explainable.js';
+-export * from './util/streamable.js';
+-export * from './util/log.js';
+-export { AnyAliasedColumn, AnyAliasedColumnWithTable, AnyColumn, AnyColumnWithTable, Equals, UnknownRow, Simplify, SqlBool, Nullable, NumbersWhenDataTypeNotAvailable, NotNull, NumericString, ShallowDehydrateObject, ShallowDehydrateValue, StringsWhenDataTypeNotAvailable, } from './util/type-utils.js';
+-export * from './util/infer-result.js';
+-export { logOnce } from './util/log-once.js';
+-export { createQueryId, QueryId } from './util/query-id.js';
+-export { SelectExpression, SelectCallback, SelectArg, Selection, CallbackSelection, } from './parser/select-parser.js';
+-export { ReferenceExpression, ReferenceExpressionOrList, SimpleReferenceExpression, StringReference, ExtractTypeFromStringReference, ExtractTypeFromReferenceExpression, } from './parser/reference-parser.js';
+-export { ValueExpression, ValueExpressionOrList, } from './parser/value-parser.js';
+-export { SimpleTableReference, TableExpression, TableExpressionOrList, } from './parser/table-parser.js';
+-export { JoinReferenceExpression, JoinCallbackExpression, } from './parser/join-parser.js';
+-export { InsertObject } from './parser/insert-values-parser.js';
+-export { UpdateObject } from './parser/update-set-parser.js';
+-export { OrderByExpression, OrderByDirectionExpression, OrderByModifiers, OrderByDirection, OrderByModifiersCallbackExpression, } from './parser/order-by-parser.js';
+-export { ComparisonOperatorExpression, OperandValueExpression, OperandValueExpressionOrList, FilterObject, } from './parser/binary-operation-parser.js';
+-export { ExistsExpression } from './parser/unary-operation-parser.js';
+-export { OperandExpression, ExpressionOrFactory, } from './parser/expression-parser.js';
+-export { Collation } from './parser/collate-parser.js';
++export * from "./kysely.js";
++export * from "./query-creator.js";
++export * from "./expression/expression.js";
++export {
++  ExpressionBuilder,
++  expressionBuilder,
++} from "./expression/expression-builder.js";
++export * from "./expression/expression-wrapper.js";
++export * from "./query-builder/where-interface.js";
++export * from "./query-builder/returning-interface.js";
++export * from "./query-builder/output-interface.js";
++export * from "./query-builder/having-interface.js";
++export * from "./query-builder/order-by-interface.js";
++export * from "./query-builder/select-query-builder.js";
++export * from "./query-builder/insert-query-builder.js";
++export * from "./query-builder/update-query-builder.js";
++export * from "./query-builder/delete-query-builder.js";
++export * from "./query-builder/no-result-error.js";
++export * from "./query-builder/join-builder.js";
++export * from "./query-builder/function-module.js";
++export * from "./query-builder/insert-result.js";
++export * from "./query-builder/delete-result.js";
++export * from "./query-builder/update-result.js";
++export * from "./query-builder/on-conflict-builder.js";
++export * from "./query-builder/aggregate-function-builder.js";
++export * from "./query-builder/case-builder.js";
++export * from "./query-builder/json-path-builder.js";
++export * from "./query-builder/merge-query-builder.js";
++export * from "./query-builder/merge-result.js";
++export * from "./query-builder/order-by-item-builder.js";
++export * from "./raw-builder/raw-builder.js";
++export * from "./raw-builder/sql.js";
++export * from "./query-executor/query-executor.js";
++export * from "./query-executor/default-query-executor.js";
++export * from "./query-executor/noop-query-executor.js";
++export * from "./query-executor/query-executor-provider.js";
++export * from "./query-compiler/default-query-compiler.js";
++export * from "./query-compiler/compiled-query.js";
++export * from "./schema/schema.js";
++export * from "./schema/create-table-builder.js";
++export * from "./schema/create-type-builder.js";
++export * from "./schema/drop-table-builder.js";
++export * from "./schema/drop-type-builder.js";
++export * from "./schema/create-index-builder.js";
++export * from "./schema/drop-index-builder.js";
++export * from "./schema/create-schema-builder.js";
++export * from "./schema/drop-schema-builder.js";
++export * from "./schema/column-definition-builder.js";
++export * from "./schema/foreign-key-constraint-builder.js";
++export * from "./schema/alter-table-builder.js";
++export * from "./schema/create-view-builder.js";
++export * from "./schema/refresh-materialized-view-builder.js";
++export * from "./schema/drop-view-builder.js";
++export * from "./schema/alter-column-builder.js";
++export * from "./dynamic/dynamic.js";
++export * from "./dynamic/dynamic-reference-builder.js";
++export * from "./dynamic/dynamic-table-builder.js";
++export * from "./driver/driver.js";
++export * from "./driver/database-connection.js";
++export * from "./driver/connection-provider.js";
++export * from "./driver/default-connection-provider.js";
++export * from "./driver/single-connection-provider.js";
++export * from "./driver/dummy-driver.js";
++export * from "./dialect/dialect.js";
++export * from "./dialect/dialect-adapter.js";
++export * from "./dialect/dialect-adapter-base.js";
++export * from "./dialect/database-introspector.js";
++export * from "./dialect/sqlite/sqlite-dialect.js";
++export * from "./dialect/sqlite/sqlite-dialect-config.js";
++export * from "./dialect/sqlite/sqlite-driver.js";
++export * from "./dialect/postgres/postgres-query-compiler.js";
++export * from "./dialect/postgres/postgres-introspector.js";
++export * from "./dialect/postgres/postgres-adapter.js";
++export * from "./dialect/mysql/mysql-dialect.js";
++export * from "./dialect/mysql/mysql-dialect-config.js";
++export * from "./dialect/mysql/mysql-driver.js";
++export * from "./dialect/mysql/mysql-query-compiler.js";
++export * from "./dialect/mysql/mysql-introspector.js";
++export * from "./dialect/mysql/mysql-adapter.js";
++export * from "./dialect/postgres/postgres-driver.js";
++export * from "./dialect/postgres/postgres-dialect-config.js";
++export * from "./dialect/postgres/postgres-dialect.js";
++export * from "./dialect/sqlite/sqlite-query-compiler.js";
++export * from "./dialect/sqlite/sqlite-introspector.js";
++export * from "./dialect/sqlite/sqlite-adapter.js";
++export * from "./dialect/mssql/mssql-adapter.js";
++export * from "./dialect/mssql/mssql-dialect-config.js";
++export * from "./dialect/mssql/mssql-dialect.js";
++export * from "./dialect/mssql/mssql-driver.js";
++export * from "./dialect/mssql/mssql-introspector.js";
++export * from "./dialect/mssql/mssql-query-compiler.js";
++export * from "./query-compiler/default-query-compiler.js";
++export * from "./query-compiler/query-compiler.js";
++export * from "./migration/migrator.js";
++export * from "./plugin/kysely-plugin.js";
++export * from "./plugin/camel-case/camel-case-plugin.js";
++export * from "./plugin/deduplicate-joins/deduplicate-joins-plugin.js";
++export * from "./plugin/with-schema/with-schema-plugin.js";
++export * from "./plugin/parse-json-results/parse-json-results-plugin.js";
++export * from "./plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js";
++export * from "./plugin/handle-empty-in-lists/handle-empty-in-lists.js";
++export * from "./operation-node/add-column-node.js";
++export * from "./operation-node/add-constraint-node.js";
++export * from "./operation-node/add-index-node.js";
++export * from "./operation-node/aggregate-function-node.js";
++export * from "./operation-node/alias-node.js";
++export * from "./operation-node/alter-column-node.js";
++export * from "./operation-node/alter-table-node.js";
++export * from "./operation-node/and-node.js";
++export * from "./operation-node/binary-operation-node.js";
++export * from "./operation-node/case-node.js";
++export * from "./operation-node/cast-node.js";
++export * from "./operation-node/check-constraint-node.js";
++export * from "./operation-node/collate-node.js";
++export * from "./operation-node/column-definition-node.js";
++export * from "./operation-node/column-node.js";
++export * from "./operation-node/column-update-node.js";
++export * from "./operation-node/common-table-expression-name-node.js";
++export * from "./operation-node/common-table-expression-node.js";
++export * from "./operation-node/constraint-node.js";
++export * from "./operation-node/create-index-node.js";
++export * from "./operation-node/create-schema-node.js";
++export * from "./operation-node/create-table-node.js";
++export * from "./operation-node/create-type-node.js";
++export * from "./operation-node/create-view-node.js";
++export * from "./operation-node/refresh-materialized-view-node.js";
++export * from "./operation-node/data-type-node.js";
++export * from "./operation-node/default-insert-value-node.js";
++export * from "./operation-node/default-value-node.js";
++export * from "./operation-node/delete-query-node.js";
++export * from "./operation-node/drop-column-node.js";
++export * from "./operation-node/drop-constraint-node.js";
++export * from "./operation-node/drop-index-node.js";
++export * from "./operation-node/drop-schema-node.js";
++export * from "./operation-node/drop-table-node.js";
++export * from "./operation-node/drop-type-node.js";
++export * from "./operation-node/drop-view-node.js";
++export * from "./operation-node/explain-node.js";
++export * from "./operation-node/fetch-node.js";
++export * from "./operation-node/foreign-key-constraint-node.js";
++export * from "./operation-node/from-node.js";
++export * from "./operation-node/function-node.js";
++export * from "./operation-node/generated-node.js";
++export * from "./operation-node/group-by-item-node.js";
++export * from "./operation-node/group-by-node.js";
++export * from "./operation-node/having-node.js";
++export * from "./operation-node/identifier-node.js";
++export * from "./operation-node/insert-query-node.js";
++export * from "./operation-node/join-node.js";
++export * from "./operation-node/json-operator-chain-node.js";
++export * from "./operation-node/json-path-leg-node.js";
++export * from "./operation-node/json-path-node.js";
++export * from "./operation-node/json-reference-node.js";
++export * from "./operation-node/limit-node.js";
++export * from "./operation-node/list-node.js";
++export * from "./operation-node/matched-node.js";
++export * from "./operation-node/merge-query-node.js";
++export * from "./operation-node/modify-column-node.js";
++export * from "./operation-node/offset-node.js";
++export * from "./operation-node/on-conflict-node.js";
++export * from "./operation-node/on-duplicate-key-node.js";
++export * from "./operation-node/on-node.js";
++export * from "./operation-node/operation-node-source.js";
++export * from "./operation-node/operation-node-transformer.js";
++export * from "./operation-node/operation-node-visitor.js";
++export * from "./operation-node/operation-node.js";
++export * from "./operation-node/operator-node.js";
++export * from "./operation-node/or-action-node.js";
++export * from "./operation-node/or-node.js";
++export * from "./operation-node/order-by-item-node.js";
++export * from "./operation-node/order-by-node.js";
++export * from "./operation-node/output-node.js";
++export * from "./operation-node/over-node.js";
++export * from "./operation-node/parens-node.js";
++export * from "./operation-node/partition-by-item-node.js";
++export * from "./operation-node/partition-by-node.js";
++export * from "./operation-node/primary-key-constraint-node.js";
++export * from "./operation-node/primitive-value-list-node.js";
++export * from "./operation-node/query-node.js";
++export * from "./operation-node/raw-node.js";
++export * from "./operation-node/reference-node.js";
++export * from "./operation-node/references-node.js";
++export * from "./operation-node/rename-column-node.js";
++export * from "./operation-node/rename-constraint-node.js";
++export * from "./operation-node/returning-node.js";
++export * from "./operation-node/schemable-identifier-node.js";
++export * from "./operation-node/select-all-node.js";
++export * from "./operation-node/select-modifier-node.js";
++export * from "./operation-node/select-query-node.js";
++export * from "./operation-node/selection-node.js";
++export * from "./operation-node/set-operation-node.js";
++export * from "./operation-node/simple-reference-expression-node.js";
++export * from "./operation-node/table-node.js";
++export * from "./operation-node/top-node.js";
++export * from "./operation-node/tuple-node.js";
++export * from "./operation-node/unary-operation-node.js";
++export * from "./operation-node/unique-constraint-node.js";
++export * from "./operation-node/update-query-node.js";
++export * from "./operation-node/using-node.js";
++export * from "./operation-node/value-list-node.js";
++export * from "./operation-node/value-node.js";
++export * from "./operation-node/values-node.js";
++export * from "./operation-node/when-node.js";
++export * from "./operation-node/where-node.js";
++export * from "./operation-node/with-node.js";
++export * from "./util/column-type.js";
++export * from "./util/compilable.js";
++export * from "./util/explainable.js";
++export * from "./util/streamable.js";
++export * from "./util/log.js";
++export {
++  AnyAliasedColumn,
++  AnyAliasedColumnWithTable,
++  AnyColumn,
++  AnyColumnWithTable,
++  Equals,
++  UnknownRow,
++  Simplify,
++  SqlBool,
++  Nullable,
++  NumbersWhenDataTypeNotAvailable,
++  NotNull,
++  NumericString,
++  ShallowDehydrateObject,
++  ShallowDehydrateValue,
++  StringsWhenDataTypeNotAvailable,
++} from "./util/type-utils.js";
++export * from "./util/infer-result.js";
++export { logOnce } from "./util/log-once.js";
++export { createQueryId, QueryId } from "./util/query-id.js";
++export {
++  SelectExpression,
++  SelectCallback,
++  SelectArg,
++  Selection,
++  CallbackSelection,
++} from "./parser/select-parser.js";
++export {
++  ReferenceExpression,
++  ReferenceExpressionOrList,
++  SimpleReferenceExpression,
++  StringReference,
++  ExtractTypeFromStringReference,
++  ExtractTypeFromReferenceExpression,
++} from "./parser/reference-parser.js";
++export {
++  ValueExpression,
++  ValueExpressionOrList,
++} from "./parser/value-parser.js";
++export {
++  SimpleTableReference,
++  TableExpression,
++  TableExpressionOrList,
++} from "./parser/table-parser.js";
++export {
++  JoinReferenceExpression,
++  JoinCallbackExpression,
++} from "./parser/join-parser.js";
++export { InsertObject } from "./parser/insert-values-parser.js";
++export { UpdateObject } from "./parser/update-set-parser.js";
++export {
++  OrderByExpression,
++  OrderByDirectionExpression,
++  OrderByModifiers,
++  OrderByDirection,
++  OrderByModifiersCallbackExpression,
++} from "./parser/order-by-parser.js";
++export {
++  ComparisonOperatorExpression,
++  OperandValueExpression,
++  OperandValueExpressionOrList,
++  FilterObject,
++} from "./parser/binary-operation-parser.js";
++export { ExistsExpression } from "./parser/unary-operation-parser.js";
++export {
++  OperandExpression,
++  ExpressionOrFactory,
++} from "./parser/expression-parser.js";
++export { Collation } from "./parser/collate-parser.js";
+diff --git a/dist/esm/index.js b/dist/esm/index.js
+index 5182ed41782a17ea53b2ca7f449aea381c5ca304..1a23e05fd82b5fde9a3ec722706cc399766c28d0 100644
+--- a/dist/esm/index.js
++++ b/dist/esm/index.js
+@@ -1,212 +1,211 @@
+ /// <reference types="./index.d.ts" />
+-export * from './kysely.js';
+-export * from './query-creator.js';
+-export * from './expression/expression.js';
+-export { expressionBuilder, } from './expression/expression-builder.js';
+-export * from './expression/expression-wrapper.js';
+-export * from './query-builder/where-interface.js';
+-export * from './query-builder/returning-interface.js';
+-export * from './query-builder/output-interface.js';
+-export * from './query-builder/having-interface.js';
+-export * from './query-builder/order-by-interface.js';
+-export * from './query-builder/select-query-builder.js';
+-export * from './query-builder/insert-query-builder.js';
+-export * from './query-builder/update-query-builder.js';
+-export * from './query-builder/delete-query-builder.js';
+-export * from './query-builder/no-result-error.js';
+-export * from './query-builder/join-builder.js';
+-export * from './query-builder/function-module.js';
+-export * from './query-builder/insert-result.js';
+-export * from './query-builder/delete-result.js';
+-export * from './query-builder/update-result.js';
+-export * from './query-builder/on-conflict-builder.js';
+-export * from './query-builder/aggregate-function-builder.js';
+-export * from './query-builder/case-builder.js';
+-export * from './query-builder/json-path-builder.js';
+-export * from './query-builder/merge-query-builder.js';
+-export * from './query-builder/merge-result.js';
+-export * from './query-builder/order-by-item-builder.js';
+-export * from './raw-builder/raw-builder.js';
+-export * from './raw-builder/sql.js';
+-export * from './query-executor/query-executor.js';
+-export * from './query-executor/default-query-executor.js';
+-export * from './query-executor/noop-query-executor.js';
+-export * from './query-executor/query-executor-provider.js';
+-export * from './query-compiler/default-query-compiler.js';
+-export * from './query-compiler/compiled-query.js';
+-export * from './schema/schema.js';
+-export * from './schema/create-table-builder.js';
+-export * from './schema/create-type-builder.js';
+-export * from './schema/drop-table-builder.js';
+-export * from './schema/drop-type-builder.js';
+-export * from './schema/create-index-builder.js';
+-export * from './schema/drop-index-builder.js';
+-export * from './schema/create-schema-builder.js';
+-export * from './schema/drop-schema-builder.js';
+-export * from './schema/column-definition-builder.js';
+-export * from './schema/foreign-key-constraint-builder.js';
+-export * from './schema/alter-table-builder.js';
+-export * from './schema/create-view-builder.js';
+-export * from './schema/refresh-materialized-view-builder.js';
+-export * from './schema/drop-view-builder.js';
+-export * from './schema/alter-column-builder.js';
+-export * from './dynamic/dynamic.js';
+-export * from './dynamic/dynamic-reference-builder.js';
+-export * from './dynamic/dynamic-table-builder.js';
+-export * from './driver/driver.js';
+-export * from './driver/database-connection.js';
+-export * from './driver/connection-provider.js';
+-export * from './driver/default-connection-provider.js';
+-export * from './driver/single-connection-provider.js';
+-export * from './driver/dummy-driver.js';
+-export * from './dialect/dialect.js';
+-export * from './dialect/dialect-adapter.js';
+-export * from './dialect/dialect-adapter-base.js';
+-export * from './dialect/database-introspector.js';
+-export * from './dialect/sqlite/sqlite-dialect.js';
+-export * from './dialect/sqlite/sqlite-dialect-config.js';
+-export * from './dialect/sqlite/sqlite-driver.js';
+-export * from './dialect/postgres/postgres-query-compiler.js';
+-export * from './dialect/postgres/postgres-introspector.js';
+-export * from './dialect/postgres/postgres-adapter.js';
+-export * from './dialect/mysql/mysql-dialect.js';
+-export * from './dialect/mysql/mysql-dialect-config.js';
+-export * from './dialect/mysql/mysql-driver.js';
+-export * from './dialect/mysql/mysql-query-compiler.js';
+-export * from './dialect/mysql/mysql-introspector.js';
+-export * from './dialect/mysql/mysql-adapter.js';
+-export * from './dialect/postgres/postgres-driver.js';
+-export * from './dialect/postgres/postgres-dialect-config.js';
+-export * from './dialect/postgres/postgres-dialect.js';
+-export * from './dialect/sqlite/sqlite-query-compiler.js';
+-export * from './dialect/sqlite/sqlite-introspector.js';
+-export * from './dialect/sqlite/sqlite-adapter.js';
+-export * from './dialect/mssql/mssql-adapter.js';
+-export * from './dialect/mssql/mssql-dialect-config.js';
+-export * from './dialect/mssql/mssql-dialect.js';
+-export * from './dialect/mssql/mssql-driver.js';
+-export * from './dialect/mssql/mssql-introspector.js';
+-export * from './dialect/mssql/mssql-query-compiler.js';
+-export * from './query-compiler/default-query-compiler.js';
+-export * from './query-compiler/query-compiler.js';
+-export * from './migration/migrator.js';
+-export * from './migration/file-migration-provider.js';
+-export * from './plugin/kysely-plugin.js';
+-export * from './plugin/camel-case/camel-case-plugin.js';
+-export * from './plugin/deduplicate-joins/deduplicate-joins-plugin.js';
+-export * from './plugin/with-schema/with-schema-plugin.js';
+-export * from './plugin/parse-json-results/parse-json-results-plugin.js';
+-export * from './plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js';
+-export * from './plugin/handle-empty-in-lists/handle-empty-in-lists.js';
+-export * from './operation-node/add-column-node.js';
+-export * from './operation-node/add-constraint-node.js';
+-export * from './operation-node/add-index-node.js';
+-export * from './operation-node/aggregate-function-node.js';
+-export * from './operation-node/alias-node.js';
+-export * from './operation-node/alter-column-node.js';
+-export * from './operation-node/alter-table-node.js';
+-export * from './operation-node/and-node.js';
+-export * from './operation-node/binary-operation-node.js';
+-export * from './operation-node/case-node.js';
+-export * from './operation-node/cast-node.js';
+-export * from './operation-node/check-constraint-node.js';
+-export * from './operation-node/collate-node.js';
+-export * from './operation-node/column-definition-node.js';
+-export * from './operation-node/column-node.js';
+-export * from './operation-node/column-update-node.js';
+-export * from './operation-node/common-table-expression-name-node.js';
+-export * from './operation-node/common-table-expression-node.js';
+-export * from './operation-node/constraint-node.js';
+-export * from './operation-node/create-index-node.js';
+-export * from './operation-node/create-schema-node.js';
+-export * from './operation-node/create-table-node.js';
+-export * from './operation-node/create-type-node.js';
+-export * from './operation-node/create-view-node.js';
+-export * from './operation-node/refresh-materialized-view-node.js';
+-export * from './operation-node/data-type-node.js';
+-export * from './operation-node/default-insert-value-node.js';
+-export * from './operation-node/default-value-node.js';
+-export * from './operation-node/delete-query-node.js';
+-export * from './operation-node/drop-column-node.js';
+-export * from './operation-node/drop-constraint-node.js';
+-export * from './operation-node/drop-index-node.js';
+-export * from './operation-node/drop-schema-node.js';
+-export * from './operation-node/drop-table-node.js';
+-export * from './operation-node/drop-type-node.js';
+-export * from './operation-node/drop-view-node.js';
+-export * from './operation-node/explain-node.js';
+-export * from './operation-node/fetch-node.js';
+-export * from './operation-node/foreign-key-constraint-node.js';
+-export * from './operation-node/from-node.js';
+-export * from './operation-node/function-node.js';
+-export * from './operation-node/generated-node.js';
+-export * from './operation-node/group-by-item-node.js';
+-export * from './operation-node/group-by-node.js';
+-export * from './operation-node/having-node.js';
+-export * from './operation-node/identifier-node.js';
+-export * from './operation-node/insert-query-node.js';
+-export * from './operation-node/join-node.js';
+-export * from './operation-node/json-operator-chain-node.js';
+-export * from './operation-node/json-path-leg-node.js';
+-export * from './operation-node/json-path-node.js';
+-export * from './operation-node/json-reference-node.js';
+-export * from './operation-node/limit-node.js';
+-export * from './operation-node/list-node.js';
+-export * from './operation-node/matched-node.js';
+-export * from './operation-node/merge-query-node.js';
+-export * from './operation-node/modify-column-node.js';
+-export * from './operation-node/offset-node.js';
+-export * from './operation-node/on-conflict-node.js';
+-export * from './operation-node/on-duplicate-key-node.js';
+-export * from './operation-node/on-node.js';
+-export * from './operation-node/operation-node-source.js';
+-export * from './operation-node/operation-node-transformer.js';
+-export * from './operation-node/operation-node-visitor.js';
+-export * from './operation-node/operation-node.js';
+-export * from './operation-node/operator-node.js';
+-export * from './operation-node/or-action-node.js';
+-export * from './operation-node/or-node.js';
+-export * from './operation-node/order-by-item-node.js';
+-export * from './operation-node/order-by-node.js';
+-export * from './operation-node/output-node.js';
+-export * from './operation-node/over-node.js';
+-export * from './operation-node/parens-node.js';
+-export * from './operation-node/partition-by-item-node.js';
+-export * from './operation-node/partition-by-node.js';
+-export * from './operation-node/primary-key-constraint-node.js';
+-export * from './operation-node/primitive-value-list-node.js';
+-export * from './operation-node/query-node.js';
+-export * from './operation-node/raw-node.js';
+-export * from './operation-node/reference-node.js';
+-export * from './operation-node/references-node.js';
+-export * from './operation-node/rename-column-node.js';
+-export * from './operation-node/rename-constraint-node.js';
+-export * from './operation-node/returning-node.js';
+-export * from './operation-node/schemable-identifier-node.js';
+-export * from './operation-node/select-all-node.js';
+-export * from './operation-node/select-modifier-node.js';
+-export * from './operation-node/select-query-node.js';
+-export * from './operation-node/selection-node.js';
+-export * from './operation-node/set-operation-node.js';
+-export * from './operation-node/simple-reference-expression-node.js';
+-export * from './operation-node/table-node.js';
+-export * from './operation-node/top-node.js';
+-export * from './operation-node/tuple-node.js';
+-export * from './operation-node/unary-operation-node.js';
+-export * from './operation-node/unique-constraint-node.js';
+-export * from './operation-node/update-query-node.js';
+-export * from './operation-node/using-node.js';
+-export * from './operation-node/value-list-node.js';
+-export * from './operation-node/value-node.js';
+-export * from './operation-node/values-node.js';
+-export * from './operation-node/when-node.js';
+-export * from './operation-node/where-node.js';
+-export * from './operation-node/with-node.js';
+-export * from './util/column-type.js';
+-export * from './util/compilable.js';
+-export * from './util/explainable.js';
+-export * from './util/streamable.js';
+-export * from './util/log.js';
+-export * from './util/infer-result.js';
+-export { logOnce } from './util/log-once.js';
+-export { createQueryId } from './util/query-id.js';
++export * from "./kysely.js";
++export * from "./query-creator.js";
++export * from "./expression/expression.js";
++export { expressionBuilder } from "./expression/expression-builder.js";
++export * from "./expression/expression-wrapper.js";
++export * from "./query-builder/where-interface.js";
++export * from "./query-builder/returning-interface.js";
++export * from "./query-builder/output-interface.js";
++export * from "./query-builder/having-interface.js";
++export * from "./query-builder/order-by-interface.js";
++export * from "./query-builder/select-query-builder.js";
++export * from "./query-builder/insert-query-builder.js";
++export * from "./query-builder/update-query-builder.js";
++export * from "./query-builder/delete-query-builder.js";
++export * from "./query-builder/no-result-error.js";
++export * from "./query-builder/join-builder.js";
++export * from "./query-builder/function-module.js";
++export * from "./query-builder/insert-result.js";
++export * from "./query-builder/delete-result.js";
++export * from "./query-builder/update-result.js";
++export * from "./query-builder/on-conflict-builder.js";
++export * from "./query-builder/aggregate-function-builder.js";
++export * from "./query-builder/case-builder.js";
++export * from "./query-builder/json-path-builder.js";
++export * from "./query-builder/merge-query-builder.js";
++export * from "./query-builder/merge-result.js";
++export * from "./query-builder/order-by-item-builder.js";
++export * from "./raw-builder/raw-builder.js";
++export * from "./raw-builder/sql.js";
++export * from "./query-executor/query-executor.js";
++export * from "./query-executor/default-query-executor.js";
++export * from "./query-executor/noop-query-executor.js";
++export * from "./query-executor/query-executor-provider.js";
++export * from "./query-compiler/default-query-compiler.js";
++export * from "./query-compiler/compiled-query.js";
++export * from "./schema/schema.js";
++export * from "./schema/create-table-builder.js";
++export * from "./schema/create-type-builder.js";
++export * from "./schema/drop-table-builder.js";
++export * from "./schema/drop-type-builder.js";
++export * from "./schema/create-index-builder.js";
++export * from "./schema/drop-index-builder.js";
++export * from "./schema/create-schema-builder.js";
++export * from "./schema/drop-schema-builder.js";
++export * from "./schema/column-definition-builder.js";
++export * from "./schema/foreign-key-constraint-builder.js";
++export * from "./schema/alter-table-builder.js";
++export * from "./schema/create-view-builder.js";
++export * from "./schema/refresh-materialized-view-builder.js";
++export * from "./schema/drop-view-builder.js";
++export * from "./schema/alter-column-builder.js";
++export * from "./dynamic/dynamic.js";
++export * from "./dynamic/dynamic-reference-builder.js";
++export * from "./dynamic/dynamic-table-builder.js";
++export * from "./driver/driver.js";
++export * from "./driver/database-connection.js";
++export * from "./driver/connection-provider.js";
++export * from "./driver/default-connection-provider.js";
++export * from "./driver/single-connection-provider.js";
++export * from "./driver/dummy-driver.js";
++export * from "./dialect/dialect.js";
++export * from "./dialect/dialect-adapter.js";
++export * from "./dialect/dialect-adapter-base.js";
++export * from "./dialect/database-introspector.js";
++export * from "./dialect/sqlite/sqlite-dialect.js";
++export * from "./dialect/sqlite/sqlite-dialect-config.js";
++export * from "./dialect/sqlite/sqlite-driver.js";
++export * from "./dialect/postgres/postgres-query-compiler.js";
++export * from "./dialect/postgres/postgres-introspector.js";
++export * from "./dialect/postgres/postgres-adapter.js";
++export * from "./dialect/mysql/mysql-dialect.js";
++export * from "./dialect/mysql/mysql-dialect-config.js";
++export * from "./dialect/mysql/mysql-driver.js";
++export * from "./dialect/mysql/mysql-query-compiler.js";
++export * from "./dialect/mysql/mysql-introspector.js";
++export * from "./dialect/mysql/mysql-adapter.js";
++export * from "./dialect/postgres/postgres-driver.js";
++export * from "./dialect/postgres/postgres-dialect-config.js";
++export * from "./dialect/postgres/postgres-dialect.js";
++export * from "./dialect/sqlite/sqlite-query-compiler.js";
++export * from "./dialect/sqlite/sqlite-introspector.js";
++export * from "./dialect/sqlite/sqlite-adapter.js";
++export * from "./dialect/mssql/mssql-adapter.js";
++export * from "./dialect/mssql/mssql-dialect-config.js";
++export * from "./dialect/mssql/mssql-dialect.js";
++export * from "./dialect/mssql/mssql-driver.js";
++export * from "./dialect/mssql/mssql-introspector.js";
++export * from "./dialect/mssql/mssql-query-compiler.js";
++export * from "./query-compiler/default-query-compiler.js";
++export * from "./query-compiler/query-compiler.js";
++export * from "./migration/migrator.js";
++export * from "./plugin/kysely-plugin.js";
++export * from "./plugin/camel-case/camel-case-plugin.js";
++export * from "./plugin/deduplicate-joins/deduplicate-joins-plugin.js";
++export * from "./plugin/with-schema/with-schema-plugin.js";
++export * from "./plugin/parse-json-results/parse-json-results-plugin.js";
++export * from "./plugin/handle-empty-in-lists/handle-empty-in-lists-plugin.js";
++export * from "./plugin/handle-empty-in-lists/handle-empty-in-lists.js";
++export * from "./operation-node/add-column-node.js";
++export * from "./operation-node/add-constraint-node.js";
++export * from "./operation-node/add-index-node.js";
++export * from "./operation-node/aggregate-function-node.js";
++export * from "./operation-node/alias-node.js";
++export * from "./operation-node/alter-column-node.js";
++export * from "./operation-node/alter-table-node.js";
++export * from "./operation-node/and-node.js";
++export * from "./operation-node/binary-operation-node.js";
++export * from "./operation-node/case-node.js";
++export * from "./operation-node/cast-node.js";
++export * from "./operation-node/check-constraint-node.js";
++export * from "./operation-node/collate-node.js";
++export * from "./operation-node/column-definition-node.js";
++export * from "./operation-node/column-node.js";
++export * from "./operation-node/column-update-node.js";
++export * from "./operation-node/common-table-expression-name-node.js";
++export * from "./operation-node/common-table-expression-node.js";
++export * from "./operation-node/constraint-node.js";
++export * from "./operation-node/create-index-node.js";
++export * from "./operation-node/create-schema-node.js";
++export * from "./operation-node/create-table-node.js";
++export * from "./operation-node/create-type-node.js";
++export * from "./operation-node/create-view-node.js";
++export * from "./operation-node/refresh-materialized-view-node.js";
++export * from "./operation-node/data-type-node.js";
++export * from "./operation-node/default-insert-value-node.js";
++export * from "./operation-node/default-value-node.js";
++export * from "./operation-node/delete-query-node.js";
++export * from "./operation-node/drop-column-node.js";
++export * from "./operation-node/drop-constraint-node.js";
++export * from "./operation-node/drop-index-node.js";
++export * from "./operation-node/drop-schema-node.js";
++export * from "./operation-node/drop-table-node.js";
++export * from "./operation-node/drop-type-node.js";
++export * from "./operation-node/drop-view-node.js";
++export * from "./operation-node/explain-node.js";
++export * from "./operation-node/fetch-node.js";
++export * from "./operation-node/foreign-key-constraint-node.js";
++export * from "./operation-node/from-node.js";
++export * from "./operation-node/function-node.js";
++export * from "./operation-node/generated-node.js";
++export * from "./operation-node/group-by-item-node.js";
++export * from "./operation-node/group-by-node.js";
++export * from "./operation-node/having-node.js";
++export * from "./operation-node/identifier-node.js";
++export * from "./operation-node/insert-query-node.js";
++export * from "./operation-node/join-node.js";
++export * from "./operation-node/json-operator-chain-node.js";
++export * from "./operation-node/json-path-leg-node.js";
++export * from "./operation-node/json-path-node.js";
++export * from "./operation-node/json-reference-node.js";
++export * from "./operation-node/limit-node.js";
++export * from "./operation-node/list-node.js";
++export * from "./operation-node/matched-node.js";
++export * from "./operation-node/merge-query-node.js";
++export * from "./operation-node/modify-column-node.js";
++export * from "./operation-node/offset-node.js";
++export * from "./operation-node/on-conflict-node.js";
++export * from "./operation-node/on-duplicate-key-node.js";
++export * from "./operation-node/on-node.js";
++export * from "./operation-node/operation-node-source.js";
++export * from "./operation-node/operation-node-transformer.js";
++export * from "./operation-node/operation-node-visitor.js";
++export * from "./operation-node/operation-node.js";
++export * from "./operation-node/operator-node.js";
++export * from "./operation-node/or-action-node.js";
++export * from "./operation-node/or-node.js";
++export * from "./operation-node/order-by-item-node.js";
++export * from "./operation-node/order-by-node.js";
++export * from "./operation-node/output-node.js";
++export * from "./operation-node/over-node.js";
++export * from "./operation-node/parens-node.js";
++export * from "./operation-node/partition-by-item-node.js";
++export * from "./operation-node/partition-by-node.js";
++export * from "./operation-node/primary-key-constraint-node.js";
++export * from "./operation-node/primitive-value-list-node.js";
++export * from "./operation-node/query-node.js";
++export * from "./operation-node/raw-node.js";
++export * from "./operation-node/reference-node.js";
++export * from "./operation-node/references-node.js";
++export * from "./operation-node/rename-column-node.js";
++export * from "./operation-node/rename-constraint-node.js";
++export * from "./operation-node/returning-node.js";
++export * from "./operation-node/schemable-identifier-node.js";
++export * from "./operation-node/select-all-node.js";
++export * from "./operation-node/select-modifier-node.js";
++export * from "./operation-node/select-query-node.js";
++export * from "./operation-node/selection-node.js";
++export * from "./operation-node/set-operation-node.js";
++export * from "./operation-node/simple-reference-expression-node.js";
++export * from "./operation-node/table-node.js";
++export * from "./operation-node/top-node.js";
++export * from "./operation-node/tuple-node.js";
++export * from "./operation-node/unary-operation-node.js";
++export * from "./operation-node/unique-constraint-node.js";
++export * from "./operation-node/update-query-node.js";
++export * from "./operation-node/using-node.js";
++export * from "./operation-node/value-list-node.js";
++export * from "./operation-node/value-node.js";
++export * from "./operation-node/values-node.js";
++export * from "./operation-node/when-node.js";
++export * from "./operation-node/where-node.js";
++export * from "./operation-node/with-node.js";
++export * from "./util/column-type.js";
++export * from "./util/compilable.js";
++export * from "./util/explainable.js";
++export * from "./util/streamable.js";
++export * from "./util/log.js";
++export * from "./util/infer-result.js";
++export { logOnce } from "./util/log-once.js";
++export { createQueryId } from "./util/query-id.js";
+diff --git a/dist/esm/migration/file-migration-provider.d.ts b/dist/esm/migration/file-migration-provider.d.ts
+deleted file mode 100644
+index 137936f83bf52e0bff73691db6f0fe5355828dce..0000000000000000000000000000000000000000
+--- a/dist/esm/migration/file-migration-provider.d.ts
++++ /dev/null
+@@ -1,48 +0,0 @@
+-import { Migration, MigrationProvider } from './migrator.js';
+-/**
+- * Reads all migrations from a folder in node.js.
+- *
+- * ### Examples
+- *
+- * ```ts
+- * import { promises as fs } from 'node:fs'
+- * import path from 'node:path'
+- *
+- * new FileMigrationProvider({
+- *   fs,
+- *   path,
+- *   migrationFolder: 'path/to/migrations/folder'
+- * })
+- * ```
+- */
+-export declare class FileMigrationProvider implements MigrationProvider {
+-    #private;
+-    constructor(props: FileMigrationProviderProps);
+-    /**
+-     * Returns all migrations, old and new.
+-     *
+-     * For example if you have your migrations in a folder as separate files,
+-     * you can implement this method to return all migration in that folder
+-     * as {@link Migration} objects.
+-     *
+-     * Kysely already has a built-in {@link FileMigrationProvider} for node.js
+-     * that does exactly that.
+-     *
+-     * The keys of the returned object are migration names and values are the
+-     * migrations. The order of the migrations is determined by the alphabetical
+-     * order of the migration names. The items in the object don't need to be
+-     * sorted, they are sorted by Kysely.
+-     */
+-    getMigrations(): Promise<Record<string, Migration>>;
+-}
+-export interface FileMigrationProviderFS {
+-    readdir(path: string): Promise<string[]>;
+-}
+-export interface FileMigrationProviderPath {
+-    join(...path: string[]): string;
+-}
+-export interface FileMigrationProviderProps {
+-    fs: FileMigrationProviderFS;
+-    path: FileMigrationProviderPath;
+-    migrationFolder: string;
+-}
+diff --git a/dist/esm/migration/file-migration-provider.js b/dist/esm/migration/file-migration-provider.js
+deleted file mode 100644
+index f410a83b59570edf52ac97e9aef6d9c351659109..0000000000000000000000000000000000000000
+--- a/dist/esm/migration/file-migration-provider.js
++++ /dev/null
+@@ -1,49 +0,0 @@
+-/// <reference types="./file-migration-provider.d.ts" />
+-import { isFunction, isObject } from '../util/object-utils.js';
+-/**
+- * Reads all migrations from a folder in node.js.
+- *
+- * ### Examples
+- *
+- * ```ts
+- * import { promises as fs } from 'node:fs'
+- * import path from 'node:path'
+- *
+- * new FileMigrationProvider({
+- *   fs,
+- *   path,
+- *   migrationFolder: 'path/to/migrations/folder'
+- * })
+- * ```
+- */
+-export class FileMigrationProvider {
+-    #props;
+-    constructor(props) {
+-        this.#props = props;
+-    }
+-    async getMigrations() {
+-        const migrations = {};
+-        const files = await this.#props.fs.readdir(this.#props.migrationFolder);
+-        for (const fileName of files) {
+-            if (fileName.endsWith('.js') ||
+-                (fileName.endsWith('.ts') && !fileName.endsWith('.d.ts')) ||
+-                fileName.endsWith('.mjs') ||
+-                (fileName.endsWith('.mts') && !fileName.endsWith('.d.mts'))) {
+-                const migration = await import(
+-                /* webpackIgnore: true */ this.#props.path.join(this.#props.migrationFolder, fileName));
+-                const migrationKey = fileName.substring(0, fileName.lastIndexOf('.'));
+-                // Handle esModuleInterop export's `default` prop...
+-                if (isMigration(migration?.default)) {
+-                    migrations[migrationKey] = migration.default;
+-                }
+-                else if (isMigration(migration)) {
+-                    migrations[migrationKey] = migration;
+-                }
+-            }
+-        }
+-        return migrations;
+-    }
+-}
+-function isMigration(obj) {
+-    return isObject(obj) && isFunction(obj.up);
+-}

@@ -1,6 +1,6 @@
 import { Slot, SplashScreen } from "expo-router"
 import { useEffect } from "react"
-import { AppState, type AppStateStatus, Platform } from "react-native"
+import { AppState, type AppStateStatus } from "react-native"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { KeyboardProvider } from "react-native-keyboard-controller"
 import {
@@ -15,18 +15,18 @@ import TrackPlayer, {
 } from "react-native-track-player"
 import { Provider } from "react-redux"
 
-import { PlaybackService } from "../audio/PlaybackService"
-import { StorytellerProvider } from "../components/StorytellerProvider"
-import { AudioBookProvider } from "../hooks/useAudioBook"
-import { logger } from "../logger"
-import { store } from "../store/store"
-import "../tasks/backgroundFetchSyncPositions"
+import { PlaybackService } from "@/audio/PlaybackService"
+import { StorytellerProvider } from "@/components/StorytellerProvider"
+import { PortalHost } from "@/components/ui/portal-context"
+import "@/global.css"
+import { AudioBookProvider } from "@/hooks/useAudioBook"
+import { logger } from "@/logger"
+import { store } from "@/store/store"
 
 TrackPlayer.registerPlaybackService(() => PlaybackService)
 
 const PLAYER_OPTIONS = {
   capabilities: [
-    ...(Platform.OS === "ios" ? [Capability.Bookmark] : []),
     Capability.JumpBackward,
     Capability.JumpForward,
     Capability.Pause,
@@ -63,14 +63,11 @@ async function initializePlayer() {
 
 initializePlayer()
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from "expo-router"
+export { ErrorBoundary } from "expo-router"
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "(tabs)",
+  initialRouteName: "index",
 }
 
 SplashScreen.preventAutoHideAsync()
@@ -113,12 +110,14 @@ export default function Layout() {
 
   return (
     <GestureHandlerRootView>
-      <KeyboardProvider navigationBarTranslucent>
+      <KeyboardProvider>
         <Provider store={store}>
           <AudioBookProvider>
             <StorytellerProvider>
               <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-                <Slot />
+                <PortalHost>
+                  <Slot />
+                </PortalHost>
               </SafeAreaProvider>
             </StorytellerProvider>
           </AudioBookProvider>

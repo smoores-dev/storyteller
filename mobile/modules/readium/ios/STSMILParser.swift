@@ -5,8 +5,8 @@
 //
 
 import Foundation
-import Fuzi
-import R2Shared
+import ReadiumShared
+import ReadiumFuzi
 
 /// The object containing the methods used to parse SMIL files.
 final class STSMILParser {
@@ -19,7 +19,10 @@ final class STSMILParser {
     ///   - parent: The parent MediaOverlayNode of the "to be creatred" nodes.
     ///   - readingOrder:
     ///   - base: The base location of the file for path normalization.
-    internal static func parseSequences(in element: Fuzi.XMLElement, withParent parent: MediaOverlayNode, mediaOverlays: MediaOverlays, base: String) {
+    internal static func parseSequences(in element: ReadiumFuzi.XMLElement, withParent parent: MediaOverlayNode, mediaOverlays: MediaOverlays, base: String) {
+        guard let baseHREF = RelativeURL(epubHREF: base) else {
+            return
+        }
         // TODO: 2 lines differ from the version used in the parseMediaOverlay for loop. Refactor?
         for sequence in element.xpath("smil:seq") {
             guard let href = sequence.attr("textref") else {
@@ -28,7 +31,11 @@ final class STSMILParser {
 
             let newNode = MediaOverlayNode()
             newNode.role.append("section")
-            newNode.text = HREF(href, relativeTo: base).string
+            guard let textref = RelativeURL(epubHREF: href).flatMap(baseHREF.resolve)?.string else {
+                continue
+            }
+            
+            newNode.text = textref
 
             parseParallels(in: sequence, withParent: newNode, base: base)
             parseSequences(in: sequence, withParent: newNode, mediaOverlays: mediaOverlays, base: base)
@@ -51,18 +58,25 @@ final class STSMILParser {
     /// - Parameters:
     ///   - element: The XML element which should contain <par>.
     ///   - parent: The parent MediaOverlayNode of the "to be creatred" nodes.
-    internal static func parseParallels(in element: Fuzi.XMLElement, withParent parent: MediaOverlayNode, base: String) {
+    internal static func parseParallels(in element: ReadiumFuzi.XMLElement, withParent parent: MediaOverlayNode, base: String) {
+        guard let baseHREF = RelativeURL(epubHREF: base) else {
+            return
+        }
         // For each <par> in the current scope.
         for parameterElement in element.xpath("smil:par") {
             guard let href = parameterElement.firstChild(xpath: "smil:text")?.attr("src"),
                   let audioElement = parameterElement.firstChild(xpath: "smil:audio"),
-                  let audioClip = parse(base: base, audioElement: audioElement)
+                  let audioClip = parse(base: baseHREF, audioElement: audioElement)
             else {
                 continue
             }
 
-            let nodeText = HREF(href, relativeTo: base).string
+            guard let nodeText = RelativeURL(epubHREF: href).flatMap(baseHREF.resolve)?.string else {
+                continue
+            }
+
             let newNode = MediaOverlayNode(nodeText, clip: audioClip)
+            
             parent.children.append(newNode)
         }
     }
@@ -95,7 +109,7 @@ final class STSMILParser {
     ///
     /// - Parameter audioElement: The audio XML element.
     /// - Returns: The formated string representing the data.
-    fileprivate static func parse(base: String, audioElement: Fuzi.XMLElement) -> Clip? {
+    fileprivate static func parse(base: RelativeURL, audioElement: ReadiumFuzi.XMLElement) -> Clip? {
         guard let audioSrc = audioElement.attr("src") else {
             return nil
         }
@@ -110,11 +124,12 @@ final class STSMILParser {
         let timeBegin = Double(parsedBegin) ?? 0.0
         let timeEnd = Double(parsedEnd) ?? -1.0
 
-        let audioString = HREF(audioSrc, relativeTo: base).string
-        guard let audioURL = URL(string: audioString) else { return nil }
+        guard let relativeURL = RelativeURL(epubHREF: audioSrc).flatMap(base.resolve) else {
+            return nil
+        }
 
         var newClip = Clip()
-        newClip.relativeUrl = audioURL
+        newClip.relativeUrl = relativeURL.url
 
         newClip.start = timeBegin
         newClip.end = timeEnd

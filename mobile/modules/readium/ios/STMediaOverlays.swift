@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import R2Shared
+import ReadiumShared
 
 public struct TextFragment {
     public var href: String
@@ -18,9 +18,16 @@ public struct TextFragment {
 
 public class STMediaOverlays : Loggable {
     public let mediaOverlays: MediaOverlays
+    public let link: Link
     
-    init() {
+    init(link: Link) {
+        self.link = link
         mediaOverlays = MediaOverlays()
+    }
+    
+    public func clips() -> [Clip] {
+        return collectNodes(inNodes: mediaOverlays.nodes).compactMap { $0.clip
+        }
     }
     
     public func clip(forFragmentId id: String) throws -> Clip? {
