@@ -447,7 +447,7 @@ export class Epub {
     )
     const encoder = new TextEncoder()
     const container = encoder.encode(`<?xml version="1.0"?>
-<container>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
   <rootfiles>
     <rootfile media-type="application/oebps-package+xml" full-path="OEBPS/content.opf"/>
   </rootfiles>
@@ -457,7 +457,7 @@ export class Epub {
     await writeFile(join(extractPath, "META-INF", "container.xml"), container)
 
     const packageDocument = encoder.encode(`<?xml version="1.0"?>
-<package unique-identifier="pub-id" dir="${language.textInfo.direction}" xml:lang=${language.toString()} version="3.0">
+<package unique-identifier="pub-id" dir="${language.textInfo.direction}" xml:lang="${language.toString()}" version="3.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <metadata>
   </metadata>
   <manifest>
