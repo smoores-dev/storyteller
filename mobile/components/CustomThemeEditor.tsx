@@ -138,8 +138,8 @@ export function CustomThemeEditor({ initialTheme, onSave }: Props) {
               onSave({
                 name,
                 isDark,
-                foreground,
-                background,
+                foreground: foreground.slice(0, 7),
+                background: background.slice(0, 7),
               })
             }}
           >
