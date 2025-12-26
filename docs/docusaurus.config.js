@@ -82,6 +82,11 @@ const config = {
             label: "Docs",
           },
           {
+            to: "blog",
+            label: "Blog",
+            position: "left",
+          },
+          {
             href: "https://opencollective.com/storyteller",
             label: "Donate",
             position: "left",
