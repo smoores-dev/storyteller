@@ -1,6 +1,6 @@
 import { type Middleware } from "@reduxjs/toolkit"
 
-import { logger } from "../../logger"
+import { logger } from "@/logger"
 
 function shallowStringify(value: unknown) {
   return JSON.stringify(value, function (k, v) {
@@ -20,8 +20,16 @@ function shallowStringify(value: unknown) {
 }
 
 export const loggingMiddleware: Middleware = (_) => (next) => (action) => {
-  logger.debug(
-    `Dispatching action: ${action.type} - ${shallowStringify(action.payload)}`,
-  )
+  if (
+    typeof action === "object" &&
+    action !== null &&
+    "type" in action &&
+    typeof action.type === "string" &&
+    "payload" in action
+  ) {
+    logger.debug(
+      `Dispatching action: ${action.type} - ${shallowStringify(action.payload)}`,
+    )
+  }
   next(action)
 }

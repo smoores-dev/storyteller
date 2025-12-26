@@ -1,86 +1,95 @@
-import {
-  type EventMapBase,
-  type NavigationState,
-} from "@react-navigation/native"
-import {
-  // Import the types
-  type StackNavigationOptions,
-  TransitionPresets,
-  // Import the creation function
-  createStackNavigator,
-} from "@react-navigation/stack"
-import { Stack, withLayoutContext } from "expo-router"
+import { Stack, useRouter } from "expo-router"
+import { ChevronLeft } from "lucide-react-native"
 import { Platform } from "react-native"
 
-const { Navigator } = createStackNavigator()
-
-export const JsStack = withLayoutContext<
-  StackNavigationOptions,
-  typeof Navigator,
-  NavigationState,
-  EventMapBase
->(Navigator)
+import { Button } from "@/components/ui/button"
+import { Icon } from "@/components/ui/icon"
 
 export default function ModalLayout() {
-  // iOS has native modal screens, so on iOS we can use the native stack
-  // and simple modal presentation
-  if (Platform.OS === "ios") {
-    return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="player"
-          options={{
-            presentation: Platform.isPad ? "fullScreenModal" : "modal",
-          }}
-        />
-        <Stack.Screen
-          name="custom-theme"
-          options={{
-            presentation: Platform.isPad ? "fullScreenModal" : "modal",
-          }}
-        />
-        <Stack.Screen
-          name="log"
-          options={{
-            presentation: Platform.isPad ? "fullScreenModal" : "modal",
-          }}
-        />
-      </Stack>
-    )
-  }
+  const modalPresentation = Platform.OS === "android" ? "formSheet" : "modal"
 
-  // Android doesn't have any analog to iOS's full screen modal
-  // sheet, so on Android we fall back to the legacy JS stack
+  const router = useRouter()
+
   return (
-    <>
-      <JsStack screenOptions={{ headerShown: false }}>
-        <JsStack.Screen name="(tabs)" />
-        <JsStack.Screen
-          name="player"
-          options={{
-            presentation: "modal",
-            gestureEnabled: true,
-            ...TransitionPresets.ModalPresentationIOS,
-          }}
-        />
-        <JsStack.Screen
-          name="custom-theme"
-          options={{
-            presentation: "modal",
-            gestureEnabled: true,
-            ...TransitionPresets.ModalPresentationIOS,
-          }}
-        />
-        <JsStack.Screen
-          name="log"
-          options={{
-            presentation: "modal",
-            gestureEnabled: true,
-            ...TransitionPresets.ModalPresentationIOS,
-          }}
-        />
-      </JsStack>
-    </>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="settings"
+        options={{
+          headerShown: true,
+          headerBackVisible: false,
+          headerLeft: () => (
+            <Button
+              size="icon"
+              variant="ghost"
+              onPress={() => {
+                router.replace("/")
+              }}
+            >
+              <Icon as={ChevronLeft} size={24} />
+            </Button>
+          ),
+          title: "Settings",
+        }}
+      />
+      <Stack.Screen name="read/[uuid]" />
+      <Stack.Screen name="book/[uuid]" />
+      <Stack.Screen name="author/[uuid]" />
+      <Stack.Screen
+        name="server"
+        options={{
+          headerShown: true,
+          headerBackVisible: false,
+          headerLeft: () => (
+            <Button
+              size="icon"
+              variant="ghost"
+              onPress={() => {
+                router.replace("/settings")
+              }}
+            >
+              <Icon as={ChevronLeft} size={24} />
+            </Button>
+          ),
+          title: "Select server",
+        }}
+      />
+      <Stack.Screen
+        name="listen/[uuid]"
+        options={{
+          presentation: modalPresentation,
+        }}
+      />
+      <Stack.Screen
+        name="custom-theme/index"
+        options={{
+          presentation: modalPresentation,
+        }}
+      />
+      <Stack.Screen
+        name="custom-theme/new"
+        options={{
+          presentation: modalPresentation,
+        }}
+      />
+      <Stack.Screen
+        name="custom-theme/[name]"
+        options={{
+          presentation: modalPresentation,
+        }}
+      />
+      <Stack.Screen
+        name="custom-fonts"
+        options={{
+          presentation: modalPresentation,
+        }}
+      />
+      <Stack.Screen
+        name="log"
+        options={{
+          presentation: modalPresentation,
+        }}
+      />
+    </Stack>
   )
 }

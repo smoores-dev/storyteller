@@ -1,0 +1,30 @@
+build:
+  name: Internal development build
+  steps:
+    - eas/checkout
+
+    - run:
+        name: Pre-install patch package manifest
+        command: ./scripts/pre-install.mjs
+
+    - run:
+        name: Focus install
+        command: yarn workspaces focus @storyteller-platform/mobile
+
+    - eas/resolve_build_config
+
+    - run:
+        name: Prebuild
+        command: yarn workspace @storyteller-platform/mobile expo prebuild -p android
+
+    - eas/inject_android_credentials
+
+    - eas/configure_android_version
+
+    - eas/run_gradle
+
+    - eas/find_and_upload_build_artifacts
+
+    - run:
+        name: Upload APK to GitLab
+        command: ./scripts/upload-apk-to-gitlab.sh

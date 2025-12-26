@@ -12,13 +12,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: IS_DEV ? "Storyteller (dev)" : "Storyteller",
     slug: "storyteller",
     version: packageInfo.version,
-    orientation: "portrait",
     icon: "./assets/Storyteller_Logo.png",
     userInterfaceStyle: "automatic",
     scheme: "storyteller",
+    experiments: {
+      reactCompiler: true,
+    },
     plugins: [
+      "expo-background-task",
+      "expo-web-browser",
       "expo-router",
       "expo-secure-store",
+      "expo-sqlite",
       [
         "expo-build-properties",
         {
@@ -77,22 +82,31 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ["./plugins/withAndroidJetifier.ts"],
       ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93] }],
       [
+        "./plugins/withPodSources.ts",
+        {
+          sources: [
+            "source 'https://github.com/readium/podspecs'",
+            "source 'https://cdn.cocoapods.org/'",
+          ],
+        },
+      ],
+      [
         "./plugins/withPods.ts",
         {
           pods: [
             "pod 'Minizip', modular_headers: true",
             "pod 'ZIPFoundation', '~> 0.9'",
-            "pod 'R2Shared', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumShared.podspec'",
-            "pod 'R2Streamer', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumStreamer.podspec'",
-            "pod 'R2Navigator', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumNavigator.podspec'",
-            "pod 'ReadiumAdapterGCDWebServer', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumAdapterGCDWebServer.podspec'",
-            "pod 'ReadiumOPDS', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumOPDS.podspec'",
-            "pod 'ReadiumInternal', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.7.4/Support/CocoaPods/ReadiumInternal.podspec'",
-            "pod 'Fuzi', podspec: 'https://raw.githubusercontent.com/readium/Fuzi/refs/heads/master/Fuzi.podspec'",
-            "pod 'ReadiumGCDWebServer', podspec: 'https://raw.githubusercontent.com/readium/GCDWebServer/4.0.0/GCDWebServer.podspec', modular_headers: true",
+            "pod 'ReadiumShared', '~> 3.5.0'",
+            "pod 'ReadiumStreamer', '~> 3.5.0'",
+            "pod 'ReadiumNavigator', '~> 3.5.0'",
+            "pod 'ReadiumOPDS', '~> 3.5.0'",
+            "pod 'ReadiumLCP', '~> 3.5.0'",
+            "pod 'ReadiumAdapterGCDWebServer', '~> 3.5.0', modular_headers: true",
           ],
         },
       ],
+      ["./plugins/withModularHeaders.ts"],
+      ["./plugins/withCoreLibraryDesugaring.ts"],
     ],
     runtimeVersion: {
       policy: "appVersion",
@@ -113,6 +127,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         UIBackgroundModes: ["audio", "fetch"],
         NSMicrophoneUsageDescription:
           "This permission is not needed by the app, but it is required by an underlying API. If you see this dialog, contact us.",
+        CFBundleDocumentTypes: [
+          {
+            CFBundleTypeName: "EPUB",
+            LSItemContentTypes: ["org.idpf.epub-container"],
+            LSHandlerRank: "Owner",
+          },
+        ],
       },
     },
     android: {
@@ -123,6 +144,40 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         foregroundImage: "./assets/Storyteller_Logo.png",
         backgroundColor: "#ffffff",
       },
+      // This doesn't work yet
+      predictiveBackGestureEnabled: false,
+      intentFilters: [
+        {
+          action: "VIEW",
+          data: [
+            {
+              mimeType: "application/epub+zip",
+              scheme: "content",
+            },
+            {
+              mimeType: "application/epub+zip",
+              scheme: "file",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+        {
+          action: "VIEW",
+          data: [
+            {
+              mimeType: "*/*",
+              pathPattern: ".*\\.epub",
+              scheme: "content",
+            },
+            {
+              mimeType: "*/*",
+              pathPattern: ".*\\.epub",
+              scheme: "file",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+      ],
     },
     extra: {
       eas: {

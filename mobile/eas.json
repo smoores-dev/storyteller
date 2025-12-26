@@ -7,7 +7,8 @@
   "build": {
     "development": {
       "android": {
-        "config": "android-build.yml"
+        "config": "android-build.yml",
+        "resourceClass": "large"
       },
       "ios": {
         "config": "ios-build.yml"
@@ -20,7 +21,8 @@
     },
     "preview": {
       "android": {
-        "config": "android-build.yml"
+        "config": "android-build-preview.yml",
+        "resourceClass": "large"
       },
       "ios": {
         "config": "ios-build.yml"
@@ -33,7 +35,8 @@
     "production": {
       "autoIncrement": true,
       "android": {
-        "config": "android-build.yml"
+        "config": "android-build.yml",
+        "resourceClass": "large"
       },
       "ios": {
         "config": "ios-build.yml"

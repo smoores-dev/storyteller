@@ -19,7 +19,7 @@
     "build:web:worker": "yarn workspace @storyteller-platform/web build:worker",
     "build": "concurrently -P 'npm:build:*'",
     "check:format": "prettier --check .",
-    "check:lint": "yarn workspaces foreach -pA run eslint --ext .cjs,.js,.jsx,.ts,.tsx .",
+    "check:lint": "yarn workspaces foreach -pA run eslint --ext .cjs,.js,.jsx,.ts,.tsx,.mjs .",
     "types:docs": "tsc -p docs",
     "types:web": "tsc -p web",
     "check:types": "tsc --build",
@@ -28,7 +28,7 @@
     "dev:docs": "yarn workspace @storyteller-platform/docs start",
     "dev:web": "yarn workspace @storyteller-platform/web dev",
     "fix:format": "prettier --write .",
-    "fix:lint": "eslint --fix .",
+    "fix:lint": "yarn workspaces foreach -pA run eslint --ext .cjs,.js,.jsx,.ts,.tsx,.mjs --fix .",
     "fix": "concurrently -P 'npm:fix:*'",
     "generate:env-docs": "tsx ./web/scripts/generate-env-docs.ts",
     "postinstall": "husky",
@@ -38,7 +38,7 @@
     "test": "concurrently -P 'npm:test:*'"
   },
   "devDependencies": {
-    "@dword-design/eslint-plugin-import-alias": "^5.0.0",
+    "@dword-design/eslint-plugin-import-alias": "patch:@dword-design/eslint-plugin-import-alias@npm%3A5.1.2#~/.yarn/patches/@dword-design-eslint-plugin-import-alias-npm-5.1.2-1b47891395.patch",
     "@eslint/eslintrc": "^3.0.0",
     "@next/eslint-plugin-next": "^14.1.0",
     "@storyteller-platform/eslint": "workspace:*",
@@ -68,5 +68,11 @@
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "typescript-plugin-css-modules": "^5.0.2"
+  },
+  "resolutions": {
+    "expo-file-system@npm:~19.0.11": "patch:expo-file-system@npm%3A19.0.11#~/.yarn/patches/expo-file-system-npm-19.0.11-1b623c597e.patch",
+    "react-native-css-interop@npm:0.1.22": "patch:react-native-css-interop@npm%3A0.1.22#~/.yarn/patches/react-native-css-interop-npm-0.1.22-9770293dfb.patch",
+    "expo-file-system@npm:~19.0.17": "patch:expo-file-system@npm%3A19.0.17#~/.yarn/patches/expo-file-system-npm-19.0.17-cda362f0b1.patch",
+    "expo-file-system@npm:~19.0.19": "patch:expo-file-system@npm%3A19.0.19#~/.yarn/patches/expo-file-system-npm-19.0.19-800f9ff305.patch"
   }
 }

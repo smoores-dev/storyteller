@@ -1,45 +1,43 @@
-@file:OptIn(ExperimentalReadiumApi::class)
+@file:OptIn(ExperimentalReadiumApi::class, InternalReadiumApi::class)
 
 package expo.modules.readium
 
-import android.graphics.Color
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.PointF
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
-import android.view.KeyEvent
-import android.view.KeyEvent.ACTION_DOWN
 import android.webkit.JavascriptInterface
 import androidx.annotation.ColorInt
+import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.lifecycleScope
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
-import expo.modules.readium.FinalizedProps
-import kotlin.math.ceil
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.Decoration
-import org.readium.r2.navigator.ExperimentalDecorator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.input.InputListener
+import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.TextAlign
+import org.readium.r2.navigator.util.DirectionalNavigationAdapter
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.util.AbsoluteUrl
+import kotlin.math.ceil
 
 data class Highlight(val id: String, @ColorInt val color: Int, val locator: Locator)
 
 data class CustomFont(val uri: String, val name: String, val type: String)
 
 data class Props(
-    var bookId: Long?,
+    var bookUuid: String?,
     var locator: Locator?,
     var isPlaying: Boolean?,
     var highlights: List<Highlight>?,
@@ -57,8 +55,8 @@ data class Props(
 
 
 data class FinalizedProps(
-    var bookId: Long,
-    var locator: Locator,
+    var bookUuid: String,
+    var locator: Locator?,
     var isPlaying: Boolean,
     var highlights: List<Highlight>,
     var bookmarks: List<Locator>,
@@ -75,7 +73,6 @@ data class FinalizedProps(
 
 
 @SuppressLint("ViewConstructor", "ResourceType")
-@OptIn(ExperimentalDecorator::class)
 class EpubView(context: Context, appContext: AppContext) : ExpoView(context, appContext),
     EpubNavigatorFragment.Listener, DecorableNavigator.Listener {
 
@@ -96,56 +93,59 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     var bookService: BookService? = null
     var navigator: EpubNavigatorFragment? = null
 
+    var locationEmitter: Job? = null
+
     private var changingResource = false
 
     var pendingProps: Props = Props(
-        bookId=null,
-        locator=null,
-        isPlaying=null,
-        highlights=null,
-        bookmarks=null,
-        readaloudColor=null,
-        customFonts=null,
-        foreground=null,
-        background=null,
-        fontFamily=null,
-        lineHeight=null,
-        paragraphSpacing=null,
-        fontSize=null,
-        textAlign=null,
+        bookUuid = null,
+        locator = null,
+        isPlaying = null,
+        highlights = null,
+        bookmarks = null,
+        readaloudColor = null,
+        customFonts = null,
+        foreground = null,
+        background = null,
+        fontFamily = null,
+        lineHeight = null,
+        paragraphSpacing = null,
+        fontSize = null,
+        textAlign = null,
     )
     var props: FinalizedProps? = null
 
     fun finalizeProps() {
         val oldProps = props
 
-        props =
-        FinalizedProps(
-            bookId = pendingProps.bookId!!,
-            locator = pendingProps.locator!!,
-            isPlaying = pendingProps.isPlaying ?: oldProps?.isPlaying ?: false,
-            highlights = pendingProps.highlights ?: oldProps?.highlights ?: listOf(),
-            bookmarks = pendingProps.bookmarks ?: oldProps?.bookmarks ?: listOf(),
-            readaloudColor = pendingProps.readaloudColor
-                ?: oldProps?.readaloudColor ?: 0xffffff00.toInt(),
-            customFonts = pendingProps.customFonts ?: oldProps?.customFonts ?: listOf(),
-            foreground = pendingProps.foreground
-                ?: oldProps?.foreground ?: Color.parseColor("#111111"),
-            background = pendingProps.background
-                ?: oldProps?.background ?: Color.parseColor("#FFFFFF"),
-            fontFamily = pendingProps.fontFamily
-                ?: oldProps?.fontFamily ?: FontFamily("Literata"),
-            lineHeight = pendingProps.lineHeight ?: oldProps?.lineHeight ?: 1.4,
-            paragraphSpacing = pendingProps.paragraphSpacing
-                ?: oldProps?.paragraphSpacing ?: 0.5,
-            fontSize = pendingProps.fontSize ?: oldProps?.fontSize ?: 1.0,
-            textAlign = pendingProps.textAlign ?: oldProps?.textAlign ?: TextAlign.JUSTIFY,
-        )
+        val finalProps =
+            FinalizedProps(
+                bookUuid = pendingProps.bookUuid!!,
+                locator = pendingProps.locator,
+                isPlaying = pendingProps.isPlaying ?: oldProps?.isPlaying ?: false,
+                highlights = pendingProps.highlights ?: oldProps?.highlights ?: listOf(),
+                bookmarks = pendingProps.bookmarks ?: oldProps?.bookmarks ?: listOf(),
+                readaloudColor = pendingProps.readaloudColor
+                    ?: oldProps?.readaloudColor ?: 0xffffff00.toInt(),
+                customFonts = pendingProps.customFonts ?: oldProps?.customFonts ?: listOf(),
+                foreground = pendingProps.foreground
+                    ?: oldProps?.foreground ?: "#111111".toColorInt(),
+                background = pendingProps.background
+                    ?: oldProps?.background ?: "#FFFFFF".toColorInt(),
+                fontFamily = pendingProps.fontFamily
+                    ?: oldProps?.fontFamily ?: FontFamily("Literata"),
+                lineHeight = pendingProps.lineHeight ?: oldProps?.lineHeight ?: 1.4,
+                paragraphSpacing = pendingProps.paragraphSpacing
+                    ?: oldProps?.paragraphSpacing ?: 0.5,
+                fontSize = pendingProps.fontSize ?: oldProps?.fontSize ?: 1.0,
+                textAlign = pendingProps.textAlign ?: oldProps?.textAlign ?: TextAlign.JUSTIFY,
+            )
 
-        if (props!!.bookId != oldProps?.bookId || props!!.customFonts != oldProps.customFonts) {
+        props = finalProps
+
+        if (finalProps.bookUuid != oldProps?.bookUuid || finalProps.customFonts != oldProps.customFonts) {
             destroyNavigator()
             initializeNavigator()
-            return
         }
 
         val activity = appContext.currentActivity as FragmentActivity?
@@ -154,34 +154,36 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         // different fragments. Prevents unnecessarily triggering renders and state updates
         // when the position hasn't actually changed
         val locatorComp =
-            if (navigator!!.currentLocator.value.locations.fragments.isEmpty())
-                props!!.locator.copy(locations = props!!.locator.locations.copy(fragments = listOf()))
-            else props!!.locator
+            finalProps.locator?.copyWithLocations(fragments = listOf(), otherLocations = mapOf())
+        val currentLocatorComp = navigator?.currentLocator?.value?.copyWithLocations(
+            fragments = listOf(),
+            otherLocations = mapOf()
+        )
 
-        if (locatorComp != navigator!!.currentLocator.value) {
-            go(props!!.locator)
+        if (locatorComp != currentLocatorComp && finalProps.locator != null) {
+            go(finalProps.locator!!)
         }
 
-        if (props!!.isPlaying) {
-            highlightFragment(props!!.locator)
+        if (finalProps.isPlaying && finalProps.locator != null) {
+            highlightFragment(finalProps.locator!!)
         } else {
             clearHighlightFragment()
         }
 
-        if (props!!.highlights != oldProps.highlights) {
+        if (finalProps.highlights != oldProps?.highlights) {
             decorateHighlights()
         }
 
-        if (props!!.bookmarks != oldProps.bookmarks) {
-            activity?.lifecycleScope?.launch { findOnPage(props!!.locator) }
+        if (finalProps.bookmarks != oldProps?.bookmarks && finalProps.locator != null) {
+            activity?.lifecycleScope?.launch { findOnPage(finalProps.locator!!) }
         }
 
-        if (props!!.readaloudColor != oldProps.readaloudColor) {
+        if (finalProps.readaloudColor != oldProps?.readaloudColor && finalProps.locator != null) {
             clearHighlightFragment()
-            highlightFragment(props!!.locator)
+            highlightFragment(finalProps.locator!!)
         }
 
-        navigator!!.submitPreferences(
+        navigator?.submitPreferences(
             EpubPreferences(
                 backgroundColor = org.readium.r2.navigator.preferences.Color(props!!.background),
                 fontFamily = props!!.fontFamily,
@@ -195,7 +197,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     fun initializeNavigator() {
-        val publication = bookService?.getPublication(props!!.bookId) ?: return
+        val publication = bookService?.getPublication(props!!.bookUuid) ?: return
 
         val fragmentTag = resources.getString(R.string.epub_fragment_tag)
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
@@ -219,7 +221,21 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         navigator?.addDecorationListener("highlights", this)
 
-        activity?.lifecycleScope?.launch {
+        navigator?.addInputListener(
+            DirectionalNavigationAdapter(
+                navigator!!,
+                animatedTransition = true,
+            )
+        )
+
+        navigator?.addInputListener(object : InputListener {
+            override fun onTap(event: TapEvent): Boolean {
+                onMiddleTouch(mapOf())
+                return true
+            }
+        })
+
+        locationEmitter = activity?.lifecycleScope?.launch {
             navigator?.currentLocator?.collect {
                 onLocatorChanged(it)
             }
@@ -232,13 +248,16 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.supportFragmentManager?.commitNow {
             setReorderingAllowed(true)
-            remove(navigator)
+            remove(navigator.requireParentFragment())
         }
+
         removeView(navigator.view)
+
+        this.navigator = null
     }
 
     private suspend fun emitCurrentLocator() {
-        val currentLocator = navigator!!.currentLocator?.value ?: return
+        val currentLocator = navigator!!.currentLocator.value
         val found = navigator!!.firstVisibleElementLocator()
         if (found == null) {
             onLocatorChange(currentLocator.toJSON().toMap())
@@ -285,7 +304,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     fun highlightFragment(locator: Locator) {
-        val id = locator.locations.fragments.first()
+        val id = locator.locations.fragments.firstOrNull() ?: return
 
         val overlayHighlight = Decoration.Style.Highlight(props!!.readaloudColor, isActive = true)
         val decoration = Decoration(id, locator, overlayHighlight)
@@ -294,7 +313,6 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         activity?.lifecycleScope?.launch {
             navigator?.applyDecorations(listOf(decoration), "overlay")
         }
-
     }
 
     fun clearHighlightFragment() {
@@ -353,7 +371,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     fun setupUserScript(): EpubView {
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
-            val fragments = bookService?.getFragments(props!!.bookId, props!!.locator) ?: return@launch
+            val locator = props!!.locator ?: return@launch
+            val fragments =
+                bookService?.getFragments(props!!.bookUuid, locator) ?: return@launch
 
             val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
@@ -472,7 +492,8 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         val currentLocator = navigator?.currentLocator?.value ?: return
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
-            val locator = bookService.buildFragmentLocator(props!!.bookId, currentLocator.href, fragment)
+            val locator =
+                bookService.buildFragmentLocator(props!!.bookUuid, currentLocator.href, fragment)
 
             onDoubleTouch(locator.toJSON().toMap())
         }
@@ -483,26 +504,13 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         onSelection(mapOf("cleared" to true))
     }
 
-    override fun onTap(point: PointF): Boolean {
-        if (point.x < width * 0.2) {
-            navigator?.goBackward(animated = true)
-            return true
-        }
-        if (point.x > width * 0.8) {
-            navigator?.goForward(animated = true)
-            return true
-        }
-        onMiddleTouch(mapOf())
-        return false
-    }
-
     private suspend fun onLocatorChanged(locator: Locator) {
         findOnPage(locator)
 
-        if (locator.href != props!!.locator.href || changingResource) {
+        if (locator.href != props!!.locator?.href || changingResource) {
             changingResource = false
 
-            val fragments = bookService?.getFragments(props!!.bookId, locator) ?: return
+            val fragments = bookService?.getFragments(props!!.bookUuid, locator) ?: return
 
             val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
@@ -519,5 +527,10 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         } else {
             emitCurrentLocator()
         }
+    }
+
+    @ExperimentalReadiumApi
+    override fun onExternalLinkActivated(url: AbsoluteUrl) {
+        TODO("Not yet implemented")
     }
 }

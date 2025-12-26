@@ -1,37 +1,41 @@
-import { ActivityIndicator, Pressable, type ViewProps } from "react-native"
+import { Pause, Play } from "lucide-react-native"
+import { ActivityIndicator } from "react-native"
 import TrackPlayer from "react-native-track-player"
 
-import { useAudioBook } from "../hooks/useAudioBook"
-import { useColorTheme } from "../hooks/useColorTheme"
-import { PauseIcon } from "../icons/PauseIcon"
-import { PlayIcon } from "../icons/PlayIcon"
-import { useAppDispatch } from "../store/appState"
-import { playerPlayed } from "../store/slices/bookshelfSlice"
+import { useAudioBook } from "@/hooks/useAudioBook"
+import { useColorTheme } from "@/hooks/useColorTheme"
+import { playerPlayed } from "@/store/actions"
+import { useAppDispatch } from "@/store/appState"
+
+import { Button } from "./ui/button"
+import { Icon } from "./ui/icon"
 
 type Props = {
-  style?: ViewProps["style"]
+  size?: number | undefined
   automaticRewind?: boolean
 }
 
-export function PlayPause({ style, automaticRewind = true }: Props) {
+export function PlayPause({ size = 24, automaticRewind = true }: Props) {
   const { isPlaying, isLoading } = useAudioBook()
   const dispatch = useAppDispatch()
   const { foreground } = useColorTheme()
 
-  if (isLoading) return <ActivityIndicator style={style} />
+  if (isLoading) return <ActivityIndicator size={size} />
 
   return isPlaying ? (
-    <Pressable
-      hitSlop={20}
+    <Button
+      variant="ghost"
+      size="icon"
       onPress={() => {
         TrackPlayer.pause()
       }}
     >
-      <PauseIcon style={style} />
-    </Pressable>
+      <Icon as={Pause} fill={foreground} size={size} />
+    </Button>
   ) : (
-    <Pressable
-      hitSlop={20}
+    <Button
+      variant="ghost"
+      size="icon"
       onPress={() => {
         if (automaticRewind) {
           dispatch(playerPlayed())
@@ -40,15 +44,12 @@ export function PlayPause({ style, automaticRewind = true }: Props) {
         }
       }}
     >
-      <PlayIcon
+      <Icon
+        as={Play}
         fill={foreground}
-        style={[
-          {
-            backgroundColor: "transparent",
-          },
-          style,
-        ]}
+        className="bg-transparent"
+        size={size}
       />
-    </Pressable>
+    </Button>
   )
 }

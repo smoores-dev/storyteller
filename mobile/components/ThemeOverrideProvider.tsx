@@ -1,4 +1,7 @@
-import { type ReactNode, createContext, useMemo } from "react"
+import convert from "color-convert"
+import { vars } from "nativewind"
+import { type ReactNode, createContext } from "react"
+import { View } from "react-native"
 
 type ThemeOverrideContextValue = {
   foreground?: string | undefined
@@ -14,18 +17,31 @@ export const ThemeOverrideContext =
 export function ThemeOverrideProvider({
   children,
   foreground,
-  foregroundSecondary,
   background,
-  surface,
-  dark,
-}: ThemeOverrideContextValue & { children: ReactNode }) {
-  const value = useMemo(
-    () => ({ foreground, foregroundSecondary, background, surface, dark }),
-    [background, dark, foreground, foregroundSecondary, surface],
-  )
+}: {
+  foreground: string
+  background: string
+  children: ReactNode
+}) {
+  const bg = convert.hex.hsl(background)
+  const fg = convert.hex.hsl(foreground)
+  const bgHsl = `${bg[0]} ${bg[1]}% ${bg[2]}%`
+  const fgHsl = `${fg[0]} ${fg[1]}% ${fg[2]}%`
   return (
-    <ThemeOverrideContext.Provider value={value}>
+    <View
+      className="flex-1"
+      style={vars({
+        "--background": bgHsl,
+        "--foreground": fgHsl,
+        "--card": bgHsl,
+        "--card-foreground": fgHsl,
+        "--secondary-foreground": fgHsl,
+        "--secondary": `${fgHsl} / 0.1`,
+        "--border": `${fgHsl} / 0.2`,
+        "--input": `${fgHsl} / 0.2`,
+      })}
+    >
       {children}
-    </ThemeOverrideContext.Provider>
+    </View>
   )
 }

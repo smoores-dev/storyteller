@@ -1,64 +1,54 @@
-import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native"
+import { View } from "react-native"
 
-import { appColor } from "../design"
-import { useColorTheme } from "../hooks/useColorTheme"
+import { cn } from "@/lib/utils"
 
-import { Slider } from "./ui/Slider"
+import { Slider } from "./ui/slider"
 
 type Props = {
-  style?: StyleProp<ViewStyle>
+  className?: string | undefined
   start?: number
   step?: number
   stop?: number
   progress: number
   onProgressChange?: ((newProgress: number) => void) | undefined
+  onPanStart?: (() => void) | undefined
+  onPanStop?: (() => void) | undefined
 }
 
 export function ProgressBar({
-  style,
+  className,
   start = 0,
   step = 1,
   stop = 100,
   progress,
   onProgressChange,
+  onPanStart,
+  onPanStop,
 }: Props) {
-  const { surface } = useColorTheme()
   if (onProgressChange) {
     return (
-      <View style={style}>
+      <View {...(className && { className })}>
         <Slider
           start={start}
           stop={stop}
           step={step}
           value={progress}
           onValueChange={onProgressChange}
+          onPanStart={onPanStart}
+          onPanStop={onPanStop}
         />
       </View>
     )
   }
 
   return (
-    <View style={[styles.outer, { backgroundColor: surface }, style]}>
+    <View className={cn("rounded-b-sm bg-secondary", className)}>
       <View
-        style={[
-          styles.inner,
-          { width: `${(progress / (stop - start)) * 100}%` },
-        ]}
+        className="absolute h-[3px] rounded-bl-sm bg-primary"
+        style={{
+          width: `${(progress / (stop - start)) * 100}%`,
+        }}
       />
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  outer: {
-    borderBottomLeftRadius: 4,
-    borderBottomRightRadius: 4,
-    height: 3,
-  },
-  inner: {
-    borderBottomLeftRadius: 4,
-    height: 3,
-    backgroundColor: appColor,
-    position: "absolute",
-  },
-})

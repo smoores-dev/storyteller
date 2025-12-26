@@ -6,6 +6,19 @@
 
 package expo.modules.readium
 
+internal object Namespaces {
+    const val OPC = "urn:oasis:names:tc:opendocument:xmlns:container"
+    const val ENC = "http://www.w3.org/2001/04/xmlenc#"
+    const val SIG = "http://www.w3.org/2000/09/xmldsig#"
+    const val COMP = "http://www.idpf.org/2016/encryption#compression"
+    const val OPF = "http://www.idpf.org/2007/opf"
+    const val DC = "http://purl.org/dc/elements/1.1/"
+    const val OPS = "http://www.idpf.org/2007/ops"
+    const val XHTML = "http://www.w3.org/1999/xhtml"
+    const val SMIL = "http://www.w3.org/ns/SMIL"
+    const val NCX = "http://www.daisy.org/z3986/2005/ncx/"
+}
+
 internal object Vocabularies {
     const val META = "http://idpf.org/epub/vocab/package/meta/#"
     const val LINK = "http://idpf.org/epub/vocab/package/link/#"

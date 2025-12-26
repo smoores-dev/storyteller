@@ -29,16 +29,16 @@ internal object ClockValueParser {
 
     private fun parseClockvalue(value: String): Double? {
         val parts = value.split(":").map { it.toDoubleOrNull() ?: return null }
-        val min_sec = parts.last() + parts[parts.size - 2] * 60
-        return if (parts.size > 2) min_sec + parts[parts.size - 3] * 3600 else min_sec
+        val minSec = parts.last() + parts[parts.size - 2] * 60
+        return if (parts.size > 2) minSec + parts[parts.size - 3] * 3600 else minSec
     }
 
     private fun parseTimecount(value: Double, metric: String): Double? =
-            when (metric) {
-                "h" -> value * 3600
-                "min" -> value * 60
-                "s", "" -> value
-                "ms" -> value / 1000
-                else -> null
-            }
+        when (metric) {
+            "h" -> value * 3600
+            "min" -> value * 60
+            "s", "" -> value
+            "ms" -> value / 1000
+            else -> null
+        }
 }

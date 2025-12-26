@@ -1,6 +1,6 @@
 import { ActivityIndicator, View } from "react-native"
 
-import { useColorTheme } from "../hooks/useColorTheme"
+import { useColorTheme } from "@/hooks/useColorTheme"
 
 export function LoadingView() {
   const { background, foreground } = useColorTheme()

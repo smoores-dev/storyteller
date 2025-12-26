@@ -1,6 +1,6 @@
 
 import Foundation
-import R2Shared
+import ReadiumShared
 
 enum BookError: LocalizedError {
     case publicationIsNotValid

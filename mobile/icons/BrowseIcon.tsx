@@ -1,6 +1,6 @@
 import { ClipPath, Defs, G, Path, Rect, Svg } from "react-native-svg"
 
-import { useColorTheme } from "../hooks/useColorTheme"
+import { useColorTheme } from "@/hooks/useColorTheme"
 
 type Props = {
   focused: boolean

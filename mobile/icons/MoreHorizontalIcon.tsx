@@ -1,6 +1,6 @@
 import { G, Path, Svg } from "react-native-svg"
 
-import { useColorTheme } from "../hooks/useColorTheme"
+import { useColorTheme } from "@/hooks/useColorTheme"
 
 export function MoreHorizontalIcon() {
   const { foreground } = useColorTheme()

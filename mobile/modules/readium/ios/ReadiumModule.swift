@@ -1,6 +1,6 @@
 import ExpoModulesCore
-import R2Shared
-import R2Navigator
+import ReadiumShared
+import ReadiumNavigator
 
 public class ReadiumModule: Module {
     public func definition() -> ModuleDefinition {
@@ -10,27 +10,35 @@ public class ReadiumModule: Module {
             try BookService.instance.extractArchive(archiveUrl: archiveUrl, extractedUrl: extractedUrl)
         }
 
-        AsyncFunction("openPublication") { (bookId: Int, publicationUri: URL) -> String in
-            let pub = try await BookService.instance.openPublication(for: bookId, at: publicationUri)
+        AsyncFunction("openPublication") { (bookId: String, publicationUri: URL) -> String in
+            let pub = try await BookService.instance.openPublication(for: bookId, at: FileURL(url: publicationUri)!)
             return pub.jsonManifest ?? "{}"
         }
 
-        AsyncFunction("getResource") { (bookId: Int, linkJson: [String : Any]) -> String in
-            let link = try Link(json: linkJson)
-            let resource = try BookService.instance.getResource(for: bookId, link: link)
-            if link.type?.starts(with: "image/") != nil {
-                let data = try resource.read().get()
-                return data.base64EncodedString()
+        AsyncFunction("buildAudiobookManifest") { (bookId: String) async throws -> [String:Any] in
+            if #available(iOS 16.0, *) {
+                return try await BookService.instance.buildAudiobookManifest(for: bookId).json
+            } else {
+                return [:]
             }
-            return try resource.readAsString().get()
         }
 
-        AsyncFunction("getPositions") { (bookId: Int) -> [[String : Any]] in
-            let positions = try BookService.instance.getPositions(for: bookId)
+        AsyncFunction("getResource") { (bookId: String, linkJson: [String : Any]) async throws -> String in
+            let link = try Link(json: linkJson)
+            let resource = try BookService.instance.getResource(for: bookId, link: link)
+            if link.mediaType?.isBitmap ?? false {
+                let data = try await resource.read().get()
+                return data.base64EncodedString()
+            }
+            return try await resource.readAsString().get()
+        }
+
+        AsyncFunction("getPositions") { (bookId: String) async throws -> [[String : Any]] in
+            let positions = try await BookService.instance.getPositions(for: bookId)
             return positions.map { $0.json }
         }
 
-        AsyncFunction("getClip") { (bookId: Int, locatorJson: [String : Any]) -> [String : Any]? in
+        AsyncFunction("getClip") { (bookId: String, locatorJson: [String : Any]) -> [String : Any]? in
             guard let locator = try Locator(json: locatorJson),
                   let clip = try BookService.instance.getClip(for: bookId, locator: locator) else {
                 return nil
@@ -45,9 +53,9 @@ public class ReadiumModule: Module {
             ]
         }
 
-        AsyncFunction("getFragment") { (bookId: Int, clipUrlString: String, position: Double) -> [String : Any]? in
+        AsyncFunction("getFragment") { (bookId: String, clipUrlString: String, position: Double) async throws -> [String : Any]? in
             guard let clipUrl = URL(string: clipUrlString),
-                  let fragment = try BookService.instance.getFragment(for: bookId, clipUrl: clipUrl, position: position) else {
+                  let fragment = try await BookService.instance.getFragment(for: bookId, clipUrl: clipUrl, position: position) else {
                 return nil
             }
             return [
@@ -56,26 +64,26 @@ public class ReadiumModule: Module {
                 "locator": fragment.locator!.json
             ]
         }
-        
-        AsyncFunction("getPreviousFragment") { (bookId: Int, locatorJson: [String : Any]) -> [String : Any]? in
+
+        AsyncFunction("getPreviousFragment") { (bookId: String, locatorJson: [String : Any]) async throws-> [String : Any]? in
             guard let locator = try Locator(json: locatorJson),
-                  let previous = try? BookService.instance.getFragment(for: bookId, before: locator) else {
+                  let previous = try? await BookService.instance.getFragment(for: bookId, before: locator) else {
                 return nil
             }
-            
+
             return [
                 "href": previous.href,
                 "fragment": previous.fragment,
                 "locator": previous.locator!.json
             ]
         }
-        
-        AsyncFunction("getNextFragment") { (bookId: Int, locatorJson: [String : Any]) -> [String : Any]? in
+
+        AsyncFunction("getNextFragment") { (bookId: String, locatorJson: [String : Any]) async throws-> [String : Any]? in
             guard let locator = try Locator(json: locatorJson),
-                  let next = try? BookService.instance.getFragment(for: bookId, after: locator) else {
+                  let next = try? await BookService.instance.getFragment(for: bookId, after: locator) else {
                 return nil
             }
-            
+
             return [
                 "href": next.href,
                 "fragment": next.fragment,
@@ -83,16 +91,16 @@ public class ReadiumModule: Module {
             ]
         }
 
-        AsyncFunction("locateLink") { (bookId: Int, linkJson: [String : Any]) -> [String : Any]? in
+        AsyncFunction("locateLink") { (bookId: String, linkJson: [String : Any]) async throws-> [String : Any]? in
             let link = try Link(json: linkJson)
-            let locator = BookService.instance.locateLink(for: bookId, link: link)
+            let locator = await BookService.instance.locateLink(for: bookId, link: link)
             return locator?.json
         }
 
         View(EPUBView.self) {
             Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
 
-            Prop("bookId") { (view: EPUBView, prop: Int) in
+            Prop("bookUuid") { (view: EPUBView, prop: String) in
                 view.pendingProps.bookId = prop
             }
 
@@ -111,7 +119,7 @@ public class ReadiumModule: Module {
 
             Prop("highlights") { (view: EPUBView, prop: [[String: Any]]) in
                 let highlights = prop.compactMap { (highlightDict: [String: Any]) -> Highlight? in
-                    guard let id = highlightDict["id"] as? String else {
+                    guard let id = highlightDict["uuid"] as? String else {
                         return nil
                     }
                     guard let color = highlightDict["color"] as? String else {
@@ -154,16 +162,7 @@ public class ReadiumModule: Module {
             }
 
             Prop("readaloudColor") { (view: EPUBView, prop: String) in
-                let mappedColor = switch prop {
-                    case "yellow": UIColor.yellow
-                    case "red": UIColor.red
-                    case "blue": UIColor.blue
-                    case "green": UIColor.green
-                    case "magenta": UIColor.magenta
-                    default: UIColor.yellow
-                }
-
-                view.pendingProps.readaloudColor = mappedColor
+                view.pendingProps.readaloudColor = Color(hex: prop)
             }
 
             Prop("fontScale") { (view: EPUBView, prop: Double) in

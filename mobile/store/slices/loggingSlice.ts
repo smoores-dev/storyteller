@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit"
 
-import { logger } from "../../logger"
+import { logger } from "@/logger"
 
 type LoggingSliceState = {
   debugEnabled: boolean

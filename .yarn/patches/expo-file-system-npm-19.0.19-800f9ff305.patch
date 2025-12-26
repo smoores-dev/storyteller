@@ -1,0 +1,24 @@
+diff --git a/package.json b/package.json
+index df561646aaae9f5f2e7bbc83b7e3034a3f3efa1a..d55d8d0034bf1359b3641fe1ac61005f76ad5fb6 100644
+--- a/package.json
++++ b/package.json
+@@ -4,6 +4,19 @@
+   "description": "Provides access to the local file system on the device.",
+   "main": "src/index.ts",
+   "types": "build/index.d.ts",
++  "exports": {
++    "./app.plugin": "./app.plugin.js",
++    "./app.plugin.js": "./app.plugin.js",
++    "./package.json": "./package.json",
++    ".": {
++      "types": "./build/index.d.ts",
++      "default": "./src/index.ts"
++    },
++    "./legacy": {
++      "types": "./build/legacy/index.d.ts",
++      "default": "./src/legacy/index.ts"
++    }
++  },
+   "sideEffects": false,
+   "scripts": {
+     "build": "expo-module build",

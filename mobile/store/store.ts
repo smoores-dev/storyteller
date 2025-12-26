@@ -1,48 +1,47 @@
+import { devToolsEnhancer } from "@redux-devtools/remote"
 import { configureStore } from "@reduxjs/toolkit"
-import createSagaMiddleware from "redux-saga"
+import "react-native-get-random-values"
 
-import { logger } from "../logger"
-
-import { crashReportingMiddleware } from "./middleware/crashReporting"
+import "./listeners/bookDetailListener"
+import "./listeners/bookImportedListener"
+import "./listeners/bookOpenListener"
+import "./listeners/downloadListener"
+import "./listeners/listBooksListener"
+import { listenerMiddleware } from "./listeners/listenerMiddleware"
+import "./listeners/playerListeners"
+import "./listeners/positionSyncListener"
+import "./listeners/serverListeners"
+import "./listeners/sleepTimerListener"
+import "./listeners/syncListeners"
+import { localApi } from "./localApi"
+// import { crashReportingMiddleware } from "./middleware/crashReporting"
 import { loggingMiddleware } from "./middleware/logging"
-import { rootSaga } from "./sagas/rootSaga"
-import { apiSlice } from "./slices/apiSlice"
-import { authSlice } from "./slices/authSlice"
+import { serverApi } from "./serverApi"
 import { bookshelfSlice } from "./slices/bookshelfSlice"
-import { librarySlice } from "./slices/librarySlice"
 import { loggingSlice } from "./slices/loggingSlice"
-import { preferencesSlice } from "./slices/preferencesSlice"
-import { startupSlice } from "./slices/startupSlice"
-import { toolbarSlice } from "./slices/toolbarSlice"
-
-const sagaMiddleware = createSagaMiddleware({
-  onError(error, errorInfo) {
-    logger.error(error)
-    logger.error(errorInfo.sagaStack)
-    alert(
-      `Encountered an error, you may need to restart the app:\n${error.toString()}`,
-    )
-    sagaMiddleware.run(rootSaga)
-  },
-})
 
 export const store = configureStore({
   reducer: {
-    library: librarySlice.reducer,
     bookshelf: bookshelfSlice.reducer,
-    auth: authSlice.reducer,
-    api: apiSlice.reducer,
-    startup: startupSlice.reducer,
     logging: loggingSlice.reducer,
-    preferences: preferencesSlice.reducer,
-    toolbar: toolbarSlice.reducer,
+    [serverApi.reducerPath]: serverApi.reducer,
+    [localApi.reducerPath]: localApi.reducer,
   },
-  middleware: (getDefaultMiddleware) => [
-    crashReportingMiddleware,
-    loggingMiddleware,
-    ...getDefaultMiddleware({ serializableCheck: false }),
-    sagaMiddleware,
-  ],
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+      immutableCheck: false,
+    }).concat([
+      listenerMiddleware.middleware,
+      serverApi.middleware,
+      localApi.middleware,
+      loggingMiddleware,
+    ]),
+  devTools: false,
+  enhancers: (getDefaultEnhancers) =>
+    getDefaultEnhancers().concat(
+      devToolsEnhancer({
+        name: "Storyteller React Native",
+      }),
+    ),
 })
-
-sagaMiddleware.run(rootSaga)

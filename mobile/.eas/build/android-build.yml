@@ -4,6 +4,10 @@ build:
     - eas/checkout
 
     - run:
+        name: Pre-install patch package manifest
+        command: ./scripts/pre-install.mjs
+
+    - run:
         name: Focus install
         command: yarn workspaces focus @storyteller-platform/mobile
 
@@ -20,7 +24,3 @@ build:
     - eas/run_gradle
 
     - eas/find_and_upload_build_artifacts
-
-    - run:
-        name: Upload APK to GitLab
-        command: ./scripts/upload-apk-to-gitlab.sh

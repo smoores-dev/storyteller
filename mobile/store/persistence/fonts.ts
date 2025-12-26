@@ -1,4 +1,6 @@
-import * as FileSystem from "expo-file-system"
+import * as FileSystem from "expo-file-system/legacy"
+
+import { type CustomFont } from "@/database/preferencesTypes"
 
 export function getCustomFontsDirectoryUrl() {
   return `${FileSystem.documentDirectory}fonts/`
@@ -24,5 +26,18 @@ export async function listCustomFontUrls() {
     return filenames.map((f) => `${getCustomFontsDirectoryUrl()}${f}`)
   } catch {
     return []
+  }
+}
+
+export function parseCustomFont(fontUrl: string): CustomFont {
+  const segments = fontUrl.split("/")
+  const filename = segments[segments.length - 1]!
+  const extDot = filename.lastIndexOf(".")
+  const name = filename.slice(0, extDot)
+  const ext = filename.slice(extDot + 1)
+  return {
+    filename,
+    name,
+    type: ext as "ttf" | "otf",
   }
 }

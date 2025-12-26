@@ -1,6 +1,5 @@
-import { type UUID } from "node:crypto"
-
 import Clipboard from "@react-native-clipboard/clipboard"
+import { skipToken } from "@reduxjs/toolkit/query"
 import {
   Pressable,
   StyleSheet,
@@ -9,38 +8,47 @@ import {
   useWindowDimensions,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import uuid from "react-native-uuid"
 
-import { useColorTheme } from "../hooks/useColorTheme"
-import { CopyIcon } from "../icons/CopyIcon"
-import { TrashIcon } from "../icons/TrashIcon"
-import { type ReadiumLocator } from "../modules/readium/src/Readium.types"
-import { useAppDispatch } from "../store/appState"
-import { type Highlight, bookshelfSlice } from "../store/slices/bookshelfSlice"
+import { useColorTheme } from "@/hooks/useColorTheme"
+import { CopyIcon } from "@/icons/CopyIcon"
+import { TrashIcon } from "@/icons/TrashIcon"
+import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
+import {
+  useCreateHighlightMutation,
+  useDeleteHighlightMutation,
+  useGetHighlightQuery,
+  useUpdateHighlightMutation,
+} from "@/store/localApi"
+import { type UUID, randomUUID } from "@/uuid"
 
 import { HighlightColorPicker } from "./HighlightColorPicker"
 
 type Props = {
-  bookId: number
+  bookUuid: UUID
   x: number
   y: number
   locator: ReadiumLocator
-  existingHighlight?: Highlight | null
+  existingHighlight?: UUID | null
   onClose: () => void
 }
 
 export function SelectionMenu({
-  bookId,
+  bookUuid,
   x,
   y,
   locator,
-  existingHighlight,
+  existingHighlight: highlightUuid,
   onClose,
 }: Props) {
   const dimensions = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const { background } = useColorTheme()
-  const dispatch = useAppDispatch()
+  const [createHighlight] = useCreateHighlightMutation()
+  const [updateHighlight] = useUpdateHighlightMutation()
+  const [deleteHighlight] = useDeleteHighlightMutation()
+  const { data: existingHighlight } = useGetHighlightQuery(
+    highlightUuid ? { uuid: highlightUuid } : skipToken,
+  )
 
   const numIcons = existingHighlight ? 7 : 6
   const panelWidth = numIcons * (24 + 16)
@@ -65,22 +73,17 @@ export function SelectionMenu({
           value={existingHighlight?.color}
           onChange={(color) => {
             if (existingHighlight) {
-              dispatch(
-                bookshelfSlice.actions.highlightColorChanged({
-                  bookId,
-                  highlightId: existingHighlight.id,
-                  color,
-                }),
-              )
+              updateHighlight({ highlightId: existingHighlight.uuid, color })
               onClose()
               return
             }
-            dispatch(
-              bookshelfSlice.actions.highlightCreated({
-                bookId,
-                highlight: { id: uuid.v4() as UUID, color, locator },
-              }),
-            )
+
+            createHighlight({
+              highlightId: randomUUID(),
+              color,
+              locator,
+              bookUuid,
+            })
             onClose()
           }}
         />
@@ -101,12 +104,7 @@ export function SelectionMenu({
           <Pressable
             style={styles.trashButton}
             onPress={() => {
-              dispatch(
-                bookshelfSlice.actions.highlightRemoved({
-                  bookId,
-                  highlightId: existingHighlight.id,
-                }),
-              )
+              deleteHighlight({ uuid: existingHighlight.uuid })
               onClose()
             }}
           >

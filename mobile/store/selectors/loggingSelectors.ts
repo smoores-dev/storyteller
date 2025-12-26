@@ -1,4 +1,4 @@
-import { type RootState } from "../appState"
+import { type RootState } from "@/store/appState"
 
 export function getDebugLoggingEnabled(state: RootState) {
   return state.logging.debugEnabled
