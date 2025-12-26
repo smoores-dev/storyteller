@@ -100,10 +100,11 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
           // console.log("rolling back to", beforeFailed?.name ?? NO_MIGRATIONS)
           await migrator.migrateTo(beforeFailed?.name ?? NO_MIGRATIONS)
           const failed = allMigrations[failedIndex]!
-          await migrations[failed.name as keyof typeof migrations].down(
+          const migration = migrations[failed.name as keyof typeof migrations]
+          if ("down" in migration) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            db as any,
-          )
+            await migration.down(db as any)
+          }
         }
         logger.error(`Migration failed (${failedResult?.migrationName}):`)
         logger.error(error.toString())

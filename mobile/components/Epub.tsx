@@ -25,6 +25,7 @@ import {
   useGetGlobalPreferencesQuery,
   useUpdateGlobalPreferenceMutation,
 } from "@/store/localApi"
+import { getCustomFontUrl } from "@/store/persistence/fonts"
 import { type UUID } from "@/uuid"
 
 import { LoadingView } from "./LoadingView"
@@ -194,7 +195,10 @@ export function Epub({ book, format, locator }: Props) {
           fontFamily={preferences?.typography?.fontFamily}
           readaloudColor={preferences?.readaloudColor}
           colorTheme={{ foreground, background }}
-          customFonts={customFonts}
+          customFonts={customFonts?.map((font) => ({
+            ...font,
+            uri: getCustomFontUrl(font.filename),
+          }))}
           onHighlightTap={(event) => {
             setSelection({
               x: event.nativeEvent.x,

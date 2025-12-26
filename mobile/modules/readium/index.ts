@@ -169,11 +169,15 @@ export function areLocatorsEqual(a: ReadiumLocator, b: ReadiumLocator) {
 }
 
 export function parseLocalizedString(
-  localizedString: ReadiumLocalizedString,
+  localizedString: ReadiumLocalizedString | null | undefined,
   locale = "en-US",
 ): string {
   if (typeof localizedString === "string") {
     return localizedString
+  }
+
+  if (!localizedString) {
+    return ""
   }
 
   if (locale in localizedString) {
