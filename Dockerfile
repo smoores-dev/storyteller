@@ -13,6 +13,7 @@ COPY epub/package.json ./epub/package.json
 COPY path/package.json ./path/package.json
 COPY audiobook/package.json ./audiobook/package.json
 COPY config/tsup/package.json ./config/tsup/package.json
+COPY config/eslint/package.json ./config/eslint/package.json
 
 RUN yarn install
 

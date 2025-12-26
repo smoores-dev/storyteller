@@ -44,5 +44,7 @@
 __tests__
 !/config/tsup
 /config/tsup/node_modules
+!/config/eslint
+/config/eslint/node_modules
 
 /docker
