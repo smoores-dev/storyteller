@@ -85,6 +85,7 @@ function Text({
   const Component = asChild ? Slot.Text : RNText
   return (
     <Component
+      maxFontSizeMultiplier={2}
       className={cn(textVariants({ variant }), textClass, className)}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}

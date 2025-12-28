@@ -160,7 +160,7 @@ export function ReadingSettings({ bookUuid }: Props) {
         </Select>
       </View>
       <Link href="/custom-theme" asChild>
-        <Button variant="ghost">
+        <Button size="flex" variant="ghost">
           <Text className="text-primary group-active:text-primary/80">
             Manage custom themes
           </Text>
@@ -397,7 +397,7 @@ export function ReadingSettings({ bookUuid }: Props) {
         </Select>
       </View>
       <Link href="custom-fonts" asChild>
-        <Button variant="ghost">
+        <Button size="flex" variant="ghost">
           <Text className="text-primary group-active:text-primary/80">
             Manage custom fonts
           </Text>

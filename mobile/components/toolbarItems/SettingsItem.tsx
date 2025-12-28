@@ -37,6 +37,7 @@ export function SettingsItem() {
           <View className="elevation absolute bottom-0 left-0 right-0 top-1/2 z-40 rounded-t border border-secondary border-b-transparent bg-background px-6 py-4 shadow shadow-foreground">
             <Button variant="ghost" size="sm" className="self-end">
               <Text
+                maxFontSizeMultiplier={1.2}
                 className="pt-2 text-lg text-primary"
                 onPress={() => {
                   setIsOpen(false)

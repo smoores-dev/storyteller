@@ -14,6 +14,7 @@ export default function ServerPage() {
       <View className="gap-4 pb-4">
         <Text className="mx-2">Server url</Text>
         <Input
+          maxFontSizeMultiplier={2}
           autoCapitalize="none"
           keyboardType="url"
           autoCorrect={false}

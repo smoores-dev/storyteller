@@ -36,13 +36,13 @@ export function NavigationItem({ mode }: Props) {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="toc">
-              <Text>Contents</Text>
+              <Text maxFontSizeMultiplier={1}>Contents</Text>
             </TabsTrigger>
             <TabsTrigger value="bookmarks">
-              <Text>Bookmarks</Text>
+              <Text maxFontSizeMultiplier={1}>Bookmarks</Text>
             </TabsTrigger>
             <TabsTrigger value="highlights">
-              <Text>Highlights</Text>
+              <Text maxFontSizeMultiplier={1}>Highlights</Text>
             </TabsTrigger>
           </TabsList>
           <TabsContent value="toc">
