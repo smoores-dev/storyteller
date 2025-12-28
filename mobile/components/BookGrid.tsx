@@ -66,6 +66,7 @@ export function BookGrid({ title, books }: Props) {
         {books.length} books
       </Text>
       <FlatList
+        key={numColumns}
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
