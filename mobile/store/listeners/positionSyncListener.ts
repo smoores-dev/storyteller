@@ -141,7 +141,7 @@ startAppListening({
       // eslint-disable-next-line no-constant-condition
       while (true) {
         await syncPositions(listenerApi.dispatch)
-        await forkApi.delay(10_000)
+        await forkApi.delay(3_000)
       }
     })
 
@@ -153,18 +153,5 @@ startAppListening({
   matcher: localApi.endpoints.updateStatus.matchFulfilled,
   effect: async (_, listenerApi) => {
     await syncPositions(listenerApi.dispatch)
-  },
-})
-
-startAppListening({
-  matcher: localApi.endpoints.updatePosition.matchFulfilled,
-  effect: async (_, listenerApi) => {
-    listenerApi.unsubscribe()
-
-    try {
-      await syncPositions(listenerApi.dispatch)
-    } finally {
-      listenerApi.subscribe()
-    }
   },
 })
