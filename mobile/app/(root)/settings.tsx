@@ -59,6 +59,7 @@ export default function Settings() {
                         <Button
                           variant="secondary"
                           className="my-2"
+                          size="flex"
                           onPress={() => {
                             deleteServer({ uuid: server.uuid })
                           }}
@@ -78,7 +79,7 @@ export default function Settings() {
             })}
           </View>
           <Link href="/server" asChild>
-            <Button variant="ghost" onPress={() => {}}>
+            <Button variant="ghost" size="flex" onPress={() => {}}>
               <Icon as={PlusIcon} />
               <Text>Add server</Text>
             </Button>
@@ -166,6 +167,7 @@ export default function Settings() {
           <Text variant="h2">Logging</Text>
           <Button
             variant="secondary"
+            size="flex"
             onPress={() => {
               dispatch(loggingSlice.actions.debugLoggingToggled())
             }}
@@ -173,7 +175,7 @@ export default function Settings() {
             <Text>{debugEnabled ? "Disable" : "Enable"} debug logging</Text>
           </Button>
           <Link href="/log" asChild>
-            <Button variant="ghost">
+            <Button size="flex" variant="ghost">
               <Text>View logs</Text>
             </Button>
           </Link>

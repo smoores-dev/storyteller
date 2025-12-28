@@ -23,7 +23,7 @@ function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        "flex h-9 flex-row items-center justify-center rounded-lg bg-muted p-[3px]",
+        "flex flex-row items-center justify-center rounded-lg bg-muted p-[3px]",
         Platform.select({ web: "inline-flex w-fit", native: "mr-auto" }),
         className,
       )}

@@ -1,6 +1,6 @@
 import { Link } from "expo-router"
 import { BookOpen, Headphones } from "lucide-react-native"
-import { View, type ViewStyle } from "react-native"
+import { Pressable, View, type ViewStyle } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { type BookWithRelations } from "@/database/books"
@@ -60,8 +60,11 @@ export function BookThumbnail({ book }: Props) {
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <Link href={`/book/${book.uuid}`} className="w-[116px] shrink-0">
-          <Stack className="h-[300px] gap-0.5 overflow-visible">
+        {/* Have to use asChild wrapped around a Pressable instead of just using Link */}
+        {/* around a Stack otherwise it does not render properly on Boox devices, */}
+        {/* and potentially other android devices similar to it. */}
+        <Link asChild href={`/book/${book.uuid}`}>
+          <Pressable className="w-[116px] gap-0.5 overflow-visible">
             <Stack className="relative mb-1 h-[176px] w-[116px] flex-col justify-center">
               <View className="block h-[176px] w-[116px]">
                 <BookThumbnailImage book={book} height={176} width={116} />
@@ -88,7 +91,7 @@ export function BookThumbnail({ book }: Props) {
             >
               {book.authors[0]?.name}
             </Text>
-          </Stack>
+          </Pressable>
         </Link>
       </ContextMenuTrigger>
       <ContextMenuContent insets={contentInsets}>

@@ -24,6 +24,7 @@ export function LoginButton({ serverUrl, serverUuid }: Props) {
   const dispatch = useAppDispatch()
   return (
     <Button
+      size="flex"
       onPress={async () => {
         const redirectUrl = Linking.createURL("settings")
         const tokenUrl = new URL("/api/v2/token/app", serverUrl)

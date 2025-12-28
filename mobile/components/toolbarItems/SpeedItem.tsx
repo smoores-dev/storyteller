@@ -46,8 +46,9 @@ export function SpeedItem() {
             <Icon as={Gauge} size={24} />
           ) : (
             <Text
+              numberOfLines={1}
               minimumFontScale={1}
-              maxFontSizeMultiplier={1.75}
+              maxFontSizeMultiplier={1}
               className="px-2 text-xs font-bold"
             >
               {currentSpeed}x
@@ -129,7 +130,9 @@ export function SpeedItem() {
                   })
                 }}
               >
-                <Text className="text-[10px]">{speed}</Text>
+                <Text maxFontSizeMultiplier={1.5} className="text-[10px]">
+                  {speed}
+                </Text>
               </Button>
             ))}
           </Group>
