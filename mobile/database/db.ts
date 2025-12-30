@@ -12,9 +12,9 @@ export const db = new Kysely<DB>({
       logger.error(event.error)
       return
     }
-    logger.debug(event.query.sql)
-    logger.debug(event.query.parameters)
-    logger.debug(`Completed in ${event.queryDurationMillis}ms`)
+    logger.trace(event.query.sql)
+    logger.trace(event.query.parameters)
+    logger.trace(`Completed in ${event.queryDurationMillis}ms`)
   },
   dialect: new ExpoDialect({ database: "storyteller.db" }),
   plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin()],
