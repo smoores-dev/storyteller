@@ -36,7 +36,7 @@
     "@readium/navigator": "2.1.1",
     "@readium/navigator-html-injectables": "2.1.1",
     "@readium/shared": "^2.1.1",
-    "@reduxjs/toolkit": "^2.9.0",
+    "@reduxjs/toolkit": "^2.11.2",
     "@remix-run/node": "^2.17.0",
     "@scalar/nextjs-openapi": "^0.1.17",
     "@storyteller-platform/audiobook": "workspace:^",

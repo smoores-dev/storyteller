@@ -1,29 +1,30 @@
+import Clipboard from "@react-native-clipboard/clipboard"
 import * as FileSystem from "expo-file-system/legacy"
 import { useRouter } from "expo-router"
 import { ChevronDownIcon } from "lucide-react-native"
 import { useEffect, useState } from "react"
 import { View } from "react-native"
-import { ScrollView } from "react-native-gesture-handler"
+import { FlatList } from "react-native-gesture-handler"
 
-import { LoadingView } from "@/components/LoadingView"
 import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
 import { Text } from "@/components/ui/text"
 
 export default function LogModal() {
-  const [logText, setLogText] = useState<string | null>(null)
+  const [logText, setLogText] = useState<string[]>([])
 
   const router = useRouter()
 
   useEffect(() => {
     async function readLogText() {
+      const today = new Date()
       const text = await FileSystem.readAsStringAsync(
-        `${FileSystem.documentDirectory}storyteller-log`,
+        `${FileSystem.documentDirectory}storyteller-${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}.log`,
         {
           encoding: "utf8",
         },
       )
-      setLogText(text)
+      setLogText(text.split("\n"))
     }
 
     const intervalId = setInterval(() => {
@@ -53,8 +54,9 @@ export default function LogModal() {
           variant="ghost"
           className="self-end"
           onPress={() => {
+            const today = new Date()
             FileSystem.writeAsStringAsync(
-              `${FileSystem.documentDirectory}storyteller-log`,
+              `${FileSystem.documentDirectory}storyteller-${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}.log`,
               "",
             )
           }}
@@ -62,12 +64,21 @@ export default function LogModal() {
           <Text>Clear</Text>
         </Button>
       </View>
-      <ScrollView className="grow">
-        {logText === null && <LoadingView />}
-        <Text selectable className="m-6 text-sm">
-          {logText}
-        </Text>
-      </ScrollView>
+      <View className="justify-center">
+        <Button
+          variant="ghost"
+          onPress={() => {
+            Clipboard.setString(logText.join("\n"))
+          }}
+        >
+          <Text>Copy</Text>
+        </Button>
+      </View>
+      <FlatList
+        className="grow px-4"
+        data={logText}
+        renderItem={(item) => <Text>{item.item}</Text>}
+      />
     </View>
   )
 }

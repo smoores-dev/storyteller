@@ -148,7 +148,7 @@ class ExpoConnection implements DatabaseConnection {
 
     const transformedParameters = serialize([...parameters])
 
-    logger.debug(`${query.kind}${readonly ? " (readonly)" : ""}: ${sql}`)
+    logger.trace(`${query.kind}${readonly ? " (readonly)" : ""}: ${sql}`)
 
     if (readonly || hasReturning) {
       const res = await this.sqlite.getAllAsync<R>(sql, transformedParameters)
@@ -191,7 +191,7 @@ class ExpoConnection implements DatabaseConnection {
         rows: [],
       } satisfies QueryResult<R>
 
-      logger.debug("queryResult", queryResult)
+      logger.trace("queryResult", queryResult)
 
       return queryResult
     }
