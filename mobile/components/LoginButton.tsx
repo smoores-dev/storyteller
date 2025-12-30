@@ -6,6 +6,7 @@ import { jwtDecode } from "jwt-decode"
 
 import { type Token } from "@/apiModels"
 import { getServerByUrl, updateServer } from "@/database/servers"
+import { logger } from "@/logger"
 import { useAppDispatch } from "@/store/appState"
 import { localApi, useCreateServerMutation } from "@/store/localApi"
 import { type UUID, randomUUID } from "@/uuid"
@@ -34,7 +35,9 @@ export function LoginButton({ serverUrl, serverUuid }: Props) {
         )
 
         if (result.type !== "success") {
-          alert("Login failed")
+          const errorMessage = `Failed to log in: Auth session result - ${result.type}`
+          logger.error(errorMessage)
+          alert(errorMessage)
           return
         }
 
@@ -43,14 +46,18 @@ export function LoginButton({ serverUrl, serverUuid }: Props) {
           | undefined
 
         if (!token) {
-          alert("Login failed")
+          const errorMessage = `Failed to log in: Server did not return an auth token`
+          logger.error(errorMessage)
+          alert(errorMessage)
           return
         }
 
         const decoded = jwtDecode(token)
         const username = decoded.sub
         if (!username) {
-          alert("Login failed")
+          const errorMessage = `Failed to log in: Auth token is missing username`
+          logger.error(errorMessage)
+          alert(errorMessage)
           return
         }
 
@@ -60,7 +67,9 @@ export function LoginButton({ serverUrl, serverUuid }: Props) {
         })
 
         if (!response.ok) {
-          alert("Login failed")
+          const errorMessage = `Failed to log in: ${response.status} - ${await response.text()}`
+          logger.error(errorMessage)
+          alert(errorMessage)
           return
         }
 
