@@ -40,7 +40,10 @@ export function KyselyAdapter(db: Kysely<DB>): Adapter {
     async updateUser({ id, ...user }) {
       await db
         .updateTable("user")
-        .set(user)
+        .set({
+          ...user,
+          ...(user.username && { username: user.username.toLowerCase() }),
+        })
         .where("id", "=", id as UUID)
         .execute()
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
