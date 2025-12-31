@@ -6,5 +6,11 @@ export default defineConfig({
   tsconfig: "./tsconfig.json",
   clean: true,
   format: ["esm", "cjs"],
-  entry: ["./**/*.ts", "!./**/*.test.ts", "!./**/*.d.ts", "!tsup.config.ts"],
+  entry: [
+    "./**/*.ts",
+    "!node_modules",
+    "!./**/*.test.ts",
+    "!./**/*.d.ts",
+    "!tsup.config.ts",
+  ],
 })
