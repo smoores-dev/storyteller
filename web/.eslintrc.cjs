@@ -17,7 +17,7 @@ module.exports = {
     "/dev-data",
     "whisper-builds",
     "tsbuild",
-    "next-env.d.ts"
+    "next-env.d.ts",
   ],
   overrides: [
     {
