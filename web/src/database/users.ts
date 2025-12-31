@@ -358,7 +358,10 @@ export async function updateUserByEmail(email: string, update: UserUpdate) {
 
     await tr
       .updateTable("user")
-      .set(update)
+      .set({
+        ...update,
+        ...(update.username && { username: update.username.toLowerCase() }),
+      })
       .where("email", "=", email)
       .execute()
   })
@@ -381,7 +384,14 @@ export async function updateUser(id: UUID, update: UserUpdate) {
       )
     }
 
-    await tr.updateTable("user").set(update).where("id", "=", id).execute()
+    await tr
+      .updateTable("user")
+      .set({
+        ...update,
+        ...(update.username && { username: update.username.toLowerCase() }),
+      })
+      .where("id", "=", id)
+      .execute()
   })
 }
 
@@ -406,7 +416,7 @@ export async function createCredentialsAccount(
   async function callback(tr: Transaction<DB>) {
     const { id } = await tr
       .updateTable("user")
-      .set({ username, name, hashedPassword })
+      .set({ username: username.toLowerCase(), name, hashedPassword })
       .where("email", "=", email)
       .returning("id as id")
       .executeTakeFirstOrThrow()
