@@ -9,6 +9,7 @@ import { fromDate, nextAuth, readSecretKey } from "@/auth/auth"
 import { db } from "@/database/connection"
 import { type DB } from "@/database/schema"
 import { getUserByUsernameOrEmail } from "@/database/users"
+import { logger } from "@/logging"
 
 const JWT_ALGORITHM = "HS256"
 
@@ -69,16 +70,19 @@ export async function POST(request: NextRequest) {
 
   const expiration = payload.exp
   if (!expiration || isPast(expiration)) {
+    logger.debug(`Short-lived token exired: ${expiration}`)
     return unauthorized
   }
 
   const username = payload.sub
   if (!username) {
+    logger.debug(`Short-lived token missing username`)
     return unauthorized
   }
 
   const user = await getUserByUsernameOrEmail(username)
   if (!user) {
+    logger.debug(`Failed to get user for username: ${username}`)
     return unauthorized
   }
 
@@ -101,7 +105,8 @@ export async function POST(request: NextRequest) {
       expires_in: session.expires.valueOf() * 1000 - Date.now(),
       token_type: "bearer",
     })
-  } catch {
+  } catch (e) {
+    logger.error({ msg: "Failed to create session for user", err: e })
     return unauthorized
   }
 }
