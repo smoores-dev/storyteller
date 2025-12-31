@@ -474,6 +474,15 @@ export async function verifyInvite(email: string, inviteKey: string) {
 }
 
 export async function deleteInvite(key: string) {
+  const user = await db
+    .selectFrom("user")
+    .select(["id"])
+    .where("inviteKey", "=", key)
+    .executeTakeFirst()
+  if (!user?.id) return
+  await db.deleteFrom("bookToStatus").where("userId", "=", user.id).execute()
+  await db.deleteFrom("account").where("userId", "=", user.id).execute()
+  await db.deleteFrom("session").where("userId", "=", user.id).execute()
   await db.deleteFrom("user").where("inviteKey", "=", key).execute()
 }
 
