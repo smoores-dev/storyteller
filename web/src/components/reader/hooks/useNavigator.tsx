@@ -94,6 +94,15 @@ export const useNavigator = ({
           initialLocator = positions[0] ?? null
         }
 
+        // if somehow the initial position is larger than the last position, set it to the last position
+        if (
+          initialLocator?.locations.position &&
+          initialLocator.locations.position >
+            (positions[positions.length - 1]?.locations.position ?? 0)
+        ) {
+          initialLocator = positions[positions.length - 1] ?? null
+        }
+
         // shutup
         // eslint-disable-next-line react-compiler/react-compiler
         navigatorRef.current = new EpubNavigator(
@@ -189,6 +198,16 @@ export const useNavigator = ({
         setIsLoading(false)
       } catch (error) {
         console.error("Failed to load publication:", error)
+        if (
+          error instanceof Error &&
+          error.message.includes("Locator not found in positions list")
+        ) {
+          // try again
+
+          await loadNavigator(positions[0] ?? null)
+          return
+        }
+
         setIsLoading(false)
         isLoadingRef.current = false
       }

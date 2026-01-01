@@ -31,7 +31,7 @@ export const ScrollingTitle = ({
 
       const element = titleRef.current
       const container = containerRef.current
-      const isOverflow = element.scrollWidth > container.clientWidth
+      const isOverflow = element.scrollWidth > container.clientWidth + 20
 
       setIsOverflowing(isOverflow)
 
