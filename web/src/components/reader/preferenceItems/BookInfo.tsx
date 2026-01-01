@@ -1,4 +1,3 @@
-import { Text } from "@mantine/core"
 import Link from "next/link"
 
 import { cn } from "@/cn"
@@ -10,7 +9,10 @@ import {
   preferencesSlice,
   selectDetailView,
 } from "@/store/slices/preferencesSlice"
-import { selectReadingMode } from "@/store/slices/readingSessionSlice"
+import {
+  selectCurrentLocator,
+  selectReadingMode,
+} from "@/store/slices/readingSessionSlice"
 
 import { ScrollingTitle } from "./ScrollingTitle"
 
@@ -35,7 +37,11 @@ export const BookInfo = ({
   const detailView = useAppSelector((state) =>
     selectDetailView(state, book.uuid),
   )
+  const currentTextLocator = useAppSelector(selectCurrentLocator)
   const { formattedProgress, title } = useFormattedProgress({ book })
+  const totalPercentageProgress = Math.round(
+    (currentTextLocator?.locations.totalProgression ?? 0) * 100,
+  )
   const dispatch = useAppDispatch()
   const mode = useAppSelector(selectReadingMode)
 
@@ -88,14 +94,14 @@ export const BookInfo = ({
       </button>
       <div
         className={cn(
-          "min-w-0",
+          "min-w-0 grow",
           context === "mini-player" ? "text-center" : "text-left",
         )}
       >
         <ScrollingTitle
           className="text-reader-text font-heading font-medium"
           scrollSpeed={30}
-          scrollInterval={20_000}
+          scrollInterval={10_000}
         >
           <span style={{ fontSize: "var(--mantine-font-size-sm)" }}>
             {detailView.scope === "book" ? (
@@ -110,9 +116,15 @@ export const BookInfo = ({
             )}
           </span>
         </ScrollingTitle>
-        <Text size="xs" className="text-reader-text-muted">
-          {formattedProgress}
-        </Text>
+        <div className="flex items-center gap-1">
+          <span className="text-reader-text-muted text-xs">
+            {formattedProgress}
+          </span>
+          <span className="text-reader-text-muted/50 text-xs">•</span>
+          <span className="text-reader-text-muted text-xs">
+            {totalPercentageProgress > 0 ? `${totalPercentageProgress}%` : ""}
+          </span>
+        </div>
       </div>
     </>
   )

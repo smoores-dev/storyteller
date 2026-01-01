@@ -952,5 +952,15 @@ export function translateLocator(locator: Locator, mode: ReadingMode) {
   )
   if (!firstPosition) return locator
 
+  // ensure the position is within bounds
+  const lastPosition = positions[positions.length - 1]
+  if (
+    lastPosition &&
+    firstPosition.locations.position &&
+    firstPosition.locations.position > (lastPosition.locations.position ?? 0)
+  ) {
+    return lastPosition
+  }
+
   return firstPosition
 }
