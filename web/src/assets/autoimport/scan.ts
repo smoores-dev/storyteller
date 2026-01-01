@@ -418,6 +418,12 @@ export async function scan(
     if (book.ebook?.filepath) {
       try {
         await stat(book.ebook.filepath)
+        if (book.ebook.missing) {
+          relations.ebook = {
+            filepath: book.ebook.filepath,
+            missing: false,
+          }
+        }
       } catch (e) {
         if (e instanceof Error && "code" in e && e.code === "ENOENT") {
           logger.debug(
@@ -468,6 +474,12 @@ export async function scan(
     if (book.audiobook?.filepath) {
       try {
         await stat(book.audiobook.filepath)
+        if (book.audiobook.missing) {
+          relations.audiobook = {
+            filepath: book.audiobook.filepath,
+            missing: false,
+          }
+        }
       } catch (e) {
         if (e instanceof Error && "code" in e && e.code === "ENOENT") {
           logger.debug(
@@ -508,6 +520,13 @@ export async function scan(
     if (book.readaloud?.filepath) {
       try {
         await stat(book.readaloud.filepath)
+        if (book.readaloud.missing) {
+          relations.readaloud = {
+            filepath: book.readaloud.filepath,
+            missing: false,
+            currentStage: book.readaloud.currentStage,
+          }
+        }
       } catch (e) {
         if (e instanceof Error && "code" in e && e.code === "ENOENT") {
           logger.debug(
