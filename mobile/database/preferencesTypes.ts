@@ -17,6 +17,12 @@ export const defaultPreferences: Preferences = {
       isDark: false,
     },
     {
+      name: "Crisp White",
+      foreground: colors.black,
+      background: colors.white,
+      isDark: false,
+    },
+    {
       name: "Night",
       foreground: colors.gray3,
       background: colors.gray9,

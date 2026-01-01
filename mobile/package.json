@@ -47,6 +47,7 @@
     "expo-constants": "~18.0.12",
     "expo-crypto": "~15.0.8",
     "expo-dev-client": "~6.0.20",
+    "expo-device": "^8.0.10",
     "expo-document-picker": "~14.0.8",
     "expo-file-system": "patch:expo-file-system@npm%3A19.0.21#~/.yarn/patches/expo-file-system-npm-19.0.21-64dc8cb1bc.patch",
     "expo-font": "~14.0.10",
