@@ -18,7 +18,7 @@ module.exports = {
       },
     },
     {
-      files: ["sidebars.js"],
+      files: ["sidebars.js", "sidebarsContributing.js"],
       env: {
         commonjs: true,
       },

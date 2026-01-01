@@ -53,7 +53,18 @@ const config = {
     ],
   ],
 
-  plugins: [require.resolve("docusaurus-lunr-search")],
+  plugins: [
+    [
+      "@docusaurus/plugin-content-docs",
+      {
+        id: "contributing",
+        path: "contributing",
+        routeBasePath: "contributing",
+        sidebarPath: require.resolve("./sidebarsContributing.js"),
+      },
+    ],
+    require.resolve("docusaurus-lunr-search"),
+  ],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
@@ -80,6 +91,13 @@ const config = {
             sidebarId: "sidebar",
             position: "left",
             label: "Docs",
+          },
+          {
+            type: "doc",
+            docId: "contributing-overview",
+            docsPluginId: "contributing",
+            label: "Contributing",
+            position: "left",
           },
           {
             to: "blog",
@@ -131,7 +149,7 @@ const config = {
               },
               {
                 label: "Development",
-                to: "/docs/category/contributing",
+                to: "/contributing/contributing-overview",
               },
             ],
           },
