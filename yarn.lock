@@ -12321,6 +12321,7 @@ __metadata:
     expo-constants: "npm:~18.0.12"
     expo-crypto: "npm:~15.0.8"
     expo-dev-client: "npm:~6.0.20"
+    expo-device: "npm:^8.0.10"
     expo-document-picker: "npm:~14.0.8"
     expo-file-system: "patch:expo-file-system@npm%3A19.0.21#~/.yarn/patches/expo-file-system-npm-19.0.21-64dc8cb1bc.patch"
     expo-font: "npm:~14.0.10"
@@ -21952,6 +21953,17 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 10c0/947bee35304acbd46888d52c30dbdf158c211118237d545e64c50be50f702fe1b49ca9d0690d05443942ec751e6c6e56cc62a43957ae34f4299f794070fc93e4
+  languageName: node
+  linkType: hard
+
+"expo-device@npm:^8.0.10":
+  version: 8.0.10
+  resolution: "expo-device@npm:8.0.10"
+  dependencies:
+    ua-parser-js: "npm:^0.7.33"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/5e18593cd5589687fb26dab37bcad03bbbd76c3cbd54a0c7f894736530b8802ffe5492731d9356a5204aea18a802f7ccf1f0fa6e17b613b4869ded0fc9fa2262
   languageName: node
   linkType: hard
 
@@ -38637,6 +38649,15 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/34d2a8e23eb8e0d1875072064d5e1d9c102e0bdce56a10a25c0b917b8aa9001a9cf5c225df12497e99da107dc379360bc138163c66b55b95f5b105b50578067e
+  languageName: node
+  linkType: hard
+
+"ua-parser-js@npm:^0.7.33":
+  version: 0.7.41
+  resolution: "ua-parser-js@npm:0.7.41"
+  bin:
+    ua-parser-js: script/cli.js
+  checksum: 10c0/b134bc0d8da10c76e07740a0ade61c193fd4c4d120ba2cb2530e26931f6b550dd60b6e801d8891f6d9c23dfebadf5590294739069edff94396f173cc8cc5767e
   languageName: node
   linkType: hard
 

@@ -1,6 +1,64 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
-import { defaultPreferences } from "@/database/preferencesTypes"
+import { colors } from "@/components/ui/tokens/colors"
+import { type Preferences } from "@/database/preferencesTypes"
+
+// This is intentionally "frozen", because this
+// is used to fill in missing preferences during the initial
+// migration. We want it to remain static so that all
+// users come out of the initial migration with the same
+// preferences, even if we evolve preferences over time
+// in later migrations.
+const defaultPreferences: Preferences = {
+  darkMode: "auto",
+  showReaderUi: false,
+  colorThemes: [
+    {
+      name: "Day",
+      foreground: colors.gray9,
+      background: colors.white,
+      isDark: false,
+    },
+    {
+      name: "Sepia",
+      foreground: colors.brown9,
+      background: colors.yellow0,
+      isDark: false,
+    },
+    {
+      name: "Night",
+      foreground: colors.gray3,
+      background: colors.gray9,
+      isDark: true,
+    },
+  ],
+  lightTheme: "Day",
+  darkTheme: "Night",
+  typography: {
+    scale: 1.0,
+    lineHeight: 1.4,
+    alignment: "justify",
+    fontFamily: "Literata",
+  },
+  layout: {
+    margins: {
+      vertical: 1.0,
+      horizontal: 1.0,
+    },
+    columns: "auto",
+    animation: true,
+  },
+  readaloudColor: "yellow",
+  customFonts: [],
+  automaticRewind: {
+    enabled: true,
+    afterInterruption: 3,
+    afterBreak: 10,
+  },
+  hideStatusbar: {
+    enabled: true,
+  },
+}
 
 type ColorTheme = {
   name: string
