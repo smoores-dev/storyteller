@@ -7,7 +7,9 @@ import { type DB } from "./schema"
 
 export type Highlight = Selectable<DB["highlight"]>
 export type HighlightUpdate = Updateable<DB["highlight"]>
-export type NewHighlight = Insertable<DB["highlight"]>
+export type NewHighlight = Omit<Insertable<DB["highlight"]>, "locator"> & {
+  locator: string
+}
 
 export async function getHighlight(uuid: UUID) {
   return (
@@ -28,7 +30,10 @@ export async function getBookHighlights(bookUuid: UUID) {
 }
 
 export async function createHighlight(highlight: NewHighlight) {
-  await db.insertInto("highlight").values(highlight).execute()
+  await db
+    .insertInto("highlight")
+    .values(highlight as unknown as Insertable<DB["highlight"]>)
+    .execute()
 }
 
 export async function updateHighlight(uuid: UUID, update: HighlightUpdate) {
