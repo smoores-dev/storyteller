@@ -9,6 +9,10 @@ import {
 } from "./1764206663395_insert_show_reader_ui_preference"
 import { up as serverCascadeDeleteUp } from "./1766770316988_server_cascade_delete"
 import { up as timestampRealUp } from "./1766772044082_timestamp_real"
+import {
+  down as addCrispWhiteDown,
+  up as addCrispWhiteUp,
+} from "./1767276420645_add_crisp_white_theme"
 
 export const migrations = {
   "1757893743063_init": {
@@ -25,4 +29,8 @@ export const migrations = {
   },
   "1766770316988_server_cascade_delete": { up: serverCascadeDeleteUp },
   "1766772044082_timestamp_real": { up: timestampRealUp },
+  "1767276420645_add_crisp_white_theme": {
+    up: addCrispWhiteUp,
+    down: addCrispWhiteDown,
+  },
 }
