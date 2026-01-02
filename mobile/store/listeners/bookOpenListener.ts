@@ -10,7 +10,6 @@ import {
   getClip,
   openPublication,
 } from "@/modules/readium"
-import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
 import { localApi } from "@/store/localApi"
 import {
   getLocalBookExtractedUrl,
@@ -116,7 +115,7 @@ startAppListening({
           .values({
             uuid: randomUUID(),
             bookUuid,
-            locator: JSON.stringify({
+            locator: {
               href: manifest.readingOrder[0]!.href,
               type: manifest.readingOrder[0]!.type,
               locations: {
@@ -124,7 +123,7 @@ startAppListening({
                 progression: 0,
                 totalProgression: 0,
               },
-            }) as unknown as ReadiumLocator,
+            },
             timestamp: Date.now(),
           })
           .execute()
@@ -143,7 +142,7 @@ startAppListening({
           .values({
             uuid: randomUUID(),
             bookUuid,
-            locator: JSON.stringify(positions[0]!) as unknown as ReadiumLocator,
+            locator: positions[0]!,
             timestamp: Date.now(),
           })
           .execute()

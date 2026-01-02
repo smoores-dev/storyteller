@@ -107,7 +107,7 @@ startAppListening({
       .map((s) => (typeof s === "string" ? { name: s } : s))
       .map((s, index) => ({
         ...s,
-        featured: index === 0 ? ("true" as const) : ("false" as const),
+        featured: index === 0,
         uuid: randomUUID(),
         name: parseLocalizedString(s.name),
       }))
@@ -155,9 +155,9 @@ startAppListening({
             downloadStatus: "DOWNLOADED",
             downloadProgress: 100,
             status: "ALIGNED",
-            epubManifest: JSON.stringify(epubManifest),
-            audioManifest: JSON.stringify(audioManifest),
-            positions: JSON.stringify(positions),
+            epubManifest,
+            audioManifest,
+            positions,
           },
         }),
         ...(format === "ebook" && {
@@ -165,8 +165,8 @@ startAppListening({
             uuid: randomUUID(),
             downloadStatus: "DOWNLOADED",
             downloadProgress: 100,
-            manifest: JSON.stringify(epubManifest),
-            positions: JSON.stringify(positions),
+            manifest: epubManifest,
+            positions,
           },
         }),
         creators,
@@ -174,7 +174,7 @@ startAppListening({
         tags,
         position: {
           uuid: randomUUID(),
-          locator: JSON.stringify(positions[0]!),
+          locator: positions[0]!,
           timestamp: Date.now(),
         },
       },

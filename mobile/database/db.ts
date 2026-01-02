@@ -1,12 +1,9 @@
-import { open } from "@op-engineering/op-sqlite"
 import { CamelCasePlugin, Kysely, ParseJSONResultsPlugin } from "kysely"
 
 import { logger } from "@/logger"
 
-import { OpSqliteDialect } from "./dialect"
+import { ExpoDialect } from "./dialect"
 import { type DB } from "./schema"
-
-export const rawDb = open({ name: "storyteller.db" })
 
 export const db = new Kysely<DB>({
   log(event) {
@@ -19,8 +16,6 @@ export const db = new Kysely<DB>({
     logger.trace(event.query.parameters)
     logger.trace(`Completed in ${event.queryDurationMillis}ms`)
   },
-  dialect: new OpSqliteDialect({
-    database: rawDb,
-  }),
+  dialect: new ExpoDialect({ database: "storyteller.db" }),
   plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin()],
 })

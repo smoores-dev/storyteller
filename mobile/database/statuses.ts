@@ -32,14 +32,14 @@ export function getDirtyStatuses() {
     .selectAll()
     .innerJoin("bookToStatus", "bookToStatus.statusUuid", "status.uuid")
     .select(["bookToStatus.bookUuid", "bookToStatus.dirty"])
-    .where("bookToStatus.dirty", "=", "true")
+    .where("bookToStatus.dirty", "=", true)
     .execute()
 }
 
 export async function setBookStatusClean(bookUuid: UUID) {
   await db
     .updateTable("bookToStatus")
-    .set({ dirty: "false" })
+    .set({ dirty: false })
     .where("bookUuid", "=", bookUuid)
     .execute()
 }
