@@ -45,9 +45,8 @@ const darkTheme = {
   "--card-foreground": "0 0% 98%",
   "--popover": "0 0% 3.9%",
   "--popover-foreground": "0 0% 98%",
-  "--primary": "22 85% 39%",
+  "--primary": "22 85% 59%",
   "--primary-foreground": "0 0% 98%",
-  "--brand": "22 85% 59%",
   "--secondary": "0 0% 14.9%",
   "--secondary-foreground": "0 0% 98%",
   "--muted": "0 0% 14.9%",
@@ -216,7 +215,6 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
           "--secondary": `${fgHsl} / 0.1`,
           "--border": `${fgHsl} / 0.2`,
           "--input": `${fgHsl} / 0.2`,
-          "--brand": dark ? "22 85% 59%" : "22 85% 39%",
         })}
       >
         {ready && children}
