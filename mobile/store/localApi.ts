@@ -16,7 +16,6 @@ import {
 import {
   type BookWithRelations,
   addBookToDownloadQueue,
-  bookQuery,
   deleteBook,
   getBook,
   getBooks,
@@ -29,7 +28,6 @@ import {
   getCollections,
 } from "@/database/collections"
 import { type Creator, getCreator } from "@/database/creators"
-import { rawDb } from "@/database/db"
 import {
   type Highlight,
   createHighlight,
@@ -96,61 +94,7 @@ export const localApi = createApi({
       async queryFn() {
         return { data: await getBooks() }
       },
-      onCacheEntryAdded: async (
-        _,
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
-      ) => {
-        try {
-          await cacheDataLoaded
-        } catch {
-          // no-op in case `cacheEntryRemoved` resolves before `cacheDataLoaded`,
-          // in which case `cacheDataLoaded` will throw
-        }
-
-        const query = bookQuery().compile()
-        const unsubscribe = rawDb.reactiveExecute({
-          query: query.sql,
-          arguments: query.parameters as unknown[],
-          fireOn: [
-            {
-              table: "book",
-            },
-            {
-              table: "creator",
-            },
-            {
-              table: "series",
-            },
-            {
-              table: "collection",
-            },
-            {
-              table: "status",
-            },
-            {
-              table: "position",
-            },
-            {
-              table: "ebook",
-            },
-            {
-              table: "audiobook",
-            },
-            {
-              table: "readaloud",
-            },
-          ],
-          callback(result) {
-            updateCachedData(() => {
-              return result.rows
-            })
-          },
-        })
-
-        await cacheEntryRemoved
-
-        unsubscribe()
-      },
+      providesTags: () => [{ type: "Books" as const, id: "LIST" }],
     }),
     getBook: build.query<BookWithRelations | null, { uuid: UUID }>({
       async queryFn({ uuid }) {
@@ -274,12 +218,7 @@ export const localApi = createApi({
       }
     >({
       async queryFn({ bookUuid, highlightId, color, locator }) {
-        await createHighlight({
-          uuid: highlightId,
-          bookUuid,
-          color,
-          locator: JSON.stringify(locator),
-        })
+        await createHighlight({ uuid: highlightId, bookUuid, color, locator })
         return { data: null }
       },
       invalidatesTags: ["Highlights"],
@@ -332,11 +271,7 @@ export const localApi = createApi({
       { uuid: UUID; bookUuid: UUID; locator: ReadiumLocator }
     >({
       async queryFn({ uuid, bookUuid, locator }) {
-        await createBookmark({
-          uuid,
-          bookUuid,
-          locator: JSON.stringify(locator),
-        })
+        await createBookmark({ uuid, bookUuid, locator })
         return { data: null }
       },
       invalidatesTags: ["Bookmarks"],
@@ -373,7 +308,7 @@ export const localApi = createApi({
             (draft) => {
               if (!draft) return
 
-              draft.status = { ...status, dirty: "true" }
+              draft.status = { ...status, dirty: true }
             },
           ),
         )
@@ -383,7 +318,7 @@ export const localApi = createApi({
             const draftBook = draft.find(({ uuid }) => uuid === bookUuid)
             if (!draftBook) return
 
-            draftBook.status = { ...status, dirty: "true" }
+            draftBook.status = { ...status, dirty: true }
           }),
         )
 
@@ -398,10 +333,7 @@ export const localApi = createApi({
       { bookUuid: UUID; locator: ReadiumLocator; timestamp: number }
     >({
       async queryFn({ bookUuid, locator, timestamp }) {
-        await updateBookPosition(bookUuid, {
-          locator: JSON.stringify(locator),
-          timestamp,
-        })
+        await updateBookPosition(bookUuid, { locator, timestamp })
         return { data: null }
       },
       async onQueryStarted(

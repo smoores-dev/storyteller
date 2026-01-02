@@ -6,9 +6,7 @@ import { db } from "./db"
 import { type DB } from "./schema"
 
 export type Bookmark = Selectable<DB["bookmark"]>
-export type NewBookmark = Omit<Insertable<DB["bookmark"]>, "locator"> & {
-  locator: string
-}
+export type NewBookmark = Insertable<DB["bookmark"]>
 
 export async function getBookBookmarks(bookUuid: UUID) {
   return await db
@@ -19,10 +17,7 @@ export async function getBookBookmarks(bookUuid: UUID) {
 }
 
 export async function createBookmark(bookmark: NewBookmark) {
-  await db
-    .insertInto("bookmark")
-    .values(bookmark as unknown as Insertable<DB["bookmark"]>)
-    .execute()
+  await db.insertInto("bookmark").values(bookmark).execute()
 }
 
 export async function deleteBookmarks(bookUuid: UUID, bookmarkUuids: UUID[]) {

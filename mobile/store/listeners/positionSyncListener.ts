@@ -1,5 +1,5 @@
 import { getBook } from "@/database/books"
-import { getDownloadedPositions } from "@/database/positions"
+import { getPositions } from "@/database/positions"
 import { getDirtyStatuses, setBookStatusClean } from "@/database/statuses"
 import { logger } from "@/logger"
 import { areLocatorsEqual } from "@/modules/readium"
@@ -11,10 +11,21 @@ import { serverApi } from "@/store/serverApi"
 import { startAppListening } from "./listenerMiddleware"
 
 export async function syncPositions(dispatch: AppDispatch) {
-  const positions = await getDownloadedPositions()
+  const positions = await getPositions()
 
   for (const position of positions) {
-    const { bookUuid, timestamp, locator, serverUuid } = position
+    const { bookUuid, timestamp, locator } = position
+    const book = await getBook(bookUuid)
+
+    if (
+      !book?.serverUuid ||
+      ![book.readaloud, book.ebook, book.audiobook].find(
+        (format) => format?.downloadStatus === "DOWNLOADED",
+      )
+    ) {
+      continue
+    }
+
     try {
       logger.debug(`Calling updatePosition`)
       logger.debug({
@@ -26,7 +37,7 @@ export async function syncPositions(dispatch: AppDispatch) {
       await dispatch(
         serverApi.endpoints.updatePosition.initiate({
           bookUuid,
-          serverUuid: serverUuid!,
+          serverUuid: book.serverUuid,
           timestamp,
           locator,
         }),
@@ -47,7 +58,7 @@ export async function syncPositions(dispatch: AppDispatch) {
               serverApi.endpoints.getPosition.initiate(
                 {
                   bookUuid,
-                  serverUuid: serverUuid!,
+                  serverUuid: book.serverUuid,
                 },
                 { forceRefetch: true },
               ),

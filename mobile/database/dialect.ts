@@ -1,6 +1,7 @@
-import type { DB as OpSqliteDatabase, Scalar } from "@op-engineering/op-sqlite"
+import * as SQLite from "expo-sqlite"
+import { type SQLiteDatabase } from "expo-sqlite"
 import {
-  CompiledQuery,
+  type CompiledQuery,
   type DatabaseConnection,
   type DatabaseIntrospector,
   type Dialect,
@@ -14,24 +15,29 @@ import {
   SqliteQueryCompiler,
 } from "kysely"
 
-export type OpSqliteDialectConfig = {
+import { logger } from "@/logger"
+
+import { deserialize as autoAffinityDeserialize } from "./converters/autoAffinityDeserialize"
+import { serialize } from "./converters/serialize"
+
+export type ExpoDialectConfig = {
   // Name of the database file or the database object.
-  database: OpSqliteDatabase
+  database: string | SQLiteDatabase
   onError?: (message: string, exception: unknown) => void
 }
 
 /**
  * Expo dialect for Kysely.
  */
-export class OpSqliteDialect implements Dialect {
-  readonly #config: OpSqliteDialectConfig
+export class ExpoDialect implements Dialect {
+  config: ExpoDialectConfig
 
-  constructor(config: OpSqliteDialectConfig) {
-    this.#config = config
+  constructor(config: ExpoDialectConfig) {
+    this.config = config
   }
 
-  createDriver(): OpSqliteDriver {
-    return new OpSqliteDriver(this.#config)
+  createDriver(): ExpoDriver {
+    return new ExpoDriver(this.config)
   }
 
   createQueryCompiler(): QueryCompiler {
@@ -50,51 +56,47 @@ export class OpSqliteDialect implements Dialect {
 /**
  * Expo driver for Kysely.
  */
-export class OpSqliteDriver implements Driver {
-  readonly #config: OpSqliteDialectConfig
+export class ExpoDriver implements Driver {
   readonly #connectionMutex = new ConnectionMutex()
+  readonly #connection: ExpoConnection
 
-  #connection?: DatabaseConnection
-
-  constructor(config: OpSqliteDialectConfig) {
-    this.#config = Object.freeze({ ...config })
+  constructor(config: ExpoDialectConfig) {
+    this.#connection = new ExpoConnection(config)
   }
 
   async releaseConnection(): Promise<void> {
     this.#connectionMutex.unlock()
   }
 
-  async init(): Promise<void> {
-    this.#connection = new OpSqliteConnection(this.#config)
-  }
+  async init(): Promise<void> {}
 
-  async acquireConnection(): Promise<DatabaseConnection> {
+  async acquireConnection(): Promise<ExpoConnection> {
     await this.#connectionMutex.lock()
-    return this.#connection!
+    return this.#connection
   }
 
-  async beginTransaction(connection: OpSqliteConnection): Promise<void> {
-    await connection.executeQuery(CompiledQuery.raw("begin"))
+  async beginTransaction(connection: ExpoConnection): Promise<void> {
+    await connection.directQuery("begin transaction")
   }
 
-  async commitTransaction(connection: OpSqliteConnection): Promise<void> {
-    await connection.executeQuery(CompiledQuery.raw("commit"))
+  async commitTransaction(connection: ExpoConnection): Promise<void> {
+    await connection.directQuery("commit")
   }
 
-  async rollbackTransaction(connection: OpSqliteConnection): Promise<void> {
-    await connection.executeQuery(CompiledQuery.raw("rollback"))
+  async rollbackTransaction(connection: ExpoConnection): Promise<void> {
+    await connection.directQuery("rollback")
   }
 
   async destroy(): Promise<void> {
-    this.#config.database.close()
+    await this.#connection.closeConnection()
   }
 
   async getDatabaseRuntimeVersion() {
     try {
-      const res = await this.#connection?.executeQuery<{ version: number }>(
-        CompiledQuery.raw("select sqlite_version() as version;"),
+      const res = await this.#connection.directQuery(
+        "select sqlite_version() as version;",
       )
-      return res?.rows[0]?.version
+      return (res[0] as { version: number }).version
     } catch (e) {
       console.error(e)
       return "unknown"
@@ -105,16 +107,23 @@ export class OpSqliteDriver implements Driver {
 /**
  * Expo connection for Kysely.
  */
-class OpSqliteConnection implements DatabaseConnection {
-  readonly #config: OpSqliteDialectConfig
+class ExpoConnection implements DatabaseConnection {
+  sqlite: SQLite.SQLiteDatabase
+  config: ExpoDialectConfig
 
-  constructor(config: OpSqliteDialectConfig) {
-    this.#config = config
-    this.#config.database.executeSync("PRAGMA foreign_keys = ON;")
+  constructor(config: ExpoDialectConfig) {
+    if (typeof config.database === "string") {
+      this.sqlite = SQLite.openDatabaseSync(config.database)
+    } else {
+      this.sqlite = config.database
+    }
+
+    this.config = config
+    this.sqlite.execSync("PRAGMA foreign_keys = ON;")
   }
 
   async closeConnection(): Promise<void> {
-    return this.#config.database.close()
+    return this.sqlite.closeAsync()
   }
 
   async executeQuery<R>(compiledQuery: CompiledQuery): Promise<QueryResult<R>> {
@@ -131,65 +140,65 @@ class OpSqliteConnection implements DatabaseConnection {
       sql += " STRICT"
     }
 
-    // const readonly =
-    //   query.kind === "SelectQueryNode" || query.kind === "RawNode"
+    const readonly =
+      query.kind === "SelectQueryNode" || query.kind === "RawNode"
 
     // Check if the query has a RETURNING clause
-    // const hasReturning = sql.toUpperCase().includes("RETURNING")
+    const hasReturning = sql.toUpperCase().includes("RETURNING")
 
-    // const transformedParameters = serialize([...parameters])
+    const transformedParameters = serialize([...parameters])
 
-    // logger.trace(`${query.kind}${readonly ? " (readonly)" : ""}: ${sql}`)
+    logger.trace(`${query.kind}${readonly ? " (readonly)" : ""}: ${sql}`)
 
-    // if (readonly || hasReturning) {
-    //   const { rows, rowsAffected, insertId } =
-    //     await this.#config.database.execute(sql, transformedParameters)
+    if (readonly || hasReturning) {
+      const res = await this.sqlite.getAllAsync<R>(sql, transformedParameters)
 
-    //   const skip =
-    //     query.kind === "SelectQueryNode" &&
-    //     (sql.includes("preferences") ||
-    //       sql.includes("bookPreferences") ||
-    //       sql.includes("pragma_table_info")) // @todo: fix this hack - find a better way
+      const skip =
+        query.kind === "SelectQueryNode" &&
+        (sql.includes("preferences") ||
+          sql.includes("bookPreferences") ||
+          sql.includes("pragma_table_info")) // @todo: fix this hack - find a better way
 
-    //   if (!skip) {
-    //     return {
-    //       rows: autoAffinityDeserialize(rows, this.#config.onError) as R[],
-    //       numAffectedRows: BigInt(rowsAffected),
-    //       insertId: BigInt(insertId ?? 0),
-    //     } satisfies QueryResult<R>
-    //   }
+      if (!skip) {
+        return {
+          rows: autoAffinityDeserialize(res, this.config.onError),
+          // Add these properties for non-readonly queries with RETURNING
+          ...(hasReturning && !readonly
+            ? {
+                numAffectedRows: BigInt(0), // We don't know this value
+                insertId: BigInt(0), // We don't know this value
+              }
+            : {}),
+        } satisfies QueryResult<R>
+      }
 
-    //   return {
-    //     rows: rows as R[],
-    //       numAffectedRows: BigInt(rowsAffected),
-    //       insertId: BigInt(insertId ?? 0),
-    //   } satisfies QueryResult<R>
-    // } else {
-    //   const res = await this.sqlite.runAsync(sql, transformedParameters)
+      return {
+        rows: res,
+        // Add these properties for non-readonly queries with RETURNING
+        ...(hasReturning && !readonly
+          ? {
+              numAffectedRows: BigInt(0), // We don't know this value
+              insertId: BigInt(0), // We don't know this value
+            }
+          : {}),
+      } satisfies QueryResult<R>
+    } else {
+      const res = await this.sqlite.runAsync(sql, transformedParameters)
 
-    //   const queryResult = {
-    //     numAffectedRows: BigInt(res.changes),
-    //     insertId: BigInt(res.lastInsertRowId),
-    //     rows: [],
-    //   } satisfies QueryResult<R>
+      const queryResult = {
+        numAffectedRows: BigInt(res.changes),
+        insertId: BigInt(res.lastInsertRowId),
+        rows: [],
+      } satisfies QueryResult<R>
 
-    //   logger.trace("queryResult", queryResult)
+      logger.trace("queryResult", queryResult)
 
-    //   return queryResult
-    // }
-
-    const { rows, rowsAffected, insertId } =
-      await this.#config.database.execute(sql, parameters as Scalar[])
-    return {
-      rows: rows as R[],
-      numAffectedRows: BigInt(rowsAffected),
-      insertId: BigInt(insertId ?? 0),
-    } satisfies QueryResult<R>
+      return queryResult
+    }
   }
 
   async directQuery<T>(query: string): Promise<Array<T>> {
-    const { rows } = await this.#config.database.execute(query, [])
-    return rows as T[]
+    return await this.sqlite.getAllAsync<T>(query, [])
   }
 
   streamQuery<R>(

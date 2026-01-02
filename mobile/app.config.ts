@@ -23,6 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-web-browser",
       "expo-router",
       "expo-secure-store",
+      "expo-sqlite",
       [
         "expo-build-properties",
         {

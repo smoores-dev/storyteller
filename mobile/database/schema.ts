@@ -92,7 +92,7 @@ export interface BookToCreator {
 export interface BookToSeries {
   bookUuid: UUID
   createdAt: Generated<string>
-  featured: Generated<"true" | "false">
+  featured: Generated<boolean>
   position: number | null
   seriesUuid: UUID
   updatedAt: Generated<string>
@@ -104,7 +104,7 @@ export interface BookToStatus {
   createdAt: Generated<string>
   statusUuid: UUID
   updatedAt: Generated<string>
-  dirty: Generated<"true" | "false">
+  dirty: Generated<boolean>
   uuid: Generated<UUID>
 }
 
@@ -120,7 +120,7 @@ export interface Collection {
   createdAt: Generated<string>
   description: string | null
   name: string
-  public: Generated<"true" | "false">
+  public: Generated<boolean>
   serverUuid: UUID | null
   updatedAt: Generated<string>
   uuid: UUID
@@ -213,7 +213,7 @@ export interface Preferences {
 
 export interface Status {
   createdAt: Generated<string>
-  isDefault: Generated<"true" | "false">
+  isDefault: Generated<boolean>
   name: string
   updatedAt: Generated<string>
   uuid: UUID

@@ -147,7 +147,7 @@ export function BookThumbnail({ book }: Props) {
           <ContextMenuSubContent>
             {availableFormats.map((format) => (
               <ContextMenuItem
-                key={format}
+                key="format"
                 onPress={() => {
                   if (downloadedFormats.includes(format)) {
                     deleteBook({
