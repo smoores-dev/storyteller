@@ -1,4 +1,4 @@
-import { sql } from "kysely"
+import { type Insertable, sql } from "kysely"
 
 import { type BookWithRelations as ServerBook } from "@storyteller-platform/web/src/database/books"
 
@@ -20,6 +20,7 @@ import { type CollectionUpdate, type NewCollection } from "./collections"
 import { type NewCreator } from "./creators"
 import { db } from "./db"
 import { type NewPosition } from "./positions"
+import { type DB } from "./schema"
 import { type NewSeries } from "./series"
 import { type NewTag } from "./tags"
 
@@ -151,7 +152,7 @@ export async function upsertServerBooks(
         positionsToInsert.push({
           uuid: serverBook.position.uuid,
           bookUuid: serverBook.uuid,
-          locator: serverBook.position.locator,
+          locator: JSON.stringify(serverBook.position.locator),
           timestamp: serverBook.position.timestamp,
         })
       }
@@ -222,7 +223,7 @@ export async function upsertServerBooks(
             uuid: randomUUID(),
             bookUuid: serverBook.uuid,
             seriesUuid: existingUuid,
-            featured: series.featured,
+            featured: series.featured ? "true" : "false",
             position: series.position,
           })
         } else {
@@ -238,7 +239,7 @@ export async function upsertServerBooks(
             uuid: randomUUID(),
             bookUuid: serverBook.uuid,
             seriesUuid: series.uuid,
-            featured: series.featured,
+            featured: series.featured ? "true" : "false",
             position: series.position,
           })
         }
@@ -253,7 +254,7 @@ export async function upsertServerBooks(
             collectionsToUpdate.push({
               uuid: existingUuid,
               description: collection.description,
-              public: collection.public,
+              public: collection.public ? "true" : "false",
             })
           }
           bookToCollectionRecords.push({
@@ -266,7 +267,7 @@ export async function upsertServerBooks(
             uuid: collection.uuid,
             name: collection.name,
             description: collection.description,
-            public: collection.public,
+            public: collection.public ? "true" : "false",
             serverUuid,
           })
 
@@ -343,7 +344,9 @@ export async function upsertServerBooks(
                   tr.selectNoFrom([
                     sql<UUID>`${uuid}`.as("uuid"),
                     sql<string>`${description}`.as("description"),
-                    sql<boolean>`${isPublic}`.as("public"),
+                    sql<"true" | "false">`${isPublic ? "true" : "false"}`.as(
+                      "public",
+                    ),
                   ]),
                 ),
               tr.selectNoFrom([
@@ -351,7 +354,11 @@ export async function upsertServerBooks(
                 sql<string>`${collectionsToUpdate[0]?.description}`.as(
                   "description",
                 ),
-                sql<boolean>`${collectionsToUpdate[0]?.public}`.as("public"),
+                sql<
+                  "true" | "false"
+                >`${collectionsToUpdate[0]?.public ? "true" : "false"}`.as(
+                  "public",
+                ),
               ]),
             )
             .as("data"),
@@ -413,7 +420,7 @@ export async function upsertServerBooks(
         .values(bookToStatusRecords)
         .onConflict((oc) =>
           oc.column("bookUuid").doUpdateSet((eb) => ({
-            dirty: false,
+            dirty: "false",
             statusUuid: eb.ref("excluded.statusUuid"),
           })),
         )
@@ -423,7 +430,7 @@ export async function upsertServerBooks(
     if (positionsToInsert.length > 0) {
       await tr
         .insertInto("position")
-        .values(positionsToInsert)
+        .values(positionsToInsert as unknown as Insertable<DB["position"]>[])
         .onConflict((oc) =>
           oc.column("bookUuid").doUpdateSet((eb) => ({
             locator: eb.ref("excluded.locator"),
@@ -436,7 +443,7 @@ export async function upsertServerBooks(
     if (ebooksToInsert.length > 0) {
       await tr
         .insertInto("ebook")
-        .values(ebooksToInsert)
+        .values(ebooksToInsert as unknown as Insertable<DB["ebook"]>[])
         .onConflict((oc) => oc.column("bookUuid").doNothing())
         .execute()
     }
@@ -444,7 +451,7 @@ export async function upsertServerBooks(
     if (audiobooksToInsert.length > 0) {
       await tr
         .insertInto("audiobook")
-        .values(audiobooksToInsert)
+        .values(audiobooksToInsert as unknown as Insertable<DB["audiobook"]>[])
         .onConflict((oc) => oc.column("bookUuid").doNothing())
         .execute()
     }
@@ -452,7 +459,7 @@ export async function upsertServerBooks(
     if (readaloudsToInsert.length > 0) {
       await tr
         .insertInto("readaloud")
-        .values(readaloudsToInsert)
+        .values(readaloudsToInsert as unknown as Insertable<DB["readaloud"]>)
         .onConflict((oc) => oc.column("bookUuid").doNothing())
         .execute()
     }
@@ -523,7 +530,7 @@ export async function createBookFromServer(
       (await tr
         .selectFrom("status")
         .select("uuid")
-        .where("isDefault", "=", true)
+        .where("isDefault", "=", "true")
         .executeTakeFirstOrThrow())
 
     await tr
@@ -715,7 +722,7 @@ export async function createBookFromServer(
           uuid: randomUUID(),
           bookUuid: serverBook.uuid,
           seriesUuid: series.uuid,
-          featured: series.featured,
+          featured: series.featured ? "true" : "false",
           position: series.position,
         })
         .execute()
@@ -735,7 +742,7 @@ export async function createBookFromServer(
           .set({
             uuid: collection.uuid,
             description: collection.description,
-            public: collection.public,
+            public: collection.public ? "true" : "false",
           })
           .where("uuid", "=", existing.uuid)
           .execute()
@@ -746,7 +753,7 @@ export async function createBookFromServer(
             uuid: collection.uuid,
             name: collection.name,
             description: collection.description,
-            public: collection.public,
+            public: collection.public ? "true" : "false",
             serverUuid,
           })
           .execute()

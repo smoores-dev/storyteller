@@ -119,7 +119,14 @@ startAppListening({
         newServerBooks.push(book)
       }
 
-      await upsertServerBooks(newServerBooks, server.uuid)
+      for (
+        let chunkStart = 0;
+        chunkStart < newServerBooks.length;
+        chunkStart += 51
+      ) {
+        const chunk = newServerBooks.slice(chunkStart, chunkStart + 50)
+        await upsertServerBooks(chunk, server.uuid)
+      }
 
       for (const book of patchedServerBooks) {
         const oldUuid = localBookIds.get(book.id!)!
@@ -272,7 +279,13 @@ startAppListening({
         },
       )
 
-      await upsertServerBooks(existingBooks, server.uuid)
+      for (
+        let chunkStart = 0;
+        chunkStart < existingBooks.length;
+        chunkStart += 51
+      ) {
+        await upsertServerBooks(existingBooks, server.uuid)
+      }
 
       await trimDeletedServerBooks(serverBooks, serverUuid)
 
