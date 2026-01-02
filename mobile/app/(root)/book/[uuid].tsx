@@ -163,7 +163,7 @@ export default function BookDetailsScreen() {
                         }}
                         className="active:text-primary active:underline"
                       >
-                        <Text className="text-sm text-brand">
+                        <Text className="text-sm text-primary">
                           {author.name}
                         </Text>
                       </Link>
@@ -188,7 +188,7 @@ export default function BookDetailsScreen() {
                         }}
                         className="active:text-primary active:underline"
                       >
-                        <Text className="text-sm text-brand">
+                        <Text className="text-sm text-primary">
                           {narrator.name}
                         </Text>
                       </Link>
@@ -358,7 +358,7 @@ export default function BookDetailsScreen() {
                         variant="link"
                         className="y-0 mt-[-5px] flex flex-row items-center gap-1 px-0"
                       >
-                        <Text className="text-brand">{series.name}</Text>
+                        <Text className="text-primary">{series.name}</Text>
                         <Text className="font-normal text-muted-foreground">
                           #{series.position}
                         </Text>
