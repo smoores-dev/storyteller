@@ -122,33 +122,42 @@ export async function readBookFile(
   )
 }
 
-export async function deleteLocalBookFiles(bookUuid: UUID) {
-  return await Promise.all([
+export async function deleteLocalBookFiles(
+  bookUuid: UUID,
+  format?: "ebook" | "readaloud" | "audiobook",
+) {
+  if (!format || format === "readaloud") {
     FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "readaloud"), {
       idempotent: true,
-    }),
-    FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "ebook"), {
-      idempotent: true,
-    }),
-    FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "audiobook"), {
-      idempotent: true,
-    }),
+    })
     FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "readaloud"), {
       idempotent: true,
-    }),
-    FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "audiobook"), {
+    })
+  }
+  if (!format || format === "ebook") {
+    FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "ebook"), {
       idempotent: true,
-    }),
+    })
     FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "ebook"), {
       idempotent: true,
-    }),
+    })
+  }
+  if (!format || format === "audiobook") {
+    FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "audiobook"), {
+      idempotent: true,
+    })
+    FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "audiobook"), {
+      idempotent: true,
+    })
+  }
+  if (!format) {
     FileSystem.deleteAsync(getOldLocalBookCoverUrl(bookUuid), {
       idempotent: true,
-    }),
+    })
     FileSystem.deleteAsync(getOldLocalAudioBookCoverUrl(bookUuid), {
       idempotent: true,
-    }),
-  ])
+    })
+  }
 }
 
 export async function ensureCoversDirectory() {

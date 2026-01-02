@@ -579,34 +579,43 @@ export async function addBookToDownloadQueue(
   })
 }
 
-export async function removeBookDownloads(bookUuid: UUID) {
+export async function removeBookDownloads(
+  bookUuid: UUID,
+  format?: "ebook" | "readaloud" | "audiobook",
+) {
   await db.transaction().execute(async (tr) => {
-    await tr
-      .updateTable("audiobook")
-      .set({ downloadStatus: "NONE", downloadProgress: 0, manifest: null })
-      .where("bookUuid", "=", bookUuid)
-      .execute()
-    await tr
-      .updateTable("ebook")
-      .set({
-        downloadStatus: "NONE",
-        downloadProgress: 0,
-        manifest: null,
-        positions: null,
-      })
-      .where("bookUuid", "=", bookUuid)
-      .execute()
-    await tr
-      .updateTable("readaloud")
-      .set({
-        downloadStatus: "NONE",
-        downloadProgress: 0,
-        audioManifest: null,
-        epubManifest: null,
-        positions: null,
-      })
-      .where("bookUuid", "=", bookUuid)
-      .execute()
+    if (!format || format === "audiobook") {
+      await tr
+        .updateTable("audiobook")
+        .set({ downloadStatus: "NONE", downloadProgress: 0, manifest: null })
+        .where("bookUuid", "=", bookUuid)
+        .execute()
+    }
+    if (!format || format === "ebook") {
+      await tr
+        .updateTable("ebook")
+        .set({
+          downloadStatus: "NONE",
+          downloadProgress: 0,
+          manifest: null,
+          positions: null,
+        })
+        .where("bookUuid", "=", bookUuid)
+        .execute()
+    }
+    if (!format || format === "readaloud") {
+      await tr
+        .updateTable("readaloud")
+        .set({
+          downloadStatus: "NONE",
+          downloadProgress: 0,
+          audioManifest: null,
+          epubManifest: null,
+          positions: null,
+        })
+        .where("bookUuid", "=", bookUuid)
+        .execute()
+    }
   })
 }
 

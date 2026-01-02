@@ -116,16 +116,20 @@ export const localApi = createApi({
     }),
     deleteBook: build.mutation<
       null,
-      { bookUuid: UUID; deleteRecord?: boolean }
+      {
+        bookUuid: UUID
+        format?: "ebook" | "readaloud" | "audiobook"
+        deleteRecord?: boolean
+      }
     >({
-      async queryFn({ bookUuid, deleteRecord = false }) {
+      async queryFn({ bookUuid, format, deleteRecord = false }) {
         if (deleteRecord) {
           await deleteBook(bookUuid)
         } else {
-          await removeBookDownloads(bookUuid)
+          await removeBookDownloads(bookUuid, format)
         }
 
-        await deleteLocalBookFiles(bookUuid)
+        await deleteLocalBookFiles(bookUuid, format)
 
         return { data: null }
       },

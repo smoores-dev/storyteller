@@ -50,11 +50,13 @@ function SelectTrigger({
   className,
   children,
   size = "default",
+  iconColor = "muted-foreground",
   ...props
 }: SelectPrimitive.TriggerProps &
   React.RefAttributes<SelectPrimitive.TriggerRef> & {
     children?: React.ReactNode
     size?: "default" | "sm"
+    iconColor?: string
   }) {
   return (
     <SelectPrimitive.Trigger
@@ -74,7 +76,7 @@ function SelectTrigger({
       <Icon
         as={ChevronDown}
         aria-hidden={true}
-        className="size-4 text-muted-foreground"
+        className={cn("size-4", "text-" + iconColor)}
       />
     </SelectPrimitive.Trigger>
   )
@@ -172,8 +174,12 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  textColor = "foreground",
   ...props
-}: SelectPrimitive.ItemProps & React.RefAttributes<SelectPrimitive.ItemRef>) {
+}: SelectPrimitive.ItemProps &
+  React.RefAttributes<SelectPrimitive.ItemRef> & {
+    textColor?: string
+  }) {
   return (
     <SelectPrimitive.Item
       className={cn(
@@ -194,7 +200,13 @@ function SelectItem({
       {children && typeof children !== "function" ? (
         children
       ) : (
-        <SelectPrimitive.ItemText className="select-none text-sm text-foreground group-active:text-accent-foreground" />
+        <SelectPrimitive.ItemText
+          className={cn(
+            "select-none text-sm",
+            "text-" + textColor,
+            "group-active:text-accent-foreground",
+          )}
+        />
       )}
     </SelectPrimitive.Item>
   )

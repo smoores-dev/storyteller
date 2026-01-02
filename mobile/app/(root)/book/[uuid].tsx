@@ -1,14 +1,14 @@
 import { skipToken } from "@reduxjs/toolkit/query"
 import { Link, useLocalSearchParams, useRouter } from "expo-router"
 import {
-  Book,
+  ChevronDown,
   ChevronLeft,
-  Headphones,
+  ChevronRight,
   LibraryBig,
+  LibrarySquare,
   Tag,
-  Trash2,
 } from "lucide-react-native"
-import { Fragment } from "react"
+import { Fragment, useState } from "react"
 import { RefreshControl, ScrollView, View } from "react-native"
 
 import BookDescription from "@/components/BookDescription"
@@ -26,11 +26,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Icon } from "@/components/ui/icon"
-import { IconReadaloud, ReadaloudIcon } from "@/components/ui/icon-readaloud"
 import {
   Select,
   SelectContent,
@@ -39,7 +43,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Text } from "@/components/ui/text"
+import { useAvailableFormats } from "@/hooks/useAvailableFormats"
 import { useColorTheme } from "@/hooks/useColorTheme"
+import { useDownloadedFormats } from "@/hooks/useDownloadedFormats"
 import {
   useDeleteBookMutation,
   useDownloadBookMutation,
@@ -69,13 +75,41 @@ export default function BookDetailsScreen() {
       : skipToken,
   )
 
-  const hasDownload = !![book?.readaloud, book?.ebook, book?.audiobook].filter(
-    (format) => format?.downloadStatus === "DOWNLOADED",
-  ).length
+  const [showTagsMore, setShowTagsMore] = useState(false)
+  const [showCollectionsMore, setShowCollectionsMore] = useState(false)
+  const [pendingDeleteFormat, setPendingDeleteFormat] = useState<
+    "readaloud" | "ebook" | "audiobook" | null
+  >(null)
+
+  const downloadedFormats = useDownloadedFormats(book)
+
+  const availableFormats = useAvailableFormats(book)
+  const onlyFormat = availableFormats[0]
 
   if (isLoading || isUninitialized) return <LoadingView />
 
   if (!book) return null
+
+  let numberOfVersions = 0
+  if (book.readaloud) numberOfVersions++
+  if (book.ebook) numberOfVersions++
+  if (book.audiobook) numberOfVersions++
+
+  const numberOfTagsToShow = 6
+  const tagsMoreNeeded = book.tags.length > numberOfTagsToShow
+  const tagsToShow = showTagsMore
+    ? book.tags
+    : book.tags.slice(0, numberOfTagsToShow)
+  const numTagsHidden = book.tags.length - tagsToShow.length
+
+  const numberOfCollectionsToShow = 6
+  const collectionsMoreNeeded =
+    book.collections.length > numberOfCollectionsToShow
+  const collectionsToShow = showCollectionsMore
+    ? book.collections
+    : book.collections.slice(0, numberOfCollectionsToShow)
+  const numCollectionsHidden =
+    book.collections.length - collectionsToShow.length
 
   return (
     <View className="flex-1">
@@ -100,45 +134,6 @@ export default function BookDetailsScreen() {
             >
               <Icon as={ChevronLeft} size={24} />
             </Button>
-            {hasDownload && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost">
-                    <Icon as={Trash2} size={24} className="text-destructive" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Remove book from device</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will remove the downloaded book files from your local
-                      device.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>
-                      <Text>Cancel</Text>
-                    </AlertDialogCancel>
-                    <AlertDialogAction asChild>
-                      <Button
-                        variant="destructive"
-                        onPress={() => {
-                          deleteBook({
-                            bookUuid: uuid,
-                            deleteRecord: book.serverUuid === null,
-                          })
-                          if (book.serverUuid === null) {
-                            router.replace("/")
-                          }
-                        }}
-                      >
-                        <Text>Remove</Text>
-                      </Button>
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
           </View>
           <Stack className="items-start px-8">
             <BookThumbnailImage
@@ -147,26 +142,15 @@ export default function BookDetailsScreen() {
               height={352}
               width={232}
             />
-            <Text className="my-4" variant="h1">
-              {book.readaloud?.status === "ALIGNED" && (
-                <>
-                  <Icon
-                    className="translate-y-[3px] text-primary"
-                    size={36}
-                    as={ReadaloudIcon}
-                  />{" "}
-                </>
-              )}
+            <Text className="mb-1 mt-4 text-2xl" variant="h1">
               {book.title}
             </Text>
             {book.subtitle && (
-              <Text variant="h3" className="mb-4">
-                {book.subtitle}
-              </Text>
+              <Text className="mb-4 text-base italic">{book.subtitle}</Text>
             )}
-            <Stack className="mb-4 gap-1 pl-2">
+            <Stack className="mb-4 gap-1 pl-0">
               <Group>
-                <Text className="text-muted-foreground">
+                <Text className="text-sm text-muted-foreground">
                   by{" "}
                   {book.authors.map((author, index) => (
                     <Fragment key={author.uuid}>
@@ -179,9 +163,13 @@ export default function BookDetailsScreen() {
                         }}
                         className="active:text-primary active:underline"
                       >
-                        <Text>{author.name}</Text>
+                        <Text className="text-sm text-brand">
+                          {author.name}
+                        </Text>
                       </Link>
-                      <Text>{index < book.authors.length - 1 && ", "}</Text>
+                      <Text className="text-sm">
+                        {index < book.authors.length - 1 && ", "}
+                      </Text>
                     </Fragment>
                   ))}
                 </Text>
@@ -200,7 +188,9 @@ export default function BookDetailsScreen() {
                         }}
                         className="active:text-primary active:underline"
                       >
-                        <Text className="text-sm">{narrator.name}</Text>
+                        <Text className="text-sm text-brand">
+                          {narrator.name}
+                        </Text>
                       </Link>
                       <Text className="text-sm">
                         {index < book.narrators.length - 1 && ", "}
@@ -209,22 +199,6 @@ export default function BookDetailsScreen() {
                   ))}
                 </Text>
               )}
-              {book.series.map((s) => (
-                <Text className="text-sm text-muted-foreground" key={s.uuid}>
-                  {s.position !== null && `Book ${s.position} of `}
-                  <Link
-                    href={{
-                      pathname: "/series/[uuid]",
-                      params: {
-                        uuid: s.uuid,
-                      },
-                    }}
-                    className="active:text-primary active:underline"
-                  >
-                    <Text className="text-sm">{s.name}</Text>
-                  </Link>
-                </Text>
-              ))}
             </Stack>
             <Group className="mb-4 items-center justify-between self-stretch">
               {book.status && (
@@ -241,7 +215,7 @@ export default function BookDetailsScreen() {
                     })
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="">
                     <SelectValue placeholder="" />
                   </SelectTrigger>
                   <SelectContent>
@@ -256,99 +230,245 @@ export default function BookDetailsScreen() {
                 </Select>
               )}
               <Stack className="gap-1">
-                <Group className="self-end rounded-md bg-primary px-2 py-1">
-                  {!!book.readaloud && (
-                    <Button
-                      variant="ghost"
-                      className="active:bg-white/10"
-                      onPress={() => {
-                        downloadBook({
-                          bookUuid: book.uuid,
-                          format: "readaloud",
-                        })
-                      }}
-                    >
-                      <Icon
-                        as={IconReadaloud}
-                        className="text-white"
-                        size={24}
-                      />
-                    </Button>
-                  )}
-                  {book.ebook && (
-                    <Button
-                      variant="ghost"
-                      className="active:bg-white/10"
-                      onPress={() => {
-                        downloadBook({ bookUuid: book.uuid, format: "ebook" })
-                      }}
-                    >
-                      <Icon as={Book} className="text-white" size={24} />
-                    </Button>
-                  )}
-                  {book.audiobook && (
-                    <Button
-                      variant="ghost"
-                      className="active:bg-white/10"
-                      onPress={() => {
-                        downloadBook({
-                          bookUuid: book.uuid,
-                          format: "audiobook",
-                        })
-                      }}
-                    >
-                      <Icon as={Headphones} className="text-white" size={24} />
-                    </Button>
+                <Group className="self-end rounded-md px-2 py-[0.05rem]">
+                  {numberOfVersions > 1 ? (
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="border-primary">
+                            <Text className="text-primary">Downloads</Text>
+                            <Icon
+                              as={ChevronDown}
+                              size={16}
+                              className="text-primary"
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          {availableFormats.map((format) => (
+                            <DropdownMenuItem
+                              key={format}
+                              onPress={() => {
+                                if (downloadedFormats.includes(format)) {
+                                  setPendingDeleteFormat(format)
+                                  return
+                                }
+                                downloadBook({
+                                  bookUuid: book.uuid,
+                                  format: format,
+                                })
+                              }}
+                              variant={
+                                downloadedFormats.includes(format)
+                                  ? "destructive"
+                                  : "default"
+                              }
+                              className={
+                                book[format]?.downloadStatus === "DOWNLOADED" ||
+                                book[format]?.downloadStatus === "DOWNLOADING"
+                                  ? "border-destructive"
+                                  : "border-primary"
+                              }
+                              disabled={
+                                book[format]?.downloadStatus === "DOWNLOADING"
+                              }
+                            >
+                              <Text>
+                                {downloadedFormats.includes(format)
+                                  ? `Remove ${format}`
+                                  : `${format[0]?.toUpperCase()}${format.slice(1)}`}
+                              </Text>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  ) : (
+                    onlyFormat && (
+                      <>
+                        <Button
+                          variant="outline"
+                          className={
+                            book[onlyFormat]?.downloadStatus === "DOWNLOADED" ||
+                            book[onlyFormat]?.downloadStatus === "DOWNLOADING"
+                              ? "border-destructive"
+                              : "border-primary"
+                          }
+                          disabled={
+                            book[onlyFormat]?.downloadStatus === "DOWNLOADING"
+                          }
+                          onPress={() => {
+                            if (
+                              book[onlyFormat]?.downloadStatus === "DOWNLOADED"
+                            ) {
+                              setPendingDeleteFormat(onlyFormat)
+                            } else {
+                              downloadBook({
+                                bookUuid: book.uuid,
+                                format: onlyFormat,
+                              })
+                            }
+                          }}
+                        >
+                          <Text
+                            className={
+                              book[onlyFormat]?.downloadStatus ===
+                                "DOWNLOADED" ||
+                              book[onlyFormat]?.downloadStatus === "DOWNLOADING"
+                                ? "text-destructive"
+                                : "text-primary"
+                            }
+                          >
+                            {book[onlyFormat]?.downloadStatus === "DOWNLOADED"
+                              ? `Remove ${onlyFormat}`
+                              : book[onlyFormat]?.downloadStatus ===
+                                  "DOWNLOADING"
+                                ? "Downloading..."
+                                : `Download ${onlyFormat}`}
+                          </Text>
+                        </Button>
+                      </>
+                    )
                   )}
                 </Group>
               </Stack>
             </Group>
+            {!!book.series.length && (
+              <>
+                <Group className="mb-2 flex-row items-center gap-1">
+                  <Icon
+                    as={LibrarySquare}
+                    size={16}
+                    className="text-muted-foreground"
+                  />
+                  <Text className="text-sm text-muted-foreground">Series</Text>
+                </Group>
+                <Group className="flex-stretch mb-4 flex-wrap">
+                  {book.series.map((series) => (
+                    <Link
+                      href={{
+                        pathname: "/series/[uuid]",
+                        params: { uuid: series.uuid },
+                      }}
+                      key={series.uuid}
+                      asChild
+                      className="w-full justify-start"
+                    >
+                      <Button
+                        variant="link"
+                        className="y-0 mt-[-5px] flex flex-row items-center gap-1 px-0"
+                      >
+                        <Text className="text-brand">{series.name}</Text>
+                        <Text className="font-normal text-muted-foreground">
+                          #{series.position}
+                        </Text>
+                      </Button>
+                    </Link>
+                  ))}
+                </Group>
+              </>
+            )}
             {!!book.tags.length && (
-              <Group className="mb-4 flex-wrap gap-2">
-                {book.tags.map((tag) => (
-                  <Link
-                    href={{
-                      pathname: "/tag/[uuid]",
-                      params: {
-                        uuid: tag.uuid,
-                      },
-                    }}
-                    key={tag.uuid}
-                    asChild
-                  >
+              <>
+                <Group className="mb-2 flex-row items-center gap-1">
+                  <Icon as={Tag} size={16} className="text-muted-foreground" />
+                  <Text className="text-sm text-muted-foreground">Tags</Text>
+                </Group>
+                <Group className="mb-4 flex-wrap gap-2">
+                  {tagsToShow.map((tag) => (
+                    <Link
+                      href={{
+                        pathname: "/tag/[uuid]",
+                        params: {
+                          uuid: tag.uuid,
+                        },
+                      }}
+                      key={tag.uuid}
+                      asChild
+                    >
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex flex-row items-center gap-2 rounded-full px-3"
+                      >
+                        {/* <Icon as={Tag} size={12} /> */}
+                        <Text>{tag.name}</Text>
+                      </Button>
+                    </Link>
+                  ))}
+                  {tagsMoreNeeded && (
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       className="flex flex-row items-center gap-2 rounded-full px-3"
+                      onPress={() => {
+                        setShowTagsMore(!showTagsMore)
+                      }}
                     >
-                      <Icon as={Tag} size={12} />
-                      <Text>{tag.name}</Text>
+                      <Icon
+                        as={showTagsMore ? ChevronLeft : ChevronRight}
+                        size={12}
+                      />
+                      <Text>
+                        {showTagsMore ? "Less" : "More (" + numTagsHidden + ")"}
+                      </Text>
                     </Button>
-                  </Link>
-                ))}
-              </Group>
+                  )}
+                </Group>
+              </>
             )}
             {!!book.collections.length && (
-              <Group className="mb-4 gap-2">
-                {book.collections.map((collection) => (
-                  <Link
-                    href={{
-                      pathname: `/collection/[uuid]`,
-                      params: { uuid: collection.uuid },
-                    }}
-                    key={collection.uuid}
-                    asChild
-                  >
-                    <Button
-                      variant="secondary"
-                      className="flex flex-row items-center gap-2 rounded px-3 py-1"
+              <>
+                <Group className="mb-2 flex-row items-center gap-1">
+                  <Icon
+                    as={LibraryBig}
+                    size={16}
+                    className="text-muted-foreground"
+                  />
+                  <Text className="text-sm text-muted-foreground">
+                    Collections
+                  </Text>
+                </Group>
+                <Group className="flex-stretch mb-4 flex-wrap gap-2">
+                  {collectionsToShow.map((collection) => (
+                    <Link
+                      href={{
+                        pathname: `/collection/[uuid]`,
+                        params: { uuid: collection.uuid },
+                      }}
+                      key={collection.uuid}
+                      asChild
                     >
-                      <Icon as={LibraryBig} size={16} />
-                      <Text>{collection.name}</Text>
+                      <Button
+                        variant="secondary"
+                        className="flex flex-row items-center gap-2 rounded-md px-4 py-0"
+                      >
+                        <Text>{collection.name}</Text>
+                      </Button>
+                    </Link>
+                  ))}
+                  {collectionsMoreNeeded && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex flex-row items-center gap-2 rounded-full px-3"
+                      onPress={() => {
+                        setShowCollectionsMore(!showCollectionsMore)
+                      }}
+                    >
+                      <Icon
+                        as={showCollectionsMore ? ChevronLeft : ChevronRight}
+                        size={12}
+                      />
+                      <Text>
+                        {showCollectionsMore
+                          ? "Less"
+                          : "More (" + numCollectionsHidden + ")"}
+                      </Text>
                     </Button>
-                  </Link>
-                ))}
-              </Group>
+                  )}
+                </Group>
+              </>
             )}
           </Stack>
           <View className="pb-safe px-8">
@@ -363,6 +483,45 @@ export default function BookDetailsScreen() {
         <View className="h-40 w-full" />
       </ScrollView>
       <MiniPlayerWidget />
+      <AlertDialog
+        open={pendingDeleteFormat !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteFormat(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Remove {pendingDeleteFormat} from device
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the downloaded {pendingDeleteFormat} files from
+              your local device.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <Text>Cancel</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onPress={() => {
+                  if (!pendingDeleteFormat) return
+                  deleteBook({
+                    bookUuid: book.uuid,
+                    format: pendingDeleteFormat,
+                    deleteRecord: book.serverUuid === null,
+                  })
+                  setPendingDeleteFormat(null)
+                }}
+              >
+                <Text>Remove</Text>
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </View>
   )
 }
