@@ -4,6 +4,7 @@ import { Pressable, View, type ViewStyle } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { type BookWithRelations } from "@/database/books"
+import { useAvailableFormats } from "@/hooks/useAvailableFormats"
 import { useDownloadedFormats } from "@/hooks/useDownloadedFormats"
 import { cn } from "@/lib/utils"
 import {
@@ -46,6 +47,8 @@ export function BookThumbnail({ book }: Props) {
   }
 
   const downloadedFormats = useDownloadedFormats(book)
+  const availableFormats = useAvailableFormats(book)
+
   const audioOnly =
     !downloadedFormats.includes("ebook") &&
     !downloadedFormats.includes("readaloud")
@@ -74,15 +77,6 @@ export function BookThumbnail({ book }: Props) {
               className="max-w-[116px] text-sm font-semibold"
               numberOfLines={2}
             >
-              {book.readaloud?.status === "ALIGNED" && (
-                <>
-                  <Icon
-                    className="translate-y-[3] text-primary"
-                    size={20}
-                    as={ReadaloudIcon}
-                  />{" "}
-                </>
-              )}
               {book.title}
             </Text>
             <Text
@@ -151,87 +145,34 @@ export function BookThumbnail({ book }: Props) {
             <Text>Downloads</Text>
           </ContextMenuSubTrigger>
           <ContextMenuSubContent>
-            {book.readaloud && (
+            {availableFormats.map((format) => (
               <ContextMenuItem
+                key="format"
                 onPress={() => {
-                  if (downloadedFormats.includes("readaloud")) {
+                  if (downloadedFormats.includes(format)) {
                     deleteBook({
                       bookUuid: book.uuid,
+                      format,
                       deleteRecord: book.serverUuid === null,
                     })
                     return
                   }
                   downloadBook({
                     bookUuid: book.uuid,
-                    format: "readaloud",
+                    format: format,
                   })
                 }}
                 variant={
-                  downloadedFormats.includes("readaloud")
-                    ? "destructive"
-                    : "default"
+                  downloadedFormats.includes(format) ? "destructive" : "default"
                 }
               >
                 <Text>
-                  {downloadedFormats.includes("readaloud")
-                    ? "Remove readaloud"
-                    : "Readaloud"}
+                  {downloadedFormats.includes(format)
+                    ? `Remove ${format}`
+                    : `${format[0]?.toUpperCase()}${format.slice(1)}`}
                 </Text>
               </ContextMenuItem>
-            )}
-            {book.ebook && (
-              <ContextMenuItem
-                onPress={() => {
-                  if (downloadedFormats.includes("ebook")) {
-                    deleteBook({
-                      bookUuid: book.uuid,
-                      deleteRecord: book.serverUuid === null,
-                    })
-                    return
-                  }
-                  downloadBook({ bookUuid: book.uuid, format: "ebook" })
-                }}
-                variant={
-                  downloadedFormats.includes("ebook")
-                    ? "destructive"
-                    : "default"
-                }
-              >
-                <Text>
-                  {downloadedFormats.includes("ebook")
-                    ? "Remove ebook"
-                    : "Ebook"}
-                </Text>
-              </ContextMenuItem>
-            )}
-            {book.audiobook && (
-              <ContextMenuItem
-                onPress={() => {
-                  if (downloadedFormats.includes("audiobook")) {
-                    deleteBook({
-                      bookUuid: book.uuid,
-                      deleteRecord: book.serverUuid === null,
-                    })
-                    return
-                  }
-                  downloadBook({
-                    bookUuid: book.uuid,
-                    format: "audiobook",
-                  })
-                }}
-                variant={
-                  downloadedFormats.includes("audiobook")
-                    ? "destructive"
-                    : "default"
-                }
-              >
-                <Text>
-                  {downloadedFormats.includes("audiobook")
-                    ? "Remove audiobook"
-                    : "Audiobook"}
-                </Text>
-              </ContextMenuItem>
-            )}
+            ))}
           </ContextMenuSubContent>
         </ContextMenuSub>
       </ContextMenuContent>
@@ -268,9 +209,22 @@ export function BookThumbnailImage({
     >
       {downloadingFormat && (
         <DownloadingIndicator
-          className="absolute right-2 top-2 z-50"
+          className={cn(
+            "absolute right-[2%] z-50",
+            hasBothCovers ? "bottom-[10%]" : "bottom-[2%]",
+          )}
           progress={downloadingFormat.downloadProgress}
+          size={Math.ceil(height / 10)}
         />
+      )}
+      {book.readaloud?.status === "ALIGNED" && (
+        <>
+          <Icon
+            className="absolute right-[4%] top-[12%] z-50 text-primary"
+            size={Math.ceil(height / 10)}
+            as={ReadaloudIcon}
+          />
+        </>
       )}
       <Stack
         className={cn(
@@ -293,14 +247,14 @@ export function BookThumbnailImage({
             asChild
           >
             <Button
-              className="rounded-full bg-foreground"
+              className="rounded-full bg-background"
               style={{
                 height: height / 5,
                 width: height / 5,
               }}
             >
               <Icon
-                className="text-background"
+                className="text-foreground"
                 as={BookOpen}
                 size={height / 10}
               />
@@ -322,7 +276,7 @@ export function BookThumbnailImage({
             asChild
           >
             <Button
-              className="rounded-full bg-foreground"
+              className="rounded-full bg-background"
               style={{
                 height: height / 5,
                 width: height / 5,
@@ -330,7 +284,7 @@ export function BookThumbnailImage({
             >
               <Icon
                 as={Headphones}
-                className="text-background"
+                className="text-foreground"
                 size={height / 10}
               />
             </Button>
