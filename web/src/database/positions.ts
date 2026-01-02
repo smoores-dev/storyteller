@@ -58,11 +58,12 @@ export async function upsertPosition(
   overwriteOnEqual = false,
 ) {
   logger.debug("upsertPosition(...)")
+  logger.debug("Incoming position")
   logger.debug({
     userId,
     bookUuid,
     locator,
-    timestamp,
+    positionTimestamp: timestamp,
   })
   const locatorString = JSON.stringify(locator)
 
@@ -85,7 +86,8 @@ export async function upsertPosition(
       .where("bookUuid", "=", bookUuid)
       .executeTakeFirst()
 
-    logger.debug(existing)
+    logger.debug("Existing position")
+    logger.debug({ ...existing, positionTimestamp: timestamp })
 
     if (!existing) {
       await tr
@@ -123,6 +125,10 @@ export async function upsertPosition(
         )
         return true
       }
+
+      logger.debug(
+        "Incoming position has newer timestamp than existing position, updating",
+      )
 
       await tr
         .updateTable("position")
