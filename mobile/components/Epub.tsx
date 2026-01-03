@@ -141,14 +141,14 @@ export function Epub({ book, format, locator }: Props) {
 
   if (isLoadingPreferences || isPreferencesUninitialized) {
     return (
-      <View className="flex-1 bg-background">
+      <View className="bg-background flex-1">
         <LoadingView />
       </View>
     )
   }
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="bg-background flex-1">
       <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
       <HideableView hidden={!preferences?.showReaderUi}>
         <Group

@@ -1,45 +1,24 @@
-import { cssInterop } from "nativewind"
 import { useState } from "react"
 import {
   ReanimatedLogLevel,
   configureReanimatedLogger,
 } from "react-native-reanimated"
-import ColorPicker, {
+import BaseColorPicker, {
   HueSlider,
-  InputWidget,
+  InputWidget as BaseInputWidget,
   Panel1,
   Preview,
   Swatches,
 } from "reanimated-color-picker"
+import { withUniwind } from "uniwind"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Text } from "@/components/ui/text"
 
-declare module "reanimated-color-picker" {
-  interface ColorPickerProps {
-    className?: string | undefined
-  }
+const ColorPicker = withUniwind(BaseColorPicker)
 
-  interface InputWidgetProps {
-    className?: string | undefined
-    inputClassName?: string | undefined
-    inputTitleClassName?: string | undefined
-  }
-}
-
-cssInterop(ColorPicker, { className: { target: "style" } })
-
-cssInterop(InputWidget, {
-  inputClassName: "inputStyle",
-  inputTitleClassName: "inputTitleStyle",
-  className: {
-    target: false,
-    nativeStyleToProp: {
-      color: "iconColor",
-    },
-  },
-})
+const InputWidget = withUniwind(BaseInputWidget)
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -66,9 +45,9 @@ export function ColorPickerDialog({ initialValue, onSave }: Props) {
           }}
         />
       </DialogTrigger>
-      <DialogContent className="w-screen max-w-[400px]">
+      <DialogContent className="w-screen max-w-100">
         <ColorPicker
-          className="m-auto w-[250px] gap-4"
+          className="m-auto w-62.5 gap-4"
           value={value}
           onChange={(result) => {
             setValue(result.hex)
@@ -79,7 +58,7 @@ export function ColorPickerDialog({ initialValue, onSave }: Props) {
           <HueSlider />
           <Swatches />
           <InputWidget
-            className="text-foreground"
+            iconColorClassName="text-foreground"
             inputClassName="border-secondary text-foreground"
             inputTitleClassName="text-foreground"
           />

@@ -25,7 +25,7 @@ export default function ServerPage() {
         />
         <LoginButton serverUrl={url} />
       </View>
-      <View className="gap-4 rounded bg-secondary p-4">
+      <View className="bg-secondary gap-4 rounded p-4">
         <Text>
           Enter the full URL for your Storyteller server instance, including the
           scheme (http:// or https://).

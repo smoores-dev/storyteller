@@ -176,7 +176,7 @@ export default function Home() {
           />
         ))}
         {books.length === 0 && (
-          <View className="mr-5 gap-4 rounded bg-border p-4">
+          <View className="bg-border mr-5 gap-4 rounded p-4">
             <Text>You don’t have any books available, yet!</Text>
             <Text>
               You can{" "}

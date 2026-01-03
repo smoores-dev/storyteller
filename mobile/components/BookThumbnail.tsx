@@ -67,20 +67,17 @@ export function BookThumbnail({ book }: Props) {
         {/* around a Stack otherwise it does not render properly on Boox devices, */}
         {/* and potentially other android devices similar to it. */}
         <Link asChild href={`/book/${book.uuid}`}>
-          <Pressable className="w-[116px] gap-0.5 overflow-visible">
-            <Stack className="relative mb-1 h-[176px] w-[116px] flex-col justify-center">
-              <View className="block h-[176px] w-[116px]">
+          <Pressable className="w-29 gap-0.5 overflow-visible">
+            <Stack className="relative mb-1 h-44 w-29 flex-col justify-center">
+              <View className="block h-44 w-29">
                 <BookThumbnailImage book={book} height={176} width={116} />
               </View>
             </Stack>
-            <Text
-              className="max-w-[116px] text-sm font-semibold"
-              numberOfLines={2}
-            >
+            <Text className="max-w-29 text-sm font-semibold" numberOfLines={2}>
               {book.title}
             </Text>
             <Text
-              className="max-w-[116px] pb-2 text-sm text-muted-foreground"
+              className="text-muted-foreground max-w-29 pb-2 text-sm"
               numberOfLines={2}
             >
               {book.authors[0]?.name}
@@ -147,7 +144,7 @@ export function BookThumbnail({ book }: Props) {
           <ContextMenuSubContent>
             {availableFormats.map((format) => (
               <ContextMenuItem
-                key="format"
+                key={format}
                 onPress={() => {
                   if (downloadedFormats.includes(format)) {
                     deleteBook({
@@ -209,26 +206,31 @@ export function BookThumbnailImage({
     >
       {downloadingFormat && (
         <DownloadingIndicator
-          className={cn(
-            "absolute right-[2%] z-50",
-            hasBothCovers ? "bottom-[10%]" : "bottom-[2%]",
-          )}
+          className={"absolute z-50"}
           progress={downloadingFormat.downloadProgress}
           size={Math.ceil(height / 10)}
+          style={{
+            left: 0.98 * width - Math.ceil(height / 10),
+            bottom: hasBothCovers ? 0.1 * height : 0.02 * height,
+          }}
         />
       )}
       {book.readaloud?.status === "ALIGNED" && (
         <>
           <Icon
-            className="absolute right-[4%] top-[12%] z-50 text-primary"
+            className="text-primary absolute z-50"
             size={Math.ceil(height / 10)}
             as={ReadaloudIcon}
+            style={{
+              top: 0.12 * height,
+              left: 0.96 * width - Math.ceil(height / 10),
+            }}
           />
         </>
       )}
       <Stack
         className={cn(
-          "absolute bottom-0 top-0 z-50 justify-center gap-4",
+          "absolute top-0 bottom-0 z-50 justify-center gap-4",
           hasBothCovers ? "right-2" : "right-1/2 translate-x-1/2",
         )}
       >
@@ -247,7 +249,7 @@ export function BookThumbnailImage({
             asChild
           >
             <Button
-              className="rounded-full bg-background"
+              className="bg-background rounded-full"
               style={{
                 height: height / 5,
                 width: height / 5,
@@ -276,7 +278,7 @@ export function BookThumbnailImage({
             asChild
           >
             <Button
-              className="rounded-full bg-background"
+              className="bg-background rounded-full"
               style={{
                 height: height / 5,
                 width: height / 5,
@@ -342,7 +344,7 @@ function EbookCoverImage({
   return (
     <Stack
       className={cn(
-        "items-center justify-center overflow-hidden rounded-lg bg-secondary",
+        "bg-secondary items-center justify-center overflow-hidden rounded-lg",
         className,
       )}
       style={{ height, width, ...style }}
@@ -368,7 +370,7 @@ function AudiobookCoverImage({
   return (
     <Stack
       className={cn(
-        "items-center justify-center overflow-hidden rounded-lg bg-secondary",
+        "bg-secondary items-center justify-center overflow-hidden rounded-lg",
         className,
       )}
       style={{ height, width, ...style }}

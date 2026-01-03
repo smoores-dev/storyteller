@@ -4,6 +4,7 @@ import { AppState, type AppStateStatus } from "react-native"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { KeyboardProvider } from "react-native-keyboard-controller"
 import {
+  SafeAreaListener,
   SafeAreaProvider,
   initialWindowMetrics,
 } from "react-native-safe-area-context"
@@ -14,6 +15,7 @@ import TrackPlayer, {
   IOSCategoryMode,
 } from "react-native-track-player"
 import { Provider } from "react-redux"
+import { Uniwind } from "uniwind"
 
 import { PlaybackService } from "@/audio/PlaybackService"
 import { StorytellerProvider } from "@/components/StorytellerProvider"
@@ -115,9 +117,15 @@ export default function Layout() {
           <AudioBookProvider>
             <StorytellerProvider>
               <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-                <PortalHost>
-                  <Slot />
-                </PortalHost>
+                <SafeAreaListener
+                  onChange={({ insets }) => {
+                    Uniwind.updateInsets(insets)
+                  }}
+                >
+                  <PortalHost>
+                    <Slot />
+                  </PortalHost>
+                </SafeAreaListener>
               </SafeAreaProvider>
             </StorytellerProvider>
           </AudioBookProvider>

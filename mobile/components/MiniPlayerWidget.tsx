@@ -47,7 +47,7 @@ export function MiniPlayerWidget() {
   if (!bookUuid) return null
 
   return (
-    <View className="z-90 elevation bottom-safe-offset-2 absolute left-3 right-3 rounded bg-background shadow shadow-foreground">
+    <View className="mb-safe-offset-2 bg-background shadow-foreground absolute right-3 bottom-0 left-3 z-90 rounded-lg shadow-sm">
       {book && (
         <View>
           <ProgressBar

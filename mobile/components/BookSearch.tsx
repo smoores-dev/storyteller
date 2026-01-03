@@ -173,7 +173,7 @@ export function BookSearch() {
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="-max-h-screen-safe-offset-32 mt-2"
+        className="mt-2"
         style={{
           width,
         }}

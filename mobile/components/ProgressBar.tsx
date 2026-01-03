@@ -42,9 +42,9 @@ export function ProgressBar({
   }
 
   return (
-    <View className={cn("rounded-b-sm bg-secondary", className)}>
+    <View className={cn("bg-secondary rounded-b-sm", className)}>
       <View
-        className="absolute h-[3px] rounded-bl-sm bg-primary"
+        className="bg-primary absolute h-0.75 rounded-bl-sm"
         style={{
           width: `${(progress / (stop - start)) * 100}%`,
         }}

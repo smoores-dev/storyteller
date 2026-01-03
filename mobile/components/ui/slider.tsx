@@ -7,10 +7,10 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated"
 import { scheduleOnRN } from "react-native-worklets"
+import { useCSSVariable } from "uniwind"
 
 import { debounce } from "@/debounce"
 import { useColorTheme } from "@/hooks/useColorTheme"
-import { THEME } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 
 const THUMB_SIZE = 20
@@ -55,6 +55,8 @@ export function Slider({
   const panning = useSharedValue(false)
   const startTranslateX = useSharedValue(0)
   const translateX = useSharedValue(0)
+
+  const primaryColor = useCSSVariable("--color-primary") as string
 
   useLayoutEffect(() => {
     if (panning.value === true) return
@@ -142,14 +144,14 @@ export function Slider({
                 : percentage
           }
         >
-          <BaseSlider.Track className="h-1 w-full rounded-full bg-secondary">
+          <BaseSlider.Track className="bg-secondary h-1 w-full rounded-full">
             <Animated.View
               role="presentation"
               style={[
                 {
                   position: "absolute",
                   height: 4,
-                  backgroundColor: THEME.light.primary,
+                  backgroundColor: primaryColor,
                   borderRadius: 2,
                 },
                 rangeAnimatedStyle,
@@ -165,7 +167,7 @@ export function Slider({
                   backgroundColor: background,
                   borderRadius: 10,
                   borderWidth: 2,
-                  borderColor: THEME.light.primary,
+                  borderColor: primaryColor,
                   top: -8,
                 },
                 thumbAnimatedStyle,

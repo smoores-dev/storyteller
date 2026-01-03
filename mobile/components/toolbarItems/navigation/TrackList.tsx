@@ -3,10 +3,12 @@ import { File } from "expo-file-system"
 import { type RefObject, useRef } from "react"
 import { View } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
+import { useSafeAreaFrame } from "react-native-safe-area-context"
 
 import { Button } from "@/components/ui/button"
 import { Text } from "@/components/ui/text"
 import { useAudioBook } from "@/hooks/useAudioBook"
+import { useSpacingVariable } from "@/hooks/useSpacingVariable"
 import { cn } from "@/lib/utils"
 import { type ReadiumLink } from "@/modules/readium/src/Readium.types"
 import { playerTrackChanged } from "@/store/actions"
@@ -51,13 +53,16 @@ export function TrackLisk({ onClose }: Props) {
     format === "audiobook"
       ? book?.audiobook?.manifest?.toc ?? fromTracks
       : book?.readaloud?.audioManifest?.toc ?? fromTracks
+  const frame = useSafeAreaFrame()
+
+  const maxHeight = frame.height - useSpacingVariable(72)
 
   if (!book) return null
 
   return (
     <ScrollView
-      className="-max-h-screen-safe-offset-36"
       ref={ref}
+      style={{ maxHeight }}
       onLayout={() => {
         if (!ref.current) return
         // @ts-expect-error ScrollView is a perfectly valid component, not sure what

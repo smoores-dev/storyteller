@@ -20,7 +20,7 @@ export function Shelf({ label, href, books }: Props) {
     <Stack>
       <Text variant="h3">
         {href ? (
-          <Link className="underline active:decoration-primary" href={href}>
+          <Link className="active:decoration-primary underline" href={href}>
             {label}
           </Link>
         ) : (

@@ -80,7 +80,7 @@ export default function CustomFontListScreen() {
               <AccordionItem value="item-1" className="bg-background">
                 <AccordionTrigger>
                   <Text
-                    className="select-none text-lg"
+                    className="text-lg select-none"
                     style={{ fontFamily: font.name }}
                   >
                     {font.name}
@@ -88,7 +88,7 @@ export default function CustomFontListScreen() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <Text
-                    className="select-none text-sm"
+                    className="text-sm select-none"
                     style={{ fontFamily: font.name }}
                   >
                     The quick brown fox jumps over the lazy dog.

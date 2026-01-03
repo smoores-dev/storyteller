@@ -81,9 +81,9 @@ export function ButtonGroupButton<Value>({
       {...props}
       className={cn({
         "bg-transparent": currentValue !== value,
-        "rounded-br-none rounded-tr-none":
+        "rounded-tr-none rounded-br-none":
           neighbors === "right" || neighbors === "both",
-        "rounded-bl-none rounded-tl-none":
+        "rounded-tl-none rounded-bl-none":
           neighbors === "left" || neighbors === "both",
       })}
       onPress={() => onPress(value)}

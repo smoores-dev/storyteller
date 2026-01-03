@@ -1,6 +1,7 @@
 import { type TriggerRef } from "@rn-primitives/popover"
 import { TableOfContentsIcon } from "lucide-react-native"
 import { useRef, useState } from "react"
+import { useSafeAreaFrame } from "react-native-safe-area-context"
 
 import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Text } from "@/components/ui/text"
+import { useSpacingVariable } from "@/hooks/useSpacingVariable"
 
 import { Bookmarks } from "./navigation/Bookmarks"
 import { Highlights } from "./navigation/Highlights"
@@ -25,6 +27,8 @@ export function NavigationItem({ mode }: Props) {
   const [tab, setTab] = useState<string>("toc")
   const popoverRef = useRef<null | TriggerRef>(null)
 
+  const frame = useSafeAreaFrame()
+
   return (
     <Popover>
       <PopoverTrigger ref={popoverRef} className="items-center" asChild>
@@ -32,7 +36,11 @@ export function NavigationItem({ mode }: Props) {
           <Icon as={TableOfContentsIcon} size={24} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="-max-h-screen-safe-offset-20">
+      <PopoverContent
+        style={{
+          maxHeight: frame.height - useSpacingVariable(40),
+        }}
+      >
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="toc">
