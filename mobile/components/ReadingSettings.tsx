@@ -368,7 +368,7 @@ export function ReadingSettings({ bookUuid }: Props) {
             <NativeSelectScrollView>
               <SelectItem label="Literata" value="Literata">
                 <Text
-                  className="select-none text-sm"
+                  className="text-sm select-none"
                   style={{ fontFamily: "Literata_500Medium" }}
                 >
                   Literata
@@ -376,7 +376,7 @@ export function ReadingSettings({ bookUuid }: Props) {
               </SelectItem>
               <SelectItem label="OpenDyslexic" value="OpenDyslexic">
                 <Text
-                  className="select-none text-sm"
+                  className="text-sm select-none"
                   style={{ fontFamily: "OpenDyslexic-Regular" }}
                 >
                   OpenDyslexic
@@ -385,7 +385,7 @@ export function ReadingSettings({ bookUuid }: Props) {
               {preferences.customFonts.map(({ name }) => (
                 <SelectItem key={name} label={name} value={name}>
                   <Text
-                    className="select-none text-sm"
+                    className="text-sm select-none"
                     style={{ fontFamily: name }}
                   >
                     {name}

@@ -142,7 +142,7 @@ export default function BookDetailsScreen() {
               height={352}
               width={232}
             />
-            <Text className="mb-1 mt-4 text-2xl" variant="h1">
+            <Text className="mt-4 mb-1 text-2xl" variant="h1">
               {book.title}
             </Text>
             {book.subtitle && (
@@ -150,7 +150,7 @@ export default function BookDetailsScreen() {
             )}
             <Stack className="mb-4 gap-1 pl-0">
               <Group>
-                <Text className="text-sm text-muted-foreground">
+                <Text className="text-muted-foreground text-sm">
                   by{" "}
                   {book.authors.map((author, index) => (
                     <Fragment key={author.uuid}>
@@ -163,7 +163,7 @@ export default function BookDetailsScreen() {
                         }}
                         className="active:text-primary active:underline"
                       >
-                        <Text className="text-sm text-primary">
+                        <Text className="text-primary text-sm">
                           {author.name}
                         </Text>
                       </Link>
@@ -175,7 +175,7 @@ export default function BookDetailsScreen() {
                 </Text>
               </Group>
               {!!book.narrators.length && (
-                <Text className="text-sm text-muted-foreground">
+                <Text className="text-muted-foreground text-sm">
                   narrated by{" "}
                   {book.narrators.map((narrator, index) => (
                     <Fragment key={narrator.uuid}>
@@ -188,7 +188,7 @@ export default function BookDetailsScreen() {
                         }}
                         className="active:text-primary active:underline"
                       >
-                        <Text className="text-sm text-primary">
+                        <Text className="text-primary text-sm">
                           {narrator.name}
                         </Text>
                       </Link>
@@ -235,7 +235,10 @@ export default function BookDetailsScreen() {
                     <>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="border-primary">
+                          <Button
+                            variant="outline"
+                            className="border-primary dark:border-primary"
+                          >
                             <Text className="text-primary">Downloads</Text>
                             <Icon
                               as={ChevronDown}
@@ -291,8 +294,8 @@ export default function BookDetailsScreen() {
                           className={
                             book[onlyFormat]?.downloadStatus === "DOWNLOADED" ||
                             book[onlyFormat]?.downloadStatus === "DOWNLOADING"
-                              ? "border-destructive"
-                              : "border-primary"
+                              ? "border-destructive dark:border-destructive"
+                              : "border-primary dark:border-primary"
                           }
                           disabled={
                             book[onlyFormat]?.downloadStatus === "DOWNLOADING"
@@ -341,7 +344,7 @@ export default function BookDetailsScreen() {
                     size={16}
                     className="text-muted-foreground"
                   />
-                  <Text className="text-sm text-muted-foreground">Series</Text>
+                  <Text className="text-muted-foreground text-sm">Series</Text>
                 </Group>
                 <Group className="flex-stretch mb-4 flex-wrap">
                   {book.series.map((series) => (
@@ -359,7 +362,7 @@ export default function BookDetailsScreen() {
                         className="y-0 mt-[-5px] flex flex-row items-center gap-1 px-0"
                       >
                         <Text className="text-primary">{series.name}</Text>
-                        <Text className="font-normal text-muted-foreground">
+                        <Text className="text-muted-foreground font-normal">
                           #{series.position}
                         </Text>
                       </Button>
@@ -372,7 +375,7 @@ export default function BookDetailsScreen() {
               <>
                 <Group className="mb-2 flex-row items-center gap-1">
                   <Icon as={Tag} size={16} className="text-muted-foreground" />
-                  <Text className="text-sm text-muted-foreground">Tags</Text>
+                  <Text className="text-muted-foreground text-sm">Tags</Text>
                 </Group>
                 <Group className="mb-4 flex-wrap gap-2">
                   {tagsToShow.map((tag) => (
@@ -425,7 +428,7 @@ export default function BookDetailsScreen() {
                     size={16}
                     className="text-muted-foreground"
                   />
-                  <Text className="text-sm text-muted-foreground">
+                  <Text className="text-muted-foreground text-sm">
                     Collections
                   </Text>
                 </Group>

@@ -18,12 +18,7 @@ __fixtures__
 /web/file-write-dist
 /web/whisper-builds
 
-mobile/android
-mobile/ios
-mobile/dist
-mobile/.expo
-mobile/modules/*/android/build
-mobile/modules/*/ios/.build
+/mobile/
 
 /epub/index.js
 /epub/index.cjs

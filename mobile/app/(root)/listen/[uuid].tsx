@@ -119,7 +119,7 @@ export default function PlayerScreen() {
   return (
     <View className="android:pt-safe relative flex-1">
       <PortalHost>
-        <View className="w-full flex-row items-center justify-between px-4 pb-2 pt-3">
+        <View className="w-full flex-row items-center justify-between px-4 pt-3 pb-2">
           <Button
             variant="ghost"
             size="icon"
@@ -166,7 +166,7 @@ export default function PlayerScreen() {
           </View>
           <View className="w-full flex-row items-center justify-between px-6 py-1">
             <Text className="w-16 text-xs font-bold">{progressTime}</Text>
-            <Text className="text-xs text-muted-foreground">
+            <Text className="text-muted-foreground text-xs">
               {remainingTime} left
             </Text>
             <Text className="w-16 text-right text-xs font-bold">

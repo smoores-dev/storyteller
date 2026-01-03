@@ -56,7 +56,7 @@ export function SpeedItem() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="rounded border border-secondary bg-background">
+      <PopoverContent className="border-secondary bg-background rounded border">
         <Stack className="items-center">
           <Text>Playback speed</Text>
           <Text>{currentSpeed}x</Text>

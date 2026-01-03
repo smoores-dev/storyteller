@@ -1,0 +1,6 @@
+/android
+/ios
+/dist
+/.expo
+/modules/*/android/build
+/modules/*/ios/.build

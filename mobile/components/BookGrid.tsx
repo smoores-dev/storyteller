@@ -44,7 +44,7 @@ export function BookGrid({ title, books }: Props) {
   return (
     <Stack
       className={cn(
-        "pt-safe h-screen-safe flex-1",
+        "pt-safe flex-1",
         books.length < numColumns ? "items-start" : "items-stretch",
       )}
     >
@@ -62,7 +62,7 @@ export function BookGrid({ title, books }: Props) {
           {title}
         </Text>
       </View>
-      <Text className="self-start pl-14 text-sm text-muted-foreground">
+      <Text className="text-muted-foreground self-start pl-14 text-sm">
         {books.length} books
       </Text>
       <FlatList

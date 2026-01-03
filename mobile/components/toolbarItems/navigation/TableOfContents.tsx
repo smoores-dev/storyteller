@@ -2,10 +2,12 @@ import { skipToken } from "@reduxjs/toolkit/query"
 import { type Ref, useRef } from "react"
 import { View } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
+import { useSafeAreaFrame } from "react-native-safe-area-context"
 
 import { Button } from "@/components/ui/button"
 import { Text } from "@/components/ui/text"
 import { type BookWithRelations } from "@/database/books"
+import { useSpacingVariable } from "@/hooks/useSpacingVariable"
 import { cn } from "@/lib/utils"
 import { isSameChapter } from "@/links"
 import { locateLink } from "@/modules/readium"
@@ -56,12 +58,17 @@ export function TableOfContents({ onClose }: Props) {
   const currentTocLink =
     locator && searchToc(toc, (link) => isSameChapter(link.href, locator.href))
 
+  const frame = useSafeAreaFrame()
+
+  const maxHeight = frame.height - useSpacingVariable(72)
   if (!toc || !book) return
 
   return (
     <ScrollView
-      className="-max-h-screen-safe-offset-36"
       ref={ref}
+      style={{
+        maxHeight,
+      }}
       onLayout={() => {
         if (!ref.current) return
         // @ts-expect-error ScrollView is a perfectly valid component, not sure what
@@ -136,7 +143,7 @@ function TableOfContentsLink({
         <Text className="text-sm font-bold">{link.title}</Text>
       </Button>
       {link.children?.map((child) => (
-        <View key={child.href} className="pl-4 pr-2">
+        <View key={child.href} className="pr-2 pl-4">
           <TableOfContentsLink
             book={book}
             link={child}

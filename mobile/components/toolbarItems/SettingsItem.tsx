@@ -30,15 +30,15 @@ export function SettingsItem() {
           setIsOpen(true)
         }}
       >
-        <Icon as={CaseSensitive} className="-mb-0.5 mt-0.5" size={24} />
+        <Icon as={CaseSensitive} className="mt-0.5 -mb-0.5" size={24} />
       </Button>
       {isOpen && bookUuid && (
         <Portal name="reading-settings" hostName={portalHostName}>
-          <View className="elevation absolute bottom-0 left-0 right-0 top-1/2 z-40 rounded-t border border-secondary border-b-transparent bg-background px-6 py-4 shadow shadow-foreground">
+          <View className="elevation border-secondary bg-background shadow-foreground absolute top-1/2 right-0 bottom-0 left-0 z-40 rounded-t border border-b-transparent px-6 py-4 shadow-sm">
             <Button variant="ghost" size="sm" className="self-end">
               <Text
                 maxFontSizeMultiplier={1.2}
-                className="pt-2 text-lg text-primary"
+                className="text-primary pt-2 text-lg"
                 onPress={() => {
                   setIsOpen(false)
                 }}

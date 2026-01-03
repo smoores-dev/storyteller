@@ -1,15 +1,12 @@
 import Clipboard from "@react-native-clipboard/clipboard"
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native"
-import { skipToken } from "@reduxjs/toolkit/query"
 import { PortalHost } from "@rn-primitives/portal"
-import convert from "color-convert"
 import * as Fonts from "expo-font"
 import * as Linking from "expo-linking"
 import { SplashScreen } from "expo-router"
 import { Migrator, NO_MIGRATIONS } from "kysely"
-import { vars } from "nativewind"
 import { type ReactNode, useEffect, useState } from "react"
-import { View } from "react-native"
+import { StatusBar, View } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
 
 import { db } from "@/database/db"
@@ -38,38 +35,9 @@ import {
 } from "./ui/alert-dialog"
 import { Text } from "./ui/text"
 
-const darkTheme = {
-  "--background": "0 0% 3.9%",
-  "--foreground": "0 0% 98%",
-  "--card": "0 0% 3.9%",
-  "--card-foreground": "0 0% 98%",
-  "--popover": "0 0% 3.9%",
-  "--popover-foreground": "0 0% 98%",
-  "--primary": "22 85% 59%",
-  "--primary-foreground": "0 0% 98%",
-  "--secondary": "0 0% 14.9%",
-  "--secondary-foreground": "0 0% 98%",
-  "--muted": "0 0% 14.9%",
-  "--muted-foreground": "0 0% 63.9%",
-  "--accent": "0 0% 14.9%",
-  "--accent-foreground": "0 0% 98%",
-  "--link": "206, 96%, 72%",
-  "--destructive": "0 70.9% 59.4%",
-  "--border": "0 0% 14.9%",
-  "--input": "0 0% 14.9%",
-  "--ring": "300 0% 45%",
-  "--chart-1": "220 70% 50%",
-  "--chart-2": "160 60% 45%",
-  "--chart-3": "30 80% 55%",
-  "--chart-4": "280 65% 60%",
-  "--chart-5": "340 75% 55%",
-}
-
 export function StorytellerProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
-  const { foreground, background, dark } = useColorTheme(
-    ready ? undefined : skipToken,
-  )
+  const { foreground, background, dark } = useColorTheme()
   const [getPreferences] = useLazyGetGlobalPreferencesQuery()
 
   const [updatePreference] = useUpdateGlobalPreferenceMutation()
@@ -183,11 +151,6 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
     return () => subscription.remove()
   }, [dispatch])
 
-  const bg = convert.hex.hsl(background)
-  const fg = convert.hex.hsl(foreground)
-  const bgHsl = `${bg[0]} ${bg[1]}% ${bg[2]}%`
-  const fgHsl = `${fg[0]} ${fg[1]}% ${fg[2]}%`
-
   return (
     <ThemeProvider
       value={{
@@ -203,20 +166,11 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
         },
       }}
     >
-      <View
-        className="flex-1"
-        style={vars({
-          ...(dark && darkTheme),
-          "--background": bgHsl,
-          "--foreground": fgHsl,
-          "--card": bgHsl,
-          "--card-foreground": fgHsl,
-          "--secondary-foreground": fgHsl,
-          "--secondary": `${fgHsl} / 0.1`,
-          "--border": `${fgHsl} / 0.2`,
-          "--input": `${fgHsl} / 0.2`,
-        })}
-      >
+      <StatusBar
+        barStyle={dark ? "light-content" : "dark-content"}
+        translucent
+      />
+      <View className="flex-1">
         {ready && children}
         <PortalHost name="migration-error" />
         <AlertDialog open={!!migrationError}>

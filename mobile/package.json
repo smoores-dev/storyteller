@@ -66,7 +66,6 @@
     "jwt-decode": "^4.0.0",
     "kysely": "patch:kysely@npm%3A0.28.7#~/.yarn/patches/kysely-npm-0.28.7-3ef55a370e.patch",
     "lucide-react-native": "^0.542.0",
-    "nativewind": "^4.1.23",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -91,7 +90,8 @@
     "redux-logger": "^3.0.6",
     "redux-saga": "^1.3.0",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "uniwind": "^1.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -124,9 +124,9 @@
     "eslint-plugin-react-native": "^4.0.0",
     "kysely-ctl": "^0.19.0",
     "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.5.11",
+    "prettier-plugin-tailwindcss": "^0.6.9",
     "shadcn": "patch:shadcn@npm%3A3.2.1#~/.yarn/patches/shadcn-npm-3.2.1-ea66ef159b.patch",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.1.18",
     "tsx": "^4.20.3",
     "typescript": "~5.9.2"
   },

@@ -1,5 +1,5 @@
 import { ArrowDown } from "lucide-react-native"
-import { View } from "react-native"
+import { View, type ViewStyle } from "react-native"
 import { AnimatedCircularProgress } from "react-native-circular-progress"
 
 import { useColorTheme } from "@/hooks/useColorTheme"
@@ -11,18 +11,27 @@ type Props = {
   className?: string | undefined
   progress: number
   size: number
+  style: ViewStyle
 }
 
-export function DownloadingIndicator({ className, progress, size }: Props) {
+export function DownloadingIndicator({
+  className,
+  progress,
+  size,
+  style,
+}: Props) {
   const { foreground, background } = useColorTheme()
 
   return (
     <View
-      className={cn("rounded-full bg-background p-[1px]", className)}
-      style={{
-        width: size + 2,
-        height: size + 2,
-      }}
+      className={cn("bg-background rounded-full p-[1px]", className)}
+      style={[
+        {
+          width: size + 2,
+          height: size + 2,
+        },
+        style,
+      ]}
     >
       <AnimatedCircularProgress
         size={size}
