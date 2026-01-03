@@ -154,7 +154,7 @@ function Sublist({
               <Button
                 variant={isCurrentTrack ? "secondary" : "ghost"}
                 className={cn(
-                  "h-auto justify-start border-b border-b-gray-400 p-4",
+                  "h-auto justify-start border-b border-b-gray-400 p-4 sm:h-auto",
                   {
                     "bg-secondary": 0,
                   },
