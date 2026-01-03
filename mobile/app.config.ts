@@ -107,6 +107,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       ["./plugins/withModularHeaders.ts"],
       ["./plugins/withCoreLibraryDesugaring.ts"],
+      ["./plugins/withAndroidAuto.ts"],
     ],
     runtimeVersion: {
       policy: "appVersion",

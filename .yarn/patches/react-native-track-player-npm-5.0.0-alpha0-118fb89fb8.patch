@@ -1,0 +1,37 @@
+diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
+index b495b5a98d36c637409e7379ccf0d0a77507f0d0..8cb7ff036ea478ad267f3902c253bb5a2adce4ec 100644
+--- a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
++++ b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
+@@ -19,6 +19,7 @@ import androidx.media3.common.Player
+ import androidx.media3.common.util.UnstableApi
+ import androidx.media3.session.CacheBitmapLoader
+ import androidx.media3.session.LibraryResult
++import androidx.media3.session.MediaLibraryService.LibraryParams
+ import androidx.media3.common.MediaItem
+ import androidx.media3.common.Rating
+ import androidx.media3.common.util.BitmapLoader
+@@ -866,6 +867,24 @@ class MusicService : HeadlessJsMediaService() {
+         // HACK: I'm sure most of the callbacks were not implemented correctly.
+         // ATM I only care that andorid auto still functions.
+ 
++        override fun onGetLibraryRoot(
++            session: MediaLibrarySession,
++            browser: MediaSession.ControllerInfo,
++            params: LibraryParams?
++        ): ListenableFuture<LibraryResult<MediaItem>> {
++            // Return an empty root for Android Auto - playback only, no browsing
++            val rootItem = MediaItem.Builder()
++                .setMediaId("root")
++                .setMediaMetadata(
++                    androidx.media3.common.MediaMetadata.Builder()
++                        .setIsBrowsable(false)
++                        .setIsPlayable(false)
++                        .build()
++                )
++                .build()
++            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, params))
++        }
++
+         override fun onDisconnected(
+             session: MediaSession,
+             controller: MediaSession.ControllerInfo
