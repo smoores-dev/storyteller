@@ -150,17 +150,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         val activity = appContext.currentActivity as FragmentActivity?
 
-        // Don't go to a new location if it's the same as the current location, except with
-        // different fragments. Prevents unnecessarily triggering renders and state updates
-        // when the position hasn't actually changed
-        val locatorComp =
-            finalProps.locator?.copyWithLocations(fragments = listOf(), otherLocations = mapOf())
-        val currentLocatorComp = navigator?.currentLocator?.value?.copyWithLocations(
-            fragments = listOf(),
-            otherLocations = mapOf()
-        )
-
-        if (locatorComp != currentLocatorComp && finalProps.locator != null) {
+        if (finalProps.locator != navigator?.currentLocator && finalProps.locator != null) {
             go(finalProps.locator!!)
         }
 
@@ -258,17 +248,56 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
     private suspend fun emitCurrentLocator() {
         val currentLocator = navigator!!.currentLocator.value
+
+        val result = props?.locator?.locations?.progression?.let {
+            navigator?.evaluateJavascript(
+                """
+            (function() {
+                const maxScreenX = window.orientation === 0 || window.orientation == 180
+                        ? screen.width
+                        : screen.height;
+
+                function snapOffset(offset) {
+                    const value = offset + 1;
+
+                    return value - (value % maxScreenX);
+                }
+
+                const documentWidth = document.scrollingElement.scrollWidth;
+                const currentPageStart = snapOffset(documentWidth * ${currentLocator.locations.progression});
+                const currentPageEnd = currentPageStart + maxScreenX;
+                return $it * documentWidth >= currentPageStart &&
+                    $it * documentWidth < currentPageEnd;
+            })();
+            """.trimIndent()
+            )
+        }
+
+        val isPropLocatorOnPage = result?.let { Json.decodeFromString<Boolean>(it) } ?: false
+
         val found = navigator!!.firstVisibleElementLocator()
         if (found == null) {
+            // If the locator specified by the prop is still on the page, don't emit
+            // a change event. We haven't actually changed the page.
+            if (isPropLocatorOnPage) return
             onLocatorChange(currentLocator.toJSON().toMap())
             return
         }
+
         val merged = currentLocator.copy(
             locations = currentLocator.locations.copy(
                 fragments = found.locations.fragments,
                 otherLocations = found.locations.otherLocations,
             ),
         )
+
+        // If the locator specified by the prop is still on the page,
+        // we still need to emit if we're adding fragments that we didn't
+        // have initially
+        if (isPropLocatorOnPage && (props?.locator?.locations?.fragments?.size ?: 0) > 0) {
+            return
+        }
+
         onLocatorChange(merged.toJSON().toMap())
     }
 

@@ -177,10 +177,10 @@ export function MiniPlayer({ book, format, hidden, automaticRewind }: Props) {
   return (
     bookPrefs && (
       <View>
-        <HideableView hidden={hidden} className="mb-safe-or-2 z-3 px-3 pb-2">
+        <HideableView hidden={hidden} className="mb-safe-or-2 z-3 px-3">
           <View className="flex-row items-center gap-0">
             <ProgressBar
-              className="my-6 grow"
+              className="mt-4 mb-4 grow"
               start={progressStart}
               stop={progressEnd ?? 0}
               progress={progress}
