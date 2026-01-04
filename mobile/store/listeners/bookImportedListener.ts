@@ -1,4 +1,5 @@
 import { File, Paths } from "expo-file-system"
+import { documentDirectory } from "expo-file-system/legacy"
 import { router } from "expo-router"
 
 import { createBook } from "@/database/books"
@@ -143,7 +144,9 @@ startAppListening({
           : null,
         language: epubManifest.metadata.language,
         publicationDate,
-        ...(ebookCoverUrl && { ebookCoverUrl }),
+        ...(ebookCoverUrl && {
+          ebookCoverUrl: ebookCoverUrl.replace(documentDirectory!, ""),
+        }),
         // ...(audiobookCoverUrl &&
         //   format === "readaloud" && { audiobookCoverUrl }),
       },
