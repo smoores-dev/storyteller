@@ -33970,7 +33970,7 @@ __metadata:
 
 "react-native-track-player@patch:react-native-track-player@npm%3A5.0.0-alpha0#~/.yarn/patches/react-native-track-player-npm-5.0.0-alpha0-118fb89fb8.patch":
   version: 5.0.0-alpha0
-  resolution: "react-native-track-player@patch:react-native-track-player@npm%3A5.0.0-alpha0#~/.yarn/patches/react-native-track-player-npm-5.0.0-alpha0-118fb89fb8.patch::version=5.0.0-alpha0&hash=0c95de"
+  resolution: "react-native-track-player@patch:react-native-track-player@npm%3A5.0.0-alpha0#~/.yarn/patches/react-native-track-player-npm-5.0.0-alpha0-118fb89fb8.patch::version=5.0.0-alpha0&hash=71b18d"
   peerDependencies:
     react: "*"
     react-native: "*"
@@ -33978,7 +33978,7 @@ __metadata:
   peerDependenciesMeta:
     shaka-player:
       optional: true
-  checksum: 10c0/bbc92989c50b6ba34f6317b2da72d630b85145062914673fd2b041ca982dfc01ab4a33d4ce8b13fc8c1795e6508f9eab3e949ce0689e3421ec25ea73a8270732
+  checksum: 10c0/8f77c62468cc8db25227bee0d0bf9a1fd551f91eae616bea8cfbccf76dc7a9b39c9ebfb00bd75f352a87b72eefbaa87a48f082460386aaee48a5e0b63b76f221
   languageName: node
   linkType: hard
 

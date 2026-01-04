@@ -1,5 +1,5 @@
 diff --git a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
-index b495b5a98d36c637409e7379ccf0d0a77507f0d0..8cb7ff036ea478ad267f3902c253bb5a2adce4ec 100644
+index b495b5a98d36c637409e7379ccf0d0a77507f0d0..56b4fa00ef0d5a7c3246c1e55b7cf2a9be445795 100644
 --- a/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
 +++ b/android/src/main/java/com/doublesymmetry/trackplayer/service/MusicService.kt
 @@ -19,6 +19,7 @@ import androidx.media3.common.Player
@@ -10,7 +10,57 @@ index b495b5a98d36c637409e7379ccf0d0a77507f0d0..8cb7ff036ea478ad267f3902c253bb5a
  import androidx.media3.common.MediaItem
  import androidx.media3.common.Rating
  import androidx.media3.common.util.BitmapLoader
-@@ -866,6 +867,24 @@ class MusicService : HeadlessJsMediaService() {
+@@ -70,6 +71,9 @@ class MusicService : HeadlessJsMediaService() {
+     private var lastWake: Long = 0
+     var onStartCommandIntentValid: Boolean = true
+ 
++    // Track connected automotive controllers for URI permission granting
++    private val automotiveControllers = mutableSetOf<String>()
++
+     fun acquireWakeLock() {
+         acquireWakeLockNow(this)
+     }
+@@ -90,6 +94,30 @@ class MusicService : HeadlessJsMediaService() {
+         }
+     }
+ 
++    // Grant URI permission for current track's artwork to automotive controllers
++    private fun grantArtworkUriPermissions() {
++        if (automotiveControllers.isEmpty()) return
++        if (!::player.isInitialized) return
++        val artworkUri = player.exoPlayer.currentMediaItem?.mediaMetadata?.artworkUri ?: return
++
++        // Only grant for content:// URIs
++        if (artworkUri.scheme != "content") return
++
++        Timber.d("Granting artwork URI permission: $artworkUri")
++        for (packageName in automotiveControllers) {
++            try {
++                grantUriPermission(
++                    packageName,
++                    artworkUri,
++                    Intent.FLAG_GRANT_READ_URI_PERMISSION
++                )
++                Timber.d("Granted URI permission to $packageName")
++            } catch (e: Exception) {
++                Timber.e(e, "Failed to grant URI permission to $packageName")
++            }
++        }
++    }
++
+     @ExperimentalCoroutinesApi
+     override fun onCreate() {
+         Timber.plant(object : Timber.DebugTree() {
+@@ -544,6 +572,8 @@ class MusicService : HeadlessJsMediaService() {
+                         (it?.oldPosition ?: 0).toSeconds()
+                     )
+                 }
++                // Grant artwork URI permissions to automotive controllers on track change
++                grantArtworkUriPermissions()
+             }
+         }
+ 
+@@ -866,10 +896,31 @@ class MusicService : HeadlessJsMediaService() {
          // HACK: I'm sure most of the callbacks were not implemented correctly.
          // ATM I only care that andorid auto still functions.
  
@@ -35,3 +85,24 @@ index b495b5a98d36c637409e7379ccf0d0a77507f0d0..8cb7ff036ea478ad267f3902c253bb5a
          override fun onDisconnected(
              session: MediaSession,
              controller: MediaSession.ControllerInfo
+         ) {
++            // Remove from tracked automotive controllers
++            automotiveControllers.remove(controller.packageName)
++
+             emit(MusicEvents.CONNECTOR_DISCONNECTED, Bundle().apply {
+                 putString("package", controller.packageName)
+             })
+@@ -892,6 +943,13 @@ class MusicService : HeadlessJsMediaService() {
+                 putBoolean("isAutomotiveController", isAutomotiveController)
+                 putBoolean("isAutoCompanionController", isAutoCompanionController)
+             })
++
++            // Track automotive controllers and grant artwork URI permissions
++            if (isAutomotiveController || isAutoCompanionController) {
++                automotiveControllers.add(controller.packageName)
++                grantArtworkUriPermissions()
++            }
++
+             if (controller.packageName in arrayOf(
+                     "com.android.systemui",
+                     // https://github.com/googlesamples/android-media-controller

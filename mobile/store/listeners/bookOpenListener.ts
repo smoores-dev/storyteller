@@ -1,5 +1,7 @@
 import { File } from "expo-file-system"
+import { documentDirectory, getContentUriAsync } from "expo-file-system/legacy"
 import { Image } from "expo-image"
+import { Platform } from "react-native"
 import TrackPlayer, { PitchAlgorithm } from "react-native-track-player"
 
 import { type BookWithRelations } from "@/database/books"
@@ -37,9 +39,22 @@ async function generateTracks(
     await Image.prefetch(serverCoverUrl)
   }
 
-  const coverUrl =
-    book.audiobookCoverUrl ??
-    (serverCoverUrl ? await Image.getCachePathAsync(serverCoverUrl) : null)
+  let coverUrl = book.audiobookCoverUrl
+    ? new URL(book.audiobookCoverUrl, documentDirectory!).toString()
+    : serverCoverUrl
+      ? await Image.getCachePathAsync(serverCoverUrl)
+      : null
+
+  // Convert to content:// URI on Android for Android Auto compatibility
+  if (coverUrl && Platform.OS === "android") {
+    try {
+      coverUrl = await getContentUriAsync(
+        new URL(coverUrl, "file://").toString(),
+      )
+    } catch {
+      // pass
+    }
+  }
 
   const manifest =
     format === "audiobook"

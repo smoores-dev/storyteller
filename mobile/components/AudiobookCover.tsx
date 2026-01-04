@@ -1,4 +1,5 @@
 import { skipToken } from "@reduxjs/toolkit/query"
+import { documentDirectory } from "expo-file-system/legacy"
 import { Image, type ImageStyle } from "expo-image"
 import { type StyleProp } from "react-native"
 
@@ -26,15 +27,15 @@ export function AudiobookCover({ book, style }: Props) {
       : skipToken,
   )
 
-  const audiobookCoverUrl =
-    book?.audiobookCoverUrl ??
-    (server && book
+  const audiobookCoverUrl = book?.audiobookCoverUrl
+    ? new URL(book.audiobookCoverUrl, documentDirectory!).toString()
+    : server && book
       ? getCoverUrl(server.baseUrl, book.uuid, {
           height: 232,
           width: 232,
           audio: true,
         })
-      : null)
+      : null
 
   if (!audiobookCoverUrl) return null
 

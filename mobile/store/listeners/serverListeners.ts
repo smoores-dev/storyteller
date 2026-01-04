@@ -1,3 +1,4 @@
+import { documentDirectory } from "expo-file-system/legacy"
 import { Image } from "expo-image"
 import * as SecureStore from "expo-secure-store"
 
@@ -17,19 +18,25 @@ startAppListening({
 
     for (const uuid of downloadedBooks) {
       await updateBook(uuid, {
-        ebookCoverUrl: await Image.getCachePathAsync(
-          getCoverUrl(server.baseUrl, uuid, {
-            height: 353,
-            width: 232,
-          }),
-        ),
-        audiobookCoverUrl: await Image.getCachePathAsync(
-          getCoverUrl(server.baseUrl, uuid, {
-            height: 232,
-            width: 232,
-            audio: true,
-          }),
-        ),
+        ebookCoverUrl:
+          (
+            await Image.getCachePathAsync(
+              getCoverUrl(server.baseUrl, uuid, {
+                height: 352,
+                width: 232,
+              }),
+            )
+          )?.replace(documentDirectory!, "") ?? null,
+        audiobookCoverUrl:
+          (
+            await Image.getCachePathAsync(
+              getCoverUrl(server.baseUrl, uuid, {
+                height: 232,
+                width: 232,
+                audio: true,
+              }),
+            )
+          )?.replace(documentDirectory!, "") ?? null,
       })
     }
   },
