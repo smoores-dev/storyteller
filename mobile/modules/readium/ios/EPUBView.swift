@@ -106,7 +106,7 @@ class EPUBView: ExpoView {
             $0.otherLocations = [:]
         })
 
-        if locatorComp != currentLocatorComp, let locator = finalProps.locator {
+        if finalProps.locator != navigator?.currentLocation, let locator = finalProps.locator {
             go(locator: locator)
         }
 
@@ -239,18 +239,70 @@ class EPUBView: ExpoView {
     }
 
     func emitCurrentLocator() async {
-        guard let currentLocator = self.navigator!.currentLocation else {
+        guard let epubNav = navigator else {
             return
         }
-        guard let found = await navigator!.firstVisibleElementLocator() else {
-            self.onLocatorChange(currentLocator.json)
+        guard let currentLocator = epubNav.currentLocation else {
             return
         }
-        let merged = currentLocator.copy(locations: {
-            $0.otherLocations["fragments"] = found.locations.fragments
-            $0.otherLocations["cssSelector"] = found.locations.cssSelector
-        })
-        self.onLocatorChange(merged.json)
+        let found = await navigator!.firstVisibleElementLocator()
+        let merged = found.map { f in
+            currentLocator.copy(locations: {
+                $0.otherLocations["fragments"] = f.locations.fragments
+                $0.otherLocations["cssSelector"] = f.locations.cssSelector
+            })
+        }
+        
+        Task {
+            let result = await props?.locator?.locations.progression.asyncMap {
+                await epubNav.evaluateJavaScript("""
+            (function() {
+                const maxScreenX = window.orientation === 0 || window.orientation == 180
+                        ? screen.width
+                        : screen.height;
+        
+                function snapOffset(offset) {
+                    const value = offset + 1;
+        
+                    return value - (value % maxScreenX);
+                }
+        
+                const documentWidth = document.scrollingElement.scrollWidth;
+                const currentPageStart = snapOffset(documentWidth * \(currentLocator.locations.progression ?? 0.0));
+                const currentPageEnd = currentPageStart + maxScreenX;
+                return \($0) * documentWidth >= currentPageStart &&
+                    \($0) * documentWidth < currentPageEnd;
+            })();
+        """)
+            }
+            switch result {
+            case nil:
+                self.onLocatorChange(merged?.json ?? currentLocator.json)
+            case .failure(let e):
+                print(e)
+                self.onLocatorChange(merged?.json ?? currentLocator.json)
+            case .success(let anyValue):
+                guard let isPropLocatorOnPage = anyValue as? Bool else {
+                    self.onLocatorChange(merged?.json ?? currentLocator.json)
+                    return
+                }
+
+                // If the locator specified by the prop is still on the page, don't emit
+                // a change event. We haven't actually changed the page.
+                if merged == nil && !isPropLocatorOnPage {
+                    self.onLocatorChange(merged?.json ?? currentLocator.json)
+                    return
+                }
+                
+                // If the locator specified by the prop is still on the page,
+                // we still need to emit if we're adding fragments that we didn't
+                // have initially
+                if isPropLocatorOnPage && (props?.locator?.locations.fragments.count ?? 0) > 0 {
+                    return
+                }
+                self.onLocatorChange(merged?.json ?? currentLocator.json)
+            }
+        }
     }
 
     func go(locator: Locator) {

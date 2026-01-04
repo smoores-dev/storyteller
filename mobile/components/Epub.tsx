@@ -58,7 +58,6 @@ export function Epub({ book, format, locator }: Props) {
   const locatorRef = useRef<ReadiumLocator | null>(null)
   const locatorIsFromEpub = locatorRef.current === locator
 
-  const hasLoadedRef = useRef(false)
   const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<Bookmark[]>([])
   const [activeHighlight, setActiveHighlight] = useState<UUID | null>(null)
@@ -237,25 +236,6 @@ export function Epub({ book, format, locator }: Props) {
 
             if (isPlaying) {
               return
-            }
-
-            // If this is the very first time we're mounting this
-            // component, we actually want to ignore the "locator changed"
-            // event, which will just be trying to reset to the beginning
-            // of the currently rendered page
-            if (!hasLoadedRef.current) {
-              hasLoadedRef.current = true
-
-              // Sometimes we need to pay attention to the first locator changed,
-              // if we rely on it to figure out the fragments for the initial
-              // locator.
-              const providesFragments =
-                event.nativeEvent.locations?.fragments &&
-                !locator.locations?.fragments
-
-              if (!providesFragments) {
-                return
-              }
             }
 
             locatorRef.current = event.nativeEvent
