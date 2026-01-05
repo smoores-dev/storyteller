@@ -27,7 +27,6 @@ import { type Settings } from "@/apiModels"
 import { ImportPathInput } from "@/components/ImportPathInput"
 import {
   useGetMaxUploadChunkSizeQuery,
-  useListCollectionsQuery,
   useUpdateSettingsMutation,
 } from "@/store/api"
 
@@ -43,8 +42,6 @@ export function SettingsForm({ settings, authUrl }: Props) {
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const { data: maxUploadChunkSize } = useGetMaxUploadChunkSizeQuery()
-
-  const { data: collections } = useListCollectionsQuery()
 
   const [updateSettings] = useUpdateSettingsMutation()
 
@@ -133,80 +130,77 @@ export function SettingsForm({ settings, authUrl }: Props) {
           import in the settings for that collection.
         </Text>
       </ImportPathInput>
-      {(form.values.importPath ||
-        collections?.some((collection) => collection.importPath)) && (
-        <Fieldset legend="Readaloud location">
-          <Box className="mb-3 text-sm opacity-70">
-            <Text className="text-sm text-black">
-              Storyteller can be configured to save new readaloud files in a
-              number of places, when the input files were not uploaded through
-              the web client:
-            </Text>
-            <List listStyleType="disc" className="text-sm">
-              <List.Item>
-                In the same folder as the input EPUB file, with a user-provided
-                suffix (defaults to “ (readaloud)”).
-              </List.Item>
-              <List.Item>
-                In a user-provided folder name next to the EPUB file (defaults
-                to “readaloud/”).
-              </List.Item>
-              <List.Item>
-                In a user-provided folder somewhere outside the auto-import
-                folder.
-              </List.Item>
-              <List.Item>
-                In the Storyteller internal folder, alongside the transcoded
-                audio and transcription files.
-              </List.Item>
-            </List>
-          </Box>
-          <NativeSelect
-            label="Readaloud location"
-            {...form.getInputProps("readaloudLocationType")}
-            onChange={(e) => {
-              const value = e.currentTarget
-                .value as Settings["readaloudLocationType"]
-              form.setFieldValue("readaloudLocationType", value)
-              switch (value) {
-                case "SUFFIX": {
-                  form.setFieldValue("readaloudLocation", " (readaloud)")
-                  break
-                }
-                case "SIBLING_FOLDER": {
-                  form.setFieldValue("readaloudLocation", "readaloud")
-                  break
-                }
-                case "CUSTOM_FOLDER": {
-                  form.setFieldValue("readaloudLocation", "/readalouds")
-                  break
-                }
-                case "INTERNAL": {
-                  form.setFieldValue("readaloudLocation", "")
-                  break
-                }
+      <Fieldset legend="Readaloud location">
+        <Box className="mb-3 text-sm opacity-70">
+          <Text className="text-sm text-black">
+            Storyteller can be configured to save new readaloud files in a
+            number of places, when the input files were not uploaded through the
+            web client:
+          </Text>
+          <List listStyleType="disc" className="text-sm">
+            <List.Item>
+              In the same folder as the input EPUB file, with a user-provided
+              suffix (defaults to “ (readaloud)”).
+            </List.Item>
+            <List.Item>
+              In a user-provided folder name next to the EPUB file (defaults to
+              “readaloud/”).
+            </List.Item>
+            <List.Item>
+              In a user-provided folder somewhere outside the auto-import
+              folder.
+            </List.Item>
+            <List.Item>
+              In the Storyteller internal folder, alongside the transcoded audio
+              and transcription files.
+            </List.Item>
+          </List>
+        </Box>
+        <NativeSelect
+          label="Readaloud location"
+          {...form.getInputProps("readaloudLocationType")}
+          onChange={(e) => {
+            const value = e.currentTarget
+              .value as Settings["readaloudLocationType"]
+            form.setFieldValue("readaloudLocationType", value)
+            switch (value) {
+              case "SUFFIX": {
+                form.setFieldValue("readaloudLocation", " (readaloud)")
+                break
               }
-            }}
-          >
-            <option value="SUFFIX">Alongside input with a suffix</option>
-            <option value="SIBLING_FOLDER">Alongside input in a folder</option>
-            <option value="CUSTOM_FOLDER">In a custom folder</option>
-            <option value="INTERNAL">In the Storyteller internal folder</option>
-          </NativeSelect>
-          {form.values.readaloudLocationType !== "INTERNAL" && (
-            <TextInput
-              label={
-                form.values.readaloudLocationType === "SUFFIX"
-                  ? "Suffix"
-                  : form.values.readaloudLocationType === "SIBLING_FOLDER"
-                    ? "Sibling folder name"
-                    : "Custom folder path"
+              case "SIBLING_FOLDER": {
+                form.setFieldValue("readaloudLocation", "readaloud")
+                break
               }
-              {...form.getInputProps("readaloudLocation")}
-            />
-          )}
-        </Fieldset>
-      )}
+              case "CUSTOM_FOLDER": {
+                form.setFieldValue("readaloudLocation", "/readalouds")
+                break
+              }
+              case "INTERNAL": {
+                form.setFieldValue("readaloudLocation", "")
+                break
+              }
+            }
+          }}
+        >
+          <option value="SUFFIX">Alongside input with a suffix</option>
+          <option value="SIBLING_FOLDER">Alongside input in a folder</option>
+          <option value="CUSTOM_FOLDER">In a custom folder</option>
+          <option value="INTERNAL">In the Storyteller internal folder</option>
+        </NativeSelect>
+        {form.values.readaloudLocationType !== "INTERNAL" && (
+          <TextInput
+            label={
+              form.values.readaloudLocationType === "SUFFIX"
+                ? "Suffix"
+                : form.values.readaloudLocationType === "SIBLING_FOLDER"
+                  ? "Sibling folder name"
+                  : "Custom folder path"
+            }
+            {...form.getInputProps("readaloudLocation")}
+          />
+        )}
+      </Fieldset>
       <Fieldset legend="Audio settings">
         <NativeSelect
           label="Maximum processed track length"
