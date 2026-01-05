@@ -453,7 +453,11 @@ export async function upsertServerBooks(
       await tr
         .insertInto("readaloud")
         .values(readaloudsToInsert)
-        .onConflict((oc) => oc.column("bookUuid").doNothing())
+        .onConflict((oc) =>
+          oc.column("bookUuid").doUpdateSet((eb) => ({
+            status: eb.ref("excluded.status"),
+          })),
+        )
         .execute()
     }
 
