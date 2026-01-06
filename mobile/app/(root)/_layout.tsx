@@ -32,7 +32,7 @@ export default function ModalLayout() {
           title: "Settings",
         }}
       />
-      <Stack.Screen name="read/[uuid]" />
+      <Stack.Screen name="read/[uuid]" options={{ gestureEnabled: false }} />
       <Stack.Screen name="book/[uuid]" />
       <Stack.Screen name="author/[uuid]" />
       <Stack.Screen
