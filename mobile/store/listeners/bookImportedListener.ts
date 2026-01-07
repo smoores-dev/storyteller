@@ -41,8 +41,10 @@ startAppListening({
       getLocalBookExtractedUrl(uuid, "readaloud"),
     )
 
-    const format = epubManifest.readingOrder.some((link) =>
-      link.alternate?.some((link) => link.type === "application/smil+xml"),
+    const format = epubManifest.readingOrder.some(
+      (link) =>
+        link.alternate?.some((link) => link.type === "application/smil+xml") ||
+        link.properties?.mediaOverlay,
     )
       ? "readaloud"
       : "ebook"
