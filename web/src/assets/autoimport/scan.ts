@@ -24,6 +24,7 @@ import { getDefaultSuffix, getInternalBookDirectory } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import {
   type BookUpdate,
+  type BookWithRelations,
   createBookFromAudiobook,
   createBookFromEpub,
   getBookByAudiobookFilepathPrefix,
@@ -220,27 +221,36 @@ export async function scan(
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         using epub = await Epub.from((bookPath.readaloud ?? bookPath.ebook)!)
 
-        let created = await createBookFromEpub(
-          epub,
-          {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            title: basename((bookPath.readaloud ?? bookPath.ebook)!, ".epub"),
-          },
-          {
-            ...(collectionUuid && { collections: [collectionUuid] }),
-            ...(bookPath.ebook && { ebook: { filepath: bookPath.ebook } }),
-            ...(bookPath.readaloud && {
-              readaloud: {
-                filepath: bookPath.readaloud,
-                status: "ALIGNED",
-                currentStage: "SPLIT_TRACKS",
-              },
-            }),
-            ...(bookPath.audiobook && {
-              audiobook: { filepath: bookPath.audiobook },
-            }),
-          },
-        )
+        let created: BookWithRelations
+        try {
+          created = await createBookFromEpub(
+            epub,
+            {
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              title: basename((bookPath.readaloud ?? bookPath.ebook)!, ".epub"),
+            },
+            {
+              ...(collectionUuid && { collections: [collectionUuid] }),
+              ...(bookPath.ebook && { ebook: { filepath: bookPath.ebook } }),
+              ...(bookPath.readaloud && {
+                readaloud: {
+                  filepath: bookPath.readaloud,
+                  status: "ALIGNED",
+                  currentStage: "SPLIT_TRACKS",
+                },
+              }),
+              ...(bookPath.audiobook && {
+                audiobook: { filepath: bookPath.audiobook },
+              }),
+            },
+          )
+        } catch (e) {
+          logger.error(
+            `Encountered issue attempting to read EPUB file at ${bookPath.readaloud ?? bookPath.ebook}, skipping`,
+          )
+          logger.error(e)
+          continue
+        }
 
         try {
           await mkdir(getInternalBookDirectory(created))
