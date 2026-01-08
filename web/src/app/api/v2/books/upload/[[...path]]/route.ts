@@ -94,7 +94,11 @@ const server = new Server({
       const collectionUuid = upload.metadata["collection"] as UUID | undefined
 
       const isEpub =
-        filetype !== false && filetype.startsWith("application/epub")
+        filetype !== false &&
+        (filetype.startsWith("application/epub") ||
+          // For some baffling reason, Chrome on Windows thinks that
+          // EPUBs are images
+          filetype === "image/epub")
       const isAudiobook = isAudioFile(filename) || isZipArchive(filename)
       if (!isEpub && !isAudiobook) {
         return {
