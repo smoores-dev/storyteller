@@ -211,30 +211,38 @@ export class Epub {
     parseTagValue: false,
   })
 
-  static xhtmlParser = new XMLParser({
-    allowBooleanAttributes: true,
-    alwaysCreateTextNode: true,
-    preserveOrder: true,
-    ignoreAttributes: false,
-    htmlEntities: true,
-    trimValues: false,
-    stopNodes: ["*.pre", "*.script"],
-    parseTagValue: false,
-    updateTag(_tagName, _jPath, attrs) {
-      // There's never an attribute called '/';
-      // this erroneously happens sometimes when parsing
-      // self-closing stop nodes with ignoreAttributes: false
-      // and allowBooleanAttributes: true.
-      //
-      // Also attrs is undefined if there are no attrs;
-      // the types are wrong.
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (attrs && "@_/" in attrs) {
-        delete attrs["@_/"]
-      }
-      return true
-    },
-  })
+  static xhtmlParser = (() => {
+    const parser = new XMLParser({
+      allowBooleanAttributes: true,
+      alwaysCreateTextNode: true,
+      preserveOrder: true,
+      ignoreAttributes: false,
+      htmlEntities: true,
+      trimValues: false,
+      stopNodes: ["*.pre", "*.script"],
+      parseTagValue: false,
+      updateTag(_tagName, _jPath, attrs) {
+        // There's never an attribute called '/';
+        // this erroneously happens sometimes when parsing
+        // self-closing stop nodes with ignoreAttributes: false
+        // and allowBooleanAttributes: true.
+        //
+        // Also attrs is undefined if there are no attrs;
+        // the types are wrong.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (attrs && "@_/" in attrs) {
+          delete attrs["@_/"]
+        }
+        return true
+      },
+    })
+    // fast-xml-parser's htmlEntities option seems to map &nbsp; to
+    // regular space (U+0020) instead of non-breaking space (U+00A0).
+    // Override the entity mapping to use the correct character.
+    parser.addEntity("nbsp", "\u00A0")
+    parser.addEntity("#160", "\u00A0")
+    return parser
+  })()
 
   static xmlBuilder = new XMLBuilder({
     preserveOrder: true,
