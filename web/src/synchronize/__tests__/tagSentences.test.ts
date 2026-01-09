@@ -545,4 +545,36 @@ void describe("tagSentences", () => {
 </html>`,
     )
   })
+
+  void it("can preserve nbsp entities", () => {
+    const input = Epub.xhtmlParser.parse(`
+<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<head>
+</head>
+<body>
+<p>First paragraph.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>Second paragraph.</p>
+</body>
+</html>
+`) as ParsedXml
+
+    const output = tagSentences("chapter_one", input)
+
+    assert.strictEqual(
+      Epub.xhtmlBuilder.build(output),
+      `
+<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<head>
+</head>
+<body>
+<p><span id="chapter_one-sentence0">First paragraph.</span></p>
+<p>\u00A0</p>
+<p>\u00A0</p>
+<p><span id="chapter_one-sentence1">Second paragraph.</span></p>
+</body>
+</html>`,
+    )
+  })
 })
