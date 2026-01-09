@@ -1,4 +1,8 @@
-# Storyteller web reader
+---
+sidebar_position: 3
+---
+
+# Storyteller Web Reader
 
 :::warning Experimental feature
 

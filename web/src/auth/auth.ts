@@ -21,6 +21,7 @@ import type {
 } from "next-auth/providers"
 import Credentials from "next-auth/providers/credentials"
 
+import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { KyselyAdapter } from "@/database/authAdapter"
 import { db } from "@/database/connection"
 import { getSettings } from "@/database/settings"
@@ -145,13 +146,22 @@ export async function createConfig(
 
   const providers = [credentialsProvider, ...additionalProviders]
 
+  const authUrlHostname = env.AUTH_URL
+    ? new URL(env.AUTH_URL).hostname
+    : undefined
+  // omit domain for localhost since many http clients handle it poorly
+  const sessionCookieDomain =
+    authUrlHostname && authUrlHostname !== "localhost"
+      ? authUrlHostname
+      : undefined
+
   const config: NextAuthConfig = {
     providers,
     cookies: {
       sessionToken: {
         name: "st_token",
-        ...(env.AUTH_URL && {
-          options: { domain: new URL(env.AUTH_URL).hostname },
+        ...(sessionCookieDomain && {
+          options: { domain: sessionCookieDomain },
         }),
       },
     },
@@ -311,7 +321,7 @@ export async function authenticateUser(
   return user
 }
 
-function extractTokenFromHeader(h: ReadonlyHeaders) {
+export function extractTokenFromHeader(h: ReadonlyHeaders) {
   const bearer = h.get("Authorization")
   if (!bearer) return null
 
@@ -322,6 +332,42 @@ function extractTokenFromHeader(h: ReadonlyHeaders) {
   if (!authToken) return null
 
   return authToken
+}
+
+export function parseBasicAuth(
+  authHeader: string | null,
+): { username: string; password: string } | null {
+  if (!authHeader?.startsWith("Basic ")) return null
+
+  const base64 = authHeader.slice(6)
+  const decoded = Buffer.from(base64, "base64").toString("utf-8")
+  const colonIndex = decoded.indexOf(":")
+  if (colonIndex === -1) return null
+
+  return {
+    username: decoded.slice(0, colonIndex),
+    password: decoded.slice(colonIndex + 1),
+  }
+}
+
+export function extractBasicAuthFromUrl(
+  url: string,
+): { username: string; password: string } | null {
+  try {
+    const parsedUrl = new URL(url)
+    const username = parsedUrl.username
+    const password = parsedUrl.password
+
+    if (username && password) {
+      return {
+        username: decodeURIComponent(username),
+        password: decodeURIComponent(password),
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 // function extractTokenFromCookie(cookie: RequestCookie | undefined) {
@@ -370,24 +416,106 @@ export function withUser<
   }
 }
 
+/**
+ * @param permission - The permission to check for
+ * @param allowBasicAuth - Whether to allow basic auth. Required for many OPDS clients.
+ */
 export function withHasPermission<
   Params extends Promise<Record<string, unknown>> = Promise<
     Record<string, unknown>
   >,
->(permission: Permission) {
-  return function (
-    handler: (
-      request: VerifiedAuthRequest,
+>(
+  permission: Permission,
+  options?: {
+    allowBasicAuth?: boolean
+    on401?: (
+      request: NextRequest,
       context: { params: Promise<Params> },
-    ) => Promise<Response> | Response,
-  ): AppRouteHandlerFn {
-    return async function (request, context) {
+    ) => Promise<Response> | Response
+  },
+) {
+  return (
+      handler: (
+        request: VerifiedAuthRequest,
+        context: { params: Promise<Params> },
+      ) => Promise<Response> | Response,
+    ): AppRouteHandlerFn =>
+    async (request, context) => {
+      if (options?.allowBasicAuth) {
+        // only allow basic auth if OPDS is enabled
+        const settings = await getSettings()
+        if (settings.opdsEnabled) {
+          // try basic auth from Authorization header first
+          let basicCreds = parseBasicAuth(request.headers.get("Authorization"))
+
+          // if not in header, try to extract from URL (some OPDS clients send credentials in URL)
+          // not sure if this ever makes its way here tho, most http clients convert this to basic auth
+          if (!basicCreds) {
+            basicCreds = extractBasicAuthFromUrl(request.url)
+          }
+
+          if (basicCreds) {
+            const user = await authenticateUser(
+              basicCreds.username,
+              basicCreds.password,
+            )
+
+            if (!user) {
+              if (options.on401) {
+                return options.on401(
+                  request,
+                  context as { params: Promise<Params> },
+                )
+              }
+              return NextResponse.json(
+                { message: "Not authenticated" },
+                { status: 401, headers: { "WWW-Authenticate": "Bearer" } },
+              )
+            }
+
+            if (!user.permissions?.[permission]) {
+              return NextResponse.json(
+                { message: "Forbidden" },
+                { status: 403 },
+              )
+            }
+
+            const token = await createUserToken(
+              basicCreds.username,
+              basicCreds.password,
+            )
+
+            // opds clients typically don't send Origin header, fall back to request url
+            const origin =
+              request.headers.get("Origin") ?? request.nextUrl.origin
+            const secure = getCookieSecure(origin)
+            const domain = getCookieDomain(origin)
+
+            const cookieStore = await cookies()
+            cookieStore.set("st_token", token.access_token, {
+              secure,
+              // omit domain for localhost since many http clients handle it poorly
+              ...(domain && domain !== "localhost" && { domain }),
+              sameSite: "lax",
+              httpOnly: true,
+              expires: new Date(Date.now() + token.expires_in),
+            })
+
+            request.cookies.set("st_token", token.access_token)
+          }
+        }
+      }
+
       const token = extractTokenFromHeader(request.headers)
+
       if (token) {
         request.cookies.set("st_token", token)
       }
       const h = nextAuth.auth(async (request, context) => {
         if (!request.auth) {
+          if (options?.on401) {
+            return options.on401(request, context)
+          }
           return NextResponse.json(
             { message: "Not authenticated" },
             { status: 401, headers: { "WWW-Authenticate": "Bearer" } },
@@ -407,7 +535,6 @@ export function withHasPermission<
 
       return (await h)(request, context)
     }
-  }
 }
 
 export function hasPermission(

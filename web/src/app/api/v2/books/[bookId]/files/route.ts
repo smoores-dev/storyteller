@@ -25,10 +25,13 @@ type Params = Promise<{
   bookId: string
 }>
 
-function determineFormat(
-  book: BookWithRelations,
-  format: "readaloud" | "audiobook" | "ebook" | null,
-) {
+type Format = "readaloud" | "audiobook" | "audiobook-rpf" | "ebook"
+
+function determineFormat(book: BookWithRelations, format: Format | null) {
+  if (format === "audiobook-rpf") {
+    return "audiobook"
+  }
+
   return (
     format ??
     (book.readaloud && "readaloud") ??
@@ -39,7 +42,7 @@ function determineFormat(
 
 async function getFilepath(
   book: BookWithRelations,
-  format: "readaloud" | "audiobook" | "ebook",
+  format: Exclude<Format, "audiobook-rpf">,
   rpf: boolean,
 ) {
   const filepath = book[format]?.filepath
@@ -129,27 +132,27 @@ async function getFilepath(
       links: [
         {
           rel: "self",
-          href: "/manifest.audiobook-manifest",
+          href: "manifest.json",
           type: "application/audiobook+json",
         },
       ],
       readingOrder: (await audiobook.getResources()).map(
         ({ filename, ...resource }) => ({
           ...resource,
-          href: join("/", filename.replace(filepath, "")),
+          href: filename.replace(filepath, "").replace(/^\//, ""),
         }),
       ),
       resources: audiocover
         ? [
             {
               rel: "cover",
-              href: `/${audiocover.filename}`,
+              href: audiocover.filename,
               type: audiocover.mimeType,
             },
           ]
         : [],
       toc: (await audiobook.getChapters()).map((chapter) => ({
-        href: `${join("/", chapter.filename.replace(filepath, ""))}#t=${chapter.start}`,
+        href: `${chapter.filename.replace(filepath, "").replace(/^\//, "")}#t=${chapter.start}`,
         title: chapter.title,
       })),
     }
@@ -158,6 +161,7 @@ async function getFilepath(
       Buffer.from(JSON.stringify(manifest)),
       "manifest.audiobook-manifest",
     )
+    zipfile.addBuffer(Buffer.from(JSON.stringify(manifest)), "manifest.json")
   }
 
   zipfile.end()
@@ -172,10 +176,9 @@ async function getFilepath(
  *       'audiobook', or 'ebook'. This endpoint supports resumable downloads via
  *       HTTP Accept-Ranges headers.
  */
-export const GET = withHasPermission<Params>("bookRead")(async (
-  request,
-  context,
-) => {
+export const GET = withHasPermission<Params>("bookRead", {
+  allowBasicAuth: true,
+})(async (request, context) => {
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
   const book = await getBook(bookUuid, request.auth.user.id)
@@ -191,11 +194,9 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   const rangesString = range?.replace("bytes=", "")
   const rangeStrings = rangesString?.split(",")
 
-  const optionalFormat = request.nextUrl.searchParams.get("format") as
-    | "readaloud"
-    | "ebook"
-    | "audiobook"
-    | null
+  const optionalFormat = request.nextUrl.searchParams.get(
+    "format",
+  ) as Format | null
 
   const format = determineFormat(book, optionalFormat)
   if (!format) {
@@ -204,19 +205,17 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       { status: 404 },
     )
   }
-
   const contentType = request.headers.get("Accept")
+  const rpf =
+    contentType?.includes("application/audiobook+zip") ||
+    optionalFormat === "audiobook-rpf"
 
   const normalizedTitle = book.title
     .normalize("NFD")
     .replaceAll(/\p{Diacritic}/gu, "")
     .replaceAll(/[^a-zA-Z0-9-_.~!#$&'()*+,/:;=?@[\] ]/gu, "")
 
-  const filepath = await getFilepath(
-    book,
-    format,
-    contentType?.includes("application/audiobook+zip") ?? false,
-  )
+  const filepath = await getFilepath(book, format, rpf)
 
   if (!filepath) {
     return Response.json(
@@ -291,12 +290,14 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     status: partialResponse ? 206 : 200,
     headers: {
       "Content-Disposition": contentDisposition(
-        `${book.title}${extname(filepath)}`,
+        `${book.title}${rpf ? ".audiobook" : extname(filepath)}`,
         {
-          fallback: `${normalizedTitle}${extname(filepath)}`,
+          fallback: `${normalizedTitle}${rpf ? ".audiobook" : extname(filepath)}`,
         },
       ),
-      "Content-Type": lookup(filepath) as string,
+      "Content-Type": rpf
+        ? "application/audiobook+zip"
+        : (lookup(filepath) as string),
       "Content-Length": `${end - start + 1}`,
       "Accept-Ranges": "bytes",
       "Last-Modified": new Date(stats.mtime).toISOString(),

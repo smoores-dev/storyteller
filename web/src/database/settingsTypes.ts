@@ -91,4 +91,6 @@ export type Settings = {
     | "CUSTOM_FOLDER"
   readaloudLocation: string
   maxUploadChunkSize: number | null
+  opdsEnabled: boolean | null
+  opdsPageSize: number | null
 }

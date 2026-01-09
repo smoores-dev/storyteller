@@ -1,11 +1,11 @@
-import { type Selectable } from "kysely"
+import type { Selectable } from "kysely"
 
 import { BookEvents } from "@/events"
-import { type UUID } from "@/uuid"
+import type { UUID } from "@/uuid"
 
 import { getBooks } from "./books"
 import { db } from "./connection"
-import { type DB } from "./schema"
+import type { DB } from "./schema"
 
 export type Tag = Selectable<DB["tag"]>
 
@@ -44,6 +44,42 @@ export async function getTags(userId?: UUID) {
     .groupBy("tag.uuid")
     .selectAll("tag")
     .execute()
+}
+
+export async function getTagByUuid(tagUuid: UUID, userId?: UUID) {
+  return db
+    .selectFrom("tag")
+    .where("tag.uuid", "=", tagUuid)
+    .$if(!!userId, (qb) =>
+      qb
+        .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
+        .leftJoin(
+          "bookToCollection",
+          "bookToTag.bookUuid",
+          "bookToCollection.bookUuid",
+        )
+        .leftJoin(
+          "collection",
+          "collection.uuid",
+          "bookToCollection.collectionUuid",
+        )
+        .leftJoin(
+          "collectionToUser",
+          "collectionToUser.collectionUuid",
+          "bookToCollection.collectionUuid",
+        )
+        .where((eb) =>
+          eb.or([
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            eb("collectionToUser.userId", "=", userId!),
+            eb("collection.public", "=", true),
+            eb("collection.public", "is", null),
+          ]),
+        ),
+    )
+    .groupBy("tag.uuid")
+    .selectAll("tag")
+    .executeTakeFirst()
 }
 
 export async function addTagsToBooks(bookUuids: UUID[], tagNames: string[]) {
