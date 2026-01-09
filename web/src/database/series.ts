@@ -1,11 +1,11 @@
-import { type Insertable, type Selectable, type Updateable } from "kysely"
+import type { Insertable, Selectable, Updateable } from "kysely"
 
 import { BookEvents } from "@/events"
-import { type UUID } from "@/uuid"
+import type { UUID } from "@/uuid"
 
 import { type NewBookToSeries, getBooks } from "./books"
 import { db } from "./connection"
-import { type BookToSeries, type DB } from "./schema"
+import type { BookToSeries, DB } from "./schema"
 
 export type Series = Selectable<DB["series"]>
 export type NewSeries = Insertable<DB["series"]>
@@ -13,8 +13,8 @@ export type SeriesUpdate = Updateable<DB["series"]>
 
 export type NewSeriesRelation = Omit<NewBookToSeries, "seriesUuid">
 
-export async function getSeries(userId?: UUID) {
-  return await db
+export function seriesQuery(userId?: UUID) {
+  return db
     .selectFrom("series")
     .$if(!!userId, (qb) =>
       qb
@@ -47,7 +47,16 @@ export async function getSeries(userId?: UUID) {
     )
     .groupBy("series.uuid")
     .selectAll("series")
-    .execute()
+}
+
+export function getSeriesByUuid(seriesUuid: UUID, userId?: UUID) {
+  return seriesQuery(userId)
+    .where("series.uuid", "=", seriesUuid)
+    .executeTakeFirst()
+}
+
+export async function getSeries(userId?: UUID) {
+  return await seriesQuery(userId).execute()
 }
 
 export async function addBooksToSeries(

@@ -1,4 +1,4 @@
-import { type NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { CredentialsSignin } from "next-auth"
 
 import { createUserToken } from "@/auth/auth"

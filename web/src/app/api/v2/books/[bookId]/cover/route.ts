@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { type Stats } from "node:fs"
+import type { Stats } from "node:fs"
 import { extname } from "node:path"
 
 import contentDisposition from "content-disposition"
@@ -56,10 +56,9 @@ type Params = Promise<{
  * @desc Use the `audio` search param to get the audio cover. The
  *       default is to get the text cover.
  */
-export const GET = withHasPermission<Params>("bookRead")(async (
-  request,
-  context,
-) => {
+export const GET = withHasPermission<Params>("bookRead", {
+  allowBasicAuth: true,
+})(async (request, context) => {
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
 

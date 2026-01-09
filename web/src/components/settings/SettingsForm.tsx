@@ -83,6 +83,8 @@ export function SettingsForm({ settings, authUrl }: Props) {
     readaloudLocation: settings.readaloudLocation,
     maxUploadChunkSize:
       maxUploadChunkSize?.maxUploadChunkSize ?? settings.maxUploadChunkSize,
+    opdsEnabled: settings.opdsEnabled,
+    opdsPageSize: settings.opdsPageSize,
   }
 
   const form = useForm({
@@ -705,6 +707,40 @@ export function SettingsForm({ settings, authUrl }: Props) {
               disabled={maxUploadChunkSize?.overriden ?? false}
               value={state.maxUploadChunkSize}
               {...form.getInputProps("maxUploadChunkSize")}
+            />
+          )}
+        </Stack>
+      </Fieldset>
+      <Fieldset legend="OPDS settings">
+        <Stack>
+          <Switch
+            label="Enable OPDS feed"
+            description={`OPDS allows compatible e-reader apps to browse and download books from your library. It can be accessed at ${state.webUrl ? new URL("/opds", state.webUrl).toString() : "/opds"}.`}
+            checked={state.opdsEnabled ?? true}
+            onChange={(event) => {
+              form.setFieldValue("opdsEnabled", event.currentTarget.checked)
+            }}
+          />
+          <Switch
+            label="Enable pagination"
+            description="Some OPDS clients don't handle pagination well. Disable this to return all items in a single response."
+            checked={state.opdsPageSize !== null}
+            onChange={(event) => {
+              const value = event.currentTarget.checked
+              if (value) {
+                form.setFieldValue("opdsPageSize", 50)
+              } else {
+                form.setFieldValue("opdsPageSize", null)
+              }
+            }}
+          />
+          {state.opdsPageSize !== null && (
+            <NumberInput
+              label="Page size"
+              description="Number of items per page in OPDS feeds."
+              min={1}
+              max={500}
+              {...form.getInputProps("opdsPageSize")}
             />
           )}
         </Stack>

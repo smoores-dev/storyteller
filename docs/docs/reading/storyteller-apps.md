@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Storyteller apps
+# Storyteller Apps
 
 _this page to be updated when the v2 mobile apps are released_
 
