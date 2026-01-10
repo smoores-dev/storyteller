@@ -68,6 +68,8 @@ export async function createRootCatalog(options: OPDSOptions) {
       ),
     )
 
+  addSearchToFeed(feed)
+
   return feed
 }
 
@@ -177,19 +179,19 @@ export function createBooksFeed(
 
     const url = new URL(selfUrl)
 
-    feed.addSelfLink(selfUrl, "acquisition")
+    feed.addSelfLink(url.pathname, "acquisition")
 
     if (currentPage > 1) {
       url.searchParams.set("page", String(currentPage - 1))
       feed.addLink({
-        href: url.toString(),
+        href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "previous",
         type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
       })
 
       url.searchParams.set("page", "1")
       feed.addLink({
-        href: url.toString(),
+        href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "first",
         type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
       })
@@ -198,19 +200,25 @@ export function createBooksFeed(
     if (currentPage < totalPages) {
       url.searchParams.set("page", String(currentPage + 1))
       feed.addLink({
-        href: url.toString(),
+        href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "next",
         type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
       })
 
       url.searchParams.set("page", String(totalPages))
       feed.addLink({
-        href: url.toString(),
+        href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "last",
         type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
       })
     }
   }
+
+  feed.addLink({
+    href: "/opds/search.xml",
+    rel: "search",
+    type: "application/opensearchdescription+xml",
+  })
 
   return feed
 }
@@ -272,6 +280,7 @@ export async function createCollectionNavFeed(options: OPDSOptions) {
         }),
       ),
     )
+  addSearchToFeed(feed)
   return feed
 }
 
@@ -410,6 +419,8 @@ export async function createTagsNavFeed(options: OPDSOptions) {
 
   feed.addSelfLink(`/opds/tags`, "navigation")
 
+  addSearchToFeed(feed)
+
   return feed
 }
 
@@ -472,4 +483,17 @@ export async function createAllBooksAcquisitionFeed(
   }
 
   return feed
+}
+
+export function addSearchToFeed(feed: Feed) {
+  // check if feed already has a search link
+  if (feed.getLinks().some((link) => link.rel === "search")) {
+    return
+  }
+
+  feed.addLink({
+    href: "/opds/search.xml",
+    rel: "search",
+    type: "application/opensearchdescription+xml",
+  })
 }
