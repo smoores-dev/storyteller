@@ -37,6 +37,14 @@ interface Props {
   authUrl?: string | undefined
 }
 
+function safeUrl(base: string, path: string) {
+  try {
+    return new URL(path, base).toString()
+  } catch {
+    return `${base}/${path}`
+  }
+}
+
 export function SettingsForm({ settings, authUrl }: Props) {
   const [saved, setSaved] = useState(false)
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -94,6 +102,10 @@ export function SettingsForm({ settings, authUrl }: Props) {
 
   const state = form.values
 
+  // sometimes the webUrl is not a valid URL, so we fallback to /opds
+  const opdsUrl = safeUrl(state.webUrl, "/opds")
+  const authUrlPath = authUrl ?? safeUrl(state.webUrl, "/api/v2/auth")
+
   return (
     <form
       onSubmit={form.onSubmit(async (updatedSettings) => {
@@ -113,7 +125,11 @@ export function SettingsForm({ settings, authUrl }: Props) {
           label="Library name"
           {...form.getInputProps("libraryName")}
         />
-        <TextInput label="Web URL" {...form.getInputProps("webUrl")} />
+        <TextInput
+          label="Web URL"
+          {...form.getInputProps("webUrl")}
+          type="url"
+        />
       </Fieldset>
       <ImportPathInput {...form.getInputProps("importPath")}>
         <Text className="text-sm text-black opacity-70">
@@ -587,11 +603,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
               )}
 
               <Text>
-                Set callback URL to{" "}
-                {authUrl ??
-                  (state.webUrl
-                    ? new URL("/api/v2/auth", state.webUrl).toString()
-                    : "/api/v2/auth")}
+                Set callback URL to {authUrlPath}
                 /callback/
                 {(provider.kind === "custom" ? provider.name : provider.id)
                   .toLowerCase()
@@ -715,7 +727,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
         <Stack>
           <Switch
             label="Enable OPDS feed"
-            description={`OPDS allows compatible e-reader apps to browse and download books from your library. It can be accessed at ${state.webUrl ? new URL("/opds", state.webUrl).toString() : "/opds"}.`}
+            description={`OPDS allows compatible e-reader apps to browse and download books from your library. It can be accessed at ${opdsUrl}.`}
             checked={state.opdsEnabled ?? true}
             onChange={(event) => {
               form.setFieldValue("opdsEnabled", event.currentTarget.checked)
