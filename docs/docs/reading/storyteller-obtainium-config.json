@@ -1,0 +1,23 @@
+{
+  "apps": [
+    {
+      "id": "dev.smoores.Storyteller",
+      "url": "https://gitlab.com/api/v4/projects/storyteller-platform%2Fstoryteller/releases",
+      "author": "gitlab.com",
+      "name": "Storyteller",
+      "installedVersion": "2.2.2",
+      "latestVersion": "2.2.2",
+      "apkUrls": "[[\"548310464-app-release.apk\",\"https://gitlab.com/api/v4/projects/67994333/packages/generic/mobile-apk/2.2.2/app-release.apk\"]]",
+      "otherAssetUrls": "[]",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"intermediateLink\":[],\"customLinkFilterRegex\":\"\",\"filterByLinkText\":false,\"matchLinksOutsideATags\":false,\"skipSort\":false,\"reverseSort\":false,\"sortByLastLinkSegment\":false,\"versionExtractWholePage\":false,\"requestHeader\":[{\"requestHeader\":\"User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36\"}],\"defaultPseudoVersioningMethod\":\"partialAPKHash\",\"trackOnly\":false,\"versionExtractionRegEx\":\"\\\\d+\\\\.\\\\d+\\\\.\\\\d+\",\"matchGroupToUse\":\"\",\"versionDetection\":true,\"useVersionCodeAsOSVersion\":false,\"apkFilterRegEx\":\"\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":true,\"appName\":\"Storyteller\",\"appAuthor\":\"Shane Friedman\",\"shizukuPretendToBeGooglePlay\":false,\"allowInsecure\":false,\"exemptFromBackgroundUpdates\":false,\"skipUpdateNotifications\":false,\"about\":\"A self-hosted platform for creating and reading ebooks with synced narration.\",\"refreshBeforeDownload\":false}",
+      "lastUpdateCheck": 1767987977764354,
+      "pinned": false,
+      "categories": [],
+      "releaseDate": null,
+      "changeLog": null,
+      "overrideSource": "HTML",
+      "allowIdChange": false
+    }
+  ]
+}
