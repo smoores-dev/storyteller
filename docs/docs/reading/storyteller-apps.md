@@ -17,6 +17,12 @@ and on the
 If you have trouble searching for the app, please use the full app name:
 Storyteller Reader.
 
+### Obtainium configuration
+
+If you'd like to use Obtainium rather than the Google or Aurora Store for
+installing Storyteller, you can import
+[this Obtainium config](./storyteller-obtainium-config.json).
+
 ## Loging into the application for the first time.
 
 When you first install the Storyteller mobile app, you will need to configure
