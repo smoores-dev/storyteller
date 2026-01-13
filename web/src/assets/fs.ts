@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { type Stats } from "node:fs"
 import {
   cp,
@@ -9,6 +10,8 @@ import {
   writeFile,
 } from "node:fs/promises"
 import { dirname, join } from "node:path"
+
+import { getFileChunks } from "@storyteller-platform/fs"
 
 import { isAudioFile } from "@/audio"
 import { type Book, type BookWithRelations, updateBook } from "@/database/books"
@@ -141,6 +144,7 @@ export async function persistEpub(
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
   await move(tmpPath, filepath)
+
   return updateBook(book.uuid, null, {
     ...(aligned
       ? {
@@ -177,6 +181,7 @@ export async function persistAudio(
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
   await move(tmpPath, filepath)
+
   const updated = await updateBook(book.uuid, null, {
     audiobook: { filepath: directory },
   })
@@ -290,4 +295,16 @@ export async function writeCachedCoverImage(
 export async function deleteCachedCoverImages(uuid: UUID) {
   const dir = getCoverImageCacheDirectory(uuid)
   await rm(dir, { recursive: true, force: true })
+}
+
+export async function computeFileHash(filePath: string): Promise<string> {
+  const hash = createHash("sha256")
+
+  // Use the stream from @storyteller-platform/fs
+  // to avoid memory overhead and Node.js file limits.
+  for await (const chunk of getFileChunks(filePath)) {
+    hash.update(chunk)
+  }
+
+  return hash.digest("hex")
 }

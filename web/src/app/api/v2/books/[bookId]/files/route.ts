@@ -16,6 +16,7 @@ import {
 import { Epub } from "@storyteller-platform/epub"
 
 import { getAudioCover } from "@/assets/covers"
+import { computeFileHash } from "@/assets/fs"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import { type BookWithRelations, getBook, getBookUuid } from "@/database/books"
@@ -284,6 +285,8 @@ export const GET = withHasPermission<Params>("bookRead", {
     logger.error(e)
   })
 
+  const hash = await computeFileHash(filepath)
+
   const readableStream = Readable.toWeb(readStream)
 
   return new Response(readableStream as ReadableStream, {
@@ -302,6 +305,7 @@ export const GET = withHasPermission<Params>("bookRead", {
       "Accept-Ranges": "bytes",
       "Last-Modified": new Date(stats.mtime).toISOString(),
       Etag: etag,
+      "X-Storyteller-Hash": hash,
       ...(partialResponse && {
         "Content-Range": `bytes ${start}-${end}/${stats.size}`,
       }),

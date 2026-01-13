@@ -21,3 +21,18 @@ export async function streamFile(path: string): Promise<Uint8Array> {
     await fileHandle.close()
   }
 }
+
+/**
+ * Streams a file in chunks using an async generator,
+ * avoiding the 2GB limit referenced above.
+ */
+export async function* getFileChunks(path: string): AsyncGenerator<Buffer> {
+  const fileHandle = await open(path)
+  try {
+    for await (const chunk of fileHandle.createReadStream()) {
+      yield chunk as Buffer
+    }
+  } finally {
+    await fileHandle.close()
+  }
+}
