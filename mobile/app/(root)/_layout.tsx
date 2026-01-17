@@ -1,17 +1,24 @@
 import { Stack, useRouter } from "expo-router"
 import { ChevronLeft } from "lucide-react-native"
 import { Platform } from "react-native"
+import { useReducedMotion } from "react-native-reanimated"
 
 import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
 
 export default function ModalLayout() {
   const modalPresentation = Platform.OS === "android" ? "formSheet" : "modal"
+  const reduceMotion = useReducedMotion()
 
   const router = useRouter()
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        ...(reduceMotion ? { animation: "none" } : {}),
+      }}
+    >
       <Stack.Screen name="index" />
       <Stack.Screen
         name="settings"
