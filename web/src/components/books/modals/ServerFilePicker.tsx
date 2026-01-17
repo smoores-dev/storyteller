@@ -35,7 +35,7 @@ function useListDirectoryAction(currentSearchDirectory: string) {
   useEffect(() => {
     setActionIsPending(true)
     void listDirectoryAction(dirname(currentSearchDirectory)).then(
-      (entries) => {
+      ({ entries }) => {
         setEntries(entries.filter((entry) => entry.isDirectory))
         setActionIsPending(false)
       },

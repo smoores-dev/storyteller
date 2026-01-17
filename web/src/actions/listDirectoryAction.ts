@@ -4,6 +4,7 @@ import { readdir, stat } from "fs/promises"
 import { join } from "node:path"
 
 import { hasPermission, nextAuth } from "@/auth/auth"
+import { DATA_DIR } from "@/directories"
 
 export type DirectoryFileEntry = {
   name: string
@@ -18,25 +19,28 @@ export type DirectoryEntry =
   | DirectoryFileEntry
 
 export async function listDirectoryAction(
-  directory: string,
-): Promise<DirectoryEntry[]> {
+  /** null means data dir for server import */
+  directory: string | null,
+): Promise<{ directory: string; entries: DirectoryEntry[] }> {
   const session = await nextAuth.auth()
   if (!hasPermission("bookCreate", session?.user)) {
     throw new Error("Forbidden")
   }
 
+  const dataDir = directory ?? DATA_DIR.replace(/([^/])$/, "$1/")
+
   let entries: string[]
   try {
-    entries = await readdir(directory)
+    entries = await readdir(dataDir)
   } catch {
-    return []
+    return { directory: dataDir, entries: [] }
   }
 
   const entryStats = (
     await Promise.all(
       entries.map(async (entry) => {
         try {
-          const stats = await stat(join(directory, entry))
+          const stats = await stat(join(dataDir, entry))
           return [entry, stats] as const
         } catch {
           return null
@@ -45,14 +49,17 @@ export async function listDirectoryAction(
     )
   ).filter((entry) => !!entry)
 
-  return entryStats.map(([filename, stats]) => {
-    const path = join(directory, filename)
-    return {
-      name: filename,
-      isDirectory: stats.isDirectory(),
-      path: stats.isDirectory() ? `${path}/` : path,
-      updatedAt: stats.mtime.toISOString(),
-      ...(!stats.isDirectory() && { size: stats.size }),
-    } as DirectoryEntry
-  })
+  return {
+    directory: dataDir,
+    entries: entryStats.map(([filename, stats]) => {
+      const path = join(dataDir, filename)
+      return {
+        name: filename,
+        isDirectory: stats.isDirectory(),
+        path: stats.isDirectory() ? `${path}/` : path,
+        updatedAt: stats.mtime.toISOString(),
+        ...(!stats.isDirectory() && { size: stats.size }),
+      } as DirectoryEntry
+    }),
+  }
 }
