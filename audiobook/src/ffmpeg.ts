@@ -28,12 +28,22 @@ async function execCmdBuffer(command: string, args: string[]) {
   try {
     const { stdout } = await execFilePromise(command, args, {
       encoding: "buffer",
-      maxBuffer: 10 * 1024 * 1024,
+      // let's be very generous
+      maxBuffer: 50 * 1024 * 1024,
       cwd: process.cwd(),
     })
     return stdout
   } catch (error) {
     console.error(error)
+    if (
+      error instanceof RangeError &&
+      error.message.includes("stdout maxBuffer length exceeded")
+    ) {
+      throw new Error(
+        "stdout maxBuffer length exceeded. This likely means that youre trying to process a very large file, and the ffmpeg process is running out of memory. Maybe check the image size of your cover art.",
+      )
+    }
+
     if (error && typeof error === "object" && "stdout" in error) {
       console.warn(error.stdout?.toString())
       throw new Error(error.stdout?.toString())

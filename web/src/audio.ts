@@ -184,9 +184,22 @@ async function execCmd(command: string) {
   let stdout: string = ""
   let stderr: string = ""
   try {
-    ;({ stdout, stderr } = await execPromise(command))
+    // cover art can be several megabytes, so we need a larger buffer
+    // matches what is set in the audiobook package
+    ;({ stdout, stderr } = await execPromise(command, {
+      maxBuffer: 50 * 1024 * 1024,
+    }))
     return stdout
   } catch (error) {
+    if (
+      error instanceof RangeError &&
+      error.message.includes("stdout maxBuffer length exceeded")
+    ) {
+      throw new Error(
+        "stdout maxBuffer length exceeded. This likely means that youre trying to process a very large file, and the ffmpeg process is running out of memory. Maybe check the image size of your cover art.",
+      )
+    }
+
     logger.error(error)
     logger.info(stdout)
     throw new Error(stderr)
