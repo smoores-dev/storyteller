@@ -64,6 +64,7 @@ const config = {
       },
     ],
     require.resolve("docusaurus-lunr-search"),
+    "./plugins/fetch-contributors.ts",
   ],
 
   themeConfig:
@@ -108,6 +109,11 @@ const config = {
             href: "https://opencollective.com/storyteller",
             label: "Donate",
             position: "left",
+          },
+          {
+            href: "/team",
+            label: "Team",
+            position: "right",
           },
           {
             href: "https://gitlab.com/storyteller-platform/storyteller",
