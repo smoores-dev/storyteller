@@ -15,12 +15,14 @@ import {
   getPositions,
   openPublication,
 } from "@/modules/readium"
+import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
 import { localApi } from "@/store/localApi"
 import {
   getLocalBookArchiveUrl,
   getLocalBookExtractedUrl,
 } from "@/store/persistence/files"
 import { getDownloadUrl } from "@/store/serverApi"
+import { throttle } from "@/throttle"
 import { randomUUID } from "@/uuid"
 
 import { startAppListening } from "./listenerMiddleware"
@@ -85,7 +87,7 @@ startAppListening({
             }),
           },
         },
-        async (progressData) => {
+        throttle(async (progressData) => {
           const progress = Math.round(
             (progressData.totalBytesWritten /
               progressData.totalBytesExpectedToWrite) *
@@ -106,7 +108,7 @@ startAppListening({
           })
 
           // TODO: Support pausing
-        },
+        }, 250),
       )
 
       await activateKeepAwakeAsync(`download.${bookUuid}.${format}`)
@@ -137,7 +139,9 @@ startAppListening({
 
         await db
           .updateTable("audiobook")
-          .set({ manifest })
+          .set({
+            manifest: JSON.stringify(manifest) as unknown as ReadiumManifest,
+          })
           .where("bookUuid", "=", bookUuid)
           .execute()
       } else {
@@ -152,9 +156,20 @@ startAppListening({
           .updateTable(format)
           .set({
             ...(format === "ebook"
-              ? { manifest: epubManifest }
-              : { epubManifest, audioManifest }),
-            positions,
+              ? {
+                  manifest: JSON.stringify(
+                    epubManifest,
+                  ) as unknown as ReadiumManifest,
+                }
+              : {
+                  epubManifest: JSON.stringify(
+                    epubManifest,
+                  ) as unknown as ReadiumManifest,
+                  audioManifest: JSON.stringify(
+                    audioManifest,
+                  ) as unknown as ReadiumManifest,
+                }),
+            positions: JSON.stringify(positions) as unknown as ReadiumLocator[],
           })
           .where("bookUuid", "=", bookUuid)
           .execute()
@@ -165,7 +180,9 @@ startAppListening({
             .values({
               uuid: randomUUID(),
               bookUuid,
-              locator: positions[0]!,
+              locator: JSON.stringify(
+                positions[0]!,
+              ) as unknown as ReadiumLocator,
               timestamp: Date.now(),
             })
             .execute()

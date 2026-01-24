@@ -15,9 +15,17 @@ import { type NewTag } from "./tags"
 
 export type NewBook = Insertable<DB["book"]>
 export type NewBookToStatus = Insertable<DB["bookToStatus"]>
-export type NewEbook = Insertable<DB["ebook"]>
-export type NewAudiobook = Insertable<DB["audiobook"]>
-export type NewReadaloud = Insertable<DB["readaloud"]>
+export type NewEbook = Omit<
+  Insertable<DB["ebook"]>,
+  "manifest" | "positions"
+> & { positions?: string; manifest?: string }
+export type NewAudiobook = Omit<Insertable<DB["audiobook"]>, "manifest"> & {
+  manifest?: string
+}
+export type NewReadaloud = Omit<
+  Insertable<DB["readaloud"]>,
+  "audioManifest" | "epubManifest" | "positions"
+> & { audioManifest?: string; epubManifest?: string; positions?: string }
 
 export type NewBookToCreator = Insertable<DB["bookToCreator"]>
 export type NewBookToSeries = Insertable<DB["bookToSeries"]>
@@ -60,14 +68,20 @@ export async function createBook(
   if (relations?.readaloud) {
     await db
       .insertInto("readaloud")
-      .values({ ...relations.readaloud, bookUuid: book.uuid })
+      .values({
+        ...(relations.readaloud as unknown as Insertable<DB["readaloud"]>),
+        bookUuid: book.uuid,
+      })
       .execute()
   }
 
   if (relations?.ebook) {
     await db
       .insertInto("ebook")
-      .values({ ...relations.ebook, bookUuid: book.uuid })
+      .values({
+        ...(relations.ebook as unknown as Insertable<DB["ebook"]>),
+        bookUuid: book.uuid,
+      })
       .execute()
   }
 
@@ -136,7 +150,7 @@ export async function createBook(
           uuid: randomUUID(),
           bookUuid: book.uuid,
           seriesUuid: series.uuid,
-          featured: index === 0,
+          featured: index === 0 ? "true" : "false",
           position: relations.series?.find((s) => s.name === series.name)
             ?.position,
         })),
@@ -172,14 +186,17 @@ export async function createBook(
   if (relations?.position) {
     await db
       .insertInto("position")
-      .values({ ...relations.position, bookUuid: book.uuid })
+      .values({
+        ...(relations.position as unknown as Insertable<DB["position"]>),
+        bookUuid: book.uuid,
+      })
       .execute()
   }
 
   return await getBook(book.uuid)
 }
 
-function bookQuery() {
+export function bookQuery() {
   return db
     .selectFrom("book")
     .selectAll("book")
@@ -391,7 +408,7 @@ export async function getBook(uuid: UUID) {
 export async function updateBookStatus(uuid: UUID, statusUuid: UUID) {
   await db
     .updateTable("bookToStatus")
-    .set({ statusUuid, dirty: true })
+    .set({ statusUuid, dirty: "true" })
     .where("bookUuid", "=", uuid)
     .execute()
 }
