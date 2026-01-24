@@ -27,7 +27,7 @@ export async function updateCollectionFromServer(
         .set({
           name: serverCollection.name,
           description: serverCollection.description,
-          public: serverCollection.public,
+          public: serverCollection.public ? "true" : "false",
         })
         .where("uuid", "=", serverCollection.uuid)
         .execute()

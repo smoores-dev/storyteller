@@ -1,4 +1,4 @@
-import { sql } from "kysely"
+import { type Insertable, sql } from "kysely"
 
 import { type BookWithRelations as ServerBook } from "@storyteller-platform/web/src/database/books"
 
@@ -20,6 +20,7 @@ import { type CollectionUpdate, type NewCollection } from "./collections"
 import { type NewCreator } from "./creators"
 import { db } from "./db"
 import { type NewPosition } from "./positions"
+import { type DB } from "./schema"
 import { type NewSeries } from "./series"
 import { type NewTag } from "./tags"
 
@@ -30,33 +31,10 @@ export async function upsertServerBooks(
 ) {
   if (!serverBooks.length) return
 
-  const allCreatorNames = new Set<string>(
-    serverBooks.flatMap((book) => [
-      ...book.authors.map((a) => a.name),
-      ...book.narrators.map((n) => n.name),
-      ...book.creators.map((c) => c.name),
-    ]),
-  )
-  const allSeriesNames = new Set<string>(
-    serverBooks.flatMap((book) => book.series.map((s) => s.name)),
-  )
-  const allCollectionNames = new Set<string>(
-    serverBooks.flatMap((book) => book.collections.map((c) => c.name)),
-  )
-  const allTagNames = new Set<string>(
-    serverBooks.flatMap((book) => book.tags.map((t) => t.name)),
-  )
-  const allStatusNames = new Set<string>(
-    serverBooks
-      .map((book) => book.status?.name)
-      .filter((status): status is string => !!status),
-  )
-
   await db.transaction().execute(async (tr) => {
     const existingCreators = await tr
       .selectFrom("creator")
       .select(["uuid", "name"])
-      .where("name", "in", Array.from(allCreatorNames))
       .where("serverUuid", "=", serverUuid)
       .execute()
 
@@ -67,7 +45,6 @@ export async function upsertServerBooks(
     const existingSeries = await tr
       .selectFrom("series")
       .select(["uuid", "name"])
-      .where("name", "in", Array.from(allSeriesNames))
       .where("serverUuid", "=", serverUuid)
       .execute()
 
@@ -78,7 +55,6 @@ export async function upsertServerBooks(
     const existingCollections = await tr
       .selectFrom("collection")
       .select(["uuid", "name"])
-      .where("name", "in", Array.from(allCollectionNames))
       .where("serverUuid", "=", serverUuid)
       .execute()
 
@@ -89,7 +65,6 @@ export async function upsertServerBooks(
     const existingTags = await tr
       .selectFrom("tag")
       .select(["uuid", "name"])
-      .where("name", "in", Array.from(allTagNames))
       .where("serverUuid", "=", serverUuid)
       .execute()
 
@@ -98,8 +73,16 @@ export async function upsertServerBooks(
     const statuses = await tr
       .selectFrom("status")
       .select(["uuid", "name", "isDefault"])
-      .where("name", "in", Array.from(allStatusNames).concat(["To read"]))
       .execute()
+
+    const existingPositions = await tr
+      .selectFrom("position")
+      .select(["timestamp", "bookUuid"])
+      .execute()
+
+    const existingPositionMap = new Map(
+      existingPositions.map((p) => [p.bookUuid, p.timestamp]),
+    )
 
     const statusMap = new Map(statuses.map((s) => [s.name, s.uuid]))
     const defaultStatus = statuses.find((s) => s.isDefault)!
@@ -148,12 +131,20 @@ export async function upsertServerBooks(
       })
 
       if (serverBook.position) {
-        positionsToInsert.push({
-          uuid: serverBook.position.uuid,
-          bookUuid: serverBook.uuid,
-          locator: serverBook.position.locator,
-          timestamp: serverBook.position.timestamp,
-        })
+        const existingPositionTimestamp = existingPositionMap.get(
+          serverBook.uuid,
+        )
+        if (
+          !existingPositionTimestamp ||
+          serverBook.position.timestamp > existingPositionTimestamp
+        ) {
+          positionsToInsert.push({
+            uuid: serverBook.position.uuid,
+            bookUuid: serverBook.uuid,
+            locator: JSON.stringify(serverBook.position.locator),
+            timestamp: serverBook.position.timestamp,
+          })
+        }
       }
 
       if (serverBook.ebook) {
@@ -222,7 +213,7 @@ export async function upsertServerBooks(
             uuid: randomUUID(),
             bookUuid: serverBook.uuid,
             seriesUuid: existingUuid,
-            featured: series.featured,
+            featured: series.featured ? "true" : "false",
             position: series.position,
           })
         } else {
@@ -238,7 +229,7 @@ export async function upsertServerBooks(
             uuid: randomUUID(),
             bookUuid: serverBook.uuid,
             seriesUuid: series.uuid,
-            featured: series.featured,
+            featured: series.featured ? "true" : "false",
             position: series.position,
           })
         }
@@ -253,7 +244,7 @@ export async function upsertServerBooks(
             collectionsToUpdate.push({
               uuid: existingUuid,
               description: collection.description,
-              public: collection.public,
+              public: collection.public ? "true" : "false",
             })
           }
           bookToCollectionRecords.push({
@@ -266,7 +257,7 @@ export async function upsertServerBooks(
             uuid: collection.uuid,
             name: collection.name,
             description: collection.description,
-            public: collection.public,
+            public: collection.public ? "true" : "false",
             serverUuid,
           })
 
@@ -308,208 +299,272 @@ export async function upsertServerBooks(
     }
 
     if (creatorsToInsert.length > 0) {
-      await tr
-        .insertInto("creator")
-        .values(creatorsToInsert)
-        .onConflict((oc) =>
-          oc.column("uuid").doUpdateSet((eb) => ({
-            name: eb.ref("excluded.name"),
-          })),
-        )
-        .execute()
+      const chunks = partitionByLength(creatorsToInsert, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("creator")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc.column("uuid").doUpdateSet((eb) => ({
+              name: eb.ref("excluded.name"),
+            })),
+          )
+          .execute()
+      }
     }
 
     if (seriesToInsert.length > 0) {
-      await tr
-        .insertInto("series")
-        .values(seriesToInsert)
-        .onConflict((oc) =>
-          oc.column("uuid").doUpdateSet((eb) => ({
-            name: eb.ref("excluded.name"),
-          })),
-        )
-        .execute()
+      const chunks = partitionByLength(seriesToInsert, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("series")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc.column("uuid").doUpdateSet((eb) => ({
+              name: eb.ref("excluded.name"),
+            })),
+          )
+          .execute()
+      }
     }
 
     if (collectionsToUpdate.length) {
-      await tr
-        .updateTable("collection")
-        .from(
-          collectionsToUpdate
-            .slice(1)
-            .reduce(
-              (qb, { uuid, description, public: isPublic }) =>
-                qb.union(
-                  tr.selectNoFrom([
-                    sql<UUID>`${uuid}`.as("uuid"),
-                    sql<string>`${description}`.as("description"),
-                    sql<boolean>`${isPublic}`.as("public"),
-                  ]),
-                ),
-              tr.selectNoFrom([
-                sql<UUID>`${collectionsToUpdate[0]?.uuid}`.as("uuid"),
-                sql<string>`${collectionsToUpdate[0]?.description}`.as(
-                  "description",
-                ),
-                sql<boolean>`${collectionsToUpdate[0]?.public}`.as("public"),
-              ]),
-            )
-            .as("data"),
-        )
-        .set((eb) => ({
-          description: eb.ref("data.description"),
-          public: eb.ref("data.public"),
-        }))
-        .whereRef("collection.uuid", "=", "data.uuid")
-        .execute()
+      const chunks = partitionByLength(collectionsToUpdate, 50)
+      for (const chunk of chunks) {
+        await tr
+          .updateTable("collection")
+          .from(
+            chunk
+              .slice(1)
+              .reduce(
+                (qb, { uuid, description, public: isPublic }) =>
+                  qb.union(
+                    tr.selectNoFrom([
+                      sql<UUID>`${uuid}`.as("uuid"),
+                      sql<string>`${description}`.as("description"),
+                      sql<"true" | "false">`${isPublic ? "true" : "false"}`.as(
+                        "public",
+                      ),
+                    ]),
+                  ),
+                tr.selectNoFrom([
+                  sql<UUID>`${chunk[0]?.uuid}`.as("uuid"),
+                  sql<string>`${chunk[0]?.description}`.as("description"),
+                  sql<
+                    "true" | "false"
+                  >`${chunk[0]?.public ? "true" : "false"}`.as("public"),
+                ]),
+              )
+              .as("data"),
+          )
+          .set((eb) => ({
+            description: eb.ref("data.description"),
+            public: eb.ref("data.public"),
+          }))
+          .whereRef("collection.uuid", "=", "data.uuid")
+          .execute()
+      }
     }
 
     if (collectionsToInsert.length > 0) {
-      await tr
-        .insertInto("collection")
-        .values(collectionsToInsert)
-        .onConflict((oc) =>
-          oc.column("uuid").doUpdateSet((eb) => ({
-            name: eb.ref("excluded.name"),
-            public: eb.ref("excluded.public"),
-            description: eb.ref("excluded.description"),
-          })),
-        )
-        .execute()
+      const chunks = partitionByLength(collectionsToInsert, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("collection")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc.column("uuid").doUpdateSet((eb) => ({
+              name: eb.ref("excluded.name"),
+              public: eb.ref("excluded.public"),
+              description: eb.ref("excluded.description"),
+            })),
+          )
+          .execute()
+      }
     }
 
     if (tagsToInsert.length > 0) {
-      await tr.insertInto("tag").values(tagsToInsert).execute()
+      const chunks = partitionByLength(tagsToInsert, 50)
+      for (const chunk of chunks) {
+        await tr.insertInto("tag").values(chunk).execute()
+      }
     }
 
-    await tr
-      .insertInto("book")
-      .values(booksToInsert)
-      .onConflict((oc) =>
-        oc.column("uuid").doUpdateSet((eb) => ({
-          id: eb.ref("excluded.id"),
-          title: eb.ref("excluded.title"),
-          subtitle: eb.ref("excluded.subtitle"),
-          serverUuid: serverUuid,
-          description: eb.ref("excluded.description"),
-          publicationDate: eb.ref("excluded.publicationDate"),
-          rating: eb.ref("excluded.rating"),
-          language: eb.ref("excluded.language"),
-          alignedAt: eb.ref("excluded.alignedAt"),
-          alignedByStorytellerVersion: eb.ref(
-            "excluded.alignedByStorytellerVersion",
-          ),
-          alignedWith: eb.ref("excluded.alignedWith"),
-          createdAt: eb.ref("excluded.createdAt"),
-          ebookCoverUrl: null,
-          audiobookCoverUrl: null,
-        })),
-      )
-      .execute()
-
-    if (bookToStatusRecords.length > 0) {
+    const bookChunks = partitionByLength(booksToInsert, 50)
+    for (const chunk of bookChunks) {
       await tr
-        .insertInto("bookToStatus")
-        .values(bookToStatusRecords)
+        .insertInto("book")
+        .values(chunk)
         .onConflict((oc) =>
-          oc.column("bookUuid").doUpdateSet((eb) => ({
-            dirty: false,
-            statusUuid: eb.ref("excluded.statusUuid"),
+          oc.column("uuid").doUpdateSet((eb) => ({
+            id: eb.ref("excluded.id"),
+            title: eb.ref("excluded.title"),
+            subtitle: eb.ref("excluded.subtitle"),
+            serverUuid: serverUuid,
+            description: eb.ref("excluded.description"),
+            publicationDate: eb.ref("excluded.publicationDate"),
+            rating: eb.ref("excluded.rating"),
+            language: eb.ref("excluded.language"),
+            alignedAt: eb.ref("excluded.alignedAt"),
+            alignedByStorytellerVersion: eb.ref(
+              "excluded.alignedByStorytellerVersion",
+            ),
+            alignedWith: eb.ref("excluded.alignedWith"),
+            createdAt: eb.ref("excluded.createdAt"),
+            ebookCoverUrl: null,
+            audiobookCoverUrl: null,
           })),
         )
         .execute()
+    }
+
+    if (bookToStatusRecords.length > 0) {
+      const chunks = partitionByLength(bookToStatusRecords, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("bookToStatus")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc.column("bookUuid").doUpdateSet((eb) => ({
+              dirty: "false",
+              statusUuid: eb.ref("excluded.statusUuid"),
+            })),
+          )
+          .execute()
+      }
     }
 
     if (positionsToInsert.length > 0) {
-      await tr
-        .insertInto("position")
-        .values(positionsToInsert)
-        .onConflict((oc) =>
-          oc.column("bookUuid").doUpdateSet((eb) => ({
-            locator: eb.ref("excluded.locator"),
-            timestamp: eb.ref("excluded.timestamp"),
-          })),
-        )
-        .execute()
+      const chunks = partitionByLength(positionsToInsert, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("position")
+          .values(chunk as unknown as Insertable<DB["position"]>[])
+          .onConflict((oc) =>
+            oc.column("bookUuid").doUpdateSet((eb) => ({
+              locator: eb.ref("excluded.locator"),
+              timestamp: eb.ref("excluded.timestamp"),
+            })),
+          )
+          .execute()
+      }
     }
 
     if (ebooksToInsert.length > 0) {
-      await tr
-        .insertInto("ebook")
-        .values(ebooksToInsert)
-        .onConflict((oc) => oc.column("bookUuid").doNothing())
-        .execute()
+      const chunks = partitionByLength(ebooksToInsert, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("ebook")
+          .values(chunk as unknown as Insertable<DB["ebook"]>[])
+          .onConflict((oc) => oc.column("bookUuid").doNothing())
+          .execute()
+      }
     }
 
     if (audiobooksToInsert.length > 0) {
-      await tr
-        .insertInto("audiobook")
-        .values(audiobooksToInsert)
-        .onConflict((oc) => oc.column("bookUuid").doNothing())
-        .execute()
+      const chunks = partitionByLength(audiobooksToInsert, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("audiobook")
+          .values(chunk as unknown as Insertable<DB["audiobook"]>[])
+          .onConflict((oc) => oc.column("bookUuid").doNothing())
+          .execute()
+      }
     }
 
     if (readaloudsToInsert.length > 0) {
-      await tr
-        .insertInto("readaloud")
-        .values(readaloudsToInsert)
-        .onConflict((oc) =>
-          oc.column("bookUuid").doUpdateSet((eb) => ({
-            status: eb.ref("excluded.status"),
-          })),
-        )
-        .execute()
+      const chunks = partitionByLength(readaloudsToInsert, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("readaloud")
+          .values(chunk as unknown as Insertable<DB["readaloud"]>)
+          .onConflict((oc) =>
+            oc.column("bookUuid").doUpdateSet((eb) => ({
+              status: eb.ref("excluded.status"),
+            })),
+          )
+          .execute()
+      }
     }
 
     if (bookToCreatorRecords.length > 0) {
-      await tr
-        .insertInto("bookToCreator")
-        .values(bookToCreatorRecords)
-        .onConflict((oc) =>
-          oc
-            .column("bookUuid")
-            .column("creatorUuid")
-            .doUpdateSet((eb) => ({
-              role: eb.ref("excluded.role"),
-            })),
-        )
-        .execute()
+      const chunks = partitionByLength(bookToCreatorRecords, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("bookToCreator")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc
+              .column("bookUuid")
+              .column("creatorUuid")
+              .doUpdateSet((eb) => ({
+                role: eb.ref("excluded.role"),
+              })),
+          )
+          .execute()
+      }
     }
 
     if (bookToSeriesRecords.length > 0) {
-      await tr
-        .insertInto("bookToSeries")
-        .values(bookToSeriesRecords)
-        .onConflict((oc) =>
-          oc
-            .column("bookUuid")
-            .column("seriesUuid")
-            .doUpdateSet((eb) => ({
-              featured: eb.ref("excluded.featured"),
-              position: eb.ref("excluded.position"),
-            })),
-        )
-        .execute()
+      const chunks = partitionByLength(bookToSeriesRecords, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("bookToSeries")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc
+              .column("bookUuid")
+              .column("seriesUuid")
+              .doUpdateSet((eb) => ({
+                featured: eb.ref("excluded.featured"),
+                position: eb.ref("excluded.position"),
+              })),
+          )
+          .execute()
+      }
     }
 
     if (bookToCollectionRecords.length > 0) {
-      await tr
-        .insertInto("bookToCollection")
-        .values(bookToCollectionRecords)
-        .onConflict((oc) =>
-          oc.column("bookUuid").column("collectionUuid").doNothing(),
-        )
-        .execute()
+      const chunks = partitionByLength(bookToCollectionRecords, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("bookToCollection")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc.column("bookUuid").column("collectionUuid").doNothing(),
+          )
+          .execute()
+      }
     }
 
     if (bookToTagRecords.length > 0) {
-      await tr
-        .insertInto("bookToTag")
-        .values(bookToTagRecords)
-        .onConflict((oc) => oc.column("bookUuid").column("tagUuid").doNothing())
-        .execute()
+      const chunks = partitionByLength(bookToTagRecords, 50)
+      for (const chunk of chunks) {
+        await tr
+          .insertInto("bookToTag")
+          .values(chunk)
+          .onConflict((oc) =>
+            oc.column("bookUuid").column("tagUuid").doNothing(),
+          )
+          .execute()
+      }
     }
   })
+}
+
+function partitionByLength<T>(input: T[], length: number): [T[], ...T[][]] {
+  return input.reduce(
+    (acc, element) => {
+      const prev = acc[acc.length - 1]!
+      if (prev.length < length) {
+        prev.push(element)
+        return acc
+      }
+      acc.push([element])
+      return acc
+    },
+    [[]] as [T[], ...T[][]],
+  )
 }
 
 export async function createBookFromServer(
@@ -527,7 +582,7 @@ export async function createBookFromServer(
       (await tr
         .selectFrom("status")
         .select("uuid")
-        .where("isDefault", "=", true)
+        .where("isDefault", "=", "true")
         .executeTakeFirstOrThrow())
 
     await tr
@@ -719,7 +774,7 @@ export async function createBookFromServer(
           uuid: randomUUID(),
           bookUuid: serverBook.uuid,
           seriesUuid: series.uuid,
-          featured: series.featured,
+          featured: series.featured ? "true" : "false",
           position: series.position,
         })
         .execute()
@@ -739,7 +794,7 @@ export async function createBookFromServer(
           .set({
             uuid: collection.uuid,
             description: collection.description,
-            public: collection.public,
+            public: collection.public ? "true" : "false",
           })
           .where("uuid", "=", existing.uuid)
           .execute()
@@ -750,7 +805,7 @@ export async function createBookFromServer(
             uuid: collection.uuid,
             name: collection.name,
             description: collection.description,
-            public: collection.public,
+            public: collection.public ? "true" : "false",
             serverUuid,
           })
           .execute()

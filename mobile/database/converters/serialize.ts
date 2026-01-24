@@ -1,8 +1,8 @@
-import { type SQLiteBindValue } from "expo-sqlite"
+// import { type SQLiteBindValue } from "expo-sqlite"
 
 import { isUint8Array } from "./helpers"
 
-export const serialize = (parameters: unknown[]): SQLiteBindValue[] => {
+export const serialize = (parameters: unknown[]): unknown[] => {
   return parameters.map((parameter) => {
     if (typeof parameter === "string") {
       return parameter.toString()
