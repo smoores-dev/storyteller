@@ -23,6 +23,7 @@
   "devDependencies": {
     "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
+    "@types/yauzl-promise": "^4",
     "@types/yazl": "^3",
     "eslint": "^8.0.0",
     "markdown-toc": "^1.2.0",
@@ -40,10 +41,9 @@
     "@storyteller-platform/path": "workspace:^",
     "@types/mime-types": "^2",
     "@types/node": "^24.0.0",
-    "@types/yauzl": "^2.10.3",
     "mime-types": "^3.0.1",
     "music-metadata": "^11.9.0",
-    "yauzl": "^3.2.0",
+    "yauzl-promise": "^4.0.0",
     "yazl": "^3.3.1"
   },
   "publishConfig": {
