@@ -1,4 +1,8 @@
-import type { DB as OpSqliteDatabase, Scalar } from "@op-engineering/op-sqlite"
+import type {
+  DB as OpSqliteDatabase,
+  PreparedStatement,
+  Scalar,
+} from "@op-engineering/op-sqlite"
 import {
   CompiledQuery,
   type DatabaseConnection,
@@ -79,6 +83,7 @@ export class OpSqliteDriver implements Driver {
 
   async commitTransaction(connection: OpSqliteConnection): Promise<void> {
     await connection.executeQuery(CompiledQuery.raw("commit"))
+    await connection.flushPendingReactiveQueries()
   }
 
   async rollbackTransaction(connection: OpSqliteConnection): Promise<void> {
@@ -108,9 +113,13 @@ export class OpSqliteDriver implements Driver {
 class OpSqliteConnection implements DatabaseConnection {
   readonly #config: OpSqliteDialectConfig
 
+  #preparedStatements = new Map<string, PreparedStatement>()
+
   constructor(config: OpSqliteDialectConfig) {
     this.#config = config
     this.#config.database.executeSync("PRAGMA foreign_keys = ON;")
+    this.#config.database.executeSync("PRAGMA mmap_size = 268435456;")
+    this.#config.database.executeSync("PRAGMA journal_mode = MEMORY;")
   }
 
   async closeConnection(): Promise<void> {
@@ -131,55 +140,17 @@ class OpSqliteConnection implements DatabaseConnection {
       sql += " STRICT"
     }
 
-    // const readonly =
-    //   query.kind === "SelectQueryNode" || query.kind === "RawNode"
+    let statement: PreparedStatement | null = null
+    if (query.kind === "SelectQueryNode") {
+      statement =
+        this.#preparedStatements.get(sql) ??
+        this.#config.database.prepareStatement(sql)
+      await statement.bind(parameters as Scalar[])
+    }
 
-    // Check if the query has a RETURNING clause
-    // const hasReturning = sql.toUpperCase().includes("RETURNING")
-
-    // const transformedParameters = serialize([...parameters])
-
-    // logger.trace(`${query.kind}${readonly ? " (readonly)" : ""}: ${sql}`)
-
-    // if (readonly || hasReturning) {
-    //   const { rows, rowsAffected, insertId } =
-    //     await this.#config.database.execute(sql, transformedParameters)
-
-    //   const skip =
-    //     query.kind === "SelectQueryNode" &&
-    //     (sql.includes("preferences") ||
-    //       sql.includes("bookPreferences") ||
-    //       sql.includes("pragma_table_info")) // @todo: fix this hack - find a better way
-
-    //   if (!skip) {
-    //     return {
-    //       rows: autoAffinityDeserialize(rows, this.#config.onError) as R[],
-    //       numAffectedRows: BigInt(rowsAffected),
-    //       insertId: BigInt(insertId ?? 0),
-    //     } satisfies QueryResult<R>
-    //   }
-
-    //   return {
-    //     rows: rows as R[],
-    //       numAffectedRows: BigInt(rowsAffected),
-    //       insertId: BigInt(insertId ?? 0),
-    //   } satisfies QueryResult<R>
-    // } else {
-    //   const res = await this.sqlite.runAsync(sql, transformedParameters)
-
-    //   const queryResult = {
-    //     numAffectedRows: BigInt(res.changes),
-    //     insertId: BigInt(res.lastInsertRowId),
-    //     rows: [],
-    //   } satisfies QueryResult<R>
-
-    //   logger.trace("queryResult", queryResult)
-
-    //   return queryResult
-    // }
-
-    const { rows, rowsAffected, insertId } =
-      await this.#config.database.execute(sql, parameters as Scalar[])
+    const { rows, rowsAffected, insertId } = statement
+      ? await statement.execute()
+      : await this.#config.database.execute(sql, parameters as Scalar[])
     return {
       rows: rows as R[],
       numAffectedRows: BigInt(rowsAffected),
@@ -190,6 +161,10 @@ class OpSqliteConnection implements DatabaseConnection {
   async directQuery<T>(query: string): Promise<Array<T>> {
     const { rows } = await this.#config.database.execute(query, [])
     return rows as T[]
+  }
+
+  async flushPendingReactiveQueries(): Promise<void> {
+    await this.#config.database.flushPendingReactiveQueries()
   }
 
   streamQuery<R>(
