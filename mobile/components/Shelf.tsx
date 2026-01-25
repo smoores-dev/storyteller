@@ -29,7 +29,7 @@ export function Shelf({ label, href, books }: Props) {
       </Text>
       <FlatList
         horizontal
-        data={books}
+        data={books.slice(0, 25)}
         contentContainerClassName="gap-4"
         renderItem={({ item: book }) => <BookThumbnail book={book} />}
       />

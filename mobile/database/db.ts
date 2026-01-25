@@ -22,5 +22,8 @@ export const db = new Kysely<DB>({
   dialect: new OpSqliteDialect({
     database: rawDb,
   }),
-  plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin()],
+  plugins: [
+    new CamelCasePlugin(),
+    new ParseJSONResultsPlugin({ objectStrategy: "create" }),
+  ],
 })

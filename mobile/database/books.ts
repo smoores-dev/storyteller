@@ -637,5 +637,7 @@ export async function removeBookDownloads(
 }
 
 export async function updateBook(uuid: UUID, update: BookUpdate) {
-  await db.updateTable("book").set(update).where("uuid", "=", uuid).execute()
+  await db.transaction().execute(async (tr) => {
+    await tr.updateTable("book").set(update).where("uuid", "=", uuid).execute()
+  })
 }

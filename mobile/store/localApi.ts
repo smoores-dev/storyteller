@@ -28,6 +28,8 @@ import {
   getCollection,
   getCollections,
 } from "@/database/collections"
+import { camelCaseRows } from "@/database/converters/camel"
+import { parseArray } from "@/database/converters/json"
 import { type Creator, getCreator } from "@/database/creators"
 import { rawDb } from "@/database/db"
 import {
@@ -142,7 +144,7 @@ export const localApi = createApi({
           ],
           callback(result) {
             updateCachedData(() => {
-              return result.rows
+              return camelCaseRows(parseArray(result.rows))
             })
           },
         })
@@ -438,7 +440,11 @@ export const localApi = createApi({
     }),
     getServer: build.query<Server, { uuid: UUID }>({
       async queryFn({ uuid }) {
-        return { data: await getServer(uuid) }
+        try {
+          return { data: await getServer(uuid) }
+        } catch (e) {
+          return { error: { error: String(e) } }
+        }
       },
       providesTags: (result) =>
         result ? [{ type: "Servers", id: result.uuid }] : [],
