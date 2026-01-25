@@ -29,6 +29,7 @@
     "@tsconfig/strictest": "^2.0.5",
     "@types/mime-types": "^2",
     "@types/node": "^24.0.0",
+    "@types/yauzl-promise": "^4",
     "@types/yazl": "^3",
     "eslint": "^8.0.0",
     "markdown-toc": "^1.2.0",
@@ -43,14 +44,13 @@
   "dependencies": {
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
-    "@types/yauzl": "^2.10.3",
     "@zip.js/zip.js": "^2.0.0",
     "async-mutex": "^0.5.0",
     "fast-xml-parser": "^4.0.0",
     "mem": "^8.0.0",
     "mime-types": "^3.0.1",
     "nanoid": "^5.1.5",
-    "yauzl": "^3.2.0",
+    "yauzl-promise": "^4.0.0",
     "yazl": "^3.3.1"
   },
   "publishConfig": {

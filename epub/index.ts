@@ -2,56 +2,17 @@ import { randomUUID } from "node:crypto"
 import { createWriteStream, rmSync } from "node:fs"
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import * as util from "node:util"
+import { pipeline } from "node:stream/promises"
 
 import { Mutex } from "async-mutex"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize from "mem"
 import { lookup } from "mime-types"
 import { nanoid } from "nanoid"
-import yauzl, { type Options } from "yauzl"
+import { fromBuffer, open } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
 import { dirname, join, resolve } from "@storyteller-platform/path"
-
-function promisify<Arg, Options, Return>(
-  api: (
-    arg: Arg,
-    options: Options,
-    callback: (err: Error | null, result: Return) => void,
-  ) => void,
-): (arg: Arg, options: Options) => Promise<Return> {
-  return function (arg: Arg, options: Options) {
-    return new Promise(function (resolve, reject) {
-      api(arg, options, function (err, response) {
-        if (err) {
-          reject(err)
-          return
-        }
-        resolve(response)
-      })
-    })
-  }
-}
-
-const unzipFromBuffer = promisify(
-  (
-    arg: Buffer,
-    options: Options,
-    callback: (err: Error | null, zipfile: yauzl.ZipFile) => void,
-  ) => {
-    yauzl.fromBuffer(arg, options, callback)
-  },
-)
-const unzipFromPath = promisify(
-  (
-    arg: string,
-    options: Options,
-    callback: (err: Error | null, zipfile: yauzl.ZipFile) => void,
-  ) => {
-    yauzl.open(arg, options, callback)
-  },
-)
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
@@ -524,47 +485,34 @@ export class Epub {
       tmpdir(),
       `storyteller-platform-epub-${randomUUID()}.epub`,
     )
-    const zipfile =
-      typeof pathOrData === "string"
-        ? await unzipFromPath(pathOrData, { lazyEntries: true })
-        : await unzipFromBuffer(Buffer.from(pathOrData), { lazyEntries: true })
+    try {
+      const zipfile =
+        typeof pathOrData === "string"
+          ? await open(pathOrData)
+          : await fromBuffer(Buffer.from(pathOrData))
 
-    using stack = new DisposableStack()
-    stack.defer(() => {
-      zipfile.close()
-    })
+      await using stack = new AsyncDisposableStack()
+      stack.defer(async () => {
+        await zipfile.close()
+      })
 
-    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-    const { promise, resolve } = Promise.withResolvers<void>()
-    zipfile.on("end", () => {
-      resolve()
-    })
-    const openReadStream = util.promisify(zipfile.openReadStream.bind(zipfile))
-    zipfile.readEntry()
-    zipfile.on("entry", async (entry: yauzl.Entry) => {
-      if (entry.fileName.endsWith("/")) {
-        // Directory file names end with '/'.
-        // Note that entries for directories themselves are optional.
-        // An entry's fileName implicitly requires its parent directories to exist.
-        zipfile.readEntry()
-      } else {
-        const writePath = join(extractPath, entry.fileName)
-        const readStream = await openReadStream(entry)
-        await mkdir(dirname(writePath), { recursive: true })
-        // file entry
-        await new Promise<void>((resolvePipe) => {
-          const writePath = join(extractPath, entry.fileName)
+      for await (const entry of zipfile) {
+        if (entry.filename.endsWith("/")) {
+          // Directory file names end with '/'.
+          // Note that entries for directories themselves are optional.
+          // An entry's filename implicitly requires its parent directories to exist.
+        } else {
+          const writePath = join(extractPath, entry.filename)
+          const readStream = await entry.openReadStream()
+          await mkdir(dirname(writePath), { recursive: true })
           const writeStream = createWriteStream(writePath)
-          writeStream.on("finish", () => {
-            resolvePipe()
-          })
-          readStream.pipe(writeStream)
-        }).finally(() => {
-          zipfile.readEntry()
-        })
+          await pipeline(readStream, writeStream)
+        }
       }
-    })
-    await promise
+    } catch (error) {
+      rmSync(extractPath, { force: true, recursive: true })
+      throw error
+    }
 
     return new this(
       extractPath,
