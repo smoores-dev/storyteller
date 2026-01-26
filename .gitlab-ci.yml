@@ -264,6 +264,8 @@ publish-fs:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
+    SIGSTORE_ID_TOKEN:
+      aud: sigstore
   variables:
     GITLAB: "true"
   script:
@@ -324,6 +326,8 @@ publish-epub:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
+    SIGSTORE_ID_TOKEN:
+      aud: sigstore
   variables:
     GITLAB: "true"
   script:
@@ -384,6 +388,8 @@ publish-audiobook:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
+    SIGSTORE_ID_TOKEN:
+      aud: sigstore
   variables:
     GITLAB: "true"
   script:
@@ -444,6 +450,8 @@ publish-path:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
+    SIGSTORE_ID_TOKEN:
+      aud: sigstore
   variables:
     GITLAB: "true"
   script:
