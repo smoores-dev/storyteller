@@ -1,8 +1,0 @@
-releases:
-  "@storyteller-platform/fs": patch
-  "@storyteller-platform/web": patch
-
-declined:
-  - "@storyteller-platform/audiobook"
-  - "@storyteller-platform/epub"
-  - "@storyteller-platform/mobile"
