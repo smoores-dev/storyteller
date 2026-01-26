@@ -55,10 +55,10 @@ export default async function writeMetadataToFiles({
       await epub.saveAndClose()
       logger.info("Epub saved")
     } catch (e) {
-      logger.error(
-        `Failed to write metadata to epub ${book.title} ${book.suffix}, skipping`,
-      )
-      logger.error(e)
+      logger.error({
+        err: e,
+        msg: `Failed to write metadata to epub ${book.title} ${book.suffix}, skipping`,
+      })
     }
   }
 
