@@ -393,6 +393,7 @@ publish-audiobook:
   variables:
     GITLAB: "true"
   script:
+    - echo "${NPM_ID_TOKEN:+set}"
     - yarn
     - yarn workspace @storyteller-platform/audiobook npm publish --provenance
 
