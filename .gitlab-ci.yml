@@ -270,7 +270,7 @@ publish-fs:
     GITLAB: "true"
   script:
     - yarn
-    - yarn workspace @storyteller-platform/fs npm publish
+    - yarn workspace @storyteller-platform/fs npm publish --provenance
 
 prerelease-fs:
   stage: prerelease
@@ -332,7 +332,7 @@ publish-epub:
     GITLAB: "true"
   script:
     - yarn
-    - yarn workspace @storyteller-platform/epub npm publish
+    - yarn workspace @storyteller-platform/epub npm publish --provenance
 
 prerelease-epub:
   stage: prerelease
@@ -394,7 +394,7 @@ publish-audiobook:
     GITLAB: "true"
   script:
     - yarn
-    - yarn workspace @storyteller-platform/audiobook npm publish
+    - yarn workspace @storyteller-platform/audiobook npm publish --provenance
 
 prerelease-audiobook:
   stage: prerelease
@@ -456,7 +456,7 @@ publish-path:
     GITLAB: "true"
   script:
     - yarn
-    - yarn workspace @storyteller-platform/path npm publish
+    - yarn workspace @storyteller-platform/path npm publish --provenance
 
 prerelease-path:
   stage: prerelease
