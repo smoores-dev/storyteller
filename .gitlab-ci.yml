@@ -269,6 +269,8 @@ publish-fs:
   variables:
     GITLAB: "true"
   script:
+    - npm install -g npm@latest
+    - npm --version
     - yarn
     - yarn workspace @storyteller-platform/fs pack
     - npm publish --provenance ./fs/package.tgz
