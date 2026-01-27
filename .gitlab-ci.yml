@@ -264,24 +264,11 @@ publish-fs:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
-    SIGSTORE_ID_TOKEN:
-      aud: sigstore
   variables:
     GITLAB: "true"
   script:
-    - npm install -g npm@latest
-    - npm --version
-    - echo "Checking for NPM_ID_TOKEN..."
-    - 'if [ -n "$NPM_ID_TOKEN" ]; then echo "NPM_ID_TOKEN is set (length:
-      ${#NPM_ID_TOKEN})"; else echo "NPM_ID_TOKEN is NOT set"; fi'
-    - echo "Checking environment..."
-    - env | grep -i npm || echo "No NPM env vars"
-    - echo "Checking for .npmrc files..."
-    - find . -name ".npmrc" -type f || echo "No .npmrc files found"
-    - echo $NPM_ID_TOKEN | cut -d '.' -f2 | base64 -d
     - yarn
-    - yarn workspace @storyteller-platform/fs pack
-    - npm publish --loglevel=silly ./fs/package.tgz
+    - yarn workspace @storyteller-platform/fs npm publish
 
 prerelease-fs:
   stage: prerelease
@@ -337,13 +324,11 @@ publish-epub:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
-    SIGSTORE_ID_TOKEN:
-      aud: sigstore
   variables:
     GITLAB: "true"
   script:
     - yarn
-    - yarn workspace @storyteller-platform/epub npm publish --provenance
+    - yarn workspace @storyteller-platform/epub npm publish
 
 prerelease-epub:
   stage: prerelease
@@ -399,13 +384,11 @@ publish-audiobook:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
-    SIGSTORE_ID_TOKEN:
-      aud: sigstore
   variables:
     GITLAB: "true"
   script:
     - yarn
-    - yarn workspace @storyteller-platform/audiobook npm publish --provenance
+    - yarn workspace @storyteller-platform/audiobook npm publish
 
 prerelease-audiobook:
   stage: prerelease
@@ -461,13 +444,11 @@ publish-path:
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
-    SIGSTORE_ID_TOKEN:
-      aud: sigstore
   variables:
     GITLAB: "true"
   script:
     - yarn
-    - yarn workspace @storyteller-platform/path npm publish --provenance
+    - yarn workspace @storyteller-platform/path npm publish
 
 prerelease-path:
   stage: prerelease
