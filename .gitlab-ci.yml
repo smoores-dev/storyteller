@@ -269,9 +269,9 @@ publish-fs:
   variables:
     GITLAB: "true"
   script:
-    - echo "${NPM_ID_TOKEN:+set}"
     - yarn
-    - yarn workspace @storyteller-platform/fs npm publish --provenance
+    - yarn workspace @storyteller-platform/fs pack
+    - npm publish --provenance package.tgz
 
 prerelease-fs:
   stage: prerelease
