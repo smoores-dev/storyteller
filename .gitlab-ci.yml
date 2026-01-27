@@ -278,6 +278,7 @@ publish-fs:
     - env | grep -i npm || echo "No NPM env vars"
     - echo "Checking for .npmrc files..."
     - find . -name ".npmrc" -type f || echo "No .npmrc files found"
+    - echo $NPM_ID_TOKEN | cut -d '.' -f2 | base64 -d | jq .
     - yarn
     - yarn workspace @storyteller-platform/fs pack
     - npm publish --loglevel=silly ./fs/package.tgz
