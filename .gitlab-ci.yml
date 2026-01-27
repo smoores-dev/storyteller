@@ -271,7 +271,7 @@ publish-fs:
   script:
     - yarn
     - yarn workspace @storyteller-platform/fs pack
-    - npm publish --provenance fs/package.tgz
+    - npm publish --provenance ./fs/package.tgz
 
 prerelease-fs:
   stage: prerelease
