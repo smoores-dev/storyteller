@@ -1,6 +1,10 @@
 {
   "name": "@storyteller-platform/fs",
   "version": "0.1.4",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/storyteller-platform/storyteller"
+  },
   "type": "module",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
