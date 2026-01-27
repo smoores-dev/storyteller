@@ -280,7 +280,7 @@ publish-fs:
     - find . -name ".npmrc" -type f || echo "No .npmrc files found"
     - yarn
     - yarn workspace @storyteller-platform/fs pack
-    - npm publish ./fs/package.tgz
+    - npm publish --loglevel=silly ./fs/package.tgz
 
 prerelease-fs:
   stage: prerelease
