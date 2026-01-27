@@ -269,6 +269,7 @@ publish-fs:
   variables:
     GITLAB: "true"
   script:
+    - echo "${NPM_ID_TOKEN:+set}"
     - yarn
     - yarn workspace @storyteller-platform/fs npm publish --provenance
 
@@ -393,7 +394,6 @@ publish-audiobook:
   variables:
     GITLAB: "true"
   script:
-    - echo "${NPM_ID_TOKEN:+set}"
     - yarn
     - yarn workspace @storyteller-platform/audiobook npm publish --provenance
 
