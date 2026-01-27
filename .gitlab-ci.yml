@@ -267,7 +267,7 @@ publish-fs:
   variables:
     GITLAB: "true"
   script:
-    - yarn
+    - yarn workspace focus @storyteller-platform/fs
     - yarn workspace @storyteller-platform/fs npm publish
 
 prerelease-fs:
