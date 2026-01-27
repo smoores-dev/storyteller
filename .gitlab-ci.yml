@@ -327,7 +327,7 @@ publish-epub:
   variables:
     GITLAB: "true"
   script:
-    - yarn
+    - yarn workspaces focus @storyteller-platform/epub
     - yarn workspace @storyteller-platform/epub npm publish
 
 prerelease-epub:
@@ -387,7 +387,7 @@ publish-audiobook:
   variables:
     GITLAB: "true"
   script:
-    - yarn
+    - yarn workspaces focus @storyteller-platform/audiobook
     - yarn workspace @storyteller-platform/audiobook npm publish
 
 prerelease-audiobook:
@@ -447,7 +447,7 @@ publish-path:
   variables:
     GITLAB: "true"
   script:
-    - yarn
+    - yarn workspaces focus @storyteller-platform/path
     - yarn workspace @storyteller-platform/path npm publish
 
 prerelease-path:
