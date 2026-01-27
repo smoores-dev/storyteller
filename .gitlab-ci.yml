@@ -271,9 +271,16 @@ publish-fs:
   script:
     - npm install -g npm@latest
     - npm --version
+    - echo "Checking for NPM_ID_TOKEN..."
+    - if [ -n "$NPM_ID_TOKEN" ]; then echo "NPM_ID_TOKEN is set (length:
+        ${#NPM_ID_TOKEN})"; else echo "NPM_ID_TOKEN is NOT set"; fi
+    - echo "Checking environment..."
+    - env | grep -i npm || echo "No NPM env vars"
+    - echo "Checking for .npmrc files..."
+    - find . -name ".npmrc" -type f || echo "No .npmrc files found"
     - yarn
     - yarn workspace @storyteller-platform/fs pack
-    - npm publish --provenance ./fs/package.tgz
+    - npm publish --provenance package.tgz
 
 prerelease-fs:
   stage: prerelease
