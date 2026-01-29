@@ -61,6 +61,10 @@ COPY --from=builder /app/node_modules/@echogarden/speex-resampler-wasm/wasm/*.wa
 COPY --from=builder /app/node_modules/@echogarden/pffft-wasm/dist/simd/pffft.wasm ./.next/standalone/web/work-dist/
 COPY --from=builder /app/node_modules/tiktoken/lite/tiktoken_bg.wasm ./.next/standalone/web/work-dist/
 
+# scripts
+# just so its in the right place and we dont have to modify the docs
+COPY --from=builder /app/scripts/ ./.next/standalone/web/scripts/
+
 # Unfortunately, echogarden attempts to manually resolve some of its own files
 COPY --from=builder /app/node_modules/echogarden/data ./.next/standalone/data
 COPY --from=builder /app/node_modules/echogarden/dist ./.next/standalone/dist
