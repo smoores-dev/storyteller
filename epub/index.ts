@@ -2022,7 +2022,9 @@ export class Epub {
     const lang = language ?? (await this.getLanguage())
 
     return [
-      Epub.createXmlElement("?xml", { version: "1.0", encoding: "UTF-8" }),
+      Epub.createXmlElement("?xml", { version: "1.0", encoding: "UTF-8" }, [
+        { "#text": "" },
+      ]),
       Epub.createXmlElement(
         "html",
         {
