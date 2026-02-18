@@ -22,7 +22,6 @@ import {
   useUpdateGlobalPreferenceMutation,
 } from "@/store/localApi"
 import { getCustomFontUrl } from "@/store/persistence/fonts"
-import { registerBackgroundTaskAsync } from "@/tasks/backgroundTaskSyncPositions"
 
 import {
   AlertDialog,
@@ -113,7 +112,6 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      await registerBackgroundTaskAsync()
       setReady(true)
       SplashScreen.hideAsync()
     }

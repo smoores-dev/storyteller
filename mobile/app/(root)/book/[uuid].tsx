@@ -1,9 +1,9 @@
-import { skipToken } from "@reduxjs/toolkit/query"
 import { Link, useLocalSearchParams, useRouter } from "expo-router"
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CircleX,
   LibraryBig,
   LibrarySquare,
   Tag,
@@ -46,15 +46,17 @@ import { Text } from "@/components/ui/text"
 import { useAvailableFormats } from "@/hooks/useAvailableFormats"
 import { useColorTheme } from "@/hooks/useColorTheme"
 import { useDownloadedFormats } from "@/hooks/useDownloadedFormats"
+import { useListAllServerBooks } from "@/hooks/useListAllServerBooks"
 import {
+  useCancelDownloadMutation,
   useDeleteBookMutation,
   useDownloadBookMutation,
   useGetBookQuery,
   useListStatusesQuery,
   useUpdateStatusMutation,
 } from "@/store/localApi"
-import { useGetBookQuery as useGetServerBookQuery } from "@/store/serverApi"
-import { type UUID } from "@/uuid"
+import { useLazyGetBookQuery as useLazyGetServerBookQuery } from "@/store/serverApi"
+import type { UUID } from "@/uuid"
 
 export default function BookDetailsScreen() {
   const router = useRouter()
@@ -62,6 +64,7 @@ export default function BookDetailsScreen() {
   const { foreground } = useColorTheme()
 
   const [downloadBook] = useDownloadBookMutation()
+  const [cancelDownload] = useCancelDownloadMutation()
   const [deleteBook] = useDeleteBookMutation()
   const { data: book, isLoading, isUninitialized } = useGetBookQuery({ uuid })
 
@@ -69,11 +72,8 @@ export default function BookDetailsScreen() {
 
   const [updateStatus] = useUpdateStatusMutation()
 
-  const { isLoading: isServerLoading, refetch } = useGetServerBookQuery(
-    book?.serverUuid
-      ? { serverUuid: book.serverUuid, bookUuid: book.uuid }
-      : skipToken,
-  )
+  const [getServerBook, { isLoading: isServerLoading }] =
+    useLazyGetServerBookQuery()
 
   const [showTagsMore, setShowTagsMore] = useState(false)
   const [showCollectionsMore, setShowCollectionsMore] = useState(false)
@@ -86,9 +86,24 @@ export default function BookDetailsScreen() {
   const availableFormats = useAvailableFormats(book)
   const onlyFormat = availableFormats[0]
 
+  const { refetch } = useListAllServerBooks()
+
   if (isLoading || isUninitialized) return <LoadingView />
 
-  if (!book) return null
+  if (!book) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text>Book not found</Text>
+        <Button
+          onPress={() => {
+            router.replace("/")
+          }}
+        >
+          <Text>Go back</Text>
+        </Button>
+      </View>
+    )
+  }
 
   let numberOfVersions = 0
   if (book.readaloud) numberOfVersions++
@@ -115,12 +130,17 @@ export default function BookDetailsScreen() {
     <View className="flex-1">
       <ScrollView
         refreshControl={
-          <RefreshControl
-            refreshing={isServerLoading}
-            onRefresh={() => {
-              refetch()
-            }}
-          />
+          book.serverUuid ? (
+            <RefreshControl
+              refreshing={isServerLoading}
+              onRefresh={() => {
+                getServerBook({
+                  serverUuid: book.serverUuid!,
+                  bookUuid: book.uuid,
+                })
+              }}
+            />
+          ) : undefined
         }
       >
         <Stack className="pt-safe">
@@ -252,6 +272,18 @@ export default function BookDetailsScreen() {
                             <DropdownMenuItem
                               key={format}
                               onPress={() => {
+                                const status = book[format]?.downloadStatus
+                                if (
+                                  status === "DOWNLOADING" ||
+                                  status === "QUEUED"
+                                ) {
+                                  cancelDownload({
+                                    bookUuid: book.uuid,
+                                    format,
+                                  })
+                                  return
+                                }
+
                                 if (downloadedFormats.includes(format)) {
                                   setPendingDeleteFormat(format)
                                   return
@@ -272,15 +304,21 @@ export default function BookDetailsScreen() {
                                   ? "border-destructive"
                                   : "border-primary"
                               }
-                              disabled={
-                                book[format]?.downloadStatus === "DOWNLOADING"
-                              }
                             >
                               <Text>
                                 {downloadedFormats.includes(format)
                                   ? `Remove ${format}`
-                                  : `${format[0]?.toUpperCase()}${format.slice(1)}`}
+                                  : book[format]?.downloadStatus ===
+                                        "DOWNLOADING" ||
+                                      book[format]?.downloadStatus === "QUEUED"
+                                    ? "Cancel download"
+                                    : `${format[0]?.toUpperCase()}${format.slice(1)}`}
                               </Text>
+                              {(book[format]?.downloadStatus ===
+                                "DOWNLOADING" ||
+                                book[format]?.downloadStatus === "QUEUED") && (
+                                <Icon as={CircleX} size={16} />
+                              )}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>
@@ -293,31 +331,43 @@ export default function BookDetailsScreen() {
                           variant="outline"
                           className={
                             book[onlyFormat]?.downloadStatus === "DOWNLOADED" ||
-                            book[onlyFormat]?.downloadStatus === "DOWNLOADING"
+                            book[onlyFormat]?.downloadStatus ===
+                              "DOWNLOADING" ||
+                            book[onlyFormat]?.downloadStatus === "QUEUED"
                               ? "border-destructive dark:border-destructive"
                               : "border-primary dark:border-primary"
                           }
-                          disabled={
-                            book[onlyFormat]?.downloadStatus === "DOWNLOADING"
-                          }
                           onPress={() => {
+                            const status = book[onlyFormat]?.downloadStatus
                             if (
-                              book[onlyFormat]?.downloadStatus === "DOWNLOADED"
+                              status === "DOWNLOADING" ||
+                              status === "QUEUED"
                             ) {
-                              setPendingDeleteFormat(onlyFormat)
-                            } else {
-                              downloadBook({
+                              cancelDownload({
                                 bookUuid: book.uuid,
                                 format: onlyFormat,
                               })
+                              return
                             }
+
+                            if (status === "DOWNLOADED") {
+                              setPendingDeleteFormat(onlyFormat)
+                              return
+                            }
+
+                            downloadBook({
+                              bookUuid: book.uuid,
+                              format: onlyFormat,
+                            })
                           }}
                         >
                           <Text
                             className={
                               book[onlyFormat]?.downloadStatus ===
                                 "DOWNLOADED" ||
-                              book[onlyFormat]?.downloadStatus === "DOWNLOADING"
+                              book[onlyFormat]?.downloadStatus ===
+                                "DOWNLOADING" ||
+                              book[onlyFormat]?.downloadStatus === "QUEUED"
                                 ? "text-destructive"
                                 : "text-primary"
                             }
@@ -325,10 +375,20 @@ export default function BookDetailsScreen() {
                             {book[onlyFormat]?.downloadStatus === "DOWNLOADED"
                               ? `Remove ${onlyFormat}`
                               : book[onlyFormat]?.downloadStatus ===
-                                  "DOWNLOADING"
-                                ? "Downloading..."
+                                    "DOWNLOADING" ||
+                                  book[onlyFormat]?.downloadStatus === "QUEUED"
+                                ? "Cancel download"
                                 : `Download ${onlyFormat}`}
                           </Text>
+                          {(book[onlyFormat]?.downloadStatus ===
+                            "DOWNLOADING" ||
+                            book[onlyFormat]?.downloadStatus === "QUEUED") && (
+                            <Icon
+                              as={CircleX}
+                              size={16}
+                              className="text-destructive"
+                            />
+                          )}
                         </Button>
                       </>
                     )
@@ -515,6 +575,11 @@ export default function BookDetailsScreen() {
                     bookUuid: book.uuid,
                     format: pendingDeleteFormat,
                     deleteRecord: book.serverUuid === null,
+                  }).then(() => {
+                    // move back to main screen
+                    router.replace("/")
+
+                    refetch()
                   })
                   setPendingDeleteFormat(null)
                 }}

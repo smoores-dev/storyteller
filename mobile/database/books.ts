@@ -199,7 +199,24 @@ export async function createBook(
 export function bookQuery() {
   return db
     .selectFrom("book")
-    .selectAll("book")
+    .select([
+      "book.alignedAt",
+      "book.alignedByStorytellerVersion",
+      "book.alignedWith",
+      "book.createdAt",
+      "book.description",
+      "book.id",
+      "book.language",
+      "book.publicationDate",
+      "book.rating",
+      "book.subtitle",
+      "book.suffix",
+      "book.title",
+      "book.serverUuid",
+      "book.ebookCoverUrl",
+      "book.audiobookCoverUrl",
+      "book.uuid",
+    ])
     .select((eb) => [
       jsonArrayFrom(
         eb
@@ -215,7 +232,6 @@ export function bookQuery() {
             "creator.name",
             "creator.fileAs",
             "creator.createdAt",
-            "creator.updatedAt",
           ])
           .whereRef("bookToCreator.bookUuid", "=", "book.uuid")
           .where("bookToCreator.role", "=", "aut"),
@@ -234,7 +250,6 @@ export function bookQuery() {
             "creator.name",
             "creator.fileAs",
             "creator.createdAt",
-            "creator.updatedAt",
           ])
           .whereRef("bookToCreator.bookUuid", "=", "book.uuid")
           .where("bookToCreator.role", "=", "nrt"),
@@ -254,7 +269,6 @@ export function bookQuery() {
             "creator.fileAs",
             "bookToCreator.role",
             "creator.createdAt",
-            "creator.updatedAt",
           ])
           .whereRef("bookToCreator.bookUuid", "=", "book.uuid")
           .where("bookToCreator.role", "!=", "nrt")
@@ -271,7 +285,6 @@ export function bookQuery() {
             "bookToSeries.featured",
             "bookToSeries.position",
             "series.createdAt",
-            "series.updatedAt",
           ])
           .whereRef("bookToSeries.bookUuid", "=", "book.uuid"),
       ).as("series"),
@@ -280,7 +293,7 @@ export function bookQuery() {
           .selectFrom("tag")
           .distinct()
           .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
-          .select(["tag.uuid", "tag.name", "tag.createdAt", "tag.updatedAt"])
+          .select(["tag.uuid", "tag.name", "tag.createdAt"])
           .whereRef("bookToTag.bookUuid", "=", "book.uuid"),
       ).as("tags"),
       jsonArrayFrom(
@@ -298,19 +311,13 @@ export function bookQuery() {
             "collection.description",
             "collection.public",
             "collection.createdAt",
-            "collection.updatedAt",
           ])
           .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
       ).as("collections"),
       jsonObjectFrom(
         eb
           .selectFrom("status")
-          .select([
-            "status.uuid",
-            "status.name",
-            "status.createdAt",
-            "status.updatedAt",
-          ])
+          .select(["status.uuid", "status.name", "status.createdAt"])
           .innerJoin("bookToStatus", "bookToStatus.statusUuid", "status.uuid")
           .select(["bookToStatus.dirty"])
           .whereRef("bookToStatus.bookUuid", "=", "book.uuid"),
@@ -323,7 +330,6 @@ export function bookQuery() {
             "position.locator",
             "position.timestamp",
             "position.createdAt",
-            "position.updatedAt",
           ])
           .whereRef("book.uuid", "=", "position.bookUuid"),
       ).as("position"),
@@ -335,10 +341,8 @@ export function bookQuery() {
             "ebook.downloadStatus",
             "ebook.downloadProgress",
             "ebook.manifest",
-            "ebook.positions",
             sql.lit<"ebook">("ebook").as("format"),
             "ebook.createdAt",
-            "ebook.updatedAt",
           ])
           .whereRef("ebook.bookUuid", "=", "book.uuid"),
       ).as("ebook"),
@@ -352,7 +356,6 @@ export function bookQuery() {
             "audiobook.downloadProgress",
             sql.lit<"audiobook">("audiobook").as("format"),
             "audiobook.createdAt",
-            "audiobook.updatedAt",
           ])
           .whereRef("audiobook.bookUuid", "=", "book.uuid"),
       ).as("audiobook"),
@@ -365,11 +368,9 @@ export function bookQuery() {
             "readaloud.downloadProgress",
             "readaloud.epubManifest",
             "readaloud.audioManifest",
-            "readaloud.positions",
             "readaloud.status",
             sql.lit<"readaloud">("readaloud").as("format"),
             "readaloud.createdAt",
-            "readaloud.updatedAt",
           ])
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),
@@ -405,6 +406,29 @@ export async function getBook(uuid: UUID) {
   )
 }
 
+export async function getOverlayClipsForBook(bookUuid: UUID) {
+  const result = await db
+    .selectFrom("readaloud")
+    .select("clips")
+    .where("bookUuid", "=", bookUuid)
+    .executeTakeFirst()
+
+  return result?.clips ?? null
+}
+
+export async function getPositionsForBook(
+  bookUuid: UUID,
+  format: "ebook" | "readaloud",
+) {
+  const result = await db
+    .selectFrom(format)
+    .select("positions")
+    .where("bookUuid", "=", bookUuid)
+    .executeTakeFirst()
+
+  return result?.positions ?? null
+}
+
 export async function updateBookStatus(uuid: UUID, statusUuid: UUID) {
   await db
     .updateTable("bookToStatus")
@@ -422,7 +446,10 @@ export async function deleteBooks(uuids: UUID[]) {
   await db.deleteFrom("book").where("uuid", "in", uuids).execute()
 }
 
-export async function detachBooksFromServer(server: Server, uuids: UUID[]) {
+export async function detachBooksFromServer(
+  server: Omit<Server, "lastListBooksResponse">,
+  uuids: UUID[],
+) {
   if (!uuids.length) return
   const urls = await Promise.all(
     uuids.map(async (uuid) => ({
@@ -629,6 +656,7 @@ export async function removeBookDownloads(
           audioManifest: null,
           epubManifest: null,
           positions: null,
+          clips: null,
         })
         .where("bookUuid", "=", bookUuid)
         .execute()

@@ -45,4 +45,6 @@ storyteller.db
 storyteller.db*
 .env.local
 
+/mobile/.env
+
 public

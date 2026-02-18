@@ -14,14 +14,19 @@ import { bookmarkPressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   useGetBookHighlightsQuery,
+  useGetBookPositionsQuery,
   useGetBookPreferencesQuery,
   useGetBookQuery,
   useGetGlobalPreferencesQuery,
 } from "@/store/localApi"
-import { getCurrentlyPlayingBookUuid } from "@/store/selectors/bookshelfSelectors"
+import {
+  getCurrentlyPlayingBookUuid,
+  getCurrentlyPlayingFormat,
+} from "@/store/selectors/bookshelfSelectors"
 
 export function Highlights() {
   const bookUuid = useAppSelector(getCurrentlyPlayingBookUuid)
+  const format = useAppSelector(getCurrentlyPlayingFormat)
   const dispatch = useAppDispatch()
   const { dark } = useColorTheme()
   const { data: highlights } = useGetBookHighlightsQuery(
@@ -41,8 +46,13 @@ export function Highlights() {
     )
   }, [book?.readaloud?.epubManifest?.toc, highlights])
 
+  const { data: positions } = useGetBookPositionsQuery(
+    bookUuid && (format === "readaloud" || format === "ebook")
+      ? { bookUuid, format }
+      : skipToken,
+  )
+
   const highlightPages = useMemo(() => {
-    const positions = book?.readaloud?.positions
     if (!positions) return []
 
     return (
@@ -61,7 +71,7 @@ export function Highlights() {
         return highlightPage
       }) ?? []
     )
-  }, [book?.readaloud?.positions, highlights])
+  }, [highlights, positions])
 
   const { data: bookPreferences } = useGetBookPreferencesQuery(
     bookUuid ? { uuid: bookUuid } : skipToken,

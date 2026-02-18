@@ -46,7 +46,7 @@ export function ProgressBar({
       <View
         className="bg-primary absolute h-0.75 rounded-bl-sm"
         style={{
-          width: `${(progress / (stop - start)) * 100}%`,
+          width: `${stop === start ? 0 : (progress / (stop - start)) * 100}%`,
         }}
       />
     </View>

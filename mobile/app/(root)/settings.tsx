@@ -13,23 +13,18 @@ import { Icon } from "@/components/ui/icon"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Text } from "@/components/ui/text"
-import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   useDeleteServerMutation,
   useGetGlobalPreferencesQuery,
   useListServersQuery,
   useUpdateGlobalPreferenceMutation,
 } from "@/store/localApi"
-import { getDebugLoggingEnabled } from "@/store/selectors/loggingSelectors"
-import { loggingSlice } from "@/store/slices/loggingSlice"
 
 export default function Settings() {
   const { data: servers } = useListServersQuery()
   const [deleteServer] = useDeleteServerMutation()
   const [updatePreference] = useUpdateGlobalPreferenceMutation()
-  const debugEnabled = useAppSelector(getDebugLoggingEnabled)
   const { data: preferences } = useGetGlobalPreferencesQuery()
-  const dispatch = useAppDispatch()
 
   if (!preferences) return <LoadingView />
 
@@ -169,10 +164,21 @@ export default function Settings() {
             variant="secondary"
             size="flex"
             onPress={() => {
-              dispatch(loggingSlice.actions.debugLoggingToggled())
+              updatePreference({
+                name: "logLevel",
+                value:
+                  preferences.logLevel === "debug"
+                    ? __DEV__
+                      ? "info"
+                      : "error"
+                    : "debug",
+              })
             }}
           >
-            <Text>{debugEnabled ? "Disable" : "Enable"} debug logging</Text>
+            <Text>
+              {preferences.logLevel === "debug" ? "Disable" : "Enable"} debug
+              logging
+            </Text>
           </Button>
           <Link href="/log" asChild>
             <Button size="flex" variant="ghost">

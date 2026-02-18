@@ -3,35 +3,30 @@ import {
   type UnknownAction,
   isAnyOf,
 } from "@reduxjs/toolkit"
-import { isPast } from "date-fns"
-import TrackPlayer from "react-native-track-player"
 
-import { type BookPreferences } from "@/database/preferencesTypes"
 import {
+  type BookPreferences,
+  type Preferences,
+} from "@/database/preferencesTypes"
+import { logger } from "@/logger"
+import {
+  Storyteller,
   getClip,
   getNextFragment,
   getPreviousFragment,
 } from "@/modules/readium"
-import {
-  nextFragmentPressed,
-  playerPlayed,
-  previousFragmentPressed,
-} from "@/store/actions"
+import { nextFragmentPressed, previousFragmentPressed } from "@/store/actions"
 import { localApi } from "@/store/localApi"
 import {
   getCurrentlyPlayingBookUuid,
   getCurrentlyPlayingFormat,
-  getSleepTimer,
 } from "@/store/selectors/bookshelfSelectors"
-import {
-  type BookshelfTrack,
-  bookshelfSlice,
-} from "@/store/slices/bookshelfSlice"
+import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 import { type UUID } from "@/uuid"
 
 import { startAppListening } from "./listenerMiddleware"
 
-const predicate = (
+const speedChangedPredicate = (
   action: UnknownAction,
 ): action is PayloadAction<
   null,
@@ -55,57 +50,63 @@ const predicate = (
 }
 
 startAppListening({
-  predicate,
+  predicate: speedChangedPredicate,
   effect: async (action) => {
     const speed = action.meta.arg.originalArgs.value.speed
 
-    await TrackPlayer.setRate(speed)
+    logger.debug(
+      `Playback speed changed for current book, updating to ${speed}`,
+    )
+    await Storyteller.setRate(speed)
   },
 })
 
-const FIVE_MINUTES_IN_MILLIS = 5 * 60 * 1000
+const automaticRewindChangedPredicate = (
+  action: UnknownAction,
+): action is PayloadAction<
+  null,
+  string,
+  {
+    arg: {
+      originalArgs: {
+        name: "automaticRewind"
+        value: Required<NonNullable<Preferences["automaticRewind"]>>
+      }
+    }
+  }
+> => {
+  return (
+    localApi.endpoints.updateGlobalPreference.matchFulfilled(action) &&
+    action.meta.arg.originalArgs.name === "automaticRewind" &&
+    (action.meta.arg.originalArgs.value as Preferences["automaticRewind"]) !==
+      undefined
+  )
+}
 
 startAppListening({
-  actionCreator: playerPlayed,
+  predicate: automaticRewindChangedPredicate,
+  effect: async (action) => {
+    const config = action.meta.arg.originalArgs.value
+
+    logger.debug(
+      `Automatic rewind config changed, updating to ${JSON.stringify(config)}`,
+    )
+    await Storyteller.setAutomaticRewind(config)
+  },
+})
+
+startAppListening({
+  matcher: localApi.endpoints.getGlobalPreferences.matchFulfilled,
   effect: async (_, listenerApi) => {
-    const preferences = await listenerApi
-      .dispatch(localApi.endpoints.getGlobalPreferences.initiate())
-      .unwrap()
+    const config = localApi.endpoints.getGlobalPreferences.select()(
+      listenerApi.getState(),
+    ).data?.automaticRewind
+    if (!config) return
 
-    const sleepTimer = getSleepTimer(listenerApi.getState())
-
-    if (sleepTimer && isPast(sleepTimer)) {
-      listenerApi.dispatch(bookshelfSlice.actions.sleepTimerExpired())
-    }
-    if (!preferences.automaticRewind.enabled) {
-      await TrackPlayer.play()
-      return
-    }
-
-    const currentBookUuid = getCurrentlyPlayingBookUuid(listenerApi.getState())
-
-    if (!currentBookUuid) {
-      await TrackPlayer.play()
-      return
-    }
-
-    const book = await listenerApi
-      .dispatch(localApi.endpoints.getBook.initiate({ uuid: currentBookUuid }))
-      .unwrap()
-
-    if (!book?.position) {
-      await TrackPlayer.play()
-      return
-    }
-
-    const { timestamp } = book.position
-    if (Date.now() - timestamp < FIVE_MINUTES_IN_MILLIS) {
-      await TrackPlayer.seekBy(-preferences.automaticRewind.afterInterruption)
-    } else {
-      await TrackPlayer.seekBy(-preferences.automaticRewind.afterBreak)
-    }
-
-    await TrackPlayer.play()
+    logger.debug(
+      `Automatic rewind config changed, updating to ${JSON.stringify(config)}`,
+    )
+    await Storyteller.setAutomaticRewind(config)
   },
 })
 
@@ -117,6 +118,7 @@ const matchFragmentButtonPressed = isAnyOf(
 startAppListening({
   matcher: matchFragmentButtonPressed,
   effect: async (action, listenerApi) => {
+    logger.debug(action.type)
     const currentBookUuid = getCurrentlyPlayingBookUuid(listenerApi.getState())
 
     if (!currentBookUuid) return
@@ -128,7 +130,10 @@ startAppListening({
       .dispatch(localApi.endpoints.getBook.initiate({ uuid: currentBookUuid }))
       .unwrap()
 
-    if (!book?.position) return
+    if (!book?.position) {
+      logger.debug(`No local position for book, aborting`)
+      return
+    }
 
     const navigateTo = await (
       action.type === nextFragmentPressed.type
@@ -136,25 +141,35 @@ startAppListening({
         : getPreviousFragment
     )(book.uuid, book.position.locator)
 
-    if (!navigateTo) return
+    if (!navigateTo) {
+      logger.debug(`Could not find next locator, aborting`)
+      return
+    }
+    const positions =
+      format !== "audiobook"
+        ? await listenerApi
+            .dispatch(
+              localApi.endpoints.getBookPositions.initiate(
+                { bookUuid: currentBookUuid, format },
+                { forceRefetch: false },
+              ),
+            )
+            .unwrap()
+        : null
 
-    const clip = await getClip(book, format, navigateTo.locator)
+    const clip = await getClip(book, format, navigateTo.locator, positions)
     if (!clip) return
 
-    const tracks = (await TrackPlayer.getQueue()) as BookshelfTrack[]
+    logger.debug(`Seeking to ${clip.start}s in ${clip.relativeUrl}`)
+    await Storyteller.seekTo(clip.relativeUrl, clip.start)
+  },
+})
 
-    const trackIndex = tracks.findIndex(
-      (track) => track.relativeUrl === clip.relativeUrl,
-    )
-
-    const currentTrackIndex = await TrackPlayer.getActiveTrackIndex()
-
-    if (trackIndex === -1) return
-
-    if (trackIndex === currentTrackIndex) {
-      await TrackPlayer.seekTo(clip.start)
-    } else {
-      await TrackPlayer.skip(trackIndex, clip.start)
-    }
+startAppListening({
+  actionCreator: bookshelfSlice.actions.miniPlayerWidgetSwiped,
+  effect: async () => {
+    logger.debug(`Mini player closed, unloading audio player`)
+    await Storyteller.pause()
+    await Storyteller.unload()
   },
 })

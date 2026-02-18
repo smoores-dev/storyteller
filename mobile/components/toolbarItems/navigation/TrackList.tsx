@@ -1,5 +1,4 @@
 import { skipToken } from "@reduxjs/toolkit/query"
-import { File } from "expo-file-system"
 import { type RefObject, useRef } from "react"
 import { View } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
@@ -7,19 +6,19 @@ import { useSafeAreaFrame } from "react-native-safe-area-context"
 
 import { Button } from "@/components/ui/button"
 import { Text } from "@/components/ui/text"
-import { useAudioBook } from "@/hooks/useAudioBook"
 import { useSpacingVariable } from "@/hooks/useSpacingVariable"
 import { cn } from "@/lib/utils"
 import { type ReadiumLink } from "@/modules/readium/src/Readium.types"
 import { playerTrackChanged } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { useGetBookQuery } from "@/store/localApi"
-import { getLocalBookExtractedUrl } from "@/store/persistence/files"
 import {
+  getCurrentTrack,
   getCurrentlyPlayingBookUuid,
   getCurrentlyPlayingFormat,
+  getPosition,
+  getTracks,
 } from "@/store/selectors/bookshelfSelectors"
-import { type BookshelfTrack } from "@/store/slices/bookshelfSlice"
 
 interface Props {
   onClose?: () => void
@@ -32,30 +31,55 @@ export function TrackLisk({ onClose }: Props) {
   const bookUuid = useAppSelector(getCurrentlyPlayingBookUuid)
   const format = useAppSelector(getCurrentlyPlayingFormat) ?? "readaloud"
 
+  const currentTrack = useAppSelector(getCurrentTrack)
+  const position = useAppSelector(getPosition)
+
   const { data: book } = useGetBookQuery(
     bookUuid ? { uuid: bookUuid } : skipToken,
   )
 
-  const { track, tracks } = useAudioBook()
+  const tracks = useAppSelector(getTracks)
 
-  const directory = bookUuid && getLocalBookExtractedUrl(bookUuid, format)
-
-  const fromTracks = directory
-    ? tracks.map((track) => ({
-        href: track.relativeUrl + "#t=0",
+  const fromTracks = tracks.map(
+    (track) =>
+      ({
+        href: track.relativeUri + "#t=0",
         title: track.title,
-      }))
-    : []
-
-  const currentTrack = tracks[track.index]
+      }) as ReadiumLink,
+  )
 
   const listing =
     format === "audiobook"
       ? book?.audiobook?.manifest?.toc ?? fromTracks
       : book?.readaloud?.audioManifest?.toc ?? fromTracks
+
   const frame = useSafeAreaFrame()
 
   const maxHeight = frame.height - useSpacingVariable(72)
+
+  const readingOrder =
+    format === "audiobook"
+      ? book?.audiobook?.manifest?.readingOrder
+      : book?.readaloud?.audioManifest?.readingOrder
+
+  const hrefToReadingOrderIndex = readingOrder?.reduce(
+    (acc, link, index) => ({ ...acc, [link.href]: index }),
+    {} as Record<string, number>,
+  )
+
+  const currentTrackReadingOrderIndex =
+    (currentTrack && hrefToReadingOrderIndex?.[currentTrack.relativeUri]) ?? 0
+
+  const currentTocItem = listing.findLast((link) => {
+    const [hrefWithoutFragment, fragment] = link.href.split("#t=")
+    const readingOrderIndex = hrefToReadingOrderIndex?.[hrefWithoutFragment!]
+    if (readingOrderIndex === undefined) return false
+
+    return (
+      readingOrderIndex <= currentTrackReadingOrderIndex &&
+      parseFloat(fragment ?? "0.0") <= position
+    )
+  })
 
   if (!book) return null
 
@@ -77,11 +101,8 @@ export function TrackLisk({ onClose }: Props) {
     >
       <Sublist
         listing={listing}
+        currentTocItem={currentTocItem}
         currentItemRef={currentItemRef}
-        currentTrack={currentTrack}
-        directory={directory}
-        track={track}
-        tracks={tracks}
         onClose={onClose}
       />
     </ScrollView>
@@ -90,18 +111,12 @@ export function TrackLisk({ onClose }: Props) {
 
 function Sublist({
   listing,
-  currentTrack,
-  directory,
-  track,
-  tracks,
+  currentTocItem,
   currentItemRef,
   onClose,
 }: {
   listing: ReadiumLink[]
-  currentTrack: BookshelfTrack | undefined
-  directory: string | null
-  track: ReturnType<typeof useAudioBook>["track"]
-  tracks: ReturnType<typeof useAudioBook>["tracks"]
+  currentTocItem: ReadiumLink | undefined
   currentItemRef: RefObject<View | null>
   onClose?: (() => void) | undefined
 }) {
@@ -109,86 +124,46 @@ function Sublist({
 
   return (
     <>
-      {listing
-        .map(({ href, title, children }) => {
-          const [urlPath, startPositionString] = href.split("#t=")
-          const startPosition = parseInt(startPositionString ?? "0", 10)
-
-          return {
-            href,
-            url: new File(directory!, urlPath!).uri,
-            startPosition,
-            title,
-            children: children ?? [],
-          }
-        })
-        .map(({ url, startPosition, ...current }, index, array) => {
-          const encodedCurrentUrl = encodeURI(
-            (currentTrack?.url as string | undefined) ?? "",
-          )
-          const next = array[index + 1]
-          const isCurrentTrack =
-            url === encodedCurrentUrl &&
-            track.position >= startPosition &&
-            (encodedCurrentUrl !== next?.url ||
-              !next ||
-              track.position < next.startPosition)
-
-          return {
-            url,
-            startPosition,
-            ...current,
-            isCurrentTrack,
-          }
-        })
-        .map(
-          ({ href, url, startPosition, isCurrentTrack, title, children }) => (
-            <View
-              collapsable={false}
-              key={href}
-              {...(isCurrentTrack && {
-                ref: currentItemRef,
-              })}
-              style={{ paddingHorizontal: 8 }}
-            >
-              <Button
-                variant={isCurrentTrack ? "secondary" : "ghost"}
-                className={cn(
-                  "h-auto justify-start border-b border-b-gray-400 p-4 sm:h-auto",
-                  {
-                    "bg-secondary": 0,
-                  },
-                )}
-                onPress={async () => {
-                  if (isCurrentTrack) return
-
-                  const track = tracks.findIndex(
-                    (t) => encodeURI(t.url as string) === url,
-                  )
-                  if (track === -1) return
-                  dispatch(
-                    playerTrackChanged({
-                      index: track,
-                      position: startPosition,
-                    }),
-                  )
-                  onClose?.()
-                }}
-              >
-                <Text className="text-sm font-bold">{title}</Text>
-              </Button>
-              <Sublist
-                listing={children}
-                currentItemRef={currentItemRef}
-                currentTrack={currentTrack}
-                directory={directory}
-                track={track}
-                tracks={tracks}
-                onClose={onClose}
-              />
-            </View>
-          ),
-        )}
+      {listing.map((link) => (
+        <View
+          collapsable={false}
+          key={link.href}
+          {...(link === currentTocItem && {
+            ref: currentItemRef,
+          })}
+          style={{ paddingHorizontal: 8 }}
+        >
+          <Button
+            variant={link === currentTocItem ? "secondary" : "ghost"}
+            className={cn(
+              "h-auto justify-start border-b border-b-gray-400 p-4 sm:h-auto",
+              {
+                "bg-secondary": 0,
+              },
+            )}
+            onPress={async () => {
+              if (currentTocItem === link) return
+              const [relativeUri, startPositionString] = link.href.split("#t=")
+              const startPosition = parseFloat(startPositionString ?? "0")
+              dispatch(
+                playerTrackChanged({
+                  relativeUri: relativeUri!,
+                  position: startPosition,
+                }),
+              )
+              onClose?.()
+            }}
+          >
+            <Text className="text-sm font-bold">{link.title}</Text>
+          </Button>
+          <Sublist
+            listing={link.children ?? []}
+            currentTocItem={currentTocItem}
+            currentItemRef={currentItemRef}
+            onClose={onClose}
+          />
+        </View>
+      ))}
     </>
   )
 }

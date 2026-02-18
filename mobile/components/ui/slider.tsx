@@ -43,8 +43,11 @@ export function Slider({
   const max = 100
 
   const valueToPercentage = useCallback(
-    (value: number) =>
-      Math.round(((value / props.step - start) / (stop - start)) * 100),
+    (value: number) => {
+      const range = stop - start
+      if (range === 0) return 0
+      return Math.round(((value / props.step - start) / range) * 100)
+    },
     [props.step, start, stop],
   )
 
@@ -63,7 +66,7 @@ export function Slider({
 
     if (sliderWidth === 0) return
     const percentage = valueToPercentage(props.value)
-    const newTranslateX = (percentage / 100) * (sliderWidth - THUMB_SIZE)
+    const newTranslateX = (percentage / 100) * sliderWidth
     if (translateX.value !== newTranslateX) translateX.set(newTranslateX)
   }, [panning, props.value, sliderWidth, translateX, valueToPercentage])
 
@@ -87,12 +90,16 @@ export function Slider({
       "worklet"
       if (sliderWidth === 0) return
 
-      translateX.set(startTranslateX.get() + event.translationX)
-      const percentage = (translateX.value / (sliderWidth - THUMB_SIZE)) * 100
-      const newValue =
-        ((percentage / 100) * (stop - start) + start) * props.step
+      translateX.set(
+        Math.min(
+          Math.max(startTranslateX.get() + event.translationX, 0),
+          sliderWidth,
+        ),
+      )
+      const percentage = (translateX.value / sliderWidth) * 100
+      const newValue = (percentage / 100) * (stop - start) + start
 
-      const stepAlignedValue = Math.floor(newValue / props.step) * props.step
+      const stepAlignedValue = Math.round(newValue) * props.step
 
       scheduleOnRN(updateValue, stepAlignedValue)
     })
@@ -104,13 +111,13 @@ export function Slider({
 
   const thumbAnimatedStyle = useAnimatedStyle(
     (): ViewStyle => ({
-      transform: [{ translateX: translateX.value }],
+      transform: [{ translateX: translateX.value - THUMB_SIZE / 2 }],
     }),
   )
 
   const rangeAnimatedStyle = useAnimatedStyle((): ViewStyle => {
     const percentage =
-      (translateX.value / Math.max(1, sliderWidth - THUMB_SIZE)) * 100
+      ((translateX.value - THUMB_SIZE / 2) / Math.max(1, sliderWidth)) * 100
 
     return {
       width: `${percentage}%`,
@@ -144,15 +151,17 @@ export function Slider({
                 : percentage
           }
         >
-          <BaseSlider.Track className="bg-secondary h-1 w-full rounded-full">
+          <BaseSlider.Track className="bg-secondary slider-track h-1 w-full rounded-full">
             <Animated.View
+              data-slot="slider-track-range"
               role="presentation"
               style={[
                 {
                   position: "absolute",
                   height: 4,
                   backgroundColor: primaryColor,
-                  borderRadius: 2,
+                  borderTopLeftRadius: 2,
+                  borderBottomLeftRadius: 2,
                 },
                 rangeAnimatedStyle,
               ]}
@@ -162,8 +171,8 @@ export function Slider({
               style={[
                 {
                   position: "absolute",
-                  height: 20,
-                  width: 20,
+                  height: THUMB_SIZE,
+                  width: THUMB_SIZE,
                   backgroundColor: background,
                   borderRadius: 10,
                   borderWidth: 2,

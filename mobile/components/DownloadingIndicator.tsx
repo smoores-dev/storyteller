@@ -1,4 +1,5 @@
 import { ArrowDown } from "lucide-react-native"
+import { useDeferredValue } from "react"
 import { View, type ViewStyle } from "react-native"
 import { AnimatedCircularProgress } from "react-native-circular-progress"
 
@@ -21,6 +22,7 @@ export function DownloadingIndicator({
   style,
 }: Props) {
   const { foreground, background } = useColorTheme()
+  const deferredProgress = useDeferredValue(progress)
 
   return (
     <View
@@ -36,7 +38,7 @@ export function DownloadingIndicator({
       <AnimatedCircularProgress
         size={size}
         width={1}
-        fill={progress}
+        fill={deferredProgress}
         rotation={0}
         tintColor={foreground}
         backgroundColor={background}

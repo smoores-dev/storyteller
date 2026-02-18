@@ -1,6 +1,9 @@
 import { createAction } from "@reduxjs/toolkit"
 
-import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
+import {
+  type ReadiumClip,
+  type ReadiumLocator,
+} from "@/modules/readium/src/Readium.types"
 import { type UUID } from "@/uuid"
 
 export const bookImported = createAction(
@@ -80,8 +83,6 @@ export const bookmarkPressed = createAction(
   }) => ({ payload }),
 )
 
-export const playerPositionUpdated = createAction("playerPositionUpdated")
-
 export const playerPositionSeeked = createAction(
   "playerPositionSeeked",
   (payload: { progress: number }) => ({
@@ -96,13 +97,16 @@ export const playerTotalPositionSeeked = createAction(
   }),
 )
 
-export const playerPaused = createAction("playerPaused")
-
-export const playerPlayed = createAction("playerPlayed")
-
 export const playerTrackChanged = createAction(
   "playerTrackChanged",
-  (payload: { index: number; position?: number }) => ({
+  (payload: { relativeUri: string; position?: number }) => ({
+    payload,
+  }),
+)
+
+export const playerClipChanged = createAction(
+  "playerClipChanged",
+  (payload: { clip: ReadiumClip }) => ({
     payload,
   }),
 )

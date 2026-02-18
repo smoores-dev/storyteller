@@ -29,7 +29,7 @@
     "dev:web": "yarn workspace @storyteller-platform/web dev",
     "fix:format": "yarn prettier --write . && yarn workspace @storyteller-platform/mobile prettier --write .",
     "fix:lint": "yarn workspaces foreach -pA run eslint --ext .cjs,.js,.jsx,.ts,.tsx,.mjs --fix .",
-    "fix": "concurrently -P 'npm:fix:*'",
+    "fix": "yarn fix:lint && yarn fix:format",
     "generate:env-docs": "tsx ./web/scripts/generate-env-docs.ts",
     "postinstall": "husky",
     "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",

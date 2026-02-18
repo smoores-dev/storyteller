@@ -91,6 +91,7 @@ export function LoginButton({ serverUrl, serverUuid }: Props) {
         await SecureStore.setItemAsync(
           `server.${uuid}.token`,
           sessionToken.access_token,
+          { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK },
         )
 
         await updateServer(uuid, { username })

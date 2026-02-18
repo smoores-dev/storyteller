@@ -146,7 +146,7 @@ export const serverApi = createApi({
   }),
 })
 
-export const { useListBooksQuery, useGetBookQuery } = serverApi
+export const { useListBooksQuery, useLazyGetBookQuery } = serverApi
 
 export function getDownloadUrl(
   baseUrl: string,

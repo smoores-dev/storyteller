@@ -5,6 +5,7 @@ import { router } from "expo-router"
 import { createBook } from "@/database/books"
 import { type BookToCreator } from "@/database/schema"
 import { getStatusByName } from "@/database/statuses"
+import { logger } from "@/logger"
 import {
   buildAudiobookManifest,
   getPositions,
@@ -32,9 +33,11 @@ startAppListening({
     router.replace("/")
 
     const { url } = action.payload
+    logger.debug(`Importing local book file from ${url}`)
     const uuid = randomUUID()
 
     await importBookFile(uuid, url)
+    logger.debug("Copied and extracted file")
 
     const epubManifest = await openPublication(
       uuid,
@@ -49,6 +52,7 @@ startAppListening({
       ? "readaloud"
       : "ebook"
 
+    logger.debug(`Determined book format: ${format}`)
     if (format === "ebook") {
       await copyReadaloudToEbook(uuid)
     }
@@ -144,7 +148,9 @@ startAppListening({
         description: epubManifest.metadata.description
           ? parseLocalizedString(epubManifest.metadata.description)
           : null,
-        language: epubManifest.metadata.language,
+        language: Array.isArray(epubManifest.metadata.language)
+          ? epubManifest.metadata.language[0]
+          : epubManifest.metadata.language,
         publicationDate,
         ...(ebookCoverUrl && {
           ebookCoverUrl: ebookCoverUrl.replace(documentDirectory!, ""),
@@ -184,6 +190,7 @@ startAppListening({
         },
       },
     )
+    logger.debug("Saved new record to database")
 
     listenerApi.dispatch(
       localApi.util.invalidateTags(["Books", "Tags", "Creators", "Series"]),

@@ -83,6 +83,30 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     // incorrectly
     override val shouldUseAndroidLayout = true
 
+    // Expo's shouldUseAndroidLayout only measures/layouts the ExpoView itself,
+    // not children. Override requestLayout to propagate through the view tree.
+    // See: https://github.com/readium/kotlin-toolkit/discussions/737
+    override fun requestLayout() {
+        super.requestLayout()
+        post {
+            measureAndLayoutRecursively(this)
+        }
+    }
+
+    private fun measureAndLayoutRecursively(view: android.view.View) {
+        view.forceLayout()
+        view.measure(
+            MeasureSpec.makeMeasureSpec(view.width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(view.height, MeasureSpec.EXACTLY)
+        )
+        view.layout(view.left, view.top, view.right, view.bottom)
+        (view as? android.view.ViewGroup)?.let { vg ->
+            for (i in 0 until vg.childCount) {
+                measureAndLayoutRecursively(vg.getChildAt(i))
+            }
+        }
+    }
+
     val onLocatorChange by EventDispatcher()
     val onMiddleTouch by EventDispatcher()
     val onBookmarksActivate by EventDispatcher()
@@ -90,7 +114,6 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     val onSelection by EventDispatcher()
     val onHighlightTap by EventDispatcher()
 
-    var bookService: BookService? = null
     var navigator: EpubNavigatorFragment? = null
 
     var locationEmitter: Job? = null
@@ -187,7 +210,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     fun initializeNavigator() {
-        val publication = bookService?.getPublication(props!!.bookUuid) ?: return
+        val publication = BookService.getPublication(props!!.bookUuid) ?: return
 
         val fragmentTag = resources.getString(R.string.epub_fragment_tag)
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
@@ -249,23 +272,30 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     private suspend fun emitCurrentLocator() {
         val currentLocator = navigator!!.currentLocator.value
 
-        val result = props?.locator?.locations?.progression?.let {
+        val result = props?.locator?.locations?.fragments?.firstOrNull()?.let {
             navigator?.evaluateJavascript(
                 """
             (function() {
-                const maxScreenX = window.orientation === 0 || window.orientation == 180
-                        ? screen.width
-                        : screen.height;
+                const element = document.getElementById("$it")
+                return storyteller.isEntirelyOnScreen(element);
+            })();
+            """.trimIndent()
+            )
+        } ?: props?.locator?.locations?.progression?.let {
+            navigator?.evaluateJavascript(
+                """
+            (function() {
+                const width = Android.getViewportWidth();
+                const pageWidth = width / window.devicePixelRatio;
 
                 function snapOffset(offset) {
                     const value = offset + 1;
-
-                    return value - (value % maxScreenX);
+                    return value - (value % pageWidth);
                 }
 
                 const documentWidth = document.scrollingElement.scrollWidth;
                 const currentPageStart = snapOffset(documentWidth * ${currentLocator.locations.progression});
-                const currentPageEnd = currentPageStart + maxScreenX;
+                const currentPageEnd = currentPageStart + pageWidth;
                 return $it * documentWidth >= currentPageStart &&
                     $it * documentWidth < currentPageEnd;
             })();
@@ -273,7 +303,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             )
         }
 
-        val isPropLocatorOnPage = result?.let { Json.decodeFromString<Boolean>(it) } ?: false
+        val isPropLocatorOnPage = result?.let { Json.decodeFromString<Boolean?>(it) } ?: false
 
         val found = navigator!!.firstVisibleElementLocator()
         if (found == null) {
@@ -402,9 +432,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         activity?.lifecycleScope?.launch {
             val locator = props!!.locator ?: return@launch
             val fragments =
-                bookService?.getFragments(props!!.bookUuid, locator) ?: return@launch
+                BookService.getFragments(props!!.bookUuid, locator)
 
-            val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
+            val joinedFragments = fragments.joinToString { "\"${it.fragmentId}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
 
             navigator?.evaluateJavascript(
@@ -517,7 +547,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
     @JavascriptInterface
     fun handleDoubleTap(fragment: String) {
-        val bookService = this.bookService ?: return
+        val bookService = BookService
         val currentLocator = navigator?.currentLocator?.value ?: return
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
         activity?.lifecycleScope?.launch {
@@ -539,9 +569,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         if (locator.href != props!!.locator?.href || changingResource) {
             changingResource = false
 
-            val fragments = bookService?.getFragments(props!!.bookUuid, locator) ?: return
+            val fragments = BookService.getFragments(props!!.bookUuid, locator)
 
-            val joinedFragments = fragments.joinToString { "\"${it.fragment}\"" }
+            val joinedFragments = fragments.joinToString { "\"${it.fragmentId}\"" }
             val jsFragmentsArray = "[${joinedFragments}]"
 
             navigator?.evaluateJavascript(

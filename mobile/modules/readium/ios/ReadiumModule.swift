@@ -4,20 +4,105 @@ import ReadiumNavigator
 
 public class ReadiumModule: Module {
     public func definition() -> ModuleDefinition {
+        OnCreate {
+            Task { @AudiobookPlayerActor in
+                await AudiobookPlayerActor.shared.observeClipChanged(self.onClipChanged(overlayPar:))
+                await AudiobookPlayerActor.shared.observeTrackChanged(self.onTrackChanged(track:position:))
+                await AudiobookPlayerActor.shared.observeIsPlayingChanged(self.onIsPlayingChanged(isPlaying:))
+                await AudiobookPlayerActor.shared.observePositionChanged(self.onPositionChanged(position:))
+            }
+        }
+        
         Name("Readium")
-
-        AsyncFunction("extractArchive") { (archiveUrl: URL, extractedUrl: URL) in
-            try BookService.instance.extractArchive(archiveUrl: archiveUrl, extractedUrl: extractedUrl)
+        
+        Events("clipChanged", "isPlayingChanged", "positionChanged", "trackChanged")
+        
+        AsyncFunction("getIsPlaying") {
+            return await AudiobookPlayerActor.shared.getIsPlaying()
+        }
+        
+        AsyncFunction("getCurrentClip") {
+            return await AudiobookPlayerActor.shared.getCurrentClip()?.toJson()
+        }
+        
+        AsyncFunction("loadTracks") { (tracksJson: [[String:Any?]]) in
+            let tracks = tracksJson.map { Track.fromJson(json: $0) }
+            return try? await AudiobookPlayerActor.shared.loadTracks(tracks: tracks)
+        }
+        
+        AsyncFunction("getPosition") {
+            return await AudiobookPlayerActor.shared.getPosition()
+        }
+        
+        AsyncFunction("getCurrentTrack") {
+            return await AudiobookPlayerActor.shared.getCurrentTrack()?.toJson()
+        }
+        
+        AsyncFunction("getTracks") {
+            return await AudiobookPlayerActor.shared.getTracks().map { $0.toJson() }
+        }
+        
+        AsyncFunction("play") { (automaticRewind: Bool?) in
+            await AudiobookPlayerActor.shared.play(automaticRewind: automaticRewind ?? true)
+        }
+        
+        AsyncFunction("pause") {
+            await AudiobookPlayerActor.shared.pause()
+        }
+        
+        AsyncFunction("unload") {
+            await AudiobookPlayerActor.shared.unload()
+        }
+        
+        AsyncFunction("skip") { (position: Double) in
+            await AudiobookPlayerActor.shared.skip(to: position)
+        }
+        
+        AsyncFunction("seekTo") { (relativeUri: String, position: Double, skipEmit: Bool?) in
+            await AudiobookPlayerActor.shared.seekTo(relativeUri: relativeUri, position: position, skipEmit: skipEmit ?? false)
+        }
+        
+        AsyncFunction("seekBy") { (amount: Double) in
+            await AudiobookPlayerActor.shared.seekBy(amount: amount, bounded: false)
+        }
+        
+        AsyncFunction("next") {
+            await AudiobookPlayerActor.shared.next()
+        }
+        
+        AsyncFunction("prev") {
+            await AudiobookPlayerActor.shared.prev()
         }
 
-        AsyncFunction("openPublication") { (bookId: String, publicationUri: URL) -> String in
-            let pub = try await BookService.instance.openPublication(for: bookId, at: FileURL(url: publicationUri)!)
+        AsyncFunction("setRate") { (rate: Double) in
+            await AudiobookPlayerActor.shared.setRate(rate: rate)
+        }
+        
+        AsyncFunction("setAutomaticRewind") { (config: [String:Any]) in
+            await AudiobookPlayerActor.shared.setAutomaticRewind(
+                enabled: config["enabled"] as! Bool,
+                afterInterruption: config["afterInterruption"] as! Double,
+                afterBreak: config["afterBreak"] as! Double
+            )
+        }
+        
+        AsyncFunction("extractArchive") { (archiveUrl: URL, extractedUrl: URL) in
+            try BookService.shared.extractArchive(archiveUrl: archiveUrl, extractedUrl: extractedUrl)
+        }
+
+        AsyncFunction("openPublication") { (bookId: String, publicationUri: URL, clipsJson: [[String:Any]]?) async throws -> String in
+            let clips = try clipsJson?.map(OverlayPar.fromJson(_:))
+            let pub = try await BookService.shared.openPublication(for: bookId, at: FileURL(url: publicationUri)!, clips: clips)
             return pub.jsonManifest ?? "{}"
+        }
+        
+        AsyncFunction("getOverlayClips") { (bookId: String) in
+            return BookService.shared.getOverlayClips(for: bookId).map { $0.toJson() }
         }
 
         AsyncFunction("buildAudiobookManifest") { (bookId: String) async throws -> [String:Any] in
             if #available(iOS 16.0, *) {
-                return try await BookService.instance.buildAudiobookManifest(for: bookId).json
+                return try await BookService.shared.buildAudiobookManifest(for: bookId).json
             } else {
                 return [:]
             }
@@ -25,7 +110,7 @@ public class ReadiumModule: Module {
 
         AsyncFunction("getResource") { (bookId: String, linkJson: [String : Any]) async throws -> String in
             let link = try Link(json: linkJson)
-            let resource = try BookService.instance.getResource(for: bookId, link: link)
+            let resource = try BookService.shared.getResource(for: bookId, link: link)
             if link.mediaType?.isBitmap ?? false {
                 let data = try await resource.read().get()
                 return data.base64EncodedString()
@@ -34,66 +119,60 @@ public class ReadiumModule: Module {
         }
 
         AsyncFunction("getPositions") { (bookId: String) async throws -> [[String : Any]] in
-            let positions = try await BookService.instance.getPositions(for: bookId)
+            let positions = try await BookService.shared.getPositions(for: bookId)
             return positions.map { $0.json }
         }
 
         AsyncFunction("getClip") { (bookId: String, locatorJson: [String : Any]) -> [String : Any]? in
             guard let locator = try Locator(json: locatorJson),
-                  let clip = try BookService.instance.getClip(for: bookId, locator: locator) else {
+                  let clip = BookService.shared.getClip(for: bookId, locator: locator) else {
                 return nil
             }
 
-            return [
-                "relativeUrl": clip.relativeUrl!.absoluteString,
-                "fragmentId": clip.fragmentId!,
-                "start": clip.start!,
-                "end": clip.end!,
-                "duration": clip.duration!
-            ]
+            return clip.toJson()
         }
 
         AsyncFunction("getFragment") { (bookId: String, clipUrlString: String, position: Double) async throws -> [String : Any]? in
             guard let clipUrl = URL(string: clipUrlString),
-                  let fragment = try await BookService.instance.getFragment(for: bookId, clipUrl: clipUrl, position: position) else {
+                  let fragment = BookService.shared.getFragment(for: bookId, clipUrl: clipUrl, position: position) else {
                 return nil
             }
             return [
-                "href": fragment.href,
-                "fragment": fragment.fragment,
-                "locator": fragment.locator!.json
+                "href": fragment.locator.href,
+                "fragment": fragment.fragmentId,
+                "locator": fragment.locator.json
             ]
         }
 
         AsyncFunction("getPreviousFragment") { (bookId: String, locatorJson: [String : Any]) async throws-> [String : Any]? in
             guard let locator = try Locator(json: locatorJson),
-                  let previous = try? await BookService.instance.getFragment(for: bookId, before: locator) else {
+                  let previous = BookService.shared.getFragment(for: bookId, before: locator) else {
                 return nil
             }
 
             return [
-                "href": previous.href,
-                "fragment": previous.fragment,
-                "locator": previous.locator!.json
+                "href": previous.locator.href,
+                "fragment": previous.fragmentId,
+                "locator": previous.locator.json
             ]
         }
 
         AsyncFunction("getNextFragment") { (bookId: String, locatorJson: [String : Any]) async throws-> [String : Any]? in
             guard let locator = try Locator(json: locatorJson),
-                  let next = try? await BookService.instance.getFragment(for: bookId, after: locator) else {
+                  let next = BookService.shared.getFragment(for: bookId, after: locator) else {
                 return nil
             }
 
             return [
-                "href": next.href,
-                "fragment": next.fragment,
-                "locator": next.locator!.json
+                "href": next.locator.href,
+                "fragment": next.fragmentId,
+                "locator": next.locator.json
             ]
         }
 
         AsyncFunction("locateLink") { (bookId: String, linkJson: [String : Any]) async throws-> [String : Any]? in
             let link = try Link(json: linkJson)
-            let locator = await BookService.instance.locateLink(for: bookId, link: link)
+            let locator = await BookService.shared.locateLink(for: bookId, link: link)
             return locator?.json
         }
 
@@ -206,5 +285,28 @@ public class ReadiumModule: Module {
                 view.finalizeProps()
             }
         }
+    }
+    
+    func onClipChanged(overlayPar: OverlayPar) {
+        sendEvent("clipChanged", [
+            "relativeUrl": overlayPar.relativeUrl.absoluteString,
+            "fragmentId": overlayPar.fragmentId,
+            "start": overlayPar.start,
+            "end": overlayPar.end,
+            "duration": overlayPar.end - overlayPar.start,
+            "locator": overlayPar.locator.json
+        ])
+    }
+    
+    func onIsPlayingChanged(isPlaying: Bool) {
+        sendEvent("isPlayingChanged", ["isPlaying": isPlaying])
+    }
+    
+    func onPositionChanged(position: Double) {
+        sendEvent("positionChanged", ["position": position])
+    }
+    
+    func onTrackChanged(track: Track, position: Double) {
+        sendEvent("trackChanged", ["track": track.toJson(), "position": position])
     }
 }

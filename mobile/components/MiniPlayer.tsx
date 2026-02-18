@@ -3,7 +3,6 @@ import { useMemo, useRef } from "react"
 import { View } from "react-native"
 
 import { type BookWithRelations } from "@/database/books"
-import { formatTimeHuman, useAudioBook } from "@/hooks/useAudioBook"
 import { cn } from "@/lib/utils"
 import { getHrefChapterTitle, positionToPageCount } from "@/links"
 import {
@@ -14,8 +13,21 @@ import {
   playerTotalPositionSeeked,
   previousFragmentPressed,
 } from "@/store/actions"
-import { useAppDispatch } from "@/store/appState"
-import { useGetBookPreferencesQuery } from "@/store/localApi"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
+import {
+  useGetBookPositionsQuery,
+  useGetBookPreferencesQuery,
+} from "@/store/localApi"
+import {
+  formatTimeHuman,
+  getBookDuration,
+  getBookPosition,
+  getCurrentTrackDuration,
+  getCurrentTrackIndex,
+  getPlaybackRate,
+  getPosition,
+  getTrackCount,
+} from "@/store/selectors/bookshelfSelectors"
 
 import { AudiobookCover } from "./AudiobookCover"
 import { EbookCover } from "./EbookCover"
@@ -29,22 +41,32 @@ import { Text } from "./ui/text"
 type Props = {
   book: BookWithRelations
   format: "ebook" | "readaloud"
-  automaticRewind: boolean
   hidden: boolean
 }
 
-export function MiniPlayer({ book, format, hidden, automaticRewind }: Props) {
+export function MiniPlayer({ book, format, hidden }: Props) {
   const locator = book.position?.locator
   const { data: bookPrefs } = useGetBookPreferencesQuery({ uuid: book.uuid })
-  const { track, total, rate } = useAudioBook()
-  const trackPositionRef = useRef(track.position)
-  trackPositionRef.current = track.position
+  const position = useAppSelector(getPosition)
+  const bookPosition = useAppSelector(getBookPosition)
+  const bookDuration = useAppSelector(getBookDuration)
+  const currentTrackIndex = useAppSelector(getCurrentTrackIndex)
+  const trackCount = useAppSelector(getTrackCount)
+  const trackDuration = useAppSelector(getCurrentTrackDuration)
+
+  const rate = useAppSelector(getPlaybackRate)
+
+  const trackPositionRef = useRef(position)
+  trackPositionRef.current = position
 
   const dispatch = useAppDispatch()
 
   const manifest =
     format === "readaloud" ? book.readaloud?.epubManifest : book.ebook?.manifest
-  const positions = book[format]?.positions
+  const { data: positions } = useGetBookPositionsQuery({
+    bookUuid: book.uuid,
+    format,
+  })
 
   const chapterTitle = useMemo(() => {
     if (!manifest?.toc) return null
@@ -62,9 +84,9 @@ export function MiniPlayer({ book, format, hidden, automaticRewind }: Props) {
   const progress = useMemo(() => {
     if (bookPrefs?.detailView?.mode === "audio") {
       if (bookPrefs?.detailView?.scope === "book") {
-        return total.position
+        return bookPosition
       }
-      return track.position
+      return position
     }
     if (bookPrefs?.detailView?.scope === "book") {
       const position =
@@ -96,8 +118,8 @@ export function MiniPlayer({ book, format, hidden, automaticRewind }: Props) {
     locator?.locations?.position,
     locator?.locations?.progression,
     locator?.locations?.totalProgression,
-    total.position,
-    track.position,
+    bookPosition,
+    position,
   ])
 
   const { title, formattedProgress } = useMemo(() => {
@@ -105,16 +127,12 @@ export function MiniPlayer({ book, format, hidden, automaticRewind }: Props) {
       if (bookPrefs.detailView.scope === "book") {
         return {
           title: book.title,
-          formattedProgress: `${formatTimeHuman(
-            total.endPosition / rate - progress / rate,
-          )} left`,
+          formattedProgress: `${formatTimeHuman(bookDuration - progress, rate)} left`,
         }
       }
       return {
-        title: `Track ${track.index + 1} of ${total.trackCount}`,
-        formattedProgress: `${formatTimeHuman(
-          track.endPosition / rate - progress / rate,
-        )} left`,
+        title: `Track ${currentTrackIndex + 1} of ${trackCount}`,
+        formattedProgress: `${formatTimeHuman(trackDuration - progress, rate)} left`,
       }
     }
     if (bookPrefs?.detailView?.scope === "book") {
@@ -145,31 +163,26 @@ export function MiniPlayer({ book, format, hidden, automaticRewind }: Props) {
     bookPrefs?.detailView?.scope,
     chapterPositions,
     chapterTitle,
+    currentTrackIndex,
+    trackCount,
+    trackDuration,
     progress,
-    track.index,
-    track.endPosition,
-    total.trackCount,
-    total.endPosition,
     rate,
     book.title,
-    positions,
+    bookDuration,
     locator?.locations?.position,
     locator?.locations?.totalProgression,
     locator?.locations?.progression,
+    positions,
   ])
 
-  const progressStart =
-    bookPrefs?.detailView?.mode === "audio"
-      ? bookPrefs?.detailView?.scope === "book"
-        ? total.startPosition
-        : track.startPosition
-      : 1
+  const progressStart = bookPrefs?.detailView?.mode === "audio" ? 0 : 1
 
   const progressEnd =
     bookPrefs?.detailView?.mode === "audio"
       ? bookPrefs?.detailView?.scope === "book"
-        ? total.endPosition
-        : track.endPosition
+        ? bookDuration
+        : trackDuration
       : bookPrefs?.detailView?.scope === "book"
         ? positions?.length
         : chapterPositions.length
@@ -220,8 +233,8 @@ export function MiniPlayer({ book, format, hidden, automaticRewind }: Props) {
                 >
                   <Icon as={Rewind} size={20} />
                 </Button>
-                <View className="w-8">
-                  <PlayPause automaticRewind={automaticRewind} />
+                <View className="w-8 flex-row items-center justify-center">
+                  <PlayPause automaticRewind={false} />
                 </View>
                 <Button
                   variant="ghost"

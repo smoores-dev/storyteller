@@ -26,7 +26,45 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-build-properties",
         {
-          ios: { deploymentTarget: "15.5" },
+          ios: {
+            deploymentTarget: "16.0",
+            extraPods: [
+              { name: "Minizip", modular_headers: true },
+              { name: "ZIPFoundation", version: "~> 0.9" },
+              {
+                name: "ReadiumShared",
+                version: "~> 3.6.0",
+                source: "https://github.com/readium/podspecs",
+              },
+              {
+                name: "ReadiumStreamer",
+                version: "~> 3.6.0",
+                source: "https://github.com/readium/podspecs",
+              },
+              {
+                name: "ReadiumNavigator",
+                version: "~> 3.6.0",
+                source: "https://github.com/readium/podspecs",
+              },
+              {
+                name: "ReadiumOPDS",
+                version: "~> 3.6.0",
+                source: "https://github.com/readium/podspecs",
+              },
+              {
+                name: "ReadiumLCP",
+                version: "~> 3.6.0",
+                source: "https://github.com/readium/podspecs",
+              },
+              {
+                name: "ReadiumAdapterGCDWebServer",
+                version: "~> 3.6.0",
+                source: "https://github.com/readium/podspecs",
+                modular_headers: true,
+              },
+              { name: "ReadiumGCDWebServer", modular_headers: true },
+            ],
+          },
           android: {
             compileSdkVersion: 35,
             targetSdkVersion: 35,
@@ -80,33 +118,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       ["./plugins/withAndroidJetifier.ts"],
       ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93] }],
-      [
-        "./plugins/withPodSources.ts",
-        {
-          sources: [
-            "source 'https://github.com/readium/podspecs'",
-            "source 'https://cdn.cocoapods.org/'",
-          ],
-        },
-      ],
-      [
-        "./plugins/withPods.ts",
-        {
-          pods: [
-            "pod 'Minizip', modular_headers: true",
-            "pod 'ZIPFoundation', '~> 0.9'",
-            "pod 'ReadiumShared', '~> 3.5.0'",
-            "pod 'ReadiumStreamer', '~> 3.5.0'",
-            "pod 'ReadiumNavigator', '~> 3.5.0'",
-            "pod 'ReadiumOPDS', '~> 3.5.0'",
-            "pod 'ReadiumLCP', '~> 3.5.0'",
-            "pod 'ReadiumAdapterGCDWebServer', '~> 3.5.0', modular_headers: true",
-          ],
-        },
-      ],
-      ["./plugins/withModularHeaders.ts"],
       ["./plugins/withCoreLibraryDesugaring.ts"],
       ["./plugins/withAndroidAuto.ts"],
+      ["./plugins/withForegroundService.ts"],
+      ["./plugins/withNoParcelSizeCrashes.ts"],
+      // NOTE: Sentry is _only_ enabled for debug builds used to track down
+      // specific crash errors. It is _not_ included in the public Storyteller
+      // releases (either in the app stores or on GitLab's release page).
+      ...(process.env["ENABLE_SENTRY"]
+        ? [
+            [
+              "@sentry/react-native/expo",
+              {
+                url: "https://sentry.io/",
+                project: "storyteller-mobile",
+                organization: "storyteller-po",
+              },
+            ] as [string, unknown],
+          ]
+        : []),
     ],
     runtimeVersion: {
       policy: "appVersion",
@@ -124,7 +154,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         UISupportsDocumentBrowser: true,
         UIFileSharingEnabled: true,
         LSSupportsOpeningDocumentsInPlace: true,
-        UIBackgroundModes: ["audio", "fetch"],
+        UIBackgroundModes: ["audio", "processing"],
         NSMicrophoneUsageDescription:
           "This permission is not needed by the app, but it is required by an underlying API. If you see this dialog, contact us.",
         CFBundleDocumentTypes: [
@@ -144,6 +174,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         foregroundImage: "./assets/Storyteller_Logo.png",
         backgroundColor: "#ffffff",
       },
+      permissions: [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+      ],
       // This doesn't work yet
       predictiveBackGestureEnabled: false,
       intentFilters: [

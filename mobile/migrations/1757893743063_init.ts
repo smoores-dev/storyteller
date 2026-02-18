@@ -774,7 +774,9 @@ END;
         description: book.epubManifest.metadata.description
           ? parseLocalizedString(book.epubManifest.metadata.description)
           : null,
-        language: book.epubManifest.metadata.language,
+        language: Array.isArray(book.epubManifest.metadata.language)
+          ? book.epubManifest.metadata.language[0]
+          : book.epubManifest.metadata.language,
         publicationDate,
         serverUuid,
         ebookCoverUrl: LegacyFiles.getLocalBookCoverUrl(book.id),
