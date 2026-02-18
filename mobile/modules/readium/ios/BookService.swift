@@ -35,44 +35,33 @@ final class BookService {
     let retriever: AssetRetriever
     private let opener: PublicationOpener
     private var publications: [String : Publication] = [:]
-    private var mediaOverlays: [String : OrderedDictionary<String, STMediaOverlays>] = [:]
+    private var clips: [String : [OverlayPar]] = [:]
 
-    public static let instance = BookService()
+    public static let shared = BookService()
 
-    private static func onCreatePublication(_ manifest: inout Manifest,_ container: inout Container,_ services: inout PublicationServicesBuilder) -> Void {
+    private static func onCreatePublication(_ manifest: inout Manifest,_ container: inout Container,_ services: inout PublicationServicesBuilder) async -> Void {
         let localContainer = container
-        var opfHREF: RelativeURL? = nil
-        var manifestItems: NodeSet? = nil
-        Task.synchronous {
-            opfHREF = try? await EPUBContainerParser(container: localContainer).parseOPFHREF()
 
-            guard let opfHREF = opfHREF else {
-                return
-            }
-
-            guard let opfResource = localContainer[opfHREF] else {
-                return
-            }
-
-            guard let opfData = try? await opfResource.read().get() else {
-                return
-            }
-
-            guard let document = try? ReadiumFuzi.XMLDocument(data: opfData) else {
-                return
-            }
-            document.definePrefix("opf", forNamespace: "http://www.idpf.org/2007/opf")
-
-             manifestItems = document.xpath("/opf:package/opf:manifest/opf:item")
-        }
-
-        guard let manifestItems = manifestItems else {
-            return
-        }
+        let opfHREF = try? await EPUBContainerParser(container: localContainer).parseOPFHREF()
 
         guard let opfHREF = opfHREF else {
             return
         }
+
+        guard let opfResource = localContainer[opfHREF] else {
+            return
+        }
+
+        guard let opfData = try? await opfResource.read().get() else {
+            return
+        }
+
+        guard let document = try? ReadiumFuzi.XMLDocument(data: opfData) else {
+            return
+        }
+        document.definePrefix("opf", forNamespace: "http://www.idpf.org/2007/opf")
+
+        let manifestItems = document.xpath("/opf:package/opf:manifest/opf:item")
 
         var readingOrder = manifest.readingOrder
         for manifestItem in manifestItems {
@@ -142,27 +131,24 @@ final class BookService {
         }
         return await publication.positions().getOrNil() ?? []
     }
+    
+    func getOverlayClips(for bookUuid: String) -> [OverlayPar] {
+        return clips[bookUuid] ?? []
+    }
 
-    func getClip(for bookId: String, locator: Locator) throws -> Clip? {
-        guard let publication = getPublication(for: bookId) else {
-            throw BookServiceError.unopenedPublication(bookId)
-        }
-
-        guard let link = publication.readingOrder.first(where: { $0.href == locator.href.string }) else {
-            throw BookServiceError.locatorNotInReadingOrder(bookId, locator.href.string)
-        }
-
-        guard let overlayHref = link.properties.otherProperties["mediaOverlay"] as? String,
-              let mediaOverlays = self.mediaOverlays[bookId]?[overlayHref] else {
-//            throw BookServiceError.noMediaOverlay(bookId, link.href)
+    func getClip(for bookId: String, locator: Locator) -> OverlayPar? {
+        guard let bookClips = clips[bookId] else {
             return nil
         }
-
+        
         guard let fragment = locator.locations.fragments.first else {
             return nil
         }
-
-        return try? mediaOverlays.clip(forFragmentId: fragment)
+        
+        return bookClips.first {
+            $0.locator.href.string == locator.href.string &&
+            $0.fragmentId == fragment
+        }
     }
 
     func locateFromPositions(for bookId: String, link: Link) async throws -> Locator {
@@ -183,118 +169,63 @@ final class BookService {
         return locator
     }
 
-    func getFragments(for bookId: String, locator: Locator) -> [TextFragment] {
-        let mediaOverlayStore = self.mediaOverlays[bookId]
-        let mediaOverlays = mediaOverlayStore?.values
-        let textFragments = mediaOverlays?.flatMap { $0.fragments() } ?? []
-        return textFragments.filter { $0.href == locator.href.string }
+    func getFragments(for bookId: String, locator: Locator) -> [OverlayPar] {
+        guard let bookClips = clips[bookId] else {
+            return []
+        }
+        return bookClips.filter { $0.locator.href.string == locator.href.string }
     }
 
-    func getFragment(for bookId: String, before locator: Locator) async throws ->  TextFragment? {
+    func getFragment(for bookId: String, before locator: Locator) -> OverlayPar? {
         guard let currentFragment = locator.locations.fragments.first else {
             return nil
         }
-        let mediaOverlayStore = self.mediaOverlays[bookId]
-        let mediaOverlays = mediaOverlayStore?.values
-        let textFragments = mediaOverlays?.flatMap { $0.fragments() } ?? []
-        guard let currentIndex = textFragments.firstIndex(where: { $0.href == locator.href.string && $0.fragment == currentFragment }) else {
+        guard let bookClips = clips[bookId] else {
             return nil
         }
-        if currentIndex == textFragments.startIndex {
+        guard let currentIndex = bookClips.firstIndex(where: { $0.locator.href.string == locator.href.string && $0.fragmentId == currentFragment }) else {
             return nil
         }
-        let previousIndex = textFragments.index(before: currentIndex)
-        var previousFragment = textFragments[previousIndex]
-        previousFragment.locator = try await getLocatorFor(bookId: bookId, href: previousFragment.href, fragment: previousFragment.fragment)
-        return previousFragment
+        if currentIndex == bookClips.startIndex {
+            return nil
+        }
+        let previousIndex = bookClips.index(before: currentIndex)
+        return bookClips[previousIndex]
     }
 
-    func getFragment(for bookId: String, after locator: Locator) async throws -> TextFragment? {
+    func getFragment(for bookId: String, after locator: Locator) -> OverlayPar? {
         guard let currentFragment = locator.locations.fragments.first else {
             return nil
         }
-        let mediaOverlayStore = self.mediaOverlays[bookId]
-        let mediaOverlays = mediaOverlayStore?.values
-        let textFragments = mediaOverlays?.flatMap { $0.fragments() } ?? []
-        guard let currentIndex = textFragments.firstIndex(where: { $0.href == locator.href.string && $0.fragment == currentFragment }) else {
+        guard let bookClips = clips[bookId] else {
             return nil
         }
-        if currentIndex == textFragments.endIndex {
+        guard let currentIndex = bookClips.firstIndex(where: { $0.locator.href.string == locator.href.string && $0.fragmentId == currentFragment }) else {
             return nil
         }
-        let nextIndex = textFragments.index(after: currentIndex)
-        var nextFragment = textFragments[nextIndex]
-        nextFragment.locator = try await getLocatorFor(bookId: bookId, href: nextFragment.href, fragment: nextFragment.fragment)
-        return nextFragment
+        if currentIndex == bookClips.endIndex {
+            return nil
+        }
+        let nextIndex = bookClips.index(after: currentIndex)
+        return bookClips[nextIndex]
     }
 
-    func getLocatorFor(bookId: String, href: String, fragment: String) async throws -> Locator? {
-        guard let publication = getPublication(for: bookId) else {
-            throw BookServiceError.unopenedPublication(bookId)
-        }
-
-        guard let link = publication.linkWithHREF(RelativeURL(epubHREF: href)!) else {
+    func getLocatorFor(bookId: String, href: String, fragment: String) -> Locator? {
+        guard let bookClips = clips[bookId] else {
             return nil
         }
-
-        let resource = publication.get(link)!
-        let htmlContent = try await resource.readAsString().get()
-        if #available(iOS 16.0, *) {
-            let fragmentRegex = try Regex("id=\"\(fragment)\"")
-            if let startOfFragment = htmlContent.firstMatch(of: fragmentRegex)?.range.lowerBound {
-                let fragmentPosition = htmlContent.distance(from: htmlContent.startIndex, to: startOfFragment)
-                let progression = Double(fragmentPosition) / Double(htmlContent.distance(from: htmlContent.startIndex, to: htmlContent.endIndex))
-                guard let startOfChapterProgression = try await locateFromPositions(for: bookId, link: link).locations.totalProgression else {
-                    return nil
-                }
-                guard let chapterIndex = publication.readingOrder.firstIndexWithHREF(RelativeURL(epubHREF: link.href)!) else {
-                    return nil
-                }
-                let nextChapterIndex = publication.readingOrder.index(after: chapterIndex)
-                let nextChapterLink = publication.readingOrder[nextChapterIndex]
-                let startOfNextChapterProgression = try await locateFromPositions(for: bookId, link: nextChapterLink).locations.totalProgression ?? 1
-                let totalProgression = startOfChapterProgression + (progression * (startOfNextChapterProgression - startOfChapterProgression))
-                return Locator(
-                    href: RelativeURL(epubHREF: href)!,
-                    mediaType: .xhtml,
-                    locations: Locator.Locations(
-                        fragments: [fragment],
-                        progression: progression,
-                        totalProgression: totalProgression
-                    )
-                )
-            }
-
-            return nil
-        }
-
-        return Locator(
-            href: RelativeURL(epubHREF: href)!,
-            mediaType: .xhtml
-        )
+        
+        return bookClips.first { $0.locator.href.string == href && $0.fragmentId == fragment }?.locator
     }
 
-    func getFragment(for bookId: String, clipUrl: URL, position: Double) async throws -> TextFragment? {
-        guard let mediaOverlayStore = self.mediaOverlays[bookId] else {
+    func getFragment(for bookId: String, clipUrl: URL, position: Double) -> OverlayPar? {
+        guard let bookClips = clips[bookId] else {
             return nil
         }
-
-        var maybeFragment: TextFragment? = nil
-        for mediaOverlays in mediaOverlayStore.values {
-            if let found = mediaOverlays.fragment(clipUrl: clipUrl, position: position) {
-                maybeFragment = found
-                break
-            }
-        }
-
-        guard var fragment = maybeFragment else {
-            return nil
-        }
-
-        let locator = try await getLocatorFor(bookId: bookId, href: fragment.href, fragment: fragment.fragment)
-        fragment.locator = locator
-
-        return fragment
+        
+        let clipsInUrl = bookClips.filter { $0.relativeUrl.relativeString == clipUrl.relativeString }
+        
+        return searchForClip(clips: clipsInUrl, position: position)
     }
 
     func locateLink(for bookId: String, link: Link) async -> Locator? {
@@ -305,13 +236,13 @@ final class BookService {
     }
 
     private func makeMediaOverlays(for bookId: String, pub publication: Publication) async throws {
-        var mediaOverlayStore: OrderedDictionary<String, STMediaOverlays> = [:]
+        var bookClips: [OverlayPar] = []
 
         let mediaOverlayLinks = publication.resources.filterByMediaType(.smil)
 
         for link in mediaOverlayLinks {
             let mediaOverlays = STMediaOverlays(link: link)
-            let node = MediaOverlayNode()
+            let node = STMediaOverlayNode()
 
             let smilResource = publication.get(link)!
             guard let smilData = try? await smilResource.read().get(),
@@ -330,18 +261,19 @@ final class BookService {
             if let textRef = body.attr("textref") { // Prevent the crash on the japanese book
                 node.text = RelativeURL(epubHREF: link.href)!.resolve( RelativeURL(epubHREF: textRef)!)!.string
             }
-            // get body parameters <par>a
-            STSMILParser.parseParallels(in: body, withParent: node, base: link.href)
-            STSMILParser.parseSequences(in: body, withParent: node, mediaOverlays: mediaOverlays.mediaOverlays, base: link.href)
 
-            mediaOverlayStore[link.href] = mediaOverlays
+            // get body parameters <par>a
+            await STSMILParser.parseParallels(publication, in: body, withParent: node, base: link.href, htmlContent: nil)
+            await STSMILParser.parseSequences(publication, in: body, withParent: node, mediaOverlays: mediaOverlays, base: link.href)
+
+            bookClips.append(contentsOf: mediaOverlays.clips())
         }
 
-        self.mediaOverlays[bookId] = mediaOverlayStore
+        clips[bookId] = bookClips
     }
 
     /// Opens the Readium 2 Publication at the given `url`.
-    func openPublication(for bookId: String, at url: FileURL) async throws -> Publication {
+    func openPublication(for bookId: String, at url: FileURL, clips: [OverlayPar]?) async throws -> Publication {
         if let publication = getPublication(for: bookId) {
             return publication
         }
@@ -356,21 +288,25 @@ final class BookService {
             let pub = try pubResult.get()
             try checkIsReadable(publication: pub)
             publications[bookId] = pub
-            try await makeMediaOverlays(for: bookId, pub: pub)
+            if clips == nil {
+                try await makeMediaOverlays(for: bookId, pub: pub)
+            } else {
+                self.clips[bookId] = clips
+            }
             return pub
         } catch {
             throw BookError.openFailed(error)
         }
     }
 
-    @available(iOS 16.0, *)
     func buildAudiobookManifest(for bookId: String) async throws -> Manifest {
         guard let publication = getPublication(for: bookId) else {
             throw BookError.bookNotFound
         }
-        guard let mediaOverlays = self.mediaOverlays[bookId] else {
+        guard let bookClips = clips[bookId] else {
             throw BookError.bookNotFound
         }
+        let clipsByHref = Dictionary(grouping: bookClips, by: \.locator.href.string)
 
         func buildAudiobookTocLink(link: Link) async throws -> Link? {
             let children = try await link.children.asyncMap {
@@ -390,41 +326,20 @@ final class BookService {
             guard let tocLocator = await locateLink(for: bookId, link: link) else {
                 return fallbackLink
             }
+            guard let tocProgression = tocLocator.locations.progression else {
+                return fallbackLink
+            }
             guard let plainLink = publication.linkWithHREF(tocLocator.href) else {
                 return fallbackLink
             }
-            guard let mediaOverlayHREF = plainLink.properties["mediaOverlay"] else {
+            guard let chapterClips = clipsByHref[plainLink.url().string] else {
                 return fallbackLink
             }
-            guard let overlay = mediaOverlays[mediaOverlayHREF as! String] else {
-                return fallbackLink
-            }
-
-            let clip: Clip? = try await {
-                if !tocLocator.locations.fragments.isEmpty {
-                    let resource = publication.get(plainLink)
-                    guard let htmlContent = await resource?.readAsString().getOrNil() else {
-                        return nil
-                    }
-                    let fragmentRegex = try Regex("id=\(tocLocator.locations.fragments.first!)")
-                    guard let endOfFragment = htmlContent.firstMatch(of: fragmentRegex)?.range.upperBound else {
-                        return nil
-                    }
-                    let nextFragmentRegex = /id="([a-zA-Z][a-zA-Z0-9\\-_:.]*)"/
-                    guard let nextFragment = htmlContent[endOfFragment...].firstMatch(of: nextFragmentRegex)?.1 else {
-                        return nil
-                    }
-                    return try? overlay.clip(forFragmentId: String(nextFragment))
-                } else {
-                    return overlay.clips().first
-                }
-            }()
-
-            guard let clip = clip else {
+            guard let clip = searchForClipsByProgression(clips: chapterClips, progression: tocProgression) else {
                 return fallbackLink
             }
 
-            guard let relativeUrl = clip.relativeUrl, let audioResource = RelativeURL(url: relativeUrl) else {
+            guard let audioResource = RelativeURL(url: clip.relativeUrl) else {
                 return fallbackLink
             }
 
@@ -436,31 +351,26 @@ final class BookService {
                 return fallbackLink
             }
 
-            let duration = overlay.link.duration
-
-            let href = "\(audioResource)#t=\(clip.start ?? 0.0)"
+            let href = "\(audioResource)#t=\(clip.start)"
 
             return Link(
                 href: href,
                 mediaType: clipResource.mediaType,
                 title: link.title,
-                duration: duration,
                 children: children,
             )
         }
 
         var clips: OrderedDictionary<String, Double> = [:]
 
-        for overlay in mediaOverlays.values {
-            for clip in overlay.clips() {
-                guard let relativeUrl = clip.relativeUrl, let audioResource = RelativeURL(url: relativeUrl) else {
-                    continue
-                }
-                let duration = clips[audioResource.string] ?? 0.0
-                let end = clip.end ?? 0.0
-                let start = clip.start ?? 0.0
-                clips[audioResource.string] = duration + end - start
+        for clip in bookClips {
+            guard let audioResource = RelativeURL(url: clip.relativeUrl) else {
+                continue
             }
+            let duration = clips[audioResource.string] ?? 0.0
+            let end = clip.end
+            let start = clip.start
+            clips[audioResource.string] = duration + end - start
         }
 
         return try await Manifest(
@@ -489,4 +399,25 @@ final class BookService {
           }
         }
     }
+}
+
+func searchForClipsByProgression(clips: [OverlayPar], progression: Double) -> OverlayPar? {
+    var startIndex = clips.startIndex
+    var endIndex = clips.endIndex
+    while (startIndex <= endIndex) {
+        let midIndex = Int((startIndex + endIndex) / 2)
+        let midItem = clips[midIndex]
+        let prevIndex = midIndex - 1
+        let prevItem = prevIndex < 0 ? nil : clips[prevIndex]
+        if progression > (midItem.locator.locations.progression ?? 0.0) {
+            startIndex = midIndex + 1
+            continue
+        }
+        if (prevItem != nil && progression < (midItem.locator.locations.progression ?? 0.0)) {
+            endIndex = midIndex - 1
+            continue
+        }
+        return midItem
+    }
+    return nil
 }

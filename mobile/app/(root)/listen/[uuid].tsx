@@ -8,11 +8,9 @@ import {
   SkipBack,
   SkipForward,
 } from "lucide-react-native"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { View } from "react-native"
-import TrackPlayer from "react-native-track-player"
 
-import { seekBackward, seekForward } from "@/audio/PlaybackService"
 import { AudiobookCover } from "@/components/AudiobookCover"
 import { LoadingView } from "@/components/LoadingView"
 import { PlayPause } from "@/components/PlayPause"
@@ -23,12 +21,20 @@ import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
 import { PortalHost } from "@/components/ui/portal-context"
 import { Text } from "@/components/ui/text"
-import { formatTime, useAudioBook } from "@/hooks/useAudioBook"
-import { areLocatorsEqual } from "@/modules/readium"
+import { Storyteller, areLocatorsEqual } from "@/modules/readium"
 import { playerPositionSeeked } from "@/store/actions"
-import { useAppDispatch } from "@/store/appState"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { useGetBookBookmarksQuery, useGetBookQuery } from "@/store/localApi"
 import { getLocalBookExtractedUrl } from "@/store/persistence/files"
+import {
+  formatTime,
+  getCurrentTrack,
+  getCurrentTrackDuration,
+  getHumanFormattedRemainingTime,
+  getIsAudioLoading,
+  getPlaybackRate,
+  getPosition,
+} from "@/store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 import { type UUID } from "@/uuid"
 
@@ -55,26 +61,29 @@ export default function PlayerScreen() {
   )
 
   const dispatch = useAppDispatch()
-  const { isLoading, track, remainingTime, rate, tracks } = useAudioBook()
-  const trackPositionRef = useRef(track.position)
-  trackPositionRef.current = track.position
+  const isLoading = useAppSelector(getIsAudioLoading)
+  const duration = useAppSelector(getCurrentTrackDuration)
+  const position = useAppSelector(getPosition)
+  const remainingTime = useAppSelector(getHumanFormattedRemainingTime)
+  const rate = useAppSelector(getPlaybackRate)
+  const currentTrack = useAppSelector(getCurrentTrack)
 
   const panning = useRef(false)
-  const [eagerProgress, setEagerProgress] = useState(track.position)
+  const [eagerProgress, setEagerProgress] = useState(position)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!panning.current) {
-      setEagerProgress(trackPositionRef.current)
+      setEagerProgress(position)
     }
-  }, [track.position, locator])
+  }, [position, locator])
 
   const progressTime = useMemo(() => {
-    return formatTime(eagerProgress / rate)
+    return formatTime(eagerProgress, rate)
   }, [eagerProgress, rate])
 
   const remainingProgressTime = useMemo(() => {
-    return "-" + formatTime((track.endPosition - eagerProgress) / rate)
-  }, [eagerProgress, rate, track.endPosition])
+    return "-" + formatTime(duration - eagerProgress, rate)
+  }, [eagerProgress, rate, duration])
 
   useEffect(() => {
     dispatch(bookshelfSlice.actions.bookOpened({ bookUuid: uuid, format }))
@@ -102,15 +111,15 @@ export default function PlayerScreen() {
     })
     .find(({ url, startPosition }, index, array) => {
       const encodedCurrentUrl = encodeURI(
-        (tracks[track.index]?.url as string | undefined) ?? "",
+        (currentTrack?.uri as string | undefined) ?? "",
       )
       const next = array[index + 1]
       return (
         url === encodedCurrentUrl &&
-        track.position >= startPosition &&
+        position >= startPosition &&
         (encodedCurrentUrl !== next?.url ||
           !next ||
-          track.position < next.startPosition)
+          position < next.startPosition)
       )
     })?.title
 
@@ -149,8 +158,8 @@ export default function PlayerScreen() {
           </View>
           <View className="my-4 w-full px-6">
             <ProgressBar
-              start={track.startPosition}
-              stop={track.endPosition}
+              start={0}
+              stop={duration}
               progress={eagerProgress}
               onProgressChange={(newProgress) => {
                 setEagerProgress(newProgress)
@@ -178,7 +187,7 @@ export default function PlayerScreen() {
               variant="ghost"
               size="icon"
               onPress={() => {
-                TrackPlayer.skipToPrevious()
+                Storyteller.prev()
               }}
             >
               <Icon as={SkipBack} size={32} />
@@ -187,7 +196,7 @@ export default function PlayerScreen() {
               variant="ghost"
               size="icon"
               onPress={() => {
-                seekBackward(15)
+                Storyteller.seekBy(-15)
               }}
             >
               <Icon as={RotateCcw} size={32} />
@@ -197,7 +206,7 @@ export default function PlayerScreen() {
               variant="ghost"
               size="icon"
               onPress={() => {
-                seekForward(15)
+                Storyteller.seekBy(15)
               }}
             >
               <Icon as={RotateCw} size={32} />
@@ -206,7 +215,7 @@ export default function PlayerScreen() {
               variant="ghost"
               size="icon"
               onPress={() => {
-                TrackPlayer.skipToNext()
+                Storyteller.next()
               }}
             >
               <Icon as={SkipForward} size={32} />

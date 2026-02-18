@@ -19,7 +19,7 @@ final class STSMILParser {
     ///   - parent: The parent MediaOverlayNode of the "to be creatred" nodes.
     ///   - readingOrder:
     ///   - base: The base location of the file for path normalization.
-    internal static func parseSequences(in element: ReadiumFuzi.XMLElement, withParent parent: MediaOverlayNode, mediaOverlays: MediaOverlays, base: String) {
+    internal static func parseSequences(_ publication: Publication, in element: ReadiumFuzi.XMLElement, withParent parent: STMediaOverlayNode, mediaOverlays: STMediaOverlays, base: String) async {
         guard let baseHREF = RelativeURL(epubHREF: base) else {
             return
         }
@@ -29,16 +29,23 @@ final class STSMILParser {
                 continue
             }
 
-            let newNode = MediaOverlayNode()
+            let newNode = STMediaOverlayNode()
             newNode.role.append("section")
             guard let textref = RelativeURL(epubHREF: href).flatMap(baseHREF.resolve)?.string else {
                 continue
             }
             
             newNode.text = textref
+            
+            guard let contentLink = publication.linkWithHREF(RelativeURL(string: textref)!),
+                  let resource = publication.get(contentLink),
+                  let htmlContent = try? await resource.readAsString().get()
+            else {
+                return
+            }
 
-            parseParallels(in: sequence, withParent: newNode, base: base)
-            parseSequences(in: sequence, withParent: newNode, mediaOverlays: mediaOverlays, base: base)
+            await parseParallels(publication, in: sequence, withParent: newNode, base: base, htmlContent: htmlContent)
+            await parseSequences(publication, in: sequence, withParent: newNode, mediaOverlays: mediaOverlays, base: base)
 
             let baseHrefParent = parent.text?.components(separatedBy: "#")[0]
 
@@ -52,16 +59,64 @@ final class STSMILParser {
             mediaOverlays.append(newNode)
         }
     }
+    
+    private static func locateFromPositions(_ publication: Publication, text: AnyURL) async throws -> Locator? {
+        guard let readingOrderIndex = publication.readingOrder.firstIndexWithHREF(text.removingFragment()) else {
+            return nil
+        }
+
+        let positions = try await publication.positionsByReadingOrder().get()
+
+        guard let locator = positions[readingOrderIndex].first else {
+            return nil
+        }
+
+        return locator
+    }
+    
+    private static func createLocator(_ publication: Publication, htmlContent: String, htmlContentStart: String.Index, text: RelativeURL) async throws -> (Locator?, String.Index) {
+        if let startOfFragment = htmlContent[htmlContentStart...].firstRange(of: text.fragment!)?.lowerBound {
+            let fragmentPosition = htmlContent.distance(from: htmlContent.startIndex, to: startOfFragment)
+            let progression = Double(fragmentPosition) / Double(htmlContent.distance(from: htmlContent.startIndex, to: htmlContent.endIndex))
+            guard let startOfChapterProgression = try await locateFromPositions(publication, text: text.anyURL)?.locations.totalProgression else {
+                return (nil, htmlContentStart)
+            }
+            guard let chapterIndex = publication.readingOrder.firstIndexWithHREF(text.removingFragment()) else {
+                return (nil, htmlContentStart)
+            }
+            let nextChapterIndex = publication.readingOrder.index(after: chapterIndex)
+            let nextChapterLink = publication.readingOrder[nextChapterIndex]
+            let startOfNextChapterProgression = try await locateFromPositions(publication, text: nextChapterLink.url())?.locations.totalProgression ?? 1
+            let totalProgression = startOfChapterProgression + (progression * (startOfNextChapterProgression - startOfChapterProgression))
+            return (
+                Locator(
+                    href: text.removingFragment(),
+                    mediaType: .xhtml,
+                    locations: Locator.Locations(
+                        fragments: [text.fragment!],
+                        progression: progression,
+                        totalProgression: totalProgression
+                    )
+                ),
+                htmlContent.index(startOfFragment, offsetBy: (text.fragment?.count ?? 0) + 5)
+            )
+        }
+
+        return (nil, htmlContentStart)
+    }
 
     /// Parse the <par> elements at the current XML element level.
     ///
     /// - Parameters:
     ///   - element: The XML element which should contain <par>.
     ///   - parent: The parent MediaOverlayNode of the "to be creatred" nodes.
-    internal static func parseParallels(in element: ReadiumFuzi.XMLElement, withParent parent: MediaOverlayNode, base: String) {
+    internal static func parseParallels(_ publication: Publication, in element: ReadiumFuzi.XMLElement, withParent parent: STMediaOverlayNode, base: String, htmlContent: String?) async {
         guard let baseHREF = RelativeURL(epubHREF: base) else {
             return
         }
+        
+        var htmlContentStart = htmlContent.flatMap(\.startIndex)
+        
         // For each <par> in the current scope.
         for parameterElement in element.xpath("smil:par") {
             guard let href = parameterElement.firstChild(xpath: "smil:text")?.attr("src"),
@@ -74,8 +129,24 @@ final class STSMILParser {
             guard let nodeText = RelativeURL(epubHREF: href).flatMap(baseHREF.resolve)?.string else {
                 continue
             }
+            
+            let nodeTextUrl = RelativeURL(string: nodeText)!
+            
+            let result: (Locator?, String.Index?) = await htmlContent.asyncFlatMap { htmlContent in
+                await htmlContentStart.asyncFlatMap { htmlContentStart in
+                    try? await createLocator(publication, htmlContent: htmlContent, htmlContentStart: htmlContentStart, text: RelativeURL(string: nodeText)!)
+                }
+            } ?? (
+                Locator(
+                    href: nodeTextUrl.removingFragment(),
+                    mediaType: .xhtml
+                ),
+                htmlContentStart
+            )
+            
+            htmlContentStart = result.1
 
-            let newNode = MediaOverlayNode(nodeText, clip: audioClip)
+            let newNode = STMediaOverlayNode(nodeText, clip: audioClip, locator: result.0)
             
             parent.children.append(newNode)
         }

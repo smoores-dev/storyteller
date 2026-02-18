@@ -15,12 +15,17 @@ import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   useDeleteBookmarksMutation,
   useGetBookBookmarksQuery,
+  useGetBookPositionsQuery,
   useGetBookQuery,
 } from "@/store/localApi"
-import { getCurrentlyPlayingBookUuid } from "@/store/selectors/bookshelfSelectors"
+import {
+  getCurrentlyPlayingBookUuid,
+  getCurrentlyPlayingFormat,
+} from "@/store/selectors/bookshelfSelectors"
 
 export function Bookmarks() {
   const bookUuid = useAppSelector(getCurrentlyPlayingBookUuid)
+  const format = useAppSelector(getCurrentlyPlayingFormat)
   const dispatch = useAppDispatch()
   const { data: bookmarks } = useGetBookBookmarksQuery(
     bookUuid ? { bookUuid } : skipToken,
@@ -40,8 +45,13 @@ export function Bookmarks() {
     )
   }, [book?.readaloud?.epubManifest?.toc, bookmarks])
 
+  const { data: positions } = useGetBookPositionsQuery(
+    bookUuid && (format === "readaloud" || format === "ebook")
+      ? { bookUuid, format }
+      : skipToken,
+  )
+
   const bookmarkPages = useMemo(() => {
-    const positions = book?.readaloud?.positions
     if (!positions) return []
 
     return (
@@ -60,7 +70,7 @@ export function Bookmarks() {
         return bookmarkPage
       }) ?? []
     )
-  }, [book?.readaloud?.positions, bookmarks])
+  }, [bookmarks, positions])
 
   if (!bookmarks || !bookUuid) return null
 

@@ -2,8 +2,8 @@
 
 package expo.modules.readium
 
+import android.net.Uri
 import kotlinx.coroutines.runBlocking
-import org.readium.r2.shared.Clip
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.publication.Href
@@ -30,6 +30,7 @@ import org.readium.r2.shared.util.fromEpubHref
 import org.readium.r2.shared.util.getOrElse
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.shared.util.resource.Resource
+import org.readium.r2.shared.util.toUri
 import org.readium.r2.shared.util.xml.ElementNode
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.epub.EpubParser
@@ -37,7 +38,7 @@ import java.io.File
 import java.net.URL
 import java.util.zip.ZipFile
 
-class BookService() {
+object BookService {
 
     /** Returns the resource data as an XML Document at the given [url], or null. */
     @OptIn(InternalReadiumApi::class)
@@ -56,8 +57,9 @@ class BookService() {
         PublicationOpener(
             EpubParser()
         )
+
     private var publications: MutableMap<String, Publication> = mutableMapOf()
-    private var mediaOverlays: MutableMap<String, Map<Href, STMediaOverlays>> = mutableMapOf()
+    private var clips: MutableMap<String, List<OverlayPar>> = mutableMapOf()
 
     fun extractArchive(archiveUrl: URL, extractedUrl: URL) {
         ZipFile(archiveUrl.path).use { zip ->
@@ -92,21 +94,8 @@ class BookService() {
     }
 
     @OptIn(InternalReadiumApi::class)
-    fun getClip(bookUuid: String, locator: Locator): Clip? {
-        val publication = getPublication(bookUuid)
-            ?: throw Exception("Publication for book $bookUuid is unopened.")
-        val link = try {
-            publication.readingOrder.first { it.url() == locator.href }
-        } catch (_: NoSuchElementException) {
-            throw Exception("Locator ${locator.href} could not be found in reading order for book $bookUuid")
-        }
-        val overlayHref = try {
-            link.properties["mediaOverlay"] as Url?
-        } catch (_: NoSuchElementException) {
-            null
-        } ?: return null
-
-        val mediaOverlays = this.mediaOverlays[bookUuid]?.get(Href(overlayHref)) ?: return null
+    fun getClip(bookUuid: String, locator: Locator): OverlayPar? {
+        val clips = this.clips[bookUuid] ?: return null
 
         val fragment = try {
             locator.locations.fragments.first()
@@ -114,7 +103,11 @@ class BookService() {
             return null
         }
 
-        return mediaOverlays.clip(fragment)
+        return clips.first { it.locator.href == locator.href && it.fragmentId == fragment }
+    }
+
+    fun getOverlayClips(bookUuid: String): List<OverlayPar> {
+        return this.clips[bookUuid] ?: listOf()
     }
 
     @OptIn(InternalReadiumApi::class)
@@ -174,57 +167,37 @@ class BookService() {
         )
     }
 
-    fun getFragments(bookUuid: String, locator: Locator): List<TextFragment> {
-        val mediaOverlayStore = this.mediaOverlays[bookUuid] ?: return emptyList()
-        val mediaOverlays = mediaOverlayStore.values
-        val textFragments = mediaOverlays.flatMap { it.fragments() }
-        return textFragments.filter { it.href == locator.href }
+    fun getFragments(bookUuid: String, locator: Locator): List<OverlayPar> {
+        val clips = this.clips[bookUuid] ?: return emptyList()
+        return clips.filter { it.locator.href == locator.href }
     }
 
-    suspend fun getFragment(bookUuid: String, clipUrl: String, position: Double): TextFragment? {
-        val mediaOverlayStore = this.mediaOverlays[bookUuid] ?: return null
+    fun getFragment(bookUuid: String, clipUrl: String, position: Double): OverlayPar? {
+        val clips = this.clips[bookUuid] ?: return null
 
-        var maybeFragment: TextFragment? = null
-        for (mediaOverlays in mediaOverlayStore.values) {
-            val found = mediaOverlays.fragment(clipUrl, position) ?: continue
-            maybeFragment = found
-            break
-        }
+        val clipsInUrl = clips.filter { it.audioResource == clipUrl }
 
-        val fragment = maybeFragment ?: return null
-        fragment.locator = buildFragmentLocator(bookUuid, fragment.href, fragment.fragment)
-
-        return fragment
+        return searchForClip(clipsInUrl, position)
     }
 
-    suspend fun getPreviousFragment(bookUuid: String, locator: Locator): TextFragment? {
+    fun getPreviousFragment(bookUuid: String, locator: Locator): OverlayPar? {
         val currentFragment = locator.locations.fragments.firstOrNull() ?: return null
-        val mediaOverlayStore = this.mediaOverlays[bookUuid] ?: return null
-        val mediaOverlays = mediaOverlayStore.values
-        val textFragments = mediaOverlays.flatMap { it.fragments() }
+        val clips = this.clips[bookUuid] ?: return null
         val currentIndex =
-            textFragments.indexOfFirst { it.href == locator.href && it.fragment == currentFragment }
+            clips.indexOfFirst { it.locator.href == locator.href && it.fragmentId == currentFragment }
         if (currentIndex == 0) return null
         val previousIndex = currentIndex.dec()
-        val previousFragment = textFragments[previousIndex]
-        previousFragment.locator =
-            buildFragmentLocator(bookUuid, previousFragment.href, previousFragment.fragment)
-        return previousFragment
+        return clips[previousIndex]
     }
 
-    suspend fun getNextFragment(bookUuid: String, locator: Locator): TextFragment? {
+    fun getNextFragment(bookUuid: String, locator: Locator): OverlayPar? {
         val currentFragment = locator.locations.fragments.firstOrNull() ?: return null
-        val mediaOverlayStore = this.mediaOverlays[bookUuid] ?: return null
-        val mediaOverlays = mediaOverlayStore.values
-        val textFragments = mediaOverlays.flatMap { it.fragments() }
+        val clips = this.clips[bookUuid] ?: return null
         val currentIndex =
-            textFragments.indexOfFirst { it.href == locator.href && it.fragment == currentFragment }
-        if (currentIndex == textFragments.size - 1) return null
+            clips.indexOfFirst { it.locator.href == locator.href && it.fragmentId == currentFragment }
+        if (currentIndex == 0) return null
         val nextIndex = currentIndex.inc()
-        val nextFragment = textFragments[nextIndex]
-        nextFragment.locator =
-            buildFragmentLocator(bookUuid, nextFragment.href, nextFragment.fragment)
-        return nextFragment
+        return clips[nextIndex]
     }
 
     fun locateLink(bookUuid: String, link: Link): Locator? {
@@ -232,7 +205,7 @@ class BookService() {
         return publication.locatorFromLink(link)
     }
 
-    suspend fun openPublication(bookUuid: String, url: URL): Publication {
+    suspend fun openPublication(bookUuid: String, url: URL, clips: List<OverlayPar>?): Publication {
         if (publications.contains(bookUuid)) {
             return publications[bookUuid]!!
         }
@@ -295,18 +268,24 @@ class BookService() {
                 .getOrElse { throw Exception("Failed to open publication at $url: ${it.message}") }
 
         publications[bookUuid] = publication
-        makeMediaOverlays(bookUuid, publication)
+        if (clips == null) {
+            makeMediaOverlays(bookUuid, publication)
+        } else {
+            this.clips[bookUuid] = clips
+        }
+
         return publication
     }
 
-    @OptIn(ExperimentalReadiumApi::class, InternalReadiumApi::class)
-    suspend fun buildAudiobookManifest(bookUuid: String): Manifest {
+    fun buildAudiobookManifest(bookUuid: String): Manifest {
         val publication = getPublication(bookUuid)
             ?: throw Exception("Publication for book $bookUuid is unopened.")
-        val mediaOverlays = this.mediaOverlays[bookUuid]
+        val bookClips = this.clips[bookUuid]
             ?: throw Exception("Book $bookUuid has no media overlays")
 
-        suspend fun buildAudiobookTocLink(link: Link): Link? {
+        val clipsByHref = bookClips.groupBy { it.locator.href }
+
+        fun buildAudiobookTocLink(link: Link): Link? {
             val children = link.children.mapNotNull { buildAudiobookTocLink(it) }
             val fallbackLink = children.firstOrNull()?.let {
                 Link(
@@ -319,52 +298,34 @@ class BookService() {
             }
 
             val tocLocator = locateLink(bookUuid, link) ?: return fallbackLink
+            val tocProgression = tocLocator.locations.progression ?: return fallbackLink
             val plainLink = publication.linkWithHref(tocLocator.href) ?: return fallbackLink
-            val mediaOverlayHref = plainLink.properties["mediaOverlay"] ?: return fallbackLink
-            val overlay = mediaOverlays[Href(mediaOverlayHref as Url)] ?: return fallbackLink
-
-            val clip = if (tocLocator.locations.fragments.isNotEmpty()) {
-                val resource = publication.get(plainLink)
-                val htmlContent =
-                    resource?.readDecodeOrNull { Try.success(it.decodeString()) }?.getOrNull()
-                        ?: return fallbackLink
-                val fragmentRegex = Regex("id=\"${tocLocator.locations.fragments.first()}\"")
-                val endOfFragment =
-                    fragmentRegex.find(htmlContent)?.range?.endInclusive ?: return fallbackLink
-                val nextFragmentRegex = Regex("id=\"([a-zA-Z][a-zA-Z0-9\\-_:.]*)\"")
-                val nextFragment =
-                    nextFragmentRegex.find(htmlContent, endOfFragment)?.groups?.get(1)?.value
-                        ?: return fallbackLink
-                overlay.clip(nextFragment) ?: return fallbackLink
-            } else {
-                overlay.clips().firstOrNull() ?: return fallbackLink
-            }
+            val chapterClips = clipsByHref[plainLink.url()] ?: return fallbackLink
+            val clip =
+                searchForClipByProgression(chapterClips, tocProgression) ?: return fallbackLink
 
             val clipResource =
                 publication.resources.first { it.href.toString() == clip.audioResource }
-            val duration = overlay.link.duration
 
-            val href = Href("${clip.audioResource}#t=${clip.start}") ?: return fallbackLink
+            val linkUrl = RelativeUrl("${clipResource.href}#t=${clip.start}")
+                ?: return fallbackLink
 
             return Link(
-                href = href,
+                href = Href(linkUrl),
                 mediaType = clipResource.mediaType,
                 title = link.title,
-                duration = duration,
                 children = children
             )
         }
 
         val clips = emptyMap<String, Double>().toMutableMap()
 
-        for (overlay in mediaOverlays.values) {
-            for (clip in overlay.clips()) {
-                val audioResource = clip.audioResource ?: continue
-                val duration = clips.getOrDefault(clip.audioResource, 0.0)
-                val end = clip.end ?: 0.0
-                val start = clip.start ?: 0.0
-                clips[audioResource] = duration + end - start
-            }
+        for (clip in bookClips) {
+            val audioResource = clip.audioResource
+            val duration = clips.getOrDefault(clip.audioResource, 0.0)
+            val end = clip.end
+            val start = clip.start
+            clips[audioResource] = duration + end - start
         }
 
         return Manifest(
@@ -380,7 +341,7 @@ class BookService() {
 
     @OptIn(InternalReadiumApi::class)
     private suspend fun makeMediaOverlays(bookUuid: String, publication: Publication) {
-        val mediaOverlayStore: MutableMap<Href, STMediaOverlays> = mutableMapOf()
+        val bookClips: MutableList<OverlayPar> = mutableListOf()
 
         val mediaOverlayLinks = publication.resources.filter { it.mediaType == MediaType.SMIL }
 
@@ -390,13 +351,34 @@ class BookService() {
                 val smilXml =
                     smilResource?.readDecodeOrNull { Try.success(it.decodeXml()) }?.getOrNull()
                         ?: continue
-                val mediaOverlays = SmilParser.parse(smilXml, link) ?: continue
-                mediaOverlayStore[link.href] = mediaOverlays
+                val mediaOverlays = SmilParser.parse(publication, smilXml, link) ?: continue
+                bookClips.addAll(mediaOverlays.clips())
             } finally {
                 smilResource?.close()
             }
         }
 
-        this.mediaOverlays[bookUuid] = mediaOverlayStore
+        this.clips[bookUuid] = bookClips
     }
+}
+
+fun searchForClipByProgression(clips: List<OverlayPar>, progression: Double): OverlayPar? {
+    var startIndex = 0
+    var endIndex = clips.size - 1
+    while (startIndex <= endIndex) {
+        val midIndex = (startIndex + endIndex) / 2
+        val midItem = clips[midIndex]
+        val prevIndex = midIndex.dec()
+        val prevItem = if (prevIndex < 0) null else clips[prevIndex]
+        if (progression > (midItem.locator.locations.progression ?: 0.0)) {
+            startIndex = midIndex + 1
+            continue
+        }
+        if (prevItem != null && progression < (prevItem.locator.locations.progression ?: 0.0)) {
+            endIndex = midIndex - 1
+            continue
+        }
+        return midItem
+    }
+    return null
 }

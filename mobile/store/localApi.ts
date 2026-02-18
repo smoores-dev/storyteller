@@ -1,6 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
 import deepmerge from "deepmerge"
 import * as SecureStore from "expo-secure-store"
+import { current } from "immer"
 
 import { type HighlightTint } from "@/colors"
 import {
@@ -20,6 +21,8 @@ import {
   deleteBook,
   getBook,
   getBooks,
+  getOverlayClipsForBook,
+  getPositionsForBook,
   removeBookDownloads,
   updateBookStatus,
 } from "@/database/books"
@@ -60,7 +63,11 @@ import {
 } from "@/database/servers"
 import { type Status, getStatus, getStatuses } from "@/database/statuses"
 import { type Tag, getTag } from "@/database/tags"
-import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
+import { deepEquals } from "@/deepEquals"
+import {
+  type ReadiumClip,
+  type ReadiumLocator,
+} from "@/modules/readium/src/Readium.types"
 import { type UUID } from "@/uuid"
 
 import { deleteLocalBookFiles } from "./persistence/files"
@@ -98,6 +105,7 @@ export const localApi = createApi({
       async queryFn() {
         return { data: await getBooks() }
       },
+      providesTags: ["Books"],
       onCacheEntryAdded: async (
         _,
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
@@ -142,9 +150,28 @@ export const localApi = createApi({
               table: "readaloud",
             },
           ],
-          callback(result) {
-            updateCachedData(() => {
-              return camelCaseRows(parseArray(result.rows))
+          callback(reactiveResult) {
+            updateCachedData((draft) => {
+              const updated: BookWithRelations[] = camelCaseRows(
+                parseArray(reactiveResult.rows),
+              )
+              const currentMap = new Map(
+                current(draft).map((book) => [book.uuid, book]),
+              )
+              const result: BookWithRelations[] = []
+              for (const book of updated) {
+                const currentBook = currentMap.get(book.uuid)
+                if (!currentBook) {
+                  result.push(book)
+                  continue
+                }
+                if (deepEquals(currentBook, book)) {
+                  result.push(currentBook)
+                  continue
+                }
+                result.push(book)
+              }
+              return result
             })
           },
         })
@@ -161,6 +188,19 @@ export const localApi = createApi({
       providesTags: (result) =>
         result ? [{ type: "Books", id: result.uuid }] : [],
     }),
+    getBookOverlayClips: build.query<ReadiumClip[] | null, { bookUuid: UUID }>({
+      async queryFn({ bookUuid }) {
+        return { data: await getOverlayClipsForBook(bookUuid) }
+      },
+    }),
+    getBookPositions: build.query<
+      ReadiumLocator[] | null,
+      { bookUuid: UUID; format: "ebook" | "readaloud" }
+    >({
+      async queryFn({ bookUuid, format }) {
+        return { data: await getPositionsForBook(bookUuid, format) }
+      },
+    }),
     downloadBook: build.mutation<
       null,
       { bookUuid: UUID; format: "ebook" | "audiobook" | "readaloud" }
@@ -168,6 +208,17 @@ export const localApi = createApi({
       async queryFn({ bookUuid, format }) {
         await addBookToDownloadQueue(bookUuid, format)
 
+        return { data: null }
+      },
+      invalidatesTags: ["Books"],
+    }),
+    cancelDownload: build.mutation<
+      null,
+      { bookUuid: UUID; format: "ebook" | "audiobook" | "readaloud" }
+    >({
+      async queryFn({ bookUuid, format }) {
+        await removeBookDownloads(bookUuid, format)
+        await deleteLocalBookFiles(bookUuid, format)
         return { data: null }
       },
       invalidatesTags: ["Books"],
@@ -197,9 +248,6 @@ export const localApi = createApi({
       async queryFn({ uuid }) {
         return { data: await getBookPreferences(uuid) }
       },
-      providesTags: (_result, _error, { uuid }) => [
-        { type: "BookPreferences", id: uuid },
-      ],
     }),
     updateBookPreference: build.mutation<
       null,
@@ -213,16 +261,37 @@ export const localApi = createApi({
         await updateBookPreference(bookUuid, name, value)
         return { data: null }
       },
-      invalidatesTags: (_result, _error, { bookUuid }) => [
-        { type: "BookPreferences", id: bookUuid },
-      ],
+      async onQueryStarted(
+        { bookUuid, name, value },
+        { dispatch, queryFulfilled },
+      ) {
+        const patch = dispatch(
+          localApi.util.updateQueryData(
+            "getBookPreferences",
+            { uuid: bookUuid },
+            (draft) => {
+              if (!draft) return
+
+              return {
+                ...draft,
+                [name]: value,
+              }
+            },
+          ),
+        )
+
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
     }),
     getGlobalPreferences: build.query<Preferences, void>({
       async queryFn() {
         const preferences = await getPreferences()
         return { data: preferences }
       },
-      providesTags: () => ["Preferences"],
     }),
     updateGlobalPreference: build.mutation<
       null,
@@ -254,7 +323,6 @@ export const localApi = createApi({
           patch.undo()
         }
       },
-      invalidatesTags: ["Preferences"],
     }),
     setBookPreferencesAsDefaults: build.mutation<null, { bookUuid: UUID }>({
       async queryFn({ bookUuid }) {
@@ -438,7 +506,10 @@ export const localApi = createApi({
       },
       providesTags: () => [{ type: "Servers" as const, id: "LIST" }],
     }),
-    getServer: build.query<Server, { uuid: UUID }>({
+    getServer: build.query<
+      Omit<Server, "lastListBooksResponse">,
+      { uuid: UUID }
+    >({
       async queryFn({ uuid }) {
         try {
           return { data: await getServer(uuid) }
@@ -500,6 +571,7 @@ export const localApi = createApi({
 })
 
 export const {
+  useCancelDownloadMutation,
   useCreateBookmarkMutation,
   useCreateHighlightMutation,
   useCreateServerMutation,
@@ -510,6 +582,7 @@ export const {
   useDownloadBookMutation,
   useGetBookBookmarksQuery,
   useGetBookHighlightsQuery,
+  useGetBookPositionsQuery,
   useGetBookQuery,
   useGetBookPreferencesQuery,
   useGetCollectionQuery,

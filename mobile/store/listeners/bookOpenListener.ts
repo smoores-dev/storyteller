@@ -2,17 +2,22 @@ import { File } from "expo-file-system"
 import { documentDirectory, getContentUriAsync } from "expo-file-system/legacy"
 import { Image } from "expo-image"
 import { Platform } from "react-native"
-import TrackPlayer, { PitchAlgorithm } from "react-native-track-player"
 
 import { type BookWithRelations } from "@/database/books"
 import { db } from "@/database/db"
 import { getServer } from "@/database/servers"
+import { logger } from "@/logger"
 import {
   type ReadiumManifest,
+  Storyteller,
   getClip,
   openPublication,
 } from "@/modules/readium"
-import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
+import {
+  type ReadiumClip,
+  type ReadiumLocator,
+  type StorytellerTrack,
+} from "@/modules/readium/src/Readium.types"
 import { localApi } from "@/store/localApi"
 import {
   getLocalBookExtractedUrl,
@@ -27,7 +32,7 @@ import { startAppListening } from "./listenerMiddleware"
 async function generateTracks(
   book: BookWithRelations,
   format: "audiobook" | "readaloud",
-) {
+): Promise<StorytellerTrack[]> {
   const server = book.serverUuid && (await getServer(book.serverUuid))
   const serverCoverUrl =
     server &&
@@ -36,25 +41,28 @@ async function generateTracks(
       width: 232,
       audio: true,
     })
+
   if (serverCoverUrl) {
     await Image.prefetch(serverCoverUrl)
   }
 
-  let coverUrl = book.audiobookCoverUrl
+  let coverUri = book.audiobookCoverUrl
     ? new URL(book.audiobookCoverUrl, documentDirectory!).toString()
     : serverCoverUrl
       ? await Image.getCachePathAsync(serverCoverUrl)
       : null
 
   // Convert to content:// URI on Android for Android Auto compatibility
-  if (coverUrl && Platform.OS === "android") {
+  if (coverUri && Platform.OS === "android") {
     try {
-      coverUrl = await getContentUriAsync(
-        new URL(coverUrl, "file://").toString(),
+      coverUri = await getContentUriAsync(
+        new URL(coverUri, "file://").toString(),
       )
     } catch {
       // pass
     }
+  } else if (coverUri) {
+    coverUri = new URL(coverUri, "file://").toString()
   }
 
   const manifest =
@@ -64,24 +72,28 @@ async function generateTracks(
 
   const audioLinks = manifest?.readingOrder ?? []
 
-  return await Promise.all(
-    audioLinks.map(async (audioLink) => {
-      const uri = getLocalBookFileUrl(book.uuid, format, audioLink.href)
+  return audioLinks.map((audioLink) => {
+    const uri = encodeURI(
+      getLocalBookFileUrl(book.uuid, format, audioLink.href),
+    )
 
-      return {
-        bookUuid: book.uuid,
-        title: audioLink.title ?? book.title,
-        url: uri,
-        duration: audioLink.duration!,
-        album: book.title,
-        artist: book.authors.map((author) => author.name).join(", "),
-        ...(coverUrl && { artwork: coverUrl }),
-        relativeUrl: encodeURI(audioLink.href),
-        pitchAlgorithm: PitchAlgorithm.Voice,
-        mimeType: audioLink.type.replace(/; codecs=.*/, ""),
-      }
-    }),
-  )
+    return {
+      bookUuid: book.uuid,
+      title: audioLink.title ?? book.title,
+      bookTitle: book.title,
+      uri,
+      duration: audioLink.duration!,
+      author: book.authors.length
+        ? book.authors.map((author) => author.name).join(", ")
+        : null,
+      narrator: book.narrators.length
+        ? book.narrators.map((narrator) => narrator.name).join(", ")
+        : null,
+      coverUri,
+      relativeUri: audioLink.href,
+      mimeType: audioLink.type.replace(/; codecs=.*/, ""),
+    }
+  })
 }
 
 startAppListening({
@@ -90,28 +102,41 @@ startAppListening({
     listenerApi.cancelActiveListeners()
 
     const { bookUuid, format } = action.payload
+    logger.debug(`Book opened: ${bookUuid}`)
 
     const {
       currentlyPlayingBookUuid: previouslyPlayingBookUuid,
       currentlyPlayingFormat: previouslyPlayingFormat,
+      tracks: currentTracks,
     } = listenerApi.getOriginalState().bookshelf
 
     if (
       previouslyPlayingBookUuid === bookUuid &&
       previouslyPlayingFormat === format
     ) {
-      listenerApi.dispatch(bookshelfSlice.actions.playerQueued())
+      logger.debug(`Book already opened and loaded, doing nothing`)
+      listenerApi.dispatch(
+        bookshelfSlice.actions.playerQueued({ tracks: currentTracks }),
+      )
       return
     }
 
+    // always unload to handle race conditions where a previous
+    // swipe-away unload may still be in-flight
+    logger.debug(`Unloading audio player before loading new book`)
+    await Storyteller.pause()
+    await Storyteller.unload()
+
     listenerApi.throwIfCancelled()
 
-    const book = await listenerApi
+    let book = await listenerApi
       .dispatch(localApi.endpoints.getBook.initiate({ uuid: bookUuid }))
       .unwrap()
 
     if (!book) {
-      listenerApi.dispatch(bookshelfSlice.actions.playerQueued())
+      listenerApi.dispatch(
+        bookshelfSlice.actions.playerQueued({ tracks: currentTracks }),
+      )
       return
     }
 
@@ -119,6 +144,9 @@ startAppListening({
 
     if (format === "audiobook") {
       if (!book.position) {
+        logger.debug(
+          "No local position for this audiobook, starting at beginning",
+        )
         const manifestFile = new File(
           getLocalBookExtractedUrl(book.uuid, format),
           "manifest.audiobook-manifest",
@@ -145,35 +173,105 @@ startAppListening({
           .execute()
       }
     } else {
+      logger.debug("Opening Readium publication")
       await openPublication(
         book.uuid,
         getLocalBookExtractedUrl(book.uuid, format),
+        (await listenerApi
+          .dispatch(
+            localApi.endpoints.getBookOverlayClips.initiate(
+              { bookUuid },
+              { forceRefetch: true },
+            ),
+          )
+          .unwrap()) ?? undefined,
       )
 
       if (!book.position) {
-        const positions = book[format]!.positions!
+        logger.debug("No local position for this book, starting at beginning")
+        const positions = await listenerApi
+          .dispatch(
+            localApi.endpoints.getBookPositions.initiate(
+              { bookUuid, format },
+              { forceRefetch: true },
+            ),
+          )
+          .unwrap()
 
         await db
           .insertInto("position")
           .values({
             uuid: randomUUID(),
             bookUuid,
-            locator: JSON.stringify(positions[0]!) as unknown as ReadiumLocator,
+            locator: JSON.stringify(
+              positions![0]!,
+            ) as unknown as ReadiumLocator,
             timestamp: Date.now(),
           })
           .execute()
       }
     }
 
+    if (
+      format === "readaloud" &&
+      !(await listenerApi
+        .dispatch(
+          localApi.endpoints.getBookOverlayClips.initiate(
+            { bookUuid },
+            { forceRefetch: false },
+          ),
+        )
+        .unwrap())
+    ) {
+      logger.debug("No clips parsed from media overlays, parsing")
+      const clips = await Storyteller.getOverlayClips(bookUuid)
+      logger.debug(`Parsed ${clips.length} clips from media overlay`)
+
+      await db
+        .updateTable("readaloud")
+        .set({ clips: JSON.stringify(clips) as unknown as ReadiumClip[] })
+        .where("bookUuid", "=", bookUuid)
+        .execute()
+    }
+
     listenerApi.throwIfCancelled()
 
+    book = await listenerApi
+      .dispatch(localApi.endpoints.getBook.initiate({ uuid: bookUuid }))
+      .unwrap()
+
+    if (!book) {
+      logger.error(`Book not found: ${bookUuid}, queueing current tracks`)
+
+      listenerApi.dispatch(
+        bookshelfSlice.actions.playerQueued({ tracks: currentTracks }),
+      )
+      return
+    }
+
+    let tracks: StorytellerTrack[] = []
     if (format !== "ebook") {
-      const tracks = await generateTracks(book, format)
+      logger.debug(`Generating track listing for ${format}`)
+      tracks = await generateTracks(book, format)
+      logger.debug(`Generated ${tracks.length} tracks`)
 
       listenerApi.throwIfCancelled()
 
+      const positions =
+        format === "readaloud"
+          ? await listenerApi
+              .dispatch(
+                localApi.endpoints.getBookPositions.initiate(
+                  { bookUuid, format },
+                  { forceRefetch: false },
+                ),
+              )
+              .unwrap()
+          : null
+
       const clip =
-        book.position && (await getClip(book, format, book.position.locator))
+        book.position &&
+        (await getClip(book, format, book.position.locator, positions))
 
       listenerApi.throwIfCancelled()
 
@@ -186,21 +284,24 @@ startAppListening({
       listenerApi.throwIfCancelled()
 
       const playerSpeed = bookPreferences.audio?.speed ?? 1
-      await TrackPlayer.reset()
-      await TrackPlayer.setRate(playerSpeed)
-      await TrackPlayer.add(tracks)
+      logger.debug(`Loading tracks into audio player`)
+      await Storyteller.loadTracks(tracks)
+      logger.debug(`Setting playback rate to ${playerSpeed}`)
+      await Storyteller.setRate(playerSpeed)
 
       if (clip) {
-        const trackIndex = tracks.findIndex(
-          (track) => track.relativeUrl === clip.relativeUrl,
+        logger.debug(
+          `Seeking to local position, ${clip.start}s at ${clip.relativeUrl}`,
         )
-
-        if (trackIndex !== -1) {
-          await TrackPlayer.skip(trackIndex, clip.start)
-        }
+        await Storyteller.seekTo(clip.relativeUrl, clip.start, true)
+      } else if (tracks[0]) {
+        logger.debug(`No clip found, seeking to start of first track`)
+        await Storyteller.seekTo(tracks[0].relativeUri, 0, true)
       }
+      logger.debug("Audio queued")
     }
 
-    listenerApi.dispatch(bookshelfSlice.actions.playerQueued())
+    logger.debug(`Book opened`)
+    listenerApi.dispatch(bookshelfSlice.actions.playerQueued({ tracks }))
   },
 })

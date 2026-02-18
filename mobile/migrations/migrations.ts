@@ -13,6 +13,18 @@ import {
   down as addCrispWhiteDown,
   up as addCrispWhiteUp,
 } from "./1767276420645_add_crisp_white_theme"
+import {
+  down as insertLogLevelDown,
+  up as insertLogLevelUp,
+} from "./1770082660466_insert_log_level"
+import {
+  down as addClipsToReadaloudDown,
+  up as addClipsToReadaloudUp,
+} from "./1770341616012_add_clips_to_readaloud"
+import {
+  down as addLastListBooksResponseToServerDown,
+  up as addLastListBooksResponseToServerUp,
+} from "./1770771063246_add_last_list_books_response_to_server"
 
 export const migrations = {
   "1757893743063_init": {
@@ -32,5 +44,17 @@ export const migrations = {
   "1767276420645_add_crisp_white_theme": {
     up: addCrispWhiteUp,
     down: addCrispWhiteDown,
+  },
+  "1770082660466_insert_log_level": {
+    up: insertLogLevelUp,
+    down: insertLogLevelDown,
+  },
+  "1770341616012_add_clips_to_readaloud": {
+    up: addClipsToReadaloudUp,
+    down: addClipsToReadaloudDown,
+  },
+  "1770771063246_add_last_list_books_response_to_server": {
+    up: addLastListBooksResponseToServerUp,
+    down: addLastListBooksResponseToServerDown,
   },
 }

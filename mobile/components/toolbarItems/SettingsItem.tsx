@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { ReadingSettings } from "@/components/ReadingSettings"
 import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
-import { PortalContext } from "@/components/ui/portal-context"
+import { PortalContext, PortalHost } from "@/components/ui/portal-context"
 import { Text } from "@/components/ui/text"
 import { useAppSelector } from "@/store/appState"
 import { getCurrentlyPlayingBookUuid } from "@/store/selectors/bookshelfSelectors"
@@ -35,29 +35,31 @@ export function SettingsItem() {
       {isOpen && bookUuid && (
         <Portal name="reading-settings" hostName={portalHostName}>
           <View className="elevation border-secondary bg-background shadow-foreground absolute top-1/2 right-0 bottom-0 left-0 z-40 rounded-t border border-b-transparent px-6 py-4 shadow-sm">
-            <Button variant="ghost" size="sm" className="self-end">
-              <Text
-                maxFontSizeMultiplier={1.2}
-                className="text-primary pt-2 text-lg"
-                onPress={() => {
-                  setIsOpen(false)
+            <PortalHost>
+              <Button variant="ghost" size="sm" className="self-end">
+                <Text
+                  maxFontSizeMultiplier={1.2}
+                  className="text-primary pt-2 text-lg"
+                  onPress={() => {
+                    setIsOpen(false)
+                  }}
+                >
+                  Done
+                </Text>
+              </Button>
+              <ScrollView
+                style={{
+                  height:
+                    dimensions.height / 2 -
+                    (insets.top +
+                      insets.bottom +
+                      (Platform.OS === "android" ? 32 + 34 : 0)),
                 }}
+                contentContainerClassName="pb-20"
               >
-                Done
-              </Text>
-            </Button>
-            <ScrollView
-              style={{
-                height:
-                  dimensions.height / 2 -
-                  (insets.top +
-                    insets.bottom +
-                    (Platform.OS === "android" ? 32 + 34 : 0)),
-              }}
-              contentContainerClassName="pb-20"
-            >
-              <ReadingSettings bookUuid={bookUuid} />
-            </ScrollView>
+                <ReadingSettings bookUuid={bookUuid} />
+              </ScrollView>
+            </PortalHost>
           </View>
         </Portal>
       )}

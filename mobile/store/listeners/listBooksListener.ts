@@ -18,7 +18,13 @@ import {
   trimDeletedServerBooks,
   upsertServerBooks,
 } from "@/database/serverBooks"
-import { getServer } from "@/database/servers"
+import {
+  getLastListBooksResponse,
+  getServer,
+  setLastListBooksResponse,
+} from "@/database/servers"
+import { deepEquals } from "@/deepEquals"
+import { logger } from "@/logger"
 import { localApi } from "@/store/localApi"
 import {
   getLocalAudioBookCoverUrl,
@@ -40,10 +46,67 @@ startAppListening({
     if (running.has(serverUuid)) return
     running.add(serverUuid)
 
+    logger.debug("Syncing book metadata from server")
+
     try {
       const server = await getServer(serverUuid)
+      const lastListBooksResponse = await getLastListBooksResponse(serverUuid)
 
       const serverBooks = action.payload
+
+      if (lastListBooksResponse) {
+        const lastResponseBookByUuid = new Map(
+          lastListBooksResponse.map((book) => [book.uuid, book]),
+        )
+
+        const serverBookByUuid = new Map(
+          serverBooks.map((book) => [book.uuid, book]),
+        )
+
+        const updatedServerBooks: ServerBook[] = []
+        const newServerBooks: ServerBook[] = []
+        const deletedLocalBooks: UUID[] = []
+
+        for (const book of serverBooks) {
+          const lastResponseBook = lastResponseBookByUuid.get(book.uuid)
+          if (!lastResponseBook) {
+            newServerBooks.push(book)
+            continue
+          }
+          if (!deepEquals(book, lastResponseBook)) {
+            updatedServerBooks.push(book)
+            continue
+          }
+        }
+
+        for (const book of lastListBooksResponse) {
+          const serverBook = serverBookByUuid.get(book.uuid)
+          if (!serverBook) {
+            deletedLocalBooks.push(book.uuid)
+          }
+        }
+
+        logger.debug(
+          `Deleting ${deletedLocalBooks.length} that have been deleted from server`,
+        )
+        await deleteBooks(deletedLocalBooks)
+
+        logger.debug(
+          `Inserting ${newServerBooks.length} books newly added to server`,
+        )
+        await upsertServerBooks(newServerBooks, serverUuid)
+
+        logger.debug(
+          `Updating ${updatedServerBooks.length} books updated on the server`,
+        )
+        await upsertServerBooks(updatedServerBooks, serverUuid)
+
+        await trimDeletedServerBooks(serverBooks, serverUuid)
+
+        await setLastListBooksResponse(serverUuid, serverBooks)
+        return
+      }
+
       const serverUuids = new Set(serverBooks.map(({ uuid }) => uuid))
 
       const localBooks = await getBooksWithAnnotations()
@@ -77,7 +140,13 @@ startAppListening({
         }
       }
 
+      logger.debug(
+        `Deleting ${deletedLocalBooks.length} that have been deleted from server`,
+      )
       await deleteBooks(deletedLocalBooks)
+      logger.debug(
+        `Detaching ${preservedDeletedBooks.length} that have been deleted from the server`,
+      )
       await detachBooksFromServer(server, preservedDeletedBooks)
 
       const newServerBooks: ServerBook[] = []
@@ -119,6 +188,9 @@ startAppListening({
         newServerBooks.push(book)
       }
 
+      logger.debug(
+        `Inserting ${newServerBooks.length} books newly added to server`,
+      )
       await upsertServerBooks(newServerBooks, server.uuid)
 
       for (const book of patchedServerBooks) {
@@ -143,7 +215,9 @@ startAppListening({
           server.uuid,
           {
             ...book,
-            position: serverPosition as BookWithRelations["position"],
+            position: serverPosition as BookWithRelations["position"] & {
+              updatedAt: string
+            },
           },
           localBook?.readaloud?.downloadStatus === "DOWNLOADED",
         )
@@ -272,9 +346,11 @@ startAppListening({
         },
       )
 
+      logger.debug(`Updating ${existingBooks.length} books from server`)
       await upsertServerBooks(existingBooks, server.uuid)
 
       await trimDeletedServerBooks(serverBooks, serverUuid)
+      await setLastListBooksResponse(serverUuid, serverBooks)
 
       listenerApi.dispatch(
         localApi.util.invalidateTags([
@@ -287,6 +363,7 @@ startAppListening({
         ]),
       )
     } finally {
+      logger.debug("Done syncing book metadata from server")
       running.delete(serverUuid)
     }
   },

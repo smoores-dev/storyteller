@@ -2,6 +2,7 @@ import { type ColumnType } from "kysely"
 
 import { type HighlightTint } from "@/colors"
 import {
+  type ReadiumClip,
   type ReadiumLocator,
   type ReadiumManifest,
 } from "@/modules/readium/src/Readium.types"
@@ -177,6 +178,7 @@ export interface Readaloud {
   audioManifest: ReadiumManifest | null
   epubManifest: ReadiumManifest | null
   positions: ReadiumLocator[] | null
+  clips: ReadiumClip[] | null
   createdAt: Generated<string>
   status: Generated<
     "CREATED" | "QUEUED" | "PROCESSING" | "STOPPED" | "ERROR" | "ALIGNED"
@@ -198,6 +200,7 @@ export interface Server {
   name: Generated<string | null>
   baseUrl: string
   username: Generated<string | null>
+  lastListBooksResponse: Generated<string | null>
   updatedAt: Generated<string>
   uuid: UUID
 }

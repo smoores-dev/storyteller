@@ -2,7 +2,6 @@
 
 package expo.modules.readium
 
-import android.graphics.Color
 import android.os.Build
 import androidx.annotation.RequiresApi
 import expo.modules.kotlin.functions.Coroutine
@@ -23,7 +22,7 @@ import org.readium.r2.shared.util.data.decodeString
 import org.readium.r2.shared.util.data.readDecodeOrNull
 import androidx.core.graphics.toColorInt
 
-class ReadiumModule : Module() {
+class ReadiumModule : Module(), Listener {
     // Each module class must implement the definition function. The definition consists of
     // components
     // that describes the module's functionality and behavior.
@@ -31,7 +30,7 @@ class ReadiumModule : Module() {
     @RequiresApi(Build.VERSION_CODES.O)
     @OptIn(ExperimentalReadiumApi::class)
     override fun definition() = ModuleDefinition {
-        val bookService = BookService()
+        val player = AudiobookPlayer(appContext, this@ReadiumModule)
 
         // Sets the name of the module that JavaScript code will use to refer to the module. Takes a
         // string as an argument.
@@ -40,29 +39,106 @@ class ReadiumModule : Module() {
         // The module will be accessible from `requireNativeModule('Readium')` in JavaScript.
         Name("Readium")
 
+        Events("clipChanged", "isPlayingChanged", "positionChanged", "trackChanged")
+
+        AsyncFunction("getIsPlaying") { ->
+            player.getIsPlaying()
+        }
+
+        AsyncFunction("getCurrentClip") { ->
+            val overlayPar = player.getCurrentClip() ?: return@AsyncFunction null
+            return@AsyncFunction overlayPar.toJson()
+        }
+
+        AsyncFunction("loadTracks") Coroutine { tracksJson: List<Map<String, Any?>> ->
+            val tracks = tracksJson.map { Track.fromJson(it) }
+            player.loadTracks(tracks)
+        }
+
+        AsyncFunction("getPosition") Coroutine { ->
+            return@Coroutine player.getPosition()
+        }
+
+        AsyncFunction("getCurrentTrack") Coroutine { ->
+            return@Coroutine player.getCurrentTrack()?.toJson()
+        }
+
+        AsyncFunction("getTracks") Coroutine { ->
+            return@Coroutine player.getTracks().map { it.toJson() }
+        }
+
+        AsyncFunction("play") Coroutine { automaticRewind: Boolean? ->
+            player.play(automaticRewind ?: true)
+        }
+
+        AsyncFunction("pause") Coroutine { ->
+            player.pause()
+        }
+
+        AsyncFunction("unload") Coroutine { ->
+            player.unload()
+        }
+
+        AsyncFunction("skip") Coroutine { position: Double ->
+            player.skip(position)
+        }
+
+        AsyncFunction("seekTo") Coroutine { relativeUri: String, position: Double, skipEmit: Boolean? ->
+            player.seekTo(relativeUri, position, skipEmit)
+        }
+
+        AsyncFunction("seekBy") Coroutine { amount: Double ->
+            player.seekBy(amount)
+        }
+
+        AsyncFunction("next") Coroutine { ->
+            player.next()
+        }
+
+        AsyncFunction("prev") Coroutine { ->
+            player.prev()
+        }
+
+        AsyncFunction("setRate") Coroutine { rate: Double ->
+            player.setRate(rate)
+        }
+
+        AsyncFunction("setAutomaticRewind") Coroutine { config: Map<String, Any> ->
+            player.setAutomaticRewind(
+                enabled = config["enabled"] as Boolean,
+                afterInterruption = config["afterInterruption"] as Double,
+                afterBreak = config["afterBreak"] as Double
+            )
+        }
+
         AsyncFunction("extractArchive") Coroutine
                 { archiveUrl: URL, extractedUrl: URL ->
-                    bookService.extractArchive(archiveUrl, extractedUrl)
+                    BookService.extractArchive(archiveUrl, extractedUrl)
                 }
 
         // Defines a JavaScript function that always returns a Promise and whose native code
         // is by default dispatched on the different thread than the JavaScript runtime runs on.
         AsyncFunction("openPublication") Coroutine
-                { bookUuid: String, publicationUri: URL ->
-                    return@Coroutine bookService.openPublication(bookUuid, publicationUri)
+                { bookUuid: String, publicationUri: URL, clipsJson: List<Map<String, Any>>? ->
+                    val clips = clipsJson?.map { OverlayPar.fromJson(it) }
+                    return@Coroutine BookService.openPublication(bookUuid, publicationUri, clips)
                         .manifest.toJSON().toMap()
                 }
 
+        AsyncFunction("getOverlayClips") Coroutine { bookUuid: String ->
+            return@Coroutine BookService.getOverlayClips(bookUuid).map { it.toJson() }
+        }
+
         AsyncFunction("buildAudiobookManifest") Coroutine
                 { bookUuid: String ->
-                    bookService.buildAudiobookManifest(bookUuid).toJSON().toMap()
+                    BookService.buildAudiobookManifest(bookUuid).toJSON().toMap()
                 }
 
         AsyncFunction("getResource") Coroutine
                 { bookUuid: String, linkMap: Map<String, Any> ->
                     val linkJson = JSONObject(linkMap)
                     val link = Link.fromJSON(linkJson) ?: return@Coroutine null
-                    val resource = bookService.getResource(bookUuid, link)
+                    val resource = BookService.getResource(bookUuid, link)
                     if (link.mediaType?.isBitmap == true) {
                         val data = resource?.read()?.getOrNull() ?: return@Coroutine null
                         return@Coroutine String(Base64.getEncoder().encode(data))
@@ -72,7 +148,7 @@ class ReadiumModule : Module() {
 
         AsyncFunction("getPositions") Coroutine
                 { bookUuid: String ->
-                    val positions = bookService.getPositions(bookUuid)
+                    val positions = BookService.getPositions(bookUuid)
                     return@Coroutine positions.map { it.toJSON().toMap() }
                 }
 
@@ -80,37 +156,31 @@ class ReadiumModule : Module() {
                 { bookUuid: String, locatorMap: Map<String, Any> ->
                     val locatorJson = JSONObject(locatorMap)
                     val locator = Locator.fromJSON(locatorJson) ?: return@Coroutine null
-                    val clip = bookService.getClip(bookUuid, locator) ?: return@Coroutine null
-                    val relativeUrl = URI(null, clip.audioResource, null).toASCIIString()
-                    return@Coroutine mutableMapOf(
-                        "relativeUrl" to relativeUrl,
-                        "fragmentId" to clip.fragmentId,
-                        "start" to clip.start,
-                        "end" to clip.end,
-                        "duration" to clip.end!! - clip.start!!
-                    )
+                    val clip = BookService.getClip(bookUuid, locator) ?: return@Coroutine null
+
+                    return@Coroutine clip.toJson()
                 }
 
         AsyncFunction("getFragment") Coroutine
                 { bookUuid: String, clipUrl: String, position: Double ->
-                    val fragment =
-                        bookService.getFragment(bookUuid, clipUrl, position)
+                    val clip =
+                        BookService.getFragment(bookUuid, clipUrl, position)
                             ?: return@Coroutine null
                     return@Coroutine mutableMapOf(
-                        "href" to fragment.href,
-                        "fragment" to fragment.fragment,
-                        "locator" to fragment.locator?.toJSON()?.toMap()
+                        "href" to clip.locator.href,
+                        "fragment" to clip.fragmentId,
+                        "locator" to clip.locator.toJSON().toMap()
                     )
                 }
 
         AsyncFunction("getNextFragment") Coroutine { bookUuid: String, locatorMap: Map<String, Any> ->
             val locatorJson = JSONObject(locatorMap)
             val locator = Locator.fromJSON(locatorJson) ?: return@Coroutine null
-            val next = bookService.getNextFragment(bookUuid, locator) ?: return@Coroutine null
+            val next = BookService.getNextFragment(bookUuid, locator) ?: return@Coroutine null
             mutableMapOf(
-                "href" to next.href,
-                "fragment" to next.fragment,
-                "locator" to next.locator?.toJSON()?.toMap()
+                "href" to next.locator.href,
+                "fragment" to next.fragmentId,
+                "locator" to next.locator.toJSON().toMap()
             )
         }
 
@@ -118,18 +188,18 @@ class ReadiumModule : Module() {
             val locatorJson = JSONObject(locatorMap)
             val locator = Locator.fromJSON(locatorJson) ?: return@Coroutine null
             val previous =
-                bookService.getPreviousFragment(bookUuid, locator) ?: return@Coroutine null
+                BookService.getPreviousFragment(bookUuid, locator) ?: return@Coroutine null
             mutableMapOf(
-                "href" to previous.href,
-                "fragment" to previous.fragment,
-                "locator" to previous.locator?.toJSON()?.toMap()
+                "href" to previous.locator.href,
+                "fragment" to previous.fragmentId,
+                "locator" to previous.locator.toJSON().toMap()
             )
         }
 
         AsyncFunction("locateLink") { bookUuid: String, linkMap: Map<String, Any> ->
             val linkJson = JSONObject(linkMap)
             val link = Link.fromJSON(linkJson) ?: throw Exception("Failed to parse link from json")
-            val locator = bookService.locateLink(bookUuid, link)
+            val locator = BookService.locateLink(bookUuid, link)
             return@AsyncFunction locator?.toJSON()?.toMap()
         }
 
@@ -145,9 +215,6 @@ class ReadiumModule : Module() {
             )
 
             Prop("bookUuid") { view: EpubView, prop: String ->
-                if (view.bookService == null) {
-                    view.bookService = bookService
-                }
                 view.pendingProps.bookUuid = prop
             }
 
@@ -253,5 +320,23 @@ class ReadiumModule : Module() {
                 view.finalizeProps()
             }
         }
+    }
+
+    override fun onClipChanged(overlayPar: OverlayPar) {
+        this.sendEvent(
+            "clipChanged", overlayPar.toJson()
+        )
+    }
+
+    override fun onIsPlayingChanged(isPlaying: Boolean) {
+        this.sendEvent("isPlayingChanged", mapOf("isPlaying" to isPlaying))
+    }
+
+    override fun onPositionChanged(position: Double) {
+        this.sendEvent("positionChanged", mapOf("position" to position))
+    }
+
+    override fun onTrackChanged(track: Track, position: Double) {
+        this.sendEvent("trackChanged", mapOf("track" to track.toJson(), "position" to position))
     }
 }

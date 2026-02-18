@@ -1,6 +1,6 @@
 import { Link } from "expo-router"
 import { Settings } from "lucide-react-native"
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { Image, RefreshControl, ScrollView, View } from "react-native"
 
 import { BookSearch } from "@/components/BookSearch"
@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/icon"
 import { Text } from "@/components/ui/text"
 import { type BookWithRelations } from "@/database/books"
 import { type Collection } from "@/database/collections"
+import { useIsFocused } from "@/hooks/useIsFocused"
 import { useListAllServerBooks } from "@/hooks/useListAllServerBooks"
 import {
   useListBooksQuery as useListLocalBooksQuery,
@@ -24,8 +25,19 @@ const EMPTY_COLLECTIONS: Collection[] = []
 
 export default function Home() {
   const { isLoading, refetch } = useListAllServerBooks()
-  const { data: books = EMPTY_BOOKS } = useListLocalBooksQuery()
+  const { data: liveBooks = EMPTY_BOOKS } = useListLocalBooksQuery()
   const { data: collections = EMPTY_COLLECTIONS } = useListCollectionsQuery()
+
+  const staleBooksRef = useRef<BookWithRelations[]>(liveBooks)
+
+  const isFocused = useIsFocused()
+  const books = isFocused ? liveBooks : staleBooksRef.current
+
+  useEffect(() => {
+    if (isFocused) {
+      staleBooksRef.current = liveBooks
+    }
+  }, [isFocused, liveBooks])
 
   const onDevice = useMemo(() => {
     return (

@@ -1,5 +1,6 @@
 import { Uniwind } from "uniwind"
 
+import { getPreferences } from "@/database/preferences"
 import { localApi } from "@/store/localApi"
 
 import { startAppListening } from "./listenerMiddleware"
@@ -72,8 +73,7 @@ startAppListening({
   predicate: () => true,
   effect: async (_, listenerApi) => {
     listenerApi.unsubscribe()
-    const { data: preferences } =
-      localApi.endpoints.getGlobalPreferences.select()(listenerApi.getState())
+    const preferences = await getPreferences()
 
     if (!preferences) return
 
@@ -84,11 +84,13 @@ startAppListening({
           ? "system"
           : "light",
     )
+
     const preferenceName =
       Uniwind.currentTheme === "dark" ? "darkTheme" : "lightTheme"
     const theme = preferences.colorThemes.find(
       (theme) => theme.name === preferences[preferenceName],
     )
+
     if (!theme) return
 
     const { background, foreground } = theme

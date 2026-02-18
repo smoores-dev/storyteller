@@ -1,20 +1,19 @@
 import { isPast } from "date-fns"
-import TrackPlayer from "react-native-track-player"
 
-import { playerPositionUpdated } from "@/store/actions"
+import { Storyteller } from "@/modules/readium"
 import { getSleepTimer } from "@/store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 
 import { startAppListening } from "./listenerMiddleware"
 
 startAppListening({
-  actionCreator: playerPositionUpdated,
+  actionCreator: bookshelfSlice.actions.audioPositionChanged,
   effect: async (_, listenerApi) => {
     const sleepTimer = getSleepTimer(listenerApi.getState())
     if (sleepTimer === null) return
 
     if (isPast(sleepTimer)) {
-      await TrackPlayer.pause()
+      await Storyteller.pause()
       listenerApi.dispatch(bookshelfSlice.actions.sleepTimerExpired())
     }
   },

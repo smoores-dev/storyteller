@@ -16,6 +16,6 @@ TaskManager.defineTask(BACKGROUND_POSITION_SYNC_TASK, async () => {
 
 export async function registerBackgroundTaskAsync() {
   BackgroundTask.registerTaskAsync(BACKGROUND_POSITION_SYNC_TASK, {
-    minimumInterval: 60 * 15, // 15 minutes
+    minimumInterval: 30,
   })
 }

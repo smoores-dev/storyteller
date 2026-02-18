@@ -30,3 +30,6 @@ web-build/
 .metro-health-check*
 
 .idea
+
+.env.local
+.env

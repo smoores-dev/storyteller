@@ -55,6 +55,7 @@ export const defaultPreferences: Preferences = {
   hideStatusbar: {
     enabled: true,
   },
+  logLevel: "info",
 }
 
 export type ColorTheme = {
@@ -123,4 +124,5 @@ export interface Preferences {
   customFonts: CustomFont[]
   hideStatusbar: HideStatusbarPreferences
   automaticRewind: AutomaticRewindPreferences
+  logLevel: "debug" | "info" | "error"
 }

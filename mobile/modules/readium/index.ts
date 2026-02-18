@@ -1,5 +1,3 @@
-import { Platform } from "react-native"
-
 import { type BookWithRelations } from "@/database/books"
 import { type BookAuthor } from "@/legacy/persistence/books"
 import { type UUID } from "@/uuid"
@@ -26,12 +24,14 @@ export async function extractArchive(archiveUrl: string, extractedUrl: string) {
 export async function openPublication(
   bookUuid: UUID,
   expandedBookUri: string,
+  clips?: ReadiumClip[],
 ): Promise<ReadiumManifest> {
   const manifest = await ReadiumModule.openPublication(
     bookUuid,
     expandedBookUri,
+    clips,
   )
-  return Platform.OS === "android" ? manifest : JSON.parse(manifest)
+  return typeof manifest === "string" ? JSON.parse(manifest) : manifest
 }
 
 export async function buildAudiobookManifest(
@@ -89,11 +89,11 @@ function getAudiobookClip(book: BookWithRelations, locator: ReadiumLocator) {
     const duration = manifest.readingOrder.find(
       (resource) => resource.href === locator.href,
     )?.duration
-    if (duration === undefined) return null
-
-    return {
-      relativeUrl: locator.href,
-      start: progression * duration,
+    if (duration !== undefined) {
+      return {
+        relativeUrl: locator.href,
+        start: progression * duration,
+      }
     }
   }
 
@@ -123,17 +123,47 @@ function getAudiobookClip(book: BookWithRelations, locator: ReadiumLocator) {
   return null
 }
 
+function getReadaloudLocatorFromAudiobook(
+  positions: ReadiumLocator[] | null,
+  locator: ReadiumLocator,
+) {
+  const totalProgression = locator.locations?.totalProgression
+  if (totalProgression === undefined) return null
+
+  if (!positions?.[0]) return null
+
+  let position = positions[0]
+  for (const p of positions) {
+    if ((p.locations?.totalProgression ?? 0) > totalProgression) {
+      position = p
+      break
+    }
+  }
+
+  return position
+}
+
 export async function getClip(
   book: BookWithRelations,
   format: "audiobook" | "ebook" | "readaloud",
   locator: ReadiumLocator,
+  positions: ReadiumLocator[] | null,
 ): Promise<{ relativeUrl: string; start: number } | null> {
   if (format === "audiobook") {
     return getAudiobookClip(book, locator)
   }
 
-  const clip = (await ReadiumModule.getClip(book.uuid, locator)) as ReadiumClip
-  return clip
+  try {
+    const clip = await ReadiumModule.getClip(book.uuid, locator)
+    return clip
+  } catch {
+    const readaloudLocator = getReadaloudLocatorFromAudiobook(
+      positions,
+      locator,
+    )
+    if (!readaloudLocator) return null
+    return await ReadiumModule.getClip(book.uuid, readaloudLocator)
+  }
 }
 
 export async function getFragment(
@@ -219,3 +249,4 @@ export function readiumToStorytellerAuthors(
 
 export type { EPUBViewProps, EPUBViewRef, ReadiumManifest }
 export { EPUBView }
+export { ReadiumModule as Storyteller }

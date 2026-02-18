@@ -312,7 +312,12 @@ export function BookThumbnailImage({
           />
         </>
       ) : book.ebook ? (
-        <EbookCoverImage book={book} height={height} width={width} />
+        <EbookCoverImage
+          book={book}
+          height={height}
+          width={width}
+          className="scale-[0.85]"
+        />
       ) : (
         <AudiobookCoverImage
           book={book}

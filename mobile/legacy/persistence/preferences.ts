@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 import { colors } from "@/components/ui/tokens/colors"
-import { type Preferences } from "@/database/preferencesTypes"
 
 // This is intentionally "frozen", because this
 // is used to fill in missing preferences during the initial
@@ -9,9 +8,8 @@ import { type Preferences } from "@/database/preferencesTypes"
 // users come out of the initial migration with the same
 // preferences, even if we evolve preferences over time
 // in later migrations.
-const defaultPreferences: Preferences = {
+const defaultPreferences: Omit<PreferencesState, "bookPreferences"> = {
   darkMode: "auto",
-  showReaderUi: false,
   colorThemes: [
     {
       name: "Day",

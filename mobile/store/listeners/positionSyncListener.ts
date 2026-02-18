@@ -1,3 +1,5 @@
+import { AppState } from "react-native"
+
 import { getBook } from "@/database/books"
 import { getDownloadedPositions } from "@/database/positions"
 import { getDirtyStatuses, setBookStatusClean } from "@/database/statuses"
@@ -11,6 +13,8 @@ import { serverApi } from "@/store/serverApi"
 import { startAppListening } from "./listenerMiddleware"
 
 export async function syncPositions(dispatch: AppDispatch) {
+  logger.debug("Syncing positions with server")
+
   const positions = await getDownloadedPositions()
 
   for (const position of positions) {
@@ -31,6 +35,8 @@ export async function syncPositions(dispatch: AppDispatch) {
           locator,
         }),
       ).unwrap()
+
+      logger.debug("Wrote position to server")
     } catch (e) {
       if (
         typeof e === "object" &&
@@ -129,7 +135,9 @@ startAppListening({
     const { result } = listenerApi.fork(async (forkApi) => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        await syncPositions(listenerApi.dispatch)
+        if (AppState.currentState === "active") {
+          await syncPositions(listenerApi.dispatch)
+        }
         await forkApi.delay(3_000)
       }
     })

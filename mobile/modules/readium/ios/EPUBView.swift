@@ -94,18 +94,6 @@ class EPUBView: ExpoView {
             initializeNavigator()
         }
 
-        // Don't go to a new location if it's the same as the current location, except with
-        // different fragments. Prevents unnecessarily triggering renders and state updates
-        // when the position hasn't actually changed
-        let locatorComp = finalProps.locator?.copy(locations: {
-            $0.fragments = []
-            $0.otherLocations = [:]
-        })
-        let currentLocatorComp = navigator?.currentLocation?.copy(locations: {
-            $0.fragments = []
-            $0.otherLocations = [:]
-        })
-
         if finalProps.locator != navigator?.currentLocation, let locator = finalProps.locator {
             go(locator: locator)
         }
@@ -144,7 +132,7 @@ class EPUBView: ExpoView {
     private var didTapWork: DispatchWorkItem?
 
     public func initializeNavigator() {
-        guard let publication = BookService.instance.getPublication(for: props!.bookId) else {
+        guard let publication = BookService.shared.getPublication(for: props!.bookId) else {
             print("skipping navigator init, publication has not yet been opened")
             return
         }
@@ -213,7 +201,7 @@ class EPUBView: ExpoView {
                 decorationTemplates: templates,
                 fontFamilyDeclarations: fontFamilyDeclarations
             ),
-            httpServer: GCDHTTPServer(assetRetriever: BookService.instance.retriever)
+            httpServer: GCDHTTPServer(assetRetriever: BookService.shared.retriever)
         ) else {
             print("Failed to create Navigator instance")
             return
@@ -254,26 +242,36 @@ class EPUBView: ExpoView {
         }
         
         Task {
-            let result = await props?.locator?.locations.progression.asyncMap {
+            var result = await props?.locator?.locations.fragments.first.asyncMap({
                 await epubNav.evaluateJavaScript("""
-            (function() {
-                const maxScreenX = window.orientation === 0 || window.orientation == 180
-                        ? screen.width
-                        : screen.height;
-        
-                function snapOffset(offset) {
-                    const value = offset + 1;
-        
-                    return value - (value % maxScreenX);
-                }
-        
-                const documentWidth = document.scrollingElement.scrollWidth;
-                const currentPageStart = snapOffset(documentWidth * \(currentLocator.locations.progression ?? 0.0));
-                const currentPageEnd = currentPageStart + maxScreenX;
-                return \($0) * documentWidth >= currentPageStart &&
-                    \($0) * documentWidth < currentPageEnd;
-            })();
-        """)
+                    (function() {
+                        const element = document.getElementById("\($0)")
+                        return storyteller.isEntirelyOnScreen(element);
+                    })();
+                """)
+            })
+            if result == nil {
+                result = await props?.locator?.locations.progression.asyncMap({
+                    await epubNav.evaluateJavaScript("""
+                        (function() {
+                            const maxScreenX = window.orientation === 0 || window.orientation == 180
+                                    ? screen.width
+                                    : screen.height;
+                    
+                            function snapOffset(offset) {
+                                const value = offset + 1;
+                    
+                                return value - (value % maxScreenX);
+                            }
+                    
+                            const documentWidth = document.scrollingElement.scrollWidth;
+                            const currentPageStart = snapOffset(documentWidth * \(currentLocator.locations.progression ?? 0.0));
+                            const currentPageEnd = currentPageStart + maxScreenX;
+                            return \($0) * documentWidth >= currentPageStart &&
+                                \($0) * documentWidth < currentPageEnd;
+                        })();
+                    """)
+                })
             }
             switch result {
             case nil:
@@ -435,7 +433,7 @@ extension EPUBView: WKScriptMessageHandler {
                         return
                     }
 
-                guard let locator = try? await BookService.instance.getLocatorFor(bookId: props!.bookId, href: currentLocator.href.string, fragment: fragment) else {
+                guard let locator = BookService.shared.getLocatorFor(bookId: props!.bookId, href: currentLocator.href.string, fragment: fragment) else {
                         return
                     }
 
@@ -472,9 +470,9 @@ extension EPUBView: EPUBNavigatorDelegate {
         }
 
 
-        let fragments = BookService.instance.getFragments(for: props!.bookId, locator: currentLocator)
+        let fragments = BookService.shared.getFragments(for: props!.bookId, locator: currentLocator)
 
-        let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
+        let joinedFragments = fragments.map(\.fragmentId).map { "\"\($0)\"" }.joined(separator: ",")
         let jsFragmentsArray = "[\(joinedFragments)]"
 
         let scriptSource = """
@@ -609,9 +607,9 @@ extension EPUBView: EPUBNavigatorDelegate {
             if locator.href != props!.locator?.href || changingResource {
                 changingResource = false
 
-                let fragments = BookService.instance.getFragments(for: props!.bookId, locator: locator)
+                let fragments = BookService.shared.getFragments(for: props!.bookId, locator: locator)
 
-                let joinedFragments = fragments.map(\.fragment).map { "\"\($0)\"" }.joined(separator: ",")
+                let joinedFragments = fragments.map(\.fragmentId).map { "\"\($0)\"" }.joined(separator: ",")
                 let jsFragmentsArray = "[\(joinedFragments)]"
 
 

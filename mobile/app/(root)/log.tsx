@@ -1,7 +1,7 @@
-import Clipboard from "@react-native-clipboard/clipboard"
 import * as FileSystem from "expo-file-system/legacy"
 import { useRouter } from "expo-router"
-import { ChevronDownIcon } from "lucide-react-native"
+import * as Sharing from "expo-sharing"
+import { ChevronDownIcon, ShareIcon } from "lucide-react-native"
 import { useEffect, useState } from "react"
 import { View } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
@@ -10,6 +10,15 @@ import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
 import { Text } from "@/components/ui/text"
 
+function getTodaysLogFilename() {
+  const today = new Date()
+  return `storyteller-${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}.log`
+}
+
+function getTodaysLogUri() {
+  return `${FileSystem.documentDirectory}${getTodaysLogFilename()}`
+}
+
 export default function LogModal() {
   const [logText, setLogText] = useState<string[]>([])
 
@@ -17,13 +26,9 @@ export default function LogModal() {
 
   useEffect(() => {
     async function readLogText() {
-      const today = new Date()
-      const text = await FileSystem.readAsStringAsync(
-        `${FileSystem.documentDirectory}storyteller-${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}.log`,
-        {
-          encoding: "utf8",
-        },
-      )
+      const text = await FileSystem.readAsStringAsync(getTodaysLogUri(), {
+        encoding: "utf8",
+      })
       setLogText(text.split("\n"))
     }
 
@@ -54,11 +59,7 @@ export default function LogModal() {
           variant="ghost"
           className="self-end"
           onPress={() => {
-            const today = new Date()
-            FileSystem.writeAsStringAsync(
-              `${FileSystem.documentDirectory}storyteller-${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}.log`,
-              "",
-            )
+            FileSystem.writeAsStringAsync(getTodaysLogUri(), "")
           }}
         >
           <Text>Clear</Text>
@@ -68,10 +69,15 @@ export default function LogModal() {
         <Button
           variant="ghost"
           onPress={() => {
-            Clipboard.setString(logText.join("\n"))
+            Sharing.shareAsync(getTodaysLogUri(), {
+              dialogTitle: getTodaysLogFilename(),
+              mimeType: "text/plain",
+              UTI: "public.log",
+            })
           }}
         >
-          <Text>Copy</Text>
+          <Icon as={ShareIcon} size={16} />
+          <Text>Share</Text>
         </Button>
       </View>
       <FlatList

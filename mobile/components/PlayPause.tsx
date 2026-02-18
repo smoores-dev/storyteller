@@ -1,11 +1,13 @@
 import { Pause, Play } from "lucide-react-native"
 import { ActivityIndicator } from "react-native"
-import TrackPlayer from "react-native-track-player"
 
-import { useAudioBook } from "@/hooks/useAudioBook"
 import { useColorTheme } from "@/hooks/useColorTheme"
-import { playerPlayed } from "@/store/actions"
-import { useAppDispatch } from "@/store/appState"
+import { Storyteller } from "@/modules/readium"
+import { useAppSelector } from "@/store/appState"
+import {
+  getIsAudioLoading,
+  getIsPlaying,
+} from "@/store/selectors/bookshelfSelectors"
 
 import { Button } from "./ui/button"
 import { Icon } from "./ui/icon"
@@ -16,8 +18,8 @@ type Props = {
 }
 
 export function PlayPause({ size = 24, automaticRewind = true }: Props) {
-  const { isPlaying, isLoading } = useAudioBook()
-  const dispatch = useAppDispatch()
+  const isPlaying = useAppSelector(getIsPlaying)
+  const isLoading = useAppSelector(getIsAudioLoading)
   const { foreground } = useColorTheme()
 
   if (isLoading) return <ActivityIndicator size={size} />
@@ -27,7 +29,7 @@ export function PlayPause({ size = 24, automaticRewind = true }: Props) {
       variant="ghost"
       size="icon"
       onPress={() => {
-        TrackPlayer.pause()
+        Storyteller.pause()
       }}
     >
       <Icon as={Pause} fill={foreground} size={size} />
@@ -37,11 +39,7 @@ export function PlayPause({ size = 24, automaticRewind = true }: Props) {
       variant="ghost"
       size="icon"
       onPress={() => {
-        if (automaticRewind) {
-          dispatch(playerPlayed())
-        } else {
-          TrackPlayer.play()
-        }
+        Storyteller.play(automaticRewind)
       }}
     >
       <Icon

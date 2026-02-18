@@ -4,12 +4,11 @@ import { useKeepAwake } from "expo-keep-awake"
 import { Link, Tabs } from "expo-router"
 import { ChevronLeft } from "lucide-react-native"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { DeviceEventEmitter, Platform, StatusBar, View } from "react-native"
+import { DeviceEventEmitter, StatusBar, View } from "react-native"
 
 import { type Bookmark } from "@/database/bookmarks"
 import { type BookWithRelations } from "@/database/books"
 import { deepEquals } from "@/deepEquals"
-import { useAudioBook } from "@/hooks/useAudioBook"
 import { useColorTheme } from "@/hooks/useColorTheme"
 import { EPUBView } from "@/modules/readium"
 import {
@@ -17,7 +16,7 @@ import {
   type ReadiumLocator,
 } from "@/modules/readium/src/Readium.types"
 import { bookDoubleTapped, bookLocatorChanged } from "@/store/actions"
-import { useAppDispatch } from "@/store/appState"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   useGetBookBookmarksQuery,
   useGetBookHighlightsQuery,
@@ -26,6 +25,7 @@ import {
   useUpdateGlobalPreferenceMutation,
 } from "@/store/localApi"
 import { getCustomFontUrl } from "@/store/persistence/fonts"
+import { getIsPlaying } from "@/store/selectors/bookshelfSelectors"
 import { type UUID } from "@/uuid"
 
 import { LoadingView } from "./LoadingView"
@@ -48,15 +48,6 @@ const backwardNavKeyCodes = [92]
 
 export function Epub({ book, format, locator }: Props) {
   useKeepAwake()
-
-  const [firstRender, setFirstRender] = useState(true)
-
-  // Track whether the locator came from the EPUB view.
-  // This allows us to disable automatic rewind when the
-  // user presses play after swiping to a new page, which
-  // would "rewind" to the previous page and be jarring.
-  const locatorRef = useRef<ReadiumLocator | null>(null)
-  const locatorIsFromEpub = locatorRef.current === locator
 
   const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<Bookmark[]>([])
@@ -121,7 +112,7 @@ export function Epub({ book, format, locator }: Props) {
 
   const epubViewRef = useRef<EPUBViewRef | null>(null)
 
-  const { isPlaying } = useAudioBook()
+  const isPlaying = useAppSelector(getIsPlaying)
 
   useEffect(() => {
     const listener = DeviceEventEmitter.addListener(
@@ -185,7 +176,7 @@ export function Epub({ book, format, locator }: Props) {
           ref={epubViewRef}
           style={{ flex: 1 }}
           bookUuid={book.uuid}
-          locator={firstRender && Platform.OS === "android" ? null : locator}
+          locator={locator}
           highlights={highlights ?? []}
           bookmarks={bookmarks?.map((bookmark) => bookmark.locator) ?? []}
           fontScale={preferences?.typography?.scale}
@@ -218,27 +209,10 @@ export function Epub({ book, format, locator }: Props) {
             )
           }}
           onLocatorChange={(event) => {
-            // UUGGHHHH this is a terrible hack
-            // Opening a book for the first time
-            // works. Each subsequent attempt to
-            // render the EpubView for a book
-            // after the first time results in an
-            // empty pager view. However, re-rendering
-            // the EpubView with a new locator
-            // (... in a setTimeout, for some reason)
-            // fixes the issue.
-            if (firstRender && Platform.OS === "android") {
-              setTimeout(() => {
-                setFirstRender(false)
-              })
-              return
-            }
-
             if (isPlaying) {
               return
             }
 
-            locatorRef.current = event.nativeEvent
             dispatch(
               bookLocatorChanged({
                 bookUuid: book.uuid,
@@ -276,7 +250,6 @@ export function Epub({ book, format, locator }: Props) {
         hidden={!preferences?.showReaderUi}
         book={book}
         format={format}
-        automaticRewind={!locatorIsFromEpub}
       />
     </View>
   )

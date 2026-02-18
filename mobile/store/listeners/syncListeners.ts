@@ -1,8 +1,10 @@
-import { type UnknownAction, isAnyOf } from "@reduxjs/toolkit"
-import TrackPlayer from "react-native-track-player"
+import { isAnyOf } from "@reduxjs/toolkit"
 
-import { getClip, getFragment } from "@/modules/readium"
-import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
+import { Storyteller, getClip, getFragment } from "@/modules/readium"
+import {
+  type ReadiumLocator,
+  type StorytellerTrack,
+} from "@/modules/readium/src/Readium.types"
 import {
   bookDoubleTapped,
   bookLocatorChanged,
@@ -10,9 +12,8 @@ import {
   miniPlayerSliderChapterPositionChanged,
   navItemPressed,
   nextTrackPressed,
-  playerPaused,
+  playerClipChanged,
   playerPositionSeeked,
-  playerPositionUpdated,
   playerTotalPositionSeeked,
   playerTrackChanged,
   prevTrackPressed,
@@ -22,8 +23,9 @@ import { localApi } from "@/store/localApi"
 import {
   getCurrentlyPlayingBookUuid,
   getCurrentlyPlayingFormat,
+  getIsPlaying,
 } from "@/store/selectors/bookshelfSelectors"
-import { type BookshelfTrack } from "@/store/slices/bookshelfSlice"
+import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 import { type UUID } from "@/uuid"
 
 import { startAppListening } from "./listenerMiddleware"
@@ -42,11 +44,6 @@ startAppListening({
   effect: async (action, listenerApi) => {
     const { bookUuid, locator, timestamp } = action.payload
 
-    const currentlyPlaying = getCurrentlyPlayingBookUuid(listenerApi.getState())
-    if (bookUuid !== currentlyPlaying) return
-    const format = getCurrentlyPlayingFormat(listenerApi.getState())
-    if (!format) return
-
     await listenerApi
       .dispatch(
         localApi.endpoints.updatePosition.initiate({
@@ -63,23 +60,36 @@ startAppListening({
 
     if (!book) return
 
+    const currentlyPlaying = getCurrentlyPlayingBookUuid(listenerApi.getState())
+    if (bookUuid !== currentlyPlaying) return
+
+    const format = getCurrentlyPlayingFormat(listenerApi.getState())
+    if (!format) return
+
+    const positions =
+      format !== "audiobook"
+        ? await listenerApi
+            .dispatch(
+              localApi.endpoints.getBookPositions.initiate(
+                { bookUuid, format },
+                { forceRefetch: false },
+              ),
+            )
+            .unwrap()
+        : null
+
     const clip =
-      book.position && (await getClip(book, format, book.position.locator))
+      book.position &&
+      (await getClip(book, format, book.position.locator, positions))
 
     if (!clip) return
 
-    const tracks = (await TrackPlayer.getQueue()) as BookshelfTrack[]
-
-    const trackIndex = tracks.findIndex(
-      (track) => track.relativeUrl === clip.relativeUrl,
-    )
-
-    if (trackIndex !== -1) {
-      await TrackPlayer.skip(trackIndex, clip.start)
-    }
-
     if (action.type === bookDoubleTapped.type) {
-      await TrackPlayer.play()
+      // this prevents the previous clip from being highlighted briefly when double tapping
+      await Storyteller.seekTo(clip.relativeUrl, clip.start + 0.01, true)
+      await Storyteller.play(false)
+    } else {
+      await Storyteller.seekTo(clip.relativeUrl, clip.start, true)
     }
   },
 })
@@ -97,86 +107,73 @@ startAppListening({
   effect: async (action, listenerApi) => {
     listenerApi.unsubscribe()
 
-    let queued: UnknownAction | null = null
-    listenerApi
-      .take((action) => action.type === playerPositionUpdated.type)
-      .then(([action]) => (queued = action))
-      .catch(() => {})
-
     try {
       switch (action.type) {
-        case playerTotalPositionSeeked.type: {
-          const { progress } = action.payload
+        // case playerTotalPositionSeeked.type: {
+        // const { progress } = action.payload
 
-          let skipTo = progress
-          let nextTrack = null
+        // let skipTo = progress
+        // let nextTrack = null
 
-          const tracks = await TrackPlayer.getQueue()
+        // const tracks = await TrackPlayer.getQueue()
 
-          let acc = 0
-          for (let i = 0; i < tracks.length; i++) {
-            const track = tracks[i]!
-            acc += track.duration ?? 0
-            if (acc > progress) break
-            nextTrack = i
-            skipTo -= track.duration ?? 0
-          }
-          if (nextTrack === null) return
+        // let acc = 0
+        // for (let i = 0; i < tracks.length; i++) {
+        //   const track = tracks[i]!
+        //   acc += track.duration ?? 0
+        //   if (acc > progress) break
+        //   nextTrack = i
+        //   skipTo -= track.duration ?? 0
+        // }
+        // if (nextTrack === null) return
 
-          await TrackPlayer.skip(nextTrack, skipTo)
-          break
-        }
+        // await TrackPlayer.skip(nextTrack, skipTo)
+        // break
+        // }
         case playerPositionSeeked.type: {
           const { progress } = action.payload
 
-          await TrackPlayer.seekTo(progress)
+          await Storyteller.skip(progress)
           break
         }
         case playerTrackChanged.type: {
-          const { index, position } = action.payload
-          await TrackPlayer.skip(index, position)
+          const { relativeUri, position } = action.payload
+          await Storyteller.seekTo(relativeUri, position ?? 0)
           break
         }
         case nextTrackPressed.type: {
-          await TrackPlayer.skipToNext()
+          await Storyteller.next()
           break
         }
         case prevTrackPressed.type: {
-          await TrackPlayer.skipToPrevious()
+          await Storyteller.prev()
           break
         }
       }
-
-      listenerApi.dispatch(playerPositionUpdated())
     } finally {
       listenerApi.subscribe()
-      if (queued) {
-        listenerApi.dispatch(queued)
-      }
     }
   },
 })
 
-const matchPlayerUpdatedOrPaused = isAnyOf(playerPositionUpdated, playerPaused)
-
 async function getLocatorFromTrackPosition(
   bookUuid: UUID,
   format: "ebook" | "readaloud" | "audiobook",
-  track: BookshelfTrack,
+  track: StorytellerTrack,
   position: number,
 ): Promise<ReadiumLocator | undefined> {
   if (format !== "audiobook") {
-    const fragment = await getFragment(bookUuid, track.relativeUrl, position)
+    const fragment = await getFragment(bookUuid, track.relativeUri, position)
     return fragment?.locator
   }
 
-  const tracks = await TrackPlayer.getQueue()
+  const tracks = await Storyteller.getTracks()
 
   let prev = true
   let prevDuration = 0
   let totalDuration = 0
   for (const t of tracks) {
-    if (t === track) {
+    if (t.relativeUri === track.relativeUri) {
       prev = false
     }
     if (prev) {
@@ -186,7 +183,7 @@ async function getLocatorFromTrackPosition(
   }
 
   return {
-    href: track.relativeUrl,
+    href: track.relativeUri,
     title: track.title,
     type: track.mimeType,
     locations: {
@@ -198,24 +195,21 @@ async function getLocatorFromTrackPosition(
 }
 
 startAppListening({
-  matcher: matchPlayerUpdatedOrPaused,
-  effect: async (_, listenerApi) => {
+  actionCreator: bookshelfSlice.actions.isPlayingChanged,
+  effect: async (action, listenerApi) => {
+    if (action.payload.isPlaying) return
+    if (
+      getIsPlaying(listenerApi.getOriginalState()) ===
+      getIsPlaying(listenerApi.getState())
+    )
+      return
+
     listenerApi.unsubscribe()
-
-    let queued = false
-    listenerApi
-      .take((action) => action.type === playerPositionUpdated.type)
-      .then(() => (queued = true))
-      .catch(() => {})
-
     try {
-      const currentTrack = (await TrackPlayer.getActiveTrack()) as
-        | BookshelfTrack
-        | undefined
-
+      const currentTrack = await Storyteller.getCurrentTrack()
       if (!currentTrack) return
 
-      const { position } = await TrackPlayer.getProgress()
+      const position = await Storyteller.getPosition()
 
       const currentBookUuid = getCurrentlyPlayingBookUuid(
         listenerApi.getState(),
@@ -245,9 +239,33 @@ startAppListening({
         .unwrap()
     } finally {
       listenerApi.subscribe()
-      if (queued) {
-        listenerApi.dispatch(playerPositionUpdated())
+    }
+  },
+})
+
+startAppListening({
+  actionCreator: playerClipChanged,
+  effect: async (action, listenerApi) => {
+    listenerApi.unsubscribe()
+    try {
+      const { clip } = action.payload
+      const currentBookUuid = getCurrentlyPlayingBookUuid(
+        listenerApi.getState(),
+      )
+      if (!currentBookUuid) return
+      const locator = clip.locator
+
+      const payload = {
+        bookUuid: currentBookUuid,
+        locator: locator,
+        timestamp: Date.now(),
       }
+
+      await listenerApi
+        .dispatch(localApi.endpoints.updatePosition.initiate(payload))
+        .unwrap()
+    } finally {
+      listenerApi.subscribe()
     }
   },
 })

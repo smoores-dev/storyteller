@@ -5,17 +5,21 @@ import * as SecureStore from "expo-secure-store"
 import { sql } from "kysely"
 
 import { getBook } from "@/database/books"
-import { db } from "@/database/db"
+import { db, rawDb } from "@/database/db"
 import { getServer } from "@/database/servers"
 import { logger } from "@/logger"
 import {
   type ReadiumManifest,
+  Storyteller,
   buildAudiobookManifest,
   extractArchive,
   getPositions,
   openPublication,
 } from "@/modules/readium"
-import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
+import type {
+  ReadiumClip,
+  ReadiumLocator,
+} from "@/modules/readium/src/Readium.types"
 import { localApi } from "@/store/localApi"
 import {
   getLocalBookArchiveUrl,
@@ -42,14 +46,6 @@ startAppListening({
           Object.assign(book[format], state)
         }),
       )
-
-      listenerApi.dispatch(
-        localApi.util.updateQueryData("listBooks", undefined, (books) => {
-          const book = books.find((book) => book.uuid === bookUuid)
-          if (!book?.[format]) return
-          Object.assign(book[format], state)
-        }),
-      )
     }
 
     listenerApi.unsubscribe()
@@ -57,25 +53,30 @@ startAppListening({
     try {
       const { bookUuid, format } = action.meta.arg.originalArgs
 
-      const book = await getBook(bookUuid)
-      if (!book?.serverUuid) {
+      logger.debug(`Starting download for ${bookUuid} (${format})`)
+      const book = (await getBook(bookUuid))!
+      if (!book.serverUuid) {
         throw new Error(
           `Attempted to download a book that did not originate from a server`,
         )
       }
 
+      logger.debug(`Getting server for ${bookUuid} (${format})`)
       const server = await getServer(book.serverUuid)
       const token = await SecureStore.getItemAsync(
         `server.${server.uuid}.token`,
       )
 
+      logger.debug(`Getting local book archive URI for ${bookUuid} (${format})`)
       const localBookArchiveUri = getLocalBookArchiveUrl(book.uuid, format)
 
+      logger.debug(`Creating parent directory for ${localBookArchiveUri}`)
       new File(localBookArchiveUri).parentDirectory.create({
         idempotent: true,
         intermediates: true,
       })
 
+      logger.debug(`Creating download resumable for ${bookUuid} (${format})`)
       const download = FileSystem.createDownloadResumable(
         getDownloadUrl(server.baseUrl, bookUuid, format),
         localBookArchiveUri,
@@ -88,48 +89,102 @@ startAppListening({
           },
         },
         throttle(async (progressData) => {
+          logger.debug(
+            `Progress: ${progressData.totalBytesWritten} / ${progressData.totalBytesExpectedToWrite}`,
+          )
           const progress = Math.round(
             (progressData.totalBytesWritten /
               progressData.totalBytesExpectedToWrite) *
               100,
           )
-          await db
-            .updateTable(format)
-            .set({
-              downloadStatus: "DOWNLOADING",
-              downloadProgress: progress,
-            })
-            .where("bookUuid", "=", bookUuid)
-            .execute()
+          logger.debug(`Progress: ${progress}`)
+          await db.transaction().execute(async (tr) => {
+            logger.debug(`Updating download status for ${bookUuid} (${format})`)
+            const { downloadStatus } = await tr
+              .selectFrom(format)
+              .select(["downloadStatus"])
+              .where("bookUuid", "=", bookUuid)
+              .executeTakeFirstOrThrow()
+            if (downloadStatus === "DOWNLOADED") return
 
+            logger.debug(`Updating download status for ${bookUuid} (${format})`)
+            await tr
+              .updateTable(format)
+              .set({
+                downloadStatus: "DOWNLOADING",
+                downloadProgress: progress,
+              })
+              .where("bookUuid", "=", bookUuid)
+              .execute()
+          })
+
+          logger.debug(
+            `Updating cached download state for ${bookUuid} (${format})`,
+          )
           updateCachedDownloadState({
             downloadStatus: "DOWNLOADING",
             downloadProgress: progress,
           })
 
+          logger.debug(`Downloading...`)
+
           // TODO: Support pausing
         }, 250),
       )
 
+      const cancelTask = listenerApi.fork(async () => {
+        const [action] = await listenerApi.take(
+          localApi.endpoints.cancelDownload.matchPending,
+        )
+
+        const { bookUuid: cancelledBookUuid, format: cancelledFormat } =
+          action.meta.arg.originalArgs
+
+        if (bookUuid !== cancelledBookUuid || format !== cancelledFormat) return
+
+        await download.cancelAsync()
+      })
+
+      logger.debug(`Activating keep awake for ${bookUuid} (${format})`)
       await activateKeepAwakeAsync(`download.${bookUuid}.${format}`)
-      await download.downloadAsync()
-      deactivateKeepAwake(`download.${bookUuid}.${format}`)
+      logger.debug(`Starting download for ${bookUuid} (${format})`)
+      const result = await download.downloadAsync()
+      cancelTask.cancel()
+
+      if (!result) {
+        logger.debug(`Download cancelled for ${bookUuid} (${format})`)
+        deactivateKeepAwake(`download.${bookUuid}.${format}`)
+        listenerApi.subscribe()
+        return
+      }
+
+      logger.debug(`Download complete for ${bookUuid} (${format})`)
+      logger.debug(`Extracting archive for ${bookUuid} (${format})`)
 
       const localExtractedUri = getLocalBookExtractedUrl(bookUuid, format)
+      logger.debug(`Getting extracted directory for ${localExtractedUri}`)
       const extractedDirectory = new Directory(localExtractedUri)
+      logger.debug(
+        `Checking if extracted directory exists for ${localExtractedUri}`,
+      )
       if (extractedDirectory.exists) {
         extractedDirectory.delete()
       }
+      logger.debug(`Creating extracted directory for ${localExtractedUri}`)
       extractedDirectory.create({
         idempotent: true,
         intermediates: true,
       })
 
+      logger.debug(
+        `Extracting archive for ${localBookArchiveUri} to ${extractedDirectory.uri}`,
+      )
       await extractArchive(localBookArchiveUri, extractedDirectory.uri)
 
       new File(localBookArchiveUri).delete()
 
       if (format === "audiobook") {
+        logger.debug(`Reading audiobook manifest for ${bookUuid} (${format})`)
         const manifestFile = new File(
           extractedDirectory,
           "manifest.audiobook-manifest",
@@ -137,6 +192,7 @@ startAppListening({
         const manifestText = await manifestFile.text()
         const manifest = JSON.parse(manifestText) as ReadiumManifest
 
+        logger.debug(`Updating audiobook manifest for ${bookUuid} (${format})`)
         await db
           .updateTable("audiobook")
           .set({
@@ -145,11 +201,16 @@ startAppListening({
           .where("bookUuid", "=", bookUuid)
           .execute()
       } else {
+        logger.debug(`Reading EPUB manifest`)
         const epubManifest = await openPublication(
           bookUuid,
           getLocalBookExtractedUrl(bookUuid, format),
         )
+        logger.debug(`Building audiobook manifest`)
         const audioManifest = await buildAudiobookManifest(bookUuid)
+        logger.debug("Retrieving overlay clips")
+        const clips = await Storyteller.getOverlayClips(bookUuid)
+        logger.debug("Retrieving positions")
         const positions = await getPositions(bookUuid)
 
         await db
@@ -168,13 +229,17 @@ startAppListening({
                   audioManifest: JSON.stringify(
                     audioManifest,
                   ) as unknown as ReadiumManifest,
+                  clips: JSON.stringify(clips) as unknown as ReadiumClip[],
                 }),
             positions: JSON.stringify(positions) as unknown as ReadiumLocator[],
           })
           .where("bookUuid", "=", bookUuid)
           .execute()
 
+        logger.debug("Cached publication metadata in local db")
+
         if (!book.position) {
+          logger.debug(`No local position for book, starting at beginning`)
           await db
             .insertInto("position")
             .values({
@@ -198,10 +263,14 @@ startAppListening({
         .where("bookUuid", "=", bookUuid)
         .execute()
 
+      await rawDb.flushPendingReactiveQueries()
+
       updateCachedDownloadState({
         downloadStatus: "DOWNLOADED",
         downloadProgress: 100,
       })
+      deactivateKeepAwake(`download.${bookUuid}.${format}`)
+      logger.debug(`Download complete`)
 
       listenerApi.dispatch(
         localApi.util.invalidateTags([{ type: "Books", id: bookUuid }]),
@@ -251,7 +320,7 @@ startAppListening({
       }
     } catch (e) {
       logger.error(`Failed to download book`)
-      logger.error(e)
+      logger.error({ err: e })
       const { bookUuid, format } = action.meta.arg.originalArgs
 
       await db
@@ -259,6 +328,8 @@ startAppListening({
         .set({ downloadStatus: "ERROR" })
         .where("bookUuid", "=", bookUuid)
         .execute()
+
+      await rawDb.flushPendingReactiveQueries()
 
       updateCachedDownloadState({
         downloadStatus: "ERROR",

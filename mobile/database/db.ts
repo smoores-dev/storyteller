@@ -1,12 +1,23 @@
-import { open } from "@op-engineering/op-sqlite"
+import {
+  ANDROID_DATABASE_PATH,
+  IOS_DOCUMENT_PATH,
+  open,
+} from "@op-engineering/op-sqlite"
 import { CamelCasePlugin, Kysely, ParseJSONResultsPlugin } from "kysely"
+import { Platform } from "react-native"
 
 import { logger } from "@/logger"
 
 import { OpSqliteDialect } from "./dialect"
 import { type DB } from "./schema"
 
-export const rawDb = open({ name: "storyteller.db" })
+export const rawDb = open({
+  name: "storyteller.db",
+  location:
+    Platform.OS === "android"
+      ? ANDROID_DATABASE_PATH
+      : `${IOS_DOCUMENT_PATH}/SQLite`,
+})
 
 export const db = new Kysely<DB>({
   log(event) {

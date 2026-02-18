@@ -2,6 +2,7 @@ import { useLocalSearchParams } from "expo-router"
 import { useEffect } from "react"
 
 import { Epub } from "@/components/Epub"
+import { LoadingView } from "@/components/LoadingView"
 import { useIsFocused } from "@/hooks/useIsFocused"
 import { useIsNotBackground } from "@/hooks/useIsNotBackground"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
@@ -31,13 +32,9 @@ export default function BookScreen() {
     dispatch(bookshelfSlice.actions.bookOpened({ bookUuid: uuid, format }))
   }, [dispatch, format, uuid])
 
-  return (
-    book &&
-    locator &&
-    isFocused &&
-    isNotBackground &&
-    !isAudioLoading && (
-      <Epub key={book.id} format={format} book={book} locator={locator} />
-    )
+  return book && locator && isFocused && isNotBackground && !isAudioLoading ? (
+    <Epub key={book.uuid} format={format} book={book} locator={locator} />
+  ) : (
+    <LoadingView />
   )
 }

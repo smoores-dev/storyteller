@@ -90,6 +90,7 @@ export type ReadiumClip = {
   start: number
   end: number
   duration: number
+  locator: ReadiumLocator
 }
 
 export type ReadiumTextFragment = {
@@ -197,7 +198,7 @@ export type ReadiumManifest = {
     }
     modified?: string
     published?: string
-    language?: string
+    language?: string | string[]
     author?: ReadiumContributor | ReadiumContributor[]
     translator?: ReadiumContributor | ReadiumContributor[]
     editor?: ReadiumContributor | ReadiumContributor[]
@@ -281,4 +282,17 @@ export type EPUBViewProps = {
 export type EPUBViewRef = {
   goForward: () => Promise<void>
   goBackward: () => Promise<void>
+}
+
+export interface StorytellerTrack {
+  uri: string
+  bookUuid: string
+  duration: number
+  bookTitle: string
+  title: string
+  author: string | null
+  coverUri: string | null
+  relativeUri: string
+  narrator: string | null
+  mimeType: string
 }

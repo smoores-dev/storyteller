@@ -1,6 +1,7 @@
 import { type Kysely } from "kysely"
 
 import { type DB } from "@/database/schema"
+import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
 
 export async function up(db: Kysely<DB>): Promise<void> {
   const positions = await db.selectFrom("position").selectAll().execute()
@@ -12,7 +13,7 @@ export async function up(db: Kysely<DB>): Promise<void> {
     }
     await db
       .updateTable("position")
-      .set({ locator })
+      .set({ locator: JSON.stringify(locator) as unknown as ReadiumLocator })
       .where("uuid", "=", position.uuid)
       .execute()
   }
@@ -26,7 +27,7 @@ export async function up(db: Kysely<DB>): Promise<void> {
     }
     await db
       .updateTable("bookmark")
-      .set({ locator })
+      .set({ locator: JSON.stringify(locator) as unknown as ReadiumLocator })
       .where("uuid", "=", bookmark.uuid)
       .execute()
   }
@@ -40,7 +41,7 @@ export async function up(db: Kysely<DB>): Promise<void> {
     }
     await db
       .updateTable("highlight")
-      .set({ locator })
+      .set({ locator: JSON.stringify(locator) as unknown as ReadiumLocator })
       .where("uuid", "=", highlight.uuid)
       .execute()
   }
@@ -57,7 +58,7 @@ export async function down(db: Kysely<DB>): Promise<void> {
 
     await db
       .updateTable("position")
-      .set({ locator })
+      .set({ locator: JSON.stringify(locator) as unknown as ReadiumLocator })
       .where("uuid", "=", position.uuid)
       .execute()
   }
@@ -72,7 +73,7 @@ export async function down(db: Kysely<DB>): Promise<void> {
 
     await db
       .updateTable("bookmark")
-      .set({ locator })
+      .set({ locator: JSON.stringify(locator) as unknown as ReadiumLocator })
       .where("uuid", "=", bookmark.uuid)
       .execute()
   }
@@ -87,7 +88,7 @@ export async function down(db: Kysely<DB>): Promise<void> {
 
     await db
       .updateTable("highlight")
-      .set({ locator })
+      .set({ locator: JSON.stringify(locator) as unknown as ReadiumLocator })
       .where("uuid", "=", highlight.uuid)
       .execute()
   }
