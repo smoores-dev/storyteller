@@ -42,10 +42,6 @@ async function generateTracks(
       audio: true,
     })
 
-  if (serverCoverUrl) {
-    await Image.prefetch(serverCoverUrl)
-  }
-
   let coverUri = book.audiobookCoverUrl
     ? new URL(book.audiobookCoverUrl, documentDirectory!).toString()
     : serverCoverUrl
