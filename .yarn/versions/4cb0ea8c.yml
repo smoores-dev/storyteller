@@ -1,9 +1,0 @@
-releases:
-  "@storyteller-platform/docs": patch
-  "@storyteller-platform/ghost-story": major
-  "@storyteller-platform/web": minor
-
-declined:
-  - "@storyteller-platform/audiobook"
-  - "@storyteller-platform/epub"
-  - "@storyteller-platform/mobile"
