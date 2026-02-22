@@ -40,10 +40,10 @@ publish-web-arm64:
 
 # GPU/accelerated builds (amd64 only)
 # BASE_TAG mapping:
-#   cuda-* variants use their base image (cuda-13.1-main, etc.)
-#   vulkan uses vulkan-main
-#   blas uses blas-main
-#   sycl uses sycl-main
+#   cuda-* variants use their base image (cuda-13.1, etc.)
+#   vulkan uses vulkan
+#   blas uses blas
+#   sycl uses sycl
 #   rocm uses main base (main) since ROCm libs are in the whisper binary
 publish-web-gpu:
   extends: .publish-web-base
@@ -51,19 +51,19 @@ publish-web-gpu:
   parallel:
     matrix:
       - VARIANT: cuda-13.1.0
-        BASE_TAG: cuda-13.1-main
+        BASE_TAG: cuda-13.1
       - VARIANT: cuda-12.9.0
-        BASE_TAG: cuda-12.9-main
+        BASE_TAG: cuda-12.9
       - VARIANT: cuda-11.8.0
-        BASE_TAG: cuda-11.8-main
+        BASE_TAG: cuda-11.8
       - VARIANT: vulkan
-        BASE_TAG: vulkan-main
+        BASE_TAG: vulkan
       - VARIANT: rocm
-        BASE_TAG: rocm-main
+        BASE_TAG: rocm
       - VARIANT: blas
-        BASE_TAG: blas-main
+        BASE_TAG: blas
       - VARIANT: sycl
-        BASE_TAG: sycl-main
+        BASE_TAG: sycl
   script:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg
       BASE_TAG=$BASE_TAG --build-arg WHISPER_VARIANT=linux-x64-$VARIANT --push
