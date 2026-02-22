@@ -143,7 +143,7 @@ build-whisper-linux-arm64-cpu:
 
 build-whisper-linux-x64-cuda-13.1.0:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-13.1-main
+  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-13.1
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-cuda-13.1.0"
@@ -156,7 +156,7 @@ build-whisper-linux-x64-cuda-13.1.0:
 
 build-whisper-linux-x64-cuda-12.9.0:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-12.9-main
+  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-12.9
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-cuda-12.9.0"
@@ -169,7 +169,7 @@ build-whisper-linux-x64-cuda-12.9.0:
 
 build-whisper-linux-x64-cuda-11.8.0:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-11.8-main
+  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-11.8
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-cuda-11.8.0"
@@ -184,7 +184,7 @@ build-whisper-linux-x64-cuda-11.8.0:
 
 build-whisper-linux-x64-blas:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:blas-main
+  image: $CI_REGISTRY_IMAGE/storyteller-base:blas
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-blas"
@@ -194,7 +194,7 @@ build-whisper-linux-x64-blas:
 
 build-whisper-linux-x64-sycl:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:sycl-main
+  image: $CI_REGISTRY_IMAGE/storyteller-base:sycl
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-sycl"
@@ -207,7 +207,7 @@ build-whisper-linux-x64-sycl:
 
 build-whisper-linux-x64-vulkan:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:vulkan-main
+  image: $CI_REGISTRY_IMAGE/storyteller-base:vulkan
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-vulkan"
@@ -217,7 +217,7 @@ build-whisper-linux-x64-vulkan:
 
 build-whisper-linux-x64-rocm:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:rocm-main
+  image: $CI_REGISTRY_IMAGE/storyteller-base:rocm
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-rocm"
