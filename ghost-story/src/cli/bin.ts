@@ -215,7 +215,7 @@ const transcribeCommand = defineCommand({
         .describe("Speech-to-text engine"),
       model: z.string().default("tiny.en").describe("Transcription model"),
       threads: z.coerce.number().default(4).describe("Number of threads"),
-      processors: z.coerce.number().default(4).describe("Number of processors"),
+      processors: z.coerce.number().default(1).describe("Number of processors"),
       noProgress: z
         .boolean()
         .default(false)
@@ -298,7 +298,7 @@ const serverCommand = defineCommand({
       port: z.coerce.number().default(8080).describe("Port to listen on"),
       host: z.string().default("0.0.0.0").describe("Host to bind to"),
       threads: z.coerce.number().default(4).describe("Number of threads"),
-      processors: z.coerce.number().default(4).describe("Number of processors"),
+      processors: z.coerce.number().default(1).describe("Number of processors"),
       noConvert: z
         .boolean()
         .default(false)
