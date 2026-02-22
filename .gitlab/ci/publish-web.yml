@@ -23,7 +23,7 @@ publish-web-amd64:
   tags: [saas-linux-large-amd64]
   script:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg
-      BASE_TAG=mr-302 --push -f Dockerfile --cache-from
+      BASE_TAG=main --push -f Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64:latest,mode=max --tag
       $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA .
@@ -33,37 +33,37 @@ publish-web-arm64:
   tags: [saas-linux-large-arm64]
   script:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg
-      BASE_TAG=mr-302 --push -f Dockerfile --cache-from
+      BASE_TAG=main --push -f Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64:latest,mode=max --tag
       $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA .
 
 # GPU/accelerated builds (amd64 only)
 # BASE_TAG mapping:
-#   cuda-* variants use their base image (cuda-13.1-mr-302, etc.)
-#   vulkan uses vulkan-mr-302
-#   blas uses blas-mr-302
-#   sycl uses sycl-mr-302
-#   rocm uses main base (mr-302) since ROCm libs are in the whisper binary
+#   cuda-* variants use their base image (cuda-13.1-main, etc.)
+#   vulkan uses vulkan-main
+#   blas uses blas-main
+#   sycl uses sycl-main
+#   rocm uses main base (main) since ROCm libs are in the whisper binary
 publish-web-gpu:
   extends: .publish-web-base
   tags: [saas-linux-large-amd64]
   parallel:
     matrix:
       - VARIANT: cuda-13.1.0
-        BASE_TAG: cuda-13.1-mr-302
+        BASE_TAG: cuda-13.1-main
       - VARIANT: cuda-12.9.0
-        BASE_TAG: cuda-12.9-mr-302
+        BASE_TAG: cuda-12.9-main
       - VARIANT: cuda-11.8.0
-        BASE_TAG: cuda-11.8-mr-302
+        BASE_TAG: cuda-11.8-main
       - VARIANT: vulkan
-        BASE_TAG: vulkan-mr-302
+        BASE_TAG: vulkan-main
       - VARIANT: rocm
-        BASE_TAG: rocm-mr-302
+        BASE_TAG: rocm-main
       - VARIANT: blas
-        BASE_TAG: blas-mr-302
+        BASE_TAG: blas-main
       - VARIANT: sycl
-        BASE_TAG: sycl-mr-302
+        BASE_TAG: sycl-main
   script:
     - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg
       BASE_TAG=$BASE_TAG --build-arg WHISPER_VARIANT=linux-x64-$VARIANT --push
