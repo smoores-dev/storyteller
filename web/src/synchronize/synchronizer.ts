@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises"
 import { basename, dirname, parse, relative } from "node:path/posix"
 
-import { type RecognitionResult } from "echogarden/dist/api/Recognition"
 import memoize from "memoize"
 
 import {
@@ -9,6 +8,7 @@ import {
   type ManifestItem,
   type ParsedXml,
 } from "@storyteller-platform/epub"
+import { type RecognitionResult } from "@storyteller-platform/ghost-story/recognition"
 
 import { getTrackDuration, lookupAudioMime } from "@/audio"
 import { logger } from "@/logging"
@@ -85,16 +85,16 @@ type SyncedChapter = {
 }
 
 export function concatTranscriptions(
-  transcriptions: Pick<RecognitionResult, "transcript" | "wordTimeline">[],
+  transcriptions: Pick<RecognitionResult, "transcript" | "timeline">[],
   audiofiles: string[],
 ) {
   return transcriptions.reduce<StorytellerTranscription>(
     (acc, transcription, index) => ({
       ...acc,
       transcript: acc.transcript + " " + transcription.transcript,
-      wordTimeline: [
-        ...acc.wordTimeline,
-        ...transcription.wordTimeline.map((entry) => ({
+      timeline: [
+        ...acc.timeline,
+        ...transcription.timeline.map((entry) => ({
           ...entry,
           startOffsetUtf16:
             (entry.startOffsetUtf16 ?? 0) + acc.transcript.length + 1,
@@ -105,7 +105,7 @@ export function concatTranscriptions(
         })),
       ],
     }),
-    { transcript: "", wordTimeline: [] },
+    { transcript: "", timeline: [] },
   )
 }
 
@@ -152,7 +152,7 @@ export class Synchronizer {
   constructor(
     public epub: Epub,
     audiofiles: string[],
-    transcriptions: Pick<RecognitionResult, "transcript" | "wordTimeline">[],
+    transcriptions: Pick<RecognitionResult, "transcript" | "timeline">[],
   ) {
     this.transcription = concatTranscriptions(transcriptions, audiofiles)
 
@@ -385,6 +385,7 @@ export class Synchronizer {
         transcriptionOffset,
         lastSentenceRange,
       )
+
     const interpolated = await interpolateSentenceRanges(
       sentenceRanges,
       lastSentenceRange,

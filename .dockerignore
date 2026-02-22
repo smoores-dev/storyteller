@@ -47,4 +47,13 @@ __tests__
 !/config/eslint
 /config/eslint/node_modules
 
+!/ghost-story
+/ghost-story/node_modules
+/ghost-story/dist
+!/config/eslint
+/config/eslint/node_modules
+
+
 /docker
+
+**/whisper.cpp/**

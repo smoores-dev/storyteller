@@ -3,12 +3,8 @@ import { writeFile } from "fs/promises"
 import { describe, it } from "node:test"
 import { join } from "path"
 
-import { setGlobalOption } from "echogarden/dist/api/GlobalOptions"
-
 import { type Settings } from "@/apiModels"
 import { transcribeTrack } from "@/transcribe"
-
-setGlobalOption("logLevel", "error")
 
 void describe("transcribe", () => {
   // This test is quite slow, and mostly just testing
@@ -20,14 +16,18 @@ void describe("transcribe", () => {
       "__fixtures__",
       "mobydick_001_002_melville.mp3",
     )
+
     const transcription = await transcribeTrack(
       trackPath,
       new Intl.Locale("en-US"),
       {
         parallelTranscodes: 1,
         parallelTranscribes: 1,
-        parallelWhisperBuild: 1,
+        whisperThreads: 1,
+        whisperModelOverrides: {},
+        autoDetectLanguage: false,
       } as Settings,
+      AbortSignal.timeout(60_000),
     )
 
     await writeFile(
@@ -35,19 +35,16 @@ void describe("transcribe", () => {
       JSON.stringify(
         {
           transcript: transcription.transcript,
-          wordTimeline: transcription.wordTimeline,
+          timeline: transcription.timeline,
         },
         null,
         2,
       ),
     )
 
+    assert.deepStrictEqual(transcription.timeline[0]?.endTime, 3.871)
     assert.deepStrictEqual(
-      transcription.wordTimeline[0]?.timeline?.[0]?.endTime,
-      3.871,
-    )
-    assert.deepStrictEqual(
-      transcription.wordTimeline[0].text,
+      transcription.timeline[0].text,
       " This is a LibraVox recording.",
     )
   })

@@ -1,0 +1,64 @@
+diff --git a/examples/server/server.cpp b/examples/server/server.cpp
+index c5354efc..5c52cdcc 100644
+--- a/examples/server/server.cpp
++++ b/examples/server/server.cpp
+@@ -793,15 +793,50 @@ int main(int argc, char ** argv) {
+     // store default params so we can reset after each inference request
+     whisper_params default_params = params;
+ 
++    const int32_t max_threads = params.n_threads;
++    const int32_t max_processors = params.n_processors;
++
+     // this is only called if no index.html is found in the public --path
+     svr->Get(sparams.request_path + "/", [&](const Request &, Response &res){
+         res.set_content(default_content, "text/html");
+         return false;
+     });
+ 
+     svr->Options(sparams.request_path + sparams.inference_path, [&](const Request &, Response &){
+     });
+ 
++    svr->Get(sparams.request_path + "/config", [&](const Request &, Response &res){
++        std::lock_guard<std::mutex> lock(whisper_mutex);
++        json jres = json{
++            {"threads", default_params.n_threads},
++            {"processors", default_params.n_processors},
++            {"max_threads", max_threads},
++            {"max_processors", max_processors},
++            {"model", default_params.model}
++        };
++        res.set_content(jres.dump(-1, ' ', false, json::error_handler_t::replace), "application/json");
++    });
++
++    svr->Post(sparams.request_path + "/config", [&](const Request &req, Response &res){
++        std::lock_guard<std::mutex> lock(whisper_mutex);
++        if (req.has_file("threads")) {
++            int32_t v = std::stoi(req.get_file_value("threads").content);
++            default_params.n_threads = std::max(1, std::min(max_threads, v));
++        }
++        if (req.has_file("processors")) {
++            int32_t v = std::stoi(req.get_file_value("processors").content);
++            default_params.n_processors = std::max(1, std::min(max_processors, v));
++        }
++        json jres = json{
++            {"threads", default_params.n_threads},
++            {"processors", default_params.n_processors},
++            {"max_threads", max_threads},
++            {"max_processors", max_processors},
++            {"model", default_params.model}
++        };
++        res.set_content(jres.dump(-1, ' ', false, json::error_handler_t::replace), "application/json");
++    });
++
+     svr->Post(sparams.request_path + sparams.inference_path, [&](const Request &req, Response &res){
+         // acquire whisper model mutex lock
+         std::lock_guard<std::mutex> lock(whisper_mutex);
+@@ -1155,6 +1190,8 @@ int main(int argc, char ** argv) {
+         whisper_ctx_init_openvino_encoder(ctx, nullptr, params.openvino_encode_device.c_str(), nullptr);
+ 
+         state.store(SERVER_STATE_READY);
++        params.model = model;
++        default_params.model = model;
+         const std::string success = "Load was successful!";
+         res.set_content(success, "application/text");
+ 

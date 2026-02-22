@@ -1,0 +1,45 @@
+export {
+  type AudioEncoding,
+  type AudioFormat,
+  type AudioFormatInfo,
+  type ServiceCapabilities,
+  formatFromExtension,
+  formatToExtension,
+  getTargetFormat,
+  needsConversion,
+  serviceCapabilities,
+} from "./AudioFormat.ts"
+
+export {
+  type AudioSource,
+  type AudioSourceFromBuffer,
+  type AudioSourceFromFile,
+  type AudioSourceFromStream,
+  type RawAudioInput,
+  audioSourceFromBuffer,
+  audioSourceFromFile,
+  audioSourceFromStream,
+  getFormat,
+  getFormatInfo,
+  isAudioSource,
+  normalizeToAudioSource,
+  toBuffer,
+  toFilePath,
+  toReadStream,
+} from "./AudioSource.ts"
+
+export {
+  type ConversionOptions,
+  type PrepareForServiceOptions,
+  type PreparedAudio,
+  type StreamForUploadOptions,
+  type StreamForUploadResult,
+  convertToBuffer,
+  convertToFile,
+  convertToStream,
+  createStreamForUpload,
+  createStreamingConversion,
+  getAudioDuration,
+  prepareForService,
+  prepareWavForService,
+} from "./AudioConverter.ts"

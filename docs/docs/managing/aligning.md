@@ -78,24 +78,75 @@ yet.
 
 ---
 
-## Some background
+## Speeding up the alignment process
 
-Storyteller runs entirely on your hardware, which means the length of the
+Storyteller can run entirely on your hardware, which means the length of the
 alignment process will vary depending on your hardware. Most of the processing
 time is made up by the automated transcription of the audiobook, which is a very
 resource intensive task.
 
 This will go faster if you have faster CPU cores, more CPU cores, or a
-CUDA-capable GPU, but it's expected that the entire alignment process will take
+compatible GPU, but it's expected that the entire alignment process will take
 around 1-4 hours for most books on most relatively modern hardware.
 
 :::info GPU acceleration
 
 If you have a CUDA- or ROCm-capable GPU, and would like to use that rather than
 your CPU for transcription, check out the
-[GPU acceleration tutorial](tutorials/gpu-unraid.md#gpu-acceleration).
+[GPU acceleration tutorial](installation/gpu-configuration.mdx).
+
+You may also want to offload the transcription task to a different machine
+entirely. Check out the
+[offloading transcription](tutorials/offloading-transcription.mdx) tutorial for
+more information.
 
 :::
+
+### Turbo mode
+
+![image of turbo mode settings](turbo.png)
+
+Storyteller `v2.7.0` and later supports a "turbo mode" for the transcription
+step. This chops up each chapter into smaller chunks and processes them in
+parallel, which can massively speed up the transcription process.
+
+There are some possible downsides to using turbo mode, however, which you should
+keep in mind before deciding to use it.
+
+#### Reduced transcription accuracy
+
+Reduced transcription accuracy. Transcriptions can be less accurate near
+boundaries of the chapters. For example, if you have set turbo mode to 4, you
+may have reduced accurary starting at a quarter of the chapter.
+
+Issues can include:
+
+- More and more noticeable offset in the timing of the readalong highlighting
+  the text as the chapter progresses.
+- The readalong highlight skipping text after crossing a chunk boundary.
+- Short chapters being skipped entirely.
+
+We are constantly working on improving the accuracy of turbo mode, and we will
+update this section as we make progress. Only use turbo mode if you are accept
+these possible issues, and realize that they can be fixed by simply setting
+turbo mode to `1` and realigning the book. Please report any issues you
+encounter with turbo mode to our [Discord](https://discord.gg/KhSvFqcrza) or
+[GitHub](https://github.com/storyteller-platform/storyteller/issues).
+
+#### Incompatibility with Parallel processing
+
+Turbo mode does not work well with the "Number of audio tracks to processing
+parallel" setting. You can experiment with setting either that or turbo mode to
+a value greater than 1 and figure out which gives the best speed over
+transcription accuracy.
+
+#### Increased resource usage
+
+See below on how to mitigate this by limiting resources. On CPU, it is not
+recommended to set turbo mode to a value greater than the number of CPU cores
+available.
+
+### Limiting resources
 
 Please note that the transcription task will, by default, use as many CPU cores
 and as much RAM as is available, and Docker, by default, will give it access to

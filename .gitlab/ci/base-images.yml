@@ -1,0 +1,88 @@
+.base-image-build:
+  image: docker:24.0.5
+  services:
+    - name: docker:24.0.5-dind
+      alias: docker
+  stage: build-base
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker context create gitlab-ci
+    - docker buildx create --use --driver=docker-container gitlab-ci
+
+# CPU base image (multi-arch: amd64 + arm64)
+build-base-cpu:
+  extends: .base-image-build
+  tags: [saas-linux-large-amd64]
+  rules:
+    - when: manual
+      allow_failure: true
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - Dockerfile.base
+        - scripts/install-node.sh
+        - scripts/install-cuda.sh
+        - .gitlab/ci/base-images.yml
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - Dockerfile.base
+        - scripts/install-node.sh
+        - scripts/install-cuda.sh
+        - .gitlab/ci/base-images.yml
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        TAG="mr-$CI_MERGE_REQUEST_IID"
+      else
+        TAG="main"
+      fi
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx build --platform linux/amd64,linux/arm64 --push --build-arg
+      GPU_VARIANT=cpu -f Dockerfile.base --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/storyteller-base/cache:cpu --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/storyteller-base/cache:cpu,mode=max
+      --tag $CI_REGISTRY_IMAGE/storyteller-base:$TAG --tag
+      $CI_REGISTRY_IMAGE/storyteller-base:cpu-$CI_COMMIT_SHORT_SHA .
+
+# GPU base images (amd64 only)
+build-base-gpu:
+  extends: .base-image-build
+  tags: [saas-linux-large-amd64]
+  rules:
+    - when: manual
+      allow_failure: true
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - Dockerfile.base
+        - scripts/install-node.sh
+        - scripts/install-cuda.sh
+        - .gitlab/ci/base-images.yml
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - Dockerfile.base
+        - scripts/install-node.sh
+        - scripts/install-cuda.sh
+        - .gitlab/ci/base-images.yml
+  parallel:
+    matrix:
+      - GPU_VARIANT:
+          - cuda-11.8
+          - cuda-12.9
+          - cuda-13.1
+          - rocm
+          - vulkan
+          - blas
+          - sycl
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        TAG="${GPU_VARIANT}-mr-$CI_MERGE_REQUEST_IID"
+      else
+        TAG="${GPU_VARIANT}"
+      fi
+    - docker buildx build --platform linux/amd64 --push --build-arg
+      GPU_VARIANT=$GPU_VARIANT -f Dockerfile.base --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/storyteller-base/cache:$GPU_VARIANT
+      --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/storyteller-base/cache:$GPU_VARIANT,mode=max
+      --tag $CI_REGISTRY_IMAGE/storyteller-base:$TAG --tag
+      $CI_REGISTRY_IMAGE/storyteller-base:$GPU_VARIANT-$CI_COMMIT_SHORT_SHA .

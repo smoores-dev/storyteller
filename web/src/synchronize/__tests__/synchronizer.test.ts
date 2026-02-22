@@ -2,9 +2,8 @@ import assert from "node:assert"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 
-import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
-
 import { Epub, type XmlElement } from "@storyteller-platform/epub"
+import { type TimelineEntry } from "@storyteller-platform/ghost-story"
 
 import transcription from "@/__fixtures__/transcriptions/mobydick_001_002_melville.json"
 import { type StorytellerTranscription } from "@/synchronize/getSentenceRanges"
@@ -12,7 +11,7 @@ import { Synchronizer } from "@/synchronize/synchronizer"
 
 const stTranscription: StorytellerTranscription = {
   transcript: transcription.transcript,
-  wordTimeline: transcription.wordTimeline.map((entry) => ({
+  timeline: transcription.timeline.map((entry) => ({
     ...(entry as TimelineEntry),
     audiofile: join(
       "src",

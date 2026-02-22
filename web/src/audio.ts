@@ -352,7 +352,9 @@ function commonFfmpegArguments(
     args.push(
       "-c:a",
       codec,
-      ...(codec === "libopus" ? ["-b:a", bitrate || "32K"] : []),
+      ...(codec === "libopus"
+        ? ["-b:a", bitrate && /^\d+[kK]$/i.test(bitrate) ? bitrate : "32K"]
+        : []),
       ...(codec === "libmp3lame" && bitrate ? ["-q:a", bitrate] : []),
     )
   } else if (

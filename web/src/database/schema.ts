@@ -162,7 +162,7 @@ export interface Readaloud {
   filepath: string | null
   missing: Generated<boolean>
   queuePosition: number | null
-  restartPending: boolean | null
+  restartPending: "full" | "transcription" | "sync" | null
   stageProgress: Generated<number>
   status: Generated<
     "CREATED" | "QUEUED" | "PROCESSING" | "STOPPED" | "ERROR" | "ALIGNED"

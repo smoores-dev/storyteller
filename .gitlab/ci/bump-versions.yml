@@ -1,0 +1,44 @@
+bump-versions:
+  stage: prerelease
+  image: node:24
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - cd web
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
+    - cd ../docs
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag docs-v${PACKAGE_VERSION}
+    - cd ../mobile
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag mobile-v${PACKAGE_VERSION}
+    - cd ../fs
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag fs-v${PACKAGE_VERSION}
+    - cd ../epub
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag epub-v${PACKAGE_VERSION}
+    - cd ../audiobook
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag audiobook-v${PACKAGE_VERSION}
+    - cd ../path
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag path-v${PACKAGE_VERSION}
+    - cd ..
+    - apt update && apt install -y --no-install-recommends git-lfs
+    - git remote set-url origin
+      https://ci-push-tag-token:${CI_PUSH_TAG_TOKEN}@gitlab.com/storyteller-platform/storyteller.git
+    - git push --tags
+
+pages:
+  image: node:24-alpine
+  stage: publish
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^docs-v?\d+\.\d+\.\d+$/'
+  script:
+    - yarn workspaces focus @storyteller-platform/docs
+    - yarn build:docs
+  artifacts:
+    paths:
+      - public

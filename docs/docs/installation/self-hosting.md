@@ -217,6 +217,7 @@ Storyteller can be configured with a number of additional environment variables.
 | STORYTELLER_SECRET_KEY            | The secret key for the instance. Either this or STORYTELLER_SECRET_KEY_FILE must be set.                                               | N/A                                        |
 | STORYTELLER_SECRET_KEY_FILE       | Path to a file containing the secret key for the instance. Either this or STORYTELLER_SECRET_KEY must be set.                          | N/A                                        |
 | STORYTELLER_WHISPER_REPO          | Repo to download whisper.cpp from.                                                                                                     | `https://github.com/ggerganov/whisper.cpp` |
+| STORYTELLER_WHISPER_VARIANT       | The whisper.cpp build variant baked into this image (e.g. cpu, cublas-12.6, hipblas).                                                  | `cpu`                                      |
 | STORYTELLER_WHISPER_VERSION       | Version of whisper.cpp to download.                                                                                                    | `v1.8.2`                                   |
 
 <!-- AUTO-GENERATED-ENV-VARS-END -->

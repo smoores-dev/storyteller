@@ -34,7 +34,7 @@ server, it is the base URL in your invite (the URL minus the
 ## Downloading books
 
 Once you are
-[logged into the server](tutorials/basic-user.md#loging-into-the-application-for-the-first-time),
+[logged into the server](tutorials/basic-user.md#logging-into-the-web-server-for-the-first-time),
 you can download books that can be read offline. When you _are_ online\*, your
 position will sync to all other devices that are also online.
 

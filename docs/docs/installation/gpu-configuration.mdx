@@ -1,0 +1,201 @@
+# GPU Acceleration
+
+The most resource-intensive part of Storyteller's forced alignment process is
+transcription, where Storyteller uses a local or hosted AI-powered transcription
+engine to transcribe the audiobook's contents. If you're running Storyteller's
+transcription locally with `whisper.cpp`, you can greatly speed up the
+transcription step by running it on a dedicated GPU, if you have one. Depending
+on your CPU and GPU, this can sometimes be a speedup of 10x or greater.
+
+## Image Tags
+
+The image tag format is
+`registry.gitlab.com/storyteller-platform/storyteller:<version>-<variant>`.
+
+Version is either `latest` or `web-<version>` (eg `web-2.7.0`). Variant is one
+of `cuda-11.8`, `cuda-12.9`, `cuda-13.1`, `rocm`, `sycl`, `blas`, or `vulkan`.
+If you don't specify a variant, the image defaults to CPU-only.
+
+GPU acceleration is only available on `x86` architecture. For `arm64`, use the
+CPU variant.
+
+When running Storyteller on macOS, or if host Storyteller on a low resource
+machine but have a more powerful machine to offload transcription to, you likely
+want to use Storyteller's
+[remote transcription](tutorials/offloading-transcription.mdx) feature.
+
+## Configuration
+
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
+<Tabs groupId="gpu-variant" queryString>
+<TabItem value="nvidia" label="NVIDIA (CUDA)">
+
+Choose the CUDA version that matches your NVIDIA driver (check with
+`nvidia-smi`): `cuda-13.1` for CUDA 13.1+, `cuda-12.9` for CUDA 12.x, or
+`cuda-11.8` for CUDA 11.x.
+
+You must install the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+and
+[configure docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker).
+
+```yaml title="compose.yml"
+services:
+  web:
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest-cuda-13.1
+    runtime: nvidia
+    volumes:
+      - ~/Documents/Storyteller:/data:rw
+    environment:
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
+    ports:
+      - "8001:8001"
+    secrets:
+      - secret_key
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+secrets:
+  secret_key:
+    file: ./STORYTELLER_SECRET_KEY.txt
+```
+
+</TabItem>
+<TabItem value="amd" label="AMD (ROCm)">
+
+Supported hardware: AMD Instinct (MI50, MI100, MI200, MI300 series), Radeon RX
+6000 series (RDNA 2), and Radeon RX 7000 series (RDNA 3).
+
+Install AMD GPU drivers on your host, then pass the devices through:
+
+```yaml title="compose.yml"
+services:
+  web:
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest-rocm
+    volumes:
+      - ~/Documents/Storyteller:/data:rw
+    environment:
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
+    ports:
+      - "8001:8001"
+    secrets:
+      - secret_key
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/kfd:/dev/kfd
+
+secrets:
+  secret_key:
+    file: ./STORYTELLER_SECRET_KEY.txt
+```
+
+#### Overriding the Radeon driver version
+
+If your AMD GPU has a driver version unsupported by the bundled ROCm, set
+`HSA_OVERRIDE_GFX_VERSION` to a supported version. For example, AMD Radeon RX
+6700 XT requires `10.3.0`:
+
+```yaml
+environment:
+  - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
+  - HSA_OVERRIDE_GFX_VERSION=10.3.0
+```
+
+If you have an AMD CPU without a discrete AMD GPU, you may still be able to use
+ROCm by setting this variable to match a supported architecture. This is
+experimental.
+
+</TabItem>
+<TabItem value="intel" label="Intel (SYCL)">
+
+:::warning
+
+Support for Intel iGPUs has not been tested yet. Please report any issues (and
+successes!) you encounter on our [Discord](https://discord.gg/KhSvFqcrza) or
+[GitHub](https://github.com/storyteller-platform/storyteller/issues).
+
+:::
+
+Supported hardware: Intel Arc series (A770, A750, etc.), Intel Data Center GPUs
+(Max, Flex series), and Intel integrated graphics (Iris Xe, UHD Graphics in 11th
+gen+ CPUs).
+
+Install Intel GPU drivers on your host, then pass through the render device:
+
+```yaml title="compose.yml"
+services:
+  web:
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest-sycl
+    volumes:
+      - ~/Documents/Storyteller:/data:rw
+    environment:
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
+    ports:
+      - "8001:8001"
+    secrets:
+      - secret_key
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - render
+      - video
+
+secrets:
+  secret_key:
+    file: ./STORYTELLER_SECRET_KEY.txt
+```
+
+#### Selecting a specific device
+
+If you have multiple Intel GPUs (eg an iGPU and a discrete GPU), set
+`GGML_SYCL_DEVICE` to select one:
+
+```yaml
+environment:
+  - GGML_SYCL_DEVICE=0
+```
+
+You can list available SYCL devices by running `sycl-ls` on a system with the
+Intel oneAPI toolkit installed.
+
+</TabItem>
+<TabItem value="vulkan" label="Vulkan (Fallback)">
+
+Vulkan works on many GPUs (NVIDIA, AMD, Intel) but is generally slower than the
+native variants above, and often slower than CPU-only. Only use this if the
+native options don't work for your hardware.
+
+Install Vulkan drivers on your host, then pass through the render device:
+
+```yaml title="compose.yml"
+services:
+  web:
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest-vulkan
+    volumes:
+      - ~/Documents/Storyteller:/data:rw
+    environment:
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
+    ports:
+      - "8001:8001"
+    secrets:
+      - secret_key
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - render
+      - video
+
+secrets:
+  secret_key:
+    file: ./STORYTELLER_SECRET_KEY.txt
+```
+
+</TabItem>
+</Tabs>

@@ -6,9 +6,8 @@ import { dirname, join } from "node:path"
 import { describe, it } from "node:test"
 import { promisify } from "node:util"
 
-import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
-
 import { Epub } from "@storyteller-platform/epub"
+import { type TimelineEntry } from "@storyteller-platform/ghost-story"
 
 import expected from "@/__fixtures__/mobydickch1_2sentenceranges.json"
 import mobyDickTranscription from "@/__fixtures__/transcriptions/mobydick_001_002_melville.json"
@@ -66,7 +65,7 @@ void describe("getSentenceRanges", () => {
 
     const stTranscription: StorytellerTranscription = {
       transcript: mobyDickTranscription.transcript,
-      wordTimeline: mobyDickTranscription.wordTimeline.map((entry) => ({
+      timeline: mobyDickTranscription.timeline.map((entry) => ({
         ...(entry as TimelineEntry),
         audiofile: join(
           "src",

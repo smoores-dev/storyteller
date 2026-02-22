@@ -96,16 +96,20 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
 
   useEffect(() => {
     setTimeout(() => {
-      const activeFrame = getActiveFrame()
-      const wnd = activeFrame?.window
-      if (!wnd) {
-        setTextWidth(computedTextWidth)
-        return
+      try {
+        const activeFrame = getActiveFrame()
+        const wnd = activeFrame?.window
+        if (!wnd) {
+          setTextWidth(computedTextWidth)
+          return
+        }
+
+        const lineWidth = getLineWidth(wnd as ReadiumWindow)
+
+        setTextWidth(`min(${lineWidth}, 100vw)`)
+      } catch (e) {
+        console.warn("Error calculating text width", e)
       }
-
-      const lineWidth = getLineWidth(wnd as ReadiumWindow)
-
-      setTextWidth(`min(${lineWidth}, 100vw)`)
     }, 100)
   }, [activeFrameUrl, lineLength, fontSize, fontFamily, computedTextWidth])
 

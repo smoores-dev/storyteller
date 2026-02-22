@@ -9,6 +9,7 @@ import {
   type BookRelationsUpdate,
   type BookUpdate,
   type BookWithRelations,
+  type Readaloud,
   getBookOrThrow,
   getNextQueuePosition,
   updateBook,
@@ -18,6 +19,8 @@ import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 
 import type processBook from "./worker"
+
+export type RestartMode = false | "full" | "transcription" | "sync"
 
 /**
  * Next.js app directory seems to have a bug where, in production,
@@ -80,7 +83,7 @@ export function cancelProcessing(bookUuid: UUID) {
 
 const mutex = new AsyncMutex()
 
-export async function startProcessing(bookUuid: UUID, restart: boolean) {
+export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   if (controllers.has(bookUuid)) return
 
   await mutex.lock()
@@ -89,12 +92,15 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
   try {
     const position = await getNextQueuePosition()
     book = await getBookOrThrow(bookUuid)
+
+    const startStage = getStartStage(restart, book)
+
     await updateBook(bookUuid, null, {
       readaloud: {
         status: "QUEUED",
-        currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        currentStage: startStage,
         queuePosition: position,
-        restartPending: restart,
+        restartPending: restart || null,
       },
     })
 
@@ -167,4 +173,14 @@ export async function startProcessing(bookUuid: UUID, restart: boolean) {
   } finally {
     if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
+}
+
+function getStartStage(
+  restart: RestartMode,
+  book: BookWithRelations,
+): Readaloud["currentStage"] {
+  if (restart === "full") return "SPLIT_TRACKS"
+  if (restart === "transcription") return "TRANSCRIBE_CHAPTERS"
+  if (restart === "sync") return "SYNC_CHAPTERS"
+  return book.readaloud?.currentStage ?? "SPLIT_TRACKS"
 }

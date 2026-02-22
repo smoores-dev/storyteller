@@ -20,6 +20,8 @@ import { TitleSummary } from "./TitleSummary"
 
 const EMPTY_BOOKS: BookWithRelations[] = []
 
+type RestartOption = "continue" | "sync" | "transcription" | "full"
+
 interface Props {
   selected: Set<UUID>
 }
@@ -37,7 +39,7 @@ export function BeginProcessingItem({ selected }: Props) {
 
   const form = useForm({
     initialValues: {
-      restart: "no" as "no" | "yes",
+      restart: "continue" as RestartOption,
     },
   })
 
@@ -52,24 +54,33 @@ export function BeginProcessingItem({ selected }: Props) {
             className="flex flex-col gap-4"
             onSubmit={form.onSubmit(async ({ restart }) => {
               close()
+              const restartMode = restart === "continue" ? false : restart
               for (const book of books) {
                 await processBook({
                   uuid: book.uuid,
-                  restart: restart === "yes",
+                  restart: restartMode,
                 })
               }
             })}
           >
             <RadioGroup
-              label="Delete cache files?"
+              label="Restart mode"
               classNames={{ label: "my-1" }}
               {...form.getInputProps("restart")}
             >
               <Stack gap={12}>
-                <Radio value="no" label="No, restart where left off" />
+                <Radio value="continue" label="Continue where left off" />
                 <Radio
-                  value="yes"
-                  label="Yes, restart from the beginning of processing"
+                  value="sync"
+                  label="Restart from sync step (keep transcriptions)"
+                />
+                <Radio
+                  value="transcription"
+                  label="Restart from transcription step (keep audio)"
+                />
+                <Radio
+                  value="full"
+                  label="Full restart (delete all cache files)"
                 />
               </Stack>
             </RadioGroup>

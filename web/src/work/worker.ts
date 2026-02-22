@@ -4,13 +4,23 @@ import { basename, dirname } from "node:path"
 import type { MessagePort } from "node:worker_threads"
 
 import { AsyncSemaphore } from "@esfx/async-semaphore"
-import type { RecognitionResult } from "echogarden"
 import { extension } from "mime-types"
 
 import { Epub } from "@storyteller-platform/epub"
+import {
+  createAggregator,
+  createTiming,
+  ensureWhisperInstalled,
+  formatSingleReport,
+  getConversionMode,
+} from "@storyteller-platform/ghost-story"
 
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
-import { deleteProcessed, getProcessedAudioFiles } from "@/assets/fs"
+import {
+  deleteProcessed,
+  deleteTranscriptions,
+  getProcessedAudioFiles,
+} from "@/assets/fs"
 import { writeMetadataToEpub } from "@/assets/metadata"
 import {
   getAlignmentReportFilepath,
@@ -31,12 +41,15 @@ import {
   getSettings,
 } from "@/database/settings"
 import type { Settings } from "@/database/settingsTypes"
+import { env } from "@/env"
 import { logger } from "@/logging"
 import { getTranscriptions, processAudiobook } from "@/process/processAudio"
 import { Synchronizer } from "@/synchronize/synchronizer"
-import { installWhisper, transcribeTrack } from "@/transcribe"
+import { transcribeTrack } from "@/transcribe"
 import type { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
+
+import type { RestartMode } from "./distributor"
 
 export async function transcribeBook(
   book: Book,
@@ -56,21 +69,33 @@ export async function transcribeBook(
     throw new Error("Failed to transcribe book: found no processed audio files")
   }
 
+  const abortController = new AbortController()
+  const { signal } = abortController
+  const hasFailed = () => signal.aborted
+
   if (
     !settings.transcriptionEngine ||
     settings.transcriptionEngine === "whisper.cpp"
   ) {
-    await installWhisper(settings)
+    await ensureWhisperInstalled({
+      model: settings.whisperModel ?? "tiny.en",
+      printOutput: true,
+      signal,
+    })
   }
 
-  const transcriptions: Pick<
-    RecognitionResult,
-    "transcript" | "wordTimeline"
-  >[] = []
+  const transcriptions: string[] = []
 
-  const abortController = new AbortController()
-  const { signal } = abortController
-  const hasFailed = () => signal.aborted // <- otherwise incorrect type narrowing when checking signal.aborted
+  const aggregatedTiming = createAggregator()
+  aggregatedTiming.setMetadata(
+    "engine",
+    settings.transcriptionEngine ?? "whisper.cpp",
+  )
+  aggregatedTiming.setMetadata("conversionMode", getConversionMode())
+  aggregatedTiming.setMetadata("parallelization", settings.parallelTranscribes)
+  if (settings.whisperThreads) {
+    aggregatedTiming.setMetadata("whisperThreads", settings.whisperThreads)
+  }
 
   try {
     await Promise.all(
@@ -96,13 +121,12 @@ export async function transcribeBook(
                 signal,
               },
             )
+            if (!existingTranscription) {
+              throw new Error(`No transcription found for ${filepath}`)
+            }
+
             logger.info(`Found existing transcription for ${filepath}`)
-            transcriptions.push(
-              JSON.parse(existingTranscription) as Pick<
-                RecognitionResult,
-                "transcript" | "wordTimeline"
-              >,
-            )
+            transcriptions.push(transcriptionFilepath)
           } catch (_) {
             if (hasFailed()) {
               return
@@ -113,18 +137,23 @@ export async function transcribeBook(
                 filepath,
                 locale,
                 settings,
+                signal,
               )
 
               if (hasFailed()) {
                 return
               }
 
-              transcriptions.push(transcription)
+              logger.info(`
+${formatSingleReport(transcription.timing, `Transcription Timing Report for ${filepath}`)}`)
+              aggregatedTiming.add(transcription.timing)
+
+              transcriptions.push(filepath)
               await writeFile(
                 transcriptionFilepath,
                 JSON.stringify({
                   transcript: transcription.transcript,
-                  wordTimeline: transcription.wordTimeline,
+                  timeline: transcription.timeline,
                 }),
                 { signal },
               )
@@ -149,7 +178,10 @@ export async function transcribeBook(
     }
     throw e
   }
-  return transcriptions
+
+  aggregatedTiming.print("Transcription Timing Report")
+
+  return
 }
 
 const STAGES = ["SPLIT_TRACKS", "TRANSCRIBE_CHAPTERS", "SYNC_CHAPTERS"] as const
@@ -160,19 +192,13 @@ export default async function processBook({
   port,
 }: {
   bookUuid: UUID
-  restart: boolean
+  restart: RestartMode
   port: MessagePort
 }) {
-  /**
-   * Post a message to the main thread containing a readaloud
-   * update for this book.
-   *
-   * @remarks
-   *
-   * We have the main thread manage these updates so that it can
-   * trigger the BookEvents emitter on the main thread, and update
-   * subscribers (i.e. the web client).
-   */
+  const processTiming = createTiming()
+  processTiming.setMetadata("bookUuid", bookUuid)
+  processTiming.setMetadata("restartMode", restart || "continue")
+
   async function updateBook(
     update: BookUpdate | null,
     relations: BookRelationsUpdate = {},
@@ -195,12 +221,33 @@ export default async function processBook({
 
   let book = await getBookOrThrow(bookUuid)
 
-  if (restart) {
-    await deleteProcessed(book)
+  if (restart === "full") {
+    await processTiming.timeAsync("delete_all_cache", () =>
+      deleteProcessed(book),
+    )
     book = await updateBook(null, {
       readaloud: {
         status: "PROCESSING",
         currentStage: "SPLIT_TRACKS",
+        stageProgress: 0,
+      },
+    })
+  } else if (restart === "transcription") {
+    await processTiming.timeAsync("delete_transcriptions", () =>
+      deleteTranscriptions(book),
+    )
+    book = await updateBook(null, {
+      readaloud: {
+        status: "PROCESSING",
+        currentStage: "TRANSCRIBE_CHAPTERS",
+        stageProgress: 0,
+      },
+    })
+  } else if (restart === "sync") {
+    book = await updateBook(null, {
+      readaloud: {
+        status: "PROCESSING",
+        currentStage: "SYNC_CHAPTERS",
         stageProgress: 0,
       },
     })
@@ -214,8 +261,6 @@ export default async function processBook({
     })
   }
 
-  // get book info from db
-  // book reference to use in log
   const bookRefForLog = `"${book.title}" (uuid: ${bookUuid})`
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -237,13 +282,15 @@ export default async function processBook({
       if (stage === "SPLIT_TRACKS") {
         const settings = await getSettings()
         logger.info("Pre-processing...")
-        await processAudiobook(
-          book,
-          settings.maxTrackLength ?? null,
-          settings.codec ?? null,
-          settings.bitrate ?? null,
-          new AsyncSemaphore(settings.parallelTranscodes),
-          onProgress,
+        await processTiming.timeAsync("split_tracks", () =>
+          processAudiobook(
+            book,
+            settings.maxTrackLength ?? null,
+            settings.codec ?? null,
+            settings.bitrate ?? null,
+            new AsyncSemaphore(settings.parallelTranscodes),
+            onProgress,
+          ),
         )
       }
 
@@ -258,7 +305,9 @@ export default async function processBook({
           : (await epub.getLanguage()) ?? new Intl.Locale("en-US")
 
         const settings = await getSettings()
-        await transcribeBook(book, locale, settings, onProgress)
+        await processTiming.timeAsync("transcribe_chapters", () =>
+          transcribeBook(book, locale, settings, onProgress),
+        )
       }
 
       if (stage === "SYNC_CHAPTERS") {
@@ -286,7 +335,9 @@ export default async function processBook({
           ),
           transcriptions,
         )
-        await synchronizer.syncBook(onProgress)
+        await processTiming.timeAsync("sync_chapters", () =>
+          synchronizer.syncBook(onProgress),
+        )
 
         await mkdir(dirname(getAlignmentReportFilepath(book)), {
           recursive: true,
@@ -311,7 +362,6 @@ export default async function processBook({
 
         book = await updateBook({
           alignedByStorytellerVersion: getCurrentVersion(),
-          // We need UTC with integer seconds, but toISOString gives UTC with ms
           alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
           alignedWith: formatTranscriptionEngineDetails(settings),
         })
@@ -365,5 +415,16 @@ export default async function processBook({
       return
     }
   }
+
+  const enableTiming = env.STORYTELLER_LOG_LEVEL === "debug"
+  if (enableTiming) {
+    logger.info(
+      formatSingleReport(
+        processTiming.summary(),
+        `Process Book: ${book.title}`,
+      ),
+    )
+  }
+
   logger.info(`Completed synchronizing book ${bookRefForLog}`)
 }

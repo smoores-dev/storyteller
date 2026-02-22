@@ -223,6 +223,20 @@ export async function deleteProcessed(book: BookWithRelations) {
   })
 }
 
+export async function deleteTranscriptions(book: BookWithRelations) {
+  await rm(getTranscriptionsFilepath(book), {
+    recursive: true,
+    force: true,
+  })
+}
+
+export async function deleteProcessedAudio(book: BookWithRelations) {
+  await rm(getProcessedAudioFilepath(book), {
+    recursive: true,
+    force: true,
+  })
+}
+
 export async function deleteOriginals(book: BookWithRelations) {
   if (book.ebook) {
     await rm(book.ebook.filepath, { force: true })

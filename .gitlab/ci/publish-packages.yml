@@ -1,0 +1,359 @@
+publish-fs:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^fs-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - yarn workspaces focus @storyteller-platform/fs
+    - yarn workspace @storyteller-platform/fs npm publish --tag="$TAG"
+
+prerelease-fs:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^fs-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/fs-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-fs"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-fs:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-fs
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^fs-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/fs"
+          url: "https://npmjs.com/package/@storyteller-platform/fs"
+
+publish-epub:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^epub-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - yarn workspaces focus @storyteller-platform/epub
+    - yarn workspace @storyteller-platform/epub npm publish --tag="$TAG"
+
+prerelease-epub:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^epub-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/epub-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-epub"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-epub:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-epub
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^epub-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/epub"
+          url: "https://npmjs.com/package/@storyteller-platform/epub"
+
+publish-audiobook:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - yarn workspaces focus @storyteller-platform/audiobook
+    - yarn workspace @storyteller-platform/audiobook npm publish --tag="$TAG"
+
+prerelease-audiobook:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/audiobook-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-audiobook"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-audiobook:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-audiobook
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/audiobook"
+          url: "https://npmjs.com/package/@storyteller-platform/audiobook"
+
+publish-path:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^path-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - yarn workspaces focus @storyteller-platform/path
+    - yarn workspace @storyteller-platform/path npm publish --tag="$TAG"
+
+prerelease-path:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^path-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/path-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-path"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-path:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-path
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^path-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/path"
+          url: "https://npmjs.com/package/@storyteller-platform/path"
+
+publish-ghost-story:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^ghost-story-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - yarn workspaces focus @storyteller-platform/ghost-story
+    - yarn workspace @storyteller-platform/ghost-story npm publish --tag="$TAG"
+
+prerelease-ghost-story:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^ghost-story-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/ghost-story-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-ghost-story"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-ghost-story:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-ghost-story
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^ghost-story-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/ghost-story"
+          url: "https://npmjs.com/package/@storyteller-platform/ghost-story"

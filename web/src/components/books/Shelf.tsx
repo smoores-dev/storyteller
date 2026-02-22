@@ -65,10 +65,12 @@ export function Shelf({
       </Title>
       <Carousel
         height={303}
-        align="start"
+        emblaOptions={{
+          align: "start",
+          slidesToScroll: columnCount,
+        }}
         slideSize="w-[9.1875rem]"
         slideGap="md"
-        slidesToScroll={columnCount}
         withIndicators
         classNames={{
           indicators: "!bottom-0",

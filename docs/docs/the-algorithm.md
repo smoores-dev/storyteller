@@ -6,6 +6,7 @@ sidebar_position: 12
 
 This is a deeper look at how the Storyteller system aligns audiobooks and
 ebooks. You don't need to know this in order to use Storyteller; it's just here
+
 for anyone interested!
 
 ## The Algorithm
@@ -72,9 +73,9 @@ file size.
 Once we have individual tracks to work with, we begin transcription. This is the
 most resource intensive part of the process. Storyteller supports a number of
 transcription backends via
-[echogarden](https://github.com/echogarden-project/echogarden) (see the
-[transcription engine docs](/docs/settings#transcription-settings) for more
-info). The transcription process is fairly standard; the only interesting
+[@storyteller-platform/ghost-story](https://github.com/storyteller-platform/storyteller)
+(see the [transcription engine docs](/docs/settings#transcription-settings) for
+more info). The transcription process is fairly standard; the only interesting
 addition to the process that Storyteller makes is to supply an "initial prompt"
 to the transcription model, outlining its task as transcribing an audiobook
 chapter and providing a list of words from the book that don't exist in the

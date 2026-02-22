@@ -1,0 +1,173 @@
+---
+title: "v2.7.0: A Reworked Transcription Engine"
+authors: tefkah
+date: 2026-02-21
+---
+
+Hey there!
+
+We're extremely excited to announce the release of Storyteller v2.7.0! This
+release completely reworks how Storyteller handles the most expensive part of
+the alignment process: transcribing the audiobook.
+
+:::tip[TL;DR]
+
+- To use GPU acceleration, you need to change your
+  [Docker image to one with GPU support](/docs/installation/gpu-configuration),
+  removing the need for the time-consuming `whisper.cpp` build process everytime
+  you restart Storyteller
+- Added (experimental) support GPU acceleration for Intel (i)GPUs
+- New experimental ["Turbo mode"](/docs/managing/aligning#turbo-mode) setting
+  for faster local transcription
+- A dedicated `cli` tool,
+  [`ghost-story`](/docs/tutorials/offloading-transcription) for offloading
+  transcription to a different machine
+- Much more efficient memory usage when using remote transcription services
+
+:::
+
+Read on for more details!
+
+{/* truncate */}
+
+## Background
+
+Since 2024, Storyteller has used the open source
+[echogarden](https://github.com/echogarden-project/echogarden) project for the
+transcription part of the alignment process with greate success! `echogarden` is
+an extremely flexible and capable project, having built in support for
+transcribing audio files locally using the open source
+[whisper.cpp](https://github.com/ggerganov/whisper.cpp) project, or using
+commercial Speech-to-Text (STT) services. But that's by far not all! It can also
+translate files, TTS, speech-denoising, convert between audio formats, and more!
+
+You may think: "Thomas, that sounds pretty nice, and I would love to see
+[feature] used in Storyteller. Why do you like reinventing the wheel so much?"
+Fair question, me!
+
+Over the years we have ran into a few issues with `echogarden` that are
+difficult to fix as a patch:
+
+- Lot of small, random crashes
+- High memory usage
+- Some extra redundancies that made eg remote transcription much slower than it
+  could be
+
+To address all of these issues, we decided to fork `echogarden` and build our
+own transcription library, called `ghost-story`.
+
+## Changes to Storyteller
+
+For those interested, you can see a technical breakdown of the changes to
+Storyteller [here](#technical-details). For most of you I reckon you are
+interested in what this means for you using Storyteller.
+
+Let's go over the changes one-by-one.
+
+### GPU acceleration
+
+Previously to use your AMD or NVIDIA GPU for transcription, you needed to simply
+change a setting in the Storyteller UI, and then when the first transcription
+task was run, Storyteller would clone and build the `whisper.cpp` project from
+source, and then use that to transcribe the audio file. This process could take
+several minutes and needed to be repeated after every restart of the container,
+which isn't ideal! Even more, since it wasn't known in advance which GPU would
+be available, Storyteller would need to install the appropriate CUDA or ROCm
+toolkit for the GPU, which required Storyteller to run in root mode.
+
+We now
+[build and host all the versions of `whisper.cpp` ourselves](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/.gitlab/ci/whisper-build.yml),
+and bundle them with specific tags of the Storyteller `Docker` image. This means
+that you can now simply change your `Docker` image to one with GPU support, and
+you are good to go!
+
+Please see our updated
+[GPU acceleration tutorial](/docs/installation/gpu-configuration) for more
+information on how to set this up!
+
+We now also support a wider variety of GPU architectures, including Intel
+(i)GPUs, AMD GPUs, and NVIDIA GPUs. Again, see the above guide for more
+information.
+
+### Turbo mode
+
+You probably know that transcribing an audiobook can take quite a while, on the
+order of several hours for a full length book, even with GPU acceleration. While
+there were some ways to speed it up (like transcribing multiple audio tracks in
+parallel), it was still a slow process.
+
+In this release, we added a new feature we call "Turbo mode" to Storyteller when
+transcribing locally, which splits uses `whisper.cpp`s ability to split up the
+audio into even smaller chunks, and then transcribes them in parallel. The
+results can be quite impressive! Early tests on eg an RTX 5070 Ti with a 12 hour
+book took less than 5 minutes to transcribe.
+
+While this feature has been built into `whisper.cpp` for a while, we hadn't
+really used it before, as the most important result for Storyteller alignment
+algorithm, the timestamped timeline of the transcribed text, ends up being
+incorrect in a number of ways when using turbo mode. Part of the work of forking
+`echogarden` was to add support for fixing these issues, which we think we have
+succeeded in doing!
+
+So please give it a try, but be aware that issues may still arise! Please report
+any issues you encounter with turbo mode to our
+[Discord](https://discord.gg/KhSvFqcrza) or
+[GitHub](https://github.com/storyteller-platform/storyteller/issues), but only
+report issues as an alignment issue if you are unable to get a consistent
+Readaloud even with a value of 1!
+
+### Remote transcription
+
+Many of you come to [our Discord](https://discord.gg/KhSvFqcrza) with the same
+question, namely: "Is it possible to use my laptop/gaming PC to do the
+transcription work for Storyteller?" That answer has been "yes!" for a while
+now, but wasn't that easy to figure out.
+
+We had a guide called
+["GPU Acceleration on MacOS"](https://web.archive.org/web/20251215000000*/https://storyteller-platform.gitlab.io/storytell/docs/community-guides/using-gpu-accelerated-whisper)
+that explained how to do this, but it was
+
+1. unclear that it could be used for offloading transcription on _any_ platform
+2. quite tricky to set up, as it required compiling `whisper.cpp` from source
+3. not easy to discover in the UI, as there wasn't a dedicated setting for it
+   (you needed to use the "OpenAI Whisper" setting, and then manually enter the
+   URL of the `whisper.cpp` server)
+
+This usecase should now be much easier and clearer to setup!
+
+#### Spin up a ready-to-use `whisper.cpp` server with `ghost-story`
+
+We have created a CLI tool,
+[`ghost-story`](/docs/tutorials/offloading-transcription), which automatically
+install and spin up a `whisper.cpp` server on the machine you are offloading
+transcription to.
+
+We have created a dedicated guide for
+[offloading transcription to a different machine](/docs/tutorials/offloading-transcription),
+which explains how to configure Storyteller to use it.
+
+Sadly `ghost-story` isn't yet available for Windows, but we are working on it!
+
+#### A dedicated guide for offloading transcription to a different machine
+
+We have also updated the old guide for
+[using GPU acceleration on MacOS](/docs/community-guides/remote-transcription-compiled-whisper)
+to also include instructions for doing so on Windows.
+
+## What's next?
+
+We're working on a number of other features and improvements for Storyteller,
+including:
+
+- Windows support for `ghost-story`
+- A standalone Ghost Story desktop app, making remote transcription as easy as
+  installing an app!
+- Synced notes/annotations between devices and the web reader
+- Improvements to the alignment algorithm
+- Stability improvements to the web reader
+
+We're very excited about the future of Storyteller, we hope you are too!
+
+## Technical details
+
+to follow!

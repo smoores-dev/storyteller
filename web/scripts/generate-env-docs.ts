@@ -8,7 +8,8 @@ import { join } from "node:path"
 
 import { z } from "zod"
 
-import { documentedServerEnvVars } from "@/envSchema"
+// eslint-disable-next-line @dword-design/import-alias/prefer-alias
+import { documentedServerEnvVars } from "../src/envSchema"
 
 const START_MARKER = "<!-- AUTO-GENERATED-ENV-VARS-START -->"
 const END_MARKER = "<!-- AUTO-GENERATED-ENV-VARS-END -->"

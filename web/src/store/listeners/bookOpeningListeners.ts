@@ -375,9 +375,8 @@ async function generateTracksForReadaloud(
 
   // map over audioToTextMap bc it's more likely to be in the correct order
   // it's at the very least in readaloud order, which the resources are not guaranteed to be
-  const tracks = audioToTextMap
-    .entries()
-    .map(([track, additionalInfo], idx) => {
+  const tracks = Array.from(audioToTextMap.entries()).map(
+    ([track, additionalInfo], idx) => {
       const toc = audioHrefToChapterTitle.get(track)
       // const metadataForClip = metadata[track.href]
       const clipUrl = getApiUrlFromResourceHref(bookUuid, track)
@@ -404,8 +403,8 @@ async function generateTracksForReadaloud(
         duration: additionalInfo.duration,
         type: additionalInfo.type,
       } satisfies AudioTrack
-    })
-    .toArray()
+    },
+  )
 
   return tracks
 }

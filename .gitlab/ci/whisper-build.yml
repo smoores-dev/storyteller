@@ -1,0 +1,565 @@
+# Whisper.cpp build jobs - triggered manually
+# Binaries are uploaded to GitLab Generic Package Registry
+# Models are downloaded directly from HuggingFace at runtime
+#
+# These jobs use our base images which have the appropriate GPU toolkits installed
+
+.whisper-build-base:
+  stage: whisper-build
+  variables:
+    WHISPER_VERSION: "1.8.3"
+    CMAKE_FLAGS: ""
+  rules:
+    - when: manual
+      allow_failure: true
+  script:
+    - git clone --depth 1 --branch v${WHISPER_VERSION}
+      https://github.com/ggml-org/whisper.cpp.git whisper-src
+    - cd whisper-src && git apply
+      ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && cd ..
+    - cd whisper-src
+    - cmake -B build -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS}
+    - cmake --build build -j --config Release
+    - mkdir -p ../dist
+    - cp -r build/bin ../dist/bin
+    - chmod +x ../dist/bin/*
+    - cd ..
+    - apt-get update && apt-get install -y jq || true
+    - tar -czvf whisper-cpp-${VARIANT}.tar.gz -C dist .
+    - echo "Deleting existing package files with same name..."
+    - |
+      PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=whisper-cpp&package_version=${WHISPER_VERSION}" \
+        | jq -r '.[0].id // empty')
+      if [ -n "$PACKAGE_ID" ]; then
+        FILE_IDS=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files" \
+          | jq -r ".[] | select(.file_name == \"whisper-cpp-${VARIANT}.tar.gz\") | .id")
+        for FILE_ID in $FILE_IDS; do
+          echo "Deleting file ID: $FILE_ID"
+          curl -s --request DELETE --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files/${FILE_ID}"
+        done
+      fi
+    - echo "Uploading to GitLab Generic Package Registry..."
+    - |
+      curl --fail-with-body --show-error \
+           --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+           --upload-file "whisper-cpp-${VARIANT}.tar.gz" \
+           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/whisper-cpp/${WHISPER_VERSION}/whisper-cpp-${VARIANT}.tar.gz"
+
+# macOS builds (use brew, no base image)
+
+build-whisper-darwin-arm64-coreml:
+  timeout: 10m
+  retry:
+    max: 2
+    when:
+      - job_execution_timeout
+  extends: .whisper-build-base
+  tags: [saas-macos-medium-m1]
+  variables:
+    VARIANT: "darwin-arm64-coreml"
+    CMAKE_FLAGS: "-DWHISPER_COREML=1"
+  before_script:
+    - brew install cmake git curl
+  script:
+    - git clone --depth 1 --branch v${WHISPER_VERSION}
+      https://github.com/ggml-org/whisper.cpp.git whisper-src
+    - cd whisper-src && git apply
+      ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && cd ..
+    - cd whisper-src
+    - cmake -B build -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS}
+    - cmake --build build -j --config Release
+    - mkdir -p ../dist
+    - cp -r build/bin ../dist/bin
+    - chmod +x ../dist/bin/*
+    - cd ..
+    - brew install jq || true
+    - tar -czvf whisper-cpp-${VARIANT}.tar.gz -C dist .
+    - echo "Deleting existing package files with same name..."
+    - |
+      PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=whisper-cpp&package_version=${WHISPER_VERSION}" \
+        | jq -r '.[0].id // empty')
+      if [ -n "$PACKAGE_ID" ]; then
+        FILE_IDS=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files" \
+          | jq -r ".[] | select(.file_name == \"whisper-cpp-${VARIANT}.tar.gz\") | .id")
+        for FILE_ID in $FILE_IDS; do
+          echo "Deleting file ID: $FILE_ID"
+          curl -s --request DELETE --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files/${FILE_ID}"
+        done
+      fi
+    - echo "Uploading to GitLab Generic Package Registry..."
+    - |
+      curl --fail-with-body --show-error \
+           --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+           --upload-file "whisper-cpp-${VARIANT}.tar.gz" \
+           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/whisper-cpp/${WHISPER_VERSION}/whisper-cpp-${VARIANT}.tar.gz"
+
+build-whisper-darwin-arm64-cpu:
+  timeout: 10m
+  retry:
+    max: 2
+    when:
+      - job_execution_timeout
+  extends: build-whisper-darwin-arm64-coreml
+  variables:
+    VARIANT: "darwin-arm64-cpu"
+    CMAKE_FLAGS: ""
+
+build-whisper-darwin-x64-cpu:
+  timeout: 10m
+  retry:
+    max: 2
+    when:
+      - job_execution_timeout
+  extends: build-whisper-darwin-arm64-coreml
+  variables:
+    VARIANT: "darwin-x64-cpu"
+    CMAKE_FLAGS: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+
+# Linux CPU builds (use base image)
+
+build-whisper-linux-x64-cpu:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-cpu"
+    CMAKE_FLAGS: ""
+
+build-whisper-linux-arm64-cpu:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:mr-302
+  tags: [saas-linux-large-arm64]
+  variables:
+    VARIANT: "linux-arm64-cpu"
+    CMAKE_FLAGS: ""
+
+# Linux CUDA builds (use cuda base images)
+
+build-whisper-linux-x64-cuda-13.1.0:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-13.1-mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-cuda-13.1.0"
+    CMAKE_FLAGS: "-DGGML_CUDA=1"
+    LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
+    LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
+  before_script:
+    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
+      /usr/local/cuda/lib64/stubs/libcuda.so.1
+
+build-whisper-linux-x64-cuda-12.9.0:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-12.9-mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-cuda-12.9.0"
+    CMAKE_FLAGS: "-DGGML_CUDA=1"
+    LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
+    LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
+  before_script:
+    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
+      /usr/local/cuda/lib64/stubs/libcuda.so.1
+
+build-whisper-linux-x64-cuda-11.8.0:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-11.8-mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-cuda-11.8.0"
+    CMAKE_FLAGS: "-DGGML_CUDA=1"
+    LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
+    LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
+  before_script:
+    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
+      /usr/local/cuda/lib64/stubs/libcuda.so.1
+
+# Linux BLAS build (optimized CPU with OpenBLAS)
+
+build-whisper-linux-x64-blas:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:blas-mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-blas"
+    CMAKE_FLAGS: "-DGGML_BLAS=ON"
+
+# Linux SYCL build (Intel GPUs/iGPUs)
+
+build-whisper-linux-x64-sycl:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:sycl-mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-sycl"
+    CMAKE_FLAGS:
+      "-DGGML_SYCL=ON -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx"
+  before_script:
+    - source /opt/intel/oneapi/setvars.sh
+
+# Linux Vulkan build
+
+build-whisper-linux-x64-vulkan:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:vulkan-mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-vulkan"
+    CMAKE_FLAGS: "-DGGML_VULKAN=1"
+
+# Linux ROCm build (AMD GPUs - still uses ubuntu image since we don't have a rocm base)
+
+build-whisper-linux-x64-rocm:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:rocm-mr-302
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-rocm"
+    # amdgpu targets cover:
+    # gfx906 - vega 20 (mi50/mi60, radeon vii)
+    # gfx908 - cdna (mi100)
+    # gfx90a - cdna 2 (mi200 series)
+    # gfx942 - cdna 3 (mi300 series)
+    # gfx1030 - rdna 2 (rx 6600/6700/6800/6900)
+    # gfx1100 - rdna 3 (rx 7900)
+    # gfx1101 - rdna 3 (rx 7800/7700)
+    # gfx1102 - rdna 3 (rx 7600)
+    CMAKE_FLAGS:
+      "-DGGML_HIP=1 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      -DAMDGPU_TARGETS=gfx906;gfx908;gfx90a;gfx942;gfx1030;gfx1100;gfx1101;gfx1102"
+  before_script:
+    # - apt-get install -y rocm-cmake rocm-device-libs rocm-utils
+    - apt-get update && apt-get install -y cmake git curl gcc g++ gnupg
+
+# Windows builds (modeled after llama.cpp's CI approach)
+#
+# two build strategies:
+#   msys2/mingw - for CPU, Vulkan, BLAS. no MSVC dependency, all tools via pacman.
+#   msvc/ninja  - for CUDA, ROCm. installs VS Build Tools on demand.
+#
+# reusable setup fragments are pulled in via !reference to avoid duplication.
+
+# -- reusable fragments --
+
+# installs MSYS2 and the UCRT64 C++ toolchain (gcc, cmake, ninja)
+.whisper-windows-install-msys2:
+  before_script:
+    - |
+      if (-not (Test-Path C:\msys64\usr\bin\bash.exe)) {
+        Write-Host "Installing MSYS2..."
+        curl.exe -sL -o "$env:TEMP\msys2.exe" `
+          "https://github.com/msys2/msys2-installer/releases/download/nightly-x86_64/msys2-x86_64-latest.exe"
+        Start-Process -Wait -FilePath "$env:TEMP\msys2.exe" -ArgumentList @(
+          'install', '--root', 'C:\msys64', '--confirm-command'
+        )
+      }
+    - |
+      $env:MSYSTEM = "UCRT64"
+      $env:CHERE_INVOKING = "1"
+      C:\msys64\usr\bin\bash.exe -lc 'pacman -Sy --noconfirm'
+      C:\msys64\usr\bin\bash.exe -lc 'pacman -S --noconfirm --needed base-devel git mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja'
+
+# installs VS Build Tools (checks for actual MSVC, not just vswhere) and ninja
+.whisper-windows-install-msvc:
+  before_script:
+    - |
+      $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+      $needsInstall = $true
+      if (Test-Path $vswhere) {
+        $vsPath = & $vswhere -latest -products * `
+          -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+          -property installationPath 2>$null
+        if ($vsPath) { $needsInstall = $false }
+      }
+      if ($needsInstall) {
+        Write-Host "Installing Visual Studio Build Tools..."
+        curl.exe -sL -o "$env:TEMP\vs_BuildTools.exe" "https://aka.ms/vs/17/release/vs_BuildTools.exe"
+        Start-Process -Wait -FilePath "$env:TEMP\vs_BuildTools.exe" -ArgumentList @(
+          '--quiet', '--wait', '--norestart', '--nocache',
+          '--add', 'Microsoft.VisualStudio.Workload.VCTools',
+          '--includeRecommended'
+        )
+      }
+    - |
+      if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
+        Write-Host "Installing ninja..."
+        curl.exe -sL -o "$env:TEMP\ninja.zip" `
+          "https://github.com/ninja-build/ninja/releases/latest/download/ninja-win.zip"
+        Expand-Archive "$env:TEMP\ninja.zip" -DestinationPath "C:\ninja" -Force
+        $env:Path = "C:\ninja;$env:Path"
+      }
+
+# imports the MSVC environment (cl.exe, link.exe, Windows SDK) into the current shell
+.whisper-windows-setup-msvc:
+  before_script:
+    - |
+      $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+      $vsInstall = & $vswhere -latest -products * `
+        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+        -property installationPath
+      cmd /c """$vsInstall\VC\Auxiliary\Build\vcvarsall.bat"" x64 && set" |
+        ForEach-Object {
+          if ($_ -match '^([^=]+)=(.*)$') {
+            [System.Environment]::SetEnvironmentVariable($Matches[1], $Matches[2])
+          }
+        }
+
+# packages binaries into a tarball and uploads to the GitLab Package Registry
+.whisper-windows-package-upload:
+  script:
+    - New-Item -ItemType Directory -Force -Path dist\bin
+    - |
+      $binDir = if (Test-Path whisper-src\build\bin\Release) {
+        "whisper-src\build\bin\Release"
+      } else { "whisper-src\build\bin" }
+      Copy-Item "$binDir\*.exe" dist\bin\
+      Copy-Item "$binDir\*.dll" dist\bin\ -ErrorAction SilentlyContinue
+    - |
+      if ($env:EXTRA_DIST_FILES) {
+        foreach ($f in ($env:EXTRA_DIST_FILES -split ';')) {
+          if (Test-Path $f) { Copy-Item $f dist\bin\ }
+        }
+      }
+    - tar -czvf "whisper-cpp-$env:VARIANT.tar.gz" -C dist .
+    - Write-Host "Deleting existing package files with same name..."
+    - |
+      $headers = @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+      $packagesUri = "$env:CI_API_V4_URL/projects/$env:CI_PROJECT_ID/packages?package_name=whisper-cpp&package_version=$env:WHISPER_VERSION"
+      $packages = Invoke-RestMethod -Uri $packagesUri -Headers $headers -ErrorAction SilentlyContinue
+      if ($packages -and $packages.Count -gt 0) {
+        $packageId = $packages[0].id
+        $filesUri = "$env:CI_API_V4_URL/projects/$env:CI_PROJECT_ID/packages/$packageId/package_files"
+        $files = Invoke-RestMethod -Uri $filesUri -Headers $headers -ErrorAction SilentlyContinue
+        $targetFile = "whisper-cpp-$env:VARIANT.tar.gz"
+        foreach ($file in $files) {
+          if ($file.file_name -eq $targetFile) {
+            Write-Host "Deleting file ID: $($file.id)"
+            $deleteUri = "$env:CI_API_V4_URL/projects/$env:CI_PROJECT_ID/packages/$packageId/package_files/$($file.id)"
+            Invoke-RestMethod -Uri $deleteUri -Method Delete -Headers $headers -ErrorAction SilentlyContinue
+          }
+        }
+      }
+    - Write-Host "Uploading to GitLab Generic Package Registry..."
+    - |
+      $headers = @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+      $uri = "$env:CI_API_V4_URL/projects/$env:CI_PROJECT_ID/packages/generic/whisper-cpp/$env:WHISPER_VERSION/whisper-cpp-$env:VARIANT.tar.gz"
+      Invoke-RestMethod -Uri $uri -Method Put -Headers $headers -InFile "whisper-cpp-$env:VARIANT.tar.gz"
+
+# -- base templates --
+
+# MSYS2/MinGW builds: CPU, Vulkan, BLAS
+# builds inside bash (UCRT64 environment), packages in PowerShell
+.whisper-build-msys2-windows:
+  stage: whisper-build
+  tags: [saas-windows-medium-amd64]
+  variables:
+    WHISPER_VERSION: "1.8.3"
+    CMAKE_FLAGS: ""
+    MSYS2_EXTRA_PACKAGES: ""
+    EXTRA_DIST_FILES: ""
+  rules:
+    - when: manual
+      allow_failure: true
+  before_script:
+    - !reference [.whisper-windows-install-msys2, before_script]
+    - |
+      if ($env:MSYS2_EXTRA_PACKAGES) {
+        C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm --needed $env:MSYS2_EXTRA_PACKAGES"
+      }
+  script:
+    - |
+      $env:MSYSTEM = "UCRT64"
+      $env:CHERE_INVOKING = "1"
+      $cmds = @(
+        'git clone --depth 1 --branch "v${WHISPER_VERSION}" https://github.com/ggml-org/whisper.cpp.git whisper-src'
+        'cd whisper-src'
+        'git apply ../scripts/whisper-server-config.patch'
+        'cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS}'
+        'cmake --build build -j $(nproc)'
+        '(cp /ucrt64/bin/libgcc_s_seh-1.dll /ucrt64/bin/libstdc++-6.dll /ucrt64/bin/libwinpthread-1.dll build/bin/ 2>/dev/null; true)'
+      )
+      & C:\msys64\usr\bin\bash.exe -lc ($cmds -join ' && ')
+    - !reference [.whisper-windows-package-upload, script]
+
+# MSVC/Ninja builds: CUDA, ROCm
+# builds in PowerShell with Ninja Multi-Config
+.whisper-build-msvc-windows:
+  stage: whisper-build
+  tags: [saas-windows-medium-amd64]
+  variables:
+    WHISPER_VERSION: "1.8.3"
+    CMAKE_FLAGS: ""
+    CMAKE_GENERATOR: "Ninja Multi-Config"
+    EXTRA_DIST_FILES: ""
+  rules:
+    - when: manual
+      allow_failure: true
+  before_script:
+    - !reference [.whisper-windows-install-msvc, before_script]
+    - !reference [.whisper-windows-setup-msvc, before_script]
+  script:
+    - git clone --depth 1 --branch "v$env:WHISPER_VERSION"
+      https://github.com/ggml-org/whisper.cpp.git whisper-src
+    - cd whisper-src
+    - git apply $env:CI_PROJECT_DIR/scripts/whisper-server-config.patch
+    - |
+      $flags = @("-B", "build", "-G", $env:CMAKE_GENERATOR, "-DBUILD_SHARED_LIBS=OFF")
+      if ($env:CMAKE_FLAGS) { $flags += ($env:CMAKE_FLAGS -split '\s+') }
+      & cmake $flags
+    - cmake --build build --config Release -j $env:NUMBER_OF_PROCESSORS
+    - cd ..
+    - !reference [.whisper-windows-package-upload, script]
+
+# -- jobs --
+
+build-whisper-windows-x64-cpu:
+  extends: .whisper-build-msys2-windows
+  variables:
+    VARIANT: "windows-x64-cpu"
+
+build-whisper-windows-x64-vulkan:
+  extends: .whisper-build-msys2-windows
+  variables:
+    VARIANT: "windows-x64-vulkan"
+    CMAKE_FLAGS: "-DGGML_VULKAN=ON"
+    MSYS2_EXTRA_PACKAGES: "mingw-w64-ucrt-x86_64-vulkan-devel"
+
+build-whisper-windows-x64-blas:
+  extends: .whisper-build-msys2-windows
+  variables:
+    VARIANT: "windows-x64-blas"
+    CMAKE_FLAGS: "-DGGML_BLAS=ON"
+    MSYS2_EXTRA_PACKAGES: "mingw-w64-ucrt-x86_64-openblas"
+
+# Windows CUDA builds
+# installer URLs will need updating for each CUDA version release
+# find installers at https://developer.nvidia.com/cuda-toolkit-archive
+
+.whisper-build-cuda-windows:
+  extends: .whisper-build-msvc-windows
+  variables:
+    CMAKE_FLAGS: "-DGGML_CUDA=ON"
+  before_script:
+    - !reference [.whisper-windows-install-msvc, before_script]
+    - !reference [.whisper-windows-setup-msvc, before_script]
+    - |
+      Write-Host "Installing CUDA toolkit $env:CUDA_VERSION..."
+      curl.exe --progress-bar -o "$env:TEMP\cuda_installer.exe" -L $env:CUDA_INSTALLER_URL
+      $size = [math]::Round((Get-Item "$env:TEMP\cuda_installer.exe").Length / 1MB, 1)
+      Write-Host "Downloaded installer: $size MB"
+      # install all toolkit components; display driver may fail on headless VMs
+      $p = Start-Process -Wait -PassThru -FilePath "$env:TEMP\cuda_installer.exe" -ArgumentList '-s'
+      Write-Host "CUDA installer exited with code: $($p.ExitCode)"
+      $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$env:CUDA_MAJOR_MINOR"
+      $env:Path = "$env:CUDA_PATH\bin;$env:Path"
+      # verify critical headers exist
+      if (-not (Test-Path "$env:CUDA_PATH\include\crt\host_config.h")) {
+        Write-Host "crt/host_config.h not found at expected location, checking cccl..."
+        if (Test-Path "$env:CUDA_PATH\include\cccl\crt\host_config.h") {
+          Write-Host "Found in cccl subtree, creating junction..."
+          New-Item -ItemType Junction -Path "$env:CUDA_PATH\include\crt" `
+            -Target "$env:CUDA_PATH\include\cccl\crt"
+        } else {
+          Write-Host "CUDA include tree:"
+          Get-ChildItem "$env:CUDA_PATH\include" -Directory | ForEach-Object { Write-Host "  $($_.Name)" }
+          Write-Error "crt/host_config.h missing from CUDA installation"
+          exit 1
+        }
+      }
+
+build-whisper-windows-x64-cuda-13.1.0:
+  extends: .whisper-build-cuda-windows
+  variables:
+    VARIANT: "windows-x64-cuda-13.1.0"
+    CUDA_VERSION: "13.1.0"
+    CUDA_MAJOR_MINOR: "13.1"
+    # update this URL when the installer is available
+    CUDA_INSTALLER_URL: "https://developer.download.nvidia.com/compute/cuda/13.1.0/local_installers/cuda_13.1.0_windows.exe"
+
+build-whisper-windows-x64-cuda-12.9.0:
+  extends: .whisper-build-cuda-windows
+  variables:
+    VARIANT: "windows-x64-cuda-12.9.0"
+    CUDA_VERSION: "12.9.0"
+    CUDA_MAJOR_MINOR: "12.9"
+    # update this URL when the installer is available
+    CUDA_INSTALLER_URL: "https://developer.download.nvidia.com/compute/cuda/12.9.0/local_installers/cuda_12.9.0_windows.exe"
+
+build-whisper-windows-x64-cuda-11.8.0:
+  extends: .whisper-build-cuda-windows
+  variables:
+    VARIANT: "windows-x64-cuda-11.8.0"
+    CUDA_VERSION: "11.8.0"
+    CUDA_MAJOR_MINOR: "11.8"
+    CUDA_INSTALLER_URL: "https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_522.06_windows.exe"
+
+# Windows ROCm/HIP build for AMD GPUs
+# needs VS Build Tools for the linker and Windows SDK headers, but uses ROCm's
+# clang (which auto-discovers them) instead of cl.exe
+# find the HIP SDK installer at https://www.amd.com/en/developer/resources/rocm-hub/hip-sdk.html
+
+build-whisper-windows-x64-rocm:
+  extends: .whisper-build-msvc-windows
+  variables:
+    VARIANT: "windows-x64-rocm"
+    ROCM_VERSION: "6.4.2"
+    AMDGPU_TARGETS: "gfx906;gfx908;gfx90a;gfx942;gfx1030;gfx1100;gfx1101;gfx1102"
+    HIP_SDK_URL: "https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-25.Q3-WinSvr2022-For-HIP.exe"
+  before_script:
+    - !reference [.whisper-windows-install-msvc, before_script]
+    # no vcvarsall - ROCm's clang finds the Windows SDK on its own
+    - |
+      $rocmBase = 'C:\Program Files\AMD\ROCm'
+      if (-not (Test-Path $rocmBase)) {
+        if (-not $env:HIP_SDK_URL) {
+          Write-Error "HIP_SDK_URL variable must be set to the AMD HIP SDK installer URL"
+          exit 1
+        }
+        Write-Host "Installing AMD HIP SDK..."
+        curl.exe --progress-bar -o "$env:TEMP\hip_installer.exe" -L $env:HIP_SDK_URL
+        $size = [math]::Round((Get-Item "$env:TEMP\hip_installer.exe").Length / 1MB, 1)
+        Write-Host "Downloaded installer: $size MB"
+        if ($size -lt 10) {
+          Write-Error "Installer too small ($size MB) - download may have returned an error page instead of the binary. Check the HIP_SDK_URL."
+          exit 1
+        }
+        # amd installers vary between /S (nsis) and -install (amd format)
+        Write-Host "Attempting silent install with /S..."
+        $p = Start-Process -Wait -PassThru -FilePath "$env:TEMP\hip_installer.exe" -ArgumentList '/S'
+        Write-Host "Installer exited with code: $($p.ExitCode)"
+        if (-not (Test-Path $rocmBase)) {
+          Write-Host "/S did not produce expected path, retrying with -install..."
+          $p = Start-Process -Wait -PassThru -FilePath "$env:TEMP\hip_installer.exe" -ArgumentList '-install'
+          Write-Host "Installer exited with code: $($p.ExitCode)"
+        }
+      }
+    - |
+      # find clang.exe in known AMD installation locations
+      $clangExe = $null
+      foreach ($base in @('C:\Program Files\AMD', 'C:\AMD')) {
+        if (-not (Test-Path $base)) { continue }
+        $clangExe = Get-ChildItem $base -Recurse -Filter 'clang.exe' -ErrorAction SilentlyContinue |
+          Where-Object { $_.FullName -match 'ROCm|HIP' } |
+          Select-Object -First 1
+        if ($clangExe) { break }
+      }
+      if (-not $clangExe) {
+        Write-Host "Listing C:\Program Files\AMD contents:"
+        Get-ChildItem 'C:\Program Files\AMD' -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+          ForEach-Object { Write-Host "  $($_.FullName)" }
+        Write-Error "Could not find ROCm clang.exe after installation"
+        exit 1
+      }
+      $hipPath = $clangExe.DirectoryName | Split-Path
+      Write-Host "Using ROCm at: $hipPath"
+      $env:CC = "$hipPath\bin\clang.exe"
+      $env:CXX = "$hipPath\bin\clang++.exe"
+      $env:CMAKE_PREFIX_PATH = "$hipPath"
+      $env:Path = "$hipPath\bin;$env:Path"
+      $env:CMAKE_FLAGS = "-DGGML_HIP=ON -DAMDGPU_TARGETS=$env:AMDGPU_TARGETS"

@@ -1,263 +1,112 @@
-import { exec as execCb, spawn } from "node:child_process"
-import { mkdir, stat } from "node:fs/promises"
-import { join } from "node:path"
-import { promisify } from "node:util"
+import os from "node:os"
+import { resolve } from "node:path"
 
-import { type RecognitionResult, recognize, setGlobalOption } from "echogarden"
-import type { WhisperCppModelId } from "echogarden/dist/recognition/WhisperCppSTT"
-import simpleGit, { CheckRepoActions, GitConfigScope } from "simple-git"
+import {
+  type BuildVariant,
+  type RecognitionResult,
+  type WhisperCppOptions,
+  ensureWhisperInstalled,
+  recognize,
+} from "@storyteller-platform/ghost-story"
 
-import type { Settings, WhisperModel } from "./database/settingsTypes"
-import { WHISPER_BUILD_DIR } from "./directories"
-import { env } from "./env"
+import type {
+  Settings,
+  WhisperCpuFallback,
+  WhisperModel,
+} from "./database/settingsTypes"
 import { logger } from "./logging"
 
-const exec = promisify(execCb)
+function getCpuFallbackVariant(
+  fallback: WhisperCpuFallback,
+): BuildVariant | undefined {
+  if (!fallback) return undefined
 
-const WHISPER_REPO = env.STORYTELLER_WHISPER_REPO
+  const platform = os.platform()
+  const arch = os.arch()
 
-const WHISPER_VERSION = env.STORYTELLER_WHISPER_VERSION
-setGlobalOption("logLevel", "error")
-
-export async function installWhisper(settings: Settings) {
-  const whisperBuild = settings.whisperBuild ?? "cpu"
-  const enableCuda = whisperBuild.startsWith("cublas")
-  if (env.NODE_ENV === "development" && !env.DEV_CONTAINER) {
-    return {
-      build: "cpu",
-    } as const
+  if (platform === "linux" && arch === "x64") {
+    // linux-x64-blas is a new variant added for CPU fallback
+    return (
+      fallback === "blas" ? "linux-x64-blas" : "linux-x64-cpu"
+    ) as BuildVariant
   }
-  const repoDir = join(WHISPER_BUILD_DIR, whisperBuild)
-  const executablePath = join(
-    WHISPER_BUILD_DIR,
-    whisperBuild,
-    "build",
-    "bin",
-    "whisper-cli",
-  )
-  try {
-    await stat(executablePath)
-    return {
-      build: "custom",
-      ...(enableCuda && { enableGPU: true }),
-      executablePath,
-    } as const
-  } catch {
-    logger.info("Installing whisper.cpp")
-    await mkdir(repoDir, { recursive: true })
-    const git = simpleGit(repoDir)
-    await git.addConfig(
-      "safe.directory",
-      WHISPER_BUILD_DIR,
-      false,
-      GitConfigScope.global,
-    )
-    if (await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT)) {
-      logger.info("Repo found, pulling the latest")
-      await git.pull()
-    } else {
-      logger.info("Cloning source code")
-      await git.clone(WHISPER_REPO, repoDir, [
-        "--depth",
-        "1",
-        "--branch",
-        WHISPER_VERSION,
-      ])
-    }
-    let path = process.env["PATH"] ?? ""
-    let libraryPath = process.env["LIBRARY_PATH"] ?? ""
-    let ldLibraryPath = process.env["LD_LIBRARY_PATH"] ?? ""
-    if (enableCuda) {
-      if (whisperBuild === "cublas-11.8") {
-        throw new Error(
-          "CUDA 11 is no longer supported. Please upgrade to 12 or 13.",
-        )
-      }
-      logger.info("CUDA enabled; installing cuda toolkit")
-      const cudaVersions =
-        whisperBuild === "cublas-13.0"
-          ? {
-              full: "13-0-local_13.0.2-580.95.05-1",
-              semver: "13.0.2",
-              majorMinor: "13.0",
-              short: "13-0",
-            }
-          : {
-              full: "12-6-local_12.6.3-560.35.05-1",
-              semver: "12.6.3",
-              majorMinor: "12.6",
-              short: "12-6",
-            }
-
-      logger.info("Downloading toolkit package")
-      await exec(
-        `wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-ubuntu2404.pin`,
-      )
-      await exec(
-        `mv cuda-ubuntu2404.pin /etc/apt/preferences.d/cuda-repository-pin-600`,
-      )
-      await exec(
-        `wget --quiet https://developer.download.nvidia.com/compute/cuda/${cudaVersions.semver}/local_installers/cuda-repo-ubuntu2404-${cudaVersions.full}_amd64.deb`,
-      )
-      logger.info("Unpacking toolkit package")
-      await exec(`dpkg -i cuda-repo-ubuntu2404-${cudaVersions.full}_amd64.deb`)
-      await exec(
-        `cp /var/cuda-repo-ubuntu2404-${cudaVersions.short}-local/cuda-*-keyring.gpg /usr/share/keyrings/`,
-      )
-      await exec(`rm cuda-repo-ubuntu2404-${cudaVersions.full}_amd64.deb`)
-      await exec("apt update")
-      logger.info("Installing toolkit")
-      await exec(`apt-get -y install cuda-toolkit-${cudaVersions.short}`)
-      path = `/usr/local/cuda-${cudaVersions.majorMinor}/bin:${path}`
-      const stubsPath = `/usr/local/cuda-${cudaVersions.majorMinor}/lib64/stubs`
-      libraryPath = `${stubsPath}:${libraryPath}`
-      ldLibraryPath = `${stubsPath}:${ldLibraryPath}`
-
-      // whisper.cpp looks for libcuda.so.1, but there's only a stub for libcuda.so,
-      // so we just symlink it for the build. The actual run of the built binary
-      // will use the host's libcuda.so.1 from the NVIDIA driver
-      await exec(`ln -s ${stubsPath}/libcuda.so ${stubsPath}/libcuda.so.1`)
-    } else if (whisperBuild === "hipblas") {
-      logger.info("Installing ROCm and hipBLAS")
-      await exec(
-        "curl -sL http://repo.radeon.com/rocm/rocm.gpg.key | apt-key add -",
-      )
-      await exec(
-        'printf "deb [arch=amd64] https://repo.radeon.com/rocm/apt/6.4.1/ jammy main" | tee /etc/apt/sources.list.d/rocm.list',
-      )
-      await exec(
-        'printf "deb [arch=amd64] https://repo.radeon.com/amdgpu/6.4.1/ubuntu jammy main" | tee /etc/apt/sources.list.d/amdgpu.list',
-      )
-      await exec("apt-get update")
-      await exec("apt-get -y install rocm-dev hipblas-dev", {
-        env: { ...process.env, DEBIAN_FRONTEND: "noninteractive" },
-      })
-    }
-    logger.info("Building whisper.cpp")
-
-    // We use spawn here rather than exec so that we can
-    // pipe the stdio to /dev/null, since we don't need it
-    // and it can be very, very long!
-    await new Promise<void>((resolve, reject) => {
-      const make = spawn(
-        "cmake",
-        [
-          "-B",
-          "build",
-          ...(enableCuda ? ["-DGGML_CUDA=1"] : []),
-          ...(whisperBuild === "cublas-13.0"
-            ? ["-DCMAKE_CUDA_STANDARD=17"]
-            : []),
-          ...(whisperBuild === "hipblas" ? ["-DGGML_HIP=1"] : []),
-        ],
-        {
-          cwd: repoDir,
-          shell: true,
-          stdio: ["ignore", "ignore", "ignore"],
-          env: {
-            ...process.env,
-            ...(enableCuda && {
-              PATH: path,
-              LIBRARY_PATH: libraryPath,
-              LD_LIBRARY_PATH: ldLibraryPath,
-            }),
-          },
-        },
-      )
-
-      make.on("close", (code, signal) => {
-        if (code !== 0 || signal) {
-          reject(new Error("Failed to build whisper.cpp"))
-          return
-        }
-        resolve()
-      })
-    })
-
-    await new Promise<void>((resolve, reject) => {
-      const make = spawn(
-        "cmake",
-        [
-          "--build",
-          "build",
-          `-j${settings.parallelWhisperBuild}`,
-          "--config",
-          "Release",
-        ],
-        {
-          cwd: repoDir,
-          shell: true,
-          stdio: ["ignore", "ignore", "ignore"],
-          env: {
-            ...process.env,
-            ...(enableCuda && {
-              PATH: path,
-              LIBRARY_PATH: libraryPath,
-              LD_LIBRARY_PATH: ldLibraryPath,
-            }),
-          },
-        },
-      )
-
-      make.on("close", (code, signal) => {
-        if (code !== 0 || signal) {
-          reject(new Error("Failed to build whisper.cpp"))
-          return
-        }
-        resolve()
-      })
-    })
-    logger.info("Successfully built whisper.cpp")
+  if (platform === "linux" && arch === "arm64") {
+    return "linux-arm64-cpu"
+  }
+  if (platform === "darwin" && arch === "arm64") {
+    return "darwin-arm64-cpu"
+  }
+  if (platform === "darwin" && arch === "x64") {
+    return "darwin-x64-cpu"
+  }
+  if (platform === "win32") {
+    return "windows-x64-cpu"
   }
 
-  return {
-    build: "custom",
-    ...((enableCuda || whisperBuild === "hipblas") && { enableGPU: true }),
-    executablePath,
-  } as const
+  return undefined
 }
 
 function getWhisperCppModelId(
   language: string,
   modelType: WhisperModel | "large",
-): WhisperCppModelId {
+): WhisperCppOptions["model"] {
   if (modelType === "large") return "large-v3-turbo"
-  // large-x models don't have English-specific variants
-  if (language !== "en" || modelType.startsWith("large")) return modelType
+  if (language !== "en" || modelType.startsWith("large"))
+    return modelType as WhisperCppOptions["model"]
+  if (modelType.includes(".en")) return modelType as WhisperCppOptions["model"]
   const quant = modelType.indexOf("-q")
-  if (quant === -1) return `${modelType}.en` as WhisperCppModelId
-  return `${modelType.slice(0, quant)}.en${modelType.slice(quant)}` as WhisperCppModelId
+  if (quant === -1) return `${modelType}.en` as WhisperCppOptions["model"]
+  return `${modelType.slice(0, quant)}.en${modelType.slice(quant)}` as WhisperCppOptions["model"]
 }
 
 export async function transcribeTrack(
-  trackPath: string,
+  path: string,
   locale: Intl.Locale,
   settings: Settings,
-): Promise<Pick<RecognitionResult, "transcript" | "wordTimeline">> {
+  signal: AbortSignal,
+): Promise<Pick<RecognitionResult, "transcript" | "timeline" | "timing">> {
+  const trackPath = resolve(process.cwd(), path)
+
+  const sharedOptions = {
+    signal,
+    language: locale.language,
+  }
+
   if (
     !settings.transcriptionEngine ||
     settings.transcriptionEngine === "whisper.cpp"
   ) {
-    const whisperOptions = await installWhisper(settings)
+    const fallbackVariant = getCpuFallbackVariant(settings.whisperCpuFallback)
+    const whisperOptions = await ensureWhisperInstalled({
+      model: settings.whisperModel ?? "tiny.en",
+      variant: fallbackVariant,
+      printOutput: true,
+      signal,
+    })
 
     logger.info(`Transcribing audio file ${trackPath}`)
 
-    const { transcript, wordTimeline } = await recognize(trackPath, {
+    return recognize(trackPath, {
       engine: "whisper.cpp",
-      language: locale.language,
-      whisperCpp: {
-        enableFlashAttention: true,
+      options: {
+        flashAttention: true,
         model: getWhisperCppModelId(
           locale.language,
           settings.whisperModel ?? "tiny",
         ),
+        onProgress: (progress) => {
+          logger.info(
+            `Transcribing ${trackPath} progress: ${Math.floor(progress * 100)}%`,
+          )
+        },
+        // todo: make this user configurable
+        processors: settings.whisperThreads,
+        threads: settings.whisperThreads * 4,
         ...whisperOptions,
       },
+      ...sharedOptions,
     })
-    return { transcript, wordTimeline }
   }
-
-  logger.info(`Transcribing audio file ${trackPath}`)
 
   if (settings.transcriptionEngine === "google-cloud") {
     if (!settings.googleCloudApiKey) {
@@ -266,14 +115,13 @@ export async function transcribeTrack(
       )
     }
 
-    const { transcript, wordTimeline } = await recognize(trackPath, {
+    return recognize(trackPath, {
       engine: "google-cloud",
-      language: locale.toString(),
-      googleCloud: {
+      options: {
         apiKey: settings.googleCloudApiKey,
       },
+      ...sharedOptions,
     })
-    return { transcript, wordTimeline }
   }
 
   if (settings.transcriptionEngine === "microsoft-azure") {
@@ -288,15 +136,14 @@ export async function transcribeTrack(
       )
     }
 
-    const { transcript, wordTimeline } = await recognize(trackPath, {
+    return recognize(trackPath, {
       engine: "microsoft-azure",
-      language: locale.toString(),
-      microsoftAzure: {
+      options: {
         serviceRegion: settings.azureServiceRegion,
         subscriptionKey: settings.azureSubscriptionKey,
       },
+      ...sharedOptions,
     })
-    return { transcript, wordTimeline }
   }
 
   if (settings.transcriptionEngine === "amazon-transcribe") {
@@ -315,17 +162,22 @@ export async function transcribeTrack(
         "Failed to start transcription with engine amazon-transcribe: missing access secret access key",
       )
     }
+    if (!settings.amazonTranscribeBucketName) {
+      throw new Error(
+        "Failed to start transcription with engine amazon-transcribe: missing bucket name",
+      )
+    }
 
-    const { transcript, wordTimeline } = await recognize(trackPath, {
+    return recognize(trackPath, {
       engine: "amazon-transcribe",
-      language: locale.toString(),
-      amazonTranscribe: {
+      options: {
         region: settings.amazonTranscribeRegion,
         accessKeyId: settings.amazonTranscribeAccessKeyId,
         secretAccessKey: settings.amazonTranscribeSecretAccessKey,
+        bucketName: settings.amazonTranscribeBucketName,
       },
+      ...sharedOptions,
     })
-    return { transcript, wordTimeline }
   }
 
   if (settings.transcriptionEngine === "openai-cloud") {
@@ -335,37 +187,58 @@ export async function transcribeTrack(
       )
     }
 
-    const { transcript, wordTimeline } = await recognize(trackPath, {
+    return recognize(trackPath, {
       engine: "openai-cloud",
-      language: locale.language,
-      openAICloud: {
+      options: {
         apiKey: settings.openAiApiKey,
         ...(settings.openAiOrganization && {
           organization: settings.openAiOrganization,
         }),
         ...(settings.openAiBaseUrl && { baseURL: settings.openAiBaseUrl }),
-        ...(settings.openAiBaseUrl &&
-          settings.openAiModelName && { model: settings.openAiModelName }),
+        model: settings.openAiModelName ?? "whisper-1",
       },
+      ...sharedOptions,
     })
-    return { transcript, wordTimeline }
   }
 
-  if (!settings.deepgramApiKey) {
-    throw new Error(
-      "Failed to start transcription with engine deepgram: missing api key",
-    )
+  if (settings.transcriptionEngine === "whisper-server") {
+    if (!settings.whisperServerUrl) {
+      throw new Error(
+        "Failed to start transcription with engine whisper-server: missing server url",
+      )
+    }
+
+    return recognize(trackPath, {
+      engine: "whisper-server",
+      options: {
+        baseURL: settings.whisperServerUrl,
+        ...(settings.whisperServerApiKey && {
+          apiKey: settings.whisperServerApiKey,
+        }),
+      },
+      ...sharedOptions,
+    })
   }
 
-  const { transcript, wordTimeline } = await recognize(trackPath, {
-    engine: "deepgram",
-    language: locale.language,
-    deepgram: {
-      apiKey: settings.deepgramApiKey,
-      ...(settings.deepgramModel && { model: settings.deepgramModel }),
-      punctuate: true,
-    },
-  })
+  if ((settings.transcriptionEngine as string) === "deepgram") {
+    if (!settings.deepgramApiKey) {
+      throw new Error(
+        "Failed to start transcription with engine deepgram: missing api key",
+      )
+    }
+    return recognize(trackPath, {
+      engine: "deepgram",
+      options: {
+        apiKey: settings.deepgramApiKey,
+        // nova-3 is just as cheap as nova-2 and has better performance
+        model: settings.deepgramModel ?? "nova-3",
+        punctuate: true,
+      },
+      ...sharedOptions,
+    })
+  }
 
-  return { transcript, wordTimeline }
+  throw new Error(
+    `Unknown transcription engine: ${settings.transcriptionEngine as string}`,
+  )
 }

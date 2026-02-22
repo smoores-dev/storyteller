@@ -15,11 +15,16 @@ export const metadata: Metadata = {
 export default async function SettingsPage() {
   const settings = await fetchApiRoute<Settings>("/settings")
   const authUrl = env.AUTH_URL
+  const whisperVariant = env.STORYTELLER_WHISPER_VARIANT
 
   return (
     <>
       <Title order={2}>Settings</Title>
-      <SettingsForm settings={settings} authUrl={authUrl} />
+      <SettingsForm
+        settings={settings}
+        authUrl={authUrl}
+        whisperVariant={whisperVariant}
+      />
     </>
   )
 }

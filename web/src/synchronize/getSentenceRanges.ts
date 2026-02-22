@@ -1,4 +1,4 @@
-import { type TimelineEntry } from "echogarden/dist/utilities/Timeline"
+import { type TimelineEntry } from "@storyteller-platform/ghost-story"
 
 import { getTrackDuration } from "@/audio"
 
@@ -11,7 +11,7 @@ export type StorytellerTimelineEntry = TimelineEntry & {
 
 export type StorytellerTranscription = {
   transcript: string
-  wordTimeline: StorytellerTimelineEntry[]
+  timeline: StorytellerTimelineEntry[]
 }
 
 export type SentenceRange = {
@@ -47,7 +47,7 @@ function findStartTimestamp(
   matchStartIndex: number,
   transcription: StorytellerTranscription,
 ) {
-  const entry = transcription.wordTimeline.find(
+  const entry = transcription.timeline.find(
     (entry) => (entry.endOffsetUtf16 ?? 0) > matchStartIndex,
   )
   if (!entry) return null
@@ -62,7 +62,7 @@ export function findEndTimestamp(
   matchEndIndex: number,
   transcription: StorytellerTranscription,
 ) {
-  const entry = transcription.wordTimeline.findLast(
+  const entry = transcription.timeline.findLast(
     (entry) => (entry.startOffsetUtf16 ?? 0) < matchEndIndex,
   )
   return entry?.endTime ?? null

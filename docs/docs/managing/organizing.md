@@ -52,7 +52,7 @@ differently.
 3. **[Library-specific metadata](#library-specific-metadata)**.
 
    This is metadata that is related to the libary ([collections](#collections))
-   or to a particular book _and_ a [particular user](#user-based-data). This
+   or to a particular book _and_ a [particular user](#user-specific-data). This
    list would include: collections, reading status, and position-sync, as well
    as highlights, notes, and bookmarks (coming soon!). This data shared between
    the server and the applications, _but is not imbedded in the files

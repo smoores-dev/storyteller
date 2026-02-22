@@ -234,7 +234,10 @@ export const api = createApi({
         eventSource.close()
       },
     }),
-    processBook: build.mutation<void, { uuid: UUID; restart?: boolean }>({
+    processBook: build.mutation<
+      void,
+      { uuid: UUID; restart?: "full" | "transcription" | "sync" | false }
+    >({
       query: ({ uuid, restart }) => ({
         url: `/books/${uuid}/process`,
         method: "POST",

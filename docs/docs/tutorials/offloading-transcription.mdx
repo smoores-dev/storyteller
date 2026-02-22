@@ -1,0 +1,243 @@
+---
+sidebar_position: 4
+title: Offloading transcription
+---
+
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
+# Offloading transcription to another machine
+
+:::tip
+
+You likely want to use this when
+
+- You have a gaming PC and you are not running Storyteller on it
+- You run Storyteller on a Mac Mini (or any Apple Silicon device)
+
+:::
+
+A likely scenario you might find yourself in is having your main storyteller
+server run on either a VPS or a small power efficient server running in your
+home, like a Raspberry Pi, and you want to improve transcription performance.
+
+Luckily, Storyteller supports offloading the transcription process to a
+different server / machine entirely.
+
+To quickly spin up a transcription server, you can use `ghost-story`, which is
+our wrapper that can automatically install the most appropriate `whisper.cpp`
+binary for your system.
+
+## Setting up the host machine
+
+We will run a version of whisper.cpp, which we also use to do local
+transcription, on your host machine of choice. This will allow Storyteller to
+use that host machine for transcription.
+
+:::info
+
+`ghost-story` is not yet available for Windows, please follow the community
+guide for
+[compiling whisper.cpp from source](community-guides/remote-transcription-compiled-whisper.mdx)
+instead.
+
+:::
+
+## Prerequisites
+
+You need to have `node` installed on your machine, ideally version `24.x` or
+higher.
+
+<Tabs groupId="operating-systems">
+  {/* <TabItem value="win" label="Windows">
+Get the laters version here: https://nodejs.org/en/download
+
+Or, using `choco`:
+
+```bash
+choco install node
+```
+
+  </TabItem> */}
+  <TabItem value="mac" label="macOS">
+
+```bash
+brew install node
+```
+
+  </TabItem>
+  <TabItem value="linux" label="Ubuntu/Debian">
+
+```bash
+sudo apt-get install -y nodejs
+```
+
+  </TabItem>
+</Tabs>
+
+## Installing ghost-story
+
+You can install `ghost-story` globally using `npm`:
+
+```bash
+npm install -g @storyteller-platform/ghost-story
+```
+
+## Installing whisper.cpp
+
+You can install `whisper.cpp` using `ghost-story`:
+
+```bash
+ghost-story install binary
+```
+
+Ghost Story will automatically install the most appropriate `whisper.cpp` binary
+for your system. If you want to install a specific variant, you can use the
+`variant` option:
+
+```bash
+ghost-story install binary <variant> [--force]
+```
+
+By default, `ghost-story` will not install binaries it deems incompatible with
+your system. You can use the `--force` option to override this behavior.
+
+<details>
+<summary>Available variants</summary>
+
+- `darwin-arm64-coreml`
+- `darwin-arm64-cpu`
+- `darwin-x64-cpu`
+- `linux-x64-cuda-13.1.0`
+- `linux-x64-cuda-12.9.0`
+- `linux-x64-cuda-11.8.0`
+- `linux-x64-sycl`
+- `linux-x64-vulkan`
+- `linux-x64-rocm`
+- `linux-x64-blas`
+- `linux-x64-cpu`
+- `linux-arm64-cpu`
+- `windows-x64-cpu`
+- `windows-x64-cuda-13.1.0`
+- `windows-x64-cuda-12.9.0`
+- `windows-x64-cuda-11.8.0`
+- `windows-x64-vulkan`
+
+</details>
+
+## Installing models
+
+Now install a model using `ghost-story`:
+
+```bash
+ghost-story install model <model>
+```
+
+<details>
+<summary>Available models</summary>
+
+- `tiny`
+- `tiny.en`
+- `tiny-q5_1`
+- `tiny.en-q5_1`
+- `tiny-q8_0`
+- `base`
+- `base.en`
+- `base-q5_1`
+- `base.en-q5_1`
+- `base-q8_0`
+- `small`
+- `small.en`
+- `small-q5_1`
+- `small.en-q5_1`
+- `small-q8_0`
+- `medium`
+- `medium.en`
+- `medium-q5_0`
+- `medium.en-q5_0`
+- `medium-q8_0`
+- `large-v1`
+- `large-v2`
+- `large-v2-q5_0`
+- `large-v2-q8_0`
+- `large-v3`
+- `large-v3-q5_0`
+- `large-v3-turbo`
+- `large-v3-turbo-q5_0`
+- `large-v3-turbo-q8_0`
+
+</details>
+
+:::note
+
+Quantized models (`-q5_1`, `-q8_0`) are not available on MacOS when using the
+`coreml` variant.
+
+:::
+
+## Starting the whisper server
+
+Now we are ready to start the whisper server.
+
+```bash title="Basic usage"
+ghost-story server
+```
+
+This will start the whisper server on the default port `8080` with the default
+model `tiny.en`.
+
+```bash title="Full usage"
+USAGE ghost-story server [OPTIONS]
+
+OPTIONS
+
+  --model, -m          Whisper model (default: "tiny.en")
+  --port, -p           Port to listen on (default: 8080)
+  --host               Host to bind to (default: "0.0.0.0")
+  --threads, -t        Number of threads (default: 4)
+  --processors         Number of processors (default: 1)
+  --no-auto-install    Don't auto-install missing binary/model (default: false)
+  --variant            Use specific binary variant
+  --force, -f          Force running even if platform doesn't match match the binary (default: false)
+```
+
+:::warning
+
+Increasing the number of processors may _drastically_ speed up transcription
+(this is the equivalent of turbo mode when using local transcription), but it
+may also result in alignment issues. Please do not raise an alignment issue if
+you have increased the number of processors.
+
+:::
+
+## Configuring Storyteller
+
+In the Storyteller settings, under "Transcription settings", set the following:
+
+- "Transcription engine" to "`whisper.cpp (remote)`"
+- "API Key" can be left empty or set to any string, as the local server does not
+  require authentication.
+- "Base URL" to the URL of the whisper.cpp server, for example
+  `http://192.168.2.40:8080`.
+
+![Transcription settings screenshot](../remote-transcription.png)
+
+The default port is `8080` but you can change it with the `--port` flag.
+
+### Determining the server host
+
+The base URL must contain the IP address or hostname of the machine running the
+whisper.cpp server.
+
+**Storyteller in Docker (macOS or Windows):** use `host.docker.internal` as the
+hostname.
+
+**Storyteller in Docker (Linux):** run the container with
+`--add-host=host.docker.internal:host-gateway` and use `host.docker.internal`,
+or use `--network=host` and `localhost`.
+
+**Storyteller on the same machine:** use `localhost`.
+
+**Storyteller on a different machine:** find the server's IP address with
+`ifconfig` (macOS) or `ipconfig` (Windows) and look for addresses starting with
+`192.168.`.
