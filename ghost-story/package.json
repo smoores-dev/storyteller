@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/ghost-story",
-  "version": "0.1.0-rc.3",
+  "version": "0.1.0",
   "description": "An easy-to-use speech toolset. Fork of the original echogarden project.",
   "author": "",
   "license": "GPL-3.0",
