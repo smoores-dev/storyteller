@@ -12,9 +12,9 @@ import { basename, dirname, extname, join } from "node:path"
 
 import { type AsyncSemaphore } from "@esfx/async-semaphore"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
-import { detectVoiceActivity } from "echogarden"
 
 import { streamFile } from "@storyteller-platform/fs"
+import { detectVoiceActivity } from "@storyteller-platform/ghost-story/vad"
 
 import { type AudioFile } from "@/assets/covers"
 import { getProcessedAudioFiles } from "@/assets/fs"
@@ -61,20 +61,19 @@ export async function getSafeRanges(
     const searchStart = approxCutPoint - 120
     const searchEnd = approxCutPoint
     await splitTrack(filepath, searchStart, searchEnd, tmpFilepath, null, null)
-    const audio = await streamFile(tmpFilepath)
-    const vadTimeline = await detectVoiceActivity(audio, {
-      engine: "adaptive-gate",
+    const vadTimeline = await detectVoiceActivity(tmpFilepath, {
+      engine: "active-gate-og",
     })
 
     // It's possible for ffmpeg to guess the duration
     // incorrectly, resulting in empty search files.
     // This happens at the very end, so we just bail out
     // if we encounter this.
-    if (vadTimeline.timeline.length === 0) {
+    if (vadTimeline.length === 0) {
       break
     }
 
-    const silenceTimeline = vadTimeline.timeline.reduce<
+    const silenceTimeline = vadTimeline.reduce<
       { start: number; end: number }[]
     >((acc, entry) => {
       const lastEntry = acc[acc.length - 1]

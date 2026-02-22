@@ -36,7 +36,7 @@ export async function register() {
     }
     for (const book of queue) {
       logger.info(`Adding ${book.title} to the queue`)
-      void startProcessing(book.uuid, book.readaloud?.restartPending ?? false)
+      void startProcessing(book.uuid, book.readaloud?.restartPending || false)
     }
   } catch (err) {
     logger.error("Failed to restart processing queue")

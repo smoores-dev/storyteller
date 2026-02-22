@@ -1,4 +1,6 @@
-import { type Providers } from "@/auth/providers"
+import type { Language } from "@storyteller-platform/ghost-story"
+
+import type { Providers } from "@/auth/providers"
 
 export type TranscriptionEngine =
   | "whisper.cpp"
@@ -7,22 +9,20 @@ export type TranscriptionEngine =
   | "amazon-transcribe"
   | "openai-cloud"
   | "deepgram"
-
-export type WhisperBuild =
-  | "cpu"
-  | "cublas-11.8"
-  | "cublas-12.6"
-  | "cublas-13.0"
-  | "hipblas"
+  | "whisper-server"
 
 export type WhisperModel =
   | "tiny"
+  | "tiny.en"
   | "tiny-q5_1"
   | "base"
+  | "base.en"
   | "base-q5_1"
   | "small"
+  | "small.en"
   | "small-q5_1"
   | "medium"
+  | "medium.en"
   | "medium-q5_0"
   | "large-v1"
   | "large-v2"
@@ -31,6 +31,8 @@ export type WhisperModel =
   | "large-v3-q5_0"
   | "large-v3-turbo"
   | "large-v3-turbo-q5_0"
+
+export type WhisperCpuFallback = "blas" | "cpu" | null
 
 interface BuiltInAuthProvider {
   kind: "built-in"
@@ -64,14 +66,20 @@ export type Settings = {
   codec: string | null
   bitrate: string | null
   transcriptionEngine: TranscriptionEngine | null
-  whisperBuild: WhisperBuild | null
   whisperModel: WhisperModel | null
+  whisperThreads: number
+  whisperModelOverrides: Record<Language, WhisperModel>
+  autoDetectLanguage: boolean
+  whisperCpuFallback: WhisperCpuFallback
+  whisperServerUrl: string | null
+  whisperServerApiKey: string | null
   googleCloudApiKey: string | null
   azureSubscriptionKey: string | null
   azureServiceRegion: string | null
   amazonTranscribeRegion: string | null
   amazonTranscribeAccessKeyId: string | null
   amazonTranscribeSecretAccessKey: string | null
+  amazonTranscribeBucketName: string | null
   openAiApiKey: string | null
   openAiOrganization: string | null
   openAiBaseUrl: string | null
@@ -81,7 +89,6 @@ export type Settings = {
   deepgramModel: string | null
   parallelTranscodes: number
   parallelTranscribes: number
-  parallelWhisperBuild: number
   authProviders: AuthProvider[]
   importPath: string | null
   readaloudLocationType:

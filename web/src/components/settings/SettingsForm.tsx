@@ -20,10 +20,10 @@ import {
   TextInput,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import { IconPlus, IconTrash } from "@tabler/icons-react"
+import { IconFlame, IconPlus, IconTrash } from "@tabler/icons-react"
 import { useRef, useState } from "react"
 
-import { type Settings } from "@/apiModels"
+import type { Settings } from "@/apiModels"
 import { ImportPathInput } from "@/components/ImportPathInput"
 import {
   useGetMaxUploadChunkSizeQuery,
@@ -35,6 +35,7 @@ import { AuthProviderInput } from "./AuthProviderInput"
 interface Props {
   settings: Settings
   authUrl?: string | undefined
+  whisperVariant?: string | undefined
 }
 
 function safeUrl(base: string, path: string) {
@@ -45,7 +46,7 @@ function safeUrl(base: string, path: string) {
   }
 }
 
-export function SettingsForm({ settings, authUrl }: Props) {
+export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
   const [saved, setSaved] = useState(false)
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -67,8 +68,13 @@ export function SettingsForm({ settings, authUrl }: Props) {
     codec: settings.codec ?? "",
     bitrate: settings.bitrate ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
-    whisperBuild: settings.whisperBuild ?? "cpu",
     whisperModel: settings.whisperModel ?? "tiny",
+    whisperThreads: settings.whisperThreads,
+    whisperModelOverrides: settings.whisperModelOverrides,
+    autoDetectLanguage: settings.autoDetectLanguage,
+    whisperCpuFallback: settings.whisperCpuFallback,
+    whisperServerUrl: settings.whisperServerUrl ?? "",
+    whisperServerApiKey: settings.whisperServerApiKey ?? "",
     googleCloudApiKey: settings.googleCloudApiKey ?? "",
     azureSubscriptionKey: settings.azureSubscriptionKey ?? "",
     azureServiceRegion: settings.azureServiceRegion ?? "",
@@ -76,6 +82,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
     amazonTranscribeAccessKeyId: settings.amazonTranscribeAccessKeyId ?? "",
     amazonTranscribeSecretAccessKey:
       settings.amazonTranscribeSecretAccessKey ?? "",
+    amazonTranscribeBucketName: settings.amazonTranscribeBucketName ?? "",
     openAiApiKey: settings.openAiApiKey ?? "",
     openAiOrganization: settings.openAiOrganization ?? "",
     openAiBaseUrl: settings.openAiBaseUrl ?? "",
@@ -84,7 +91,6 @@ export function SettingsForm({ settings, authUrl }: Props) {
     deepgramModel: settings.deepgramModel ?? "nova-3",
     parallelTranscribes: settings.parallelTranscribes,
     parallelTranscodes: settings.parallelTranscodes,
-    parallelWhisperBuild: settings.parallelWhisperBuild,
     authProviders: settings.authProviders,
     importPath: settings.importPath,
     readaloudLocationType: settings.readaloudLocationType,
@@ -242,6 +248,10 @@ export function SettingsForm({ settings, authUrl }: Props) {
         <NativeSelect
           label="Preferred audio codec"
           {...form.getInputProps("codec")}
+          onChange={(e) => {
+            form.setFieldValue("codec", e.target.value)
+            form.setFieldValue("bitrate", "")
+          }}
         >
           <option value="">Default</option>
           <option value="libopus">OPUS</option>
@@ -292,9 +302,18 @@ export function SettingsForm({ settings, authUrl }: Props) {
           <p>
             This is by far the most resource-intensive phase of the process. By
             default, Storyteller will attempt to run the transcription job
-            locally, using your server&apos;s hardware. If you would prefer to
-            run the task via a paid third-party service, you set that with the
-            &quot;transcription engine&quot; setting below.
+            locally, using your server&apos;s hardware.
+          </p>
+          <p>
+            You can also run the transcription job via a remote `whisper.cpp`
+            server. This most often used when you want to run the transcription
+            job on a different machine than the one running Storyteller. See the
+            documentation for more details.
+          </p>
+          <p>
+            If you would prefer to run the task via a paid third-party service,
+            you set that with the &quot;transcription engine&quot; setting
+            below.
           </p>
           <p>The available paid transcription services are:</p>
           <List listStyleType="disc" className="text-sm">
@@ -339,6 +358,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
           {...form.getInputProps("transcriptionEngine")}
         >
           <option value="whisper.cpp">whisper.cpp (local)</option>
+          <option value="whisper-server">whisper.cpp (remote)</option>
           <option value="google-cloud">Google Cloud</option>
           <option value="microsoft-azure">Azure Cognitive Services</option>
           <option value="amazon-transcribe">Amazon Transcribe</option>
@@ -346,44 +366,34 @@ export function SettingsForm({ settings, authUrl }: Props) {
           <option value="deepgram">Deepgram Speech to Text</option>
         </NativeSelect>
         {state.transcriptionEngine === "whisper.cpp" && (
-          <>
-            <NativeSelect
-              label="Whisper build"
-              {...form.getInputProps("whisperBuild")}
-              error={
-                state.whisperBuild === "cublas-11.8"
-                  ? "cuBLAS 11.8 is no longer supported. Please update to version 12 or 13."
-                  : undefined
-              }
-            >
-              <option value="cpu">CPU</option>
-              <option value="cublas-11.8" disabled>
-                cuBLAS 11.8 (NVIDIA GPU)
-              </option>
-              <option value="cublas-12.6">cuBLAS 12.6 (NVIDIA GPU)</option>
-              <option value="cublas-13.0">cuBLAS 13.0 (NVIDIA GPU)</option>
-              <option value="hipblas">hipBLAS (AMD GPU)</option>
-            </NativeSelect>
-            <Box className="text-sm opacity-70">
-              <p>
-                You can also specify which Whisper model Storyteller should use
-                for transcription. The default (tiny) is sufficient for most
-                English books. For books with many uncommon words, or in
-                languages other than English, you may need to try larger models,
-                such as small or medium.
-              </p>
-            </Box>
+          <Stack>
+            <Text className="text-sm opacity-70">
+              Using whisper.cpp variant: <Code>{whisperVariant ?? "cpu"}</Code>.
+              To use a different variant (e.g. with GPU acceleration), install a
+              different Storyteller image.
+            </Text>
+            <Text className="text-sm opacity-70">
+              You can specify which Whisper model Storyteller should use for
+              transcription. The default (tiny) is sufficient for most English
+              books. For books with many uncommon words, or in languages other
+              than English, you may need to try larger models, such as small or
+              medium.
+            </Text>
             <NativeSelect
               label="Whisper model"
               {...form.getInputProps("whisperModel")}
             >
               <option value="tiny">tiny</option>
+              <option value="tiny.en">tiny.en</option>
               <option value="tiny-q5_1">tiny-q5_1</option>
               <option value="base">base</option>
+              <option value="base.en">base.en</option>
               <option value="base-q5_1">base-q5_1</option>
               <option value="small">small</option>
+              <option value="small.en">small.en</option>
               <option value="small-q5_1">small-q5_1</option>
               <option value="medium">medium</option>
+              <option value="medium.en">medium.en</option>
               <option value="medium-q5_0">medium-q5_0</option>
               <option value="large-v1">large-v1</option>
               <option value="large-v2">large-v2</option>
@@ -393,7 +403,181 @@ export function SettingsForm({ settings, authUrl }: Props) {
               <option value="large-v3-turbo">large-v3-turbo</option>
               <option value="large-v3-turbo-q5_0">large-v3-turbo-q5_0</option>
             </NativeSelect>
-          </>
+            <NumberInput
+              label={
+                <div className="flex items-center gap-0">
+                  <IconFlame
+                    className="mr-2 inline-block fill-orange-600 text-orange-600"
+                    size={16}
+                  />
+                  Turbo mode
+                </div>
+              }
+              description={
+                <>
+                  <Text size="sm">
+                    Change the parallelization level of the Whisper model. Can
+                    result in a massive speed increase when doing
+                    GPU-accelerated transcription.
+                  </Text>
+                  <Text size="sm">
+                    It is not recommended to set both this value and the
+                    &quot;Number of audio tracks to process in parallel&quot;
+                    value to a value greater than 1. Choose one or the other.
+                  </Text>
+                </>
+              }
+              min={1}
+              max={16}
+              {...form.getInputProps("whisperThreads")}
+            />
+
+            <Text size="sm" className="opacity-70">
+              <span className="font-bold text-orange-600">Warning!</span>{" "}
+              Setting above 1 may reduce transcription accuracy but increases
+              speed by splitting audio into chunks processed in parallel. Do not
+              report bugs if you set this to a value greater than 1 and are not
+              able to get a consistent Readaloud, only if you cannot get a
+              consistent Readaloud even with a value of 1.
+            </Text>
+            <NativeSelect
+              label="CPU fallback"
+              description="If you have a GPU variant installed but want to fall back to CPU transcription, select a CPU variant here. This will download and use the selected CPU variant instead of the GPU variant."
+              value={state.whisperCpuFallback ?? ""}
+              onChange={(e) => {
+                const val = e.currentTarget.value
+                form.setFieldValue(
+                  "whisperCpuFallback",
+                  val === "" ? null : (val as "blas" | "cpu"),
+                )
+              }}
+            >
+              <option value="">Use default (GPU if available)</option>
+              <option value="blas">OpenBLAS (optimized CPU)</option>
+              <option value="cpu">Plain CPU</option>
+            </NativeSelect>
+            {/* <Switch
+              label="Auto-detect language"
+              description="When enabled, Storyteller will attempt to detect the language of the audio instead of using the book's language metadata. This will slow down transcription."
+              {...form.getInputProps("autoDetectLanguage", {
+                type: "checkbox",
+              })}
+            />
+            <Fieldset
+              legend="Per-language model overrides"
+              className="mt-4"
+              disabled={!state.autoDetectLanguage}
+            >
+              <Box className="mb-3 text-sm opacity-70">
+                <p>
+                  You can specify different Whisper models for specific
+                  languages. For example, use <Code>tiny.en</Code> for English
+                  and <Code>large-v3-turbo</Code> for other languages.
+                </p>
+                {!state.autoDetectLanguage && (
+                  <p className="mt-2 font-medium">
+                    Enable auto-detect language above to use per-language model
+                    overrides.
+                  </p>
+                )}
+              </Box>
+              <Stack gap={8}>
+                {Object.entries(state.whisperModelOverrides).map(
+                  ([lang, model]) => (
+                    <Group key={lang} gap={8}>
+                      <NativeSelect
+                        label="Language"
+                        value={lang}
+                        className="flex-1"
+                        onChange={(e) => {
+                          const newKey = e.currentTarget.value as Language
+                          const newOverrides = Object.fromEntries(
+                            Object.entries(state.whisperModelOverrides).map(
+                              ([k, v]) => (k === lang ? [newKey, v] : [k, v]),
+                            ),
+                          ) as Record<Language, WhisperModel>
+                          form.setFieldValue(
+                            "whisperModelOverrides",
+                            newOverrides,
+                          )
+                        }}
+                      >
+                        <option value="">Select language</option>
+                        {LANGUAGES.map((l) => (
+                          <option key={l.value} value={l.value}>
+                            {l.label}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                      <NativeSelect
+                        label="Model"
+                        value={model}
+                        className="flex-1"
+                        onChange={(e) => {
+                          form.setFieldValue("whisperModelOverrides", {
+                            ...state.whisperModelOverrides,
+                            [lang]: e.currentTarget.value as WhisperModel,
+                          })
+                        }}
+                      >
+                        <option value="tiny">tiny</option>
+                        <option value="tiny.en">tiny.en</option>
+                        <option value="tiny-q5_1">tiny-q5_1</option>
+                        <option value="base">base</option>
+                        <option value="base.en">base.en</option>
+                        <option value="base-q5_1">base-q5_1</option>
+                        <option value="small">small</option>
+                        <option value="small.en">small.en</option>
+                        <option value="small-q5_1">small-q5_1</option>
+                        <option value="medium">medium</option>
+                        <option value="medium.en">medium.en</option>
+                        <option value="medium-q5_0">medium-q5_0</option>
+                        <option value="large-v1">large-v1</option>
+                        <option value="large-v2">large-v2</option>
+                        <option value="large-v2-q5_0">large-v2-q5_0</option>
+                        <option value="large-v3">large-v3</option>
+                        <option value="large-v3-q5_0">large-v3-q5_0</option>
+                        <option value="large-v3-turbo">large-v3-turbo</option>
+                        <option value="large-v3-turbo-q5_0">
+                          large-v3-turbo-q5_0
+                        </option>
+                      </NativeSelect>
+                      <ActionIcon
+                        variant="subtle"
+                        className="mt-6"
+                        onClick={() => {
+                          const newOverrides = Object.fromEntries(
+                            Object.entries(state.whisperModelOverrides).filter(
+                              ([k]) => k !== lang,
+                            ),
+                          ) as Record<Language, WhisperModel>
+                          form.setFieldValue(
+                            "whisperModelOverrides",
+                            newOverrides,
+                          )
+                        }}
+                      >
+                        <IconTrash color="red" />
+                      </ActionIcon>
+                    </Group>
+                  ),
+                )}
+                <Button
+                  leftSection={<IconPlus />}
+                  variant="outline"
+                  className="self-start"
+                  onClick={() => {
+                    form.setFieldValue("whisperModelOverrides", {
+                      ...state.whisperModelOverrides,
+                      en: "tiny" as WhisperModel,
+                    })
+                  }}
+                >
+                  Add override
+                </Button>
+              </Stack>
+            </Fieldset> */}
+          </Stack>
         )}
         {state.transcriptionEngine === "google-cloud" && (
           <TextInput
@@ -422,6 +606,21 @@ export function SettingsForm({ settings, authUrl }: Props) {
               label="Region"
               withAsterisk
               {...form.getInputProps("amazonTranscribeRegion")}
+            />
+            <TextInput
+              label="Bucket name"
+              withAsterisk
+              description={
+                <>
+                  <Text size="sm">
+                    Amazon Transcribe’s batch transcription job API requires
+                    that files are uploaded to an S3 bucket before starting the
+                    transcribe job. This is the bucket that Storyteller will
+                    upload files to.
+                  </Text>
+                </>
+              }
+              {...form.getInputProps("amazonTranscribeBucketName")}
             />
             <TextInput
               label="Access key id"
@@ -463,7 +662,8 @@ export function SettingsForm({ settings, authUrl }: Props) {
                     className="text-st-orange-800 underline"
                     href="https://github.com/ggml-org/whisper.cpp/tree/master/examples/server"
                   >
-                    whisper.cpp HTTP server
+                    whisper.cpp HTTP server (we recommend using the `whisper.cpp
+                    (remote)` setting for that instead)
                   </a>
                   .
                 </>
@@ -476,10 +676,44 @@ export function SettingsForm({ settings, authUrl }: Props) {
                 <>
                   e.g. <Code>Systran/faster-distil-whisper-large-v3</Code> for
                   faster-whisper-server&rsquo;s large-v3 model, or{" "}
-                  <Code>whisper-1</Code> for large-v3 on OpenAI Cloud.
+                  <Code>whisper-1</Code> for large-v3 on OpenAI Cloud. Warning:
+                  do not use non-whisper models here, such as{" "}
+                  <Code>openai-4o</Code>, as the timeline will not be generated
+                  correctlye
                 </>
               }
               {...form.getInputProps("openAiModelName")}
+            />
+          </>
+        )}
+        {state.transcriptionEngine === "whisper-server" && (
+          <>
+            <Text size="sm">
+              Use a remote, self-hosted `whisper.cpp` server for transcription.
+              Useful if you have a powerful machine to offload transcription to.
+              See our{" "}
+              <a href="https://storyteller-platform.gitlab.io/storyteller/docs/tutorials/offloading-transcription">
+                offloading transcription guide
+              </a>{" "}
+              for more information.
+            </Text>
+            <TextInput
+              label="Server URL"
+              description={
+                <>
+                  e.g. <Code>http://192.168.1.19:8080</Code> for the local
+                  whisper.cpp server.
+                </>
+              }
+              withAsterisk
+              {...form.getInputProps("whisperServerUrl")}
+            />
+            <TextInput
+              description={
+                <>Only necessary if your server requires an API key.</>
+              }
+              label="API Key"
+              {...form.getInputProps("whisperServerApiKey")}
             />
           </>
         )}
@@ -514,14 +748,9 @@ export function SettingsForm({ settings, authUrl }: Props) {
       <Fieldset legend="Parellelization settings">
         <Box className="mb-3 text-sm opacity-70">
           <p>
-            Audio transcoding is an inherently single-threaded task, and
-            Whisper’s transcription engine has diminishing returns on multi-core
-            processing for a single file.
-          </p>
-          <p>
-            However, since Storyteller splits input audio into multiple tracks,
-            it’s possible to run transcoding and transcription on multiple
-            tracks in parallel.
+            Since Storyteller splits audiobooks into multiple tracks, it&apos;s
+            possible to run transcoding and transcription on multiple tracks in
+            parallel.
           </p>
         </Box>
         <NumberInput
@@ -533,17 +762,6 @@ export function SettingsForm({ settings, authUrl }: Props) {
           label="Number of audio tracks to transcribe in parallel"
           description="Transcribing one track will use up to 4 CPU cores (when using CPU-based transcription)"
           {...form.getInputProps("parallelTranscribes")}
-        />
-        <Box className="mb-3 text-sm opacity-70">
-          <p>
-            Whenever the Storyteller container is recreated (e.g. after an
-            update), it will rebuild whisper.cpp. This process can be sped up
-            considerably by dedicating multiple CPU cores.
-          </p>
-        </Box>
-        <NumberInput
-          label="Number of CPU cores to allocate for building whisper.cpp locally"
-          {...form.getInputProps("parallelWhisperBuild")}
         />
       </Fieldset>
       <Fieldset legend="Authentication providers">
@@ -589,7 +807,7 @@ export function SettingsForm({ settings, authUrl }: Props) {
                   onChange={(value) => {
                     form.replaceListItem("authProviders", i, {
                       ...provider,
-                      id: value,
+                      id: value as typeof provider.id,
                     })
                   }}
                 />

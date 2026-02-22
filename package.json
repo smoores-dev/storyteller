@@ -11,7 +11,8 @@
     "epub/",
     "audiobook/",
     "path/",
-    "config/*"
+    "config/*",
+    "ghost-story/"
   ],
   "scripts": {
     "build:docs": "yarn workspace @storyteller-platform/docs build",

@@ -1,0 +1,105 @@
+{
+  "name": "@storyteller-platform/ghost-story",
+  "version": "0.1.0-rc.3",
+  "description": "An easy-to-use speech toolset. Fork of the original echogarden project.",
+  "author": "",
+  "license": "GPL-3.0",
+  "keywords": [
+    "text-to-speech"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/storyteller-platform/storyteller"
+  },
+  "bugs": {
+    "url": "https://github.com/storyteller-platform/storyteller/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./recognition": "./src/api/Recognition.ts",
+    "./vad": "./src/api/VoiceActivityDetection.ts",
+    "./server": "./src/cli/whisper-server.ts",
+    "./bin": "./src/cli/bin.ts"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepack": "yarn build",
+    "test": "tsx -C @storyteller --test test/whisper-server.test.ts &&  tsx -C @storyteller --test test/whispercpp.test.ts &&  tsx -C @storyteller --test test/vad.test.ts"
+  },
+  "bin": "./dist/cli/bin.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.994.0",
+    "@aws-sdk/client-transcribe": "^3.994.0",
+    "@robingenz/zli": "^0.2.0",
+    "chalk": "^5.4.1",
+    "cli-progress": "^3.12.0",
+    "ffmpeg-stream": "^1.0.1",
+    "fs-extra": "~11.3.0",
+    "lodash.merge": "^4.6.2",
+    "microsoft-cognitiveservices-speech-sdk": "~1.44.0",
+    "openai": "~4.103.0",
+    "tar": "^7.4.3",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@storyteller-platform/eslint": "workspace:*",
+    "@storyteller-platform/tsup": "workspace:^",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/cli-progress": "^3",
+    "@types/fs-extra": "~11.0.4",
+    "@types/lodash.merge": "^4",
+    "@types/node": "^24.0.0",
+    "@types/tar": "^6.1.13",
+    "eslint": "^8.0.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.8.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      },
+      "./server": {
+        "import": {
+          "types": "./dist/cli/whisper-server.d.ts",
+          "default": "./dist/cli/whisper-server.js"
+        },
+        "require": {
+          "types": "./dist/cli/whisper-server.d.cts",
+          "default": "./dist/cli/whisper-server.cjs"
+        }
+      },
+      "./recognition": {
+        "types": "./dist/api/Recognition.d.ts",
+        "default": "./dist/api/Recognition.js"
+      },
+      "./vad": {
+        "types": "./dist/api/VoiceActivityDetection.d.ts",
+        "default": "./dist/api/VoiceActivityDetection.js"
+      }
+    }
+  }
+}

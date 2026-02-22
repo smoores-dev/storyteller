@@ -69,6 +69,13 @@ export const documentedServerEnvVars = {
     .string()
     .default("v1.8.2")
     .describe("Version of whisper.cpp to download."),
+  STORYTELLER_WHISPER_VARIANT: z
+    .string()
+    .optional()
+    .describe(
+      "The whisper.cpp build variant baked into this image (e.g. linux-x64-cpu, linux-x64-cuda-12.9.0). " +
+        "Set automatically by Docker builds. When not set, `ghost-story` will detect or use what's installed.",
+    ),
   STORYTELLER_DEMO_MODE: z.coerce
     .boolean()
     .optional()

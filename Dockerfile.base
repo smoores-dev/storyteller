@@ -1,0 +1,119 @@
+# GPU_VARIANT can be: cpu, cuda-11.8, cuda-12.9, cuda-13.1, vulkan
+ARG GPU_VARIANT=cpu
+
+# cuda-11 needs ubuntu 22.04, everything else uses 24.04, so we are forced to do this silly thing if we dont also want to have the ubuntu version be an argument
+FROM ubuntu:22.04 AS base-cuda-11.8
+FROM ubuntu:24.04 AS base-cuda-12.9
+FROM ubuntu:24.04 AS base-cuda-13.1
+FROM ubuntu:24.04 AS base-rocm
+FROM ubuntu:24.04 AS base-blas
+FROM ubuntu:24.04 AS base-sycl
+FROM ubuntu:24.04 AS base-vulkan
+FROM ubuntu:24.04 AS base-cpu
+
+FROM base-${GPU_VARIANT} AS base
+
+ARG GPU_VARIANT=cpu
+
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+  build-essential \
+  git \
+  cmake \
+  software-properties-common \
+  sqlite3 \
+  libsqlite3-dev \
+  argon2 \
+  wget \
+  ca-certificates \
+  curl \
+  gnupg \
+  libelf1 \
+  libnuma-dev \
+  kmod \
+  file \
+  python3 \
+  python3-pip \
+  tini && \
+  apt-get clean
+
+COPY scripts/install-cuda.sh /tmp/install-cuda.sh
+
+# install cuda if variant starts with "cuda"
+RUN case "$GPU_VARIANT" in \
+      cuda-11.8) \
+        chmod +x /tmp/install-cuda.sh && \
+        /tmp/install-cuda.sh 11-8 2204 ;; \
+      cuda-12.9) \
+        chmod +x /tmp/install-cuda.sh && \
+        /tmp/install-cuda.sh 12-9 2404 ;; \
+      cuda-13.1) \
+        chmod +x /tmp/install-cuda.sh && \
+        /tmp/install-cuda.sh 13-1 2404 ;; \
+    esac
+
+# install vulkan if variant is "vulkan"
+RUN if [ "$GPU_VARIANT" = "vulkan" ]; then \
+      apt-get update && \
+      apt-get install -y --no-install-recommends \
+        libvulkan1 \
+        libvulkan-dev \
+        vulkan-tools \
+        glslang-tools \
+        mesa-vulkan-drivers \
+        glslc && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+
+RUN if [ "$GPU_VARIANT" = "blas" ]; then \
+      apt-get update && \
+      apt-get install -y --no-install-recommends \
+        libopenblas-dev \
+        pkg-config && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+
+RUN if [ "$GPU_VARIANT" = "sycl" ]; then \
+    wget -q https://registrationcenter-download.intel.com/akdlm/IRC_NAS/6caa93ca-e10a-4cc5-b210-68f385feea9e/intel-oneapi-base-toolkit-2025.3.1.36_offline.sh && \
+    sh ./intel-oneapi-base-toolkit-2025.3.1.36_offline.sh -a --silent --cli --eula accept && \
+    rm ./intel-oneapi-base-toolkit-2025.3.1.36_offline.sh; \
+fi
+
+RUN if [ "$GPU_VARIANT" = "rocm" ]; then \
+    echo "Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600" > /etc/apt/preferences.d/rocm-pin-600 && \
+    curl -sL http://repo.radeon.com/rocm/rocm.gpg.key | apt-key add - && \
+    printf "deb [arch=amd64] https://repo.radeon.com/rocm/apt/6.4.1/ noble main" | tee /etc/apt/sources.list.d/rocm.list && \
+    printf "deb [arch=amd64] https://repo.radeon.com/amdgpu/6.4.1/ubuntu noble main" | tee /etc/apt/sources.list.d/amdgpu.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y  \
+      rocm-dev \
+      rocblas-dev \
+      hipblas-dev; \
+fi
+
+# set up library paths for GPU variants
+# cuda paths (harmless if /usr/local/cuda doesn't exist)
+ENV PATH="/usr/local/cuda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64"
+
+# oneapi/sycl paths (harmless if /opt/intel/oneapi doesn't exist)
+ENV ONEAPI_ROOT=/opt/intel/oneapi
+ENV PATH="${ONEAPI_ROOT}/compiler/latest/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${ONEAPI_ROOT}/compiler/latest/lib:${ONEAPI_ROOT}/mkl/latest/lib:${LD_LIBRARY_PATH:-}"
+
+COPY scripts/install-node.sh .
+
+ARG TARGETARCH
+
+# install node
+RUN NODE_ARCH=$(if [ "${TARGETARCH}" = "amd64" ]; then echo "x64"; else echo "arm64"; fi) && \
+  wget https://nodejs.org/dist/v24.8.0/node-v24.8.0-linux-$NODE_ARCH.tar.xz && \
+  tar -xf node-v24.8.0-linux-$NODE_ARCH.tar.xz && \
+  rm node-v24.8.0-linux-$NODE_ARCH.tar.xz && \
+  cp -r node-v24.8.0-linux-$NODE_ARCH/* /usr/ && \
+  rm -r node-v24.8.0-linux-$NODE_ARCH && \
+  corepack enable && \
+  yes | yarn --version
+
+COPY --link --from=mwader/static-ffmpeg:8.0 /ffmpeg /usr/local/bin/
+COPY --link --from=mwader/static-ffmpeg:8.0 /ffprobe /usr/local/bin/

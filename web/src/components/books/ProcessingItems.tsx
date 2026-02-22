@@ -44,24 +44,63 @@ export function ProcessingItems({ book, aligned }: Props) {
             onClick={() => processBook({ uuid: book.uuid, restart: false })}
           >
             <IconProgress aria-hidden />{" "}
-            {aligned ? "Re-process (using cached files)" : "Continue"}
+            {aligned ? "Re-sync (keep all files)" : "Continue"}
           </Menu.Item>
-          <Menu.Item
-            classNames={{
-              itemLabel: "flex gap-2",
-            }}
-            onClick={() => processBook({ uuid: book.uuid, restart: true })}
-          >
-            <IconReload aria-hidden /> Delete cache and re-process from source
-            files
-          </Menu.Item>
+
+          <Menu.Sub openDelay={100} closeDelay={150}>
+            <Menu.Sub.Target>
+              <Menu.Sub.Item
+                classNames={{
+                  itemLabel: "flex gap-2",
+                }}
+              >
+                <IconReload aria-hidden /> Re-process
+              </Menu.Sub.Item>
+            </Menu.Sub.Target>
+            <Menu.Sub.Dropdown>
+              <Menu.Item
+                classNames={{
+                  itemLabel: "flex gap-2",
+                }}
+                onClick={() =>
+                  processBook({ uuid: book.uuid, restart: "sync" })
+                }
+              >
+                <IconProgress aria-hidden /> From sync step (keep
+                transcriptions)
+              </Menu.Item>
+              <Menu.Item
+                classNames={{
+                  itemLabel: "flex gap-2",
+                }}
+                onClick={() =>
+                  processBook({ uuid: book.uuid, restart: "transcription" })
+                }
+              >
+                <IconReload aria-hidden /> From transcription step (keep audio)
+              </Menu.Item>
+              <Menu.Item
+                classNames={{
+                  itemLabel: "flex gap-2",
+                }}
+                onClick={() =>
+                  processBook({ uuid: book.uuid, restart: "full" })
+                }
+              >
+                <IconReload aria-hidden /> Full restart (delete all cache)
+              </Menu.Item>
+            </Menu.Sub.Dropdown>
+          </Menu.Sub>
+
+          <Menu.Divider />
+
           <Menu.Item
             classNames={{
               itemLabel: "flex gap-2",
             }}
             onClick={() => deleteBookAssets({ uuid: book.uuid })}
           >
-            <IconReload aria-hidden /> Delete cache files
+            <IconTrash aria-hidden /> Delete cache files
           </Menu.Item>
           {aligned ? (
             <Menu.Item

@@ -2,8 +2,12 @@ smoores:
   name: Shane Friedman
   title: Storyteller Creator
   url: https://smoores.dev
+  image_url: https://gitlab.com/uploads/-/system/user/avatar/2464265/avatar.png?width=192
 
 tefkah:
-  name: Tefkah
+  name: Thomas F. K. Jorna
+  image_url: https://avatars.githubusercontent.com/u/21983833?s=48&v=4
   title: Developer
   url: https://tefkah.com
+  socials:
+    github: https://github.com/tefkah
