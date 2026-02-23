@@ -30,6 +30,7 @@ export type NavSubItem = {
 
 export type NavItem = {
   title: string
+  allTitle?: string
   url: string
   icon?: TablerIcon
   isCollapsible?: boolean
@@ -53,6 +54,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                   currentPath={location}
                   isSectionOpen={isSectionOpen}
                   setSectionOpen={setSectionOpen}
+                  allTitle={item.allTitle ?? item.title}
                 />
               )
             }
@@ -87,11 +89,13 @@ function CollapsibleNavItem({
   currentPath,
   isSectionOpen,
   setSectionOpen,
+  allTitle,
 }: {
   item: NavItem
   currentPath: string
   isSectionOpen: (id: string, defaultOpen: boolean) => boolean
   setSectionOpen: (id: string, open: boolean) => void
+  allTitle: string
 }) {
   const isItemActive =
     currentPath === item.url ||
@@ -126,7 +130,7 @@ function CollapsibleNavItem({
                   isActive={isItemActive}
                   render={
                     <V3Link href={item.url}>
-                      <span>All {item.title}</span>
+                      <span>{allTitle}</span>
                     </V3Link>
                   }
                 />

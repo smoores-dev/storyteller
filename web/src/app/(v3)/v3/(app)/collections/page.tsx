@@ -1,15 +1,20 @@
 import { type Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { SiteHeader } from "@v3/_/components/site-header"
 
-export const metadata: Metadata = {
-  title: "Collections",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("CollectionsPage")
+  return {
+    title: t("title"),
+  }
 }
 
-export default function Books() {
+export default async function Collections() {
+  const t = await getTranslations("CollectionsPage")
   return (
     <>
-      <SiteHeader breadcrumbs={[{ label: "Collections" }]} />
+      <SiteHeader breadcrumbs={[{ label: t("title") }]} />
       <div className="flex flex-1 flex-col"></div>
     </>
   )

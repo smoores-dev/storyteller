@@ -2,6 +2,7 @@ import { type Metadata } from "next"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { AuthError } from "next-auth"
+import { getTranslations } from "next-intl/server"
 
 import { apiHost } from "@/app/apiHost"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
@@ -23,8 +24,11 @@ function defaultRedirectCallback({
   return baseUrl
 }
 
-export const metadata: Metadata = {
-  title: "Login",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("LoginPage")
+  return {
+    title: t("title"),
+  }
 }
 
 export default async function LoginPage() {

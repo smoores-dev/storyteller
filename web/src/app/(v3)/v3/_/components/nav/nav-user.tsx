@@ -8,8 +8,10 @@ import {
   IconUser,
 } from "@tabler/icons-react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { useTheme } from "next-themes"
 
+import { LocaleChanger } from "@v3/_/components/locale-changer"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +45,8 @@ export function NavUser({
 
   const displayName = user.name ?? user.username ?? "User"
   const displayEmail = user.email ?? user.username ?? ""
+
+  const t = useTranslations("AppSidebar")
 
   return (
     <SidebarMenu>
@@ -86,7 +90,7 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconUser />
-                Account
+                {t("account")}
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
@@ -95,7 +99,7 @@ export function NavUser({
                   ) : (
                     <IconSun className="size-4" />
                   )}
-                  Theme
+                  {t("theme")}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   <DropdownMenuItem
@@ -104,7 +108,7 @@ export function NavUser({
                     }}
                   >
                     <IconSun className="size-4" />
-                    Light
+                    {t("light")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -112,17 +116,18 @@ export function NavUser({
                     }}
                   >
                     <IconMoon className="size-4" />
-                    Dark
+                    {t("dark")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
                       setTheme("system")
                     }}
                   >
-                    System
+                    {t("system")}
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
+              <LocaleChanger nested />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -132,7 +137,7 @@ export function NavUser({
                   className="flex items-center gap-2"
                 >
                   <IconLogout />
-                  Log out
+                  {t("logout")}
                 </Link>
               }
             />

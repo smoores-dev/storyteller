@@ -1,4 +1,24 @@
+// @ts-check
+
 import { resolve } from "node:path"
+
+import createNextIntlPlugin from "next-intl/plugin"
+
+const withNextIntl = createNextIntlPlugin({
+  // this is nice, but requires next 16
+  // experimental: {
+  // srcPath: "./src",
+  // messages: {
+  //   path: "./messages",
+  //   format: "json",
+  //   locales: "infer",
+  // },
+  // createMessagesDeclaration: ["./messages/en.json", "./messages/nl.json"],
+  // extract: {
+  //   sourceLocale: "./messages/en.json",
+  // },
+  // },
+})
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -31,12 +51,6 @@ const nextConfig = {
     authInterrupts: true,
     reactCompiler: true,
   },
-  /**
-   *
-   * @param {import('webpack').Configuration} config
-   * @param {*} param1
-   * @returns
-   */
   webpack: (config, { isServer, dev }) => {
     if (isServer && !dev) {
       config.devtool = "source-map"
@@ -46,4 +60,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

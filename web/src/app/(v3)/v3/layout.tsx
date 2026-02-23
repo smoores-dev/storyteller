@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next"
 import { Inter, Young_Serif } from "next/font/google"
 import Script from "next/script"
+import { NextIntlClientProvider } from "next-intl"
+import { getTranslations } from "next-intl/server"
 import { NuqsAdapter } from "nuqs/adapters/next"
 
 import StoreProvider from "@/components/StoreProvider"
@@ -25,12 +27,15 @@ const youngSerif = Young_Serif({
   variable: "--font-young-serif",
 })
 
-export const metadata: Metadata = {
-  title: {
-    template: "%s | Storyteller",
-    default: "Storyteller",
-  },
-  description: "A simple tool for syncing audiobooks and ebooks",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Layout")
+  return {
+    title: {
+      template: `%s | ${t("title")}`,
+      default: t("title"),
+    },
+    description: t("description"),
+  }
 }
 
 export const viewport: Viewport = {
@@ -65,20 +70,22 @@ export default function RootLayout({
         {!env.ENABLE_V3_FRONTEND ? (
           <div>V3 frontend is not enabled</div>
         ) : (
-          <StoreProvider>
-            <AudioProviderRedux>
-              <PiPProvider>
-                <ThemeProvider
-                  attribute="class"
-                  defaultTheme="system"
-                  enableSystem
-                  disableTransitionOnChange
-                >
-                  <NuqsAdapter>{children}</NuqsAdapter>
-                </ThemeProvider>
-              </PiPProvider>
-            </AudioProviderRedux>
-          </StoreProvider>
+          <NextIntlClientProvider>
+            <StoreProvider>
+              <AudioProviderRedux>
+                <PiPProvider>
+                  <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
+                  >
+                    <NuqsAdapter>{children}</NuqsAdapter>
+                  </ThemeProvider>
+                </PiPProvider>
+              </AudioProviderRedux>
+            </StoreProvider>
+          </NextIntlClientProvider>
         )}
       </body>
     </html>

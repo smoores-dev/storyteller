@@ -10,7 +10,8 @@ import {
   IconSettings,
 } from "@tabler/icons-react"
 import Image from "next/image"
-import { useCallback, useMemo } from "react"
+import { useTranslations } from "next-intl"
+import { useCallback } from "react"
 
 import { type User } from "@/apiModels"
 import {
@@ -26,11 +27,14 @@ import {
   type NavSecondaryItem,
 } from "@v3/_/components/nav/nav-secondary"
 import { NavUser } from "@v3/_/components/nav/nav-user"
+import { Kbd, KbdGroup } from "@v3/_/components/ui/kbd"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarPinButton,
 } from "@v3/_/components/ui/sidebar"
 import { V3Link } from "@v3/_/components/v3-link"
@@ -41,10 +45,7 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar> & {
   user: User
 }) {
-  // const { data: user } = useGetSessionQuery()
   const { data: collections } = useListCollectionsQuery()
-  // const { data: userShelves } = useListUserShelvesQuery()
-  // const [deleteShelf] = useDeleteUserShelfMutation()
 
   const openSearch = useCallback(() => {
     const event = new KeyboardEvent("keydown", {
@@ -55,17 +56,19 @@ export function AppSidebar({
     document.dispatchEvent(event)
   }, [])
 
-  const navMain: NavItem[] = useMemo(() => {
-    const collectionSubItems =
-      collections?.map((collection) => {
-        const { icon, label } = extractEmojiIcon(collection.name)
-        return {
-          title: label,
-          url: `/collections/${collection.uuid}`,
-          icon,
-        }
-      }) ?? []
+  const t = useTranslations("AppSidebar")
 
+  const collectionSubItems =
+    collections?.map((collection) => {
+      const { icon, label } = extractEmojiIcon(collection.name)
+      return {
+        title: label,
+        url: `/collections/${collection.uuid}`,
+        icon,
+      }
+    }) ?? []
+
+  const navMain: NavItem[] =
     // const shelfSubItems =
     //   userShelves?.map((shelf) => {
     //     const { icon, label } = extractEmojiIcon(shelf.name)
@@ -77,54 +80,67 @@ export function AppSidebar({
     //     }
     //   }) ?? []
 
-    return [
+    [
       {
-        title: "Home",
+        title: t("home"),
         url: "/",
         icon: IconHome,
       },
       {
-        title: "Books",
+        title: t("books"),
+        allTitle: t("allBooks"),
         url: "/books",
         icon: IconBook,
         // isCollapsible: shelfSubItems.length > 0,
         // subItems: shelfSubItems,
       },
       {
-        title: "Collections",
+        title: t("collections"),
+        allTitle: t("allCollections"),
         url: "/collections",
         icon: IconBook2,
         isCollapsible: collectionSubItems.length > 0,
         subItems: collectionSubItems,
       },
       {
-        title: "Series",
+        title: t("series"),
         url: "/series",
         icon: IconList,
       },
     ]
-  }, [collections])
 
-  const navSecondary: NavSecondaryItem[] = useMemo(
-    () => [
-      {
-        title: "Search (Cmd + K)",
-        icon: IconSearch,
-        onClick: openSearch,
-      },
-      {
-        title: "Settings",
-        url: "/settings",
-        icon: IconSettings,
-      },
-      {
-        title: "Documentation",
-        url: "https://storyteller-platform.gitlab.io/storyteller/",
-        icon: IconHelpCircle,
-      },
-    ],
-    [openSearch],
-  )
+  const navSecondary: NavSecondaryItem[] = [
+    {
+      custom: (
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={openSearch}
+            className="flex justify-between gap-2"
+          >
+            <div className="flex items-center gap-2">
+              <IconSearch />
+              {t("search")}
+            </div>
+            <KbdGroup>
+              <Kbd>⌘</Kbd>
+              <Kbd>K</Kbd>
+            </KbdGroup>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ),
+      key: "search",
+    },
+    {
+      title: t("settings"),
+      url: "/settings",
+      icon: IconSettings,
+    },
+    {
+      title: t("documentation"),
+      url: "https://storyteller-platform.gitlab.io/storyteller/",
+      icon: IconHelpCircle,
+    },
+  ]
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>

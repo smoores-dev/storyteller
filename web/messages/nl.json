@@ -1,0 +1,54 @@
+{
+  "Layout": {
+    "description": "Een eenvoudig hulpmiddel voor het synchroniseren van audiobooks en ebooks",
+    "title": "Storyteller",
+    "logout": "Uitloggen"
+  },
+  "LoginPage": {
+    "welcomeBack": "Welkom terug!",
+    "title": "Inloggen",
+    "username": "Gebruikersnaam",
+    "usernameOrEmail": "Gebruikersnaam of email",
+    "password": "Wachtwoord",
+    "login": "Aanmelden",
+    "continueWith": "Of log in met",
+    "loginToYourStorytellerAccount": "Log in met je Storyteller account",
+    "somethingWentWrongPleaseTryAgain": "Er is iets misgegaan. Probeer het opnieuw.",
+    "invalidUsernameOrPassword": "Ongeldige gebruikersnaam of wachtwoord",
+    "loggingIn": "Aanmelden..."
+  },
+  "HomePage": {
+    "title": "Start"
+  },
+  "BooksPage": {
+    "title": "Boeken"
+  },
+  "CollectionsPage": {
+    "title": "Verzamelingen"
+  },
+  "SeriesPage": {
+    "title": "Series"
+  },
+  "AppSidebar": {
+    "home": "Start",
+    "books": "Boeken",
+    "allBooks": "Alle boeken",
+    "collections": "Verzamelingen",
+    "allCollections": "Alle verzamelingen",
+    "series": "Series",
+    "search": "Zoeken",
+    "settings": "Instellingen",
+    "documentation": "Documentatie",
+    "account": "Account",
+    "logout": "Uitloggen",
+    "theme": "Thema",
+    "light": "Licht",
+    "dark": "Donker",
+    "system": "Systeem",
+    "language": "Taal",
+    "localeChanger": {
+      "en": "Engels",
+      "nl": "Nederlands"
+    }
+  }
+}
