@@ -34,12 +34,12 @@ export function LoginForm({
   return (
     <>
       {errorState === "bad-creds" && (
-        <p className="rounded border-2 border-red-800 bg-red-800 bg-opacity-10 p-4 text-red-800">
+        <p className="bg-opacity-10 rounded-sm border-2 border-red-800 bg-red-800 p-4 text-red-800">
           Invalid username or password
         </p>
       )}
       {errorState === "failed" && (
-        <p className="rounded border-2 border-red-800 bg-red-800 bg-opacity-10 p-4 text-red-800">
+        <p className="bg-opacity-10 rounded-sm border-2 border-red-800 bg-red-800 p-4 text-red-800">
           Failed to login. Check server logs for details.
         </p>
       )}

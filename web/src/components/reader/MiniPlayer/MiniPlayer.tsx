@@ -349,8 +349,8 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
             : "pointer-events-none translate-y-40 opacity-0",
           isDragging && "cursor-grabbing",
           !isDragging
-            ? "transition-[transform,_opacity,_top,_left,_right,_bottom]"
-            : "transition-[transform,_opacity]",
+            ? "transition-[transform,opacity,top,left,right,bottom]"
+            : "transition-[transform,opacity]",
           pinnedMiniPlayer && !isDragging && "cursor-grab",
         )}
         onMouseDown={handleMouseDown}
@@ -359,7 +359,7 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
         <nav
           className={cn(
             "bg-reader-bg flex w-full items-center justify-between gap-1 px-4 py-2",
-            isCompactPiP && "absolute left-0 right-0 top-0 bg-transparent",
+            isCompactPiP && "absolute top-0 right-0 left-0 bg-transparent",
           )}
         >
           <div className="flex items-center gap-1">
@@ -404,7 +404,7 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
             )}
             {context === "pip" ? (
               <button
-                className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative rounded-sm bg-transparent p-1.5"
+                className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative rounded-xs bg-transparent p-1.5"
                 onClick={() => {
                   if (!pipWindow) return
                   window.focus()
@@ -418,7 +418,7 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
               <Tooltip label="Go to book">
                 <Link
                   href={`/books/${book.uuid}/read`}
-                  className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative rounded-sm bg-transparent p-1.5"
+                  className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative rounded-xs bg-transparent p-1.5"
                 >
                   <IconChevronRight size={18} />
                   <span className="sr-only">Go to book</span>
@@ -450,7 +450,7 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
                 "flex max-w-[75%] flex-col items-center gap-3 overflow-hidden",
               )}
             >
-              <div className="flex min-w-0 max-w-full flex-col items-center gap-1 overflow-hidden">
+              <div className="flex max-w-full min-w-0 flex-col items-center gap-1 overflow-hidden">
                 <ScrollingTitle
                   scrollSpeed={30}
                   scrollInterval={20000}

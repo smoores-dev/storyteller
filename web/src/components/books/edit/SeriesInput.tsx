@@ -68,7 +68,7 @@ export function SeriesInput({
           />
           <ActionIcon
             variant="subtle"
-            className="absolute right-4 top-0"
+            className="absolute top-0 right-4"
             onClick={() => {
               removeSeries(i)
             }}

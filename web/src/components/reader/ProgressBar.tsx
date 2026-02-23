@@ -71,7 +71,7 @@ const Tooltip = ({
 
   return createPortal(
     <div
-      className="bg-reader-surface text-reader-text pointer-events-none fixed z-[500] -translate-x-1/2 whitespace-nowrap rounded-md font-medium"
+      className="bg-reader-surface text-reader-text pointer-events-none fixed z-500 -translate-x-1/2 rounded-md font-medium whitespace-nowrap"
       style={{
         left: `${leftPosition}px`,
         bottom: `${bottomPosition}px`,
@@ -102,7 +102,7 @@ const Thumb = ({
 
   return createPortal(
     <div
-      className="bg-reader-accent border-reader-border pointer-events-none fixed z-[500] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+      className="bg-reader-accent border-reader-border pointer-events-none fixed z-500 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
       style={{
         left: `${leftPosition}px`,
         top: `${topPosition}px`,
@@ -304,7 +304,7 @@ const CustomSlider = ({
         {/* progress bar */}
         <div
           className={cn(
-            "bg-reader-accent absolute left-0 top-0 z-10 h-1 transition-all",
+            "bg-reader-accent absolute top-0 left-0 z-10 h-1 transition-all",
             isDragging ? "duration-0" : "duration-300",
           )}
           style={{
@@ -509,7 +509,7 @@ const MarkList = ({
             className={cn(
               !isLast &&
                 // !isSmall &&
-                `after:bg-reader-bg after:absolute after:right-0 after:top-0 after:h-1 after:transition-colors after:content-['']`,
+                `after:bg-reader-bg after:absolute after:top-0 after:right-0 after:h-1 after:transition-colors after:content-['']`,
             )}
             targetDocument={targetDocument}
           />
@@ -552,8 +552,8 @@ const MarkButton = ({
         style={style}
         ref={buttonRef}
         className={cn(
-          "group/mark pointer-events-auto absolute top-0 z-[500] h-5 cursor-pointer transition-all duration-75 hover:before:opacity-100 after:group-hover:opacity-100",
-          "before:bg-reader-accent-hover before:absolute before:-top-0.5 before:left-0 before:z-[501] before:h-2 before:opacity-0 before:transition-opacity before:content-[''] group-hover/mark:before:opacity-100",
+          "group/mark pointer-events-auto absolute top-0 z-500 h-5 cursor-pointer transition-all duration-75 group-hover:after:opacity-100 hover:before:opacity-100",
+          "before:bg-reader-accent-hover before:absolute before:-top-0.5 before:left-0 before:z-501 before:h-2 before:opacity-0 before:transition-opacity before:content-[''] group-hover/mark:before:opacity-100",
 
           "before:w-[calc(100%-2px)] after:w-[2px]",
           className,

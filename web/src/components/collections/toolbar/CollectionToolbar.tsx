@@ -40,10 +40,10 @@ export function CollectionToolbar({
   }
 
   return (
-    <Group className="w-max flex-nowrap gap-2 [&>*]:shrink-0">
+    <Group className="w-max flex-nowrap gap-2 *:shrink-0">
       <Button
         variant="light"
-        className={`w-fit self-start ${isEditing ? "!pr-1" : ""}`}
+        className={`w-fit self-start ${isEditing ? "pr-1!" : ""}`}
         leftSection={isEditing ? <IconEditOff /> : <IconEdit />}
         onClick={() => {
           setIsEditing((value) => !value)

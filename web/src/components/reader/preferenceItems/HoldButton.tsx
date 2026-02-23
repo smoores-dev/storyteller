@@ -43,7 +43,7 @@ export const HoldButton = ({
 
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
           <div
-            className="absolute bottom-0 left-0 right-0 bg-blue-500/30 transition-all duration-75 ease-linear"
+            className="absolute right-0 bottom-0 left-0 bg-blue-500/30 transition-all duration-75 ease-linear"
             style={{ height: `${progress}%` }}
           />
         </div>

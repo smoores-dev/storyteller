@@ -134,4 +134,8 @@ export const internalServerEnvVars = {
     .boolean()
     .optional()
     .describe("Whether to enable React Scan for development."),
+  ENABLE_V3_FRONTEND: z.coerce
+    .boolean()
+    .optional()
+    .describe("Whether to enable the v3 frontend."),
 } as const

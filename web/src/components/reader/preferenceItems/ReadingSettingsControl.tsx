@@ -930,7 +930,7 @@ export const ReadingSettingsControl = (props: Props) => {
           onClick={toggleMenu}
         />
       </Popover.Target>
-      <Popover.Dropdown className="border-reader-border bg-reader-surface max-h-[80vh] flex-col gap-8 overflow-y-auto overflow-x-clip">
+      <Popover.Dropdown className="border-reader-border bg-reader-surface max-h-[80vh] flex-col gap-8 overflow-x-clip overflow-y-auto">
         <ReadingSettingsContent scope={props.scope} />
       </Popover.Dropdown>
     </Popover>
@@ -1133,7 +1133,7 @@ export const ClickyPreferenceSelect = <
             )
           }}
           className={cn(
-            `flex grow flex-col flex-nowrap items-center justify-center gap-1 whitespace-nowrap rounded-lg border p-3 transition-all ${
+            `flex grow flex-col flex-nowrap items-center justify-center gap-1 rounded-lg border p-3 whitespace-nowrap transition-all ${
               preference.value === option.value
                 ? "border-reader-accent bg-reader-accent/10 text-reader-accent"
                 : "border-reader-border text-reader-text hover:ring-reader-accent/50 ring-offset-1 hover:ring-2"
@@ -1179,7 +1179,7 @@ export const ResetOrSetGlobalButton = <K extends keyof ReadingPreferences>(
         <Menu withArrow withinPortal={false} classNames={popoverClassNames}>
           <Menu.Target>
             <button
-              className="hover:bg-reader-surface-hover hover:text-reader-accent-hover text-reader-text absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-md px-1 py-1"
+              className="hover:bg-reader-surface-hover hover:text-reader-accent-hover text-reader-text absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-md px-1 py-1"
               onClick={(e) => {
                 e.stopPropagation()
               }}

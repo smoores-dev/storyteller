@@ -69,19 +69,19 @@ export function Shelf({
           align: "start",
           slidesToScroll: columnCount,
         }}
-        slideSize="w-[9.1875rem]"
+        slideSize="w-36.75"
         slideGap="md"
         withIndicators
         classNames={{
-          indicators: "!bottom-0",
-          indicator: "!bg-st-orange-100 data-[active]:!bg-st-orange-600",
+          indicators: "bottom-0!",
+          indicator: "bg-st-orange-100! data-active:bg-st-orange-600!",
         }}
       >
         {books.map((book) => (
           <Carousel.Slide key={book.uuid}>
             {isSelecting && (
               <Checkbox
-                className="absolute left-1 top-1 z-50"
+                className="absolute top-1 left-1 z-50"
                 checked={selected.has(book.uuid)}
                 onChange={() => {
                   onSelect(book.uuid)

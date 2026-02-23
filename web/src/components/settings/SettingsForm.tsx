@@ -878,7 +878,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
               />
               <ActionIcon
                 variant="subtle"
-                className="absolute right-4 top-0"
+                className="absolute top-0 right-4"
                 onClick={() => {
                   form.removeListItem("authProviders", i)
                 }}

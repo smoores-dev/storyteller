@@ -63,7 +63,7 @@ export const theme: MantineThemeOverride = createTheme({
     }),
     Burger: Burger.extend({
       defaultProps: {
-        className: "pb-[0.625rem]",
+        className: "pb-2.5",
       },
     }),
     Fieldset: Fieldset.extend({

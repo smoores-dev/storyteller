@@ -117,7 +117,7 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
     <footer
       className={cn(
         className,
-        "text-reader-text relative left-1/2 right-0 flex h-20 -translate-x-1/2 transform flex-col rounded-b-lg shadow-lg transition-[bottom] duration-300 ease-in-out md:h-16 md:pb-0",
+        "text-reader-text relative right-0 left-1/2 flex h-20 -translate-x-1/2 transform flex-col rounded-b-lg shadow-lg transition-[bottom] duration-300 ease-in-out md:h-16 md:pb-0",
         // values other than translate-y-full do not seem to work in safari
         // possibly due to https://github.com/tailwindlabs/tailwindcss/issues/18512
         // would be nice to only show the progressbar
@@ -187,7 +187,7 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
 
             <button
               className={classNames(
-                `text-reader-text hover:text-reader-accent-hover hover:bg-reader-surface-hover rounded-sm bg-transparent p-1`,
+                `text-reader-text hover:text-reader-accent-hover hover:bg-reader-surface-hover rounded-xs bg-transparent p-1`,
               )}
               onClick={() => {
                 if (playing) {

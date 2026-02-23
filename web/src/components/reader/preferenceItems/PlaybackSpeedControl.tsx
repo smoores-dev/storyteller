@@ -54,7 +54,7 @@ const SpeedControl = () => {
               }}
               className={`rounded-lg border px-3 py-2 text-center transition-all ${
                 Math.abs(playbackSpeed - speed) < 0.01
-                  ? "border-reader-accent bg-reader-accent/10 text-reader-accent shadow-sm"
+                  ? "border-reader-accent bg-reader-accent/10 text-reader-accent shadow-xs"
                   : "border-reader-border bg-reader-bg text-reader-text hover:border-reader-accent/50 hover:bg-reader-surface-hover"
               }`}
             >

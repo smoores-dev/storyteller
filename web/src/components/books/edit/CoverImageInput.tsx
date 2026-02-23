@@ -21,10 +21,10 @@ function CoverInput({
         <Button
           {...props}
           variant="subtle"
-          className="flex h-[max-content] w-[max-content] justify-center"
+          className="flex h-max w-max justify-center"
         >
           <Image
-            className="rounded"
+            className="rounded-sm"
             h={height * 3}
             w={64 * 3}
             src={coverUrl}
@@ -33,7 +33,7 @@ function CoverInput({
           />
           <Text
             c="black"
-            className="absolute bottom-4 left-0 inline-block w-full bg-white bg-opacity-90 py-2"
+            className="bg-opacity-90 absolute bottom-4 left-0 inline-block w-full bg-white py-2"
           >
             Edit cover art
           </Text>

@@ -1,0 +1,131 @@
+@import "tailwindcss";
+@import "@mantine/core/styles.css" layer(base);
+@import "@mantine/dates/styles.css" layer(base);
+
+@theme {
+  --breakpoint-*: initial;
+  --breakpoint-sm: $mantine-breakpoint-xs;
+  --breakpoint-md: $mantine-breakpoint-sm;
+  --breakpoint-lg: $mantine-breakpoint-md;
+  --breakpoint-xl: $mantine-breakpoint-lg;
+  --breakpoint-2xl: $mantine-breakpoint-xl;
+
+  --animate-swap-right: swap-right 0.5s ease-in-out 0.25s both;
+  --animate-swap-left: swap-left 0.5s ease-in-out 0.25s both;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-heading: var(--font-young-serif);
+  --font-literata: Literata;
+  --font-open-dyslexic: OpenDyslexic;
+
+  --color-st-orange-50: var(--mantine-color-st-orange-0);
+  --color-st-orange-100: var(--mantine-color-st-orange-1);
+  --color-st-orange-200: var(--mantine-color-st-orange-2);
+  --color-st-orange-300: var(--mantine-color-st-orange-3);
+  --color-st-orange-400: var(--mantine-color-st-orange-4);
+  --color-st-orange-500: var(--mantine-color-st-orange-5);
+  --color-st-orange-600: var(--mantine-color-st-orange-6);
+  --color-st-orange-700: var(--mantine-color-st-orange-7);
+  --color-st-orange-800: var(--mantine-color-st-orange-8);
+  --color-st-orange-900: var(--mantine-color-st-orange-9);
+
+  --color-reader-bg: hsl(var(--reader-ui-bg, 0 0% 100%));
+  --color-reader-surface: hsl(var(--reader-ui-surface, 0 0% 100%));
+  --color-reader-surface-hover: hsl(var(--reader-ui-surface-hover, 0 0% 96.1%));
+  --color-reader-border: hsl(var(--reader-ui-border, 0 0% 89.8%));
+  --color-reader-text: hsl(var(--reader-ui-text, 0 0% 0%));
+  --color-reader-text-secondary: hsl(
+    var(--reader-ui-text-secondary, 0 0% 32.2%)
+  );
+  --color-reader-text-muted: hsl(var(--reader-ui-text-muted, 0 0% 45.1%));
+  --color-reader-accent: hsl(var(--reader-ui-accent, 24.6 95% 53.1%));
+  --color-reader-accent-hover: hsl(
+    var(--reader-ui-accent-hover, 20.5 90.2% 48.2%)
+  );
+  --color-reader-highlight-color-yellow: var(
+    --reader-highlight-color-yellow,
+    #ffff0088
+  );
+  --color-reader-highlight-color-red: var(
+    --reader-highlight-color-red,
+    #ff000088
+  );
+  --color-reader-highlight-color-green: var(
+    --reader-highlight-color-green,
+    #00ff0088
+  );
+  --color-reader-highlight-color-blue: var(
+    --reader-highlight-color-blue,
+    #0000ff88
+  );
+  --color-reader-highlight-color-magenta: var(
+    --reader-highlight-color-magenta,
+    #ff00ff88
+  );
+  --color-reader-highlight-color-custom: var(
+    --reader-highlight-color-custom,
+    #ffffff88
+  );
+
+  @keyframes swap-right {
+    0% {
+      transform: translateX(0%) scale(100%);
+      z-index: 10;
+    }
+    50% {
+      transform: translateX(35%) scale(115%);
+      z-index: 30;
+    }
+    100% {
+      transform: translateX(0%) scale(115%);
+      z-index: 30;
+    }
+  }
+  @keyframes swap-left {
+    0% {
+      transform: translateX(0%) scale(100%);
+    }
+    50% {
+      transform: translateX(-35%) scale(100%);
+    }
+    100% {
+      transform: translateX(0%) scale(100%);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@layer base {
+  p {
+    @apply my-3;
+  }
+}
+
+/**
+  * this fixes the annoying zoom behavior in safari ios
+  */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  select,
+  textarea,
+  input {
+    font-size: 16px !important;
+  }
+}

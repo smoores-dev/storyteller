@@ -37,7 +37,7 @@ export default async function BookReadPage({ params, searchParams }: Props) {
   const book = await fetchApiRoute<BookWithRelations>(`/books/${uuid}`)
   return (
     // id here to give it the same bg color as the rest of the reader
-    <div className={`bg-reader-bg absolute inset-0 z-[200]`}>
+    <div className={`bg-reader-bg absolute inset-0 z-200`}>
       <Reader book={book} mode={mode} />
     </div>
   )

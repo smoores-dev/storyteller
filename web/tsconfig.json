@@ -29,7 +29,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@v3/*": ["./src/app/(v3)/v3/*"]
     },
     "outDir": "tsbuild",
     "noEmit": false

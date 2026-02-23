@@ -109,9 +109,9 @@ const MiniPlayerSettingsDrawer = ({ opened, onClose, book }: Props) => {
       }}
     >
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40" />
-        <Drawer.Content className="bg-reader-surface fixed bottom-0 left-0 right-0 z-[200] flex max-h-[85vh] flex-col rounded-t-2xl p-4">
-          <div className="bg-reader-surface flex-shrink-0 py-4">
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/40" />
+        <Drawer.Content className="bg-reader-surface fixed right-0 bottom-0 left-0 z-200 flex max-h-[85vh] flex-col rounded-t-2xl p-4">
+          <div className="bg-reader-surface shrink-0 py-4">
             <div className="bg-reader-border mx-auto mb-4 h-1.5 w-12 rounded-full" />
             <Title order={3} className="text-reader-text">
               Settings
@@ -178,7 +178,7 @@ const SettingsCollapsible = ({
         <Button
           onClick={toggleOpen}
           variant="subtle"
-          className="bg-reader-surface-hover hover:bg-reader-accent-hover/20 !mx-0 flex h-12 w-full rounded-lg"
+          className="bg-reader-surface-hover hover:bg-reader-accent-hover/20 mx-0! flex h-12 w-full rounded-lg"
           classNames={{
             label: "mx-0 flex w-full items-center gap-3",
             inner: "justify-between w-full",
@@ -257,7 +257,7 @@ const MiniPlayerSettingsContent = ({
           index={2}
         >
           <SleepTimerItem mode="raw" />
-          <div className="from-reader-surface absolute right-0 top-0 h-full w-10 bg-gradient-to-l to-transparent" />
+          <div className="from-reader-surface absolute top-0 right-0 h-full w-10 bg-linear-to-l to-transparent" />
         </SettingsCollapsible>
 
         {/* Table of Contents */}
@@ -275,7 +275,7 @@ const MiniPlayerSettingsContent = ({
           style={{ top: getButtonTop(4) }}
         >
           <Link
-            className="bg-reader-surface-hover hover:bg-reader-accent-hover/20 !mx-0 flex h-12 w-full items-center justify-between gap-3 rounded-lg px-4 hover:underline"
+            className="bg-reader-surface-hover hover:bg-reader-accent-hover/20 mx-0! flex h-12 w-full items-center justify-between gap-3 rounded-lg px-4 hover:underline"
             href={`/books/${bookUUID}/read`}
           >
             <div className="flex items-center justify-start gap-3 pl-1">
@@ -294,7 +294,7 @@ const MiniPlayerSettingsContent = ({
         >
           <Button
             variant="subtle"
-            className="bg-reader-surface-hover !mx-0 flex h-12 w-full rounded-lg px-4"
+            className="bg-reader-surface-hover mx-0! flex h-12 w-full rounded-lg px-4"
             classNames={{
               label: "mx-0 flex w-full items-center justify-start gap-3",
               inner: "justify-between w-full",
@@ -351,7 +351,7 @@ const CloseMiniPlayerButton = ({ onClose }: { onClose: () => void }) => {
       >
         <Button
           variant="subtle"
-          className="!mx-0 flex h-12 w-full rounded-lg bg-red-200"
+          className="mx-0! flex h-12 w-full rounded-lg bg-red-200"
           classNames={{
             label: "mx-0 flex w-full items-center justify-start gap-3",
             inner: "justify-between w-full",
