@@ -22,7 +22,7 @@ export const readingThemes = [
   {
     value: "auto",
     label: "Auto",
-    bg: "bg-gradient-to-br from-white to-gray-900",
+    bg: "bg-linear-to-br from-white to-gray-900",
     text: "text-gray-900",
   },
   { value: "dark", label: "Dark", bg: "bg-gray-900", text: "text-gray-50" },

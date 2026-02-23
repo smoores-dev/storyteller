@@ -91,7 +91,7 @@ export const ScrollingTitle = ({
         <div
           ref={titleRef}
           className={cn(
-            "relative whitespace-nowrap transition-[left] motion-reduce:!left-0",
+            "relative whitespace-nowrap transition-[left] motion-reduce:left-0!",
             className,
           )}
           style={{

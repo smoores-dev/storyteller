@@ -105,14 +105,14 @@ export const MiniPlayerCircle = ({
       style={correctCirclePosition}
       className={cn(
         "text-reader-text fixed z-20 duration-300",
-        !pinnedMiniPlayer && "bottom-10 right-10",
+        !pinnedMiniPlayer && "right-10 bottom-10",
         minimizedMiniPlayer
           ? "pointer-events-auto translate-y-0 opacity-100"
           : "pointer-events-none translate-y-40 opacity-0",
         isDragging && "cursor-grabbing",
         isDragging
           ? "transition-[transform,opacity]"
-          : "transition-[transform,_opacity,_left,_top,_bottom,_right]",
+          : "transition-[transform,opacity,left,top,bottom,right]",
         pinnedMiniPlayer && !isDragging && "cursor-grab",
       )}
       onMouseDown={handleMouseDown}
@@ -121,7 +121,7 @@ export const MiniPlayerCircle = ({
       <div
         ref={controlsRef}
         className={cn(
-          "absolute top-1/2 -translate-y-1/2 transition-[opacity,_right,_left] duration-200",
+          "absolute top-1/2 -translate-y-1/2 transition-[opacity,right,left] duration-200",
           showControls
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0",
@@ -177,7 +177,7 @@ export const MiniPlayerCircle = ({
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <IconHeadphonesOff
                     size={14}
-                    className="text-reader-text drop-shadow"
+                    className="text-reader-text drop-shadow-sm"
                   />
                 </div>
               )}

@@ -53,7 +53,7 @@ export function AddBooksModal({ isOpen, collection, onClose }: Props) {
           isEditing={false}
           setIsEditing={() => {}}
           filterSortOptions={options}
-          className="flex-grow overflow-y-auto"
+          className="grow overflow-y-auto"
           books={books}
           isSelecting
           selected={selected}

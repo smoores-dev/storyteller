@@ -21,11 +21,11 @@ export function SeriesThumbnail({ series, onClick }: Props) {
 
   return (
     <Box className="group">
-      <Stack gap={2} className="h-[18.9375rem]">
-        <Stack className="mb-1 h-[14.0625rem] flex-col justify-center">
+      <Stack gap={2} className="h-75.75">
+        <Stack className="mb-1 h-56.25 flex-col justify-center">
           <UnstyledButton
             onClick={onClick}
-            className="relative h-[14.0625rem] w-[9.1875rem]"
+            className="relative h-56.25 w-36.75"
           >
             <SeriesThumbnailImage
               height="14.0625rem"
@@ -34,11 +34,11 @@ export function SeriesThumbnail({ series, onClick }: Props) {
             />
           </UnstyledButton>
         </Stack>
-        <UnstyledButton className="line-clamp-2 max-w-[9.1875rem] bg-white text-sm font-semibold group-hover:line-clamp-none">
+        <UnstyledButton className="line-clamp-2 max-w-36.75 bg-white text-sm font-semibold group-hover:line-clamp-none">
           {series.name}
         </UnstyledButton>
         <Link
-          className="hover:text-st-orange-600 max-w-[9.1875rem] bg-white pb-2 text-sm hover:underline"
+          className="hover:text-st-orange-600 max-w-36.75 bg-white pb-2 text-sm hover:underline"
           href={`/books?authors=${book?.authors[0]?.uuid}`}
         >
           {book?.authors[0]?.name}

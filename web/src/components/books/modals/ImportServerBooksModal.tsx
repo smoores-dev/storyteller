@@ -422,7 +422,7 @@ export function ImportServerBooksModal({ isOpen, collection, onClose }: Props) {
         </Combobox>
       </div>
 
-      <div className="dark:bg-dark-700 sticky bottom-0 -mx-4 -mb-4 mt-2 border-t bg-white px-4 py-3">
+      <div className="dark:bg-dark-700 sticky bottom-0 -mx-4 mt-2 -mb-4 border-t bg-white px-4 py-3">
         <Group justify="flex-end">
           <Button
             variant="filled"

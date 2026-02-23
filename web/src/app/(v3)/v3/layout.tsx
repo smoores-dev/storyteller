@@ -1,12 +1,14 @@
-import { ColorSchemeScript, MantineProvider } from "@mantine/core"
 import type { Metadata, Viewport } from "next"
 import { Inter, Young_Serif } from "next/font/google"
+import Script from "next/script"
+import { NuqsAdapter } from "nuqs/adapters/next"
 
 import StoreProvider from "@/components/StoreProvider"
 import { AudioProviderRedux } from "@/components/reader/AudioProviderRedux"
 import { PiPProvider } from "@/components/reader/PipProvider"
 import { env } from "@/env"
-import { theme } from "@/theme/theme"
+
+import { ThemeProvider } from "@v3/_/components/theme-provider"
 
 import "./globals.css"
 
@@ -37,6 +39,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
 }
 
+export const dynamic = "force-dynamic"
+
 export default function RootLayout({
   children,
 }: {
@@ -49,24 +53,33 @@ export default function RootLayout({
       className={`${inter.variable} ${youngSerif.variable}`}
     >
       <head>
-        <ColorSchemeScript />
         {env.NODE_ENV === "development" && env.ENABLE_REACT_SCAN && (
-          <script
-            crossOrigin="anonymous"
+          <Script
             src="//unpkg.com/react-scan/dist/auto.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
           />
         )}
       </head>
       <body className="h-dvh" suppressHydrationWarning>
-        <StoreProvider>
-          <AudioProviderRedux>
-            <PiPProvider>
-              <MantineProvider theme={theme} defaultColorScheme="light">
-                {children}
-              </MantineProvider>
-            </PiPProvider>
-          </AudioProviderRedux>
-        </StoreProvider>
+        {!env.ENABLE_V3_FRONTEND ? (
+          <div>V3 frontend is not enabled</div>
+        ) : (
+          <StoreProvider>
+            <AudioProviderRedux>
+              <PiPProvider>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
+                  enableSystem
+                  disableTransitionOnChange
+                >
+                  <NuqsAdapter>{children}</NuqsAdapter>
+                </ThemeProvider>
+              </PiPProvider>
+            </AudioProviderRedux>
+          </StoreProvider>
+        )}
       </body>
     </html>
   )

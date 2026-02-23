@@ -75,12 +75,12 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
               <IconDotsCircleHorizontal
                 size={40}
                 color="white"
-                className="absolute right-0 top-0 z-40 [filter:drop-shadow(0_0_1px_rgba(0,0,0,1))]"
+                className="absolute top-0 right-0 z-40 filter-[drop-shadow(0_0_1px_rgba(0,0,0,1))]"
               />
             )}
             {book.readaloud?.status === "PROCESSING" && (
               <RingProgress
-                className="absolute right-0 top-0 z-40 [&>svg]:[filter:drop-shadow(0_0_1px_rgba(0,0,0,1))]"
+                className="absolute top-0 right-0 z-40 [&>svg]:filter-[drop-shadow(0_0_1px_rgba(0,0,0,1))]"
                 size={40}
                 thickness={4}
                 roundCaps
@@ -104,7 +104,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                 }
               >
                 <ActionIcon
-                  className="absolute right-[6px] top-[6px] z-50 hidden rounded-full group-hover:block"
+                  className="absolute top-[6px] right-[6px] z-50 hidden rounded-full group-hover:block"
                   color="red"
                   onClick={(e) => {
                     e.stopPropagation()
@@ -127,7 +127,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
             <Group wrap="nowrap">
               <Title className="font-sans" order={2}>
                 {!!book.readaloud?.filepath && (
-                  <IconReadaloud className="text-st-orange-600 -mb-4 -ml-2 -mr-1 -mt-6 inline-block h-10 w-10" />
+                  <IconReadaloud className="text-st-orange-600 -mt-6 -mr-1 -mb-4 -ml-2 inline-block h-10 w-10" />
                 )}{" "}
                 {book.title}
               </Title>
@@ -199,7 +199,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                 {book.collections.map((collection) => (
                   <Link
                     href={`/collections/${collection.uuid}`}
-                    className="flex flex-row items-center gap-2 rounded bg-gray-100 px-3 py-1 hover:bg-gray-200"
+                    className="flex flex-row items-center gap-2 rounded-sm bg-gray-100 px-3 py-1 hover:bg-gray-200"
                     key={collection.uuid}
                   >
                     <IconBooks size={16} />
@@ -296,7 +296,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
           )}
         </Group>
 
-        <Stack className="rounded bg-gray-100 p-4" gap={4}>
+        <Stack className="rounded-sm bg-gray-100 p-4" gap={4}>
           {book.readaloud?.filepath && (
             <Text>
               <span className="font-bold">Readaloud file path:</span>{" "}

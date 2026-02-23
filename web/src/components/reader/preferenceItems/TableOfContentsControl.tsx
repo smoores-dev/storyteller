@@ -27,7 +27,7 @@ const TocList = () => {
             <button
               key={item.id}
               className={classNames(
-                "hover:bg-reader-surface-hover w-full rounded p-2 text-left transition-colors",
+                "hover:bg-reader-surface-hover w-full rounded-sm p-2 text-left transition-colors",
                 {
                   "text-reader-text-muted": !item.locator,
                   "bg-reader-accent/10":

@@ -15,3 +15,20 @@ export function formatBytes(bytes: number) {
 // source: https://gist.github.com/fabiospampinato/d6d7ec6503f403532ab7b18e99cf9808
 export const emojiRegex =
   /(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*/gu
+
+export function extractEmojiIcon(name: string): {
+  icon: string
+  label: string
+} {
+  const match = name.match(emojiRegex)
+  if (match) {
+    return {
+      icon: match[0],
+      label: name.slice(match[0].length).trim(),
+    }
+  }
+  return {
+    icon: name[0] ?? "?",
+    label: name,
+  }
+}

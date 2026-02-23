@@ -127,8 +127,8 @@ export const ResponsiveSettingsControls = ({
         open={drawerContent !== null}
       >
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/40" />
-          <Drawer.Content className="bg-reader-surface fixed bottom-0 left-0 right-0 z-[200] flex max-h-[65svh] flex-col rounded-t-2xl">
+          <Drawer.Overlay className="fixed inset-0 z-200 bg-black/40" />
+          <Drawer.Content className="bg-reader-surface fixed right-0 bottom-0 left-0 z-200 flex max-h-[65svh] flex-col rounded-t-2xl">
             <div className="bg-reader-border mx-auto mt-6 h-2 w-12 shrink-0 rounded-full" />
             <Drawer.Title className="text-reader-text font-heading p-4 text-2xl font-bold">
               {drawerContent?.title}

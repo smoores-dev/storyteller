@@ -27,6 +27,11 @@ module.exports = {
             group: "parent",
             position: "before",
           },
+          {
+            pattern: "@v3/**",
+            group: "parent",
+            position: "before",
+          },
         ],
         groups: ["builtin", "external", "parent", "sibling", "index"],
         "newlines-between": "always",

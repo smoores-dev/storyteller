@@ -115,7 +115,7 @@ export function BookGrid({
       >
         {showCollectionToolbar && (
           <div className="sticky top-0 h-0" style={{ marginTop: filtersSize }}>
-            <Stack className="w-full gap-x-0 gap-y-1 overflow-x-scroll bg-white pb-2 pt-1">
+            <Stack className="w-full gap-x-0 gap-y-1 overflow-x-scroll bg-white pt-1 pb-2">
               <CollectionToolbar
                 collection={collection}
                 books={books}
@@ -199,7 +199,7 @@ function BookGridItem({
         >
           {isSelecting && (
             <Checkbox
-              className="absolute left-1 top-1 z-50"
+              className="absolute top-1 left-1 z-50"
               checked={selected.has(book.uuid)}
               onChange={() => {
                 onSelect(book.uuid)

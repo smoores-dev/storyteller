@@ -22,7 +22,7 @@ export const ReaderHeader = ({
   return (
     <header
       className={cn(
-        "bg-reader-bg relative left-0 right-0 top-0 z-[100] flex h-12 items-center justify-between transition-transform duration-300 ease-in-out",
+        "bg-reader-bg relative top-0 right-0 left-0 z-100 flex h-12 items-center justify-between transition-transform duration-300 ease-in-out",
         isVisible ? "translate-y-0" : "-translate-y-full",
       )}
     >

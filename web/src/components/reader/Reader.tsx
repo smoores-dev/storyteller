@@ -271,7 +271,7 @@ const ReaderComponent = ({
   return (
     <>
       <NavigatorEventsProvider activeFrame={activeFrame} listeners={listeners}>
-        <div className="bg-reader-bg text-reader-text relative flex h-full max-h-[100vh] w-full max-w-[100vw] flex-col overflow-clip">
+        <div className="bg-reader-bg text-reader-text relative flex h-full max-h-screen w-full max-w-[100vw] flex-col overflow-clip">
           <ReaderHeader
             book={book}
             isVisible={showUi}
@@ -282,7 +282,7 @@ const ReaderComponent = ({
           <div
             className={classNames(
               "relative mx-auto h-full w-full flex-1 touch-manipulation md:touch-auto",
-              layout === "paginated" ? "my-4" : "-mb-20 -mt-14",
+              layout === "paginated" ? "my-4" : "-mt-14 -mb-20",
             )}
           >
             {memoizedContainerRef}
@@ -291,7 +291,7 @@ const ReaderComponent = ({
               <>
                 <button
                   type="button"
-                  className="hover:text-reader-text absolute right-0 top-1/2 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
+                  className="hover:text-reader-text absolute top-1/2 right-0 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
                   onClick={() => {
                     dispatch(nextPagePressed())
                   }}
@@ -300,7 +300,7 @@ const ReaderComponent = ({
                 </button>
                 <button
                   type="button"
-                  className="hover:text-reader-text absolute left-0 top-1/2 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
+                  className="hover:text-reader-text absolute top-1/2 left-0 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
                   onClick={() => {
                     dispatch(previousPagePressed())
                   }}

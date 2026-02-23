@@ -30,7 +30,7 @@ export function CurrentBookProgress() {
           src={getCoverUrl(currentBook.uuid, { width: 40, height: 65 })}
         />
 
-        <div className="absolute bottom-0 h-full w-full bg-gradient-to-t from-white to-transparent"></div>
+        <div className="absolute bottom-0 h-full w-full bg-linear-to-t from-white to-transparent"></div>
         <RingProgress
           className="absolute bottom-2 left-2"
           size={30}

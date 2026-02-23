@@ -65,7 +65,7 @@ const SleepTimerControl = () => {
   const dispatch = useAppDispatch()
 
   return (
-    <div className="flex w-full flex-col overflow-y-auto overflow-x-clip">
+    <div className="flex w-full flex-col overflow-x-clip overflow-y-auto">
       <SleepTimerButton minutes={0} text="Off" />
       {[5, 10, 15, 30, 45, 60, 90, 120].map((minutes) => (
         <SleepTimerButton

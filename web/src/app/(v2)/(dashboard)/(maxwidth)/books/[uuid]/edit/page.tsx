@@ -45,7 +45,7 @@ export default async function BookEditPage(props: Props) {
       {(book.alignedAt ||
         book.alignedWith ||
         book.alignedByStorytellerVersion) && (
-        <Stack className="rounded bg-gray-100 p-4">
+        <Stack className="rounded-sm bg-gray-100 p-4">
           {book.alignedAt && (
             <Text>
               <span className="font-bold">Last aligned:</span>{" "}

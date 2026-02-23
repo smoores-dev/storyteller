@@ -243,7 +243,7 @@ export function StorytellerAppShell({
             color="st-orange"
             onClick={toggle}
             size="md"
-            className="visible absolute -left-7 top-4 z-[200] ml-4 md:invisible"
+            className="visible absolute top-4 -left-7 z-200 ml-4 md:invisible"
           />
 
           <CreateCollectionModal

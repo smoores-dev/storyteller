@@ -37,7 +37,7 @@ export const ReadaloudSyncingToggle = ({
       }}
       className={cn(
         !syncing &&
-          "before:bg-reader-text relative before:absolute before:left-1/2 before:top-1/2 before:z-[555] before:block before:h-5 before:w-0.5 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-none before:content-['']",
+          "before:bg-reader-text relative before:absolute before:top-1/2 before:left-1/2 before:z-555 before:block before:h-5 before:w-0.5 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-none before:content-['']",
         className,
       )}
     />
