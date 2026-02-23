@@ -9,6 +9,7 @@
     "ms-python.black-formatter",
     "bbenoist.nix",
     "gitlab.gitlab-workflow",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "lokalise.i18n-ally"
   ]
 }

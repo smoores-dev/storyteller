@@ -1,0 +1,52 @@
+{
+  "Layout": {
+    "description": "A simple tool for syncing audiobooks and ebooks",
+    "title": "Storyteller"
+  },
+
+  "LoginPage": {
+    "welcomeBack": "Welcome back!",
+    "title": "Login",
+    "username": "Username",
+    "usernameOrEmail": "Username or email",
+    "password": "Password",
+    "login": "Login",
+    "continueWith": "Or continue with",
+    "loginToYourStorytellerAccount": "Login to your Storyteller account",
+    "somethingWentWrongPleaseTryAgain": "Something went wrong. Please try again.",
+    "invalidUsernameOrPassword": "Invalid username or password",
+    "loggingIn": "Logging in..."
+  },
+  "HomePage": {
+    "title": "Home"
+  },
+
+  "CollectionsPage": {
+    "title": "Collections"
+  },
+  "BooksPage": {
+    "title": "Books"
+  },
+  "AppSidebar": {
+    "home": "Home",
+    "books": "Books",
+    "allBooks": "All books",
+    "collections": "Collections",
+    "allCollections": "All collections",
+    "series": "Series",
+    "search": "Search",
+    "settings": "Settings",
+    "documentation": "Documentation",
+    "account": "Account",
+    "logout": "Logout",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "language": "Language",
+    "localeChanger": {
+      "en": "English",
+      "nl": "Dutch"
+    }
+  }
+}

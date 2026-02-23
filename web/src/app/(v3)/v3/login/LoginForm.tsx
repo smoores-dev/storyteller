@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IconEye, IconEyeOff } from "@tabler/icons-react"
 import { useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod/v4"
@@ -48,6 +49,8 @@ export function LoginForm({
   oauthLoginAction: (providerId: string, callbackUrl?: string) => Promise<void>
   providers: PublicProvider[]
 }) {
+  const t = useTranslations("LoginPage")
+
   const {
     register,
     handleSubmit,
@@ -93,27 +96,27 @@ export function LoginForm({
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="font-heading text-3xl font-bold">
-                  Welcome back!
+                  {t("welcomeBack")}
                 </h1>
                 <p className="text-muted-foreground text-balance">
-                  Login to your Storyteller account
+                  {t("loginToYourStorytellerAccount")}
                 </p>
               </div>
               {hasError && (
                 <p className="text-destructive text-center text-sm">
                   {errors.root?.message !== "bad-creds"
-                    ? "Something went wrong. Please try again."
-                    : "Invalid username or password"}
+                    ? t("somethingWentWrongPleaseTryAgain")
+                    : t("invalidUsernameOrPassword")}
                 </p>
               )}
               <Field>
                 <FieldLabel htmlFor="usernameOrEmail">
-                  Username or email
+                  {t("usernameOrEmail")}
                 </FieldLabel>
                 <Input
                   id="usernameOrEmail"
                   type="text"
-                  placeholder="username or email"
+                  placeholder={t("usernameOrEmail")}
                   autoComplete="username"
                   {...register("usernameOrEmail")}
                 />
@@ -122,7 +125,7 @@ export function LoginForm({
                 )}
               </Field>
               <Field>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
                 <InputGroup>
                   <InputGroupInput
                     id="password"
@@ -145,11 +148,11 @@ export function LoginForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? t("loggingIn") : t("login")}
                 </Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-transparent">
-                Or continue with
+                {t("continueWith")}
               </FieldSeparator>
             </FieldGroup>
           </form>

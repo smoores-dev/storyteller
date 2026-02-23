@@ -1,21 +1,26 @@
 // import { HomeShelfRenderer, ShelfManager } from "@/components/home"
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { SiteHeader } from "@v3/_/components/site-header"
 
 // import { useHomeShelves } from "@/hooks/useHomeShelves"
 
-export const metadata: Metadata = {
-  title: "Home",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("HomePage")
+  return {
+    title: t("title"),
+  }
 }
 
-export default function Index() {
+export default async function Index() {
+  const t = await getTranslations("HomePage")
   // const { shelves, isLoading } = useHomeShelves()
 
   return (
     <div>
       <SiteHeader
-        breadcrumbs={[{ label: "Home" }]}
+        breadcrumbs={[{ label: t("title") }]}
         // actions={<ShelfManager />}
       />
       <div className="flex flex-1 flex-col gap-1 py-4">

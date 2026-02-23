@@ -20,6 +20,7 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "allowArbitraryExtensions": true,
     "incremental": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "preserve",
@@ -38,6 +39,7 @@
   "extends": ["@tsconfig/strictest/tsconfig.json"],
   "include": [
     "./next-env.d.ts",
+    "messages/**/*.json",
     "src/**/*.js",
     "src/**/*.json",
     "src/**/*.ts",

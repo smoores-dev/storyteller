@@ -42,5 +42,7 @@
     "path",
     "web",
     "."
-  ]
+  ],
+  "i18n-ally.localesPaths": ["./web/messages"],
+  "i18n-ally.keystyle": "nested"
 }
