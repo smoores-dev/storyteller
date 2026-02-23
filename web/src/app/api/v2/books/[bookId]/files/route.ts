@@ -87,7 +87,7 @@ async function getFilepath(
   zipfile.outputStream.pipe(writeStream)
 
   for (const audioFile of audioFiles) {
-    zipfile.addFile(join(filepath, audioFile), audioFile)
+    zipfile.addFile(join(filepath, audioFile), audioFile, { compress: false })
   }
 
   if (rpf) {
