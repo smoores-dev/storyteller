@@ -12,7 +12,7 @@ on your CPU and GPU, this can sometimes be a speedup of 10x or greater.
 The image tag format is
 `registry.gitlab.com/storyteller-platform/storyteller:<version>-<variant>`.
 
-Version is either `latest` or `web-<version>` (eg `web-2.7.0`). Variant is one
+Version is either `latest` or `web-v<version>` (eg `web-v2.7.0`). Variant is one
 of `cuda-11.8.0`, `cuda-12.9.0`, `cuda-13.1.0`, `rocm`, `sycl`, `blas`, or
 `vulkan`. If you don't specify a variant, the image defaults to CPU-only.
 
@@ -33,8 +33,8 @@ import TabItem from "@theme/TabItem"
 <TabItem value="nvidia" label="NVIDIA (CUDA)">
 
 Choose the CUDA version that matches your NVIDIA driver (check with
-`nvidia-smi`): `cuda-13.1` for CUDA 13.1+, `cuda-12.9` for CUDA 12.x, or
-`cuda-11.8` for CUDA 11.x.
+`nvidia-smi`): `cuda-13.1.0` for CUDA 13.1+, `cuda-12.9.0` for CUDA 12.x, or
+`cuda-11.8.0` for CUDA 11.x.
 
 You must install the
 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
@@ -44,7 +44,7 @@ and
 ```yaml title="compose.yml"
 services:
   web:
-    image: registry.gitlab.com/storyteller-platform/storyteller:latest-cuda-13.1
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest-cuda-13.1.0
     runtime: nvidia
     volumes:
       - ~/Documents/Storyteller:/data:rw
