@@ -11,6 +11,8 @@ import {
 } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
+import { AsyncMutex } from "@esfx/async-mutex"
+
 import { getFileChunks } from "@storyteller-platform/fs"
 
 import { isAudioFile } from "@/audio"
@@ -265,6 +267,8 @@ export async function deleteAssets(
   await deleteOriginals(book)
 }
 
+const cachedCoverImageLocks = new Map<string, AsyncMutex>()
+
 export async function getCachedCoverImage(
   uuid: UUID,
   kind: "text" | "audio",
@@ -273,6 +277,15 @@ export async function getCachedCoverImage(
 ) {
   try {
     const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
+    const lock = cachedCoverImageLocks.get(dir) ?? new AsyncMutex()
+    cachedCoverImageLocks.set(dir, lock)
+
+    await using stack = new AsyncDisposableStack()
+    stack.defer(() => {
+      lock.unlock()
+    })
+
+    await lock.lock()
     const infoJSON = await readFile(join(dir, "info.json"), {
       encoding: "utf-8",
     })
@@ -301,6 +314,15 @@ export async function writeCachedCoverImage(
     stats: image.stats,
   })
   const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
+  const lock = cachedCoverImageLocks.get(dir) ?? new AsyncMutex()
+  cachedCoverImageLocks.set(dir, lock)
+
+  await using stack = new AsyncDisposableStack()
+  stack.defer(() => {
+    lock.unlock()
+  })
+
+  await lock.lock()
   await mkdir(join(dir), { recursive: true })
   await writeFile(join(dir, "info.json"), infoJSON, { encoding: "utf-8" })
   await writeFile(join(dir, image.filename), image.data)

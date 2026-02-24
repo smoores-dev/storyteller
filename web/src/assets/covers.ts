@@ -12,6 +12,7 @@ import {
   type Book,
   type BookWithRelations,
   getBookOrThrow,
+  touchBook,
 } from "@/database/books"
 import { type UUID } from "@/uuid"
 
@@ -343,6 +344,7 @@ export async function writeExtractedEbookCover(
   }
   await mkdir(ebookCoverDir, { recursive: true })
   await writeFile(join(ebookCoverDir, filename), data)
+  await touchBook(book.uuid)
 }
 
 export async function writeExtractedAudiobookCover(
@@ -357,4 +359,5 @@ export async function writeExtractedAudiobookCover(
   }
   await mkdir(audiobookCoverDir, { recursive: true })
   await writeFile(join(audiobookCoverDir, filename), data)
+  await touchBook(book.uuid)
 }

@@ -643,8 +643,14 @@ export function getCoverUrl(
   {
     height,
     width,
+    updatedAt,
     audio = false,
-  }: { height?: number; width?: number; audio?: boolean } = {},
+  }: {
+    height?: number
+    width?: number
+    audio?: boolean
+    updatedAt: string | Date
+  },
 ) {
   const searchParams = new URLSearchParams()
   if (audio) {
@@ -656,5 +662,5 @@ export function getCoverUrl(
   if (width) {
     searchParams.append("w", width.toString())
   }
-  return `/api/v2/books/${bookUuid}/cover?${searchParams.toString()}`
+  return `/api/v2/books/${bookUuid}/cover?${searchParams.toString()}&v=${new Date(updatedAt).getTime()}`
 }

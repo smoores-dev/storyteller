@@ -63,6 +63,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
             ...(book.subtitle && { subtitle: book.subtitle }),
             ...(book.description && { description: book.description }),
             ...(book.language && { language: book.language }),
+            updatedAt: new Date(book.updatedAt),
           },
         )
 
