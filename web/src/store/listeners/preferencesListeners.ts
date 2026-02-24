@@ -1,8 +1,9 @@
 import { isAnyOf } from "@reduxjs/toolkit"
 
+import { withActiveFrame } from "@/components/reader/frameUtils"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import { closeMiniPlayer } from "@/store/actions"
-import { getActiveFrame, getNavigator } from "@/store/readerRegistry"
+import { getNavigator } from "@/store/readerRegistry"
 import {
   applyThemeToDocument,
   preferencesSlice,
@@ -45,53 +46,41 @@ startAppListening({
   ),
   effect: async (_action, listenerApi) => {
     const target = selectCurrentBook(listenerApi.getState())?.uuid
-
     if (!target) return
 
     const preferences = selectBookPreferences(listenerApi.getState(), target)
-    const activeFrame = getActiveFrame()
-    // never apply themes if there's no active frame
-    if (!activeFrame) return
 
     if (window.location.pathname.includes("/read")) {
       applyThemeToDocument(preferences)
     }
 
-    try {
-      if (activeFrame.iframe.contentWindow?.document) {
-        applyThemeToDocument(
-          preferences,
-          activeFrame.iframe.contentWindow.document,
-        )
-      }
+    // apply theme to iframe, returns null if frame unavailable
+    const applied = withActiveFrame((frame) => {
+      applyThemeToDocument(preferences, frame.iframe.contentWindow.document)
+      return true
+    })
 
-      if (window.documentPictureInPicture?.window) {
-        applyThemeToDocument(
-          preferences,
-          window.documentPictureInPicture.window.document,
-        )
-      }
+    // don't continue if no active frame
+    if (!applied) return
 
-      const nav = getNavigator()
-      if (!nav) return
-      const readiumPreferences = selectEpubPreferences(
-        listenerApi.getState(),
-        target,
+    if (window.documentPictureInPicture?.window) {
+      applyThemeToDocument(
+        preferences,
+        window.documentPictureInPicture.window.document,
       )
-      await nav.submitPreferences(readiumPreferences)
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes("Trying to use frame when it doesn't exist")
-      ) {
-        console.warn(
-          "Error when navigating to preferences, but it's not a problem",
-          error,
-        )
-        return
-      }
-      throw error
     }
+
+    const nav = getNavigator()
+    if (!nav) return
+
+    const readiumPreferences = selectEpubPreferences(
+      listenerApi.getState(),
+      target,
+    )
+
+    await withActiveFrame(async () => {
+      await nav.submitPreferences(readiumPreferences)
+    })
   },
 })
 

@@ -7,6 +7,7 @@ import {
   getLocatorForFragment,
   getLocatorWithClosestPositionAsync,
 } from "@/components/reader/BookService"
+import { withActiveFrame } from "@/components/reader/frameUtils"
 import {
   findFirstVisibleLocator,
   isLocatorWithinViewport,
@@ -26,7 +27,6 @@ import {
 } from "@/store/actions"
 import type { AppDispatch, RootState } from "@/store/appState"
 import {
-  getActiveFrame,
   getNavigator,
   getPositions,
   getPublication,
@@ -67,9 +67,6 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
     return false
   }
 
-  const activeFrame = getActiveFrame()
-  if (!activeFrame) return false
-
   if (locator.locations.fragments[0]) {
     listenerApi.dispatch(requestHighlightUpdate({ locator }))
   }
@@ -77,7 +74,6 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
   const isWithinViewport = isLocatorWithinViewport(
     locator,
     nav.viewport,
-    activeFrame,
     isScrolling,
   )
 
@@ -98,7 +94,7 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
 
   if (isWithinViewport) {
     if (isScrolling) {
-      scrollToLocator(locator, activeFrame, scrollSettings)
+      scrollToLocator(locator, scrollSettings)
     }
 
     return true
@@ -106,39 +102,32 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
   const isDifferentChapter = locator.href !== nav.currentLocator.href
 
   return new Promise((resolve, reject) => {
-    try {
-      nav.go(locator, isDifferentChapter, (success) => {
-        if (!success) {
-          console.error("Failed to navigate to locator")
-          resolve(false)
-          return
-        }
-
-        const activeFrame = getActiveFrame()
-        if (!activeFrame) {
-          console.warn("Active frame not available")
-          resolve(false)
-          return
-        }
-
-        // after navigation completes, scroll to the element if in scrolling mode
-        if (isScrolling && locator.locations.fragments[0]) {
-          scrollToLocator(locator, activeFrame, scrollSettings)
-        }
-
-        resolve(true)
-      })
-    } catch (e) {
-      if (
-        e instanceof Error &&
-        e.message.includes("Trying to show frame when it doesn't exist")
-      ) {
-        console.warn("Error navigating to locator", e)
+    nav.go(locator, isDifferentChapter, (success) => {
+      if (!success) {
+        console.error("Failed to navigate to locator")
         resolve(false)
         return
       }
-      reject(e as Error)
-    }
+
+      try {
+        // after navigation completes, scroll to the element if in scrolling mode
+        if (isScrolling && locator.locations.fragments[0]) {
+          scrollToLocator(locator, scrollSettings)
+        }
+
+        resolve(true)
+      } catch (e) {
+        if (
+          e instanceof Error &&
+          e.message.includes("Trying to show frame when it doesn't exist")
+        ) {
+          console.warn("Error navigating to locator", e)
+          resolve(false)
+          return
+        }
+        reject(e as Error)
+      }
+    })
   })
 }
 
@@ -185,16 +174,18 @@ startAppListening({
         : nav.goBackward.bind(nav)
 
     const progressions = nav.viewport.progressions.get(nav.currentLocator.href)
-    const shouldPause =
-      (nextPagePressed.type === action.type
+
+    const isAtEndOfChapter =
+      nextPagePressed.type === action.type
         ? progressions?.end === 1
-        : progressions?.start === 0) && isSyncing
+        : progressions?.start === 0
+
+    const shouldPause = (scrolling || isAtEndOfChapter) && isSyncing
 
     const wasPlaying = AudioPlayer.getState().playing
 
-    // if at end of thing
     if (shouldPause && wasPlaying) {
-      // pause if we are skipping chapters
+      // pause if we are skipping chapters, or we scrolling
       AudioPlayer.pause()
     }
 
@@ -357,34 +348,25 @@ startAppListening({
 const matchedActiveFrame = isAnyOf(readingSessionSlice.actions.setActiveFrame)
 
 // when active frame changes, add click listeners to fragments
+// stopgap until we move to better frame management
 startAppListening({
   matcher: matchedActiveFrame,
   effect: async (_action, listenerApi) => {
-    const activeFrame = getActiveFrame()
     const publication = getPublication()
-    const window = activeFrame?.iframe.contentWindow
 
-    if (!window || !publication) {
-      console.warn(
-        "No window, current locator, or publication",
-        window,
-        publication,
-      )
-      console.error(
-        "No window, current locator, or publication",
-        window,
-        publication,
-      )
+    if (!publication) {
+      console.warn("No publication", window, publication)
       return
     }
 
-    const syncing = selectReadingMode(listenerApi.getState()) === "readaloud"
-    if (!syncing) {
+    const isReadaloud =
+      selectReadingMode(listenerApi.getState()) === "readaloud"
+    if (!isReadaloud) {
       console.error("Not syncing")
       return
     }
 
-    const resourceHref = getHrefFromActiveFrame(activeFrame)
+    const resourceHref = getHrefFromActiveFrame(_action.payload ?? undefined)
     if (!resourceHref) {
       console.error("No resource href found")
       return
@@ -408,90 +390,95 @@ startAppListening({
       console.error("No book found")
       return
     }
-    if (!guide?.[0]) {
+    const firstGuide = guide?.[0]
+    if (!firstGuide) {
       console.error("No guide found")
       return
     }
 
-    for (const clip of guide[0].guided?.[0]?.children ?? []) {
-      if (!clip.fragmentId) {
-        console.error("No fragment ID found")
-        continue
-      }
+    withActiveFrame((activeFrame) => {
+      for (const clip of firstGuide.guided?.[0]?.children ?? []) {
+        const window = activeFrame.iframe.contentWindow
 
-      const element = window.document.getElementById(clip.fragmentId)
-      if (!element) {
-        console.error("No element found for fragment", clip.fragmentId)
-        continue
-      }
-
-      element.classList.add("reader-fragment")
-
-      element.addEventListener("click", async (event) => {
-        const clone = new MouseEvent("click", event)
-        event.stopImmediatePropagation()
-        event.preventDefault()
-
-        const doubleClickTimeout = selectDoubleClickTimeout(
-          listenerApi.getState(),
-        )
-        if (doubleClickTimeout) {
-          const selection = window.document.getSelection()
-          if (selection) {
-            selection.empty()
-          }
-
-          window.clearTimeout(doubleClickTimeout)
-
-          listenerApi.dispatch(
-            readingSessionSlice.actions.setDoubleClickTimeout(null),
-          )
-
-          if (!clip.fragmentId) {
-            console.error("No fragment ID found")
-            return
-          }
-
-          const locator = await getLocatorForFragment(
-            resourceHref,
-            clip.fragmentId,
-          )
-
-          if (!locator) {
-            console.error("No clip locator found")
-            return
-          }
-          listenerApi.dispatch(
-            userRequestedTextNavigation({
-              locator: locator,
-            }),
-          )
-          return
+        if (!clip.fragmentId) {
+          console.error("No fragment ID found")
+          continue
         }
 
-        const element = event.currentTarget as HTMLElement | null
-
+        const element = window.document.getElementById(clip.fragmentId)
         if (!element) {
-          console.error("No element found")
-          return
+          console.error("No element found for fragment", clip.fragmentId)
+          continue
         }
 
-        listenerApi.dispatch(
-          readingSessionSlice.actions.setDoubleClickTimeout(
-            window.setTimeout(() => {
-              listenerApi.dispatch(
-                readingSessionSlice.actions.setDoubleClickTimeout(null),
-              )
-              if (!element.parentElement) {
-                console.error("No parent element found")
-                return
-              }
-              element.parentElement.dispatchEvent(clone)
-            }, 350),
-          ),
-        )
-      })
-    }
+        element.classList.add("reader-fragment")
+
+        element.addEventListener("click", async (event) => {
+          const clone = new MouseEvent("click", event)
+          event.stopImmediatePropagation()
+          event.preventDefault()
+
+          const doubleClickTimeout = selectDoubleClickTimeout(
+            listenerApi.getState(),
+          )
+          if (doubleClickTimeout) {
+            const selection = window.document.getSelection()
+            if (selection) {
+              selection.empty()
+            }
+
+            window.clearTimeout(doubleClickTimeout)
+
+            listenerApi.dispatch(
+              readingSessionSlice.actions.setDoubleClickTimeout(null),
+            )
+
+            if (!clip.fragmentId) {
+              console.error("No fragment ID found")
+              return
+            }
+
+            const locator = await getLocatorForFragment(
+              resourceHref,
+              clip.fragmentId,
+            )
+
+            if (!locator) {
+              console.error("No clip locator found")
+              return
+            }
+            listenerApi.dispatch(
+              userRequestedTextNavigation({
+                locator: locator,
+              }),
+            )
+            return
+          }
+
+          const element = event.currentTarget as HTMLElement | null
+
+          if (!element) {
+            console.error("No element found")
+            return
+          }
+
+          listenerApi.dispatch(
+            readingSessionSlice.actions.setDoubleClickTimeout(
+              window.setTimeout(() => {
+                listenerApi.dispatch(
+                  readingSessionSlice.actions.setDoubleClickTimeout(null),
+                )
+                if (!element.parentElement) {
+                  console.error("No parent element found")
+                  return
+                }
+                element.parentElement.dispatchEvent(clone)
+              }, 350),
+            ),
+          )
+        })
+      }
+    })
   },
 })
 
@@ -511,12 +498,10 @@ startAppListening({
     const nav = getNavigator()
     if (nav?.currentLocator.href !== locator.href) return
 
-    const activeFrame = getActiveFrame()
+    withActiveFrame((activeFrame) => {
+      // @ts-expect-error private property, but no other way to check if the frame is destroyed or hidden
+      if (activeFrame.hidden || activeFrame.destroyed) return
 
-    // @ts-expect-error private property, but no other way to check if the frame is destroyed or hidden
-    if (activeFrame?.hidden || activeFrame?.destroyed) return
-
-    if (activeFrame?.msg) {
       highlightFragment(
         activeFrame as FrameManager & { msg: FrameComms },
         locator,
@@ -525,10 +510,12 @@ startAppListening({
       listenerApi.dispatch(
         readingSessionSlice.actions.updateCurrentlyHighlightedFragment(locator),
       )
-    }
+    })
   },
 })
 
+// stopgap until we move to better frame management
+// setup keyboard listeners
 startAppListening({
   matcher: isAnyOf(readingSessionSlice.actions.setActiveFrame),
   effect: (_, listenerApi) => {
@@ -538,32 +525,16 @@ startAppListening({
       const mode = selectReadingMode(listenerApi.getState())
       const bookId = selectCurrentBook(listenerApi.getState())?.uuid
       if (!bookId) return
-      const activeFrame = getActiveFrame()
-      if (!activeFrame) return
 
       const handler = getHotkeyHandler(
         getReaderKeyboardHotkeys(listenerApi.dispatch, mode, bookId),
       )
-      // try to remove
-      try {
-        activeFrame.iframe.contentWindow?.document.removeEventListener(
-          "keydown",
-          handler,
-        )
-      } catch (error) {
-        // this is probably fineee
-        console.warn("Error removing keyboard handler:", error)
-      }
 
-      try {
-        activeFrame.iframe.contentWindow?.document.addEventListener(
-          "keydown",
-          handler,
-        )
-      } catch (error) {
-        // this is probably fineee
-        console.warn("Error adding keyboard handler:", error)
-      }
+      withActiveFrame((activeFrame) => {
+        const document = activeFrame.iframe.contentWindow.document
+        document.removeEventListener("keydown", handler)
+        document.addEventListener("keydown", handler)
+      })
     } finally {
       listenerApi.subscribe()
     }

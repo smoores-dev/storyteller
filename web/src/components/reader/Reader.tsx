@@ -37,6 +37,7 @@ import {
 
 import { usePiPWindow } from "./PipProvider"
 import { MINI_PLAYER_HEIGHT, MINI_PLAYER_WIDTH } from "./constants"
+import { withActiveFrame } from "./frameUtils"
 import { getClientXY } from "./hooks/mouseHelpers"
 import { useNavigator } from "./hooks/useNavigator"
 import { NavigatorEventsProvider } from "./hooks/useNavigatorEvents"
@@ -157,16 +158,17 @@ const ReaderComponent = ({
 
       // sometimes when tab is not active, readium either premeptively destroys the frame or never "undestroys" it
       // this is rather heavy handed, but the easiest way to do it is to just reload the navigator
-      const frame = getActiveFrame()
-      if (!frame) return
-      // @ts-expect-error private property, but no other way to check if the frame is destroyed or hidden
-      if (!frame.destroyed && !frame.hidden) {
-        return
-      }
 
-      // manually reload the navigator to reshow the frame
-      // TODO: maybe there's a better way to do this
-      void loadNavigator(currentLocator)
+      withActiveFrame((frame) => {
+        // @ts-expect-error private property, but no other way to check if the frame is destroyed or hidden
+        if (!frame.destroyed && !frame.hidden) {
+          return
+        }
+
+        // manually reload the navigator to reshow the frame
+        // TODO: maybe there's a better way to do this
+        void loadNavigator(currentLocator)
+      })
     }
   }, [
     documentVisibility,
@@ -216,6 +218,7 @@ const ReaderComponent = ({
 
   const layout = useAppSelector((state) => selectPreference(state, "layout"))
 
+  // this can stay for now, will be removed in future pr
   const activeFrame = getActiveFrame()
 
   const [hideUi, setHideUi] = useState(false)

@@ -1,6 +1,5 @@
 import {
   type EpubNavigator,
-  type FrameManager,
   type VisualNavigatorViewport,
 } from "@readium/navigator"
 import {
@@ -9,7 +8,7 @@ import {
   LocatorLocations,
 } from "@readium/shared"
 
-import { getActiveFrame } from "@/store/readerRegistry"
+import { withActiveFrame } from "./frameUtils"
 
 export const CSS_SELECTOR_TYPE = {
   id: "id",
@@ -281,10 +280,6 @@ function findFirstChildWithId(element: Element): Element | null {
 export function isLocatorWithinViewport(
   locator: Locator,
   viewport: VisualNavigatorViewport,
-  /**
-   * for actually checking
-   */
-  activeFrame: FrameManager,
   scrolling = true,
 ) {
   if (!viewport.readingOrder.includes(locator.href)) {
@@ -297,9 +292,8 @@ export function isLocatorWithinViewport(
 
   if (fragment) {
     let element: HTMLElement | null = null
-    try {
-      element =
-        activeFrame.iframe.contentDocument?.getElementById(fragment) ?? null
+    return withActiveFrame((activeFrame) => {
+      element = activeFrame.iframe.contentDocument.getElementById(fragment)
 
       if (!element) {
         return false
@@ -312,16 +306,7 @@ export function isLocatorWithinViewport(
       )
 
       return visible
-    } catch (e) {
-      if (
-        e instanceof Error &&
-        e.message.includes("Trying to use frame when it doesn't exist")
-      ) {
-        console.warn("Error getting element", e)
-        return false
-      }
-      throw e
-    }
+    })
   }
 
   // don't need to check with scrolling because we will scroll to the element
@@ -354,41 +339,41 @@ export function isSafari(wnd: Window): boolean {
 }
 
 export function findFirstVisibleLocator(guide: GuidedNavigationDocument) {
-  let firstVisibleFragmentId = null
-  const activeFrame = getActiveFrame()
-  const guideFragments = guide.guided?.[0]?.children
-    ?.map((child) => child.fragmentId)
-    .filter((fragment) => fragment != null)
+  return withActiveFrame((activeFrame) => {
+    let firstVisibleFragmentId = null
+    const guideFragments = guide.guided?.[0]?.children
+      ?.map((child) => child.fragmentId)
+      .filter((fragment) => fragment != null)
 
-  if (!guideFragments) return null
+    if (!guideFragments) return null
 
-  const window = activeFrame?.iframe.contentWindow
-  if (!window) return null
+    const window = activeFrame.iframe.contentWindow
 
-  for (const fragmentId of guideFragments) {
-    const element = window.document.getElementById(fragmentId)
-    if (!element) continue
+    for (const fragmentId of guideFragments) {
+      const element = window.document.getElementById(fragmentId)
+      if (!element) continue
 
-    if (isElementFullyVisible(window as ReadiumWindow, element)) {
-      firstVisibleFragmentId = fragmentId
-      break
+      if (isElementFullyVisible(window as ReadiumWindow, element)) {
+        firstVisibleFragmentId = fragmentId
+        break
+      }
     }
-  }
 
-  if (firstVisibleFragmentId === null) return null
+    if (firstVisibleFragmentId === null) return null
 
-  return {
-    href: "#",
-    type: "application/xhtml+xml",
-    locations: {
-      cssSelector: `#${firstVisibleFragmentId}`,
-      fragments: [firstVisibleFragmentId],
-    },
-    text: {
-      highlight: window.document.getElementById(firstVisibleFragmentId)
-        ?.textContent,
-    },
-  }
+    return {
+      href: "#",
+      type: "application/xhtml+xml",
+      locations: {
+        cssSelector: `#${firstVisibleFragmentId}`,
+        fragments: [firstVisibleFragmentId],
+      },
+      text: {
+        highlight: window.document.getElementById(firstVisibleFragmentId)
+          ?.textContent,
+      },
+    }
+  })
 }
 
 /**
@@ -443,22 +428,19 @@ let currentScrollWindow: Window | null = null
 
 export function scrollToLocator(
   locator: Locator,
-  activeFrame: FrameManager,
   scrollSettings: {
     behavior: "smooth" | "instant"
     implementation: "native" | "custom"
     speed: number
   },
 ) {
-  try {
+  return withActiveFrame((activeFrame) => {
     const document = activeFrame.iframe.contentDocument
-    if (!document) return
 
     const fragment = locator.locations.fragments[0]
     if (!fragment) return
 
     const window = activeFrame.iframe.contentWindow
-    if (!window) return
 
     const element = window.document.getElementById(fragment)
     if (!element) return
@@ -543,13 +525,5 @@ export function scrollToLocator(
     }
 
     currentScrollAnimation = window.requestAnimationFrame(animate)
-  } catch (e) {
-    if (
-      e instanceof Error &&
-      e.message.includes("Trying to use frame when it doesn't exist")
-    ) {
-      return
-    }
-    console.error("Error scrolling to locator", e)
-  }
+  })
 }
