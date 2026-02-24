@@ -1,7 +1,6 @@
 const postcssConfig = {
   plugins: {
     "@tailwindcss/postcss": {},
-    "postcss-import": {},
     "postcss-preset-mantine": {},
     "postcss-simple-vars": {
       variables: {

@@ -4,11 +4,11 @@
 
 @theme {
   --breakpoint-*: initial;
-  --breakpoint-sm: $mantine-breakpoint-xs;
-  --breakpoint-md: $mantine-breakpoint-sm;
-  --breakpoint-lg: $mantine-breakpoint-md;
-  --breakpoint-xl: $mantine-breakpoint-lg;
-  --breakpoint-2xl: $mantine-breakpoint-xl;
+  --breakpoint-sm: 36em;
+  --breakpoint-md: 48em;
+  --breakpoint-lg: 62em;
+  --breakpoint-xl: 75em;
+  --breakpoint-2xl: 88em;
 
   --animate-swap-right: swap-right 0.5s ease-in-out 0.25s both;
   --animate-swap-left: swap-left 0.5s ease-in-out 0.25s both;
