@@ -1,3 +1,4 @@
+import he from "he"
 import { Entry, Feed } from "opds-ts/v1.2"
 
 import { type BookWithRelations, booksQuery } from "@/database/books"
@@ -57,7 +58,7 @@ export async function createRootCatalog(options: OPDSOptions) {
       collections.map((collection) =>
         new Entry(`collection:${collection.uuid}`, collection.name)
           .setSummary(
-            `${collection.name}${collection.description ? `: ${collection.description}` : ""}`,
+            `${collection.name}${collection.description ? `: ${he.decode(collection.description)}` : ""}`,
           )
           .setUpdated(collection.updatedAt)
           .addLink({
@@ -109,7 +110,7 @@ export function createBooksFeed(
       book.readaloud.status === "ALIGNED"
 
     const entry = new Entry(`book:${book.uuid}`, book.title)
-      .setSummary(book.description ?? "")
+      .setSummary(he.decode(book.description ?? ""))
       .setUpdated(book.updatedAt)
       .setAuthor(book.authors.map((author) => author.name).join(", "))
 
