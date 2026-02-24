@@ -303,6 +303,7 @@ function generateTracksForAudiobook(
   bookUuid: UUID,
   bookTitle: string,
   authors: string,
+  updatedAt: Date,
 ): AudioTrack[] {
   return publication.readingOrder.items.map((item, idx) => {
     return {
@@ -313,6 +314,15 @@ function generateTracksForAudiobook(
       relativeUrl: item.href,
       title: item.title ?? `Track ${idx + 1}`,
       artist: authors,
+      artwork: new URL(
+        getCoverUrl(bookUuid, {
+          audio: true,
+          height: 64,
+          width: 64,
+          updatedAt: updatedAt,
+        }),
+        window.location.origin,
+      ).toString(),
       album: bookTitle,
       duration: item.duration ?? 0,
       type: item.type ?? "application/octet-stream",
@@ -327,6 +337,7 @@ async function generateTracksForReadaloud(
   bookUuid: UUID,
   bookTitle: string,
   authors: string,
+  updatedAt: Date,
 ): Promise<AudioTrack[]> {
   const { textToAudioMap, audioToTextMap } = await registerMaps(publication)
 
@@ -398,6 +409,7 @@ async function generateTracksForReadaloud(
             audio: true,
             height: 64,
             width: 64,
+            updatedAt: updatedAt,
           }),
           window.location.origin,
         ).toString(),
@@ -453,12 +465,14 @@ startAppListening({
                 book.uuid,
                 book.title,
                 authors,
+                new Date(book.updatedAt),
               )
             : await generateTracksForReadaloud(
                 publication,
                 book.uuid,
                 book.title,
                 authors,
+                new Date(book.updatedAt),
               )
 
         if (tracks.length === 0) {

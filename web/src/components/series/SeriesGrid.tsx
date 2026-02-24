@@ -86,8 +86,14 @@ const BookItem = memo(function BookItem({
           aria-hidden
           src={
             bookData.ebook || bookData.readaloud
-              ? getCoverUrl(book.bookUuid, EBOOK_COVER_OPTIONS)
-              : getCoverUrl(book.bookUuid, AUDIO_COVER_OPTIONS)
+              ? getCoverUrl(book.bookUuid, {
+                  ...EBOOK_COVER_OPTIONS,
+                  updatedAt: bookData.updatedAt,
+                })
+              : getCoverUrl(book.bookUuid, {
+                  ...AUDIO_COVER_OPTIONS,
+                  updatedAt: bookData.updatedAt,
+                })
           }
         />
       </Box>
@@ -362,42 +368,54 @@ export function SeriesGrid({ series }: Props) {
                 />
               )}
               <Stack className="gap-4">
-                {bookList.map((book) => (
-                  <Group key={book.uuid} flex="nowrap">
-                    <Box>{book.position}</Box>
-                    <Box className="h-10 w-8 shrink-0">
-                      <Image
-                        alt=""
-                        className="h-full rounded-md"
-                        aria-hidden
-                        src={
-                          bookMap.get(book.bookUuid)?.ebook ||
-                          bookMap.get(book.bookUuid)?.readaloud
-                            ? getCoverUrl(book.bookUuid, EBOOK_COVER_OPTIONS)
-                            : getCoverUrl(book.bookUuid, AUDIO_COVER_OPTIONS)
-                        }
-                      />
-                    </Box>
-                    <Stack gap={0} className="grow">
-                      <Text>
-                        <Link
-                          href={`/books/${book.bookUuid}`}
-                          className="hover:text-st-orange-600 hover:underline"
-                        >
-                          {book.title}
-                        </Link>
-                      </Text>
-                      <Text size="xs">
-                        <Link
-                          href={`/books?authors=${bookMap.get(book.bookUuid)?.authors[0]?.uuid}`}
-                          className="hover:text-st-orange-600 hover:underline"
-                        >
-                          {bookMap.get(book.bookUuid)?.authors[0]?.name}
-                        </Link>
-                      </Text>
-                    </Stack>
-                  </Group>
-                ))}
+                {bookList.map((book) => {
+                  const currentBook = bookMap.get(book.bookUuid)
+                  return (
+                    <Group key={book.uuid} flex="nowrap">
+                      <Box>{book.position}</Box>
+                      <Box className="h-10 w-8 shrink-0">
+                        <Image
+                          alt=""
+                          className="h-full rounded-md"
+                          aria-hidden
+                          src={
+                            currentBook?.ebook || currentBook?.readaloud
+                              ? getCoverUrl(book.bookUuid, {
+                                  ...EBOOK_COVER_OPTIONS,
+                                  updatedAt:
+                                    bookMap.get(book.bookUuid)?.updatedAt ??
+                                    new Date(),
+                                })
+                              : getCoverUrl(book.bookUuid, {
+                                  ...AUDIO_COVER_OPTIONS,
+                                  updatedAt:
+                                    bookMap.get(book.bookUuid)?.updatedAt ??
+                                    new Date(),
+                                })
+                          }
+                        />
+                      </Box>
+                      <Stack gap={0} className="grow">
+                        <Text>
+                          <Link
+                            href={`/books/${book.bookUuid}`}
+                            className="hover:text-st-orange-600 hover:underline"
+                          >
+                            {book.title}
+                          </Link>
+                        </Text>
+                        <Text size="xs">
+                          <Link
+                            href={`/books?authors=${bookMap.get(book.bookUuid)?.authors[0]?.uuid}`}
+                            className="hover:text-st-orange-600 hover:underline"
+                          >
+                            {bookMap.get(book.bookUuid)?.authors[0]?.name}
+                          </Link>
+                        </Text>
+                      </Stack>
+                    </Group>
+                  )
+                })}
               </Stack>
             </Stack>
           </Modal>

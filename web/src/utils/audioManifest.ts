@@ -39,6 +39,7 @@ export interface AudioFileInfo {
 
 export interface ManifestOptions {
   bookId: UUID
+  updatedAt: Date
   title: string
   subtitle?: string
   description?: string
@@ -198,6 +199,7 @@ export async function createM4bManifest(
           height: 1024,
           width: 1024,
           audio: true,
+          updatedAt: new Date(),
         }),
         type: "image/jpeg",
       }),
@@ -269,6 +271,7 @@ export async function createDirectoryManifest(
           height: 1024,
           width: 1024,
           audio: true,
+          updatedAt: options.updatedAt,
         }),
         type: "image/jpeg",
       }),

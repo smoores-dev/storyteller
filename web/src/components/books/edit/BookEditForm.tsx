@@ -149,10 +149,12 @@ export function BookEditForm({ book }: Props) {
             textFallback={getCoverUrl(book.uuid, {
               height: px(98 * 3) as number,
               width: px(64 * 3) as number,
+              updatedAt: book.updatedAt,
             })}
             audioFallback={getCoverUrl(book.uuid, {
               height: px(64 * 3) as number,
               width: px(64 * 3) as number,
+              updatedAt: book.updatedAt,
               audio: true,
             })}
             getInputProps={form.getInputProps}

@@ -27,7 +27,11 @@ export function CurrentBookProgress() {
           w={40}
           alt=""
           aria-hidden
-          src={getCoverUrl(currentBook.uuid, { width: 40, height: 65 })}
+          src={getCoverUrl(currentBook.uuid, {
+            width: 40,
+            height: 65,
+            updatedAt: currentBook.updatedAt,
+          })}
         />
 
         <div className="absolute bottom-0 h-full w-full bg-linear-to-t from-white to-transparent"></div>

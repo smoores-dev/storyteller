@@ -93,6 +93,7 @@ function BookItem({ book }: { book: BookWithRelations }) {
           src={getCoverUrl(book.uuid, {
             height: 40,
             width: 32,
+            updatedAt: book.updatedAt,
           })}
         ></Image>
       </Box>

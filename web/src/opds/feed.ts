@@ -116,7 +116,11 @@ export function createBooksFeed(
 
     if (hasEbook || hasReadaloud) {
       entry.addLink({
-        href: getCoverUrl(book.uuid, { height: 225, width: 147 }),
+        href: getCoverUrl(book.uuid, {
+          height: 225,
+          width: 147,
+          updatedAt: book.updatedAt,
+        }),
         rel: "http://opds-spec.org/image/thumbnail",
         type: "image/jpeg",
         properties: {
@@ -125,7 +129,12 @@ export function createBooksFeed(
       })
     } else if (hasAudiobook) {
       entry.addLink({
-        href: getCoverUrl(book.uuid, { height: 147, width: 147 }),
+        href: getCoverUrl(book.uuid, {
+          height: 147,
+          width: 147,
+          updatedAt: book.updatedAt,
+          audio: true,
+        }),
         rel: "http://opds-spec.org/image/thumbnail",
         type: "image/jpeg",
         properties: {

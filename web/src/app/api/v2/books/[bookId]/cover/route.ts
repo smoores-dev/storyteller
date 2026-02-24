@@ -21,27 +21,31 @@ function hasChanged(
   },
 ) {
   if (conditions.ifNoneMatch) {
-    return conditions.ifNoneMatch === currentHeaders.Etag
+    return conditions.ifNoneMatch !== currentHeaders.Etag
   }
 
   if (conditions.ifModifiedSince) {
     const conditionDate = new Date(conditions.ifModifiedSince)
     const currentDate = new Date(currentHeaders["Last-Modified"])
-    return currentDate <= conditionDate
+    return currentDate > conditionDate
   }
 
-  return false
+  return true
 }
 
-function createCacheHeaders(stats: Stats) {
+function createCacheHeaders(stats: Stats, updatedAt?: Date) {
   const lastModified = new Date(stats.mtimeMs).toISOString()
   const etagBase = `${Math.round(stats.mtimeMs)}-${stats.size}`
   const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
 
+  // only cache immutably if updatedAt is provided
+  const cacheControl = updatedAt
+    ? "public, max-age=31536000, immutable"
+    : "must-revalidate"
   return {
     "Last-Modified": lastModified,
     Etag: etag,
-    "Cache-Control": "must-revalidate",
+    "Cache-Control": cacheControl,
   }
 }
 
@@ -55,6 +59,8 @@ type Params = Promise<{
  * @summary Get the cover image for a book
  * @desc Use the `audio` search param to get the audio cover. The
  *       default is to get the text cover.
+ *       The `v` search param is the last known updatedAt of the book.
+ *       If it is provided, cover image will be cached in the browser
  */
 export const GET = withHasPermission<Params>("bookRead", {
   allowBasicAuth: true,
@@ -67,6 +73,10 @@ export const GET = withHasPermission<Params>("bookRead", {
 
   const height = parseInt(request.nextUrl.searchParams.get("h") ?? "0", 10)
   const width = parseInt(request.nextUrl.searchParams.get("w") ?? "0", 10)
+
+  const version = parseInt(request.nextUrl.searchParams.get("v") ?? "0", 10)
+  const updatedAt =
+    version && !Number.isNaN(version) ? new Date(version) : undefined
 
   const ifNoneMatch = request.headers.get("if-none-match")
   const ifModifiedSince = request.headers.get("if-modified-since")
@@ -87,11 +97,18 @@ export const GET = withHasPermission<Params>("bookRead", {
       ? await getExtractedAudiobookCover(book)
       : await getExtractedEbookCover(book))
 
-  if (!coverImage) return new Response(null, { status: 404 })
+  if (!coverImage) {
+    return new Response(null, {
+      status: 404,
+      ...(updatedAt
+        ? { headers: { "Cache-Control": "public, max-age=3600, immutable" } }
+        : {}),
+    })
+  }
 
-  const cacheHeaders = createCacheHeaders(coverImage.stats)
+  const cacheHeaders = createCacheHeaders(coverImage.stats, updatedAt)
 
-  if (hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
+  if (!hasChanged(cacheHeaders, { ifNoneMatch, ifModifiedSince })) {
     return notModified
   }
 
@@ -106,7 +123,7 @@ export const GET = withHasPermission<Params>("bookRead", {
         })
       : coverImage.data)
 
-  if (height && width) {
+  if (height && width && !cachedImage) {
     coverImage.data = result
     await writeCachedCoverImage(
       book.uuid,

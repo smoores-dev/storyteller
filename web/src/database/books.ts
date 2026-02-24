@@ -1158,3 +1158,23 @@ export async function updateBook(
 
   return book
 }
+
+export async function touchBook(uuid: UUID, userId?: UUID) {
+  await db
+    .updateTable("book")
+    .set({ updatedAt: sql`CURRENT_TIMESTAMP` })
+    .where("uuid", "=", uuid)
+    .execute()
+
+  const book = await getBook(uuid, userId)
+
+  if (!book) throw new Error(`Failed to retrieve book with uuid ${uuid}`)
+
+  BookEvents.emit("message", {
+    type: "bookUpdated",
+    bookUuid: uuid,
+    payload: book,
+  })
+
+  return book
+}

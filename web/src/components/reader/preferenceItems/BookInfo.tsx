@@ -89,6 +89,7 @@ export const BookInfo = ({
                 ? imageDimensions?.audio?.width ?? 40
                 : imageDimensions?.text?.width ?? 28,
             audio: detailView.mode === "audio",
+            updatedAt: book.updatedAt,
           })}
         />
       </button>

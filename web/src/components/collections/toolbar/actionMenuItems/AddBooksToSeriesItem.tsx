@@ -89,12 +89,15 @@ export function AddBooksToSeriesItem({ selected }: Props) {
           ...r,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           title: books.find((b) => b.uuid === r.bookUuid)!.title,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          updatedAt: books.find((b) => b.uuid === r.bookUuid)!.updatedAt,
           index: i,
         })),
         ...seriesBooks.map((b) => ({
           type: "seriesBook" as const,
           bookUuid: b.uuid,
           title: b.title,
+          updatedAt: b.updatedAt,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           position: b.series.find((s) => s.uuid === newSeries!.uuid)!.position,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -164,47 +167,53 @@ export function AddBooksToSeriesItem({ selected }: Props) {
 
             <Fieldset legend="Books">
               <Stack className="gap-4">
-                {bookList.map((book) => (
-                  <Group key={book.bookUuid} className="flex-nowrap">
-                    {book.type === "relation" ? (
-                      <TextInput
-                        className="w-10 shrink-0"
-                        classNames={{
-                          input: "p-0 text-center bg-transparent",
-                        }}
-                        {...form.getInputProps(
-                          `relations.${book.index}.position`,
-                        )}
-                      />
-                    ) : (
-                      <Text className="w-10 text-center text-xl">
-                        #{book.position}
-                      </Text>
-                    )}
+                {bookList.map((book) => {
+                  return (
+                    <Group key={book.bookUuid} className="flex-nowrap">
+                      {book.type === "relation" ? (
+                        <TextInput
+                          className="w-10 shrink-0"
+                          classNames={{
+                            input: "p-0 text-center bg-transparent",
+                          }}
+                          {...form.getInputProps(
+                            `relations.${book.index}.position`,
+                          )}
+                        />
+                      ) : (
+                        <Text className="w-10 text-center text-xl">
+                          #{book.position}
+                        </Text>
+                      )}
 
-                    <Box className="h-10 w-8 shrink-0">
-                      <Image
-                        alt=""
-                        className="h-full rounded-md"
-                        aria-hidden
-                        src={
-                          books.find((b) => b.uuid === book.bookUuid)?.ebook ||
-                          books.find((b) => b.uuid === book.bookUuid)?.readaloud
-                            ? getCoverUrl(book.bookUuid, {
-                                height: 225,
-                                width: 147,
-                              })
-                            : getCoverUrl(book.bookUuid, {
-                                height: 147,
-                                width: 147,
-                                audio: true,
-                              })
-                        }
-                      ></Image>
-                    </Box>
-                    <Text>{book.title}</Text>
-                  </Group>
-                ))}
+                      <Box className="h-10 w-8 shrink-0">
+                        <Image
+                          alt=""
+                          className="h-full rounded-md"
+                          aria-hidden
+                          src={
+                            books.find((b) => b.uuid === book.bookUuid)
+                              ?.ebook ||
+                            books.find((b) => b.uuid === book.bookUuid)
+                              ?.readaloud
+                              ? getCoverUrl(book.bookUuid, {
+                                  height: 225,
+                                  width: 147,
+                                  updatedAt: book.updatedAt,
+                                })
+                              : getCoverUrl(book.bookUuid, {
+                                  height: 147,
+                                  width: 147,
+                                  audio: true,
+                                  updatedAt: book.updatedAt,
+                                })
+                          }
+                        ></Image>
+                      </Box>
+                      <Text>{book.title}</Text>
+                    </Group>
+                  )
+                })}
               </Stack>
             </Fieldset>
           </Stack>

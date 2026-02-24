@@ -102,7 +102,9 @@ export function EbookCoverImage({
 
   const intersectionCallback = useCallback(
     (entry: IntersectionObserverEntry) => {
-      setShowImage(entry.isIntersecting)
+      if (entry.isIntersecting) {
+        setShowImage(true)
+      }
     },
     [],
   )
@@ -137,6 +139,7 @@ export function EbookCoverImage({
           src={getCoverUrl(book.uuid, {
             height: imageHeight ?? (px(height) as number),
             width: imageWidth ?? (px(width) as number),
+            updatedAt: book.updatedAt,
           })}
           loading="lazy"
           onError={() => {
@@ -164,7 +167,11 @@ export function AudiobookCoverImage({
 
   const intersectionCallback = useCallback(
     (entry: IntersectionObserverEntry) => {
-      setShowImage(entry.isIntersecting)
+      // only set to true, never back to false
+      // prevents unnecessary refetching
+      if (entry.isIntersecting) {
+        setShowImage(true)
+      }
     },
     [],
   )
@@ -199,6 +206,7 @@ export function AudiobookCoverImage({
             height: imageHeight ?? (px(height) as number),
             width: imageWidth ?? (px(width) as number),
             audio: true,
+            updatedAt: book.updatedAt,
           })}
           loading="lazy"
           onError={() => {
