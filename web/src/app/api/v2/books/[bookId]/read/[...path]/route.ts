@@ -26,7 +26,6 @@ const ONE_DAY = 24 * ONE_HOUR
 const ONE_WEEK = 7 * ONE_DAY
 const ONE_YEAR = 365 * ONE_DAY
 
-// cache configuration for different resource types
 const CACHE_RULES = {
   immutable: {
     patterns: [/\.css$/, /\.js$/, /\.woff2?$/, /\.ttf$/, /\.otf$/, /\.eot$/],
@@ -51,7 +50,7 @@ const CACHE_RULES = {
   media: {
     patterns: [/\.(mp3|wav|ogg|m4a|aac|webm|mp4)$/i],
     maxAge: ONE_WEEK,
-    directive: `public, max-age=${ONE_HOUR}, must-revalidate`,
+    directive: `public, max-age=${ONE_WEEK}, must-revalidate`,
   },
   default: {
     patterns: [],
@@ -112,6 +111,10 @@ async function rwp(
   if (!readiumService.isRunning()) {
     logger.warn("Readium service not running, attempting to start")
     await readiumService.start()
+  }
+
+  if (searchParams.has("v")) {
+    searchParams.delete("v")
   }
 
   const response = await readiumService.makeRequest(
