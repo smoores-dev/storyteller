@@ -28,6 +28,7 @@ export const BUILD_VARIANTS = [
   "linux-x64-rocm",
   "linux-x64-blas",
   "linux-x64-cpu",
+  "linux-x64-cpu-legacy",
   "linux-arm64-cpu",
   "windows-x64-cpu",
   "windows-x64-cuda-13.1.0",
@@ -307,6 +308,50 @@ function hasSycl(): boolean {
   }
 }
 
+interface CpuCapabilities {
+  avx2: boolean
+  fma: boolean
+}
+
+let cpuCapabilitiesCache: CpuCapabilities | null = null
+
+function getLinuxCpuCapabilities(): CpuCapabilities {
+  if (cpuCapabilitiesCache) return cpuCapabilitiesCache
+
+  try {
+    const cpuinfo = readFileSync("/proc/cpuinfo", "utf-8")
+    const flagsMatch = cpuinfo.match(/^flags\s*:\s*(.+)$/m)
+    if (!flagsMatch?.[1]) {
+      cpuCapabilitiesCache = { avx2: false, fma: false }
+      return cpuCapabilitiesCache
+    }
+    const flags = flagsMatch[1].split(/\s+/)
+    cpuCapabilitiesCache = {
+      avx2: flags.includes("avx2"),
+      fma: flags.includes("fma"),
+    }
+  } catch {
+    // if /proc/cpuinfo is unreadable, assume modern cpu
+    cpuCapabilitiesCache = { avx2: true, fma: true }
+  }
+
+  return cpuCapabilitiesCache
+}
+
+export function applyLegacyCpuFallback(variant: BuildVariant): BuildVariant {
+  if (process.platform !== "linux") return variant
+  if (variant !== "linux-x64-cpu") return variant
+
+  const caps = getLinuxCpuCapabilities()
+  if (caps.avx2 && caps.fma) return variant
+
+  console.warn(
+    `CPU lacks ${[!caps.avx2 && "AVX2", !caps.fma && "FMA"].filter(Boolean).join(" and ")} support. ` +
+      `Falling back to linux-x64-cpu-legacy variant.`,
+  )
+  return "linux-x64-cpu-legacy"
+}
+
 /**
  * neturns the variant configured via STORYTELLER_WHISPER_VARIANT env var.
  * set by the Docker build process and should be the primary source
@@ -389,23 +434,23 @@ export function detectPlatform(): BuildVariant {
  */
 export function resolveVariant(requestedVariant?: BuildVariant): BuildVariant {
   if (requestedVariant) {
-    return requestedVariant
+    return applyLegacyCpuFallback(requestedVariant)
   }
 
   const configured = getConfiguredVariant()
   if (configured) {
-    return configured
+    return applyLegacyCpuFallback(configured)
   }
 
   const installed = getInstalledVariant()
   if (installed) {
-    return installed
+    return applyLegacyCpuFallback(installed)
   }
 
   console.warn(
     "No variant configured or installed. Falling back to platform detection.",
   )
-  return detectPlatform()
+  return applyLegacyCpuFallback(detectPlatform())
 }
 
 export function isValidModel(model: string): model is WhisperModel {

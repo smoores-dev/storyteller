@@ -5,6 +5,7 @@ import {
   type BuildVariant,
   type RecognitionResult,
   type WhisperCppOptions,
+  applyLegacyCpuFallback,
   ensureWhisperInstalled,
   recognize,
 } from "@storyteller-platform/ghost-story"
@@ -25,10 +26,10 @@ function getCpuFallbackVariant(
   const arch = os.arch()
 
   if (platform === "linux" && arch === "x64") {
-    // linux-x64-blas is a new variant added for CPU fallback
-    return (
+    const variant = (
       fallback === "blas" ? "linux-x64-blas" : "linux-x64-cpu"
     ) as BuildVariant
+    return applyLegacyCpuFallback(variant)
   }
   if (platform === "linux" && arch === "arm64") {
     return "linux-arm64-cpu"

@@ -44,6 +44,7 @@ export {
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
   type WhisperModel,
+  applyLegacyCpuFallback,
   detectPlatform,
   getConfiguredVariant,
   getInstallDir,

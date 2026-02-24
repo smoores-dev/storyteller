@@ -131,6 +131,14 @@ build-whisper-linux-x64-cpu:
     VARIANT: "linux-x64-cpu"
     CMAKE_FLAGS: ""
 
+build-whisper-linux-x64-cpu-legacy:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:main
+  tags: [saas-linux-large-amd64]
+  variables:
+    VARIANT: "linux-x64-cpu-legacy"
+    CMAKE_FLAGS: "-DGGML_AVX2=OFF -DGGML_FMA=OFF"
+
 build-whisper-linux-arm64-cpu:
   extends: .whisper-build-base
   image: $CI_REGISTRY_IMAGE/storyteller-base:main

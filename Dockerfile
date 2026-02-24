@@ -51,9 +51,14 @@ RUN if [ -z "$WHISPER_VARIANT" ]; then \
       esac; \
     fi && \
     node ./ghost-story/dist/cli/bin.js \
-      install binary "$WHISPER_VARIANT"  && \
+      install binary "$WHISPER_VARIANT" && \
+    node ./ghost-story/dist/cli/bin.js \
+      install model tiny.en && \
+    if [ "$WHISPER_VARIANT" = "linux-x64-cpu" ]; then \
+      echo "Also installing legacy CPU variant for older hardware..." && \
       node ./ghost-story/dist/cli/bin.js \
-      install model tiny.en
+        install binary linux-x64-cpu-legacy; \
+    fi
 
 ARG BASE_TAG=main
 FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS runner
