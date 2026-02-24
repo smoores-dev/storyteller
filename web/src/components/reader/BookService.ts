@@ -77,8 +77,16 @@ export function getApiUrlFromResourceHref(
   return `${window.location.origin}/api/v2/books/${uuid}/${mode}/${clipUrl}`
 }
 
+const regex = /.*\/api\/v2\/books\/.*\/(read|listen)\//
+
 export function getResourceHrefFromApiUrl(apiUrl: string): string {
-  return apiUrl.replace(/.*\/api\/v2\/books\/.*\/(read|listen)\//, "")
+  if (URL.canParse(apiUrl)) {
+    const url = new URL(apiUrl)
+    url.searchParams.delete("v")
+    return url.toString().replace(regex, "")
+  }
+
+  return apiUrl.replace(regex, "")
 }
 
 export async function getGuideForAudioResource(

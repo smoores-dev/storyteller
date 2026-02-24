@@ -2,7 +2,6 @@ import { type BookWithRelations } from "@/database/books"
 
 type CacheBustingOptions = {
   book: BookWithRelations
-  forceRefresh?: boolean
 }
 
 /**
@@ -10,7 +9,7 @@ type CacheBustingOptions = {
  * based on the book's content timestamp
  */
 export function createCacheBustingFetch(options: CacheBustingOptions) {
-  const { book, forceRefresh = false } = options
+  const { book } = options
 
   return async (
     input: RequestInfo | URL,
@@ -28,17 +27,10 @@ export function createCacheBustingFetch(options: CacheBustingOptions) {
     if (url.pathname.includes(`/api/v2/books/${book.uuid}/`)) {
       const contentTimestamp = getContentTimestamp(book)
 
-      const headers = new Headers(init?.headers)
-
-      if (forceRefresh) {
-        headers.set("X-Cache-Bust", Date.now().toString())
-      } else {
-        headers.set("X-Content-Version", contentTimestamp)
-      }
+      url.searchParams.set("v", contentTimestamp)
 
       const newInit = {
         ...init,
-        headers,
         credentials: "include",
       } satisfies RequestInit
 
@@ -72,7 +64,7 @@ export function getContentTimestamp(book: BookWithRelations): string {
  * creates a fetch client that forces cache refresh for all requests
  */
 export function createForceCacheBustingFetch(book: BookWithRelations) {
-  return createCacheBustingFetch({ book, forceRefresh: true })
+  return createCacheBustingFetch({ book })
 }
 
 export function hasContentChanged(

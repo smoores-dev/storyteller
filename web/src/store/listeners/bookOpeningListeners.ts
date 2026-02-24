@@ -51,6 +51,11 @@ async function registerMaps(
       const link = publication.linkWithHref(item.href)
 
       if (!link) return { link: null, clips: null }
+      // don't fetch guide if no alternates have been provided (ie there is no guide)
+      if (!link.alternates || link.alternates.items.length === 0) {
+        return { link: null, clips: null }
+      }
+
       try {
         const guide = await publication.guideForLink(link)
         if (!guide)
