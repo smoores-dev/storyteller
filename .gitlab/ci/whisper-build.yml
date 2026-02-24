@@ -137,7 +137,7 @@ build-whisper-linux-x64-cpu-legacy:
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-cpu-legacy"
-    CMAKE_FLAGS: "-DGGML_AVX2=OFF -DGGML_FMA=OFF"
+    CMAKE_FLAGS: "-DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_AVX512=OFF"
 
 build-whisper-linux-arm64-cpu:
   extends: .whisper-build-base
