@@ -10,6 +10,7 @@ import {
   getLocatorForFragment,
   getResourceHrefFromApiUrl,
 } from "@/components/reader/BookService"
+import { withActiveFrame } from "@/components/reader/frameUtils"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import {
   getAudioToTextMap,
@@ -200,20 +201,21 @@ export const highlightFragment = (
   } as DecoratorRequest)
 }
 
-export const getHrefFromActiveFrame = (activeFrame: FrameManager) => {
-  const window = activeFrame.iframe.contentWindow
-  if (!window) return null
+export const getHrefFromActiveFrame = (frame?: FrameManager) => {
+  return withActiveFrame((activeFrame) => {
+    const window = activeFrame.iframe.contentWindow
 
-  const baseElement = window.document.querySelector<HTMLBaseElement>(
-    "base[data-readium=true",
-  )
-  if (!baseElement) return null
+    const baseElement = window.document.querySelector<HTMLBaseElement>(
+      "base[data-readium=true",
+    )
+    if (!baseElement) return null
 
-  const url = baseElement.href
+    const url = baseElement.href
 
-  const href = getResourceHrefFromApiUrl(url)
+    const href = getResourceHrefFromApiUrl(url)
 
-  return href
+    return href
+  }, frame)
 }
 
 /**

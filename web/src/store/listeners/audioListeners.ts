@@ -5,6 +5,7 @@ import {
   getAudiobookLocator,
   getFragmentForClip,
 } from "@/components/reader/BookService"
+import { withActiveFrame } from "@/components/reader/frameUtils"
 import { isSameLocator } from "@/components/reader/locators"
 import { AudioPlayer } from "@/services/AudioPlayerService"
 import {
@@ -21,7 +22,7 @@ import {
   syncPosition,
   textNavigatedFromAudio,
 } from "@/store/actions"
-import { getActiveFrame, getPublication } from "@/store/readerRegistry"
+import { getPublication } from "@/store/readerRegistry"
 import { selectPreference } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
@@ -257,9 +258,10 @@ const matchSyncingDisabled = isAnyOf(readingSessionSlice.actions.setSyncing)
 startAppListening({
   matcher: matchSyncingDisabled,
   effect: (action) => {
-    const activeFrame = getActiveFrame()
-    if (activeFrame && !action["payload"]) {
-      clearHighlight(activeFrame)
+    if (!action["payload"]) {
+      withActiveFrame((frame) => {
+        clearHighlight(frame)
+      })
     }
   },
 })

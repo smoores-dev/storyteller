@@ -8,6 +8,8 @@ import {
   useState,
 } from "react"
 
+import { withActiveFrame } from "@/components/reader/frameUtils"
+
 import { getClientXY } from "./mouseHelpers"
 
 /**
@@ -191,23 +193,20 @@ export const NavigatorEventsProvider = ({
       startTimeRef.current = null
     }
 
-    const wnd = activeFrame.iframe.contentWindow
-    try {
+    withActiveFrame((activeFrame) => {
+      const wnd = activeFrame.iframe.contentWindow
       listeners?.mouseMove?.forEach(({ handler }) => {
-        wnd?.addEventListener("mousemove", handler, { signal })
+        wnd.addEventListener("mousemove", handler, { signal })
       })
       registeredHandlers.mouseMove.forEach(({ handler }) => {
-        wnd?.addEventListener("mousemove", handler, { signal })
+        wnd.addEventListener("mousemove", handler, { signal })
       })
 
-      wnd?.addEventListener("mousedown", handleStart, { signal })
-      wnd?.addEventListener("mouseup", handleEnd, { signal })
-      wnd?.addEventListener("touchstart", handleStart, { signal })
-      wnd?.addEventListener("touchend", handleEnd, { signal })
-    } catch (error) {
-      // this is probably fineee
-      console.warn("Error adding click handler:", error)
-    }
+      wnd.addEventListener("mousedown", handleStart, { signal })
+      wnd.addEventListener("mouseup", handleEnd, { signal })
+      wnd.addEventListener("touchstart", handleStart, { signal })
+      wnd.addEventListener("touchend", handleEnd, { signal })
+    })
     return () => {
       // cleanup any pending timeout
       if (pendingTimeoutRef.current !== null) {

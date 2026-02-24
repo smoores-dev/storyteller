@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { cn } from "@/cn"
 import { ProgressBar } from "@/components/reader/ProgressBar"
+import { withActiveFrame } from "@/components/reader/frameUtils"
 import { type ReadiumWindow } from "@/components/reader/helpers"
 import { BookInfo } from "@/components/reader/preferenceItems/BookInfo"
 import { HoldButton } from "@/components/reader/preferenceItems/HoldButton"
@@ -22,7 +23,6 @@ import {
   skipPartButtonPressed,
 } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
-import { getActiveFrame } from "@/store/readerRegistry"
 import {
   selectIsLoading,
   selectIsPlaying,
@@ -96,20 +96,13 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
 
   useEffect(() => {
     setTimeout(() => {
-      try {
-        const activeFrame = getActiveFrame()
-        const wnd = activeFrame?.window
-        if (!wnd) {
-          setTextWidth(computedTextWidth)
-          return
-        }
+      withActiveFrame((activeFrame) => {
+        const wnd = activeFrame.window
 
         const lineWidth = getLineWidth(wnd as ReadiumWindow)
 
         setTextWidth(`min(${lineWidth}, 100vw)`)
-      } catch (e) {
-        console.warn("Error calculating text width", e)
-      }
+      })
     }, 100)
   }, [activeFrameUrl, lineLength, fontSize, fontFamily, computedTextWidth])
 
