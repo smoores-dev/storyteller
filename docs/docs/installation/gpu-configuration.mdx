@@ -36,6 +36,13 @@ Choose the CUDA version that matches your NVIDIA driver (check with
 `nvidia-smi`): `cuda-13.1.0` for CUDA 13.1+, `cuda-12.9.0` for CUDA 12.x, or
 `cuda-11.8.0` for CUDA 11.x.
 
+:::note
+
+You likely want to use `cuda-12.9.0` if you are on `cuda-13.0.x` and/or are
+using an RTX 10 series GPU or older.
+
+:::
+
 You must install the
 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 and

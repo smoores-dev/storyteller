@@ -13,6 +13,7 @@ import { useDisclosure } from "@mantine/hooks"
 import { IconProgress } from "@tabler/icons-react"
 
 import { type BookWithRelations } from "@/database/books"
+import { useGpuBuildWarning } from "@/hooks/useGpuBuildWarning"
 import { useListBooksQuery, useProcessBookMutation } from "@/store/api"
 import { type UUID } from "@/uuid"
 
@@ -29,6 +30,7 @@ interface Props {
 export function BeginProcessingItem({ selected }: Props) {
   const [isOpen, { open, close }] = useDisclosure()
   const [processBook] = useProcessBookMutation()
+  const { guardProcessing, warningModal } = useGpuBuildWarning()
 
   const { books } = useListBooksQuery(undefined, {
     selectFromResult: (result) => ({
@@ -45,6 +47,7 @@ export function BeginProcessingItem({ selected }: Props) {
 
   return (
     <>
+      {warningModal}
       <Modal opened={isOpen} onClose={close} title="Begin processing" centered>
         <Stack gap={32}>
           <Text>
@@ -52,15 +55,18 @@ export function BeginProcessingItem({ selected }: Props) {
           </Text>
           <form
             className="flex flex-col gap-4"
-            onSubmit={form.onSubmit(async ({ restart }) => {
+            onSubmit={form.onSubmit(({ restart }) => {
               close()
               const restartMode = restart === "continue" ? false : restart
-              for (const book of books) {
-                await processBook({
-                  uuid: book.uuid,
-                  restart: restartMode,
-                })
-              }
+              guardProcessing(async (dismiss) => {
+                for (const book of books) {
+                  await processBook({
+                    uuid: book.uuid,
+                    restart: restartMode,
+                    ...(dismiss && { dismissGpuWarning: true }),
+                  })
+                }
+              })
             })}
           >
             <RadioGroup

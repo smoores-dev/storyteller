@@ -46,6 +46,7 @@ export const api = createApi({
     "MaxUploadChunkSize",
     "UserReadingPreferences",
     "UserReadingState",
+    "GpuBuildWarning",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -124,6 +125,22 @@ export const api = createApi({
         body: settings,
       }),
       invalidatesTags: ["MaxUploadChunkSize"],
+    }),
+    getGpuBuildWarning: build.query<
+      | {
+          showWarning: true
+          variant: string | undefined
+          whisperBuild: string | null
+        }
+      | { showWarning: false; variant?: never; whisperBuild?: never },
+      void
+    >({
+      query: () => ({
+        url: "/books/_/process",
+        method: "POST",
+        params: { gpuWarning: "check" },
+      }),
+      providesTags: ["GpuBuildWarning"],
     }),
     getBook: build.query<BookWithRelations, { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}`,
@@ -236,17 +253,24 @@ export const api = createApi({
     }),
     processBook: build.mutation<
       void,
-      { uuid: UUID; restart?: "full" | "transcription" | "sync" | false }
+      {
+        uuid: UUID
+        restart?: "full" | "transcription" | "sync" | false
+        dismissGpuWarning?: boolean
+      }
     >({
-      query: ({ uuid, restart }) => ({
-        url: `/books/${uuid}/process`,
-        method: "POST",
-        ...(restart && {
-          params: {
-            restart,
-          },
-        }),
-      }),
+      query: ({ uuid, restart, dismissGpuWarning }) => {
+        const params: Record<string, string> = {}
+        if (restart) params["restart"] = restart
+        if (dismissGpuWarning) params["gpuWarning"] = "dismiss"
+        return {
+          url: `/books/${uuid}/process`,
+          method: "POST",
+          ...(Object.keys(params).length > 0 && { params }),
+        }
+      },
+      invalidatesTags: (_result, _error, { dismissGpuWarning }) =>
+        dismissGpuWarning ? ["GpuBuildWarning"] : [],
     }),
     cancelProcessing: build.mutation<void, { uuid: UUID }>({
       query: ({ uuid }) => ({
@@ -600,6 +624,7 @@ export const {
   useDeleteSeriesMutation,
   useDeleteUserMutation,
   useGetCurrentUserQuery,
+  useGetGpuBuildWarningQuery,
   useGetMaxUploadChunkSizeQuery,
   useGetShelvesQuery,
   useLazyListCollectionsQuery,
