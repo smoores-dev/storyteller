@@ -294,7 +294,7 @@ export function MergeBooksItem({ selected, onCommit }: Props) {
                 update: {
                   ...update,
                   publicationDate:
-                    publicationDate && publicationDate.toISOString(),
+                    publicationDate && new Date(publicationDate).toISOString(),
                 },
                 relations: {
                   creators: [

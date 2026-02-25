@@ -95,7 +95,10 @@ export function BookEditForm({ book }: Props) {
     <>
       <DeleteBookModal book={book} isOpen={opened} onClose={close} />
       {savedState === SaveState.ERROR && (
-        <p>Failed to update. Check your server logs for details.</p>
+        <p className="text-sm text-red-500">
+          Failed to update. Check your server and/or browser console logs for
+          details.
+        </p>
       )}
       <form
         onSubmit={form.onSubmit(async (values) => {
@@ -108,12 +111,13 @@ export function BookEditForm({ book }: Props) {
                 ...update,
                 publicationDate:
                   update.publicationDate &&
-                  update.publicationDate.toISOString(),
+                  new Date(update.publicationDate).toISOString(),
               },
               textCover,
               audioCover,
             })
-          } catch (_) {
+          } catch (error) {
+            console.error(error)
             setSavedState(SaveState.ERROR)
             return
           }
