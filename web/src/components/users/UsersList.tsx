@@ -18,11 +18,13 @@ import { UserStatus } from "./UserStatus"
 interface Props {
   users: User[]
   invites: Invite[]
+  disablePasswordLogin?: boolean
 }
 
 export function UsersList({
   users: initialUsers,
   invites: initialInvites,
+  disablePasswordLogin,
 }: Props) {
   const { permissions } = useGetCurrentUserQuery(undefined, {
     selectFromResult: (result) => ({
@@ -43,7 +45,7 @@ export function UsersList({
       {permissions?.inviteList && (
         <>
           <Title order={3}>Invites</Title>
-          <CreateInviteForm />
+          <CreateInviteForm disablePasswordLogin={disablePasswordLogin} />
           <List type="ordered" listStyleType="none">
             {invites?.map((invite) => (
               <List.Item

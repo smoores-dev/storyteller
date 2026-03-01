@@ -10,6 +10,7 @@ import {
   Fieldset,
   Group,
   List,
+  MultiSelect,
   NativeSelect,
   NumberInput,
   PasswordInput,
@@ -25,6 +26,11 @@ import { useRef, useState } from "react"
 
 import type { Settings } from "@/apiModels"
 import { ImportPathInput } from "@/components/ImportPathInput"
+import {
+  ADMIN_PERMISSIONS,
+  BASIC_PERMISSIONS,
+  PERMISSIONS_VALUES,
+} from "@/components/users/CreateInviteForm"
 import {
   useGetMaxUploadChunkSizeQuery,
   useUpdateSettingsMutation,
@@ -92,6 +98,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
     parallelTranscribes: settings.parallelTranscribes,
     parallelTranscodes: settings.parallelTranscodes,
     authProviders: settings.authProviders,
+    disablePasswordLogin: settings.disablePasswordLogin,
     importPath: settings.importPath,
     readaloudLocationType: settings.readaloudLocationType,
     readaloudLocation: settings.readaloudLocation,
@@ -107,7 +114,14 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
   })
 
   const state = form.values
-
+  const canDisablePassword = state.authProviders.some(
+    (p) =>
+      p.kind === "custom" &&
+      p.allowRegistration &&
+      Object.values(p.groupPermissions ?? {}).some((perms) =>
+        perms.includes("settingsUpdate"),
+      ),
+  )
   // sometimes the webUrl is not a valid URL, so we fallback to /opds
   const opdsUrl = safeUrl(state.webUrl, "/opds")
   const authUrlPath = authUrl ?? safeUrl(state.webUrl, "/api/v2/auth")
@@ -807,7 +821,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
                   onChange={(value) => {
                     form.replaceListItem("authProviders", i, {
                       ...provider,
-                      id: value as typeof provider.id,
+                      id: value,
                     })
                   }}
                 />
@@ -876,6 +890,131 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
                 withAsterisk
                 {...form.getInputProps(`authProviders.${i}.clientSecret`)}
               />
+              {provider.kind === "custom" && (
+                <>
+                  <Switch
+                    label="Allow registration"
+                    description="Automatically create accounts for new users from this provider"
+                    {...form.getInputProps(
+                      `authProviders.${i}.allowRegistration`,
+                      {
+                        type: "checkbox",
+                      },
+                    )}
+                  />
+                  {provider.allowRegistration && (
+                    <Fieldset legend="Group Permissions" className="mt-2">
+                      <Text className="mb-2 text-sm text-gray-600">
+                        Map OIDC groups to permissions. If specified, users not
+                        in any listed group will be denied access.
+                      </Text>
+                      <Stack gap="sm">
+                        {Object.entries(provider.groupPermissions ?? {}).map(
+                          ([groupName, permissions], idx) => {
+                            const setPerms = (perms: string[]) => {
+                              form.setFieldValue(
+                                `authProviders.${i}.groupPermissions`,
+                                {
+                                  ...provider.groupPermissions,
+                                  [groupName]: perms,
+                                },
+                              )
+                            }
+                            return (
+                              <Box
+                                key={idx}
+                                className="relative rounded border p-3"
+                              >
+                                <TextInput
+                                  label="Group name"
+                                  value={groupName}
+                                  onChange={(e) => {
+                                    const newName = e.target.value
+                                    const { [groupName]: perms, ...rest } =
+                                      provider.groupPermissions ?? {}
+                                    // Prevent overwriting existing group
+                                    if (
+                                      newName !== groupName &&
+                                      newName in rest
+                                    )
+                                      return
+
+                                    form.setFieldValue(
+                                      `authProviders.${i}.groupPermissions`,
+                                      { ...rest, [newName]: perms ?? [] },
+                                    )
+                                  }}
+                                  className="mb-2"
+                                />
+                                <Box className="mb-1 flex justify-end gap-1">
+                                  <Button
+                                    variant="subtle"
+                                    size="xs"
+                                    onClick={() => {
+                                      setPerms([...ADMIN_PERMISSIONS])
+                                    }}
+                                  >
+                                    Admin
+                                  </Button>
+                                  <Button
+                                    variant="subtle"
+                                    size="xs"
+                                    onClick={() => {
+                                      setPerms([...BASIC_PERMISSIONS])
+                                    }}
+                                  >
+                                    Basic
+                                  </Button>
+                                </Box>
+                                <MultiSelect
+                                  label="Permissions"
+                                  data={PERMISSIONS_VALUES}
+                                  value={permissions}
+                                  onChange={setPerms}
+                                />
+                                <ActionIcon
+                                  variant="subtle"
+                                  className="absolute top-1 right-1"
+                                  size="sm"
+                                  onClick={() => {
+                                    const { [groupName]: _, ...rest } =
+                                      provider.groupPermissions ?? {}
+                                    form.setFieldValue(
+                                      `authProviders.${i}.groupPermissions`,
+                                      Object.keys(rest).length > 0
+                                        ? rest
+                                        : undefined,
+                                    )
+                                  }}
+                                >
+                                  <IconTrash size={14} color="red" />
+                                </ActionIcon>
+                              </Box>
+                            )
+                          },
+                        )}
+                        <Button
+                          leftSection={<IconPlus size={14} />}
+                          variant="outline"
+                          size="xs"
+                          className="self-start"
+                          onClick={() => {
+                            const existing = provider.groupPermissions ?? {}
+                            // Use empty string; user must provide a name
+                            if ("" in existing) return
+                            form.setFieldValue(
+                              `authProviders.${i}.groupPermissions`,
+                              { ...existing, "": [...BASIC_PERMISSIONS] },
+                            )
+                          }}
+                        >
+                          Add group
+                        </Button>
+                      </Stack>
+                    </Fieldset>
+                  )}
+                </>
+              )}
               <ActionIcon
                 variant="subtle"
                 className="absolute top-0 right-4"
@@ -904,6 +1043,19 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           >
             Add provider
           </Button>
+          <Switch
+            label="Disable password login"
+            description={
+              canDisablePassword
+                ? "Only allow login via configured authentication providers. Most OPDS clients do not support OAuth."
+                : "Requires an auth provider with a group that can change server settings"
+            }
+            mt="md"
+            disabled={!canDisablePassword}
+            {...form.getInputProps("disablePasswordLogin", {
+              type: "checkbox",
+            })}
+          />
         </Stack>
       </Fieldset>
       <Fieldset legend="Upload settings">

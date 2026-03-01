@@ -266,6 +266,43 @@ URL in the provider’s settings!
 
 :::
 
+### Automatic account creation
+
+By default, users must be invited before they can sign in with OAuth. If you'd
+like to allow users to create accounts automatically when they sign in with a
+custom OIDC provider, enable the "Allow registration" option for that provider.
+
+New users created this way will be given basic permissions (read, download, and
+list books).
+
+#### Group-based permissions
+
+If your OIDC provider includes a `groups` claim in its userinfo response, you
+can map those groups to specific permissions. When group permissions are
+configured:
+
+- Users in a configured group will receive the permissions mapped to that group
+- Users in multiple groups will receive the combined permissions from all
+  matching groups
+- Users not in any configured group will be denied access
+
+This allows you to control access and permissions based on your identity
+provider's group membership.
+
+#### Disabling password login
+
+Once you have configured an authentication provider with a group that grants the
+"Change server settings" permission, you can disable password-based login
+entirely. This will hide the username/password form on the login page and
+prevent email-based invites.
+
+:::warning OPDS Compatibility
+
+Most OPDS clients do not support OAuth authentication. If you rely on OPDS
+access to your library, you should keep password login enabled.
+
+:::
+
 ### Linking accounts
 
 Once you’ve configured a provider, you can link your existing account to your
