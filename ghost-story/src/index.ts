@@ -81,6 +81,7 @@ export {
 } from "./recognition/OpenAICloudSTT.ts"
 export {
   type Language,
+  Languages,
   type RecognitionResult as WhisperCppResult,
   type WhisperCppModelId,
   type WhisperCppOptions,

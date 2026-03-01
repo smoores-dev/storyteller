@@ -25,6 +25,7 @@ import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { KyselyAdapter } from "@/database/authAdapter"
 import { db } from "@/database/connection"
 import { getSettings } from "@/database/settings"
+import { type CustomAuthProvider } from "@/database/settingsTypes"
 import {
   type Permission,
   type UserPermissionSet,
@@ -110,17 +111,49 @@ const credentialsProvider = Credentials({
   },
 })
 
+function customProviderId(name: string) {
+  return name
+    .toLowerCase()
+    .replaceAll(/ +/g, "-")
+    .replaceAll(/[^a-zA-Z0-9-]/g, "")
+}
+
 export async function createConfig(
   request: NextRequest | undefined,
 ): Promise<NextAuthConfig> {
   const settings = await getSettings()
+  const allowedRegistrationProviders = new Set(
+    settings.authProviders
+      .filter(
+        (p): p is CustomAuthProvider =>
+          p.kind === "custom" && !!p.allowRegistration,
+      )
+      .map((p) => customProviderId(p.name)),
+  )
+  const providerGroupPermissions = new Map(
+    settings.authProviders
+      .filter(
+        (p): p is CustomAuthProvider =>
+          p.kind === "custom" && !!p.groupPermissions,
+      )
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      .map((p) => [customProviderId(p.name), p.groupPermissions!]),
+  )
+  const adapter = KyselyAdapter(db, providerGroupPermissions)
 
   const additionalProviders = settings.authProviders.map((provider) => {
     if (provider.kind === "built-in") {
-      const providerFactory = Providers[provider.id] as (
-        config: OAuthUserConfig<unknown>,
-      ) => OIDCConfig<unknown>
-
+      const providerFactory = Providers[
+        provider.id as keyof typeof Providers
+      ] as
+        | ((config: OAuthUserConfig<unknown>) => OIDCConfig<unknown>)
+        | undefined
+      if (!providerFactory) {
+        const validIds = Object.keys(Providers).join(", ")
+        throw new Error(
+          `Unknown built-in auth provider "${provider.id}". Valid providers: ${validIds}`,
+        )
+      }
       return providerFactory({
         clientId: provider.clientId,
         clientSecret: provider.clientSecret,
@@ -128,11 +161,9 @@ export async function createConfig(
       })
     }
 
+    const id = customProviderId(provider.name)
     return {
-      id: provider.name
-        .toLowerCase()
-        .replaceAll(/ +/g, "-")
-        .replaceAll(/[^a-zA-Z0-9-]/g, ""),
+      id,
       name: provider.name,
       type: provider.type,
       clientId: provider.clientId,
@@ -140,7 +171,24 @@ export async function createConfig(
       issuer: provider.issuer,
       ...(provider.type === "oidc" && {
         checks: ["pkce" as const, "state" as const],
+        idToken: false, // Fetch from userinfo endpoint; ID token claims vary by provider
+        ...(provider.groupPermissions && {
+          authorization: { params: { scope: "openid profile email groups" } },
+        }),
       }),
+      profile(profile: Record<string, unknown>) {
+        return {
+          id: profile["sub"] as string,
+          name: profile["name"] as string | undefined,
+          email: profile["email"] as string | undefined,
+          image: profile["picture"] as string | undefined,
+          username:
+            (profile["preferred_username"] as string | undefined) ??
+            (profile["email"] as string | undefined),
+          groups: profile["groups"] as string[] | undefined,
+          providerId: id,
+        }
+      },
     }
   })
 
@@ -156,7 +204,7 @@ export async function createConfig(
       : undefined
 
   const config: NextAuthConfig = {
-    providers,
+    providers: providers as NextAuthConfig["providers"],
     cookies: {
       sessionToken: {
         name: "st_token",
@@ -188,7 +236,7 @@ export async function createConfig(
           user,
         }
       },
-      async signIn({ user, credentials }) {
+      async signIn({ user, credentials, account, profile }) {
         if (credentials) {
           const sessionToken = randomUUID()
           const sessionExpiry = fromDate(maxAge)
@@ -198,6 +246,34 @@ export async function createConfig(
             userId: user.id!,
             expires: sessionExpiry,
           })
+        }
+        // Block new user registration from providers that don't allow it
+        if (account?.provider) {
+          const isNewUser = !user.id
+          if (
+            isNewUser &&
+            !allowedRegistrationProviders.has(account.provider)
+          ) {
+            return false
+          }
+          // Check group membership if group permissions are configured
+          const groupPerms = providerGroupPermissions.get(account.provider)
+          if (groupPerms) {
+            const userGroups = (profile as { groups?: string[] }).groups
+            if (userGroups === undefined) {
+              console.warn(
+                `OIDC provider "${account.provider}" has group permissions configured ` +
+                  "but the profile response did not include a 'groups' claim. " +
+                  "Ensure your provider is configured to return groups.",
+              )
+            }
+            const hasMatchingGroup = (userGroups ?? []).some(
+              (g) => g in groupPerms,
+            )
+            if (!hasMatchingGroup) {
+              return "/auth/denied"
+            }
+          }
         }
         return true
       },

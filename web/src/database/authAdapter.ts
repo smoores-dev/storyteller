@@ -14,19 +14,104 @@
  *
  * @module @auth/kysely-adapter
  */
-import { type Adapter } from "@auth/core/adapters"
+import { type Adapter, type AdapterUser } from "@auth/core/adapters"
 import { type Insertable, type Kysely } from "kysely"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
 import { type UUID } from "@/uuid"
 
 import { type DB } from "./schema"
+import { getDefaultStatus } from "./statuses"
 import { getUser, getUserByAccount, getUserByUsernameOrEmail } from "./users"
 
-export function KyselyAdapter(db: Kysely<DB>): Adapter {
+const NO_PERMISSIONS = {
+  bookRead: false,
+  bookDownload: false,
+  bookList: false,
+  bookCreate: false,
+  bookDelete: false,
+  bookProcess: false,
+  bookUpdate: false,
+  collectionCreate: false,
+  inviteList: false,
+  inviteDelete: false,
+  userCreate: false,
+  userList: false,
+  userRead: false,
+  userDelete: false,
+  userUpdate: false,
+  settingsUpdate: false,
+}
+
+const BASIC_PERMISSIONS = {
+  ...NO_PERMISSIONS,
+  bookRead: true,
+  bookDownload: true,
+  bookList: true,
+}
+
+function computePermissions(
+  groups: string[] | undefined,
+  groupPermissions: Record<string, string[]> | undefined,
+) {
+  if (!groupPermissions) return BASIC_PERMISSIONS
+  const granted = new Set(groups?.flatMap((g) => groupPermissions[g] ?? []))
+  if (granted.size === 0) return NO_PERMISSIONS
+  return Object.fromEntries(
+    Object.keys(NO_PERMISSIONS).map((k) => [k, granted.has(k)]),
+  ) as typeof NO_PERMISSIONS
+}
+
+export function KyselyAdapter(
+  db: Kysely<DB>,
+  providerGroupPermissions?: Map<string, Record<string, string[]>>,
+): Adapter {
   return {
-    createUser() {
-      throw new Error("No automatic signups allowed")
+    async createUser(user) {
+      const { username, groups, providerId } = user as AdapterUser & {
+        username?: string
+        groups?: string[]
+        providerId?: string
+      }
+      const groupPermissions = providerId
+        ? providerGroupPermissions?.get(providerId)
+        : undefined
+      const permissions = computePermissions(groups, groupPermissions)
+      const userId = await db.transaction().execute(async (tr) => {
+        const { uuid: permUuid } = await tr
+          .insertInto("userPermission")
+          .values(permissions)
+          .returning(["uuid"])
+          .executeTakeFirstOrThrow()
+        const { id } = await tr
+          .insertInto("user")
+          .values({
+            email: user.email,
+            username,
+            name: user.name,
+            emailVerified: user.emailVerified,
+            userPermissionUuid: permUuid,
+          })
+          .returning(["id"])
+          .executeTakeFirstOrThrow()
+        const defaultStatus = await getDefaultStatus(tr)
+        await tr
+          .insertInto("bookToStatus")
+          .columns(["bookUuid", "userId", "statusUuid"])
+          .expression((eb) =>
+            eb
+              .selectFrom("book")
+              .select((eb) => [
+                "book.uuid",
+                eb.val(id).as("userId"),
+                eb.val(defaultStatus.uuid).as("statusUuid"),
+              ]),
+          )
+          .execute()
+        return id
+      })
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return (await getUser(userId))!
     },
     async getUser(id) {
       return getUser(id as UUID)

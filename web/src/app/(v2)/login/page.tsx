@@ -11,6 +11,7 @@ import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { createConfig, nextAuth } from "@/auth/auth"
 import { LoginForm } from "@/components/login/LoginForm"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
+import { getSettings } from "@/database/settings"
 
 function defaultRedirectCallback({
   url,
@@ -122,6 +123,7 @@ export default async function Login() {
 
   const { credentials: _, ...providers } =
     await fetchApiRoute<Record<string, PublicProvider>>("/auth/providers")
+  const settings = await getSettings()
 
   return (
     <Center className="min-h-screen pb-36">
@@ -146,6 +148,7 @@ export default async function Login() {
             credentialsLoginAction={credentialsLogin}
             oauthLoginAction={oauthLogin}
             providers={Object.values(providers)}
+            disablePasswordLogin={settings.disablePasswordLogin}
           />
         </Stack>
       </Paper>

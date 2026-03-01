@@ -8,6 +8,7 @@ import { AuthError } from "next-auth"
 import type { User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import { createConfig, hashPassword, nextAuth } from "@/auth/auth"
+import { getSettings } from "@/database/settings"
 import { getAccounts, updateUser } from "@/database/users"
 import { env } from "@/env"
 
@@ -31,6 +32,18 @@ export default async function AccountPage() {
   const unlinkedProviders = providers.filter((p) =>
     linkedAccounts.every((a) => a.provider !== p.id),
   )
+  const settings = await getSettings()
+  const disablePasswordLogin = settings.disablePasswordLogin
+  const oauthAccounts = linkedAccounts.filter(
+    (account) => account.provider !== "credentials",
+  )
+  const hasPassword = linkedAccounts.some(
+    (account) => account.provider === "credentials",
+  )
+  // Allow unlinking if user has an alternative login method
+  const canUnlink = disablePasswordLogin
+    ? oauthAccounts.length > 1
+    : hasPassword || oauthAccounts.length > 1
 
   async function updateUserAction(data: FormData) {
     "use server"
@@ -78,16 +91,18 @@ export default async function AccountPage() {
             autoCorrect="off"
             defaultValue={currentUser.name ?? ""}
           />
-          <PasswordInput
-            label={
-              linkedAccounts.some(
-                (account) => account.provider === "credentials",
-              )
-                ? "Change password"
-                : "Add password"
-            }
-            name="password"
-          />
+          {!disablePasswordLogin && (
+            <PasswordInput
+              label={
+                linkedAccounts.some(
+                  (account) => account.provider === "credentials",
+                )
+                  ? "Change password"
+                  : "Add password"
+              }
+              name="password"
+            />
+          )}
           <Button className="my-4 self-end" type="submit">
             Save
           </Button>
@@ -98,9 +113,17 @@ export default async function AccountPage() {
           <Title order={3} className="my-4">
             Linked accounts
           </Title>
-          {linkedAccounts
-            .filter((account) => account.provider !== "credentials")
-            .map((account) => (
+          {oauthAccounts.map((account) =>
+            !canUnlink ? (
+              <Button
+                key={account.provider}
+                variant="outline"
+                type="button"
+                className="cursor-default"
+              >
+                {providersMap[account.provider]?.name}
+              </Button>
+            ) : (
               <form
                 key={account.provider}
                 action={async function unlink() {
@@ -111,12 +134,11 @@ export default async function AccountPage() {
                 }}
               >
                 <Button variant="outline" type="submit">
-                  <span>
-                    Unlink from {providersMap[account.provider]?.name}
-                  </span>
+                  Unlink from {providersMap[account.provider]?.name}
                 </Button>
               </form>
-            ))}
+            ),
+          )}
           {unlinkedProviders.map((provider) => (
             <form
               key={provider.id}

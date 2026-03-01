@@ -17,12 +17,14 @@ type Props = {
   ) => Promise<"bad-creds" | "failed" | undefined>
   oauthLoginAction: (id: string, callbackUrl?: string) => Promise<void>
   providers: PublicProvider[]
+  disablePasswordLogin?: boolean
 }
 
 export function LoginForm({
   credentialsLoginAction,
   oauthLoginAction,
   providers,
+  disablePasswordLogin,
 }: Props) {
   const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
@@ -78,52 +80,56 @@ export function LoginForm({
               )
             })}
 
-            <Divider label="Or" labelPosition="center" className="my-2.5" />
+            {!disablePasswordLogin && (
+              <Divider label="Or" labelPosition="center" className="my-2.5" />
+            )}
           </Stack>
         )}
 
-        <form
-          action={async (formData) => {
-            setErrorState(null)
-            try {
-              const error = await credentialsLoginAction(
-                formData,
-                searchParams.get("callbackUrl") ?? undefined,
-              )
-              if (error) {
-                setErrorState(error)
+        {!disablePasswordLogin && (
+          <form
+            action={async (formData) => {
+              setErrorState(null)
+              try {
+                const error = await credentialsLoginAction(
+                  formData,
+                  searchParams.get("callbackUrl") ?? undefined,
+                )
+                if (error) {
+                  setErrorState(error)
+                }
+              } catch (e) {
+                // Next.js uses thrown errors to trigger redirects.
+                // We want to follow the redirect, but _first_ (after
+                // successfully logging in), we want to invalidate
+                // the current user cache, so that we retrieve the
+                // new current user and update the sidebar.
+                dispatch(api.util.invalidateTags(["CurrentUser"]))
+                throw e
               }
-            } catch (e) {
-              // Next.js uses thrown errors to trigger redirects.
-              // We want to follow the redirect, but _first_ (after
-              // successfully logging in), we want to invalidate
-              // the current user cache, so that we retrieve the
-              // new current user and update the sidebar.
-              dispatch(api.util.invalidateTags(["CurrentUser"]))
-              throw e
-            }
-          }}
-        >
-          <Stack className="gap-6">
-            <TextInput
-              required
-              name="usernameOrEmail"
-              autoCapitalize="none"
-              autoCorrect="off"
-              placeholder="Email or username"
-              className="my-0"
-            />
-            <PasswordInput
-              required
-              name="password"
-              placeholder="Password"
-              className="my-0"
-            />
-            <Button type="submit" className="mt-3 w-full self-end">
-              Login
-            </Button>
-          </Stack>
-        </form>
+            }}
+          >
+            <Stack className="gap-6">
+              <TextInput
+                required
+                name="usernameOrEmail"
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder="Email or username"
+                className="my-0"
+              />
+              <PasswordInput
+                required
+                name="password"
+                placeholder="Password"
+                className="my-0"
+              />
+              <Button type="submit" className="mt-3 w-full self-end">
+                Login
+              </Button>
+            </Stack>
+          </form>
+        )}
       </Stack>
     </>
   )

@@ -61,7 +61,11 @@ export const PERMISSIONS_VALUES: Array<{
   { value: "settingsUpdate", label: "Change server settings" },
 ]
 
-export function CreateInviteForm() {
+interface Props {
+  disablePasswordLogin?: boolean | undefined
+}
+
+export function CreateInviteForm({ disablePasswordLogin }: Props) {
   const [showForm, setShowForm] = useState(false)
 
   const form = useForm({
@@ -149,6 +153,10 @@ export function CreateInviteForm() {
             )}
           </Stack>
         </form>
+      ) : disablePasswordLogin ? (
+        <Text className="self-center text-gray-600">
+          Enable password login to invite users by email
+        </Text>
       ) : (
         <Button
           className="self-center"
