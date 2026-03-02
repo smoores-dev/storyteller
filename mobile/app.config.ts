@@ -117,7 +117,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       ["./plugins/withAndroidJetifier.ts"],
-      ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93] }],
+      ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93, 117] }],
       ["./plugins/withCoreLibraryDesugaring.ts"],
       ["./plugins/withAndroidAuto.ts"],
       ["./plugins/withForegroundService.ts"],
