@@ -394,7 +394,9 @@ publish-align-sea-darwin-arm64:
   variables:
     VARIANT: "darwin-arm64"
   before_script:
-    - brew install curl node
+    - brew install curl
+    - nvm install 25
+    - nvm use 25
 
 publish-align-sea-linux-x64:
   image: node:25
@@ -403,7 +405,7 @@ publish-align-sea-linux-x64:
     VARIANT: "linux-x64"
   before_script:
     - apt update
-    - apt install jq
+    - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
 publish-align-sea-linux-arm64:
   image: node:25
@@ -413,7 +415,7 @@ publish-align-sea-linux-arm64:
     VARIANT: "linux-arm64"
   before_script:
     - apt update
-    - apt install jq
+    - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
 # publish-align-sea-windows-x64:
 #   extends: .publish-align-sea-base
