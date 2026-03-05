@@ -368,25 +368,30 @@ release-ghost-story:
     - yarn workspaces focus @storyteller-platform/align
     - yarn workspace @storyteller-platform/align compile
     - |
-      PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-        "${CIP_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}" \
-        | jq -r '.[0].id // empty')
-      if [ -n "$PACKAGE_ID" ]; then
-        FILE_IDS=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files" \
-          | jq -r ".[] | select(.file_name == \"stalign-${VARIANT}\") | .id")
-        for FILE_ID in $FILE_IDS; do
-          echo "Deleting file ID: $FILE_ID"
-          curl -s --request DELETE --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files/${FILE_ID}"
-        done
-      fi
-    - echo "Uploading to GitLab Generic Package Registry..."
-    - |
-      curl --fail-with-body --show-error \
-           --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-           --upload-file stalign \
-           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/stalign/${CI_COMMIT_TAG}/stalign-${VARIANT}"
+      curl --header "JOB-TOKEN:
+        ${CI_JOB_TOKEN}" \
+        "${CIP_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}"
+        \ | jq -r '.[0].id // empty'
+    # - |
+    #   PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+    #     "${CIP_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}" \
+    #     | jq -r '.[0].id // empty')
+    #   if [ -n "$PACKAGE_ID" ]; then
+    #     FILE_IDS=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+    #       "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files" \
+    #       | jq -r ".[] | select(.file_name == \"stalign-${VARIANT}\") | .id")
+    #     for FILE_ID in $FILE_IDS; do
+    #       echo "Deleting file ID: $FILE_ID"
+    #       curl -s --request DELETE --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+    #         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files/${FILE_ID}"
+    #     done
+    #   fi
+    # - echo "Uploading to GitLab Generic Package Registry..."
+    # - |
+    #   curl --fail-with-body --show-error \
+    #        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+    #        --upload-file stalign \
+    #        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/stalign/${CI_COMMIT_TAG}/stalign-${VARIANT}"
 
 publish-align-sea-darwin-arm64:
   extends: .publish-align-sea-base
@@ -416,81 +421,80 @@ publish-align-sea-linux-arm64:
   before_script:
     - apt update
     - DEBIAN_FRONTEND=noninteractive apt install -y jq
-
 # publish-align-sea-windows-x64:
 #   extends: .publish-align-sea-base
 #   tags: [saas-windows-medium-amd64]
 #   variables:
 #     VARIANT: "windows-x64"
 
-publish-align:
-  image: node:25
-  stage: publish
-  rules:
-    - if:
-        '$CI_COMMIT_TAG =~
-        /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  id_tokens:
-    NPM_ID_TOKEN:
-      aud: "npm:registry.npmjs.org"
-  variables:
-    GITLAB: "true"
-  script:
-    - TAG=${CI_COMMIT_TAG##*-}
-    - |
-      case "$TAG" in
-        alpha*) TAG="alpha" ;;
-        beta*) TAG="beta" ;;
-        rc*) TAG="rc" ;;
-        experimental*) TAG="experimental" ;;
-        dev*) TAG="dev" ;;
-        test*) TAG="test" ;;
-        preview*) TAG="preview" ;;
-        *) TAG="latest" ;;
-      esac
-    - yarn workspaces focus @storyteller-platform/align
-    - yarn workspace @storyteller-platform/align npm publish --tag="$TAG"
+# publish-align:
+#   image: node:25
+#   stage: publish
+#   rules:
+#     - if:
+#         '$CI_COMMIT_TAG =~
+#         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+#   id_tokens:
+#     NPM_ID_TOKEN:
+#       aud: "npm:registry.npmjs.org"
+#   variables:
+#     GITLAB: "true"
+#   script:
+#     - TAG=${CI_COMMIT_TAG##*-}
+#     - |
+#       case "$TAG" in
+#         alpha*) TAG="alpha" ;;
+#         beta*) TAG="beta" ;;
+#         rc*) TAG="rc" ;;
+#         experimental*) TAG="experimental" ;;
+#         dev*) TAG="dev" ;;
+#         test*) TAG="test" ;;
+#         preview*) TAG="preview" ;;
+#         *) TAG="latest" ;;
+#       esac
+#     - yarn workspaces focus @storyteller-platform/align
+#     - yarn workspace @storyteller-platform/align npm publish --tag="$TAG"
 
-prerelease-align:
-  stage: prerelease
-  image: alpine:latest
-  rules:
-    - if:
-        '$CI_COMMIT_TAG =~
-        /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/align-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-align"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
+# prerelease-align:
+#   stage: prerelease
+#   image: alpine:latest
+#   rules:
+#     - if:
+#         '$CI_COMMIT_TAG =~
+#         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+#   script:
+#     - apk add curl jq
+#     - version=$(echo $CI_COMMIT_TAG | sed -r 's/align-//')
+#     - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+#     - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+#       "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+#       select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+#     - to_sha=$CI_COMMIT_SHORT_SHA
+#     - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+#       "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-align"
+#       | jq -r .notes > release_notes.md'
+#   artifacts:
+#     paths:
+#       - release_notes.md
 
-release-align:
-  stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs:
-    - job: prerelease-align
-      artifacts: true
-  rules:
-    - if:
-        '$CI_COMMIT_TAG =~
-        /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - echo "Creating release for $CI_COMMIT_TAG"
-  release:
-    name: "Release $CI_COMMIT_TAG"
-    description: release_notes.md
-    tag_name: "$CI_COMMIT_TAG"
-    ref: "$CI_COMMIT_SHA"
-    assets:
-      links:
-        - name: "NPM package for @storyteller-platform/align"
-          url: "https://npmjs.com/package/@storyteller-platform/align"
+# release-align:
+#   stage: release
+#   image: registry.gitlab.com/gitlab-org/release-cli:latest
+#   needs:
+#     - job: prerelease-align
+#       artifacts: true
+#   rules:
+#     - if:
+#         '$CI_COMMIT_TAG =~
+#         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+#   script:
+#     - echo "Creating release for $CI_COMMIT_TAG"
+#   release:
+#     name: "Release $CI_COMMIT_TAG"
+#     description: release_notes.md
+#     tag_name: "$CI_COMMIT_TAG"
+#     ref: "$CI_COMMIT_SHA"
+#     assets:
+#       links:
+#         - name: "NPM package for @storyteller-platform/align"
+#           url: "https://npmjs.com/package/@storyteller-platform/align"
