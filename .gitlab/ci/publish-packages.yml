@@ -382,11 +382,13 @@ release-ghost-story:
         done
       fi
     - echo "Uploading to GitLab Generic Package Registry..."
+    - IFS='v' read -ra VERSION_PARTS <<< $CI_COMMIT_TAG
+    - echo v${VERSION_PARTS[1]}
     - |
       curl --fail-with-body --show-error \
            --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
            --upload-file align/stalign \
-           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/stalign/${CI_COMMIT_TAG}/stalign-${VARIANT}"
+           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/stalign/${VERSION_PARTS[1]}/stalign-${VARIANT}"
 
 publish-align-sea-darwin-arm64:
   extends: .publish-align-sea-base
