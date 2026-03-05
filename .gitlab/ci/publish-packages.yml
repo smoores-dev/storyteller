@@ -386,7 +386,7 @@ release-ghost-story:
     - |
       curl --fail-with-body --show-error \
            --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-           --upload-file stalign \
+           --upload-file align/stalign \
            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/stalign/${CI_COMMIT_TAG}/stalign-${VARIANT}"
 
 publish-align-sea-darwin-arm64:
@@ -395,8 +395,12 @@ publish-align-sea-darwin-arm64:
   variables:
     VARIANT: "darwin-arm64"
   before_script:
-    - brew install curl node
-    - brew link node --force --overwrite
+    - brew install curl
+    - export NVM_DIR="$HOME/.nvm"
+    - source "$NVM_DIR/nvm.sh"
+    - nvm install 25
+    - nvm use 25
+    - nvm alias default 25
 
 publish-align-sea-linux-x64:
   image: node:25
