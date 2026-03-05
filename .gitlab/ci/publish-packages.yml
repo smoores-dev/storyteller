@@ -368,7 +368,6 @@ release-ghost-story:
     - yarn workspaces focus @storyteller-platform/align
     - yarn workspace @storyteller-platform/align compile
     - |
-    - |
       PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}" \
         | jq -r '.[0].id // empty')
@@ -383,6 +382,7 @@ release-ghost-story:
         done
       fi
     - echo "Uploading to GitLab Generic Package Registry..."
+    - ls
     - |
       curl --fail-with-body --show-error \
            --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
@@ -395,8 +395,8 @@ publish-align-sea-darwin-arm64:
   variables:
     VARIANT: "darwin-arm64"
   before_script:
-    - brew install curl node@25
-    - brew link node@25 --force --overwrite
+    - brew install curl node
+    - brew link node --force --overwrite
 
 publish-align-sea-linux-x64:
   image: node:25
@@ -417,11 +417,11 @@ publish-align-sea-linux-arm64:
     - apt update
     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
-publish-align-sea-windows-x64:
-  extends: .publish-align-sea-base
-  tags: [saas-windows-medium-amd64]
-  variables:
-    VARIANT: "windows-x64"
+# publish-align-sea-windows-x64:
+#   extends: .publish-align-sea-base
+#   tags: [saas-windows-medium-amd64]
+#   variables:
+#     VARIANT: "windows-x64"
 
 publish-align:
   image: node:25
