@@ -382,7 +382,6 @@ release-ghost-story:
         done
       fi
     - echo "Uploading to GitLab Generic Package Registry..."
-    - ls
     - |
       curl --fail-with-body --show-error \
            --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
@@ -401,6 +400,7 @@ publish-align-sea-darwin-arm64:
     - nvm install 25
     - nvm use 25
     - nvm alias default 25
+    - npm i -g yarn
 
 publish-align-sea-linux-x64:
   image: node:25
