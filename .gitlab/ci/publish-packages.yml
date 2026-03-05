@@ -368,10 +368,9 @@ release-ghost-story:
     - yarn workspaces focus @storyteller-platform/align
     - yarn workspace @storyteller-platform/align compile
     - |
-      curl --header "JOB-TOKEN:
-        ${CI_JOB_TOKEN}" \
-        "${CIP_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}"
-        \ | jq -r '.[0].id // empty'
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "${CIP_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}" \
+        | jq -r '.[0].id // empty'
     # - |
     #   PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
     #     "${CIP_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}" \
