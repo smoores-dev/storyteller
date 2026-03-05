@@ -28,6 +28,9 @@ bump-versions:
     - cd ../ghost-story
     - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
     - ../scripts/if-version-change.sh git tag ghost-story-v${PACKAGE_VERSION}
+    - cd ../align
+    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+    - ../scripts/if-version-change.sh git tag align-v${PACKAGE_VERSION}
     - cd ..
     - apt update && apt install -y --no-install-recommends git-lfs
     - git remote set-url origin
