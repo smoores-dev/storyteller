@@ -300,7 +300,6 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
             </option>
             <option value="5">5</option>
             <option value="6">6 (acceptable quality/high compression)</option>
-            <option value="0">0</option>
             <option value="7">7</option>
             <option value="8">8</option>
             <option value="9">9</option>

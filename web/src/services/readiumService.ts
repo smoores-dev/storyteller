@@ -76,7 +76,7 @@ export class ReadiumService {
       this.retryCount = 0
       logger.info(`Readium service started on port ${this.port}`)
     } catch (error) {
-      logger.error("Failed to start Readium service", error)
+      logger.error({ err: error }, "Failed to start Readium service")
       throw error
     }
   }
@@ -136,8 +136,8 @@ export class ReadiumService {
             execSync(`kill -9 ${process}`)
           } catch (error) {
             logger.error(
+              { err: error },
               `Failed to kill existing readium process with PID ${process}`,
-              error,
             )
             throw error
           }
@@ -148,7 +148,7 @@ export class ReadiumService {
             )
             await this.start()
           } catch (error) {
-            logger.error("Failed to restart Readium service", error)
+            logger.error({ err: error }, "Failed to restart Readium service")
             throw error
           }
         }
@@ -164,7 +164,7 @@ export class ReadiumService {
 
       this.process.on("error", (error) => {
         clearTimeout(timeoutId)
-        logger.error("Readium process error", error)
+        logger.error({ err: error }, "Readium process error")
         reject(error)
       })
 
@@ -184,7 +184,7 @@ export class ReadiumService {
           const backoffTime = Math.min(1000 * 2 ** this.retryCount, 10000)
           setTimeout(() => {
             this.start().catch((err: unknown) => {
-              logger.error("Failed to restart Readium service", err)
+              logger.error({ err }, "Failed to restart Readium service")
             })
           }, backoffTime)
         }
@@ -218,8 +218,8 @@ export class ReadiumService {
         await sleep(1000)
         this.start().catch((err: unknown) => {
           logger.error(
+            { err },
             "Failed to restart Readium service after health check failure",
-            err,
           )
         })
       }
@@ -247,7 +247,7 @@ export class ReadiumService {
       return true
     } catch (error) {
       // connection refused, timeout, etc. means server is not responsive
-      logger.debug("Readium health check failed", error)
+      logger.debug({ err: error }, "Readium health check failed")
       return false
     }
   }

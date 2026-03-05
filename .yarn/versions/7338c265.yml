@@ -1,0 +1,8 @@
+releases:
+  "@storyteller-platform/align": minor
+  "@storyteller-platform/audiobook": patch
+  "@storyteller-platform/web": patch
+
+declined:
+  - "@storyteller-platform/ghost-story"
+  - "@storyteller-platform/mobile"

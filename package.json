@@ -12,7 +12,8 @@
     "audiobook/",
     "path/",
     "config/*",
-    "ghost-story/"
+    "ghost-story/",
+    "align/"
   ],
   "scripts": {
     "build:docs": "yarn workspace @storyteller-platform/docs build",
@@ -33,6 +34,7 @@
     "fix": "yarn fix:lint && yarn fix:format",
     "generate:env-docs": "tsx ./web/scripts/generate-env-docs.ts",
     "postinstall": "husky",
+    "test:align": "yarn workspace @storyteller-platform/align test",
     "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",
     "test:epub": "yarn workspace @storyteller-platform/epub test",
     "test:web": "yarn workspace @storyteller-platform/web test:all",

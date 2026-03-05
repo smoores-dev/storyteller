@@ -1,0 +1,6 @@
+dist/*
+bundle/*
+sea-config.json
+# test fixtures
+src/__fixtures__/__output__/*
+!src/__fixtures__/__output__/.keep

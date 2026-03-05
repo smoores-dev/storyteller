@@ -67,7 +67,6 @@ if (globalThis.alignmentPiscina) {
       },
     }),
   })
-  logger.debug("new Piscina instance", alignmentPiscina.maxThreads)
   globalThis.alignmentPiscina = alignmentPiscina
 }
 

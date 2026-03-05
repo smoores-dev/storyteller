@@ -13,6 +13,7 @@ COPY .yarn/cache ./.yarn/cache
 COPY .yarn/patches ./.yarn/patches
 
 COPY web/package.json ./web/package.json
+COPY align/package.json ./align/package.json
 COPY fs/package.json ./fs/package.json
 COPY epub/package.json ./epub/package.json
 COPY path/package.json ./path/package.json

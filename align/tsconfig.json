@@ -1,0 +1,29 @@
+{
+  "extends": ["@tsconfig/strictest/tsconfig.json"],
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "incremental": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "resolveJsonModule": true,
+    "lib": ["esnext"],
+    "outDir": "dist"
+  },
+  "include": ["package.json", "src/**/*.ts", "test/**/*.ts"],
+  "references": [
+    {
+      "path": "../epub"
+    },
+    {
+      "path": "../audiobook"
+    },
+    {
+      "path": "../ghost-story"
+    }
+  ]
+}

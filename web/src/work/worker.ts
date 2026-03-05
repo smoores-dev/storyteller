@@ -1,36 +1,32 @@
 import { randomUUID } from "node:crypto"
-import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, readFile } from "node:fs/promises"
 import { basename, dirname } from "node:path"
 import type { MessagePort } from "node:worker_threads"
 
-import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { extension } from "mime-types"
 
+import {
+  align,
+  markup,
+  processAudiobook,
+  transcribe,
+} from "@storyteller-platform/align"
 import { Epub } from "@storyteller-platform/epub"
 import {
-  createAggregator,
   createTiming,
-  ensureWhisperInstalled,
   formatSingleReport,
-  getConversionMode,
 } from "@storyteller-platform/ghost-story"
 
 import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
-import {
-  deleteProcessed,
-  deleteTranscriptions,
-  getProcessedAudioFiles,
-} from "@/assets/fs"
+import { deleteProcessed, deleteTranscriptions } from "@/assets/fs"
 import { writeMetadataToEpub } from "@/assets/metadata"
 import {
   getAlignmentReportFilepath,
   getProcessedAudioFilepath,
   getReadaloudFilepath,
-  getTranscriptionFilename,
   getTranscriptionsFilepath,
 } from "@/assets/paths"
 import {
-  type Book,
   type BookRelationsUpdate,
   type BookUpdate,
   type BookWithRelations,
@@ -40,149 +36,12 @@ import {
   formatTranscriptionEngineDetails,
   getSettings,
 } from "@/database/settings"
-import type { Settings } from "@/database/settingsTypes"
 import { env } from "@/env"
 import { logger } from "@/logging"
-import { getTranscriptions, processAudiobook } from "@/process/processAudio"
-import { Synchronizer } from "@/synchronize/synchronizer"
-import { transcribeTrack } from "@/transcribe"
 import type { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
 
 import type { RestartMode } from "./distributor"
-
-export async function transcribeBook(
-  book: Book,
-  locale: Intl.Locale,
-  settings: Settings,
-  onProgress?: (progress: number) => void,
-) {
-  if (process.env["DEBUG_TRANSCRIBE"] === "true") {
-    const inspector = await import("node:inspector")
-    inspector.open(9231, "0.0.0.0", true)
-  }
-  const semaphore = new AsyncSemaphore(settings.parallelTranscribes)
-  const transcriptionsPath = getTranscriptionsFilepath(book)
-  await mkdir(transcriptionsPath, { recursive: true })
-  const audioFiles = await getProcessedAudioFiles(book)
-  if (!audioFiles.length) {
-    throw new Error("Failed to transcribe book: found no processed audio files")
-  }
-
-  const abortController = new AbortController()
-  const { signal } = abortController
-  const hasFailed = () => signal.aborted
-
-  if (
-    !settings.transcriptionEngine ||
-    settings.transcriptionEngine === "whisper.cpp"
-  ) {
-    await ensureWhisperInstalled({
-      model: settings.whisperModel ?? "tiny.en",
-      printOutput: true,
-      signal,
-    })
-  }
-
-  const transcriptions: string[] = []
-
-  const aggregatedTiming = createAggregator()
-  aggregatedTiming.setMetadata(
-    "engine",
-    settings.transcriptionEngine ?? "whisper.cpp",
-  )
-  aggregatedTiming.setMetadata("conversionMode", getConversionMode())
-  aggregatedTiming.setMetadata("parallelization", settings.parallelTranscribes)
-  if (settings.whisperThreads) {
-    aggregatedTiming.setMetadata("whisperThreads", settings.whisperThreads)
-  }
-
-  try {
-    await Promise.all(
-      audioFiles.map(async (audioFile) => {
-        await semaphore.wait()
-
-        if (hasFailed()) {
-          semaphore.release()
-          return
-        }
-
-        try {
-          const transcriptionFilepath = getTranscriptionsFilepath(
-            book,
-            getTranscriptionFilename(audioFile),
-          )
-          const filepath = getProcessedAudioFilepath(book, audioFile)
-          try {
-            const existingTranscription = await readFile(
-              transcriptionFilepath,
-              {
-                encoding: "utf-8",
-                signal,
-              },
-            )
-            if (!existingTranscription) {
-              throw new Error(`No transcription found for ${filepath}`)
-            }
-
-            logger.info(`Found existing transcription for ${filepath}`)
-            transcriptions.push(transcriptionFilepath)
-          } catch (_) {
-            if (hasFailed()) {
-              return
-            }
-
-            try {
-              const transcription = await transcribeTrack(
-                filepath,
-                locale,
-                settings,
-                signal,
-              )
-
-              if (hasFailed()) {
-                return
-              }
-
-              logger.info(`
-${formatSingleReport(transcription.timing, `Transcription Timing Report for ${filepath}`)}`)
-              aggregatedTiming.add(transcription.timing)
-
-              transcriptions.push(filepath)
-              await writeFile(
-                transcriptionFilepath,
-                JSON.stringify({
-                  transcript: transcription.transcript,
-                  timeline: transcription.timeline,
-                }),
-                { signal },
-              )
-            } catch (e) {
-              logger.error({ msg: `Failed to transcribe ${filepath}`, err: e })
-              abortController.abort(e)
-              throw e
-            }
-          }
-          onProgress?.((transcriptions.length + 1) / audioFiles.length)
-        } finally {
-          semaphore.release()
-        }
-      }),
-    )
-  } catch (e) {
-    if (e instanceof Error && e.name === "AbortError") {
-      throw new Error(
-        `Transcription was aborted due to a failure: ${e.message}`,
-        { cause: e },
-      )
-    }
-    throw e
-  }
-
-  aggregatedTiming.print("Transcription Timing Report")
-
-  return
-}
 
 const STAGES = ["SPLIT_TRACKS", "TRANSCRIBE_CHAPTERS", "SYNC_CHAPTERS"] as const
 
@@ -284,12 +143,19 @@ export default async function processBook({
         logger.info("Pre-processing...")
         await processTiming.timeAsync("split_tracks", () =>
           processAudiobook(
-            book,
-            settings.maxTrackLength ?? null,
-            settings.codec ?? null,
-            settings.bitrate ?? null,
-            new AsyncSemaphore(settings.parallelTranscodes),
-            onProgress,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            book.audiobook!.filepath,
+            getProcessedAudioFilepath(book),
+            {
+              maxLength: settings.maxTrackLength,
+              parallelism: settings.parallelTranscodes,
+              encoding: {
+                codec: settings.codec,
+                bitrate: settings.bitrate,
+              },
+              logger,
+              onProgress,
+            },
           ),
         )
       }
@@ -306,7 +172,37 @@ export default async function processBook({
 
         const settings = await getSettings()
         await processTiming.timeAsync("transcribe_chapters", () =>
-          transcribeBook(book, locale, settings, onProgress),
+          transcribe(
+            getProcessedAudioFilepath(book),
+            getTranscriptionsFilepath(book),
+            locale,
+            {
+              onProgress,
+              engine: settings.transcriptionEngine,
+              parallelism: settings.parallelTranscribes,
+              model: settings.whisperModel,
+              processors: settings.whisperThreads,
+              threads: settings.whisperThreads * 4,
+              whisperCpuOverride: settings.whisperCpuFallback,
+              logger,
+              googleCloudApiKey: settings.googleCloudApiKey,
+              azureServiceRegion: settings.azureServiceRegion,
+              azureSubscriptionKey: settings.azureSubscriptionKey,
+              amazonTranscribeRegion: settings.amazonTranscribeRegion,
+              amazonTranscribeAccessKeyId: settings.amazonTranscribeAccessKeyId,
+              amazonTranscribeSecretAccessKey:
+                settings.amazonTranscribeSecretAccessKey,
+              amazonTranscribeBucketName: settings.amazonTranscribeBucketName,
+              openAiApiKey: settings.openAiApiKey,
+              openAiOrganization: settings.openAiOrganization,
+              openAiBaseUrl: settings.openAiBaseUrl,
+              openAiModelName: settings.openAiModelName,
+              whisperServerUrl: settings.whisperServerUrl,
+              whisperServerApiKey: settings.whisperServerApiKey,
+              deepgramApiKey: settings.deepgramApiKey,
+              deepgramModel: settings.deepgramModel,
+            },
+          ),
         )
       }
 
@@ -315,38 +211,24 @@ export default async function processBook({
         const readaloudFilepath = getReadaloudFilepath(book, settings)
         const readaloudDirectory = dirname(readaloudFilepath)
         await mkdir(readaloudDirectory, { recursive: true })
+
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        await cp(book.ebook!.filepath, readaloudFilepath, { force: true })
-
-        using epub = await Epub.from(readaloudFilepath)
-        const audioFiles = await getProcessedAudioFiles(book)
-        book = await getBookOrThrow(bookUuid)
-        const transcriptions = await getTranscriptions(book)
-        if (!audioFiles.length) {
-          throw new Error(`No audio files found for book ${bookUuid}`)
-        }
-        logger.info("Syncing narration...")
-        const synchronizer = new Synchronizer(
-          epub,
-          await Promise.all(
-            audioFiles.map((audioFile) =>
-              getProcessedAudioFilepath(book, audioFile),
-            ),
-          ),
-          transcriptions,
-        )
-        await processTiming.timeAsync("sync_chapters", () =>
-          synchronizer.syncBook(onProgress),
-        )
-
-        await mkdir(dirname(getAlignmentReportFilepath(book)), {
-          recursive: true,
+        await markup(book.ebook!.filepath, readaloudFilepath, {
+          onProgress,
+          logger,
         })
 
-        await writeFile(
-          getAlignmentReportFilepath(book),
-          JSON.stringify(synchronizer.report, null, 2),
-          { encoding: "utf-8" },
+        await align(
+          readaloudFilepath,
+          readaloudFilepath,
+          getTranscriptionsFilepath(book),
+          getProcessedAudioFilepath(book),
+          {
+            granularity: "sentence",
+            reportsPath: getAlignmentReportFilepath(book),
+            logger,
+            onProgress,
+          },
         )
 
         book = await updateBook(null, {
@@ -387,6 +269,8 @@ export default async function processBook({
         logger.info(
           `Writing metadata to aligned readaloud file (title: ${book.title})`,
         )
+
+        using epub = await Epub.from(readaloudFilepath)
         await writeMetadataToEpub(book, epub, {
           includeAlignmentMetadata: true,
           ...(audioCover && { audioCover }),
