@@ -12,7 +12,22 @@ import { basename, dirname, extname, join } from "@storyteller-platform/path"
 
 import { AudiobookEntry } from "./entry.ts"
 import { type AttachedPic } from "./ffmpeg.ts"
+import { AUDIO_FILE_EXTENSIONS } from "./mime.ts"
 import { type AudiobookChapter, type AudiobookResource } from "./resources.ts"
+
+export {
+  AAC_FILE_EXTENSIONS,
+  AIFF_FILE_EXTENSIONS,
+  MP3_FILE_EXTENSIONS,
+  MPEG4_FILE_EXTENSIONS,
+  OGG_FILE_EXTENSIONS,
+  OPUS_FILE_EXTENSIONS,
+  isAudioFile,
+  isZipArchive,
+  lookupAudioMime,
+} from "./mime.ts"
+
+export type { AudiobookChapter }
 
 export interface AudiobookMetadata {
   title?: string | null
@@ -26,36 +41,6 @@ export interface AudiobookMetadata {
   publisher?: string | null
   releaseDate?: Date | null
 }
-
-export const COVER_IMAGE_FILE_EXTENSIONS = [
-  ".jpeg",
-  ".jpg",
-  ".png",
-  ".svg",
-] as const
-export const MP3_FILE_EXTENSIONS = [".mp3"] as const
-export const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"] as const
-export const AAC_FILE_EXTENSIONS = [".aac"] as const
-export const OGG_FILE_EXTENSIONS = [".ogg", ".oga", ".mogg"] as const
-export const OPUS_FILE_EXTENSIONS = [".opus"] as const
-export const WAVE_FILE_EXTENSIONS = [".wav"] as const
-export const AIFF_FILE_EXTENSIONS = [".aiff"] as const
-export const FLAC_FILE_EXTENSIONS = [".flac"] as const
-export const ALAC_FILE_EXTENSIONS = [".alac"] as const
-export const WEBM_FILE_EXTENSIONS = [".weba"] as const
-
-const AUDIO_FILE_EXTENSIONS = [
-  ...MP3_FILE_EXTENSIONS,
-  ...AAC_FILE_EXTENSIONS,
-  ...MPEG4_FILE_EXTENSIONS,
-  ...OPUS_FILE_EXTENSIONS,
-  ...OGG_FILE_EXTENSIONS,
-  ...WAVE_FILE_EXTENSIONS,
-  ...AIFF_FILE_EXTENSIONS,
-  ...FLAC_FILE_EXTENSIONS,
-  ...ALAC_FILE_EXTENSIONS,
-  ...WEBM_FILE_EXTENSIONS,
-] as const
 
 export type AudiobookInputs = [string, ...string[]]
 

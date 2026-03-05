@@ -219,7 +219,12 @@ export const GET = async (
     // don't want to use instanceof
     if (isReadiumServiceError(error)) {
       if (error.errorType === "file_not_found") {
-        logger.error(`Book file not found: ${book.title} (${bookId})`, error)
+        logger.error(
+          {
+            err: error,
+          },
+          `Book file not found: ${book.title} (${bookId})`,
+        )
         return Response.json(
           {
             error: "book_not_found",
@@ -237,7 +242,7 @@ export const GET = async (
       }
 
       if (error.errorType === "file_not_found_in_book") {
-        logger.error(`Resource not found in book: ${path}`, error)
+        logger.error({ err: error }, `Resource not found in book: ${path}`)
         return Response.json(
           {
             error: "resource_not_found",
@@ -254,7 +259,7 @@ export const GET = async (
       }
 
       if (error.errorType === "not_running") {
-        logger.error("Readium service is not running", error)
+        logger.error({ err: error }, "Readium service is not running")
         return Response.json(
           {
             error: "service_unavailable",
@@ -270,7 +275,12 @@ export const GET = async (
       }
     }
 
-    logger.error(`Unexpected error reading book resource: ${path}`, error)
+    logger.error(
+      {
+        err: error,
+      },
+      `Unexpected error reading book resource: ${path}`,
+    )
     return Response.json(
       {
         error: "internal_error",
@@ -328,7 +338,7 @@ export const GET = async (
         ) {
           logger.debug(`Stream aborted for ${path}`)
         } else {
-          logger.error(`Stream error for ${path}`, error)
+          logger.error({ err: error }, `Stream error for ${path}`)
           controller.error(error)
         }
       }

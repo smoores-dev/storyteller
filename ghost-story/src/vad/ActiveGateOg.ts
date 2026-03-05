@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-condition */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { type FileHandle, open, stat } from "fs/promises"
+import { type FileHandle, open, stat } from "node:fs/promises"
 
 import { fileToWav } from "../convert.ts"
 import { decodeAscii } from "../encodings/Ascii.ts"

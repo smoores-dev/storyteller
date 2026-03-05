@@ -121,3 +121,5 @@ export {
   ensureVadInstalled,
   segmentsToTimeline,
 } from "./vad/Silero.ts"
+
+export { RECOGNITION_ENGINES } from "./cli/config.ts"

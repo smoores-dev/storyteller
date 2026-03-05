@@ -2,17 +2,17 @@
   "name": "@storyteller-platform/ghost-story",
   "version": "0.1.2",
   "description": "An easy-to-use speech toolset. Fork of the original echogarden project.",
-  "author": "",
+  "author": "Thomas F. K. Jorna",
   "license": "GPL-3.0",
   "keywords": [
-    "text-to-speech"
+    "speech-to-text"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/storyteller-platform/storyteller"
+    "url": "https://gitlab.com/storyteller-platform/storyteller"
   },
   "bugs": {
-    "url": "https://github.com/storyteller-platform/storyteller/issues"
+    "url": "https://gitlab.com/storyteller-platform/storyteller/issues"
   },
   "engines": {
     "node": ">=20"

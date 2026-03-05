@@ -76,3 +76,17 @@ test-audiobook:
   script:
     - yarn
     - yarn test:audiobook
+
+test-align:
+  image: registry.gitlab.com/storyteller-platform/storyteller-base:main
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if:
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
+      changes:
+        - align/**/*
+  script:
+    - yarn
+    - yarn test:align
