@@ -99,7 +99,17 @@ ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64"
 # oneapi/sycl paths (harmless if /opt/intel/oneapi doesn't exist)
 ENV ONEAPI_ROOT=/opt/intel/oneapi
 ENV PATH="${ONEAPI_ROOT}/compiler/latest/bin:${PATH}"
-ENV LD_LIBRARY_PATH="${ONEAPI_ROOT}/compiler/latest/lib:${ONEAPI_ROOT}/mkl/latest/lib:${LD_LIBRARY_PATH:-}"
+
+# register oneapi libraries with the dynamic linker so whisper.cpp can find
+# libsycl, libdnnl, libtbb, libmkl, etc. at runtime.
+# setvars.sh knows the exact paths for the installed toolkit version, so we
+# capture its LD_LIBRARY_PATH output rather than hardcoding component paths
+# that vary across toolkit releases.
+RUN if [ -d /opt/intel/oneapi ]; then \
+      bash -c 'source /opt/intel/oneapi/setvars.sh 2>/dev/null && echo "$LD_LIBRARY_PATH" | tr ":" "\n"' \
+        > /etc/ld.so.conf.d/oneapi.conf && \
+      ldconfig; \
+    fi
 
 COPY scripts/install-node.sh .
 
