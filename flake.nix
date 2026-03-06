@@ -79,7 +79,7 @@
                       git lfs pull
 
                       # install readium cli for development using our reusable script
-                      ./web/install-readium-cli.sh 0.4.0
+                      ./web/install-readium-cli.sh 0.6.5
 
                       touch .devenv-initialized'';
                     status = "test -f .devenv-initialized";

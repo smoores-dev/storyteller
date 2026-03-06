@@ -70,13 +70,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-ARG READIUM_VERSION=0.6.1
-
-# Install Readium CLI using our script
-COPY --from=builder /app/web/install-readium-cli.sh /tmp/install-readium-cli.sh
-RUN chmod +x /tmp/install-readium-cli.sh && \
-    /tmp/install-readium-cli.sh ${READIUM_VERSION} && \
-    rm /tmp/install-readium-cli.sh
+COPY --from=ghcr.io/readium/readium:0.6.5 /opt/readium /opt/readium
+RUN ln -sf /opt/readium /usr/local/bin/readium
 
 
 COPY --from=builder /app/web/.next/standalone ./.next/standalone
