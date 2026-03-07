@@ -3,14 +3,19 @@ import { createReadStream } from "node:fs"
 import { readdir, stat } from "node:fs/promises"
 import { join, relative } from "node:path"
 
+import { xxh3 } from "@node-rs/xxhash"
+
 import { type PipelineStep } from "@/assets/autoimport/scanner/types"
 import { isAudioFile } from "@/audio"
 import { updateBook } from "@/database/books"
 
 import { getFormatRelationPatch } from "./utils"
 
-async function hashFile(filepath: string): Promise<{ hash: string; fileSize: number | null }> {
-  const hash = createHash("sha256")
+async function hashFile(
+  filepath: string,
+): Promise<{ hash: string; fileSize: number | null }> {
+  // const hash = createHash("sha256")
+  const hash = xxh3.Xxh3.withSeed()
   const fileStats = await stat(filepath)
   const fileSize = fileStats.isFile() ? fileStats.size : null
 
@@ -22,7 +27,7 @@ async function hashFile(filepath: string): Promise<{ hash: string; fileSize: num
   })
 
   return {
-    hash: hash.digest("hex"),
+    hash: hash.digest().toString(),
     fileSize,
   }
 }

@@ -35,6 +35,7 @@
     "@mantine/dates": "^8.3.0",
     "@mantine/form": "^8.3.0",
     "@mantine/hooks": "^8.3.0",
+    "@node-rs/xxhash": "^1.7.6",
     "@readium/navigator": "2.1.1",
     "@readium/navigator-html-injectables": "2.1.1",
     "@readium/shared": "patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch",

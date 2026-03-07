@@ -43,6 +43,7 @@ const nextConfig = {
     "pino-pretty",
     "onnxruntime-node",
     "@node-rs/crc32",
+    "@node-rs/xxhash",
   ],
   output: "standalone",
   outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../.."),
