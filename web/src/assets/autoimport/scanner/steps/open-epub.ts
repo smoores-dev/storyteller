@@ -1,11 +1,11 @@
 import { Epub } from "@storyteller-platform/epub"
 
-import { type PipelineStep } from "../types"
+import { type PipelineStep } from "@/assets/autoimport/scanner/types"
 
 export const openEpubStep: PipelineStep = {
   name: "open-epub",
   async run(ctx) {
-    if (ctx.format !== "ebook") {
+    if (ctx.format === "audiobook") {
       return
     }
 
@@ -24,4 +24,3 @@ export const openEpubStep: PipelineStep = {
     ctx.epub = null
   },
 }
-

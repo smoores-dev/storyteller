@@ -117,6 +117,8 @@ export const SettingsSchema = z.object({
   // OPDS settings
   opdsEnabled: z.boolean().nullable(),
   opdsPageSize: z.number().nullable(),
+  // Scanning settings
+  existingBooksScanIntervalMinutes: z.number().nullable(),
 })
 export type Settings = z.infer<typeof SettingsSchema>
 

@@ -31,9 +31,8 @@ export interface Audiobook {
   bookUuid: import("@/uuid").UUID
   contentHash: string | null
   createdAt: Generated<string>
-  duration: number | null
   filepath: string
-  manifest: ColumnType<Record<string, unknown>, string, string> | null
+  manifest: string | null
   missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
@@ -145,7 +144,7 @@ export interface Ebook {
   contentHash: string | null
   createdAt: Generated<string>
   filepath: string
-  manifest: ColumnType<Record<string, unknown>, string, string> | null
+  manifest: string | null
   missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
@@ -175,9 +174,11 @@ export interface Position {
 
 export interface Readaloud {
   bookUuid: import("@/uuid").UUID
+  contentHash: string | null
   createdAt: Generated<string>
   currentStage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
   filepath: string | null
+  manifest: string | null
   missing: Generated<boolean>
   queuePosition: number | null
   restartPending: "full" | "transcription" | "sync" | null

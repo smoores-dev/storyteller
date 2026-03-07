@@ -29,10 +29,10 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import {
-  createScanContext,
-  runBookScanPipeline,
   type ScanFlag,
   type ScanFormat,
+  createScanContext,
+  runBookScanPipeline,
 } from "./scanner"
 
 type BookPath = {
@@ -86,7 +86,10 @@ function registerNewFlags(
   flagsByBook.set(bookUuid, existing)
 }
 
-function hasAnyRelationChange(book: BookWithRelations, bookPath: BookPath): boolean {
+function hasAnyRelationChange(
+  book: BookWithRelations,
+  bookPath: BookPath,
+): boolean {
   if (bookPath.ebook && !book.ebook) {
     return true
   }
@@ -113,7 +116,11 @@ async function ensureBookDirectory(book: BookWithRelations) {
     await mkdir(getInternalBookDirectory(book))
     return book
   } catch (error) {
-    if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") {
+    if (
+      !(error instanceof Error) ||
+      !("code" in error) ||
+      error.code !== "EEXIST"
+    ) {
       throw error
     }
   }
@@ -185,7 +192,9 @@ async function createNewBook(
             currentStage: "SPLIT_TRACKS",
           },
         }),
-        ...(bookPath.audiobook && { audiobook: { filepath: bookPath.audiobook } }),
+        ...(bookPath.audiobook && {
+          audiobook: { filepath: bookPath.audiobook },
+        }),
       },
     )
 
@@ -290,7 +299,11 @@ async function updateReadaloudMissingState(
       })
       continue
     } catch (error) {
-      if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") {
+      if (
+        !(error instanceof Error) ||
+        !("code" in error) ||
+        error.code !== "ENOENT"
+      ) {
         throw error
       }
     }
@@ -372,6 +385,7 @@ async function discoverBookPaths(
 
   logger.debug("Checking ebooks for adjacent readalouds and audio...")
   for (const ebookPath of ebookPaths) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (signal.aborted) {
       logger.debug("Scanning aborted")
       return []
@@ -389,6 +403,7 @@ async function discoverBookPaths(
     let readaloudPath: string | null = null
 
     for (const path of [ebookPath, ...additionalEbookPaths]) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (signal.aborted) {
         logger.debug("Scanning aborted")
         return []
@@ -477,7 +492,9 @@ export async function scan(
 
   let books = getScopedBooks(allBooks, collectionUuid)
   const knownEbookPaths = new Set(
-    books.map((book) => book.ebook?.filepath).filter((path): path is string => !!path),
+    books
+      .map((book) => book.ebook?.filepath)
+      .filter((path): path is string => !!path),
   )
   const knownReadaloudPaths = new Set(
     books
@@ -491,6 +508,7 @@ export async function scan(
     knownReadaloudPaths,
     signal,
   )
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (signal.aborted) {
     logger.debug("Scanning aborted")
     return
@@ -501,6 +519,7 @@ export async function scan(
 
   logger.debug("Searching found book folders for new books...")
   for (const bookPath of bookPaths) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (signal.aborted) {
       logger.debug("Scanning aborted")
       return
@@ -508,10 +527,14 @@ export async function scan(
 
     const book = findMatchingBook(books, bookPath)
     if (!book) {
-      logger.debug(`Found a new book! Importing from ${JSON.stringify(bookPath)}`)
+      logger.debug(
+        `Found a new book! Importing from ${JSON.stringify(bookPath)}`,
+      )
 
       if (bookPath.audiobook) {
-        const nestedBook = await getBookByAudiobookFilepathPrefix(bookPath.audiobook)
+        const nestedBook = await getBookByAudiobookFilepathPrefix(
+          bookPath.audiobook,
+        )
         if (nestedBook) {
           logger.warn(
             `Found a new audiobook file in the folder ${bookPath.audiobook}, but the book ${nestedBook.title} already has audiobook files at ${nestedBook.audiobookFilepath}: skipping. Please place all files within book-specific folders: https://storyteller-platform.gitlab.io/storyteller/docs/managing/adding#organizing-your-auto-import-folder.`,
@@ -527,7 +550,11 @@ export async function scan(
         }
 
         books.push(created)
-        registerNewFlags(newFlagsByBook, created.uuid, getBookPathFormats(bookPath))
+        registerNewFlags(
+          newFlagsByBook,
+          created.uuid,
+          getBookPathFormats(bookPath),
+        )
       } catch (error) {
         logger.error(
           `Encountered issue attempting to import from ${JSON.stringify(bookPath)}, skipping`,

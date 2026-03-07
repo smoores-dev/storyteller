@@ -1,25 +1,37 @@
-import { getBook, updateBook, type BookRelationsUpdate } from "@/database/books"
-
+import {
+  type PipelineStep,
+  type ScanContext,
+} from "@/assets/autoimport/scanner/types"
 import { keepMissingMetadata, keepMissingRelations } from "@/assets/metadata"
+import { type BookRelationsUpdate, getBook, updateBook } from "@/database/books"
 
-import { type PipelineStep, type ScanContext } from "../types"
 import { getFormatRelationPatch } from "./utils"
 
 function withFormatFields(ctx: ScanContext): BookRelationsUpdate {
-  if (ctx.format === "ebook") {
-    return getFormatRelationPatch(ctx, {
-      manifest: ctx.manifest,
-      contentHash: ctx.fileHash,
-      missing: false,
-    })
+  switch (ctx.format) {
+    case "ebook":
+      return getFormatRelationPatch(ctx, {
+        manifest: JSON.stringify(ctx.manifest ?? null),
+        contentHash: ctx.fileHash,
+        missing: false,
+      })
+    case "audiobook":
+      return getFormatRelationPatch(ctx, {
+        manifest: JSON.stringify(ctx.manifest ?? null),
+        contentHash: ctx.fileHash,
+        missing: false,
+      })
+    case "readaloud":
+      return getFormatRelationPatch(ctx, {
+        manifest: JSON.stringify(ctx.manifest ?? null),
+        contentHash: ctx.fileHash,
+        missing: false,
+      })
+    default: {
+      const fmt: never = ctx.format
+      throw new Error(`Invalid format: ${fmt as string}`)
+    }
   }
-
-  return getFormatRelationPatch(ctx, {
-    manifest: ctx.manifest,
-    duration: ctx.duration,
-    contentHash: ctx.fileHash,
-    missing: false,
-  })
 }
 
 export const reconcileMetadataStep: PipelineStep = {

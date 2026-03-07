@@ -4,6 +4,7 @@ import { ZodError } from "zod"
 
 import { update } from "@/assets/autoimport/listen"
 import { env } from "@/env"
+import { refreshScheduledExistingBookScan } from "@/assets/autoimport/scheduledScan"
 
 import { db } from "./connection"
 import { ConfigFileSchema, type Settings } from "./settingsTypes"
@@ -170,6 +171,7 @@ export async function updateSettings(settings: Settings) {
       .execute()
   }
   await update(null)
+  await refreshScheduledExistingBookScan()
 }
 
 // Validate and cache config file on startup (never re-read after this)

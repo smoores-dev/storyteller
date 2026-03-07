@@ -8,7 +8,7 @@ import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { scan } from "./scan"
+import { runImportPathScan } from "./scanManager"
 
 const entryLocks = new Map<string, AsyncMutex>()
 
@@ -33,7 +33,7 @@ function startWatcher(
   // This will always succeed, we just created the lock
   scanLock.tryLock()
 
-  scan(importPath, collection, controller.signal)
+  runImportPathScan(importPath, collection, controller.signal)
     .catch((e: unknown) => {
       logger.error(
         `Encountered an error scanning for new book files in ${importPath}`,
@@ -65,7 +65,7 @@ function startWatcher(
 
       await scanLock.lock()
 
-      scan(importPath, collection, controller.signal)
+      runImportPathScan(importPath, collection, controller.signal)
         .catch((e: unknown) => {
           logger.error(
             `Encountered an error scanning for new book files in ${importPath}`,

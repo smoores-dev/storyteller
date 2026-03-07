@@ -1,3 +1,5 @@
+import { type Logger } from "pino"
+
 import { type Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook"
 import { type Epub } from "@storyteller-platform/epub"
 
@@ -8,10 +10,11 @@ import {
 } from "@/database/books"
 import { type UUID } from "@/uuid"
 
-export type ScanFormat = "ebook" | "audiobook"
+export type ScanFormat = "ebook" | "audiobook" | "readaloud"
 export type ScanFlag = "missing" | "changed" | "new"
 
 export interface ScanContext {
+  logger: Logger
   bookUuid: UUID
   format: ScanFormat
   filepath: string

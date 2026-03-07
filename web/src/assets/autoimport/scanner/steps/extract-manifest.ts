@@ -65,15 +65,23 @@ function deriveEbookPositionsCount(
 export const extractManifestStep: PipelineStep = {
   name: "extract-manifest",
   async run(ctx) {
-    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
-      return
-    }
-
     if (!ctx.book) {
       return
     }
 
-    if (ctx.format === "ebook") {
+    if (
+      !ctx.flags.has("changed") &&
+      !ctx.flags.has("new") &&
+      ctx.book[ctx.format]?.manifest
+    ) {
+      ctx.logger.debug(
+        `No changed or new flags, skipping manifest extraction for book`,
+      )
+      return
+    }
+
+    if (ctx.format === "ebook" || ctx.format === "readaloud") {
+      ctx.logger.debug(`Extracting manifest for book ${ctx.book.title}`)
       const readiumService = getReadiumService()
       if (!readiumService.isRunning()) {
         await readiumService.start()
@@ -88,12 +96,13 @@ export const extractManifestStep: PipelineStep = {
       return
     }
 
+    ctx.logger.debug(`Creating audiobook manifest`)
     const manifest = await createAudiobookManifest(ctx.filepath, {
       bookId: ctx.book.uuid,
       title: ctx.book.title,
-      subtitle: ctx.book.subtitle ?? undefined,
-      description: ctx.book.description ?? undefined,
-      language: ctx.book.language ?? undefined,
+      subtitle: ctx.book.subtitle ?? "",
+      description: ctx.book.description ?? "",
+      language: ctx.book.language ?? "",
       updatedAt: new Date(ctx.book.updatedAt),
     })
     const serialized = manifest.serialize() as Record<string, unknown>

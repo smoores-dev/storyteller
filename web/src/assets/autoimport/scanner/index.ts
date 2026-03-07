@@ -18,7 +18,7 @@ const steps = [
   extractMetadataStep,
   extractManifestStep,
   reconcileMetadataStep,
-]
+] as const
 
 export function createScanContext(input: {
   bookUuid: ScanContext["bookUuid"]
@@ -51,7 +51,7 @@ export async function runBookScanPipeline(
   signal: AbortSignal,
 ) {
   await runPipeline(contexts, steps, {
-    concurrency: 2,
+    concurrency: contexts.length === 1 ? 1 : 2,
     signal,
     onProgress(processed, total) {
       logger.debug(`scan pipeline progress ${processed}/${total}`)

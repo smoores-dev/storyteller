@@ -1,3 +1,4 @@
--- no-op migration---
+-- no-op migration----
 SELECT
   1;
+

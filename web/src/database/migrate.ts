@@ -35,6 +35,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "65_add_scan_pipeline_metadata.sql": (
     await import("./migrations/65_add_scan_pipeline_metadata.sql")
   ).default,
+  "66_add_existing_book_scan_schedule_setting.sql": (
+    await import("./migrations/66_add_existing_book_scan_schedule_setting.sql")
+  ).default,
 }
 
 async function isFirstStartup() {

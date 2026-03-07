@@ -3,7 +3,11 @@
 import { Box, Button, Group, Paper, Progress, Stack, Text } from "@mantine/core"
 
 import { usePermissions } from "@/hooks/usePermissions"
-import { useListBooksQuery, useProcessBookMutation } from "@/store/api"
+import {
+  useListBooksQuery,
+  useProcessBookMutation,
+  useTriggerBookScanMutation,
+} from "@/store/api"
 import { type UUID } from "@/uuid"
 
 import { BookOptions } from "./BookOptions"
@@ -29,6 +33,8 @@ export function BookStatus({ bookUuid }: Props) {
   const permissions = usePermissions()
 
   const [processBook] = useProcessBookMutation()
+  const [triggerBookScan, { isLoading: isTriggeringScan }] =
+    useTriggerBookScanMutation()
 
   if (!book) return null
 
@@ -44,6 +50,7 @@ export function BookStatus({ bookUuid }: Props) {
     <Paper>
       <Group justify="space-between" wrap="nowrap" align="center">
         <BookOptions aligned={aligned} book={book} />
+
         {book.readaloud || (book.ebook && book.audiobook) ? (
           <Stack justify="space-between" className="grow">
             {book.readaloud?.status ? (
@@ -82,6 +89,19 @@ export function BookStatus({ bookUuid }: Props) {
           <Box />
         )}
       </Group>
+
+      {permissions.bookProcess && (
+        <Button
+          variant="default"
+          className="self-start"
+          loading={isTriggeringScan}
+          onClick={() => {
+            void triggerBookScan({ uuid: book.uuid })
+          }}
+        >
+          Trigger Scan
+        </Button>
+      )}
     </Paper>
   )
 }

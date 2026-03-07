@@ -52,9 +52,11 @@ export const computeHashStep: PipelineStep = {
   name: "compute-hash",
   async run(ctx) {
     const hash =
-      ctx.format === "ebook"
-        ? await hashFile(ctx.filepath)
-        : await hashAudiobookDirectory(ctx.filepath)
+      ctx.format === "audiobook"
+        ? await hashAudiobookDirectory(ctx.filepath)
+        : await hashFile(ctx.filepath)
+
+    ctx.logger.debug(`Computed hash for ${ctx.filepath}: ${hash}`)
 
     ctx.fileHash = hash
 
@@ -78,4 +80,3 @@ export const computeHashStep: PipelineStep = {
     ctx.existingHash = hash
   },
 }
-

@@ -33,8 +33,11 @@ import {
   BASIC_PERMISSIONS,
   PERMISSIONS_VALUES,
 } from "@/components/users/CreateInviteForm"
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   useGetMaxUploadChunkSizeQuery,
+  useGetScanStateQuery,
+  useTriggerScanMutation,
   useUpdateSettingsMutation,
 } from "@/store/api"
 
@@ -66,10 +69,17 @@ export function SettingsForm({
   const isAnyLocked = (...keys: (keyof Settings)[]) => keys.some(isLocked)
   const [saved, setSaved] = useState(false)
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const permissions = usePermissions()
 
   const { data: maxUploadChunkSize } = useGetMaxUploadChunkSizeQuery()
+  const { data: scanState } = useGetScanStateQuery(undefined, {
+    pollingInterval: 5_000,
+    skip: !permissions?.bookProcess,
+  })
 
   const [updateSettings] = useUpdateSettingsMutation()
+  const [triggerScan, { isLoading: isTriggeringScan }] =
+    useTriggerScanMutation()
 
   const initialValues: Settings = {
     smtpHost: settings.smtpHost,
@@ -117,6 +127,8 @@ export function SettingsForm({
       maxUploadChunkSize?.maxUploadChunkSize ?? settings.maxUploadChunkSize,
     opdsEnabled: settings.opdsEnabled,
     opdsPageSize: settings.opdsPageSize,
+    existingBooksScanIntervalMinutes:
+      settings.existingBooksScanIntervalMinutes ?? null,
   }
 
   const form = useForm({
@@ -203,6 +215,58 @@ export function SettingsForm({
           import in the settings for that collection.
         </Text>
       </ImportPathInput>
+      <Fieldset
+        legend="Library scan controls"
+        disabled={isAnyLocked(
+          "existingBooksScanIntervalMinutes",
+          "existingBooksScanIntervalMinutes",
+        )}
+      >
+        <Stack>
+          <Text className="text-sm text-black opacity-70">
+            Trigger full rescans for existing books and optionally run them on a
+            schedule.
+          </Text>
+          {permissions?.bookProcess && (
+            <Group>
+              <Button
+                variant="outline"
+                loading={isTriggeringScan}
+                onClick={() => {
+                  void triggerScan({ scope: "existing" })
+                }}
+              >
+                Trigger Scan (All Existing Books)
+              </Button>
+            </Group>
+          )}
+          {permissions?.bookProcess && scanState?.running && (
+            <Text className="text-sm text-black opacity-70">
+              Scan running ({scanState.source ?? "unknown"})
+            </Text>
+          )}
+          <Switch
+            label="Schedule existing-book scans"
+            checked={state.existingBooksScanIntervalMinutes !== null}
+            onChange={(event) => {
+              if (!event.currentTarget.checked) {
+                form.setFieldValue("existingBooksScanIntervalMinutes", null)
+                return
+              }
+
+              form.setFieldValue("existingBooksScanIntervalMinutes", 60)
+            }}
+          />
+          {state.existingBooksScanIntervalMinutes !== null && (
+            <NumberInput
+              label="Existing-book scan interval (minutes)"
+              min={1}
+              {...form.getInputProps("existingBooksScanIntervalMinutes")}
+            />
+          )}
+        </Stack>
+      </Fieldset>
+
       <Fieldset
         legend="Readaloud location"
         disabled={isAnyLocked("readaloudLocationType", "readaloudLocation")}

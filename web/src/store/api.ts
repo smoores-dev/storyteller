@@ -278,6 +278,37 @@ export const api = createApi({
         method: "DELETE",
       }),
     }),
+    triggerBookScan: build.mutation<void, { uuid: UUID }>({
+      query: ({ uuid }) => ({
+        url: `/books/${uuid}/scan`,
+        method: "POST",
+      }),
+    }),
+    triggerScan: build.mutation<
+      void,
+      { scope?: "existing" | "imports" | "all" } | void
+    >({
+      query: (args) => {
+        if (!args?.scope) {
+          return {
+            url: "/books/scan",
+            method: "POST",
+          }
+        }
+
+        return {
+          url: "/books/scan",
+          method: "POST",
+          params: { scope: args.scope },
+        }
+      },
+    }),
+    getScanState: build.query<
+      { running: boolean; source: string | null; startedAt: number | null },
+      void
+    >({
+      query: () => "/books/scan",
+    }),
     mergeBooks: build.mutation<
       BookWithRelations,
       { update: BookUpdate; relations: BookRelationsUpdate; from: UUID[] }
@@ -610,6 +641,7 @@ export const {
   useAddBooksToSeriesMutation,
   useAddTagsToBooksMutation,
   useCancelProcessingMutation,
+  useGetScanStateQuery,
   useCreateBookMutation,
   useCreateCollectionMutation,
   useCreateInviteMutation,
@@ -642,6 +674,8 @@ export const {
   useListUsersQuery,
   useMergeBooksMutation,
   useProcessBookMutation,
+  useTriggerBookScanMutation,
+  useTriggerScanMutation,
   useRemoveBooksFromCollectionsMutation,
   useRemoveBooksFromSeriesMutation,
   useRemoveTagsFromBooksMutation,
