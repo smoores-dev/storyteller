@@ -29,6 +29,7 @@ import { type UserPermissionSet } from "@/database/users"
 import { type BookEvent } from "@/events"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import { type UUID } from "@/uuid"
+import { Manifest } from "@readium/shared"
 
 export const api = createApi({
   reducerPath: "api",
@@ -144,6 +145,35 @@ export const api = createApi({
     }),
     getBook: build.query<BookWithRelations, { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}`,
+      transformResponse: (response: BookWithRelations) => {
+        return {
+          ...response,
+          ebook: response.ebook
+            ? {
+                ...response.ebook,
+                manifest: response.ebook.manifest
+                  ? Manifest.deserialize(response.ebook.manifest)
+                  : null,
+              }
+            : null,
+          readaloud: response.readaloud
+            ? {
+                ...response.readaloud,
+                manifest: response.readaloud.manifest
+                  ? Manifest.deserialize(response.readaloud.manifest)
+                  : null,
+              }
+            : null,
+          audiobook: response.audiobook
+            ? {
+                ...response.audiobook,
+                manifest: response.audiobook.manifest
+                  ? Manifest.deserialize(response.audiobook.manifest)
+                  : null,
+              }
+            : null,
+        }
+      },
     }),
     deleteBook: build.mutation<
       void,

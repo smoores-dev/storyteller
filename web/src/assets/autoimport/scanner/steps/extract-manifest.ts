@@ -69,10 +69,14 @@ export const extractManifestStep: PipelineStep = {
       return
     }
 
+    const manifes = ctx.book[ctx.format]?.manifest
+    console.log("manifest", manifes, typeof manifes)
+
     if (
       !ctx.flags.has("changed") &&
       !ctx.flags.has("new") &&
-      ctx.book[ctx.format]?.manifest
+      manifes &&
+      manifes !== "null"
     ) {
       ctx.logger.debug(
         `No changed or new flags, skipping manifest extraction for book`,

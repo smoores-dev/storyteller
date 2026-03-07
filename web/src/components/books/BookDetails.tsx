@@ -31,6 +31,7 @@ import { usePermissions } from "@/hooks/usePermissions"
 import {
   getDownloadUrl,
   useCancelProcessingMutation,
+  useGetBookQuery,
   useListBooksQuery,
   useListStatusesQuery,
   useUpdateStatusMutation,
@@ -52,11 +53,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
 
   const permissions = usePermissions()
 
-  const { book } = useListBooksQuery(undefined, {
-    selectFromResult: (result) => ({
-      book: result.data?.find((book) => book.uuid === bookUuid),
-    }),
-  })
+  const { data: book } = useGetBookQuery({ uuid: bookUuid })
   const { data: statuses = [] } = useListStatusesQuery()
   const [updateStatus] = useUpdateStatusMutation()
   const [cancelProcessing] = useCancelProcessingMutation()

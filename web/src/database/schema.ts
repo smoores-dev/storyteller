@@ -32,7 +32,7 @@ export interface Audiobook {
   contentHash: string | null
   createdAt: Generated<string>
   filepath: string
-  manifest: string | null
+  manifest: import("@/components/reader/types").SerializedManifest | null
   missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
@@ -144,7 +144,7 @@ export interface Ebook {
   contentHash: string | null
   createdAt: Generated<string>
   filepath: string
-  manifest: string | null
+  manifest: import("@/components/reader/types").SerializedManifest | null
   missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
@@ -178,10 +178,10 @@ export interface Readaloud {
   createdAt: Generated<string>
   currentStage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
   filepath: string | null
-  manifest: string | null
+  manifest: import("@/components/reader/types").SerializedManifest | null
   missing: Generated<boolean>
   queuePosition: number | null
-  restartPending: "full" | "transcription" | "sync" | null
+  restartPending: boolean | null
   stageProgress: Generated<number>
   status: Generated<
     "CREATED" | "QUEUED" | "PROCESSING" | "STOPPED" | "ERROR" | "ALIGNED"
@@ -273,7 +273,6 @@ export interface UserPermission {
   userUpdate: Generated<boolean>
   uuid: Generated<import("@/uuid").UUID>
 }
-
 export interface VerificationToken {
   createdAt: Generated<string>
   expires: Date
