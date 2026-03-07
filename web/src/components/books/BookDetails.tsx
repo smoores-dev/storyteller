@@ -28,6 +28,7 @@ import Link from "next/link"
 
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
+import { type BookWithRelations } from "@/database/books"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   getDownloadUrl,
@@ -42,7 +43,6 @@ import { BookStatus } from "./BookStatus"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 import { StatusInput } from "./edit/StatusInput"
 import { DeleteBookModal } from "./modals/DeleteBookModal"
-import { BookWithRelations } from "@/database/books"
 
 interface Props {
   bookUuid: UUID
@@ -72,7 +72,10 @@ function Details({
     <Text className="flex flex-row items-center gap-2">
       <Icon />
       <div className="flex flex-col gap-0.5">
-        <div className="line-clamp-1 font-mono text-sm" title={fmt.filepath}>
+        <div
+          className="line-clamp-1 font-mono text-sm"
+          title={fmt.filepath ?? ""}
+        >
           {fmt.filepath}
         </div>
         <div className="flex flex-row items-center gap-2 text-xs">
@@ -104,22 +107,6 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const { data: statuses = [] } = useListStatusesQuery()
   const [updateStatus] = useUpdateStatusMutation()
   const [cancelProcessing] = useCancelProcessingMutation()
-
-  console.log(book?.ebook?.manifest)
-  console.log(book?.ebook?.missing)
-  console.log(book?.ebook?.pageCount)
-  console.log(book?.ebook?.duration)
-  console.log(book?.ebook?.fileSize)
-  console.log(book?.readaloud?.manifest)
-  console.log(book?.readaloud?.missing)
-  console.log(book?.readaloud?.pageCount)
-  console.log(book?.readaloud?.duration)
-  console.log(book?.readaloud?.fileSize)
-  console.log(book?.audiobook?.manifest)
-  console.log(book?.audiobook?.pageCount)
-  console.log(book?.audiobook?.duration)
-  console.log(book?.audiobook?.fileSize)
-  console.log(book?.audiobook?.missing)
 
   if (!book) return null
 

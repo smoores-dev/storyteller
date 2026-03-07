@@ -79,7 +79,6 @@ export async function runPipeline(
 ) {
   const total = contexts.length
   if (total === 0) {
-    console.log("CONTEXTS", contexts)
     logger.info("No books to scan")
     return
   }

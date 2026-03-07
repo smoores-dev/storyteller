@@ -20,7 +20,12 @@ export const openEpubStep: PipelineStep = {
       return
     }
 
-    ctx.epub.discardAndClose()
+    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
+      ctx.epub.discardAndClose()
+      return
+    }
+
+    await ctx.epub.saveAndClose()
     ctx.epub = null
   },
 }

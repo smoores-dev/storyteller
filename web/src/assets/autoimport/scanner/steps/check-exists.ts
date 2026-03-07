@@ -1,8 +1,8 @@
 import { stat } from "node:fs/promises"
 
+import { type PipelineStep } from "@/assets/autoimport/scanner/types"
 import { updateBook } from "@/database/books"
 
-import { type PipelineStep } from "../types"
 import { getFormatRelationPatch } from "./utils"
 
 export const checkExistsStep: PipelineStep = {

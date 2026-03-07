@@ -1,26 +1,40 @@
-import { type BookRelationsUpdate } from "@/database/books"
-import { type SerializedManifest } from "@/components/reader/types"
-
 import { type ScanContext } from "@/assets/autoimport/scanner/types"
+import { type SerializedManifest } from "@/components/reader/types"
+import { type BookRelationsUpdate } from "@/database/books"
 
 type EbookRelationPatch = Partial<
   Pick<
     NonNullable<BookRelationsUpdate["ebook"]>,
-    "missing" | "contentHash" | "manifest" | "pageCount" | "duration" | "fileSize"
+    | "missing"
+    | "contentHash"
+    | "manifest"
+    | "pageCount"
+    | "duration"
+    | "fileSize"
   >
 >
 
 type AudiobookRelationPatch = Partial<
   Pick<
     NonNullable<BookRelationsUpdate["audiobook"]>,
-    "missing" | "contentHash" | "manifest" | "pageCount" | "duration" | "fileSize"
+    | "missing"
+    | "contentHash"
+    | "manifest"
+    | "pageCount"
+    | "duration"
+    | "fileSize"
   >
 >
 
 type ReadaloudRelationPatch = Partial<
   Pick<
     NonNullable<BookRelationsUpdate["readaloud"]>,
-    "missing" | "contentHash" | "manifest" | "pageCount" | "duration" | "fileSize"
+    | "missing"
+    | "contentHash"
+    | "manifest"
+    | "pageCount"
+    | "duration"
+    | "fileSize"
   >
 >
 

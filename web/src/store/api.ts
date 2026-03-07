@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
+import { Manifest } from "@readium/shared"
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
 import {
@@ -29,7 +30,6 @@ import { type UserPermissionSet } from "@/database/users"
 import { type BookEvent } from "@/events"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import { type UUID } from "@/uuid"
-import { Manifest } from "@readium/shared"
 
 export const api = createApi({
   reducerPath: "api",

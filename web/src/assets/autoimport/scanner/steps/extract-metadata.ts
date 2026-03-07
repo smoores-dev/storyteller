@@ -1,6 +1,8 @@
-import { getMetadataFromAudiobook, getMetadataFromEpub } from "@/assets/metadata"
-
-import { type PipelineStep } from "../types"
+import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import {
+  getMetadataFromAudiobook,
+  getMetadataFromEpub,
+} from "@/assets/metadata"
 
 export const extractMetadataStep: PipelineStep = {
   name: "extract-metadata",
@@ -30,4 +32,3 @@ export const extractMetadataStep: PipelineStep = {
     ctx.extractedRelations = relations
   },
 }
-

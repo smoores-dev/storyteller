@@ -118,7 +118,6 @@ export async function scanExistingBooks(
     return
   }
 
-  console.log("BOOKS", books)
   const contexts = buildScanContexts(books)
   logger.info(`Planning to scan ${contexts.length} existing books`)
   await runBookScanPipeline(contexts, signal)

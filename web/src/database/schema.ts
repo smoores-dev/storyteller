@@ -190,7 +190,7 @@ export interface Readaloud {
   missing: Generated<boolean>
   pageCount: number | null
   queuePosition: number | null
-  restartPending: boolean | null
+  restartPending: "full" | "transcription" | "sync" | false | null
   stageProgress: Generated<number>
   status: Generated<
     "CREATED" | "QUEUED" | "PROCESSING" | "STOPPED" | "ERROR" | "ALIGNED"

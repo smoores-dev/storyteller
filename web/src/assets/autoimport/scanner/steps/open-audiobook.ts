@@ -6,9 +6,8 @@ import {
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 
+import { type PipelineStep } from "@/assets/autoimport/scanner/types"
 import { isAudioFile } from "@/audio"
-
-import { type PipelineStep } from "../types"
 
 async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
   const entries = await readdir(directory, { recursive: true })
@@ -35,15 +34,20 @@ export const openAudiobookStep: PipelineStep = {
       return
     }
 
-    ctx.audiobook = await Audiobook.from(...tracks)
+    using audiobook = await Audiobook.from(...tracks)
+    ctx.audiobook = audiobook
   },
   async cleanup(ctx) {
     if (!ctx.audiobook) {
       return
     }
 
-    ctx.audiobook.discardAndClose()
+    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
+      ctx.audiobook.discardAndClose()
+      return
+    }
+
+    await ctx.audiobook.saveAndClose()
     ctx.audiobook = null
   },
 }
-

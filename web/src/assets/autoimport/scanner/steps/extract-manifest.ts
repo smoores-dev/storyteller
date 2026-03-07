@@ -1,14 +1,12 @@
 import {
-  ScanContext,
   type PipelineStep,
+  type ScanContext,
 } from "@/assets/autoimport/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
-import { getReadiumService, ReadiumService } from "@/services/readiumService"
+import { getReadiumService } from "@/services/readiumService"
 import { createAudiobookManifest } from "@/utils/audioManifest"
 
 import { getNumericValue, normalizeManifestValue } from "./utils"
-import { Manifest, Publication } from "@readium/shared"
-import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
 
 function deriveAudiobookDuration(manifest: SerializedManifest): number | null {
   const readingOrder = manifest.readingOrder
@@ -28,30 +26,27 @@ function deriveAudiobookDuration(manifest: SerializedManifest): number | null {
 async function deriveEbookPositionsCount(
   ctx: ScanContext,
 ): Promise<number | null> {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-
-  // http://localhost:9002/webpub/VXNlcnMvdGhvbWFzL1Byb2plY3RzL3N0b3J5dGVsbGVyL2Rldi1kYXRhL2Fzc2V0cy9DYXBpdGFsIFsyMW44WkFqUF0vYWxpZ25lZC9DYXBpdGFsLmVwdWI/~readium/positions.json
-  //  http://localhost:9002/webpub/VXNlcnMvdGhvbWFzL1Byb2plY3RzL3N0b3J5dGVsbGVyL2Rldi1kYXRhL2Fzc2V0cy9DYXBpdGFsIFtCQ0VZbEEzQV0vYXVkaW8/~readium/positions.json
   try {
     const positions = await globalThis.readiumServiceInstance?.makeRequest(
       ctx.filepath,
       "~readium/positions.json",
-      undefined,
-      {
-        signal: ctx.signal,
-      },
+      // TODO: Add signal
     )
 
     if (!positions) {
       return null
     }
 
-    const pos = await positions.json()
-    console.log(pos.total)
+    const pos = (await positions.json()) as { total: number }
 
     return pos.total
   } catch (error) {
-    console.error(error)
+    ctx.logger.error({
+      msg: "Failed to derive ebook positions count",
+      err: error,
+      bookUuid: ctx.bookUuid,
+      filepath: ctx.filepath,
+    })
     return null
   }
 }
@@ -63,15 +58,8 @@ export const extractManifestStep: PipelineStep = {
       return
     }
 
-    const formatRelation = (() => {
-      if (ctx.format === "ebook") {
-        return ctx.book.ebook
-      }
-      if (ctx.format === "audiobook") {
-        return ctx.book.audiobook
-      }
-      return ctx.book.readaloud
-    })()
+    const formatRelation = ctx.book[ctx.format]
+
     const normalizeManifest = normalizeManifestValue as (
       value: unknown,
     ) => SerializedManifest | null
@@ -87,7 +75,7 @@ export const extractManifestStep: PipelineStep = {
       )
       ctx.manifest = existingManifest
       if (ctx.format === "ebook" || ctx.format === "readaloud") {
-        ctx.pageCount = await deriveEbookPositionsCount(ctx, existingManifest)
+        ctx.pageCount = await deriveEbookPositionsCount(ctx)
       }
       if (ctx.format === "audiobook") {
         ctx.duration = deriveAudiobookDuration(existingManifest)
@@ -108,7 +96,7 @@ export const extractManifestStep: PipelineStep = {
       )
       const manifest = (await response.json()) as SerializedManifest
       ctx.manifest = manifest
-      ctx.pageCount = await deriveEbookPositionsCount(ctx, manifest)
+      ctx.pageCount = await deriveEbookPositionsCount(ctx)
       ctx.duration = deriveAudiobookDuration(manifest)
       return
     }

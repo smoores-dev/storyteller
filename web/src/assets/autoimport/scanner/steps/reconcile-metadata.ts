@@ -3,10 +3,9 @@ import {
   type ScanContext,
 } from "@/assets/autoimport/scanner/types"
 import { keepMissingMetadata, keepMissingRelations } from "@/assets/metadata"
-import { type SerializedManifest } from "@/components/reader/types"
 import { type BookRelationsUpdate, getBook, updateBook } from "@/database/books"
 
-import { getFormatRelationPatch, normalizeManifestValue } from "./utils"
+import { getFormatRelationPatch } from "./utils"
 
 function withFormatFields(ctx: ScanContext): BookRelationsUpdate {
   switch (ctx.format) {
