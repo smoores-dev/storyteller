@@ -32,6 +32,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   ).default,
   "59_migrate_hrefs.sql": (await import("./migrations/59_migrate_hrefs.sql"))
     .default,
+  "65_add_scan_pipeline_metadata.sql": (
+    await import("./migrations/65_add_scan_pipeline_metadata.sql")
+  ).default,
 }
 
 async function isFirstStartup() {

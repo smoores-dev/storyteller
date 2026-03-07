@@ -574,6 +574,8 @@ export function booksQuery(userId?: UUID) {
             "ebook.uuid",
             "ebook.filepath",
             "ebook.missing",
+            "ebook.contentHash",
+            "ebook.manifest",
             "ebook.createdAt",
             "ebook.updatedAt",
           ])
@@ -586,6 +588,8 @@ export function booksQuery(userId?: UUID) {
             "audiobook.uuid",
             "audiobook.filepath",
             "audiobook.missing",
+            "audiobook.contentHash",
+            "audiobook.manifest",
             "audiobook.createdAt",
             "audiobook.updatedAt",
           ])
@@ -605,6 +609,8 @@ export function booksQuery(userId?: UUID) {
             "readaloud.restartPending",
             "readaloud.createdAt",
             "readaloud.updatedAt",
+            "audiobook.manifest",
+            "audiobook.contentHash",
           ])
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),

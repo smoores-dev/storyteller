@@ -29,8 +29,11 @@ export interface Account {
 
 export interface Audiobook {
   bookUuid: import("@/uuid").UUID
+  contentHash: string | null
   createdAt: Generated<string>
+  duration: number | null
   filepath: string
+  manifest: ColumnType<Record<string, unknown>, string, string> | null
   missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
@@ -139,8 +142,10 @@ export interface DeviceAuthorization {
 
 export interface Ebook {
   bookUuid: import("@/uuid").UUID
+  contentHash: string | null
   createdAt: Generated<string>
   filepath: string
+  manifest: ColumnType<Record<string, unknown>, string, string> | null
   missing: Generated<boolean>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
