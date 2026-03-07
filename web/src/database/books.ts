@@ -578,6 +578,9 @@ export function booksQuery(userId?: UUID) {
             "ebook.updatedAt",
             "ebook.manifest",
             "ebook.contentHash",
+            "ebook.pageCount",
+            "ebook.duration",
+            "ebook.fileSize",
           ])
           .whereRef("ebook.bookUuid", "=", "book.uuid"),
       ).as("ebook"),
@@ -592,6 +595,9 @@ export function booksQuery(userId?: UUID) {
             "audiobook.updatedAt",
             "audiobook.manifest",
             "audiobook.contentHash",
+            "audiobook.pageCount",
+            "audiobook.duration",
+            "audiobook.fileSize",
           ])
           .whereRef("audiobook.bookUuid", "=", "book.uuid"),
       ).as("audiobook"),
@@ -611,6 +617,9 @@ export function booksQuery(userId?: UUID) {
             "readaloud.updatedAt",
             "readaloud.manifest",
             "readaloud.contentHash",
+            "readaloud.pageCount",
+            "readaloud.duration",
+            "readaloud.fileSize",
           ])
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),

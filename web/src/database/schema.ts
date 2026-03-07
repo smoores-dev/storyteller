@@ -31,9 +31,12 @@ export interface Audiobook {
   bookUuid: import("@/uuid").UUID
   contentHash: string | null
   createdAt: Generated<string>
+  duration: number | null
+  fileSize: number | null
   filepath: string
-  manifest: import("@/components/reader/types").SerializedManifest | null
+  manifest: unknown
   missing: Generated<boolean>
+  pageCount: number | null
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
@@ -143,9 +146,12 @@ export interface Ebook {
   bookUuid: import("@/uuid").UUID
   contentHash: string | null
   createdAt: Generated<string>
+  duration: number | null
+  fileSize: number | null
   filepath: string
-  manifest: import("@/components/reader/types").SerializedManifest | null
+  manifest: unknown
   missing: Generated<boolean>
+  pageCount: number | null
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
@@ -177,9 +183,12 @@ export interface Readaloud {
   contentHash: string | null
   createdAt: Generated<string>
   currentStage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
+  duration: number | null
+  fileSize: number | null
   filepath: string | null
-  manifest: import("@/components/reader/types").SerializedManifest | null
+  manifest: unknown
   missing: Generated<boolean>
+  pageCount: number | null
   queuePosition: number | null
   restartPending: boolean | null
   stageProgress: Generated<number>

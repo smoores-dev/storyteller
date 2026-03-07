@@ -3,6 +3,7 @@ import { type Logger } from "pino"
 import { type Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook"
 import { type Epub } from "@storyteller-platform/epub"
 
+import { type SerializedManifest } from "@/components/reader/types"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -27,12 +28,17 @@ export interface ScanContext {
   extractedMetadata: BookUpdate | null
   extractedRelations: BookRelationsUpdate
   book: BookWithRelations | null
-  manifest: unknown | null
+  manifest: SerializedManifest | null
+  pageCount: number | null
+  duration: number | null
+  fileSize: number | null
 }
 
 export interface PipelineStep {
   name: string
-  run: (ctx: ScanContext, signal: AbortSignal) => Promise<boolean | void>
+  run:
+    | ((ctx: ScanContext, signal: AbortSignal) => Promise<boolean | undefined>)
+    | ((ctx: ScanContext, signal: AbortSignal) => Promise<void>)
   cleanup?: (ctx: ScanContext) => Promise<void>
 }
 

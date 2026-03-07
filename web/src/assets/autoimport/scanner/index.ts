@@ -30,6 +30,7 @@ export function createScanContext(input: {
   book: ScanContext["book"]
 }): ScanContext {
   return {
+    logger,
     bookUuid: input.bookUuid,
     filepath: input.filepath,
     format: input.format,
@@ -43,6 +44,9 @@ export function createScanContext(input: {
     extractedRelations: {},
     book: input.book,
     manifest: null,
+    pageCount: null,
+    duration: null,
+    fileSize: null,
   }
 }
 
@@ -50,7 +54,7 @@ export async function runBookScanPipeline(
   contexts: ScanContext[],
   signal: AbortSignal,
 ) {
-  await runPipeline(contexts, steps, {
+  await runPipeline(contexts, [...steps], {
     concurrency: contexts.length === 1 ? 1 : 2,
     signal,
     onProgress(processed, total) {

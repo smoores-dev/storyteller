@@ -25,11 +25,26 @@ export default async function migrate() {
           .addColumn("manifest", "jsonb")
           .execute()
       }
+      if (!(await hasColumn(trx, table, "page_count"))) {
+        await trx.schema
+          .alterTable(table)
+          .addColumn("page_count", "integer")
+          .execute()
+      }
+      if (!(await hasColumn(trx, table, "duration"))) {
+        await trx.schema
+          .alterTable(table)
+          .addColumn("duration", "real")
+          .execute()
+      }
+      if (!(await hasColumn(trx, table, "file_size"))) {
+        await trx.schema
+          .alterTable(table)
+          .addColumn("file_size", "integer")
+          .execute()
+      }
       if (await hasColumn(trx, table, "positions")) {
         await trx.schema.alterTable(table).dropColumn("positions").execute()
-      }
-      if (await hasColumn(trx, table, "duration")) {
-        await trx.schema.alterTable(table).dropColumn("duration").execute()
       }
       if (await hasColumn(trx, table, "file_hash")) {
         await trx.schema.alterTable(table).dropColumn("file_hash").execute()

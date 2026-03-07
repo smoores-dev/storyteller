@@ -1,28 +1,35 @@
 import { createHash } from "node:crypto"
 import { createReadStream } from "node:fs"
-import { readdir } from "node:fs/promises"
+import { readdir, stat } from "node:fs/promises"
 import { join, relative } from "node:path"
 
+import { type PipelineStep } from "@/assets/autoimport/scanner/types"
 import { isAudioFile } from "@/audio"
 import { updateBook } from "@/database/books"
 
-import { type PipelineStep } from "../types"
 import { getFormatRelationPatch } from "./utils"
 
-async function hashFile(filepath: string): Promise<string> {
+async function hashFile(filepath: string): Promise<{ hash: string; fileSize: number | null }> {
   const hash = createHash("sha256")
+  const fileStats = await stat(filepath)
+  const fileSize = fileStats.isFile() ? fileStats.size : null
 
   await new Promise<void>((resolve, reject) => {
     const stream = createReadStream(filepath)
-    stream.on("data", (chunk: Buffer) => hash.update(chunk))
+    stream.on("data", (chunk: string | Buffer) => hash.update(chunk))
     stream.on("error", reject)
     stream.on("end", resolve)
   })
 
-  return hash.digest("hex")
+  return {
+    hash: hash.digest("hex"),
+    fileSize,
+  }
 }
 
-async function hashAudiobookDirectory(dirPath: string): Promise<string> {
+async function hashAudiobookDirectory(
+  dirPath: string,
+): Promise<{ hash: string; fileSize: number | null }> {
   const entries = await readdir(dirPath, {
     recursive: true,
     withFileTypes: true,
@@ -35,23 +42,33 @@ async function hashAudiobookDirectory(dirPath: string): Promise<string> {
   const hash = createHash("sha256")
   if (files.length === 0) {
     hash.update("empty-audiobook-directory")
-    return hash.digest("hex")
+    return {
+      hash: hash.digest("hex"),
+      fileSize: 0,
+    }
   }
 
+  let totalSize = 0
   for (const file of files) {
+    const fileStats = await stat(file)
+    totalSize += fileStats.size
     hash.update(relative(dirPath, file))
     hash.update(":")
-    hash.update(await hashFile(file))
+    const { hash: fileHash } = await hashFile(file)
+    hash.update(fileHash)
     hash.update(";")
   }
 
-  return hash.digest("hex")
+  return {
+    hash: hash.digest("hex"),
+    fileSize: totalSize,
+  }
 }
 
 export const computeHashStep: PipelineStep = {
   name: "compute-hash",
   async run(ctx) {
-    const hash =
+    const { hash, fileSize } =
       ctx.format === "audiobook"
         ? await hashAudiobookDirectory(ctx.filepath)
         : await hashFile(ctx.filepath)
@@ -59,6 +76,7 @@ export const computeHashStep: PipelineStep = {
     ctx.logger.debug(`Computed hash for ${ctx.filepath}: ${hash}`)
 
     ctx.fileHash = hash
+    ctx.fileSize = fileSize
 
     if (ctx.flags.has("new")) {
       ctx.flags.add("changed")
@@ -74,6 +92,7 @@ export const computeHashStep: PipelineStep = {
       getFormatRelationPatch(ctx, {
         missing: false,
         contentHash: hash,
+        fileSize,
       }),
     )
 
