@@ -76,7 +76,7 @@ export const SettingsSchema = z.object({
   // Library settings
   libraryName: z.string(),
   webUrl: z.string(),
-  importPath: z.string().nullable(),
+  importPath: z.array(z.string()).nullable(),
   // Audio settings
   codec: z.string().nullable(),
   bitrate: z.string().nullable(),

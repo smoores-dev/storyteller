@@ -25,13 +25,15 @@ const state: ScanState = {
 }
 
 function getImportTargets(
-  rootImportPath: string | null,
+  rootImportPaths: string[] | null,
   collections: Awaited<ReturnType<typeof getCollections>>,
 ) {
   const targets: { importPath: string; collectionUuid: UUID | null }[] = []
 
-  if (rootImportPath) {
-    targets.push({ importPath: rootImportPath, collectionUuid: null })
+  if (rootImportPaths) {
+    for (const importPath of rootImportPaths) {
+      targets.push({ importPath, collectionUuid: null })
+    }
   }
 
   for (const collection of collections) {
@@ -89,11 +91,11 @@ export async function runImportPathScan(
 
 export async function runAllImportScans(signal: AbortSignal) {
   await runExclusive("manual-imports", signal, async () => {
-    const [rootImportPath, collections] = await Promise.all([
+    const [rootImportPaths, collections] = await Promise.all([
       getSetting("importPath"),
       getCollections(),
     ])
-    const targets = getImportTargets(rootImportPath, collections)
+    const targets = getImportTargets(rootImportPaths, collections)
 
     for (const target of targets) {
       if (signal.aborted) {

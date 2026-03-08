@@ -36,7 +36,7 @@ export async function getSuggestedImportPathAction(): Promise<SuggestedImportPat
   const excludedPaths = [
     ASSETS_DIR,
     resolvedAssetsDir,
-    settings.importPath,
+    ...(settings.importPath ?? []),
     ...collections.map((c) => c.importPath),
   ].filter((p): p is string => p !== null)
 

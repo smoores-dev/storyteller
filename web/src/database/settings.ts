@@ -96,6 +96,24 @@ export function getConfigLockedKeys(): Set<keyof Settings> {
   return loadConfigFile().keys
 }
 
+// handles legacy single-string values and the literal string "null"
+function normalizeImportPaths(raw: unknown): string[] | null {
+  if (raw === null || raw === undefined || raw === "null") return null
+  if (Array.isArray(raw)) return raw.length === 0 ? null : raw
+  if (typeof raw === "string") return [raw]
+  return null
+}
+
+function normalizeSettingValue<Name extends keyof Settings>(
+  name: Name,
+  value: unknown,
+): Settings[Name] {
+  if (name === "importPath") {
+    return normalizeImportPaths(value) as Settings[Name]
+  }
+  return value as Settings[Name]
+}
+
 export async function getSetting<Name extends keyof Settings>(name: Name) {
   const { settings: configSettings, keys } = loadConfigFile()
   if (keys.has(name)) {
@@ -106,7 +124,11 @@ export async function getSetting<Name extends keyof Settings>(name: Name) {
     .select(["value as valueJson"])
     .where("name", "=", name)
     .executeTakeFirstOrThrow()
-  return JSON.parse(valueJson) as Settings[Name]
+
+  return normalizeSettingValue(
+    name,
+    typeof valueJson === "string" ? JSON.parse(valueJson) : valueJson,
+  )
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -114,24 +136,27 @@ export async function getSettings(): Promise<Settings> {
     .selectFrom("settings")
     .select(["name", "value"])
     .execute()
-  const dbSettings = rows.reduce(
-    (acc, row) => ({
+
+  const dbDesttings = rows.reduce((acc, row) => {
+    const name = row.name
+    const parsed =
+      typeof row.value === "string"
+        ? (JSON.parse(row.value) as Settings[keyof Settings])
+        : row.value
+    return {
       ...acc,
-      [row.name]:
-        // We configured Kysely to auto-parse JSON objects and arrays,
-        // so we need to guard against values that have already been parsed
-        typeof row.value === "string"
-          ? (JSON.parse(row.value) as Settings[keyof Settings])
-          : row.value,
-    }),
-    {},
-  ) as Settings
-  const result: Settings = {
-    ...dbSettings,
-    smtpSsl: dbSettings.smtpSsl ?? true,
-    smtpRejectUnauthorized: dbSettings.smtpRejectUnauthorized ?? true,
-  }
+      [name]: normalizeSettingValue(name, parsed),
+    }
+  }, {}) as Settings
+
   const { settings: configSettings } = loadConfigFile()
+
+  const result = {
+    ...dbDesttings,
+    smtpSsl: result.smtpSsl ?? true,
+    smtpRejectUnauthorized: result.smtpRejectUnauthorized ?? true,
+  }
+
   return { ...result, ...configSettings }
 }
 

@@ -91,11 +91,13 @@ const controllers = new Map<UUID, AbortController>()
 export async function listen() {
   const collections = await getCollections()
 
-  const rootImportPath = await getSetting("importPath")
+  const rootImportPaths = await getSetting("importPath")
 
-  if (rootImportPath) {
-    logger.info(`Starting new watcher for root import path, ${rootImportPath}`)
-    startWatcher(null, rootImportPath, rootController)
+  if (rootImportPaths) {
+    for (const importPath of rootImportPaths) {
+      logger.info(`Starting new watcher for root import path, ${importPath}`)
+      startWatcher(null, importPath, rootController)
+    }
   }
 
   for (const collection of collections) {
@@ -118,16 +120,16 @@ export async function listen() {
 
 export async function update(uuid: UUID | null) {
   if (!uuid) {
-    const rootImportPath = await getSetting("importPath")
-    logger.info("Cancelling watcher for root import path")
+    const rootImportPaths = await getSetting("importPath")
+    logger.info("Cancelling watchers for root import paths")
     rootController.abort()
     rootController = new AbortController()
 
-    if (rootImportPath) {
-      logger.info(
-        `Starting new watcher for root import path, ${rootImportPath}`,
-      )
-      startWatcher(null, rootImportPath, rootController)
+    if (rootImportPaths) {
+      for (const importPath of rootImportPaths) {
+        logger.info(`Starting new watcher for root import path, ${importPath}`)
+        startWatcher(null, importPath, rootController)
+      }
     }
   } else {
     const collection = await getCollection(uuid)

@@ -9,7 +9,7 @@ import {
 import { useForm } from "@mantine/form"
 import { useRef, useState } from "react"
 
-import { ImportPathInput } from "@/components/ImportPathInput"
+import { SingleImportPathInput } from "@/components/ImportPathInput"
 import { UserSelect } from "@/components/books/edit/UserSelect"
 import { SaveState } from "@/components/forms"
 import {
@@ -97,7 +97,7 @@ export function CreateCollectionModal({ isOpen, onClose }: Props) {
           description="Whether this collection (and its books) should be visible to all users"
           {...form.getInputProps("public", { type: "checkbox" })}
         />
-        <ImportPathInput {...form.getInputProps("importPath")}>
+        <SingleImportPathInput {...form.getInputProps("importPath")}>
           <Text className="text-sm text-black opacity-70 dark:text-white">
             Storyteller can be configured to automatically import book files
             from a specific directory.
@@ -109,7 +109,7 @@ export function CreateCollectionModal({ isOpen, onClose }: Props) {
             automatically import any that it finds. They will be added to this
             collection.
           </Text>
-        </ImportPathInput>
+        </SingleImportPathInput>
         {!form.values.public && (
           <UserSelect
             label="Share with"
