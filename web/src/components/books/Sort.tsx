@@ -9,6 +9,9 @@ const optionLabels: Record<BookSortKey, string> = {
   "align-time": "Last aligned",
   "create-time": "Created",
   "publish-date": "Published",
+  "file-size": "File size",
+  "page-count": "Page count",
+  duration: "Duration",
 }
 
 interface Props {
@@ -34,7 +37,14 @@ export function Sort({ value, onValueChange }: Props) {
         }
         onValueChange([
           sortKey,
-          ["publish-date", "create-time", "align-time"].includes(sortKey)
+          [
+            "publish-date",
+            "create-time",
+            "align-time",
+            "file-size",
+            "page-count",
+            "duration",
+          ].includes(sortKey)
             ? "desc"
             : "asc",
         ])

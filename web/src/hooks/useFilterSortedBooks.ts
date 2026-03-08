@@ -17,6 +17,9 @@ export type BookSortKey =
   | "align-time"
   | "create-time"
   | "publish-date"
+  | "file-size"
+  | "page-count"
+  | "duration"
 export type SortDirection = "asc" | "desc"
 export type BookSort = [BookSortKey, SortDirection]
 
@@ -85,6 +88,12 @@ export interface FilterSortOptions {
     onAuthorsChange: (values: UUID[] | null) => void
     bookTypes: BookType[] | null
     onBookTypesChange: (values: BookType[] | null) => void
+    fileSize: number[] | null
+    onFileSizeChange: (values: number[] | null) => void
+    duration: number[] | null
+    onDurationChange: (values: number[] | null) => void
+    pageCount: number[] | null
+    onPageCountChange: (values: number[] | null) => void
     reset: () => void
   }
 }
@@ -176,6 +185,11 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
   const bookTypes = (searchParams.get("bookTypes")?.split(",") ?? null) as
     | BookType[]
     | null
+
+  const fileSize = searchParams.get("fileSize")?.split(",").map(Number) ?? null
+  const duration = searchParams.get("duration")?.split(",").map(Number) ?? null
+  const pageCount =
+    searchParams.get("pageCount")?.split(",").map(Number) ?? null
 
   const filtersActive = !!(
     collections ||
@@ -322,9 +336,58 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
           case "publish-date": {
             return pubSort
           }
+          case "file-size": {
+            if (bookTypes?.length === 1 || bookTypes?.[0] === "ebook") {
+              const firstFileSize = first.ebook?.fileSize ?? 0
+              const secondFileSize = second.ebook?.fileSize ?? 0
+              return firstFileSize - secondFileSize
+            }
+
+            if (bookTypes?.length === 1 || bookTypes?.[0] === "audiobook") {
+              const firstFileSize = first.audiobook?.fileSize ?? 0
+              const secondFileSize = second.audiobook?.fileSize ?? 0
+              return firstFileSize - secondFileSize
+            }
+
+            if (bookTypes?.length === 1 || bookTypes?.[0] === "readaloud") {
+              const firstFileSize = first.readaloud?.fileSize ?? 0
+              const secondFileSize = second.readaloud?.fileSize ?? 0
+              return firstFileSize - secondFileSize
+            }
+
+            const maxFileFirstSize = Math.max(
+              first.ebook?.fileSize ?? 0,
+              first.audiobook?.fileSize ?? 0,
+              first.readaloud?.fileSize ?? 0,
+            )
+
+            const maxFileSecondSize = Math.max(
+              second.ebook?.fileSize ?? 0,
+              second.audiobook?.fileSize ?? 0,
+              second.readaloud?.fileSize ?? 0,
+            )
+
+            return maxFileFirstSize - maxFileSecondSize
+          }
+          case "page-count": {
+            const firstPageCount =
+              first.ebook?.pageCount ?? first.readaloud?.pageCount ?? 0
+            const secondPageCount =
+              second.ebook?.pageCount ?? second.readaloud?.pageCount ?? 0
+
+            return firstPageCount - secondPageCount
+          }
+          case "duration": {
+            const firstDuration =
+              first.audiobook?.duration ?? first.readaloud?.duration ?? 0
+            const secondDuration =
+              second.audiobook?.duration ?? second.readaloud?.duration ?? 0
+
+            return firstDuration - secondDuration
+          }
         }
       }),
-    [filtered, sort],
+    [bookTypes, filtered, sort],
   )
 
   return {
@@ -373,6 +436,27 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
           onBookTypesChange: (values) => {
             setSearchParam("bookTypes", values)
           },
+          fileSize,
+          onFileSizeChange: (values) => {
+            setSearchParam(
+              "fileSize",
+              values?.map((value) => value?.toString() ?? null) ?? null,
+            )
+          },
+          duration,
+          onDurationChange: (values) => {
+            setSearchParam(
+              "duration",
+              values?.map((value) => value?.toString() ?? null) ?? null,
+            )
+          },
+          pageCount,
+          onPageCountChange: (values) => {
+            setSearchParam(
+              "pageCount",
+              values?.map((value) => value?.toString() ?? null) ?? null,
+            )
+          },
           reset: clearSearchParams,
         }),
         [
@@ -386,6 +470,9 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
           showFilters,
           statuses,
           tags,
+          fileSize,
+          duration,
+          pageCount,
         ],
       ),
     },

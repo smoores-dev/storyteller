@@ -73,7 +73,7 @@ function Details({
       <Icon />
       <div className="flex flex-col gap-0.5">
         <div
-          className="line-clamp-1 font-mono text-sm"
+          className="line-clamp-1 text-sm font-semibold"
           title={fmt.filepath ?? ""}
         >
           {fmt.filepath}

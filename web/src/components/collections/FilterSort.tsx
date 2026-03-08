@@ -1,7 +1,10 @@
 import {
   Button,
+  Flex,
   Group,
+  Input,
   MultiSelect,
+  NumberInput,
   Stack,
   type TextInputProps,
 } from "@mantine/core"
@@ -208,7 +211,82 @@ export function FilterSort({
                 )
               }}
             />
+            <Flex>
+              <NumberInput
+                aria-label="Min file-size (MB)"
+                placeholder={`Min file-size (MB)`}
+                value={filters.fileSize?.[0]}
+                onChange={(value) => {
+                  filters.onFileSizeChange([
+                    Number(value),
+                    filters.fileSize?.[1],
+                  ])
+                }}
+              />
+              <NumberInput
+                aria-label="Max file-size (MB)"
+                placeholder={`Max file-size (MB)`}
+                value={filters.fileSize?.[1]}
+                onChange={(value) => {
+                  filters.onFileSizeChange([
+                    filters.fileSize?.[0],
+                    Number(value),
+                  ])
+                }}
+              />
+            </Flex>
+
+            <Flex>
+              <NumberInput
+                aria-label="Min duration (minutes)"
+                placeholder={`Min duration (minutes)`}
+                value={filters.duration?.[0]}
+                onChange={(value) => {
+                  filters.onDurationChange([
+                    Number(value),
+                    filters.duration?.[1],
+                  ])
+                }}
+              />
+              <NumberInput
+                aria-label="Max duration (minutes)"
+                placeholder={`Max duration (minutes)`}
+                value={filters.duration?.[1]}
+                onChange={(value) => {
+                  filters.onDurationChange([
+                    filters.duration?.[0],
+                    Number(value),
+                  ])
+                }}
+              />
+            </Flex>
+
+            <Flex>
+              <NumberInput
+                aria-label="Min page count"
+                placeholder={`Min page count`}
+                value={filters.pageCount?.[0]}
+                onChange={(value) => {
+                  filters.onPageCountChange([
+                    Number(value),
+                    filters.pageCount?.[1],
+                  ])
+                }}
+              />
+              <NumberInput
+                aria-label="Max page count"
+                placeholder={`Max page count`}
+                value={filters.pageCount?.[1]}
+                onChange={(value) => {
+                  filters.onPageCountChange([
+                    filters.pageCount?.[0],
+                    Number(value),
+                  ])
+                }}
+              />
+            </Flex>
           </Group>
+
           <Group>
             <Button
               size="compact-sm"
