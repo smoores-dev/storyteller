@@ -22,6 +22,7 @@ const steps = [
   openEpubStep,
   openAudiobookStep,
   extractMetadataStep,
+  extractCoversStep,
   extractManifestStep,
   reconcileMetadataStep,
 ] as const

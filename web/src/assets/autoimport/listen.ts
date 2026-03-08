@@ -1,4 +1,4 @@
-import { watch } from "node:fs"
+import { type WatchEventType, watch } from "node:fs"
 
 import { AsyncMutex } from "@esfx/async-mutex"
 import debounce from "debounce"
@@ -47,7 +47,7 @@ function startWatcher(
   watch(
     importPath,
     { recursive: true, signal: controller.signal },
-    debounce(async () => {
+    debounce(async (_eventType: WatchEventType, _filename: string | null) => {
       if (controller.signal.aborted) {
         logger.info("Detected a change, but scanning is aborted. Ignoring.")
         return
