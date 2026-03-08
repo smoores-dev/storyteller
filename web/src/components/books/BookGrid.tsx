@@ -207,6 +207,7 @@ function BookGridItem({
             />
           )}
           <BookThumbnail
+            filterSortOptions={filterSortOptions}
             book={book}
             link={!isSelecting}
             onClick={() => {

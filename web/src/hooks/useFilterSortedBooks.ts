@@ -110,6 +110,79 @@ export function safeCreateLocale(book?: BookWithRelations, fallback = "en") {
   }
 }
 
+function getBookFileSizeMB(
+  book: BookWithRelations,
+  bookTypes: BookType[] | null,
+): number | null {
+  if (bookTypes?.length === 1) {
+    const [type] = bookTypes
+    if (type === "ebook" || type === "ebook-only")
+      return book.ebook?.fileSize != null
+        ? book.ebook.fileSize / (1024 * 1024)
+        : null
+    if (type === "audiobook" || type === "audiobook-only")
+      return book.audiobook?.fileSize != null
+        ? book.audiobook.fileSize / (1024 * 1024)
+        : null
+    if (type === "readaloud")
+      return book.readaloud?.fileSize != null
+        ? book.readaloud.fileSize / (1024 * 1024)
+        : null
+  }
+
+  const sizes = [
+    book.ebook?.fileSize,
+    book.audiobook?.fileSize,
+    book.readaloud?.fileSize,
+  ].filter((s): s is number => s != null && s > 0)
+
+  if (!sizes.length) return null
+  return Math.max(...sizes) / (1024 * 1024)
+}
+
+function getBookDurationMinutes(book: BookWithRelations): number | null {
+  const seconds = book.audiobook?.duration ?? book.readaloud?.duration ?? null
+  if (seconds == null || seconds <= 0) return null
+  return seconds / 60
+}
+
+function getBookPageCount(book: BookWithRelations): number | null {
+  const pages = book.ebook?.pageCount ?? book.readaloud?.pageCount ?? null
+  if (pages == null || pages <= 0) return null
+  return pages
+}
+
+function isValidBound(value: number | undefined): value is number {
+  return value != null && Number.isFinite(value) && value > 0
+}
+
+function matchesRange(
+  value: number | null,
+  range: number[] | null,
+): boolean {
+  if (!range) return true
+  const [min, max] = range
+  const hasMin = isValidBound(min)
+  const hasMax = isValidBound(max)
+  if (!hasMin && !hasMax) return true
+  if (value === null) return false
+  if (hasMin && value < min) return false
+  if (hasMax && value > max) return false
+  return true
+}
+
+// null values always sort to the end regardless of sort direction
+function compareNullable(
+  a: number | null,
+  b: number | null,
+  fallback: number,
+): number {
+  if (a === null && b === null) return fallback
+  if (a === null) return 1
+  if (b === null) return -1
+  return a - b || fallback
+}
+
 export function useFilterSortedBooks(books: BookWithRelations[]): {
   books: BookWithRelations[]
   options: FilterSortOptions
@@ -197,7 +270,10 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
     series ||
     bookTypes ||
     authors ||
-    statuses
+    statuses ||
+    fileSize ||
+    duration ||
+    pageCount
   )
 
   const [showFilters, setShowFilters] = useState(false)
@@ -270,9 +346,25 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
             return false
           }
         }
+        if (!matchesRange(getBookFileSizeMB(book, bookTypes), fileSize))
+          return false
+        if (!matchesRange(getBookDurationMinutes(book), duration)) return false
+        if (!matchesRange(getBookPageCount(book), pageCount)) return false
+
         return true
       }),
-    [authors, bookTypes, collections, searched, series, statuses, tags],
+    [
+      authors,
+      bookTypes,
+      collections,
+      duration,
+      fileSize,
+      pageCount,
+      searched,
+      series,
+      statuses,
+      tags,
+    ],
   )
 
   const sorted = useMemo(
@@ -337,53 +429,25 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
             return pubSort
           }
           case "file-size": {
-            if (bookTypes?.length === 1 || bookTypes?.[0] === "ebook") {
-              const firstFileSize = first.ebook?.fileSize ?? 0
-              const secondFileSize = second.ebook?.fileSize ?? 0
-              return firstFileSize - secondFileSize
-            }
-
-            if (bookTypes?.length === 1 || bookTypes?.[0] === "audiobook") {
-              const firstFileSize = first.audiobook?.fileSize ?? 0
-              const secondFileSize = second.audiobook?.fileSize ?? 0
-              return firstFileSize - secondFileSize
-            }
-
-            if (bookTypes?.length === 1 || bookTypes?.[0] === "readaloud") {
-              const firstFileSize = first.readaloud?.fileSize ?? 0
-              const secondFileSize = second.readaloud?.fileSize ?? 0
-              return firstFileSize - secondFileSize
-            }
-
-            const maxFileFirstSize = Math.max(
-              first.ebook?.fileSize ?? 0,
-              first.audiobook?.fileSize ?? 0,
-              first.readaloud?.fileSize ?? 0,
+            return compareNullable(
+              getBookFileSizeMB(first, bookTypes),
+              getBookFileSizeMB(second, bookTypes),
+              pubSort,
             )
-
-            const maxFileSecondSize = Math.max(
-              second.ebook?.fileSize ?? 0,
-              second.audiobook?.fileSize ?? 0,
-              second.readaloud?.fileSize ?? 0,
-            )
-
-            return maxFileFirstSize - maxFileSecondSize
           }
           case "page-count": {
-            const firstPageCount =
-              first.ebook?.pageCount ?? first.readaloud?.pageCount ?? 0
-            const secondPageCount =
-              second.ebook?.pageCount ?? second.readaloud?.pageCount ?? 0
-
-            return firstPageCount - secondPageCount
+            return compareNullable(
+              getBookPageCount(first),
+              getBookPageCount(second),
+              pubSort,
+            )
           }
           case "duration": {
-            const firstDuration =
-              first.audiobook?.duration ?? first.readaloud?.duration ?? 0
-            const secondDuration =
-              second.audiobook?.duration ?? second.readaloud?.duration ?? 0
-
-            return firstDuration - secondDuration
+            return compareNullable(
+              getBookDurationMinutes(first),
+              getBookDurationMinutes(second),
+              pubSort,
+            )
           }
         }
       }),
