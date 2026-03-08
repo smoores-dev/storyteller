@@ -66,6 +66,7 @@ export type BookType =
   | "audiobook-only"
   | "readaloud"
   | "ebook-audiobook-only"
+  | "missing"
 
 export interface FilterSortOptions {
   onSearchChange: (value: string) => void
@@ -110,50 +111,68 @@ export function safeCreateLocale(book?: BookWithRelations, fallback = "en") {
   }
 }
 
+function assetFileSize(
+  asset: { fileSize: number | null; missing: boolean | null } | null,
+): number | null {
+  if (!asset || asset.missing || asset.fileSize == null || asset.fileSize <= 0)
+    return null
+  return asset.fileSize
+}
+
 function getBookFileSizeMB(
   book: BookWithRelations,
   bookTypes: BookType[] | null,
 ): number | null {
   if (bookTypes?.length === 1) {
     const [type] = bookTypes
-    if (type === "ebook" || type === "ebook-only")
-      return book.ebook?.fileSize != null
-        ? book.ebook.fileSize / (1024 * 1024)
-        : null
+    const sizeOf = (
+      asset: { fileSize: number | null; missing: boolean | null } | null,
+    ) => {
+      const s = assetFileSize(asset)
+      return s != null ? s / (1024 * 1024) : null
+    }
+    if (type === "ebook" || type === "ebook-only") return sizeOf(book.ebook)
     if (type === "audiobook" || type === "audiobook-only")
-      return book.audiobook?.fileSize != null
-        ? book.audiobook.fileSize / (1024 * 1024)
-        : null
-    if (type === "readaloud")
-      return book.readaloud?.fileSize != null
-        ? book.readaloud.fileSize / (1024 * 1024)
-        : null
+      return sizeOf(book.audiobook)
+    if (type === "readaloud") return sizeOf(book.readaloud)
   }
 
   const sizes = [
-    book.ebook?.fileSize,
-    book.audiobook?.fileSize,
-    book.readaloud?.fileSize,
-  ].filter((s): s is number => s != null && s > 0)
+    assetFileSize(book.ebook),
+    assetFileSize(book.audiobook),
+    assetFileSize(book.readaloud),
+  ].filter((s): s is number => s !== null)
 
   if (!sizes.length) return null
   return Math.max(...sizes) / (1024 * 1024)
 }
 
 function getBookDurationMinutes(book: BookWithRelations): number | null {
-  const seconds = book.audiobook?.duration ?? book.readaloud?.duration ?? null
+  const audiobook =
+    book.audiobook && !book.audiobook.missing ? book.audiobook : null
+  const readaloud =
+    book.readaloud && !book.readaloud.missing ? book.readaloud : null
+  const seconds = audiobook?.duration ?? readaloud?.duration ?? null
   if (seconds == null || seconds <= 0) return null
   return seconds / 60
 }
 
 function getBookPageCount(book: BookWithRelations): number | null {
-  const pages = book.ebook?.pageCount ?? book.readaloud?.pageCount ?? null
+  const ebook = book.ebook && !book.ebook.missing ? book.ebook : null
+  const readaloud =
+    book.readaloud && !book.readaloud.missing ? book.readaloud : null
+  const pages = ebook?.pageCount ?? readaloud?.pageCount ?? null
   if (pages == null || pages <= 0) return null
   return pages
 }
 
 function isValidBound(value: number | undefined): value is number {
   return value != null && Number.isFinite(value) && value > 0
+}
+
+function cleanRangeParam(values: number[] | null): string[] | null {
+  if (!values?.some((v) => v > 0)) return null
+  return values.map((v) => (v > 0 ? v.toString() : ""))
 }
 
 function matchesRange(
@@ -171,16 +190,22 @@ function matchesRange(
   return true
 }
 
-// null values always sort to the end regardless of sort direction
-function compareNullable(
-  a: number | null,
-  b: number | null,
+// null values always sort to the end regardless of sort direction.
+// takes the original a/b (not swapped) so null handling is direction-independent.
+function sortByMetric(
+  a: BookWithRelations,
+  b: BookWithRelations,
+  getMetric: (book: BookWithRelations) => number | null,
+  direction: SortDirection,
   fallback: number,
 ): number {
-  if (a === null && b === null) return fallback
-  if (a === null) return 1
-  if (b === null) return -1
-  return a - b || fallback
+  const aVal = getMetric(a)
+  const bVal = getMetric(b)
+  if (aVal === null && bVal === null) return fallback
+  if (aVal === null) return 1
+  if (bVal === null) return -1
+  const diff = direction === "asc" ? aVal - bVal : bVal - aVal
+  return diff || fallback
 }
 
 export function useFilterSortedBooks(books: BookWithRelations[]): {
@@ -340,6 +365,13 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
                     book.ebook && book.audiobook && !book.readaloud?.filepath
                   )
                 }
+                case "missing": {
+                  return (
+                    book.ebook?.missing === true ||
+                    book.audiobook?.missing === true ||
+                    book.readaloud?.missing === true
+                  )
+                }
               }
             })
           ) {
@@ -429,25 +461,19 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
             return pubSort
           }
           case "file-size": {
-            return compareNullable(
-              getBookFileSizeMB(first, bookTypes),
-              getBookFileSizeMB(second, bookTypes),
+            return sortByMetric(
+              a,
+              b,
+              (book) => getBookFileSizeMB(book, bookTypes),
+              sort[1],
               pubSort,
             )
           }
           case "page-count": {
-            return compareNullable(
-              getBookPageCount(first),
-              getBookPageCount(second),
-              pubSort,
-            )
+            return sortByMetric(a, b, getBookPageCount, sort[1], pubSort)
           }
           case "duration": {
-            return compareNullable(
-              getBookDurationMinutes(first),
-              getBookDurationMinutes(second),
-              pubSort,
-            )
+            return sortByMetric(a, b, getBookDurationMinutes, sort[1], pubSort)
           }
         }
       }),
@@ -502,24 +528,15 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
           },
           fileSize,
           onFileSizeChange: (values) => {
-            setSearchParam(
-              "fileSize",
-              values?.map((value) => value?.toString() ?? null) ?? null,
-            )
+            setSearchParam("fileSize", cleanRangeParam(values))
           },
           duration,
           onDurationChange: (values) => {
-            setSearchParam(
-              "duration",
-              values?.map((value) => value?.toString() ?? null) ?? null,
-            )
+            setSearchParam("duration", cleanRangeParam(values))
           },
           pageCount,
           onPageCountChange: (values) => {
-            setSearchParam(
-              "pageCount",
-              values?.map((value) => value?.toString() ?? null) ?? null,
-            )
+            setSearchParam("pageCount", cleanRangeParam(values))
           },
           reset: clearSearchParams,
         }),

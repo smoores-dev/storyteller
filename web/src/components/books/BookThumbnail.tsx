@@ -7,7 +7,10 @@ import { cn } from "@/cn"
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
-import { type FilterSortOptions } from "@/hooks/useFilterSortedBooks"
+import {
+  type BookType,
+  type FilterSortOptions,
+} from "@/hooks/useFilterSortedBooks"
 import { useCancelProcessingMutation } from "@/store/api"
 
 import { BookThumbnailImage } from "./BookThumbnailImage"
@@ -17,25 +20,69 @@ type DetailItem = {
   href?: string
 }
 
+function nonMissingAsset<T extends { missing: boolean | null }>(
+  asset: T | null,
+): T | null {
+  return asset && !asset.missing ? asset : null
+}
+
+function getDisplayFileSize(
+  book: BookWithRelations,
+  bookTypes: BookType[] | null,
+): number | null {
+  if (bookTypes?.length === 1) {
+    const [type] = bookTypes
+    if (type === "ebook" || type === "ebook-only")
+      return nonMissingAsset(book.ebook)?.fileSize ?? null
+    if (type === "audiobook" || type === "audiobook-only")
+      return nonMissingAsset(book.audiobook)?.fileSize ?? null
+    if (type === "readaloud")
+      return nonMissingAsset(book.readaloud)?.fileSize ?? null
+  }
+  const sizes = [
+    nonMissingAsset(book.ebook)?.fileSize,
+    nonMissingAsset(book.audiobook)?.fileSize,
+    nonMissingAsset(book.readaloud)?.fileSize,
+  ].filter((s): s is number => s != null && s > 0)
+  if (!sizes.length) return null
+  return Math.max(...sizes)
+}
+
+function getDisplayDuration(book: BookWithRelations): number | null {
+  return (
+    nonMissingAsset(book.audiobook)?.duration ??
+    nonMissingAsset(book.readaloud)?.duration ??
+    null
+  )
+}
+
+function getDisplayPageCount(book: BookWithRelations): number | null {
+  return (
+    nonMissingAsset(book.ebook)?.pageCount ??
+    nonMissingAsset(book.readaloud)?.pageCount ??
+    null
+  )
+}
+
+function formatFileSize(bytes: number | null): string | null {
+  if (bytes == null || bytes <= 0) return null
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 function formatSortMetric(
   book: BookWithRelations,
   sortKey: string,
+  bookTypes: BookType[] | null,
 ): string | null {
   switch (sortKey) {
     case "duration": {
-      const dur = book.audiobook?.duration ?? book.readaloud?.duration
+      const dur = getDisplayDuration(book)
       return dur != null && dur > 0 ? formatTimeHuman(dur) : null
     }
-    case "file-size": {
-      const size = Math.max(
-        book.ebook?.fileSize ?? 0,
-        book.audiobook?.fileSize ?? 0,
-        book.readaloud?.fileSize ?? 0,
-      )
-      return size > 0 ? `${(size / (1024 * 1024)).toFixed(1)} MB` : null
-    }
+    case "file-size":
+      return formatFileSize(getDisplayFileSize(book, bookTypes))
     case "page-count": {
-      const pages = book.ebook?.pageCount ?? book.readaloud?.pageCount
+      const pages = getDisplayPageCount(book)
       return pages != null && pages > 0 ? `${pages} pages` : null
     }
     case "create-time":
@@ -69,26 +116,21 @@ function getBookDetailItems(
   const { filters } = options
 
   if (sortKey !== "title" && sortKey !== "author") {
-    const metric = formatSortMetric(book, sortKey)
+    const metric = formatSortMetric(book, sortKey, filters.bookTypes)
     if (metric) items.push({ text: metric })
   }
 
   // range filter metrics not already shown via the sort key
   if (items.length < 2 && filters.duration && sortKey !== "duration") {
-    const dur = book.audiobook?.duration ?? book.readaloud?.duration
+    const dur = getDisplayDuration(book)
     if (dur != null && dur > 0) items.push({ text: formatTimeHuman(dur) })
   }
   if (items.length < 2 && filters.fileSize && sortKey !== "file-size") {
-    const size = Math.max(
-      book.ebook?.fileSize ?? 0,
-      book.audiobook?.fileSize ?? 0,
-      book.readaloud?.fileSize ?? 0,
-    )
-    if (size > 0)
-      items.push({ text: `${(size / (1024 * 1024)).toFixed(1)} MB` })
+    const text = formatFileSize(getDisplayFileSize(book, filters.bookTypes))
+    if (text) items.push({ text })
   }
   if (items.length < 2 && filters.pageCount && sortKey !== "page-count") {
-    const pages = book.ebook?.pageCount ?? book.readaloud?.pageCount
+    const pages = getDisplayPageCount(book)
     if (pages != null && pages > 0) items.push({ text: `${pages} pages` })
   }
 
@@ -210,7 +252,7 @@ export function BookThumbnail({
         >
           {book.authors[0]?.name}
         </TextContainer>
-        <div className="mt-auto line-clamp-1 max-w-36.75 bg-white pb-2 text-xs">
+        <div className="line-clamp-1 max-w-36.75 truncate bg-white pb-2 text-xs">
           {detailItems.map((item, i) => (
             <Fragment key={i}>
               {i > 0 && <span className="text-gray-400"> · </span>}
