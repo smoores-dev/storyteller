@@ -5,6 +5,7 @@ import {
   runAllImportScans,
   runExistingBooksScan,
 } from "@/assets/autoimport/scanManager"
+import { type ScanOptions } from "@/assets/autoimport/scanner"
 import { withHasPermission } from "@/auth/auth"
 
 export const dynamic = "force-dynamic"
@@ -23,7 +24,23 @@ function getScope(value: string | null): ScanScope {
   return "existing"
 }
 
-async function triggerScopeScan(scope: ScanScope) {
+export function parseScanOptions(params: URLSearchParams): ScanOptions {
+  const options: ScanOptions = {}
+  if (params.get("force") === "true") {
+    options.force = true
+  }
+  const override = params.get("metadataOverride")
+  if (
+    override === "never" ||
+    override === "fill-empty" ||
+    override === "always"
+  ) {
+    options.metadataOverrideMode = override
+  }
+  return options
+}
+
+async function triggerScopeScan(scope: ScanScope, options: ScanOptions) {
   const controller = new AbortController()
 
   if (scope === "imports") {
@@ -32,12 +49,12 @@ async function triggerScopeScan(scope: ScanScope) {
   }
 
   if (scope === "all") {
-    await runExistingBooksScan(controller.signal)
+    await runExistingBooksScan(controller.signal, options)
     await runAllImportScans(controller.signal)
     return
   }
 
-  await runExistingBooksScan(controller.signal)
+  await runExistingBooksScan(controller.signal, options)
 }
 
 export const GET = withHasPermission("bookProcess")(() => {
@@ -46,7 +63,8 @@ export const GET = withHasPermission("bookProcess")(() => {
 
 export const POST = withHasPermission("bookProcess")((request) => {
   const scope = getScope(request.nextUrl.searchParams.get("scope"))
-  void triggerScopeScan(scope)
+  const options = parseScanOptions(request.nextUrl.searchParams)
+  void triggerScopeScan(scope, options)
 
   return new Response(null, { status: 204 })
 })

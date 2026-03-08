@@ -82,11 +82,11 @@ export const computeHashStep: PipelineStep = {
     ctx.fileHash = hash
     ctx.fileSize = fileSize
 
-    if (ctx.flags.has("new")) {
-      ctx.flags.add("changed")
-    }
-
-    if (!ctx.flags.has("new") && ctx.existingHash !== hash) {
+    if (
+      ctx.options.force ||
+      ctx.flags.has("new") ||
+      ctx.existingHash !== hash
+    ) {
       ctx.flags.add("changed")
     }
 

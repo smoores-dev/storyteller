@@ -54,6 +54,11 @@ export default async function writeMetadataToFiles({
       await writeMetadataToEpub(book, epub, { textCover })
       await epub.saveAndClose()
       logger.info("Epub saved")
+
+      const { hash, fileSize } = await hashFile(book.ebook.filepath)
+      await updateBook(book.uuid, null, {
+        ebook: { filepath: book.ebook.filepath, contentHash: hash, fileSize },
+      })
     } catch (e) {
       logger.error({
         err: e,

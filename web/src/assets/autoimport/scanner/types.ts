@@ -9,10 +9,16 @@ import {
   type BookUpdate,
   type BookWithRelations,
 } from "@/database/books"
+import { type MetadataOverrideMode } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"
 
 export type ScanFormat = "ebook" | "audiobook" | "readaloud"
 export type ScanFlag = "missing" | "changed" | "new"
+
+export interface ScanOptions {
+  force?: boolean
+  metadataOverrideMode?: MetadataOverrideMode
+}
 
 export interface ScanContext {
   logger: Logger
@@ -32,6 +38,7 @@ export interface ScanContext {
   pageCount: number | null
   duration: number | null
   fileSize: number | null
+  options: ScanOptions
 }
 
 export interface PipelineStep {

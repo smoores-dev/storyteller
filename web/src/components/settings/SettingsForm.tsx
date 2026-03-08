@@ -129,6 +129,7 @@ export function SettingsForm({
     opdsPageSize: settings.opdsPageSize,
     existingBooksScanIntervalMinutes:
       settings.existingBooksScanIntervalMinutes ?? null,
+    metadataOverrideMode: settings.metadataOverrideMode,
   }
 
   const form = useForm({
@@ -233,7 +234,7 @@ export function SettingsForm({
                 variant="outline"
                 loading={isTriggeringScan}
                 onClick={() => {
-                  void triggerScan({ scope: "existing" })
+                  void triggerScan({ scope: "existing", force: true })
                 }}
               >
                 Trigger Scan (All Existing Books)
@@ -264,6 +265,17 @@ export function SettingsForm({
               {...form.getInputProps("existingBooksScanIntervalMinutes")}
             />
           )}
+          <NativeSelect
+            label="Metadata override behavior"
+            description="Controls how metadata from scanned files is applied to existing books."
+            {...form.getInputProps("metadataOverrideMode")}
+          >
+            <option value="fill-empty">Fill empty fields only (default)</option>
+            <option value="always">
+              Always use file metadata as source of truth
+            </option>
+            <option value="never">Never override book metadata</option>
+          </NativeSelect>
         </Stack>
       </Fieldset>
 

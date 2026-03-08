@@ -24,6 +24,13 @@ export const WhisperModelOverridesSchema = z.record(
 )
 export type WhisperModelOverrides = z.infer<typeof WhisperModelOverridesSchema>
 
+export const MetadataOverrideModeSchema = z.enum([
+  "never",
+  "fill-empty",
+  "always",
+])
+export type MetadataOverrideMode = z.infer<typeof MetadataOverrideModeSchema>
+
 export const ReadaloudLocationTypeSchema = z.enum([
   "SUFFIX",
   "SIBLING_FOLDER",
@@ -119,6 +126,7 @@ export const SettingsSchema = z.object({
   opdsPageSize: z.number().nullable(),
   // Scanning settings
   existingBooksScanIntervalMinutes: z.number().nullable(),
+  metadataOverrideMode: MetadataOverrideModeSchema,
 })
 export type Settings = z.infer<typeof SettingsSchema>
 

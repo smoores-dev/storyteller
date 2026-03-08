@@ -308,30 +308,38 @@ export const api = createApi({
         method: "DELETE",
       }),
     }),
-    triggerBookScan: build.mutation<void, { uuid: UUID }>({
-      query: ({ uuid }) => ({
+    triggerBookScan: build.mutation<
+      void,
+      { uuid: UUID; force?: boolean; metadataOverride?: string }
+    >({
+      query: ({ uuid, force, metadataOverride }) => ({
         url: `/books/${uuid}/scan`,
         method: "POST",
+        params: {
+          ...(force && { force: "true" }),
+          ...(metadataOverride && { metadataOverride }),
+        },
       }),
     }),
     triggerScan: build.mutation<
       void,
-      { scope?: "existing" | "imports" | "all" } | void
+      {
+        scope?: "existing" | "imports" | "all"
+        force?: boolean
+        metadataOverride?: string
+      } | void
     >({
-      query: (args) => {
-        if (!args?.scope) {
-          return {
-            url: "/books/scan",
-            method: "POST",
-          }
-        }
-
-        return {
-          url: "/books/scan",
-          method: "POST",
-          params: { scope: args.scope },
-        }
-      },
+      query: (args) => ({
+        url: "/books/scan",
+        method: "POST",
+        params: {
+          ...(args?.scope && { scope: args.scope }),
+          ...(args?.force && { force: "true" }),
+          ...(args?.metadataOverride && {
+            metadataOverride: args.metadataOverride,
+          }),
+        },
+      }),
     }),
     getScanState: build.query<
       { running: boolean; source: string | null; startedAt: number | null },

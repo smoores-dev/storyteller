@@ -1,3 +1,4 @@
+import { parseScanOptions } from "@/app/api/v2/books/scan/route"
 import { runExistingBookScan } from "@/assets/autoimport/scanManager"
 import { withHasPermission } from "@/auth/auth"
 import { getBookUuid } from "@/database/books"
@@ -9,14 +10,15 @@ type Params = Promise<{
 }>
 
 export const POST = withHasPermission<Params>("bookProcess")(async (
-  _request,
+  request,
   context,
 ) => {
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
   const controller = new AbortController()
+  const options = parseScanOptions(request.nextUrl.searchParams)
 
-  void runExistingBookScan(bookUuid, controller.signal)
+  void runExistingBookScan(bookUuid, controller.signal, options)
 
   return new Response(null, { status: 204 })
 })

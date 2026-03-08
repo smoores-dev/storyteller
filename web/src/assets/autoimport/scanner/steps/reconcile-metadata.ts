@@ -3,7 +3,15 @@ import {
   type ScanContext,
 } from "@/assets/autoimport/scanner/types"
 import { keepMissingMetadata, keepMissingRelations } from "@/assets/metadata"
-import { type BookRelationsUpdate, getBook, updateBook } from "@/database/books"
+import {
+  type BookRelationsUpdate,
+  type BookUpdate,
+  type BookWithRelations,
+  getBook,
+  updateBook,
+} from "@/database/books"
+import { getSetting } from "@/database/settings"
+import { type MetadataOverrideMode } from "@/database/settingsTypes"
 
 import { getFormatRelationPatch } from "./utils"
 
@@ -43,6 +51,29 @@ function withFormatFields(ctx: ScanContext): BookRelationsUpdate {
   }
 }
 
+function resolveMetadata(
+  mode: MetadataOverrideMode,
+  current: BookWithRelations,
+  extracted: BookUpdate | null,
+  extractedRelations: BookRelationsUpdate,
+): { metadataUpdate: BookUpdate | null; relationUpdate: BookRelationsUpdate } {
+  if (mode === "never") {
+    return { metadataUpdate: null, relationUpdate: {} }
+  }
+
+  if (mode === "always") {
+    return {
+      metadataUpdate: extracted,
+      relationUpdate: extractedRelations,
+    }
+  }
+
+  return {
+    metadataUpdate: keepMissingMetadata(current, extracted),
+    relationUpdate: keepMissingRelations(current, extractedRelations),
+  }
+}
+
 export const reconcileMetadataStep: PipelineStep = {
   name: "reconcile-metadata",
   async run(ctx) {
@@ -53,8 +84,16 @@ export const reconcileMetadataStep: PipelineStep = {
 
     ctx.book = current
 
-    const metadataUpdate = keepMissingMetadata(current, ctx.extractedMetadata)
-    const relationUpdate = keepMissingRelations(current, ctx.extractedRelations)
+    const mode =
+      ctx.options.metadataOverrideMode ??
+      (await getSetting("metadataOverrideMode"))
+
+    const { metadataUpdate, relationUpdate } = resolveMetadata(
+      mode,
+      current,
+      ctx.extractedMetadata,
+      ctx.extractedRelations,
+    )
 
     await updateBook(ctx.bookUuid, metadataUpdate, {
       ...relationUpdate,

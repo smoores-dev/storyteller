@@ -6,11 +6,15 @@ import { type UUID } from "@/uuid"
 
 import {
   type ScanContext,
+  type ScanOptions,
   createScanContext,
   runBookScanPipeline,
 } from "./scanner"
 
-function buildScanContexts(books: BookWithRelations[]): ScanContext[] {
+function buildScanContexts(
+  books: BookWithRelations[],
+  options: ScanOptions = {},
+): ScanContext[] {
   return books.flatMap((book) => {
     const contexts: ScanContext[] = []
 
@@ -23,6 +27,7 @@ function buildScanContexts(books: BookWithRelations[]): ScanContext[] {
           missing: book.ebook.missing,
           existingHash: book.ebook.contentHash ?? null,
           book,
+          options,
         }),
       )
     }
@@ -36,6 +41,7 @@ function buildScanContexts(books: BookWithRelations[]): ScanContext[] {
           missing: book.audiobook.missing,
           existingHash: book.audiobook.contentHash ?? null,
           book,
+          options,
         }),
       )
     }
@@ -49,6 +55,7 @@ function buildScanContexts(books: BookWithRelations[]): ScanContext[] {
           missing: book.readaloud.missing,
           existingHash: book.readaloud.contentHash ?? null,
           book,
+          options,
         }),
       )
     }
@@ -111,6 +118,7 @@ async function updateReadaloudMissingState(
 export async function scanExistingBooks(
   signal: AbortSignal,
   bookUuids?: UUID[],
+  options?: ScanOptions,
 ) {
   const books = await getBooks(bookUuids ?? null)
   if (signal.aborted) {
@@ -118,7 +126,7 @@ export async function scanExistingBooks(
     return
   }
 
-  const contexts = buildScanContexts(books)
+  const contexts = buildScanContexts(books, options)
   logger.info(`Planning to scan ${contexts.length} existing books`)
   await runBookScanPipeline(contexts, signal)
   await updateReadaloudMissingState(books, signal)

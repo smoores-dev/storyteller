@@ -85,23 +85,22 @@ export function BookStatus({ bookUuid }: Props) {
             )}
           </Stack>
         ) : (
-          // Just to keep the actions in the same place
           <Box />
         )}
-      </Group>
 
-      {permissions.bookProcess && (
-        <Button
-          variant="default"
-          className="self-start"
-          loading={isTriggeringScan}
-          onClick={() => {
-            void triggerBookScan({ uuid: book.uuid })
-          }}
-        >
-          Trigger Scan
-        </Button>
-      )}
+        {permissions.bookProcess && (
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            loading={isTriggeringScan}
+            onClick={() => {
+              void triggerBookScan({ uuid: book.uuid, force: true })
+            }}
+          >
+            Trigger Scan
+          </Button>
+        )}
+      </Group>
     </Paper>
   )
 }

@@ -8,6 +8,7 @@ import { type UUID } from "@/uuid"
 
 import { scan } from "./scan"
 import { scanExistingBooks } from "./scanExisting"
+import { type ScanOptions } from "./scanner"
 
 type ScanSource = "watcher" | "manual-existing" | "manual-imports" | "scheduled"
 
@@ -107,20 +108,27 @@ export async function runAllImportScans(signal: AbortSignal) {
   })
 }
 
-export async function runExistingBooksScan(signal: AbortSignal) {
+export async function runExistingBooksScan(
+  signal: AbortSignal,
+  options?: ScanOptions,
+) {
   await runExclusive("manual-existing", signal, async () => {
-    await scanExistingBooks(signal)
+    await scanExistingBooks(signal, undefined, options)
   })
 }
 
-export async function runExistingBookScan(bookUuid: UUID, signal: AbortSignal) {
+export async function runExistingBookScan(
+  bookUuid: UUID,
+  signal: AbortSignal,
+  options?: ScanOptions,
+) {
   await runExclusive("manual-existing", signal, async () => {
     const book = await getBook(bookUuid)
     if (!book) {
       logger.error(`Book ${bookUuid} not found`)
       return
     }
-    await scanExistingBooks(signal, [bookUuid])
+    await scanExistingBooks(signal, [bookUuid], options)
   })
 }
 
