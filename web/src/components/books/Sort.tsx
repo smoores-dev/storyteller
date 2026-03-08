@@ -17,9 +17,10 @@ const optionLabels: Record<BookSortKey, string> = {
 interface Props {
   value: BookSort
   onValueChange: (values: BookSort) => void
+  exclude?: BookSortKey[]
 }
 
-export function Sort({ value, onValueChange }: Props) {
+export function Sort({ value, onValueChange, exclude }: Props) {
   const combobox = useCombobox({
     onDropdownClose: () => {
       combobox.resetSelectedOption()
@@ -76,20 +77,22 @@ export function Sort({ value, onValueChange }: Props) {
 
       <Combobox.Dropdown>
         <Combobox.Options>
-          {Object.entries(optionLabels).map(([option, label]) => (
-            <Combobox.Option value={option} key={option}>
-              <Group justify="space-between" wrap="nowrap">
-                <Text>{label}</Text>
-                {value[0] === option ? (
-                  value[1] === "asc" ? (
-                    <IconArrowDown size={16} />
-                  ) : (
-                    <IconArrowUp size={16} />
-                  )
-                ) : null}
-              </Group>
-            </Combobox.Option>
-          ))}
+          {Object.entries(optionLabels)
+            .filter(([option]) => !exclude?.includes(option as BookSortKey))
+            .map(([option, label]) => (
+              <Combobox.Option value={option} key={option}>
+                <Group justify="space-between" wrap="nowrap">
+                  <Text>{label}</Text>
+                  {value[0] === option ? (
+                    value[1] === "asc" ? (
+                      <IconArrowDown size={16} />
+                    ) : (
+                      <IconArrowUp size={16} />
+                    )
+                  ) : null}
+                </Group>
+              </Combobox.Option>
+            ))}
         </Combobox.Options>
       </Combobox.Dropdown>
     </Combobox>

@@ -119,7 +119,7 @@ function assetFileSize(
   return asset.fileSize
 }
 
-function getBookFileSizeMB(
+export function getBookFileSizeMB(
   book: BookWithRelations,
   bookTypes: BookType[] | null,
 ): number | null {
@@ -147,7 +147,7 @@ function getBookFileSizeMB(
   return Math.max(...sizes) / (1024 * 1024)
 }
 
-function getBookDurationMinutes(book: BookWithRelations): number | null {
+export function getBookDurationMinutes(book: BookWithRelations): number | null {
   const audiobook =
     book.audiobook && !book.audiobook.missing ? book.audiobook : null
   const readaloud =
@@ -157,7 +157,7 @@ function getBookDurationMinutes(book: BookWithRelations): number | null {
   return seconds / 60
 }
 
-function getBookPageCount(book: BookWithRelations): number | null {
+export function getBookPageCount(book: BookWithRelations): number | null {
   const ebook = book.ebook && !book.ebook.missing ? book.ebook : null
   const readaloud =
     book.readaloud && !book.readaloud.missing ? book.readaloud : null
@@ -170,12 +170,12 @@ function isValidBound(value: number | undefined): value is number {
   return value != null && Number.isFinite(value) && value > 0
 }
 
-function cleanRangeParam(values: number[] | null): string[] | null {
+export function cleanRangeParam(values: number[] | null): string[] | null {
   if (!values?.some((v) => v > 0)) return null
   return values.map((v) => (v > 0 ? v.toString() : ""))
 }
 
-function matchesRange(
+export function matchesRange(
   value: number | null,
   range: number[] | null,
 ): boolean {
@@ -192,7 +192,7 @@ function matchesRange(
 
 // null values always sort to the end regardless of sort direction.
 // takes the original a/b (not swapped) so null handling is direction-independent.
-function sortByMetric(
+export function sortByMetric(
   a: BookWithRelations,
   b: BookWithRelations,
   getMetric: (book: BookWithRelations) => number | null,

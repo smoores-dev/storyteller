@@ -45,7 +45,11 @@ export function SeriesList() {
     <Stack>
       <Group className="mt-2">
         <Search value={options.search} onValueChange={options.onSearchChange} />
-        <Sort value={options.sort} onValueChange={options.onSortChange} />
+        <Sort
+          value={options.sort}
+          onValueChange={options.onSortChange}
+          exclude={["duration", "file-size", "page-count"]}
+        />
       </Group>
       {series.length ? (
         <SeriesGrid series={series} />

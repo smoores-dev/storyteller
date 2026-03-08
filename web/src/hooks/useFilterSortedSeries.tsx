@@ -122,6 +122,10 @@ export function useFilterSortedSeries(series: SeriesWithBooks[]): {
               new Date(getFirstBook(second)?.publicationDate).valueOf()
             )
           }
+          default: {
+            console.warn(`Unknown sort key: ${sort[0] as string}`)
+            return 0
+          }
         }
       }),
     [getFirstBook, searched, sort],
