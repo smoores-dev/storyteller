@@ -37,9 +37,6 @@ import {
 } from "./paths"
 
 export async function move(source: string, destination: string) {
-  if (source === destination) {
-    return
-  }
   await cp(source, destination, { recursive: true })
   try {
     await rm(source, { recursive: true })
