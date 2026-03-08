@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto"
 import { createReadStream } from "node:fs"
 import { readdir, stat } from "node:fs/promises"
 import { join, relative } from "node:path"
@@ -44,11 +43,11 @@ async function hashAudiobookDirectory(
     .map((entry) => join(entry.parentPath, entry.name))
     .sort((a, b) => a.localeCompare(b))
 
-  const hash = createHash("sha256")
+  const hash = xxh3.Xxh3.withSeed()
   if (files.length === 0) {
     hash.update("empty-audiobook-directory")
     return {
-      hash: hash.digest("hex"),
+      hash: hash.digest().toString(),
       fileSize: 0,
     }
   }
@@ -65,7 +64,7 @@ async function hashAudiobookDirectory(
   }
 
   return {
-    hash: hash.digest("hex"),
+    hash: hash.digest().toString(),
     fileSize: totalSize,
   }
 }
