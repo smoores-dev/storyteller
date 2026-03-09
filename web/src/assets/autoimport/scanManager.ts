@@ -6,7 +6,7 @@ import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { scan } from "./scan"
+import { type ImportPathChange, scan, scanChangedPaths } from "./scan"
 import { scanExistingBooks } from "./scanExisting"
 import { type ScanOptions } from "./scanner"
 
@@ -111,6 +111,17 @@ export async function runImportPathScan(
   })
 }
 
+export async function runImportPathChangeScan(
+  importPath: string,
+  collectionUuid: UUID | null,
+  changes: ImportPathChange[],
+  signal: AbortSignal,
+) {
+  await runExclusive("watcher", signal, async () => {
+    await scanChangedPaths(importPath, collectionUuid, changes, signal)
+  })
+}
+
 export async function runAllImportScans(signal: AbortSignal) {
   await runExclusive("manual-imports", signal, async () => {
     await runAllImportScansUnlocked(signal)
@@ -141,10 +152,7 @@ export async function runExistingBookScan(
   })
 }
 
-export async function runFullScan(
-  signal: AbortSignal,
-  options?: ScanOptions,
-) {
+export async function runFullScan(signal: AbortSignal, options?: ScanOptions) {
   await runExclusive("manual-full", signal, async () => {
     await scanExistingBooks(signal, undefined, options)
     if (signal.aborted) {

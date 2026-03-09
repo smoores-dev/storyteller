@@ -1,15 +1,18 @@
-import { type WatchEventType, watch } from "node:fs"
-import { resolve } from "node:path"
-
 import { AsyncMutex } from "@esfx/async-mutex"
-import debounce from "debounce"
+import watcher from "@parcel/watcher"
 
 import { getCollection, getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { runImportPathScan } from "./scanManager"
+import { type ImportPathChange } from "./scan"
+import { runImportPathChangeScan, runImportPathScan } from "./scanManager"
+import {
+  getWatcherOptions,
+  readSnapshotChanges,
+  writeWatcherSnapshot,
+} from "./watcherSnapshot"
 import { isSuppressed } from "./writeIntent"
 
 const entryLocks = new Map<string, AsyncMutex>()
@@ -31,72 +34,170 @@ function startWatcher(
   }
 
   const scanLock = new AsyncMutex()
+  const pendingChanges: ImportPathChange[] = []
+  let flushTimer: NodeJS.Timeout | null = null
+  let closed = false
+  let subscription: Awaited<ReturnType<typeof watcher.subscribe>> | null = null
 
-  // This will always succeed, we just created the lock
-  scanLock.tryLock()
+  const closeWatcher = async () => {
+    if (closed) {
+      return
+    }
+    closed = true
+    if (flushTimer) {
+      clearTimeout(flushTimer)
+      flushTimer = null
+    }
+    if (subscription) {
+      try {
+        await subscription.unsubscribe()
+      } catch (error) {
+        logger.error(`Failed to unsubscribe watcher for ${importPath}`)
+        logger.error(error)
+      }
+      subscription = null
+    }
+    if (entryLock.isLocked) {
+      entryLock.unlock()
+    }
+  }
 
-  runImportPathScan(importPath, collection, controller.signal)
-    .catch((e: unknown) => {
-      logger.error(
-        `Encountered an error scanning for new book files in ${importPath}`,
+  const scheduleFlush = (delayMs: number) => {
+    if (controller.signal.aborted || closed || flushTimer) {
+      return
+    }
+    flushTimer = setTimeout(() => {
+      flushTimer = null
+      void flushChanges()
+    }, delayMs)
+    flushTimer.unref()
+  }
+
+  const queueChanges = (changes: ImportPathChange[]) => {
+    if (!changes.length) {
+      return
+    }
+    pendingChanges.push(...changes)
+    if (scanLock.isLocked) {
+      logger.info(
+        `Detected changes in ${importPath} while scan is running, queuing ${changes.length} event(s).`,
       )
-      logger.error(e)
-    })
-    .finally(() => {
+    }
+    scheduleFlush(750)
+  }
+
+  const flushChanges = async () => {
+    if (controller.signal.aborted || closed) {
+      return
+    }
+    if (!pendingChanges.length) {
+      return
+    }
+
+    await scanLock.lock()
+    const batch = pendingChanges.splice(0, pendingChanges.length)
+    try {
+      await runImportPathChangeScan(
+        importPath,
+        collection,
+        batch,
+        controller.signal,
+      )
+      await writeWatcherSnapshot(importPath)
+    } catch (error) {
+      logger.error(
+        `Encountered an error scanning changed files in import path ${importPath}`,
+      )
+      logger.error(error)
+    } finally {
       scanLock.unlock()
-    })
+    }
 
-  watch(
-    importPath,
-    { recursive: true, signal: controller.signal },
-    debounce(async (_eventType: WatchEventType, filename: string | null) => {
-      if (controller.signal.aborted) {
-        logger.debug("detected a change, but scanning is aborted. Ignoring.")
-        logger.info("Detected a change, but scanning is aborted. Ignoring.")
-        return
-      }
-      console.log("detected a change", _eventType, filename)
+    if (pendingChanges.length) {
+      scheduleFlush(250)
+    }
+  }
 
-      if (filename) {
-        const absolutePath = resolve(importPath, filename)
-        if (isSuppressed(absolutePath)) {
-          logger.debug(
-            `Detected a change in ${absolutePath} caused by an internal write, ignoring.`,
-          )
-          return
-        }
-      }
+  const handleEvents = (
+    events: { path: string; type: ImportPathChange["type"] }[],
+  ) => {
+    if (controller.signal.aborted || closed) {
+      logger.debug("Detected a change, but scanning is aborted. Ignoring.")
+      return
+    }
 
-      if (scanLock.isLocked) {
-        logger.info(
-          `Detected a change in ${importPath} but previous scan is still running, queuing to run after.`,
-        )
-      } else {
-        logger.info(
-          `Detected a change in ${importPath}, scanning for new book files...`,
-        )
-      }
+    const relevantChanges = events
+      .filter((event) => !isSuppressed(event.path))
+      .map((event) => ({
+        path: event.path,
+        type: event.type,
+      }))
+    if (!relevantChanges.length) {
+      return
+    }
 
-      await scanLock.lock()
+    logger.info(
+      `Detected ${relevantChanges.length} change event(s) in ${importPath}, queuing incremental scan.`,
+    )
+    queueChanges(relevantChanges)
+  }
 
-      runImportPathScan(importPath, collection, controller.signal)
-        .catch((e: unknown) => {
-          logger.error(
-            `Encountered an error scanning for new book files in ${importPath}`,
-          )
-          logger.error(e)
-        })
-        .finally(() => {
-          scanLock.unlock()
-        })
-    }, 5_000),
+  const bootstrapWatcher = async () => {
+    const startup = await readSnapshotChanges(importPath)
+    if (controller.signal.aborted || closed) {
+      return
+    }
+
+    if (!startup.snapshotExists) {
+      logger.info(
+        `No snapshot found for ${importPath}; running one full import-path scan to establish baseline.`,
+      )
+      await runImportPathScan(importPath, collection, controller.signal)
+      await writeWatcherSnapshot(importPath)
+      return
+    }
+
+    if (!startup.changes.length) {
+      logger.debug(`No pending changes from snapshot for ${importPath}`)
+      return
+    }
+
+    logger.info(
+      `Recovered ${startup.changes.length} pending change event(s) for ${importPath} from snapshot.`,
+    )
+    queueChanges(startup.changes)
+    scheduleFlush(0)
+  }
+
+  controller.signal.addEventListener(
+    "abort",
+    () => {
+      void closeWatcher()
+    },
+    { once: true },
   )
-    .on("close", () => {
-      entryLock.unlock()
-    })
-    .on("error", () => {
-      entryLock.unlock()
-    })
+
+  void (async () => {
+    try {
+      subscription = await watcher.subscribe(
+        importPath,
+        (error, events) => {
+          if (error) {
+            logger.error(`Watcher subscription error for ${importPath}`)
+            logger.error(error)
+            return
+          }
+          handleEvents(events)
+        },
+        getWatcherOptions(),
+      )
+      await bootstrapWatcher()
+    } catch (error) {
+      logger.error(`Failed to start watcher for import path ${importPath}`)
+      logger.error(error)
+      await closeWatcher()
+    }
+  })()
 }
 
 let rootController = new AbortController()

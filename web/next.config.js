@@ -44,6 +44,7 @@ const nextConfig = {
     "onnxruntime-node",
     "@node-rs/crc32",
     "@node-rs/xxhash",
+    "@parcel/watcher",
   ],
   output: "standalone",
   outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../.."),
