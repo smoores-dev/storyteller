@@ -8,7 +8,7 @@ export async function register() {
   // adding extra imports to env.ts
   const { env } = await import("@/env")
   const { listen } = await import("./assets/autoimport/listen")
-  const { refreshScheduledExistingBookScan } = await import(
+  const { refreshScheduledScan } = await import(
     "./assets/autoimport/scheduledScan"
   )
   const { logger } = await import("./logging")
@@ -27,7 +27,7 @@ export async function register() {
   }
   try {
     await listen()
-    await refreshScheduledExistingBookScan()
+    await refreshScheduledScan()
   } catch (err) {
     logger.error("Failed to initiate auto-import services")
     logger.error(err)

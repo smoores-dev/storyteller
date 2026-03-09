@@ -1,6 +1,7 @@
 import { Epub } from "@storyteller-platform/epub"
 
 import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import { suppressPath, unsuppressPath } from "@/assets/autoimport/writeIntent"
 
 export const openEpubStep: PipelineStep = {
   name: "open-epub",
@@ -25,7 +26,12 @@ export const openEpubStep: PipelineStep = {
       return
     }
 
-    await ctx.epub.saveAndClose()
+    suppressPath(ctx.filepath)
+    try {
+      await ctx.epub.saveAndClose()
+    } finally {
+      unsuppressPath(ctx.filepath)
+    }
     ctx.epub = null
   },
 }

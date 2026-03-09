@@ -4,6 +4,7 @@ import {
   getScanState,
   runAllImportScans,
   runExistingBooksScan,
+  runFullScan,
 } from "@/assets/autoimport/scanManager"
 import { type ScanOptions } from "@/assets/autoimport/scanner"
 import { withHasPermission } from "@/auth/auth"
@@ -49,8 +50,7 @@ async function triggerScopeScan(scope: ScanScope, options: ScanOptions) {
   }
 
   if (scope === "all") {
-    await runExistingBooksScan(controller.signal, options)
-    await runAllImportScans(controller.signal)
+    await runFullScan(controller.signal, options)
     return
   }
 

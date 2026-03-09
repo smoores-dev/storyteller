@@ -1,4 +1,5 @@
 import { type WatchEventType, watch } from "node:fs"
+import { resolve } from "node:path"
 
 import { AsyncMutex } from "@esfx/async-mutex"
 import debounce from "debounce"
@@ -9,6 +10,7 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { runImportPathScan } from "./scanManager"
+import { isSuppressed } from "./writeIntent"
 
 const entryLocks = new Map<string, AsyncMutex>()
 
@@ -47,10 +49,22 @@ function startWatcher(
   watch(
     importPath,
     { recursive: true, signal: controller.signal },
-    debounce(async (_eventType: WatchEventType, _filename: string | null) => {
+    debounce(async (_eventType: WatchEventType, filename: string | null) => {
       if (controller.signal.aborted) {
+        logger.debug("detected a change, but scanning is aborted. Ignoring.")
         logger.info("Detected a change, but scanning is aborted. Ignoring.")
         return
+      }
+      console.log("detected a change", _eventType, filename)
+
+      if (filename) {
+        const absolutePath = resolve(importPath, filename)
+        if (isSuppressed(absolutePath)) {
+          logger.debug(
+            `Detected a change in ${absolutePath} caused by an internal write, ignoring.`,
+          )
+          return
+        }
       }
 
       if (scanLock.isLocked) {

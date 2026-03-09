@@ -7,13 +7,6 @@ import {
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
-import {
-  getAudioCover,
-  getEpubCover,
-  writeExtractedAudiobookCover,
-  writeExtractedEbookCover,
-} from "@/assets/covers"
-import { writeCachedCoverImage } from "@/assets/fs"
 import { getDefaultSuffix, getInternalBookDirectory } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import {
@@ -24,10 +17,10 @@ import {
   getBooks,
   updateBook,
 } from "@/database/books"
-import { optimizeImage } from "@/images"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
+import { cacheAudioCover, cacheTextCover } from "./coverCache"
 import {
   type ScanFlag,
   type ScanFormat,
@@ -126,46 +119,6 @@ async function ensureBookDirectory(book: BookWithRelations) {
   }
 
   return await updateBook(book.uuid, { suffix: getDefaultSuffix(book.uuid) })
-}
-
-async function cacheTextCover(book: BookWithRelations) {
-  const coverImage = await getEpubCover(book)
-  if (!coverImage) {
-    return
-  }
-
-  await writeExtractedEbookCover(book, coverImage.filename, coverImage.data)
-  const optimized = await optimizeImage({
-    buffer: coverImage.data,
-    height: 225,
-    width: 147,
-    contentType: coverImage.mimeType,
-  })
-
-  await writeCachedCoverImage(book.uuid, "text", 225, 147, {
-    ...coverImage,
-    data: optimized,
-  })
-}
-
-async function cacheAudioCover(book: BookWithRelations) {
-  const audioCover = await getAudioCover(book)
-  if (!audioCover) {
-    return
-  }
-
-  await writeExtractedAudiobookCover(book, audioCover.filename, audioCover.data)
-  const optimized = await optimizeImage({
-    buffer: Buffer.from(audioCover.data),
-    height: 147,
-    width: 147,
-    contentType: audioCover.mimeType,
-  })
-
-  await writeCachedCoverImage(book.uuid, "audio", 147, 147, {
-    ...audioCover,
-    data: optimized,
-  })
 }
 
 async function createNewBook(
@@ -525,7 +478,20 @@ export async function scan(
       return
     }
 
-    const book = findMatchingBook(books, bookPath)
+    // check all books (not just scoped) to prevent duplicates across overlapping import paths
+    const globalMatch = findMatchingBook(allBooks, bookPath)
+    const book =
+      globalMatch && books.some((b) => b.uuid === globalMatch.uuid)
+        ? globalMatch
+        : null
+
+    if (globalMatch && !book) {
+      logger.warn(
+        `File at ${JSON.stringify(bookPath)} already belongs to book "${globalMatch.title}" in another collection, skipping`,
+      )
+      continue
+    }
+
     if (!book) {
       logger.debug(
         `Found a new book! Importing from ${JSON.stringify(bookPath)}`,

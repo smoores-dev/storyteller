@@ -4,7 +4,13 @@ import { MessageChannel } from "node:worker_threads"
 
 import Piscina, { transferableSymbol, valueSymbol } from "piscina"
 
-import { updateBook } from "@/database/books"
+import {
+  suppressDirectory,
+  suppressPath,
+  unsuppressDirectory,
+  unsuppressPath,
+} from "@/assets/autoimport/writeIntent"
+import { getBook, updateBook } from "@/database/books"
 import { env } from "@/env"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
@@ -139,13 +145,29 @@ export async function queueWritesToFiles(
     },
   }
 
-  await fileWritePiscina.run(
-    {
-      bookUuid,
-      textCover: transferableTextCover,
-      audioCover: transferableAudioCover,
-      port: port1,
-    } satisfies WriteMetadataToFilesInput,
-    { transferList: [port1] },
-  )
+  const book = await getBook(bookUuid)
+  const filepaths: string[] = []
+  if (book?.ebook?.filepath) filepaths.push(book.ebook.filepath)
+  if (book?.readaloud?.filepath) filepaths.push(book.readaloud.filepath)
+
+  const dirpaths: string[] = []
+  if (book?.audiobook?.filepath) dirpaths.push(book.audiobook.filepath)
+
+  for (const fp of filepaths) suppressPath(fp)
+  for (const dp of dirpaths) suppressDirectory(dp)
+
+  try {
+    await fileWritePiscina.run(
+      {
+        bookUuid,
+        textCover: transferableTextCover,
+        audioCover: transferableAudioCover,
+        port: port1,
+      } satisfies WriteMetadataToFilesInput,
+      { transferList: [port1] },
+    )
+  } finally {
+    for (const fp of filepaths) unsuppressPath(fp)
+    for (const dp of dirpaths) unsuppressDirectory(dp)
+  }
 }

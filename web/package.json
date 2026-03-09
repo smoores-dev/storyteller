@@ -83,6 +83,7 @@
     "next-auth": "^5.0.0-beta.28",
     "next-intl": "^4.7.0",
     "next-themes": "^0.4.6",
+    "node-cron": "^4.2.1",
     "nodemailer": "^6.9.13",
     "nuqs": "^2.8.6",
     "opds-ts": "^2.1.0",

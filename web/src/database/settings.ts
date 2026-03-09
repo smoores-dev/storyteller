@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs"
 import { ZodError } from "zod"
 
 import { update } from "@/assets/autoimport/listen"
+import { refreshScheduledScan } from "@/assets/autoimport/scheduledScan"
 import { env } from "@/env"
-import { refreshScheduledExistingBookScan } from "@/assets/autoimport/scheduledScan"
 
 import { db } from "./connection"
 import { ConfigFileSchema, type Settings } from "./settingsTypes"
@@ -153,8 +153,8 @@ export async function getSettings(): Promise<Settings> {
 
   const result = {
     ...dbDesttings,
-    smtpSsl: result.smtpSsl ?? true,
-    smtpRejectUnauthorized: result.smtpRejectUnauthorized ?? true,
+    smtpSsl: dbDesttings.smtpSsl ?? true,
+    smtpRejectUnauthorized: dbDesttings.smtpRejectUnauthorized ?? true,
   }
 
   return { ...result, ...configSettings }
@@ -196,7 +196,7 @@ export async function updateSettings(settings: Settings) {
       .execute()
   }
   await update(null)
-  await refreshScheduledExistingBookScan()
+  await refreshScheduledScan()
 }
 
 // Validate and cache config file on startup (never re-read after this)

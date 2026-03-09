@@ -7,6 +7,10 @@ import {
 } from "@storyteller-platform/audiobook"
 
 import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import {
+  suppressDirectory,
+  unsuppressDirectory,
+} from "@/assets/autoimport/writeIntent"
 import { isAudioFile } from "@/audio"
 
 async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
@@ -47,7 +51,12 @@ export const openAudiobookStep: PipelineStep = {
       return
     }
 
-    await ctx.audiobook.saveAndClose()
+    suppressDirectory(ctx.filepath)
+    try {
+      await ctx.audiobook.saveAndClose()
+    } finally {
+      unsuppressDirectory(ctx.filepath)
+    }
     ctx.audiobook = null
   },
 }

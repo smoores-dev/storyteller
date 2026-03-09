@@ -6,6 +6,12 @@ import { AsyncMutex } from "@esfx/async-mutex"
 import Piscina from "piscina"
 
 import {
+  suppressDirectory,
+  suppressPath,
+  unsuppressDirectory,
+  unsuppressPath,
+} from "@/assets/autoimport/writeIntent"
+import {
   type BookRelationsUpdate,
   type BookUpdate,
   type BookWithRelations,
@@ -119,6 +125,12 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
 
   controllers.set(bookUuid, abortController)
 
+  const fileSuppression: string[] = []
+  const dirSuppression: string[] = []
+  if (book.ebook?.filepath) fileSuppression.push(book.ebook.filepath)
+  if (book.readaloud?.filepath) fileSuppression.push(book.readaloud.filepath)
+  if (book.audiobook?.filepath) dirSuppression.push(book.audiobook.filepath)
+
   const { port1, port2 } = new MessageChannel()
 
   port2.on(
@@ -128,6 +140,15 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
       update: BookUpdate | null
       relations: BookRelationsUpdate
     }) => {
+      // readaloud filepath may change during processing, keep suppressed
+      if (message.relations.readaloud?.filepath) {
+        const fp = message.relations.readaloud.filepath
+        if (!fileSuppression.includes(fp)) {
+          fileSuppression.push(fp)
+          suppressPath(fp)
+        }
+      }
+
       const updated = await updateBook(
         bookUuid,
         message.update,
@@ -136,6 +157,9 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
       port2.postMessage({ requestId: message.requestId, book: updated })
     },
   )
+
+  for (const fp of fileSuppression) suppressPath(fp)
+  for (const dp of dirSuppression) suppressDirectory(dp)
 
   try {
     await alignmentPiscina.run(
@@ -173,6 +197,8 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
     logger.error(`Processing for book ${bookUuid} failed unexpectedly`)
     logger.error(err)
   } finally {
+    for (const fp of fileSuppression) unsuppressPath(fp)
+    for (const dp of dirSuppression) unsuppressDirectory(dp)
     if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
 }

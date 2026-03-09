@@ -1,0 +1,71 @@
+import { resolve } from "node:path"
+
+import { logger } from "@/logging"
+
+// ttl prevents leaked entries if a write fails without cleanup
+const DEFAULT_TTL_MS = 60_000
+
+type Entry = {
+  timer: NodeJS.Timeout
+}
+
+const pending = new Map<string, Entry>()
+
+function toKey(filepath: string): string {
+  return resolve(filepath)
+}
+
+export function suppressPath(filepath: string, ttlMs = DEFAULT_TTL_MS) {
+  logger.debug(`suppressPath ${filepath} was called`)
+  const key = toKey(filepath)
+  const existing = pending.get(key)
+  if (existing) {
+    clearTimeout(existing.timer)
+  }
+
+  const timer = setTimeout(() => {
+    pending.delete(key)
+  }, ttlMs)
+
+  // unref so the timer doesn't keep the process alive
+  timer.unref()
+  pending.set(key, { timer })
+}
+
+export function unsuppressPath(filepath: string) {
+  logger.debug(`unsuppressPath ${filepath} was called`)
+  const key = toKey(filepath)
+  const existing = pending.get(key)
+  if (!existing) {
+    return
+  }
+
+  clearTimeout(existing.timer)
+  pending.delete(key)
+}
+
+export function isSuppressed(filepath: string): boolean {
+  logger.debug(`isSuppressed ${filepath} was called`)
+  const key = toKey(filepath)
+  if (pending.has(key)) {
+    return true
+  }
+
+  // check if any suppressed directory is a parent of this path
+  for (const suppressed of pending.keys()) {
+    logger.debug(`checking if ${key} is suppressed by ${suppressed}`)
+    if (key.startsWith(suppressed + "/")) {
+      return true
+    }
+  }
+
+  return false
+}
+
+export function suppressDirectory(dirpath: string, ttlMs = DEFAULT_TTL_MS) {
+  suppressPath(dirpath, ttlMs)
+}
+
+export function unsuppressDirectory(dirpath: string) {
+  unsuppressPath(dirpath)
+}

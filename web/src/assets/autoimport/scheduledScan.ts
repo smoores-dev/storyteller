@@ -1,21 +1,43 @@
 import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 
-import { runScheduledExistingBooksScan } from "./scanManager"
+import { runScheduledFullScan } from "./scanManager"
 
 let scheduledScanTimer: NodeJS.Timeout | null = null
+let scheduledScanAborted = false
 
-function clearScheduledExistingBookScanTimer() {
+function clearScheduledScanTimer() {
+  scheduledScanAborted = true
   if (!scheduledScanTimer) {
     return
   }
 
-  clearInterval(scheduledScanTimer)
+  clearTimeout(scheduledScanTimer)
   scheduledScanTimer = null
 }
 
-export async function refreshScheduledExistingBookScan() {
-  clearScheduledExistingBookScanTimer()
+function scheduleNext(intervalMs: number) {
+  scheduledScanTimer = setTimeout(() => {
+    if (scheduledScanAborted) {
+      return
+    }
+
+    const controller = new AbortController()
+    runScheduledFullScan(controller.signal)
+      .catch((error: unknown) => {
+        logger.error("Scheduled full scan failed")
+        logger.error(error)
+      })
+      .finally(() => {
+        if (!scheduledScanAborted) {
+          scheduleNext(intervalMs)
+        }
+      })
+  }, intervalMs)
+}
+
+export async function refreshScheduledScan() {
+  clearScheduledScanTimer()
 
   const intervalMinutes = await getSetting("existingBooksScanIntervalMinutes")
   if (!intervalMinutes || intervalMinutes <= 0) {
@@ -27,17 +49,10 @@ export async function refreshScheduledExistingBookScan() {
     return
   }
 
-  scheduledScanTimer = setInterval(() => {
-    const controller = new AbortController()
-    void runScheduledExistingBooksScan(controller.signal).catch(
-      (error: unknown) => {
-        logger.error("Scheduled existing-book scan failed")
-        logger.error(error)
-      },
-    )
-  }, intervalMs)
+  scheduledScanAborted = false
+  scheduleNext(intervalMs)
 
   logger.info(
-    `Configured scheduled existing-book scan every ${intervalMinutes} minute(s)`,
+    `Configured scheduled full scan every ${intervalMinutes} minute(s)`,
   )
 }

@@ -234,10 +234,10 @@ export function SettingsForm({
                 variant="outline"
                 loading={isTriggeringScan}
                 onClick={() => {
-                  void triggerScan({ scope: "existing", force: true })
+                  void triggerScan({ scope: "all", force: true })
                 }}
               >
-                Trigger Scan (All Existing Books)
+                Trigger Full Scan
               </Button>
             </Group>
           )}
