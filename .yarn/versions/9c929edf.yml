@@ -1,0 +1,5 @@
+releases:
+  "@storyteller-platform/web": patch
+
+undecided:
+  - "@storyteller-platform/align"
