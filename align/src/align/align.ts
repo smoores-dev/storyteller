@@ -123,6 +123,8 @@ export async function align(
 
   const timing = await aligner.alignBook(options.onProgress)
 
+  await epub.saveAndClose()
+
   if (options.reportsPath) {
     await mkdir(autoDirname(options.reportsPath), { recursive: true })
 
