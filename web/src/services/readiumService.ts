@@ -363,6 +363,9 @@ declare global {
   // need to use var for globalThis
   // eslint-disable-next-line no-var
   var readiumServiceInstance: ReadiumService | null
+  // need to use var for globalThis
+  // eslint-disable-next-line no-var
+  var readiumServiceShutdownHandlersAttached: boolean | undefined
 }
 
 export function getReadiumService(): ReadiumService {
@@ -379,20 +382,26 @@ export function getReadiumService(): ReadiumService {
   return globalThis.readiumServiceInstance
 }
 
-// graceful shutdown handler
-globalThis.process.on("SIGTERM", () => {
+function stopReadiumServiceForSignal(signal: "SIGINT" | "SIGTERM") {
   if (globalThis.readiumServiceInstance) {
-    logger.info("Received SIGTERM, stopping Readium service")
+    logger.info(`Received ${signal}, stopping Readium service`)
     globalThis.readiumServiceInstance.stop()
   }
-})
 
-globalThis.process.on("SIGINT", () => {
-  if (globalThis.readiumServiceInstance) {
-    logger.info("Received SIGINT, stopping Readium service")
-    globalThis.readiumServiceInstance.stop()
-  }
-})
+  // ensure we do not trap the process by leaving signal handlers attached
+  process.exit(0)
+}
+
+if (!globalThis.readiumServiceShutdownHandlersAttached) {
+  globalThis.readiumServiceShutdownHandlersAttached = true
+  globalThis.process.once("SIGTERM", () => {
+    stopReadiumServiceForSignal("SIGTERM")
+  })
+
+  globalThis.process.once("SIGINT", () => {
+    stopReadiumServiceForSignal("SIGINT")
+  })
+}
 
 /**
  * Find the process id of the process running on the given port and command
