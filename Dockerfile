@@ -66,9 +66,12 @@ FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BAS
 
 WORKDIR /app
 
-# Install FFmpeg runtime libraries (required by whisper.cpp with WHISPER_FFMPEG=1)
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu \
     && rm -rf /var/lib/apt/lists/*
+
+RUN userdel -r ubuntu \
+    && groupadd -g 1000 storyteller \
+    && useradd -u 1000 -g storyteller -m storyteller
 
 COPY --from=ghcr.io/readium/readium:0.6.5 /opt/readium /opt/readium
 RUN ln -sf /opt/readium /usr/local/bin/readium
@@ -79,6 +82,9 @@ COPY --from=builder /app/web/public ./.next/standalone/web/public
 COPY --from=builder /app/web/.next/static ./.next/standalone/web/.next/static
 COPY --from=builder /app/web/sqlite/uuid.c.so ./.next/standalone/web/sqlite/uuid.c.so
 
+RUN mkdir -p ./.next/standalone/web/.next/cache \
+    && chown storyteller:storyteller ./.next/standalone/web/.next/cache
+
 # Copy SQL migrations
 COPY --from=builder /app/web/migrations ./.next/standalone/web/migrations
 
@@ -87,13 +93,14 @@ COPY --from=builder /app/web/migrations ./.next/standalone/web/migrations
 COPY --from=builder /app/scripts/ ./.next/standalone/web/scripts/
 
 # Copy pre-installed whisper binaries and models from builder
-COPY --from=builder /root/.local/share/ghost-story /root/.local/share/ghost-story
+COPY --from=builder --chown=storyteller:storyteller /root/.local/share/ghost-story /home/storyteller/.local/share/ghost-story
 
 EXPOSE 8001
 
 ARG CI_COMMIT_TAG
 ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
+ENV HOME=/home/storyteller
 ENV PORT=8001
 ENV HOSTNAME=0.0.0.0
 ENV STORYTELLER_DATA_DIR=/data
@@ -112,7 +119,9 @@ ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT}
 
 WORKDIR /app/.next/standalone/web
 
+COPY --from=builder /app/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
+ENTRYPOINT ["entrypoint.sh"]
 
 CMD ["node", "--enable-source-maps", "server.js"]
