@@ -150,6 +150,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       config: {
         usesNonExemptEncryption: false,
       },
+      icon: "./assets/storyteller-ios.icon",
       infoPlist: {
         UISupportsDocumentBrowser: true,
         UIFileSharingEnabled: true,
