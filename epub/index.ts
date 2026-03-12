@@ -537,7 +537,7 @@ export class Epub {
     return await readFile(path, encoding)
   }
 
-  private async getRootfile() {
+  async getRootfile() {
     if (this.rootfile !== null) return this.rootfile
 
     const containerString = await this.getFileData(
@@ -1974,6 +1974,40 @@ export class Epub {
   private resolveHref(from: string, href: string) {
     const startPath = dirname(from)
     return resolve(this.extractPath, startPath, href)
+  }
+
+  /**
+   * Retrieve the contents of a file, given its href.
+   *
+   * Optionally takes the href that this href should be resolved relative to,
+   * and an encoding parameter.
+   *
+   * @param href The href of the file to retrieve
+   * @param [relitaveTo] Optional - The href to resolve this href relative to.
+   *   Use if resolving a relative href from a file other than the package document.
+   * @param [encoding] Optional - Must be the string "utf-8". If provided,
+   *   the function will encode the data into a unicode string.
+   *   Otherwise, the data will be returned as a byte array.
+   */
+  async readFileContents(href: string, relativeTo?: string): Promise<Uint8Array>
+  async readFileContents(
+    href: string,
+    relativeTo: string | undefined,
+    encoding: "utf-8",
+  ): Promise<string>
+  async readFileContents(
+    href: string,
+    relativeTo?: string,
+    encoding?: "utf-8",
+  ): Promise<string | Uint8Array> {
+    const rootfile = await this.getRootfile()
+    const from = relativeTo ? this.resolveHref(rootfile, relativeTo) : rootfile
+    const path = this.resolveHref(from, href)
+
+    const itemEntry = encoding
+      ? await this.getFileData(path, encoding)
+      : await this.getFileData(path)
+    return itemEntry
   }
 
   /**

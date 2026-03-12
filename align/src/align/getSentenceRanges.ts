@@ -5,6 +5,7 @@ import { type TimelineEntry } from "@storyteller-platform/ghost-story"
 import { getTrackDuration } from "../common/ffmpeg.ts"
 
 import { findNearestMatch } from "./fuzzy.ts"
+import { slugify } from "./slugify.ts"
 
 export type StorytellerTimelineEntry = TimelineEntry & {
   audiofile: string
@@ -90,6 +91,7 @@ export async function getSentenceRanges(
   transcription: StorytellerTranscription,
   sentences: string[],
   chapterOffset: number,
+  locale: Intl.Locale,
   lastSentenceRange: SentenceRange | null,
 ) {
   const sentenceRanges: SentenceRange[] = []
@@ -101,20 +103,16 @@ export async function getSentenceRanges(
 
   let startSentenceEntry = startSentence
 
-  const sentenceEntries = sentences
-    .map((sentence, index) => [index, sentence] as const)
-    .filter(([index, sentence]) => {
-      if (
-        sentence.replaceAll(/[.-_()[\],/?!@#$%^^&*`~;:='"<>+ˌˈ]/g, "").length <=
-        3
-      ) {
-        // We have to adjust the start sentence, since we're going to
-        // be iterating over the filtered sentenceEntries
-        if (index < startSentence) startSentenceEntry--
-        return false
-      }
-      return true
-    })
+  const sentenceEntries: [number, string][] = []
+  for (let i = 0; i < sentences.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const sentence = (await slugify(sentences[i]!, locale)).result
+    if (sentence.length <= 3) {
+      if (i < startSentence) startSentenceEntry--
+      continue
+    }
+    sentenceEntries.push([i, sentence])
+  }
 
   let transcriptionWindowIndex = 0
   let transcriptionWindowOffset = 0
@@ -131,9 +129,11 @@ export async function getSentenceRanges(
       transcriptionWindowIndex,
       transcriptionWindowIndex + 10,
     )
-    const transcriptionWindow = transcriptionWindowList
-      .join("")
-      .slice(transcriptionWindowOffset)
+    const { result: transcriptionWindow, mapping } = await slugify(
+      transcriptionWindowList.join("-").slice(transcriptionWindowOffset),
+      locale,
+    )
+    const inverted = mapping.invert()
 
     const query = collapseWhitespace(sentence.trim()).toLowerCase()
 
@@ -163,8 +163,14 @@ export async function getSentenceRanges(
       .slice(0, transcriptionWindowIndex)
       .join("").length
 
+    const matchStart = inverted.map(firstMatch.index, 1)
+    const matchEnd = inverted.map(
+      firstMatch.index + firstMatch.match.length,
+      -1,
+    )
+
     const startResult = findStartTimestamp(
-      firstMatch.index +
+      matchStart +
         transcriptionOffset +
         transcriptionWindowOffset +
         chapterOffset,
@@ -179,8 +185,7 @@ export async function getSentenceRanges(
 
     const end =
       findEndTimestamp(
-        firstMatch.index +
-          firstMatch.match.length +
+        matchEnd +
           transcriptionOffset +
           transcriptionWindowOffset +
           chapterOffset,
@@ -230,15 +235,11 @@ export async function getSentenceRanges(
 
     notFound = 0
     lastMatchEnd =
-      firstMatch.index +
-      firstMatch.match.length +
-      transcriptionOffset +
-      transcriptionWindowOffset +
-      chapterOffset
+      matchEnd + transcriptionOffset + transcriptionWindowOffset + chapterOffset
 
     const windowIndexResult = getWindowIndexFromOffset(
       transcriptionWindowList,
-      firstMatch.index + firstMatch.match.length + transcriptionWindowOffset,
+      matchEnd + transcriptionWindowOffset,
     )
 
     transcriptionWindowIndex += windowIndexResult.index

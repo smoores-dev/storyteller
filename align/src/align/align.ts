@@ -16,6 +16,7 @@ import {
   createTiming,
 } from "@storyteller-platform/ghost-story"
 import { type RecognitionResult } from "@storyteller-platform/ghost-story/recognition"
+import { type Mapping } from "@storyteller-platform/transliteration"
 
 import { getTrackDuration } from "../common/ffmpeg.ts"
 import { getXhtmlSegmentation } from "../markup/segmentation.ts"
@@ -29,6 +30,7 @@ import {
   getSentenceRanges,
   interpolateSentenceRanges,
 } from "./getSentenceRanges.ts"
+import { slugify } from "./slugify.ts"
 
 const OFFSET_SEARCH_WINDOW_SIZE = 5000
 
@@ -84,6 +86,7 @@ export async function align(
   audiobookDir: string,
   options: AlignOptions,
 ) {
+  await mkdir(dirname(output), { recursive: true })
   await copyFile(input, output)
 
   const audiobookFiles = await readdir(audiobookDir).then((filenames) =>
@@ -174,6 +177,7 @@ export class Aligner {
     epubSentences: string[],
     transcriptionText: string,
     lastMatchOffset: number,
+    mapping: Mapping,
   ) {
     let i = 0
     while (i < transcriptionText.length) {
@@ -192,11 +196,13 @@ export class Aligner {
       let startSeen: number | null = null
       let endSeen: number | null = null
       for (const aligned of this.alignedChapters) {
-        if (startSeen !== null && endSeen === aligned.startOffset) {
-          endSeen = aligned.endOffset
+        const alignedStart = mapping.map(aligned.startOffset, -1)
+        const alignedEnd = mapping.map(aligned.endOffset, -1)
+        if (startSeen !== null && endSeen === alignedStart) {
+          endSeen = alignedEnd
         } else {
-          startSeen = aligned.startOffset
-          endSeen = aligned.endOffset
+          startSeen = alignedStart
+          endSeen = alignedEnd
         }
         if (startIndex >= startSeen && startIndex < endSeen) {
           startIndex = endSeen
@@ -215,7 +221,7 @@ export class Aligner {
         while (startSentence < epubSentences.length) {
           const queryString = epubSentences
             .slice(startSentence, startSentence + 6)
-            .join(" ")
+            .join("-")
 
           const firstMatch = findNearestMatch(
             queryString.toLowerCase(),
@@ -379,6 +385,7 @@ export class Aligner {
     startSentence: number,
     chapterId: string,
     transcriptionOffset: number,
+    locale: Intl.Locale,
     lastSentenceRange: SentenceRange | null,
   ) {
     const timing = createTiming()
@@ -404,6 +411,7 @@ export class Aligner {
         this.transcription,
         chapterSentences,
         transcriptionOffset,
+        locale,
         lastSentenceRange,
       )
     timing.end("align sentences")
@@ -451,15 +459,20 @@ export class Aligner {
   }
 
   async alignBook(onProgress?: ((progress: number) => void) | null) {
-    this.timing.setMetadata(
-      "language",
-      (this.languageOverride ?? (await this.epub.getLanguage()))?.language ??
-        "unknown",
-    )
+    const locale =
+      this.languageOverride ??
+      (await this.epub.getLanguage()) ??
+      new Intl.Locale("en-US")
+
+    this.timing.setMetadata("language", locale.toString())
     this.timing.setMetadata("granularity", this.granularity)
 
     const spine = await this.epub.getSpineItems()
-    const transcriptionText = this.transcription.transcript
+    const manifest = await this.epub.getManifest()
+    const { result: transcriptionText, mapping } = await slugify(
+      this.transcription.transcript,
+      locale,
+    )
 
     let lastTranscriptionOffset = 0
     let lastSentenceRange: null | SentenceRange = null
@@ -475,7 +488,16 @@ export class Aligner {
       )
 
       const chapterId = spineItem.id
+      if (manifest[chapterId]?.properties?.includes("nav")) {
+        continue
+      }
       const chapterSentences = await this.getChapterSentences(chapterId)
+      const slugifiedChapterSentences: string[] = []
+      for (const chapterSentence of chapterSentences) {
+        slugifiedChapterSentences.push(
+          (await slugify(chapterSentence, locale)).result,
+        )
+      }
       if (chapterSentences.length === 0) {
         this.logger?.info(`Chapter #${index} has no text; skipping`)
         continue
@@ -490,11 +512,17 @@ export class Aligner {
         )
         continue
       }
-      const { startSentence, transcriptionOffset } = this.findBestOffset(
-        chapterSentences,
-        transcriptionText,
-        lastTranscriptionOffset,
-      )
+
+      const { startSentence, transcriptionOffset: slugifiedOffset } =
+        this.findBestOffset(
+          slugifiedChapterSentences,
+          transcriptionText,
+          mapping.map(lastTranscriptionOffset, -1),
+          mapping,
+        )
+
+      const transcriptionOffset =
+        slugifiedOffset && mapping.invert().map(slugifiedOffset, -1)
 
       if (transcriptionOffset === null) {
         this.logger?.info(
@@ -506,10 +534,12 @@ export class Aligner {
       this.logger?.info(
         `Chapter #${index} best matches transcription at offset ${transcriptionOffset}, starting at sentence ${startSentence}`,
       )
+
       const result = await this.alignChapter(
         startSentence,
         chapterId,
         transcriptionOffset,
+        locale,
         lastSentenceRange,
       )
 
