@@ -41,6 +41,9 @@ export function StatusInput({
           component="button"
           type="button"
           pointer
+          classNames={{
+            input: "h-10",
+          }}
           rightSection={<Combobox.Chevron />}
           onClick={() => {
             combobox.toggleDropdown()

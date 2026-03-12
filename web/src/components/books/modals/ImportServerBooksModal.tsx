@@ -255,7 +255,7 @@ export function ImportServerBooksModal({ isOpen, collection, onClose }: Props) {
           onOptionSubmit={handleValueSelect}
           disabled={actionIsPending}
         >
-          <div className="sticky top-[60px] flex flex-col gap-2 bg-white">
+          <div className="sticky top-[60px] flex flex-col gap-2 bg-white dark:bg-neutral-800">
             <div className="mb-1 flex flex-wrap items-center gap-2 md:flex-nowrap">
               <Tooltip label="Go up one folder">
                 <ActionIcon
@@ -290,14 +290,17 @@ export function ImportServerBooksModal({ isOpen, collection, onClose }: Props) {
                   <IconDatabase size={14} />
                 </ActionIcon>
               </Tooltip>
-              <div className="h-4 w-px bg-gray-300" />
+              <div className="h-4 w-px bg-gray-300 dark:bg-neutral-500" />
               {currentDirName && (
                 <div className="line-clamp-1 flex max-w-full items-center gap-2 truncate whitespace-nowrap">
                   <IconFolderOpen
                     size={14}
-                    className="size-4 grow text-gray-500"
+                    className="size-4 grow text-gray-500 dark:text-neutral-400"
                   />
-                  <Text size="xs" c="dimmed" className="truncate">
+                  <Text
+                    size="xs"
+                    className="truncate text-gray-500 dark:text-neutral-400"
+                  >
                     {currentDirName}
                   </Text>
                 </div>
@@ -422,7 +425,7 @@ export function ImportServerBooksModal({ isOpen, collection, onClose }: Props) {
         </Combobox>
       </div>
 
-      <div className="dark:bg-dark-700 sticky bottom-0 -mx-4 mt-2 -mb-4 border-t bg-white px-4 py-3">
+      <div className="sticky bottom-0 -mx-4 mt-2 -mb-4 border-t bg-white px-4 py-3 dark:border-neutral-500 dark:bg-neutral-800">
         <Group justify="flex-end">
           <Button
             variant="filled"

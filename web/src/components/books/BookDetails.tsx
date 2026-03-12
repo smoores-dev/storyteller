@@ -80,7 +80,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
             )}
             {book.readaloud?.status === "PROCESSING" && (
               <RingProgress
-                className="absolute top-0 right-0 z-40 [&>svg]:filter-[drop-shadow(0_0_1px_rgba(0,0,0,1))]"
+                className="absolute top-0 right-0 z-40 [&>svg]:[filter:drop-shadow(0_0_1px_rgba(0,0,0,1))] dark:[&>svg]:[filter:drop-shadow(0_0_1px_rgba(255,255,255,1))]"
                 size={40}
                 thickness={4}
                 roundCaps
@@ -185,7 +185,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                 {book.tags.map((tag) => (
                   <Link
                     href={`/books?tags=${tag.uuid}`}
-                    className="flex flex-row items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm hover:bg-gray-200"
+                    className="flex flex-row items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm hover:bg-gray-200 dark:bg-neutral-700"
                     key={tag.uuid}
                   >
                     <IconTagFilled size={12} />
@@ -199,7 +199,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                 {book.collections.map((collection) => (
                   <Link
                     href={`/collections/${collection.uuid}`}
-                    className="flex flex-row items-center gap-2 rounded-sm bg-gray-100 px-3 py-1 hover:bg-gray-200"
+                    className="flex flex-row items-center gap-2 rounded bg-gray-100 px-3 py-1 hover:bg-gray-200 dark:bg-neutral-700"
                     key={collection.uuid}
                   >
                     <IconBooks size={16} />
@@ -227,7 +227,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
               {book.readaloud?.status === "ALIGNED" && (
                 <Link
                   href={`/books/${book.uuid}/read?mode=readaloud`}
-                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-full px-4 py-2 text-white"
+                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-sm px-4 py-2 text-white"
                 >
                   <IconPlayerPlay /> Read
                 </Link>
@@ -235,7 +235,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
               {book.readaloud?.status !== "ALIGNED" && book.ebook && (
                 <Link
                   href={`/books/${book.uuid}/read?mode=epub`}
-                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-full px-4 py-2 text-white"
+                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-sm px-4 py-2 text-white"
                 >
                   <IconBook2 /> Read
                 </Link>
@@ -243,7 +243,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
               {book.readaloud?.status !== "ALIGNED" && book.audiobook && (
                 <Link
                   href={`/books/${book.uuid}/read?mode=audiobook`}
-                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-full px-4 py-2 text-white"
+                  className="hover:bg-st-orange-600 bg-st-orange-500 flex gap-2 rounded-sm px-4 py-2 text-white"
                 >
                   <IconHeadphonesFilled /> Listen
                 </Link>
@@ -265,11 +265,11 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
 
               <Stack gap={4}>
                 <Text className="self-end">Download</Text>
-                <Group className="bg-st-orange-50 self-end px-4 py-2">
+                <Group className="bg-st-orange-50 dark:bg-st-orange-500 h-10 self-end rounded-sm px-4">
                   {!!book.readaloud?.filepath && (
                     <Anchor
                       href={getDownloadUrl(book.uuid, "readaloud")}
-                      className="hover:bg-st-orange-100 rounded-md"
+                      className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
                     >
                       <IconReadaloud />
                     </Anchor>
@@ -277,7 +277,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                   {book.ebook && (
                     <Anchor
                       href={getDownloadUrl(book.uuid, "ebook")}
-                      className="hover:bg-st-orange-100 rounded-md"
+                      className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
                     >
                       <IconBook2 />
                     </Anchor>
@@ -285,7 +285,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                   {book.audiobook && (
                     <Anchor
                       href={getDownloadUrl(book.uuid, "audiobook")}
-                      className="hover:bg-st-orange-100 rounded-md"
+                      className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
                     >
                       <IconHeadphonesFilled />
                     </Anchor>
@@ -296,7 +296,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
           )}
         </Group>
 
-        <Stack className="rounded-sm bg-gray-100 p-4" gap={4}>
+        <Stack className="rounded bg-gray-100 p-4 dark:bg-neutral-700" gap={4}>
           {book.readaloud?.filepath && (
             <Text>
               <span className="font-bold">Readaloud file path:</span>{" "}

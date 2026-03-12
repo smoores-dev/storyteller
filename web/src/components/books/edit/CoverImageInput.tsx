@@ -33,7 +33,7 @@ function CoverInput({
           />
           <Text
             c="black"
-            className="bg-opacity-90 absolute bottom-4 left-0 inline-block w-full bg-white py-2"
+            className="bg-opacity-90 absolute bottom-4 left-0 inline-block w-full bg-white py-2 dark:bg-neutral-800"
           >
             Edit cover art
           </Text>

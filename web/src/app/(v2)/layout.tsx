@@ -50,7 +50,7 @@ export default function RootLayout({
       className={`${inter.variable} ${youngSerif.variable}`}
     >
       <head>
-        <ColorSchemeScript />
+        <ColorSchemeScript defaultColorScheme="auto" />
         {env.NODE_ENV === "development" && env.ENABLE_REACT_SCAN && (
           <Script
             src="//unpkg.com/react-scan/dist/auto.global.js"
@@ -63,7 +63,7 @@ export default function RootLayout({
         <StoreProvider>
           <AudioProviderRedux>
             <PiPProvider>
-              <MantineProvider theme={theme} defaultColorScheme="light">
+              <MantineProvider theme={theme} defaultColorScheme="auto">
                 {children}
               </MantineProvider>
             </PiPProvider>

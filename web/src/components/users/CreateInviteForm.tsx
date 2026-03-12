@@ -92,7 +92,7 @@ export function CreateInviteForm({ disablePasswordLogin }: Props) {
   if (!canAddUser) return null
 
   return (
-    <Stack className="mt-8 max-w-[600px] rounded-md bg-gray-200 p-8">
+    <Stack className="mt-8 max-w-[600px] rounded-md bg-gray-200 p-8 dark:bg-neutral-700">
       {showForm ? (
         <form
           onSubmit={form.onSubmit(async ({ email, permissions }) => {
@@ -160,7 +160,6 @@ export function CreateInviteForm({ disablePasswordLogin }: Props) {
       ) : (
         <Button
           className="self-center"
-          variant="white"
           onClick={() => {
             setShowForm(true)
           }}

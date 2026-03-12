@@ -34,11 +34,11 @@ export function SeriesThumbnail({ series, onClick }: Props) {
             />
           </UnstyledButton>
         </Stack>
-        <UnstyledButton className="line-clamp-2 max-w-36.75 bg-white text-sm font-semibold group-hover:line-clamp-none">
+        <UnstyledButton className="line-clamp-2 max-w-36.75 text-sm font-semibold group-hover:line-clamp-none">
           {series.name}
         </UnstyledButton>
         <Link
-          className="hover:text-st-orange-600 max-w-36.75 bg-white pb-2 text-sm hover:underline"
+          className="hover:text-st-orange-600 max-w-36.75 pb-2 text-sm hover:underline"
           href={`/books?authors=${book?.authors[0]?.uuid}`}
         >
           {book?.authors[0]?.name}

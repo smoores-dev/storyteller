@@ -65,6 +65,7 @@ import {
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
 
+import { BadDarkModeShim } from "./BadDarkModeShim"
 import { MiniPlayerCircle } from "./MiniPlayerCircle"
 import {
   type Position,
@@ -335,9 +336,12 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
 
   return (
     <>
+      <BadDarkModeShim />
       <footer
         ref={miniPlayerRef}
-        style={style}
+        style={{
+          ...style,
+        }}
         className={cn(
           "bg-reader-bg text-reader-text fixed z-20 flex flex-col overflow-clip rounded-lg border shadow-lg duration-300",
           context === "miniplayer" ? "w-[85%] md:w-[400px]" : "bottom-0 w-full",

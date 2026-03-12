@@ -10,6 +10,7 @@ import {
   selectBookPreferences,
   selectEpubPreferences,
   storePreferencesInStorage,
+  syncAutoTheme,
 } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
@@ -42,6 +43,7 @@ startAppListening({
   matcher: isAnyOf(
     preferencesSlice.actions.updatePreference,
     preferencesSlice.actions.resetPreference,
+    syncAutoTheme,
     readingSessionSlice.actions.setActiveFrame,
   ),
   effect: async (_action, listenerApi) => {

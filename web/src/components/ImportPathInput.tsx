@@ -1,4 +1,4 @@
-import { Button, Fieldset, Switch } from "@mantine/core"
+import { Button, Fieldset, Switch, useComputedColorScheme } from "@mantine/core"
 import { type ReactNode, useState } from "react"
 
 import { ServerFilePicker } from "./books/modals/ServerFilePicker"
@@ -12,6 +12,7 @@ interface Props {
 export function ImportPathInput({ value, onChange, children }: Props) {
   const [enableAutoimport, setEnableAutoimport] = useState(value !== null)
   const [importPathInteractive, setImportPathInteractive] = useState(false)
+  const computedColorScheme = useComputedColorScheme()
 
   return (
     <Fieldset legend="Automatic import" className="flex flex-col gap-4">
@@ -42,7 +43,7 @@ export function ImportPathInput({ value, onChange, children }: Props) {
           />
         ) : (
           <Button
-            variant="white"
+            variant={computedColorScheme === "dark" ? "default" : "white"}
             classNames={{
               inner: "justify-start",
             }}

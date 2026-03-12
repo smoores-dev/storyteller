@@ -58,7 +58,7 @@ export const theme: MantineThemeOverride = createTheme({
     AppShellNavbar: AppShellNavbar.extend({
       defaultProps: {
         className:
-          "group/navbar border-r-st-orange-100 overflow-x-hidden border-r-2 md:w-10 md:transition-[width] md:hover:w-[200px]",
+          "group/navbar border-r-st-orange-100 dark:border-r-st-orange-300 overflow-x-hidden border-r-2 md:w-10 md:transition-[width] md:hover:w-[200px]",
       },
     }),
     Burger: Burger.extend({

@@ -61,7 +61,7 @@ export function UsersList({
       {permissions?.userList && (
         <>
           <Title order={3}>Users</Title>
-          <List type="ordered" listStyleType="none">
+          <List type="ordered" listStyleType="none" spacing={8}>
             {users?.map((user) => (
               <List.Item key={user.id} classNames={{ itemWrapper: "block" }}>
                 <UserStatus user={user} />
