@@ -80,6 +80,16 @@ secrets:
 Supported hardware: AMD Instinct (MI50, MI100, MI200, MI300 series), Radeon RX
 6000 series (RDNA 2), and Radeon RX 7000 series (RDNA 3).
 
+:::warning
+
+`whisper.cpp` does not support ROCm 7.1+ yet, which is eg the version
+required/recommended to use Ryzen AI 300+ CPUs found in e.g. the Framework
+Desktop. You can either use the Vulkan variant instead, use the CPU variant, or
+run a transcription server on another device using
+[ghost-story](/docs/tutorials/offloading-transcription).
+
+:::
+
 Install AMD GPU drivers on your host, then pass the devices through:
 
 ```yaml title="compose.yml"
@@ -124,9 +134,10 @@ experimental.
 
 :::warning
 
-Support for Intel iGPUs has not been tested yet. Please report any issues (and
-successes!) you encounter on our [Discord](https://discord.gg/KhSvFqcrza) or
-[GitHub](https://github.com/storyteller-platform/storyteller/issues).
+This variant is only recommended for discrete Intel GPUs, eg an Intel Arc or
+Intel Data Center graphics card. The SYCL variant is likely _slower_ than the
+CPU variant when trying to use it for an iGPU! Please use the CPU variant
+instead in that case.
 
 :::
 
