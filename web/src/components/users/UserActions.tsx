@@ -1,4 +1,9 @@
-import { ActionIcon, Stack, Tooltip } from "@mantine/core"
+import {
+  ActionIcon,
+  Stack,
+  Tooltip,
+  useComputedColorScheme,
+} from "@mantine/core"
 import { IconPencil, IconTrash } from "@tabler/icons-react"
 
 import { type User } from "@/apiModels"
@@ -18,10 +23,13 @@ export function UserActions({ user, onEdit }: Props) {
 
   const [deleteUser] = useDeleteUserMutation()
 
+  const theme = useComputedColorScheme()
+  const color = theme === "dark" ? "white" : "black"
+
   return (
     <Stack>
       {permissions?.userUpdate && (
-        <ActionIcon variant="subtle" color="black" onClick={onEdit}>
+        <ActionIcon variant="subtle" color={color} onClick={onEdit}>
           <Tooltip position="right" label="Edit">
             <IconPencil aria-label="Edit" />
           </Tooltip>

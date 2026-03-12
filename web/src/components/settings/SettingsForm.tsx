@@ -152,17 +152,17 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
         />
       </Fieldset>
       <ImportPathInput {...form.getInputProps("importPath")}>
-        <Text className="text-sm text-black opacity-70">
+        <Text className="text-sm text-black opacity-70 dark:text-white">
           Storyteller can be configured to automatically import book files from
           a specific directory.
         </Text>
-        <Text className="text-sm text-black opacity-70">
+        <Text className="text-sm text-black opacity-70 dark:text-white">
           When enabled, Storyteller will set up a filesystem watcher for the
           directory. When any files are added or modified within the directory,
           Storyteller will scan for new book files, and automatically import any
           that it finds.
         </Text>
-        <Text className="text-sm text-black opacity-70">
+        <Text className="text-sm text-black opacity-70 dark:text-white">
           Book files found in this directory will not be automatically added to
           a collection. You can also configure collection-specific automatic
           import in the settings for that collection.
@@ -170,7 +170,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
       </ImportPathInput>
       <Fieldset legend="Readaloud location">
         <Box className="mb-3 text-sm opacity-70">
-          <Text className="text-sm text-black">
+          <Text className="text-sm text-black dark:text-white">
             Storyteller can be configured to save new readaloud files in a
             number of places, when the input files were not uploaded through the
             web client:
@@ -243,7 +243,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
         <NativeSelect
           label="Maximum processed track length"
           description={
-            <span className="text-black opacity-70">
+            <span className="text-black opacity-70 dark:text-white">
               Audio tracks longer than this will be split to be this length or
               shorter before transcribing.
               <br />
@@ -783,7 +783,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
             <Fieldset
               key={i}
               legend="Provider"
-              className="relative bg-white pt-10"
+              className="relative bg-white pt-10 dark:bg-neutral-800"
             >
               <Select
                 {...form.getInputProps(`authProviders.${i}.kind`)}
@@ -1167,7 +1167,10 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           { type: "checkbox" })}
         />
       </Fieldset>
-      <Group justify="flex-end" className="sticky bottom-0 z-10 bg-white p-6">
+      <Group
+        justify="flex-end"
+        className="sticky bottom-0 z-10 bg-white p-6 dark:bg-neutral-800"
+      >
         <Button type="submit">{saved ? "Saved!" : "Update"}</Button>
       </Group>
     </form>

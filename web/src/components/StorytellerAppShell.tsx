@@ -10,15 +10,20 @@ import {
   NavLink,
   Text,
   Title,
+  useComputedColorScheme,
+  useMantineColorScheme,
 } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
 import {
   IconBook2,
   IconBooks,
+  IconDeviceLaptop,
   IconHome,
   IconLogout,
+  IconMoon,
   IconPlus,
   IconSettings,
+  IconSun,
   IconUser,
   IconUsers,
 } from "@tabler/icons-react"
@@ -39,6 +44,7 @@ import {
   useListCollectionsQuery,
 } from "@/store/api"
 import { useAppDispatch } from "@/store/appState"
+import { syncAutoTheme } from "@/store/slices/preferencesSlice"
 import { emojiRegex } from "@/strings"
 
 import { CreateCollectionModal } from "./collections/CreateCollectionModal"
@@ -85,6 +91,37 @@ export function StorytellerAppShell({
   const { data: liveCollections } = useListCollectionsQuery()
   const collections = liveCollections ?? initialCollections
 
+  const { colorScheme, setColorScheme } = useMantineColorScheme()
+  const computedColorScheme = useComputedColorScheme("light")
+
+  const ColorSchemeIcon =
+    colorScheme === "light"
+      ? IconSun
+      : colorScheme === "dark"
+        ? IconMoon
+        : IconDeviceLaptop
+
+  const colorSchemeLabel =
+    colorScheme === "light"
+      ? "Light"
+      : colorScheme === "dark"
+        ? "Dark"
+        : "System"
+
+  const cycleColorScheme = () => {
+    const next =
+      colorScheme === "light"
+        ? "dark"
+        : colorScheme === "dark"
+          ? "auto"
+          : "light"
+    setColorScheme(next)
+  }
+
+  useEffect(() => {
+    dispatch(syncAutoTheme())
+  }, [computedColorScheme, dispatch])
+
   return (
     <IntersectionObserverProvider
       options={{ rootMargin: "200px 0px 200px 0px" }}
@@ -113,7 +150,7 @@ export function StorytellerAppShell({
                   alt=""
                   aria-hidden
                 />
-                <Title size="h3" className="text-black">
+                <Title size="h3" className="text-black dark:text-white">
                   Storyteller
                 </Title>
               </Group>
@@ -123,7 +160,7 @@ export function StorytellerAppShell({
           <Box className="md:w-[200px]">
             <Text
               px="sm"
-              className="mb-2 font-mono text-xs text-gray-500 md:invisible md:group-hover/navbar:visible"
+              className="mb-2 font-mono text-xs text-gray-500 md:invisible md:group-hover/navbar:visible dark:text-gray-300"
             >
               Version: {version}
             </Text>
@@ -226,6 +263,12 @@ export function StorytellerAppShell({
                 active={pathname === "/settings"}
               />
             ) : null}
+            <NavLink
+              component="button"
+              onClick={cycleColorScheme}
+              leftSection={<ColorSchemeIcon />}
+              label={colorSchemeLabel}
+            />
             <NavLink
               onClick={close}
               component="a"

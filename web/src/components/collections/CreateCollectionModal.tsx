@@ -98,11 +98,11 @@ export function CreateCollectionModal({ isOpen, onClose }: Props) {
           {...form.getInputProps("public", { type: "checkbox" })}
         />
         <ImportPathInput {...form.getInputProps("importPath")}>
-          <Text className="text-sm text-black opacity-70">
+          <Text className="text-sm text-black opacity-70 dark:text-white">
             Storyteller can be configured to automatically import book files
             from a specific directory.
           </Text>
-          <Text className="text-sm text-black opacity-70">
+          <Text className="text-sm text-black opacity-70 dark:text-white">
             When enabled, Storyteller will set up a filesystem watcher for the
             directory. When any files are added or modified within the
             directory, Storyteller will scan for new book files, and

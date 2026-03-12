@@ -2,6 +2,8 @@
 @import "@mantine/core/styles.css" layer(base);
 @import "@mantine/dates/styles.css" layer(base);
 
+@custom-variant dark (&:where([data-mantine-color-scheme="dark"], [data-mantine-color-scheme="dark"] *));
+
 @theme {
   --breakpoint-*: initial;
   --breakpoint-sm: 36em;

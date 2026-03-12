@@ -42,7 +42,7 @@ export function BookStatus({ bookUuid }: Props) {
 
   return (
     <Paper>
-      <Group justify="space-between" wrap="nowrap" align="flex-end">
+      <Group justify="space-between" wrap="nowrap" align="center">
         <BookOptions aligned={aligned} book={book} />
         {book.readaloud || (book.ebook && book.audiobook) ? (
           <Stack justify="space-between" className="grow">

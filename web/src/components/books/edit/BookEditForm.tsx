@@ -232,7 +232,7 @@ export function BookEditForm({ book }: Props) {
 
         <Group
           justify="space-between"
-          className="sticky bottom-0 z-10 bg-white p-6"
+          className="sticky bottom-0 z-10 bg-white p-6 dark:bg-neutral-800"
         >
           <Button onClick={open} color="red" variant="outline">
             Delete book

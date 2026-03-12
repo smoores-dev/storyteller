@@ -1,6 +1,7 @@
 import { type EpubPreferences, TextAlignment } from "@readium/navigator"
 import {
   type PayloadAction,
+  createAction,
   createSelector,
   createSlice,
 } from "@reduxjs/toolkit"
@@ -322,6 +323,8 @@ export const preferencesSlice = createSlice({
   },
 })
 
+export const syncAutoTheme = createAction("preferences/syncAutoTheme")
+
 export const preferencesReducer = preferencesSlice.reducer
 
 export const selectGlobalPreferences = (state: RootState) =>
@@ -553,8 +556,28 @@ export const themes = {
   }
 >
 
+const getResolvedColorScheme = (): "light" | "dark" => {
+  if (typeof document === "undefined") return "light"
+
+  const scheme = document.documentElement.getAttribute(
+    "data-mantine-color-scheme",
+  )
+  if (scheme === "dark") return "dark"
+  if (scheme === "light") return "light"
+
+  // fallback to media query when mantine attribute is not set
+  if (typeof window !== "undefined") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light"
+  }
+
+  return "light"
+}
+
 export const getTheme = (preferences: ReadingPreferences) => {
-  return themes[preferences.theme]
+  if (preferences.theme !== "auto") return themes[preferences.theme]
+  return getResolvedColorScheme() === "dark" ? themes.dark : themes.light
 }
 
 export const getLetterSpacing = (preferences: ReadingPreferences): number => {

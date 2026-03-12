@@ -96,7 +96,7 @@ export function BookThumbnail({ book, link, onClick }: Props) {
         </Stack>
         <TextContainer
           href={`/books/${book.uuid}`}
-          className="line-clamp-2 max-w-36.75 bg-white text-sm font-semibold group-hover:line-clamp-none"
+          className="line-clamp-2 max-w-36.75 text-sm font-semibold group-hover:line-clamp-none"
         >
           {!!book.readaloud?.filepath && (
             <IconReadaloud className="text-st-orange-600 -mx-1 -mt-3 -mb-2 inline-block h-6 w-6" />
@@ -106,7 +106,7 @@ export function BookThumbnail({ book, link, onClick }: Props) {
         <TextContainer
           className={cx(
             { "hover:text-st-orange-600 hover:underline": link },
-            "max-w-36.75 bg-white pb-2 text-sm",
+            "max-w-36.75 pb-2 text-sm",
           )}
           href={`/books?authors=${book.authors[0]?.uuid}`}
         >

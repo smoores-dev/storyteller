@@ -115,7 +115,7 @@ export function BookGrid({
       >
         {showCollectionToolbar && (
           <div className="sticky top-0 h-0" style={{ marginTop: filtersSize }}>
-            <Stack className="w-full gap-x-0 gap-y-1 overflow-x-scroll bg-white pt-1 pb-2">
+            <Stack className="dark:bg-bg w-full gap-x-0 gap-y-1 overflow-x-scroll bg-white pt-1 pb-2 dark:bg-neutral-800">
               <CollectionToolbar
                 collection={collection}
                 books={books}

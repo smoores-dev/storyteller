@@ -36,7 +36,10 @@ export function ProcessingItems({ book, aligned }: Props) {
           <Menu.Target>
             <ActionIcon color="black" variant="subtle">
               <Tooltip position="right" label="Processing">
-                <IconProgress aria-label="Processing" />
+                <IconProgress
+                  aria-label="Processing"
+                  className="text-black dark:text-white"
+                />
               </Tooltip>
             </ActionIcon>
           </Menu.Target>

@@ -116,7 +116,7 @@ export function EbookCoverImage({
     <Stack
       className={twMerge(
         cx(
-          "group-hover:border-st-orange-300 items-center justify-center overflow-hidden rounded-md bg-slate-200 group-hover:border-2",
+          "group-hover:border-st-orange-300 items-center justify-center overflow-hidden rounded-md bg-slate-200 group-hover:border-2 dark:bg-neutral-700",
           className,
         ),
       )}
@@ -183,7 +183,7 @@ export function AudiobookCoverImage({
     <Stack
       className={twMerge(
         cx(
-          "group-hover:border-st-orange-300 items-center justify-center overflow-hidden rounded-md bg-slate-200 group-hover:border-2",
+          "group-hover:border-st-orange-300 items-center justify-center overflow-hidden rounded-md bg-slate-200 group-hover:border-2 dark:bg-neutral-700",
           className,
         ),
       )}
