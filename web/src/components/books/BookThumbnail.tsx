@@ -3,7 +3,6 @@ import { IconDotsCircleHorizontal, IconProgressX } from "@tabler/icons-react"
 import Link from "next/link"
 import { Fragment } from "react"
 
-import { cn } from "@/cn"
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
@@ -243,16 +242,7 @@ export function BookThumbnail({
           )}{" "}
           {book.title}
         </TextContainer>
-        <TextContainer
-          className={cn(
-            { "hover:text-st-orange-600 hover:underline": link },
-            "max-w-36.75 pb-2 text-sm",
-          )}
-          href={`/books?authors=${book.authors[0]?.uuid}`}
-        >
-          {book.authors[0]?.name}
-        </TextContainer>
-        <div className="line-clamp-1 max-w-36.75 truncate bg-white pb-2 text-xs">
+        <div className="line-clamp-1 max-w-36.75 truncate pb-2 text-xs">
           {detailItems.map((item, i) => (
             <Fragment key={i}>
               {i > 0 && <span className="text-gray-400"> · </span>}

@@ -1,8 +1,10 @@
 import { AsyncMutex } from "@esfx/async-mutex"
 import watcher from "@parcel/watcher"
 
+import { isAudioFile } from "@/audio"
 import { getCollection, getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
+import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
@@ -15,9 +17,12 @@ import {
   writeWatcherSnapshot,
 } from "./watcherSnapshot"
 import { isSuppressed } from "./writeIntent"
-import { ASSETS_DIR } from "@/directories"
 
 const entryLocks = new Map<string, AsyncMutex>()
+
+function standardFilter(path: string): boolean {
+  return path.endsWith(".epub") || isAudioFile(path)
+}
 
 function startWatcher(
   collection: UUID | null,
@@ -132,7 +137,9 @@ function startWatcher(
     const relevantChanges = events
       .filter(
         (event) =>
-          !isSuppressed(event.path) && (filter ? filter(event.path) : true),
+          !isSuppressed(event.path) &&
+          standardFilter(event.path) &&
+          (filter ? filter(event.path) : true),
       )
       .map((event) => ({
         path: event.path,
@@ -214,7 +221,7 @@ function startWatcher(
 }
 
 let rootController = new AbortController()
-let assetController = new AbortController()
+const assetController = new AbortController()
 const controllers = new Map<UUID, AbortController>()
 
 export async function listen() {

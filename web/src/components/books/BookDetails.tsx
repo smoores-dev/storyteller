@@ -343,27 +343,10 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
           )}
         </Group>
 
-        <Stack className="rounded bg-gray-100 p-4 dark:bg-neutral-700" gap={4}>
-          {book.readaloud?.filepath && (
-            <Text>
-              <span className="font-bold">Readaloud file path:</span>{" "}
-              {book.readaloud.filepath}
-            </Text>
-          )}
-          {book.ebook && (
-            <Text>
-              <span className="font-bold">E-book file path:</span>{" "}
-              {book.ebook.filepath}
-            </Text>
-          )}
-          {book.audiobook && (
-            <Text>
-              <span className="font-bold">Audiobook file path:</span>{" "}
-              {book.audiobook.filepath}
-            </Text>
-          )}
-        </Stack>
-        <Stack className="rounded-sm bg-gray-100 p-4" gap={4}>
+        <Stack
+          className="rounded-sm bg-gray-100 p-4 dark:bg-neutral-700"
+          gap={4}
+        >
           <Details book={book} format="readaloud" />
           <Details book={book} format="ebook" />
           <Details book={book} format="audiobook" />
