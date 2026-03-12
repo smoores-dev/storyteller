@@ -14,9 +14,7 @@ check-versions:
   image: registry.gitlab.com/storyteller-platform/storyteller-base:main
   stage: check
   rules:
-    - if:
-        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
-        "main" && $CI_COMMIT_TAG == null))
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - git fetch origin main --depth 1
     - ./scripts/check-versions.sh
