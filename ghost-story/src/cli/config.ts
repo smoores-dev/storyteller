@@ -20,14 +20,21 @@ export const BUILD_VARIANTS = [
   "darwin-arm64-coreml",
   "darwin-arm64-cpu",
   "darwin-x64-cpu",
+  "linux-x64-blas",
+  "linux-x64-cpu",
   "linux-x64-cuda-13.1.0",
   "linux-x64-cuda-12.9.0",
   "linux-x64-cuda-11.8.0",
   "linux-x64-sycl",
   "linux-x64-vulkan",
   "linux-x64-rocm",
-  "linux-x64-blas",
-  "linux-x64-cpu",
+  "linux-x64-cuda-13.1.0-legacy",
+  "linux-x64-cuda-12.9.0-legacy",
+  "linux-x64-cuda-11.8.0-legacy",
+  "linux-x64-sycl-legacy",
+  "linux-x64-vulkan-legacy",
+  "linux-x64-rocm-legacy",
+  "linux-x64-blas-legacy",
   "linux-x64-cpu-legacy",
   "linux-arm64-cpu",
   "windows-x64-cpu",
@@ -340,7 +347,7 @@ function getLinuxCpuCapabilities(): CpuCapabilities {
 
 export function applyLegacyCpuFallback(variant: BuildVariant): BuildVariant {
   if (process.platform !== "linux") return variant
-  if (variant !== "linux-x64-cpu") return variant
+  if (process.arch !== "x64") return variant
 
   const caps = getLinuxCpuCapabilities()
   if (caps.avx2 && caps.fma) return variant
@@ -349,7 +356,7 @@ export function applyLegacyCpuFallback(variant: BuildVariant): BuildVariant {
     `CPU lacks ${[!caps.avx2 && "AVX2", !caps.fma && "FMA"].filter(Boolean).join(" and ")} support. ` +
       `Falling back to linux-x64-cpu-legacy variant.`,
   )
-  return "linux-x64-cpu-legacy"
+  return `${variant}-legacy` as BuildVariant
 }
 
 /**
