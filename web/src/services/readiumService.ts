@@ -253,7 +253,8 @@ export class ReadiumService {
   }
   static base64Encode(path: string): string {
     // readium does not like trailing = signs
-    return Buffer.from(path).toString("base64").replace(/=+$/, "")
+    // should be base64url specifically, not base64, otherwise fails on some unicode chars
+    return Buffer.from(path).toString("base64url").replace(/=+$/, "")
   }
 
   private static encodePath(filepath: string, assetPath: string): string {
