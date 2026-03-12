@@ -9,7 +9,17 @@ import { DATA_DIR } from "@/directories"
 import { type ImportPathChange } from "./scan"
 
 const SNAPSHOT_DIR = join(DATA_DIR, ".autoimport", "watcher-snapshots")
-const WATCHER_OPTIONS = { backend: "watchman" } as const
+const WATCHER_OPTIONS = {
+  backend: "watchman",
+  ignore: [
+    "**/*.json",
+    "**/transcoded audio/*",
+    "**/transcriptions/*",
+    "**/ebook cover/*",
+    "**/audiobook cover/*",
+    "**/.storyteller",
+  ],
+} as const satisfies watcher.Options
 
 type SnapshotChanges = {
   snapshotExists: boolean

@@ -8,6 +8,7 @@ import {
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
+import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
 import { getDefaultSuffix, getInternalBookDirectory } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import {
@@ -22,6 +23,7 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
+import { wasPathRecentlyDeleted } from "./recentDeletes"
 import {
   type ScanFlag,
   type ScanFormat,
@@ -102,13 +104,19 @@ function hasAnyRelationChange(
   book: BookWithRelations,
   bookPath: BookPath,
 ): boolean {
-  if (bookPath.ebook && !book.ebook) {
+  if (bookPath.ebook && (!book.ebook || book.ebook.filepath !== bookPath.ebook)) {
     return true
   }
-  if (bookPath.audiobook && !book.audiobook) {
+  if (
+    bookPath.audiobook &&
+    (!book.audiobook || book.audiobook.filepath !== bookPath.audiobook)
+  ) {
     return true
   }
-  if (bookPath.readaloud && !book.readaloud) {
+  if (
+    bookPath.readaloud &&
+    (!book.readaloud || book.readaloud.filepath !== bookPath.readaloud)
+  ) {
     return true
   }
   return false
@@ -208,30 +216,42 @@ async function attachNewRelations(
   const newFormats: ScanFormat[] = []
   const relations: Parameters<typeof updateBook>[2] = {}
 
-  if (bookPath.ebook && !book.ebook) {
+  if (bookPath.ebook && (!book.ebook || book.ebook.filepath !== bookPath.ebook)) {
     relations.ebook = {
       filepath: bookPath.ebook,
       missing: false,
     }
-    newFormats.push("ebook")
+    if (!book.ebook) {
+      newFormats.push("ebook")
+    }
   }
 
-  if (bookPath.audiobook && !book.audiobook) {
+  if (
+    bookPath.audiobook &&
+    (!book.audiobook || book.audiobook.filepath !== bookPath.audiobook)
+  ) {
     relations.audiobook = {
       filepath: bookPath.audiobook,
       missing: false,
     }
-    newFormats.push("audiobook")
+    if (!book.audiobook) {
+      newFormats.push("audiobook")
+    }
   }
 
-  if (bookPath.readaloud && !book.readaloud) {
+  if (
+    bookPath.readaloud &&
+    (!book.readaloud || book.readaloud.filepath !== bookPath.readaloud)
+  ) {
     relations.readaloud = {
       filepath: bookPath.readaloud,
       missing: false,
-      status: "ALIGNED",
-      currentStage: "SPLIT_TRACKS",
+      status: book.readaloud?.status ?? "ALIGNED",
+      currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
     }
-    newFormats.push("readaloud")
+    if (!book.readaloud) {
+      newFormats.push("readaloud")
+    }
   }
 
   if (!Object.keys(relations).length) {
@@ -751,13 +771,173 @@ async function applyMovePairs(
   return updatedBooks
 }
 
+function isMoveSourceLikelyValid(filepath: string, missing: boolean): boolean {
+  if (missing) {
+    return true
+  }
+  return wasPathRecentlyDeleted(filepath)
+}
+
+async function findHashMoveCandidates(
+  books: BookWithRelations[],
+  format: ScanFormat,
+  filepath: string,
+): Promise<BookWithRelations[]> {
+  const hash =
+    format === "audiobook"
+      ? (await hashAudiobookDirectory(filepath)).hash
+      : (await hashFile(filepath)).hash
+
+  return books.filter((book) => {
+    if (format === "ebook" && book.ebook?.contentHash === hash && book.ebook.filepath !== filepath) {
+      return isMoveSourceLikelyValid(book.ebook.filepath, book.ebook.missing)
+    }
+
+    if (
+      format === "audiobook" &&
+      book.audiobook?.contentHash === hash &&
+      book.audiobook.filepath !== filepath
+    ) {
+      return isMoveSourceLikelyValid(book.audiobook.filepath, book.audiobook.missing)
+    }
+
+    if (
+      format === "readaloud" &&
+      book.readaloud?.contentHash === hash &&
+      !!book.readaloud.filepath &&
+      book.readaloud.filepath !== filepath
+    ) {
+      return isMoveSourceLikelyValid(book.readaloud.filepath, book.readaloud.missing)
+    }
+
+    return false
+  })
+}
+
+function pickBestMoveCandidate(
+  byFormat: Map<ScanFormat, BookWithRelations[]>,
+): BookWithRelations | null {
+  const scores = new Map<UUID, number>()
+  const booksByUuid = new Map<UUID, BookWithRelations>()
+
+  for (const candidates of byFormat.values()) {
+    const seen = new Set<UUID>()
+    for (const candidate of candidates) {
+      if (seen.has(candidate.uuid)) {
+        continue
+      }
+      seen.add(candidate.uuid)
+      booksByUuid.set(candidate.uuid, candidate)
+      const currentScore = scores.get(candidate.uuid) ?? 0
+      scores.set(candidate.uuid, currentScore + 1)
+    }
+  }
+
+  let bestUuid: UUID | null = null
+  let bestScore = 0
+  let tie = false
+  for (const [uuid, score] of scores.entries()) {
+    if (score > bestScore) {
+      bestUuid = uuid
+      bestScore = score
+      tie = false
+      continue
+    }
+    if (score === bestScore) {
+      tie = true
+    }
+  }
+
+  if (!bestUuid || tie) {
+    return null
+  }
+
+  return booksByUuid.get(bestUuid) ?? null
+}
+
+async function reconcileHashBasedMove(
+  bookPath: BookPath,
+  books: BookWithRelations[],
+): Promise<UpdatedBookResult | null> {
+  const candidatesByFormat = new Map<ScanFormat, BookWithRelations[]>()
+
+  if (bookPath.ebook) {
+    candidatesByFormat.set(
+      "ebook",
+      await findHashMoveCandidates(books, "ebook", bookPath.ebook),
+    )
+  }
+  if (bookPath.audiobook) {
+    candidatesByFormat.set(
+      "audiobook",
+      await findHashMoveCandidates(books, "audiobook", bookPath.audiobook),
+    )
+  }
+  if (bookPath.readaloud) {
+    candidatesByFormat.set(
+      "readaloud",
+      await findHashMoveCandidates(books, "readaloud", bookPath.readaloud),
+    )
+  }
+
+  if (!candidatesByFormat.size) {
+    return null
+  }
+
+  const candidate = pickBestMoveCandidate(candidatesByFormat)
+  if (!candidate) {
+    return null
+  }
+
+  const relations: Parameters<typeof updateBook>[2] = {}
+  const movedFormats: ScanFormat[] = []
+
+  if (bookPath.ebook && candidate.ebook?.filepath && candidate.ebook.filepath !== bookPath.ebook) {
+    relations.ebook = { filepath: bookPath.ebook, missing: false }
+    movedFormats.push("ebook")
+  }
+
+  if (
+    bookPath.audiobook &&
+    candidate.audiobook?.filepath &&
+    candidate.audiobook.filepath !== bookPath.audiobook
+  ) {
+    relations.audiobook = { filepath: bookPath.audiobook, missing: false }
+    movedFormats.push("audiobook")
+  }
+
+  if (
+    bookPath.readaloud &&
+    candidate.readaloud?.filepath &&
+    candidate.readaloud.filepath !== bookPath.readaloud
+  ) {
+    relations.readaloud = {
+      filepath: bookPath.readaloud,
+      missing: false,
+      currentStage: candidate.readaloud.currentStage,
+      status: candidate.readaloud.status,
+    }
+    movedFormats.push("readaloud")
+  }
+
+  if (!Object.keys(relations).length) {
+    return null
+  }
+
+  const updated = await updateBook(candidate.uuid, null, relations)
+  return {
+    book: updated,
+    newFormats: movedFormats,
+  }
+}
+
 export async function scan(
   importPath: string,
   collectionUuid: UUID | null,
   signal: AbortSignal,
 ) {
   logger.debug(`Starting new scan for ${importPath}`)
-  const allBooks = await getBooks()
+  let allBooks = await getBooks()
   if (signal.aborted) {
     logger.debug("Scanning aborted")
     return
@@ -813,6 +993,18 @@ export async function scan(
     }
 
     if (!book) {
+      const moved = await reconcileHashBasedMove(bookPath, books)
+      if (moved) {
+        logger.info(`Reconciled moved path for book ${moved.book.uuid} from hash match`)
+        books = books.map((candidate) =>
+          candidate.uuid === moved.book.uuid ? moved.book : candidate,
+        )
+        allBooks = allBooks.map((candidate) =>
+          candidate.uuid === moved.book.uuid ? moved.book : candidate,
+        )
+        continue
+      }
+
       logger.debug(
         `Found a new book! Importing from ${JSON.stringify(bookPath)}`,
       )
@@ -996,6 +1188,25 @@ export async function scanChangedPaths(
       }
 
       if (!scopedMatch) {
+        const moved = await reconcileHashBasedMove(bookPath, scopedBooks)
+        if (moved) {
+          logger.info(
+            `Reconciled moved path for book ${moved.book.uuid} from hash match`,
+          )
+          registerFormats(
+            affectedFormatsByBook,
+            moved.book.uuid,
+            moved.newFormats,
+          )
+          scopedBooks = scopedBooks.map((book) =>
+            book.uuid === moved.book.uuid ? moved.book : book,
+          )
+          allBooks = allBooks.map((book) =>
+            book.uuid === moved.book.uuid ? moved.book : book,
+          )
+          continue
+        }
+
         if (bookPath.audiobook) {
           const nestedBook = await getBookByAudiobookFilepathPrefix(
             bookPath.audiobook,

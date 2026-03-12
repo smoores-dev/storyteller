@@ -6,6 +6,7 @@ import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
+import { rememberDeletedPath } from "./recentDeletes"
 import { type ImportPathChange } from "./scan"
 import { runImportPathChangeScan, runImportPathScan } from "./scanManager"
 import {
@@ -14,6 +15,7 @@ import {
   writeWatcherSnapshot,
 } from "./watcherSnapshot"
 import { isSuppressed } from "./writeIntent"
+import { ASSETS_DIR } from "@/directories"
 
 const entryLocks = new Map<string, AsyncMutex>()
 
@@ -21,6 +23,7 @@ function startWatcher(
   collection: UUID | null,
   importPath: string,
   controller: AbortController,
+  filter?: (path: string) => boolean,
 ) {
   let entryLock = entryLocks.get(importPath)
 
@@ -127,13 +130,23 @@ function startWatcher(
     }
 
     const relevantChanges = events
-      .filter((event) => !isSuppressed(event.path))
+      .filter(
+        (event) =>
+          !isSuppressed(event.path) && (filter ? filter(event.path) : true),
+      )
       .map((event) => ({
         path: event.path,
         type: event.type,
       }))
     if (!relevantChanges.length) {
       return
+    }
+
+    for (const change of relevantChanges) {
+      if (change.type !== "delete") {
+        continue
+      }
+      rememberDeletedPath(change.path)
     }
 
     logger.info(
@@ -201,6 +214,7 @@ function startWatcher(
 }
 
 let rootController = new AbortController()
+let assetController = new AbortController()
 const controllers = new Map<UUID, AbortController>()
 
 export async function listen() {
@@ -208,13 +222,14 @@ export async function listen() {
 
   const rootImportPaths = await getSetting("importPath")
 
+  // watch root import paths
   if (rootImportPaths) {
     for (const importPath of rootImportPaths) {
       logger.info(`Starting new watcher for root import path, ${importPath}`)
       startWatcher(null, importPath, rootController)
     }
   }
-
+  // watch collections
   for (const collection of collections) {
     if (collection.importPath) {
       if (!controllers.has(collection.uuid)) {
@@ -231,6 +246,14 @@ export async function listen() {
       )
     }
   }
+
+  // only match files in the text, aligned, and audio directories
+  const assetRegex = /[^/]*\/(text|aligned|audio)\//
+
+  // watch assets
+  startWatcher(null, ASSETS_DIR, assetController, (path) => {
+    return assetRegex.test(path)
+  })
 }
 
 export async function update(uuid: UUID | null) {
