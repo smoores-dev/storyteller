@@ -326,7 +326,7 @@ Defined in:
 > **\[dispose\]**(): `void`
 
 Defined in:
-[epub/index.ts:2493](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2493)
+[epub/index.ts:2529](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2529)
 
 ##### Returns
 
@@ -420,7 +420,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2189](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2189)
+[epub/index.ts:2225](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2225)
 
 Create a new manifest item and write its contents to a new entry.
 
@@ -449,7 +449,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2194](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2194)
+[epub/index.ts:2230](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2230)
 
 Create a new manifest item and write its contents to a new entry.
 
@@ -478,7 +478,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **addManifestItem**(`item`, `contents`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2199](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2199)
+[epub/index.ts:2235](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2235)
 
 Create a new manifest item and write its contents to a new entry.
 
@@ -506,7 +506,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **addMetadata**(`entry`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2311](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2311)
+[epub/index.ts:2347](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2347)
 
 Add a new metadata entry to the Epub.
 
@@ -588,7 +588,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 > [`XmlElement`](#xmlelement)\<`"?xml"`\>)[]\>
 
 Defined in:
-[epub/index.ts:2017](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2017)
+[epub/index.ts:2051](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2051)
 
 Create a new XHTML document with the given body and head.
 
@@ -610,7 +610,7 @@ Create a new XHTML document with the given body and head.
 > **discardAndClose**(): `void`
 
 Defined in:
-[epub/index.ts:2420](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2420)
+[epub/index.ts:2456](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2456)
 
 ##### Returns
 
@@ -931,6 +931,17 @@ If there is no dc:date element, returns null.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dcdate
 
+#### getRootfile()
+
+> **getRootfile**(): `Promise`\<`string`\>
+
+Defined in:
+[epub/index.ts:540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L540)
+
+##### Returns
+
+`Promise`\<`string`\>
+
 #### getSpineItems()
 
 > **getSpineItems**(): `Promise`\<[`ManifestItem`](#manifestitem)[]\>
@@ -1048,6 +1059,56 @@ If there is no dc:type element, returns null.
 
 https://www.w3.org/TR/epub-33/#sec-opf-dctype
 
+#### readFileContents()
+
+##### Call Signature
+
+> **readFileContents**(`href`, `relativeTo?`):
+> `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+Defined in:
+[epub/index.ts:1992](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1992)
+
+Retrieve the contents of a file, given its href.
+
+Optionally takes the href that this href should be resolved relative to, and an
+encoding parameter.
+
+###### Parameters
+
+| Parameter     | Type     | Description                      |
+| ------------- | -------- | -------------------------------- |
+| `href`        | `string` | The href of the file to retrieve |
+| `relativeTo?` | `string` | -                                |
+
+###### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+
+##### Call Signature
+
+> **readFileContents**(`href`, `relativeTo`, `encoding`): `Promise`\<`string`\>
+
+Defined in:
+[epub/index.ts:1993](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1993)
+
+Retrieve the contents of a file, given its href.
+
+Optionally takes the href that this href should be resolved relative to, and an
+encoding parameter.
+
+###### Parameters
+
+| Parameter    | Type                    | Description                                                                                                                                                        |
+| ------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `href`       | `string`                | The href of the file to retrieve                                                                                                                                   |
+| `relativeTo` | `undefined` \| `string` | -                                                                                                                                                                  |
+| `encoding`   | `"utf-8"`               | Optional - Must be the string "utf-8". If provided, the function will encode the data into a unicode string. Otherwise, the data will be returned as a byte array. |
+
+###### Returns
+
+`Promise`\<`string`\>
+
 #### readItemContents()
 
 ##### Call Signature
@@ -1055,7 +1116,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctype
 > **readItemContents**(`id`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
 Defined in:
-[epub/index.ts:1989](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1989)
+[epub/index.ts:2023](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2023)
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1078,7 +1139,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **readItemContents**(`id`, `encoding`): `Promise`\<`string`\>
 
 Defined in:
-[epub/index.ts:1990](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L1990)
+[epub/index.ts:2024](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2024)
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1104,7 +1165,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **readXhtmlItemContents**(`id`, `as?`): `Promise`\<[`ParsedXml`](#parsedxml)\>
 
 Defined in:
-[epub/index.ts:2050](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2050)
+[epub/index.ts:2086](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2086)
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1128,7 +1189,7 @@ https://www.w3.org/TR/epub-33/#sec-xhtml
 > **readXhtmlItemContents**(`id`, `as`): `Promise`\<`string`\>
 
 Defined in:
-[epub/index.ts:2051](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2051)
+[epub/index.ts:2087](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2087)
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1229,7 +1290,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 > **removeManifestItem**(`id`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2146](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2146)
+[epub/index.ts:2182](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2182)
 
 ##### Parameters
 
@@ -1246,7 +1307,7 @@ Defined in:
 > **removeMetadata**(`predicate`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2395](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2395)
+[epub/index.ts:2431](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2431)
 
 Remove one or more metadata entries.
 
@@ -1321,7 +1382,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 > **replaceMetadata**(`predicate`, `entry`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2350](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2350)
+[epub/index.ts:2386](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2386)
 
 Replace a metadata entry with a new one.
 
@@ -1348,7 +1409,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 > **saveAndClose**(): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2436](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2436)
+[epub/index.ts:2472](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2472)
 
 Write the current contents of the Epub to a new EPUB archive on disk.
 
@@ -1583,7 +1644,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctype
 > **updateManifestItem**(`id`, `newItem`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2262](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2262)
+[epub/index.ts:2298](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2298)
 
 Update the manifest entry for an existing item.
 
@@ -1612,7 +1673,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 > **writeItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2098](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2098)
+[epub/index.ts:2134](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2134)
 
 Write new contents for an existing manifest item, specified by its id.
 
@@ -1639,7 +1700,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **writeItemContents**(`id`, `contents`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2099](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2099)
+[epub/index.ts:2135](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2135)
 
 Write new contents for an existing manifest item, specified by its id.
 
@@ -1667,7 +1728,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 > **writeXhtmlItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
 Defined in:
-[epub/index.ts:2138](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2138)
+[epub/index.ts:2174](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/epub/index.ts#L2174)
 
 Write new contents for an existing XHTML item, specified by its id.
 

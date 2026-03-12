@@ -136,7 +136,7 @@ function* levenshteinNgram(
   const subsequenceLength = subsequence.length
   const sequenceLength = sequence.length
 
-  const ngramLength = Math.round(subsequenceLength / (maxDist + 1))
+  const ngramLength = Math.floor(subsequenceLength / (maxDist + 1))
   if (ngramLength === 0) {
     throw new Error("The subsequence length must be greater than maxDist")
   }
