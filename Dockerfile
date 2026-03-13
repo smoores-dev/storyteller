@@ -69,7 +69,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu \
     && rm -rf /var/lib/apt/lists/*
 
-RUN userdel -r ubuntu \
+RUN  (userdel -r ubuntu || true) \
     && groupadd -g 1000 storyteller \
     && useradd -u 1000 -g storyteller -m storyteller
 

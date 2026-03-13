@@ -6,9 +6,11 @@
 
 .whisper-build-base:
   stage: whisper-build
+  needs: []
   variables:
     WHISPER_VERSION: "1.8.3"
     CMAKE_FLAGS: ""
+    LEGACY: ""
   rules:
     - when: manual
       allow_failure: true
@@ -18,14 +20,21 @@
     - cd whisper-src && git apply
       ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && cd ..
     - cd whisper-src
+    - |
+      if [ "$LEGACY" = "1" ]; then
+        export CFLAGS="-mno-avx2 -mno-fma -mno-bmi2"
+        export CXXFLAGS="-mno-avx2 -mno-fma -mno-bmi2"
+      fi
     - cmake -B build -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS}
+      ${LEGACY:+-DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF}
     - cmake --build build -j --config Release
     - mkdir -p ../dist
     - cp -r build/bin ../dist/bin
     - chmod +x ../dist/bin/*
     - cd ..
     - apt-get update && apt-get install -y jq || true
-    - tar -czvf whisper-cpp-${VARIANT}.tar.gz -C dist .
+    - VARIANT_SUFFIX=${VARIANT}${LEGACY:+"-legacy"}
+    - tar -czvf whisper-cpp-${VARIANT_SUFFIX}.tar.gz -C dist .
     - echo "Deleting existing package files with same name..."
     - |
       PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
@@ -34,7 +43,7 @@
       if [ -n "$PACKAGE_ID" ]; then
         FILE_IDS=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${PACKAGE_ID}/package_files" \
-          | jq -r ".[] | select(.file_name == \"whisper-cpp-${VARIANT}.tar.gz\") | .id")
+          | jq -r ".[] | select(.file_name == \"whisper-cpp-${VARIANT_SUFFIX}.tar.gz\") | .id")
         for FILE_ID in $FILE_IDS; do
           echo "Deleting file ID: $FILE_ID"
           curl -s --request DELETE --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
@@ -45,13 +54,14 @@
     - |
       curl --fail-with-body --show-error \
            --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-           --upload-file "whisper-cpp-${VARIANT}.tar.gz" \
-           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/whisper-cpp/${WHISPER_VERSION}/whisper-cpp-${VARIANT}.tar.gz"
+           --upload-file "whisper-cpp-${VARIANT_SUFFIX}.tar.gz" \
+           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/whisper-cpp/${WHISPER_VERSION}/whisper-cpp-${VARIANT_SUFFIX}.tar.gz"
 
 # macOS builds (use brew, no base image)
 
 build-whisper-darwin-arm64-coreml:
   timeout: 10m
+  needs: []
   retry:
     max: 2
     when:
@@ -100,7 +110,7 @@ build-whisper-darwin-arm64-coreml:
            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/whisper-cpp/${WHISPER_VERSION}/whisper-cpp-${VARIANT}.tar.gz"
 
 build-whisper-darwin-arm64-cpu:
-  timeout: 10m
+  timeout: 20m
   retry:
     max: 2
     when:
@@ -111,7 +121,7 @@ build-whisper-darwin-arm64-cpu:
     CMAKE_FLAGS: ""
 
 build-whisper-darwin-x64-cpu:
-  timeout: 10m
+  timeout: 20m
   retry:
     max: 2
     when:
@@ -132,15 +142,9 @@ build-whisper-linux-x64-cpu:
     CMAKE_FLAGS: ""
 
 build-whisper-linux-x64-cpu-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:main
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-cpu
   variables:
-    VARIANT: "linux-x64-cpu-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF
+    LEGACY: "1"
 
 build-whisper-linux-arm64-cpu:
   extends: .whisper-build-base
@@ -192,52 +196,19 @@ build-whisper-linux-x64-cuda-11.8.0:
       /usr/local/cuda/lib64/stubs/libcuda.so.1
 
 build-whisper-linux-x64-cuda-13.1.0-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-13.1
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-cuda-13.1.0
   variables:
-    VARIANT: "linux-x64-cuda-13.1.0-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF -DGGML_CUDA=1
-    LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-    LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-  before_script:
-    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
-      /usr/local/cuda/lib64/stubs/libcuda.so.1
+    LEGACY: "1"
 
 build-whisper-linux-x64-cuda-12.9.0-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-12.9
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-cuda-12.9.0
   variables:
-    VARIANT: "linux-x64-cuda-12.9.0-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF -DGGML_CUDA=1
-    LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-    LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-  before_script:
-    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
-      /usr/local/cuda/lib64/stubs/libcuda.so.1
+    LEGACY: "1"
 
 build-whisper-linux-x64-cuda-11.8.0-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-11.8
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-cuda-11.8.0
   variables:
-    VARIANT: "linux-x64-cuda-11.8.0-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF -DGGML_CUDA=1
-    LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-    LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-  before_script:
-    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
-      /usr/local/cuda/lib64/stubs/libcuda.so.1
+    LEGACY: "1"
 
 # Linux BLAS build (optimized CPU with OpenBLAS)
 
@@ -250,15 +221,9 @@ build-whisper-linux-x64-blas:
     CMAKE_FLAGS: "-DGGML_BLAS=ON"
 
 build-whisper-linux-x64-blas-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:blas
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-blas
   variables:
-    VARIANT: "linux-x64-blas-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF -DGGML_BLAS=ON
+    LEGACY: "1"
 
 # Linux SYCL build (Intel GPUs/iGPUs)
 
@@ -271,37 +236,12 @@ build-whisper-linux-x64-sycl:
     CMAKE_FLAGS:
       "-DGGML_SYCL=ON -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx"
   before_script:
-    - wget -q
-      https://registrationcenter-download.intel.com/akdlm/IRC_NAS/6caa93ca-e10a-4cc5-b210-68f385feea9e/intel-oneapi-base-toolkit-2025.3.1.36_offline.sh
-    - sh ./intel-oneapi-base-toolkit-2025.3.1.36_offline.sh -a --silent --cli
-      --eula accept
-    - rm ./intel-oneapi-base-toolkit-2025.3.1.36_offline.sh
-    - find /opt/intel/oneapi -name "*.so*" -exec dirname {} \; | sort -u >
-      /etc/ld.so.conf.d/oneapi.conf
-    - ldconfig
     - source /opt/intel/oneapi/setvars.sh
 
 build-whisper-linux-x64-sycl-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:sycl
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-sycl
   variables:
-    VARIANT: "linux-x64-sycl-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF -DGGML_SYCL=ON
-      -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx
-  before_script:
-    - wget -q
-      https://registrationcenter-download.intel.com/akdlm/IRC_NAS/6caa93ca-e10a-4cc5-b210-68f385feea9e/intel-oneapi-base-toolkit-2025.3.1.36_offline.sh
-    - sh ./intel-oneapi-base-toolkit-2025.3.1.36_offline.sh -a --silent --cli
-      --eula accept
-    - rm ./intel-oneapi-base-toolkit-2025.3.1.36_offline.sh
-    - find /opt/intel/oneapi -name "*.so*" -exec dirname {} \; | sort -u >
-      /etc/ld.so.conf.d/oneapi.conf
-    - ldconfig
-    - source /opt/intel/oneapi/setvars.sh
+    LEGACY: "1"
 
 # Linux Vulkan build
 
@@ -314,15 +254,9 @@ build-whisper-linux-x64-vulkan:
     CMAKE_FLAGS: "-DGGML_VULKAN=1"
 
 build-whisper-linux-x64-vulkan-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:vulkan
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-vulkan
   variables:
-    VARIANT: "linux-x64-vulkan-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF -DGGML_VULKAN=1
+    LEGACY: "1"
 
 # Linux ROCm build (AMD GPUs - still uses ubuntu image since we don't have a rocm base)
 
@@ -349,29 +283,9 @@ build-whisper-linux-x64-rocm:
     - apt-get update && apt-get install -y cmake git curl gcc g++ gnupg
 
 build-whisper-linux-x64-rocm-legacy:
-  extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:rocm
-  tags: [saas-linux-large-amd64]
+  extends: build-whisper-linux-x64-rocm
   variables:
-    VARIANT: "linux-x64-rocm-legacy"
-    CFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    CXXFLAGS: "-mno-avx2 -mno-fma -mno-bmi2"
-    # amdgpu targets cover:
-    # gfx906 - vega 20 (mi50/mi60, radeon vii)
-    # gfx908 - cdna (mi100)
-    # gfx90a - cdna 2 (mi200 series)
-    # gfx942 - cdna 3 (mi300 series)
-    # gfx1030 - rdna 2 (rx 6600/6700/6800/6900)
-    # gfx1100 - rdna 3 (rx 7900)
-    # gfx1101 - rdna 3 (rx 7800/7700)
-    # gfx1102 - rdna 3 (rx 7600)
-    CMAKE_FLAGS: >-
-      -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_BMI2=OFF -DGGML_HIP=1
-      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-      -DAMDGPU_TARGETS=gfx906;gfx908;gfx90a;gfx942;gfx1030;gfx1100;gfx1101;gfx1102
-  before_script:
-    # - apt-get install -y rocm-cmake rocm-device-libs rocm-utils
-    - apt-get update && apt-get install -y cmake git curl gcc g++ gnupg
+    LEGACY: "1"
 
 # Windows builds (modeled after llama.cpp's CI approach)
 #
@@ -492,6 +406,7 @@ build-whisper-linux-x64-rocm-legacy:
 # MSYS2/MinGW builds: CPU, Vulkan, BLAS
 # builds inside bash (UCRT64 environment), packages in PowerShell
 .whisper-build-msys2-windows:
+  needs: []
   stage: whisper-build
   tags: [saas-windows-medium-amd64]
   variables:
@@ -526,6 +441,7 @@ build-whisper-linux-x64-rocm-legacy:
 # MSVC/Ninja builds: CUDA, ROCm
 # builds in PowerShell with Ninja Multi-Config
 .whisper-build-msvc-windows:
+  needs: []
   stage: whisper-build
   tags: [saas-windows-medium-amd64]
   variables:
@@ -540,8 +456,9 @@ build-whisper-linux-x64-rocm-legacy:
     - !reference [.whisper-windows-install-msvc, before_script]
     - !reference [.whisper-windows-setup-msvc, before_script]
   script:
-    - git clone --depth 1 --branch "v$env:WHISPER_VERSION"
-      https://github.com/ggml-org/whisper.cpp.git whisper-src
+    - git clone --depth 1 --branch "v$env:WHISPER_VERSION" -c
+      core.autocrlf=false https://github.com/ggml-org/whisper.cpp.git
+      whisper-src
     - cd whisper-src
     - git apply $env:CI_PROJECT_DIR/scripts/whisper-server-config.patch
     - |
@@ -666,13 +583,20 @@ build-whisper-windows-x64-rocm:
           exit 1
         }
         # amd installers vary between /S (nsis) and -install (amd format)
-        Write-Host "Attempting silent install with /S..."
-        $p = Start-Process -Wait -PassThru -FilePath "$env:TEMP\hip_installer.exe" -ArgumentList '/S'
-        Write-Host "Installer exited with code: $($p.ExitCode)"
+        Start-Process "$env:TEMP\hip_installer.exe" -ArgumentList '-install' -NoNewWindow -Wait 
         if (-not (Test-Path $rocmBase)) {
-          Write-Host "/S did not produce expected path, retrying with -install..."
-          $p = Start-Process -Wait -PassThru -FilePath "$env:TEMP\hip_installer.exe" -ArgumentList '-install'
-          Write-Host "Installer exited with code: $($p.ExitCode)"
+          Write-Error "HIP SDK installation failed, trying again?"
+          Start-Process "$env:TEMP\hip_installer.exe"-ArgumentList '-install'  -NoNewWindow  -Wait
+          if (-not (Test-Path $rocmBase)) {
+            Write-Error "HIP SDK installation failed, giving up."
+            Write-Error "Listing C:\Program Files\AMD contents:"
+            Get-ChildItem 'C:\Program Files\AMD' -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host "  $($_.FullName)" }
+            Write-Error "Listing C:\AMD contents:"
+            Get-ChildItem 'C:\AMD' -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host "  $($_.FullName)" }
+            exit 1
+          }
         }
       }
     - |
