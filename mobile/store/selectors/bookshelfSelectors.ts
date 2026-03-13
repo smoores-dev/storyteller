@@ -41,16 +41,12 @@ export function getTracks(state: RootState) {
   return state.bookshelf.tracks
 }
 
-export const getCurrentTrackIndex = createSelector(
-  (state: RootState) => state.bookshelf.currentTrack,
-  (state: RootState) => state.bookshelf.tracks,
-  (currentTrack, tracks) => {
-    if (!currentTrack) return 0
-    return tracks.findIndex(
-      (track) => track.relativeUri === currentTrack.relativeUri,
-    )
-  },
-)
+export function getCurrentTrackIndex(state: RootState) {
+  const index = state.bookshelf.currentTrackIndex
+  const trackCount = state.bookshelf.tracks.length
+  if (index < 0 || index >= trackCount) return 0
+  return index
+}
 
 export function formatTime(time: number, rate = 1) {
   time = time / rate

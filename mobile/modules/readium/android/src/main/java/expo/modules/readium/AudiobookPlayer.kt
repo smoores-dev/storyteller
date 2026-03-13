@@ -127,7 +127,7 @@ data class Track(
 interface Listener : Player.Listener {
     fun onClipChanged(overlayPar: OverlayPar)
     fun onPositionChanged(position: Double)
-    fun onTrackChanged(track: Track, position: Double)
+    fun onTrackChanged(track: Track, position: Double, index: Int)
 }
 
 val interruptionInterval = 5.minutes
@@ -537,7 +537,7 @@ class AudiobookPlayer(
 
         controllerFuture.await()
 
-        listener.onTrackChanged(getCurrentTrack() ?: return, getPosition())
+        listener.onTrackChanged(getCurrentTrack() ?: return, getPosition(), controller?.currentMediaItemIndex ?: 0)
     }
 
     fun getIsPlaying(): Boolean {
@@ -560,6 +560,10 @@ class AudiobookPlayer(
         val player = controller ?: return null
         val mediaItem = player.currentMediaItem ?: return null
         return getTrackFromMediaItem(mediaItem)
+    }
+
+    fun getCurrentTrackIndex(): Int {
+        return controller?.currentMediaItemIndex ?: 0
     }
 
     private fun getTrackFromMediaItem(item: MediaItem): Track? {
@@ -733,7 +737,7 @@ class AudiobookPlayer(
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-        listener.onTrackChanged(getCurrentTrack() ?: return, getPosition())
+        listener.onTrackChanged(getCurrentTrack() ?: return, getPosition(), controller?.currentMediaItemIndex ?: 0)
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {

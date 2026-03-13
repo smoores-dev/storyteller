@@ -13,7 +13,7 @@ import { playerTrackChanged } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { useGetBookQuery } from "@/store/localApi"
 import {
-  getCurrentTrack,
+  getCurrentTrackIndex,
   getCurrentlyPlayingBookUuid,
   getCurrentlyPlayingFormat,
   getPosition,
@@ -31,7 +31,7 @@ export function TrackLisk({ onClose }: Props) {
   const bookUuid = useAppSelector(getCurrentlyPlayingBookUuid)
   const format = useAppSelector(getCurrentlyPlayingFormat) ?? "readaloud"
 
-  const currentTrack = useAppSelector(getCurrentTrack)
+  const currentTrackIndex = useAppSelector(getCurrentTrackIndex)
   const position = useAppSelector(getPosition)
 
   const { data: book } = useGetBookQuery(
@@ -67,17 +67,14 @@ export function TrackLisk({ onClose }: Props) {
     {} as Record<string, number>,
   )
 
-  const currentTrackReadingOrderIndex =
-    (currentTrack && hrefToReadingOrderIndex?.[currentTrack.relativeUri]) ?? 0
-
   const currentTocItem = listing.findLast((link) => {
     const [hrefWithoutFragment, fragment] = link.href.split("#t=")
     const readingOrderIndex = hrefToReadingOrderIndex?.[hrefWithoutFragment!]
     if (readingOrderIndex === undefined) return false
 
     return (
-      readingOrderIndex <= currentTrackReadingOrderIndex &&
-      parseFloat(fragment ?? "0.0") <= position
+      readingOrderIndex <= currentTrackIndex &&
+      parseFloat(fragment ?? "0.0") <= position + 3
     )
   })
 

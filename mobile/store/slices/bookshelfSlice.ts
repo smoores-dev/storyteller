@@ -1,6 +1,7 @@
 import { type PayloadAction, createSlice } from "@reduxjs/toolkit"
 import { isPast } from "date-fns"
 
+import { logger } from "@/logger"
 import { type StorytellerTrack } from "@/modules/readium/src/Readium.types"
 import { localApi } from "@/store/localApi"
 import { type UUID } from "@/uuid"
@@ -14,6 +15,7 @@ export type BookshelfState = {
   position: number
   isPlaying: boolean
   currentTrack: StorytellerTrack | null
+  currentTrackIndex: number
 }
 
 const initialState: BookshelfState = {
@@ -25,6 +27,7 @@ const initialState: BookshelfState = {
   position: 0,
   isPlaying: false,
   currentTrack: null,
+  currentTrackIndex: 0,
 }
 
 export const bookshelfSlice = createSlice({
@@ -53,10 +56,21 @@ export const bookshelfSlice = createSlice({
     },
     audioTrackChanged(
       state,
-      action: PayloadAction<{ track: StorytellerTrack; position: number }>,
+      action: PayloadAction<{
+        track: StorytellerTrack
+        position: number
+        index: number
+      }>,
     ) {
-      state.currentTrack = action.payload.track
+      const trackFromState = state.tracks[action.payload.index]
+      if (!trackFromState) {
+        logger.debug(
+          `audioTrackChanged: index ${action.payload.index} out of bounds (${state.tracks.length} tracks)`,
+        )
+      }
+      state.currentTrack = trackFromState ?? action.payload.track
       state.position = action.payload.position
+      state.currentTrackIndex = action.payload.index
     },
     isPlayingChanged(state, action: PayloadAction<{ isPlaying: boolean }>) {
       state.isPlaying = action.payload.isPlaying
@@ -81,6 +95,7 @@ export const bookshelfSlice = createSlice({
         state.position = 0
         state.isPlaying = false
         state.currentTrack = null
+        state.currentTrackIndex = 0
       }
     },
     miniPlayerWidgetSwiped(state) {
@@ -91,6 +106,7 @@ export const bookshelfSlice = createSlice({
       state.currentlyPlayingBookUuid = null
       state.currentlyPlayingFormat = null
       state.currentTrack = null
+      state.currentTrackIndex = 0
     },
   },
   extraReducers: (builder) => {
@@ -118,6 +134,7 @@ export const bookshelfSlice = createSlice({
           state.position = 0
           state.isPlaying = false
           state.currentTrack = null
+          state.currentTrackIndex = 0
         }
       },
     )

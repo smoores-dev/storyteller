@@ -24,9 +24,9 @@ export function addStorytellerEventListeners(store: AppStore) {
     store.dispatch(bookshelfSlice.actions.audioPositionChanged({ position }))
   })
 
-  listenWhenActive("trackChanged", ({ track, position }) => {
+  listenWhenActive("trackChanged", ({ track, position, index }) => {
     store.dispatch(
-      bookshelfSlice.actions.audioTrackChanged({ track, position }),
+      bookshelfSlice.actions.audioTrackChanged({ track, position, index }),
     )
   })
 
@@ -58,10 +58,11 @@ export function addStorytellerEventListeners(store: AppStore) {
       Promise.all([
         Storyteller.getPosition(),
         Storyteller.getCurrentTrack(),
-      ]).then(([position, track]) => {
+        Storyteller.getCurrentTrackIndex(),
+      ]).then(([position, track, index]) => {
         if (!track) return
         store.dispatch(
-          bookshelfSlice.actions.audioTrackChanged({ track, position }),
+          bookshelfSlice.actions.audioTrackChanged({ track, position, index }),
         )
       })
     }

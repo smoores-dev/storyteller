@@ -18,7 +18,11 @@ interface ReadiumEvents extends EventsMap {
   clipChanged(clip: ReadiumClip): void
   isPlayingChanged(event: { isPlaying: boolean }): void
   positionChanged(event: { position: number }): void
-  trackChanged(event: { track: StorytellerTrack; position: number }): void
+  trackChanged(event: {
+    track: StorytellerTrack
+    position: number
+    index: number
+  }): void
 }
 
 declare class ReadiumModule extends NativeModule<ReadiumEvents> {
@@ -51,6 +55,7 @@ declare class ReadiumModule extends NativeModule<ReadiumEvents> {
   loadTracks(tracks: StorytellerTrack[]): Promise<void>
   getPosition(): Promise<number>
   getCurrentTrack(): Promise<StorytellerTrack | null>
+  getCurrentTrackIndex(): Promise<number>
   getTracks(): Promise<StorytellerTrack[]>
   seekTo(relativeUri: string, position: number, skipEmit?: true): Promise<void>
   seekBy(amount: number): Promise<void>
