@@ -66,7 +66,7 @@ class Track {
 
 public typealias ClipChangedCallback = (_ clip: OverlayPar) -> Void
 typealias DuckCallback = () -> Void
-typealias TrackChangedCallback = (_ track: Track, _ position: Double) -> Void
+typealias TrackChangedCallback = (_ track: Track, _ position: Double, _ index: Int) -> Void
 typealias PositionChangedCallback = (_ position: Double) -> Void
 typealias IsPlayingChangedCallback = (_ isPlaying: Bool) -> Void
 
@@ -268,6 +268,10 @@ public actor AudiobookPlayerActor {
         return tracks[currentIndex]
     }
 
+    func getCurrentTrackIndex() -> Int {
+        return currentIndex
+    }
+
     func getCurrentClip() -> OverlayPar? {
         guard let track = getCurrentTrack() else {
             return nil
@@ -323,7 +327,7 @@ public actor AudiobookPlayerActor {
     }
 
     func skip(to position: Double) async {
-        await player.seek(to: CMTime(seconds: position, preferredTimescale: 1))
+        await player.seek(to: CMTime(seconds: position, preferredTimescale: 1000))
 
         guard let track = getCurrentTrack() else { return }
         let position = getPosition()
@@ -337,7 +341,7 @@ public actor AudiobookPlayerActor {
 
         if endPosition < 0.0 {
             if currentIndex == 0 || bounded {
-                await player.seek(to: CMTime(seconds: 0, preferredTimescale: 1))
+                await player.seek(to: CMTime(seconds: 0, preferredTimescale: 1000))
             } else {
                 let seekToIndex = currentIndex - 1
                 let seekToTrack = tracks[seekToIndex]
@@ -345,12 +349,12 @@ public actor AudiobookPlayerActor {
             }
         } else if endPosition >= currentTrack.duration {
             if currentIndex == tracks.count - 1 || bounded {
-                await player.seek(to: CMTime(seconds: currentTrack.duration, preferredTimescale: 1))
+                await player.seek(to: CMTime(seconds: currentTrack.duration, preferredTimescale: 1000))
             } else {
                 await loadTrack(index: currentIndex + 1, position: endPosition - currentTrack.duration)
             }
         } else {
-            await player.seek(to: CMTime(seconds: endPosition, preferredTimescale: 1))
+            await player.seek(to: CMTime(seconds: endPosition, preferredTimescale: 1000))
         }
 
         guard let track = getCurrentTrack() else { return }
@@ -370,7 +374,7 @@ public actor AudiobookPlayerActor {
         }
 
         if seekToIndex == currentIndex && player.currentItem != nil {
-            await player.seek(to: CMTime(seconds: position, preferredTimescale: 1))
+            await player.seek(to: CMTime(seconds: position, preferredTimescale: 1000))
         } else {
             await loadTrack(index: seekToIndex, position: position)
         }
@@ -421,6 +425,18 @@ public actor AudiobookPlayerActor {
             NotificationCenter.default.removeObserver(interruptionObserver)
         }
 
+        if let routeChangeNotificationObserver = self.routeChangeNotificationObserver {
+            NotificationCenter.default.removeObserver(routeChangeNotificationObserver)
+        }
+
+        if let playToEndObserver = self.playToEndObserver {
+            NotificationCenter.default.removeObserver(playToEndObserver)
+        }
+
+        if let positionChangeObserver = self.positionChangeObserver {
+            player.removeTimeObserver(positionChangeObserver)
+        }
+
         observers.forEach {
             player.removeTimeObserver($0)
         }
@@ -431,10 +447,15 @@ public actor AudiobookPlayerActor {
 
         tracks = [Track]()
 
+        player.replaceCurrentItem(with: nil)
+
         itemObserver = nil
         rateObserver = nil
         statusObserver = nil
         isPlayingObserver = nil
+        routeChangeNotificationObserver = nil
+        playToEndObserver = nil
+        positionChangeObserver = nil
     }
 
     private func loadTrack(index: Int, position: Double, shouldContinuePlaying: Bool? = nil) async {
@@ -499,7 +520,7 @@ public actor AudiobookPlayerActor {
         isPlayingObserver = nil
 
         // Weirdly fails if set below 1?
-        self.positionChangeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1.0, preferredTimescale: 1), queue: .main) { time in
+        self.positionChangeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1.0, preferredTimescale: 1000), queue: .main) { time in
             Task { @AudiobookPlayerActor in
                 await AudiobookPlayerActor.shared.updateElapsedTime()
                 await AudiobookPlayerActor.shared.positionChangedCallbacks.forEach {
@@ -508,12 +529,12 @@ public actor AudiobookPlayerActor {
             }
         }
 
-        await player.seek(to: CMTime(seconds: position, preferredTimescale: 1))
+        await player.seek(to: CMTime(seconds: position, preferredTimescale: 1000))
 
         currentImageTask?.cancel()
 
         trackChangedCallbacks.forEach {
-            $0(track, position)
+            $0(track, position, currentIndex)
         }
 
         let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()

@@ -63,6 +63,10 @@ class ReadiumModule : Module(), Listener {
             return@Coroutine player.getCurrentTrack()?.toJson()
         }
 
+        AsyncFunction("getCurrentTrackIndex") { ->
+            player.getCurrentTrackIndex()
+        }
+
         AsyncFunction("getTracks") Coroutine { ->
             return@Coroutine player.getTracks().map { it.toJson() }
         }
@@ -336,7 +340,7 @@ class ReadiumModule : Module(), Listener {
         this.sendEvent("positionChanged", mapOf("position" to position))
     }
 
-    override fun onTrackChanged(track: Track, position: Double) {
-        this.sendEvent("trackChanged", mapOf("track" to track.toJson(), "position" to position))
+    override fun onTrackChanged(track: Track, position: Double, index: Int) {
+        this.sendEvent("trackChanged", mapOf("track" to track.toJson(), "position" to position, "index" to index))
     }
 }

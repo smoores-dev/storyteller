@@ -7,7 +7,7 @@ public class ReadiumModule: Module {
         OnCreate {
             Task { @AudiobookPlayerActor in
                 await AudiobookPlayerActor.shared.observeClipChanged(self.onClipChanged(overlayPar:))
-                await AudiobookPlayerActor.shared.observeTrackChanged(self.onTrackChanged(track:position:))
+                await AudiobookPlayerActor.shared.observeTrackChanged(self.onTrackChanged(track:position:index:))
                 await AudiobookPlayerActor.shared.observeIsPlayingChanged(self.onIsPlayingChanged(isPlaying:))
                 await AudiobookPlayerActor.shared.observePositionChanged(self.onPositionChanged(position:))
             }
@@ -36,6 +36,10 @@ public class ReadiumModule: Module {
         
         AsyncFunction("getCurrentTrack") {
             return await AudiobookPlayerActor.shared.getCurrentTrack()?.toJson()
+        }
+
+        AsyncFunction("getCurrentTrackIndex") {
+            return await AudiobookPlayerActor.shared.getCurrentTrackIndex()
         }
         
         AsyncFunction("getTracks") {
@@ -306,7 +310,7 @@ public class ReadiumModule: Module {
         sendEvent("positionChanged", ["position": position])
     }
     
-    func onTrackChanged(track: Track, position: Double) {
-        sendEvent("trackChanged", ["track": track.toJson(), "position": position])
+    func onTrackChanged(track: Track, position: Double, index: Int) {
+        sendEvent("trackChanged", ["track": track.toJson(), "position": position, "index": index])
     }
 }

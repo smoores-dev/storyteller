@@ -1,5 +1,4 @@
 import { skipToken } from "@reduxjs/toolkit/query"
-import { File } from "expo-file-system"
 import { router, useLocalSearchParams } from "expo-router"
 import {
   ChevronDown,
@@ -22,18 +21,19 @@ import { Icon } from "@/components/ui/icon"
 import { PortalHost } from "@/components/ui/portal-context"
 import { Text } from "@/components/ui/text"
 import { Storyteller, areLocatorsEqual } from "@/modules/readium"
+import { type ReadiumLink } from "@/modules/readium/src/Readium.types"
 import { playerPositionSeeked } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { useGetBookBookmarksQuery, useGetBookQuery } from "@/store/localApi"
-import { getLocalBookExtractedUrl } from "@/store/persistence/files"
 import {
   formatTime,
-  getCurrentTrack,
   getCurrentTrackDuration,
+  getCurrentTrackIndex,
   getHumanFormattedRemainingTime,
   getIsAudioLoading,
   getPlaybackRate,
   getPosition,
+  getTracks,
 } from "@/store/selectors/bookshelfSelectors"
 import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 import { type UUID } from "@/uuid"
@@ -66,8 +66,6 @@ export default function PlayerScreen() {
   const position = useAppSelector(getPosition)
   const remainingTime = useAppSelector(getHumanFormattedRemainingTime)
   const rate = useAppSelector(getPlaybackRate)
-  const currentTrack = useAppSelector(getCurrentTrack)
-
   const panning = useRef(false)
   const [eagerProgress, setEagerProgress] = useState(position)
 
@@ -89,39 +87,56 @@ export default function PlayerScreen() {
     dispatch(bookshelfSlice.actions.bookOpened({ bookUuid: uuid, format }))
   }, [dispatch, format, uuid])
 
-  const directory = getLocalBookExtractedUrl(uuid, format)
+  const tracks = useAppSelector(getTracks)
+  const currentTrackIndex = useAppSelector(getCurrentTrackIndex)
+
+  const fromTracks = tracks.map((track) => ({
+    href: track.relativeUri + "#t=0",
+    title: track.title,
+  }))
 
   const listing =
     format === "audiobook"
-      ? book?.audiobook?.manifest?.toc
-      : book?.readaloud?.audioManifest?.toc
+      ? book?.audiobook?.manifest?.toc ?? fromTracks
+      : book?.readaloud?.audioManifest?.toc ?? fromTracks
 
-  const chapterTitle = listing
-    ?.flatMap(({ children, ...item }) => [item, ...(children ?? [])])
-    .map(({ href, title }) => {
-      const [urlPath, startPositionString] = href.split("#t=")
-      const startPosition = parseInt(startPositionString ?? "0", 10)
+  const readingOrder =
+    format === "audiobook"
+      ? book?.audiobook?.manifest?.readingOrder
+      : book?.readaloud?.audioManifest?.readingOrder
 
-      return {
-        href,
-        url: new File(directory, urlPath!).uri,
-        startPosition,
-        title,
-      }
-    })
-    .find(({ url, startPosition }, index, array) => {
-      const encodedCurrentUrl = encodeURI(
-        (currentTrack?.uri as string | undefined) ?? "",
-      )
-      const next = array[index + 1]
-      return (
-        url === encodedCurrentUrl &&
-        position >= startPosition &&
-        (encodedCurrentUrl !== next?.url ||
-          !next ||
-          position < next.startPosition)
-      )
-    })?.title
+  const hrefToReadingOrderIndex = readingOrder?.reduce(
+    (acc, link, index) => ({ ...acc, [link.href]: index }),
+    {} as Record<string, number>,
+  )
+
+  const chapters = listing.flatMap((item) => [
+    item,
+    ...("children" in item ? item.children ?? [] : []),
+  ])
+
+  const currentChapterIndex = chapters.findLastIndex((link) => {
+    const [hrefWithoutFragment, fragment] = link.href.split("#t=")
+    const readingOrderIndex = hrefToReadingOrderIndex?.[hrefWithoutFragment!]
+    if (readingOrderIndex === undefined) return false
+    return (
+      readingOrderIndex <= currentTrackIndex &&
+      parseFloat(fragment ?? "0.0") <= position + 3
+    )
+  })
+
+  const chapterTitle =
+    currentChapterIndex >= 0 ? chapters[currentChapterIndex]?.title : undefined
+
+  const singleTrack = tracks.length === 1
+
+  const seekToChapter = (chapter: ReadiumLink) => {
+    const [relativeUri, fragment] = chapter.href.split("#t=")
+    const target = parseFloat(fragment ?? "0")
+    setEagerProgress(target)
+    dispatch(bookshelfSlice.actions.audioPositionChanged({ position: target }))
+    Storyteller.seekTo(relativeUri!, target)
+  }
 
   if (!book) return null
 
@@ -187,7 +202,21 @@ export default function PlayerScreen() {
               variant="ghost"
               size="icon"
               onPress={() => {
-                Storyteller.prev()
+                if (singleTrack && currentChapterIndex >= 0) {
+                  const current = chapters[currentChapterIndex]!
+                  const startPos = parseFloat(
+                    current.href.split("#t=")[1] ?? "0",
+                  )
+                  if (position - startPos > 3) {
+                    seekToChapter(current)
+                  } else if (currentChapterIndex > 0) {
+                    seekToChapter(chapters[currentChapterIndex - 1]!)
+                  } else {
+                    seekToChapter(current)
+                  }
+                } else {
+                  Storyteller.prev()
+                }
               }}
             >
               <Icon as={SkipBack} size={32} />
@@ -215,7 +244,15 @@ export default function PlayerScreen() {
               variant="ghost"
               size="icon"
               onPress={() => {
-                Storyteller.next()
+                if (
+                  singleTrack &&
+                  currentChapterIndex >= 0 &&
+                  currentChapterIndex < chapters.length - 1
+                ) {
+                  seekToChapter(chapters[currentChapterIndex + 1]!)
+                } else {
+                  Storyteller.next()
+                }
               }}
             >
               <Icon as={SkipForward} size={32} />

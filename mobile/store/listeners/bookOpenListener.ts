@@ -285,6 +285,11 @@ startAppListening({
       logger.debug(`Setting playback rate to ${playerSpeed}`)
       await Storyteller.setRate(playerSpeed)
 
+      // Dispatch playerQueued before seekTo so that state.tracks contains the
+      // new book's tracks when the native trackChanged event fires. Otherwise
+      // audioTrackChanged picks up the old book's track (and its duration).
+      listenerApi.dispatch(bookshelfSlice.actions.playerQueued({ tracks }))
+
       if (clip) {
         logger.debug(
           `Seeking to local position, ${clip.start}s at ${clip.relativeUrl}`,
@@ -295,9 +300,10 @@ startAppListening({
         await Storyteller.seekTo(tracks[0].relativeUri, 0, true)
       }
       logger.debug("Audio queued")
+    } else {
+      listenerApi.dispatch(bookshelfSlice.actions.playerQueued({ tracks }))
     }
 
     logger.debug(`Book opened`)
-    listenerApi.dispatch(bookshelfSlice.actions.playerQueued({ tracks }))
   },
 })
