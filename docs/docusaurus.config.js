@@ -2,6 +2,8 @@
 // Note: type annotations allow type checking and IDEs autocompletion
 
 const { themes } = require("prism-react-renderer")
+
+const { getFileAuthors } = require("./utils/getFileAuthors")
 const lightCodeTheme = themes.github
 const darkCodeTheme = themes.dracula
 
@@ -34,6 +36,26 @@ const config = {
     locales: ["en"],
   },
 
+  markdown: {
+    parseFrontMatter: async (params) => {
+      const result = await params.defaultParseFrontMatter(params)
+
+      // Skip author lookup for blog posts
+      if (params.filePath.includes("/blog/")) {
+        return result
+      }
+
+      const fileAuthors = await getFileAuthors(params.filePath)
+      return {
+        ...result,
+        frontMatter: {
+          ...result.frontMatter,
+          fileAuthors,
+        },
+      }
+    },
+  },
+
   presets: [
     [
       "classic",
@@ -61,6 +83,8 @@ const config = {
         path: "contributing",
         routeBasePath: "contributing",
         sidebarPath: require.resolve("./sidebarsContributing.js"),
+        editUrl:
+          "https://gitlab.com/storyteller-platform/storyteller/-/tree/main/docs/",
       },
     ],
     require.resolve("docusaurus-lunr-search"),

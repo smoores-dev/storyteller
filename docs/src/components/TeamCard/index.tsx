@@ -1,5 +1,5 @@
 import Link from "@docusaurus/Link"
-import type { Contributor } from "@site/plugins/fetch-contributors"
+import type { Contributor } from "@site/utils/gitlabContributors"
 import React from "react"
 
 import styles from "./styles.module.css"
