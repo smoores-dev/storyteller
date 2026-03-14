@@ -1,6 +1,6 @@
 import Link from "@docusaurus/Link"
-import type { Contributor } from "@site/plugins/fetch-contributors"
 import TeamCard from "@site/src/components/TeamCard"
+import type { Contributor } from "@site/utils/gitlabContributors"
 import Layout from "@theme/Layout"
 import React from "react"
 

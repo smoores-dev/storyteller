@@ -5,6 +5,18 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"@0no-co/graphql.web@npm:^1.0.13":
+  version: 1.2.0
+  resolution: "@0no-co/graphql.web@npm:1.2.0"
+  peerDependencies:
+    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
+  peerDependenciesMeta:
+    graphql:
+      optional: true
+  checksum: 10c0/4eed600962bfab42afb49cddcfb31a47b00502f59707609cf160559920ce0f5cf8874791e4cafc465ede30ae291992f3f892bc757b2a989e80e50e358f71c518
+  languageName: node
+  linkType: hard
+
 "@0no-co/graphql.web@npm:^1.0.5":
   version: 1.0.7
   resolution: "@0no-co/graphql.web@npm:1.0.7"
@@ -7819,7 +7831,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-typed-document-node/core@npm:^3.1.1, @graphql-typed-document-node/core@npm:^3.2.0":
+"@graphql-typed-document-node/core@npm:^3.1.1":
   version: 3.2.0
   resolution: "@graphql-typed-document-node/core@npm:3.2.0"
   peerDependencies:
@@ -13007,11 +13019,12 @@ __metadata:
     "@types/lunr": "npm:^2"
     "@types/node": "npm:^24.0.0"
     "@types/react": "npm:^18.0.0"
+    "@urql/core": "npm:^6.0.1"
+    "@urql/exchange-retry": "npm:^2.0.0"
     clsx: "npm:^1.2.1"
     docusaurus-lunr-search: "npm:3.6.0"
     eslint: "npm:^8.0.0"
     graphql: "npm:^16.12.0"
-    graphql-request: "npm:^7.4.0"
     lunr: "npm:^2.3.9"
     prettier: "npm:^3.2.5"
     prism-react-renderer: "npm:^2.4.1"
@@ -16530,6 +16543,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@urql/core@npm:^6.0.0, @urql/core@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "@urql/core@npm:6.0.1"
+  dependencies:
+    "@0no-co/graphql.web": "npm:^1.0.13"
+    wonka: "npm:^6.3.2"
+  checksum: 10c0/44ff0d12dcef1e47338a9ff1217759d1124fa66eec1eec21ff9622e44c179b9d66fa78f462f195bfd8b790b04609abbe5a0674cbfcb0bc6d9c6fe6223d7d7b5b
+  languageName: node
+  linkType: hard
+
 "@urql/exchange-retry@npm:^1.3.0":
   version: 1.3.0
   resolution: "@urql/exchange-retry@npm:1.3.0"
@@ -16539,6 +16562,18 @@ __metadata:
   peerDependencies:
     "@urql/core": ^5.0.0
   checksum: 10c0/4a4e54fbf21b7bd221e9d29acd885b16b154f3660aab4ce5bc257b0093a4aebe1dab4efe692127b43751359ea0c5aa11320a8f422236d22e54918e1637b6b248
+  languageName: node
+  linkType: hard
+
+"@urql/exchange-retry@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@urql/exchange-retry@npm:2.0.0"
+  dependencies:
+    "@urql/core": "npm:^6.0.0"
+    wonka: "npm:^6.3.2"
+  peerDependencies:
+    "@urql/core": ^6.0.0
+  checksum: 10c0/37a4dbea6b158c73521fc58e33c2b73ad4568e221e3e2fce373a5cadb21b93f345b4a3e574646b2b1e3f598db4d6fcf62cb6d21d5abd11a3ca88d39c248894fd
   languageName: node
   linkType: hard
 
@@ -25160,17 +25195,6 @@ __metadata:
   version: 1.4.0
   resolution: "graphemer@npm:1.4.0"
   checksum: 10c0/e951259d8cd2e0d196c72ec711add7115d42eb9a8146c8eeda5b8d3ac91e5dd816b9cd68920726d9fd4490368e7ed86e9c423f40db87e2d8dfafa00fa17c3a31
-  languageName: node
-  linkType: hard
-
-"graphql-request@npm:^7.4.0":
-  version: 7.4.0
-  resolution: "graphql-request@npm:7.4.0"
-  dependencies:
-    "@graphql-typed-document-node/core": "npm:^3.2.0"
-  peerDependencies:
-    graphql: 14 - 16
-  checksum: 10c0/066531d70b9c4656251e51c950ce9bee3df05291e12e2b983608d75ac3a70d700efd6488d273b043235dc125658973db38b21eba59e808863831a5a19a6a7b41
   languageName: node
   linkType: hard
 
