@@ -595,7 +595,7 @@ function createMediaOverlay(
     Epub.createXmlElement(
       "smil",
       {
-        xmlns: "https://www.w3.org/ns/SMIL",
+        xmlns: "http://www.w3.org/ns/SMIL",
         "xmlns:epub": "http://www.idpf.org/2007/ops",
         version: "3.0",
       },
