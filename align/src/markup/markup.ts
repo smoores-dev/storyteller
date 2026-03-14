@@ -42,6 +42,7 @@ export async function markup(
   const primaryLocale = options.primaryLocale ?? (await epub.getLanguage())
 
   const spine = await epub.getSpineItems()
+  const manifest = await epub.getManifest()
 
   for (let index = 0; index < spine.length; index++) {
     options.onProgress?.(index / spine.length)
@@ -54,6 +55,9 @@ export async function markup(
     )
 
     const chapterId = spineItem.id
+    if (manifest[chapterId]?.properties?.includes("nav")) {
+      continue
+    }
 
     const chapterXml = await epub.readXhtmlItemContents(chapterId)
 
