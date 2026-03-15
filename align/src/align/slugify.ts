@@ -60,6 +60,8 @@ function createReplacers(locale: Intl.Locale) {
       .replace(new RegExp(`\\${currencySymbols.decimal}`), ".")
     const number = parseFloat(normalizedNumeral)
 
+    if (Number.isNaN(number)) return match[0]
+
     return toWords(number, {
       localeCode: `${maximizedLocale.language}-${maximizedLocale.region}`,
       currency: true,
@@ -102,6 +104,8 @@ function createReplacers(locale: Intl.Locale) {
       .replaceAll(new RegExp(`\\${numberSymbols.group}`, "g"), "")
       .replace(new RegExp(`\\${numberSymbols.decimal}`), ".")
     const number = parseFloat(normalizedNumeral)
+
+    if (Number.isNaN(number)) return match[0]
 
     return toWords(number, {
       localeCode: `${maximizedLocale.language}-${maximizedLocale.region}`,
