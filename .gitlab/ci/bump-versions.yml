@@ -43,6 +43,8 @@ pages:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^docs-v?\d+\.\d+\.\d+$/'
   script:
+    - apk update
+    - apk add git
     - yarn workspaces focus @storyteller-platform/docs
     - yarn build:docs
   artifacts:
