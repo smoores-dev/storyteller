@@ -89,7 +89,8 @@ RUN if [ "$GPU_VARIANT" = "sycl" ]; then \
       intel-opencl-icd \
       intel-level-zero-gpu \
       level-zero \
-      intel-oneapi-runtime-libs && \
+      intel-oneapi-runtime-libs \
+      intel-oneapi-runtime-dnnl && \
     rm -rf /var/lib/apt/lists/* && \
     find /opt/intel/oneapi -name "*.so*" -exec dirname {} \; | sort -u > /etc/ld.so.conf.d/oneapi.conf && \
     ldconfig; \
