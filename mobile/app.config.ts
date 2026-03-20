@@ -20,6 +20,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       "expo-background-task",
+      [
+        "expo-camera",
+        {
+          cameraPermission:
+            "Allow Storyteller to use the camera to scan QR codes for device sign-in.",
+        },
+      ],
       "expo-web-browser",
       "expo-router",
       "expo-secure-store",
@@ -156,6 +163,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         UIFileSharingEnabled: true,
         LSSupportsOpeningDocumentsInPlace: true,
         UIBackgroundModes: ["audio", "processing"],
+        NSCameraUsageDescription:
+          "Allow Storyteller to use the camera to scan QR codes for device sign-in.",
         NSMicrophoneUsageDescription:
           "This permission is not needed by the app, but it is required by an underlying API. If you see this dialog, contact us.",
         CFBundleDocumentTypes: [

@@ -469,14 +469,28 @@ CREATE INDEX idx_audiobook_book ON audiobook (book_uuid);
 
 CREATE INDEX idx_readaloud_book ON readaloud (book_uuid);
 
-CREATE TABLE IF NOT EXISTS "processing_task" (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  id INTEGER,
-  type TEXT NOT NULL,
-  book_uuid TEXT NOT NULL,
-  status TEXT NOT NULL,
-  progress REAL NOT NULL DEFAULT 0,
+CREATE TABLE device_authorization (
+  id TEXT PRIMARY KEY DEFAULT (uuid ()),
+  device_code TEXT NOT NULL UNIQUE,
+  user_code TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  approved_by_user_id TEXT,
+  interval_seconds INTEGER NOT NULL DEFAULT 5,
+  expires_at TEXT NOT NULL,
+  last_polled_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_uuid) REFERENCES book (uuid)
+  FOREIGN KEY (approved_by_user_id) REFERENCES user (id)
 );
+
+CREATE INDEX device_authorization_expires_at_idx ON device_authorization (expires_at);
+
+CREATE TRIGGER device_authorization_update_trigger AFTER
+UPDATE ON device_authorization FOR EACH ROW BEGIN
+UPDATE device_authorization
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  id = OLD.id;
+
+END;

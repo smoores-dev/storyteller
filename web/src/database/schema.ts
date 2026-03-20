@@ -124,6 +124,19 @@ export interface Creator {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface DeviceAuthorization {
+  approvedByUserId: import("@/uuid").UUID | null
+  createdAt: Generated<string>
+  deviceCode: string
+  expiresAt: Date
+  id: Generated<import("@/uuid").UUID>
+  intervalSeconds: Generated<number>
+  lastPolledAt: Date | null
+  status: Generated<string>
+  updatedAt: Generated<string>
+  userCode: string
+}
+
 export interface Ebook {
   bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
@@ -275,6 +288,7 @@ export interface DB {
   collection: Collection
   collectionToUser: CollectionToUser
   creator: Creator
+  deviceAuthorization: DeviceAuthorization
   ebook: Ebook
   migration: Migration
   position: Position
