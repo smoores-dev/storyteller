@@ -1,15 +1,14 @@
 import * as Linking from "expo-linking"
 import { useRouter } from "expo-router"
-import * as SecureStore from "expo-secure-store"
 import * as WebBrowser from "expo-web-browser"
 import { jwtDecode } from "jwt-decode"
 
 import { type Token } from "@/apiModels"
-import { getServerByUrl, updateServer } from "@/database/servers"
+import { saveServerSession } from "@/auth/saveServerSession"
 import { logger } from "@/logger"
 import { useAppDispatch } from "@/store/appState"
-import { localApi, useCreateServerMutation } from "@/store/localApi"
-import { type UUID, randomUUID } from "@/uuid"
+import { localApi } from "@/store/localApi"
+import { type UUID } from "@/uuid"
 
 import { Button } from "./ui/button"
 import { Text } from "./ui/text"
@@ -21,7 +20,6 @@ interface Props {
 
 export function LoginButton({ serverUrl, serverUuid }: Props) {
   const router = useRouter()
-  const [createServer] = useCreateServerMutation()
   const dispatch = useAppDispatch()
   return (
     <Button
@@ -75,26 +73,12 @@ export function LoginButton({ serverUrl, serverUuid }: Props) {
 
         const sessionToken = (await response.json()) as Token
 
-        let uuid!: UUID
-        if (!serverUuid) {
-          const { uuid: newUuid } =
-            (await getServerByUrl(serverUrl)) ??
-            (await createServer({
-              uuid: randomUUID(),
-              baseUrl: serverUrl,
-            }).unwrap())
-          uuid = newUuid
-        } else {
-          uuid = serverUuid
-        }
-
-        await SecureStore.setItemAsync(
-          `server.${uuid}.token`,
-          sessionToken.access_token,
-          { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK },
-        )
-
-        await updateServer(uuid, { username })
+        await saveServerSession({
+          serverUrl,
+          sessionToken,
+          username,
+          ...(serverUuid ? { serverUuid } : {}),
+        })
 
         dispatch(localApi.util.invalidateTags(["Servers"]))
 

@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises"
 import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { hash, verify as verifyPassword } from "argon2"
 import { add } from "date-fns/fp/add"
+import { type Insertable } from "kysely"
 import type { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
 import { cookies, headers, headers as nextHeaders } from "next/headers"
 import { notFound, redirect } from "next/navigation"
@@ -24,6 +25,7 @@ import Credentials from "next-auth/providers/credentials"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { KyselyAdapter } from "@/database/authAdapter"
 import { db } from "@/database/connection"
+import { type DB } from "@/database/schema"
 import { getSettings } from "@/database/settings"
 import { type CustomAuthProvider } from "@/database/settingsTypes"
 import {
@@ -346,6 +348,29 @@ export async function createUserToken(
   }
 }
 
+export async function createSessionTokenForUserId(
+  userId: UUID,
+  sessionMaxAge = maxAge,
+) {
+  const sessionToken = randomUUID()
+  const sessionExpiry = fromDate(sessionMaxAge)
+
+  await db
+    .insertInto("session")
+    .values({
+      sessionToken,
+      userId,
+      expires: sessionExpiry,
+    } as Insertable<DB["session"]>)
+    .execute()
+
+  return {
+    access_token: sessionToken,
+    expires_in: sessionExpiry.valueOf() * 1000 - Date.now(),
+    token_type: "bearer",
+  }
+}
+
 /**
  * AppRouteHandlerFnContext is the context that is passed to the handler as the
  * second argument.
@@ -620,7 +645,7 @@ export function hasPermission(
   return !!user?.permissions?.[permission]
 }
 
-export async function assertHasPermission(permission: Permission) {
+export async function assertAuthenticatedUser() {
   const cookieStore = await cookies()
   const authTokenCookie = cookieStore.get("st_token")
 
@@ -638,7 +663,11 @@ export async function assertHasPermission(permission: Permission) {
     redirect("/login")
   }
 
-  const user = sessionAndUser.user as UserWithPermissions
+  return sessionAndUser.user as UserWithPermissions
+}
+
+export async function assertHasPermission(permission: Permission) {
+  const user = await assertAuthenticatedUser()
 
   if (!user.permissions?.[permission]) {
     notFound()

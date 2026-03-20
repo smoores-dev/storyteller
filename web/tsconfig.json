@@ -48,7 +48,13 @@
     ".next/types/**/*.ts",
     "postcss.config.js"
   ],
-  "exclude": ["migrations/node_modules", ".next", "tsbuild", "work-dist"],
+  "exclude": [
+    "migrations/node_modules",
+    ".next",
+    "tsbuild",
+    "work-dist",
+    "src/__fixtures__"
+  ],
   "references": [
     {
       "path": "../epub"

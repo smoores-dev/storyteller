@@ -1,13 +1,12 @@
-import { randomUUID } from "node:crypto"
-
 import { addMinutes, isPast } from "date-fns"
 import { type JwtPayload, sign, verify } from "jsonwebtoken"
-import { type Insertable } from "kysely"
 import { type NextRequest } from "next/server"
 
-import { fromDate, nextAuth, readSecretKey } from "@/auth/auth"
-import { db } from "@/database/connection"
-import { type DB } from "@/database/schema"
+import {
+  createSessionTokenForUserId,
+  nextAuth,
+  readSecretKey,
+} from "@/auth/auth"
 import { getUserByUsernameOrEmail } from "@/database/users"
 import { logger } from "@/logging"
 
@@ -87,24 +86,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const sessionToken = randomUUID()
-    const sessionExpiry = fromDate(maxAge)
-    const session = {
-      sessionToken,
-      userId: user.id,
-      expires: sessionExpiry,
-    }
-
-    await db
-      .insertInto("session")
-      .values(session as Insertable<DB["session"]>)
-      .execute()
-
-    return Response.json({
-      access_token: session.sessionToken,
-      expires_in: session.expires.valueOf() * 1000 - Date.now(),
-      token_type: "bearer",
-    })
+    const session = await createSessionTokenForUserId(user.id, maxAge)
+    return Response.json(session)
   } catch (e) {
     logger.error({ msg: "Failed to create session for user", err: e })
     return unauthorized

@@ -1,5 +1,12 @@
 import type { PublicProvider } from "@auth/core/types"
-import { Button, PasswordInput, Stack, TextInput, Title } from "@mantine/core"
+import {
+  Anchor,
+  Button,
+  PasswordInput,
+  Stack,
+  TextInput,
+  Title,
+} from "@mantine/core"
 import type { Metadata } from "next"
 import { revalidatePath } from "next/cache"
 import { forbidden } from "next/navigation"
@@ -108,6 +115,9 @@ export default async function AccountPage() {
           </Button>
         </Stack>
       </form>
+      <Anchor href="/device/start">
+        Sign in on another device with a QR code
+      </Anchor>
       {providers.length ? (
         <>
           <Title order={3} className="my-4">
