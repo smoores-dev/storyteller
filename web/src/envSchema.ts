@@ -98,6 +98,12 @@ export const documentedServerEnvVars = {
     .describe(
       "Path to a file containing the secret key for the instance. Either this or STORYTELLER_SECRET_KEY must be set.",
     ),
+  STORYTELLER_CONFIG: z
+    .string()
+    .optional()
+    .describe(
+      "[Path to a JSON configuration file.](#declarative-configuration) Settings in this file override database settings and cannot be changed via the UI.",
+    ),
 } as const
 
 export const internalServerEnvVars = {

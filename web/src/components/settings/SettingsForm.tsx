@@ -2,6 +2,7 @@
 
 import {
   ActionIcon,
+  Alert,
   Anchor,
   Box,
   Button,
@@ -21,7 +22,7 @@ import {
   TextInput,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import { IconFlame, IconPlus, IconTrash } from "@tabler/icons-react"
+import { IconFlame, IconLock, IconPlus, IconTrash } from "@tabler/icons-react"
 import { useRef, useState } from "react"
 
 import type { Settings } from "@/apiModels"
@@ -42,6 +43,7 @@ interface Props {
   settings: Settings
   authUrl?: string | undefined
   whisperVariant?: string | undefined
+  configLockedKeys?: (keyof Settings)[]
 }
 
 function safeUrl(base: string, path: string) {
@@ -52,7 +54,15 @@ function safeUrl(base: string, path: string) {
   }
 }
 
-export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
+export function SettingsForm({
+  settings,
+  authUrl,
+  whisperVariant,
+  configLockedKeys = [],
+}: Props) {
+  const lockedKeys = new Set(configLockedKeys)
+  const isLocked = (key: keyof Settings) => lockedKeys.has(key)
+  const isAnyLocked = (...keys: (keyof Settings)[]) => keys.some(isLocked)
   const [saved, setSaved] = useState(false)
   const clearSavedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -140,18 +150,42 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
         }, 2000)
       })}
     >
+      {configLockedKeys.length > 0 && (
+        <Alert
+          className="mt-4"
+          variant="light"
+          color="st-orange"
+          title="Locked settings"
+          icon={<IconLock size={18} />}
+        >
+          Some settings are{" "}
+          <Anchor
+            className="text-sm"
+            href="https://storyteller-platform.gitlab.io/storyteller/docs/installation/self-hosting#declarative-configuration"
+            target="_blank"
+          >
+            managed via configuration file
+          </Anchor>{" "}
+          and cannot be changed here.
+        </Alert>
+      )}
       <Fieldset legend="Library settings">
         <TextInput
           label="Library name"
           {...form.getInputProps("libraryName")}
+          disabled={isLocked("libraryName")}
         />
         <TextInput
           label="Web URL"
           {...form.getInputProps("webUrl")}
           type="url"
+          disabled={isLocked("webUrl")}
         />
       </Fieldset>
-      <ImportPathInput {...form.getInputProps("importPath")}>
+      <ImportPathInput
+        {...form.getInputProps("importPath")}
+        disabled={isLocked("importPath")}
+      >
         <Text className="text-sm text-black opacity-70 dark:text-white">
           Storyteller can be configured to automatically import book files from
           a specific directory.
@@ -168,7 +202,10 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           import in the settings for that collection.
         </Text>
       </ImportPathInput>
-      <Fieldset legend="Readaloud location">
+      <Fieldset
+        legend="Readaloud location"
+        disabled={isAnyLocked("readaloudLocationType", "readaloudLocation")}
+      >
         <Box className="mb-3 text-sm opacity-70">
           <Text className="text-sm text-black dark:text-white">
             Storyteller can be configured to save new readaloud files in a
@@ -252,6 +289,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
             </span>
           }
           {...form.getInputProps("maxTrackLength")}
+          disabled={isLocked("maxTrackLength")}
         >
           <option value={0.25}>15 minutes</option>
           <option value={0.5}>30 minutes</option>
@@ -268,6 +306,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
             form.setFieldValue("codec", e.target.value)
             form.setFieldValue("bitrate", "")
           }}
+          disabled={isLocked("codec")}
         >
           <option value="">Default</option>
           <option value="libopus">OPUS</option>
@@ -278,6 +317,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           <NativeSelect
             label="Preferred audio bitrate"
             {...form.getInputProps("bitrate")}
+            disabled={isLocked("bitrate")}
           >
             <option value="">Default (32 Kb/s)</option>
             <option value="16K">16 Kb/s</option>
@@ -291,6 +331,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           <NativeSelect
             label="Preferred audio bitrate"
             {...form.getInputProps("bitrate")}
+            disabled={isLocked("bitrate")}
           >
             <option value="">Default (constant 48 kb/s)</option>
             <option value="0">0 (high quality/low compression)</option>
@@ -371,6 +412,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
         <NativeSelect
           label="Transcription engine"
           {...form.getInputProps("transcriptionEngine")}
+          disabled={isLocked("transcriptionEngine")}
         >
           <option value="whisper.cpp">whisper.cpp (local)</option>
           <option value="whisper-server">whisper.cpp (remote)</option>
@@ -397,6 +439,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
             <NativeSelect
               label="Whisper model"
               {...form.getInputProps("whisperModel")}
+              disabled={isLocked("whisperModel")}
             >
               <option value="tiny">tiny</option>
               <option value="tiny.en">tiny.en</option>
@@ -466,6 +509,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
                   val === "" ? null : (val as "blas" | "cpu"),
                 )
               }}
+              disabled={isLocked("whisperCpuFallback")}
             >
               <option value="">Use default (GPU if available)</option>
               <option value="blas">OpenBLAS (optimized CPU)</option>
@@ -599,6 +643,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
             label="API key"
             withAsterisk
             {...form.getInputProps("googleCloudApiKey")}
+            disabled={isLocked("googleCloudApiKey")}
           />
         )}
         {state.transcriptionEngine === "microsoft-azure" && (
@@ -607,11 +652,13 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
               label="Subscription key"
               withAsterisk
               {...form.getInputProps("azureSubscriptionKey")}
+              disabled={isLocked("azureSubscriptionKey")}
             />
             <TextInput
               label="Service region key"
               withAsterisk
               {...form.getInputProps("azureServiceRegion")}
+              disabled={isLocked("azureServiceRegion")}
             />
           </>
         )}
@@ -621,6 +668,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
               label="Region"
               withAsterisk
               {...form.getInputProps("amazonTranscribeRegion")}
+              disabled={isLocked("amazonTranscribeRegion")}
             />
             <TextInput
               label="Bucket name"
@@ -641,11 +689,13 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
               label="Access key id"
               withAsterisk
               {...form.getInputProps("amazonTranscribeAccessKeyId")}
+              disabled={isLocked("amazonTranscribeAccessKeyId")}
             />
             <TextInput
               label="Secret access key"
               withAsterisk
               {...form.getInputProps("amazonTranscribeSecretAccessKey")}
+              disabled={isLocked("amazonTranscribeSecretAccessKey")}
             />
           </>
         )}
@@ -655,10 +705,12 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
               label="API Key"
               withAsterisk
               {...form.getInputProps("openAiApiKey")}
+              disabled={isLocked("openAiApiKey")}
             />
             <TextInput
               label="Organization (optional)"
               {...form.getInputProps("openAiOrganization")}
+              disabled={isLocked("openAiOrganization")}
             />
             <TextInput
               label="Base URL (optional)"
@@ -684,6 +736,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
                 </>
               }
               {...form.getInputProps("openAiBaseUrl")}
+              disabled={isLocked("openAiBaseUrl")}
             />
             <TextInput
               label="Model name (optional)"
@@ -698,6 +751,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
                 </>
               }
               {...form.getInputProps("openAiModelName")}
+              disabled={isLocked("openAiModelName")}
             />
           </>
         )}
@@ -738,6 +792,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
               label="API Key"
               withAsterisk
               {...form.getInputProps("deepgramApiKey")}
+              disabled={isLocked("deepgramApiKey")}
             />
             <TextInput
               label="Model name"
@@ -756,6 +811,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
                 </>
               }
               {...form.getInputProps("deepgramModel")}
+              disabled={isLocked("deepgramModel")}
             />
           </>
         )}
@@ -772,14 +828,19 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           label="Number of audio tracks to transcode in parallel"
           description="Transcoding one track will use on CPU core"
           {...form.getInputProps("parallelTranscodes")}
+          disabled={isLocked("parallelTranscodes")}
         />
         <NumberInput
           label="Number of audio tracks to transcribe in parallel"
           description="Transcribing one track will use up to 4 CPU cores (when using CPU-based transcription)"
           {...form.getInputProps("parallelTranscribes")}
+          disabled={isLocked("parallelTranscribes")}
         />
       </Fieldset>
-      <Fieldset legend="Authentication providers">
+      <Fieldset
+        legend="Authentication providers"
+        disabled={isLocked("authProviders")}
+      >
         <Stack gap={4} className="my-4">
           {state.authProviders.map((provider, i) => (
             <Fieldset
@@ -1059,7 +1120,10 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           />
         </Stack>
       </Fieldset>
-      <Fieldset legend="Upload settings">
+      <Fieldset
+        legend="Upload settings"
+        disabled={isLocked("maxUploadChunkSize")}
+      >
         <Stack>
           {maxUploadChunkSize?.overriden && (
             <Text className="text-sm">
@@ -1103,6 +1167,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
             onChange={(event) => {
               form.setFieldValue("opdsEnabled", event.currentTarget.checked)
             }}
+            disabled={isLocked("opdsEnabled")}
           />
           <Switch
             label="Enable pagination"
@@ -1116,6 +1181,7 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
                 form.setFieldValue("opdsPageSize", null)
               }
             }}
+            disabled={isLocked("opdsPageSize")}
           />
           {state.opdsPageSize !== null && (
             <NumberInput
@@ -1124,11 +1190,23 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
               min={1}
               max={500}
               {...form.getInputProps("opdsPageSize")}
+              disabled={isLocked("opdsPageSize")}
             />
           )}
         </Stack>
       </Fieldset>
-      <Fieldset legend="Email settings">
+      <Fieldset
+        legend="Email settings"
+        disabled={isAnyLocked(
+          "smtpHost",
+          "smtpPort",
+          "smtpFrom",
+          "smtpUsername",
+          "smtpPassword",
+          "smtpSsl",
+          "smtpRejectUnauthorized",
+        )}
+      >
         <TextInput label="SMTP host" {...form.getInputProps("smtpHost")} />
         <TextInput
           label="SMTP port"

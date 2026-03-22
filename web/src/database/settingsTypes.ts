@@ -138,3 +138,8 @@ export const SettingsSchema = z.object({
   opdsPageSize: z.number().nullable(),
 })
 export type Settings = z.infer<typeof SettingsSchema>
+
+// Partial schema for config file: _file references are resolved
+// at runtime before validation (see resolveFileReferences)
+export const ConfigFileSchema = SettingsSchema.partial()
+export type ConfigFile = z.infer<typeof ConfigFileSchema>

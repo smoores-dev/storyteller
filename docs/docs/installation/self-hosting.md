@@ -224,6 +224,51 @@ Storyteller can be configured with a number of additional environment variables.
 
 ---
 
+## Declarative Configuration
+
+Settings can be managed via a JSON file instead of the web UI. Set
+`STORYTELLER_CONFIG` to the path of your configuration file:
+
+```yaml
+environment:
+  - STORYTELLER_CONFIG=/config/storyteller.json
+```
+
+The configuration file contains any settings you want to override. You can
+export your current settings as a starting point using the "Export as JSON"
+button on the Settings page.
+
+```json
+{
+  "libraryName": "My Library",
+  "webUrl": "https://storyteller.example.com",
+  "transcriptionEngine": "whisper.cpp"
+}
+```
+
+Settings in the configuration file override database values, cannot be changed
+through the UI, and are validated on startup.
+
+### Secrets
+
+For sensitive values, append `_file` to any setting name to read the value from
+a file. This works well with Docker or Kubernetes secrets:
+
+```json
+{
+  "smtpPassword_file": "/run/secrets/smtp_password",
+  "authProviders": [
+    {
+      "kind": "custom",
+      "name": "Authelia",
+      "clientSecret_file": "/run/secrets/oidc_secret"
+    }
+  ]
+}
+```
+
+---
+
 ## Now what?
 
 To create your admin account and get started, head to http://localhost:8001 in a
