@@ -1,12 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 import { nextAuth } from "./auth/auth"
+import { getSetting } from "./database/settings"
 import { getUserCount } from "./database/users"
 
 export async function middleware(request: NextRequest) {
   const isInitPage = request.nextUrl.pathname.startsWith("/init")
 
-  const needsInit = (await getUserCount()) === 0
+  const noUsers = (await getUserCount()) === 0
+  const disablePasswordLogin = await getSetting("disablePasswordLogin")
+  const needsInit = noUsers && !disablePasswordLogin
 
   if (needsInit && !isInitPage) {
     return NextResponse.redirect(new URL("/init", request.url))

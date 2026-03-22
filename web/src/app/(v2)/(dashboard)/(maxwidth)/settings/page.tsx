@@ -1,4 +1,5 @@
-import { Title } from "@mantine/core"
+import { Box, Button, Title } from "@mantine/core"
+import { IconDownload } from "@tabler/icons-react"
 import type { Metadata } from "next"
 
 import type { Settings } from "@/apiModels"
@@ -13,17 +14,33 @@ export const metadata: Metadata = {
 }
 
 export default async function SettingsPage() {
-  const settings = await fetchApiRoute<Settings>("/settings")
+  const [settings, configLockedKeys] = await Promise.all([
+    fetchApiRoute<Settings>("/settings"),
+    fetchApiRoute<(keyof Settings)[]>("/settings/config-locked-keys"),
+  ])
   const authUrl = env.AUTH_URL
   const whisperVariant = env.STORYTELLER_WHISPER_VARIANT
 
   return (
     <>
-      <Title order={2}>Settings</Title>
+      <Box className="flex items-center justify-between">
+        <Title order={2}>Settings</Title>
+        <Button
+          component="a"
+          href="/api/v2/settings"
+          download="storyteller-config.json"
+          variant="subtle"
+          size="sm"
+          leftSection={<IconDownload size={16} />}
+        >
+          Export as JSON
+        </Button>
+      </Box>
       <SettingsForm
         settings={settings}
         authUrl={authUrl}
         whisperVariant={whisperVariant}
+        configLockedKeys={configLockedKeys}
       />
     </>
   )

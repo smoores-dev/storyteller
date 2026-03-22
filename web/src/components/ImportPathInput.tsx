@@ -7,15 +7,25 @@ interface Props {
   value?: string | null
   onChange: (update: string | null) => void
   children?: ReactNode
+  disabled?: boolean
 }
 
-export function ImportPathInput({ value, onChange, children }: Props) {
+export function ImportPathInput({
+  value,
+  onChange,
+  children,
+  disabled,
+}: Props) {
   const [enableAutoimport, setEnableAutoimport] = useState(value !== null)
   const [importPathInteractive, setImportPathInteractive] = useState(false)
   const computedColorScheme = useComputedColorScheme()
 
   return (
-    <Fieldset legend="Automatic import" className="flex flex-col gap-4">
+    <Fieldset
+      legend="Automatic import"
+      className="flex flex-col gap-4"
+      disabled={disabled}
+    >
       {children}
       <Switch
         label="Enable"
