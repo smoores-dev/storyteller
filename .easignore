@@ -12,6 +12,7 @@ __pycache__
 /audiobook
 /config/*
 !/config/eslint
+/align
 
 /dev-data
 
