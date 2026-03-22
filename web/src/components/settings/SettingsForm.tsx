@@ -253,6 +253,8 @@ export function SettingsForm({ settings, authUrl, whisperVariant }: Props) {
           }
           {...form.getInputProps("maxTrackLength")}
         >
+          <option value={0.25}>15 minutes</option>
+          <option value={0.5}>30 minutes</option>
           <option value={0.75}>45 minutes</option>
           <option value={1}>1 hour</option>
           <option value={2}>2 hours (default)</option>
