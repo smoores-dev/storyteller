@@ -11,6 +11,7 @@ import {
   prepareWavForService,
   toFilePath,
 } from "../audio/index.ts"
+import { createTimeoutAgent } from "../fetch.ts"
 import type { Timeline } from "../utilities/Timeline.ts"
 import type { Timing } from "../utilities/Timing.ts"
 import {
@@ -31,6 +32,10 @@ export interface WhisperServerOptions {
   temperature?: number
   apiKey?: string
   inputFormat?: AudioFormat
+  /**
+   * timeout in milliseconds waiting for a response from the whisper server
+   */
+  timeout?: number
 }
 
 const defaultOptions: Required<
@@ -39,6 +44,7 @@ const defaultOptions: Required<
   baseURL: "http://localhost:8080",
   inferencePath: "/audio/transcriptions",
   temperature: 0,
+  timeout: 30 * 60 * 1000, // 30 minutes
 }
 
 export interface RecognitionResult {
@@ -93,9 +99,15 @@ export async function recognize(
       headers["Authorization"] = `Bearer ${opts.apiKey}`
     }
 
-    const doUpload = () => fetch(url, { method: "POST", body: form, headers })
-
-    const response = await timing.timeAsync("upload", doUpload)
+    const response = await timing.timeAsync("upload", async () =>
+      fetch(url, {
+        method: "POST",
+        body: form,
+        headers,
+        dispatcher: createTimeoutAgent(opts.timeout),
+        // this is necessary because  `tsc` from `/web` will cry and shit its pants
+      } as RequestInit),
+    )
 
     if (!response.ok) {
       const text = await response.text()

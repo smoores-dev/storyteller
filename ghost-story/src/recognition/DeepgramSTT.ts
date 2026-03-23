@@ -9,29 +9,12 @@ import {
   serviceCapabilities,
 } from "../audio/index.ts"
 import { type ConversionMode, getConversionMode } from "../config.ts"
+import { createTimeoutAgent } from "../fetch.ts"
 import { extendDeep } from "../utilities/ObjectUtilities.ts"
 import type { TimelineEntry } from "../utilities/Timeline.ts"
 import type { Timing } from "../utilities/Timing.ts"
 
 const SERVICE_ID = "deepgram"
-
-// function formatToDeepgramEncoding(format: AudioFormat): string {
-//   switch (format) {
-//     case "wav":
-//       return "wav"
-//     case "flac":
-//       return "flac"
-//     case "opus":
-//     case "ogg":
-//       return "opus"
-//     case "mp3":
-//       return "mp3"
-//     case "webm":
-//       return "webm"
-//     default:
-//       return "wav"
-//   }
-// }
 
 function formatToContentType(format: AudioFormat): string {
   switch (format) {
@@ -114,6 +97,7 @@ export async function recognize(
         // from the root
         body: uploadResult.stream as unknown,
         signal: signal ?? null,
+        dispatcher: createTimeoutAgent(opts.timeout),
       } as RequestInit)
 
       const conversionPromise = uploadResult.start?.()
@@ -237,13 +221,17 @@ export interface DeepgramSTTOptions {
   punctuate: boolean
   inputFormat?: AudioFormat | undefined
   conversionMode?: ConversionMode | undefined
+  timeout?: number
 }
 
-export const defaultDeepgramSTTOptions: DeepgramSTTOptions = {
+export const defaultDeepgramSTTOptions = {
   apiKey: "",
   model: "nova-3",
-  punctuate: true,
-}
+  punctuate: true as boolean,
+  timeout: 30 * 60 * 1000, // 30 minutes
+  inputFormat: undefined as AudioFormat | undefined,
+  conversionMode: undefined as ConversionMode | undefined,
+} satisfies DeepgramSTTOptions
 
 interface DeepgramWordEntry {
   word: string
