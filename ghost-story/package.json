@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/ghost-story",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "An easy-to-use speech toolset. Fork of the original echogarden project.",
   "author": "Thomas F. K. Jorna",
   "license": "GPL-3.0",
