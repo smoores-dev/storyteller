@@ -8,6 +8,7 @@ check:
         "main" && $CI_COMMIT_TAG == null))
   script:
     - yarn
+    - yarn workspace @storyteller-platform/align build
     - yarn check
 
 check-versions:

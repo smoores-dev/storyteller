@@ -314,6 +314,18 @@ export class Epub {
   }
 
   /**
+   * Given an XMLElement, return its attributes.
+   */
+  static getXmlAttributes(element: XmlElement): Record<string, string> {
+    return Object.fromEntries(
+      Object.entries(element[":@"] ?? {}).map(([key, value]) => [
+        key.slice(2),
+        value,
+      ]),
+    )
+  }
+
+  /**
    * Given an XMLElement, return its tag name.
    */
   static getXmlElementName<Name extends ElementName>(

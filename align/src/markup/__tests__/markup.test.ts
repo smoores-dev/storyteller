@@ -1,59 +1,84 @@
 import assert from "node:assert"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { dirname, join } from "node:path"
 import { describe, it } from "node:test"
 
 import { Epub, type ParsedXml } from "@storyteller-platform/epub"
 
-import { appendTextNode, markupChapter } from "../markup.ts"
+import { markupChapter } from "../markup.ts"
 import { getXhtmlSegmentation } from "../segmentation.ts"
 
-void describe("appendTextNode", () => {
-  void it("can append text nodes to empty parents", () => {
-    const input: ParsedXml = []
-    appendTextNode("chapter_one", input, "test", [], new Set())
-    assert.deepStrictEqual(input, [{ "#text": "test" }])
-  })
+function sanitizeFilename(title: string): string {
+  return title
+    .replace(/[/\\:*?"<>|]/g, "-") // Windows illegal chars
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .trim() // Trim trailing whitespace
+    .replace(/[.]+$/, "") // No trailing dots
+}
 
-  void it("can append text nodes with marks", () => {
-    const input: ParsedXml = []
-    appendTextNode(
-      "chapter_one",
-      input,
-      "test",
-      [{ elementName: "a", attributes: { "@_href": "#" } }],
-      new Set(),
-    )
-    assert.deepStrictEqual(input, [
-      { a: [{ "#text": "test" }], ":@": { "@_href": "#" } },
-    ])
-  })
+function truncate(input: string, byteLimit: number, suffix = ""): string {
+  const normalized = input.normalize("NFC")
+  const encoder = new TextEncoder()
 
-  void it("can wrap text nodes with sentence spans", () => {
-    const input: ParsedXml = []
-    appendTextNode("chapter_one", input, "test", [], new Set(), 0)
-    assert.deepStrictEqual(input, [
-      {
-        span: [{ "#text": "test" }],
-        ":@": { "@_id": "chapter_one-s0" },
-      },
-    ])
-  })
+  let result = ""
+  for (const char of normalized) {
+    const withSuffix = result + char + suffix
+    const byteLength = encoder.encode(withSuffix).length
 
-  void it("can join text nodes with the same sentence ids", () => {
-    const input: ParsedXml = [
-      {
-        span: [{ "#text": "test" }],
-        ":@": { "@_id": "chapter_one-s0" },
-      },
-    ]
-    appendTextNode("chapter_one", input, "test", [], new Set(), 0)
-    assert.deepStrictEqual(input, [
-      {
-        span: [{ "#text": "test" }, { "#text": "test" }],
-        ":@": { "@_id": "chapter_one-s0" },
-      },
-    ])
-  })
-})
+    if (byteLength > byteLimit) break
+    result += char
+  }
+
+  return result + suffix
+}
+
+function getSafeFilepathSegment(name: string, suffix: string = "") {
+  return truncate(sanitizeFilename(name), 150, suffix)
+}
+
+async function assertMarkupSnapshot(context: it.TestContext, output: string) {
+  const snapshotFilename = getSafeFilepathSegment(context.fullName, ".snapshot")
+  const snapshotFilepath = join(
+    "src",
+    "markup",
+    "__snapshots__",
+    snapshotFilename,
+  )
+
+  if (process.env["UPDATE_SNAPSHOTS"]) {
+    await mkdir(dirname(snapshotFilepath), { recursive: true })
+    await writeFile(snapshotFilepath, output, { encoding: "utf-8" })
+    return
+  }
+
+  try {
+    const existingSnapshot = await readFile(snapshotFilepath, {
+      encoding: "utf-8",
+    })
+
+    const existingLines = existingSnapshot.split("\n")
+    const newLines = output.split("\n")
+    for (let i = 0; i < existingLines.length; i++) {
+      const existingLine = existingLines[i]
+      const newLine = newLines[i]
+      if (existingLine !== newLine) {
+        assert.strictEqual(
+          newLines.slice(Math.max(0, i - 5), i + 5),
+          existingLines.slice(Math.max(0, i - 5), i + 5),
+        )
+      }
+    }
+  } catch (e) {
+    if (e instanceof assert.AssertionError) {
+      throw e
+    }
+    throw new assert.AssertionError({
+      actual: output,
+      expected: "",
+      diff: "simple",
+    })
+  }
+}
 
 void describe("markupChapter", () => {
   void it("can tag sentences", async (t) => {
@@ -91,7 +116,7 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
@@ -100,9 +125,10 @@ void describe("markupChapter", () => {
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can tag sentences with formatting marks", async (t) => {
@@ -125,17 +151,19 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can tag sentences with formatting marks that overlap sentence boundaries", async (t) => {
@@ -158,17 +186,19 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can tag sentences with nested formatting marks", async (t) => {
@@ -191,17 +221,19 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can tag sentences with atoms", async (t) => {
@@ -224,17 +256,19 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can tag sentences in nested textblocks", async (t) => {
@@ -267,17 +301,19 @@ void describe("markupChapter", () => {
 </html>
     `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can tag sentences that cross textblock boundaries", async (t) => {
@@ -303,20 +339,22 @@ void describe("markupChapter", () => {
 </html>
     `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can handle soft page breaks", async (t) => {
+  void it.only("can handle soft page breaks", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
   <head>
@@ -346,17 +384,19 @@ void describe("markupChapter", () => {
   </body>
 </html>`) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can handle boolean-like text values", async (t) => {
@@ -370,17 +410,19 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can handle number-like text values", async (t) => {
@@ -394,17 +436,19 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can handle null-like text values", async (t) => {
@@ -418,17 +462,19 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
   void it("can preserve nbsp entities", async (t) => {
@@ -445,16 +491,18 @@ void describe("markupChapter", () => {
 </html>
 `) as ParsedXml
 
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation, mapping } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(input),
       {},
     )
+
     const { markedUp: output } = markupChapter(
       "chapter_one",
       input,
       segmentation,
+      mapping,
     )
 
-    t.assert.snapshot((Epub.xhtmlBuilder.build(output) as string).split("\n"))
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 })

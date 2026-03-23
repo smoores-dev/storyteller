@@ -29,9 +29,6 @@
 !/align
 /align/src/**/__fixtures__/
 /align/node_modules
-/align/src/**/*.js
-/align/src/**/*.cjs
-/align/src/**/*.d.ts
 !/web
 !/docker-scripts
 !/scripts

@@ -85,13 +85,15 @@ async function assertAlignSnapshot(
       "utf-8",
     )
     const chapterXml = Epub.xhtmlParser.parse(chapterContents) as ParsedXml
-    const segmentation = await getXhtmlSegmentation(
+    const { result: segmentation } = await getXhtmlSegmentation(
       Epub.getXhtmlBody(chapterXml),
       {
         primaryLocale: new Intl.Locale("en-US"),
       },
     )
-    const chapterSentences = segmentation.sentences.map((s) => s.text)
+    const chapterSentences = segmentation
+      .map((s) => s.text)
+      .filter((s) => s.match(/\S/))
     for (const par of Epub.getXmlChildren(seq)) {
       newSnapshot += `\n`
       const text = Epub.findXmlChildByName("text", Epub.getXmlChildren(par))
@@ -106,7 +108,7 @@ async function assertAlignSnapshot(
 
       const textSentence = chapterSentences[parseInt(sentenceId)]
       if (!textSentence) continue
-      newSnapshot += `Text:  ${textSentence}\n`
+      newSnapshot += `Text:  ${textSentence.replace(/\n/, "")}\n`
 
       const audioSrc = audio[":@"]?.["@_src"]
       if (!audioSrc) continue
@@ -115,7 +117,8 @@ async function assertAlignSnapshot(
       const audioEnd = audio[":@"]?.["@_clipEnd"]
       if (!audioStart || !audioEnd) continue
 
-      const audioStartTime = parseFloat(audioStart.slice(0, -1))
+      // Subtract a bit in case this got bumped up by the expander
+      const audioStartTime = parseFloat(audioStart.slice(0, -1)) - 0.002
       const audioEndTime = parseFloat(audioEnd.slice(0, -1))
 
       const audioFilename = posixBasename(audioSrc, extname(audioSrc))
@@ -241,7 +244,9 @@ void describe("align", () => {
       createTestLogger(),
     )
 
-    await aligner.alignBook()
+    const timing = await aligner.alignBook()
+
+    if (!process.env["CI"]) timing.print()
 
     await assertAlignSnapshot(context, epub, transcriptionFilepaths)
   })

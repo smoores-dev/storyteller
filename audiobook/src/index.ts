@@ -108,6 +108,7 @@ export class Audiobook {
             extname(entry) as (typeof AUDIO_FILE_EXTENSIONS)[number],
           ),
         )
+        .sort()
         .map((entry) => new AudiobookEntry(join(extractPath, entry)))
     } else {
       return this.inputs.map((input) => new AudiobookEntry(input))

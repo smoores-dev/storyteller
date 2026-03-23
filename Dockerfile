@@ -14,6 +14,9 @@ COPY .yarn/patches ./.yarn/patches
 
 COPY web/package.json ./web/package.json
 COPY align/package.json ./align/package.json
+COPY align/binding.gyp ./align/binding.gyp
+COPY align/prebuilds/linux-x64 ./align/prebuilds/linux-x64
+COPY align/prebuilds/linux-arm64 ./align/prebuilds/linux-arm64
 COPY fs/package.json ./fs/package.json
 COPY epub/package.json ./epub/package.json
 COPY path/package.json ./path/package.json
@@ -92,6 +95,12 @@ COPY --from=builder /app/web/migrations ./.next/standalone/web/migrations
 # just so its in the right place and we dont have to modify the docs
 COPY --from=builder /app/scripts/ ./.next/standalone/web/scripts/
 
+COPY --from=builder /app/align/prebuilds/linux-x64 ./.next/standalone/web/work-dist/@storyteller-platform/align/prebuilds/linux-x64
+COPY --from=builder /app/align/prebuilds/linux-arm64 ./.next/standalone/web/work-dist/@storyteller-platform/align/prebuilds/linux-arm64
+
+# Echogarden tries to naively resolve its own wasm builds
+COPY --from=builder /app/node_modules/@echogarden/icu-segmentation-wasm/wasm/*.wasm ./.next/standalone/web/work-dist/
+
 # Copy pre-installed whisper binaries and models from builder
 COPY --from=builder --chown=storyteller:storyteller /root/.local/share/ghost-story /home/storyteller/.local/share/ghost-story
 
@@ -108,6 +117,7 @@ ENV READIUM_PORT=9000
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
+ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/web/work-dist/@storyteller-platform/align/
 ENV SQLITE_NATIVE_BINDING=/app/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 ENV STORYTELLER_WORKER=worker.cjs
 ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.cjs
