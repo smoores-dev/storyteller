@@ -4,16 +4,17 @@
     "composite": true,
     "emitDeclarationOnly": true,
     "incremental": true,
-    "module": "Node16",
-    "moduleResolution": "Node16",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "lib": ["ESNext"],
-    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
+    "exactOptionalPropertyTypes": false,
+    "lib": ["esnext"],
+    "types": ["@types/node", "undici-types"],
     "customConditions": ["@storyteller"],
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "package.json"]
 }

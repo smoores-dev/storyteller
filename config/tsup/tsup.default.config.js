@@ -30,6 +30,7 @@ export const defaultOptions = {
     // this fixes the .d.ts generation for some packages (e.g. audiobook)
     compilerOptions: {
       composite: false,
+      incremental: false,
     },
   },
 }

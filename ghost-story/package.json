@@ -53,6 +53,7 @@
     "microsoft-cognitiveservices-speech-sdk": "~1.44.0",
     "openai": "~4.103.0",
     "tar": "^7.4.3",
+    "undici": "7.14.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {

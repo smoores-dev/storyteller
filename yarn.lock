@@ -13571,6 +13571,7 @@ __metadata:
     tsup: "npm:^8.5.0"
     tsx: "npm:^4.19.2"
     typescript: "npm:~5.8.3"
+    undici: "npm:7.14.0"
     zod: "npm:^3.25.0"
   bin:
     ghost-story: ./dist/cli/bin.js
@@ -40623,6 +40624,13 @@ __metadata:
   version: 7.13.0
   resolution: "undici-types@npm:7.13.0"
   checksum: 10c0/44bbb0935425291351bfd8039571f017295b5d6dc5727045d0a4fea8c6ffe73a6703b48ce010f9cb539b9041a75b463f8cfe1e7309cab7486452505fb0d66151
+  languageName: node
+  linkType: hard
+
+"undici@npm:7.14.0":
+  version: 7.14.0
+  resolution: "undici@npm:7.14.0"
+  checksum: 10c0/4beab6a5bfb89add9e90195aee6bc993708afbabad33bff7da791b5334a6e26a591c29938822d2fb8f69ae0ad8d580d64e03247b11157af9f820d5bd9f8f16e7
   languageName: node
   linkType: hard
 
