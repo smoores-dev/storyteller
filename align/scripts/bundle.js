@@ -21,6 +21,12 @@ await build({
     ".js": ".cjs",
   },
   outdir: "bundle",
+  inject: [
+    new URL("./import.meta.dirname-polyfill.js", import.meta.url).pathname,
+  ],
+  define: {
+    "import.meta.dirname": "import_meta_dirname",
+  },
   plugins: [
     {
       name: "node-builtins",
