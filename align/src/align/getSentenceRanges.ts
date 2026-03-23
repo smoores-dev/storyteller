@@ -1,10 +1,11 @@
-import { segmentText } from "@echogarden/text-segmentation"
+import { enumerate } from "itertools"
 
 import { type TimelineEntry } from "@storyteller-platform/ghost-story"
 
 import { getTrackDuration } from "../common/ffmpeg.ts"
+import { errorAlign } from "../errorAlign/errorAlign.ts"
+import { type Alignment } from "../errorAlign/utils.ts"
 
-import { findNearestMatch } from "./fuzzy.ts"
 import { slugify } from "./slugify.ts"
 
 export type StorytellerTimelineEntry = TimelineEntry & {
@@ -21,29 +22,6 @@ export type SentenceRange = {
   start: number
   end: number
   audiofile: string
-}
-
-async function getSentencesWithOffsets(text: string) {
-  const sentences = await segmentText(text).then((r) =>
-    r.sentences.map((s) => s.text),
-  )
-  const sentencesWithOffsets: string[] = []
-  let lastSentenceEnd = 0
-  for (const sentence of sentences) {
-    const sentenceStart = text.indexOf(sentence, lastSentenceEnd)
-    if (sentenceStart > lastSentenceEnd) {
-      sentencesWithOffsets.push(text.slice(lastSentenceEnd, sentenceStart))
-    }
-
-    sentencesWithOffsets.push(sentence)
-    lastSentenceEnd = sentenceStart + sentence.length
-  }
-
-  if (text.length > lastSentenceEnd) {
-    sentencesWithOffsets.push(text.slice(lastSentenceEnd))
-  }
-
-  return sentencesWithOffsets
 }
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
@@ -72,187 +50,134 @@ export function findEndTimestamp(
   return entry?.endTime ?? null
 }
 
-function getWindowIndexFromOffset(window: string[], offset: number) {
-  let index = 0
-  while (index < window.length - 1 && offset >= window[index]!.length) {
-    offset -= window[index]!.length
-    index += 1
+function getAlignmentsForSentence(sentence: string, alignments: Alignment[]) {
+  const result: Alignment[] = []
+  let sentenceIndex = 0
+  for (const alignment of alignments) {
+    if (sentenceIndex === sentence.length) break
+    if (alignment.opType !== "INSERT") {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      sentenceIndex += alignment.ref!.length + (sentenceIndex === 0 ? 0 : 1)
+    }
+    result.push(alignment)
   }
-  return { index, offset }
-}
-/* eslint-enable @typescript-eslint/no-non-null-assertion */
-
-function collapseWhitespace(input: string) {
-  return input.replaceAll(/\s+/g, " ")
+  return result
 }
 
 export async function getSentenceRanges(
   startSentence: number,
+  endSentence: number,
   transcription: StorytellerTranscription,
   sentences: string[],
   chapterOffset: number,
+  chapterEndOffset: number,
   locale: Intl.Locale,
-  lastSentenceRange: SentenceRange | null,
 ) {
   const sentenceRanges: SentenceRange[] = []
-  const fullTranscriptionText = transcription.transcript
-  const transcriptionText = fullTranscriptionText.slice(chapterOffset)
-  const transcriptionSentences = await getSentencesWithOffsets(
-    transcriptionText,
-  ).then((s) => s.map((sentence) => sentence.toLowerCase()))
+  const fullTranscript = transcription.transcript
+  const chapterTranscript = fullTranscript.slice(
+    chapterOffset,
+    chapterEndOffset,
+  )
+  const { result: slugifiedChapterTranscript, mapping: transcriptMapping } =
+    await slugify(chapterTranscript, locale)
 
-  let startSentenceEntry = startSentence
+  let chapterTranscriptEndIndex = chapterOffset
+  let chapterSentenceIndex = startSentence
+  let slugifiedChapterTranscriptWindowStartIndex = 0
+  while (chapterSentenceIndex < endSentence) {
+    const slugifiedChapterSentenceWindowList: string[] = []
 
-  const sentenceEntries: [number, string][] = []
-  for (let i = 0; i < sentences.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const sentence = (await slugify(sentences[i]!, locale)).result
-    if (sentence.length <= 3) {
-      if (i < startSentence) startSentenceEntry--
-      continue
-    }
-    sentenceEntries.push([i, sentence])
-  }
-
-  let transcriptionWindowIndex = 0
-  let transcriptionWindowOffset = 0
-  let lastGoodTranscriptionWindow = 0
-  let notFound = 0
-  let sentenceIndex = startSentenceEntry
-  let lastMatchEnd = chapterOffset
-
-  while (sentenceIndex < sentenceEntries.length) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const [sentenceId, sentence] = sentenceEntries[sentenceIndex]!
-
-    const transcriptionWindowList = transcriptionSentences.slice(
-      transcriptionWindowIndex,
-      transcriptionWindowIndex + 10,
-    )
-    const { result: transcriptionWindow, mapping } = await slugify(
-      transcriptionWindowList.join("-").slice(transcriptionWindowOffset),
-      locale,
-    )
-    const inverted = mapping.invert()
-
-    const query = collapseWhitespace(sentence.trim()).toLowerCase()
-
-    const firstMatch = findNearestMatch(
-      query,
-      transcriptionWindow,
-      Math.max(Math.floor(0.25 * query.length), 1),
-    )
-
-    if (!firstMatch) {
-      sentenceIndex += 1
-      notFound += 1
-      if (notFound === 3 || sentenceIndex === sentenceEntries.length) {
-        transcriptionWindowIndex += 1
-        if (transcriptionWindowIndex == lastGoodTranscriptionWindow + 30) {
-          transcriptionWindowIndex = lastGoodTranscriptionWindow
-          notFound = 0
-          continue
-        }
-        sentenceIndex -= notFound
-        notFound = 0
-      }
-      continue
+    let sentenceWindowLength = 0
+    let i = chapterSentenceIndex
+    while (sentenceWindowLength < 5000 && i < sentences.length) {
+      const { result: sentence } = await slugify(sentences[i]!, locale)
+      slugifiedChapterSentenceWindowList.push(sentence)
+      sentenceWindowLength += sentence.length
+      i++
     }
 
-    const transcriptionOffset = transcriptionSentences
-      .slice(0, transcriptionWindowIndex)
-      .join("").length
-
-    const matchStart = inverted.map(firstMatch.index, 1)
-    const matchEnd = inverted.map(
-      firstMatch.index + firstMatch.match.length,
-      -1,
+    const slugifiedChapterSentenceWindow =
+      slugifiedChapterSentenceWindowList.join("-")
+    const slugifiedChapterTranscriptWindow = slugifiedChapterTranscript.slice(
+      slugifiedChapterTranscriptWindowStartIndex,
+      slugifiedChapterTranscriptWindowStartIndex + sentenceWindowLength * 1.2,
     )
 
-    const startResult = findStartTimestamp(
-      matchStart +
-        transcriptionOffset +
-        transcriptionWindowOffset +
-        chapterOffset,
-      transcription,
+    const alignments = errorAlign(
+      slugifiedChapterSentenceWindow,
+      slugifiedChapterTranscriptWindow,
     )
-    if (!startResult) {
-      sentenceIndex += 1
-      continue
-    }
-    let start = startResult.start
-    const audiofile = startResult.audiofile
+    let alignmentIndex = 0
+    let currentTranscriptWindowIndex = 0
+    for (const [i, slugifiedSentence] of enumerate(
+      slugifiedChapterSentenceWindowList,
+    )) {
+      if (!slugifiedSentence) continue
+      const sentenceAlignments = getAlignmentsForSentence(
+        slugifiedSentence,
+        alignments.slice(alignmentIndex),
+      )
+      const sentenceLengthInSlugifiedTranscript = sentenceAlignments
+        .filter((a) => a.opType !== "DELETE")
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        .map((a) => a.hyp!)
+        .join("-").length
 
-    const end =
-      findEndTimestamp(
-        matchEnd +
-          transcriptionOffset +
-          transcriptionWindowOffset +
-          chapterOffset,
+      const start = findStartTimestamp(
+        chapterOffset +
+          transcriptMapping
+            .invert()
+            .map(
+              slugifiedChapterTranscriptWindowStartIndex +
+                currentTranscriptWindowIndex,
+              1,
+            ),
         transcription,
-      ) ?? startResult.end
+      )
 
-    if (sentenceRanges.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const previousSentenceRange = sentenceRanges[sentenceRanges.length - 1]!
-      const previousAudiofile = previousSentenceRange.audiofile
+      chapterTranscriptEndIndex =
+        chapterOffset +
+        transcriptMapping
+          .invert()
+          .map(
+            slugifiedChapterTranscriptWindowStartIndex +
+              currentTranscriptWindowIndex +
+              sentenceLengthInSlugifiedTranscript,
+            -1,
+          )
 
-      if (audiofile === previousAudiofile) {
-        if (previousSentenceRange.id === sentenceId - 1) {
-          previousSentenceRange.end = start
-        }
-      } else {
-        if (previousSentenceRange.id === sentenceId - 1) {
-          const lastTrackDuration = await getTrackDuration(previousAudiofile)
-          previousSentenceRange.end = lastTrackDuration
-          start = 0
-        }
+      const end = findEndTimestamp(chapterTranscriptEndIndex, transcription)
+
+      if (start && end !== null) {
+        sentenceRanges.push({
+          id: i + chapterSentenceIndex,
+          start: start.start,
+          audiofile: start.audiofile,
+          end: end,
+        })
       }
-    } else if (lastSentenceRange !== null) {
-      if (audiofile === lastSentenceRange.audiofile) {
-        if (sentenceId === 0) {
-          lastSentenceRange.end = start
-        }
-      } else {
-        const lastTrackDuration = await getTrackDuration(
-          lastSentenceRange.audiofile,
-        )
-        lastSentenceRange.end = lastTrackDuration
-        if (sentenceId === 0) {
-          start = 0
-        }
+
+      alignmentIndex += sentenceAlignments.length
+      currentTranscriptWindowIndex += sentenceLengthInSlugifiedTranscript
+      if (
+        slugifiedChapterTranscriptWindow[currentTranscriptWindowIndex] === "-"
+      ) {
+        currentTranscriptWindowIndex++
       }
-    } else if (sentenceId === 0) {
-      start = 0
     }
 
-    sentenceRanges.push({
-      id: sentenceId,
-      start,
-      end,
-      audiofile,
-    })
-
-    notFound = 0
-    lastMatchEnd =
-      matchEnd + transcriptionOffset + transcriptionWindowOffset + chapterOffset
-
-    const windowIndexResult = getWindowIndexFromOffset(
-      transcriptionWindowList,
-      matchEnd + transcriptionWindowOffset,
-    )
-
-    transcriptionWindowIndex += windowIndexResult.index
-    transcriptionWindowOffset = windowIndexResult.offset
-
-    lastGoodTranscriptionWindow = transcriptionWindowIndex
-    sentenceIndex += 1
+    chapterSentenceIndex += slugifiedChapterSentenceWindowList.length
+    slugifiedChapterTranscriptWindowStartIndex += currentTranscriptWindowIndex
+    if (
+      slugifiedChapterTranscript[slugifiedChapterTranscriptWindowStartIndex] ===
+      "-"
+    ) {
+      slugifiedChapterTranscriptWindowStartIndex++
+    }
   }
 
-  return {
-    sentenceRanges,
-    transcriptionOffset: lastMatchEnd,
-  }
+  return { sentenceRanges, transcriptionOffset: chapterTranscriptEndIndex }
 }
 
 /**

@@ -19,8 +19,8 @@
     "test:all": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller-node --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
     "build": "yarn build:sqlite-ext && yarn build:worker && yarn build:file-write-worker && next build",
     "build:sqlite-ext": "bash ./build-sqlite-ext.sh",
-    "build:worker": "esbuild src/work/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@node-rs/crc32 --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",
-    "build:file-write-worker": "esbuild src/writeToFiles/fileWriteWorker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@node-rs/crc32 --out-extension:.js=.cjs --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=file-write-dist/",
+    "build:worker": "esbuild src/work/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@node-rs/crc32 --out-extension:.js=.cjs --define:import.meta.dirname=import_meta_dirname --inject:./src/work/import.meta.dirname-polyfill.js --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",
+    "build:file-write-worker": "esbuild src/writeToFiles/fileWriteWorker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@node-rs/crc32 --out-extension:.js=.cjs --define:import.meta.dirname=import_meta_dirname --inject:./src/work/import.meta.dirname-polyfill.js --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=file-write-dist/",
     "start": "./start.sh"
   },
   "dependencies": {
