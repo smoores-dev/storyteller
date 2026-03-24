@@ -62,11 +62,15 @@ function createReplacers(locale: Intl.Locale) {
 
     if (Number.isNaN(number)) return match[0]
 
-    return toWords(number, {
-      localeCode: `${maximizedLocale.language}-${maximizedLocale.region}`,
-      currency: true,
-      doNotAddOnly: true,
-    })
+    try {
+      return toWords(number, {
+        localeCode: `${maximizedLocale.language}-${maximizedLocale.region}`,
+        currency: true,
+        doNotAddOnly: true,
+      })
+    } catch {
+      return match[0]
+    }
   }
 
   const numberFormat = new Intl.NumberFormat(locale)
@@ -106,10 +110,13 @@ function createReplacers(locale: Intl.Locale) {
     const number = parseFloat(normalizedNumeral)
 
     if (Number.isNaN(number)) return match[0]
-
-    return toWords(number, {
-      localeCode: `${maximizedLocale.language}-${maximizedLocale.region}`,
-    })
+    try {
+      return toWords(number, {
+        localeCode: `${maximizedLocale.language}-${maximizedLocale.region}`,
+      })
+    } catch {
+      return match[0]
+    }
   }
 
   return [
