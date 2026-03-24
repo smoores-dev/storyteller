@@ -114,6 +114,21 @@ export async function align(
           JSON.parse(c) as Pick<RecognitionResult, "transcript" | "timeline">,
       ),
     )
+    // When we introduced ghost-story, we changed `wordTimeline`
+    // to `timeline`. This means that old transcriptions have the
+    // wrong shape, so we fix it here.
+    .then((transcriptions) => {
+      return transcriptions.map((transcription) => {
+        if ("wordTimeline" in transcription) {
+          return {
+            ...transcription,
+            timeline:
+              transcription.wordTimeline as RecognitionResult["timeline"],
+          }
+        }
+        return transcription
+      })
+    })
 
   const aligner = new Aligner(
     epub,
