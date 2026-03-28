@@ -41,9 +41,9 @@ export async function getDownloadedPositions() {
     .selectAll()
     .innerJoin("book", "book.uuid", "position.bookUuid")
     .select(["book.serverUuid"])
-    .innerJoin("ebook", "book.uuid", "ebook.bookUuid")
-    .innerJoin("audiobook", "book.uuid", "audiobook.bookUuid")
-    .innerJoin("readaloud", "book.uuid", "readaloud.bookUuid")
+    .leftJoin("ebook", "book.uuid", "ebook.bookUuid")
+    .leftJoin("audiobook", "book.uuid", "audiobook.bookUuid")
+    .leftJoin("readaloud", "book.uuid", "readaloud.bookUuid")
     .where("book.serverUuid", "is not", null)
     .where((eb) =>
       eb.or([
