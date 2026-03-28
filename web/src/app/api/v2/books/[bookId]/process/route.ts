@@ -83,9 +83,7 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
 
   if (gpuWarning === "check") {
     const result = await shouldShowGpuWarning()
-    if (result.showWarning) {
-      return NextResponse.json(result)
-    }
+    return NextResponse.json(result)
   }
 
   if (gpuWarning === "dismiss") {
