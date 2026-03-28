@@ -22,6 +22,7 @@ import { api, getCoverUrl } from "@/store/api"
 import {
   type AudioTextMap,
   type TextAudioMap,
+  clearRegistry,
   registerAudioToTextMap,
   registerGuide,
   registerPositions,
@@ -429,7 +430,10 @@ async function generateTracksForReadaloud(
 startAppListening({
   actionCreator: readingSessionSlice.actions.startBook,
   effect: async (action, listenerApi) => {
+    listenerApi.cancelActiveListeners()
     listenerApi.unsubscribe()
+
+    clearRegistry()
 
     const { book } = action.payload
     const mode = selectReadingMode(listenerApi.getState())

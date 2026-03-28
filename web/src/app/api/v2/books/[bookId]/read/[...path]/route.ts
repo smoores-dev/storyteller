@@ -22,39 +22,37 @@ type Params = {
 const ONE_SECOND = 1_000
 const ONE_MINUTE = 60 * ONE_SECOND
 const ONE_HOUR = 60 * ONE_MINUTE
-const ONE_DAY = 24 * ONE_HOUR
-const ONE_WEEK = 7 * ONE_DAY
-const ONE_YEAR = 365 * ONE_DAY
+const ONE_WEEK = 7 * 24 * ONE_HOUR
+const ONE_YEAR = 365 * 24 * ONE_HOUR
 
 const CACHE_RULES = {
   immutable: {
     patterns: [/\.css$/, /\.js$/, /\.woff2?$/, /\.ttf$/, /\.otf$/, /\.eot$/],
-    maxAge: ONE_YEAR,
     directive: `public, max-age=${ONE_YEAR}, immutable`,
   },
+
   longTerm: {
     patterns: [/manifest\.json$/, /\.json$/, /\.xml$/],
-    maxAge: ONE_DAY,
-    directive: `public, max-age=${ONE_DAY}, must-revalidate`,
-  },
-  shortTerm: {
-    patterns: [/\.html?$/, /\.xhtml$/],
-    maxAge: ONE_HOUR,
     directive: `public, max-age=${ONE_HOUR}, must-revalidate`,
   },
+
+  shortTerm: {
+    patterns: [/\.html?$/, /\.xhtml$/],
+    directive: `public, max-age=${ONE_HOUR}, must-revalidate`,
+  },
+
   images: {
     patterns: [/\.(jpg|jpeg|png|gif|svg|webp)$/i],
-    maxAge: ONE_WEEK,
     directive: `public, max-age=${ONE_WEEK}, must-revalidate`,
   },
+
   media: {
     patterns: [/\.(mp3|wav|ogg|m4a|aac|webm|mp4)$/i],
-    maxAge: ONE_WEEK,
     directive: `public, max-age=${ONE_WEEK}, must-revalidate`,
   },
+
   default: {
     patterns: [],
-    maxAge: ONE_HOUR,
     directive: `public, max-age=${ONE_HOUR}, must-revalidate`,
   },
 } as const
@@ -211,9 +209,6 @@ export const GET = async (
     response = await rwp(book, path, searchParams, {
       headers: newHeaders,
       signal: abortController.signal,
-      cache: request.cache,
-      keepalive: request.keepalive,
-      integrity: request.integrity,
     })
   } catch (error) {
     // don't want to use instanceof
