@@ -129,7 +129,7 @@ function* combinations<T>(iterable: Iterable<T>, r: number) {
   }
 }
 
-export function reversed<T>(iterable: IterableIterator<T>) {
+export function reversed<T>(iterable: Iterable<T>) {
   return Array.from(iterable).toReversed()
 }
 
