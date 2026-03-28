@@ -104,6 +104,23 @@ export const documentedServerEnvVars = {
     .describe(
       "[Path to a JSON configuration file.](#declarative-configuration) Settings in this file override database settings and cannot be changed via the UI.",
     ),
+  PUID: z.coerce
+    .number()
+    .optional()
+    .default(1000)
+    .describe("The uid of the user to run Storyteller as."),
+  PGID: z.coerce
+    .number()
+    .optional()
+    .default(1000)
+    .describe("The gid of the user to run Storyteller as."),
+  FORCE_USER_SETTING: z.coerce
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Set to `true` to allow _starting_ the container as a non-root user.",
+    ),
 } as const
 
 export const internalServerEnvVars = {
