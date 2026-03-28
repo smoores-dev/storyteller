@@ -16,6 +16,7 @@ import { type BookWithRelations } from "@/database/books"
 import { useGpuBuildWarning } from "@/hooks/useGpuBuildWarning"
 import { useListBooksQuery, useProcessBookMutation } from "@/store/api"
 import { type UUID } from "@/uuid"
+import { STAGE_ORDER } from "@/work/stages"
 
 import { TitleSummary } from "./TitleSummary"
 
@@ -38,6 +39,15 @@ export function BeginProcessingItem({ selected }: Props) {
         result.data?.filter((book) => selected.has(book.uuid)) ?? EMPTY_BOOKS,
     }),
   })
+
+  const singleBook = books.length === 1 ? books[0] : null
+
+  const singleBookStageOrder = singleBook?.readaloud?.currentStage
+    ? STAGE_ORDER[singleBook.readaloud.currentStage]
+    : -1
+
+  const canRestartFromSync = !singleBook || singleBookStageOrder >= 2
+  const canRestartFromTranscription = !singleBook || singleBookStageOrder >= 1
 
   const form = useForm({
     initialValues: {
@@ -76,14 +86,19 @@ export function BeginProcessingItem({ selected }: Props) {
             >
               <Stack gap={12}>
                 <Radio value="continue" label="Continue where left off" />
+
                 <Radio
                   value="sync"
+                  disabled={!canRestartFromSync}
                   label="Restart from sync step (keep transcriptions)"
                 />
+
                 <Radio
                   value="transcription"
+                  disabled={!canRestartFromTranscription}
                   label="Restart from transcription step (keep audio)"
                 />
+
                 <Radio
                   value="full"
                   label="Full restart (delete all cache files)"
