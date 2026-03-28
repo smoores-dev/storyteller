@@ -26,6 +26,12 @@ want to use Storyteller's
 
 ## Configuration
 
+If you are using bind mounts and need Storyteller to write files as your host
+user, see the `PUID`/`PGID` setup in
+[self-hosting](/docs/installation/self-hosting#file-ownership-on-linux-puid-and-pgid).
+For GPU access, keep the default container user flow and do not set `user:` in
+Compose.
+
 import Tabs from "@theme/Tabs"
 import TabItem from "@theme/TabItem"
 

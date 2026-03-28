@@ -137,6 +137,8 @@ Docker. Here is a quick summary of some useful commands:
 
 ---
 
+##
+
 ## Secrets
 
 :::warning Do not skip this step
@@ -196,29 +198,114 @@ secrets:
 
 ---
 
+## Permission management, running as a different user
+
+:::note
+
+This is a slightly advanced topic. If you don't know what `UID` and `GID` are,
+you probably don't need to worry about it!
+
+:::
+
+Storyteller by default runs as the `storyteller` user with `UID` and `GID`
+`1000` in the container. If you want to run it as a different user for reasons,
+you can set the `PUID` and `PGID` environment variables.
+
+```yaml
+services:
+  web:
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest
+    volumes:
+      - ~/Documents/Storyteller:/data:rw
+    environment:
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
+      - PUID=1001
+      - PGID=1001
+    ports:
+      - "8001:8001"
+    secrets:
+      - secret_key
+
+secrets:
+  secret_key:
+    file: ./STORYTELLER_SECRET_KEY.txt
+```
+
+We do this by first starting the container as root, making sure the
+`storyteller` user in the container can access configuration on internal files
+necessary for the container to run, and then dropping privileges to the
+`storyteller` user.
+
+What we cannot (or rather, will not!) do is change the ownership of any other
+volumes mounted into the container, such as your books library. This means you
+should be cautious about changing the `PUID` and `PGID` environment variables:
+you need to make sure that those `UID` and `GID` are able to to access your book
+library.
+
+:::info{title="Example"}
+
+Your docker file looks something like this:
+
+```yaml
+services:
+  web:
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest
+    volumes:
+      # storyteller's internal data directory: this is where it stores its database, covers, transcriptions, and any ebooks and audiobooks you upload to it.
+      - ~/Documents/Storyteller:/data:rw
+      # another folder where you store books you want storyteller to auto-import from.
+      - ~/Files/Books:/library:rs
+    environment:
+      - STORYTELLER_SECRET_KEY_FILE=/run/secrets/secret_key
+      - PUID=1001
+      - PGID=1001
+```
+
+:::
+
+:::danger
+
+Do NOT set `user:` in `compose.yaml`, or use `-u/--user` with `docker run`!
+
+Storyteller expects to be in control of assigning the uid/gid of the
+`storyteller` user, and cannot handle any ownership issues that may arise from
+starting the container as a non-root user. It is extremly likely you will end up
+with permission issues in your `/data` volume this way.
+
+If you think you know better, you can set the `FORCE_USER_SETTING=1` environment
+variable to allow this.
+
+:::
+
+---
+
 ## Additional env variables for configuration
 
 Storyteller can be configured with a number of additional environment variables.
 
 <!-- AUTO-GENERATED-ENV-VARS-START -->
 
-| Variable Name                     | Description                                                                                                                            | Default                                    |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| AUTH_URL                          | [Required for OAuth](https://storyteller-platform.gitlab.io/storyteller/docs/settings#setting-the-auth_url-environment-variable)       | N/A                                        |
-| ENABLE_WEB_READER                 | [Enable the experimental web reader by setting to `true`.](https://storyteller-platform.gitlab.io/storyteller/docs/reading/web-reader) | `false`                                    |
-| READIUM_PORT                      | Port for the Readium server.                                                                                                           | `8002`                                     |
-| STORYTELLER_DATA_DIR              | Directory where Storyteller will store its data.                                                                                       | Current Directory (`/data` in container)   |
-| STORYTELLER_DB_DIR                | Directory where Storyteller will store its database files.                                                                             | `STORYTELLER_DATA_DIR`                     |
-| STORYTELLER_DB_FILENAME           | Filename for the Storyteller database.                                                                                                 | `storyteller.db`                           |
-| STORYTELLER_DEMO_MODE             | Enable demo mode by setting to `true`. (Used for [demo-storyteller.elfhosted.com](https://demo-storyteller.elfhosted.com))             | `false`                                    |
-| STORYTELLER_INITIAL_AUDIO_CODEC   | Initial audio codec to use. Options are `mp3`, `aac`, `opus`, `opus-16`, `opus-24`, `opus-32`, `opus-64`, `opus-96`.                   | N/A                                        |
-| STORYTELLER_LOG_LEVEL             | Log level for Storyteller. Options are `error`, `warn`, `info`, `debug`, `trace`.                                                      | `info`                                     |
-| STORYTELLER_MAX_UPLOAD_CHUNK_SIZE | Upload chunk size limit in megabytes.                                                                                                  | `10` (10 MB)                               |
-| STORYTELLER_SECRET_KEY            | The secret key for the instance. Either this or STORYTELLER_SECRET_KEY_FILE must be set.                                               | N/A                                        |
-| STORYTELLER_SECRET_KEY_FILE       | Path to a file containing the secret key for the instance. Either this or STORYTELLER_SECRET_KEY must be set.                          | N/A                                        |
-| STORYTELLER_WHISPER_REPO          | Repo to download whisper.cpp from.                                                                                                     | `https://github.com/ggerganov/whisper.cpp` |
-| STORYTELLER_WHISPER_VARIANT       | The whisper.cpp build variant baked into this image (e.g. cpu, cublas-12.6, hipblas).                                                  | `cpu`                                      |
-| STORYTELLER_WHISPER_VERSION       | Version of whisper.cpp to download.                                                                                                    | `v1.8.2`                                   |
+| Variable Name                     | Description                                                                                                                                                                                           | Default                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| AUTH_URL                          | [Required for OAuth](https://storyteller-platform.gitlab.io/storyteller/docs/settings#setting-the-auth_url-environment-variable)                                                                      | N/A                                        |
+| ENABLE_WEB_READER                 | [Enable the experimental web reader by setting to `true`.](https://storyteller-platform.gitlab.io/storyteller/docs/reading/web-reader)                                                                | `false`                                    |
+| FORCE_USER_SETTING                | Set to `true` to allow _starting_ the container as a non-root user.                                                                                                                                   | -                                          |
+| PGID                              | The gid of the user to run Storyteller as.                                                                                                                                                            | `1000`                                     |
+| PUID                              | The uid of the user to run Storyteller as.                                                                                                                                                            | `1000`                                     |
+| READIUM_PORT                      | Port for the Readium server.                                                                                                                                                                          | `8002`                                     |
+| STORYTELLER_CONFIG                | [Path to a JSON configuration file.](#declarative-configuration) Settings in this file override database settings and cannot be changed via the UI.                                                   | N/A                                        |
+| STORYTELLER_DATA_DIR              | Directory where Storyteller will store its data.                                                                                                                                                      | Current Directory (`/data` in container)   |
+| STORYTELLER_DB_DIR                | Directory where Storyteller will store its database files.                                                                                                                                            | `STORYTELLER_DATA_DIR`                     |
+| STORYTELLER_DB_FILENAME           | Filename for the Storyteller database.                                                                                                                                                                | `storyteller.db`                           |
+| STORYTELLER_DEMO_MODE             | Enable demo mode by setting to `true`. (Used for [demo-storyteller.elfhosted.com](https://demo-storyteller.elfhosted.com))                                                                            | `false`                                    |
+| STORYTELLER_INITIAL_AUDIO_CODEC   | Initial audio codec to use. Options are `mp3`, `aac`, `opus`, `opus-16`, `opus-24`, `opus-32`, `opus-64`, `opus-96`.                                                                                  | N/A                                        |
+| STORYTELLER_LOG_LEVEL             | Log level for Storyteller. Options are `error`, `warn`, `info`, `debug`, `trace`.                                                                                                                     | `info`                                     |
+| STORYTELLER_MAX_UPLOAD_CHUNK_SIZE | Upload chunk size limit in megabytes.                                                                                                                                                                 | `10` (10 MB)                               |
+| STORYTELLER_SECRET_KEY            | The secret key for the instance. Either this or STORYTELLER_SECRET_KEY_FILE must be set.                                                                                                              | N/A                                        |
+| STORYTELLER_SECRET_KEY_FILE       | Path to a file containing the secret key for the instance. Either this or STORYTELLER_SECRET_KEY must be set.                                                                                         | N/A                                        |
+| STORYTELLER_WHISPER_REPO          | Repo to download whisper.cpp from.                                                                                                                                                                    | `https://github.com/ggerganov/whisper.cpp` |
+| STORYTELLER_WHISPER_VARIANT       | The whisper.cpp build variant baked into this image (e.g. linux-x64-cpu, linux-x64-cuda-12.9.0). Set automatically by Docker builds. When not set, `ghost-story` will detect or use what's installed. | N/A                                        |
+| STORYTELLER_WHISPER_VERSION       | Version of whisper.cpp to download.                                                                                                                                                                   | `v1.8.2`                                   |
 
 <!-- AUTO-GENERATED-ENV-VARS-END -->
 

@@ -74,7 +74,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu \
 
 RUN  (userdel -r ubuntu || true) \
     && groupadd -g 1000 storyteller \
-    && useradd -u 1000 -g storyteller -m storyteller
+    && useradd -u 1000 -g storyteller -m storyteller \
+    && (usermod -aG render,video storyteller 2>/dev/null || true)
 
 COPY --from=ghcr.io/readium/readium:0.6.5 /opt/readium /opt/readium
 RUN ln -sf /opt/readium /usr/local/bin/readium
