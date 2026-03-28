@@ -8,6 +8,7 @@ import {
   processConfig,
 } from "@robingenz/zli"
 import { Presets, SingleBar } from "cli-progress"
+import { ensureDirSync } from "fs-extra"
 import { z } from "zod"
 
 import { type RecognitionOptions } from "../api/Recognition.ts"
@@ -246,7 +247,19 @@ const transcribeCommand = defineCommand({
       Presets.shades_classic,
     )
     try {
-      const [inputPath] = args
+      let [inputPath] = args
+
+      const path = await import("node:path")
+      inputPath = path.resolve(process.cwd(), inputPath)
+      let outputPath = options.output
+        ? path.resolve(process.cwd(), options.output)
+        : undefined
+      if (outputPath && !path.extname(outputPath)) {
+        outputPath = `${outputPath}.json`
+      }
+      if (outputPath) {
+        ensureDirSync(path.dirname(outputPath))
+      }
 
       const result = await recognize(inputPath, {
         engine: options.engine,
@@ -274,14 +287,14 @@ const transcribeCommand = defineCommand({
         },
       } as RecognitionOptions)
 
-      if (!options.output) {
+      if (!outputPath) {
         console.log(JSON.stringify(result, null, 2))
         return
       }
 
       const { writeFile } = await import("node:fs/promises")
-      await writeFile(options.output, JSON.stringify(result, null, 2))
-      console.log(`\nTranscription written to ${options.output}`)
+      await writeFile(outputPath, JSON.stringify(result, null, 2))
+      console.log(`\nTranscription written to ${outputPath}`)
     } finally {
       if (!options.noProgress) {
         progressBar.stop()
