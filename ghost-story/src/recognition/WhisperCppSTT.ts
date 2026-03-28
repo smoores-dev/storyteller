@@ -423,7 +423,7 @@ function buildTranscribeArgs(options: BuildArgsOptions): string[] {
     "--print-progress",
     options.language ? ["--language", options.language.toLowerCase()] : null,
     options.flashAttention ? ["--flash-attn"] : null,
-    options.suppressNonSpeechTokens ? ["--suppress-nst", "--no-prints"] : null,
+    options.suppressNonSpeechTokens ? ["--suppress-nst"] : null,
     ["--processors", String(options.processors)],
     ["--threads", String(options.threads)],
   ]

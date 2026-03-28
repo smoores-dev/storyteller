@@ -12,6 +12,8 @@ import path from "node:path"
 import { pipeline } from "node:stream/promises"
 import { createGunzip } from "node:zlib"
 
+import chalk from "chalk"
+import { Presets, SingleBar } from "cli-progress"
 import { extract } from "tar"
 
 import {
@@ -76,11 +78,32 @@ export async function downloadFile(options: DownloadOptions): Promise<void> {
   await mkdir(path.dirname(destPath), { recursive: true })
 
   const fileStream = createWriteStream(destPath)
+
+  const progressBar = new SingleBar(
+    {
+      etaBuffer: 2,
+      hideCursor: null,
+      noTTYOutput: !process.stderr.isTTY,
+      autopadding: true,
+      format: `${chalk.yellow("{bar}")} | {percentage}% | {current}/{sum} MB | ({speed} MB/s)`,
+    },
+    Presets.shades_classic,
+  )
+
   const reader =
     response.body.getReader() as ReadableStreamDefaultReader<Uint8Array>
 
   let downloaded = 0
-  let lastPrinted = 0
+  let lastTime = Date.now()
+  let lastDownloaded = 0
+
+  if (printOutput) {
+    progressBar.start(totalSize, 0, {
+      current: "0 MB",
+      sum: `${(totalSize / 1024 / 1024).toFixed(2)} MB`,
+      speed: 0,
+    })
+  }
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, no-constant-condition
@@ -97,20 +120,29 @@ export async function downloadFile(options: DownloadOptions): Promise<void> {
       onProgress?.(downloaded, totalSize)
 
       if (printOutput && totalSize > 0) {
-        const shouldPrint =
-          downloaded - lastPrinted > 10 * 1024 * 1024 ||
-          downloaded === totalSize
+        const deltaTime = Date.now() - lastTime
+
+        const shouldPrint = deltaTime > 1000 || downloaded === totalSize
+
         if (shouldPrint) {
-          const percent = ((downloaded / totalSize) * 100).toFixed(1)
-          console.log(
-            `  ${(downloaded / 1024 / 1024).toFixed(1)} MB / ${(totalSize / 1024 / 1024).toFixed(1)} MB (${percent}%)`,
-          )
-          lastPrinted = downloaded
+          const speed =
+            (downloaded - lastDownloaded) / 1024 / 1024 / (deltaTime / 1000)
+          lastTime = Date.now()
+          lastDownloaded = downloaded
+
+          progressBar.update(downloaded, {
+            current: (downloaded / 1024 / 1024).toFixed(2),
+            sum: (totalSize / 1024 / 1024).toFixed(2),
+            speed: speed.toFixed(2),
+          })
         }
       }
     }
   } finally {
     fileStream.end()
+    if (printOutput) {
+      progressBar.stop()
+    }
   }
 
   await new Promise<void>((resolve, reject) => {
