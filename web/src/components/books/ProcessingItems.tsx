@@ -13,6 +13,7 @@ import {
   useDeleteBookAssetsMutation,
   useProcessBookMutation,
 } from "@/store/api"
+import { STAGE_ORDER } from "@/work/stages"
 
 type Props = {
   book: BookWithRelations
@@ -24,6 +25,13 @@ export function ProcessingItems({ book, aligned }: Props) {
   const [cancelProcessing] = useCancelProcessingMutation()
   const [deleteBookAssets] = useDeleteBookAssetsMutation()
   const { guardProcessing, warningModal } = useGpuBuildWarning()
+
+  const currentStageOrder = book.readaloud?.currentStage
+    ? STAGE_ORDER[book.readaloud.currentStage]
+    : -1
+
+  const canRestartFromSync = currentStageOrder >= 2
+  const canRestartFromTranscription = currentStageOrder >= 1
 
   if (
     book.readaloud?.status !== "QUEUED" &&
@@ -74,6 +82,7 @@ export function ProcessingItems({ book, aligned }: Props) {
               </Menu.Sub.Target>
               <Menu.Sub.Dropdown>
                 <Menu.Item
+                  disabled={!canRestartFromSync}
                   classNames={{
                     itemLabel: "flex gap-2",
                   }}
@@ -90,7 +99,9 @@ export function ProcessingItems({ book, aligned }: Props) {
                   <IconProgress aria-hidden /> From sync step (keep
                   transcriptions)
                 </Menu.Item>
+
                 <Menu.Item
+                  disabled={!canRestartFromTranscription}
                   classNames={{
                     itemLabel: "flex gap-2",
                   }}

@@ -18,6 +18,7 @@ import { env } from "@/env"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 
+import { STAGE_ORDER } from "./stages"
 import type processBook from "./worker"
 
 export type RestartMode = false | "full" | "transcription" | "sync"
@@ -88,18 +89,20 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   await mutex.lock()
   let book: BookWithRelations
   let abortController: AbortController
+  let effectiveRestart: RestartMode = false
   try {
     const position = await getNextQueuePosition()
     book = await getBookOrThrow(bookUuid)
 
-    const startStage = getStartStage(restart, book)
+    effectiveRestart = clampRestart(restart, book)
+    const startStage = getStartStage(effectiveRestart, book)
 
     await updateBook(bookUuid, null, {
       readaloud: {
         status: "QUEUED",
         currentStage: startStage,
         queuePosition: position,
-        restartPending: restart || null,
+        restartPending: effectiveRestart || null,
       },
     })
 
@@ -136,7 +139,7 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
 
   try {
     await alignmentPiscina.run(
-      { bookUuid, restart, port: port1 } satisfies Parameters<
+      { bookUuid, restart: effectiveRestart, port: port1 } satisfies Parameters<
         typeof processBook
       >[0],
       { transferList: [port1], signal: abortController.signal },
@@ -172,6 +175,23 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   } finally {
     if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
+}
+
+// clamp the requested restart to the book's actual progress so we never
+// skip ahead past stages that haven't completed yet
+function clampRestart(
+  restart: RestartMode,
+  book: BookWithRelations,
+): RestartMode {
+  if (restart === false || restart === "full") return restart
+
+  const bookStage = book.readaloud?.currentStage ?? "SPLIT_TRACKS"
+  const targetStage: Readaloud["currentStage"] =
+    restart === "transcription" ? "TRANSCRIBE_CHAPTERS" : "SYNC_CHAPTERS"
+
+  if (STAGE_ORDER[targetStage] > STAGE_ORDER[bookStage]) return false
+
+  return restart
 }
 
 function getStartStage(
