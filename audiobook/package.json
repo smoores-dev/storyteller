@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/audiobook",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "type": "module",
   "license": "MIT",
   "module": "dist/index.js",
@@ -21,6 +21,7 @@
     "prepack": "yarn build"
   },
   "devDependencies": {
+    "@storyteller-platform/eslint": "workspace:*",
     "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/yauzl-promise": "^4",
@@ -36,7 +37,6 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@storyteller-platform/eslint": "workspace:*",
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
     "@types/mime-types": "^2",
