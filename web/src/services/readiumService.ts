@@ -297,7 +297,11 @@ export class ReadiumService {
     }
 
     logger.debug(`[READIUM] Fetching ${url.toString()}`)
-    const response = await fetch(url, init)
+
+    // never let next.js cache readium responses in its data cache.
+    // browser-level caching is handled by cache-control headers in the route handler.
+    const { cache: _cache, ...restInit } = init ?? {}
+    const response = await fetch(url, { ...restInit, cache: "no-store" })
     logger.debug(`[READIUM] ${response.status} ${url.toString()}`)
 
     if (response.status >= 500) {
