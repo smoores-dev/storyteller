@@ -85,12 +85,14 @@ RUN if [ "$GPU_VARIANT" = "sycl" ]; then \
     echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
       > /etc/apt/sources.list.d/oneAPI.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y \
       intel-opencl-icd \
       intel-level-zero-gpu \
       level-zero \
       intel-oneapi-runtime-libs \
-      intel-oneapi-runtime-dnnl && \
+      intel-oneapi-runtime-dnnl \ 
+      intel-oneapi-umf-1.0 && \
+    echo "/opt/intel/oneapi/umf/1.0/lib" > /etc/ld.so.conf.d/intel-umf.conf && \
     rm -rf /var/lib/apt/lists/* && \
     find /opt/intel/oneapi -name "*.so*" -exec dirname {} \; | sort -u > /etc/ld.so.conf.d/oneapi.conf && \
     ldconfig; \

@@ -1,0 +1,6 @@
+releases:
+  "@storyteller-platform/web": patch
+
+declined:
+  - "@storyteller-platform/align"
+  - "@storyteller-platform/mobile"
