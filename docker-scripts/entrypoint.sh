@@ -7,7 +7,7 @@ STORYTELLER_USER="storyteller"
 
 # if user set `user:` in compose, yell at them to change it
 # unless they set an extra env var to allow this 
-if [ "$(id -u)" != "0"]; then
+if [ "$(id -u)" != "0" ]; then
     if [ -z "$FORCE_USER_SETTING" ]; then
         echo "Error: setting `user:` in compose or `-u/--user` using `docker run` is NOT supported!"
         echo "Please set the PUID/PGID environment variables instead. See https://docs.storyteller.ai/docs/installation/self-hosting#file-ownership-on-linux-puid-and-pgid for more details."
