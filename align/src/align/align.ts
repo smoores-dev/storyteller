@@ -2,10 +2,8 @@ import { copyFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import { dirname as autoDirname, join as autoJoin } from "node:path"
 import { basename, dirname, parse, relative } from "node:path/posix"
 
-import { enumerate } from "itertools"
 import memoize from "memoize"
 import { type Logger } from "pino"
-import { runes } from "runes2"
 
 import { isAudioFile, lookupAudioMime } from "@storyteller-platform/audiobook"
 import {
@@ -23,7 +21,6 @@ import { type Mapping } from "@storyteller-platform/transliteration"
 import { getTrackDuration } from "../common/ffmpeg.ts"
 import { getXhtmlSegmentation } from "../markup/segmentation.ts"
 
-import { findNearestMatch } from "./fuzzy.ts"
 import {
   type SentenceRange,
   type StorytellerTranscription,
@@ -32,6 +29,7 @@ import {
   getSentenceRanges,
   interpolateSentenceRanges,
 } from "./getSentenceRanges.ts"
+import { findBoundaries } from "./search.ts"
 import { slugify } from "./slugify.ts"
 
 type AlignedChapter = {
@@ -63,6 +61,15 @@ interface ChapterReport {
     matchedSentence: string
     nextSentence: string | null
   }
+
+  lastMatchedSentenceId: number
+  lastMatchedSentenceContext: {
+    prevSentence: string | null
+    matchedSentence: string
+    nextSentence: string | null
+  }
+
+  chapterSentenceCount: number
 
   audioFiles: AudioFileContext[]
 }
@@ -188,123 +195,6 @@ export class Aligner {
     this.granularity = granularity ?? "sentence"
   }
 
-  private findBestOffset(
-    epubSentences: string[],
-    transcriptionText: string,
-    lastMatchOffset: number,
-    dir = 1,
-  ) {
-    const reverse = dir < 0
-    if (dir < 0) {
-      epubSentences = epubSentences
-        .toReversed()
-        .map((s) => runes(s).toReversed().join(""))
-      transcriptionText = runes(transcriptionText).toReversed().join("")
-      lastMatchOffset = transcriptionText.length - lastMatchOffset
-    }
-    const flatSliceIndices = [
-      0,
-      ...this.alignedChapters
-        .toSorted((a, b) =>
-          reverse
-            ? transcriptionText.length -
-              a.endOffset -
-              (transcriptionText.length - b.endOffset)
-            : a.startOffset - b.startOffset,
-        )
-        .flatMap((aligned) => [
-          reverse
-            ? transcriptionText.length - aligned.endOffset
-            : aligned.startOffset,
-          reverse
-            ? transcriptionText.length - aligned.startOffset
-            : aligned.endOffset,
-        ]),
-      transcriptionText.length,
-    ]
-    const sliceIndices: [number, number][] = []
-    for (let i = 0; i < flatSliceIndices.length - 1; i += 2) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      sliceIndices.push([flatSliceIndices[i]!, flatSliceIndices[i + 1]!])
-    }
-
-    const allSlices: { start: number; text: string }[] = []
-
-    let startSlice = 0
-    for (const [i, [start, end]] of enumerate(sliceIndices)) {
-      if (lastMatchOffset >= start && lastMatchOffset < end) {
-        if (!reverse) {
-          startSlice = i + 1
-          allSlices.push({
-            start,
-            text: transcriptionText.slice(start, lastMatchOffset),
-          })
-        }
-        allSlices.push({
-          start: lastMatchOffset,
-          text: transcriptionText.slice(lastMatchOffset, end),
-        })
-      } else if (!reverse) {
-        allSlices.push({ start, text: transcriptionText.slice(start, end) })
-      }
-    }
-
-    const slices = allSlices.filter((slice) => slice.text.length)
-
-    if (reverse && !slices.length) {
-      const indices = sliceIndices.find(([start]) => start > lastMatchOffset)
-      if (indices) {
-        slices.push({
-          start: indices[0],
-          text: transcriptionText.slice(...indices),
-        })
-      }
-    }
-
-    for (const slice of slices
-      .slice(startSlice)
-      .concat(slices.slice(0, startSlice))) {
-      let startSentence = 0
-
-      while (startSentence < epubSentences.length) {
-        const needle = epubSentences
-          .slice(startSentence, startSentence + 6)
-          .join("-")
-
-        const firstMatch = findNearestMatch(
-          needle,
-          slice.text,
-          Math.max(Math.floor(0.1 * needle.length), 1),
-        )
-
-        if (firstMatch) {
-          const start = reverse
-            ? transcriptionText.length - (slice.start + firstMatch.index)
-            : slice.start + firstMatch.index
-
-          return {
-            startSentence: reverse
-              ? epubSentences.length - startSentence
-              : startSentence,
-            transcriptionOffset: start,
-          }
-        }
-        startSentence += 3
-      }
-    }
-
-    if (reverse) {
-      return {
-        startSentence: epubSentences.length,
-        transcriptionOffset: slices[0]
-          ? transcriptionText.length - slices[0].start
-          : null,
-      }
-    }
-
-    return { startSentence: 0, transcriptionOffset: null }
-  }
-
   private async getChapterSentences(chapterId: string) {
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
@@ -391,6 +281,7 @@ export class Aligner {
     chapterSentences: string[],
     sentenceRanges: SentenceRange[],
     startSentence: number,
+    endSentence: number,
     transcriptionOffset: number,
   ) {
     this.report.chapters.push({
@@ -416,7 +307,14 @@ export class Aligner {
         matchedSentence: chapterSentences[startSentence]!,
         nextSentence: chapterSentences[startSentence + 1] ?? null,
       },
-
+      lastMatchedSentenceId: endSentence,
+      lastMatchedSentenceContext: {
+        prevSentence: chapterSentences[endSentence - 1] ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        matchedSentence: chapterSentences[endSentence]!,
+        nextSentence: chapterSentences[endSentence + 1] ?? null,
+      },
+      chapterSentenceCount: sentenceRanges.length,
       audioFiles: sentenceRanges.reduce<AudioFileContext[]>((acc, range) => {
         const existing = acc.find(
           (context) => context.filepath === range.audiofile,
@@ -436,8 +334,6 @@ export class Aligner {
   }
 
   private async alignChapter(
-    startSentence: number,
-    endSentence: number,
     chapterId: string,
     transcriptionOffset: number,
     transcriptionEndOffset: number,
@@ -461,16 +357,18 @@ export class Aligner {
     timing.end("split to sentences")
 
     timing.start("align sentences")
-    const { sentenceRanges, transcriptionOffset: endTranscriptionOffset } =
-      await getSentenceRanges(
-        startSentence,
-        endSentence,
-        this.transcription,
-        chapterSentences,
-        transcriptionOffset,
-        transcriptionEndOffset,
-        locale,
-      )
+    const {
+      sentenceRanges,
+      transcriptionOffset: endTranscriptionOffset,
+      firstFoundSentence,
+      lastFoundSentence,
+    } = await getSentenceRanges(
+      this.transcription,
+      chapterSentences,
+      transcriptionOffset,
+      transcriptionEndOffset,
+      locale,
+    )
     timing.end("align sentences")
 
     const storytellerStylesheetUrl = relative(
@@ -496,7 +394,8 @@ export class Aligner {
       chapter,
       chapterSentences,
       sentenceRanges,
-      startSentence,
+      firstFoundSentence,
+      lastFoundSentence,
       transcriptionOffset,
     )
 
@@ -505,6 +404,26 @@ export class Aligner {
       endTranscriptionOffset,
       timing,
     }
+  }
+
+  narrowToAvailableBoundary(boundary: { start: number; end: number }) {
+    const narrowed = { ...boundary }
+    for (const chapter of this.alignedChapters) {
+      if (
+        chapter.startOffset > narrowed.start &&
+        chapter.startOffset <= narrowed.end
+      ) {
+        narrowed.end = chapter.startOffset - 1
+      }
+      if (
+        chapter.endOffset < narrowed.end &&
+        chapter.endOffset >= narrowed.start
+      ) {
+        narrowed.start = chapter.endOffset + 1
+      }
+    }
+
+    return narrowed
   }
 
   async alignBook(onProgress?: ((progress: number) => void) | null) {
@@ -522,8 +441,6 @@ export class Aligner {
       this.transcription.transcript,
       locale,
     )
-
-    let lastTranscriptionOffset = 0
 
     for (let index = 0; index < spine.length; index++) {
       onProgress?.(index / spine.length)
@@ -561,61 +478,36 @@ export class Aligner {
         continue
       }
 
-      const { startSentence, transcriptionOffset: slugifiedOffset } =
-        this.findBestOffset(
-          slugifiedChapterSentences,
-          transcriptionText,
-          mapping.map(lastTranscriptionOffset, -1),
-        )
+      const boundaries = findBoundaries(
+        slugifiedChapterSentences.join("-"),
+        transcriptionText,
+      )
 
-      if (slugifiedOffset === null) {
+      if (!boundaries) {
         this.logger?.info(
-          `Couldn't find matching transcription for chapter #${index}`,
+          `Could not find chapter #${index} in the transcripton`,
         )
         continue
       }
 
-      const transcriptionOffset = mapping.invert().map(slugifiedOffset, -1)
-
-      const {
-        startSentence: startEndSentence,
-        transcriptionOffset: slugifiedEndOffset,
-      } = this.findBestOffset(
-        slugifiedChapterSentences,
-        transcriptionText,
-        Math.min(
-          transcriptionText.length,
-          slugifiedOffset +
-            Math.round(slugifiedChapterSentences.join("-").length * 1.2),
-        ),
-        -1,
-      )
-
-      const endSentence = startEndSentence
-      const endOffset =
-        slugifiedEndOffset === null
-          ? this.transcription.transcript.length
-          : mapping.invert().map(slugifiedEndOffset, 1)
-
-      if (endSentence - startSentence < slugifiedChapterSentences.length / 2) {
-        this.logger?.info(`Found less than half of chapter #${index}, skipping`)
+      const { start, end } = this.narrowToAvailableBoundary(boundaries)
+      if (start === end) {
+        continue
       }
 
-      this.logger?.info(
-        `Chapter #${index} best matches transcription from ${transcriptionOffset} to ${endOffset}, from sentence ${startSentence} to ${endSentence} (of ${slugifiedChapterSentences.length}) in the book`,
-      )
+      const transcriptionOffset = mapping.invert().map(Math.max(start, 0), -1)
+
+      const endOffset = mapping
+        .invert()
+        .map(Math.min(end, transcriptionText.length), 1)
 
       const result = await this.alignChapter(
-        startSentence,
-        endSentence,
         chapterId,
         transcriptionOffset,
         endOffset,
         locale,
         mapping,
       )
-
-      lastTranscriptionOffset = result.endTranscriptionOffset
 
       this.timing.add(result.timing.summary())
     }
