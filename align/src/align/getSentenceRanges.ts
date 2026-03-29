@@ -236,7 +236,7 @@ export async function getSentenceRanges(
         firstFoundSentence = chapterSentenceIndex + slice[0]
       }
       if (i === sentences.length) {
-        lastFoundSentence = chapterSentenceIndex + slice[0] + slice[1] - 1
+        lastFoundSentence = chapterSentenceIndex + slice[1] - 1
       }
       slugifiedChapterSentenceWindowList =
         slugifiedChapterSentenceWindowList.slice(...slice)
