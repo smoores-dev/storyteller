@@ -6,6 +6,7 @@ export default defineConfig({
   clean: true,
   tsconfig: "./tsconfig.json",
   entry: ["src/**/*.ts", "!src/**/__tests__/**"],
+  target: ["esnext", "node24"],
   dts: {
     ...defaultOptions.dts,
     compilerOptions: {
