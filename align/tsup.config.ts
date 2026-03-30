@@ -5,7 +5,7 @@ export default defineConfig({
   ...defaultOptions,
   clean: true,
   tsconfig: "./tsconfig.json",
-  entry: ["src/**/*.ts"],
+  entry: ["src/**/*.ts", "!src/**/__tests__/**"],
   dts: {
     ...defaultOptions.dts,
     compilerOptions: {
