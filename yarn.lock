@@ -13570,7 +13570,7 @@ __metadata:
     "@storyteller-platform/epub": "workspace:^"
     "@storyteller-platform/eslint": "workspace:*"
     "@storyteller-platform/ghost-story": "workspace:^"
-    "@storyteller-platform/transliteration": "npm:^3.1.0"
+    "@storyteller-platform/transliteration": "npm:^3.1.1"
     "@storyteller-platform/tsup": "workspace:*"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/cli-progress": "npm:^3"
@@ -13894,16 +13894,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/transliteration@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "@storyteller-platform/transliteration@npm:3.1.0"
+"@storyteller-platform/transliteration@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "@storyteller-platform/transliteration@npm:3.1.1"
   dependencies:
     havarotjs: "npm:^0.25.4"
     kuroshiro-analyzer-kuromoji: "npm:^1.1.0"
   bin:
     slugify: dist/bin/slugify
     transliterate: dist/bin/transliterate
-  checksum: 10c0/b7407d75f6d9a643f6842261bf192aec5552f26eab626d3e734625f11c6238564675e7c60e06eaa7c196785f90a64d88e9f5fcb4deac3fc9a15881fafb8f6116
+  checksum: 10c0/c6eda09207e29a15161ee6de0a86e13448e61a964564e711aa58730ee9d96f7bfb5e3a44e14793abf0a5becf520574ca6bc4b491cbff64df3026c6474b58691f
   languageName: node
   linkType: hard
 
