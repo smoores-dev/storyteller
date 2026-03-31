@@ -20,7 +20,12 @@ function listenWhenActive(...args: Parameters<typeof Storyteller.addListener>) {
 }
 
 export function addStorytellerEventListeners(store: AppStore) {
+  let lastPositionDispatch = 0
   listenWhenActive("positionChanged", ({ position }) => {
+    const now = Date.now()
+    if (now - lastPositionDispatch < 500) return
+
+    lastPositionDispatch = now
     store.dispatch(bookshelfSlice.actions.audioPositionChanged({ position }))
   })
 

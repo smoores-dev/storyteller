@@ -19,21 +19,16 @@ export async function syncPositions(dispatch: AppDispatch) {
 
   for (const position of positions) {
     const { bookUuid, timestamp, locator, serverUuid } = position
+
     try {
       logger.debug(`Calling updatePosition`)
-      logger.debug({
-        bookUuid,
-        timestamp,
-        locator,
-      })
+      logger.debug({ bookUuid, timestamp, locator })
 
       await dispatch(
-        serverApi.endpoints.updatePosition.initiate({
-          bookUuid,
-          serverUuid: serverUuid!,
-          timestamp,
-          locator,
-        }),
+        serverApi.endpoints.updatePosition.initiate(
+          { bookUuid, serverUuid: serverUuid!, timestamp, locator },
+          { track: false },
+        ),
       ).unwrap()
 
       logger.debug("Wrote position to server")
@@ -55,7 +50,7 @@ export async function syncPositions(dispatch: AppDispatch) {
                   bookUuid,
                   serverUuid: serverUuid!,
                 },
-                { forceRefetch: true },
+                { forceRefetch: true, subscribe: false },
               ),
             ).unwrap()
 
@@ -101,10 +96,8 @@ export async function syncPositions(dispatch: AppDispatch) {
     try {
       const serverStatuses = await dispatch(
         serverApi.endpoints.listStatuses.initiate(
-          {
-            serverUuid: book.serverUuid,
-          },
-          { forceRefetch: false },
+          { serverUuid: book.serverUuid },
+          { forceRefetch: false, subscribe: false },
         ),
       ).unwrap()
 
@@ -112,11 +105,14 @@ export async function syncPositions(dispatch: AppDispatch) {
       if (!serverStatus) continue
 
       await dispatch(
-        serverApi.endpoints.updateStatus.initiate({
-          bookUuid: book.uuid,
-          serverUuid: book.serverUuid,
-          statusUuid: serverStatus.uuid,
-        }),
+        serverApi.endpoints.updateStatus.initiate(
+          {
+            bookUuid: book.uuid,
+            serverUuid: book.serverUuid,
+            statusUuid: serverStatus.uuid,
+          },
+          { track: false },
+        ),
       ).unwrap()
 
       await setBookStatusClean(book.uuid)
@@ -138,6 +134,7 @@ startAppListening({
         if (AppState.currentState === "active") {
           await syncPositions(listenerApi.dispatch)
         }
+
         await forkApi.delay(3_000)
       }
     })

@@ -27,8 +27,9 @@ export const serverApi = createApi({
     extraOptions?: { auth?: boolean },
   ) {
     const serverUuid = args.serverUuid
+
     const { data: servers = [] } = await baseQueryApi.dispatch(
-      localApi.endpoints.listServers.initiate(),
+      localApi.endpoints.listServers.initiate(undefined, { subscribe: false }),
     )
 
     const server = servers.find((server) => server.uuid === serverUuid)

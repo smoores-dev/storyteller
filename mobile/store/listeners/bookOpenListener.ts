@@ -126,7 +126,12 @@ startAppListening({
     listenerApi.throwIfCancelled()
 
     let book = await listenerApi
-      .dispatch(localApi.endpoints.getBook.initiate({ uuid: bookUuid }))
+      .dispatch(
+        localApi.endpoints.getBook.initiate(
+          { uuid: bookUuid },
+          { subscribe: false },
+        ),
+      )
       .unwrap()
 
     if (!book) {
@@ -177,7 +182,7 @@ startAppListening({
           .dispatch(
             localApi.endpoints.getBookOverlayClips.initiate(
               { bookUuid },
-              { forceRefetch: true },
+              { forceRefetch: true, subscribe: false },
             ),
           )
           .unwrap()) ?? undefined,
@@ -185,11 +190,12 @@ startAppListening({
 
       if (!book.position) {
         logger.debug("No local position for this book, starting at beginning")
+
         const positions = await listenerApi
           .dispatch(
             localApi.endpoints.getBookPositions.initiate(
               { bookUuid, format },
-              { forceRefetch: true },
+              { forceRefetch: true, subscribe: false },
             ),
           )
           .unwrap()
@@ -214,7 +220,7 @@ startAppListening({
         .dispatch(
           localApi.endpoints.getBookOverlayClips.initiate(
             { bookUuid },
-            { forceRefetch: false },
+            { forceRefetch: false, subscribe: false },
           ),
         )
         .unwrap())
@@ -233,7 +239,12 @@ startAppListening({
     listenerApi.throwIfCancelled()
 
     book = await listenerApi
-      .dispatch(localApi.endpoints.getBook.initiate({ uuid: bookUuid }))
+      .dispatch(
+        localApi.endpoints.getBook.initiate(
+          { uuid: bookUuid },
+          { subscribe: false },
+        ),
+      )
       .unwrap()
 
     if (!book) {
@@ -259,7 +270,7 @@ startAppListening({
               .dispatch(
                 localApi.endpoints.getBookPositions.initiate(
                   { bookUuid, format },
-                  { forceRefetch: false },
+                  { forceRefetch: false, subscribe: false },
                 ),
               )
               .unwrap()
@@ -273,7 +284,10 @@ startAppListening({
 
       const bookPreferences = await listenerApi
         .dispatch(
-          localApi.endpoints.getBookPreferences.initiate({ uuid: bookUuid }),
+          localApi.endpoints.getBookPreferences.initiate(
+            { uuid: bookUuid },
+            { subscribe: false },
+          ),
         )
         .unwrap()
 

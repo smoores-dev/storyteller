@@ -30,7 +30,11 @@ export default function ModalLayout() {
               size="icon"
               variant="ghost"
               onPress={() => {
-                router.replace("/")
+                if (router.canGoBack()) {
+                  router.back()
+                } else {
+                  router.replace("/")
+                }
               }}
             >
               <Icon as={ChevronLeft} size={24} />
@@ -52,7 +56,11 @@ export default function ModalLayout() {
               size="icon"
               variant="ghost"
               onPress={() => {
-                router.replace("/settings")
+                if (router.canGoBack()) {
+                  router.back()
+                } else {
+                  router.replace("/settings")
+                }
               }}
             >
               <Icon as={ChevronLeft} size={24} />

@@ -1,7 +1,7 @@
 import deepmerge from "deepmerge"
 import Constants from "expo-constants"
 import { useKeepAwake } from "expo-keep-awake"
-import { Link, Tabs } from "expo-router"
+import { Tabs, useRouter } from "expo-router"
 import { ChevronLeft } from "lucide-react-native"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { DeviceEventEmitter, StatusBar, View } from "react-native"
@@ -49,6 +49,7 @@ const backwardNavKeyCodes = [92]
 export function Epub({ book, format, locator }: Props) {
   useKeepAwake()
 
+  const router = useRouter()
   const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<Bookmark[]>([])
   const [activeHighlight, setActiveHighlight] = useState<UUID | null>(null)
@@ -150,11 +151,19 @@ export function Epub({ book, format, locator }: Props) {
             setToolbarHeight(event.nativeEvent.layout.height)
           }}
         >
-          <Link href="/" replace asChild>
-            <Button variant="ghost" size="icon">
-              <Icon as={ChevronLeft} size={24} />
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back()
+              } else {
+                router.replace("/")
+              }
+            }}
+          >
+            <Icon as={ChevronLeft} size={24} />
+          </Button>
           <Toolbar mode="text" activeBookmarks={activeBookmarks} />
         </Group>
       </HideableView>

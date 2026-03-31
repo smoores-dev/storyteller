@@ -44,18 +44,26 @@ startAppListening({
   effect: async (action, listenerApi) => {
     const { bookUuid, locator, timestamp } = action.payload
 
-    await listenerApi
-      .dispatch(
-        localApi.endpoints.updatePosition.initiate({
+    const updatePositionPromise = listenerApi.dispatch(
+      localApi.endpoints.updatePosition.initiate(
+        {
           bookUuid,
           locator,
           timestamp,
-        }),
-      )
-      .unwrap()
+        },
+        { track: false },
+      ),
+    )
+
+    await updatePositionPromise.unwrap()
 
     const book = await listenerApi
-      .dispatch(localApi.endpoints.getBook.initiate({ uuid: bookUuid }))
+      .dispatch(
+        localApi.endpoints.getBook.initiate(
+          { uuid: bookUuid },
+          { subscribe: false },
+        ),
+      )
       .unwrap()
 
     if (!book) return
@@ -66,17 +74,17 @@ startAppListening({
     const format = getCurrentlyPlayingFormat(listenerApi.getState())
     if (!format) return
 
-    const positions =
-      format !== "audiobook"
-        ? await listenerApi
-            .dispatch(
-              localApi.endpoints.getBookPositions.initiate(
-                { bookUuid, format },
-                { forceRefetch: false },
-              ),
-            )
-            .unwrap()
-        : null
+    let positions: ReadiumLocator[] | null = null
+    if (format !== "audiobook") {
+      positions = await listenerApi
+        .dispatch(
+          localApi.endpoints.getBookPositions.initiate(
+            { bookUuid, format },
+            { forceRefetch: false, subscribe: false },
+          ),
+        )
+        .unwrap()
+    }
 
     const clip =
       book.position &&
@@ -85,7 +93,6 @@ startAppListening({
     if (!clip) return
 
     if (action.type === bookDoubleTapped.type) {
-      // this prevents the previous clip from being highlighted briefly when double tapping
       await Storyteller.seekTo(clip.relativeUrl, clip.start + 0.01, true)
       await Storyteller.play(false)
     } else {
@@ -235,7 +242,9 @@ startAppListening({
       }
 
       await listenerApi
-        .dispatch(localApi.endpoints.updatePosition.initiate(payload))
+        .dispatch(
+          localApi.endpoints.updatePosition.initiate(payload, { track: false }),
+        )
         .unwrap()
     } finally {
       listenerApi.subscribe()
@@ -262,7 +271,9 @@ startAppListening({
       }
 
       await listenerApi
-        .dispatch(localApi.endpoints.updatePosition.initiate(payload))
+        .dispatch(
+          localApi.endpoints.updatePosition.initiate(payload, { track: false }),
+        )
         .unwrap()
     } finally {
       listenerApi.subscribe()

@@ -96,7 +96,11 @@ export default function BookDetailsScreen() {
         <Text>Book not found</Text>
         <Button
           onPress={() => {
-            router.replace("/")
+            if (router.canGoBack()) {
+              router.back()
+            } else {
+              router.replace("/")
+            }
           }}
         >
           <Text>Go back</Text>
@@ -149,7 +153,11 @@ export default function BookDetailsScreen() {
               variant="ghost"
               size="icon"
               onPress={() => {
-                router.back()
+                if (router.canGoBack()) {
+                  router.back()
+                } else {
+                  router.replace("/")
+                }
               }}
             >
               <Icon as={ChevronLeft} size={24} />

@@ -138,9 +138,6 @@ export const localApi = createApi({
               table: "status",
             },
             {
-              table: "position",
-            },
-            {
               table: "ebook",
             },
             {
