@@ -22,3 +22,31 @@ void describe("whispercpp", () => {
     assert.ok(result.timeline.length > 0)
   })
 })
+
+void describe("transcription corruption", () => {
+  void it(
+    "should produce valid characters for japanese audio",
+    { timeout: 120_000 },
+    async (ctx) => {
+      const audioPath = new URL(
+        "./test-data/no-space-script/japanese.mp3",
+        import.meta.url,
+      )
+
+      const result = await recognize(audioPath.pathname, createTiming(), {
+        language: "ja",
+        model: "tiny",
+        printOutput: true,
+        flashAttention: false,
+      })
+
+      result.timeline.forEach((entry) => {
+        ctx.assert.doesNotMatch(
+          entry.text,
+          /�/,
+          "no invalid characters in timeline",
+        )
+      })
+    },
+  )
+})

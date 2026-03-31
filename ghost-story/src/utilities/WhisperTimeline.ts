@@ -1,3 +1,4 @@
+import { startsWithSpacelessScript } from "./SpacelessScripts.ts"
 import type { Timeline, TimelineEntry } from "./Timeline.ts"
 
 // 16k sample rate
@@ -78,6 +79,129 @@ export interface WhisperServerWord {
 // special tokens that whisper uses internally
 const specialTokenPattern = /\[_.+\]|<\|[a-z_]+\|>/g
 
+const REPLACEMENT_CHAR = "\uFFFD"
+
+function isSpecialToken(text: string): boolean {
+  return text.startsWith("[_") || text.startsWith("<|")
+}
+
+function hasUtf8Corruption(text: string): boolean {
+  return text.includes(REPLACEMENT_CHAR)
+}
+
+// when node reads whisper json with utf-8 encoding, invalid byte fragments
+// from split bpe tokens become U+FFFD replacement characters.
+// the segment-level text is still valid, so we use it as ground truth and
+// merge consecutive corrupted fragments into one reconstructed run.
+interface Utf8Run<T> {
+  first: T
+  last: T
+  text: string
+  probability: number
+  isMerged: boolean
+}
+
+interface Utf8MergeOptions<T> {
+  getText: (item: T) => string
+  getProbability: (item: T) => number
+  shouldSkipInAnchor: (item: T) => boolean
+}
+
+function buildAnchor<T>(
+  items: readonly T[],
+  startIdx: number,
+  options: Utf8MergeOptions<T>,
+  maxItems: number = 5,
+): string {
+  let anchor = ""
+  let count = 0
+
+  for (let j = startIdx; j < items.length && count < maxItems; j++) {
+    const item = items[j]
+    if (!item) break
+
+    const text = options.getText(item)
+    if (options.shouldSkipInAnchor(item)) continue
+    if (hasUtf8Corruption(text)) break
+
+    anchor += text
+    count++
+  }
+
+  return anchor
+}
+
+function forEachMergedUtf8Run<T>(
+  items: readonly T[],
+  segmentText: string,
+  options: Utf8MergeOptions<T>,
+  emit: (run: Utf8Run<T>) => void,
+): void {
+  let segPos = 0
+  let i = 0
+
+  while (i < items.length) {
+    const item = items[i]
+    if (!item) break
+
+    const text = options.getText(item)
+    const isSkippable = options.shouldSkipInAnchor(item)
+
+    if (isSkippable || !hasUtf8Corruption(text)) {
+      if (!isSkippable) {
+        segPos += text.length
+      }
+
+      emit({
+        first: item,
+        last: item,
+        text,
+        probability: options.getProbability(item),
+        isMerged: false,
+      })
+      i++
+      continue
+    }
+
+    const runStart = i
+    let probability = 1
+
+    while (i < items.length) {
+      const runItem = items[i]
+      if (!runItem) break
+
+      const runText = options.getText(runItem)
+      const shouldStop =
+        options.shouldSkipInAnchor(runItem) || !hasUtf8Corruption(runText)
+
+      if (shouldStop) break
+
+      probability *= options.getProbability(runItem)
+      i++
+    }
+
+    const first = items[runStart]
+    const last = items[i - 1]
+    if (!first || !last) continue
+
+    const anchor = buildAnchor(items, i, options)
+    const anchorIdx =
+      anchor.length > 0 ? segmentText.indexOf(anchor, segPos) : -1
+
+    const runEndSegPos = anchorIdx >= 0 ? anchorIdx : segmentText.length
+    const mergedText = segmentText.slice(segPos, runEndSegPos)
+    segPos = runEndSegPos
+
+    emit({
+      first,
+      last,
+      text: mergedText,
+      probability,
+      isMerged: true,
+    })
+  }
+}
+
 export function parseWhisperCppOutput(
   transcription: WhisperCppTranscriptionSegment[],
 ): RawWhisperSegment[] {
@@ -85,24 +209,34 @@ export function parseWhisperCppOutput(
     const words: RawWhisperWord[] = []
     let lastTokenEndMs = 0
 
-    for (const token of segment.tokens) {
-      const cleanedText = token.text.replace(specialTokenPattern, "")
-      if (cleanedText.trim().length === 0) continue
+    forEachMergedUtf8Run(
+      segment.tokens,
+      segment.text,
+      {
+        getText: (token) => token.text,
+        getProbability: (token) => token.p,
+        shouldSkipInAnchor: (token) => isSpecialToken(token.text),
+      },
+      (run) => {
+        const cleanedText = run.text.replace(specialTokenPattern, "")
+        if (cleanedText.trim().length === 0) return
 
-      const offsetFrom = token.offsets?.from ?? lastTokenEndMs
-      const offsetTo = token.offsets?.to ?? lastTokenEndMs
+        const fallbackOffset = run.isMerged ? 0 : lastTokenEndMs
+        const offsetFrom = run.first.offsets?.from ?? fallbackOffset
+        const offsetTo = run.last.offsets?.to ?? fallbackOffset
 
-      if (token.offsets) {
-        lastTokenEndMs = token.offsets.to
-      }
+        if (run.isMerged || run.last.offsets) {
+          lastTokenEndMs = offsetTo
+        }
 
-      words.push({
-        text: cleanedText,
-        start: offsetFrom / 1000,
-        end: offsetTo / 1000,
-        confidence: token.p,
-      })
-    }
+        words.push({
+          text: cleanedText,
+          start: offsetFrom / 1000,
+          end: offsetTo / 1000,
+          confidence: run.probability,
+        })
+      },
+    )
 
     return {
       text: segment.text,
@@ -117,12 +251,29 @@ export function parseWhisperServerOutput(
   segments: WhisperServerSegment[],
 ): RawWhisperSegment[] {
   return segments.map((segment) => {
-    const words: RawWhisperWord[] = (segment.words ?? []).map((word) => ({
-      text: word.word,
-      start: word.start,
-      end: word.end,
-      confidence: word.probability ?? 0,
-    }))
+    const words: RawWhisperWord[] = []
+
+    forEachMergedUtf8Run(
+      segment.words ?? [],
+      segment.text,
+      {
+        getText: (word) => word.word,
+        getProbability: (word) => word.probability ?? 1,
+        shouldSkipInAnchor: () => false,
+      },
+      (run) => {
+        const confidence = run.isMerged
+          ? run.probability
+          : run.first.probability ?? 0
+
+        words.push({
+          text: run.text,
+          start: run.first.start,
+          end: run.last.end,
+          confidence,
+        })
+      },
+    )
 
     return {
       text: segment.text,
@@ -440,9 +591,13 @@ export function extractCorrectedTimeline(
         end: segmentEnd,
       })
 
-      // merge tokens that don't start with space into previous word
+      // merge sub-word tokens (no leading space) into the previous word,
+      // but not for CJK characters which don't use spaces between words
       const lastEntry = timeline[timeline.length - 1]
-      if (lastEntry && !word.text.startsWith(" ")) {
+      const isSubwordContinuation =
+        !word.text.startsWith(" ") && !startsWithSpacelessScript(trimmedText)
+
+      if (lastEntry && isSubwordContinuation) {
         lastEntry.text += trimmedText
         // use minimum confidence to preserve low-confidence signals
         if (lastEntry.confidence !== undefined) {

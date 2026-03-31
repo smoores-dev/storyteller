@@ -1,0 +1,127 @@
+diff --git a/examples/cli/cli.cpp b/examples/cli/cli.cpp
+index 4e84c1b2..3e2bf267 100644
+--- a/examples/cli/cli.cpp
++++ b/examples/cli/cli.cpp
+@@ -593,6 +593,40 @@ static void output_csv(struct whisper_context * ctx, std::ofstream & fout, const
+     }
+ }
+ 
++static int utf8_expected_len(unsigned char c) {
++    if ((c & 0x80) == 0)    return 1;
++    if ((c & 0xE0) == 0xC0) return 2;
++    if ((c & 0xF0) == 0xE0) return 3;
++    if ((c & 0xF8) == 0xF0) return 4;
++    return 1;
++}
++
++// returns the length of the longest prefix of s that ends on a complete
++// utf-8 character boundary. any trailing incomplete multi-byte sequence
++// is excluded so it can be carried over to the next token.
++static size_t utf8_valid_prefix_length(const std::string & s) {
++    if (s.empty()) return 0;
++
++    size_t len = s.size();
++
++    size_t i = len;
++    while (i > 0 && (static_cast<unsigned char>(s[i - 1]) & 0xC0) == 0x80) {
++        --i;
++    }
++
++    if (i == 0) return 0;
++
++    size_t lead_pos = i - 1;
++    int expected = utf8_expected_len(static_cast<unsigned char>(s[lead_pos]));
++    int actual = static_cast<int>(len - lead_pos);
++
++    if (actual >= expected) {
++        return len;
++    }
++
++    return lead_pos;
++}
++
+ static void output_score(struct whisper_context * ctx, std::ofstream & fout, const whisper_params & /*params*/, std::vector<std::vector<float>> /*pcmf32s*/) {
+     const int n_segments = whisper_full_n_segments(ctx);
+     // fprintf(stderr,"segments: %d\n",n_segments);
+@@ -736,20 +770,72 @@ static void output_json(
+                     value_s("text", text, !params.diarize && !params.tinydiarize && !full);
+ 
+                     if (full) {
+-                        start_arr("tokens");
+                         const int n = whisper_full_n_tokens(ctx, i);
++
++                        // bpe tokens can split multi-byte utf-8 characters
++                        // across adjacent tokens. merge those fragments into
++                        // a single entry with the spanning timestamps and the
++                        // joint probability (product of fragment probs).
++                        struct merged_token {
++                            std::string text;
++                            int64_t     t0;
++                            int64_t     t1;
++                            whisper_token id;
++                            float       p;
++                            float       t_dtw;
++                        };
++
++                        std::vector<merged_token> merged;
++                        merged.reserve(n);
++
++                        std::string utf8_buf;
++                        bool accumulating = false;
++                        merged_token pending{};
++
+                         for (int j = 0; j < n; ++j) {
+                             auto token = whisper_full_get_token_data(ctx, i, j);
++                            const char * raw = whisper_token_to_str(ctx, token.id);
++
++                            if (accumulating) {
++                                utf8_buf  += raw;
++                                pending.t1 = token.t1;
++                                pending.p *= token.p;
++                            } else {
++                                utf8_buf     = raw;
++                                pending.t0   = token.t0;
++                                pending.t1   = token.t1;
++                                pending.id   = token.id;
++                                pending.p    = token.p;
++                                pending.t_dtw = token.t_dtw;
++                                accumulating = true;
++                            }
++
++                            if (utf8_valid_prefix_length(utf8_buf) == utf8_buf.size()) {
++                                pending.text = std::move(utf8_buf);
++                                merged.push_back(std::move(pending));
++                                utf8_buf.clear();
++                                accumulating = false;
++                                pending = {};
++                            }
++                        }
++
++                        if (accumulating) {
++                            pending.text = std::move(utf8_buf);
++                            merged.push_back(std::move(pending));
++                        }
++
++                        start_arr("tokens");
++                        for (size_t j = 0; j < merged.size(); ++j) {
++                            const auto & mt = merged[j];
+                             start_obj(nullptr);
+-                                value_s("text", whisper_token_to_str(ctx, token.id), false);
+-                                if(token.t0 > -1 && token.t1 > -1) {
+-                                    // If we have per-token timestamps, write them out
+-                                    times_o(token.t0, token.t1, false);
++                                value_s("text", mt.text.c_str(), false);
++                                if (mt.t0 > -1 && mt.t1 > -1) {
++                                    times_o(mt.t0, mt.t1, false);
+                                 }
+-                                value_i("id", token.id, false);
+-                                value_f("p", token.p, false);
+-                                value_f("t_dtw", token.t_dtw, true);
+-                            end_obj(j == (n - 1));
++                                value_i("id", mt.id, false);
++                                value_f("p", mt.p, false);
++                                value_f("t_dtw", mt.t_dtw, true);
++                            end_obj(j == merged.size() - 1);
+                         }
+                         end_arr(!params.diarize && !params.tinydiarize);
+                     }

@@ -8,17 +8,19 @@
   stage: whisper-build
   needs: []
   variables:
-    WHISPER_VERSION: "1.8.3"
+    WHISPER_UPSTREAM_VERSION: "1.8.3"
+    WHISPER_VERSION: "1.8.3-st.2"
     CMAKE_FLAGS: ""
     LEGACY: ""
   rules:
     - when: manual
       allow_failure: true
   script:
-    - git clone --depth 1 --branch v${WHISPER_VERSION}
+    - git clone --depth 1 --branch v${WHISPER_UPSTREAM_VERSION}
       https://github.com/ggml-org/whisper.cpp.git whisper-src
     - cd whisper-src && git apply
-      ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && cd ..
+      ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && git apply
+      ${CI_PROJECT_DIR}/scripts/whisper-utf8-json-fix.patch && cd ..
     - cd whisper-src
     - |
       if [ "$LEGACY" = "1" ]; then
@@ -74,10 +76,11 @@ build-whisper-darwin-arm64-coreml:
   before_script:
     - brew install cmake git curl
   script:
-    - git clone --depth 1 --branch v${WHISPER_VERSION}
+    - git clone --depth 1 --branch v${WHISPER_UPSTREAM_VERSION}
       https://github.com/ggml-org/whisper.cpp.git whisper-src
     - cd whisper-src && git apply
-      ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && cd ..
+      ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && git apply
+      ${CI_PROJECT_DIR}/scripts/whisper-utf8-json-fix.patch && cd ..
     - cd whisper-src
     - cmake -B build -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS}
     - cmake --build build -j --config Release
@@ -225,8 +228,7 @@ build-whisper-linux-x64-blas-legacy:
   variables:
     LEGACY: "1"
 
-# Linux SYCL build (Intel GPUs/iGPUs)
-
+# Linux SYCL build (Intel GPUs)
 build-whisper-linux-x64-sycl:
   extends: .whisper-build-base
   image:
@@ -422,7 +424,8 @@ build-whisper-linux-x64-rocm-legacy:
   stage: whisper-build
   tags: [saas-windows-medium-amd64]
   variables:
-    WHISPER_VERSION: "1.8.3"
+    WHISPER_UPSTREAM_VERSION: "1.8.3"
+    WHISPER_VERSION: "1.8.3-st.2"
     CMAKE_FLAGS: ""
     MSYS2_EXTRA_PACKAGES: ""
     EXTRA_DIST_FILES: ""
@@ -440,9 +443,10 @@ build-whisper-linux-x64-rocm-legacy:
       $env:MSYSTEM = "UCRT64"
       $env:CHERE_INVOKING = "1"
       $cmds = @(
-        'git clone --depth 1 --branch "v${WHISPER_VERSION}" https://github.com/ggml-org/whisper.cpp.git whisper-src'
+        'git clone --depth 1 --branch "v${WHISPER_UPSTREAM_VERSION}" https://github.com/ggml-org/whisper.cpp.git whisper-src'
         'cd whisper-src'
         'git apply ../scripts/whisper-server-config.patch'
+        'git apply ../scripts/whisper-utf8-json-fix.patch'
         'cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS}'
         'cmake --build build -j $(nproc)'
         '(cp /ucrt64/bin/libgcc_s_seh-1.dll /ucrt64/bin/libstdc++-6.dll /ucrt64/bin/libwinpthread-1.dll build/bin/ 2>/dev/null; true)'
@@ -457,7 +461,8 @@ build-whisper-linux-x64-rocm-legacy:
   stage: whisper-build
   tags: [saas-windows-medium-amd64]
   variables:
-    WHISPER_VERSION: "1.8.3"
+    WHISPER_UPSTREAM_VERSION: "1.8.3"
+    WHISPER_VERSION: "1.8.3-st.2"
     CMAKE_FLAGS: ""
     CMAKE_GENERATOR: "Ninja Multi-Config"
     EXTRA_DIST_FILES: ""
@@ -468,11 +473,12 @@ build-whisper-linux-x64-rocm-legacy:
     - !reference [.whisper-windows-install-msvc, before_script]
     - !reference [.whisper-windows-setup-msvc, before_script]
   script:
-    - git clone --depth 1 --branch "v$env:WHISPER_VERSION" -c
+    - git clone --depth 1 --branch "v$env:WHISPER_UPSTREAM_VERSION" -c
       core.autocrlf=false https://github.com/ggml-org/whisper.cpp.git
       whisper-src
     - cd whisper-src
     - git apply $env:CI_PROJECT_DIR/scripts/whisper-server-config.patch
+    - git apply $env:CI_PROJECT_DIR/scripts/whisper-utf8-json-fix.patch
     - |
       $flags = @("-B", "build", "-G", $env:CMAKE_GENERATOR, "-DBUILD_SHARED_LIBS=OFF")
       if ($env:CMAKE_FLAGS) { $flags += ($env:CMAKE_FLAGS -split '\s+') }

@@ -1,3 +1,5 @@
+import { startsWithSpacelessScript } from "./SpacelessScripts.ts"
+
 export type TimelineEntryType =
   | "segment"
   | "paragraph"
@@ -133,17 +135,28 @@ export function buildTranscriptFromTimeline(timeline: Timeline): string {
   const words: string[] = []
 
   function collectWords(entries: Timeline) {
-    for (const entry of entries) {
-      if (entry.type === "word") {
-        words.push(entry.text)
-      } else if (entry.timeline) {
+    for (let i = 0; i < entries.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const entry = entries[i]!
+
+      if (entry.timeline) {
         collectWords(entry.timeline)
+        continue
       }
+
+      if (!startsWithSpacelessScript(entry.text) && i !== entries.length - 1) {
+        words.push(entry.text)
+        words.push(" ")
+        continue
+      }
+
+      words.push(entry.text)
     }
   }
 
   collectWords(timeline)
-  return words.join(" ")
+
+  return words.join("")
 }
 
 export function addTimeOffsetToTimeline(

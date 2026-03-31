@@ -90,7 +90,7 @@ RUN if [ "$GPU_VARIANT" = "sycl" ]; then \
       intel-level-zero-gpu \
       level-zero \
       intel-oneapi-runtime-libs \
-      intel-oneapi-runtime-dnnl \ 
+      intel-oneapi-runtime-dnnl \
       intel-oneapi-umf-1.0 && \
     echo "/opt/intel/oneapi/umf/1.0/lib" > /etc/ld.so.conf.d/intel-umf.conf && \
     rm -rf /var/lib/apt/lists/* && \

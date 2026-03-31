@@ -8,7 +8,9 @@ import z from "zod"
 import { type RecognitionEngine } from "../api/Recognition.ts"
 import { getAppDataDir } from "../utilities/FileSystem.ts"
 
-export const WHISPER_CPP_VERSION = "1.8.3"
+export const WHISPER_CPP_UPSTREAM_VERSION = "1.8.3"
+export const WHISPER_CPP_PATCH_LEVEL = 2
+export const WHISPER_CPP_VERSION = `${WHISPER_CPP_UPSTREAM_VERSION}-st.${WHISPER_CPP_PATCH_LEVEL}`
 export const WHISPER_MODEL_VERSION = "1.0.0"
 export const SILERO_VAD_VERSION = "6.2.0"
 
