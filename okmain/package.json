@@ -45,8 +45,7 @@
     "build:debug": "napi build --platform",
     "test": "node --test __test__/index.test.ts",
     "test:update-snapshots": "node --test --test-update-snapshots __test__/index.test.ts ",
-    "prepublishOnly": "napi prepublish -t npm",
-    "prepack": "yarn build $FLAGS"
+    "prepublishOnly": "napi prepublish -t npm"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.2.0",
