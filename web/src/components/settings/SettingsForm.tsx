@@ -129,6 +129,7 @@ export function SettingsForm({
     opdsPageSize: settings.opdsPageSize,
     existingBooksScanIntervalMinutes:
       settings.existingBooksScanIntervalMinutes ?? null,
+    scanCronExpression: settings.scanCronExpression ?? null,
     metadataOverrideMode: settings.metadataOverrideMode,
   }
 
@@ -236,7 +237,7 @@ export function SettingsForm({
                 onClick={() => {
                   void triggerScan({ scope: "all", force: true })
                 }}
-                disabled={scanState?.running}
+                disabled={Boolean(scanState?.running)}
               >
                 Trigger Full Scan
               </Button>

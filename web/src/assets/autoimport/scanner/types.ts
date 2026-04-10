@@ -53,5 +53,5 @@ export interface PipelineStep {
 export interface PipelineRunnerOptions {
   concurrency: number
   signal: AbortSignal
-  onProgress?: (processed: number, total: number) => void
+  onProgress?: ((processed: number, total: number) => void) | undefined
 }

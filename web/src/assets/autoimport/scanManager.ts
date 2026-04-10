@@ -154,11 +154,12 @@ export async function runExistingBookScan(
 
 export async function runFullScan(signal: AbortSignal, options?: ScanOptions) {
   await runExclusive("manual-full", signal, async () => {
+    await runAllImportScansUnlocked(signal)
+
     await scanExistingBooks(signal, undefined, options)
     if (signal.aborted) {
       return
     }
-    await runAllImportScansUnlocked(signal)
   })
 }
 

@@ -674,7 +674,7 @@ export async function scan(
   signal: AbortSignal,
 ) {
   logger.debug(`Starting new scan for ${importPath}`)
-  let allBooks = await getBooks()
+  const allBooks = await getBooks()
   if (signal.aborted) {
     logger.debug("Scanning aborted")
     return

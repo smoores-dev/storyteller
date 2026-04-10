@@ -90,11 +90,14 @@ function Details({
 
               <span>{((fmt.fileSize ?? 0) / 1024 / 1024).toFixed(2)} MB</span>
 
-              {Boolean("isEpub2" in fmt && fmt.isEpub2) && (
-                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                  EPUB 2
-                </span>
-              )}
+              {
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+                Boolean("isEpub2" in fmt && fmt.isEpub2) && (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    EPUB 2
+                  </span>
+                )
+              }
             </>
           )}
         </div>

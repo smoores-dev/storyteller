@@ -14,7 +14,9 @@ export const openEpubStep: PipelineStep = {
       return
     }
 
-    ctx.epub = await Epub.from(ctx.filepath, { skipVersionCheck: true })
+    using epub = await Epub.from(ctx.filepath, { skipVersionCheck: true })
+
+    ctx.epub = epub
 
     const version = await ctx.epub.getVersion()
     ctx.isEpub2 = !!version && !version.startsWith("3.")
