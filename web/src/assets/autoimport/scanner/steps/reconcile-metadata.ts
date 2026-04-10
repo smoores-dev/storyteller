@@ -59,12 +59,6 @@ function resolveMetadata(
   extracted: BookUpdate | null,
   extractedRelations: BookRelationsUpdate,
 ): { metadataUpdate: BookUpdate | null; relationUpdate: BookRelationsUpdate } {
-  console.log({
-    mode,
-    current,
-    extracted,
-    extractedRelations,
-  })
   if (mode === "never") {
     return { metadataUpdate: null, relationUpdate: {} }
   }
@@ -103,10 +97,6 @@ export const reconcileMetadataStep: PipelineStep = {
       ctx.extractedRelations,
     )
 
-    console.log("relationUpdate", {
-      ...relationUpdate,
-      ...withFormatFields(ctx),
-    })
     await updateBook(ctx.bookUuid, metadataUpdate, {
       ...relationUpdate,
       ...withFormatFields(ctx),

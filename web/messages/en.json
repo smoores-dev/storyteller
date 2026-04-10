@@ -67,17 +67,23 @@
             "locationTypeInternal": "In the Storyteller internal folder"
           },
           "scanControls": {
-            "title": "Library Scan Controls",
-            "description": "Trigger full rescans for existing books and optionally run them on a schedule",
-            "triggerFullScan": "Trigger full scan",
-            "scanRunning": "Scan running ({source})",
-            "enableScheduledScans": "Schedule existing-book scans",
-            "scanInterval": "Existing-book scan interval (minutes)",
+            "title": "Library Scanning",
+            "description": "Scan your library for new files and changes. Scans check all tracked books and import paths for additions, removals, and modified files.",
+            "scanLibrary": "Scan library",
+            "forceRescan": "Force re-read all metadata",
+            "scanRunning": "Scan in progress ({source})",
+            "enableScheduledScans": "Run scans on a schedule",
+            "scanInterval": "Scan interval (minutes)",
+            "showAdvancedCron": "Use a cron expression instead",
+            "showSimpleInterval": "Use a simple interval instead",
+            "cronExpression": "Cron expression",
+            "cronExpressionDescription": "Standard cron syntax (minute hour day month weekday). The expression is evaluated in the server's timezone.",
+            "cronHelper": "Cron expression reference (crontab.guru)",
             "metadataOverrideMode": "Metadata override behavior",
-            "metadataOverrideModeDescription": "Controls how metadata from scanned files is applied to existing books",
-            "metadataOverrideFillEmpty": "Fill empty fields only (default)",
-            "metadataOverrideAlways": "Always use file metadata as source of truth",
-            "metadataOverrideNever": "Never override book metadata"
+            "metadataOverrideModeDescription": "Controls what happens to a book's metadata (title, author, description, etc.) when a scan detects a change in the source file.",
+            "metadataOverrideFillEmpty": "Fill empty fields only -- only write metadata for fields that are currently blank",
+            "metadataOverrideAlways": "Always overwrite -- replace all metadata with what is read from the file on every scan",
+            "metadataOverrideNever": "Never overwrite -- never touch metadata after initial import"
           }
         }
       },

@@ -37,15 +37,30 @@ function minutesToCronExpression(minutes: number): string {
   return `0 */${clampedHours} * * *`
 }
 
+async function resolveCronExpression(): Promise<string | null> {
+  const [cronExpression, intervalMinutes] = await Promise.all([
+    getSetting("scanCronExpression"),
+    getSetting("existingBooksScanIntervalMinutes"),
+  ])
+
+  if (cronExpression) {
+    return cronExpression
+  }
+
+  if (!intervalMinutes || intervalMinutes <= 0) {
+    return null
+  }
+
+  return minutesToCronExpression(intervalMinutes)
+}
+
 export async function refreshScheduledScan() {
   await clearScheduledTask()
 
-  const intervalMinutes = await getSetting("existingBooksScanIntervalMinutes")
-  if (!intervalMinutes || intervalMinutes <= 0) {
+  const expression = await resolveCronExpression()
+  if (!expression) {
     return
   }
-
-  const expression = minutesToCronExpression(intervalMinutes)
 
   scheduledTask = cron.schedule(
     expression,
@@ -54,14 +69,11 @@ export async function refreshScheduledScan() {
       try {
         await runScheduledFullScan(controller.signal)
       } catch (error: unknown) {
-        logger.error("Scheduled full scan failed")
-        logger.error(error)
+        logger.error({ msg: "Scheduled full scan failed", err: error })
       }
     },
     { name: "scheduled-library-scan", noOverlap: true },
   )
 
-  logger.info(
-    `Configured scheduled full scan every ${intervalMinutes} minute(s) (cron: ${expression})`,
-  )
+  logger.info(`Scheduled library scan configured (cron: ${expression})`)
 }

@@ -46,7 +46,7 @@ async function runSingleContext(
     })
     ctx.logger = childLogger
     if (signal.aborted) {
-      childLogger.error("Scan pipeline aborted, stopping step")
+      childLogger.debug("Scan aborted, stopping")
       break
     }
 
@@ -87,11 +87,13 @@ export async function runPipeline(
   let nextIndex = 0
   let processed = 0
 
+  logger.info(`Scanning ${total} book(s) with concurrency ${concurrency}`)
+
   const runWorker = async () => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, no-constant-condition
     while (true) {
       if (options.signal.aborted) {
-        logger.error("Scan pipeline aborted, stopping workers")
+        logger.warn("Scan pipeline aborted, stopping workers")
         return
       }
 
@@ -99,17 +101,18 @@ export async function runPipeline(
       nextIndex += 1
 
       if (index >= contexts.length) {
-        logger.info("Scan pipeline completed, stopping workers")
         return
       }
 
       const ctx = contexts[index]
       if (!ctx) {
-        logger.error("Scan pipeline context is undefined, stopping workers")
+        logger.error("Scan pipeline context is undefined, skipping")
         continue
       }
 
-      logger.info(`Scan pipeline running context ${index} of ${total}`)
+      logger.debug(
+        `Scanning ${index + 1}/${total}: ${ctx.book?.title ?? ctx.filepath}`,
+      )
       await runSingleContext(ctx, steps, options.signal)
       processed += 1
       options.onProgress?.(processed, total)
@@ -117,4 +120,6 @@ export async function runPipeline(
   }
 
   await Promise.all(Array.from({ length: concurrency }, () => runWorker()))
+
+  logger.info(`Scan pipeline finished: ${processed}/${total} book(s) processed`)
 }

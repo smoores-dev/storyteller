@@ -126,6 +126,7 @@ export const SettingsSchema = z.object({
   opdsPageSize: z.number().nullable(),
   // Scanning settings
   existingBooksScanIntervalMinutes: z.number().nullable(),
+  scanCronExpression: z.string().nullable(),
   metadataOverrideMode: MetadataOverrideModeSchema,
 })
 export type Settings = z.infer<typeof SettingsSchema>

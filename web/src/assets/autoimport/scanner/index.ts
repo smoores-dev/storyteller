@@ -60,16 +60,20 @@ export function createScanContext(input: {
   }
 }
 
+type PipelineRunnerOptions = {
+  concurrency: number
+  signal: AbortSignal
+  onProgress?: (processed: number, total: number) => void
+}
+
 export async function runBookScanPipeline(
   contexts: ScanContext[],
-  signal: AbortSignal,
+  options: PipelineRunnerOptions,
 ) {
   await runPipeline(contexts, [...steps], {
-    concurrency: contexts.length === 1 ? 1 : 2,
-    signal,
-    onProgress(processed, total) {
-      logger.debug(`scan pipeline progress ${processed}/${total}`)
-    },
+    concurrency: contexts.length === 1 ? 1 : options.concurrency,
+    signal: options.signal,
+    onProgress: options.onProgress,
   })
 }
 

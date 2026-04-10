@@ -97,7 +97,10 @@ function hasAnyRelationChange(
   book: BookWithRelations,
   bookPath: BookPath,
 ): boolean {
-  if (bookPath.ebook && (!book.ebook || book.ebook.filepath !== bookPath.ebook)) {
+  if (
+    bookPath.ebook &&
+    (!book.ebook || book.ebook.filepath !== bookPath.ebook)
+  ) {
     return true
   }
   if (
@@ -209,7 +212,10 @@ async function attachNewRelations(
   const newFormats: ScanFormat[] = []
   const relations: Parameters<typeof updateBook>[2] = {}
 
-  if (bookPath.ebook && (!book.ebook || book.ebook.filepath !== bookPath.ebook)) {
+  if (
+    bookPath.ebook &&
+    (!book.ebook || book.ebook.filepath !== bookPath.ebook)
+  ) {
     relations.ebook = {
       filepath: bookPath.ebook,
       missing: false,
@@ -809,7 +815,13 @@ export async function scan(
     return entries
   })
 
-  await runBookScanPipeline(contexts, signal)
+  await runBookScanPipeline(contexts, {
+    concurrency: 2,
+    onProgress: (processed, total) => {
+      logger.debug(`Scanning ${importPath}: (${processed}/${total})`)
+    },
+    signal,
+  })
   await updateReadaloudMissingState(refreshedBooks, signal)
 
   logger.info("Scanning complete")
@@ -1019,7 +1031,13 @@ export async function scanChangedPaths(
     return
   }
 
-  await runBookScanPipeline(contexts, signal)
+  await runBookScanPipeline(contexts, {
+    concurrency: 2,
+    onProgress: (processed, total) => {
+      logger.debug(`Scanning ${importPath}: (${processed}/${total})`)
+    },
+    signal,
+  })
   await updateReadaloudMissingState(
     refreshedBooks.filter((book) => affectedFormatsByBook.has(book.uuid)),
     signal,

@@ -1,6 +1,8 @@
 "use client"
 
+import { IconChevronDown } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
+import { useState } from "react"
 import { useWatch } from "react-hook-form"
 
 import { usePermissions } from "@/hooks/usePermissions"
@@ -17,6 +19,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@v3/_/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuTrigger,
+} from "@v3/_/components/ui/dropdown-menu"
 import { Input } from "@v3/_/components/ui/input"
 import { Label } from "@v3/_/components/ui/label"
 import {
@@ -119,10 +128,72 @@ function AutoImportSection() {
   )
 }
 
+function ScanTriggerButton({
+  scanState,
+  isTriggeringScan,
+  triggerScan,
+}: {
+  scanState: { running: boolean; source: string | null } | undefined
+  isTriggeringScan: boolean
+  triggerScan: (args: {
+    scope?: "existing" | "imports" | "all"
+    force?: boolean
+  }) => void
+}) {
+  const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
+  const isDisabled = scanState?.running || isTriggeringScan
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-r-none border-r-0"
+          disabled={isDisabled}
+          onClick={() => {
+            triggerScan({ scope: "all", force: false })
+          }}
+        >
+          {t("scanLibrary")}
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={isDisabled}
+            className="border-border dark:bg-input/30 hover:bg-input/50 inline-flex h-6 items-center rounded-r-md border px-1 text-xs disabled:pointer-events-none disabled:opacity-50"
+          >
+            <IconChevronDown size={14} />
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={() => {
+                  triggerScan({ scope: "all", force: true })
+                }}
+              >
+                {t("forceRescan")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenu>
+      </div>
+
+      {scanState?.running && (
+        <p className="text-muted-foreground text-sm">
+          {t("scanRunning", { source: scanState.source ?? "unknown" })}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function ScanControlsSection() {
   const { form } = useSettingsForm()
   const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
   const permissions = usePermissions()
+  const [showCronInput, setShowCronInput] = useState(false)
 
   const { data: scanState } = useGetScanStateQuery(undefined, {
     pollingInterval: 5_000,
@@ -135,12 +206,25 @@ function ScanControlsSection() {
     control: form.control,
     name: "existingBooksScanIntervalMinutes",
   })
-  const isScheduled = scheduledInterval !== null
+  const cronExpression = useWatch({
+    control: form.control,
+    name: "scanCronExpression",
+  })
+  const isScheduled = scheduledInterval !== null || !!cronExpression
 
   const metadataOverrideOptions = [
-    { value: "fill-empty", label: t("metadataOverrideFillEmpty") },
-    { value: "always", label: t("metadataOverrideAlways") },
-    { value: "never", label: t("metadataOverrideNever") },
+    {
+      value: "fill-empty",
+      label: t("metadataOverrideFillEmpty"),
+    },
+    {
+      value: "always",
+      label: t("metadataOverrideAlways"),
+    },
+    {
+      value: "never",
+      label: t("metadataOverrideNever"),
+    },
   ]
 
   return (
@@ -152,25 +236,13 @@ function ScanControlsSection() {
         </CardHeader>
         <CardContent className="space-y-4">
           {permissions?.bookProcess && (
-            <div className="space-y-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={scanState?.running || isTriggeringScan}
-                onClick={() => {
-                  void triggerScan({ scope: "all", force: true })
-                }}
-              >
-                {t("triggerFullScan")}
-              </Button>
-
-              {scanState?.running && (
-                <p className="text-muted-foreground text-sm">
-                  {t("scanRunning", { source: scanState.source ?? "unknown" })}
-                </p>
-              )}
-            </div>
+            <ScanTriggerButton
+              scanState={scanState}
+              isTriggeringScan={isTriggeringScan}
+              triggerScan={(args) => {
+                void triggerScan(args)
+              }}
+            />
           )}
 
           <div className="flex items-center gap-2">
@@ -178,10 +250,13 @@ function ScanControlsSection() {
               id="enableScheduledScans"
               checked={isScheduled}
               onCheckedChange={(checked) => {
-                form.setValue(
-                  "existingBooksScanIntervalMinutes",
-                  checked ? 1440 : null,
-                )
+                if (checked) {
+                  form.setValue("existingBooksScanIntervalMinutes", 1440)
+                  form.setValue("scanCronExpression", null)
+                } else {
+                  form.setValue("existingBooksScanIntervalMinutes", null)
+                  form.setValue("scanCronExpression", null)
+                }
               }}
             />
             <Label htmlFor="enableScheduledScans">
@@ -190,24 +265,85 @@ function ScanControlsSection() {
           </div>
 
           {isScheduled && (
-            <SettingsFormField
-              name="existingBooksScanIntervalMinutes"
-              label={t("scanInterval")}
-              render={(field, fieldState, isLocked) => (
-                <Input
-                  id="existingBooksScanIntervalMinutes"
-                  type="number"
-                  min={1}
-                  disabled={isLocked}
-                  value={field.value ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    field.onChange(val === "" ? null : Number(val))
-                  }}
-                  aria-invalid={fieldState.invalid}
-                />
+            <div className="space-y-3">
+              {!showCronInput ? (
+                <>
+                  <SettingsFormField
+                    name="existingBooksScanIntervalMinutes"
+                    label={t("scanInterval")}
+                    render={(field, fieldState, isLocked) => (
+                      <Input
+                        id="existingBooksScanIntervalMinutes"
+                        type="number"
+                        min={1}
+                        disabled={isLocked}
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          field.onChange(val === "" ? null : Number(val))
+                          form.setValue("scanCronExpression", null)
+                        }}
+                        aria-invalid={fieldState.invalid}
+                      />
+                    )}
+                  />
+
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground text-xs underline"
+                    onClick={() => setShowCronInput(true)}
+                  >
+                    {t("showAdvancedCron")}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <SettingsFormField
+                    name="scanCronExpression"
+                    label={t("cronExpression")}
+                    description={t("cronExpressionDescription")}
+                    render={(field, fieldState, isLocked) => (
+                      <Input
+                        id="scanCronExpression"
+                        disabled={isLocked}
+                        placeholder="0 */4 * * *"
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          field.onChange(val || null)
+                          if (val) {
+                            form.setValue(
+                              "existingBooksScanIntervalMinutes",
+                              null,
+                            )
+                          }
+                        }}
+                        aria-invalid={fieldState.invalid}
+                      />
+                    )}
+                  />
+
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="https://crontab.guru/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                    >
+                      {t("cronHelper")}
+                    </a>
+
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                      onClick={() => setShowCronInput(false)}
+                    >
+                      {t("showSimpleInterval")}
+                    </button>
+                  </div>
+                </>
               )}
-            />
+            </div>
           )}
 
           <SettingsFormField
@@ -221,6 +357,7 @@ function ScanControlsSection() {
                 value={field.value}
                 onValueChange={(value) => {
                   if (!value) return
+
                   field.onChange(value)
                 }}
               >
