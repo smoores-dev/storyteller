@@ -224,7 +224,7 @@ export function SettingsForm({
         )}
       >
         <Stack>
-          <Text className="text-sm text-black opacity-70">
+          <Text className="text-sm opacity-70 dark:text-white">
             Trigger full rescans for existing books and optionally run them on a
             schedule.
           </Text>
@@ -236,13 +236,14 @@ export function SettingsForm({
                 onClick={() => {
                   void triggerScan({ scope: "all", force: true })
                 }}
+                disabled={scanState?.running}
               >
                 Trigger Full Scan
               </Button>
             </Group>
           )}
           {permissions?.bookProcess && scanState?.running && (
-            <Text className="text-sm text-black opacity-70">
+            <Text className="text-sm opacity-70 dark:text-white">
               Scan running ({scanState.source ?? "unknown"})
             </Text>
           )}
