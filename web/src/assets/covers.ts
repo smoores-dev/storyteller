@@ -259,7 +259,7 @@ export async function getEpubCover(book: BookWithRelations) {
   if (!epubFilepath) return null
 
   if (!epubFilepath) return null
-  using epub = await Epub.from(epubFilepath, { skipVersionCheck: true })
+  using epub = await Epub.from(epubFilepath)
   const coverImageItem = await epub.getCoverImageItem()
   if (!coverImageItem) return null
   const data = await epub.getCoverImage()

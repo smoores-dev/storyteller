@@ -324,7 +324,6 @@ export const api = createApi({
     triggerScan: build.mutation<
       void,
       {
-        scope?: "existing" | "imports" | "all"
         force?: boolean
         metadataOverride?: string
       } | void
@@ -333,7 +332,6 @@ export const api = createApi({
         url: "/books/scan",
         method: "POST",
         params: {
-          ...(args?.scope && { scope: args.scope }),
           ...(args?.force && { force: "true" }),
           ...(args?.metadataOverride && {
             metadataOverride: args.metadataOverride,

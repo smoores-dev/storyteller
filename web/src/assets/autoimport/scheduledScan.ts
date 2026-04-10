@@ -3,7 +3,7 @@ import cron, { type ScheduledTask } from "node-cron"
 import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 
-import { runScheduledFullScan } from "./scanManager"
+import { runScheduledScan } from "./scanManager"
 
 let scheduledTask: ScheduledTask | null = null
 
@@ -67,7 +67,7 @@ export async function refreshScheduledScan() {
     async () => {
       const controller = new AbortController()
       try {
-        await runScheduledFullScan(controller.signal)
+        await runScheduledScan(controller.signal)
       } catch (error: unknown) {
         logger.error({ msg: "Scheduled full scan failed", err: error })
       }

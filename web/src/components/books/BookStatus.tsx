@@ -1,6 +1,7 @@
 "use client"
 
-import { Box, Button, Group, Paper, Progress, Stack, Text } from "@mantine/core"
+import { Box, Button, Group, Menu, Paper, Progress, Stack, Text } from "@mantine/core"
+import { IconChevronDown } from "@tabler/icons-react"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import {
@@ -89,16 +90,70 @@ export function BookStatus({ bookUuid }: Props) {
         )}
 
         {permissions.bookProcess && (
-          <Button
-            variant="subtle"
-            size="compact-sm"
-            loading={isTriggeringScan}
-            onClick={() => {
-              void triggerBookScan({ uuid: book.uuid, force: true })
-            }}
-          >
-            Trigger Scan
-          </Button>
+          <Button.Group>
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              loading={isTriggeringScan}
+              onClick={() => {
+                void triggerBookScan({ uuid: book.uuid })
+              }}
+            >
+              Scan
+            </Button>
+            <Menu position="bottom-end">
+              <Menu.Target>
+                <Button
+                  variant="subtle"
+                  size="compact-sm"
+                  disabled={isTriggeringScan}
+                  px={4}
+                >
+                  <IconChevronDown size={14} />
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  onClick={() => {
+                    void triggerBookScan({ uuid: book.uuid, force: true })
+                  }}
+                >
+                  Force re-read metadata
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={() => {
+                    void triggerBookScan({
+                      uuid: book.uuid,
+                      metadataOverride: "always",
+                    })
+                  }}
+                >
+                  Overwrite all metadata from file
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() => {
+                    void triggerBookScan({
+                      uuid: book.uuid,
+                      metadataOverride: "fill-empty",
+                    })
+                  }}
+                >
+                  Fill empty metadata from file
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() => {
+                    void triggerBookScan({
+                      uuid: book.uuid,
+                      metadataOverride: "never",
+                    })
+                  }}
+                >
+                  Scan without touching metadata
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Button.Group>
         )}
       </Group>
     </Paper>

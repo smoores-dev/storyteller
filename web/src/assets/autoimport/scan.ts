@@ -672,12 +672,14 @@ export async function scan(
   importPath: string,
   collectionUuid: UUID | null,
   signal: AbortSignal,
-) {
+): Promise<Set<UUID>> {
+  const scannedBookUuids = new Set<UUID>()
+
   logger.debug(`Starting new scan for ${importPath}`)
   const allBooks = await getBooks()
   if (signal.aborted) {
     logger.debug("Scanning aborted")
-    return
+    return scannedBookUuids
   }
 
   let books = getScopedBooks(allBooks, collectionUuid)
@@ -701,7 +703,7 @@ export async function scan(
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (signal.aborted) {
     logger.debug("Scanning aborted")
-    return
+    return scannedBookUuids
   }
 
   logger.debug(`Found ${bookPaths.length} book folders.`)
@@ -712,7 +714,7 @@ export async function scan(
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (signal.aborted) {
       logger.debug("Scanning aborted")
-      return
+      return scannedBookUuids
     }
 
     // check all books (not just scoped) to prevent duplicates across overlapping import paths
@@ -824,7 +826,12 @@ export async function scan(
   })
   await updateReadaloudMissingState(refreshedBooks, signal)
 
+  for (const ctx of contexts) {
+    scannedBookUuids.add(ctx.bookUuid)
+  }
+
   logger.info("Scanning complete")
+  return scannedBookUuids
 }
 
 export async function scanChangedPaths(

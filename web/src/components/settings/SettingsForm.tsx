@@ -11,6 +11,7 @@ import {
   Fieldset,
   Group,
   List,
+  Menu,
   MultiSelect,
   NativeSelect,
   NumberInput,
@@ -22,7 +23,13 @@ import {
   TextInput,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import { IconFlame, IconLock, IconPlus, IconTrash } from "@tabler/icons-react"
+import {
+  IconChevronDown,
+  IconFlame,
+  IconLock,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react"
 import { useRef, useState } from "react"
 
 import type { Settings } from "@/apiModels"
@@ -218,65 +225,161 @@ export function SettingsForm({
         </Text>
       </ImportPathInput>
       <Fieldset
-        legend="Library scan controls"
+        legend="Library scanning"
         disabled={isAnyLocked(
           "existingBooksScanIntervalMinutes",
-          "existingBooksScanIntervalMinutes",
+          "metadataOverrideMode",
         )}
       >
         <Stack>
           <Text className="text-sm opacity-70 dark:text-white">
-            Trigger full rescans for existing books and optionally run them on a
-            schedule.
+            Scan your library for new files and changes. Scans check all tracked
+            books and import paths for additions, removals, and modified files.
           </Text>
           {permissions?.bookProcess && (
             <Group>
-              <Button
-                variant="outline"
-                loading={isTriggeringScan}
-                onClick={() => {
-                  void triggerScan({ scope: "all", force: true })
-                }}
-                disabled={Boolean(scanState?.running)}
-              >
-                Trigger Full Scan
-              </Button>
+              <Button.Group>
+                <Button
+                  variant="outline"
+                  loading={isTriggeringScan}
+                  onClick={() => {
+                    void triggerScan({})
+                  }}
+                  disabled={Boolean(scanState?.running)}
+                >
+                  Scan library
+                </Button>
+                <Menu position="bottom-end">
+                  <Menu.Target>
+                    <Button
+                      variant="outline"
+                      disabled={
+                        Boolean(scanState?.running) || isTriggeringScan
+                      }
+                      px="xs"
+                    >
+                      <IconChevronDown size={14} />
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      onClick={() => {
+                        void triggerScan({ force: true })
+                      }}
+                    >
+                      Force re-read all metadata
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      onClick={() => {
+                        void triggerScan({ metadataOverride: "always" })
+                      }}
+                    >
+                      Scan and overwrite all metadata
+                    </Menu.Item>
+                    <Menu.Item
+                      onClick={() => {
+                        void triggerScan({ metadataOverride: "fill-empty" })
+                      }}
+                    >
+                      Scan and fill empty metadata only
+                    </Menu.Item>
+                    <Menu.Item
+                      onClick={() => {
+                        void triggerScan({ metadataOverride: "never" })
+                      }}
+                    >
+                      Scan without touching metadata
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Button.Group>
             </Group>
           )}
           {permissions?.bookProcess && scanState?.running && (
             <Text className="text-sm opacity-70 dark:text-white">
-              Scan running ({scanState.source ?? "unknown"})
+              Scan in progress ({scanState.source ?? "unknown"})
             </Text>
           )}
           <Switch
-            label="Schedule existing-book scans"
-            checked={state.existingBooksScanIntervalMinutes !== null}
+            label="Run scans on a schedule"
+            checked={
+              state.existingBooksScanIntervalMinutes !== null ||
+              !!state.scanCronExpression
+            }
             onChange={(event) => {
               if (!event.currentTarget.checked) {
                 form.setFieldValue("existingBooksScanIntervalMinutes", null)
+                form.setFieldValue("scanCronExpression", null)
                 return
               }
 
-              form.setFieldValue("existingBooksScanIntervalMinutes", 60)
+              form.setFieldValue("existingBooksScanIntervalMinutes", 1440)
+              form.setFieldValue("scanCronExpression", null)
             }}
           />
-          {state.existingBooksScanIntervalMinutes !== null && (
-            <NumberInput
-              label="Existing-book scan interval (minutes)"
-              min={1}
-              {...form.getInputProps("existingBooksScanIntervalMinutes")}
-            />
+          {(state.existingBooksScanIntervalMinutes !== null ||
+            !!state.scanCronExpression) && (
+            <>
+              <NumberInput
+                label="Scan interval (minutes)"
+                min={1}
+                {...form.getInputProps("existingBooksScanIntervalMinutes")}
+                value={state.existingBooksScanIntervalMinutes ?? ""}
+                onChange={(val) => {
+                  form.setFieldValue(
+                    "existingBooksScanIntervalMinutes",
+                    val === "" ? null : Number(val),
+                  )
+                  form.setFieldValue("scanCronExpression", null)
+                }}
+              />
+              <TextInput
+                label="Or use a cron expression"
+                description={
+                  <>
+                    Standard cron syntax (minute hour day month weekday).{" "}
+                    <Anchor
+                      href="https://crontab.guru/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="sm"
+                    >
+                      Cron expression reference
+                    </Anchor>
+                  </>
+                }
+                placeholder="0 */4 * * *"
+                value={state.scanCronExpression ?? ""}
+                onChange={(event) => {
+                  const val = event.currentTarget.value
+                  form.setFieldValue("scanCronExpression", val || null)
+                  if (val) {
+                    form.setFieldValue(
+                      "existingBooksScanIntervalMinutes",
+                      null,
+                    )
+                  }
+                }}
+              />
+            </>
           )}
           <NativeSelect
             label="Metadata override behavior"
-            description="Controls how metadata from scanned files is applied to existing books."
+            description="Controls what happens to a book's metadata (title, author, description, etc.) when a scan detects a change in the source file."
             {...form.getInputProps("metadataOverrideMode")}
           >
-            <option value="fill-empty">Fill empty fields only (default)</option>
-            <option value="always">
-              Always use file metadata as source of truth
+            <option value="fill-empty">
+              Fill empty fields only -- only write metadata for fields that are
+              currently blank
             </option>
-            <option value="never">Never override book metadata</option>
+            <option value="always">
+              Always overwrite -- replace all metadata with what is read from the
+              file on every scan
+            </option>
+            <option value="never">
+              Never overwrite -- never touch metadata after initial import
+            </option>
           </NativeSelect>
         </Stack>
       </Fieldset>

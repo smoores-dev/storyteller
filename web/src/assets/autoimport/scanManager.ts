@@ -10,12 +10,7 @@ import { type ImportPathChange, scan, scanChangedPaths } from "./scan"
 import { scanExistingBooks } from "./scanExisting"
 import { type ScanOptions } from "./scanner"
 
-type ScanSource =
-  | "watcher"
-  | "manual-existing"
-  | "manual-imports"
-  | "manual-full"
-  | "scheduled"
+type ScanSource = "watcher" | "manual" | "scheduled"
 
 type ScanState = {
   running: boolean
@@ -81,27 +76,33 @@ async function runExclusive(
   }
 }
 
-async function runAllImportScansUnlocked(signal: AbortSignal) {
+async function runImportScans(signal: AbortSignal): Promise<Set<UUID>> {
   const [rootImportPaths, collections] = await Promise.all([
     getSetting("importPath"),
     getCollections(),
   ])
   const targets = getImportTargets(rootImportPaths, collections)
 
+  const scannedUuids = new Set<UUID>()
   for (const target of targets) {
     if (signal.aborted) {
-      return
+      return scannedUuids
     }
 
-    await scan(target.importPath, target.collectionUuid, signal)
+    const uuids = await scan(target.importPath, target.collectionUuid, signal)
+    for (const uuid of uuids) {
+      scannedUuids.add(uuid)
+    }
   }
+
+  return scannedUuids
 }
 
 export function getScanState(): ScanState {
   return { ...state }
 }
 
-export async function runImportPathScan(
+export async function runWatcherScan(
   importPath: string,
   collectionUuid: UUID | null,
   signal: AbortSignal,
@@ -111,7 +112,7 @@ export async function runImportPathScan(
   })
 }
 
-export async function runImportPathChangeScan(
+export async function runWatcherChangeScan(
   importPath: string,
   collectionUuid: UUID | null,
   changes: ImportPathChange[],
@@ -122,54 +123,51 @@ export async function runImportPathChangeScan(
   })
 }
 
-export async function runAllImportScans(signal: AbortSignal) {
-  await runExclusive("manual-imports", signal, async () => {
-    await runAllImportScansUnlocked(signal)
-  })
-}
-
-export async function runExistingBooksScan(
+export async function runLibraryScan(
   signal: AbortSignal,
   options?: ScanOptions,
 ) {
-  await runExclusive("manual-existing", signal, async () => {
-    await scanExistingBooks(signal, undefined, options)
+  await runExclusive("manual", signal, async () => {
+    const scannedUuids = await runImportScans(signal)
+    if (signal.aborted) {
+      return
+    }
+
+    await scanExistingBooks(signal, {
+      ...(options && { scanOptions: options }),
+      excludeBookUuids: scannedUuids,
+    })
   })
 }
 
-export async function runExistingBookScan(
+export async function runSingleBookScan(
   bookUuid: UUID,
   signal: AbortSignal,
   options?: ScanOptions,
 ) {
-  await runExclusive("manual-existing", signal, async () => {
+  await runExclusive("manual", signal, async () => {
     const book = await getBook(bookUuid)
     if (!book) {
       logger.error(`Book ${bookUuid} not found`)
       return
     }
-    await scanExistingBooks(signal, [bookUuid], options)
+
+    await scanExistingBooks(signal, {
+      bookUuids: [bookUuid],
+      ...(options && { scanOptions: options }),
+    })
   })
 }
 
-export async function runFullScan(signal: AbortSignal, options?: ScanOptions) {
-  await runExclusive("manual-full", signal, async () => {
-    await runAllImportScansUnlocked(signal)
-
-    await scanExistingBooks(signal, undefined, options)
-    if (signal.aborted) {
-      return
-    }
-  })
-}
-
-export async function runScheduledFullScan(signal: AbortSignal) {
+export async function runScheduledScan(signal: AbortSignal) {
   await runExclusive("scheduled", signal, async () => {
-    logger.info("Running scheduled full scan")
-    await scanExistingBooks(signal)
+    logger.info("Running scheduled library scan")
+
+    const scannedUuids = await runImportScans(signal)
     if (signal.aborted) {
       return
     }
-    await runAllImportScansUnlocked(signal)
+
+    await scanExistingBooks(signal, { excludeBookUuids: scannedUuids })
   })
 }

@@ -24,6 +24,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuPortal,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 import { Input } from "@v3/_/components/ui/input"
@@ -128,6 +129,11 @@ function AutoImportSection() {
   )
 }
 
+type ScanTriggerArgs = {
+  force?: boolean
+  metadataOverride?: string
+}
+
 function ScanTriggerButton({
   scanState,
   isTriggeringScan,
@@ -135,10 +141,7 @@ function ScanTriggerButton({
 }: {
   scanState: { running: boolean; source: string | null } | undefined
   isTriggeringScan: boolean
-  triggerScan: (args: {
-    scope?: "existing" | "imports" | "all"
-    force?: boolean
-  }) => void
+  triggerScan: (args: ScanTriggerArgs) => void
 }) {
   const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
   const isDisabled = scanState?.running || isTriggeringScan
@@ -153,7 +156,7 @@ function ScanTriggerButton({
           className="rounded-r-none border-r-0"
           disabled={isDisabled}
           onClick={() => {
-            triggerScan({ scope: "all", force: false })
+            triggerScan({})
           }}
         >
           {t("scanLibrary")}
@@ -170,10 +173,32 @@ function ScanTriggerButton({
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onSelect={() => {
-                  triggerScan({ scope: "all", force: true })
+                  triggerScan({ force: true })
                 }}
               >
                 {t("forceRescan")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => {
+                  triggerScan({ metadataOverride: "always" })
+                }}
+              >
+                {t("scanOverrideAlways")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  triggerScan({ metadataOverride: "fill-empty" })
+                }}
+              >
+                {t("scanOverrideFillEmpty")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  triggerScan({ metadataOverride: "never" })
+                }}
+              >
+                {t("scanOverrideNever")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenuPortal>
@@ -240,7 +265,12 @@ function ScanControlsSection() {
               scanState={scanState}
               isTriggeringScan={isTriggeringScan}
               triggerScan={(args) => {
-                void triggerScan(args)
+                void triggerScan({
+                  ...(args.force !== undefined && { force: args.force }),
+                  ...(args.metadataOverride !== undefined && {
+                    metadataOverride: args.metadataOverride,
+                  }),
+                })
               }}
             />
           )}
@@ -291,7 +321,7 @@ function ScanControlsSection() {
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground text-xs underline"
-                    onClick={() => setShowCronInput(true)}
+                    onClick={() => { setShowCronInput(true); }}
                   >
                     {t("showAdvancedCron")}
                   </button>
@@ -336,7 +366,7 @@ function ScanControlsSection() {
                     <button
                       type="button"
                       className="text-muted-foreground hover:text-foreground text-xs underline"
-                      onClick={() => setShowCronInput(false)}
+                      onClick={() => { setShowCronInput(false); }}
                     >
                       {t("showSimpleInterval")}
                     </button>

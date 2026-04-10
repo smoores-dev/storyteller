@@ -9,7 +9,7 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { type ImportPathChange } from "./scan"
-import { runImportPathChangeScan, runImportPathScan } from "./scanManager"
+import { runWatcherChangeScan, runWatcherScan } from "./scanManager"
 import {
   getWatcherOptions,
   readSnapshotChanges,
@@ -104,7 +104,7 @@ function startWatcher(
     await scanLock.lock()
     const batch = pendingChanges.splice(0, pendingChanges.length)
     try {
-      await runImportPathChangeScan(
+      await runWatcherChangeScan(
         importPath,
         collection,
         batch,
@@ -164,7 +164,7 @@ function startWatcher(
       logger.info(
         `No snapshot found for ${importPath}; running one full import-path scan to establish baseline.`,
       )
-      await runImportPathScan(importPath, collection, controller.signal)
+      await runWatcherScan(importPath, collection, controller.signal)
       await writeWatcherSnapshot(importPath)
       return
     }

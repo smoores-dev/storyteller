@@ -117,16 +117,24 @@ async function updateReadaloudMissingState(
 
 export async function scanExistingBooks(
   signal: AbortSignal,
-  bookUuids?: UUID[],
-  options?: ScanOptions,
+  options?: {
+    bookUuids?: UUID[]
+    scanOptions?: ScanOptions
+    excludeBookUuids?: Set<UUID>
+  },
 ) {
-  const books = await getBooks(bookUuids ?? null)
+  const books = await getBooks(options?.bookUuids ?? null)
   if (signal.aborted) {
-    logger.debug("Existing-book scan aborted")
+    logger.debug("Library scan aborted")
     return
   }
 
-  const contexts = buildScanContexts(books, options)
+  const excludeUuids = options?.excludeBookUuids
+  const filteredBooks = excludeUuids
+    ? books.filter((book) => !excludeUuids.has(book.uuid))
+    : books
+
+  const contexts = buildScanContexts(filteredBooks, options?.scanOptions)
   logger.info(`Scanning ${contexts.length} tracked book format(s)`)
   await runBookScanPipeline(contexts, {
     concurrency: 2,
@@ -135,6 +143,6 @@ export async function scanExistingBooks(
     },
     signal,
   })
-  await updateReadaloudMissingState(books, signal)
+  await updateReadaloudMissingState(filteredBooks, signal)
   logger.info("Library scan complete")
 }

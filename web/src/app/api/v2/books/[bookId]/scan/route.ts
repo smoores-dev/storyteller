@@ -1,5 +1,5 @@
 import { parseScanOptions } from "@/app/api/v2/books/scan/route"
-import { runExistingBookScan } from "@/assets/autoimport/scanManager"
+import { runSingleBookScan } from "@/assets/autoimport/scanManager"
 import { withHasPermission } from "@/auth/auth"
 import { getBookUuid } from "@/database/books"
 
@@ -18,7 +18,7 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
   const controller = new AbortController()
   const options = parseScanOptions(request.nextUrl.searchParams)
 
-  void runExistingBookScan(bookUuid, controller.signal, options)
+  void runSingleBookScan(bookUuid, controller.signal, options)
 
   return new Response(null, { status: 204 })
 })
