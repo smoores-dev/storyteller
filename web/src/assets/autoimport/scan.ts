@@ -8,7 +8,6 @@ import {
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
-import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
 import { getDefaultSuffix, getInternalBookDirectory } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import {
@@ -23,7 +22,6 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
-import { wasPathRecentlyDeleted } from "./recentDeletes"
 import {
   type ScanFlag,
   type ScanFormat,
@@ -50,11 +48,6 @@ export type ImportPathChange = {
 type SearchRoot = {
   rootPath: string
   warnIfFileAtRoot: boolean
-}
-
-type MovePair = {
-  from: string
-  to: string
 }
 
 function getScopedBooks(
@@ -630,14 +623,6 @@ function getDiscoveryRootsFromChanges(
   return Array.from(roots)
 }
 
-function toMoveKey(path: string): string {
-  const name = basename(path).toLowerCase()
-  if (extname(path)) {
-    return `file:${name}`
-  }
-  return `dir:${name}`
-}
-
 function mergeChangeType(
   previous: ImportPathChange["type"] | undefined,
   next: ImportPathChange["type"],
@@ -675,260 +660,6 @@ function coalesceChanges(changes: ImportPathChange[]): ImportPathChange[] {
     byPath.set(path, merged)
   }
   return Array.from(byPath.entries()).map(([path, type]) => ({ path, type }))
-}
-
-function detectMovePairs(changes: ImportPathChange[]): MovePair[] {
-  const deletesByKey = new Map<string, string[]>()
-  for (const change of changes) {
-    if (change.type !== "delete") {
-      continue
-    }
-    const key = toMoveKey(change.path)
-    const existing = deletesByKey.get(key) ?? []
-    existing.push(change.path)
-    deletesByKey.set(key, existing)
-  }
-
-  const pairs: MovePair[] = []
-  for (const change of changes) {
-    if (change.type !== "create") {
-      continue
-    }
-
-    const key = toMoveKey(change.path)
-    const existing = deletesByKey.get(key)
-    if (!existing?.length) {
-      continue
-    }
-
-    const from = existing.shift()
-    if (!from || from === change.path) {
-      continue
-    }
-
-    pairs.push({ from, to: change.path })
-  }
-  return pairs
-}
-
-function rewritePathForMove(path: string, move: MovePair): string | null {
-  const normalizedPath = normalizePath(path)
-  const normalizedFrom = normalizePath(move.from)
-  const normalizedTo = normalizePath(move.to)
-  if (normalizedPath === normalizedFrom) {
-    return normalizedTo
-  }
-  if (!normalizedPath.startsWith(`${normalizedFrom}/`)) {
-    return null
-  }
-  return `${normalizedTo}${normalizedPath.slice(normalizedFrom.length)}`
-}
-
-async function applyMovePairs(
-  books: BookWithRelations[],
-  movePairs: MovePair[],
-): Promise<Map<UUID, BookWithRelations>> {
-  const updatedBooks = new Map<UUID, BookWithRelations>()
-
-  for (const move of movePairs) {
-    for (const book of books) {
-      const current = updatedBooks.get(book.uuid) ?? book
-      const relations: Parameters<typeof updateBook>[2] = {}
-
-      if (current.ebook?.filepath) {
-        const next = rewritePathForMove(current.ebook.filepath, move)
-        if (next) {
-          relations.ebook = { filepath: next, missing: false }
-        }
-      }
-      if (current.audiobook?.filepath) {
-        const next = rewritePathForMove(current.audiobook.filepath, move)
-        if (next) {
-          relations.audiobook = { filepath: next, missing: false }
-        }
-      }
-      if (current.readaloud?.filepath) {
-        const next = rewritePathForMove(current.readaloud.filepath, move)
-        if (next) {
-          relations.readaloud = {
-            filepath: next,
-            missing: false,
-            currentStage: current.readaloud.currentStage,
-            status: current.readaloud.status,
-          }
-        }
-      }
-
-      if (!Object.keys(relations).length) {
-        continue
-      }
-
-      const updated = await updateBook(current.uuid, null, relations)
-      updatedBooks.set(updated.uuid, updated)
-    }
-  }
-
-  return updatedBooks
-}
-
-function isMoveSourceLikelyValid(filepath: string, missing: boolean): boolean {
-  if (missing) {
-    return true
-  }
-  return wasPathRecentlyDeleted(filepath)
-}
-
-async function findHashMoveCandidates(
-  books: BookWithRelations[],
-  format: ScanFormat,
-  filepath: string,
-): Promise<BookWithRelations[]> {
-  const hash =
-    format === "audiobook"
-      ? (await hashAudiobookDirectory(filepath)).hash
-      : (await hashFile(filepath)).hash
-
-  return books.filter((book) => {
-    if (format === "ebook" && book.ebook?.contentHash === hash && book.ebook.filepath !== filepath) {
-      return isMoveSourceLikelyValid(book.ebook.filepath, book.ebook.missing)
-    }
-
-    if (
-      format === "audiobook" &&
-      book.audiobook?.contentHash === hash &&
-      book.audiobook.filepath !== filepath
-    ) {
-      return isMoveSourceLikelyValid(book.audiobook.filepath, book.audiobook.missing)
-    }
-
-    if (
-      format === "readaloud" &&
-      book.readaloud?.contentHash === hash &&
-      !!book.readaloud.filepath &&
-      book.readaloud.filepath !== filepath
-    ) {
-      return isMoveSourceLikelyValid(book.readaloud.filepath, book.readaloud.missing)
-    }
-
-    return false
-  })
-}
-
-function pickBestMoveCandidate(
-  byFormat: Map<ScanFormat, BookWithRelations[]>,
-): BookWithRelations | null {
-  const scores = new Map<UUID, number>()
-  const booksByUuid = new Map<UUID, BookWithRelations>()
-
-  for (const candidates of byFormat.values()) {
-    const seen = new Set<UUID>()
-    for (const candidate of candidates) {
-      if (seen.has(candidate.uuid)) {
-        continue
-      }
-      seen.add(candidate.uuid)
-      booksByUuid.set(candidate.uuid, candidate)
-      const currentScore = scores.get(candidate.uuid) ?? 0
-      scores.set(candidate.uuid, currentScore + 1)
-    }
-  }
-
-  let bestUuid: UUID | null = null
-  let bestScore = 0
-  let tie = false
-  for (const [uuid, score] of scores.entries()) {
-    if (score > bestScore) {
-      bestUuid = uuid
-      bestScore = score
-      tie = false
-      continue
-    }
-    if (score === bestScore) {
-      tie = true
-    }
-  }
-
-  if (!bestUuid || tie) {
-    return null
-  }
-
-  return booksByUuid.get(bestUuid) ?? null
-}
-
-async function reconcileHashBasedMove(
-  bookPath: BookPath,
-  books: BookWithRelations[],
-): Promise<UpdatedBookResult | null> {
-  const candidatesByFormat = new Map<ScanFormat, BookWithRelations[]>()
-
-  if (bookPath.ebook) {
-    candidatesByFormat.set(
-      "ebook",
-      await findHashMoveCandidates(books, "ebook", bookPath.ebook),
-    )
-  }
-  if (bookPath.audiobook) {
-    candidatesByFormat.set(
-      "audiobook",
-      await findHashMoveCandidates(books, "audiobook", bookPath.audiobook),
-    )
-  }
-  if (bookPath.readaloud) {
-    candidatesByFormat.set(
-      "readaloud",
-      await findHashMoveCandidates(books, "readaloud", bookPath.readaloud),
-    )
-  }
-
-  if (!candidatesByFormat.size) {
-    return null
-  }
-
-  const candidate = pickBestMoveCandidate(candidatesByFormat)
-  if (!candidate) {
-    return null
-  }
-
-  const relations: Parameters<typeof updateBook>[2] = {}
-  const movedFormats: ScanFormat[] = []
-
-  if (bookPath.ebook && candidate.ebook?.filepath && candidate.ebook.filepath !== bookPath.ebook) {
-    relations.ebook = { filepath: bookPath.ebook, missing: false }
-    movedFormats.push("ebook")
-  }
-
-  if (
-    bookPath.audiobook &&
-    candidate.audiobook?.filepath &&
-    candidate.audiobook.filepath !== bookPath.audiobook
-  ) {
-    relations.audiobook = { filepath: bookPath.audiobook, missing: false }
-    movedFormats.push("audiobook")
-  }
-
-  if (
-    bookPath.readaloud &&
-    candidate.readaloud?.filepath &&
-    candidate.readaloud.filepath !== bookPath.readaloud
-  ) {
-    relations.readaloud = {
-      filepath: bookPath.readaloud,
-      missing: false,
-      currentStage: candidate.readaloud.currentStage,
-      status: candidate.readaloud.status,
-    }
-    movedFormats.push("readaloud")
-  }
-
-  if (!Object.keys(relations).length) {
-    return null
-  }
-
-  const updated = await updateBook(candidate.uuid, null, relations)
-  return {
-    book: updated,
-    newFormats: movedFormats,
-  }
 }
 
 export async function scan(
@@ -993,18 +724,6 @@ export async function scan(
     }
 
     if (!book) {
-      const moved = await reconcileHashBasedMove(bookPath, books)
-      if (moved) {
-        logger.info(`Reconciled moved path for book ${moved.book.uuid} from hash match`)
-        books = books.map((candidate) =>
-          candidate.uuid === moved.book.uuid ? moved.book : candidate,
-        )
-        allBooks = allBooks.map((candidate) =>
-          candidate.uuid === moved.book.uuid ? moved.book : candidate,
-        )
-        continue
-      }
-
       logger.debug(
         `Found a new book! Importing from ${JSON.stringify(bookPath)}`,
       )
@@ -1122,18 +841,6 @@ export async function scanChangedPaths(
   }
   let scopedBooks = getScopedBooks(allBooks, collectionUuid)
 
-  const movePairs = detectMovePairs(normalizedChanges)
-  if (movePairs.length) {
-    const movedBooks = await applyMovePairs(scopedBooks, movePairs)
-    for (const movedBook of movedBooks.values()) {
-      scopedBooks = scopedBooks.map((book) =>
-        book.uuid === movedBook.uuid ? movedBook : book,
-      )
-      allBooks = allBooks.map((book) =>
-        book.uuid === movedBook.uuid ? movedBook : book,
-      )
-    }
-  }
   const affectedFormatsByBook = getAffectedFormatsFromChanges(
     scopedBooks,
     normalizedChanges,
@@ -1188,25 +895,6 @@ export async function scanChangedPaths(
       }
 
       if (!scopedMatch) {
-        const moved = await reconcileHashBasedMove(bookPath, scopedBooks)
-        if (moved) {
-          logger.info(
-            `Reconciled moved path for book ${moved.book.uuid} from hash match`,
-          )
-          registerFormats(
-            affectedFormatsByBook,
-            moved.book.uuid,
-            moved.newFormats,
-          )
-          scopedBooks = scopedBooks.map((book) =>
-            book.uuid === moved.book.uuid ? moved.book : book,
-          )
-          allBooks = allBooks.map((book) =>
-            book.uuid === moved.book.uuid ? moved.book : book,
-          )
-          continue
-        }
-
         if (bookPath.audiobook) {
           const nestedBook = await getBookByAudiobookFilepathPrefix(
             bookPath.audiobook,

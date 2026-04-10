@@ -11,7 +11,7 @@ export const extractMetadataStep: PipelineStep = {
       return
     }
 
-    if (ctx.format === "ebook") {
+    if (ctx.format === "ebook" || ctx.format === "readaloud") {
       if (!ctx.epub) {
         return
       }

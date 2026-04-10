@@ -14,7 +14,10 @@ export const extractCoversStep: PipelineStep = {
       return
     }
 
-    if (ctx.format === "ebook" || ctx.format === "readaloud") {
+    if (
+      (ctx.format === "ebook" || ctx.format === "readaloud") &&
+      !ctx.isEpub2
+    ) {
       await cacheTextCover(book)
     }
 

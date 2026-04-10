@@ -52,6 +52,7 @@ export function createScanContext(input: {
     extractedRelations: {},
     book: input.book,
     manifest: null,
+    isEpub2: false,
     pageCount: null,
     duration: null,
     fileSize: null,

@@ -22,6 +22,7 @@ function withFormatFields(ctx: ScanContext): BookRelationsUpdate {
         manifest: JSON.stringify(ctx.manifest ?? null),
         contentHash: ctx.fileHash,
         missing: false,
+        isEpub2: ctx.isEpub2,
         pageCount: ctx.pageCount,
         duration: ctx.duration,
         fileSize: ctx.fileSize,
@@ -40,6 +41,7 @@ function withFormatFields(ctx: ScanContext): BookRelationsUpdate {
         manifest: JSON.stringify(ctx.manifest ?? null),
         contentHash: ctx.fileHash,
         missing: false,
+        isEpub2: ctx.isEpub2,
         pageCount: ctx.pageCount,
         duration: ctx.duration,
         fileSize: ctx.fileSize,
@@ -57,6 +59,12 @@ function resolveMetadata(
   extracted: BookUpdate | null,
   extractedRelations: BookRelationsUpdate,
 ): { metadataUpdate: BookUpdate | null; relationUpdate: BookRelationsUpdate } {
+  console.log({
+    mode,
+    current,
+    extracted,
+    extractedRelations,
+  })
   if (mode === "never") {
     return { metadataUpdate: null, relationUpdate: {} }
   }
@@ -95,6 +103,10 @@ export const reconcileMetadataStep: PipelineStep = {
       ctx.extractedRelations,
     )
 
+    console.log("relationUpdate", {
+      ...relationUpdate,
+      ...withFormatFields(ctx),
+    })
     await updateBook(ctx.bookUuid, metadataUpdate, {
       ...relationUpdate,
       ...withFormatFields(ctx),

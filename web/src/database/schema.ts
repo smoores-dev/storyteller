@@ -149,6 +149,7 @@ export interface Ebook {
   duration: number | null
   fileSize: number | null
   filepath: string
+  isEpub2: Generated<boolean>
   manifest: unknown
   missing: Generated<boolean>
   pageCount: number | null
@@ -186,6 +187,7 @@ export interface Readaloud {
   duration: number | null
   fileSize: number | null
   filepath: string | null
+  isEpub2: Generated<boolean>
   manifest: unknown
   missing: Generated<boolean>
   pageCount: number | null

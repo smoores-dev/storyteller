@@ -6,6 +6,7 @@ type EbookRelationPatch = Partial<
   Pick<
     NonNullable<BookRelationsUpdate["ebook"]>,
     | "missing"
+    | "isEpub2"
     | "contentHash"
     | "manifest"
     | "pageCount"
@@ -30,6 +31,7 @@ type ReadaloudRelationPatch = Partial<
   Pick<
     NonNullable<BookRelationsUpdate["readaloud"]>,
     | "missing"
+    | "isEpub2"
     | "contentHash"
     | "manifest"
     | "pageCount"

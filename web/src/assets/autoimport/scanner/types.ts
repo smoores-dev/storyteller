@@ -35,6 +35,7 @@ export interface ScanContext {
   extractedRelations: BookRelationsUpdate
   book: BookWithRelations | null
   manifest: SerializedManifest | null
+  isEpub2: boolean
   pageCount: number | null
   duration: number | null
   fileSize: number | null

@@ -8,7 +8,6 @@ import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { rememberDeletedPath } from "./recentDeletes"
 import { type ImportPathChange } from "./scan"
 import { runImportPathChangeScan, runImportPathScan } from "./scanManager"
 import {
@@ -147,13 +146,6 @@ function startWatcher(
       }))
     if (!relevantChanges.length) {
       return
-    }
-
-    for (const change of relevantChanges) {
-      if (change.type !== "delete") {
-        continue
-      }
-      rememberDeletedPath(change.path)
     }
 
     logger.info(

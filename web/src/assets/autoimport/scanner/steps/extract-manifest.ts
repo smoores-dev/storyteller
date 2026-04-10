@@ -11,6 +11,7 @@ import { getNumericValue, normalizeManifestValue } from "./utils"
 function deriveAudiobookDuration(manifest: SerializedManifest): number | null {
   const readingOrder = manifest.readingOrder
   let duration = 0
+
   for (const item of readingOrder) {
     const value = getNumericValue(item.duration)
     if (value === null) {
@@ -51,6 +52,40 @@ async function deriveEbookPositionsCount(
   }
 }
 
+function resolveReadaloudPageCount(
+  ctx: ScanContext,
+  ownPageCount: number | null,
+): number | null {
+  const ebook = ctx.book?.ebook
+  if (ebook && !ebook.missing && ebook.pageCount) {
+    return ebook.pageCount
+  }
+
+  return ownPageCount
+}
+
+function resolveReadaloudDuration(
+  ctx: ScanContext,
+  manifest: SerializedManifest,
+): number | null {
+  const audiobook = ctx.book?.audiobook
+  if (audiobook && !audiobook.missing && audiobook.duration) {
+    return audiobook.duration
+  }
+
+  let duration = 0
+  for (const item of manifest.resources ?? []) {
+    const value = getNumericValue(item.duration)
+    if (value === null) {
+      continue
+    }
+
+    duration += value
+  }
+  console.log("duration", duration)
+  return duration > 0 ? duration : null
+}
+
 export const extractManifestStep: PipelineStep = {
   name: "extract-manifest",
   async run(ctx) {
@@ -74,16 +109,25 @@ export const extractManifestStep: PipelineStep = {
         `No changed or new flags, skipping manifest extraction for book`,
       )
       ctx.manifest = existingManifest
-      if (ctx.format === "ebook" || ctx.format === "readaloud") {
+
+      if (ctx.format === "ebook") {
         ctx.pageCount = await deriveEbookPositionsCount(ctx)
       }
+
+      if (ctx.format === "readaloud") {
+        const ownPageCount = await deriveEbookPositionsCount(ctx)
+        ctx.pageCount = resolveReadaloudPageCount(ctx, ownPageCount)
+        ctx.duration = resolveReadaloudDuration(ctx, existingManifest)
+      }
+
       if (ctx.format === "audiobook") {
         ctx.duration = deriveAudiobookDuration(existingManifest)
       }
+
       return
     }
 
-    if (ctx.format === "ebook" || ctx.format === "readaloud") {
+    if (ctx.format === "ebook") {
       ctx.logger.debug(`Extracting manifest for book ${ctx.book.title}`)
       const readiumService = getReadiumService()
       if (!readiumService.isRunning()) {
@@ -98,6 +142,27 @@ export const extractManifestStep: PipelineStep = {
       ctx.manifest = manifest
       ctx.pageCount = await deriveEbookPositionsCount(ctx)
       ctx.duration = deriveAudiobookDuration(manifest)
+      return
+    }
+
+    if (ctx.format === "readaloud") {
+      ctx.logger.debug(`Extracting manifest for readaloud ${ctx.book.title}`)
+      const readiumService = getReadiumService()
+      if (!readiumService.isRunning()) {
+        await readiumService.start()
+      }
+
+      const response = await readiumService.makeRequest(
+        ctx.filepath,
+        "manifest.json",
+      )
+      const manifest = (await response.json()) as SerializedManifest
+      console.log("manifest", manifest)
+      ctx.manifest = manifest
+
+      const ownPageCount = await deriveEbookPositionsCount(ctx)
+      ctx.pageCount = resolveReadaloudPageCount(ctx, ownPageCount)
+      ctx.duration = resolveReadaloudDuration(ctx, manifest)
       return
     }
 
