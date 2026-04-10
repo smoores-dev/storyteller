@@ -1,7 +1,10 @@
-import { Epub } from "@storyteller-platform/epub"
+import { Epub, UnsupportedEpubVersionError } from "@storyteller-platform/epub"
 
 import { type PipelineStep } from "@/assets/autoimport/scanner/types"
 import { suppressPath, unsuppressPath } from "@/assets/autoimport/writeIntent"
+import { updateBook } from "@/database/books"
+
+import { getFormatRelationPatch } from "./utils"
 
 export const openEpubStep: PipelineStep = {
   name: "open-epub",
@@ -14,12 +17,32 @@ export const openEpubStep: PipelineStep = {
       return
     }
 
-    using epub = await Epub.from(ctx.filepath, { skipVersionCheck: true })
+    try {
+      ctx.epub = await Epub.from(ctx.filepath)
+      return
+    } catch (error) {
+      if (!(error instanceof UnsupportedEpubVersionError)) {
+        throw error
+      }
 
-    ctx.epub = epub
+      ctx.isEpub2 = true
 
-    const version = await ctx.epub.getVersion()
-    ctx.isEpub2 = !!version && !version.startsWith("3.")
+      if (!ctx.book) {
+        ctx.logger.warn(
+          `EPUB 2 file at ${ctx.filepath} cannot be imported (only EPUB 3 is supported)`,
+        )
+        return false
+      }
+
+      ctx.logger.info(`Flagging ${ctx.book.title} as EPUB 2`)
+      await updateBook(
+        ctx.bookUuid,
+        null,
+        getFormatRelationPatch(ctx, { isEpub2: true }),
+      )
+
+      return false
+    }
   },
 
   async cleanup(ctx) {
@@ -27,8 +50,9 @@ export const openEpubStep: PipelineStep = {
       return
     }
 
-    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
+    if (ctx.isEpub2 || (!ctx.flags.has("changed") && !ctx.flags.has("new"))) {
       ctx.epub.discardAndClose()
+      ctx.epub = null
       return
     }
 
