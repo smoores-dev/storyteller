@@ -6,7 +6,7 @@ export async function register() {
   // this makes sure env is validated at startup
   // we don't import it "normally" as this may cause issues in the edge runtime if end up
   // adding extra imports to env.ts
-  const { env } = await import("@/env")
+  await import("@/env")
   const { listen } = await import("./assets/autoimport/listen")
   const { refreshScheduledScan } = await import(
     "./assets/autoimport/scheduledScan"
@@ -45,10 +45,6 @@ export async function register() {
   } catch (err) {
     logger.error("Failed to restart processing queue")
     logger.error(err)
-  }
-
-  if (!env.ENABLE_WEB_READER) {
-    return
   }
 
   try {
