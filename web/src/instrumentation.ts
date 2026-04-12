@@ -7,9 +7,9 @@ export async function register() {
   // we don't import it "normally" as this may cause issues in the edge runtime if end up
   // adding extra imports to env.ts
   await import("@/env")
-  const { listen } = await import("./assets/autoimport/listen")
+  const { listen } = await import("./assets/library/listen")
   const { refreshScheduledScan } = await import(
-    "./assets/autoimport/scheduledScan"
+    "./assets/library/scheduledScan"
   )
   const { logger } = await import("./logging")
   const { migrate } = await import("./database/migrate")
@@ -40,7 +40,7 @@ export async function register() {
     await listen()
     await refreshScheduledScan()
   } catch (err) {
-    logger.error("Failed to initiate auto-import services")
+    logger.error("Failed to initiate library watcher services")
     logger.error(err)
   }
 

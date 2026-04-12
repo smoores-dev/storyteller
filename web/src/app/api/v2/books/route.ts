@@ -42,7 +42,9 @@ export const dynamic = "force-dynamic"
  *       have been aligned by Storyteller successfully.
  */
 export const GET = withHasPermission("bookList")(async (request) => {
-  const books = await getBooks(null, request.auth.user.id)
+  const books = await getBooks(null, request.auth.user.id, {
+    includeManifest: false,
+  })
 
   return NextResponse.json(books)
 })

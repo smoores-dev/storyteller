@@ -11,6 +11,7 @@ import {
   type FilterSortOptions,
 } from "@/hooks/useFilterSortedBooks"
 import { useCancelProcessingMutation } from "@/store/api"
+import { formatFileSize } from "@/utils/formatFileSize"
 
 import { BookThumbnailImage } from "./BookThumbnailImage"
 
@@ -61,11 +62,6 @@ function getDisplayPageCount(book: BookWithRelations): number | null {
     nonMissingAsset(book.readaloud)?.pageCount ??
     null
   )
-}
-
-function formatFileSize(bytes: number | null): string | null {
-  if (bytes == null || bytes <= 0) return null
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function formatSortMetric(

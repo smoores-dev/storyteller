@@ -3,8 +3,8 @@ import { NextResponse } from "next/server"
 import {
   getScanState,
   runLibraryScan,
-} from "@/assets/autoimport/scanManager"
-import { type ScanOptions } from "@/assets/autoimport/scanner"
+} from "@/assets/library/scanManager"
+import { type ScanOptions } from "@/assets/library/scanner"
 import { withHasPermission } from "@/auth/auth"
 
 export const dynamic = "force-dynamic"

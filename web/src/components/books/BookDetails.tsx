@@ -37,6 +37,7 @@ import {
   useListStatusesQuery,
   useUpdateStatusMutation,
 } from "@/store/api"
+import { formatFileSize } from "@/utils/formatFileSize"
 import { type UUID } from "@/uuid"
 
 import { BookStatus } from "./BookStatus"
@@ -88,7 +89,7 @@ function Details({
                 <span>{formatTimeHuman(fmt.duration ?? 0)}</span>
               )}
 
-              <span>{((fmt.fileSize ?? 0) / 1024 / 1024).toFixed(2)} MB</span>
+              <span>{formatFileSize(fmt.fileSize ?? null) ?? "0.0 MB"}</span>
 
               {
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion

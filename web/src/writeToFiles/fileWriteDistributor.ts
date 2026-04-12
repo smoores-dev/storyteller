@@ -9,7 +9,7 @@ import {
   suppressPath,
   unsuppressDirectory,
   unsuppressPath,
-} from "@/assets/autoimport/writeIntent"
+} from "@/assets/library/writeIntent"
 import { getBook, updateBook } from "@/database/books"
 import { env } from "@/env"
 import { logger } from "@/logging"

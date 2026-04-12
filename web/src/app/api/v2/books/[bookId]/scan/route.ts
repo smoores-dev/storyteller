@@ -1,5 +1,5 @@
 import { parseScanOptions } from "@/app/api/v2/books/scan/route"
-import { runSingleBookScan } from "@/assets/autoimport/scanManager"
+import { runSingleBookScan } from "@/assets/library/scanManager"
 import { withHasPermission } from "@/auth/auth"
 import { getBookUuid } from "@/database/books"
 

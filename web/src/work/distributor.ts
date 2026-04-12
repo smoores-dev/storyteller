@@ -10,7 +10,7 @@ import {
   suppressPath,
   unsuppressDirectory,
   unsuppressPath,
-} from "@/assets/autoimport/writeIntent"
+} from "@/assets/library/writeIntent"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
