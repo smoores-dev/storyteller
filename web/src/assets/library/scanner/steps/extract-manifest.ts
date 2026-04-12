@@ -1,7 +1,7 @@
 import {
   type PipelineStep,
   type ScanContext,
-} from "@/assets/autoimport/scanner/types"
+} from "@/assets/library/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
 import { getReadiumService } from "@/services/readiumService"
 import { createAudiobookManifest } from "@/utils/audioManifest"

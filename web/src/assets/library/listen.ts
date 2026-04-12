@@ -86,8 +86,8 @@ function startWatcher(
     }
     pendingChanges.push(...changes)
     if (scanLock.isLocked) {
-      logger.info(
-        `Detected changes in ${importPath} while scan is running, queuing ${changes.length} event(s).`,
+      logger.debug(
+        `Queuing ${changes.length} change(s) in ${importPath} while scan is running`,
       )
     }
     scheduleFlush(750)
@@ -103,6 +103,9 @@ function startWatcher(
 
     await scanLock.lock()
     const batch = pendingChanges.splice(0, pendingChanges.length)
+    logger.info(
+      `Scanning ${batch.length} change(s) in ${importPath}`,
+    )
     try {
       await runWatcherChangeScan(
         importPath,
@@ -148,8 +151,8 @@ function startWatcher(
       return
     }
 
-    logger.info(
-      `Detected ${relevantChanges.length} change event(s) in ${importPath}, queuing incremental scan.`,
+    logger.debug(
+      `Detected ${relevantChanges.length} change event(s) in ${importPath}`,
     )
     queueChanges(relevantChanges)
   }

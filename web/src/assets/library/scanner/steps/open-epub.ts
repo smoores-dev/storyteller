@@ -1,7 +1,7 @@
 import { Epub, UnsupportedEpubVersionError } from "@storyteller-platform/epub"
 
-import { type PipelineStep } from "@/assets/autoimport/scanner/types"
-import { suppressPath, unsuppressPath } from "@/assets/autoimport/writeIntent"
+import { type PipelineStep } from "@/assets/library/scanner/types"
+import { suppressPath, unsuppressPath } from "@/assets/library/writeIntent"
 import { updateBook } from "@/database/books"
 
 import { getFormatRelationPatch } from "./utils"

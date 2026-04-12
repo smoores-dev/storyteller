@@ -1,4 +1,4 @@
-import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import { type PipelineStep } from "@/assets/library/scanner/types"
 import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
 import { updateBook } from "@/database/books"
 

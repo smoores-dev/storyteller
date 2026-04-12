@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises"
 
-import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import { type PipelineStep } from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
 import { getFormatRelationPatch } from "./utils"

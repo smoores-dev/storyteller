@@ -1,7 +1,7 @@
 import {
   type PipelineStep,
   type ScanContext,
-} from "@/assets/autoimport/scanner/types"
+} from "@/assets/library/scanner/types"
 import { keepMissingMetadata, keepMissingRelations } from "@/assets/metadata"
 import {
   type BookRelationsUpdate,

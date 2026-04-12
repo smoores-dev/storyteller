@@ -136,13 +136,7 @@ export async function scanExistingBooks(
 
   const contexts = buildScanContexts(filteredBooks, options?.scanOptions)
   logger.info(`Scanning ${contexts.length} tracked book format(s)`)
-  await runBookScanPipeline(contexts, {
-    concurrency: 2,
-    onProgress: (processed, total) => {
-      logger.debug(`Scanning existing books: (${processed}/${total})`)
-    },
-    signal,
-  })
+  await runBookScanPipeline(contexts, { concurrency: 2, signal })
   await updateReadaloudMissingState(filteredBooks, signal)
   logger.info("Library scan complete")
 }

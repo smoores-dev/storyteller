@@ -1,5 +1,5 @@
-import { cacheAudioCover, cacheTextCover } from "@/assets/autoimport/coverCache"
-import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
+import { type PipelineStep } from "@/assets/library/scanner/types"
 import { getBook } from "@/database/books"
 
 export const extractCoversStep: PipelineStep = {

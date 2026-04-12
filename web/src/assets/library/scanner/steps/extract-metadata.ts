@@ -1,4 +1,4 @@
-import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import { type PipelineStep } from "@/assets/library/scanner/types"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,

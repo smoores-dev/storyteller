@@ -348,9 +348,6 @@ async function discoverBookPathsForRoots(
   const audiobookPathsSet = new Set<string>()
   const bookPaths: BookPath[] = []
 
-  logger.debug(
-    `Starting recursive directory scan for ${roots.length} root(s)...`,
-  )
   for (const root of roots) {
     if (signal.aborted) {
       logger.debug("Scanning aborted")
@@ -370,9 +367,6 @@ async function discoverBookPathsForRoots(
       throw error
     }
 
-    logger.debug(
-      `Found ${entries.length} files recursively in ${root.rootPath}`,
-    )
     for (const entry of entries) {
       if (!entry.isFile() && !entry.isSymbolicLink()) {
         continue
@@ -408,14 +402,12 @@ async function discoverBookPathsForRoots(
   }
 
   logger.debug(
-    `Found ${ebookPaths.length} ebook files and ${audiobookPathsSet.size} audiobook folders`,
+    `Discovered ${ebookPaths.length} ebook file(s) and ${audiobookPathsSet.size} audiobook folder(s) across ${roots.length} root(s)`,
   )
 
   const audiobookPaths = Array.from(audiobookPathsSet)
   const handledEbookPaths = new Set<string>()
   const handledAudiobookPaths = new Set<string>()
-
-  logger.debug("Checking ebooks for adjacent readalouds and audio...")
   for (const ebookPath of ebookPaths) {
     if (signal.aborted) {
       logger.debug("Scanning aborted")
@@ -498,7 +490,6 @@ async function discoverBookPathsForRoots(
     })
   }
 
-  logger.debug("Checking for standalone audiobooks...")
   for (const audiobookPath of audiobookPaths) {
     if (handledAudiobookPaths.has(audiobookPath)) {
       continue
@@ -706,10 +697,8 @@ export async function scan(
     return scannedBookUuids
   }
 
-  logger.debug(`Found ${bookPaths.length} book folders.`)
+  logger.debug(`Discovered ${bookPaths.length} book folder(s), checking for new or changed books`)
   const newFlagsByBook = new Map<UUID, Set<ScanFormat>>()
-
-  logger.debug("Searching found book folders for new books...")
   for (const bookPath of bookPaths) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (signal.aborted) {
@@ -817,20 +806,14 @@ export async function scan(
     return entries
   })
 
-  await runBookScanPipeline(contexts, {
-    concurrency: 2,
-    onProgress: (processed, total) => {
-      logger.debug(`Scanning ${importPath}: (${processed}/${total})`)
-    },
-    signal,
-  })
+  await runBookScanPipeline(contexts, { concurrency: 2, signal })
   await updateReadaloudMissingState(refreshedBooks, signal)
 
   for (const ctx of contexts) {
     scannedBookUuids.add(ctx.bookUuid)
   }
 
-  logger.info("Scanning complete")
+  logger.info(`Import scan complete for ${importPath}. found ${bookPaths.length} book(s), scanned ${contexts.length} format(s)`)
   return scannedBookUuids
 }
 
@@ -1038,13 +1021,7 @@ export async function scanChangedPaths(
     return
   }
 
-  await runBookScanPipeline(contexts, {
-    concurrency: 2,
-    onProgress: (processed, total) => {
-      logger.debug(`Scanning ${importPath}: (${processed}/${total})`)
-    },
-    signal,
-  })
+  await runBookScanPipeline(contexts, { concurrency: 2, signal })
   await updateReadaloudMissingState(
     refreshedBooks.filter((book) => affectedFormatsByBook.has(book.uuid)),
     signal,

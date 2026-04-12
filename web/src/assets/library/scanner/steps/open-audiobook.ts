@@ -6,11 +6,11 @@ import {
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 
-import { type PipelineStep } from "@/assets/autoimport/scanner/types"
+import { type PipelineStep } from "@/assets/library/scanner/types"
 import {
   suppressDirectory,
   unsuppressDirectory,
-} from "@/assets/autoimport/writeIntent"
+} from "@/assets/library/writeIntent"
 import { isAudioFile } from "@/audio"
 
 async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {

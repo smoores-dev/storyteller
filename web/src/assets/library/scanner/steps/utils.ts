@@ -1,4 +1,4 @@
-import { type ScanContext } from "@/assets/autoimport/scanner/types"
+import { type ScanContext } from "@/assets/library/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
 import { type BookRelationsUpdate } from "@/database/books"
 
