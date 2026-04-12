@@ -6,7 +6,7 @@ import {
 } from "kysely"
 import { jsonArrayFrom } from "kysely/helpers/sqlite"
 
-import { update as updateAutoimport } from "@/assets/autoimport/listen"
+import { update as updateLibraryWatcher } from "@/assets/library/listen"
 import { BookEvents } from "@/events"
 import { type UUID } from "@/uuid"
 
@@ -153,7 +153,7 @@ export async function updateCollection(
 
     return collection
   })
-  await updateAutoimport(uuid)
+  await updateLibraryWatcher(uuid)
   return collection
 }
 

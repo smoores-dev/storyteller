@@ -421,7 +421,12 @@ export async function createBook(
   return book
 }
 
-export function booksQuery(userId?: UUID) {
+type BooksQueryOptions = {
+  includeManifest?: boolean
+}
+
+export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
+  const includeManifest = options?.includeManifest ?? true
   return db
     .selectFrom("book")
     .selectAll("book")
@@ -577,11 +582,13 @@ export function booksQuery(userId?: UUID) {
             "ebook.isEpub2",
             "ebook.createdAt",
             "ebook.updatedAt",
-            "ebook.manifest",
             "ebook.contentHash",
             "ebook.pageCount",
             "ebook.duration",
             "ebook.fileSize",
+            ...(includeManifest
+              ? (["ebook.manifest"] as const)
+              : []),
           ])
           .whereRef("ebook.bookUuid", "=", "book.uuid"),
       ).as("ebook"),
@@ -594,11 +601,13 @@ export function booksQuery(userId?: UUID) {
             "audiobook.missing",
             "audiobook.createdAt",
             "audiobook.updatedAt",
-            "audiobook.manifest",
             "audiobook.contentHash",
             "audiobook.pageCount",
             "audiobook.duration",
             "audiobook.fileSize",
+            ...(includeManifest
+              ? (["audiobook.manifest"] as const)
+              : []),
           ])
           .whereRef("audiobook.bookUuid", "=", "book.uuid"),
       ).as("audiobook"),
@@ -617,11 +626,13 @@ export function booksQuery(userId?: UUID) {
             "readaloud.restartPending",
             "readaloud.createdAt",
             "readaloud.updatedAt",
-            "readaloud.manifest",
             "readaloud.contentHash",
             "readaloud.pageCount",
             "readaloud.duration",
             "readaloud.fileSize",
+            ...(includeManifest
+              ? (["readaloud.manifest"] as const)
+              : []),
           ])
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),
@@ -697,8 +708,12 @@ export async function getNextQueuePosition() {
   return latestPosition + 1
 }
 
-export async function getBooks(bookUuids: UUID[] | null = null, userId?: UUID) {
-  const books = await booksQuery(userId)
+export async function getBooks(
+  bookUuids: UUID[] | null = null,
+  userId?: UUID,
+  options?: BooksQueryOptions,
+) {
+  const books = await booksQuery(userId, options)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids!))
     .execute()

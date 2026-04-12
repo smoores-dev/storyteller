@@ -32,11 +32,8 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   ).default,
   "59_migrate_hrefs.sql": (await import("./migrations/59_migrate_hrefs.sql"))
     .default,
-  "65_add_scan_pipeline_metadata.sql": (
-    await import("./migrations/65_add_scan_pipeline_metadata.sql")
-  ).default,
-  "66_add_existing_book_scan_schedule_setting.sql": (
-    await import("./migrations/66_add_existing_book_scan_schedule_setting.sql")
+  "66_add_scan_pipeline.sql": (
+    await import("./migrations/66_add_scan_pipeline.sql")
   ).default,
 }
 

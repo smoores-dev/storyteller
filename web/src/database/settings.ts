@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs"
 
 import { ZodError } from "zod"
 
-import { update } from "@/assets/autoimport/listen"
-import { refreshScheduledScan } from "@/assets/autoimport/scheduledScan"
+import { update } from "@/assets/library/listen"
+import { refreshScheduledScan } from "@/assets/library/scheduledScan"
 import { env } from "@/env"
 
 import { db } from "./connection"
