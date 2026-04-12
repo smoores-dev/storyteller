@@ -20,6 +20,17 @@ export async function register() {
   logger.debug("Debug logging enabled")
 
   try {
+    const readiumService = getReadiumService()
+    await readiumService.start()
+    logger.info("Readium service initialized successfully")
+  } catch (err) {
+    logger.error(
+      "Failed to start Readium service: this will cause problems with the web reader and scanner",
+    )
+    logger.error(err)
+  }
+
+  try {
     await migrate()
   } catch (err) {
     logger.error("Failed to run database migrations — Aborting startup")
@@ -44,15 +55,6 @@ export async function register() {
     }
   } catch (err) {
     logger.error("Failed to restart processing queue")
-    logger.error(err)
-  }
-
-  try {
-    const readiumService = getReadiumService()
-    await readiumService.start()
-    logger.info("Readium service initialized successfully")
-  } catch (err) {
-    logger.error("Failed to start Readium service")
     logger.error(err)
   }
 }
