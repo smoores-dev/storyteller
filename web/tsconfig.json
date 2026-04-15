@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
+    "exactOptionalPropertyTypes": false,
     "allowImportingTsExtensions": true,
     "strict": true,
     "isolatedModules": true,
