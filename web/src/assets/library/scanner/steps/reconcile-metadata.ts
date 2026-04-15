@@ -15,37 +15,36 @@ import { type MetadataOverrideMode } from "@/database/settingsTypes"
 
 import { getFormatRelationPatch } from "./utils"
 
-function withFormatFields(ctx: ScanContext): BookRelationsUpdate {
+function buildFormatRelation(ctx: ScanContext): BookRelationsUpdate {
+  const shared = {
+    manifest: JSON.stringify(ctx.manifest ?? null),
+    contentHash: ctx.fileHash,
+    missing: false,
+    fileSize: ctx.fileSize,
+  }
+
   switch (ctx.format) {
     case "ebook":
       return getFormatRelationPatch(ctx, {
-        manifest: JSON.stringify(ctx.manifest ?? null),
-        contentHash: ctx.fileHash,
-        missing: false,
+        ...shared,
         isEpub2: ctx.isEpub2,
         pageCount: ctx.pageCount,
-        duration: ctx.duration,
-        fileSize: ctx.fileSize,
       })
+
     case "audiobook":
       return getFormatRelationPatch(ctx, {
-        manifest: JSON.stringify(ctx.manifest ?? null),
-        contentHash: ctx.fileHash,
-        missing: false,
-        pageCount: ctx.pageCount,
+        ...shared,
         duration: ctx.duration,
-        fileSize: ctx.fileSize,
       })
+
     case "readaloud":
       return getFormatRelationPatch(ctx, {
-        manifest: JSON.stringify(ctx.manifest ?? null),
-        contentHash: ctx.fileHash,
-        missing: false,
+        ...shared,
         isEpub2: ctx.isEpub2,
         pageCount: ctx.pageCount,
         duration: ctx.duration,
-        fileSize: ctx.fileSize,
       })
+
     default: {
       const format: never = ctx.format
       throw new Error(`Invalid format: ${format as string}`)
@@ -76,6 +75,26 @@ function resolveMetadata(
   }
 }
 
+function hasChanges(
+  ctx: ScanContext,
+  metadataUpdate: BookUpdate | null,
+  relationUpdate: BookRelationsUpdate,
+  currentBook: BookWithRelations,
+): boolean {
+  if (metadataUpdate || Object.keys(relationUpdate).length > 0) {
+    return true
+  }
+
+  // format fields (manifest, pageCount, duration) are only
+  // re-extracted when the file is new or changed
+  if (ctx.flags.has("changed") || ctx.flags.has("new")) {
+    return true
+  }
+
+  const relation = currentBook[ctx.format]
+  return !relation || relation.missing
+}
+
 export const reconcileMetadataStep: PipelineStep = {
   name: "reconcile-metadata",
   async run(ctx) {
@@ -97,17 +116,32 @@ export const reconcileMetadataStep: PipelineStep = {
       ctx.extractedRelations,
     )
 
-    await updateBook(ctx.bookUuid, metadataUpdate, {
-      ...relationUpdate,
-      ...withFormatFields(ctx),
-    })
-
-    const updated = await getBook(ctx.bookUuid)
-    if (!updated) {
-      return undefined
+    if (!hasChanges(ctx, metadataUpdate, relationUpdate, current)) {
+      ctx.logger.debug("No changes to metadata or relations, skipping update")
+      return false
     }
 
-    ctx.book = updated
+    const formatRelation = buildFormatRelation(ctx)
+
+    ctx.logger.debug({
+      msg: "Updating metadata and relations",
+      metadataUpdate,
+      relationUpdate,
+      formatRelation,
+    })
+
+    // safe cast: relationUpdate and formatRelation have non-overlapping keys,
+    // but the spread confuses exactOptionalPropertyTypes
+    await updateBook(ctx.bookUuid, metadataUpdate, {
+      ...relationUpdate,
+      ...formatRelation,
+    } as BookRelationsUpdate)
+
+    const updated = await getBook(ctx.bookUuid)
+    if (updated) {
+      ctx.book = updated
+    }
+
     return undefined
   },
 }

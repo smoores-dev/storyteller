@@ -1,7 +1,6 @@
 import { Epub, UnsupportedEpubVersionError } from "@storyteller-platform/epub"
 
 import { type PipelineStep } from "@/assets/library/scanner/types"
-import { suppressPath, unsuppressPath } from "@/assets/library/writeIntent"
 import { updateBook } from "@/database/books"
 
 import { getFormatRelationPatch } from "./utils"
@@ -45,23 +44,14 @@ export const openEpubStep: PipelineStep = {
     }
   },
 
-  async cleanup(ctx) {
+  cleanup(ctx) {
     if (!ctx.epub) {
       return
     }
 
-    if (ctx.isEpub2 || (!ctx.flags.has("changed") && !ctx.flags.has("new"))) {
-      ctx.epub.discardAndClose()
-      ctx.epub = null
-      return
-    }
-
-    suppressPath(ctx.filepath)
-    try {
-      await ctx.epub.saveAndClose()
-    } finally {
-      unsuppressPath(ctx.filepath)
-    }
+    // the scan pipeline only reads from files, never writes to them.
+    // writing metadata back to source files is handled by fileWriteDistributor.
+    ctx.epub.discardAndClose()
     ctx.epub = null
   },
 }
