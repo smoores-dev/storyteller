@@ -1,5 +1,5 @@
-import { type PipelineStep } from "@/assets/library/scanner/types"
 import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
+import { type PipelineStep } from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
 import { getFormatRelationPatch } from "./utils"

@@ -47,7 +47,7 @@ export interface PipelineStep {
   run:
     | ((ctx: ScanContext, signal: AbortSignal) => Promise<boolean | undefined>)
     | ((ctx: ScanContext, signal: AbortSignal) => Promise<void>)
-  cleanup?: (ctx: ScanContext) => Promise<void>
+  cleanup?: (ctx: ScanContext) => Promise<void> | void
 }
 
 export interface PipelineRunnerOptions {

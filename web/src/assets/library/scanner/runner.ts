@@ -38,11 +38,7 @@ async function runSingleContext(
 
   for (const step of steps) {
     const childLogger = logger.child({
-      step: step.name,
-      bookTitle: ctx.book?.title,
-      format: ctx.format,
-      bookUuid: ctx.bookUuid,
-      filepath: ctx.filepath,
+      ctx: `[SCAN (${step.name})] '${ctx.book?.title}' {${ctx.format.toUpperCase()}} [${ctx.filepath}] (${ctx.bookUuid})`,
     })
     ctx.logger = childLogger
     if (signal.aborted) {
