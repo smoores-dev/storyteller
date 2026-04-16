@@ -3,7 +3,7 @@ import {
   type ScanContext,
 } from "@/assets/library/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
-import { getReadiumService } from "@/services/readiumService"
+import { ReadiumService } from "@/services/readiumService"
 import { createAudiobookManifest } from "@/utils/audioManifest"
 
 import { getNumericValue, normalizeManifestValue } from "./utils"
@@ -22,34 +22,6 @@ function deriveAudiobookDuration(manifest: SerializedManifest): number | null {
   }
 
   return duration > 0 ? duration : null
-}
-
-async function deriveEbookPositionsCount(
-  ctx: ScanContext,
-): Promise<number | null> {
-  try {
-    const positions = await globalThis.readiumServiceInstance?.makeRequest(
-      ctx.filepath,
-      "~readium/positions.json",
-      // TODO: Add signal
-    )
-
-    if (!positions) {
-      return null
-    }
-
-    const pos = (await positions.json()) as { total: number }
-
-    return pos.total
-  } catch (error) {
-    ctx.logger.error({
-      msg: "Failed to derive ebook positions count",
-      err: error,
-      bookUuid: ctx.bookUuid,
-      filepath: ctx.filepath,
-    })
-    return null
-  }
 }
 
 function resolveReadaloudPageCount(
@@ -113,39 +85,40 @@ export const extractManifestStep: PipelineStep = {
 
     if (ctx.format === "ebook") {
       ctx.logger.debug(`Extracting manifest for book ${ctx.book.title}`)
-      const readiumService = getReadiumService()
-      if (!readiumService.isRunning()) {
-        await readiumService.start()
-      }
-
-      const response = await readiumService.makeRequest(
-        ctx.filepath,
-        "manifest.json",
-      )
-      const manifest = (await response.json()) as SerializedManifest
-      ctx.manifest = manifest
-      ctx.pageCount = await deriveEbookPositionsCount(ctx)
+      const m = await ReadiumService.getManifest(ctx.filepath, {
+        inferPageCount: true,
+      })
+      ctx.manifest = m
+      ctx.pageCount = m.metadata.numberOfPages ?? null
 
       return
     }
 
     if (ctx.format === "readaloud") {
       ctx.logger.debug(`Extracting manifest for readaloud ${ctx.book.title}`)
-      const readiumService = getReadiumService()
-      if (!readiumService.isRunning()) {
-        await readiumService.start()
-      }
+      // const readiumService = getReadiumService()
+      // if (!readiumService.isRunning()) {
+      //   await readiumService.start()
+      // }
 
-      const response = await readiumService.makeRequest(
-        ctx.filepath,
-        "manifest.json",
+      // const response = await readiumService.makeRequest(
+      //   ctx.filepath,
+      //   "manifest.json",
+      // )
+      // const manifest = (await response.json()) as SerializedManifest
+      // ctx.manifest = manifest
+
+      // const ownPageCount = await deriveEbookPositionsCount(ctx)
+      const m = await ReadiumService.getManifest(ctx.filepath, {
+        inferPageCount: true,
+      })
+
+      ctx.manifest = m
+      ctx.pageCount = resolveReadaloudPageCount(
+        ctx,
+        m.metadata.numberOfPages ?? null,
       )
-      const manifest = (await response.json()) as SerializedManifest
-      ctx.manifest = manifest
-
-      const ownPageCount = await deriveEbookPositionsCount(ctx)
-      ctx.pageCount = resolveReadaloudPageCount(ctx, ownPageCount)
-      ctx.duration = resolveReadaloudDuration(ctx, manifest)
+      ctx.duration = resolveReadaloudDuration(ctx, m)
       return
     }
 
