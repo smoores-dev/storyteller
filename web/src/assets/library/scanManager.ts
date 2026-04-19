@@ -1,14 +1,10 @@
 import { AsyncMutex } from "@esfx/async-mutex"
 
-import { getBook } from "@/database/books"
 import { getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
-import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { type ImportPathChange, scan, scanChangedPaths } from "./scan"
-import { scanExistingBooks } from "./scanExisting"
-import { type ScanOptions } from "./scanner"
+import { scan } from "./scan"
 
 type ScanSource = "watcher" | "manual" | "scheduled"
 
@@ -51,7 +47,7 @@ function getImportTargets(
   return targets
 }
 
-async function runExclusive(
+export async function runExclusive(
   source: ScanSource,
   signal: AbortSignal,
   callback: () => Promise<void>,
@@ -76,7 +72,7 @@ async function runExclusive(
   }
 }
 
-async function runImportScans(signal: AbortSignal): Promise<Set<UUID>> {
+export async function runImportScans(signal: AbortSignal): Promise<Set<UUID>> {
   const [rootImportPaths, collections] = await Promise.all([
     getSetting("importPath"),
     getCollections(),
@@ -100,74 +96,4 @@ async function runImportScans(signal: AbortSignal): Promise<Set<UUID>> {
 
 export function getScanState(): ScanState {
   return { ...state }
-}
-
-export async function runWatcherScan(
-  importPath: string,
-  collectionUuid: UUID | null,
-  signal: AbortSignal,
-) {
-  await runExclusive("watcher", signal, async () => {
-    await scan(importPath, collectionUuid, signal)
-  })
-}
-
-export async function runWatcherChangeScan(
-  importPath: string,
-  collectionUuid: UUID | null,
-  changes: ImportPathChange[],
-  signal: AbortSignal,
-) {
-  await runExclusive("watcher", signal, async () => {
-    await scanChangedPaths(importPath, collectionUuid, changes, signal)
-  })
-}
-
-export async function runLibraryScan(
-  signal: AbortSignal,
-  options?: ScanOptions,
-) {
-  await runExclusive("manual", signal, async () => {
-    const scannedUuids = await runImportScans(signal)
-    if (signal.aborted) {
-      return
-    }
-
-    await scanExistingBooks(signal, {
-      ...(options && { scanOptions: options }),
-      excludeBookUuids: scannedUuids,
-    })
-  })
-}
-
-export async function runSingleBookScan(
-  bookUuid: UUID,
-  signal: AbortSignal,
-  options?: ScanOptions,
-) {
-  await runExclusive("manual", signal, async () => {
-    const book = await getBook(bookUuid)
-    if (!book) {
-      logger.error(`Book ${bookUuid} not found`)
-      return
-    }
-
-    await scanExistingBooks(signal, {
-      bookUuids: [bookUuid],
-      ...(options && { scanOptions: options }),
-    })
-  })
-}
-
-export async function runScheduledScan(signal: AbortSignal) {
-  await runExclusive("scheduled", signal, async () => {
-    logger.info("Running scheduled library scan")
-
-    const scannedUuids = await runImportScans(signal)
-    if (signal.aborted) {
-      return
-    }
-
-    await scanExistingBooks(signal, { excludeBookUuids: scannedUuids })
-  })
 }

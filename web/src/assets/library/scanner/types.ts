@@ -12,7 +12,10 @@ import {
 import { type MetadataOverrideMode } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"
 
-export type ScanFormat = "ebook" | "audiobook" | "readaloud"
+export type ScanFormat = "ebook" | "audiobook" | "readaloud" | "epub-unknown"
+
+export type ResolvedEpubFormat = "ebook" | "readaloud"
+
 export type ScanFlag = "missing" | "changed" | "new"
 
 export interface ScanOptions {
@@ -44,14 +47,19 @@ export interface ScanContext {
 
 export interface PipelineStep {
   name: string
-  run:
-    | ((ctx: ScanContext, signal: AbortSignal) => Promise<boolean | undefined>)
-    | ((ctx: ScanContext, signal: AbortSignal) => Promise<void>)
-  cleanup?: (ctx: ScanContext) => Promise<void> | void
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+  run(ctx: ScanContext, signal: AbortSignal): Promise<boolean | void>
+  cleanup?(ctx: ScanContext): Promise<void> | void
 }
 
-export interface PipelineRunnerOptions {
-  concurrency: number
-  signal: AbortSignal
-  onProgress?: ((processed: number, total: number) => void) | undefined
+export function isEpubFormat(format: ScanFormat): boolean {
+  return (
+    format === "ebook" || format === "readaloud" || format === "epub-unknown"
+  )
+}
+
+export function isResolvedFormat(
+  format: ScanFormat,
+): format is "ebook" | "audiobook" | "readaloud" {
+  return format !== "epub-unknown"
 }

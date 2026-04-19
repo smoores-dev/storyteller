@@ -8,8 +8,8 @@ import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { type ImportPathChange } from "./scan"
-import { runWatcherChangeScan, runWatcherScan } from "./scanManager"
+import { type ImportPathChange, scan, scanChangedPaths } from "./scan"
+import { runExclusive } from "./scanManager"
 import {
   getWatcherOptions,
   readSnapshotChanges,
@@ -103,16 +103,11 @@ function startWatcher(
 
     await scanLock.lock()
     const batch = pendingChanges.splice(0, pendingChanges.length)
-    logger.info(
-      `Scanning ${batch.length} change(s) in ${importPath}`,
-    )
+    logger.info(`Scanning ${batch.length} change(s) in ${importPath}`)
     try {
-      await runWatcherChangeScan(
-        importPath,
-        collection,
-        batch,
-        controller.signal,
-      )
+      await runExclusive("watcher", controller.signal, async () => {
+        await scanChangedPaths(importPath, collection, batch, controller.signal)
+      })
       await writeWatcherSnapshot(importPath)
     } catch (error) {
       logger.error(
@@ -167,7 +162,9 @@ function startWatcher(
       logger.info(
         `No snapshot found for ${importPath}; running one full import-path scan to establish baseline.`,
       )
-      await runWatcherScan(importPath, collection, controller.signal)
+      await runExclusive("watcher", controller.signal, async () => {
+        await scan(importPath, collection, controller.signal)
+      })
       await writeWatcherSnapshot(importPath)
       return
     }

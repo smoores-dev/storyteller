@@ -1,14 +1,12 @@
-import { Epub, UnsupportedEpubVersionError } from "@storyteller-platform/epub"
+import { Epub, EpubVersionError } from "@storyteller-platform/epub"
 
-import { type PipelineStep } from "@/assets/library/scanner/types"
-import { updateBook } from "@/database/books"
-
-import { getFormatRelationPatch } from "./utils"
+import { type PipelineStep, isEpubFormat } from "@/assets/library/scanner/types"
 
 export const openEpubStep: PipelineStep = {
   name: "open-epub",
+
   async run(ctx) {
-    if (ctx.format === "audiobook") {
+    if (!isEpubFormat(ctx.format)) {
       return
     }
 
@@ -18,29 +16,13 @@ export const openEpubStep: PipelineStep = {
 
     try {
       ctx.epub = await Epub.from(ctx.filepath)
-      return
     } catch (error) {
-      if (!(error instanceof UnsupportedEpubVersionError)) {
+      if (!(error instanceof EpubVersionError)) {
         throw error
       }
 
+      // let the upgrade-epub step handle this
       ctx.isEpub2 = true
-
-      if (!ctx.book) {
-        ctx.logger.warn(
-          `EPUB 2 file at ${ctx.filepath} cannot be imported (only EPUB 3 is supported)`,
-        )
-        return false
-      }
-
-      ctx.logger.info(`Flagging ${ctx.book.title} as EPUB 2`)
-      await updateBook(
-        ctx.bookUuid,
-        null,
-        getFormatRelationPatch(ctx, { isEpub2: true }),
-      )
-
-      return false
     }
   },
 

@@ -1,11 +1,15 @@
 import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
-import { type PipelineStep } from "@/assets/library/scanner/types"
+import {
+  type PipelineStep,
+  isResolvedFormat,
+} from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
 import { getFormatRelationPatch } from "./utils"
 
 export const computeHashStep: PipelineStep = {
   name: "compute-hash",
+
   async run(ctx) {
     const { hash, fileSize } =
       ctx.format === "audiobook"
@@ -23,6 +27,11 @@ export const computeHashStep: PipelineStep = {
       ctx.existingHash !== hash
     ) {
       ctx.flags.add("changed")
+    }
+
+    // defer DB write for unresolved formats; reconcile-metadata will persist everything
+    if (!isResolvedFormat(ctx.format)) {
+      return
     }
 
     await updateBook(

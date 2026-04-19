@@ -1,6 +1,7 @@
 import {
   type PipelineStep,
   type ScanContext,
+  isResolvedFormat,
 } from "@/assets/library/scanner/types"
 import { keepMissingMetadata, keepMissingRelations } from "@/assets/metadata"
 import {
@@ -21,6 +22,12 @@ function buildFormatRelation(ctx: ScanContext): BookRelationsUpdate {
     contentHash: ctx.fileHash,
     missing: false,
     fileSize: ctx.fileSize,
+  }
+
+  if (!isResolvedFormat(ctx.format)) {
+    throw new Error(
+      `Cannot build format relation for unresolved format "${ctx.format}"`,
+    )
   }
 
   switch (ctx.format) {
@@ -44,11 +51,6 @@ function buildFormatRelation(ctx: ScanContext): BookRelationsUpdate {
         pageCount: ctx.pageCount,
         duration: ctx.duration,
       })
-
-    default: {
-      const format: never = ctx.format
-      throw new Error(`Invalid format: ${format as string}`)
-    }
   }
 }
 
@@ -80,6 +82,7 @@ function hasChanges(
   metadataUpdate: BookUpdate | null,
   relationUpdate: BookRelationsUpdate,
   currentBook: BookWithRelations,
+  format: "ebook" | "audiobook" | "readaloud",
 ): boolean {
   if (metadataUpdate || Object.keys(relationUpdate).length > 0) {
     return true
@@ -91,13 +94,20 @@ function hasChanges(
     return true
   }
 
-  const relation = currentBook[ctx.format]
+  const relation = currentBook[format]
   return !relation || relation.missing
 }
 
 export const reconcileMetadataStep: PipelineStep = {
   name: "reconcile-metadata",
   async run(ctx) {
+    if (!isResolvedFormat(ctx.format)) {
+      ctx.logger.error(
+        `Format was not resolved before reconciliation (still "${ctx.format}"), skipping`,
+      )
+      return false
+    }
+
     const current = await getBook(ctx.bookUuid)
     if (!current) {
       return false
@@ -116,7 +126,7 @@ export const reconcileMetadataStep: PipelineStep = {
       ctx.extractedRelations,
     )
 
-    if (!hasChanges(ctx, metadataUpdate, relationUpdate, current)) {
+    if (!hasChanges(ctx, metadataUpdate, relationUpdate, current, ctx.format)) {
       ctx.logger.debug("No changes to metadata or relations, skipping update")
       return false
     }

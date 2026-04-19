@@ -1,6 +1,7 @@
 import {
   type PipelineStep,
   type ScanContext,
+  isResolvedFormat,
 } from "@/assets/library/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
 import { ReadiumService } from "@/services/readiumService"
@@ -60,7 +61,7 @@ function resolveReadaloudDuration(
 export const extractManifestStep: PipelineStep = {
   name: "extract-manifest",
   async run(ctx) {
-    if (!ctx.book) {
+    if (!ctx.book || !isResolvedFormat(ctx.format)) {
       return
     }
 
@@ -96,29 +97,17 @@ export const extractManifestStep: PipelineStep = {
 
     if (ctx.format === "readaloud") {
       ctx.logger.debug(`Extracting manifest for readaloud ${ctx.book.title}`)
-      // const readiumService = getReadiumService()
-      // if (!readiumService.isRunning()) {
-      //   await readiumService.start()
-      // }
 
-      // const response = await readiumService.makeRequest(
-      //   ctx.filepath,
-      //   "manifest.json",
-      // )
-      // const manifest = (await response.json()) as SerializedManifest
-      // ctx.manifest = manifest
-
-      // const ownPageCount = await deriveEbookPositionsCount(ctx)
-      const m = await ReadiumService.getManifest(ctx.filepath, {
+      const manifest = await ReadiumService.getManifest(ctx.filepath, {
         inferPageCount: true,
       })
 
-      ctx.manifest = m
+      ctx.manifest = manifest
       ctx.pageCount = resolveReadaloudPageCount(
         ctx,
-        m.metadata.numberOfPages ?? null,
+        manifest.metadata.numberOfPages ?? null,
       )
-      ctx.duration = resolveReadaloudDuration(ctx, m)
+      ctx.duration = resolveReadaloudDuration(ctx, manifest)
       return
     }
 

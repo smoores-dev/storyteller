@@ -14,6 +14,7 @@ const WATCHER_OPTIONS = {
   ignore: [
     "**/*.json",
     "**/transcoded audio/*",
+    "**/.DS_Store",
     "**/transcriptions/*",
     "**/ebook cover/*",
     "**/audiobook cover/*",

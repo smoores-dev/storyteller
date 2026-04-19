@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 
+import { scanExistingBooks } from "@/assets/library/scanExisting"
 import {
   getScanState,
-  runLibraryScan,
+  runExclusive,
+  runImportScans,
 } from "@/assets/library/scanManager"
 import { type ScanOptions } from "@/assets/library/scanner"
 import { withHasPermission } from "@/auth/auth"
@@ -35,7 +37,19 @@ export const GET = withHasPermission("bookProcess")(() => {
 export const POST = withHasPermission("bookProcess")((request) => {
   const options = parseScanOptions(request.nextUrl.searchParams)
   const controller = new AbortController()
-  void runLibraryScan(controller.signal, options)
+  const signal = controller.signal
+
+  void runExclusive("manual", signal, async () => {
+    const scannedUuids = await runImportScans(signal)
+    if (signal.aborted) {
+      return
+    }
+
+    await scanExistingBooks(signal, {
+      scanOptions: options,
+      excludeBookUuids: scannedUuids,
+    })
+  })
 
   return new Response(null, { status: 204 })
 })

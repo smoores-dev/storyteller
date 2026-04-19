@@ -3,7 +3,8 @@ import cron, { type ScheduledTask } from "node-cron"
 import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 
-import { runScheduledScan } from "./scanManager"
+import { scanExistingBooks } from "./scanExisting"
+import { runExclusive, runImportScans } from "./scanManager"
 
 let scheduledTask: ScheduledTask | null = null
 
@@ -66,8 +67,18 @@ export async function refreshScheduledScan() {
     expression,
     async () => {
       const controller = new AbortController()
+      const signal = controller.signal
       try {
-        await runScheduledScan(controller.signal)
+        await runExclusive("scheduled", signal, async () => {
+          logger.info("Running scheduled library scan")
+
+          const scannedUuids = await runImportScans(controller.signal)
+          if (signal.aborted) {
+            return
+          }
+
+          await scanExistingBooks(signal, { excludeBookUuids: scannedUuids })
+        })
       } catch (error: unknown) {
         logger.error({ msg: "Scheduled full scan failed", err: error })
       }

@@ -1,4 +1,7 @@
-import { type ScanContext } from "@/assets/library/scanner/types"
+import {
+  type ScanContext,
+  isResolvedFormat,
+} from "@/assets/library/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
 import { type BookRelationsUpdate } from "@/database/books"
 
@@ -44,6 +47,12 @@ export function getFormatRelationPatch(
   ctx: ScanContext,
   update: EbookRelationPatch | AudiobookRelationPatch | ReadaloudRelationPatch,
 ): BookRelationsUpdate {
+  if (!isResolvedFormat(ctx.format)) {
+    throw new Error(
+      `Cannot build relation patch for unresolved format "${ctx.format}"`,
+    )
+  }
+
   switch (ctx.format) {
     case "ebook":
       return {
@@ -52,6 +61,7 @@ export function getFormatRelationPatch(
           ...(update as EbookRelationPatch),
         } as NonNullable<BookRelationsUpdate["ebook"]>,
       }
+
     case "audiobook":
       return {
         audiobook: {
@@ -59,6 +69,7 @@ export function getFormatRelationPatch(
           ...(update as AudiobookRelationPatch),
         } as NonNullable<BookRelationsUpdate["audiobook"]>,
       }
+
     case "readaloud":
       return {
         readaloud: {
@@ -66,10 +77,6 @@ export function getFormatRelationPatch(
           ...(update as ReadaloudRelationPatch),
         } as NonNullable<BookRelationsUpdate["readaloud"]>,
       }
-    default: {
-      const format: never = ctx.format
-      throw new Error(`Invalid format: ${format as string}`)
-    }
   }
 }
 

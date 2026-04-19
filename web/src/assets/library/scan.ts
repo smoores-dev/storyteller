@@ -17,7 +17,6 @@ import {
   type BookPath,
   attachNewRelations,
   createNewBook,
-  discoverBookPaths,
   discoverBookPathsForRoots,
   findMatchingBook,
   getBookPathFormats,
@@ -29,9 +28,18 @@ import {
   registerFormats,
   updateReadaloudMissingState,
 } from "./scanHelpers"
-import { type ScanFormat, runBookScanPipeline } from "./scanner"
+import {
+  type ScanFormat,
+  createScanContext,
+  runBookScanPipeline,
+} from "./scanner"
 
 export type { ImportPathChange } from "./changes"
+
+type UnclassifiedEpub = {
+  bookUuid: UUID
+  filepath: string
+}
 
 function getAffectedFormatsFromChanges(
   books: BookWithRelations[],
@@ -43,13 +51,24 @@ function getAffectedFormatsFromChanges(
     for (const book of books) {
       const formats: ScanFormat[] = []
 
-      if (book.ebook?.filepath && pathsOverlap(book.ebook.filepath, change.path)) {
+      if (
+        book.ebook?.filepath &&
+        pathsOverlap(book.ebook.filepath, change.path)
+      ) {
         formats.push("ebook")
       }
-      if (book.audiobook?.filepath && pathsOverlap(book.audiobook.filepath, change.path)) {
+
+      if (
+        book.audiobook?.filepath &&
+        pathsOverlap(book.audiobook.filepath, change.path)
+      ) {
         formats.push("audiobook")
       }
-      if (book.readaloud?.filepath && pathsOverlap(book.readaloud.filepath, change.path)) {
+
+      if (
+        book.readaloud?.filepath &&
+        pathsOverlap(book.readaloud.filepath, change.path)
+      ) {
         formats.push("readaloud")
       }
 
@@ -60,6 +79,20 @@ function getAffectedFormatsFromChanges(
   return affected
 }
 
+function collectUnclassifiedEpubs(
+  bookUuid: UUID,
+  bookPath: BookPath,
+  out: UnclassifiedEpub[],
+) {
+  if (!bookPath.epubUnknown?.length) {
+    return
+  }
+
+  for (const filepath of bookPath.epubUnknown) {
+    out.push({ bookUuid, filepath })
+  }
+}
+
 async function reconcileDiscoveredPaths(
   bookPaths: BookPath[],
   collectionUuid: UUID | null,
@@ -67,6 +100,7 @@ async function reconcileDiscoveredPaths(
   scopedBooks: BookWithRelations[],
   formatsByBook: Map<UUID, Set<ScanFormat>>,
   newFormatsByBook: Map<UUID, Set<ScanFormat>> | null,
+  unclassifiedEpubs: UnclassifiedEpub[],
   signal: AbortSignal,
 ): Promise<{
   allBooks: BookWithRelations[]
@@ -99,6 +133,7 @@ async function reconcileDiscoveredPaths(
         const nestedBook = await getBookByAudiobookFilepathPrefix(
           bookPath.audiobook,
         )
+
         if (nestedBook) {
           logger.warn(
             `Found a new audiobook file in the folder ${bookPath.audiobook}, but the book ${nestedBook.title} already has audiobook files at ${nestedBook.audiobookFilepath}: skipping. Please place all files within book-specific folders: https://storyteller-platform.gitlab.io/storyteller/docs/managing/adding#organizing-your-auto-import-folder.`,
@@ -118,6 +153,8 @@ async function reconcileDiscoveredPaths(
         if (newFormatsByBook) {
           registerFormats(newFormatsByBook, created.uuid, discoveredFormats)
         }
+
+        collectUnclassifiedEpubs(created.uuid, bookPath, unclassifiedEpubs)
         currentScoped.push(created)
         currentAll.push(created)
       } catch (error) {
@@ -139,6 +176,8 @@ async function reconcileDiscoveredPaths(
       registerFormats(newFormatsByBook, updated.book.uuid, updated.newFormats)
     }
 
+    collectUnclassifiedEpubs(scopedMatch.uuid, bookPath, unclassifiedEpubs)
+
     currentScoped = currentScoped.map((book) =>
       book.uuid === updated.book.uuid ? updated.book : book,
     )
@@ -148,6 +187,25 @@ async function reconcileDiscoveredPaths(
   }
 
   return { allBooks: currentAll, scopedBooks: currentScoped }
+}
+
+function buildUnclassifiedEpubContexts(
+  unclassified: UnclassifiedEpub[],
+  refreshedBooks: BookWithRelations[],
+) {
+  return unclassified.map(({ bookUuid, filepath }) => {
+    const book = refreshedBooks.find((b) => b.uuid === bookUuid) ?? null
+
+    return createScanContext({
+      bookUuid,
+      format: "epub-unknown",
+      filepath,
+      missing: false,
+      existingHash: null,
+      flags: ["new"],
+      book,
+    })
+  })
 }
 
 export async function scan(
@@ -165,14 +223,23 @@ export async function scan(
 
   const scopedBooks = getScopedBooks(allBooks, collectionUuid)
   const knownEbookPaths = new Set(
-    scopedBooks.map((book) => book.ebook?.filepath).filter((p): p is string => !!p),
+    scopedBooks
+      .map((book) => book.ebook?.filepath)
+      .filter((p): p is string => !!p),
   )
   const knownReadaloudPaths = new Set(
-    scopedBooks.map((book) => book.readaloud?.filepath).filter((p): p is string => !!p),
+    scopedBooks
+      .map((book) => book.readaloud?.filepath)
+      .filter((p): p is string => !!p),
   )
 
-  const bookPaths = await discoverBookPaths(
-    importPath,
+  const bookPaths = await discoverBookPathsForRoots(
+    [
+      {
+        rootPath: importPath,
+        warnIfFileAtRoot: true,
+      },
+    ],
     knownEbookPaths,
     knownReadaloudPaths,
     signal,
@@ -182,8 +249,12 @@ export async function scan(
     return scannedBookUuids
   }
 
-  logger.debug(`Discovered ${bookPaths.length} book folder(s), checking for new or changed books`)
+  logger.debug(
+    `Discovered ${bookPaths.length} book folder(s), checking for new or changed books`,
+  )
+
   const newFlagsByBook = new Map<UUID, Set<ScanFormat>>()
+  const unclassifiedEpubs: UnclassifiedEpub[] = []
 
   await reconcileDiscoveredPaths(
     bookPaths,
@@ -192,13 +263,16 @@ export async function scan(
     scopedBooks,
     newFlagsByBook,
     null,
+    unclassifiedEpubs,
     signal,
   )
 
   const refreshedBooks = getScopedBooks(await getBooks(), collectionUuid)
-  const contexts = buildScanContexts(refreshedBooks, {
-    newFormats: newFlagsByBook,
-  })
+
+  const contexts = [
+    ...buildScanContexts(refreshedBooks, { newFormats: newFlagsByBook }),
+    ...buildUnclassifiedEpubContexts(unclassifiedEpubs, refreshedBooks),
+  ]
 
   await runBookScanPipeline(contexts, { concurrency: 2, signal })
   await updateReadaloudMissingState(refreshedBooks, signal)
@@ -210,6 +284,7 @@ export async function scan(
   logger.info(
     `Import scan complete for ${importPath}. found ${bookPaths.length} book(s), scanned ${contexts.length} format(s)`,
   )
+
   return scannedBookUuids
 }
 
@@ -222,6 +297,7 @@ export async function scanChangedPaths(
   const normalizedChanges = coalesceChanges(changes).filter((change) =>
     isWithinPath(importPath, change.path),
   )
+
   if (!normalizedChanges.length) {
     logger.debug(`No relevant changes detected for ${importPath}`)
     return
@@ -242,18 +318,30 @@ export async function scanChangedPaths(
     normalizedChanges,
   )
   const newFormatsByBook = new Map<UUID, Set<ScanFormat>>()
+  const unclassifiedEpubs: UnclassifiedEpub[] = []
 
   const knownEbookPaths = new Set(
-    scopedBooks.map((book) => book.ebook?.filepath).filter((p): p is string => !!p),
+    scopedBooks
+      .map((book) => book.ebook?.filepath)
+      .filter((p): p is string => !!p),
   )
   const knownReadaloudPaths = new Set(
-    scopedBooks.map((book) => book.readaloud?.filepath).filter((p): p is string => !!p),
+    scopedBooks
+      .map((book) => book.readaloud?.filepath)
+      .filter((p): p is string => !!p),
   )
 
-  const discoveryRoots = getDiscoveryRootsFromChanges(importPath, normalizedChanges)
+  const discoveryRoots = getDiscoveryRootsFromChanges(
+    importPath,
+    normalizedChanges,
+  )
+
   if (discoveryRoots.length) {
     const discoveredBookPaths = await discoverBookPathsForRoots(
-      discoveryRoots.map((rootPath) => ({ rootPath, warnIfFileAtRoot: false })),
+      discoveryRoots.map((rootPath) => ({
+        rootPath,
+        warnIfFileAtRoot: false,
+      })),
       knownEbookPaths,
       knownReadaloudPaths,
       signal,
@@ -266,20 +354,28 @@ export async function scanChangedPaths(
       scopedBooks,
       affectedFormatsByBook,
       newFormatsByBook,
+      unclassifiedEpubs,
       signal,
     )
   }
 
-  if (!affectedFormatsByBook.size) {
+  const hasAffected = affectedFormatsByBook.size > 0
+  const hasUnclassified = unclassifiedEpubs.length > 0
+
+  if (!hasAffected && !hasUnclassified) {
     logger.debug(`No affected books found for ${importPath}`)
     return
   }
 
   const refreshedBooks = getScopedBooks(await getBooks(), collectionUuid)
-  const contexts = buildScanContexts(refreshedBooks, {
-    formatFilter: affectedFormatsByBook,
-    newFormats: newFormatsByBook,
-  })
+
+  const contexts = [
+    ...buildScanContexts(refreshedBooks, {
+      formatFilter: affectedFormatsByBook,
+      newFormats: newFormatsByBook,
+    }),
+    ...buildUnclassifiedEpubContexts(unclassifiedEpubs, refreshedBooks),
+  ]
 
   if (!contexts.length) {
     logger.debug(`No scan contexts generated for ${importPath}`)
@@ -291,6 +387,7 @@ export async function scanChangedPaths(
     refreshedBooks.filter((book) => affectedFormatsByBook.has(book.uuid)),
     signal,
   )
+
   logger.info(
     `Incremental scan complete for ${importPath}. processed ${affectedFormatsByBook.size} book(s)`,
   )

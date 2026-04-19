@@ -40,7 +40,7 @@ export async function getAudioCoverFilepath(bookUuid: UUID) {
   const index = await getAudioIndex(bookUuid)
   if (index === null) return index
 
-  if (!("cover" in index)) return null
+  if (!("cover" in index) || !index.cover) return null
 
   return join(getAudioDirectory(bookUuid), index.cover)
 }
@@ -101,7 +101,7 @@ export async function getEpubCoverFilepath(bookUuid: UUID) {
   const index = await getEpubIndex(bookUuid)
   if (index === null) return index
 
-  if (!("cover" in index)) return null
+  if (!("cover" in index) || !index.cover) return null
 
   return join(getEpubDirectory(bookUuid), index.cover)
 }

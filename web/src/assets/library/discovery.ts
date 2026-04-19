@@ -12,6 +12,7 @@ import { getDefaultSuffix, getInternalBookDirectory } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import {
   type BookWithRelations,
+  createBook,
   createBookFromAudiobook,
   createBookFromEpub,
   updateBook,
@@ -26,6 +27,7 @@ export type BookPath = {
   ebook?: string
   audiobook?: string
   readaloud?: string
+  epubUnknown?: string[]
 }
 
 type SearchRoot = {
@@ -35,9 +37,11 @@ type SearchRoot = {
 
 export function getBookPathFormats(bookPath: BookPath): ScanFormat[] {
   const formats: ScanFormat[] = []
+
   if (bookPath.ebook) formats.push("ebook")
   if (bookPath.audiobook) formats.push("audiobook")
   if (bookPath.readaloud) formats.push("readaloud")
+
   return formats
 }
 
@@ -47,20 +51,26 @@ export function hasAnyRelationChange(
 ): boolean {
   const ebookChanged =
     !!bookPath.ebook && (!book.ebook || book.ebook.filepath !== bookPath.ebook)
+
   const audiobookChanged =
     !!bookPath.audiobook &&
     (!book.audiobook || book.audiobook.filepath !== bookPath.audiobook)
+
   const readaloudChanged =
     !!bookPath.readaloud &&
     (!book.readaloud || book.readaloud.filepath !== bookPath.readaloud)
 
-  return ebookChanged || audiobookChanged || readaloudChanged
+  const hasUnclassifiedEpubs = !!bookPath.epubUnknown?.length
+
+  return (
+    ebookChanged || audiobookChanged || readaloudChanged || hasUnclassifiedEpubs
+  )
 }
 
 export function findMatchingBook(
   books: BookWithRelations[],
   bookPath: BookPath,
-) {
+): BookWithRelations | undefined {
   return books.find(
     (book) =>
       (bookPath.ebook && bookPath.ebook === book.ebook?.filepath) ||
@@ -90,6 +100,12 @@ export async function createNewBook(
   bookPath: BookPath,
   collectionUuid: UUID | null,
 ): Promise<BookWithRelations | null> {
+  const collectionRelation = collectionUuid
+    ? { collections: [collectionUuid] }
+    : {}
+
+  // if we already know which epub is which (from a previous scan), use the
+  // classified path and open it for metadata.
   if (bookPath.readaloud || bookPath.ebook) {
     const sourceEpub = bookPath.readaloud ?? bookPath.ebook
     if (!sourceEpub) {
@@ -101,7 +117,7 @@ export async function createNewBook(
       epub,
       { title: basename(sourceEpub, ".epub") },
       {
-        ...(collectionUuid && { collections: [collectionUuid] }),
+        ...collectionRelation,
         ...(bookPath.ebook && { ebook: { filepath: bookPath.ebook } }),
         ...(bookPath.readaloud && {
           readaloud: {
@@ -122,28 +138,43 @@ export async function createNewBook(
     return created
   }
 
-  if (!bookPath.audiobook) {
+  // if there's an audiobook, use it for metadata extraction
+  if (bookPath.audiobook) {
+    const audiobookPath = bookPath.audiobook
+    const entries = await readdir(audiobookPath)
+    const tracks = entries
+      .filter((entry) => isAudioFile(entry))
+      .map((relativePath) => join(audiobookPath, relativePath))
+
+    using audiobook = await Audiobook.from(...(tracks as AudiobookInputs))
+    let created = await createBookFromAudiobook(
+      audiobook,
+      { title: basename(audiobookPath) },
+      {
+        ...collectionRelation,
+        audiobook: { filepath: audiobookPath },
+      },
+    )
+
+    created = await ensureBookDirectory(created)
+    await cacheAudioCover(created)
+    return created
+  }
+
+  // unclassified epubs only -- create a minimal book record.
+  // the scanner pipeline will open the epub, determine its format
+  // (ebook vs readaloud), extract metadata, and create the relation.
+  const firstEpub = bookPath.epubUnknown?.[0]
+  if (!firstEpub) {
     return null
   }
 
-  const audiobookPath = bookPath.audiobook
-  const entries = await readdir(audiobookPath)
-  const tracks = entries
-    .filter((entry) => isAudioFile(entry))
-    .map((relativePath) => join(audiobookPath, relativePath))
-
-  using audiobook = await Audiobook.from(...(tracks as AudiobookInputs))
-  let created = await createBookFromAudiobook(
-    audiobook,
-    { title: basename(audiobookPath) },
-    {
-      ...(collectionUuid && { collections: [collectionUuid] }),
-      audiobook: { filepath: audiobookPath },
-    },
+  let created = await createBook(
+    { title: basename(firstEpub, ".epub") },
+    collectionRelation,
   )
 
   created = await ensureBookDirectory(created)
-  await cacheAudioCover(created)
   return created
 }
 
@@ -207,7 +238,13 @@ function dedupeBookPaths(paths: BookPath[]): BookPath[] {
   const deduped: BookPath[] = []
 
   for (const path of paths) {
-    const key = `${path.ebook ?? ""}|${path.readaloud ?? ""}|${path.audiobook ?? ""}`
+    const key = [
+      path.ebook ?? "",
+      path.readaloud ?? "",
+      path.audiobook ?? "",
+      ...(path.epubUnknown ?? []),
+    ].join("|")
+
     if (seen.has(key)) {
       continue
     }
@@ -219,27 +256,13 @@ function dedupeBookPaths(paths: BookPath[]): BookPath[] {
   return deduped
 }
 
-export async function discoverBookPaths(
-  importPath: string,
-  knownEbookPaths: Set<string>,
-  knownReadaloudPaths: Set<string>,
-  signal: AbortSignal,
-): Promise<BookPath[]> {
-  return discoverBookPathsForRoots(
-    [{ rootPath: importPath, warnIfFileAtRoot: true }],
-    knownEbookPaths,
-    knownReadaloudPaths,
-    signal,
-  )
-}
-
 export async function discoverBookPathsForRoots(
   roots: SearchRoot[],
   knownEbookPaths: Set<string>,
   knownReadaloudPaths: Set<string>,
   signal: AbortSignal,
 ): Promise<BookPath[]> {
-  const ebookPaths: string[] = []
+  const epubPaths: string[] = []
   const audiobookPathsSet = new Set<string>()
   const bookPaths: BookPath[] = []
 
@@ -277,7 +300,9 @@ export async function discoverBookPathsForRoots(
           )
           continue
         }
-        ebookPaths.push(fullPath)
+
+        epubPaths.push(fullPath)
+        continue
       }
 
       if (!isAudioFile(ext)) {
@@ -296,74 +321,49 @@ export async function discoverBookPathsForRoots(
   }
 
   logger.debug(
-    `Discovered ${ebookPaths.length} ebook file(s) and ${audiobookPathsSet.size} audiobook folder(s) across ${roots.length} root(s)`,
+    `Discovered ${epubPaths.length} epub file(s) and ${audiobookPathsSet.size} audiobook folder(s) across ${roots.length} root(s)`,
   )
 
   const audiobookPaths = Array.from(audiobookPathsSet)
-  const handledEbookPaths = new Set<string>()
+  const handledEpubPaths = new Set<string>()
   const handledAudiobookPaths = new Set<string>()
 
-  for (const ebookPath of ebookPaths) {
+  for (const epubPath of epubPaths) {
     if (signal.aborted) {
       return []
     }
 
-    if (handledEbookPaths.has(ebookPath)) {
+    if (handledEpubPaths.has(epubPath)) {
       continue
     }
 
-    const dir = `${dirname(ebookPath)}/`
-    const additionalEbookPaths = ebookPaths.filter(
-      (path) => path.startsWith(dir) && path !== ebookPath,
+    // gather all epubs in the same directory
+    const dir = `${dirname(epubPath)}/`
+    const siblingEpubPaths = epubPaths.filter(
+      (path) => path.startsWith(dir) && path !== epubPath,
     )
+
+    const allEpubsInDir = [epubPath, ...siblingEpubPaths]
+
+    // classify: known paths go into their known format,
+    // everything else is unclassified and will be resolved by the scanner
     let plainEbookPath: string | null = null
     let readaloudPath: string | null = null
+    const unknownEpubs: string[] = []
 
-    for (const path of [ebookPath, ...additionalEbookPaths]) {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (signal.aborted) {
-        return []
-      }
-
-      if (plainEbookPath && readaloudPath) {
-        break
-      }
-
+    for (const path of allEpubsInDir) {
       if (knownEbookPaths.has(path)) {
         plainEbookPath = path
-        continue
-      }
-
-      if (knownReadaloudPaths.has(path)) {
+      } else if (knownReadaloudPaths.has(path)) {
         readaloudPath = path
-        continue
+      } else {
+        unknownEpubs.push(path)
       }
 
-      try {
-        using epub = await Epub.from(path)
-        const manifest = await epub.getManifest()
-        const isReadaloud = Object.values(manifest).some(
-          (item) => item.mediaOverlay,
-        )
-
-        if (isReadaloud && !readaloudPath) {
-          readaloudPath = path
-          handledEbookPaths.add(path)
-          continue
-        }
-
-        if (!isReadaloud && !plainEbookPath) {
-          plainEbookPath = path
-          handledEbookPaths.add(path)
-        }
-      } catch (error) {
-        logger.error(
-          `Encountered issue attempting to read EPUB file at ${path}, skipping`,
-        )
-        logger.error(error)
-      }
+      handledEpubPaths.add(path)
     }
 
+    // pair with the closest audiobook directory
     const nestedAudiobookPaths = audiobookPaths.filter((path) =>
       `${path}/`.startsWith(dir),
     )
@@ -372,7 +372,13 @@ export async function discoverBookPathsForRoots(
       handledAudiobookPaths.add(nestedAudiobookPath)
     }
 
-    if (!plainEbookPath && !readaloudPath && !nestedAudiobookPath) {
+    const hasAnything =
+      plainEbookPath ||
+      readaloudPath ||
+      nestedAudiobookPath ||
+      unknownEpubs.length > 0
+
+    if (!hasAnything) {
       continue
     }
 
@@ -380,6 +386,7 @@ export async function discoverBookPathsForRoots(
       ...(plainEbookPath && { ebook: plainEbookPath }),
       ...(readaloudPath && { readaloud: readaloudPath }),
       ...(nestedAudiobookPath && { audiobook: nestedAudiobookPath }),
+      ...(unknownEpubs.length > 0 && { epubUnknown: unknownEpubs }),
     })
   }
 
@@ -387,6 +394,7 @@ export async function discoverBookPathsForRoots(
     if (handledAudiobookPaths.has(audiobookPath)) {
       continue
     }
+
     bookPaths.push({ audiobook: audiobookPath })
   }
 
