@@ -377,7 +377,7 @@ export class ReadiumService {
   ): Promise<SerializedManifest> {
     const res = await new Promise((resolve, reject) => {
       exec(
-        `readium manifest ${filepath}${options.inferPageCount ? " --infer-page-count" : ""}`,
+        `readium manifest "${filepath}"${options.inferPageCount ? " --infer-page-count" : ""}`,
         {
           signal: options.signal,
         },
