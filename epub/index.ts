@@ -462,6 +462,36 @@ export class Epub {
   }
 
   /**
+   * Given an XML structure, find all descendants matching
+   * the provided name and optional filter.
+   *
+   * Will perform a breadth first search for the elements, returning
+   * the elements in the order found.
+   */
+  static findAllXmlDescendantsByName<Name extends ElementName>(
+    name: Name,
+    xml: ParsedXml,
+    filter?: (node: XmlElement<Name>) => boolean,
+  ): XmlElement<Name>[] {
+    const result: XmlElement<Name>[] = []
+
+    for (const child of xml) {
+      if (Epub.isXmlTextNode(child)) continue
+      if (
+        Epub.getXmlElementName(child) === name &&
+        (!filter || filter(child))
+      ) {
+        result.push(child)
+      }
+      result.push(
+        ...Epub.findAllXmlDescendantsByName(name, Epub.getXmlChildren(child)),
+      )
+    }
+
+    return result
+  }
+
+  /**
    * Given an XMLNode, determine whether it represents
    * a text node or an XML element.
    */

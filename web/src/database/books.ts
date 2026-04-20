@@ -1178,3 +1178,14 @@ export async function touchBook(uuid: UUID, userId?: UUID) {
 
   return book
 }
+
+export async function getReadaloudFilepath(bookUuid: UUID) {
+  const row = await db
+    .selectFrom("readaloud")
+    .select("filepath")
+    .where("bookUuid", "=", bookUuid)
+    .where("missing", "=", false)
+    .executeTakeFirst()
+
+  return row?.filepath ?? null
+}

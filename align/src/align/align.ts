@@ -439,7 +439,7 @@ export class Aligner {
                 w.text.match(/\S/),
               )
 
-              return words.map((w) => w.text.replace("\n", ""))
+              return words.map((w) => `${w.text} `.replace("\n ", ""))
             }),
           )
 

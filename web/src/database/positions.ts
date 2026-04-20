@@ -1,8 +1,10 @@
 import { isDeepStrictEqual } from "node:util"
 
 import { logger } from "@/logging"
+import { addFragmentToLocator } from "@/mediaOverlays"
 import { type UUID } from "@/uuid"
 
+import { getReadaloudFilepath } from "./books"
 import { db } from "./connection"
 
 export type ReadiumLocation = {
@@ -65,9 +67,25 @@ export async function upsertPosition(
     locator,
     positionTimestamp: timestamp,
   })
-  const locatorString = JSON.stringify(locator)
+
+  const hasFragment = !!locator.locations?.fragments?.[0]
 
   const upserted = await db.transaction().execute(async (tr) => {
+    const hasLocalReadaloud = await getReadaloudFilepath(bookUuid)
+    const expandedLocator =
+      !hasFragment && hasLocalReadaloud
+        ? await addFragmentToLocator(bookUuid, locator)
+        : locator
+
+    if (expandedLocator !== locator) {
+      logger.debug(
+        { fragment: locator.locations?.fragments?.[0] },
+        "Added fragment to locator from Media Overlay",
+      )
+    }
+
+    const locatorString = JSON.stringify(expandedLocator)
+
     const { statusUuid } = await tr
       .selectFrom("bookToStatus")
       .select(["statusUuid"])
@@ -106,7 +124,7 @@ export async function upsertPosition(
 
       if (
         existing.timestamp === timestamp &&
-        !isDeepStrictEqual(existing.locator, locator) &&
+        !isDeepStrictEqual(existing.locator, expandedLocator) &&
         !overwriteOnEqual
       ) {
         logger.debug(
@@ -117,7 +135,7 @@ export async function upsertPosition(
 
       if (
         existing.timestamp === timestamp &&
-        isDeepStrictEqual(existing.locator, locator) &&
+        isDeepStrictEqual(existing.locator, expandedLocator) &&
         !overwriteOnEqual
       ) {
         logger.debug(
@@ -149,7 +167,7 @@ export async function upsertPosition(
 
     if (
       statusUuid === toRead.uuid &&
-      (locator.locations?.totalProgression ?? 0) < 0.98
+      (expandedLocator.locations?.totalProgression ?? 0) < 0.98
     ) {
       logger.debug(
         'Status is "To read" and progression is less than 98%, setting to "Reading"',
@@ -163,7 +181,7 @@ export async function upsertPosition(
     }
     if (
       (statusUuid === toRead.uuid || statusUuid === reading.uuid) &&
-      (locator.locations?.totalProgression ?? 0) >= 0.98
+      (expandedLocator.locations?.totalProgression ?? 0) >= 0.98
     ) {
       logger.debug(
         'Status is "To read" or "Reading" and progression is greater than 98%, setting to "Read"',

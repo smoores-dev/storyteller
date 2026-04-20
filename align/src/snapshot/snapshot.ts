@@ -7,12 +7,7 @@ import {
 
 import { type Sentence } from "@echogarden/text-segmentation"
 
-import {
-  type ElementName,
-  Epub,
-  type ParsedXml,
-  type XmlElement,
-} from "@storyteller-platform/epub"
+import { Epub, type ParsedXml } from "@storyteller-platform/epub"
 import { type RecognitionResult } from "@storyteller-platform/ghost-story"
 
 import { parseDom } from "../markup/parseDom.ts"
@@ -87,7 +82,10 @@ export async function createAlignmentSnapshot(
 
     let lastChapterSentence = -1
     const chapterSentences = segmentation.filter((s) => s.text.match(/\S/))
-    const pars = findAll("par", Epub.getXmlChildren(seq))
+    const pars = Epub.findAllXmlDescendantsByName(
+      "par",
+      Epub.getXmlChildren(seq),
+    )
     for (const par of pars) {
       newSnapshot += `\n`
       const text = Epub.findXmlChildByName("text", Epub.getXmlChildren(par))
@@ -216,21 +214,4 @@ function getTextSentenceIndexByIdFragment(textSrc: string) {
   const [fragment, sentenceId] = match
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return { fragment, sentenceId: parseInt(sentenceId!, 10) }
-}
-
-function findAll<Name extends ElementName>(
-  name: Name,
-  xml: ParsedXml,
-): XmlElement<Name>[] {
-  const result: XmlElement<Name>[] = []
-
-  for (const child of xml) {
-    if (Epub.isXmlTextNode(child)) continue
-    if (Epub.getXmlElementName(child) === name) {
-      result.push(child)
-    }
-    result.push(...findAll(name, Epub.getXmlChildren(child)))
-  }
-
-  return result
 }
