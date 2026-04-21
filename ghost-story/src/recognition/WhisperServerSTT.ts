@@ -135,18 +135,23 @@ export async function recognize(
           whisperConfig.maxProcessors,
         )
         if (effectiveProcessors !== whisperConfig.processors) {
-          // set the processors to the correct number again
           const configForm = new FormData()
           configForm.append("processors", String(effectiveProcessors))
           configForm.append("threads", String(whisperConfig.threads))
-          // TODO: also configure model in some cases
+
           await fetch(`${baseUrl}/config`, {
             method: "POST",
             headers,
             body: configForm,
           })
+
+          whisperConfig.processors = effectiveProcessors
         }
-      } catch {
+      } catch (e) {
+        console.warn(
+          `Failed to get config from Whisper server, continuing with default config. If you aren't using ghost-story server, this is expected`,
+          e,
+        )
         // ignore
       }
     }
