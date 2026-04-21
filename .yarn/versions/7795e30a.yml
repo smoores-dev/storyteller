@@ -1,0 +1,7 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/ghost-story": patch
+  "@storyteller-platform/web": patch
+
+declined:
+  - "@storyteller-platform/mobile"
