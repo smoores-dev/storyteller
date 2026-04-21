@@ -311,7 +311,7 @@ const serverCommand = defineCommand({
     z.object({
       model: whisperModelSchema.default("tiny.en").describe("Whisper model"),
       port: z.coerce.number().default(8080).describe("Port to listen on"),
-      host: z.string().default("0.0.0.0").describe("Host to bind to"),
+      host: z.string().optional().describe("Host to bind to"),
       threads: z.coerce.number().default(4).describe("Number of threads"),
       processors: z.coerce.number().default(1).describe("Number of processors"),
       noConvert: z

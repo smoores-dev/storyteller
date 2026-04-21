@@ -17,7 +17,7 @@ import { installBinary, installModel } from "./install.ts"
 export interface ServerOptions {
   model: WhisperModel
   port: number
-  host: string
+  host?: string | undefined
   threads: number
   processors: number
   convert: boolean
@@ -31,7 +31,6 @@ export interface ServerOptions {
 export const defaultServerOptions: ServerOptions = {
   model: "tiny.en",
   port: 8080,
-  host: "0.0.0.0",
   threads: 4,
   processors: 4,
   convert: true,
@@ -120,8 +119,7 @@ export async function spawnWhisperServer(options: ServerOptions) {
   const serverArgs = [
     "-m",
     modelPath,
-    "--host",
-    options.host,
+    ...(options.host ? ["--host", options.host] : []),
     "--port",
     String(options.port),
     "-t",
