@@ -114,7 +114,7 @@ export async function recognize(
     const configResponse = await fetch(`${baseUrl}/config`, {
       headers,
       dispatcher: createTimeoutAgent(opts.timeout),
-    })
+    } as RequestInit)
     let whisperConfig: WhisperServerRunConfig | null = null
     if (configResponse.ok) {
       try {
@@ -143,7 +143,7 @@ export async function recognize(
             method: "POST",
             headers,
             body: configForm,
-          })
+          } as RequestInit)
 
           whisperConfig.processors = effectiveProcessors
         }
