@@ -24,7 +24,6 @@ export function suppressPath(filepath: string, ttlMs = DEFAULT_TTL_MS) {
     pending.delete(key)
   }, ttlMs)
 
-  // unref so the timer doesn't keep the process alive
   timer.unref()
   pending.set(key, { timer })
 }
@@ -42,11 +41,11 @@ export function unsuppressPath(filepath: string) {
 
 export function isSuppressed(filepath: string): boolean {
   const key = toKey(filepath)
+
   if (pending.has(key)) {
     return true
   }
 
-  // check if any suppressed directory is a parent of this path
   for (const suppressed of pending.keys()) {
     if (key.startsWith(suppressed + "/")) {
       return true

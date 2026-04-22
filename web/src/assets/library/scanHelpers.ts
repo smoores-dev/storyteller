@@ -9,7 +9,7 @@ import {
   type ScanFormat,
   type ScanOptions,
   createScanContext,
-} from "./scanner"
+} from "./scanner/index"
 
 export function getScopedBooks(
   allBooks: BookWithRelations[],
@@ -52,13 +52,17 @@ export function buildScanContexts(
 ): ScanContext[] {
   return books.flatMap((book) => {
     const allowedFormats = options.formatFilter?.get(book.uuid)
-    const newFormats = options.newFormats?.get(book.uuid) ?? new Set<ScanFormat>()
+    const newFormats =
+      options.newFormats?.get(book.uuid) ?? new Set<ScanFormat>()
     const makeFlags = (format: ScanFormat): ScanFlag[] =>
       newFormats.has(format) ? ["new"] : []
 
     const contexts: ScanContext[] = []
 
-    if (book.ebook?.filepath && (!allowedFormats || allowedFormats.has("ebook"))) {
+    if (
+      book.ebook?.filepath &&
+      (!allowedFormats || allowedFormats.has("ebook"))
+    ) {
       contexts.push(
         createScanContext({
           bookUuid: book.uuid,
@@ -73,7 +77,10 @@ export function buildScanContexts(
       )
     }
 
-    if (book.audiobook?.filepath && (!allowedFormats || allowedFormats.has("audiobook"))) {
+    if (
+      book.audiobook?.filepath &&
+      (!allowedFormats || allowedFormats.has("audiobook"))
+    ) {
       contexts.push(
         createScanContext({
           bookUuid: book.uuid,
@@ -88,7 +95,10 @@ export function buildScanContexts(
       )
     }
 
-    if (book.readaloud?.filepath && (!allowedFormats || allowedFormats.has("readaloud"))) {
+    if (
+      book.readaloud?.filepath &&
+      (!allowedFormats || allowedFormats.has("readaloud"))
+    ) {
       contexts.push(
         createScanContext({
           bookUuid: book.uuid,
@@ -108,9 +118,7 @@ export function buildScanContexts(
 }
 
 function isENOENT(error: unknown): boolean {
-  return (
-    error instanceof Error && "code" in error && error.code === "ENOENT"
-  )
+  return error instanceof Error && "code" in error && error.code === "ENOENT"
 }
 
 export async function updateReadaloudMissingState(

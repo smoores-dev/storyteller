@@ -4,9 +4,8 @@ import { join } from "node:path"
 
 import watcher from "@parcel/watcher"
 
+import { type ImportPathChange } from "@/assets/library/changes"
 import { DATA_DIR } from "@/directories"
-
-import { type ImportPathChange } from "./scan"
 
 const SNAPSHOT_DIR = join(DATA_DIR, ".autoimport", "watcher-snapshots")
 const WATCHER_OPTIONS = {
@@ -43,6 +42,7 @@ function isENOENT(error: unknown): boolean {
   if (!("code" in error)) {
     return false
   }
+
   return error.code === "ENOENT"
 }
 
@@ -56,12 +56,14 @@ export async function readSnapshotChanges(
   await ensureSnapshotDir()
 
   const snapshot = snapshotPath(importPath)
+
   try {
     const events = await watcher.getEventsSince(
       importPath,
       snapshot,
       WATCHER_OPTIONS,
     )
+
     return {
       snapshotExists: true,
       changes: events.map((event) => ({
@@ -73,12 +75,14 @@ export async function readSnapshotChanges(
     if (isENOENT(error)) {
       return { snapshotExists: false, changes: [] }
     }
+
     throw error
   }
 }
 
 export async function writeWatcherSnapshot(importPath: string): Promise<void> {
   await ensureSnapshotDir()
+
   await watcher.writeSnapshot(
     importPath,
     snapshotPath(importPath),

@@ -7,9 +7,9 @@ export async function register() {
   // we don't import it "normally" as this may cause issues in the edge runtime if end up
   // adding extra imports to env.ts
   await import("@/env")
-  const { listen } = await import("./assets/library/listen")
+  const { listen } = await import("./assets/library/triggers/watcher")
   const { refreshScheduledScan } = await import(
-    "./assets/library/scheduledScan"
+    "./assets/library/triggers/scheduled"
   )
   const { logger } = await import("./logging")
   const { migrate } = await import("./database/migrate")

@@ -1,10 +1,8 @@
 import cron, { type ScheduledTask } from "node-cron"
 
+import { Scan } from "@/assets/library/scan"
 import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
-
-import { scanExistingBooks } from "./scanExisting"
-import { runExclusive, runImportScans } from "./scanManager"
 
 let scheduledTask: ScheduledTask | null = null
 
@@ -33,7 +31,6 @@ function minutesToCronExpression(minutes: number): string {
     return `${remainderMinutes} */${hours} * * *`
   }
 
-  // fallback: run at minute 0 of the nearest whole-hour interval
   const clampedHours = Math.max(1, hours)
   return `0 */${clampedHours} * * *`
 }
@@ -67,18 +64,11 @@ export async function refreshScheduledScan() {
     expression,
     async () => {
       const controller = new AbortController()
-      const signal = controller.signal
+
       try {
-        await runExclusive("scheduled", signal, async () => {
-          logger.info("Running scheduled library scan")
-
-          const scannedUuids = await runImportScans(controller.signal)
-          if (signal.aborted) {
-            return
-          }
-
-          await scanExistingBooks(signal, { excludeBookUuids: scannedUuids })
-        })
+        logger.info("Running scheduled library scan")
+        const scan = await Scan.fullLibrary("scheduled")
+        await scan.execute(controller.signal)
       } catch (error: unknown) {
         logger.error({ msg: "Scheduled full scan failed", err: error })
       }

@@ -10,12 +10,12 @@ import { openAudiobookStep } from "./steps/open-audiobook"
 import { openEpubStep } from "./steps/open-epub"
 import { reconcileMetadataStep } from "./steps/reconcile-metadata"
 import { upgradeEpubStep } from "./steps/upgrade-epub"
-import {
-  type PipelineStep,
-  type ScanContext,
-  type ScanFlag,
-  type ScanFormat,
-  type ScanOptions,
+import type {
+  PipelineStep,
+  ScanContext,
+  ScanFlag,
+  ScanFormat,
+  ScanOptions,
 } from "./types"
 
 const steps: PipelineStep[] = [

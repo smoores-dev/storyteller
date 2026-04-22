@@ -21,7 +21,7 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
-import { type ScanFormat } from "./scanner"
+import { type ScanFormat } from "./scanner/index"
 
 export type BookPath = {
   ebook?: string

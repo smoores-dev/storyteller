@@ -6,7 +6,7 @@ import {
 } from "kysely"
 import { jsonArrayFrom } from "kysely/helpers/sqlite"
 
-import { update as updateLibraryWatcher } from "@/assets/library/listen"
+import { update as updateLibraryWatcher } from "@/assets/library/triggers/watcher"
 import { BookEvents } from "@/events"
 import { type UUID } from "@/uuid"
 
