@@ -5,11 +5,9 @@ import { MessageChannel } from "node:worker_threads"
 import Piscina, { transferableSymbol, valueSymbol } from "piscina"
 
 import {
-  suppressDirectory,
-  suppressPath,
-  unsuppressDirectory,
-  unsuppressPath,
-} from "@/assets/library/triggers/write-intent"
+  suppressPrefix,
+  unsuppressPrefix,
+} from "@/assets/library/scanner/write-intent"
 import { getBook, updateBook } from "@/database/books"
 import { env } from "@/env"
 import { logger } from "@/logging"
@@ -153,8 +151,8 @@ export async function queueWritesToFiles(
   const dirpaths: string[] = []
   if (book?.audiobook?.filepath) dirpaths.push(book.audiobook.filepath)
 
-  for (const fp of filepaths) suppressPath(fp)
-  for (const dp of dirpaths) suppressDirectory(dp)
+  for (const fp of filepaths) suppressPrefix(fp)
+  for (const dp of dirpaths) suppressPrefix(dp)
 
   try {
     await fileWritePiscina.run(
@@ -167,7 +165,7 @@ export async function queueWritesToFiles(
       { transferList: [port1] },
     )
   } finally {
-    for (const fp of filepaths) unsuppressPath(fp)
-    for (const dp of dirpaths) unsuppressDirectory(dp)
+    for (const fp of filepaths) unsuppressPrefix(fp)
+    for (const dp of dirpaths) unsuppressPrefix(dp)
   }
 }

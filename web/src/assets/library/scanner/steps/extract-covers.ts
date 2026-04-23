@@ -1,25 +1,14 @@
 import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
-import { type PipelineStep } from "@/assets/library/scanner/types"
-import { getBook } from "@/database/books"
+import { type Reconciled } from "@/assets/library/scanner/types"
 
-export const extractCoversStep: PipelineStep = {
-  name: "extract-covers",
-  async run(ctx) {
-    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
-      return
-    }
+export async function extractTextCover(
+  input: Reconciled & { format: "ebook" | "readaloud" },
+): Promise<void> {
+  await cacheTextCover(input.book)
+}
 
-    const book = await getBook(ctx.bookUuid)
-    if (!book) {
-      return
-    }
-
-    if (ctx.format === "ebook" || ctx.format === "readaloud") {
-      await cacheTextCover(book)
-    }
-
-    if (ctx.format === "audiobook") {
-      await cacheAudioCover(book)
-    }
-  },
+export async function extractAudiobookCover(
+  input: Reconciled & { format: "audiobook" },
+): Promise<void> {
+  await cacheAudioCover(input.book)
 }

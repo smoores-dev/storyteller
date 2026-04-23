@@ -586,9 +586,7 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "ebook.pageCount",
             "ebook.duration",
             "ebook.fileSize",
-            ...(includeManifest
-              ? (["ebook.manifest"] as const)
-              : []),
+            ...(includeManifest ? (["ebook.manifest"] as const) : []),
           ])
           .whereRef("ebook.bookUuid", "=", "book.uuid"),
       ).as("ebook"),
@@ -605,9 +603,7 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "audiobook.pageCount",
             "audiobook.duration",
             "audiobook.fileSize",
-            ...(includeManifest
-              ? (["audiobook.manifest"] as const)
-              : []),
+            ...(includeManifest ? (["audiobook.manifest"] as const) : []),
           ])
           .whereRef("audiobook.bookUuid", "=", "book.uuid"),
       ).as("audiobook"),
@@ -630,9 +626,7 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "readaloud.pageCount",
             "readaloud.duration",
             "readaloud.fileSize",
-            ...(includeManifest
-              ? (["readaloud.manifest"] as const)
-              : []),
+            ...(includeManifest ? (["readaloud.manifest"] as const) : []),
           ])
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),

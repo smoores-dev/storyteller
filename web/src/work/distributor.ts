@@ -6,11 +6,9 @@ import { AsyncMutex } from "@esfx/async-mutex"
 import Piscina from "piscina"
 
 import {
-  suppressDirectory,
-  suppressPath,
-  unsuppressDirectory,
-  unsuppressPath,
-} from "@/assets/library/triggers/write-intent"
+  suppressPrefix,
+  unsuppressPrefix,
+} from "@/assets/library/scanner/write-intent"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -145,7 +143,7 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
         const fp = message.relations.readaloud.filepath
         if (!fileSuppression.includes(fp)) {
           fileSuppression.push(fp)
-          suppressPath(fp)
+          suppressPrefix(fp)
         }
       }
 
@@ -158,8 +156,8 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
     },
   )
 
-  for (const fp of fileSuppression) suppressPath(fp)
-  for (const dp of dirSuppression) suppressDirectory(dp)
+  for (const fp of fileSuppression) suppressPrefix(fp)
+  for (const dp of dirSuppression) suppressPrefix(dp)
 
   try {
     await alignmentPiscina.run(
@@ -197,8 +195,8 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
     logger.error(`Processing for book ${bookUuid} failed unexpectedly`)
     logger.error(err)
   } finally {
-    for (const fp of fileSuppression) unsuppressPath(fp)
-    for (const dp of dirSuppression) unsuppressDirectory(dp)
+    for (const fp of fileSuppression) unsuppressPrefix(fp)
+    for (const dp of dirSuppression) unsuppressPrefix(dp)
     if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
 }

@@ -1,34 +1,28 @@
-import { type PipelineStep } from "@/assets/library/scanner/types"
+import {
+  type AudiobookOpened,
+  type FormatKnown,
+} from "@/assets/library/scanner/types"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
 } from "@/assets/metadata"
+import { type BookRelationsUpdate, type BookUpdate } from "@/database/books"
 
-export const extractMetadataStep: PipelineStep = {
-  name: "extract-metadata",
-  async run(ctx) {
-    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
-      return
-    }
+type MetadataExtras = {
+  extractedMetadata: BookUpdate | null
+  extractedRelations: BookRelationsUpdate
+}
 
-    if (ctx.format === "ebook" || ctx.format === "readaloud") {
-      if (!ctx.epub) {
-        return
-      }
+export async function extractEpubMetadata<T extends FormatKnown>(
+  input: T,
+): Promise<T & MetadataExtras> {
+  const { update, relations } = await getMetadataFromEpub(input.epub)
+  return { ...input, extractedMetadata: update, extractedRelations: relations }
+}
 
-      const { update, relations } = await getMetadataFromEpub(ctx.epub)
-      ctx.extractedMetadata = update
-      ctx.extractedRelations = relations
-      ctx.epub = null
-      return
-    }
-
-    if (!ctx.audiobook) {
-      return
-    }
-
-    const { update, relations } = await getMetadataFromAudiobook(ctx.audiobook)
-    ctx.extractedMetadata = update
-    ctx.extractedRelations = relations
-  },
+export async function extractAudiobookMetadata<T extends AudiobookOpened>(
+  input: T,
+): Promise<T & MetadataExtras> {
+  const { update, relations } = await getMetadataFromAudiobook(input.audiobook)
+  return { ...input, extractedMetadata: update, extractedRelations: relations }
 }

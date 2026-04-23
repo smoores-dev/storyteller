@@ -1,49 +1,45 @@
 import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
-import {
-  type PipelineStep,
-  isResolvedFormat,
-} from "@/assets/library/scanner/types"
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
+import { type Existing, isResolvedFormat } from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
-import { getFormatRelationPatch } from "./utils"
+type HashedExtras = {
+  fileHash: string
+  fileSize: number | null
+  existingHash: string
+  changed: boolean
+}
 
-export const computeHashStep: PipelineStep = {
-  name: "compute-hash",
+export async function computeHash<T extends Existing>(
+  input: T,
+  ctx: ScanCtx,
+): Promise<T & HashedExtras> {
+  const { hash, fileSize } =
+    input.format === "audiobook"
+      ? await hashAudiobookDirectory(input.filepath, ctx.signal)
+      : await hashFile(input.filepath, ctx.signal)
 
-  async run(ctx) {
-    const { hash, fileSize } =
-      ctx.format === "audiobook"
-        ? await hashAudiobookDirectory(ctx.filepath)
-        : await hashFile(ctx.filepath)
+  const changed =
+    !!ctx.options.force || input.isNew || input.existingHash !== hash
 
-    ctx.logger.debug(`Computed hash for ${ctx.filepath}: ${hash}`)
-
-    ctx.fileHash = hash
-    ctx.fileSize = fileSize
-
-    if (
-      ctx.options.force ||
-      ctx.flags.has("new") ||
-      ctx.existingHash !== hash
-    ) {
-      ctx.flags.add("changed")
-    }
-
-    // defer DB write for unresolved formats; reconcile-metadata will persist everything
-    if (!isResolvedFormat(ctx.format)) {
-      return
-    }
-
+  if (isResolvedFormat(input.format)) {
     await updateBook(
-      ctx.bookUuid,
+      input.bookUuid,
       null,
-      getFormatRelationPatch(ctx, {
+      getFormatRelationPatch(input, {
         missing: false,
         contentHash: hash,
         fileSize,
       }),
     )
+  }
 
-    ctx.existingHash = hash
-  },
+  return {
+    ...input,
+    fileHash: hash,
+    fileSize,
+    existingHash: hash,
+    changed,
+  }
 }

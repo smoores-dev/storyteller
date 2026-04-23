@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs"
 
 import { ZodError } from "zod"
 
-import { refreshScheduledScan } from "@/assets/library/triggers/scheduled"
-import { update } from "@/assets/library/triggers/watcher"
+import { getScheduler } from "@/assets/library/scanner/triggers/scheduler"
+import { getWatcher } from "@/assets/library/scanner/triggers/watcher"
 import { env } from "@/env"
 
 import { db } from "./connection"
@@ -195,8 +195,8 @@ export async function updateSettings(settings: Settings) {
       .where("name", "=", settingName as keyof Settings)
       .execute()
   }
-  await update(null)
-  await refreshScheduledScan()
+  await getWatcher().update(null)
+  await getScheduler().refresh()
 }
 
 // Validate and cache config file on startup (never re-read after this)

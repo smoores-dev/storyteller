@@ -6,10 +6,7 @@ import { useState } from "react"
 import { useWatch } from "react-hook-form"
 
 import { usePermissions } from "@/hooks/usePermissions"
-import {
-  useGetScanStateQuery,
-  useTriggerScanMutation,
-} from "@/store/api"
+import { useGetScanStateQuery, useTriggerScanMutation } from "@/store/api"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -321,7 +318,9 @@ function ScanControlsSection() {
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground text-xs underline"
-                    onClick={() => { setShowCronInput(true); }}
+                    onClick={() => {
+                      setShowCronInput(true)
+                    }}
                   >
                     {t("showAdvancedCron")}
                   </button>
@@ -366,7 +365,9 @@ function ScanControlsSection() {
                     <button
                       type="button"
                       className="text-muted-foreground hover:text-foreground text-xs underline"
-                      onClick={() => { setShowCronInput(false); }}
+                      onClick={() => {
+                        setShowCronInput(false)
+                      }}
                     >
                       {t("showSimpleInterval")}
                     </button>

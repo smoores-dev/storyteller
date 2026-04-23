@@ -6,7 +6,7 @@ import {
 } from "kysely"
 import { jsonArrayFrom } from "kysely/helpers/sqlite"
 
-import { update as updateLibraryWatcher } from "@/assets/library/triggers/watcher"
+import { getWatcher } from "@/assets/library/scanner/triggers/watcher"
 import { BookEvents } from "@/events"
 import { type UUID } from "@/uuid"
 
@@ -153,7 +153,7 @@ export async function updateCollection(
 
     return collection
   })
-  await updateLibraryWatcher(uuid)
+  await getWatcher().update(uuid)
   return collection
 }
 
@@ -246,4 +246,6 @@ export async function deleteCollection(uuid: UUID, userId: UUID) {
       .execute()
     await tr.deleteFrom("collection").where("uuid", "=", uuid).execute()
   })
+
+  await getWatcher().remove(uuid)
 }

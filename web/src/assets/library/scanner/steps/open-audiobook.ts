@@ -3,11 +3,15 @@ import { join } from "node:path"
 
 import {
   Audiobook,
+  type Audiobook as AudiobookAsset,
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 
-import { type PipelineStep } from "@/assets/library/scanner/types"
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { type AudiobookHashed } from "@/assets/library/scanner/types"
 import { isAudioFile } from "@/audio"
+
+const STEP = "open-audiobook"
 
 async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
   const entries = await readdir(directory, { recursive: true })
@@ -18,32 +22,32 @@ async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
   return tracks as AudiobookInputs
 }
 
-export const openAudiobookStep: PipelineStep = {
-  name: "open-audiobook",
-  async run(ctx) {
-    if (ctx.format !== "audiobook") {
-      return
-    }
+export async function openAudiobook<T extends AudiobookHashed>(
+  input: T,
+  ctx: ScanCtx,
+  scope: AsyncDisposableStack,
+): Promise<(T & { audiobook: AudiobookAsset }) | null> {
+  if (!input.changed) {
+    ctx.report.skipped({
+      step: STEP,
+      bookUuid: input.bookUuid,
+      format: input.format,
+      reason: "unchanged",
+    })
+    return null
+  }
 
-    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
-      return
-    }
+  const tracks = await getAudiobookTracks(input.filepath)
+  if (tracks.length === 0) {
+    ctx.report.skipped({
+      step: STEP,
+      bookUuid: input.bookUuid,
+      format: input.format,
+      reason: "no-audio-tracks",
+    })
+    return null
+  }
 
-    const tracks = await getAudiobookTracks(ctx.filepath)
-    if (tracks.length === 0) {
-      return
-    }
-
-    using audiobook = await Audiobook.from(...tracks)
-    ctx.audiobook = audiobook
-  },
-
-  cleanup(ctx) {
-    if (!ctx.audiobook) {
-      return
-    }
-
-    ctx.audiobook.discardAndClose()
-    ctx.audiobook = null
-  },
+  const audiobook = scope.use(await Audiobook.from(...tracks))
+  return { ...input, audiobook }
 }

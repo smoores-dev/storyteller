@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
-import { Scan, type ScanOptions, getScanState } from "@/assets/library/scan"
+import { type ScanOptions } from "@/assets/library/scanner/ctx"
+import { getScanState, scanLibrary } from "@/assets/library/scanner/scan"
 import { withHasPermission } from "@/auth/auth"
 
 export const dynamic = "force-dynamic"
@@ -32,10 +33,7 @@ export const POST = withHasPermission("bookProcess")((request) => {
   const options = parseScanOptions(request.nextUrl.searchParams)
   const controller = new AbortController()
 
-  void (async () => {
-    const scan = await Scan.fullLibrary("manual", options)
-    await scan.execute(controller.signal)
-  })()
+  void scanLibrary({ source: "manual", options, signal: controller.signal })
 
   return new Response(null, { status: 204 })
 })

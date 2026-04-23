@@ -1,7 +1,8 @@
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
 import {
-  type PipelineStep,
-  type ScanContext,
-  isResolvedFormat,
+  type ManifestReady,
+  type Reconciled,
 } from "@/assets/library/scanner/types"
 import { keepMissingMetadata, keepMissingRelations } from "@/assets/metadata"
 import {
@@ -14,44 +15,37 @@ import {
 import { getSetting } from "@/database/settings"
 import { type MetadataOverrideMode } from "@/database/settingsTypes"
 
-import { getFormatRelationPatch } from "./utils"
+const STEP = "reconcile-metadata"
 
-function buildFormatRelation(ctx: ScanContext): BookRelationsUpdate {
+function buildFormatRelation(input: ManifestReady): BookRelationsUpdate {
   const shared = {
-    manifest: JSON.stringify(ctx.manifest ?? null),
-    contentHash: ctx.fileHash,
+    manifest: JSON.stringify(input.manifest),
+    contentHash: input.fileHash,
     missing: false,
-    fileSize: ctx.fileSize,
+    fileSize: input.fileSize,
   }
 
-  if (!isResolvedFormat(ctx.format)) {
-    throw new Error(
-      `Cannot build format relation for unresolved format "${ctx.format}"`,
-    )
+  if (input.format === "ebook") {
+    return getFormatRelationPatch(input, {
+      ...shared,
+      isEpub2: input.isEpub2,
+      pageCount: input.pageCount,
+    })
   }
 
-  switch (ctx.format) {
-    case "ebook":
-      return getFormatRelationPatch(ctx, {
-        ...shared,
-        isEpub2: ctx.isEpub2,
-        pageCount: ctx.pageCount,
-      })
-
-    case "audiobook":
-      return getFormatRelationPatch(ctx, {
-        ...shared,
-        duration: ctx.duration,
-      })
-
-    case "readaloud":
-      return getFormatRelationPatch(ctx, {
-        ...shared,
-        isEpub2: ctx.isEpub2,
-        pageCount: ctx.pageCount,
-        duration: ctx.duration,
-      })
+  if (input.format === "audiobook") {
+    return getFormatRelationPatch(input, {
+      ...shared,
+      duration: input.duration,
+    })
   }
+
+  return getFormatRelationPatch(input, {
+    ...shared,
+    isEpub2: input.isEpub2,
+    pageCount: input.pageCount,
+    duration: input.duration,
+  })
 }
 
 function resolveMetadata(
@@ -65,10 +59,7 @@ function resolveMetadata(
   }
 
   if (mode === "always") {
-    return {
-      metadataUpdate: extracted,
-      relationUpdate: extractedRelations,
-    }
+    return { metadataUpdate: extracted, relationUpdate: extractedRelations }
   }
 
   return {
@@ -78,80 +69,70 @@ function resolveMetadata(
 }
 
 function hasChanges(
-  ctx: ScanContext,
+  input: ManifestReady,
   metadataUpdate: BookUpdate | null,
   relationUpdate: BookRelationsUpdate,
   currentBook: BookWithRelations,
-  format: "ebook" | "audiobook" | "readaloud",
 ): boolean {
-  if (metadataUpdate || Object.keys(relationUpdate).length > 0) {
-    return true
-  }
-
-  // format fields (manifest, pageCount, duration) are only
-  // re-extracted when the file is new or changed
-  if (ctx.flags.has("changed") || ctx.flags.has("new")) {
-    return true
-  }
-
-  const relation = currentBook[format]
+  if (metadataUpdate || Object.keys(relationUpdate).length > 0) return true
+  if (input.changed) return true
+  const relation = currentBook[input.format]
   return !relation || relation.missing
 }
 
-export const reconcileMetadataStep: PipelineStep = {
-  name: "reconcile-metadata",
-  async run(ctx) {
-    if (!isResolvedFormat(ctx.format)) {
-      ctx.logger.error(
-        `Format was not resolved before reconciliation (still "${ctx.format}"), skipping`,
-      )
-      return false
-    }
-
-    const current = await getBook(ctx.bookUuid)
-    if (!current) {
-      return false
-    }
-
-    ctx.book = current
-
-    const mode =
-      ctx.options.metadataOverrideMode ??
-      (await getSetting("metadataOverrideMode"))
-
-    const { metadataUpdate, relationUpdate } = resolveMetadata(
-      mode,
-      current,
-      ctx.extractedMetadata,
-      ctx.extractedRelations,
-    )
-
-    if (!hasChanges(ctx, metadataUpdate, relationUpdate, current, ctx.format)) {
-      ctx.logger.debug("No changes to metadata or relations, skipping update")
-      return false
-    }
-
-    const formatRelation = buildFormatRelation(ctx)
-
-    ctx.logger.debug({
-      msg: "Updating metadata and relations",
-      metadataUpdate,
-      relationUpdate,
-      formatRelation,
+export async function reconcileMetadata<T extends ManifestReady>(
+  input: T,
+  ctx: ScanCtx,
+): Promise<(T & Reconciled) | null> {
+  const current = await getBook(input.bookUuid)
+  if (!current) {
+    ctx.report.warn({
+      step: STEP,
+      msg: "Book no longer exists during scan reconciliation",
+      bookUuid: input.bookUuid,
+      format: input.format,
     })
+    return null
+  }
 
-    // safe cast: relationUpdate and formatRelation have non-overlapping keys,
-    // but the spread confuses exactOptionalPropertyTypes
-    await updateBook(ctx.bookUuid, metadataUpdate, {
-      ...relationUpdate,
-      ...formatRelation,
-    } as BookRelationsUpdate)
+  const mode =
+    ctx.options.metadataOverrideMode ??
+    (await getSetting("metadataOverrideMode"))
 
-    const updated = await getBook(ctx.bookUuid)
-    if (updated) {
-      ctx.book = updated
-    }
+  const { metadataUpdate, relationUpdate } = resolveMetadata(
+    mode,
+    current,
+    input.extractedMetadata,
+    input.extractedRelations,
+  )
 
-    return undefined
-  },
+  if (!hasChanges(input, metadataUpdate, relationUpdate, current)) {
+    ctx.report.skipped({
+      step: STEP,
+      bookUuid: input.bookUuid,
+      format: input.format,
+      reason: "no-metadata-changes",
+    })
+    return null
+  }
+
+  const formatRelation = buildFormatRelation(input)
+
+  await updateBook(input.bookUuid, metadataUpdate, {
+    ...relationUpdate,
+    ...formatRelation,
+  } as BookRelationsUpdate)
+
+  const updated = await getBook(input.bookUuid)
+  if (!updated) {
+    ctx.report.warn({
+      step: STEP,
+      msg: "Book disappeared after metadata reconciliation",
+      bookUuid: input.bookUuid,
+      format: input.format,
+    })
+    return null
+  }
+
+  return { ...input, book: updated } as T & Reconciled
 }

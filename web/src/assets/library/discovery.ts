@@ -21,7 +21,7 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
-import { type ScanFormat } from "./scanner/index"
+import { type ScanFormat } from "./scanner/types"
 
 export type BookPath = {
   ebook?: string
@@ -43,28 +43,6 @@ export function getBookPathFormats(bookPath: BookPath): ScanFormat[] {
   if (bookPath.readaloud) formats.push("readaloud")
 
   return formats
-}
-
-export function hasAnyRelationChange(
-  book: BookWithRelations,
-  bookPath: BookPath,
-): boolean {
-  const ebookChanged =
-    !!bookPath.ebook && (!book.ebook || book.ebook.filepath !== bookPath.ebook)
-
-  const audiobookChanged =
-    !!bookPath.audiobook &&
-    (!book.audiobook || book.audiobook.filepath !== bookPath.audiobook)
-
-  const readaloudChanged =
-    !!bookPath.readaloud &&
-    (!book.readaloud || book.readaloud.filepath !== bookPath.readaloud)
-
-  const hasUnclassifiedEpubs = !!bookPath.epubUnknown?.length
-
-  return (
-    ebookChanged || audiobookChanged || readaloudChanged || hasUnclassifiedEpubs
-  )
 }
 
 export function findMatchingBook(

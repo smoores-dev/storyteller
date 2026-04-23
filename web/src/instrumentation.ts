@@ -7,9 +7,11 @@ export async function register() {
   // we don't import it "normally" as this may cause issues in the edge runtime if end up
   // adding extra imports to env.ts
   await import("@/env")
-  const { listen } = await import("./assets/library/triggers/watcher")
-  const { refreshScheduledScan } = await import(
-    "./assets/library/triggers/scheduled"
+  const { getWatcher } = await import(
+    "./assets/library/scanner/triggers/watcher"
+  )
+  const { getScheduler } = await import(
+    "./assets/library/scanner/triggers/scheduler"
   )
   const { logger } = await import("./logging")
   const { migrate } = await import("./database/migrate")
@@ -36,9 +38,10 @@ export async function register() {
     logger.error("Failed to run database migrations — Aborting startup")
     throw err
   }
+
   try {
-    await listen()
-    await refreshScheduledScan()
+    await getWatcher().start()
+    await getScheduler().refresh()
   } catch (err) {
     logger.error("Failed to initiate library watcher services")
     logger.error(err)

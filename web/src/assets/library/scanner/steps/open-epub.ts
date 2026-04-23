@@ -1,39 +1,43 @@
 import { Epub, EpubVersionError } from "@storyteller-platform/epub"
 
-import { type PipelineStep, isEpubFormat } from "@/assets/library/scanner/types"
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { type EpubHashed } from "@/assets/library/scanner/types"
 
-export const openEpubStep: PipelineStep = {
-  name: "open-epub",
+const STEP = "open-epub"
 
-  async run(ctx) {
-    if (!isEpubFormat(ctx.format)) {
-      return
+type OpenResult<T> =
+  | (T & { isEpub2: false; epub: Epub })
+  | (T & { isEpub2: true })
+
+export async function openEpub<T extends EpubHashed>(
+  input: T,
+  ctx: ScanCtx,
+  scope: AsyncDisposableStack,
+): Promise<OpenResult<T> | null> {
+  if (!input.changed) {
+    if (input.format === "epub-unknown") {
+      ctx.report.warn({
+        step: STEP,
+        msg: "Unknown EPUB did not change, skipping format determination",
+        bookUuid: input.bookUuid,
+      })
+      return null
     }
 
-    if (!ctx.flags.has("changed") && !ctx.flags.has("new")) {
-      return
-    }
+    ctx.report.skipped({
+      step: STEP,
+      bookUuid: input.bookUuid,
+      format: input.format,
+      reason: "unchanged",
+    })
+    return null
+  }
 
-    try {
-      ctx.epub = await Epub.from(ctx.filepath)
-    } catch (error) {
-      if (!(error instanceof EpubVersionError)) {
-        throw error
-      }
-
-      // let the upgrade-epub step handle this
-      ctx.isEpub2 = true
-    }
-  },
-
-  cleanup(ctx) {
-    if (!ctx.epub) {
-      return
-    }
-
-    // the scan pipeline only reads from files, never writes to them.
-    // writing metadata back to source files is handled by fileWriteDistributor.
-    ctx.epub.discardAndClose()
-    ctx.epub = null
-  },
+  try {
+    const epub = scope.use(await Epub.from(input.filepath))
+    return { ...input, isEpub2: false, epub }
+  } catch (error) {
+    if (!(error instanceof EpubVersionError)) throw error
+    return { ...input, isEpub2: true }
+  }
 }

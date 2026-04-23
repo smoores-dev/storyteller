@@ -1,76 +1,84 @@
 import { stat } from "node:fs/promises"
 
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
 import {
-  type PipelineStep,
+  type ScanInput,
   isResolvedFormat,
 } from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
-import { getFormatRelationPatch } from "./utils"
+const STEP = "check-exists"
 
 function isENOENT(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === "ENOENT"
 }
 
-async function handleMissingFile(
-  ctx: Parameters<typeof getFormatRelationPatch>[0],
-) {
-  if (!isResolvedFormat(ctx.format)) {
-    ctx.logger.warn(
-      `Discovered file at ${ctx.filepath} no longer exists, skipping`,
-    )
-    return
+export async function checkExists<T extends ScanInput>(
+  input: T,
+  ctx: ScanCtx,
+): Promise<(T & { missing: false }) | null> {
+  try {
+    await stat(input.filepath)
+  } catch (error) {
+    if (!isENOENT(error)) throw error
+    await handleMissing(input, ctx)
+    return null
   }
 
-  if (ctx.missing) {
-    ctx.logger.debug(`File ${ctx.filepath} already missing, skipping`)
-    return
-  }
-
-  ctx.logger.debug(`File ${ctx.filepath} does not exist, marking as missing`)
-  ctx.flags.add("missing")
-  await updateBook(
-    ctx.bookUuid,
-    null,
-    getFormatRelationPatch(ctx, { missing: true }),
-  )
-  ctx.missing = true
+  await handleFound(input, ctx)
+  return { ...input, missing: false }
 }
 
-async function handleFoundFile(
-  ctx: Parameters<typeof getFormatRelationPatch>[0],
-) {
-  if (!isResolvedFormat(ctx.format) || !ctx.missing) {
+async function handleMissing(input: ScanInput, ctx: ScanCtx) {
+  if (!isResolvedFormat(input.format)) {
+    ctx.report.warn({
+      step: STEP,
+      msg: `Discovered file at ${input.filepath} no longer exists, skipping`,
+      bookUuid: input.bookUuid,
+    })
     return
   }
 
-  ctx.logger.debug(
-    `File ${ctx.filepath} has been found, marking as not missing`,
-  )
+  if (input.missing) {
+    ctx.report.skipped({
+      step: STEP,
+      bookUuid: input.bookUuid,
+      format: input.format,
+      reason: "already-marked-missing",
+    })
+    return
+  }
+
   await updateBook(
-    ctx.bookUuid,
+    input.bookUuid,
     null,
-    getFormatRelationPatch(ctx, { missing: false }),
+    getFormatRelationPatch(input, { missing: true }),
   )
-  ctx.missing = false
+
+  ctx.report.skipped({
+    step: STEP,
+    bookUuid: input.bookUuid,
+    format: input.format,
+    reason: "missing-on-disk",
+  })
 }
 
-export const checkExistsStep: PipelineStep = {
-  name: "check-exists",
+async function handleFound(input: ScanInput, ctx: ScanCtx) {
+  if (!isResolvedFormat(input.format) || !input.missing) {
+    return
+  }
 
-  async run(ctx) {
-    try {
-      await stat(ctx.filepath)
-    } catch (error) {
-      if (!isENOENT(error)) {
-        throw error
-      }
+  await updateBook(
+    input.bookUuid,
+    null,
+    getFormatRelationPatch(input, { missing: false }),
+  )
 
-      await handleMissingFile(ctx)
-      return false
-    }
-
-    await handleFoundFile(ctx)
-    return undefined
-  },
+  ctx.report.info({
+    step: STEP,
+    bookUuid: input.bookUuid,
+    format: input.format,
+    msg: `File ${input.filepath} has been found, marking as not missing`,
+  })
 }

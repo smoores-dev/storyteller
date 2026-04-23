@@ -7,13 +7,21 @@ type Entry = {
   timer: NodeJS.Timeout
 }
 
-const pending = new Map<string, Entry>()
+declare global {
+  // eslint-disable-next-line no-var
+  var writeIntentPending: Map<string, Entry> | undefined
+}
+
+const pending = globalThis.writeIntentPending ?? new Map<string, Entry>()
+if (!globalThis.writeIntentPending) {
+  globalThis.writeIntentPending = pending
+}
 
 function toKey(filepath: string): string {
   return resolve(filepath)
 }
 
-export function suppressPath(filepath: string, ttlMs = DEFAULT_TTL_MS) {
+export function suppressPrefix(filepath: string, ttlMs = DEFAULT_TTL_MS) {
   const key = toKey(filepath)
   const existing = pending.get(key)
   if (existing) {
@@ -28,7 +36,7 @@ export function suppressPath(filepath: string, ttlMs = DEFAULT_TTL_MS) {
   pending.set(key, { timer })
 }
 
-export function unsuppressPath(filepath: string) {
+export function unsuppressPrefix(filepath: string) {
   const key = toKey(filepath)
   const existing = pending.get(key)
   if (!existing) {
@@ -56,12 +64,4 @@ export function isSuppressed(filepath: string): boolean {
   }
 
   return false
-}
-
-export function suppressDirectory(dirpath: string, ttlMs = DEFAULT_TTL_MS) {
-  suppressPath(dirpath, ttlMs)
-}
-
-export function unsuppressDirectory(dirpath: string) {
-  unsuppressPath(dirpath)
 }

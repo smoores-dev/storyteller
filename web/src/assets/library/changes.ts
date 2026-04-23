@@ -9,10 +9,7 @@ function normalizePath(path: string): string {
   return resolve(path)
 }
 
-export function isWithinPath(
-  rootPath: string,
-  candidatePath: string,
-): boolean {
+export function isWithinPath(rootPath: string, candidatePath: string): boolean {
   const rel = relative(normalizePath(rootPath), normalizePath(candidatePath))
   if (!rel || rel === ".") {
     return true
@@ -22,22 +19,7 @@ export function isWithinPath(
 }
 
 export function pathsOverlap(left: string, right: string): boolean {
-  const normalizedLeft = normalizePath(left)
-  const normalizedRight = normalizePath(right)
-
-  if (normalizedLeft === normalizedRight) {
-    return true
-  }
-
-  const leftIsChild =
-    normalizedLeft.startsWith(`${normalizedRight}/`) ||
-    normalizedLeft.startsWith(`${normalizedRight}\\`)
-
-  const rightIsChild =
-    normalizedRight.startsWith(`${normalizedLeft}/`) ||
-    normalizedRight.startsWith(`${normalizedLeft}\\`)
-
-  return leftIsChild || rightIsChild
+  return isWithinPath(left, right) || isWithinPath(right, left)
 }
 
 export function mergeChangeType(

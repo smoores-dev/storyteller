@@ -253,9 +253,7 @@ export function SettingsForm({
                   <Menu.Target>
                     <Button
                       variant="outline"
-                      disabled={
-                        Boolean(scanState?.running) || isTriggeringScan
-                      }
+                      disabled={Boolean(scanState?.running) || isTriggeringScan}
                       px="xs"
                     >
                       <IconChevronDown size={14} />
@@ -355,10 +353,7 @@ export function SettingsForm({
                   const val = event.currentTarget.value
                   form.setFieldValue("scanCronExpression", val || null)
                   if (val) {
-                    form.setFieldValue(
-                      "existingBooksScanIntervalMinutes",
-                      null,
-                    )
+                    form.setFieldValue("existingBooksScanIntervalMinutes", null)
                   }
                 }}
               />
@@ -374,8 +369,8 @@ export function SettingsForm({
               currently blank
             </option>
             <option value="always">
-              Always overwrite -- replace all metadata with what is read from the
-              file on every scan
+              Always overwrite -- replace all metadata with what is read from
+              the file on every scan
             </option>
             <option value="never">
               Never overwrite -- never touch metadata after initial import

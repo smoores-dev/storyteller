@@ -1,38 +1,44 @@
-import { type PipelineStep } from "@/assets/library/scanner/types"
+import { type Epub } from "@storyteller-platform/epub"
+
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
+import {
+  type EpubHashed,
+  isResolvedFormat,
+} from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
-import { getFormatRelationPatch } from "./utils"
+const STEP = "upgrade-epub"
 
-export const upgradeEpubStep: PipelineStep = {
-  name: "upgrade-epub",
+type OpenState<T> =
+  | (T & { isEpub2: false; epub: Epub })
+  | (T & { isEpub2: true })
 
-  async run(ctx) {
-    if (!ctx.isEpub2) {
-      return
-    }
+export async function upgradeEpub<T extends EpubHashed>(
+  input: OpenState<T>,
+  ctx: ScanCtx,
+): Promise<(T & { isEpub2: false; epub: Epub }) | null> {
+  if (!input.isEpub2) return input
 
-    // TODO: implement epub 2 -> epub 3 upgrade.
-    // once implemented, this step should upgrade the file on disk,
-    // then open the upgraded epub into ctx.epub so the rest of the
-    // pipeline can proceed.
-
-    if (!ctx.book) {
-      ctx.logger.warn(
-        `EPUB 2 file at ${ctx.filepath} cannot be imported (only EPUB 3 is supported)`,
-      )
-      return false
-    }
-
-    ctx.logger.info(`EPUB 2 detected, upgrade not yet implemented`)
-
-    if (ctx.format !== "epub-unknown") {
-      await updateBook(
-        ctx.bookUuid,
-        null,
-        getFormatRelationPatch(ctx, { isEpub2: true }),
-      )
-    }
-
-    return false
-  },
+  // TODO: implement epub 2 -> epub 3 upgrade.
+  if (isResolvedFormat(input.format)) {
+    await updateBook(
+      input.bookUuid,
+      null,
+      getFormatRelationPatch(input, { isEpub2: true }),
+    )
+    ctx.report.skipped({
+      step: STEP,
+      bookUuid: input.bookUuid,
+      format: input.format,
+      reason: "epub2-upgrade-not-implemented",
+    })
+  } else {
+    ctx.report.warn({
+      step: STEP,
+      msg: "Unknown EPUB is EPUB 2, format cannot be resolved",
+      bookUuid: input.bookUuid,
+    })
+  }
+  return null
 }
