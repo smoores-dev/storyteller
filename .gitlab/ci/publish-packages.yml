@@ -773,8 +773,8 @@ publish-okmain:
     - yarn workspace @storyteller-platform/okmain napi create-npm-dirs # creates the npm dirs
     - yarn workspace @storyteller-platform/okmain napi artifacts # moves all the artifacts to the correct npm dir
     - ls -latR okmain/npm
-    - yarn workspace @storyteller-platform/okmain npm publish --tag="$TAG"
-      --access public
+    # yarn workspace doesn't run prepublish
+    - cd okmain && npm publish --tag="$TAG" --access public
 
 prerelease-okmain:
   stage: prerelease
