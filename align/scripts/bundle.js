@@ -137,7 +137,7 @@ for (const [assetName, sourcePath] of discoveredAssets) {
 
 const seaConfig = {
   main: "bundle/bin.cjs",
-  output: "stalign",
+  output: process.platform === "win32" ? "stalign.exe" : "stalign",
   disableExperimentalSEAWarning: true,
   assets,
 }
