@@ -457,6 +457,9 @@ publish-align-sea-windows-x64:
   tags: [saas-windows-medium-amd64]
   before_script:
     - |
+      $refreshPath = {
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+      }
       $requiredNode = "25.9.0"
       $nodeOk = $false
       if (Get-Command node -ErrorAction SilentlyContinue) {
@@ -468,16 +471,16 @@ publish-align-sea-windows-x64:
       if (-not $nodeOk) {
         if (Get-Command choco -ErrorAction SilentlyContinue) {
           choco install -y nodejs --version=$requiredNode
-          refreshenv
+          & $refreshPath
         } else {
           throw "node $requiredNode is required on the windows runner"
         }
       }
       npm i -g corepack
-      refreshenv
+      & $refreshPath
       corepack enable
       corepack prepare yarn@4.12.0 --activate
-      refreshenv
+      & $refreshPath
       node --version
       yarn --version
   script:
