@@ -474,8 +474,10 @@ publish-align-sea-windows-x64:
         }
       }
       npm i -g corepack
+      refreshenv
       corepack enable
       corepack prepare yarn@4.12.0 --activate
+      refreshenv
       node --version
       yarn --version
   script:
