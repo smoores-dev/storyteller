@@ -457,11 +457,20 @@ publish-align-sea-windows-x64:
   tags: [saas-windows-medium-amd64]
   before_script:
     - |
-      if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+      $requiredNode = "25.9.0"
+      $nodeOk = $false
+      if (Get-Command node -ErrorAction SilentlyContinue) {
+        $installedNode = (node --version).TrimStart('v')
+        if ($installedNode -eq $requiredNode) {
+          $nodeOk = $true
+        }
+      }
+      if (-not $nodeOk) {
         if (Get-Command choco -ErrorAction SilentlyContinue) {
-          choco install -y nodejs
+          choco install -y nodejs --version=$requiredNode
+          refreshenv
         } else {
-          throw "node is required on the windows runner"
+          throw "node $requiredNode is required on the windows runner"
         }
       }
       npm i -g corepack
