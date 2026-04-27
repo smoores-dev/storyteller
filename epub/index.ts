@@ -12,7 +12,13 @@ import { nanoid } from "nanoid"
 import { fromBuffer, open } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
-import { dirname, join, resolve } from "@storyteller-platform/path"
+import {
+  dirname,
+  hrefToPlatformPath,
+  join,
+  resolve,
+  sep,
+} from "@storyteller-platform/path"
 
 import * as Upgrade from "./upgrade.ts"
 
@@ -614,7 +620,7 @@ export class Epub {
       })
 
       for await (const entry of zipfile) {
-        if (entry.filename.endsWith("/")) {
+        if (entry.filename.endsWith(sep)) {
           // Directory file names end with '/'.
           // Note that entries for directories themselves are optional.
           // An entry's filename implicitly requires its parent directories to exist.
@@ -2293,7 +2299,11 @@ export class Epub {
    */
   private resolveInternalHref(from: string, href: string) {
     const startPath = dirname(from)
-    return resolve(this.extractPath, startPath, href)
+    return resolve(
+      this.extractPath,
+      hrefToPlatformPath(startPath),
+      hrefToPlatformPath(href),
+    )
   }
 
   /**

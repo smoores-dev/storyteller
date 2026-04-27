@@ -2,7 +2,7 @@
 
 import { build } from "esbuild"
 import { builtinModules } from "node:module"
-import { basename, join, resolve } from "node:path"
+import { basename, join, resolve, sep } from "node:path"
 import { copyFileSync, writeFileSync } from "node:fs"
 import nodeGypBuild from "node-gyp-build"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -22,7 +22,9 @@ await build({
   },
   outdir: "bundle",
   inject: [
-    new URL("./import.meta.dirname-polyfill.js", import.meta.url).pathname,
+    fileURLToPath(
+      new URL("./import.meta.dirname-polyfill.js", import.meta.url),
+    ),
   ],
   define: {
     "import.meta.dirname": "import_meta_dirname",
@@ -53,14 +55,14 @@ await build({
           { filter: /^node-gyp-build$/, namespace: "node-gyp-build" },
           () => {
             const prebuildPath = nodeGypBuild.path(
-              resolve(import.meta.dirname, "../"),
+              resolve(import.meta.dirname, ".."),
             )
             // const assetName = `${basename(prebuildPath, ".node")}-${randomUUID()}.node`
             // discoveredAssets.set(assetName, prebuildPath)
 
             return {
               loader: "js",
-              resolveDir: resolve(import.meta.dirname, "../"),
+              resolveDir: resolve(import.meta.dirname, ".."),
               contents: `
 const nativeModule = require(${JSON.stringify(prebuildPath)});
 
@@ -84,7 +86,7 @@ module.exports = function requireBinding() {
 
           let resolved
           try {
-            const parentUrl = pathToFileURL(args.resolveDir + "/").href
+            const parentUrl = pathToFileURL(args.resolveDir + sep).href
             resolved = fileURLToPath(import.meta.resolve(args.path, parentUrl))
           } catch {
             return
@@ -136,7 +138,7 @@ for (const [assetName, sourcePath] of discoveredAssets) {
 }
 
 const seaConfig = {
-  main: "bundle/bin.cjs",
+  main: join("bundle", "bin.cjs"),
   output: process.platform === "win32" ? "stalign.exe" : "stalign",
   disableExperimentalSEAWarning: true,
   assets,

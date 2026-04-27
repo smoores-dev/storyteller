@@ -71,9 +71,9 @@ export async function processAudiobook(
 
         function onFileProgress(progress: number) {
           perFileProgress.set(index, progress)
-          const updatedProgress = Array.from(perFileProgress.values()).reduce(
-            (acc, p) => acc + p,
-          )
+          const updatedProgress =
+            Array.from(perFileProgress.values()).reduce((acc, p) => acc + p) /
+            filenames.length
           options.logger?.info(
             `Progress: ${Math.floor(updatedProgress * 100)}%`,
           )
