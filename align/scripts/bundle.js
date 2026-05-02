@@ -57,8 +57,8 @@ await build({
             const prebuildPath = nodeGypBuild.path(
               resolve(import.meta.dirname, ".."),
             )
-            // const assetName = `${basename(prebuildPath, ".node")}-${randomUUID()}.node`
-            // discoveredAssets.set(assetName, prebuildPath)
+
+            console.log("NODE GYP BUILD PATH:", prebuildPath)
 
             return {
               loader: "js",

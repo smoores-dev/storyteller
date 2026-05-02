@@ -399,58 +399,58 @@ release-ghost-story:
            --upload-file align/stalign \
            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/stalign/${VERSION_PARTS[1]}/stalign-${VARIANT}"
 
-publish-align-sea-darwin-arm64:
-  extends: .publish-align-sea-base
-  tags: [saas-macos-medium-m1]
-  variables:
-    VARIANT: "darwin-arm64"
-    KEYCHAIN_NAME: "build-$CI_JOB_ID.keychain"
-    KEYCHAIN_PASSWORD: "temp-keychain-password"
-    CODESIGNING: "true"
-  before_script:
-    - brew install curl
-    - export NVM_DIR="$HOME/.nvm"
-    - source "$NVM_DIR/nvm.sh"
-    - nvm install 25
-    - nvm use 25
-    - nvm alias default 25
-    - npm i -g yarn
-    - security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-    - security list-keychains -d user -s "$KEYCHAIN_NAME" $(security
-      list-keychains -d user | tr -d '"')
-    - security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
-    - security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-    - echo "$APPLE_CERTIFICATE_P12" | base64 --decode > certificate.p12
-    - security import certificate.p12 -k "$KEYCHAIN_NAME" -P
-      "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-    - echo "$APPLE_CA" | base64 --decode > developer_id_cert_authority.cer
-    - security import developer_id_cert_authority.cer -k "$KEYCHAIN_NAME" -T
-      /usr/bin/codesign
-    - 'security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k
-      "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"'
-    - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
-  after_script:
-    - security delete-keychain "$KEYCHAIN_NAME" || true
-    - rm -f certificate.p12
+# publish-align-sea-darwin-arm64:
+#   extends: .publish-align-sea-base
+#   tags: [saas-macos-medium-m1]
+#   variables:
+#     VARIANT: "darwin-arm64"
+#     KEYCHAIN_NAME: "build-$CI_JOB_ID.keychain"
+#     KEYCHAIN_PASSWORD: "temp-keychain-password"
+#     CODESIGNING: "true"
+#   before_script:
+#     - brew install curl
+#     - export NVM_DIR="$HOME/.nvm"
+#     - source "$NVM_DIR/nvm.sh"
+#     - nvm install 25
+#     - nvm use 25
+#     - nvm alias default 25
+#     - npm i -g yarn
+#     - security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+#     - security list-keychains -d user -s "$KEYCHAIN_NAME" $(security
+#       list-keychains -d user | tr -d '"')
+#     - security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
+#     - security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+#     - echo "$APPLE_CERTIFICATE_P12" | base64 --decode > certificate.p12
+#     - security import certificate.p12 -k "$KEYCHAIN_NAME" -P
+#       "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+#     - echo "$APPLE_CA" | base64 --decode > developer_id_cert_authority.cer
+#     - security import developer_id_cert_authority.cer -k "$KEYCHAIN_NAME" -T
+#       /usr/bin/codesign
+#     - 'security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k
+#       "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"'
+#     - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
+#   after_script:
+#     - security delete-keychain "$KEYCHAIN_NAME" || true
+#     - rm -f certificate.p12
 
-publish-align-sea-linux-x64:
-  image: node:25
-  extends: .publish-align-sea-base
-  variables:
-    VARIANT: "linux-x64"
-  before_script:
-    - apt update
-    - DEBIAN_FRONTEND=noninteractive apt install -y jq
+# publish-align-sea-linux-x64:
+#   image: node:25
+#   extends: .publish-align-sea-base
+#   variables:
+#     VARIANT: "linux-x64"
+#   before_script:
+#     - apt update
+#     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
-publish-align-sea-linux-arm64:
-  image: node:25
-  extends: .publish-align-sea-base
-  tags: [saas-linux-small-arm64]
-  variables:
-    VARIANT: "linux-arm64"
-  before_script:
-    - apt update
-    - DEBIAN_FRONTEND=noninteractive apt install -y jq
+# publish-align-sea-linux-arm64:
+#   image: node:25
+#   extends: .publish-align-sea-base
+#   tags: [saas-linux-small-arm64]
+#   variables:
+#     VARIANT: "linux-arm64"
+#   before_script:
+#     - apt update
+#     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
 publish-align-sea-windows-x64:
   stage: publish
@@ -523,77 +523,77 @@ publish-align-sea-windows-x64:
         -Body $fileBytes `
         -ContentType "application/octet-stream"
 
-publish-align:
-  image: node:25
-  stage: publish
-  rules:
-    - if:
-        '$CI_COMMIT_TAG =~
-        /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  id_tokens:
-    NPM_ID_TOKEN:
-      aud: "npm:registry.npmjs.org"
-  variables:
-    GITLAB: "true"
-  script:
-    - TAG=${CI_COMMIT_TAG##*-}
-    - |
-      case "$TAG" in
-        alpha*) TAG="alpha" ;;
-        beta*) TAG="beta" ;;
-        rc*) TAG="rc" ;;
-        experimental*) TAG="experimental" ;;
-        dev*) TAG="dev" ;;
-        test*) TAG="test" ;;
-        preview*) TAG="preview" ;;
-        *) TAG="latest" ;;
-      esac
-    - yarn workspaces focus @storyteller-platform/align
-    - yarn workspace @storyteller-platform/align npm publish --tag="$TAG"
+# publish-align:
+#   image: node:25
+#   stage: publish
+#   rules:
+#     - if:
+#         '$CI_COMMIT_TAG =~
+#         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+#   id_tokens:
+#     NPM_ID_TOKEN:
+#       aud: "npm:registry.npmjs.org"
+#   variables:
+#     GITLAB: "true"
+#   script:
+#     - TAG=${CI_COMMIT_TAG##*-}
+#     - |
+#       case "$TAG" in
+#         alpha*) TAG="alpha" ;;
+#         beta*) TAG="beta" ;;
+#         rc*) TAG="rc" ;;
+#         experimental*) TAG="experimental" ;;
+#         dev*) TAG="dev" ;;
+#         test*) TAG="test" ;;
+#         preview*) TAG="preview" ;;
+#         *) TAG="latest" ;;
+#       esac
+#     - yarn workspaces focus @storyteller-platform/align
+#     - yarn workspace @storyteller-platform/align npm publish --tag="$TAG"
 
-prerelease-align:
-  stage: prerelease
-  image: alpine:latest
-  rules:
-    - if:
-        '$CI_COMMIT_TAG =~
-        /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/align-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-align"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
+# prerelease-align:
+#   stage: prerelease
+#   image: alpine:latest
+#   rules:
+#     - if:
+#         '$CI_COMMIT_TAG =~
+#         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+#   script:
+#     - apk add curl jq
+#     - version=$(echo $CI_COMMIT_TAG | sed -r 's/align-//')
+#     - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+#     - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+#       "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+#       select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+#     - to_sha=$CI_COMMIT_SHORT_SHA
+#     - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+#       "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-align"
+#       | jq -r .notes > release_notes.md'
+#   artifacts:
+#     paths:
+#       - release_notes.md
 
-release-align:
-  stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs:
-    - job: prerelease-align
-      artifacts: true
-  rules:
-    - if:
-        '$CI_COMMIT_TAG =~
-        /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - echo "Creating release for $CI_COMMIT_TAG"
-  release:
-    name: "Release $CI_COMMIT_TAG"
-    description: release_notes.md
-    tag_name: "$CI_COMMIT_TAG"
-    ref: "$CI_COMMIT_SHA"
-    assets:
-      links:
-        - name: "NPM package for @storyteller-platform/align"
-          url: "https://npmjs.com/package/@storyteller-platform/align"
+# release-align:
+#   stage: release
+#   image: registry.gitlab.com/gitlab-org/release-cli:latest
+#   needs:
+#     - job: prerelease-align
+#       artifacts: true
+#   rules:
+#     - if:
+#         '$CI_COMMIT_TAG =~
+#         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+#   script:
+#     - echo "Creating release for $CI_COMMIT_TAG"
+#   release:
+#     name: "Release $CI_COMMIT_TAG"
+#     description: release_notes.md
+#     tag_name: "$CI_COMMIT_TAG"
+#     ref: "$CI_COMMIT_SHA"
+#     assets:
+#       links:
+#         - name: "NPM package for @storyteller-platform/align"
+#           url: "https://npmjs.com/package/@storyteller-platform/align"
 
 .okmain-tag-rules:
   rules:
