@@ -86,7 +86,9 @@ module.exports = function requireBinding() {
 
           let resolved
           try {
+            console.log(args.path, args.resolveDir)
             const parentUrl = pathToFileURL(args.resolveDir + sep).href
+            console.log(parentUrl)
             resolved = fileURLToPath(import.meta.resolve(args.path, parentUrl))
           } catch {
             return
