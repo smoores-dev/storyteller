@@ -1,29 +1,64 @@
-import { Link } from "expo-router"
-import { Settings } from "lucide-react-native"
+import * as DocumentPicker from "expo-document-picker"
+import { Link, useRouter } from "expo-router"
+import { EllipsisVertical, FileUp, Settings } from "lucide-react-native"
 import { useEffect, useMemo, useRef } from "react"
-import { Image, RefreshControl, ScrollView, View } from "react-native"
+import {
+  Image,
+  RefreshControl,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native"
 
 import { BookSearch } from "@/components/BookSearch"
 import { MiniPlayerWidget } from "@/components/MiniPlayerWidget"
 import { Shelf } from "@/components/Shelf"
 import { Group } from "@/components/ui/Group"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Icon } from "@/components/ui/icon"
 import { Text } from "@/components/ui/text"
 import { type BookWithRelations } from "@/database/books"
 import { type Collection } from "@/database/collections"
 import { useIsFocused } from "@/hooks/useIsFocused"
 import { useListAllServerBooks } from "@/hooks/useListAllServerBooks"
+import { bookImported } from "@/store/actions"
+import { useAppDispatch } from "@/store/appState"
 import {
   useListBooksQuery as useListLocalBooksQuery,
   useListCollectionsQuery,
 } from "@/store/localApi"
-import { type UUID } from "@/uuid"
+
+import {
+  filterCurrentlyReading,
+  filterNextUp,
+  filterRecentlyAdded,
+  filterStartReading,
+} from "./shelf/[type]"
 
 const EMPTY_BOOKS: BookWithRelations[] = []
 const EMPTY_COLLECTIONS: Collection[] = []
 
+async function pickBookFile() {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ["application/epub+zip", "application/epub"],
+    copyToCacheDirectory: true,
+  })
+
+  if (result.canceled || !result.assets[0]) return null
+
+  return result.assets[0].uri
+}
+
 export default function Home() {
+  const router = useRouter()
+  const dispatch = useAppDispatch()
+
   const { isLoading, refetch } = useListAllServerBooks()
   const { data: liveBooks = EMPTY_BOOKS } = useListLocalBooksQuery()
   const { data: collections = EMPTY_COLLECTIONS } = useListCollectionsQuery()
@@ -40,126 +75,94 @@ export default function Home() {
   }, [isFocused, liveBooks])
 
   const onDevice = useMemo(() => {
-    return (
-      books.filter(
+    return books
+      .filter(
         (book) =>
           book.audiobook?.downloadStatus === "DOWNLOADED" ||
           book.ebook?.downloadStatus === "DOWNLOADED" ||
           book.readaloud?.downloadStatus === "DOWNLOADED",
-      ) ?? []
-    )
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf(),
+      )
   }, [books])
 
   const currentlyReading = useMemo(() => {
-    return (
-      books
-        .filter((book) => book.status?.name === "Reading")
-        .sort(
-          (a, b) => (b.position?.timestamp ?? 0) - (a.position?.timestamp ?? 0),
-        ) ?? []
-    )
+    return filterCurrentlyReading(books)
   }, [books])
 
-  const nextUp = useMemo(() => {
-    const latestReadInSeries = new Map<UUID, BookWithRelations>()
-    const resultSet = new Set<UUID>()
-    for (const book of books) {
-      if (!book.series.length) continue
+  const nextUp = useMemo(() => filterNextUp(books), [books])
 
-      const series = book.series
-      for (const s of series) {
-        const latestRead = latestReadInSeries.get(s.uuid)
-        if (!latestRead) {
-          if (book.status?.name === "Read") {
-            latestReadInSeries.set(s.uuid, book)
-            continue
-          } else {
-            continue
-          }
-        }
+  const startReading = useMemo(() => filterStartReading(books), [books])
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const latestSeriesPos = latestRead.series.find(
-          (ls) => ls.uuid === s.uuid,
-        )!.position
-        if ((latestSeriesPos ?? 0) < (s.position ?? 0)) {
-          if (book.status?.name === "Read") {
-            latestReadInSeries.set(s.uuid, book)
-          } else if (!resultSet.has(book.uuid)) {
-            resultSet.add(book.uuid)
-          }
-        }
-      }
-    }
-
-    return books
-      .filter((book) => resultSet.has(book.uuid))
-      .sort((a, b) => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const latestA = a.series
-          .map((s) => latestReadInSeries.get(s.uuid))
-          .filter((book) => !!book)[0]!
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const latestB = b.series
-          .map((s) => latestReadInSeries.get(s.uuid))
-          .filter((book) => !!book)[0]!
-
-        return (
-          (latestB.position?.timestamp ?? 0) -
-          (latestA.position?.timestamp ?? 0)
-        )
-      })
-  }, [books])
-
-  const startReading = useMemo(() => {
-    return books
-      .filter((book) => book.status?.name === "To read")
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf(),
-      )
-  }, [books])
-
-  const recentlyAdded = useMemo(() => {
-    return books
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf(),
-      )
-  }, [books])
+  const recentlyAdded = useMemo(() => filterRecentlyAdded(books), [books])
 
   const booksByCollection = useMemo(
     () =>
       Object.fromEntries(
         collections.map((collection) => [
           collection.uuid,
-          books.filter((book) =>
-            book.collections.some((c) => c.uuid === collection.uuid),
-          ),
+          books
+            .filter((book) =>
+              book.collections.some((c) => c.uuid === collection.uuid),
+            )
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).valueOf() -
+                new Date(a.createdAt).valueOf(),
+            ),
         ]),
       ),
     [books, collections],
   )
 
+  const scrollViewRef = useRef<ScrollView>(null)
+
   return (
-    <View className="pt-safe flex-1 items-center gap-4 bg-transparent">
-      <Group className="items-center gap-2 px-2">
-        <Image
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          source={require("../../assets/Storyteller_Logo.png")}
-          className="h-16 w-16"
-        />
+    <View className="pt-safe flex-1 items-center gap-2 bg-transparent">
+      <Group className="items-center gap-2 pr-2 pl-4">
+        <TouchableOpacity
+          onPress={() => {
+            scrollViewRef.current?.scrollTo({ y: 0, animated: true })
+          }}
+        >
+          <Image
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            source={require("../../assets/Storyteller_Logo.png")}
+            className="h-12 w-12"
+          />
+        </TouchableOpacity>
         <BookSearch />
-        <Link href="/settings" asChild>
-          <Button variant="ghost" size="icon">
-            <Icon as={Settings} size={24} className="text-primary" />
-          </Button>
-        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Icon as={EllipsisVertical} size={24} className="text-primary" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onPress={async () => {
+                const uri = await pickBookFile()
+                if (uri) dispatch(bookImported({ url: uri, from: "home" }))
+              }}
+            >
+              <Icon as={FileUp} size={18} className="text-foreground" />
+              <Text>Import book</Text>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem onPress={() => router.push("/settings")}>
+              <Icon as={Settings} size={18} className="text-foreground" />
+              <Text>Settings</Text>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </Group>
       <ScrollView
         className="w-full pl-6"
         contentContainerClassName="gap-4"
+        ref={scrollViewRef}
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
@@ -169,11 +172,40 @@ export default function Home() {
           />
         }
       >
-        <Shelf label="On this device" books={onDevice} />
-        <Shelf label="Currently reading" books={currentlyReading} />
-        <Shelf label="Next up" books={nextUp} />
-        <Shelf label="Start reading" books={startReading} />
-        <Shelf label="Recently added" books={recentlyAdded} />
+        <Shelf
+          label="On this device"
+          books={onDevice}
+          href={{ pathname: "/shelf/[type]", params: { type: "on-device" } }}
+        />
+        <Shelf
+          label="Currently reading"
+          books={currentlyReading}
+          href={{
+            pathname: "/shelf/[type]",
+            params: { type: "currently-reading" },
+          }}
+        />
+        <Shelf
+          label="Next up"
+          books={nextUp}
+          href={{ pathname: "/shelf/[type]", params: { type: "next-up" } }}
+        />
+        <Shelf
+          label="Start reading"
+          books={startReading}
+          href={{
+            pathname: "/shelf/[type]",
+            params: { type: "start-reading" },
+          }}
+        />
+        <Shelf
+          label="Recently added"
+          books={recentlyAdded}
+          href={{
+            pathname: "/shelf/[type]",
+            params: { type: "recently-added" },
+          }}
+        />
         {collections.map((collection) => (
           <Shelf
             key={collection.uuid}

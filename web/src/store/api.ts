@@ -9,6 +9,7 @@ import {
   type Shelves,
   type User,
 } from "@/apiModels"
+import { type UpgradeResult } from "@/app/api/v2/books/[bookId]/upgrade-epub/route"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -16,6 +17,7 @@ import {
   type CreatorRelation,
   type SeriesRelation,
 } from "@/database/books"
+import { type ChangelogEntry } from "@/database/changelog"
 import { type CollectionWithRelations } from "@/database/collections"
 import { type Creator } from "@/database/creators"
 import { type Position } from "@/database/positions"
@@ -345,6 +347,16 @@ export const api = createApi({
     >({
       query: () => "/books/scan",
     }),
+    upgradeBookEpub: build.mutation<
+      Record<string, UpgradeResult>,
+      { uuid: UUID; createBackup?: boolean; backupSuffix?: string }
+    >({
+      query: ({ uuid, createBackup, backupSuffix }) => ({
+        url: `/books/${uuid}/upgrade-epub`,
+        method: "POST",
+        body: { createBackup, backupSuffix },
+      }),
+    }),
     mergeBooks: build.mutation<
       BookWithRelations,
       { update: BookUpdate; relations: BookRelationsUpdate; from: UUID[] }
@@ -357,7 +369,10 @@ export const api = createApi({
     }),
     createBook: build.mutation<
       BookWithRelations,
-      { collection: UUID | undefined; paths: string[] }
+      {
+        collection: UUID | undefined
+        paths: string[]
+      }
     >({
       query: (body) => ({
         url: `/books`,
@@ -669,6 +684,60 @@ export const api = createApi({
         body,
       }),
     }),
+
+    getInfiniteChangelog: build.infiniteQuery<
+      ChangelogEntry[],
+      string,
+      { page: number; perPage: number }
+    >({
+      infiniteQueryOptions: {
+        getNextPageParam: (_lastPage, _allPages, lastPageParam) => {
+          return {
+            page: lastPageParam.page + 1,
+            perPage: lastPageParam.perPage,
+          }
+        },
+        initialPageParam: { page: 1, perPage: 20 },
+        getPreviousPageParam: (_firstPage, _allPages, firstPageParam) => {
+          return firstPageParam.page > 1
+            ? {
+                page: firstPageParam.page - 1,
+                perPage: firstPageParam.perPage,
+              }
+            : undefined
+        },
+      },
+      query: ({ pageParam, queryArg }) => {
+        const params = new URLSearchParams({
+          component: queryArg,
+          page: String(pageParam.page),
+          perPage: String(pageParam.perPage),
+        })
+        return `/changelog?${params.toString()}`
+      },
+    }),
+
+    getChangelog: build.query<
+      ChangelogEntry[],
+      { component?: string; page?: number; perPage?: number }
+    >({
+      query: ({ component = "web", page = 1, perPage = 20 }) => {
+        const params = new URLSearchParams({
+          component,
+          page: String(page),
+          perPage: String(perPage),
+        })
+        return `/changelog?${params.toString()}`
+      },
+    }),
+
+    getLatestVersion: build.query<
+      { version: string | null },
+      { component?: string; beta?: boolean }
+    >({
+      query: ({ component = "web", beta = false }) =>
+        `/changelog/latest?component=${component}&beta=${beta}`,
+    }),
   }),
 })
 
@@ -723,6 +792,9 @@ export const {
   useUpdateSettingsMutation,
   useUpdateStatusMutation,
   useUpdateUserMutation,
+  useGetChangelogQuery,
+  useGetLatestVersionQuery,
+  useUpgradeBookEpubMutation,
 } = api
 
 export function getDownloadUrl(

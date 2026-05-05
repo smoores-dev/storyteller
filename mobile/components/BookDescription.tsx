@@ -13,6 +13,7 @@ interface Props {
 export default function BookDescription({ description, textColor }: Props) {
   if (!description) return null
 
+  //
   return (
     <>
       <style>{`

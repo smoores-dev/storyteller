@@ -1,6 +1,6 @@
 import { FastForward, Rewind } from "lucide-react-native"
 import { useMemo, useRef } from "react"
-import { View } from "react-native"
+import { TouchableOpacity, View } from "react-native"
 
 import { type BookWithRelations } from "@/database/books"
 import { cn } from "@/lib/utils"
@@ -248,9 +248,8 @@ export function MiniPlayer({ book, format, hidden }: Props) {
             )}
           </View>
 
-          <View className="flex-row items-center justify-between gap-3 pr-8 pl-[15px]">
-            <Button
-              variant="ghost"
+          <View className="flex-row items-center justify-between gap-3 pr-6 pl-3">
+            <TouchableOpacity
               className="w-10 p-0"
               onPress={() => {
                 dispatch(bookDetailPressed({ bookUuid: book.uuid, format }))
@@ -268,9 +267,8 @@ export function MiniPlayer({ book, format, hidden }: Props) {
                   <EbookCover book={book} />
                 )}
               </View>
-            </Button>
-            <Button
-              variant="ghost"
+            </TouchableOpacity>
+            <TouchableOpacity
               className="flex-1 flex-col items-stretch"
               onPress={() => {
                 dispatch(bookDetailPressed({ bookUuid: book.uuid, format }))
@@ -279,7 +277,7 @@ export function MiniPlayer({ book, format, hidden }: Props) {
               <Text
                 maxFontSizeMultiplier={1.25}
                 numberOfLines={1}
-                className="text-sm font-semibold"
+                className="text-sm"
               >
                 {title}
               </Text>
@@ -298,7 +296,7 @@ export function MiniPlayer({ book, format, hidden }: Props) {
                   %
                 </Text>
               </View>
-            </Button>
+            </TouchableOpacity>
           </View>
         </HideableView>
       </View>

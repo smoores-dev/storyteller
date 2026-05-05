@@ -20,6 +20,7 @@ import { RemoveBooksFromCollectionsItem } from "./actionMenuItems/RemoveBooksFro
 import { RemoveBooksFromSeriesItem } from "./actionMenuItems/RemoveBooksFromSeriesItem"
 import { RemoveTagsFromBooksItem } from "./actionMenuItems/RemoveTagsFromBooksItem"
 import { UpdateReadingStatusItem } from "./actionMenuItems/UpdateReadingStatusItem"
+import { UpgradeEpubItem } from "./actionMenuItems/UpgradeEpubItem"
 
 interface Props {
   selected: Set<UUID>
@@ -80,6 +81,9 @@ export function ActionMenu({ selected, onClear }: Props) {
             <RemoveTagsFromBooksItem selected={selected} />
           )}
           <UpdateReadingStatusItem selected={selected} />
+          {!!permissions?.bookUpdate && (
+            <UpgradeEpubItem selected={selected} onCommit={onCommit} />
+          )}
           {!!permissions?.bookProcess && (
             <BeginProcessingItem selected={selected} />
           )}

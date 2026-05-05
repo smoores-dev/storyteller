@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/storyteller-platform/storyteller"
+    "url": "https://gitlab.com/storyteller-platform/storyteller.git"
   },
   "bugs": {
     "url": "https://gitlab.com/storyteller-platform/storyteller"
@@ -45,7 +45,7 @@
     "build:debug": "napi build --platform",
     "test": "node --test __test__/index.test.ts",
     "test:update-snapshots": "node --test --test-update-snapshots __test__/index.test.ts ",
-    "prepublishOnly": "napi prepublish -t npm"
+    "prepublish": "napi prepublish -t npm"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.2.0",

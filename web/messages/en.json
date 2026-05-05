@@ -39,6 +39,16 @@
     "failedToSaveSettings": "Failed to save settings",
     "searchSettings": "Search settings...",
     "formHasErrors": "{count, plural, one {# error} other {# errors}}",
+    "changelog": {
+      "title": "Changelog",
+      "noChangelogEntriesFound": "No changelog entries found.",
+      "loadMore": "Load more",
+      "currentlyOn": "Currently on version {version} (latest: {latest})",
+      "current": "current",
+      "new": "new",
+      "showBetaVersions": "Show beta versions",
+      "hideBetaVersions": "Hide beta versions"
+    },
     "tabs": {
       "library": {
         "title": "Library",

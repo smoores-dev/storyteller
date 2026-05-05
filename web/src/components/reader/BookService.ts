@@ -419,7 +419,7 @@ export async function getLocatorForFragment(
     const startOfChapterProgression =
       chapterPosition?.locations.totalProgression
 
-    if (!startOfChapterProgression) {
+    if (startOfChapterProgression == null) {
       console.error(
         "NO START OF CHAPTER PROGRESSION",
         chapterPosition,

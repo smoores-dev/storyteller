@@ -83,14 +83,26 @@ export function liftText(root: Root) {
       )
     }
 
-    lastTextEnd = pos + node.nodeSize
-
     let result = node.text.replaceAll(/\n/g, " ")
+    // Skip leading whitespace in text blocks
+    if (text.endsWith("\n")) {
+      const contentStart = result.match(/\S/u)?.index ?? result.length
+      if (contentStart !== 0) {
+        result = result.slice(contentStart)
+        mapping.appendMap(
+          new StepMap([mapping.map(lastTextEnd), contentStart, 0]),
+        )
+      }
+    }
+
+    lastTextEnd = pos + node.nodeSize
 
     const hasBlockSiblings = parent.children.some((child) => child.isBlock)
 
     if (hasBlockSiblings && !result.match(/\S/)) {
-      mapping.appendMap(new StepMap([textLength, result.length, 0]))
+      if (result.length) {
+        mapping.appendMap(new StepMap([textLength, result.length, 0]))
+      }
       result = ""
     }
 

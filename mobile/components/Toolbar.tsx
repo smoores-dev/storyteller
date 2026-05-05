@@ -59,6 +59,7 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
           ) : (
             <Link
               asChild
+              replace
               href={{
                 pathname: "/listen/[uuid]",
                 params: { uuid: book.uuid, format },

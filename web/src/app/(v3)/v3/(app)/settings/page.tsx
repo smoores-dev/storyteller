@@ -4,11 +4,12 @@ import { getMessages, getTranslations } from "next-intl/server"
 
 import { nextAuth } from "@/auth/auth"
 import { getConfigLockedKeys, getSettings } from "@/database/settings"
+import { getCurrentVersion } from "@/versions"
 
 import { SettingsForm } from "@v3/_/components/settings-form/settings-form"
 import {
   type SectionKeywords,
-  tabs as settingsTabs,
+  settingsFormTabs,
 } from "@v3/_/components/settings-form/tabs"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,7 +36,7 @@ function generateSectionKeywords(
 ): SectionKeywords {
   const result: SectionKeywords = {} as SectionKeywords
 
-  for (const tab of settingsTabs) {
+  for (const tab of settingsFormTabs) {
     result[tab] = {}
 
     const tabData = tabsMessages[tab]
@@ -75,12 +76,16 @@ export default async function SettingsPage() {
   }
   const sectionKeywords = generateSectionKeywords(settingsMessages.tabs)
 
+  const currentVersion = getCurrentVersion()
+
   return (
     <SettingsForm
       settings={settings}
       sectionKeywords={sectionKeywords}
       // cant pass set through client component
+
       configLockedKeys={Array.from(configLockedKeys)}
+      currentVersion={currentVersion}
     />
   )
 }

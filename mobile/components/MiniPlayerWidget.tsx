@@ -1,7 +1,12 @@
 import { skipToken } from "@reduxjs/toolkit/query"
 import { Link } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
-import { View, type ViewStyle, useWindowDimensions } from "react-native"
+import {
+  TouchableOpacity,
+  View,
+  type ViewStyle,
+  useWindowDimensions,
+} from "react-native"
 import { Gesture, GestureDetector } from "react-native-gesture-handler"
 import Animated, {
   Easing,
@@ -28,7 +33,6 @@ import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 import { AudiobookCover } from "./AudiobookCover"
 import { PlayPause } from "./PlayPause"
 import { ProgressBar } from "./ProgressBar"
-import { Button } from "./ui/button"
 import { Text } from "./ui/text"
 
 export function MiniPlayerWidget() {
@@ -131,22 +135,19 @@ export function MiniPlayerWidget() {
                   }}
                   asChild
                 >
-                  <Button
-                    variant="ghost"
-                    className="shrink flex-row items-center justify-between gap-6 pr-12"
-                  >
+                  <TouchableOpacity className="shrink flex-row items-center justify-between gap-6 px-6">
                     <View className="h-10 w-10">
                       <AudiobookCover book={book} style={{ borderRadius: 4 }} />
                     </View>
                     <View>
-                      <Text numberOfLines={1} className="text-sm font-semibold">
+                      <Text numberOfLines={1} className="text-sm">
                         {book.title}
                       </Text>
                       <Text numberOfLines={1} className="text-sm">
                         {formattedProgress}
                       </Text>
                     </View>
-                  </Button>
+                  </TouchableOpacity>
                 </Link>
                 <PlayPause />
               </View>

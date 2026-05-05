@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/web",
-  "version": "2.11.13",
+  "version": "2.13.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,8 +19,8 @@
     "test:all": "yarn build:sqlite-ext && STORYTELLER_DATA_DIR=src/__fixtures__/__output__ tsx -C @storyteller-node --test src/__tests__/*.test.ts src/*/__tests__/*.test.ts",
     "build": "yarn build:sqlite-ext && yarn build:worker && yarn build:file-write-worker && next build",
     "build:sqlite-ext": "bash ./build-sqlite-ext.sh",
-    "build:worker": "esbuild src/work/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@node-rs/crc32 --out-extension:.js=.cjs --define:import.meta.dirname=import_meta_dirname --inject:./src/work/import.meta.dirname-polyfill.js --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=work-dist/",
-    "build:file-write-worker": "esbuild src/writeToFiles/fileWriteWorker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sourcemap=inline --format=cjs --external:winax --external:@node-rs/crc32 --out-extension:.js=.cjs --define:import.meta.dirname=import_meta_dirname --inject:./src/work/import.meta.dirname-polyfill.js --define:import.meta.url=import_meta_url --inject:./src/work/import.meta.url-polyfill.js --outdir=file-write-dist/",
+    "build:worker": "esbuild src/work/worker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sources-content=false --sourcemap --format=esm --splitting --external:winax --external:@reflink --external:@node-rs/crc32 --out-extension:.js=.mjs --banner:js='import{createRequire}from\"node:module\";const require=createRequire(import.meta.url);' --outdir=work-dist/",
+    "build:file-write-worker": "esbuild src/writeToFiles/fileWriteWorker.ts --conditions=@storyteller-node --bundle --platform=node --loader:.node=file --sources-content=false --sourcemap --format=esm --splitting --external:winax --external:@node-rs/crc32 --external:@reflink --out-extension:.js=.mjs --banner:js='import{createRequire}from\"node:module\";const require=createRequire(import.meta.url);' --outdir=file-write-dist/",
     "start": "./start.sh"
   },
   "dependencies": {
@@ -41,6 +41,7 @@
     "@readium/navigator-html-injectables": "2.1.1",
     "@readium/shared": "patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch",
     "@reduxjs/toolkit": "^2.11.2",
+    "@reflink/reflink": "^0.1.19",
     "@remix-run/node": "^2.17.0",
     "@scalar/nextjs-openapi": "^0.1.17",
     "@storyteller-platform/align": "workspace:*",
@@ -134,7 +135,7 @@
     "@types/react-window": "^1",
     "@types/yazl": "^3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
-    "esbuild": "^0.25.9",
+    "esbuild": "^0.28.0",
     "eslint": "^8.0.0",
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "kysely-codegen": "^0.18.5",

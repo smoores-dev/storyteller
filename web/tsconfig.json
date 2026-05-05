@@ -39,6 +39,7 @@
   },
   "extends": ["@tsconfig/strictest/tsconfig.json"],
   "include": [
+    "./package.json",
     "./next-env.d.ts",
     "messages/**/*.json",
     "src/**/*.js",

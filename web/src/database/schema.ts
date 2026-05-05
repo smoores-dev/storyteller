@@ -292,10 +292,27 @@ export interface VerificationToken {
   updatedAt: Generated<string>
 }
 
+export interface ImportSkipPath {
+  bookUuid: import("@/uuid").UUID | null
+  filepath: string
+}
+
+export interface Changelog {
+  uuid: Generated<import("@/uuid").UUID>
+  tagName: string
+  version: string
+  component: string
+  description: string | null
+  releasedAt: string
+  createdAt: Generated<string>
+  updatedAt: Generated<string>
+}
+
 export interface DB {
   account: Account
   audiobook: Audiobook
   book: Book
+  changelog: Changelog
   bookToCollection: BookToCollection
   bookToCreator: BookToCreator
   bookToSeries: BookToSeries
@@ -306,6 +323,7 @@ export interface DB {
   creator: Creator
   deviceAuthorization: DeviceAuthorization
   ebook: Ebook
+  importSkipPath: ImportSkipPath
   migration: Migration
   position: Position
   readaloud: Readaloud

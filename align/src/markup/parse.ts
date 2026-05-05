@@ -9,9 +9,11 @@ import {
 import { path } from "@optique/run/valueparser"
 
 import {
+  autoUpgradeParser,
   granularityParser,
   languageParser,
   loggingParser,
+  removeNcxParser,
 } from "../common/parse.ts"
 
 export const markupCommand = command(
@@ -32,6 +34,8 @@ export const markupCommand = command(
       ),
     }),
     granularityParser,
+    autoUpgradeParser,
+    removeNcxParser,
     languageParser,
     loggingParser,
   ),

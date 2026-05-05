@@ -1,16 +1,12 @@
-import { Stack, useRouter } from "expo-router"
-import { ChevronLeft } from "lucide-react-native"
+import { Stack } from "expo-router"
 import { Platform } from "react-native"
 import { useReducedMotion } from "react-native-reanimated"
 
-import { Button } from "@/components/ui/button"
-import { Icon } from "@/components/ui/icon"
+import { BackButton } from "@/components/BackButton"
 
 export default function ModalLayout() {
   const modalPresentation = Platform.OS === "android" ? "formSheet" : "modal"
   const reduceMotion = useReducedMotion()
-
-  const router = useRouter()
 
   return (
     <Stack
@@ -25,47 +21,22 @@ export default function ModalLayout() {
         options={{
           headerShown: true,
           headerBackVisible: false,
-          headerLeft: () => (
-            <Button
-              size="icon"
-              variant="ghost"
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back()
-                } else {
-                  router.replace("/")
-                }
-              }}
-            >
-              <Icon as={ChevronLeft} size={24} />
-            </Button>
-          ),
+          headerShadowVisible: false,
+          headerLeft: () => <BackButton />,
           title: "Settings",
         }}
       />
       <Stack.Screen name="read/[uuid]" options={{ gestureEnabled: false }} />
       <Stack.Screen name="book/[uuid]" />
+      <Stack.Screen name="shelf/[type]" />
       <Stack.Screen name="author/[uuid]" />
       <Stack.Screen
         name="server"
         options={{
           headerShown: true,
           headerBackVisible: false,
-          headerLeft: () => (
-            <Button
-              size="icon"
-              variant="ghost"
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back()
-                } else {
-                  router.replace("/settings")
-                }
-              }}
-            >
-              <Icon as={ChevronLeft} size={24} />
-            </Button>
-          ),
+          headerShadowVisible: false,
+          headerLeft: () => <BackButton fallback="/settings" />,
           title: "Select server",
         }}
       />

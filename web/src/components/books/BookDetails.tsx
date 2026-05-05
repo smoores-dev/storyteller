@@ -18,6 +18,7 @@ import {
   IconBook2,
   IconBooks,
   IconDotsCircleHorizontal,
+  IconFileArrowRight,
   IconHeadphonesFilled,
   IconPencil,
   IconPlayerPlay,
@@ -44,6 +45,7 @@ import { BookStatus } from "./BookStatus"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 import { StatusInput } from "./edit/StatusInput"
 import { DeleteBookModal } from "./modals/DeleteBookModal"
+import { UpgradeEpubModal } from "./modals/UpgradeEpubModal"
 
 interface Props {
   bookUuid: UUID
@@ -109,6 +111,10 @@ function Details({
 
 export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const [opened, { open, close }] = useDisclosure()
+  const [
+    upgradeModalOpen,
+    { open: openUpgradeModal, close: closeUpgradeModal },
+  ] = useDisclosure()
 
   const permissions = usePermissions()
 
@@ -119,9 +125,19 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
 
   if (!book) return null
 
+  const hasEpubFiles =
+    book.ebook?.filepath.endsWith(".epub") ||
+    book.readaloud?.filepath?.endsWith(".epub")
+
   return (
     <>
       <DeleteBookModal book={book} isOpen={opened} onClose={close} />
+
+      <UpgradeEpubModal
+        bookUuids={[book.uuid]}
+        isOpen={upgradeModalOpen}
+        onClose={closeUpgradeModal}
+      />
 
       <Stack>
         <Group gap={48} align="flex-start">
@@ -380,13 +396,25 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
             </Text>
           )}
         </Stack>
-        {!!permissions?.bookDelete && (
-          <Group className="mt-8 justify-end">
+
+        <Group className="mt-8 justify-end">
+          {!!permissions?.bookUpdate && hasEpubFiles && (
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconFileArrowRight size={14} />}
+              onClick={openUpgradeModal}
+            >
+              Convert to EPUB 3
+            </Button>
+          )}
+
+          {!!permissions?.bookDelete && (
             <Button onClick={open} color="red">
               Delete book
             </Button>
-          </Group>
-        )}
+          )}
+        </Group>
       </Stack>
     </>
   )

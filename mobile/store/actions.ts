@@ -8,7 +8,7 @@ import { type UUID } from "@/uuid"
 
 export const bookImported = createAction(
   "bookImported",
-  (payload: { url: string }) => ({ payload }),
+  (payload: { url: string; from: "home" | "open-with" }) => ({ payload }),
 )
 
 export const bookDoubleTapped = createAction(

@@ -48,9 +48,20 @@ public struct OverlayPar: Sendable {
     }
     
     static func fromJson(_ map: [String:Any]) throws -> OverlayPar {
+        let rawFragmentId = map["fragmentId"] as! String
+
+        let fragmentId: String
+        if let hashRange = rawFragmentId.range(of: "#", options: .backwards) {
+            fragmentId = String(rawFragmentId[hashRange.upperBound...])
+        } else if let encodedRange = rawFragmentId.range(of: "%23", options: .backwards) {
+            fragmentId = String(rawFragmentId[encodedRange.upperBound...])
+        } else {
+            fragmentId = rawFragmentId
+        }
+
         return OverlayPar(
             relativeUrl: RelativeURL(epubHREF: map["relativeUrl"] as! String)!.url,
-            fragmentId: map["fragmentId"] as! String,
+            fragmentId: fragmentId,
             textResource: map["textResource"] as! String,
             start: map["start"] as! Double,
             end: map["end"] as! Double,

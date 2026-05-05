@@ -1,5 +1,3 @@
-import { useRouter } from "expo-router"
-import { ChevronLeft } from "lucide-react-native"
 import {
   FlatList,
   RefreshControl,
@@ -9,13 +7,11 @@ import {
 
 import { type BookWithRelations } from "@/database/books"
 import { useListAllServerBooks } from "@/hooks/useListAllServerBooks"
-import { cn } from "@/lib/utils"
 
+import { BackButton } from "./BackButton"
 import { BookThumbnail } from "./BookThumbnail"
 import { MiniPlayerWidget } from "./MiniPlayerWidget"
 import { Stack } from "./ui/Stack"
-import { Button } from "./ui/button"
-import { Icon } from "./ui/icon"
 import { Text } from "./ui/text"
 
 interface Props {
@@ -24,47 +20,40 @@ interface Props {
 }
 
 export function BookGrid({ title, books }: Props) {
-  const router = useRouter()
   const dimensions = useWindowDimensions()
 
   const { isLoading, refetch } = useListAllServerBooks()
 
-  const padding = 16
-  const minGap = 8
-  const thumbnailWidthPlusMinGap = 116 + 8
-  const numColumns = Math.floor(
-    (dimensions.width - padding - minGap) / thumbnailWidthPlusMinGap,
+  const horizontalPadding = 32
+  const gap = 12
+  const minThumbnailWidth = 150
+
+  const numColumns = Math.max(
+    1,
+    Math.floor(
+      (dimensions.width - horizontalPadding + gap) / (minThumbnailWidth + gap),
+    ),
   )
 
-  const maxGap = 32
-  const gap =
-    (dimensions.width - padding - numColumns * thumbnailWidthPlusMinGap) /
-    (numColumns + 1)
+  const thumbnailWidth = Math.floor(
+    (dimensions.width - horizontalPadding - (numColumns - 1) * gap) /
+      numColumns,
+  )
 
   return (
-    <Stack
-      className={cn(
-        "pt-safe flex-1",
-        books.length < numColumns ? "items-start" : "items-stretch",
-      )}
-    >
-      <View className="flex-row items-center justify-start gap-4 self-start">
-        <Button
-          variant="ghost"
-          size="icon"
-          onPress={() => {
-            router.back()
-          }}
-        >
-          <Icon as={ChevronLeft} size={24} />
-        </Button>
-        <Text className="my-4" variant="h2">
+    <Stack className="pt-safe flex-1 items-stretch">
+      <View className="w-full flex-row items-center justify-start gap-2 self-start px-2">
+        <BackButton />
+
+        <Text className="font-youngserif my-2" variant="h3">
           {title}
         </Text>
+
+        <Text className="text-muted-foreground mr-4 ml-auto text-sm">
+          {books.length} books
+        </Text>
       </View>
-      <Text className="text-muted-foreground self-start pl-14 text-sm">
-        {books.length} books
-      </Text>
+
       <FlatList
         key={numColumns}
         refreshControl={
@@ -76,19 +65,12 @@ export function BookGrid({ title, books }: Props) {
           />
         }
         className="px-4"
-        numColumns={numColumns}
         data={books}
-        columnWrapperStyle={{
-          gap: Math.min(gap, maxGap),
-          justifyContent: "space-around",
-        }}
+        numColumns={numColumns}
+        {...(numColumns > 1 && { columnWrapperStyle: { gap } })}
         renderItem={({ item: book }) => (
-          <View className="my-2">
-            {book ? (
-              <BookThumbnail book={book} />
-            ) : (
-              <View className="w-[116px]" />
-            )}
+          <View className="my-2" style={{ width: thumbnailWidth }}>
+            <BookThumbnail book={book} width={thumbnailWidth} />
           </View>
         )}
         ListFooterComponent={<View className="h-40 w-full" />}

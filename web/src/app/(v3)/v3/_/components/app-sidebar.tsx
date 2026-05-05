@@ -11,15 +11,18 @@ import {
 } from "@tabler/icons-react"
 import Image from "next/image"
 import { useTranslations } from "next-intl"
-import { useCallback } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
+import { toast } from "sonner"
 
 import { type User } from "@/apiModels"
 import {
   // useDeleteUserShelfMutation,
   // useGetSessionQuery,
+  useGetLatestVersionQuery,
   useListCollectionsQuery,
 } from "@/store/api"
 import { extractEmojiIcon } from "@/strings"
+import { BETA_TAGS, compareVersions } from "@/versions"
 
 import { type NavItem, NavMain } from "@v3/_/components/nav/nav-main"
 import {
@@ -39,13 +42,77 @@ import {
 } from "@v3/_/components/ui/sidebar"
 import { V3Link } from "@v3/_/components/v3-link"
 
+import { DISMISSED_VERSION_KEY } from "./settings-form/changelog-tab"
+
+const THIRTY_MINUTES = 30 * 60 * 1000
+
+function UpdateDot() {
+  return (
+    <span
+      className="bg-primary size-2 rounded-full"
+      aria-label="Update available"
+    />
+  )
+}
+
 export function AppSidebar({
   user,
+  currentVersion,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: User
+  currentVersion: string
 }) {
   const { data: collections } = useListCollectionsQuery()
+
+  const { data: latestVersionData } = useGetLatestVersionQuery(
+    {
+      component: "web",
+      beta: BETA_TAGS.some((tag) => currentVersion.includes(tag)),
+    },
+    { pollingInterval: THIRTY_MINUTES },
+  )
+
+  const latestVersion = latestVersionData?.version ?? null
+
+  const hasUpdate = useMemo(() => {
+    if (!latestVersion) return false
+
+    const dismissed =
+      typeof window !== "undefined"
+        ? localStorage.getItem(DISMISSED_VERSION_KEY)
+        : null
+
+    const isNewerThanCurrent = compareVersions(latestVersion, currentVersion)
+    const isNewerThanDismissed =
+      !dismissed || compareVersions(latestVersion, dismissed)
+
+    return isNewerThanCurrent === 1 && isNewerThanDismissed
+  }, [latestVersion, currentVersion])
+
+  const toastShownRef = useRef(false)
+
+  useEffect(() => {
+    if (!hasUpdate || !latestVersion || toastShownRef.current) return
+
+    toastShownRef.current = true
+
+    toast.info(`A new version (v${latestVersion}) is available`, {
+      dismissible: true,
+      closeButton: true,
+      onDismiss: () => {
+        localStorage.setItem(DISMISSED_VERSION_KEY, latestVersion)
+      },
+      action: {
+        label: "View changelog",
+        onClick: () => {
+          window.location.href = "/v3/settings?tab=changelog"
+          localStorage.setItem(DISMISSED_VERSION_KEY, latestVersion)
+        },
+      },
+      duration: Infinity,
+    })
+  }, [hasUpdate, latestVersion])
 
   const openSearch = useCallback(() => {
     const event = new KeyboardEvent("keydown", {
@@ -134,6 +201,7 @@ export function AppSidebar({
       title: t("settings"),
       url: "/settings",
       icon: IconSettings,
+      badge: hasUpdate ? <UpdateDot /> : undefined,
     },
     {
       title: t("documentation"),

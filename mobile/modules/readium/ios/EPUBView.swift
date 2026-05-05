@@ -420,20 +420,14 @@ extension EPUBView: UIGestureRecognizerDelegate {
 }
 
 extension EPUBView: WKScriptMessageHandler {
-    /// Handles incoming calls from JS.
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) -> Void {
         Task {
             switch message.name {
                 case "storytellerDoubleClick":
-                    guard let fragment = message.body as? String else {
-                        return
-                    }
+                    guard let fragment = message.body as? String else { return }
+                    guard let currentLocator = props!.locator else { return }
 
-                    guard let currentLocator = props!.locator else {
-                        return
-                    }
-
-                guard let locator = BookService.shared.getLocatorFor(bookId: props!.bookId, href: currentLocator.href.string, fragment: fragment) else {
+                    guard let locator = BookService.shared.getLocatorFor(bookId: props!.bookId, href: currentLocator.href.string, fragment: fragment) else {
                         return
                     }
 
@@ -468,7 +462,6 @@ extension EPUBView: EPUBNavigatorDelegate {
         guard let currentLocator = props!.locator else {
             return
         }
-
 
         let fragments = BookService.shared.getFragments(for: props!.bookId, locator: currentLocator)
 

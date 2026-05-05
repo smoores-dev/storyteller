@@ -96,11 +96,20 @@ COPY --from=builder /app/web/migrations ./.next/standalone/web/migrations
 # just so its in the right place and we dont have to modify the docs
 COPY --from=builder /app/scripts/ ./.next/standalone/web/scripts/
 
+# worker bundles (ESM with code-split chunks)
+COPY --from=builder /app/web/work-dist ./.next/standalone/web/work-dist
+COPY --from=builder /app/web/file-write-dist ./.next/standalone/web/file-write-dist
+
 COPY --from=builder /app/align/prebuilds/linux-x64 ./.next/standalone/web/work-dist/@storyteller-platform/align/prebuilds/linux-x64
 COPY --from=builder /app/align/prebuilds/linux-arm64 ./.next/standalone/web/work-dist/@storyteller-platform/align/prebuilds/linux-arm64
 
 # Echogarden tries to naively resolve its own wasm builds
 COPY --from=builder /app/node_modules/@echogarden/icu-segmentation-wasm/wasm/*.wasm ./.next/standalone/web/work-dist/
+
+# kuromoji package: the bundled kuroshiro-analyzer-kuromoji still calls
+# require.resolve("kuromoji") at runtime to locate its dict/ directory, so the
+# package must exist on disk in a location reachable from web/work-dist/.
+COPY --from=builder /app/node_modules/kuromoji ./.next/standalone/node_modules/kuromoji
 
 # Copy pre-installed whisper binaries and models from builder
 COPY --from=builder --chown=storyteller:storyteller /root/.local/share/ghost-story /home/storyteller/.local/share/ghost-story
@@ -120,8 +129,8 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/web/work-dist/@storyteller-platform/align/
 ENV SQLITE_NATIVE_BINDING=/app/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node
-ENV STORYTELLER_WORKER=worker.cjs
-ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.cjs
+ENV STORYTELLER_WORKER=worker.mjs
+ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.mjs
 
 # set the whisper variant that was pre-installed in this image
 # this tells the runtime which binary to use without needing detection

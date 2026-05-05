@@ -81,6 +81,16 @@ object BookService {
         return publications[bookUuid]
     }
 
+    // Seeds clips for getClip() without a full openPublication — used by the
+    // Android Auto session callback, which can't block on XML parsing. Skips
+    // if clips are already present so repeat Auto taps don't re-parse; the
+    // in-app openPublication path always overwrites regardless.
+    fun setClips(bookUuid: String, clips: List<OverlayPar>) {
+        if (!this.clips.containsKey(bookUuid)) {
+            this.clips[bookUuid] = clips
+        }
+    }
+
     fun getResource(bookUuid: String, link: Link): Resource? {
         val publication = getPublication(bookUuid)
             ?: throw Exception("Publication for book $bookUuid is unopened.")

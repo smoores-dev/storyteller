@@ -11,6 +11,7 @@ import {
 import { Fragment, useState } from "react"
 import { RefreshControl, ScrollView, View } from "react-native"
 
+import { BackButton } from "@/components/BackButton"
 import BookDescription from "@/components/BookDescription"
 import { BookThumbnailImage } from "@/components/BookThumbnail"
 import { LoadingView } from "@/components/LoadingView"
@@ -143,20 +144,8 @@ export default function BookDetailsScreen() {
         }
       >
         <Stack className="pt-safe">
-          <View className="flex-row justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back()
-                } else {
-                  router.replace("/")
-                }
-              }}
-            >
-              <Icon as={ChevronLeft} size={24} />
-            </Button>
+          <View className="flex-row justify-between px-2">
+            <BackButton />
           </View>
           <Stack className="items-start px-8">
             <BookThumbnailImage
@@ -165,7 +154,7 @@ export default function BookDetailsScreen() {
               height={352}
               width={232}
             />
-            <Text className="mt-4 mb-1 text-2xl" variant="h1">
+            <Text className="font-youngserif mt-4 mb-1 text-2xl" variant="h1">
               {book.title}
             </Text>
             {book.subtitle && (

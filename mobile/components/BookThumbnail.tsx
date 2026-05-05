@@ -33,11 +33,22 @@ import { Icon } from "./ui/icon"
 import { ReadaloudIcon } from "./ui/icon-readaloud"
 import { Text } from "./ui/text"
 
+const DEFAULT_THUMBNAIL_WIDTH = 116
+const THUMBNAIL_HEIGHT_RATIO = 176 / 116
+
 interface Props {
   book: BookWithRelations
+  width?: number
 }
 
-export function BookThumbnail({ book }: Props) {
+export function BookThumbnail({
+  book,
+  width = DEFAULT_THUMBNAIL_WIDTH,
+}: Props) {
+  const height = Math.round(width * THUMBNAIL_HEIGHT_RATIO)
+  const titleFontSize = Math.max(11, Math.min(16, Math.round(width * 0.11)))
+  const authorFontSize = Math.max(10, Math.min(14, Math.round(width * 0.1)))
+
   const insets = useSafeAreaInsets()
   const contentInsets = {
     top: insets.top,
@@ -63,24 +74,33 @@ export function BookThumbnail({ book }: Props) {
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        {/* Have to use asChild wrapped around a Pressable instead of just using Link */}
-        {/* around a Stack otherwise it does not render properly on Boox devices, */}
-        {/* and potentially other android devices similar to it. */}
+        {/* asChild + Pressable instead of Link for Boox device compat */}
         <Link asChild href={`/book/${book.uuid}`}>
-          <Pressable className="w-29 gap-0.5 overflow-visible">
-            <Stack className="relative mb-1 h-44 w-29 flex-col justify-center">
-              <View className="block h-44 w-29">
-                <BookThumbnailImage book={book} height={176} width={116} />
+          <Pressable style={{ width }} className="overflow-visible">
+            <Stack
+              // should be a more elegant way to get the text a little closer
+              className="relative -mb-3 flex-col justify-center"
+              style={{ height, width }}
+            >
+              <View style={{ height, width }}>
+                <BookThumbnailImage book={book} height={height} width={width} />
               </View>
             </Stack>
-            <Text className="max-w-29 text-sm font-semibold" numberOfLines={2}>
-              {book.title}
-            </Text>
+
             <Text
-              className="text-muted-foreground max-w-29 pb-2 text-sm"
-              numberOfLines={2}
+              className="text-muted-foreground"
+              numberOfLines={1}
+              style={{ maxWidth: width, fontSize: authorFontSize }}
             >
               {book.authors[0]?.name}
+            </Text>
+
+            <Text
+              className="leading-none font-semibold"
+              numberOfLines={2}
+              style={{ maxWidth: width, fontSize: titleFontSize }}
+            >
+              {book.title}
             </Text>
           </Pressable>
         </Link>
@@ -198,7 +218,11 @@ export function BookThumbnailImage({
 
   return (
     <View
-      className={cn("relative", className)}
+      className={cn(
+        "relative",
+        !hasBothCovers && book.ebook && "items-start justify-start",
+        className,
+      )}
       style={{
         height,
         width,
@@ -317,7 +341,7 @@ export function BookThumbnailImage({
           book={book}
           height={height}
           width={width}
-          className="scale-[0.85]"
+          className="-translate-x-[10%] scale-[0.8]"
         />
       ) : (
         <AudiobookCoverImage

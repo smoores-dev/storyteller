@@ -41,7 +41,7 @@ void describe("slugify", () => {
 
   void it("should slugify Chinese currency", async () => {
     const input = "价格为 ¥5,500.50"
-    const output = "jie-ge-wei-wu-qian-wu-bai-yuan-wu-shi-fen"
+    const output = "jia-ge-wei-wu-qian-wu-bai-yuan-wu-shi-fen"
     const { result } = await slugify(input, new Intl.Locale("zh"))
     assert.strictEqual(result, output)
   })

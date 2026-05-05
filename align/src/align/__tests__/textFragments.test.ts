@@ -16,9 +16,9 @@ void describe("findMinimalFragment", () => {
 
     const factory = new TextFragmentFactory(sentences.map((s) => s.text))
 
-    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=t,.%20")
-    assert.strictEqual(factory.findMinimalFragment(1), ":~:text=it,.%20")
-    assert.strictEqual(factory.findMinimalFragment(2), ":~:text=no,.")
+    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=this,text")
+    assert.strictEqual(factory.findMinimalFragment(1), ":~:text=it,sentences")
+    assert.strictEqual(factory.findMinimalFragment(2), ":~:text=none,word")
   })
 
   void it("should find a unique fragment when there are overlaps", async () => {
@@ -31,10 +31,10 @@ void describe("findMinimalFragment", () => {
 
     const factory = new TextFragmentFactory(sentences.map((s) => s.text))
 
-    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=t,.%20")
+    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=this,words")
     assert.strictEqual(
       factory.findMinimalFragment(1),
-      ":~:text=this%20is%20an,.",
+      ":~:text=this%20is%20another,words",
     )
   })
 
@@ -48,10 +48,10 @@ void describe("findMinimalFragment", () => {
 
     const factory = new TextFragmentFactory(sentences.map((s) => s.text))
 
-    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=t,.%20")
+    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=there,mcclane")
     assert.strictEqual(
       factory.findMinimalFragment(1),
-      ":~:text=john%20mcclane%20,.",
+      ":~:text=john%20mcclane%20is,badass",
     )
   })
 
@@ -65,10 +65,10 @@ void describe("findMinimalFragment", () => {
 
     const factory = new TextFragmentFactory(sentences.map((s) => s.text))
 
-    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=t,.%20")
+    assert.strictEqual(factory.findMinimalFragment(0), ":~:text=this,sentence")
     assert.strictEqual(
       factory.findMinimalFragment(2),
-      ":~:text=%20-,this%20is%20a%20simple%20sentence.",
+      ":~:text=sentence.%20-,this%20is%20a%20simple%20sentence.",
     )
   })
 
@@ -84,11 +84,11 @@ void describe("findMinimalFragment", () => {
 
     assert.strictEqual(
       factory.findMinimalFragment(1),
-      ":~:text=this%20is%20a%20si,.%20",
+      ":~:text=this%20is%20a%20simple,sentence",
     )
     assert.strictEqual(
       factory.findMinimalFragment(3),
-      ":~:text=e.%20-,this%20is%20a%20simple%20sentence.%20",
+      ":~:text=sentence.%20-,this%20is%20a%20simple%20sentence.%20",
     )
   })
 })

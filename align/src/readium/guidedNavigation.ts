@@ -72,6 +72,7 @@ export function generateGuidedNavigationManifest(
     readingOrder.push(
       new Link({
         href,
+        type: "application/guided-navigation+json",
         properties: new Properties({
           references: [
             {

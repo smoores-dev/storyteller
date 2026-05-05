@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import {
   IconAlertCircle,
   IconDownload,
+  IconHistory,
   IconMail,
   IconMicrophone,
   IconRss,
@@ -41,6 +42,7 @@ import { Tabs, TabsList, TabsTrigger } from "@v3/_/components/ui/tabs"
 
 import { SettingsFormProvider } from "./SettingsFormProvider"
 import { AuthTab } from "./auth-tab"
+import { ChangelogTab } from "./changelog-tab"
 import { EmailTab } from "./email-tab"
 import { LibraryTab } from "./library-tab"
 import { OpdsTab } from "./opds-tab"
@@ -171,10 +173,12 @@ export function SettingsForm({
   settings,
   sectionKeywords,
   configLockedKeys,
+  currentVersion,
 }: {
   settings: Settings
   sectionKeywords: SectionKeywords
   configLockedKeys: (keyof Settings)[]
+  currentVersion: string
 }) {
   const t = useTranslations("SettingsPage")
   const title = t("title")
@@ -279,6 +283,7 @@ export function SettingsForm({
         { value: "upload", label: t("tabs.upload.title"), icon: IconUpload },
         { value: "email", label: t("tabs.email.title"), icon: IconMail },
         { value: "opds", label: t("tabs.opds.title"), icon: IconRss },
+        { value: "changelog", label: "Changelog", icon: IconHistory },
       ] as const,
     [t],
   )
@@ -342,7 +347,9 @@ export function SettingsForm({
   }, [matchingTabs, searchQuery, setActiveTabEvent])
 
   const filteredTabs = searchQuery
-    ? tabs.filter((tab) => matchingTabs.has(tab.value))
+    ? tabs.filter(
+        (tab) => matchingTabs.has(tab.value) || tab.value === "changelog",
+      )
     : tabs
 
   return (
@@ -459,6 +466,7 @@ export function SettingsForm({
                 <UploadTab maxUploadChunkSize={maxUploadChunkSize} />
                 <EmailTab />
                 <OpdsTab />
+                <ChangelogTab currentVersion={currentVersion} />
               </div>
             </Tabs>
           </SearchContext.Provider>

@@ -383,16 +383,12 @@ release-ghost-story:
       fi
     - if [ -n "${CODESIGNING}" ]; then echo "Signing executable..."; fi
     - if [ -n "${CODESIGNING}" ]; then codesign --sign "$APPLE_SIGNING_IDENTITY"
-      --force --options runtime --timestamp ./align/stalign; fi
+      --force --options runtime --timestamp --entitlements
+      align/entitlements.plist ./align/stalign; fi
     - if [ -n "${CODESIGNING}" ]; then codesign --verify --verbose
       ./align/stalign; fi
     - if [ -n "${CODESIGNING}" ]; then spctl --assess --type execute --verbose
       ./align/stalign; fi
-    - if [ -n "${CODESIGNING}" ]; then zip -j stalign.zip ./align/stalign; fi
-    - if [ -n "${CODESIGNING}" ]; then xcrun notarytool submit stalign.zip
-      --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id
-      "$APPLE_TEAM_ID" --wait; fi
-    - if [ -n "${CODESIGNING}" ]; then xcrun stapler staple ./align/stalign; fi
 
     - echo "Uploading to GitLab Generic Package Registry..."
     - VERSION_PARTS=($(echo "$CI_COMMIT_TAG" | tr 'v' ' '))
@@ -420,15 +416,18 @@ publish-align-sea-darwin-arm64:
     - nvm alias default 25
     - npm i -g yarn
     - security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+    - security list-keychains -d user -s "$KEYCHAIN_NAME" $(security
+      list-keychains -d user | tr -d '"')
     - security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
     - security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
     - echo "$APPLE_CERTIFICATE_P12" | base64 --decode > certificate.p12
     - security import certificate.p12 -k "$KEYCHAIN_NAME" -P
       "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-    - 'security set-key-partition-list -S apple-tool:,apple: -s -k
+    - echo "$APPLE_CA" | base64 --decode > developer_id_cert_authority.cer
+    - security import developer_id_cert_authority.cer -k "$KEYCHAIN_NAME" -T
+      /usr/bin/codesign
+    - 'security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k
       "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"'
-    - security list-keychains -d user -s "$KEYCHAIN_NAME" $(security
-      list-keychains -d user | tr -d '"')
     - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
   after_script:
     - security delete-keychain "$KEYCHAIN_NAME" || true
@@ -774,6 +773,7 @@ publish-okmain:
     - yarn workspace @storyteller-platform/okmain napi create-npm-dirs # creates the npm dirs
     - yarn workspace @storyteller-platform/okmain napi artifacts # moves all the artifacts to the correct npm dir
     - ls -latR okmain/npm
+    - export npm_config_tag="$TAG" # necessary because napi prepublish script reads the tag from this env var as the republish the subpackages w/ npm
     - yarn workspace @storyteller-platform/okmain npm publish --tag="$TAG"
       --access public
 

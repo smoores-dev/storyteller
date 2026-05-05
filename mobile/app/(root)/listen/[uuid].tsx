@@ -8,7 +8,7 @@ import {
   SkipForward,
 } from "lucide-react-native"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { View } from "react-native"
+import { TouchableOpacity, View } from "react-native"
 
 import { AudiobookCover } from "@/components/AudiobookCover"
 import { LoadingView } from "@/components/LoadingView"
@@ -144,27 +144,26 @@ export default function PlayerScreen() {
     <View className="android:pt-safe relative flex-1">
       <PortalHost>
         <View className="w-full flex-row items-center justify-between px-4 pt-3 pb-2">
-          <Button
-            variant="ghost"
-            size="icon"
+          <TouchableOpacity
+            className="size-8 items-center justify-center"
             onPress={() => {
               router.back()
             }}
           >
             <Icon as={ChevronDown} size={24} />
-          </Button>
+          </TouchableOpacity>
           <Toolbar mode="audio" activeBookmarks={activeBookmarks} />
         </View>
 
         <View className="mb-4 h-full flex-1 items-center">
           {isLoading && <LoadingView />}
-          <AspectRatio ratio={1} className="max-h-[60%] w-full px-4">
+          <AspectRatio ratio={1} className="mt-2 max-h-[60%] w-full p-4">
             <View className="h-full w-full flex-1 overflow-hidden rounded-xl">
               <AudiobookCover book={book} />
             </View>
           </AspectRatio>
           <View className="w-full px-6 pt-6">
-            <Text variant="h4" numberOfLines={2} className="mb-2">
+            <Text variant="h4" numberOfLines={2}>
               {book.title}
             </Text>
             <Text numberOfLines={1} className="mb-4">

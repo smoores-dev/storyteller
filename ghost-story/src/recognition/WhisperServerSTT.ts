@@ -17,6 +17,7 @@ import type { Timing } from "../utilities/Timing.ts"
 import {
   type RawWhisperSegment,
   type WhisperServerSegment,
+  calculateEffectiveProcessors,
   calculateWhisperSplits,
   countProcessorBoundaries,
   extractCorrectedTimeline,
@@ -25,6 +26,15 @@ import {
 
 export type InputPreference = "file"
 export const inputPreference: InputPreference = "file"
+
+type WhisperServerRunConfig = {
+  threads: number
+  processors: number
+  model: string
+  maxThreads: number
+  maxProcessors: number
+  audioDuration: number
+}
 
 export interface WhisperServerOptions {
   baseURL?: string
@@ -93,10 +103,57 @@ export async function recognize(
       form.append("language", languageCode)
     }
 
-    const url = `${opts.baseURL}${opts.inferencePath}`
+    const baseUrl = opts.baseURL.replace(/\/+$/g, "")
+    const url = `${baseUrl}${opts.inferencePath}`
     const headers: Record<string, string> = {}
     if (opts.apiKey) {
       headers["Authorization"] = `Bearer ${opts.apiKey}`
+    }
+
+    // check for config
+    const configResponse = await fetch(`${baseUrl}/config`, {
+      headers,
+      dispatcher: createTimeoutAgent(opts.timeout),
+    } as RequestInit)
+    let whisperConfig: WhisperServerRunConfig | null = null
+    if (configResponse.ok) {
+      try {
+        const [config, audioLength] = await Promise.all([
+          configResponse.json(),
+          getAudioDuration(filePath),
+        ])
+
+        whisperConfig = {
+          ...(config as WhisperServerRunConfig),
+          audioDuration: audioLength,
+        }
+
+        // if we get a config, we are using ghost-story server, so we have control over the number of processors used
+        // check if we need to lower number of proessors
+        const effectiveProcessors = calculateEffectiveProcessors(
+          audioLength,
+          whisperConfig.maxProcessors,
+        )
+        if (effectiveProcessors !== whisperConfig.processors) {
+          const configForm = new FormData()
+          configForm.append("processors", String(effectiveProcessors))
+          configForm.append("threads", String(whisperConfig.threads))
+
+          await fetch(`${baseUrl}/config`, {
+            method: "POST",
+            headers,
+            body: configForm,
+          } as RequestInit)
+
+          whisperConfig.processors = effectiveProcessors
+        }
+      } catch (e) {
+        console.warn(
+          `Failed to get config from Whisper server, continuing with default config. If you aren't using ghost-story server, this is expected`,
+          e,
+        )
+        // ignore
+      }
     }
 
     const response = await timing.timeAsync("upload", async () =>
@@ -119,6 +176,7 @@ export async function recognize(
     const { timeline, transcript } = await extractTimelineAndTranscript(
       data,
       filePath,
+      whisperConfig,
     )
     if (!timeline) {
       throw new Error(
@@ -140,6 +198,7 @@ interface ExtractedResult {
 async function extractTimelineAndTranscript(
   response: WhisperServerResponse,
   audioPath: string,
+  whisperConfig?: WhisperServerRunConfig | null,
 ): Promise<ExtractedResult> {
   if (response.segments.length === 0) {
     return { timeline: [], transcript: response.text?.trim() ?? "" }
@@ -149,7 +208,14 @@ async function extractTimelineAndTranscript(
 
   if (hasNestedWords) {
     const rawSegments = parseWhisperServerOutput(response.segments)
-    const splitBoundaries = await detectSplitBoundaries(rawSegments, audioPath)
+    // we either know where the splits are bc we are using an up to date ghost-story, or we need to try and detect them (which is pretyy jank)
+    const splitBoundaries = whisperConfig?.audioDuration
+      ? calculateWhisperSplits(
+          whisperConfig.audioDuration,
+          whisperConfig.processors,
+        )
+      : await detectSplitBoundaries(rawSegments, audioPath)
+
     const timeline = extractCorrectedTimeline(rawSegments, { splitBoundaries })
 
     // build transcript from timeline words to ensure exact match

@@ -91,7 +91,11 @@ export type {
   TimelineEntry,
   TimelineEntryType,
 } from "./utilities/Timeline.ts"
-
+export {
+  spacelessScriptPattern,
+  spacelessScripts,
+  startsWithSpacelessScript,
+} from "./utilities/SpacelessScripts.ts"
 export {
   type AggregatedStats,
   type PhaseTiming,

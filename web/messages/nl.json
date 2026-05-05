@@ -39,6 +39,16 @@
     "failedToSaveSettings": "Instellingen opslaan mislukt",
     "searchSettings": "Instellingen zoeken...",
     "formHasErrors": "{count, plural, =1 {# fout} other {# fouten}}",
+    "changelog": {
+      "title": "Changelog",
+      "loadMore": "Meer laden",
+      "noChangelogEntriesFound": "Geen changelogs gevonden.",
+      "currentlyOn": "Huidige versie {version} (laatste: {latest})",
+      "current": "huidig",
+      "new": "nieuw",
+      "showBetaVersions": "Toon beta-versies",
+      "hideBetaVersions": "Verberg beta-versies"
+    },
     "tabs": {
       "library": {
         "title": "Bibliotheek",

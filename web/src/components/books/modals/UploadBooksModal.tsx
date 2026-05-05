@@ -1,4 +1,4 @@
-import { Button, Modal, Text } from "@mantine/core"
+import { Button, Modal, Text, useComputedColorScheme } from "@mantine/core"
 import Uppy, { type Meta, type UppyFile } from "@uppy/core"
 import "@uppy/core/dist/style.min.css"
 import "@uppy/dashboard/dist/style.min.css"
@@ -59,30 +59,17 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
 
   const maxUploadChunkSize = data?.maxUploadChunkSize
 
-  const [epubUppy, setEpubUppy] = useState(
-    () =>
-      new Uppy({
-        restrictions: {
-          maxNumberOfFiles: 1,
-          allowedFileTypes: epubFileTypes,
-        },
-      }).use(Tus, {
-        endpoint: tusEndpoint,
-        withCredentials: true,
-        ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
-      }),
-    // .use(BookThumbnailGenerator, {
-    //   thumbnailFactories: {
-    //     "application/epub+zip": async (file) => {
-    //       const arrayBuffer = await file.data.arrayBuffer()
-    //       const data = new Uint8Array(arrayBuffer)
-    //       using epub = await Epub.from(data)
-    //       const coverData = await epub.getCoverImage()
-    //       if (!coverData) return null
-    //       return new Blob([coverData])
-    //     },
-    //   },
-    // }),
+  const [epubUppy, setEpubUppy] = useState(() =>
+    new Uppy({
+      restrictions: {
+        maxNumberOfFiles: 1,
+        allowedFileTypes: epubFileTypes,
+      },
+    }).use(Tus, {
+      endpoint: tusEndpoint,
+      withCredentials: true,
+      ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
+    }),
   )
 
   useEffect(() => {
@@ -98,18 +85,6 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
           withCredentials: true,
           ...(maxUploadChunkSize && { chunkSize: maxUploadChunkSize }),
         }),
-        // .use(BookThumbnailGenerator, {
-        //   thumbnailFactories: {
-        //     "application/epub+zip": async (file) => {
-        //       const arrayBuffer = await file.data.arrayBuffer()
-        //       const data = new Uint8Array(arrayBuffer)
-        //       using epub = await Epub.from(data)
-        //       const coverData = await epub.getCoverImage()
-        //       if (!coverData) return null
-        //       return new Blob([coverData])
-        //     },
-        //   },
-        // }),
       )
     }
   }, [isLoading, maxUploadChunkSize])
@@ -209,6 +184,8 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
 
   const complete = isEpubComplete && isAudioComplete
 
+  const computedColorScheme = useComputedColorScheme()
+
   return (
     <Modal
       opened={isOpen}
@@ -229,11 +206,15 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
       >
         {(props) => <Button {...props}>Choose file...</Button>}
       </FileButton> */}
+      <Text className="text-xs">
+        EPUB 2 files are automatically converted to EPUB 3 during upload.
+      </Text>
       <Dashboard
         id="EbookDashboard"
         uppy={epubUppy}
         height={122}
         showProgressDetails
+        theme={computedColorScheme}
         hideUploadButton
         singleFileFullScreen
         proudlyDisplayPoweredByUppy={false}
@@ -247,15 +228,17 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
           },
         }}
       />
+
       {isEpubAligned && (
         <Text className="text-center">
-          This EPUB file already has audio for immersive reading, so you don’t
-          need to upload the audio separately!
+          This EPUB file already has audio for immersive reading, so you
+          don&apos;t need to upload the audio separately!
         </Text>
       )}
       <Dashboard
         id="AudiobookDashboard"
         disabled={isEpubAligned}
+        theme={computedColorScheme}
         uppy={audioUppy}
         height={300}
         showProgressDetails
@@ -272,6 +255,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
           },
         }}
       />
+
       <Button
         disabled={!epubFiles.length && !audioFiles.length}
         onClick={() => {

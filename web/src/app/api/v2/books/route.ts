@@ -14,7 +14,7 @@ import {
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
-import { deleteAssets } from "@/assets/fs"
+import { deleteAssets, move } from "@/assets/fs"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
@@ -31,6 +31,8 @@ import {
   getBooks,
   updateBook,
 } from "@/database/books"
+import { getSetting } from "@/database/settings"
+import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
@@ -70,32 +72,77 @@ export const DELETE = withHasPermission("bookDelete")(async (request) => {
   return new Response(null, { status: 204 })
 })
 
+async function openOrUpgradeEpub(epubPath: string): Promise<Epub | null> {
+  try {
+    return await Epub.from(epubPath)
+  } catch (e) {
+    if (!isEpubVersionError(e)) {
+      logger.error(`Failed to read EPUB file at ${epubPath}: skipping`)
+      logger.error(e)
+      return null
+    }
+
+    const shouldUpgrade = await getSetting("epub2ImportStrategy")
+    if (shouldUpgrade === "skip") {
+      logger.info(`Skipping EPUB 2 file at ${epubPath} because of settings`)
+      throw new Error(
+        "EPUB 2 file is not supported. Please upgrade the file to EPUB 3, or change the upgrade strategy in the settings.",
+      )
+    }
+
+    const backupSuffix = await getSetting("epub2BackupSuffix")
+    const backupPath =
+      shouldUpgrade === "backup-and-convert"
+        ? epubPath.replace(/\.epub$/i, `${backupSuffix}.epub`)
+        : undefined
+
+    logger.info(
+      `EPUB at ${epubPath} is not EPUB 3, ${shouldUpgrade === "backup-and-convert" ? `creating backup at ${backupPath}` : "auto-converting before import"}`,
+    )
+
+    if (backupPath) {
+      await move(epubPath, backupPath)
+    }
+
+    using upgraded = await Epub.upgrade(
+      backupPath ?? epubPath,
+      backupPath ? { outputPath: epubPath } : undefined,
+    )
+
+    await upgraded.saveAndClose()
+
+    return await Epub.from(epubPath)
+  }
+}
+
 export const POST = withHasPermission("bookCreate")(async (request) => {
   const { paths, collection } = (await request.json()) as {
     paths: string[]
     collection: UUID | undefined
   }
+
   const epubs = paths.filter((path) => extname(path) === ".epub")
   const audio = paths.filter((path) => isAudioFile(path) || isZipArchive(path))
 
   let ebook: string | null = null
   let readaloud: string | null = null
+
   for (const epubPath of epubs) {
-    try {
-      using epub = await Epub.from(epubPath)
-      const manifest = await epub.getManifest()
-      const isReadaloud = Object.values(manifest).some(
-        (item) => item.mediaOverlay,
-      )
-      if (!isReadaloud && !ebook) {
-        ebook = epubPath
-      }
-      if (isReadaloud && !readaloud) {
-        readaloud = epubPath
-      }
-    } catch (e) {
-      logger.error(`Failed to read EPUB file at ${epubPath}: skipping`)
-      logger.error(e)
+    const epub = await openOrUpgradeEpub(epubPath)
+    if (!epub) continue
+
+    using _ = epub
+    const manifest = await epub.getManifest()
+    const isReadaloud = Object.values(manifest).some(
+      (item) => item.mediaOverlay,
+    )
+
+    if (!isReadaloud && !ebook) {
+      ebook = epubPath
+    }
+
+    if (isReadaloud && !readaloud) {
+      readaloud = epubPath
     }
   }
 

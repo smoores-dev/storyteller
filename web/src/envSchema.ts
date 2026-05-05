@@ -139,11 +139,11 @@ export const internalServerEnvVars = {
     .describe("The root path of the Storyteller instance."),
   STORYTELLER_WORKER: z
     .string()
-    .default("worker.cjs")
+    .default("worker.mjs")
     .describe("The worker to use for the Storyteller instance."),
   STORYTELLER_FILE_WRITE_WORKER: z
     .string()
-    .default("fileWriteWorker.cjs")
+    .default("fileWriteWorker.mjs")
     .describe("The file write worker to use for the Storyteller instance."),
   SQLITE_NATIVE_BINDING: z
     .string()

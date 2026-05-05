@@ -55,7 +55,9 @@ if (globalThis.fileWritePiscina) {
 } else {
   fileWritePiscina = new Piscina({
     filename,
+    minThreads: 0,
     maxThreads: 1,
+    idleTimeout: 30_000,
     // In dev, we don't bundle packages in the worker.
     // These flags allow us to import directly from the
     // source typescript files for our own packages (e.g. @storyteller-platform/epub)

@@ -6,7 +6,15 @@ import { useAppDispatch } from "@/store/appState"
 
 export function useInitialData<
   Endpoint extends Parameters<typeof api.util.upsertQueryData>[0],
->(thunk: SkipToken | ReturnType<typeof api.util.upsertQueryData<Endpoint>>) {
+>(
+  thunk:
+    | SkipToken
+    | ReturnType<
+        typeof api.util.upsertQueryData<
+          Exclude<Endpoint, `${string}Infinite${string}`>
+        >
+      >,
+) {
   const dispatch = useAppDispatch()
   const initialized = useRef(false)
   if (!initialized.current) {

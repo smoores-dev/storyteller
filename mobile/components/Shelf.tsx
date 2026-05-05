@@ -1,4 +1,5 @@
-import { type HrefObject, Link } from "expo-router"
+import { type HrefObject, useRouter } from "expo-router"
+import { TouchableOpacity, View } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 
 import { type BookWithRelations } from "@/database/books"
@@ -14,19 +15,29 @@ interface Props {
 }
 
 export function Shelf({ label, href, books }: Props) {
+  const router = useRouter()
+
   if (!books.length) return null
 
   return (
     <Stack>
-      <Text variant="h3">
-        {href ? (
-          <Link className="active:decoration-primary underline" href={href}>
-            {label}
-          </Link>
-        ) : (
-          label
+      <View className="flex-row items-baseline justify-between pr-3">
+        <Text variant="h3" className="font-youngserif">
+          {label}
+        </Text>
+
+        {href && (
+          <TouchableOpacity
+            onPress={() => router.push(href)}
+            className="flex-row items-center"
+          >
+            <Text className="text-primary text-sm">
+              View all ({books.length})
+            </Text>
+          </TouchableOpacity>
         )}
-      </Text>
+      </View>
+
       <FlatList
         horizontal
         data={books.slice(0, 25)}

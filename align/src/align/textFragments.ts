@@ -54,19 +54,37 @@ export class TextFragmentFactory {
       i++
     }
 
+    while (chars.at(i)?.match(/[\p{L}\p{N}]/u) && i < chars.length) i++
+
     let fragment = ""
 
     const start = chars.slice(0, i).join("")
     fragment += encodeTextFragmentPart(start)
 
-    const remainingSpan = span.slice(i)
+    const remainingChars = chars.slice(i)
+    while (
+      !remainingChars.at(-1)?.match(/[\p{L}\p{N}]/u) &&
+      remainingChars.length
+    ) {
+      remainingChars.splice(remainingChars.length - 1, 1)
+    }
+
+    let e = remainingChars.length
+
     let end = ""
-    let e = remainingSpan.length - 1
-    // Almost (?) every block span will end with a newline, but those
-    // aren't really in the text so we can't include them in the fragments
-    if (remainingSpan.at(-1) === "\n") e--
-    while (remainingSpan.indexOf(end) !== e + 1 && e >= 0) {
-      end = remainingSpan.slice(e)
+    const remainingSpan = remainingChars.join("")
+
+    while (
+      remainingSpan.indexOf(end) !==
+        remainingSpan.length - remainingChars.slice(e).join("").length &&
+      e >= 0
+    ) {
+      e--
+      end = remainingChars.slice(e).join("")
+    }
+
+    while (remainingChars.at(e)?.match(/[\p{L}\p{N}]/u) && e >= 0) {
+      end = remainingChars.slice(e).join("")
       e--
     }
 
@@ -95,7 +113,14 @@ export class TextFragmentFactory {
         if (!candidates.length) break
       }
 
-      const prefix = this.runes.slice(startPos - p + 1, startPos).join("")
+      while (
+        this.runes.at(startPos - p - 1)?.match(/[\p{L}\p{N}]/u) &&
+        p <= startPos
+      ) {
+        p++
+      }
+
+      const prefix = this.runes.slice(startPos - p, startPos).join("")
 
       fragment = `${encodeTextFragmentPart(prefix)}-,${fragment}`
     }

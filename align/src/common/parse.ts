@@ -51,3 +51,15 @@ export const parallelismParser = object({
     1,
   ),
 })
+
+export const autoUpgradeParser = object({
+  autoupgrade: option("--autoupgrade", "-u", {
+    description: message`Automatically upgrade any EPUB 2 files to EPUB 3`,
+  }),
+})
+
+export const removeNcxParser = object({
+  removeNcx: option("--remove-ncx", {
+    description: message`Whether to remove the NCX and guide element after upgrading an EPUB from 2 to 3`,
+  }),
+})

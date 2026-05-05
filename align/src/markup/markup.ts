@@ -1,4 +1,5 @@
-import { copyFile } from "node:fs/promises"
+import { copyFile, mkdir } from "node:fs/promises"
+import { dirname } from "node:path"
 import { basename } from "node:path/posix"
 
 import { type Logger } from "pino"
@@ -36,6 +37,7 @@ export async function markup(
   const timing = createAggregator()
   timing.setMetadata("granularity", options.granularity ?? "sentence")
 
+  await mkdir(dirname(output), { recursive: true })
   await copyFile(input, output)
 
   using epub = await Epub.from(output)
@@ -118,7 +120,7 @@ export async function markupChapter(
         let j = 0
         let wordPos = pos
         for (const word of sentence.words.entries) {
-          if (word.text.match(/\S/)) {
+          if (!word.isPunctuation) {
             root = addMark(
               root,
               lifted.mapping.invert().map(wordPos),

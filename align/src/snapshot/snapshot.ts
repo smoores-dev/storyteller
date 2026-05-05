@@ -13,7 +13,10 @@ import {
   type ParsedXml,
   type XmlElement,
 } from "@storyteller-platform/epub"
-import { type RecognitionResult } from "@storyteller-platform/ghost-story"
+import {
+  type RecognitionResult,
+  startsWithSpacelessScript,
+} from "@storyteller-platform/ghost-story"
 
 import { parseDom } from "../markup/parseDom.ts"
 import { segmentChapter } from "../markup/segmentation.ts"
@@ -159,7 +162,13 @@ export async function createAlignmentSnapshot(
         word = transcription.timeline[++i]
       }
 
-      const transcriptionSentence = transcriptionWords.join(" ")
+      const transcriptionSentence = transcriptionWords
+        .map((w, idx) =>
+          startsWithSpacelessScript(w) || idx === transcriptionWords.length - 1
+            ? w
+            : `${w} `,
+        )
+        .join("")
       newSnapshot += `Audio: ${transcriptionSentence}\n`
     }
 

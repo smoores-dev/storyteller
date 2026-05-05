@@ -56,11 +56,6 @@ export async function transcribe(
   locale: Intl.Locale,
   options: TranscribeOptions,
 ): Promise<TimingAggregator> {
-  if (process.env["DEBUG_TRANSCRIBE"] === "true") {
-    const inspector = await import("node:inspector")
-    inspector.open(9231, "0.0.0.0", true)
-  }
-
   const semaphore = new AsyncSemaphore(options.parallelism ?? 1)
 
   const controller = new AbortController()

@@ -49,12 +49,22 @@ data class OverlayPar(
         }
 
         fun fromJson(map: Map<String, Any>): OverlayPar {
+            val rawFragmentId = map["fragmentId"] as String
+
+            val fragmentId = rawFragmentId.lastIndexOf('#').let { idx ->
+                if (idx >= 0) rawFragmentId.substring(idx + 1)
+                else rawFragmentId.lastIndexOf("%23").let { enc ->
+                    if (enc >= 0) rawFragmentId.substring(enc + 3)
+                    else rawFragmentId
+                }
+            }
+
             return OverlayPar(
                 map["relativeUrl"] as String,
-                map["fragmentId"] as String,
+                fragmentId,
                 map["textResource"] as String,
-                map["start"] as Double,
-                map["end"] as Double,
+                (map["start"] as Number).toDouble(),
+                (map["end"] as Number).toDouble(),
                 Locator.fromJSON(JSONObject(map["locator"] as Map<String, Any>))!!
             )
         }

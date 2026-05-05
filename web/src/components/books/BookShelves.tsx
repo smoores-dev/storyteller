@@ -13,6 +13,40 @@ import { Shelf } from "./Shelf"
 
 const EMPTY_BOOKS: BookWithRelations[] = []
 
+function filterNextUp(books: BookWithRelations[]) {
+  const seriesToBooks = books.reduce((acc, book) => {
+    for (const s of book.series) {
+      acc.set(
+        s.uuid,
+        (acc.get(s.uuid) ?? [])
+          .concat({ position: s.position ?? 0, book })
+          .sort((a, b) => a.position - b.position),
+      )
+    }
+    return acc
+  }, new Map<UUID, { position: number; book: BookWithRelations }[]>())
+
+  const resultBooks = new Set<BookWithRelations>()
+  for (const seriesBooks of seriesToBooks.values()) {
+    const lastReadBook = seriesBooks.findLast(
+      (b) => b.book.status?.name === "Read",
+    )
+    const lastUnreadBook = seriesBooks.findLast(
+      (b) => b.book.status?.name !== "Read",
+    )
+
+    if (
+      lastReadBook &&
+      lastUnreadBook &&
+      lastReadBook.position < lastUnreadBook.position
+    ) {
+      resultBooks.add(lastUnreadBook.book)
+    }
+  }
+
+  return Array.from(resultBooks)
+}
+
 export function BookShelves() {
   const { data: books = EMPTY_BOOKS, isLoading } = useListBooksQuery()
   const { data: statuses } = useListStatusesQuery()
@@ -33,54 +67,7 @@ export function BookShelves() {
   }, [books])
 
   const nextUp = useMemo(() => {
-    const latestReadInSeries = new Map<UUID, BookWithRelations>()
-    const resultSet = new Set<UUID>()
-    for (const book of books) {
-      if (!book.series.length) continue
-
-      const series = book.series
-      for (const s of series) {
-        const latestRead = latestReadInSeries.get(s.uuid)
-        if (!latestRead) {
-          if (book.status?.name === "Read") {
-            latestReadInSeries.set(s.uuid, book)
-            continue
-          } else {
-            continue
-          }
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const latestSeriesPos = latestRead.series.find(
-          (ls) => ls.uuid === s.uuid,
-        )!.position
-        if ((latestSeriesPos ?? 0) < (s.position ?? 0)) {
-          if (book.status?.name === "Read") {
-            latestReadInSeries.set(s.uuid, book)
-          } else if (!resultSet.has(book.uuid)) {
-            resultSet.add(book.uuid)
-          }
-        }
-      }
-    }
-
-    return books
-      .filter((book) => resultSet.has(book.uuid))
-      .sort((a, b) => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const latestA = a.series
-          .map((s) => latestReadInSeries.get(s.uuid))
-          .filter((book) => !!book)[0]!
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const latestB = b.series
-          .map((s) => latestReadInSeries.get(s.uuid))
-          .filter((book) => !!book)[0]!
-
-        return (
-          (latestB.position?.timestamp ?? 0) -
-          (latestA.position?.timestamp ?? 0)
-        )
-      })
+    return filterNextUp(books)
   }, [books])
 
   const startReading = useMemo(() => {

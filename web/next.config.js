@@ -1,8 +1,13 @@
 // @ts-check
 
+import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
 import createNextIntlPlugin from "next-intl/plugin"
+
+const pkg = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
+)
 
 const withNextIntl = createNextIntlPlugin({
   // this is nice, but requires next 16
@@ -22,6 +27,9 @@ const withNextIntl = createNextIntlPlugin({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION: pkg.version,
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -45,6 +53,7 @@ const nextConfig = {
     "@node-rs/crc32",
     "@node-rs/xxhash",
     "@parcel/watcher",
+    "@reflink/reflink",
   ],
   output: "standalone",
   outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../.."),

@@ -30,7 +30,10 @@ import { startAppListening } from "./listenerMiddleware"
 startAppListening({
   actionCreator: bookImported,
   effect: async (action, listenerApi) => {
-    router.replace("/")
+    // if we are already on the home screen, don't replace it
+    if (action.payload.from === "open-with") {
+      router.replace("/")
+    }
 
     const { url } = action.payload
     logger.debug(`Importing local book file from ${url}`)

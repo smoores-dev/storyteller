@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 
 import { type User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
+import { getCurrentVersion } from "@/versions"
 
 import { AppSidebar } from "@v3/_/components/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@v3/_/components/ui/sidebar"
@@ -14,6 +15,7 @@ export default async function AppLayout({
   const user = await fetchApiRoute<User>("/user")
 
   const cookieStore = await cookies()
+  const currentVersion = getCurrentVersion()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
@@ -27,7 +29,7 @@ export default async function AppLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" user={user} />
+      <AppSidebar variant="inset" user={user} currentVersion={currentVersion} />
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   )

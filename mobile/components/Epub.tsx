@@ -1,8 +1,7 @@
 import deepmerge from "deepmerge"
 import Constants from "expo-constants"
 import { useKeepAwake } from "expo-keep-awake"
-import { Tabs, useRouter } from "expo-router"
-import { ChevronLeft } from "lucide-react-native"
+import { Tabs } from "expo-router"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { DeviceEventEmitter, StatusBar, View } from "react-native"
 
@@ -28,14 +27,13 @@ import { getCustomFontUrl } from "@/store/persistence/fonts"
 import { getIsPlaying } from "@/store/selectors/bookshelfSelectors"
 import { type UUID } from "@/uuid"
 
+import { BackButton } from "./BackButton"
 import { LoadingView } from "./LoadingView"
 import { MiniPlayer } from "./MiniPlayer"
 import { SelectionMenu } from "./SelectionMenu"
 import { Toolbar } from "./Toolbar"
 import { Group } from "./ui/Group"
 import { HideableView } from "./ui/HideableView"
-import { Button } from "./ui/button"
-import { Icon } from "./ui/icon"
 
 type Props = {
   book: BookWithRelations
@@ -49,7 +47,6 @@ const backwardNavKeyCodes = [92]
 export function Epub({ book, format, locator }: Props) {
   useKeepAwake()
 
-  const router = useRouter()
   const { foreground, background } = useColorTheme()
   const [activeBookmarks, setActiveBookmarks] = useState<Bookmark[]>([])
   const [activeHighlight, setActiveHighlight] = useState<UUID | null>(null)
@@ -151,19 +148,7 @@ export function Epub({ book, format, locator }: Props) {
             setToolbarHeight(event.nativeEvent.layout.height)
           }}
         >
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back()
-              } else {
-                router.replace("/")
-              }
-            }}
-          >
-            <Icon as={ChevronLeft} size={24} />
-          </Button>
+          <BackButton />
           <Toolbar mode="text" activeBookmarks={activeBookmarks} />
         </Group>
       </HideableView>

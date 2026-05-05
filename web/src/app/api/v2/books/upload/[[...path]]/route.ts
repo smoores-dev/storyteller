@@ -21,6 +21,7 @@ import { isAudioFile, isZipArchive, lookupAudioMime } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"
 import { UPLOADS_DIR } from "@/directories"
+import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
@@ -111,7 +112,22 @@ const server = new Server({
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const uploadPath = upload.storage!.path
       if (isEpub) {
-        using epub = await Epub.from(uploadPath)
+        let epub: Epub
+
+        try {
+          epub = await Epub.from(uploadPath)
+        } catch (e) {
+          if (!isEpubVersionError(e)) throw e
+
+          logger.info(`Uploaded EPUB is not EPUB 3, auto-converting to EPUB 3`)
+
+          using upgraded = await Epub.upgrade(uploadPath)
+          await upgraded.saveAndClose()
+
+          epub = await Epub.from(uploadPath)
+        }
+
+        using _ = epub
         const manifest = await epub.getManifest()
         const isAligned = Object.values(manifest).some(
           (item) => item.mediaOverlay,

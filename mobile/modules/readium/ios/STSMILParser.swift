@@ -73,7 +73,26 @@ final class STSMILParser {
 
         return locator
     }
-    
+
+    /// resolves an epub href against a base url, handling the case where
+    /// RelativeURL(epubHREF:) encodes # as %23 when falling back to
+    /// path-based encoding for hrefs containing spaces (common in epub 2).
+    private static func resolveEpubHREF(_ href: String, base: RelativeURL) -> String? {
+        let fragmentIndex = href.firstIndex(of: "#")
+        let pathPart = fragmentIndex.map { String(href[href.startIndex..<$0]) } ?? href
+        let fragment = fragmentIndex.map { String(href[href.index(after: $0)...]) }
+
+        guard let resolved = RelativeURL(epubHREF: pathPart).flatMap(base.resolve)?.string else {
+            return nil
+        }
+
+        if let fragment = fragment {
+            return "\(resolved)#\(fragment)"
+        }
+
+        return resolved
+    }
+
     private static func createLocator(_ publication: Publication, htmlContent: String, htmlContentStart: String.Index, text: RelativeURL) async throws -> (Locator?, String.Index) {
         if let startOfFragment = htmlContent[htmlContentStart...].firstRange(of: text.fragment!)?.lowerBound {
             let fragmentPosition = htmlContent.distance(from: htmlContent.startIndex, to: startOfFragment)
@@ -133,10 +152,10 @@ final class STSMILParser {
                 continue
             }
 
-            guard let nodeText = RelativeURL(epubHREF: href).flatMap(baseHREF.resolve)?.string else {
+            guard let nodeText = resolveEpubHREF(href, base: baseHREF) else {
                 continue
             }
-            
+
             let nodeTextUrl = RelativeURL(string: nodeText)!
             
             let result: (Locator?, String.Index?) = await htmlContent.asyncFlatMap { htmlContent in

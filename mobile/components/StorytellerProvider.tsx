@@ -138,12 +138,12 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
       if (!url?.startsWith("content://") && !url?.startsWith("file://")) return
-      dispatch(bookImported({ url }))
+      dispatch(bookImported({ url, from: "open-with" }))
     })
 
     const subscription = Linking.addEventListener("url", ({ url }) => {
       if (!url.startsWith("content://") && !url.startsWith("file://")) return
-      dispatch(bookImported({ url }))
+      dispatch(bookImported({ url, from: "open-with" }))
     })
 
     return () => subscription.remove()

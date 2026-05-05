@@ -39,7 +39,22 @@ export const ReadaloudLocationTypeSchema = z.enum([
 ])
 export type ReadaloudLocationType = z.infer<typeof ReadaloudLocationTypeSchema>
 
+export const Epub2ImportStrategySchema = z.enum([
+  "backup-and-convert",
+  "replace",
+  "skip",
+])
+export type Epub2ImportStrategy = z.infer<typeof Epub2ImportStrategySchema>
+
 const optionalUrlSchema = z.union([z.literal(""), z.url()]).optional()
+
+export const ImportModeSchema = z.enum([
+  "reference",
+  "copy",
+  "move",
+  "hardlink",
+])
+export type ImportMode = z.infer<typeof ImportModeSchema>
 
 // Auth provider schemas
 export const BuiltInAuthProviderSchema = z.object({
@@ -84,6 +99,7 @@ export const SettingsSchema = z.object({
   libraryName: z.string(),
   webUrl: z.string(),
   importPath: z.array(z.string()).nullable(),
+  importMode: ImportModeSchema,
   // Audio settings
   codec: z.string().nullable(),
   bitrate: z.string().nullable(),
@@ -128,6 +144,9 @@ export const SettingsSchema = z.object({
   existingBooksScanIntervalMinutes: z.number().nullable(),
   scanCronExpression: z.string().nullable(),
   metadataOverrideMode: MetadataOverrideModeSchema,
+  // EPUB 2 import settings
+  epub2ImportStrategy: Epub2ImportStrategySchema,
+  epub2BackupSuffix: z.string(),
 })
 export type Settings = z.infer<typeof SettingsSchema>
 

@@ -64,6 +64,16 @@ public class STMediaOverlayNode {
         guard let text = text else {
             return nil
         }
-        return text.components(separatedBy: "#").last
+
+        if let hashRange = text.range(of: "#", options: .backwards) {
+            return String(text[hashRange.upperBound...])
+        }
+
+        // epubHREF: fallback encodes # as %23 for paths with spaces
+        if let encodedRange = text.range(of: "%23", options: .backwards) {
+            return String(text[encodedRange.upperBound...])
+        }
+
+        return text
     }
 }

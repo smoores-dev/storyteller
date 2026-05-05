@@ -523,16 +523,30 @@ export function extractCorrectedTimeline(
         ? segment.segmentStart
         : segment.segmentEnd
 
-    // this should probably happen the other way around: rather than find boundaries and then matching them with the calculated ones, we should find the boundaries using the calculated ones
-    // at the moment this has the chance of missing boundary adjustments
-    const boundary = detectProcessorBoundary(segment, state)
-    if (boundary.isBoundary) {
-      state.cumulativeOffset = getBetterCumulativeOffset(
-        state,
-        segment,
-        splitBoundaries,
-        usedSplits,
-      )
+    if (splitBoundaries.length > 0) {
+      // if we _really_ know the boundary it should be really close
+      const boundary = splitBoundaries.find((boundary) => {
+        return Math.abs(boundary - segmentStart) < 2
+      })
+      if (boundary) {
+        state.cumulativeOffset = getBetterCumulativeOffset(
+          state,
+          segment,
+          splitBoundaries,
+          usedSplits,
+        )
+      }
+    } else {
+      const boundary = detectProcessorBoundary(segment, state)
+
+      if (boundary.isBoundary) {
+        state.cumulativeOffset = getBetterCumulativeOffset(
+          state,
+          segment,
+          splitBoundaries,
+          usedSplits,
+        )
+      }
     }
 
     // check if next segment is time traveling, we should fix this segment then

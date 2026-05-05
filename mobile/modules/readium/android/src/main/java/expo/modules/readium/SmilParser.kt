@@ -158,6 +158,25 @@ internal object SmilParser {
         )
     }
 
+    // Url.fromEpubHref encodes # as %23 when falling back to path-based
+    // encoding for hrefs with spaces. split the fragment out first so it
+    // survives the encoding, then resolve against a base url.
+    private fun resolveEpubHref(href: String, base: Url): Url? {
+        val hashIndex = href.indexOf('#')
+
+        if (hashIndex < 0) {
+            val url = Url.fromEpubHref(href) ?: return null
+            return base.resolve(url)
+        }
+
+        val pathPart = href.substring(0, hashIndex)
+        val fragment = href.substring(hashIndex + 1)
+        val pathUrl = Url.fromEpubHref(pathPart) ?: return null
+        val resolved = base.resolve(pathUrl)
+
+        return Url("$resolved#$fragment")
+    }
+
     private suspend fun parsePar(
         publication: Publication,
         htmlContentStart: Int,
@@ -166,32 +185,32 @@ internal object SmilParser {
         node: ElementNode,
         filePath: Url
     ): Pair<MediaOverlayNode?, Int> {
-        val text = node.getFirst("text", Namespaces.SMIL)
-            ?.getAttr("src")
-            ?.let { Url.fromEpubHref(it) }
+        val textSrc = node.getFirst("text", Namespaces.SMIL)?.getAttr("src")
             ?: return Pair(null, 0)
-        val audio = node.getFirst("audio", Namespaces.SMIL)
+
+        val resolvedText = resolveEpubHref(textSrc, filePath)
+            ?: return Pair(null, 0)
+
+        val resolvedAudio = node.getFirst("audio", Namespaces.SMIL)
             ?.let { audioNode ->
-                val src = audioNode.getAttr("src")
+                val src = audioNode.getAttr("src") ?: return@let null
                 val begin = audioNode.getAttr("clipBegin")?.let { ClockValueParser.parse(it) } ?: ""
                 val end = audioNode.getAttr("clipEnd")?.let { ClockValueParser.parse(it) } ?: ""
-                "$src#t=$begin,$end"
+                resolveEpubHref("$src#t=$begin,$end", filePath)
             }
-            ?.let { Url.fromEpubHref(it) }
 
-        val pair =
-            createLocator(
-                publication,
-                htmlContentStart,
-                htmlContent,
-                defaultLocator,
-                filePath.resolve(text)
-            )
+        val pair = createLocator(
+            publication,
+            htmlContentStart,
+            htmlContent,
+            defaultLocator,
+            resolvedText
+        )
 
         return Pair(
             MediaOverlayNode(
-                filePath.resolve(text),
-                audio?.let { filePath.resolve(audio) },
+                resolvedText,
+                resolvedAudio,
                 locator = pair.first
             ), pair.second
         )

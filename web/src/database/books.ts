@@ -787,6 +787,13 @@ export async function deleteBook(bookUuid: UUID, tr?: Transaction<DB>) {
     await tr.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
     await tr.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
     await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
+    // Note: importSkipPath records are intentionally preserved so deleted books
+    // aren't re-imported. They're cleaned up by the scan when files no longer exist.
+    await tr
+      .updateTable("importSkipPath")
+      .set({ bookUuid: null })
+      .where("bookUuid", "=", bookUuid)
+      .execute()
 
     await tr.deleteFrom("book").where("uuid", "=", bookUuid).execute()
   }

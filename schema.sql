@@ -469,6 +469,18 @@ CREATE INDEX idx_audiobook_book ON audiobook (book_uuid);
 
 CREATE INDEX idx_readaloud_book ON readaloud (book_uuid);
 
+CREATE TABLE IF NOT EXISTS "processing_task" (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  id INTEGER,
+  type TEXT NOT NULL,
+  book_uuid TEXT NOT NULL,
+  status TEXT NOT NULL,
+  progress REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_uuid) REFERENCES book (uuid)
+);
+
 CREATE TABLE device_authorization (
   id TEXT PRIMARY KEY DEFAULT (uuid ()),
   device_code TEXT NOT NULL UNIQUE,
@@ -494,3 +506,21 @@ WHERE
   id = OLD.id;
 
 END;
+
+CREATE TABLE import_skip_path (
+  book_uuid TEXT REFERENCES book (uuid),
+  filepath TEXT PRIMARY KEY
+);
+
+CREATE TABLE changelog (
+  uuid text PRIMARY KEY DEFAULT (uuid ()),
+  tag_name text NOT NULL UNIQUE,
+  version text NOT NULL,
+  component text NOT NULL,
+  description text,
+  released_at text NOT NULL,
+  created_at text NOT NULL DEFAULT (datetime ('now')),
+  updated_at text NOT NULL DEFAULT (datetime ('now'))
+);
+
+CREATE INDEX idx_changelog_component_released_at ON changelog (component, released_at DESC);

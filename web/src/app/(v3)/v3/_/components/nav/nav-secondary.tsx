@@ -8,6 +8,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@v3/_/components/ui/sidebar"
@@ -17,6 +18,7 @@ export type NavSecondaryItem =
   | ({
       title: string
       icon: TablerIcon
+      badge?: React.ReactNode
     } & (
       | {
           url?: never
@@ -71,6 +73,10 @@ export function NavSecondary({
                       </V3Link>
                     }
                   />
+                )}
+
+                {item.badge && (
+                  <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
                 )}
               </SidebarMenuItem>
             )

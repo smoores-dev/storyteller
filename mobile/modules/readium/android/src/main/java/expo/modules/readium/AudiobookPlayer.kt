@@ -30,6 +30,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSessionService
@@ -52,6 +53,7 @@ import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.extensions.toList
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
+import java.io.File
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
@@ -134,39 +136,58 @@ val interruptionInterval = 5.minutes
 
 @androidx.annotation.OptIn(UnstableApi::class)
 class PlaybackService : MediaLibraryService() {
+    companion object {
+        const val ROOT_ID = "root"
+        const val HOME_ID = "home"
+        const val LIBRARY_ID = "library"
+
+        // mediaId format for playable book placeholders: "book:{uuid}:{format}"
+        const val BOOK_ID_PREFIX = "book:"
+    }
+
     private var mediaSession: MediaLibrarySession? = null
     private var player: ExoPlayer? = null
     private var mediaIdToClips = mapOf<String, List<OverlayPar>>()
     private var root = MediaItem.Builder()
-        .setMediaId("root")
+        .setMediaId(ROOT_ID)
         .setMediaMetadata(
             MediaMetadata.Builder()
-                .setIsBrowsable(false)
+                .setIsBrowsable(true)
                 .setIsPlayable(false)
+                .setTitle("Storyteller")
                 .build()
         )
         .build()
 
+    private val dbHelper by lazy { StorytellerDatabaseHelper(this) }
+
+    // Set when onAddMediaItems resolves a book with a saved position; consumed
+    // by the STATE_READY listener in onCreate so the seek happens exactly once
+    // after ExoPlayer finishes preparing the new queue.
+    @Volatile private var pendingSeekTrackIndex: Int = -1
+    @Volatile private var pendingSeekMs: Long = 0L
+
     // Track connected automotive controllers for URI permission granting
     private val automotiveControllers = mutableSetOf<String>()
+
+    private fun grantCoverUriPermission(packageName: String, artworkUri: Uri) {
+        if (artworkUri.scheme != "content") return
+        try {
+            grantUriPermission(
+                packageName,
+                artworkUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (e: Exception) {
+            //
+        }
+    }
 
     // Grant URI permission for current track's artwork to automotive controllers
     private fun grantArtworkUriPermissions(artworkUri: Uri) {
         if (automotiveControllers.isEmpty()) return
-
-        // Only grant for content:// URIs
-        if (artworkUri.scheme != "content") return
-
         for (packageName in automotiveControllers) {
-            try {
-                grantUriPermission(
-                    packageName,
-                    artworkUri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (e: Exception) {
-                //
-            }
+            grantCoverUriPermission(packageName, artworkUri)
         }
     }
 
@@ -188,6 +209,21 @@ class PlaybackService : MediaLibraryService() {
             .setSeekForwardIncrementMs(1500)
             .setName("Storyteller")
             .build()
+
+        // Consume Android Auto resume seeks once ExoPlayer has prepared the new
+        // queue. Doing this before STATE_READY risks the seek being overwritten
+        // by the timeline transition to track 0 at position 0.
+        player.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState != Player.STATE_READY) return
+                val idx = pendingSeekTrackIndex
+                if (idx < 0) return
+                val ms = pendingSeekMs
+                pendingSeekTrackIndex = -1
+                pendingSeekMs = 0L
+                player.seekTo(idx, ms)
+            }
+        })
 
         mediaSession =
             with(
@@ -327,6 +363,260 @@ class PlaybackService : MediaLibraryService() {
         )
     }
 
+    private fun categoryItem(
+        id: String,
+        title: String,
+        childStyle: ChildStyle = ChildStyle.LIST,
+    ): MediaItem {
+        val extras = Bundle().apply {
+            val value = when (childStyle) {
+                ChildStyle.LIST -> MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                ChildStyle.GRID -> MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM
+            }
+            putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE, value)
+            putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, value)
+        }
+        return MediaItem.Builder()
+            .setMediaId(id)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .setTitle(title)
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                    .setExtras(extras)
+                    .build()
+            )
+            .build()
+    }
+
+    private enum class ChildStyle { LIST, GRID }
+
+    private fun bookCoverUri(bookUuid: String): Uri =
+        Uri.parse("content://${packageName}.autocover/$bookUuid")
+
+    private fun bookBrowseItem(entry: BookEntry, groupTitle: String? = null): MediaItem {
+        val extras = groupTitle?.let {
+            Bundle().apply { putString(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE, it) }
+        }
+
+        val metadata = MediaMetadata.Builder()
+            .setIsBrowsable(false)
+            .setIsPlayable(true)
+            .setTitle(entry.title)
+            .setAlbumTitle(entry.title)
+            .setArtworkUri(bookCoverUri(entry.uuid))
+            .setMediaType(MediaMetadata.MEDIA_TYPE_AUDIO_BOOK)
+            .apply {
+                entry.author?.let { setArtist(it) }
+                entry.author?.let { setSubtitle(it) }
+                extras?.let { setExtras(it) }
+            }
+            .build()
+        return MediaItem.Builder()
+            .setMediaId("$BOOK_ID_PREFIX${entry.uuid}:${entry.format}")
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
+    private fun buildBookItems(
+        browser: MediaSession.ControllerInfo,
+        entries: List<BookEntry>
+    ): List<MediaItem> = entries.map { entry ->
+        grantCoverUriPermission(browser.packageName, bookCoverUri(entry.uuid))
+        bookBrowseItem(entry)
+    }
+
+    // Expands the Android Auto book placeholders into real track queues.
+    private fun resolveMediaItems(
+        controller: MediaSession.ControllerInfo,
+        mediaItems: List<MediaItem>
+    ): List<MediaItem> {
+        val resolved = mutableListOf<MediaItem>()
+        var newSeek: Pair<Int, Long>? = null
+        for (item in mediaItems) {
+            if (!item.mediaId.startsWith(BOOK_ID_PREFIX)) {
+                resolved.add(item)
+                continue
+            }
+            val parts = item.mediaId.removePrefix(BOOK_ID_PREFIX).split(":", limit = 2)
+            if (parts.size != 2) continue
+            val (bookUuid, format) = parts
+            val entry = dbHelper.getBook(bookUuid, format) ?: continue
+
+            val tracks = tracksFromManifest(entry)
+            if (tracks.isEmpty()) continue
+
+            grantCoverUriPermission(controller.packageName, bookCoverUri(bookUuid))
+
+            val locatorJson = dbHelper.getPositionLocator(bookUuid)
+            val manifestJson = entry.manifestJson
+            if (locatorJson != null && manifestJson != null) {
+                newSeek = resolvePositionMs(bookUuid, format, locatorJson, manifestJson, tracks)
+            }
+
+            resolved.addAll(tracks)
+        }
+        // Always publish the resolution outcome so a book without a saved
+        // position doesn't inherit the previous call's seek.
+        pendingSeekTrackIndex = newSeek?.first ?: -1
+        pendingSeekMs = newSeek?.second ?: 0L
+        return resolved
+    }
+
+    // Returns books from all Home sections as a single flat list, each tagged
+    // with its section's group title. Android Auto renders these as labeled
+    // horizontal shelves within the Home folder — matching Audible's layout.
+    // Each book appears in exactly one shelf, picking the highest-priority
+    // section it qualifies for.
+    private fun buildSectionedHome(browser: MediaSession.ControllerInfo): List<MediaItem> {
+        val sections = listOf(
+            "Currently Reading" to dbHelper.getCurrentlyReading(),
+            "Next Up" to dbHelper.getNextUp(),
+            "Start Reading" to dbHelper.getStartReading(),
+            "Recently Added" to dbHelper.getRecentlyAdded(),
+        )
+        val seen = mutableSetOf<String>()
+        val items = mutableListOf<MediaItem>()
+        for ((sectionTitle, entries) in sections) {
+            for (entry in entries) {
+                if (!seen.add(entry.uuid)) continue
+                grantCoverUriPermission(browser.packageName, bookCoverUri(entry.uuid))
+                items.add(bookBrowseItem(entry, groupTitle = sectionTitle))
+            }
+        }
+        return items
+    }
+
+    private fun tracksFromManifest(entry: BookEntry): List<MediaItem> {
+        val manifestText = entry.manifestJson ?: return emptyList()
+        val readingOrder = runCatching {
+            JSONObject(manifestText).optJSONArray("readingOrder") ?: JSONArray()
+        }.getOrElse { return emptyList() }
+
+        val extractedDir = File(filesDir, "books/extracted/${entry.uuid}/${entry.format}")
+        val total = readingOrder.length()
+        val tracks = mutableListOf<MediaItem>()
+        for (i in 0 until total) {
+            val resource = readingOrder.optJSONObject(i) ?: continue
+            val href = resource.optNonEmptyString("href") ?: continue
+            val mimeType = resource.optNonEmptyString("type")?.replace(Regex(";\\s*codecs=.*"), "")
+            val durationSeconds = resource.optDouble("duration", 0.0)
+            val title = resource.optNonEmptyString("title") ?: entry.title
+
+            val metadata = MediaMetadata.Builder()
+                .setTrackNumber(i + 1)
+                .setTotalTrackCount(total)
+                .setTitle(title)
+                .setAlbumTitle(entry.title)
+                .setArtworkUri(bookCoverUri(entry.uuid))
+                .setDurationMs((durationSeconds * 1000).roundToLong())
+                .setMediaType(MediaMetadata.MEDIA_TYPE_AUDIO_BOOK_CHAPTER)
+                .apply {
+                    entry.author?.let { setArtist(it) }
+                    setExtras(Bundle().apply { putString("bookUuid", entry.uuid) })
+                }
+                .build()
+
+            val fileUri = Uri.fromFile(File(extractedDir, href))
+            val item = MediaItem.Builder()
+                .setMediaId(href)
+                .setUri(fileUri)
+                .apply { mimeType?.let { setMimeType(it) } }
+                .setMediaMetadata(metadata)
+                .build()
+            tracks.add(item)
+        }
+        return tracks
+    }
+
+    // Mirrors getAudiobookClip() and getClip() in mobile/modules/readium/index.ts
+    // so an Auto resume lands in the same place the in-app player would.
+    private fun resolvePositionMs(
+        bookUuid: String,
+        format: String,
+        locatorJson: String,
+        manifestJson: String,
+        tracks: List<MediaItem>,
+    ): Pair<Int, Long>? {
+        val locatorJsonObj = runCatching { JSONObject(locatorJson) }.getOrNull() ?: return null
+        val href = locatorJsonObj.optNonEmptyString("href") ?: return null
+        val locations = locatorJsonObj.optJSONObject("locations")
+        val manifest = runCatching { JSONObject(manifestJson) }.getOrNull()
+        val readingOrder = manifest?.optJSONArray("readingOrder")
+
+        val trackIndex = tracks.indexOfFirst { it.mediaId == href }
+
+        if (trackIndex >= 0) {
+            locations?.optJSONArray("fragments")?.let { fragments ->
+                for (j in 0 until fragments.length()) {
+                    val f = fragments.optString(j)
+                    if (f.startsWith("t=")) {
+                        val seconds = f.removePrefix("t=").toDoubleOrNull() ?: continue
+                        return trackIndex to (seconds * 1000).roundToLong()
+                    }
+                }
+            }
+
+            val progression = locations?.optDoubleOrNull("progression")
+            if (progression != null && readingOrder != null) {
+                val trackDuration = readingOrder.optJSONObject(trackIndex)?.optDouble("duration", 0.0) ?: 0.0
+                if (trackDuration > 0) {
+                    return trackIndex to (progression * trackDuration * 1000).roundToLong()
+                }
+            }
+        } else if (format == "readaloud") {
+            val locator = Locator.fromJSON(locatorJsonObj)
+            val clipsJson = dbHelper.getReadaloudClips(bookUuid)
+            if (locator != null && clipsJson != null) {
+                parseStoredClips(clipsJson)?.let { BookService.setClips(bookUuid, it) }
+                val clip = runCatching { BookService.getClip(bookUuid, locator) }.getOrNull()
+                if (clip != null) {
+                    val idx = tracks.indexOfFirst { it.mediaId == clip.audioResource }
+                    if (idx >= 0) return idx to (clip.start * 1000).roundToLong()
+                }
+            }
+        }
+
+        val totalProgression = locations?.optDoubleOrNull("totalProgression")
+        if (totalProgression != null && readingOrder != null) {
+            var totalDuration = 0.0
+            val durations = DoubleArray(readingOrder.length())
+            for (j in 0 until readingOrder.length()) {
+                val d = readingOrder.optJSONObject(j)?.optDouble("duration", 0.0) ?: 0.0
+                durations[j] = d
+                totalDuration += d
+            }
+            if (totalDuration <= 0) return null
+            var offset = totalDuration * totalProgression
+            for (j in durations.indices) {
+                if (offset < durations[j]) {
+                    return j to (offset * 1000).roundToLong()
+                }
+                offset -= durations[j]
+            }
+            // offset fell off the end — clamp to the last track's end.
+            val last = durations.size - 1
+            return last to (durations[last] * 1000).roundToLong()
+        }
+
+        return null
+    }
+
+    private fun JSONObject.optDoubleOrNull(key: String): Double? =
+        if (has(key) && !isNull(key)) optDouble(key, Double.NaN).takeIf { !it.isNaN() } else null
+
+    private fun JSONObject.optNonEmptyString(key: String): String? =
+        if (has(key) && !isNull(key)) optString(key).takeIf { it.isNotEmpty() } else null
+
+    private fun parseStoredClips(json: String): List<OverlayPar>? =
+        runCatching {
+            val arr = JSONArray(json)
+            (0 until arr.length()).mapNotNull { i ->
+                arr.optJSONObject(i)?.toMap()?.let { OverlayPar.fromJson(it) }
+            }
+        }.getOrNull()
+
     private fun getCallback(): MediaLibrarySession.Callback {
         return object : MediaLibrarySession.Callback {
             override fun onGetLibraryRoot(
@@ -345,9 +635,53 @@ class PlaybackService : MediaLibraryService() {
                 pageSize: Int,
                 params: LibraryParams?
             ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+                val items: List<MediaItem> = when (parentId) {
+                    ROOT_ID -> listOf(
+                        categoryItem(HOME_ID, "Home", ChildStyle.GRID),
+                        categoryItem(LIBRARY_ID, "Library", ChildStyle.GRID),
+                    )
+                    HOME_ID -> buildSectionedHome(browser)
+                    LIBRARY_ID -> buildBookItems(browser, dbHelper.getDownloads())
+                    else -> emptyList()
+                }
                 return Futures.immediateFuture(
-                    LibraryResult.ofItemList(emptyList(), params)
+                    LibraryResult.ofItemList(ImmutableList.copyOf(items), params)
                 )
+            }
+
+            override fun onSetMediaItems(
+                mediaSession: MediaSession,
+                controller: MediaSession.ControllerInfo,
+                mediaItems: List<MediaItem>,
+                startIndex: Int,
+                startPositionMs: Long
+            ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+                val resolved = resolveMediaItems(controller, mediaItems)
+                if (resolved.isEmpty()) {
+                    return Futures.immediateFailedFuture(
+                        UnsupportedOperationException("No playable items")
+                    )
+                }
+                val seek = pendingSeekTrackIndex.takeIf { it >= 0 }
+                val startIdx = seek ?: C.INDEX_UNSET
+                val startPos = if (seek != null) pendingSeekMs else C.TIME_UNSET
+                return Futures.immediateFuture(
+                    MediaSession.MediaItemsWithStartPosition(resolved, startIdx, startPos)
+                )
+            }
+
+            override fun onAddMediaItems(
+                mediaSession: MediaSession,
+                controller: MediaSession.ControllerInfo,
+                mediaItems: List<MediaItem>
+            ): ListenableFuture<List<MediaItem>> {
+                val resolved = resolveMediaItems(controller, mediaItems)
+                if (resolved.isEmpty()) {
+                    return Futures.immediateFailedFuture(
+                        UnsupportedOperationException("No playable items")
+                    )
+                }
+                return Futures.immediateFuture(resolved)
             }
 
             override fun onCustomCommand(

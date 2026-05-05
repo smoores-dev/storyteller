@@ -232,7 +232,22 @@ final class BookService {
         guard let publication = getPublication(for: bookId) else {
             return nil
         }
-        return await publication.locate(link)
+
+        var linkToLocate = link
+
+        // the readium epubHREF: initializer encodes # as %23 when falling
+        // back to path-based encoding for hrefs with spaces (epub 2).
+        // reconstruct the link with a proper fragment separator so that
+        // removingFragment() works and the href matches the reading order.
+        if link.href.contains("%23") {
+            linkToLocate = Link(
+                href: link.href.replacingOccurrences(of: "%23", with: "#"),
+                mediaType: link.mediaType,
+                title: link.title
+            )
+        }
+
+        return await publication.locate(linkToLocate)
     }
 
     private func makeMediaOverlays(for bookId: String, pub publication: Publication) async throws {

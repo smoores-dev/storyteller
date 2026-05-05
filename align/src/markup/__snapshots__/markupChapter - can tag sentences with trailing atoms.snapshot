@@ -6,8 +6,8 @@
   </head>
   <body>
     <h1><span id="chapter_one-s0">Chapter 1</span><br/><img src="../images/cn.png"/></h1>
-    <p><span id="chapter_one-s1">
-        Call me <strong>Ishmael</strong>. </span><span id="chapter_one-s2">Some years ago—never mind how long precisely—having
+    <p>
+        <span id="chapter_one-s1">Call me <strong>Ishmael</strong>. </span><span id="chapter_one-s2">Some years ago—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore, I thought I would sail about a little and see the watery part of
         the world.</span>

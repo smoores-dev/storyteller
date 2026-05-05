@@ -159,6 +159,7 @@ export function BookSearch() {
         asChild
       >
         <Input
+          className="min-h-8 text-sm"
           maxFontSizeMultiplier={2}
           value={query}
           onChangeText={(value) => {

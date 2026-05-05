@@ -16,6 +16,7 @@ export type BookshelfState = {
   isPlaying: boolean
   currentTrack: StorytellerTrack | null
   currentTrackIndex: number
+  currentSearchQuery: string | null
 }
 
 const initialState: BookshelfState = {
@@ -28,6 +29,7 @@ const initialState: BookshelfState = {
   isPlaying: false,
   currentTrack: null,
   currentTrackIndex: 0,
+  currentSearchQuery: null,
 }
 
 export const bookshelfSlice = createSlice({
@@ -107,6 +109,9 @@ export const bookshelfSlice = createSlice({
       state.currentlyPlayingFormat = null
       state.currentTrack = null
       state.currentTrackIndex = 0
+    },
+    searchQueryChanged(state, action: PayloadAction<{ query: string }>) {
+      state.currentSearchQuery = action.payload.query
     },
   },
   extraReducers: (builder) => {

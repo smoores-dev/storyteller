@@ -285,4 +285,27 @@ void describe("align", () => {
       join("src", "align", "__fixtures__", "immense-world", "transcriptions"),
     )
   })
+
+  void it("should align Why I Cant Sleep (mandarin)", async (context) => {
+    await testAlignBook(
+      context,
+      "sentence",
+      join(
+        "src",
+        "align",
+        "__fixtures__",
+        "why-i-cant-sleep",
+        "text",
+        "why_i_cant_sleep_hanzi_only.epub",
+      ),
+      join("src", "align", "__fixtures__", "why-i-cant-sleep", "audio"),
+      join(
+        "src",
+        "align",
+        "__fixtures__",
+        "why-i-cant-sleep",
+        "transcriptions",
+      ),
+    )
+  })
 })

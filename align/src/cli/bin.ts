@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto"
 import { rmSync } from "node:fs"
 import * as os from "node:os"
-import { join } from "node:path"
+import { basename, join } from "node:path"
 
 import {
   constant,
@@ -28,9 +28,11 @@ import { align } from "../align/align.ts"
 import { alignCommand, alignParser } from "../align/parse.ts"
 import { createLogger } from "../common/logging.ts"
 import {
+  autoUpgradeParser,
   granularityParser,
   languageParser,
   loggingParser,
+  removeNcxParser,
 } from "../common/parse.ts"
 import { markup } from "../markup/markup.ts"
 import { markupCommand } from "../markup/parse.ts"
@@ -40,6 +42,8 @@ import { snapshotCommand } from "../snapshot/parse.ts"
 import { snapshotAlignment } from "../snapshot/snapshot.ts"
 import { transcribeCommand, transcribeParser } from "../transcribe/parse.ts"
 import { transcribe } from "../transcribe/transcribe.ts"
+import { upgradeEpubCommand } from "../upgradeEpub/parse.ts"
+import { upgradeEpub } from "../upgradeEpub/upgradeEpub.ts"
 
 const pipelineCommand = merge(
   object({
@@ -65,6 +69,8 @@ const pipelineCommand = merge(
   }),
   processParser,
   group("Transcription", transcribeParser),
+  autoUpgradeParser,
+  removeNcxParser,
   granularityParser,
   languageParser,
   alignParser,
@@ -74,6 +80,7 @@ const pipelineCommand = merge(
 const parser = or(
   processCommand,
   transcribeCommand,
+  upgradeEpubCommand,
   markupCommand,
   alignCommand,
   pipelineCommand,
@@ -105,6 +112,8 @@ async function main() {
   }
 
   function startProgressBar() {
+    if (parsed.action === "upgrade-epub") return
+
     if (!parsed.noProgress && parsed.logLevel === "silent") {
       progressBar.start(100, 0)
     }
@@ -124,7 +133,9 @@ async function main() {
 
   startProgressBar()
 
-  const logger = createLogger(parsed.logLevel)
+  const logger = createLogger(
+    parsed.action === "upgrade-epub" ? "warn" : parsed.logLevel,
+  )
 
   switch (parsed.action) {
     case "process": {
@@ -174,8 +185,26 @@ async function main() {
       break
     }
 
+    case "upgrade-epub": {
+      await upgradeEpub(parsed.input, parsed.output, {
+        removeNcx: parsed.removeNcx,
+      })
+      break
+    }
+
     case "markup": {
-      const timing = await markup(parsed.input, parsed.output, {
+      let input = parsed.input
+      if (parsed.autoupgrade) {
+        logger.info("Upgrading EPUB 2 to EPUB 3")
+        input = join(
+          os.tmpdir(),
+          `stalign-autoupgrade-${randomUUID()}`,
+          basename(parsed.input),
+        )
+        await upgradeEpub(parsed.input, input, { removeNcx: parsed.removeNcx })
+      }
+
+      const timing = await markup(input, parsed.output, {
         primaryLocale: parsed.language ?? new Intl.Locale("en-US"),
         granularity: parsed.granularity,
         logger,
@@ -195,8 +224,19 @@ async function main() {
     }
 
     case "align": {
+      let input = parsed.epub
+      if (parsed.autoupgrade) {
+        logger.info("Upgrading EPUB 2 to EPUB 3")
+        input = join(
+          os.tmpdir(),
+          `stalign-autoupgrade-${randomUUID()}`,
+          basename(parsed.epub),
+        )
+        await upgradeEpub(parsed.epub, input, { removeNcx: parsed.removeNcx })
+      }
+
       const timing = await align(
-        parsed.epub,
+        input,
         parsed.output,
         parsed.transcriptions,
         parsed.audiobook,
@@ -205,6 +245,7 @@ async function main() {
           textRef: parsed.textRef,
           outFormat: parsed.outFormat,
           primaryLocale: parsed.language,
+          reportsPath: parsed.reports,
           logger,
           ...(!parsed.noProgress &&
             parsed.logLevel === "silent" && {
@@ -223,12 +264,25 @@ async function main() {
     }
 
     case "pipeline": {
-      using epub = await Epub.from(parsed.epub)
+      let input = parsed.epub
+      if (parsed.autoupgrade) {
+        logger.info("Upgrading EPUB 2 to EPUB 3")
+        input = join(
+          os.tmpdir(),
+          `stalign-autoupgrade-${randomUUID()}`,
+          basename(parsed.epub),
+        )
+        await upgradeEpub(parsed.epub, input, { removeNcx: parsed.removeNcx })
+      }
+
+      using epub = await Epub.from(input)
 
       const primaryLocale =
         parsed.language ??
         (await epub.getLanguage()) ??
         new Intl.Locale("en-US")
+
+      epub.discardAndClose()
 
       const processedAudio =
         parsed.processedAudio ??
@@ -333,7 +387,7 @@ async function main() {
           })
         }
 
-        const markupTiming = await markup(parsed.epub, markedup, {
+        const markupTiming = await markup(input, markedup, {
           granularity: parsed.granularity,
           primaryLocale,
           logger,
@@ -370,6 +424,7 @@ async function main() {
           textRef: parsed.textRef,
           outFormat: parsed.outFormat,
           primaryLocale,
+          reportsPath: parsed.reports,
           logger,
           ...(!parsed.noProgress &&
             parsed.logLevel === "silent" && {
