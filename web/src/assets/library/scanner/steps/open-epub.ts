@@ -1,43 +1,30 @@
 import { Epub, EpubVersionError } from "@storyteller-platform/epub"
 
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
-import { type EpubHashed } from "@/assets/library/scanner/types"
+import { createStep } from "@/assets/library/scanner/step"
+import {
+  type EpubHashed,
+  type EpubOpenState,
+} from "@/assets/library/scanner/types"
 
 const STEP = "open-epub"
 
-type OpenResult<T> =
-  | (T & { isEpub2: false; epub: Epub })
-  | (T & { isEpub2: true })
+export type OpenEpubInput = EpubHashed
+export type OpenEpubOutput = EpubOpenState
 
-export async function openEpub<T extends EpubHashed>(
-  input: T,
-  ctx: ScanCtx,
-  scope: AsyncDisposableStack,
-): Promise<OpenResult<T> | null> {
-  if (!input.changed) {
-    if (input.format === "epub-unknown") {
-      ctx.report.warn({
-        step: STEP,
-        msg: "Unknown EPUB did not change, skipping format determination",
-        bookUuid: input.bookUuid,
-      })
-      return null
+export const openEpubStep = createStep<OpenEpubInput, OpenEpubOutput>(
+  STEP,
+  async (input, ctx) => {
+    const scope = ctx.scope
+    if (!scope) {
+      throw new Error("open-epub step requires ctx.scope")
     }
 
-    ctx.report.skipped({
-      step: STEP,
-      bookUuid: input.bookUuid,
-      format: input.format,
-      reason: "unchanged",
-    })
-    return null
-  }
-
-  try {
-    const epub = scope.use(await Epub.from(input.filepath))
-    return { ...input, isEpub2: false, epub }
-  } catch (error) {
-    if (!(error instanceof EpubVersionError)) throw error
-    return { ...input, isEpub2: true }
-  }
-}
+    try {
+      const epub = scope.use(await Epub.from(input.filepath))
+      return { ...input, isEpub2: false, epub }
+    } catch (error) {
+      if (!(error instanceof EpubVersionError)) throw error
+      return { ...input, isEpub2: true }
+    }
+  },
+)

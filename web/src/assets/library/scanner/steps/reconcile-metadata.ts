@@ -1,5 +1,5 @@
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
+import { createStep } from "@/assets/library/scanner/step"
 import {
   type ManifestReady,
   type Reconciled,
@@ -16,6 +16,9 @@ import { getSetting } from "@/database/settings"
 import { type MetadataOverrideMode } from "@/database/settingsTypes"
 
 const STEP = "reconcile-metadata"
+
+export type ReconcileMetadataInput = ManifestReady
+export type ReconcileMetadataOutput = Reconciled
 
 function buildFormatRelation(input: ManifestReady): BookRelationsUpdate {
   const shared = {
@@ -76,14 +79,15 @@ function hasChanges(
 ): boolean {
   if (metadataUpdate || Object.keys(relationUpdate).length > 0) return true
   if (input.changed) return true
+
   const relation = currentBook[input.format]
   return !relation || relation.missing
 }
 
-export async function reconcileMetadata<T extends ManifestReady>(
-  input: T,
-  ctx: ScanCtx,
-): Promise<(T & Reconciled) | null> {
+export const reconcileMetadataStep = createStep<
+  ReconcileMetadataInput,
+  ReconcileMetadataOutput
+>(STEP, async (input, ctx) => {
   const current = await getBook(input.bookUuid)
   if (!current) {
     ctx.report.warn({
@@ -134,5 +138,5 @@ export async function reconcileMetadata<T extends ManifestReady>(
     return null
   }
 
-  return { ...input, book: updated } as T & Reconciled
-}
+  return { ...input, book: updated } as ManifestReady & Reconciled
+})

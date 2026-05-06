@@ -3,15 +3,20 @@ import { join } from "node:path"
 
 import {
   Audiobook,
-  type Audiobook as AudiobookAsset,
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
-import { type AudiobookHashed } from "@/assets/library/scanner/types"
+import { createStep } from "@/assets/library/scanner/step"
+import {
+  type AudiobookHashed,
+  type AudiobookOpened,
+} from "@/assets/library/scanner/types"
 import { isAudioFile } from "@/audio"
 
 const STEP = "open-audiobook"
+
+export type OpenAudiobookInput = AudiobookHashed
+export type OpenAudiobookOutput = AudiobookOpened
 
 async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
   const entries = await readdir(directory, { recursive: true })
@@ -22,11 +27,10 @@ async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
   return tracks as AudiobookInputs
 }
 
-export async function openAudiobook<T extends AudiobookHashed>(
-  input: T,
-  ctx: ScanCtx,
-  scope: AsyncDisposableStack,
-): Promise<(T & { audiobook: AudiobookAsset }) | null> {
+export const openAudiobookStep = createStep<
+  OpenAudiobookInput,
+  OpenAudiobookOutput
+>(STEP, async (input, ctx) => {
   if (!input.changed) {
     ctx.report.skipped({
       step: STEP,
@@ -35,6 +39,11 @@ export async function openAudiobook<T extends AudiobookHashed>(
       reason: "unchanged",
     })
     return null
+  }
+
+  const scope = ctx.scope
+  if (!scope) {
+    throw new Error("open-audiobook step requires ctx.scope")
   }
 
   const tracks = await getAudiobookTracks(input.filepath)
@@ -50,4 +59,4 @@ export async function openAudiobook<T extends AudiobookHashed>(
 
   const audiobook = scope.use(await Audiobook.from(...tracks))
   return { ...input, audiobook }
-}
+})

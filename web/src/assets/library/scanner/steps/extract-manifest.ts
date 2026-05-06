@@ -1,38 +1,38 @@
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { getNumericValue } from "@/assets/library/scanner/manifestValue"
+import { createStep } from "@/assets/library/scanner/step"
 import {
+  type AudiobookManifestReady,
   type AudiobookMetadataExtracted,
+  type EbookManifestReady,
   type EpubMetadataExtracted,
+  type ReadaloudManifestReady,
 } from "@/assets/library/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
 import { ReadiumService } from "@/services/readiumService"
 import { createAudiobookManifest } from "@/utils/audioManifest"
 
-type EbookManifestExtras = {
-  manifest: SerializedManifest
-  pageCount: number | null
-  duration: null
+export type ExtractEbookManifestInput = EpubMetadataExtracted & {
+  format: "ebook"
 }
+export type ExtractEbookManifestOutput = EbookManifestReady
 
-type ReadaloudManifestExtras = {
-  manifest: SerializedManifest
-  pageCount: number | null
-  duration: number | null
+export type ExtractReadaloudManifestInput = EpubMetadataExtracted & {
+  format: "readaloud"
 }
+export type ExtractReadaloudManifestOutput = ReadaloudManifestReady
 
-type AudiobookManifestExtras = {
-  manifest: SerializedManifest
-  pageCount: null
-  duration: number | null
-}
+export type ExtractAudiobookManifestInput = AudiobookMetadataExtracted
+export type ExtractAudiobookManifestOutput = AudiobookManifestReady
 
 function deriveAudiobookDuration(manifest: SerializedManifest): number | null {
   let duration = 0
+
   for (const item of manifest.readingOrder) {
     const value = getNumericValue(item.duration)
     if (value === null) continue
     duration += value
   }
+
   return duration > 0 ? duration : null
 }
 
@@ -53,37 +53,43 @@ function resolveReadaloudDuration(
   if (audiobook && !audiobook.missing && audiobook.duration) {
     return audiobook.duration
   }
+
   let duration = 0
   for (const item of manifest.resources ?? []) {
     const value = getNumericValue(item.duration)
     if (value === null) continue
     duration += value
   }
+
   return duration > 0 ? duration : null
 }
 
-export async function extractEbookManifest<
-  T extends EpubMetadataExtracted & { format: "ebook" },
->(input: T, ctx: ScanCtx): Promise<T & EbookManifestExtras> {
+export const extractEbookManifestStep = createStep<
+  ExtractEbookManifestInput,
+  ExtractEbookManifestOutput
+>("extract-ebook-manifest", async (input, ctx) => {
   const manifest = await ReadiumService.getManifest(input.filepath, {
     inferPageCount: true,
     signal: ctx.signal,
   })
+
   return {
     ...input,
     manifest,
     pageCount: manifest.metadata.numberOfPages ?? null,
     duration: null,
   }
-}
+})
 
-export async function extractReadaloudManifest<
-  T extends EpubMetadataExtracted & { format: "readaloud" },
->(input: T, ctx: ScanCtx): Promise<T & ReadaloudManifestExtras> {
+export const extractReadaloudManifestStep = createStep<
+  ExtractReadaloudManifestInput,
+  ExtractReadaloudManifestOutput
+>("extract-readaloud-manifest", async (input, ctx) => {
   const manifest = await ReadiumService.getManifest(input.filepath, {
     inferPageCount: true,
     signal: ctx.signal,
   })
+
   return {
     ...input,
     manifest,
@@ -93,11 +99,12 @@ export async function extractReadaloudManifest<
     ),
     duration: resolveReadaloudDuration(input, manifest),
   }
-}
+})
 
-export async function extractAudiobookManifest<
-  T extends AudiobookMetadataExtracted,
->(input: T): Promise<T & AudiobookManifestExtras> {
+export const extractAudiobookManifestStep = createStep<
+  ExtractAudiobookManifestInput,
+  ExtractAudiobookManifestOutput
+>("extract-audiobook-manifest", async (input) => {
   const manifestOptions = {
     bookId: input.book.uuid,
     title: input.book.title,
@@ -119,4 +126,4 @@ export async function extractAudiobookManifest<
     pageCount: null,
     duration: deriveAudiobookDuration(serialized),
   }
-}
+})

@@ -1,5 +1,5 @@
 import { type Dirent } from "node:fs"
-import { mkdir, readdir } from "node:fs/promises"
+import { mkdir, readdir, rm } from "node:fs/promises"
 import { basename, dirname, extname, join, resolve } from "node:path"
 
 import {
@@ -8,7 +8,14 @@ import {
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
-import { getDefaultSuffix, getInternalBookDirectory } from "@/assets/paths"
+import { copyWithHardlink, copyWithReflink, move } from "@/assets/fs"
+import {
+  getDefaultSuffix,
+  getInternalAudioDirectory,
+  getInternalBookDirectory,
+  getInternalEpubFilepath,
+  getInternalReadaloudFilepath,
+} from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import {
   type BookWithRelations,
@@ -17,11 +24,18 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
+import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
 import { type ScanFormat } from "./scanner/types"
+import { db } from "@/database/connection"
+import {
+  addImportSkipPaths,
+  getImportSkipPaths,
+  removeImportSkipPaths,
+} from "@/database/scans"
 
 export type BookPath = {
   ebook?: string
@@ -74,9 +88,93 @@ async function ensureBookDirectory(book: BookWithRelations) {
   return await updateBook(book.uuid, { suffix: getDefaultSuffix(book.uuid) })
 }
 
+type RelocateMode = Exclude<ImportMode, "reference">
+type Relocator = (source: string, destination: string) => Promise<void>
+
+function resolveRelocator(mode: RelocateMode): Relocator {
+  if (mode === "move") {
+    return move
+  }
+
+  if (mode === "hardlink") {
+    return copyWithHardlink
+  }
+
+  return copyWithReflink
+}
+
+async function relocateBookPaths(
+  book: BookWithRelations,
+  bookPath: BookPath,
+  importMode: ImportMode,
+  newSkipPaths: { bookUuid: UUID; filepath: string }[],
+): Promise<BookPath> {
+  if (importMode === "reference") {
+    for (const path of [
+      bookPath.ebook,
+      bookPath.readaloud,
+      bookPath.audiobook,
+    ]) {
+      if (path) newSkipPaths.push({ bookUuid: book.uuid, filepath: path })
+    }
+    return bookPath
+  }
+
+  const relocate = resolveRelocator(importMode)
+  const relocated: BookPath = {}
+
+  if (bookPath.ebook) {
+    const destPath = getInternalEpubFilepath(book)
+    await mkdir(dirname(destPath), { recursive: true })
+    await relocate(bookPath.ebook, destPath)
+    relocated.ebook = destPath
+
+    if (importMode !== "move")
+      newSkipPaths.push({ bookUuid: book.uuid, filepath: bookPath.ebook })
+  }
+
+  if (bookPath.readaloud) {
+    const destPath = getInternalReadaloudFilepath(book)
+    await mkdir(dirname(destPath), { recursive: true })
+    await relocate(bookPath.readaloud, destPath)
+    relocated.readaloud = destPath
+
+    if (importMode !== "move")
+      newSkipPaths.push({ bookUuid: book.uuid, filepath: bookPath.readaloud })
+  }
+
+  if (bookPath.audiobook) {
+    const sourceDir = bookPath.audiobook
+    const destDir = getInternalAudioDirectory(book)
+    await mkdir(destDir, { recursive: true })
+
+    const entries = await readdir(sourceDir)
+    for (const entry of entries) {
+      if (!isAudioFile(entry)) continue
+      await relocate(join(sourceDir, entry), join(destDir, entry))
+    }
+
+    if (importMode === "move") {
+      await rm(sourceDir, { recursive: true })
+    }
+
+    relocated.audiobook = destDir
+
+    if (importMode !== "move")
+      newSkipPaths.push({ bookUuid: book.uuid, filepath: bookPath.audiobook })
+  }
+
+  if (bookPath.epubUnknown?.length) {
+    relocated.epubUnknown = [...bookPath.epubUnknown]
+  }
+
+  return relocated
+}
+
 export async function createNewBook(
   bookPath: BookPath,
   collectionUuid: UUID | null,
+  importMode: ImportMode,
 ): Promise<BookWithRelations | null> {
   const collectionRelation = collectionUuid
     ? { collections: [collectionUuid] }
@@ -111,6 +209,25 @@ export async function createNewBook(
     )
 
     created = await ensureBookDirectory(created)
+    const relocated = await relocateBookPaths(created, bookPath, importMode)
+
+    created = await updateBook(created.uuid, null, {
+      ...(relocated.ebook && {
+        ebook: { filepath: relocated.ebook, missing: false },
+      }),
+      ...(relocated.readaloud && {
+        readaloud: {
+          filepath: relocated.readaloud,
+          missing: false,
+          status: created.readaloud?.status ?? "ALIGNED",
+          currentStage: created.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        },
+      }),
+      ...(relocated.audiobook && {
+        audiobook: { filepath: relocated.audiobook, missing: false },
+      }),
+    })
+
     await cacheTextCover(created)
     await cacheAudioCover(created)
     return created
@@ -135,6 +252,13 @@ export async function createNewBook(
     )
 
     created = await ensureBookDirectory(created)
+    const relocated = await relocateBookPaths(created, bookPath, importMode)
+    if (relocated.audiobook) {
+      created = await updateBook(created.uuid, null, {
+        audiobook: { filepath: relocated.audiobook, missing: false },
+      })
+    }
+
     await cacheAudioCover(created)
     return created
   }
@@ -164,32 +288,34 @@ type UpdatedBookResult = {
 export async function attachNewRelations(
   book: BookWithRelations,
   bookPath: BookPath,
+  importMode: ImportMode,
 ): Promise<UpdatedBookResult> {
+  const pathToAttach = await relocateBookPaths(book, bookPath, importMode)
   const newFormats: ScanFormat[] = []
   const relations: Parameters<typeof updateBook>[2] = {}
 
   if (
-    bookPath.ebook &&
-    (!book.ebook || book.ebook.filepath !== bookPath.ebook)
+    pathToAttach.ebook &&
+    (!book.ebook || book.ebook.filepath !== pathToAttach.ebook)
   ) {
-    relations.ebook = { filepath: bookPath.ebook, missing: false }
+    relations.ebook = { filepath: pathToAttach.ebook, missing: false }
     if (!book.ebook) newFormats.push("ebook")
   }
 
   if (
-    bookPath.audiobook &&
-    (!book.audiobook || book.audiobook.filepath !== bookPath.audiobook)
+    pathToAttach.audiobook &&
+    (!book.audiobook || book.audiobook.filepath !== pathToAttach.audiobook)
   ) {
-    relations.audiobook = { filepath: bookPath.audiobook, missing: false }
+    relations.audiobook = { filepath: pathToAttach.audiobook, missing: false }
     if (!book.audiobook) newFormats.push("audiobook")
   }
 
   if (
-    bookPath.readaloud &&
-    (!book.readaloud || book.readaloud.filepath !== bookPath.readaloud)
+    pathToAttach.readaloud &&
+    (!book.readaloud || book.readaloud.filepath !== pathToAttach.readaloud)
   ) {
     relations.readaloud = {
-      filepath: bookPath.readaloud,
+      filepath: pathToAttach.readaloud,
       missing: false,
       status: book.readaloud?.status ?? "ALIGNED",
       currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
@@ -244,6 +370,12 @@ export async function discoverBookPathsForRoots(
   const audiobookPathsSet = new Set<string>()
   const bookPaths: BookPath[] = []
 
+  const skipPaths = new Set(
+    (await getImportSkipPaths()).map((row) => row.filepath),
+  )
+  const seenSkipPaths = new Set<string>()
+  const newSkipPaths: { bookUuid: UUID; filepath: string }[] = []
+
   for (const root of roots) {
     if (signal.aborted) {
       return []
@@ -279,6 +411,10 @@ export async function discoverBookPathsForRoots(
           continue
         }
 
+        if (skipPaths.has(fullPath)) {
+          seenSkipPaths.add(fullPath)
+          continue
+        }
         epubPaths.push(fullPath)
         continue
       }
@@ -291,6 +427,11 @@ export async function discoverBookPathsForRoots(
         logger.warn(
           `Found an audiobook file that was not in a book folder: skipping. Please place all files within book-specific folders: https://storyteller-platform.gitlab.io/storyteller/docs/managing/adding#organizing-your-auto-import-folder. ${fullPath}`,
         )
+        continue
+      }
+
+      if (skipPaths.has(entry.parentPath)) {
+        seenSkipPaths.add(entry.parentPath)
         continue
       }
 
@@ -374,6 +515,15 @@ export async function discoverBookPathsForRoots(
     }
 
     bookPaths.push({ audiobook: audiobookPath })
+  }
+
+  // Persist skip paths: add new ones, remove stale ones (files no longer in import directory)
+  if (newSkipPaths.length > 0) {
+    await addImportSkipPaths(newSkipPaths)
+  }
+  const staleSkipPaths = [...skipPaths].filter((p) => !seenSkipPaths.has(p))
+  if (staleSkipPaths.length > 0) {
+    await removeImportSkipPaths(staleSkipPaths)
   }
 
   return dedupeBookPaths(bookPaths)

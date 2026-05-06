@@ -2,6 +2,7 @@ import {
   type BookWithRelations,
   getBookByAudiobookFilepathPrefix,
 } from "@/database/books"
+import { getSetting } from "@/database/settings"
 import { type UUID } from "@/uuid"
 
 import {
@@ -60,14 +61,9 @@ function hasAnyRelationChange(
   book: BookWithRelations,
   bookPath: BookPath,
 ): boolean {
-  const ebookChanged =
-    !!bookPath.ebook && (!book.ebook || book.ebook.filepath !== bookPath.ebook)
-  const audiobookChanged =
-    !!bookPath.audiobook &&
-    (!book.audiobook || book.audiobook.filepath !== bookPath.audiobook)
-  const readaloudChanged =
-    !!bookPath.readaloud &&
-    (!book.readaloud || book.readaloud.filepath !== bookPath.readaloud)
+  const ebookChanged = !!bookPath.ebook && !book.ebook
+  const audiobookChanged = !!bookPath.audiobook && !book.audiobook
+  const readaloudChanged = !!bookPath.readaloud && !book.readaloud
   const hasUnclassifiedEpubs = !!bookPath.epubUnknown?.length
 
   return (
@@ -83,6 +79,7 @@ function hasAnyRelationChange(
 export async function reconcileDiscoveredPaths(
   input: ReconcileInput,
 ): Promise<ReconcileResult> {
+  const importMode = await getSetting("importMode")
   const result: ReconcileResult = {
     formatsByBook: new Map(),
     newFormatsByBook: new Map(),
@@ -113,7 +110,11 @@ export async function reconcileDiscoveredPaths(
         if (nestedBook) continue
       }
 
-      const created = await createNewBook(bookPath, input.collectionUuid)
+      const created = await createNewBook(
+        bookPath,
+        input.collectionUuid,
+        importMode,
+      )
       if (!created) continue
 
       const discoveredFormats = getBookPathFormats(bookPath)
@@ -128,7 +129,7 @@ export async function reconcileDiscoveredPaths(
 
     if (!hasAnyRelationChange(scopedMatch, bookPath)) continue
 
-    const updated = await attachNewRelations(scopedMatch, bookPath)
+    const updated = await attachNewRelations(scopedMatch, bookPath, importMode)
     addFormats(result.formatsByBook, updated.book.uuid, updated.newFormats)
     addFormats(result.newFormatsByBook, updated.book.uuid, updated.newFormats)
     collectUnclassifiedEpubs(

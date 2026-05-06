@@ -2,7 +2,9 @@ import { stat } from "node:fs/promises"
 
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
+import { createStep } from "@/assets/library/scanner/step"
 import {
+  type Existing,
   type ScanInput,
   isResolvedFormat,
 } from "@/assets/library/scanner/types"
@@ -10,24 +12,11 @@ import { updateBook } from "@/database/books"
 
 const STEP = "check-exists"
 
+export type CheckExistsInput = ScanInput
+export type CheckExistsOutput = Existing
+
 function isENOENT(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === "ENOENT"
-}
-
-export async function checkExists<T extends ScanInput>(
-  input: T,
-  ctx: ScanCtx,
-): Promise<(T & { missing: false }) | null> {
-  try {
-    await stat(input.filepath)
-  } catch (error) {
-    if (!isENOENT(error)) throw error
-    await handleMissing(input, ctx)
-    return null
-  }
-
-  await handleFound(input, ctx)
-  return { ...input, missing: false }
 }
 
 async function handleMissing(input: ScanInput, ctx: ScanCtx) {
@@ -82,3 +71,19 @@ async function handleFound(input: ScanInput, ctx: ScanCtx) {
     msg: `File ${input.filepath} has been found, marking as not missing`,
   })
 }
+
+export const checkExistsStep = createStep<CheckExistsInput, CheckExistsOutput>(
+  STEP,
+  async (input, ctx) => {
+    try {
+      await stat(input.filepath)
+    } catch (error) {
+      if (!isENOENT(error)) throw error
+      await handleMissing(input, ctx)
+      return null
+    }
+
+    await handleFound(input, ctx)
+    return { ...input, missing: false }
+  },
+)

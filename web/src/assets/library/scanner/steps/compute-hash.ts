@@ -1,45 +1,47 @@
 import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
-import { type Existing, isResolvedFormat } from "@/assets/library/scanner/types"
+import { createStep } from "@/assets/library/scanner/step"
+import {
+  type Existing,
+  type Hashed,
+  isResolvedFormat,
+} from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
-type HashedExtras = {
-  fileHash: string
-  fileSize: number | null
-  existingHash: string
-  changed: boolean
-}
+const STEP = "compute-hash"
 
-export async function computeHash<T extends Existing>(
-  input: T,
-  ctx: ScanCtx,
-): Promise<T & HashedExtras> {
-  const { hash, fileSize } =
-    input.format === "audiobook"
-      ? await hashAudiobookDirectory(input.filepath, ctx.signal)
-      : await hashFile(input.filepath, ctx.signal)
+export type ComputeHashInput = Existing
+export type ComputeHashOutput = Hashed
 
-  const changed =
-    !!ctx.options.force || input.isNew || input.existingHash !== hash
+export const computeHashStep = createStep<ComputeHashInput, ComputeHashOutput>(
+  STEP,
+  async (input, ctx) => {
+    const { hash, fileSize } =
+      input.format === "audiobook"
+        ? await hashAudiobookDirectory(input.filepath, ctx.signal)
+        : await hashFile(input.filepath, ctx.signal)
 
-  if (isResolvedFormat(input.format)) {
-    await updateBook(
-      input.bookUuid,
-      null,
-      getFormatRelationPatch(input, {
-        missing: false,
-        contentHash: hash,
-        fileSize,
-      }),
-    )
-  }
+    const changed =
+      !!ctx.options.force || input.isNew || input.existingHash !== hash
 
-  return {
-    ...input,
-    fileHash: hash,
-    fileSize,
-    existingHash: hash,
-    changed,
-  }
-}
+    if (isResolvedFormat(input.format)) {
+      await updateBook(
+        input.bookUuid,
+        null,
+        getFormatRelationPatch(input, {
+          missing: false,
+          contentHash: hash,
+          fileSize,
+        }),
+      )
+    }
+
+    return {
+      ...input,
+      fileHash: hash,
+      fileSize,
+      existingHash: hash,
+      changed,
+    }
+  },
+)

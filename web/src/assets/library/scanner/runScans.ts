@@ -75,6 +75,9 @@ export async function runScans(
       const input = inputs[index]
       if (!input) return
 
+      console.log(
+        `Scanning ${input.book.title} ${input.format} [${index}/${total}]`,
+      )
       await scanOne(input, ctx)
 
       processed += 1

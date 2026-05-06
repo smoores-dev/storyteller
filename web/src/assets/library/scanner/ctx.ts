@@ -18,5 +18,6 @@ export type ScanCtx = {
   logger: Logger
   source: ScanSource
   options: ScanOptions
+  scope?: AsyncDisposableStack
   setProgress: (processed: number, total: number) => void
 }

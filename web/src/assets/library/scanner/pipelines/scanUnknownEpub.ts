@@ -1,37 +1,37 @@
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { ebookTail } from "@/assets/library/scanner/pipelines/scanEbook"
 import { readaloudTail } from "@/assets/library/scanner/pipelines/scanReadaloud"
-import { checkExists } from "@/assets/library/scanner/steps/check-exists"
-import { computeHash } from "@/assets/library/scanner/steps/compute-hash"
-import { determineFormat } from "@/assets/library/scanner/steps/determine-format"
-import { extractTextCover } from "@/assets/library/scanner/steps/extract-covers"
-import { openEpub } from "@/assets/library/scanner/steps/open-epub"
-import { upgradeEpub } from "@/assets/library/scanner/steps/upgrade-epub"
-import { type UnknownEpubInput } from "@/assets/library/scanner/types"
+import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
+import { computeHashStep } from "@/assets/library/scanner/steps/compute-hash"
+import { determineFormatStep } from "@/assets/library/scanner/steps/determine-format"
+import { extractTextCoverStep } from "@/assets/library/scanner/steps/extract-covers"
+import { openEpubStep } from "@/assets/library/scanner/steps/open-epub"
+import { upgradeEpubStep } from "@/assets/library/scanner/steps/upgrade-epub"
+import {
+  type EpubHashed,
+  type UnknownEpubInput,
+} from "@/assets/library/scanner/types"
 
 export async function scanUnknownEpub(input: UnknownEpubInput, ctx: ScanCtx) {
   await using scope = new AsyncDisposableStack()
+  const pipelineCtx: ScanCtx = { ...ctx, scope }
 
-  const existing = await checkExists(input, ctx)
-  if (!existing) return
+  const existing = await checkExistsStep.run(input, pipelineCtx)
 
-  const hashed = await computeHash(existing, ctx)
-  const opened = await openEpub(hashed, ctx, scope)
-  if (!opened) return
+  const hashed = await computeHashStep.run(existing, pipelineCtx)
 
-  const upgraded = await upgradeEpub(opened, ctx)
-  if (!upgraded) return
+  const opened = await openEpubStep.run(hashed as EpubHashed, pipelineCtx)
 
-  const classified = await determineFormat(upgraded, ctx)
+  const upgraded = await upgradeEpubStep.run(opened, pipelineCtx)
+
+  const classified = await determineFormatStep.run(upgraded, pipelineCtx)
 
   const reconciled =
     classified.format === "ebook"
-      ? await ebookTail(classified, ctx)
-      : await readaloudTail(classified, ctx)
+      ? await ebookTail(classified, pipelineCtx)
+      : await readaloudTail(classified, pipelineCtx)
 
-  if (!reconciled) return
-
-  await extractTextCover(reconciled)
+  await extractTextCoverStep.run(reconciled, pipelineCtx)
   ctx.report.succeeded({
     step: "scan-unknown-epub",
     bookUuid: reconciled.bookUuid,

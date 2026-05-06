@@ -1,7 +1,10 @@
 import { type Epub } from "@storyteller-platform/epub"
 
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
-import { type UnknownEpubInput } from "@/assets/library/scanner/types"
+import { createStep } from "@/assets/library/scanner/step"
+import {
+  type FormatKnown,
+  type UnknownEpubInput,
+} from "@/assets/library/scanner/types"
 
 const STEP = "determine-format"
 
@@ -14,15 +17,13 @@ type OpenedUnknown = UnknownEpubInput & {
   epub: Epub
 }
 
-type Classified<F extends "ebook" | "readaloud"> = Omit<
-  OpenedUnknown,
-  "format"
-> & { format: F }
+export type DetermineFormatInput = OpenedUnknown
+export type DetermineFormatOutput = FormatKnown
 
-export async function determineFormat(
-  input: OpenedUnknown,
-  ctx: ScanCtx,
-): Promise<Classified<"ebook"> | Classified<"readaloud">> {
+export const determineFormatStep = createStep<
+  DetermineFormatInput,
+  DetermineFormatOutput
+>(STEP, async (input, ctx) => {
   const manifest = await input.epub.getManifest()
   const hasMediaOverlays = Object.values(manifest).some(
     (item) => item.mediaOverlay,
@@ -39,5 +40,6 @@ export async function determineFormat(
   if (format === "ebook") {
     return { ...input, format: "ebook" }
   }
+
   return { ...input, format: "readaloud" }
-}
+})
