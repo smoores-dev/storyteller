@@ -20,10 +20,14 @@ const STEP = "reconcile-metadata"
 export type ReconcileMetadataInput = ManifestReady
 export type ReconcileMetadataOutput = Reconciled
 
-function buildFormatRelation(input: ManifestReady): BookRelationsUpdate {
+function buildFormatRelation(
+  input: ManifestReady,
+  current: BookWithRelations,
+): BookRelationsUpdate {
   const shared = {
     manifest: JSON.stringify(input.manifest),
     contentHash: input.fileHash,
+    fingerprint: input.fingerprint,
     missing: false,
     fileSize: input.fileSize,
   }
@@ -43,11 +47,16 @@ function buildFormatRelation(input: ManifestReady): BookRelationsUpdate {
     })
   }
 
+  const isNewReadaloudRow = !current.readaloud
   return getFormatRelationPatch(input, {
     ...shared,
     isEpub2: input.isEpub2,
     pageCount: input.pageCount,
     duration: input.duration,
+    ...(isNewReadaloudRow && {
+      status: "ALIGNED" as const,
+      currentStage: "SPLIT_TRACKS" as const,
+    }),
   })
 }
 
@@ -97,7 +106,7 @@ export const reconcileMetadataStep = defineStep(
       return null
     }
 
-    const formatRelation = buildFormatRelation(input)
+    const formatRelation = buildFormatRelation(input, current)
 
     await updateBook(input.bookUuid, metadataUpdate, {
       ...relationUpdate,

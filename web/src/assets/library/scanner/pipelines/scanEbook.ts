@@ -2,6 +2,7 @@ import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
 import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
 import { computeHashStep } from "@/assets/library/scanner/steps/compute-hash"
+import { determineFormatStep } from "@/assets/library/scanner/steps/determine-format"
 import { extractTextCoverStep } from "@/assets/library/scanner/steps/extract-covers"
 import {
   extractEbookManifestStep,
@@ -52,7 +53,11 @@ export async function scanEbook(
     return
   }
 
-  const metadata = await extractEpubMetadataStep(upgraded, ctx)
+  // For tentative inputs, decide ebook vs readaloud now that we have an
+  // upgraded, opened epub. Pass-through for non-tentative inputs.
+  const formatKnown = await determineFormatStep(upgraded, pipelineCtx)
+
+  const metadata = await extractEpubMetadataStep(formatKnown, ctx)
 
   const manifest =
     metadata.format === "readaloud"

@@ -22,6 +22,13 @@ type ScanInputBase = {
   missing: boolean
   existingHash: string | null
   existingFingerprint: string | null
+  /**
+   * True for inputs synthesized from discovery's epubUnknown list.
+   * The pipeline starts these as "ebook" and may flip to "readaloud"
+   * after determine-format inspects media overlays. Until that step
+   * runs, no DB writes touch the format relation.
+   */
+  formatTentative?: boolean
 }
 
 export type EbookInput = ScanInputBase & { format: "ebook" }

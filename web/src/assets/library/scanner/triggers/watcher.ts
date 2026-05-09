@@ -17,7 +17,11 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 function standardFilter(path: string): boolean {
-  return path.endsWith(".epub") || isAudioFile(path)
+  return (
+    /^\.watchman-cookie/.test(path.split("/").pop() ?? "") ||
+    path.endsWith(".epub") ||
+    isAudioFile(path)
+  )
 }
 
 type ControllerKey = UUID | "root" | "assets"
@@ -267,9 +271,19 @@ export class Watcher {
         }))
 
       if (!relevantChanges.length) {
+        logger.debug({
+          msg: "No relevant changes found",
+          importPath,
+          changes: events,
+        })
         return
       }
 
+      logger.debug({
+        msg: "Relevant changes found",
+        importPath,
+        changes: relevantChanges,
+      })
       queueChanges(relevantChanges)
     }
 

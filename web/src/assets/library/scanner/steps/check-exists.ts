@@ -16,6 +16,19 @@ function isENOENT(error: unknown): boolean {
 }
 
 async function handleMissing(input: ScanInput, ctx: ScanCtx) {
+  // Tentative inputs have no relation row yet, so there's nothing to
+  // mark missing. Just drop the input — discovery will surface the file
+  // again next scan if it reappears.
+  if (input.formatTentative) {
+    ctx.report.skipped({
+      step: STEP,
+      book: input.book,
+      format: input.format,
+      reason: "tentative-file-vanished",
+    })
+    return
+  }
+
   if (input.missing) {
     ctx.report.skipped({
       step: STEP,
@@ -42,6 +55,10 @@ async function handleMissing(input: ScanInput, ctx: ScanCtx) {
 }
 
 async function handleFound(input: ScanInput, ctx: ScanCtx) {
+  // Tentative inputs don't have an existing relation; reconcile-metadata
+  // will create one with missing: false at the end of the pipeline.
+  if (input.formatTentative) return
+
   const isMissing = input.book[input.format]?.missing ?? false
   if (isMissing) {
     await updateBook(

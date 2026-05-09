@@ -1,5 +1,3 @@
-import { type Epub } from "@storyteller-platform/epub"
-
 import { defineStep } from "@/assets/library/scanner/step2"
 import {
   type EpubOpened,
@@ -8,37 +6,36 @@ import {
 
 const STEP = "determine-format"
 
-type OpenedUnknown = EpubOpened & {
-  missing: false
-  fileHash: string
-  fileSize: number | null
-  changed: boolean
-  isEpub2: false
-  epub: Epub
-}
-
-export type DetermineFormatInput = OpenedUnknown
+export type DetermineFormatInput = EpubOpened
 export type DetermineFormatOutput = FormatKnown
 
+/**
+ * look at post-epub-2 upgrade epub and check if it has media overlays
+ * this is only for new epub files, not for existing books.
+ */
 export const determineFormatStep = defineStep(
   STEP,
-  async (input: DetermineFormatInput, ctx) => {
+  async (input: DetermineFormatInput, ctx): Promise<DetermineFormatOutput> => {
+    if (!input.formatTentative) return input
+
     const manifest = await input.epub.getManifest()
     const hasMediaOverlays = Object.values(manifest).some(
       (item) => item.mediaOverlay,
     )
     const format = hasMediaOverlays ? "readaloud" : "ebook"
 
-    ctx.report.info({
-      step: STEP,
-      format,
-      msg: `Determined format as ${format}`,
-    })
-
-    if (format === "ebook") {
-      return { ...input, format: "ebook" }
+    if (format !== input.format) {
+      ctx.report.info({
+        step: STEP,
+        msg: `Resolved tentative ebook ${input.filepath} as ${format}`,
+        book: input.book,
+        format,
+      })
     }
 
-    return { ...input, format: "readaloud" }
+    if (format === "ebook") {
+      return { ...input, format: "ebook", formatTentative: false }
+    }
+    return { ...input, format: "readaloud", formatTentative: false }
   },
 )

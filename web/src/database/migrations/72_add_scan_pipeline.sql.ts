@@ -12,24 +12,6 @@ const hasColumn = async (trx: typeof db, table: string, column: string) => {
   return tableMetadata.columns.some((col) => col.name === column)
 }
 
-// function minutesToCronExpression(minutes: number): string {
-//   if (minutes < 1) {
-//     return "* * * * *"
-//   }
-
-//   if (minutes < 60 && 60 % minutes === 0) {
-//     return `*/${minutes} * * * *`
-//   }
-
-//   const hours = Math.floor(minutes / 60)
-//   if (hours >= 1 && hours <= 24 && 24 % hours === 0) {
-//     const remainderMinutes = minutes % 60
-//     return `${remainderMinutes} */${hours} * * *`
-//   }
-
-//   return `0 */${Math.max(1, hours)} * * *`
-// }
-
 async function addFormatTableColumns(trx: typeof db) {
   const tables = ["ebook", "audiobook", "readaloud"]
 

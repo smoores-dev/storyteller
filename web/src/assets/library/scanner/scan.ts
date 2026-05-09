@@ -6,7 +6,10 @@ import {
   pathsOverlap,
 } from "@/assets/library/changes"
 import { discoverBookPathsForRoots } from "@/assets/library/discovery"
-import { reconcileDiscoveredPaths } from "@/assets/library/reconcile"
+import {
+  type UnclassifiedEpub,
+  reconcileDiscoveredPaths,
+} from "@/assets/library/reconcile"
 import { type BookWithRelations, getBooks } from "@/database/books"
 import { getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
@@ -193,30 +196,76 @@ async function resolveImportPath(
     signal: ctx.signal,
   })
 
-  reportDiscoveries(ctx, task.importPath, reconciled.newFormatsByBook)
+  reportDiscoveries(
+    ctx,
+    task.importPath,
+    reconciled.newFormatsByBook,
+    reconciled.unclassifiedEpubs,
+  )
 
   const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
   const inputs = buildInputsForBooks(refreshedBooks, {
     newFormats: reconciled.newFormatsByBook,
   })
+  inputs.push(
+    ...buildTentativeInputs(refreshedBooks, reconciled.unclassifiedEpubs),
+  )
 
   return { inputs }
+}
+
+function buildTentativeInputs(
+  books: BookWithRelations[],
+  unclassified: UnclassifiedEpub[],
+): ScanInput[] {
+  if (!unclassified.length) return []
+  const bookByUuid = new Map(books.map((book) => [book.uuid, book]))
+  const inputs: ScanInput[] = []
+  for (const { bookUuid, filepath } of unclassified) {
+    const book = bookByUuid.get(bookUuid)
+    if (!book) continue
+    inputs.push({
+      bookUuid,
+      filepath,
+      format: "ebook",
+      formatTentative: true,
+      book,
+      isNew: true,
+      missing: false,
+      existingHash: null,
+      existingFingerprint: null,
+    })
+  }
+  return inputs
 }
 
 function reportDiscoveries(
   ctx: ScanCtx,
   importPath: string,
   newFormatsByBook: Map<UUID, Set<ScanFormat>>,
+  unclassified: UnclassifiedEpub[],
 ) {
-  if (newFormatsByBook.size === 0) return
+  const tentativeBookUuids = new Set(unclassified.map((u) => u.bookUuid))
+  if (newFormatsByBook.size === 0 && tentativeBookUuids.size === 0) return
+
   let formatCount = 0
+  const bookUuids = new Set<UUID>(tentativeBookUuids)
   for (const [bookUuid, formats] of newFormatsByBook) {
-    ctx.report.recordAdded(bookUuid)
+    bookUuids.add(bookUuid)
     formatCount += formats.size
+  }
+  for (const bookUuid of bookUuids) {
+    ctx.report.recordAdded(bookUuid)
+  }
+
+  const parts = [`${bookUuids.size} book(s)`]
+  if (formatCount > 0) parts.push(`${formatCount} format(s)`)
+  if (unclassified.length > 0) {
+    parts.push(`${unclassified.length} unclassified epub(s)`)
   }
   ctx.report.info({
     step: "discover",
-    msg: `Discovered ${newFormatsByBook.size} book(s)/${formatCount} format(s) under ${importPath}`,
+    msg: `Discovered ${parts.join("/")} under ${importPath}`,
   })
 }
 
@@ -247,7 +296,7 @@ async function resolveChangedPaths(
   )
 
   let newFormatsByBook = new Map<UUID, Set<ScanFormat>>()
-  let unclassifiedEpubs: { bookUuid: UUID; filepath: string }[] = []
+  let unclassifiedEpubs: UnclassifiedEpub[] = []
 
   if (discoveryRoots.length) {
     const discovered = await discoverBookPathsForRoots(
@@ -273,7 +322,8 @@ async function resolveChangedPaths(
     }
     newFormatsByBook = reconciled.newFormatsByBook
     unclassifiedEpubs = reconciled.unclassifiedEpubs
-    reportDiscoveries(ctx, task.importPath, reconciled.newFormatsByBook)
+
+    reportDiscoveries(ctx, task.importPath, newFormatsByBook, unclassifiedEpubs)
   }
 
   if (!affectedFormats.size && !unclassifiedEpubs.length) {
@@ -284,6 +334,13 @@ async function resolveChangedPaths(
   const inputs = buildInputsForBooks(refreshedBooks, {
     formatFilter: affectedFormats,
     newFormats: newFormatsByBook,
+  })
+  inputs.push(...buildTentativeInputs(refreshedBooks, unclassifiedEpubs))
+  logger.debug({
+    msg: "Resolved changed paths",
+    importPath: task.importPath,
+    collection: task.collection,
+    changes: task.changes,
   })
 
   if (!inputs.length) return EMPTY_RESOLUTION

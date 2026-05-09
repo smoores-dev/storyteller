@@ -39,6 +39,8 @@ type ReadaloudRelationPatch = Partial<
     | "duration"
     | "fileSize"
     | "fingerprint"
+    | "status"
+    | "currentStage"
   >
 >
 

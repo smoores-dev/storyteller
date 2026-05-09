@@ -2,13 +2,11 @@ import {
   fingerprintAudiobookDirectory,
   fingerprintFile,
 } from "@/assets/library/fingerprint"
-import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
 import { defineStep } from "@/assets/library/scanner/step2"
 import {
   type Existing,
   type Fingerprinted,
 } from "@/assets/library/scanner/types"
-import { updateBook } from "@/database/books"
 
 const STEP = "check-fingerprint"
 
@@ -24,14 +22,6 @@ export const checkFingerprintStep = defineStep(
       !!ctx.options.force ||
       input.isNew ||
       input.existingFingerprint !== fingerprint
-
-    if (changed) {
-      await updateBook(
-        input.bookUuid,
-        null,
-        getFormatRelationPatch(input, { fingerprint, fileSize }),
-      )
-    }
 
     return {
       ...input,
