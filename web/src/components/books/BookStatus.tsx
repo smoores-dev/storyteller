@@ -14,6 +14,8 @@ import { IconChevronDown } from "@tabler/icons-react"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import {
+  useCancelScanMutation,
+  useGetScanStateQuery,
   useListBooksQuery,
   useProcessBookMutation,
   useTriggerBookScanMutation,
@@ -45,6 +47,12 @@ export function BookStatus({ bookUuid }: Props) {
   const [processBook] = useProcessBookMutation()
   const [triggerBookScan, { isLoading: isTriggeringScan }] =
     useTriggerBookScanMutation()
+  const [cancelScan, { isLoading: isCancellingScan }] = useCancelScanMutation()
+
+  const { data: scanState } = useGetScanStateQuery(undefined, {
+    pollingInterval: 5_000,
+    skip: !permissions?.bookProcess,
+  })
 
   if (!book) return null
 
@@ -99,40 +107,56 @@ export function BookStatus({ bookUuid }: Props) {
         )}
 
         {permissions.bookProcess && (
-          <Button.Group>
-            <Button
-              variant="subtle"
-              size="compact-sm"
-              loading={isTriggeringScan}
-              onClick={() => {
-                void triggerBookScan({ uuid: book.uuid })
-              }}
-            >
-              Scan
-            </Button>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <Button
-                  variant="subtle"
-                  size="compact-sm"
-                  disabled={isTriggeringScan}
-                  px={4}
-                >
-                  <IconChevronDown size={14} />
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  onClick={() => {
-                    void triggerBookScan({ uuid: book.uuid, force: true })
-                  }}
-                >
-                  Force rescan (re-read metadata from files even if unchanged
-                  since last scan)
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Button.Group>
+          <Group gap="xs">
+            <Button.Group>
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                loading={isTriggeringScan}
+                onClick={() => {
+                  void triggerBookScan({ uuid: book.uuid })
+                }}
+              >
+                Scan
+              </Button>
+              <Menu position="bottom-end">
+                <Menu.Target>
+                  <Button
+                    variant="subtle"
+                    size="compact-sm"
+                    disabled={isTriggeringScan}
+                    px={4}
+                  >
+                    <IconChevronDown size={14} />
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    onClick={() => {
+                      void triggerBookScan({ uuid: book.uuid, force: true })
+                    }}
+                  >
+                    Force rescan (re-read metadata from files even if unchanged
+                    since last scan)
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Button.Group>
+
+            {scanState?.running && (
+              <Button
+                variant="subtle"
+                color="red"
+                size="compact-sm"
+                loading={isCancellingScan}
+                onClick={() => {
+                  void cancelScan()
+                }}
+              >
+                Cancel scan
+              </Button>
+            )}
+          </Group>
         )}
       </Group>
     </Paper>

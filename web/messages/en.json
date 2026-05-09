@@ -83,6 +83,7 @@
             "scanWithDefaults": "Scan with default settings",
             "forceRescan": "Force rescan (re-read metadata from files even if unchanged since last scan)",
             "scanRunning": "Scan in progress ({source})",
+            "cancelScan": "Cancel scan",
             "enableScheduledScans": "Run scans on a schedule",
             "scanInterval": "Scan interval (minutes)",
             "showAdvancedCron": "Use a cron expression instead",

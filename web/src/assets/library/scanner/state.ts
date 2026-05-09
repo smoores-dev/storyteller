@@ -13,6 +13,7 @@ export type ScanState = {
 
 type Mutable = {
   lock: AsyncMutex
+  activeController: AbortController | null
   pendingSources: ScanSource[]
   recent: ScanReport[]
   state: ScanState
@@ -23,6 +24,7 @@ const RECENT_LIMIT = 25
 function initialState(): Mutable {
   return {
     lock: new AsyncMutex(),
+    activeController: null,
     pendingSources: [],
     recent: [],
     state: {
@@ -63,6 +65,7 @@ export function getRecentScanReports() {
 export async function withScanLock<T>(
   source: ScanSource,
   startedAt: number,
+  controller: AbortController | null,
   run: (setProgress: (processed: number, total: number) => void) => Promise<T>,
 ): Promise<T | null> {
   const m = get()
@@ -80,6 +83,8 @@ export async function withScanLock<T>(
     syncPending(m)
   }
 
+  m.activeController = controller
+
   m.state = {
     ...m.state,
     running: true,
@@ -93,6 +98,8 @@ export async function withScanLock<T>(
       m.state = { ...m.state, progress: { processed, total } }
     })
   } finally {
+    m.activeController = null
+
     m.state = {
       ...m.state,
       running: false,
@@ -100,6 +107,7 @@ export async function withScanLock<T>(
       startedAt: null,
       progress: null,
     }
+
     m.lock.unlock()
   }
 }
@@ -110,6 +118,17 @@ export function pushRecentReport(report: ScanReport) {
   if (m.recent.length > RECENT_LIMIT) {
     m.recent.splice(0, m.recent.length - RECENT_LIMIT)
   }
+}
+
+export function cancelActiveScan(): boolean {
+  const m = get()
+
+  if (!m.activeController) {
+    return false
+  }
+
+  m.activeController.abort()
+  return true
 }
 
 function syncPending(m: Mutable) {

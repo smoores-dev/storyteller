@@ -53,6 +53,7 @@ import {
 } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
+  useCancelScanMutation,
   useGetMaxUploadChunkSizeQuery,
   useGetScanStateQuery,
   useTriggerScanMutation,
@@ -233,6 +234,7 @@ export function SettingsForm({
   const [updateSettings] = useUpdateSettingsMutation()
   const [triggerScan, { isLoading: isTriggeringScan }] =
     useTriggerScanMutation()
+  const [cancelScan, { isLoading: isCancellingScan }] = useCancelScanMutation()
 
   const initialValues: Settings = {
     smtpHost: settings.smtpHost,
@@ -431,9 +433,23 @@ export function SettingsForm({
           )}
 
           {permissions?.bookProcess && scanState?.running && (
-            <Text className="text-sm opacity-70 dark:text-white">
-              Scan in progress ({scanState.source ?? "unknown"})
-            </Text>
+            <Group align="center" gap="sm">
+              <Text className="text-sm opacity-70 dark:text-white">
+                Scan in progress ({scanState.source ?? "unknown"})
+              </Text>
+
+              <Button
+                variant="subtle"
+                color="red"
+                size="compact-sm"
+                loading={isCancellingScan}
+                onClick={() => {
+                  void cancelScan()
+                }}
+              >
+                Cancel
+              </Button>
+            </Group>
           )}
 
           <Switch

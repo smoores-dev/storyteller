@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 
 import { type ScanOptions } from "@/assets/library/scanner/ctx"
-import { getScanState, scanLibrary } from "@/assets/library/scanner/scan"
+import {
+  cancelActiveScan,
+  getScanState,
+  scanLibrary,
+} from "@/assets/library/scanner/scan"
 import { withHasPermission } from "@/auth/auth"
 import {
   MetadataFieldOverridesSchema,
@@ -64,9 +68,7 @@ export const POST = withHasPermission("bookProcess")(async (request) => {
   return new Response(null, { status: 204 })
 })
 
-export const DELETE = withHasPermission("bookProcess")(async (request) => {
-  const controller = new AbortController()
-  cancelScan(controller.signal)
-
+export const DELETE = withHasPermission("bookProcess")(() => {
+  cancelActiveScan()
   return new Response(null, { status: 204 })
 })

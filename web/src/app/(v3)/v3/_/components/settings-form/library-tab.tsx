@@ -17,7 +17,11 @@ import {
   defaultMetadataFieldOverrides,
 } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
-import { useGetScanStateQuery, useTriggerScanMutation } from "@/store/api"
+import {
+  useCancelScanMutation,
+  useGetScanStateQuery,
+  useTriggerScanMutation,
+} from "@/store/api"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -376,50 +380,67 @@ function ScanTriggerButton({
 }) {
   const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
   const [modalOpen, setModalOpen] = useState(false)
+  const [cancelScan, { isLoading: isCancelling }] = useCancelScanMutation()
   const isDisabled = scanState?.running || isTriggeringScan
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="rounded-r-none border-r-0"
-          disabled={isDisabled}
-          onClick={() => {
-            setModalOpen(true)
-          }}
-        >
-          {t("scanLibrary")}
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger
+      <div className="flex items-center gap-2">
+        <div className="flex items-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-r-none border-r-0"
             disabled={isDisabled}
-            className="border-border dark:bg-input/30 hover:bg-input/50 inline-flex h-6 items-center rounded-r-md border px-1 text-xs disabled:pointer-events-none disabled:opacity-50"
+            onClick={() => {
+              setModalOpen(true)
+            }}
           >
-            <IconChevronDown size={14} />
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={() => {
-                  triggerScan({})
-                }}
-              >
-                {t("scanWithDefaults")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  triggerScan({ force: true })
-                }}
-              >
-                {t("forceRescan")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenu>
+            {t("scanLibrary")}
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={isDisabled}
+              className="border-border dark:bg-input/30 hover:bg-input/50 inline-flex h-6 items-center rounded-r-md border px-1 text-xs disabled:pointer-events-none disabled:opacity-50"
+            >
+              <IconChevronDown size={14} />
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    triggerScan({})
+                  }}
+                >
+                  {t("scanWithDefaults")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    triggerScan({ force: true })
+                  }}
+                >
+                  {t("forceRescan")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenu>
+        </div>
+
+        {scanState?.running && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={isCancelling}
+            onClick={() => {
+              void cancelScan()
+            }}
+          >
+            {t("cancelScan")}
+          </Button>
+        )}
       </div>
 
       {scanState?.running && (

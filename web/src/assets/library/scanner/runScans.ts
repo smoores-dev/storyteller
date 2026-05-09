@@ -1,6 +1,7 @@
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { scanAudiobook } from "@/assets/library/scanner/pipelines/scanAudiobook"
 import { scanEbook } from "@/assets/library/scanner/pipelines/scanEbook"
+import { ScanAbortedError } from "@/assets/library/scanner/step2"
 import { type ScanInput } from "@/assets/library/scanner/types"
 import { logger } from "@/logging"
 
@@ -50,6 +51,14 @@ export async function runScans(
           }
         }
       } catch (err) {
+        if (err instanceof ScanAbortedError) {
+          ctx.report.info({
+            step: "scan",
+            msg: `Scan aborted for ${input.book.title} (${input.format})`,
+          })
+          return
+        }
+
         ctx.report.failed({
           step: "scan",
           book: input.book,

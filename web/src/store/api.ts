@@ -343,6 +343,12 @@ export const api = createApi({
         }),
       }),
     }),
+    cancelScan: build.mutation<void, void>({
+      query: () => ({
+        url: "/books/scan",
+        method: "DELETE",
+      }),
+    }),
     getScanState: build.query<
       { running: boolean; source: string | null; startedAt: number | null },
       void
@@ -790,6 +796,7 @@ export const {
   useMergeBooksMutation,
   useProcessBookMutation,
   useTriggerBookScanMutation,
+  useCancelScanMutation,
   useTriggerScanMutation,
   useRemoveBooksFromCollectionsMutation,
   useRemoveBooksFromSeriesMutation,

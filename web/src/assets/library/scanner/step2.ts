@@ -9,6 +9,13 @@ type NarrowOutput<Output, Narrowed> = Output extends null
   ? null
   : Output & Narrowed
 
+export class ScanAbortedError extends Error {
+  constructor(step: string) {
+    super(`Scan aborted before step "${step}"`)
+    this.name = "ScanAbortedError"
+  }
+}
+
 /**
  * Define a step function that can be used in the scanner.
  */
@@ -20,6 +27,10 @@ export function defineStep<Input extends ScanInput, Output>(
     input: N,
     ctx: ScanCtx,
   ): Promise<NarrowOutput<Output, N>> => {
+    if (ctx.signal.aborted) {
+      throw new ScanAbortedError(step)
+    }
+
     const stepCtx = { ...ctx, step }
 
     try {
@@ -31,6 +42,10 @@ export function defineStep<Input extends ScanInput, Output>(
 
       return result as NarrowOutput<Output, N>
     } catch (err) {
+      if (err instanceof ScanAbortedError) {
+        throw err
+      }
+
       stepCtx.report.warn({
         step: step,
         msg: `Step ${step} failed before format was resolved for book ${input.book.title} (${input.format})`,

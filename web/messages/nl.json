@@ -89,6 +89,7 @@
             "scanWithDefaults": "Start scan",
             "forceRescan": "Forceer herscan (lees metadata opnieuw uit bestanden ook al is deze ongewijzigd sinds de laatste scan)",
             "scanRunning": "Scan wordt uitgevoerd ({source})",
+            "cancelScan": "Annuleer scan",
             "enableScheduledScans": "Voer scans op een schema uit",
             "scanInterval": "Scan interval (minuten)",
             "metadataFieldOverrides": "Metadata gedrag",

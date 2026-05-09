@@ -35,7 +35,7 @@ export type ScanResult = {
   report: ScanReport | null
 }
 
-export { getRecentScanReports, getScanState } from "./state"
+export { cancelActiveScan, getRecentScanReports, getScanState } from "./state"
 
 function defaultConcurrency(source: ScanSource): number {
   return source === "watcher" ? 2 : 8
@@ -300,16 +300,33 @@ export async function scan(opts: {
     opts.source,
   )
 
+  // internal controller that can be aborted from the cancel endpoint.
+  // forwards abort from the caller's signal so both paths cancel the scan.
+  const scanController = new AbortController()
+
+  if (opts.signal.aborted) {
+    scanController.abort()
+  } else {
+    opts.signal.addEventListener(
+      "abort",
+      () => {
+        scanController.abort()
+      },
+      { once: true },
+    )
+  }
+
   const locked = await withScanLock(
     opts.source,
     startedAt,
+    scanController,
     async (setProgress) => {
-      if (opts.signal.aborted) {
+      if (scanController.signal.aborted) {
         return { scannedBookUuids: new Set<UUID>(), processedInputs: 0 }
       }
 
       const ctx: ScanCtx = {
-        signal: opts.signal,
+        signal: scanController.signal,
         report,
         logger: report.logger,
         source: opts.source,
