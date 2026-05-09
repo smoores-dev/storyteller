@@ -114,6 +114,7 @@ export async function reconcileDiscoveredPaths(
         bookPath,
         input.collectionUuid,
         importMode,
+        newSkipPaths,
       )
       if (!created) continue
 
@@ -129,7 +130,12 @@ export async function reconcileDiscoveredPaths(
 
     if (!hasAnyRelationChange(scopedMatch, bookPath)) continue
 
-    const updated = await attachNewRelations(scopedMatch, bookPath, importMode)
+    const updated = await attachNewRelations(
+      scopedMatch,
+      bookPath,
+      importMode,
+      newSkipPaths,
+    )
     addFormats(result.formatsByBook, updated.book.uuid, updated.newFormats)
     addFormats(result.newFormatsByBook, updated.book.uuid, updated.newFormats)
     collectUnclassifiedEpubs(

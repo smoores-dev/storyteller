@@ -1,15 +1,16 @@
 import { type Logger } from "pino"
 
 import { type ScanSource } from "@/assets/library/scanner/ctx"
+import { type BookWithRelations } from "@/database/books"
 import { type UUID } from "@/uuid"
 
-import { type ResolvedScanFormat } from "./types"
+import { type ScanFormat } from "./types"
 
 type BaseEntry = {
   ts: number
   step: string
   bookUuid?: UUID
-  format?: ResolvedScanFormat
+  format?: ScanFormat
 }
 
 export type ReportEntry =
@@ -18,19 +19,22 @@ export type ReportEntry =
   | (BaseEntry & {
       kind: "skip"
       reason: string
+      bookTitle: string
       bookUuid: UUID
-      format: ResolvedScanFormat
+      format: ScanFormat
     })
   | (BaseEntry & {
       kind: "failed"
       err: unknown
+      bookTitle: string
       bookUuid: UUID
-      format: ResolvedScanFormat
+      format: ScanFormat
     })
   | (BaseEntry & {
       kind: "succeeded"
+      bookTitle: string
       bookUuid: UUID
-      format: ResolvedScanFormat
+      format: ScanFormat
     })
 
 type ReportCounts = {
@@ -39,6 +43,17 @@ type ReportCounts = {
   skipped: number
   failed: number
   succeeded: number
+}
+
+function formatBookMessage(input: {
+  step: string
+  msg: string
+  book?: BookWithRelations
+  format?: ScanFormat
+}): string {
+  return input.book
+    ? `[${input.step}] ${input.msg} for book ${input.book.title} (${input.format})`
+    : input.msg
 }
 
 export class ScanReport {
@@ -69,14 +84,11 @@ export class ScanReport {
   info(input: {
     step: string
     msg: string
-    bookUuid?: UUID
-    format?: ResolvedScanFormat
+    book?: BookWithRelations
+    format?: ScanFormat
   }) {
     this.baseLogger.info({
-      msg: input.msg,
-      step: input.step,
-      bookUuid: input.bookUuid,
-      format: input.format,
+      msg: formatBookMessage(input),
     })
 
     this.entries.push({
@@ -84,7 +96,7 @@ export class ScanReport {
       ts: Date.now(),
       step: input.step,
       msg: input.msg,
-      bookUuid: input.bookUuid,
+      bookUuid: input.book?.uuid,
       format: input.format,
     })
   }
@@ -92,15 +104,12 @@ export class ScanReport {
   warn(input: {
     step: string
     msg: string
-    bookUuid?: UUID
-    format?: ResolvedScanFormat
+    book?: BookWithRelations
+    format?: ScanFormat
     err?: unknown
   }) {
     this.baseLogger.warn({
-      msg: input.msg,
-      step: input.step,
-      bookUuid: input.bookUuid,
-      format: input.format,
+      msg: formatBookMessage(input),
       err: input.err,
     })
 
@@ -109,7 +118,7 @@ export class ScanReport {
       ts: Date.now(),
       step: input.step,
       msg: input.msg,
-      bookUuid: input.bookUuid,
+      bookUuid: input.book?.uuid,
       format: input.format,
       err: input.err,
     })
@@ -118,15 +127,14 @@ export class ScanReport {
   skipped(input: {
     step: string
     reason: string
-    bookUuid: UUID
-    format: ResolvedScanFormat
+    book: BookWithRelations
+    format: ScanFormat
   }) {
-    this.baseLogger.info({
-      msg: "scan step skipped",
-      step: input.step,
-      reason: input.reason,
-      bookUuid: input.bookUuid,
-      format: input.format,
+    this.baseLogger.warn({
+      msg: formatBookMessage({
+        ...input,
+        msg: `Skipped for reason: ${input.reason}`,
+      }),
     })
 
     this.entries.push({
@@ -134,24 +142,22 @@ export class ScanReport {
       ts: Date.now(),
       step: input.step,
       reason: input.reason,
-      bookUuid: input.bookUuid,
+      bookTitle: input.book.title,
+      bookUuid: input.book.uuid,
       format: input.format,
     })
 
-    this.skippedBooksSet.add(input.bookUuid)
+    this.skippedBooksSet.add(input.book.uuid)
   }
 
   failed(input: {
     step: string
-    bookUuid: UUID
-    format: ResolvedScanFormat
+    book: BookWithRelations
+    format: ScanFormat
     err: unknown
   }) {
     this.baseLogger.error({
-      msg: "scan step failed",
-      step: input.step,
-      bookUuid: input.bookUuid,
-      format: input.format,
+      msg: formatBookMessage({ ...input, msg: `Failed` }),
       err: input.err,
     })
 
@@ -159,28 +165,34 @@ export class ScanReport {
       kind: "failed",
       ts: Date.now(),
       step: input.step,
-      bookUuid: input.bookUuid,
+      bookTitle: input.book.title,
+      bookUuid: input.book.uuid,
       format: input.format,
       err: input.err,
     })
 
-    this.failedBooksSet.add(input.bookUuid)
+    this.failedBooksSet.add(input.book.uuid)
   }
 
   succeeded(input: {
     step: string
-    bookUuid: UUID
-    format: ResolvedScanFormat
+    book: BookWithRelations
+    format: ScanFormat
   }) {
+    this.baseLogger.info({
+      msg: formatBookMessage({ ...input, msg: `Succeeded` }),
+    })
+
     this.entries.push({
       kind: "succeeded",
       ts: Date.now(),
       step: input.step,
-      bookUuid: input.bookUuid,
+      bookTitle: input.book.title,
+      bookUuid: input.book.uuid,
       format: input.format,
     })
 
-    this.succeededBooksSet.add(input.bookUuid)
+    this.succeededBooksSet.add(input.book.uuid)
   }
 
   outcomes(): ReportEntry[] {

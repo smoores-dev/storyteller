@@ -24,18 +24,18 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
-import { type ImportMode } from "@/database/settingsTypes"
-import { logger } from "@/logging"
-import { type UUID } from "@/uuid"
-
-import { cacheAudioCover, cacheTextCover } from "./coverCache"
-import { type ScanFormat } from "./scanner/types"
 import { db } from "@/database/connection"
 import {
   addImportSkipPaths,
   getImportSkipPaths,
   removeImportSkipPaths,
 } from "@/database/scans"
+import { type ImportMode } from "@/database/settingsTypes"
+import { logger } from "@/logging"
+import { type UUID } from "@/uuid"
+
+import { cacheAudioCover, cacheTextCover } from "./coverCache"
+import { type ScanFormat } from "./scanner/types"
 
 export type BookPath = {
   ebook?: string
@@ -175,6 +175,7 @@ export async function createNewBook(
   bookPath: BookPath,
   collectionUuid: UUID | null,
   importMode: ImportMode,
+  newSkipPaths: { bookUuid: UUID; filepath: string }[],
 ): Promise<BookWithRelations | null> {
   const collectionRelation = collectionUuid
     ? { collections: [collectionUuid] }
@@ -209,7 +210,12 @@ export async function createNewBook(
     )
 
     created = await ensureBookDirectory(created)
-    const relocated = await relocateBookPaths(created, bookPath, importMode)
+    const relocated = await relocateBookPaths(
+      created,
+      bookPath,
+      importMode,
+      newSkipPaths,
+    )
 
     created = await updateBook(created.uuid, null, {
       ...(relocated.ebook && {
@@ -252,7 +258,12 @@ export async function createNewBook(
     )
 
     created = await ensureBookDirectory(created)
-    const relocated = await relocateBookPaths(created, bookPath, importMode)
+    const relocated = await relocateBookPaths(
+      created,
+      bookPath,
+      importMode,
+      newSkipPaths,
+    )
     if (relocated.audiobook) {
       created = await updateBook(created.uuid, null, {
         audiobook: { filepath: relocated.audiobook, missing: false },
@@ -289,8 +300,14 @@ export async function attachNewRelations(
   book: BookWithRelations,
   bookPath: BookPath,
   importMode: ImportMode,
+  newSkipPaths: { bookUuid: UUID; filepath: string }[],
 ): Promise<UpdatedBookResult> {
-  const pathToAttach = await relocateBookPaths(book, bookPath, importMode)
+  const pathToAttach = await relocateBookPaths(
+    book,
+    bookPath,
+    importMode,
+    newSkipPaths,
+  )
   const newFormats: ScanFormat[] = []
   const relations: Parameters<typeof updateBook>[2] = {}
 

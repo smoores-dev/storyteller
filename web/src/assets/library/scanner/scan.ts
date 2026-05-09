@@ -115,27 +115,6 @@ function buildInputsForBooks(
   return inputs
 }
 
-function buildUnclassifiedInputs(
-  unclassified: { bookUuid: UUID; filepath: string }[],
-  books: BookWithRelations[],
-): ScanInput[] {
-  return unclassified.flatMap(({ bookUuid, filepath }) => {
-    const book = books.find((b) => b.uuid === bookUuid)
-    if (!book) return []
-    return [
-      {
-        bookUuid,
-        filepath,
-        format: "epub-unknown" as const,
-        book,
-        isNew: true,
-        missing: false,
-        existingHash: null,
-      },
-    ]
-  })
-}
-
 function formatsAffectedByChanges(
   books: BookWithRelations[],
   changes: ImportPathChange[],
@@ -212,12 +191,9 @@ async function resolveImportPath(
   })
 
   const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
-  const inputs = [
-    ...buildInputsForBooks(refreshedBooks, {
-      newFormats: reconciled.newFormatsByBook,
-    }),
-    ...buildUnclassifiedInputs(reconciled.unclassifiedEpubs, refreshedBooks),
-  ]
+  const inputs = buildInputsForBooks(refreshedBooks, {
+    newFormats: reconciled.newFormatsByBook,
+  })
 
   return { inputs }
 }
@@ -282,13 +258,10 @@ async function resolveChangedPaths(
   }
 
   const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
-  const inputs = [
-    ...buildInputsForBooks(refreshedBooks, {
-      formatFilter: affectedFormats,
-      newFormats: newFormatsByBook,
-    }),
-    ...buildUnclassifiedInputs(unclassifiedEpubs, refreshedBooks),
-  ]
+  const inputs = buildInputsForBooks(refreshedBooks, {
+    formatFilter: affectedFormats,
+    newFormats: newFormatsByBook,
+  })
 
   if (!inputs.length) return EMPTY_RESOLUTION
 

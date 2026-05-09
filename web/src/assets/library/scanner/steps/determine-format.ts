@@ -1,14 +1,14 @@
 import { type Epub } from "@storyteller-platform/epub"
 
-import { createStep } from "@/assets/library/scanner/step"
+import { defineStep } from "@/assets/library/scanner/step2"
 import {
+  type EpubOpened,
   type FormatKnown,
-  type UnknownEpubInput,
 } from "@/assets/library/scanner/types"
 
 const STEP = "determine-format"
 
-type OpenedUnknown = UnknownEpubInput & {
+type OpenedUnknown = EpubOpened & {
   missing: false
   fileHash: string
   fileSize: number | null
@@ -20,26 +20,25 @@ type OpenedUnknown = UnknownEpubInput & {
 export type DetermineFormatInput = OpenedUnknown
 export type DetermineFormatOutput = FormatKnown
 
-export const determineFormatStep = createStep<
-  DetermineFormatInput,
-  DetermineFormatOutput
->(STEP, async (input, ctx) => {
-  const manifest = await input.epub.getManifest()
-  const hasMediaOverlays = Object.values(manifest).some(
-    (item) => item.mediaOverlay,
-  )
-  const format = hasMediaOverlays ? "readaloud" : "ebook"
+export const determineFormatStep = defineStep(
+  STEP,
+  async (input: DetermineFormatInput, ctx) => {
+    const manifest = await input.epub.getManifest()
+    const hasMediaOverlays = Object.values(manifest).some(
+      (item) => item.mediaOverlay,
+    )
+    const format = hasMediaOverlays ? "readaloud" : "ebook"
 
-  ctx.report.info({
-    step: STEP,
-    bookUuid: input.bookUuid,
-    format,
-    msg: `Classified EPUB as ${format}`,
-  })
+    ctx.report.info({
+      step: STEP,
+      format,
+      msg: `Determined format as ${format}`,
+    })
 
-  if (format === "ebook") {
-    return { ...input, format: "ebook" }
-  }
+    if (format === "ebook") {
+      return { ...input, format: "ebook" }
+    }
 
-  return { ...input, format: "readaloud" }
-})
+    return { ...input, format: "readaloud" }
+  },
+)

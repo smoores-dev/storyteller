@@ -53,34 +53,34 @@ export function getFormatRelationPatch(
   ctx: FormatRelationContext,
   update: FormatRelationPatch,
 ): BookRelationsUpdate {
-  if (ctx.format === "ebook") {
-    return {
-      ebook: {
-        filepath: ctx.filepath,
-        ...(update as EbookRelationPatch),
-      } as NonNullable<BookRelationsUpdate["ebook"]>,
+  switch (ctx.format) {
+    case "ebook":
+      return {
+        ebook: {
+          filepath: ctx.filepath,
+          ...(update as EbookRelationPatch),
+        } as NonNullable<BookRelationsUpdate["ebook"]>,
+      }
+    case "audiobook":
+      return {
+        audiobook: {
+          filepath: ctx.filepath,
+          ...(update as AudiobookRelationPatch),
+        } as NonNullable<BookRelationsUpdate["audiobook"]>,
+      }
+    case "readaloud":
+      return {
+        readaloud: {
+          filepath: ctx.filepath,
+          ...(update as ReadaloudRelationPatch),
+        } as NonNullable<BookRelationsUpdate["readaloud"]>,
+      }
+    default: {
+      const _exhaustive: never = ctx.format
+
+      throw new Error(
+        `Cannot build relation patch for unresolved format "${_exhaustive as string}"`,
+      )
     }
   }
-
-  if (ctx.format === "audiobook") {
-    return {
-      audiobook: {
-        filepath: ctx.filepath,
-        ...(update as AudiobookRelationPatch),
-      } as NonNullable<BookRelationsUpdate["audiobook"]>,
-    }
-  }
-
-  if (ctx.format === "readaloud") {
-    return {
-      readaloud: {
-        filepath: ctx.filepath,
-        ...(update as ReadaloudRelationPatch),
-      } as NonNullable<BookRelationsUpdate["readaloud"]>,
-    }
-  }
-
-  throw new Error(
-    `Cannot build relation patch for unresolved format "${ctx.format}"`,
-  )
 }

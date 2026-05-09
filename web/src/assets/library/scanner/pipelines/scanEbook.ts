@@ -2,68 +2,86 @@ import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
 import { computeHashStep } from "@/assets/library/scanner/steps/compute-hash"
 import { extractTextCoverStep } from "@/assets/library/scanner/steps/extract-covers"
-import { extractEbookManifestStep } from "@/assets/library/scanner/steps/extract-manifest"
+import {
+  extractEbookManifestStep,
+  extractReadaloudManifestStep,
+} from "@/assets/library/scanner/steps/extract-manifest"
 import { extractEpubMetadataStep } from "@/assets/library/scanner/steps/extract-metadata"
 import { openEpubStep } from "@/assets/library/scanner/steps/open-epub"
 import { reconcileMetadataStep } from "@/assets/library/scanner/steps/reconcile-metadata"
 import { upgradeEpubStep } from "@/assets/library/scanner/steps/upgrade-epub"
 import {
-  EpubHashed,
-  EpubOpened,
   type EbookInput,
-  type FormatKnown,
+  type EpubHashed,
+  type Hashed,
+  type ReadaloudInput,
+  type ScanInput,
 } from "@/assets/library/scanner/types"
 
-export async function scanEbook(input: EbookInput, ctx: ScanCtx) {
+const isEpub2 = <T extends EpubHashed & { isEpub2: boolean }>(
+  input: T,
+): input is T & { isEpub2: true } => {
+  return input.isEpub2
+}
+
+const isChanged = <Input extends Hashed>(
+  input: Input,
+): input is Input extends Input ? Input & { changed: true } : never => {
+  return input.changed
+}
+
+const isReadaloud = <Input extends ScanInput>(
+  input: Input,
+): input is Input & { format: "readaloud" } => {
+  return input.format === "readaloud"
+}
+
+export async function scanEbook(
+  input: EbookInput | ReadaloudInput,
+  ctx: ScanCtx,
+) {
   await using scope = new AsyncDisposableStack()
   const pipelineCtx: ScanCtx = { ...ctx, scope }
 
-  const existing = await checkExistsStep.run(input, pipelineCtx)
+  const existing = await checkExistsStep(input, pipelineCtx)
+  if (!existing) return
 
-  const hashed = await computeHashStep.run(existing, pipelineCtx)
+  const hashed = await computeHashStep(existing, pipelineCtx)
 
-  if (!hashed.changed) {
-    if (hashed.format === "epub-unknown") {
-      ctx.report.warn({
-        step: "open-epub",
-        msg: "Unknown EPUB did not change, skipping format determination",
-        bookUuid: input.bookUuid,
-      })
-      return
-    }
-
+  if (!isChanged(hashed)) {
     ctx.report.skipped({
       step: "open-epub",
-      bookUuid: input.bookUuid,
+      book: input.book,
       format: input.format,
       reason: "unchanged",
     })
     return
   }
 
-  const opened = await openEpubStep.run(hashed as EpubHashed, pipelineCtx)
+  const opened = await openEpubStep(hashed as EpubHashed, pipelineCtx)
 
-  const upgraded = await upgradeEpubStep.run(opened, pipelineCtx)
+  const upgraded = isEpub2(opened)
+    ? await upgradeEpubStep(opened, pipelineCtx)
+    : opened
 
-  const reconciled = await ebookTail(
-    upgraded as EpubOpened & { format: "readaloud" },
-    pipelineCtx,
-  )
+  if (!upgraded) {
+    // maybe do something
+    return
+  }
 
-  await extractTextCoverStep.run(reconciled, pipelineCtx)
+  const metadata = await extractEpubMetadataStep(upgraded, ctx)
+
+  const manifest = isReadaloud(metadata)
+    ? await extractReadaloudManifestStep(metadata, ctx)
+    : await extractEbookManifestStep(metadata, ctx)
+
+  const reconciled = await reconcileMetadataStep(manifest, ctx)
+  if (!reconciled) return
+
+  await extractTextCoverStep(reconciled, pipelineCtx)
   ctx.report.succeeded({
     step: "scan-ebook",
-    bookUuid: reconciled.bookUuid,
+    book: reconciled.book,
     format: "ebook",
   })
-}
-
-export async function ebookTail<
-  T extends FormatKnown & { format: "ebook" | "readaloud" },
->(input: T, ctx: ScanCtx) {
-  const metadata = await extractEpubMetadataStep.run(input, ctx)
-
-  const manifest = await extractEbookManifestStep.run(metadata, ctx)
-
-  return await reconcileMetadataStep.run(manifest, ctx)
 }

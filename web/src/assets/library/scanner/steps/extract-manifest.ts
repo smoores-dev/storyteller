@@ -1,5 +1,5 @@
 import { getNumericValue } from "@/assets/library/scanner/manifestValue"
-import { createStep } from "@/assets/library/scanner/step"
+import { defineStep } from "@/assets/library/scanner/step2"
 import {
   type AudiobookManifestReady,
   type AudiobookMetadataExtracted,
@@ -64,66 +64,68 @@ function resolveReadaloudDuration(
   return duration > 0 ? duration : null
 }
 
-export const extractEbookManifestStep = createStep<
-  ExtractEbookManifestInput,
-  ExtractEbookManifestOutput
->("extract-ebook-manifest", async (input, ctx) => {
-  const manifest = await ReadiumService.getManifest(input.filepath, {
-    inferPageCount: true,
-    signal: ctx.signal,
-  })
+export const extractEbookManifestStep = defineStep(
+  "extract-ebook-manifest",
+  async (input: ExtractEbookManifestInput, ctx) => {
+    const manifest = await ReadiumService.getManifest(input.filepath, {
+      inferPageCount: true,
+      signal: ctx.signal,
+    })
 
-  return {
-    ...input,
-    manifest,
-    pageCount: manifest.metadata.numberOfPages ?? null,
-    duration: null,
-  }
-})
+    return {
+      ...input,
+      manifest,
+      pageCount: manifest.metadata.numberOfPages ?? null,
+      duration: null,
+    }
+  },
+)
 
-export const extractReadaloudManifestStep = createStep<
-  ExtractReadaloudManifestInput,
-  ExtractReadaloudManifestOutput
->("extract-readaloud-manifest", async (input, ctx) => {
-  const manifest = await ReadiumService.getManifest(input.filepath, {
-    inferPageCount: true,
-    signal: ctx.signal,
-  })
+export const extractReadaloudManifestStep = defineStep(
+  "extract-readaloud-manifest",
+  async (input: ExtractReadaloudManifestInput, ctx) => {
+    const manifest = await ReadiumService.getManifest(input.filepath, {
+      inferPageCount: true,
+      signal: ctx.signal,
+    })
 
-  return {
-    ...input,
-    manifest,
-    pageCount: resolveReadaloudPageCount(
-      input,
-      manifest.metadata.numberOfPages ?? null,
-    ),
-    duration: resolveReadaloudDuration(input, manifest),
-  }
-})
+    return {
+      ...input,
+      manifest,
+      pageCount: resolveReadaloudPageCount(
+        input,
+        manifest.metadata.numberOfPages ?? null,
+      ),
+      duration: resolveReadaloudDuration(input, manifest),
+    }
+  },
+)
 
-export const extractAudiobookManifestStep = createStep<
-  ExtractAudiobookManifestInput,
-  ExtractAudiobookManifestOutput
->("extract-audiobook-manifest", async (input) => {
-  const manifestOptions = {
-    bookId: input.book.uuid,
-    title: input.book.title,
-    updatedAt: new Date(input.book.updatedAt),
-    ...(input.book.subtitle ? { subtitle: input.book.subtitle } : {}),
-    ...(input.book.description ? { description: input.book.description } : {}),
-    ...(input.book.language ? { language: input.book.language } : {}),
-  }
+export const extractAudiobookManifestStep = defineStep(
+  "extract-audiobook-manifest",
+  async (input: ExtractAudiobookManifestInput, _ctx) => {
+    const manifestOptions = {
+      bookId: input.book.uuid,
+      title: input.book.title,
+      updatedAt: new Date(input.book.updatedAt),
+      ...(input.book.subtitle ? { subtitle: input.book.subtitle } : {}),
+      ...(input.book.description
+        ? { description: input.book.description }
+        : {}),
+      ...(input.book.language ? { language: input.book.language } : {}),
+    }
 
-  const manifest = await createAudiobookManifest(
-    input.filepath,
-    manifestOptions,
-  )
-  const serialized = manifest.serialize() as SerializedManifest
+    const manifest = await createAudiobookManifest(
+      input.filepath,
+      manifestOptions,
+    )
+    const serialized = manifest.serialize() as SerializedManifest
 
-  return {
-    ...input,
-    manifest: serialized,
-    pageCount: null,
-    duration: deriveAudiobookDuration(serialized),
-  }
-})
+    return {
+      ...input,
+      manifest: serialized,
+      pageCount: null,
+      duration: deriveAudiobookDuration(serialized),
+    }
+  },
+)

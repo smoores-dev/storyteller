@@ -15,35 +15,43 @@ export async function scanAudiobook(input: AudiobookInput, ctx: ScanCtx) {
   await using scope = new AsyncDisposableStack()
   const pipelineCtx: ScanCtx = { ...ctx, scope }
 
-  const existing = await checkExistsStep.run(input, pipelineCtx)
+  const existing = await checkExistsStep(input, pipelineCtx)
 
-  const hashed = await computeHashStep.run(existing, pipelineCtx)
+  if (!existing) return
+
+  const hashed = await computeHashStep(existing, pipelineCtx)
 
   if (!hashed.changed) {
     ctx.report.skipped({
       step: "open-audiobook",
-      bookUuid: input.bookUuid,
+      book: input.book,
       format: input.format,
       reason: "unchanged",
     })
     return
   }
 
-  const opened = await openAudiobookStep.run(
-    hashed as AudiobookHashed,
-    pipelineCtx,
-  )
+  const opened = await openAudiobookStep(hashed, pipelineCtx)
+  if (!opened) {
+    // maybe do something
+    return
+  }
 
-  const metadata = await extractAudiobookMetadataStep.run(opened, pipelineCtx)
+  const metadata = await extractAudiobookMetadataStep(opened, pipelineCtx)
 
-  const manifest = await extractAudiobookManifestStep.run(metadata, pipelineCtx)
+  const manifest = await extractAudiobookManifestStep(metadata, pipelineCtx)
 
-  const reconciled = await reconcileMetadataStep.run(manifest, pipelineCtx)
+  const reconciled = await reconcileMetadataStep(manifest, pipelineCtx)
 
-  await extractAudiobookCoverStep.run(reconciled, pipelineCtx)
+  if (!reconciled) {
+    // maybe do something
+    return
+  }
+
+  await extractAudiobookCoverStep(reconciled, pipelineCtx)
   ctx.report.succeeded({
     step: "scan-audiobook",
-    bookUuid: reconciled.bookUuid,
+    book: reconciled.book,
     format: "audiobook",
   })
 }

@@ -2,12 +2,8 @@ import { stat } from "node:fs/promises"
 
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
-import { createStep } from "@/assets/library/scanner/step"
-import {
-  type Existing,
-  type ScanInput,
-  isResolvedFormat,
-} from "@/assets/library/scanner/types"
+import { defineStep } from "@/assets/library/scanner/step2"
+import { type Existing, type ScanInput } from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
 const STEP = "check-exists"
@@ -20,19 +16,10 @@ function isENOENT(error: unknown): boolean {
 }
 
 async function handleMissing(input: ScanInput, ctx: ScanCtx) {
-  if (!isResolvedFormat(input.format)) {
-    ctx.report.warn({
-      step: STEP,
-      msg: `Discovered file at ${input.filepath} no longer exists, skipping`,
-      bookUuid: input.bookUuid,
-    })
-    return
-  }
-
   if (input.missing) {
     ctx.report.skipped({
       step: STEP,
-      bookUuid: input.bookUuid,
+      book: input.book,
       format: input.format,
       reason: "already-marked-missing",
     })
@@ -47,17 +34,13 @@ async function handleMissing(input: ScanInput, ctx: ScanCtx) {
 
   ctx.report.skipped({
     step: STEP,
-    bookUuid: input.bookUuid,
+    book: input.book,
     format: input.format,
     reason: "missing-on-disk",
   })
 }
 
 async function handleFound(input: ScanInput, ctx: ScanCtx) {
-  if (!isResolvedFormat(input.format) || !input.missing) {
-    return
-  }
-
   await updateBook(
     input.bookUuid,
     null,
@@ -66,15 +49,13 @@ async function handleFound(input: ScanInput, ctx: ScanCtx) {
 
   ctx.report.info({
     step: STEP,
-    bookUuid: input.bookUuid,
-    format: input.format,
     msg: `File ${input.filepath} has been found, marking as not missing`,
   })
 }
 
-export const checkExistsStep = createStep<CheckExistsInput, CheckExistsOutput>(
+export const checkExistsStep = defineStep(
   STEP,
-  async (input, ctx) => {
+  async (input: ScanInput, ctx) => {
     try {
       await stat(input.filepath)
     } catch (error) {
@@ -84,6 +65,6 @@ export const checkExistsStep = createStep<CheckExistsInput, CheckExistsOutput>(
     }
 
     await handleFound(input, ctx)
-    return { ...input, missing: false }
+    return { ...input, missing: false as const }
   },
 )

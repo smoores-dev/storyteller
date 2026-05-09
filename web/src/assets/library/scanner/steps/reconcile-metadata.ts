@@ -1,5 +1,5 @@
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
-import { createStep } from "@/assets/library/scanner/step"
+import { defineStep } from "@/assets/library/scanner/step2"
 import {
   type ManifestReady,
   type Reconciled,
@@ -84,59 +84,58 @@ function hasChanges(
   return !relation || relation.missing
 }
 
-export const reconcileMetadataStep = createStep<
-  ReconcileMetadataInput,
-  ReconcileMetadataOutput
->(STEP, async (input, ctx) => {
-  const current = await getBook(input.bookUuid)
-  if (!current) {
-    ctx.report.warn({
-      step: STEP,
-      msg: "Book no longer exists during scan reconciliation",
-      bookUuid: input.bookUuid,
-      format: input.format,
-    })
-    return null
-  }
+/**
+ * Reconciles the extracted metadata from the book file with the current metadata in the database.
+ */
+export const reconcileMetadataStep = defineStep(
+  "reconcile-metadata",
+  async (input: ReconcileMetadataInput, ctx) => {
+    const current = await getBook(input.book.uuid)
+    if (!current) {
+      ctx.report.warn({
+        step: STEP,
+        msg: `Book no longer exists during scan reconciliation for book ${input.book.title} (${input.format})`,
+      })
+      return null
+    }
 
-  const mode =
-    ctx.options.metadataOverrideMode ??
-    (await getSetting("metadataOverrideMode"))
+    const mode =
+      ctx.options.metadataOverrideMode ??
+      (await getSetting("metadataOverrideMode"))
 
-  const { metadataUpdate, relationUpdate } = resolveMetadata(
-    mode,
-    current,
-    input.extractedMetadata,
-    input.extractedRelations,
-  )
+    const { metadataUpdate, relationUpdate } = resolveMetadata(
+      mode,
+      current,
+      input.extractedMetadata,
+      input.extractedRelations,
+    )
 
-  if (!hasChanges(input, metadataUpdate, relationUpdate, current)) {
-    ctx.report.skipped({
-      step: STEP,
-      bookUuid: input.bookUuid,
-      format: input.format,
-      reason: "no-metadata-changes",
-    })
-    return null
-  }
+    if (!hasChanges(input, metadataUpdate, relationUpdate, current)) {
+      ctx.report.skipped({
+        step: STEP,
+        book: input.book,
+        format: input.format,
+        reason: "no-metadata-changes",
+      })
+      return null
+    }
 
-  const formatRelation = buildFormatRelation(input)
+    const formatRelation = buildFormatRelation(input)
 
-  await updateBook(input.bookUuid, metadataUpdate, {
-    ...relationUpdate,
-    ...formatRelation,
-  } as BookRelationsUpdate)
+    await updateBook(input.bookUuid, metadataUpdate, {
+      ...relationUpdate,
+      ...formatRelation,
+    } as BookRelationsUpdate)
 
-  const updated = await getBook(input.bookUuid)
-  if (!updated) {
-    ctx.report.warn({
-      step: STEP,
-      msg: "Book disappeared after metadata reconciliation",
-      bookUuid: input.bookUuid,
-      format: input.format,
-    })
-    return null
-  }
+    const updated = await getBook(input.bookUuid)
+    if (!updated) {
+      ctx.report.warn({
+        step: STEP,
+        msg: `Book disappeared after metadata reconciliation for book ${input.book.title} (${input.format})`,
+      })
+      return null
+    }
 
-  return { ...input, book: updated } as ManifestReady & Reconciled
-})
+    return { ...input, book: updated } as ManifestReady & Reconciled
+  },
+)

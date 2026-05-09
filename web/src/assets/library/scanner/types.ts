@@ -9,17 +9,9 @@ import {
 } from "@/database/books"
 import { type UUID } from "@/uuid"
 
-export type ScanFormat = "ebook" | "audiobook" | "readaloud" | "epub-unknown"
+export type ScanFormat = "ebook" | "audiobook" | "readaloud"
 
-export type ResolvedScanFormat = Exclude<ScanFormat, "epub-unknown">
-export type ResolvedEpubFormat = Extract<
-  ResolvedScanFormat,
-  "ebook" | "readaloud"
->
-export type EpubScanFormat = Extract<
-  ScanFormat,
-  "ebook" | "readaloud" | "epub-unknown"
->
+export type EpubScanFormat = Extract<ScanFormat, "ebook" | "readaloud">
 
 type ScanInputBase = {
   bookUuid: UUID
@@ -33,13 +25,8 @@ type ScanInputBase = {
 export type EbookInput = ScanInputBase & { format: "ebook" }
 export type ReadaloudInput = ScanInputBase & { format: "readaloud" }
 export type AudiobookInput = ScanInputBase & { format: "audiobook" }
-export type UnknownEpubInput = ScanInputBase & { format: "epub-unknown" }
 
-export type ScanInput =
-  | EbookInput
-  | ReadaloudInput
-  | AudiobookInput
-  | UnknownEpubInput
+export type ScanInput = EbookInput | ReadaloudInput | AudiobookInput
 
 export type Existing = ScanInput & { missing: false }
 
@@ -50,22 +37,19 @@ type HashedExtras = {
 }
 
 export type Hashed = Existing & HashedExtras
-export type EpubHashed = (EbookInput | ReadaloudInput | UnknownEpubInput) & {
+export type EpubHashed = (EbookInput | ReadaloudInput) & {
   missing: false
 } & HashedExtras
 export type AudiobookHashed = AudiobookInput & { missing: false } & HashedExtras
 
-type EpubOpenedExtras = { isEpub2: false; epub: Epub }
-type EpubNeedsUpgradeExtras = { isEpub2: true }
+export type EpubOpened = EpubHashed & { isEpub2: false; epub: Epub }
+export type EpubNeedsUpgrade = EpubHashed & { isEpub2: true }
 
-export type EpubOpened = EpubHashed & EpubOpenedExtras
-export type EpubNeedsUpgrade = EpubHashed & EpubNeedsUpgradeExtras
 export type EpubOpenState = EpubOpened | EpubNeedsUpgrade
 
 export type FormatKnown = (EbookInput | ReadaloudInput) & {
   missing: false
-} & HashedExtras &
-  EpubOpenedExtras
+} & HashedExtras & { isEpub2: false; epub: Epub }
 
 export type AudiobookOpened = AudiobookHashed & { audiobook: AudiobookAsset }
 
@@ -102,16 +86,12 @@ type AudiobookManifestExtras = {
 
 export type EbookManifestReady = EbookInput & {
   missing: false
-} & HashedExtras &
-  EpubOpenedExtras &
-  MetadataExtractedExtras &
+} & HashedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
   EbookManifestExtras
 
 export type ReadaloudManifestReady = ReadaloudInput & {
   missing: false
-} & HashedExtras &
-  EpubOpenedExtras &
-  MetadataExtractedExtras &
+} & HashedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
   ReadaloudManifestExtras
 
 export type AudiobookManifestReady = AudiobookInput & {
@@ -128,18 +108,6 @@ export type ManifestReady =
 
 export type Reconciled = ManifestReady & { book: BookWithRelations }
 
-export function isResolvedFormat(
-  format: ScanFormat,
-): format is ResolvedScanFormat {
-  return format !== "epub-unknown"
-}
-
 export function isEpubFormat(format: ScanFormat): format is EpubScanFormat {
   return format !== "audiobook"
-}
-
-export function isResolvedEpubFormat(
-  format: ScanFormat,
-): format is ResolvedEpubFormat {
-  return format === "ebook" || format === "readaloud"
 }

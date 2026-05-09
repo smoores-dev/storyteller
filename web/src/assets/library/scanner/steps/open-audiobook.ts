@@ -6,7 +6,7 @@ import {
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 
-import { createStep } from "@/assets/library/scanner/step"
+import { defineStep } from "@/assets/library/scanner/step2"
 import {
   type AudiobookHashed,
   type AudiobookOpened,
@@ -27,36 +27,26 @@ async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
   return tracks as AudiobookInputs
 }
 
-export const openAudiobookStep = createStep<
-  OpenAudiobookInput,
-  OpenAudiobookOutput
->(STEP, async (input, ctx) => {
-  if (!input.changed) {
-    ctx.report.skipped({
-      step: STEP,
-      bookUuid: input.bookUuid,
-      format: input.format,
-      reason: "unchanged",
-    })
-    return null
-  }
+export const openAudiobookStep = defineStep(
+  "open-audiobook",
+  async (input: OpenAudiobookInput, ctx) => {
+    const scope = ctx.scope
+    if (!scope) {
+      throw new Error("open-audiobook step requires ctx.scope")
+    }
 
-  const scope = ctx.scope
-  if (!scope) {
-    throw new Error("open-audiobook step requires ctx.scope")
-  }
+    const tracks = await getAudiobookTracks(input.filepath)
+    if (tracks.length === 0) {
+      ctx.report.skipped({
+        step: STEP,
+        book: input.book,
+        format: input.format,
+        reason: "no-audio-tracks",
+      })
+      return null
+    }
 
-  const tracks = await getAudiobookTracks(input.filepath)
-  if (tracks.length === 0) {
-    ctx.report.skipped({
-      step: STEP,
-      bookUuid: input.bookUuid,
-      format: input.format,
-      reason: "no-audio-tracks",
-    })
-    return null
-  }
-
-  const audiobook = scope.use(await Audiobook.from(...tracks))
-  return { ...input, audiobook }
-})
+    const audiobook = scope.use(await Audiobook.from(...tracks))
+    return { ...input, audiobook }
+  },
+)
