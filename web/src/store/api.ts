@@ -312,33 +312,35 @@ export const api = createApi({
     }),
     triggerBookScan: build.mutation<
       void,
-      { uuid: UUID; force?: boolean; metadataOverride?: string }
+      {
+        uuid: UUID
+        force?: boolean
+        metadataFieldOverrides?: Record<string, string>
+      }
     >({
-      query: ({ uuid, force, metadataOverride }) => ({
+      query: ({ uuid, force, metadataFieldOverrides }) => ({
         url: `/books/${uuid}/scan`,
         method: "POST",
-        params: {
-          ...(force && { force: "true" }),
-          ...(metadataOverride && { metadataOverride }),
-        },
+        ...(force && { params: { force: "true" } }),
+        ...(metadataFieldOverrides && {
+          body: { metadataFieldOverrides },
+        }),
       }),
     }),
     triggerScan: build.mutation<
       void,
       {
         force?: boolean
-        metadataOverride?: string
+        metadataFieldOverrides?: Record<string, string>
       } | void
     >({
       query: (args) => ({
         url: "/books/scan",
         method: "POST",
-        params: {
-          ...(args?.force && { force: "true" }),
-          ...(args?.metadataOverride && {
-            metadataOverride: args.metadataOverride,
-          }),
-        },
+        ...(args?.force && { params: { force: "true" } }),
+        ...(args?.metadataFieldOverrides && {
+          body: { metadataFieldOverrides: args.metadataFieldOverrides },
+        }),
       }),
     }),
     getScanState: build.query<
@@ -392,6 +394,8 @@ export const api = createApi({
           publicationDate?: BookUpdate["publicationDate"]
           authors?: string[]
           creators?: CreatorRelation[]
+          pageCount?: number | null
+          duration?: number | null
           series?: SeriesRelation[]
           collections?: UUID[]
           tags?: string[]
@@ -439,6 +443,12 @@ export const api = createApi({
         }
         if (updatedFields.includes("rating")) {
           body.append("rating", JSON.stringify(update.rating))
+        }
+        if (updatedFields.includes("pageCount")) {
+          body.append("pageCount", JSON.stringify(update.pageCount))
+        }
+        if (updatedFields.includes("duration")) {
+          body.append("duration", JSON.stringify(update.duration))
         }
 
         if (update.tags) {

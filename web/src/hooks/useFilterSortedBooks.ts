@@ -148,19 +148,29 @@ export function getBookFileSizeMB(
 }
 
 export function getBookDurationMinutes(book: BookWithRelations): number | null {
+  if (book.duration != null && book.duration > 0) {
+    return book.duration / 60
+  }
+
   const audiobook =
     book.audiobook && !book.audiobook.missing ? book.audiobook : null
   const readaloud =
     book.readaloud && !book.readaloud.missing ? book.readaloud : null
+
   const seconds = audiobook?.duration ?? readaloud?.duration ?? null
   if (seconds == null || seconds <= 0) return null
   return seconds / 60
 }
 
 export function getBookPageCount(book: BookWithRelations): number | null {
+  if (book.pageCount != null && book.pageCount > 0) {
+    return book.pageCount
+  }
+
   const ebook = book.ebook && !book.ebook.missing ? book.ebook : null
   const readaloud =
     book.readaloud && !book.readaloud.missing ? book.readaloud : null
+
   const pages = ebook?.pageCount ?? readaloud?.pageCount ?? null
   if (pages == null || pages <= 0) return null
   return pages

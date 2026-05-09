@@ -127,38 +127,8 @@ export function BookStatus({ bookUuid }: Props) {
                     void triggerBookScan({ uuid: book.uuid, force: true })
                   }}
                 >
-                  Force re-read metadata
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  onClick={() => {
-                    void triggerBookScan({
-                      uuid: book.uuid,
-                      metadataOverride: "always",
-                    })
-                  }}
-                >
-                  Overwrite all metadata from file
-                </Menu.Item>
-                <Menu.Item
-                  onClick={() => {
-                    void triggerBookScan({
-                      uuid: book.uuid,
-                      metadataOverride: "fill-empty",
-                    })
-                  }}
-                >
-                  Fill empty metadata from file
-                </Menu.Item>
-                <Menu.Item
-                  onClick={() => {
-                    void triggerBookScan({
-                      uuid: book.uuid,
-                      metadataOverride: "never",
-                    })
-                  }}
-                >
-                  Scan without touching metadata
+                  Force rescan (re-read metadata from files even if unchanged
+                  since last scan)
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>

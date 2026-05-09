@@ -24,7 +24,6 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
-import { db } from "@/database/connection"
 import {
   addImportSkipPaths,
   getImportSkipPaths,

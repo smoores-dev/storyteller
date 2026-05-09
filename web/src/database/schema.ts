@@ -47,8 +47,10 @@ export interface Book {
   alignedWith: string | null
   createdAt: Generated<string>
   description: string | null
+  duration: number | null
   id: number | null
   language: Generated<string | null>
+  pageCount: number | null
   publicationDate: string | null
   rating: number | null
   subtitle: string | null

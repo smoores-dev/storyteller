@@ -63,6 +63,8 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const subtitle = getField<string | null>(formData, "subtitle") ?? null
   const description = getField<string | null>(formData, "description") ?? null
   const rating = getField<number | null>(formData, "rating") ?? null
+  const pageCount = getField<number | null>(formData, "pageCount") ?? null
+  const duration = getField<number | null>(formData, "duration") ?? null
 
   const publicationDate =
     getField<string | null>(formData, "publicationDate") ?? null
@@ -149,6 +151,8 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       ...(fields.has("description") && { description }),
       ...(fields.has("rating") && { rating }),
       ...(fields.has("publicationDate") && { publicationDate }),
+      ...(fields.has("pageCount") && { pageCount }),
+      ...(fields.has("duration") && { duration }),
     },
     {
       ...(fields.has("creators") && { creators }),

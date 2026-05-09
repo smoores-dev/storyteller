@@ -6,10 +6,9 @@ import { type Epub } from "@storyteller-platform/epub"
 
 import { move, persistAudio, persistEpub } from "@/assets/fs"
 import {
+  applyFieldOverrides,
   getMetadataFromAudiobook,
   getMetadataFromEpub,
-  keepMissingMetadata,
-  keepMissingRelations,
 } from "@/assets/metadata"
 import {
   getInternalAudioDirectory,
@@ -21,6 +20,7 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
+import { getSetting } from "@/database/settings"
 import { type UUID } from "@/uuid"
 
 export async function handleEpubNewBook(
@@ -51,8 +51,9 @@ export async function handleEpubExistingBook(
   const { update: epubUpdate, relations: epubRelations } =
     await getMetadataFromEpub(epub)
 
-  const update = keepMissingMetadata(book, epubUpdate)
-  const relations = keepMissingRelations(book, epubRelations)
+  const overrides = await getSetting("metadataFieldOverrides")
+  const { metadataUpdate: update, relationUpdate: relations } =
+    applyFieldOverrides(overrides, book, epubUpdate, epubRelations)
 
   const updated = await updateBook(
     book.uuid,
@@ -111,8 +112,14 @@ export async function handleAudiobookExistingBook(
     const { update: audiobookUpdate, relations: audiobookRelations } =
       await getMetadataFromAudiobook(audiobook)
 
-    const update = keepMissingMetadata(book, audiobookUpdate)
-    const relations = keepMissingRelations(book, audiobookRelations)
+    const audiobookOverrides = await getSetting("metadataFieldOverrides")
+    const { metadataUpdate: update, relationUpdate: relations } =
+      applyFieldOverrides(
+        audiobookOverrides,
+        book,
+        audiobookUpdate,
+        audiobookRelations,
+      )
 
     updated = await updateBook(book.uuid, update, {
       ...relations,

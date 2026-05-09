@@ -1,6 +1,6 @@
 import { type Logger } from "pino"
 
-import { type MetadataOverrideMode } from "@/database/settingsTypes"
+import { type MetadataFieldOverrides } from "@/database/settingsTypes"
 
 import { type ScanReport } from "./scanReport"
 
@@ -8,7 +8,7 @@ export type ScanSource = "watcher" | "manual" | "scheduled"
 
 export type ScanOptions = {
   force?: boolean
-  metadataOverrideMode?: MetadataOverrideMode
+  metadataFieldOverrides?: MetadataFieldOverrides
   concurrency?: number
 }
 

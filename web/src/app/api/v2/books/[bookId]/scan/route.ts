@@ -16,7 +16,14 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
   const controller = new AbortController()
-  const options = parseScanOptions(request.nextUrl.searchParams)
+  let body: unknown = null
+  try {
+    body = await request.json()
+  } catch {
+    // no body is fine
+  }
+
+  const options = parseScanOptions(request.nextUrl.searchParams, body)
 
   void scanBooks({
     source: "manual",

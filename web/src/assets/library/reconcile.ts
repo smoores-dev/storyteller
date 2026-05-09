@@ -89,6 +89,7 @@ export async function reconcileDiscoveredPaths(
   let currentAll = input.allBooks
   let currentScoped = input.scopedBooks
 
+  const newSkipPaths: { bookUuid: UUID; filepath: string }[] = []
   for (const bookPath of input.bookPaths) {
     if (input.signal.aborted) return result
 

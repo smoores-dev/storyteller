@@ -2,6 +2,7 @@ import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { scanAudiobook } from "@/assets/library/scanner/pipelines/scanAudiobook"
 import { scanEbook } from "@/assets/library/scanner/pipelines/scanEbook"
 import { type ScanInput } from "@/assets/library/scanner/types"
+import { logger } from "@/logging"
 
 export async function runScans(
   inputs: ScanInput[],
@@ -39,12 +40,14 @@ export async function runScans(
       try {
         switch (input.format) {
           case "ebook":
-          case "readaloud":
+          case "readaloud": {
             await scanEbook(input, ctx)
-            return
-          case "audiobook":
+            break
+          }
+          case "audiobook": {
             await scanAudiobook(input, ctx)
-            return
+            break
+          }
         }
       } catch (err) {
         ctx.report.failed({
@@ -61,4 +64,28 @@ export async function runScans(
   }
 
   await Promise.all(Array.from({ length: workers }, () => worker()))
+
+  const duration = ctx.report.finishedAt ?? Date.now() - ctx.report.startedAt
+  ctx.report.info({
+    step: "scan",
+    msg: `Scan completed in ${duration}ms`,
+  })
+
+  // report errors
+  const errors = ctx.report
+    .outcomes()
+    .filter((outcome) => outcome.kind === "failed")
+
+  if (errors.length > 0) {
+    ctx.report.warn({
+      step: "scan",
+      msg: `Some scans failed, see below`,
+    })
+    for (const error of errors) {
+      logger.error({
+        msg: `Scanning ${error.bookTitle} (${error.format}) failed: `,
+        err: error.err,
+      })
+    }
+  }
 }

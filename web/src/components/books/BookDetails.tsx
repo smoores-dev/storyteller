@@ -86,9 +86,13 @@ function Details({
             <span className="text-red-500">Missing</span>
           ) : (
             <>
-              {format !== "audiobook" && <span>{fmt.pageCount} pages</span>}
+              {format !== "audiobook" && (
+                <span>{book.pageCount ?? fmt.pageCount} pages</span>
+              )}
               {format !== "ebook" && (
-                <span>{formatTimeHuman(fmt.duration ?? 0)}</span>
+                <span>
+                  {formatTimeHuman(book.duration ?? fmt.duration ?? 0)}
+                </span>
               )}
 
               <span>{formatFileSize(fmt.fileSize ?? null) ?? "0.0 MB"}</span>

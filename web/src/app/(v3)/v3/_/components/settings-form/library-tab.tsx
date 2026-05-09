@@ -5,6 +5,17 @@ import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useWatch } from "react-hook-form"
 
+import {
+  cronExpressionToMinutes,
+  minutesToCronExpression,
+} from "@/assets/library/scanner/triggers/cron"
+import {
+  METADATA_FIELDS,
+  type MetadataField,
+  type MetadataFieldMode,
+  type MetadataFieldOverrides,
+  defaultMetadataFieldOverrides,
+} from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetScanStateQuery, useTriggerScanMutation } from "@/store/api"
 
@@ -17,11 +28,19 @@ import {
   CardTitle,
 } from "@v3/_/components/ui/card"
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v3/_/components/ui/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuPortal,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 import { Input } from "@v3/_/components/ui/input"
@@ -126,21 +145,159 @@ function AutoImportSection() {
   )
 }
 
-type ScanTriggerArgs = {
-  force?: boolean
-  metadataOverride?: string
+const FIELD_LABEL_KEYS = {
+  cover: "fieldCover",
+  title: "fieldTitle",
+  subtitle: "fieldSubtitle",
+  description: "fieldDescription",
+  language: "fieldLanguage",
+  publicationDate: "fieldPublicationDate",
+  authors: "fieldAuthors",
+  narrators: "fieldNarrators",
+  creators: "fieldCreators",
+  series: "fieldSeries",
+  tags: "fieldTags",
+} as const satisfies Record<MetadataField, string>
+
+const MODE_OPTIONS = [
+  { value: "skip", labelKey: "modeSkip" },
+  { value: "fill-empty", labelKey: "modeFillEmpty" },
+  { value: "always", labelKey: "modeAlways" },
+] as const satisfies { value: MetadataFieldMode; labelKey: string }[]
+
+export function MetadataFieldOverridesEditor({
+  value,
+  onChange,
+  t,
+}: {
+  value: MetadataFieldOverrides
+  onChange: (overrides: MetadataFieldOverrides) => void
+  t: ReturnType<typeof useTranslations>
+}) {
+  return (
+    <div className="divide-border divide-y rounded-md border">
+      {METADATA_FIELDS.map((field) => (
+        <div
+          key={field}
+          className="flex items-center justify-between px-3 py-2"
+        >
+          <span className="text-foreground text-xs">
+            {t(FIELD_LABEL_KEYS[field])}
+          </span>
+
+          <Select
+            value={value[field]}
+            onValueChange={(mode) => {
+              onChange({ ...value, [field]: mode })
+            }}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue>
+                {t(
+                  MODE_OPTIONS.find((opt) => opt.value === value[field])
+                    ?.labelKey ?? "modeFillEmpty",
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {MODE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {t(opt.labelKey)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ScanModal({
+  open,
+  onOpenChange,
+  onConfirm,
+  savedOverrides,
+  t,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: (overrides: MetadataFieldOverrides, force: boolean) => void
+  savedOverrides: MetadataFieldOverrides
+  t: ReturnType<typeof useTranslations>
+}) {
+  const [localOverrides, setLocalOverrides] =
+    useState<MetadataFieldOverrides>(savedOverrides)
+  const [force, setForce] = useState(false)
+
+  const handleOpen = (next: boolean) => {
+    if (next) {
+      setLocalOverrides(savedOverrides)
+      setForce(false)
+    }
+    onOpenChange(next)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("scanModalTitle")}</DialogTitle>
+          <DialogDescription>{t("scanModalDescription")}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 px-6 pb-2">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="scanModalForce"
+              checked={force}
+              onCheckedChange={setForce}
+            />
+            <Label htmlFor="scanModalForce">{t("forceRescan")}</Label>
+          </div>
+
+          <MetadataFieldOverridesEditor
+            value={localOverrides}
+            onChange={setLocalOverrides}
+            t={t}
+          />
+        </div>
+
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" size="sm" />}>
+            {t("scanModalCancel")}
+          </DialogClose>
+          <Button
+            size="sm"
+            onClick={() => {
+              onConfirm(localOverrides, force)
+              onOpenChange(false)
+            }}
+          >
+            {t("scanModalConfirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 function ScanTriggerButton({
   scanState,
   isTriggeringScan,
   triggerScan,
+  savedOverrides,
 }: {
   scanState: { running: boolean; source: string | null } | undefined
   isTriggeringScan: boolean
-  triggerScan: (args: ScanTriggerArgs) => void
+  triggerScan: (args: {
+    force?: boolean
+    metadataFieldOverrides?: MetadataFieldOverrides
+  }) => void
+  savedOverrides: MetadataFieldOverrides
 }) {
   const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
+  const [modalOpen, setModalOpen] = useState(false)
   const isDisabled = scanState?.running || isTriggeringScan
 
   return (
@@ -153,7 +310,7 @@ function ScanTriggerButton({
           className="rounded-r-none border-r-0"
           disabled={isDisabled}
           onClick={() => {
-            triggerScan({})
+            setModalOpen(true)
           }}
         >
           {t("scanLibrary")}
@@ -170,32 +327,17 @@ function ScanTriggerButton({
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onSelect={() => {
+                  triggerScan({})
+                }}
+              >
+                {t("scanWithDefaults")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
                   triggerScan({ force: true })
                 }}
               >
                 {t("forceRescan")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => {
-                  triggerScan({ metadataOverride: "always" })
-                }}
-              >
-                {t("scanOverrideAlways")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  triggerScan({ metadataOverride: "fill-empty" })
-                }}
-              >
-                {t("scanOverrideFillEmpty")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  triggerScan({ metadataOverride: "never" })
-                }}
-              >
-                {t("scanOverrideNever")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenuPortal>
@@ -207,6 +349,19 @@ function ScanTriggerButton({
           {t("scanRunning", { source: scanState.source ?? "unknown" })}
         </p>
       )}
+
+      <ScanModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        savedOverrides={savedOverrides}
+        onConfirm={(overrides, force) => {
+          triggerScan({
+            ...(force && { force: true }),
+            metadataFieldOverrides: overrides,
+          })
+        }}
+        t={t}
+      />
     </div>
   )
 }
@@ -224,30 +379,23 @@ function ScanControlsSection() {
   const [triggerScan, { isLoading: isTriggeringScan }] =
     useTriggerScanMutation()
 
-  const scheduledInterval = useWatch({
-    control: form.control,
-    name: "existingBooksScanIntervalMinutes",
-  })
   const cronExpression = useWatch({
     control: form.control,
     name: "scanCronExpression",
   })
-  const isScheduled = scheduledInterval !== null || !!cronExpression
+  const isScheduled = !!cronExpression
 
-  const metadataOverrideOptions = [
-    {
-      value: "fill-empty",
-      label: t("metadataOverrideFillEmpty"),
-    },
-    {
-      value: "always",
-      label: t("metadataOverrideAlways"),
-    },
-    {
-      value: "never",
-      label: t("metadataOverrideNever"),
-    },
-  ]
+  const intervalMinutes = cronExpression
+    ? cronExpressionToMinutes(cronExpression)
+    : null
+
+  const overrides = useWatch({
+    control: form.control,
+    name: "metadataFieldOverrides",
+  })
+  const currentOverrides =
+    (overrides as MetadataFieldOverrides | undefined) ??
+    defaultMetadataFieldOverrides()
 
   return (
     <SettingsSection tab="library" section="scanControls">
@@ -261,11 +409,12 @@ function ScanControlsSection() {
             <ScanTriggerButton
               scanState={scanState}
               isTriggeringScan={isTriggeringScan}
+              savedOverrides={currentOverrides}
               triggerScan={(args) => {
                 void triggerScan({
                   ...(args.force !== undefined && { force: args.force }),
-                  ...(args.metadataOverride !== undefined && {
-                    metadataOverride: args.metadataOverride,
+                  ...(args.metadataFieldOverrides && {
+                    metadataFieldOverrides: args.metadataFieldOverrides,
                   }),
                 })
               }}
@@ -278,10 +427,11 @@ function ScanControlsSection() {
               checked={isScheduled}
               onCheckedChange={(checked) => {
                 if (checked) {
-                  form.setValue("existingBooksScanIntervalMinutes", 1440)
-                  form.setValue("scanCronExpression", null)
+                  form.setValue(
+                    "scanCronExpression",
+                    minutesToCronExpression(1440),
+                  )
                 } else {
-                  form.setValue("existingBooksScanIntervalMinutes", null)
                   form.setValue("scanCronExpression", null)
                 }
               }}
@@ -295,25 +445,29 @@ function ScanControlsSection() {
             <div className="space-y-3">
               {!showCronInput ? (
                 <>
-                  <SettingsFormField
-                    name="existingBooksScanIntervalMinutes"
-                    label={t("scanInterval")}
-                    render={(field, fieldState, isLocked) => (
-                      <Input
-                        id="existingBooksScanIntervalMinutes"
-                        type="number"
-                        min={1}
-                        disabled={isLocked}
-                        value={field.value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          field.onChange(val === "" ? null : Number(val))
-                          form.setValue("scanCronExpression", null)
-                        }}
-                        aria-invalid={fieldState.invalid}
-                      />
-                    )}
-                  />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="scanIntervalMinutes">
+                      {t("scanInterval")}
+                    </Label>
+                    <Input
+                      id="scanIntervalMinutes"
+                      type="number"
+                      min={1}
+                      value={intervalMinutes ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === "") return
+
+                        const minutes = Number(val)
+                        if (minutes > 0) {
+                          form.setValue(
+                            "scanCronExpression",
+                            minutesToCronExpression(minutes),
+                          )
+                        }
+                      }}
+                    />
+                  </div>
 
                   <button
                     type="button"
@@ -340,12 +494,6 @@ function ScanControlsSection() {
                         onChange={(e) => {
                           const val = e.target.value
                           field.onChange(val || null)
-                          if (val) {
-                            form.setValue(
-                              "existingBooksScanIntervalMinutes",
-                              null,
-                            )
-                          }
                         }}
                         aria-invalid={fieldState.invalid}
                       />
@@ -377,34 +525,20 @@ function ScanControlsSection() {
             </div>
           )}
 
-          <SettingsFormField
-            name="metadataOverrideMode"
-            label={t("metadataOverrideMode")}
-            description={t("metadataOverrideModeDescription")}
-            render={(field, _, isLocked) => (
-              <Select
-                items={metadataOverrideOptions}
-                disabled={isLocked}
-                value={field.value}
-                onValueChange={(value) => {
-                  if (!value) return
+          <div className="space-y-2">
+            <Label>{t("metadataFieldOverrides")}</Label>
+            <p className="text-muted-foreground text-xs">
+              {t("metadataFieldOverridesDescription")}
+            </p>
 
-                  field.onChange(value)
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {metadataOverrideOptions.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
+            <MetadataFieldOverridesEditor
+              value={currentOverrides}
+              onChange={(updated) => {
+                form.setValue("metadataFieldOverrides", updated)
+              }}
+              t={t}
+            />
+          </div>
         </CardContent>
       </Card>
     </SettingsSection>

@@ -24,12 +24,41 @@ export const WhisperModelOverridesSchema = z.record(
 )
 export type WhisperModelOverrides = z.infer<typeof WhisperModelOverridesSchema>
 
-export const MetadataOverrideModeSchema = z.enum([
-  "never",
-  "fill-empty",
-  "always",
-])
-export type MetadataOverrideMode = z.infer<typeof MetadataOverrideModeSchema>
+export const METADATA_FIELDS = [
+  "cover",
+  "title",
+  "subtitle",
+  "description",
+  "language",
+  "publicationDate",
+  "authors",
+  "narrators",
+  "creators",
+  "series",
+  "tags",
+] as const
+
+export type MetadataField = (typeof METADATA_FIELDS)[number]
+
+export const MetadataFieldModeSchema = z.enum(["skip", "fill-empty", "always"])
+export type MetadataFieldMode = z.infer<typeof MetadataFieldModeSchema>
+
+export const MetadataFieldOverridesSchema = z.object(
+  Object.fromEntries(
+    METADATA_FIELDS.map((field) => [field, MetadataFieldModeSchema]),
+  ) as { [K in MetadataField]: typeof MetadataFieldModeSchema },
+)
+export type MetadataFieldOverrides = z.infer<
+  typeof MetadataFieldOverridesSchema
+>
+
+export function defaultMetadataFieldOverrides(
+  mode: MetadataFieldMode = "fill-empty",
+): MetadataFieldOverrides {
+  return Object.fromEntries(
+    METADATA_FIELDS.map((field) => [field, mode]),
+  ) as MetadataFieldOverrides
+}
 
 export const ReadaloudLocationTypeSchema = z.enum([
   "SUFFIX",
@@ -141,9 +170,8 @@ export const SettingsSchema = z.object({
   opdsEnabled: z.boolean().nullable(),
   opdsPageSize: z.number().nullable(),
   // Scanning settings
-  existingBooksScanIntervalMinutes: z.number().nullable(),
   scanCronExpression: z.string().nullable(),
-  metadataOverrideMode: MetadataOverrideModeSchema,
+  metadataFieldOverrides: MetadataFieldOverridesSchema,
   // EPUB 2 import settings
   epub2ImportStrategy: Epub2ImportStrategySchema,
   epub2BackupSuffix: z.string(),

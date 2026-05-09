@@ -16,10 +16,9 @@ import {
 } from "@/assets/covers"
 import { deleteAssets, move } from "@/assets/fs"
 import {
+  applyFieldOverrides,
   getMetadataFromAudiobook,
   getMetadataFromEpub,
-  keepMissingMetadata,
-  keepMissingRelations,
 } from "@/assets/metadata"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
@@ -181,11 +180,16 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
       const { update: epubUpdate, relations: epubRelations } =
         await getMetadataFromEpub(epub)
 
-      const update = keepMissingMetadata(book, epubUpdate)
-      const relations = keepMissingRelations(book, epubRelations)
+      const overrides = await getSetting("metadataFieldOverrides")
+      const { metadataUpdate, relationUpdate } = applyFieldOverrides(
+        overrides,
+        book,
+        epubUpdate,
+        epubRelations,
+      )
 
-      book = await updateBook(book.uuid, update, {
-        ...relations,
+      book = await updateBook(book.uuid, metadataUpdate, {
+        ...relationUpdate,
         ebook: {
           filepath: ebook,
         },
@@ -220,11 +224,19 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
       const { update: audiobookUpdate, relations: audiobookRelations } =
         await getMetadataFromAudiobook(audiobook)
 
-      const update = keepMissingMetadata(book, audiobookUpdate)
-      const relations = keepMissingRelations(book, audiobookRelations)
+      const audioOverrides = await getSetting("metadataFieldOverrides")
+      const {
+        metadataUpdate: audioMetadataUpdate,
+        relationUpdate: audioRelationUpdate,
+      } = applyFieldOverrides(
+        audioOverrides,
+        book,
+        audiobookUpdate,
+        audiobookRelations,
+      )
 
-      book = await updateBook(book.uuid, update, {
-        ...relations,
+      book = await updateBook(book.uuid, audioMetadataUpdate, {
+        ...audioRelationUpdate,
         audiobook: {
           filepath: audioDirectory,
         },

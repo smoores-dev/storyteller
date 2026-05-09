@@ -62,19 +62,56 @@
           },
           "autoImport": {
             "title": "Automatisch Importeren",
-            "description": "Configureer automatische boekimport vanuit een map",
-            "explanation": "Je kan Storyteller instellen om automatisch (audio)boeken te importeren vanuit een specifieke map. Wanneer ingeschakeld, zal Storyteller automatisch nieuwe (audio)boeken in de map importeren die het vindt.",
+            "description": "Configureer automatische boekimport vanuit een folder",
+            "explanation": "Je kan Storyteller instellen om automatisch (audio)boeken te importeren vanuit een specifieke folder. Als je dit inschakelt, zal Storyteller automatisch nieuwe (audio)boeken in de ingestelde folder importeren.",
             "importPath": "Importpad",
-            "importPathPlaceholder": "/pad/naar/boeken"
+            "importPathPlaceholder": "/folder/naar/boeken"
           },
           "readaloudLocation": {
             "title": "Readaloud Locatie",
             "description": "Stel in waar nieuwe readalouds worden opgeslagen wanneer de (audio)boeken niet via de webclient zijn geüpload",
             "locationType": "Locatietype",
-            "locationTypeSuffix": "In dezelfde map als de EPUB, met een suffix",
-            "locationTypeSiblingFolder": "In dezelfde map als de EPUB, in een map",
-            "locationTypeCustomFolder": "In een specifieke map",
-            "locationTypeInternal": "In de interne Storyteller-map"
+            "locationTypeSuffix": "In dezelfde folder als de EPUB, met een suffix",
+            "locationTypeSiblingFolder": "In dezelfde folder als de EPUB, in een folder",
+            "locationTypeCustomFolder": "In een specifieke folder",
+            "locationTypeInternal": "In de interne Storyteller-folder"
+          },
+          "scanControls": {
+            "title": "Bibliotheek Scannen",
+            "description": "Scan je bibliotheek voor nieuwe bestanden en wijzigingen. Scans controleren alle gevolgde boeken en importpaden voor toevoegingen, verwijderingen en gewijzigde bestanden.",
+            "scanLibrary": "Bibliotheek scannen",
+            "showAdvancedCron": "Gebruik een cron expressie in plaats van een interval",
+            "showSimpleInterval": "Gebruik een eenvoudig interval in plaats van een cron expressie",
+            "cronExpression": "Cron expressie",
+            "cronExpressionDescription": "Standaard cron syntax (minuut uur dag maand weekdag). De expressie wordt uitgevoerd in de tijdzone van de server.",
+            "cronHelper": "Cron expressie referentie (crontab.guru)",
+
+            "scanWithDefaults": "Start scan",
+            "forceRescan": "Forceer herscan (lees metadata opnieuw uit bestanden ook al is deze ongewijzigd sinds de laatste scan)",
+            "scanRunning": "Scan wordt uitgevoerd ({source})",
+            "enableScheduledScans": "Voer scans op een schema uit",
+            "scanInterval": "Scan interval (minuten)",
+            "metadataFieldOverrides": "Metadata gedrag",
+            "metadataFieldOverridesDescription": "Kies voor elk veld hoe we veranderingen in de boekbestanden behandelen.",
+            "modeSkip": "Overslaan",
+            "modeFillEmpty": "Alleen lege velden invullen",
+            "modeAlways": "Altijd overschrijven",
+            "scanModalTitle": "Bibliotheek scannen",
+            "scanModalDescription": "Kies welke metadata velden we uit de boekbestanden lezen tijdens deze scan. Deze instellingen zijn vooraf ingevuld met je standaard instellingen.",
+            "scanModalConfirm": "Begin scan",
+            "scanModalCancel": "Annuleren",
+
+            "fieldTitle": "Titel",
+            "fieldSubtitle": "Ondertitel",
+            "fieldDescription": "Omschrijving",
+            "fieldLanguage": "Taal",
+            "fieldPublicationDate": "Publicatiedatum",
+            "fieldCover": "Cover",
+            "fieldAuthors": "Auteurs",
+            "fieldNarrators": "Vertellers",
+            "fieldCreators": "Andere creatoren",
+            "fieldSeries": "Serie",
+            "fieldTags": "Tags"
           }
         }
       },

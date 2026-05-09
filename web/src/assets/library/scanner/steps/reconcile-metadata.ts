@@ -4,7 +4,7 @@ import {
   type ManifestReady,
   type Reconciled,
 } from "@/assets/library/scanner/types"
-import { keepMissingMetadata, keepMissingRelations } from "@/assets/metadata"
+import { applyFieldOverrides } from "@/assets/metadata"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -13,7 +13,7 @@ import {
   updateBook,
 } from "@/database/books"
 import { getSetting } from "@/database/settings"
-import { type MetadataOverrideMode } from "@/database/settingsTypes"
+import { type MetadataFieldOverrides } from "@/database/settingsTypes"
 
 const STEP = "reconcile-metadata"
 
@@ -51,26 +51,6 @@ function buildFormatRelation(input: ManifestReady): BookRelationsUpdate {
   })
 }
 
-function resolveMetadata(
-  mode: MetadataOverrideMode,
-  current: BookWithRelations,
-  extracted: BookUpdate | null,
-  extractedRelations: BookRelationsUpdate,
-): { metadataUpdate: BookUpdate | null; relationUpdate: BookRelationsUpdate } {
-  if (mode === "never") {
-    return { metadataUpdate: null, relationUpdate: {} }
-  }
-
-  if (mode === "always") {
-    return { metadataUpdate: extracted, relationUpdate: extractedRelations }
-  }
-
-  return {
-    metadataUpdate: keepMissingMetadata(current, extracted),
-    relationUpdate: keepMissingRelations(current, extractedRelations),
-  }
-}
-
 function hasChanges(
   input: ManifestReady,
   metadataUpdate: BookUpdate | null,
@@ -84,9 +64,6 @@ function hasChanges(
   return !relation || relation.missing
 }
 
-/**
- * Reconciles the extracted metadata from the book file with the current metadata in the database.
- */
 export const reconcileMetadataStep = defineStep(
   "reconcile-metadata",
   async (input: ReconcileMetadataInput, ctx) => {
@@ -99,12 +76,12 @@ export const reconcileMetadataStep = defineStep(
       return null
     }
 
-    const mode =
-      ctx.options.metadataOverrideMode ??
-      (await getSetting("metadataOverrideMode"))
+    const overrides: MetadataFieldOverrides =
+      ctx.options.metadataFieldOverrides ??
+      (await getSetting("metadataFieldOverrides"))
 
-    const { metadataUpdate, relationUpdate } = resolveMetadata(
-      mode,
+    const { metadataUpdate, relationUpdate } = applyFieldOverrides(
+      overrides,
       current,
       input.extractedMetadata,
       input.extractedRelations,

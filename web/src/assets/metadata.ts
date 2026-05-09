@@ -19,87 +19,140 @@ import {
   type BookWithRelations,
   type CreatorRelation,
 } from "@/database/books"
+import {
+  type MetadataField,
+  type MetadataFieldMode,
+  type MetadataFieldOverrides,
+} from "@/database/settingsTypes"
 import { logger } from "@/logging"
 
 import { persistCustomAudioCover } from "./covers"
 import { getProcessedAudioFiles } from "./fs"
 import { getProcessedAudioFilepath } from "./paths"
 
-export function keepMissingMetadata(book: Book, incoming: BookUpdate | null) {
-  if (!incoming) return null
-
-  const keep: BookUpdate = {}
-  if (book.title === "" && incoming.title) {
-    keep.title = incoming.title
-  }
-  if (book.description === null && incoming.description) {
-    keep.description = incoming.description
-  }
-  if (book.language === null && incoming.language) {
-    keep.language = incoming.language
-  }
-  if (book.publicationDate === null && incoming.publicationDate) {
-    keep.publicationDate = incoming.publicationDate
-  }
-  if (book.alignedAt === null && incoming.alignedAt) {
-    keep.alignedAt = incoming.alignedAt
-  }
-  if (
-    book.alignedByStorytellerVersion === null &&
-    incoming.alignedByStorytellerVersion
-  ) {
-    keep.alignedByStorytellerVersion = incoming.alignedByStorytellerVersion
-  }
-  if (book.alignedWith === null && incoming.alignedWith) {
-    keep.alignedWith = incoming.alignedWith
-  }
-  return keep
+type ScalarFieldMapping = {
+  field: MetadataField
+  key: keyof BookUpdate
+  isEmpty: (book: Book) => boolean
 }
 
-export function keepMissingRelations(
-  book: BookWithRelations,
-  incoming: BookRelationsUpdate,
-) {
-  const keep: BookRelationsUpdate = {}
-  const incomingAuthors = incoming.creators?.filter(
-    (creator) => creator.role === "aut",
+const SCALAR_FIELDS: ScalarFieldMapping[] = [
+  { field: "title", key: "title", isEmpty: (b) => b.title === "" },
+  { field: "subtitle", key: "subtitle", isEmpty: (b) => b.subtitle === null },
+  {
+    field: "description",
+    key: "description",
+    isEmpty: (b) => b.description === null,
+  },
+  { field: "language", key: "language", isEmpty: (b) => b.language === null },
+  {
+    field: "publicationDate",
+    key: "publicationDate",
+    isEmpty: (b) => b.publicationDate === null,
+  },
+]
+
+function shouldInclude(mode: MetadataFieldMode, isEmpty: boolean): boolean {
+  if (mode === "skip") return false
+  if (mode === "always") return true
+  return isEmpty
+}
+
+export function applyFieldOverrides(
+  overrides: MetadataFieldOverrides,
+  current: BookWithRelations,
+  extracted: BookUpdate | null,
+  extractedRelations: BookRelationsUpdate,
+): { metadataUpdate: BookUpdate | null; relationUpdate: BookRelationsUpdate } {
+  let metadataUpdate: BookUpdate | null = null
+
+  // scalar book fields
+  if (extracted) {
+    for (const { field, key, isEmpty } of SCALAR_FIELDS) {
+      const mode = overrides[field]
+      const value = extracted[key]
+
+      if (value !== undefined && shouldInclude(mode, isEmpty(current))) {
+        metadataUpdate ??= {}
+        ;(metadataUpdate as Record<string, unknown>)[key] = value
+      }
+    }
+  }
+
+  // alignment fields are always read from the file
+  if (extracted) {
+    if (extracted.alignedAt !== undefined) {
+      metadataUpdate ??= {}
+      metadataUpdate.alignedAt = extracted.alignedAt
+    }
+
+    if (extracted.alignedByStorytellerVersion !== undefined) {
+      metadataUpdate ??= {}
+      metadataUpdate.alignedByStorytellerVersion =
+        extracted.alignedByStorytellerVersion
+    }
+
+    if (extracted.alignedWith !== undefined) {
+      metadataUpdate ??= {}
+      metadataUpdate.alignedWith = extracted.alignedWith
+    }
+  }
+
+  // relation fields
+  const relationUpdate: BookRelationsUpdate = {}
+
+  const incomingAuthors = extractedRelations.creators?.filter(
+    (c) => c.role === "aut",
   )
-  const incomingNarrators = incoming.creators?.filter(
-    (creator) => creator.role === "nrt",
+  const incomingNarrators = extractedRelations.creators?.filter(
+    (c) => c.role === "nrt",
   )
-  const incomingCreators = incoming.creators?.filter(
-    (creator) => creator.role !== "aut" && creator.role !== "nrt",
+  const incomingOtherCreators = extractedRelations.creators?.filter(
+    (c) => c.role !== "aut" && c.role !== "nrt",
   )
 
-  keep.creators = []
+  const creators: CreatorRelation[] = []
 
-  if (book.authors.length === 0 && incomingAuthors?.length) {
-    keep.creators.push(...incomingAuthors)
-  } else {
-    keep.creators.push(
-      ...book.authors.map((author) => ({ ...author, role: "aut" as const })),
-    )
-  }
-  if (book.narrators.length === 0 && incomingNarrators?.length) {
-    keep.creators.push(...incomingNarrators)
-  } else {
-    keep.creators.push(
-      ...book.narrators.map((author) => ({ ...author, role: "nrt" as const })),
-    )
-  }
-  if (book.creators.length === 0 && incomingCreators?.length) {
-    keep.creators.push(...incomingCreators)
-  } else {
-    keep.creators.push(...book.creators)
-  }
-  if (book.series.length === 0 && incoming.series?.length) {
-    keep.series = incoming.series
-  }
-  if (book.tags.length === 0 && incoming.tags?.length) {
-    keep.tags = incoming.tags
+  if (
+    incomingAuthors?.length &&
+    shouldInclude(overrides.authors, current.authors.length === 0)
+  ) {
+    creators.push(...incomingAuthors)
   }
 
-  return keep
+  if (
+    incomingNarrators?.length &&
+    shouldInclude(overrides.narrators, current.narrators.length === 0)
+  ) {
+    creators.push(...incomingNarrators)
+  }
+
+  if (
+    incomingOtherCreators?.length &&
+    shouldInclude(overrides.creators, current.creators.length === 0)
+  ) {
+    creators.push(...incomingOtherCreators)
+  }
+
+  if (creators.length > 0) {
+    relationUpdate.creators = creators
+  }
+
+  if (
+    extractedRelations.series?.length &&
+    shouldInclude(overrides.series, current.series.length === 0)
+  ) {
+    relationUpdate.series = extractedRelations.series
+  }
+
+  if (
+    extractedRelations.tags?.length &&
+    shouldInclude(overrides.tags, current.tags.length === 0)
+  ) {
+    relationUpdate.tags = extractedRelations.tags
+  }
+
+  return { metadataUpdate, relationUpdate }
 }
 
 export async function getMetadataFromEpub(epub: Epub): Promise<{

@@ -33,6 +33,10 @@ import {
 import { useRef, useState } from "react"
 
 import type { Settings } from "@/apiModels"
+import {
+  cronExpressionToMinutes,
+  minutesToCronExpression,
+} from "@/assets/library/scanner/triggers/cron"
 import { type Providers } from "@/auth/providers"
 import { ImportPathInput } from "@/components/ImportPathInput"
 import {
@@ -40,6 +44,12 @@ import {
   BASIC_PERMISSIONS,
   PERMISSIONS_VALUES,
 } from "@/components/users/CreateInviteForm"
+import {
+  METADATA_FIELDS,
+  type MetadataField,
+  type MetadataFieldMode,
+  type MetadataFieldOverrides,
+} from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useGetMaxUploadChunkSizeQuery,
@@ -63,6 +73,71 @@ function safeUrl(base: string, path: string) {
   } catch {
     return `${base}/${path}`
   }
+}
+
+const FIELD_LABELS: Record<MetadataField, string> = {
+  cover: "Cover",
+  title: "Title",
+  subtitle: "Subtitle",
+  description: "Description",
+  language: "Language",
+  publicationDate: "Publication date",
+  authors: "Authors",
+  narrators: "Narrators",
+  creators: "Other creators",
+  series: "Series",
+  tags: "Tags",
+}
+
+const MODE_OPTIONS: { value: MetadataFieldMode; label: string }[] = [
+  { value: "skip", label: "Skip" },
+  { value: "fill-empty", label: "Fill empty" },
+  { value: "always", label: "Always override" },
+]
+
+function V2MetadataFieldOverrides({
+  value,
+  onChange,
+}: {
+  value: MetadataFieldOverrides
+  onChange: (overrides: MetadataFieldOverrides) => void
+}) {
+  return (
+    <Box>
+      <Text fw={500} size="sm" mb={4}>
+        Metadata read behavior
+      </Text>
+      <Text size="xs" c="dimmed" mb="sm">
+        For each field, choose how it is read from the book file during scans.
+        Writing metadata to the file always includes all known fields.
+      </Text>
+
+      <Stack gap="xs">
+        {METADATA_FIELDS.map((field) => (
+          <Group key={field} justify="space-between" wrap="nowrap">
+            <Text size="sm">{FIELD_LABELS[field]}</Text>
+            <NativeSelect
+              size="xs"
+              value={value[field]}
+              onChange={(event) => {
+                onChange({
+                  ...value,
+                  [field]: event.currentTarget.value as MetadataFieldMode,
+                })
+              }}
+              style={{ width: 160 }}
+            >
+              {MODE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </Group>
+        ))}
+      </Stack>
+    </Box>
+  )
 }
 
 export function SettingsForm({
@@ -135,10 +210,8 @@ export function SettingsForm({
       maxUploadChunkSize?.maxUploadChunkSize ?? settings.maxUploadChunkSize,
     opdsEnabled: settings.opdsEnabled,
     opdsPageSize: settings.opdsPageSize,
-    existingBooksScanIntervalMinutes:
-      settings.existingBooksScanIntervalMinutes ?? null,
     scanCronExpression: settings.scanCronExpression ?? null,
-    metadataOverrideMode: settings.metadataOverrideMode,
+    metadataFieldOverrides: settings.metadataFieldOverrides,
     epub2ImportStrategy: settings.epub2ImportStrategy,
     epub2BackupSuffix: settings.epub2BackupSuffix,
   }
@@ -240,16 +313,14 @@ export function SettingsForm({
       </ImportPathInput>
       <Fieldset
         legend="Library scanning"
-        disabled={isAnyLocked(
-          "existingBooksScanIntervalMinutes",
-          "metadataOverrideMode",
-        )}
+        disabled={isAnyLocked("scanCronExpression", "metadataFieldOverrides")}
       >
         <Stack>
           <Text className="text-sm opacity-70 dark:text-white">
             Scan your library for new files and changes. Scans check all tracked
             books and import paths for additions, removals, and modified files.
           </Text>
+
           {permissions?.bookProcess && (
             <Group>
               <Button.Group>
@@ -261,7 +332,7 @@ export function SettingsForm({
                   }}
                   disabled={Boolean(scanState?.running)}
                 >
-                  Scan library
+                  Scan with default settings
                 </Button>
                 <Menu position="bottom-end">
                   <Menu.Target>
@@ -279,73 +350,56 @@ export function SettingsForm({
                         void triggerScan({ force: true })
                       }}
                     >
-                      Force re-read all metadata
-                    </Menu.Item>
-                    <Menu.Divider />
-                    <Menu.Item
-                      onClick={() => {
-                        void triggerScan({ metadataOverride: "always" })
-                      }}
-                    >
-                      Scan and overwrite all metadata
-                    </Menu.Item>
-                    <Menu.Item
-                      onClick={() => {
-                        void triggerScan({ metadataOverride: "fill-empty" })
-                      }}
-                    >
-                      Scan and fill empty metadata only
-                    </Menu.Item>
-                    <Menu.Item
-                      onClick={() => {
-                        void triggerScan({ metadataOverride: "never" })
-                      }}
-                    >
-                      Scan without touching metadata
+                      Force rescan (re-read metadata from files even if
+                      unchanged since last scan)
                     </Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
               </Button.Group>
             </Group>
           )}
+
           {permissions?.bookProcess && scanState?.running && (
             <Text className="text-sm opacity-70 dark:text-white">
               Scan in progress ({scanState.source ?? "unknown"})
             </Text>
           )}
+
           <Switch
             label="Run scans on a schedule"
-            checked={
-              state.existingBooksScanIntervalMinutes !== null ||
-              !!state.scanCronExpression
-            }
+            checked={!!state.scanCronExpression}
             onChange={(event) => {
               if (!event.currentTarget.checked) {
-                form.setFieldValue("existingBooksScanIntervalMinutes", null)
                 form.setFieldValue("scanCronExpression", null)
                 return
               }
 
-              form.setFieldValue("existingBooksScanIntervalMinutes", 1440)
-              form.setFieldValue("scanCronExpression", null)
+              form.setFieldValue(
+                "scanCronExpression",
+                minutesToCronExpression(1440),
+              )
             }}
           />
-          {(state.existingBooksScanIntervalMinutes !== null ||
-            !!state.scanCronExpression) && (
+
+          {!!state.scanCronExpression && (
             <>
               <NumberInput
                 label="Scan interval (minutes)"
                 min={1}
-                {...form.getInputProps("existingBooksScanIntervalMinutes")}
-                value={state.existingBooksScanIntervalMinutes ?? ""}
+                value={cronExpressionToMinutes(state.scanCronExpression) ?? ""}
                 onChange={(val) => {
-                  form.setFieldValue(
-                    "existingBooksScanIntervalMinutes",
-                    val === "" ? null : Number(val),
-                  )
-                  form.setFieldValue("scanCronExpression", null)
+                  if (val === "") return
+
+                  const minutes = Number(val)
+                  if (minutes > 0) {
+                    form.setFieldValue(
+                      "scanCronExpression",
+                      minutesToCronExpression(minutes),
+                    )
+                  }
                 }}
               />
+
               <TextInput
                 label="Or use a cron expression"
                 description={
@@ -362,34 +416,21 @@ export function SettingsForm({
                   </>
                 }
                 placeholder="0 */4 * * *"
-                value={state.scanCronExpression ?? ""}
+                value={state.scanCronExpression}
                 onChange={(event) => {
                   const val = event.currentTarget.value
                   form.setFieldValue("scanCronExpression", val || null)
-                  if (val) {
-                    form.setFieldValue("existingBooksScanIntervalMinutes", null)
-                  }
                 }}
               />
             </>
           )}
-          <NativeSelect
-            label="Metadata override behavior"
-            description="Controls what happens to a book's metadata (title, author, description, etc.) when a scan detects a change in the source file."
-            {...form.getInputProps("metadataOverrideMode")}
-          >
-            <option value="fill-empty">
-              Fill empty fields only -- only write metadata for fields that are
-              currently blank
-            </option>
-            <option value="always">
-              Always overwrite -- replace all metadata with what is read from
-              the file on every scan
-            </option>
-            <option value="never">
-              Never overwrite -- never touch metadata after initial import
-            </option>
-          </NativeSelect>
+
+          <V2MetadataFieldOverrides
+            value={state.metadataFieldOverrides}
+            onChange={(overrides) => {
+              form.setFieldValue("metadataFieldOverrides", overrides)
+            }}
+          />
         </Stack>
       </Fieldset>
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { Button, Group, Stack, TextInput, px } from "@mantine/core"
+import { Button, Group, NumberInput, Stack, TextInput, px } from "@mantine/core"
 import { DateInput } from "@mantine/dates"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
@@ -73,6 +73,8 @@ export function BookEditForm({ book }: Props) {
       description: book.description,
       narrators: book.narrators.map((narrator) => narrator.name),
       tags: book.tags.map((tag) => tag.name),
+      duration: book.duration,
+      pageCount: book.pageCount,
       textCover: null as File | null,
       audioCover: null as File | null,
     },
@@ -186,6 +188,30 @@ export function BookEditForm({ book }: Props) {
               valueFormat="YYYY-MM-DD"
               {...form.getInputProps("publicationDate")}
             />
+
+            <NumberInput
+              className="m-0"
+              label="Page count"
+              description="Custom page count. Overrides the value derived from the ebook file when set."
+              min={0}
+              value={form.values.pageCount ?? ""}
+              onChange={(val) => {
+                form.setFieldValue("pageCount", val === "" ? null : Number(val))
+              }}
+            />
+
+            <NumberInput
+              className="m-0"
+              label="Duration (seconds)"
+              description="Custom duration in seconds. Overrides the value derived from audio files when set."
+              min={0}
+              decimalScale={2}
+              value={form.values.duration ?? ""}
+              onChange={(val) => {
+                form.setFieldValue("duration", val === "" ? null : Number(val))
+              }}
+            />
+
             <NarratorsInput
               narrators={creators}
               {...form.getInputProps("narrators")}

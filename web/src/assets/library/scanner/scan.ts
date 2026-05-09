@@ -321,7 +321,9 @@ export async function scan(opts: {
       const allInputs: ScanInput[] = []
 
       for (const task of opts.tasks) {
-        if (ctx.signal.aborted) break
+        if (ctx.signal.aborted) {
+          break
+        }
 
         let resolved: TaskResolution | null = null
         if (task.kind === "import-path") {
@@ -336,11 +338,15 @@ export async function scan(opts: {
         allInputs.push(...resolved.inputs)
       }
 
-      for (const task of opts.tasks) {
-        if (ctx.signal.aborted) break
-        if (task.kind !== "existing-books") continue
-
-        const resolved = await resolveExistingBooks(task, scannedBookUuids, ctx)
+      const existingBookTask = opts.tasks.find(
+        (task) => task.kind === "existing-books",
+      )
+      if (existingBookTask) {
+        const resolved = await resolveExistingBooks(
+          existingBookTask,
+          scannedBookUuids,
+          ctx,
+        )
         for (const input of resolved.inputs)
           scannedBookUuids.add(input.bookUuid)
         allInputs.push(...resolved.inputs)
@@ -367,7 +373,12 @@ export async function scan(opts: {
   )
 
   report.finish()
-  report.logger.info({ step: "scan-run", msg: "Scan finished" })
+  report.logger.info({
+    step: "scan-run",
+    msg:
+      "Scan finished for tasks: " +
+      opts.tasks.map((task) => task.kind).join(", "),
+  })
   pushRecentReport(report)
 
   return {
