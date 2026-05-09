@@ -47,10 +47,12 @@ async function handleFound(input: ScanInput, ctx: ScanCtx) {
     getFormatRelationPatch(input, { missing: false }),
   )
 
-  ctx.report.info({
-    step: STEP,
-    msg: `File ${input.filepath} has been found, marking as not missing`,
-  })
+  if (input.missing) {
+    ctx.report.info({
+      step: STEP,
+      msg: `File ${input.filepath} has been found, marking as not missing`,
+    })
+  }
 }
 
 export const checkExistsStep = defineStep(

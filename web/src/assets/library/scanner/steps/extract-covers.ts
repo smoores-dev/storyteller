@@ -1,6 +1,13 @@
+import {
+  getExtractedAudiobookCover,
+  getExtractedEbookCover,
+} from "@/assets/covers"
 import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { defineStep } from "@/assets/library/scanner/step2"
 import { type Reconciled } from "@/assets/library/scanner/types"
+import { getSetting } from "@/database/settings"
+import { type MetadataFieldMode } from "@/database/settingsTypes"
 
 export type ExtractTextCoverInput = Reconciled & {
   format: "ebook" | "readaloud"
@@ -8,9 +15,45 @@ export type ExtractTextCoverInput = Reconciled & {
 
 export type ExtractAudiobookCoverInput = Reconciled & { format: "audiobook" }
 
+const STEP = "extract-cover"
+
+async function getCoverMode(ctx: ScanCtx): Promise<MetadataFieldMode> {
+  const overrides =
+    ctx.options.metadataFieldOverrides ??
+    (await getSetting("metadataFieldOverrides"))
+
+  return overrides.cover
+}
+
 export const extractTextCoverStep = defineStep(
   "extract-text-cover",
-  async (input: ExtractTextCoverInput, _ctx) => {
+  async (input: ExtractTextCoverInput, ctx) => {
+    const mode = await getCoverMode(ctx)
+
+    if (mode === "skip") {
+      ctx.report.skipped({
+        step: STEP,
+        book: input.book,
+        format: input.format,
+        reason: "cover-override-skip",
+      })
+      return input
+    }
+
+    if (mode === "fill-empty") {
+      const existing = await getExtractedEbookCover(input.book)
+
+      if (existing) {
+        ctx.report.skipped({
+          step: STEP,
+          book: input.book,
+          format: input.format,
+          reason: "cover-already-exists",
+        })
+        return input
+      }
+    }
+
     await cacheTextCover(input.book)
     return input
   },
@@ -18,7 +61,33 @@ export const extractTextCoverStep = defineStep(
 
 export const extractAudiobookCoverStep = defineStep(
   "extract-audiobook-cover",
-  async (input: ExtractAudiobookCoverInput, _ctx) => {
+  async (input: ExtractAudiobookCoverInput, ctx) => {
+    const mode = await getCoverMode(ctx)
+
+    if (mode === "skip") {
+      ctx.report.skipped({
+        step: STEP,
+        book: input.book,
+        format: input.format,
+        reason: "cover-override-skip",
+      })
+      return input
+    }
+
+    if (mode === "fill-empty") {
+      const existing = await getExtractedAudiobookCover(input.book)
+
+      if (existing) {
+        ctx.report.skipped({
+          step: STEP,
+          book: input.book,
+          format: input.format,
+          reason: "cover-already-exists",
+        })
+        return input
+      }
+    }
+
     await cacheAudioCover(input.book)
     return input
   },

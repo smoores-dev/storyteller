@@ -91,7 +91,7 @@
             "cronExpressionDescription": "Standard cron syntax (minute hour day month weekday). The expression is evaluated in the server's timezone.",
             "cronHelper": "Cron expression reference (crontab.guru)",
             "metadataFieldOverrides": "Metadata read behavior",
-            "metadataFieldOverridesDescription": "For each metadata field, choose how it is read from the book file into the database during scans. Writing metadata to the file always includes all known fields.",
+            "metadataFieldOverridesDescription": "Controls how Storyteller handles metadata from book files during scans. The default (fill empty) is suitable for most users. If you also manage your books with other tools (e.g. Calibre, Audiobookshelf) and want those changes reflected in Storyteller, consider using always override.",
             "fieldTitle": "Title",
             "fieldSubtitle": "Subtitle",
             "fieldDescription": "Description",
@@ -106,8 +106,11 @@
             "modeSkip": "Skip",
             "modeFillEmpty": "Fill empty",
             "modeAlways": "Always override",
+            "modeCustom": "Custom",
+            "showAdvancedOverrides": "Show per-field settings",
+            "showSimpleOverrides": "Use a single setting for all fields",
             "scanModalTitle": "Scan library",
-            "scanModalDescription": "Configure which metadata fields to read from book files for this scan. These settings are prefilled from your saved defaults.",
+            "scanModalDescription": "Configure the metadata read behavior for this scan. These settings are prefilled from your saved defaults.",
             "scanModalConfirm": "Start scan",
             "scanModalCancel": "Cancel"
           }

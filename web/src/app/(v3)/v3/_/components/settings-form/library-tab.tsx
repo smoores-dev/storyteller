@@ -165,7 +165,16 @@ const MODE_OPTIONS = [
   { value: "always", labelKey: "modeAlways" },
 ] as const satisfies { value: MetadataFieldMode; labelKey: string }[]
 
-export function MetadataFieldOverridesEditor({
+function getUniformMode(
+  overrides: MetadataFieldOverrides,
+): MetadataFieldMode | "custom" {
+  const modes = METADATA_FIELDS.map((f) => overrides[f])
+  const allSame = modes.every((m) => m === modes[0])
+
+  return allSame ? modes[0]! : "custom"
+}
+
+function PerFieldOverridesEditor({
   value,
   onChange,
   t,
@@ -209,6 +218,71 @@ export function MetadataFieldOverridesEditor({
           </Select>
         </div>
       ))}
+    </div>
+  )
+}
+
+export function MetadataFieldOverridesEditor({
+  value,
+  onChange,
+  t,
+}: {
+  value: MetadataFieldOverrides
+  onChange: (overrides: MetadataFieldOverrides) => void
+  t: ReturnType<typeof useTranslations>
+}) {
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const uniformMode = getUniformMode(value)
+
+  return (
+    <div className="space-y-2">
+      <Select
+        value={uniformMode}
+        onValueChange={(mode) => {
+          if (mode === "custom") return
+          onChange(defaultMetadataFieldOverrides(mode as MetadataFieldMode))
+        }}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue>
+            {uniformMode === "custom"
+              ? t("modeCustom")
+              : t(
+                  MODE_OPTIONS.find((opt) => opt.value === uniformMode)
+                    ?.labelKey ?? "modeFillEmpty",
+                )}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {MODE_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {t(opt.labelKey)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {showAdvanced ? (
+        <>
+          <PerFieldOverridesEditor value={value} onChange={onChange} t={t} />
+
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground text-xs underline"
+            onClick={() => setShowAdvanced(false)}
+          >
+            {t("showSimpleOverrides")}
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="text-muted-foreground hover:text-foreground text-xs underline"
+          onClick={() => setShowAdvanced(true)}
+        >
+          {t("showAdvancedOverrides")}
+        </button>
+      )}
     </div>
   )
 }

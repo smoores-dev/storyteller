@@ -18,7 +18,6 @@ import {
   IconBook2,
   IconBooks,
   IconDotsCircleHorizontal,
-  IconFileArrowRight,
   IconHeadphonesFilled,
   IconPencil,
   IconPlayerPlay,
@@ -55,9 +54,11 @@ interface Props {
 function Details({
   book,
   format,
+  onUpgradeEpub,
 }: {
   book: BookWithRelations
   format: "ebook" | "audiobook" | "readaloud"
+  onUpgradeEpub?: () => void
 }) {
   const fmt = book[format]
   if (!fmt) {
@@ -70,6 +71,9 @@ function Details({
       : format === "audiobook"
         ? IconHeadphonesFilled
         : IconReadaloud
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+  const isEpub2 = Boolean("isEpub2" in fmt && fmt.isEpub2)
 
   return (
     <Text className="flex flex-row items-center gap-2">
@@ -97,14 +101,32 @@ function Details({
 
               <span>{formatFileSize(fmt.fileSize ?? null) ?? "0.0 MB"}</span>
 
-              {
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
-                Boolean("isEpub2" in fmt && fmt.isEpub2) && (
-                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              {isEpub2 && (
+                <Tooltip
+                  label="EPUB 2 is not fully supported. Click to convert to EPUB 3."
+                  position="top"
+                  withArrow
+                  disabled={!onUpgradeEpub}
+                >
+                  <span
+                    role={onUpgradeEpub ? "button" : undefined}
+                    tabIndex={onUpgradeEpub ? 0 : undefined}
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                      onUpgradeEpub
+                        ? "cursor-pointer bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    }`}
+                    onClick={onUpgradeEpub}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        onUpgradeEpub?.()
+                      }
+                    }}
+                  >
                     EPUB 2
                   </span>
-                )
-              }
+                </Tooltip>
+              )}
             </>
           )}
         </div>
@@ -128,10 +150,6 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const [cancelProcessing] = useCancelProcessingMutation()
 
   if (!book) return null
-
-  const hasEpubFiles =
-    book.ebook?.filepath.endsWith(".epub") ||
-    book.readaloud?.filepath?.endsWith(".epub")
 
   return (
     <>
@@ -376,8 +394,16 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
           className="rounded-sm bg-gray-100 p-4 dark:bg-neutral-700"
           gap={4}
         >
-          <Details book={book} format="readaloud" />
-          <Details book={book} format="ebook" />
+          <Details
+            book={book}
+            format="readaloud"
+            onUpgradeEpub={permissions?.bookUpdate ? openUpgradeModal : undefined}
+          />
+          <Details
+            book={book}
+            format="ebook"
+            onUpgradeEpub={permissions?.bookUpdate ? openUpgradeModal : undefined}
+          />
           <Details book={book} format="audiobook" />
           {book.alignedAt && (
             <Text>
@@ -402,17 +428,6 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
         </Stack>
 
         <Group className="mt-8 justify-end">
-          {!!permissions?.bookUpdate && hasEpubFiles && (
-            <Button
-              variant="subtle"
-              size="xs"
-              leftSection={<IconFileArrowRight size={14} />}
-              onClick={openUpgradeModal}
-            >
-              Convert to EPUB 3
-            </Button>
-          )}
-
           {!!permissions?.bookDelete && (
             <Button onClick={open} color="red">
               Delete book

@@ -49,6 +49,7 @@ import {
   type MetadataField,
   type MetadataFieldMode,
   type MetadataFieldOverrides,
+  defaultMetadataFieldOverrides,
 } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
@@ -95,6 +96,15 @@ const MODE_OPTIONS: { value: MetadataFieldMode; label: string }[] = [
   { value: "always", label: "Always override" },
 ]
 
+function getUniformMode(
+  overrides: MetadataFieldOverrides,
+): MetadataFieldMode | "custom" {
+  const first = overrides[METADATA_FIELDS[0]]
+  const allSame = METADATA_FIELDS.every((f) => overrides[f] === first)
+
+  return allSame ? first : "custom"
+}
+
 function V2MetadataFieldOverrides({
   value,
   onChange,
@@ -102,40 +112,101 @@ function V2MetadataFieldOverrides({
   value: MetadataFieldOverrides
   onChange: (overrides: MetadataFieldOverrides) => void
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const uniformMode = getUniformMode(value)
+
   return (
     <Box>
       <Text fw={500} size="sm" mb={4}>
         Metadata read behavior
       </Text>
       <Text size="xs" c="dimmed" mb="sm">
-        For each field, choose how it is read from the book file during scans.
-        Writing metadata to the file always includes all known fields.
+        Controls how Storyteller handles metadata changes in existing book files
+        made outside of Storyteller during scans. If you manage your books with
+        other tools (e.g. Calibre, Audiobookshelf) and want those changes
+        reflected in Storyteller, consider using always override. The default
+        (fill empty) is suitable for most users. For example, when importing the
+        book it didn&apos;t have a description, so that field was empty. When
+        scanning the book again, we now see it has a description, so when
+        &apos;fill empty&apos; is used, the description found in the .epub will
+        be used.
       </Text>
 
-      <Stack gap="xs">
-        {METADATA_FIELDS.map((field) => (
-          <Group key={field} justify="space-between" wrap="nowrap">
-            <Text size="sm">{FIELD_LABELS[field]}</Text>
-            <NativeSelect
-              size="xs"
-              value={value[field]}
-              onChange={(event) => {
-                onChange({
-                  ...value,
-                  [field]: event.currentTarget.value as MetadataFieldMode,
-                })
-              }}
-              style={{ width: 160 }}
-            >
-              {MODE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </NativeSelect>
-          </Group>
+      <NativeSelect
+        size="sm"
+        value={uniformMode}
+        onChange={(event) => {
+          const mode = event.currentTarget.value
+          if (mode === "custom") return
+
+          onChange(defaultMetadataFieldOverrides(mode as MetadataFieldMode))
+        }}
+        style={{ maxWidth: 240 }}
+      >
+        {MODE_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
         ))}
-      </Stack>
+        {uniformMode === "custom" && (
+          <option value="custom" disabled>
+            Custom
+          </option>
+        )}
+      </NativeSelect>
+
+      {showAdvanced ? (
+        <>
+          <Stack gap="xs" mt="sm">
+            {METADATA_FIELDS.map((field) => (
+              <Group key={field} justify="space-between" wrap="nowrap">
+                <Text size="sm">{FIELD_LABELS[field]}</Text>
+                <NativeSelect
+                  size="xs"
+                  value={value[field]}
+                  onChange={(event) => {
+                    onChange({
+                      ...value,
+                      [field]: event.currentTarget.value as MetadataFieldMode,
+                    })
+                  }}
+                  style={{ width: 160 }}
+                >
+                  {MODE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Group>
+            ))}
+          </Stack>
+
+          <Anchor
+            component="button"
+            type="button"
+            size="xs"
+            mt="xs"
+            onClick={() => {
+              setShowAdvanced(false)
+            }}
+          >
+            Use a single setting for all fields
+          </Anchor>
+        </>
+      ) : (
+        <Anchor
+          component="button"
+          type="button"
+          size="xs"
+          mt="xs"
+          onClick={() => {
+            setShowAdvanced(true)
+          }}
+        >
+          Show per-field settings
+        </Anchor>
+      )}
     </Box>
   )
 }

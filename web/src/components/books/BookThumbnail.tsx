@@ -50,6 +50,7 @@ function getDisplayFileSize(
 
 function getDisplayDuration(book: BookWithRelations): number | null {
   return (
+    book.duration ??
     nonMissingAsset(book.audiobook)?.duration ??
     nonMissingAsset(book.readaloud)?.duration ??
     null
@@ -58,6 +59,7 @@ function getDisplayDuration(book: BookWithRelations): number | null {
 
 function getDisplayPageCount(book: BookWithRelations): number | null {
   return (
+    book.pageCount ??
     nonMissingAsset(book.ebook)?.pageCount ??
     nonMissingAsset(book.readaloud)?.pageCount ??
     null
