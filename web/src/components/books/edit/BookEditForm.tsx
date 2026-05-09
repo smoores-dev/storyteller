@@ -1,11 +1,20 @@
 "use client"
 
-import { Button, Group, NumberInput, Stack, TextInput, px } from "@mantine/core"
+import {
+  Button,
+  Group,
+  NumberInput,
+  Stack,
+  Text,
+  TextInput,
+  px,
+} from "@mantine/core"
 import { DateInput } from "@mantine/dates"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import { useRef, useState } from "react"
 
+import { Label } from "@/app/(v3)/v3/_/components/ui/label"
 import { DeleteBookModal } from "@/components/books/modals/DeleteBookModal"
 import { SaveState } from "@/components/forms"
 import {
@@ -32,6 +41,73 @@ import { NarratorsInput } from "./NarratorsInput"
 import { SeriesInput } from "./SeriesInput"
 import { StatusInput } from "./StatusInput"
 import { TagsInput } from "./TagsInput"
+
+function DurationInput({
+  value,
+  onChange,
+}: {
+  value: number | null
+  onChange: (value: number | null) => void
+}) {
+  const totalSeconds = value ?? 0
+
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = Math.round(totalSeconds % 60)
+
+  function update(h: number, m: number, s: number) {
+    const total = h * 3600 + m * 60 + s
+    onChange(total === 0 ? null : total)
+  }
+
+  return (
+    <div className="flex flex-col">
+      <Label className="m-0 text-sm font-medium">Audiobook duration</Label>
+      <Text className="m-0 text-xs" c="dimmed">
+        Custom duration. Overrides the value derived from the audio file when
+        set.
+      </Text>
+
+      <Group grow align="flex-end">
+        <NumberInput
+          label="Hours"
+          min={0}
+          value={hours}
+          onChange={(val) => {
+            update(val === "" ? 0 : Number(val), minutes, seconds)
+          }}
+        />
+
+        <NumberInput
+          label="Minutes"
+          min={0}
+          max={59}
+          value={minutes}
+          onChange={(val) => {
+            update(hours, val === "" ? 0 : Number(val), seconds)
+          }}
+        />
+
+        <NumberInput
+          label="Seconds"
+          min={0}
+          max={59}
+          value={seconds}
+          onChange={(val) => {
+            update(hours, minutes, val === "" ? 0 : Number(val))
+          }}
+        />
+
+        <NumberInput
+          label="= Total Seconds"
+          value={totalSeconds}
+          readOnly
+          variant="filled"
+        />
+      </Group>
+    </div>
+  )
+}
 
 type Props = {
   book: BookWithRelations
@@ -200,15 +276,10 @@ export function BookEditForm({ book }: Props) {
               }}
             />
 
-            <NumberInput
-              className="m-0"
-              label="Duration (seconds)"
-              description="Custom duration in seconds. Overrides the value derived from audio files when set."
-              min={0}
-              decimalScale={2}
-              value={form.values.duration ?? ""}
+            <DurationInput
+              value={form.values.duration}
               onChange={(val) => {
-                form.setFieldValue("duration", val === "" ? null : Number(val))
+                form.setFieldValue("duration", val)
               }}
             />
 

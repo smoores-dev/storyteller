@@ -55,13 +55,12 @@ export async function register() {
     logger.error(err)
   }
 
-  // TODO: make cron
-  const THIRTY_MINUTES = 30 * 60 * 1000
-  setInterval(() => {
+  const cron = await import("node-cron")
+  cron.schedule("*/30 * * * *", () => {
     syncChangelog().catch((err: unknown) => {
       logger.error({ msg: "Periodic changelog sync failed", err })
     })
-  }, THIRTY_MINUTES)
+  })
 
   try {
     const queue = await getQueuedBooks()

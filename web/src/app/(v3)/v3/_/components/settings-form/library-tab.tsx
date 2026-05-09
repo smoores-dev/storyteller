@@ -171,7 +171,7 @@ function getUniformMode(
   const modes = METADATA_FIELDS.map((f) => overrides[f])
   const allSame = modes.every((m) => m === modes[0])
 
-  return allSame ? modes[0]! : "custom"
+  return allSame ? modes[0] ?? "custom" : "custom"
 }
 
 function PerFieldOverridesEditor({
@@ -269,7 +269,9 @@ export function MetadataFieldOverridesEditor({
           <button
             type="button"
             className="text-muted-foreground hover:text-foreground text-xs underline"
-            onClick={() => setShowAdvanced(false)}
+            onClick={() => {
+              setShowAdvanced(false)
+            }}
           >
             {t("showSimpleOverrides")}
           </button>
@@ -278,7 +280,9 @@ export function MetadataFieldOverridesEditor({
         <button
           type="button"
           className="text-muted-foreground hover:text-foreground text-xs underline"
-          onClick={() => setShowAdvanced(true)}
+          onClick={() => {
+            setShowAdvanced(true)
+          }}
         >
           {t("showAdvancedOverrides")}
         </button>
