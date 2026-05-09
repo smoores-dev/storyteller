@@ -16,6 +16,35 @@ export class ScanAbortedError extends Error {
   }
 }
 
+function describeValue(v: unknown): string {
+  if (v === null) return "null"
+  if (typeof v === "string")
+    return v.length > 60 ? `<string len=${v.length}>` : `"${v}"`
+  if (typeof v === "number" || typeof v === "boolean") return String(v)
+  if (Array.isArray(v)) return `<array len=${v.length}>`
+  if (typeof v === "object") return "<object>"
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+  return String(v)
+}
+
+function summarizeDelta(input: ScanInput, output: unknown): string | null {
+  if (output === null) return "→ null"
+  if (typeof output !== "object" || Array.isArray(output)) return null
+
+  const inObj = input as unknown as Record<string, unknown>
+  const outObj = output as Record<string, unknown>
+  const changes: string[] = []
+  for (const key of Object.keys(outObj)) {
+    if (key === "book") continue
+    if (!(key in inObj)) {
+      changes.push(`+${key}=${describeValue(outObj[key])}`)
+    } else if (inObj[key] !== outObj[key]) {
+      changes.push(`~${key}=${describeValue(outObj[key])}`)
+    }
+  }
+  return changes.length ? `→ ${changes.join(", ")}` : null
+}
+
 /**
  * Define a step function that can be used in the scanner.
  */
@@ -32,13 +61,18 @@ export function defineStep<Input extends ScanInput, Output>(
     }
 
     const stepCtx = { ...ctx, step }
+    const start = performance.now()
+    const tag = `[STEP:${step}] ${input.book.title} (${input.format})`
 
     try {
-      stepCtx.logger.debug({ input }, "step started")
+      stepCtx.logger.debug(tag)
 
       const result = await fn(input, stepCtx)
 
-      stepCtx.logger.debug({ result }, "step finished")
+      if (process.env["STORYTELLER_LOG_LEVEL"] === "debug") {
+        const delta = summarizeDelta(input, result)
+        if (delta) stepCtx.logger.debug(`${tag} ${delta}`)
+      }
 
       return result as NarrowOutput<Output, N>
     } catch (err) {
@@ -47,12 +81,21 @@ export function defineStep<Input extends ScanInput, Output>(
       }
 
       stepCtx.report.warn({
-        step: step,
-        msg: `Step ${step} failed before format was resolved for book ${input.book.title} (${input.format})`,
+        step,
+        msg: `Step ${step} failed`,
+        book: input.book,
+        format: input.format,
         err,
       })
 
       throw err
+    } finally {
+      ctx.report.recordTiming({
+        step,
+        durationMs: performance.now() - start,
+        bookUuid: input.bookUuid,
+        format: input.format,
+      })
     }
   }
 }

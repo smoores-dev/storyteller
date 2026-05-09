@@ -17,25 +17,28 @@ export const computeHashStep = defineStep(
         ? await hashAudiobookDirectory(input.filepath, ctx.signal)
         : await hashFile(input.filepath, ctx.signal)
 
-    const changed =
-      !!ctx.options.force || input.isNew || input.existingHash !== hash
+    const changed = input.isNew || input.existingHash !== hash
 
-    await updateBook(
-      input.bookUuid,
-      null,
-      getFormatRelationPatch(input, {
-        missing: false,
-        contentHash: hash,
-        fileSize,
-      }),
-    )
+    if (changed) {
+      await updateBook(
+        input.bookUuid,
+        null,
+        getFormatRelationPatch(input, {
+          missing: false,
+          contentHash: hash,
+          fileSize,
+        }),
+      )
+    }
+
+    const actuallyChanged = !!ctx.options.force || changed
 
     return {
       ...input,
       fileHash: hash,
       fileSize,
       existingHash: hash,
-      changed,
+      changed: actuallyChanged,
     }
   },
 )

@@ -8,7 +8,8 @@ export const logger = pino(
     level: env.STORYTELLER_LOG_LEVEL,
   },
   PinoPretty({
-    ignore: "pid,hostname",
+    ignore: "pid,hostname,ctx",
+    messageFormat: "{if ctx}{ctx} {end}{msg}",
     translateTime: "SYS:standard",
   }),
 )

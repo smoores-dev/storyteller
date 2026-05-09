@@ -45,6 +45,49 @@ type ReportCounts = {
   succeeded: number
 }
 
+export type StepTiming = {
+  step: string
+  durationMs: number
+  bookUuid?: UUID
+  format?: ScanFormat
+}
+
+export type StepTimingAggregate = {
+  step: string
+  count: number
+  totalMs: number
+  avgMs: number
+}
+
+export type ScanFailure = {
+  step: string
+  bookUuid: UUID
+  bookTitle: string
+  format: ScanFormat
+  errMsg: string
+}
+
+export type ScanSummary = {
+  source: ScanSource
+  startedAt: number
+  finishedAt: number | null
+  durationMs: number
+  tasks: string[]
+  counts: {
+    inputs: number
+    succeeded: number
+    skipped: number
+    failed: number
+  }
+  bookCounts: {
+    added: number
+    newlyMissing: number
+  }
+  skipsByReason: Record<string, number>
+  timingsByStep: StepTimingAggregate[]
+  failures: ScanFailure[]
+}
+
 function formatBookMessage(input: {
   step: string
   msg: string
@@ -56,11 +99,38 @@ function formatBookMessage(input: {
     : input.msg
 }
 
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === "string") return err
+  try {
+    return JSON.stringify(err)
+  } catch {
+    return String(err)
+  }
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms.toFixed(0)}ms`
+  if (ms < 60_000) return `${(ms / 1000).toFixed(2)}s`
+  const minutes = Math.floor(ms / 60_000)
+  const seconds = ((ms % 60_000) / 1000).toFixed(1)
+  return `${minutes}m ${seconds}s`
+}
+
+function pad(value: string | number, width: number): string {
+  return String(value).padStart(width)
+}
+
 export class ScanReport {
   private readonly entries: ReportEntry[] = []
   private readonly succeededBooksSet = new Set<UUID>()
   private readonly failedBooksSet = new Set<UUID>()
   private readonly skippedBooksSet = new Set<UUID>()
+  private readonly addedBooksSet = new Set<UUID>()
+  private readonly newlyMissingBooksSet = new Set<UUID>()
+  private readonly timings: StepTiming[] = []
+  private inputsTotal = 0
+  private tasksValue: string[] = []
   private finishedAtValue: number | null = null
 
   constructor(
@@ -79,6 +149,26 @@ export class ScanReport {
 
   finish() {
     this.finishedAtValue = Date.now()
+  }
+
+  setTasks(tasks: string[]) {
+    this.tasksValue = tasks
+  }
+
+  setInputsTotal(total: number) {
+    this.inputsTotal = total
+  }
+
+  recordAdded(bookUuid: UUID) {
+    this.addedBooksSet.add(bookUuid)
+  }
+
+  recordNewlyMissing(bookUuid: UUID) {
+    this.newlyMissingBooksSet.add(bookUuid)
+  }
+
+  recordTiming(timing: StepTiming) {
+    this.timings.push(timing)
   }
 
   info(input: {
@@ -130,7 +220,7 @@ export class ScanReport {
     book: BookWithRelations
     format: ScanFormat
   }) {
-    this.baseLogger.warn({
+    this.baseLogger.debug({
       msg: formatBookMessage({
         ...input,
         msg: `Skipped for reason: ${input.reason}`,
@@ -156,11 +246,6 @@ export class ScanReport {
     format: ScanFormat
     err: unknown
   }) {
-    this.baseLogger.error({
-      msg: formatBookMessage({ ...input, msg: `Failed` }),
-      err: input.err,
-    })
-
     this.entries.push({
       kind: "failed",
       ts: Date.now(),
@@ -179,7 +264,7 @@ export class ScanReport {
     book: BookWithRelations
     format: ScanFormat
   }) {
-    this.baseLogger.info({
+    this.baseLogger.debug({
       msg: formatBookMessage({ ...input, msg: `Succeeded` }),
     })
 
@@ -214,40 +299,152 @@ export class ScanReport {
   counts(): ReportCounts {
     return this.entries.reduce<ReportCounts>(
       (acc, entry) => {
-        if (entry.kind === "info") {
-          acc.info += 1
-          return acc
-        }
-
-        if (entry.kind === "warn") {
-          acc.warn += 1
-          return acc
-        }
-
-        if (entry.kind === "skip") {
-          acc.skipped += 1
-          return acc
-        }
-
-        if (entry.kind === "failed") {
-          acc.failed += 1
-          return acc
-        }
-
-        acc.succeeded += 1
+        if (entry.kind === "info") acc.info += 1
+        else if (entry.kind === "warn") acc.warn += 1
+        else if (entry.kind === "skip") acc.skipped += 1
+        else if (entry.kind === "failed") acc.failed += 1
+        else acc.succeeded += 1
         return acc
       },
       { info: 0, warn: 0, skipped: 0, failed: 0, succeeded: 0 },
     )
   }
 
-  toJSON() {
+  timingsByStep(): StepTimingAggregate[] {
+    const map = new Map<string, { count: number; totalMs: number }>()
+    for (const t of this.timings) {
+      const existing = map.get(t.step) ?? { count: 0, totalMs: 0 }
+      existing.count += 1
+      existing.totalMs += t.durationMs
+      map.set(t.step, existing)
+    }
+    return [...map.entries()]
+      .map(([step, { count, totalMs }]) => ({
+        step,
+        count,
+        totalMs,
+        avgMs: count > 0 ? totalMs / count : 0,
+      }))
+      .sort((a, b) => b.totalMs - a.totalMs)
+  }
+
+  skipsByReason(): Record<string, number> {
+    const out: Record<string, number> = {}
+    for (const entry of this.entries) {
+      if (entry.kind !== "skip") continue
+      out[entry.reason] = (out[entry.reason] ?? 0) + 1
+    }
+    return out
+  }
+
+  failures(): ScanFailure[] {
+    const out: ScanFailure[] = []
+    for (const entry of this.entries) {
+      if (entry.kind !== "failed") continue
+      out.push({
+        step: entry.step,
+        bookUuid: entry.bookUuid,
+        bookTitle: entry.bookTitle,
+        format: entry.format,
+        errMsg: errorMessage(entry.err),
+      })
+    }
+    return out
+  }
+
+  summary(): ScanSummary {
+    const finishedAt = this.finishedAtValue ?? Date.now()
+    const counts = this.counts()
     return {
       source: this.source,
       startedAt: this.startedAt,
       finishedAt: this.finishedAtValue,
-      counts: this.counts(),
+      durationMs: finishedAt - this.startedAt,
+      tasks: [...this.tasksValue],
+      counts: {
+        inputs: this.inputsTotal,
+        succeeded: counts.succeeded,
+        skipped: counts.skipped,
+        failed: counts.failed,
+      },
+      bookCounts: {
+        added: this.addedBooksSet.size,
+        newlyMissing: this.newlyMissingBooksSet.size,
+      },
+      skipsByReason: this.skipsByReason(),
+      timingsByStep: this.timingsByStep(),
+      failures: this.failures(),
+    }
+  }
+
+  formatSummary(): string {
+    const s = this.summary()
+    const lines: string[] = ["Scan summary"]
+
+    const tasksStr = formatTasks(s.tasks)
+    lines.push(
+      `  Source:    ${s.source.padEnd(14)} Duration:  ${formatDuration(s.durationMs)}`,
+    )
+    if (tasksStr) lines.push(`  Tasks:     ${tasksStr}`)
+    lines.push(
+      `  Inputs:    ${s.counts.inputs} ` +
+        `(${s.counts.succeeded} succeeded, ${s.counts.skipped} skipped, ${s.counts.failed} failed)`,
+    )
+    if (s.bookCounts.added > 0 || s.bookCounts.newlyMissing > 0) {
+      lines.push(
+        `  Books:     ${s.bookCounts.added} added, ${s.bookCounts.newlyMissing} newly missing`,
+      )
+    }
+
+    const skipReasons = Object.entries(s.skipsByReason).sort(
+      (a, b) => b[1] - a[1],
+    )
+    if (skipReasons.length > 0) {
+      lines.push(`  Skips by reason:`)
+      const widest = Math.max(...skipReasons.map(([reason]) => reason.length))
+      for (const [reason, count] of skipReasons) {
+        lines.push(`    ${reason.padEnd(widest)}  ${pad(count, 5)}`)
+      }
+    }
+
+    const timings = s.timingsByStep.slice(0, 5)
+    const timingsTotal = s.timingsByStep.reduce((a, t) => a + t.totalMs, 0)
+    if (timings.length > 0 && timingsTotal > 0) {
+      lines.push(`  Time by step (top ${timings.length}):`)
+      const widest = Math.max(...timings.map((t) => t.step.length))
+      for (const t of timings) {
+        const pct = ((t.totalMs / timingsTotal) * 100).toFixed(0) + "%"
+        lines.push(
+          `    ${t.step.padEnd(widest)}  ${pad(pct, 4)}  ` +
+            `avg: ${pad(formatDuration(t.avgMs), 8)}  total: ${formatDuration(t.totalMs)}`,
+        )
+      }
+    }
+
+    if (s.failures.length > 0) {
+      lines.push(`  Failures (${s.failures.length}):`)
+      for (const f of s.failures) {
+        lines.push(`    - ${f.step} | ${f.bookTitle} (${f.format})`)
+        lines.push(`      ${f.errMsg}`)
+      }
+    }
+
+    return lines.join("\n")
+  }
+
+  toJSON() {
+    return {
+      ...this.summary(),
       outcomes: this.outcomes(),
     }
   }
+}
+
+function formatTasks(tasks: string[]): string {
+  if (!tasks.length) return ""
+  const counts = new Map<string, number>()
+  for (const t of tasks) counts.set(t, (counts.get(t) ?? 0) + 1)
+  return [...counts.entries()]
+    .map(([kind, count]) => (count > 1 ? `${kind}×${count}` : kind))
+    .join(", ")
 }

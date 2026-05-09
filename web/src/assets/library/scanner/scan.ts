@@ -190,12 +190,31 @@ async function resolveImportPath(
     signal: ctx.signal,
   })
 
+  reportDiscoveries(ctx, task.importPath, reconciled.newFormatsByBook)
+
   const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
   const inputs = buildInputsForBooks(refreshedBooks, {
     newFormats: reconciled.newFormatsByBook,
   })
 
   return { inputs }
+}
+
+function reportDiscoveries(
+  ctx: ScanCtx,
+  importPath: string,
+  newFormatsByBook: Map<UUID, Set<ScanFormat>>,
+) {
+  if (newFormatsByBook.size === 0) return
+  let formatCount = 0
+  for (const [bookUuid, formats] of newFormatsByBook) {
+    ctx.report.recordAdded(bookUuid)
+    formatCount += formats.size
+  }
+  ctx.report.info({
+    step: "discover",
+    msg: `Discovered ${newFormatsByBook.size} book(s)/${formatCount} format(s) under ${importPath}`,
+  })
 }
 
 async function resolveChangedPaths(
@@ -251,6 +270,7 @@ async function resolveChangedPaths(
     }
     newFormatsByBook = reconciled.newFormatsByBook
     unclassifiedEpubs = reconciled.unclassifiedEpubs
+    reportDiscoveries(ctx, task.importPath, reconciled.newFormatsByBook)
   }
 
   if (!affectedFormats.size && !unclassifiedEpubs.length) {
@@ -298,6 +318,11 @@ export async function scan(opts: {
     logger.child({ ctx: `[SCAN:${opts.source}]` }),
     startedAt,
     opts.source,
+  )
+  const taskKinds = opts.tasks.map((t) => t.kind)
+  report.setTasks(taskKinds)
+  report.logger.info(
+    `Scan started (${taskKinds.length} task${taskKinds.length === 1 ? "" : "s"}: ${taskKinds.join(", ")})`,
   )
 
   // internal controller that can be aborted from the cancel endpoint.
@@ -374,10 +399,7 @@ export async function scan(opts: {
       }
 
       const inputs = dedupeInputs(allInputs)
-      report.info({
-        step: "scan-run",
-        msg: `Running scan (${opts.source}): ${inputs.length} input(s)`,
-      })
+      report.setInputsTotal(inputs.length)
 
       await runScans(
         inputs,
@@ -390,12 +412,7 @@ export async function scan(opts: {
   )
 
   report.finish()
-  report.logger.info({
-    step: "scan-run",
-    msg:
-      "Scan finished for tasks: " +
-      opts.tasks.map((task) => task.kind).join(", "),
-  })
+  report.logger.info({ msg: report.formatSummary() })
   pushRecentReport(report)
 
   return {

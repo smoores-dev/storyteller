@@ -32,22 +32,24 @@ async function handleMissing(input: ScanInput, ctx: ScanCtx) {
     getFormatRelationPatch(input, { missing: true }),
   )
 
-  ctx.report.skipped({
+  ctx.report.recordNewlyMissing(input.bookUuid)
+  ctx.report.info({
     step: STEP,
+    msg: `File went missing: ${input.filepath}`,
     book: input.book,
     format: input.format,
-    reason: "missing-on-disk",
   })
 }
 
 async function handleFound(input: ScanInput, ctx: ScanCtx) {
-  await updateBook(
-    input.bookUuid,
-    null,
-    getFormatRelationPatch(input, { missing: false }),
-  )
+  const isMissing = input.book[input.format]?.missing ?? false
+  if (isMissing) {
+    await updateBook(
+      input.bookUuid,
+      null,
+      getFormatRelationPatch(input, { missing: false }),
+    )
 
-  if (input.missing) {
     ctx.report.info({
       step: STEP,
       msg: `File ${input.filepath} has been found, marking as not missing`,

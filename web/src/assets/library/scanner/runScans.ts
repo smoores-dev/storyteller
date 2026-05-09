@@ -3,7 +3,6 @@ import { scanAudiobook } from "@/assets/library/scanner/pipelines/scanAudiobook"
 import { scanEbook } from "@/assets/library/scanner/pipelines/scanEbook"
 import { ScanAbortedError } from "@/assets/library/scanner/step2"
 import { type ScanInput } from "@/assets/library/scanner/types"
-import { logger } from "@/logging"
 
 export async function runScans(
   inputs: ScanInput[],
@@ -13,15 +12,11 @@ export async function runScans(
   const total = inputs.length
   if (total === 0) {
     ctx.setProgress(0, 0)
-    ctx.report.info({ step: "run-scans", msg: "No scan inputs to process" })
     return
   }
 
   ctx.setProgress(0, total)
-  ctx.report.info({
-    step: "run-scans",
-    msg: `Scanning ${total} input(s) with concurrency ${concurrency}`,
-  })
+  ctx.logger.debug(`Scanning ${total} input(s) with concurrency ${concurrency}`)
 
   const workers = Math.max(1, Math.min(concurrency, total))
   let next = 0
@@ -35,8 +30,8 @@ export async function runScans(
       const input = inputs[index]
       if (!input) return
 
-      ctx.logger.info(
-        `Scanning ${input.book.title} ${input.format} [${index}/${total}]`,
+      ctx.logger.debug(
+        `Scanning ${input.book.title} ${input.format} [${index + 1}/${total}]`,
       )
       try {
         switch (input.format) {
@@ -52,10 +47,9 @@ export async function runScans(
         }
       } catch (err) {
         if (err instanceof ScanAbortedError) {
-          ctx.report.info({
-            step: "scan",
-            msg: `Scan aborted for ${input.book.title} (${input.format})`,
-          })
+          ctx.logger.debug(
+            `Scan aborted for ${input.book.title} (${input.format})`,
+          )
           return
         }
 
@@ -73,28 +67,4 @@ export async function runScans(
   }
 
   await Promise.all(Array.from({ length: workers }, () => worker()))
-
-  const duration = ctx.report.finishedAt ?? Date.now() - ctx.report.startedAt
-  ctx.report.info({
-    step: "scan",
-    msg: `Scan completed in ${duration}ms`,
-  })
-
-  // report errors
-  const errors = ctx.report
-    .outcomes()
-    .filter((outcome) => outcome.kind === "failed")
-
-  if (errors.length > 0) {
-    ctx.report.warn({
-      step: "scan",
-      msg: `Some scans failed, see below`,
-    })
-    for (const error of errors) {
-      logger.error({
-        msg: `Scanning ${error.bookTitle} (${error.format}) failed: `,
-        err: error.err,
-      })
-    }
-  }
 }
