@@ -6,10 +6,7 @@ import { extractAudiobookManifestStep } from "@/assets/library/scanner/steps/ext
 import { extractAudiobookMetadataStep } from "@/assets/library/scanner/steps/extract-metadata"
 import { openAudiobookStep } from "@/assets/library/scanner/steps/open-audiobook"
 import { reconcileMetadataStep } from "@/assets/library/scanner/steps/reconcile-metadata"
-import {
-  type AudiobookHashed,
-  type AudiobookInput,
-} from "@/assets/library/scanner/types"
+import { type AudiobookInput } from "@/assets/library/scanner/types"
 
 export async function scanAudiobook(input: AudiobookInput, ctx: ScanCtx) {
   await using scope = new AsyncDisposableStack()

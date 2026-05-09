@@ -13,28 +13,8 @@ import { upgradeEpubStep } from "@/assets/library/scanner/steps/upgrade-epub"
 import {
   type EbookInput,
   type EpubHashed,
-  type Hashed,
   type ReadaloudInput,
-  type ScanInput,
 } from "@/assets/library/scanner/types"
-
-const isEpub2 = <T extends EpubHashed & { isEpub2: boolean }>(
-  input: T,
-): input is T & { isEpub2: true } => {
-  return input.isEpub2
-}
-
-const isChanged = <Input extends Hashed>(
-  input: Input,
-): input is Input extends Input ? Input & { changed: true } : never => {
-  return input.changed
-}
-
-const isReadaloud = <Input extends ScanInput>(
-  input: Input,
-): input is Input & { format: "readaloud" } => {
-  return input.format === "readaloud"
-}
 
 export async function scanEbook(
   input: EbookInput | ReadaloudInput,
@@ -48,7 +28,7 @@ export async function scanEbook(
 
   const hashed = await computeHashStep(existing, pipelineCtx)
 
-  if (!isChanged(hashed)) {
+  if (!hashed.changed) {
     ctx.report.skipped({
       step: "open-epub",
       book: input.book,
@@ -60,7 +40,7 @@ export async function scanEbook(
 
   const opened = await openEpubStep(hashed as EpubHashed, pipelineCtx)
 
-  const upgraded = isEpub2(opened)
+  const upgraded = opened.isEpub2
     ? await upgradeEpubStep(opened, pipelineCtx)
     : opened
 
@@ -71,9 +51,10 @@ export async function scanEbook(
 
   const metadata = await extractEpubMetadataStep(upgraded, ctx)
 
-  const manifest = isReadaloud(metadata)
-    ? await extractReadaloudManifestStep(metadata, ctx)
-    : await extractEbookManifestStep(metadata, ctx)
+  const manifest =
+    metadata.format === "readaloud"
+      ? await extractReadaloudManifestStep(metadata, ctx)
+      : await extractEbookManifestStep(metadata, ctx)
 
   const reconciled = await reconcileMetadataStep(manifest, ctx)
   if (!reconciled) return

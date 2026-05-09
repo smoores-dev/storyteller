@@ -10,7 +10,7 @@ export type ExtractAudiobookCoverInput = Reconciled & { format: "audiobook" }
 
 export const extractTextCoverStep = defineStep(
   "extract-text-cover",
-  async <T extends ExtractTextCoverInput>(input: T, _ctx) => {
+  async (input: ExtractTextCoverInput, _ctx) => {
     await cacheTextCover(input.book)
     return input
   },
