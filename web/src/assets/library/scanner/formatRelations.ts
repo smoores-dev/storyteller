@@ -11,6 +11,7 @@ type EbookRelationPatch = Partial<
     | "pageCount"
     | "duration"
     | "fileSize"
+    | "fingerprint"
   >
 >
 
@@ -23,6 +24,7 @@ type AudiobookRelationPatch = Partial<
     | "pageCount"
     | "duration"
     | "fileSize"
+    | "fingerprint"
   >
 >
 
@@ -36,6 +38,7 @@ type ReadaloudRelationPatch = Partial<
     | "pageCount"
     | "duration"
     | "fileSize"
+    | "fingerprint"
   >
 >
 

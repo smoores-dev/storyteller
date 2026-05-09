@@ -34,6 +34,7 @@ export interface Audiobook {
   duration: number | null
   fileSize: number | null
   filepath: string
+  fingerprint: string | null
   manifest: unknown
   missing: Generated<boolean>
   pageCount: number | null
@@ -151,6 +152,7 @@ export interface Ebook {
   duration: number | null
   fileSize: number | null
   filepath: string
+  fingerprint: string | null
   isEpub2: Generated<boolean>
   manifest: unknown
   missing: Generated<boolean>
@@ -189,6 +191,7 @@ export interface Readaloud {
   duration: number | null
   fileSize: number | null
   filepath: string | null
+  fingerprint: string | null
   isEpub2: Generated<boolean>
   manifest: unknown
   missing: Generated<boolean>

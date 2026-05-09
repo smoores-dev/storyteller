@@ -1,6 +1,7 @@
 import { type Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook"
 import { type Epub } from "@storyteller-platform/epub"
 
+import { type StatEntry } from "@/assets/library/fingerprint"
 import { type SerializedManifest } from "@/components/reader/types"
 import {
   type BookRelationsUpdate,
@@ -20,6 +21,7 @@ type ScanInputBase = {
   isNew: boolean
   missing: boolean
   existingHash: string | null
+  existingFingerprint: string | null
 }
 
 export type EbookInput = ScanInputBase & { format: "ebook" }
@@ -30,10 +32,21 @@ export type ScanInput = EbookInput | ReadaloudInput | AudiobookInput
 
 export type Existing = ScanInput & { missing: false }
 
-type HashedExtras = {
-  fileHash: string
+type FingerprintedExtras = {
+  fingerprint: string
   fileSize: number | null
   changed: boolean
+  /**
+   * Stat snapshot from the fingerprint walk, reused by compute-hash to
+   * avoid re-walking and re-statting.
+   */
+  statEntries: StatEntry[]
+}
+
+export type Fingerprinted = Existing & FingerprintedExtras
+
+type HashedExtras = FingerprintedExtras & {
+  fileHash: string
 }
 
 export type Hashed = Existing & HashedExtras

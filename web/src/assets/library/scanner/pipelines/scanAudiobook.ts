@@ -1,5 +1,6 @@
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
+import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
 import { computeHashStep } from "@/assets/library/scanner/steps/compute-hash"
 import { extractAudiobookCoverStep } from "@/assets/library/scanner/steps/extract-covers"
 import { extractAudiobookManifestStep } from "@/assets/library/scanner/steps/extract-manifest"
@@ -13,20 +14,21 @@ export async function scanAudiobook(input: AudiobookInput, ctx: ScanCtx) {
   const pipelineCtx: ScanCtx = { ...ctx, scope }
 
   const existing = await checkExistsStep(input, pipelineCtx)
-
   if (!existing) return
 
-  const hashed = await computeHashStep(existing, pipelineCtx)
+  const fingerprinted = await checkFingerprintStep(existing, pipelineCtx)
 
-  if (!hashed.changed) {
+  if (!fingerprinted.changed) {
     ctx.report.skipped({
-      step: "open-audiobook",
+      step: "check-fingerprint",
       book: input.book,
       format: input.format,
       reason: "unchanged",
     })
     return
   }
+
+  const hashed = await computeHashStep(fingerprinted, pipelineCtx)
 
   const opened = await openAudiobookStep(hashed, pipelineCtx)
   if (!opened) {

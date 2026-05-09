@@ -4,6 +4,7 @@ import { join, relative } from "node:path"
 
 import { xxh3 } from "@node-rs/xxhash"
 
+import { type StatEntry } from "@/assets/library/fingerprint"
 import { isAudioFile } from "@/audio"
 
 function createAbortError(): Error {
@@ -18,15 +19,25 @@ function throwIfAborted(signal?: AbortSignal) {
   }
 }
 
+/**
+ * Stream the file through xxh3. If `knownSize` is provided (e.g. from a
+ * prior fingerprint stat), the redundant stat call is skipped.
+ */
 export async function hashFile(
   filepath: string,
   signal?: AbortSignal,
+  knownSize?: number | null,
 ): Promise<{ hash: string; fileSize: number | null }> {
   throwIfAborted(signal)
 
   const hash = xxh3.Xxh3.withSeed()
-  const fileStats = await stat(filepath)
-  const fileSize = fileStats.isFile() ? fileStats.size : null
+  let fileSize: number | null
+  if (knownSize !== undefined) {
+    fileSize = knownSize
+  } else {
+    const fileStats = await stat(filepath)
+    fileSize = fileStats.isFile() ? fileStats.size : null
+  }
 
   await new Promise<void>((resolve, reject) => {
     const stream = createReadStream(filepath)
@@ -62,39 +73,33 @@ export async function hashFile(
   }
 }
 
+/**
+ * Hash an audiobook directory. If `knownEntries` is provided (e.g. from a
+ * prior fingerprint walk), the readdir + per-file stat are skipped and we
+ * go straight to streaming reads.
+ */
 export async function hashAudiobookDirectory(
   dirPath: string,
   signal?: AbortSignal,
+  knownEntries?: StatEntry[],
 ): Promise<{ hash: string; fileSize: number | null }> {
   throwIfAborted(signal)
 
-  const entries = await readdir(dirPath, {
-    recursive: true,
-    withFileTypes: true,
-  })
-  const files = entries
-    .filter((entry) => entry.isFile() && isAudioFile(entry.name))
-    .map((entry) => join(entry.parentPath, entry.name))
-    .sort((a, b) => a.localeCompare(b))
+  const entries = knownEntries ?? (await walkAudiobookDirectory(dirPath))
 
   const hash = xxh3.Xxh3.withSeed()
-  if (files.length === 0) {
+  if (entries.length === 0) {
     hash.update("empty-audiobook-directory")
-    return {
-      hash: hash.digest().toString(),
-      fileSize: 0,
-    }
+    return { hash: hash.digest().toString(), fileSize: 0 }
   }
 
   let totalSize = 0
-  for (const file of files) {
+  for (const entry of entries) {
     throwIfAborted(signal)
-
-    const fileStats = await stat(file)
-    totalSize += fileStats.size
-    hash.update(relative(dirPath, file))
+    totalSize += entry.size
+    hash.update(entry.relPath)
     hash.update(":")
-    const { hash: fileHash } = await hashFile(file, signal)
+    const { hash: fileHash } = await hashFile(entry.absPath, signal, entry.size)
     hash.update(fileHash)
     hash.update(";")
   }
@@ -103,4 +108,22 @@ export async function hashAudiobookDirectory(
     hash: hash.digest().toString(),
     fileSize: totalSize,
   }
+}
+
+async function walkAudiobookDirectory(dirPath: string): Promise<StatEntry[]> {
+  const dirEntries = await readdir(dirPath, {
+    recursive: true,
+    withFileTypes: true,
+  })
+  const filePaths = dirEntries
+    .filter((entry) => entry.isFile() && isAudioFile(entry.name))
+    .map((entry) => join(entry.parentPath, entry.name))
+    .sort((a, b) => a.localeCompare(b))
+
+  const out: StatEntry[] = []
+  for (const absPath of filePaths) {
+    const s = await stat(absPath)
+    out.push({ absPath, relPath: relative(dirPath, absPath), size: s.size })
+  }
+  return out
 }
