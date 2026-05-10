@@ -18,9 +18,8 @@ import { type UUID } from "@/uuid"
 
 function standardFilter(path: string): boolean {
   return (
-    /^\.watchman-cookie/.test(path.split("/").pop() ?? "") ||
-    path.endsWith(".epub") ||
-    isAudioFile(path)
+    (path.endsWith(".epub") || isAudioFile(path)) &&
+    !/\.watchman-cookie/.test(path)
   )
 }
 

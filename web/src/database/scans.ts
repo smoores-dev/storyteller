@@ -5,7 +5,12 @@ import { db } from "./connection"
 export async function addImportSkipPaths(
   paths: { bookUuid: UUID; filepath: string }[],
 ) {
-  return db.insertInto("importSkipPath").values(paths).execute()
+  if (!paths.length) return
+  return db
+    .insertInto("importSkipPath")
+    .values(paths)
+    .onConflict((oc) => oc.column("filepath").doNothing())
+    .execute()
 }
 
 export async function removeImportSkipPaths(paths: string[]) {

@@ -2,6 +2,7 @@ import {
   type BookWithRelations,
   getBookByAudiobookFilepathPrefix,
 } from "@/database/books"
+import { addImportSkipPaths } from "@/database/scans"
 import { getSetting } from "@/database/settings"
 import { type UUID } from "@/uuid"
 
@@ -50,10 +51,15 @@ function collectUnclassifiedEpubs(
   bookUuid: UUID,
   bookPath: BookPath,
   output: UnclassifiedEpub[],
+  newSkipPaths: { bookUuid: UUID; filepath: string }[],
 ) {
   if (!bookPath.epubUnknown?.length) return
   for (const filepath of bookPath.epubUnknown) {
     output.push({ bookUuid, filepath })
+    // unclassified epubs aren't relocated — their filepath stays as-is
+    // and the scanner pipeline writes the relation later. record the
+    // skip path now so the next scan won't rediscover the file.
+    newSkipPaths.push({ bookUuid, filepath })
   }
 }
 
@@ -122,7 +128,12 @@ export async function reconcileDiscoveredPaths(
       const discoveredFormats = getBookPathFormats(bookPath)
       addFormats(result.formatsByBook, created.uuid, discoveredFormats)
       addFormats(result.newFormatsByBook, created.uuid, discoveredFormats)
-      collectUnclassifiedEpubs(created.uuid, bookPath, result.unclassifiedEpubs)
+      collectUnclassifiedEpubs(
+        created.uuid,
+        bookPath,
+        result.unclassifiedEpubs,
+        newSkipPaths,
+      )
 
       currentScoped.push(created)
       currentAll.push(created)
@@ -143,6 +154,7 @@ export async function reconcileDiscoveredPaths(
       scopedMatch.uuid,
       bookPath,
       result.unclassifiedEpubs,
+      newSkipPaths,
     )
 
     currentScoped = currentScoped.map((book) =>
@@ -151,6 +163,13 @@ export async function reconcileDiscoveredPaths(
     currentAll = currentAll.map((book) =>
       book.uuid === updated.book.uuid ? updated.book : book,
     )
+  }
+
+  // persist skip paths populated by createNewBook / attachNewRelations
+  // (reference mode keeps the original file in the import dir; copy/hardlink
+  // keep the source). without this, those files get re-discovered next scan.
+  if (newSkipPaths.length > 0) {
+    await addImportSkipPaths(newSkipPaths)
   }
 
   return result

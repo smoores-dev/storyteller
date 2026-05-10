@@ -24,11 +24,8 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
-import {
-  addImportSkipPaths,
-  getImportSkipPaths,
-  removeImportSkipPaths,
-} from "@/database/scans"
+import { getImportSkipPaths, removeImportSkipPaths } from "@/database/scans"
+import { getSetting } from "@/database/settings"
 import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
@@ -386,11 +383,18 @@ export async function discoverBookPathsForRoots(
   const audiobookPathsSet = new Set<string>()
   const bookPaths: BookPath[] = []
 
+  const epub2BackupSuffix = await getSetting("epub2BackupSuffix")
   const skipPaths = new Set(
     (await getImportSkipPaths()).map((row) => row.filepath),
   )
   const seenSkipPaths = new Set<string>()
-  const newSkipPaths: { bookUuid: UUID; filepath: string }[] = []
+  const walkedRoots = roots.map((r) => resolve(r.rootPath))
+  const isUnderWalkedRoot = (p: string) => {
+    const resolved = resolve(p)
+    return walkedRoots.some(
+      (root) => resolved === root || resolved.startsWith(`${root}/`),
+    )
+  }
 
   for (const root of roots) {
     if (signal.aborted) {
@@ -424,6 +428,12 @@ export async function discoverBookPathsForRoots(
           logger.warn(
             `Found an EPUB file that was not in a book folder: skipping. Please place all files within book-specific folders: https://storyteller-platform.gitlab.io/storyteller/docs/managing/adding#organizing-your-auto-import-folder. ${fullPath}`,
           )
+          continue
+        }
+
+        // belt-and-suspenders: epub2 backups are also added to importSkipPath
+        // by upgrade-epub, but skip by suffix too in case the row got purged.
+        if (entry.name.endsWith(`${epub2BackupSuffix}.epub`)) {
           continue
         }
 
@@ -533,11 +543,11 @@ export async function discoverBookPathsForRoots(
     bookPaths.push({ audiobook: audiobookPath })
   }
 
-  // Persist skip paths: add new ones, remove stale ones (files no longer in import directory)
-  if (newSkipPaths.length > 0) {
-    await addImportSkipPaths(newSkipPaths)
-  }
-  const staleSkipPaths = [...skipPaths].filter((p) => !seenSkipPaths.has(p))
+  // only purge skip rows for paths under roots we actually walked; otherwise
+  // a single-root scan would delete entries belonging to other import paths.
+  const staleSkipPaths = [...skipPaths].filter(
+    (p) => isUnderWalkedRoot(p) && !seenSkipPaths.has(p),
+  )
   if (staleSkipPaths.length > 0) {
     await removeImportSkipPaths(staleSkipPaths)
   }
