@@ -106,6 +106,10 @@ COPY --from=builder /app/align/prebuilds/linux-arm64 ./.next/standalone/web/work
 # Echogarden tries to naively resolve its own wasm builds
 COPY --from=builder /app/node_modules/@echogarden/icu-segmentation-wasm/wasm/*.wasm ./.next/standalone/web/work-dist/
 
+# @parcel/watcher native binaries are loaded dynamically at runtime and
+# not traced by next.js into the standalone output
+COPY --from=builder /app/node_modules/@parcel ./.next/standalone/node_modules/@parcel
+
 # kuromoji package: the bundled kuroshiro-analyzer-kuromoji still calls
 # require.resolve("kuromoji") at runtime to locate its dict/ directory, so the
 # package must exist on disk in a location reachable from web/work-dist/.
