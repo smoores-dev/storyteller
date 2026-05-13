@@ -73,6 +73,7 @@ export class Watcher {
 
   async update(uuid: UUID | null): Promise<void> {
     if (!uuid) {
+      console.log("update root")
       const rootImportPaths = await getSetting("importPath")
       const existingRootController = this.controllers.get("root")
       if (existingRootController) {
@@ -81,6 +82,7 @@ export class Watcher {
 
       const rootController = new AbortController()
       this.controllers.set("root", rootController)
+      console.log("rootImportPaths", rootImportPaths)
 
       if (rootImportPaths) {
         for (const importPath of rootImportPaths) {
@@ -155,6 +157,7 @@ export class Watcher {
     }
 
     if (!entryLock.tryLock()) {
+      console.log("entryLock already locked", importPath)
       return
     }
 

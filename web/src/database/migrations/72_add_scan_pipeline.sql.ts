@@ -2,6 +2,7 @@ import { sql } from "kysely"
 
 import { minutesToCronExpression } from "@/assets/library/scanner/triggers/cron"
 import { db } from "@/database/connection"
+import { defaultMetadataFieldOverrides } from "../settingsTypes"
 
 const hasColumn = async (trx: typeof db, table: string, column: string) => {
   const tableMetadata = (await trx.introspection.getTables()).find(
@@ -108,11 +109,33 @@ async function cronExpressionSettings(trx: typeof db) {
   }
 }
 
+async function metadataFieldOverridesSettings(trx: typeof db) {
+  // check setting
+  const metadataFieldOverridesSetting = await trx
+    .selectFrom("settings")
+    .where("name", "=", "metadataFieldOverrides")
+    .selectAll()
+    .execute()
+
+  if (metadataFieldOverridesSetting.length === 0) {
+    const defaultOverrides = defaultMetadataFieldOverrides()
+
+    await trx
+      .insertInto("settings")
+      .values({
+        name: "metadataFieldOverrides",
+        value: JSON.stringify(defaultOverrides),
+      })
+      .execute()
+  }
+}
+
 export default async function migrate() {
   await db.transaction().execute(async (trx) => {
     await addFormatTableColumns(trx)
     await addBookTableColumns(trx)
     await addFingerprintColumns(trx)
     await cronExpressionSettings(trx)
+    await metadataFieldOverridesSettings(trx)
   })
 }

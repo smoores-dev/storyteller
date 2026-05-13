@@ -195,6 +195,7 @@ export async function updateSettings(settings: Settings) {
       .where("name", "=", settingName as keyof Settings)
       .execute()
   }
+  console.log("updateSettings", settings)
   await getWatcher().update(null)
   await getScheduler().refresh()
 }

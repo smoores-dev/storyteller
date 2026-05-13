@@ -11,6 +11,7 @@ const SNAPSHOT_DIR = join(DATA_DIR, ".autoimport", "watcher-snapshots")
 const WATCHER_OPTIONS = {
   backend: "watchman",
   ignore: [
+    "**/*.watchman-cookie*",
     "**/*.json",
     "**/transcoded audio/*",
     "**/.DS_Store",
