@@ -1,5 +1,6 @@
 import { sql } from "kysely"
 
+import { minutesToCronExpression } from "@/assets/library/scanner/triggers/cron"
 import { db } from "@/database/connection"
 
 const hasColumn = async (trx: typeof db, table: string, column: string) => {
@@ -88,10 +89,30 @@ async function addBookTableColumns(trx: typeof db) {
   }
 }
 
+async function cronExpressionSettings(trx: typeof db) {
+  // check setting
+  const cronSetting = await trx
+    .selectFrom("settings")
+    .where("name", "=", "scanCronExpression")
+    .selectAll()
+    .execute()
+
+  if (cronSetting.length === 0) {
+    await trx
+      .insertInto("settings")
+      .values({
+        name: "scanCronExpression",
+        value: JSON.stringify(minutesToCronExpression(60 * 60 * 24)),
+      })
+      .execute()
+  }
+}
+
 export default async function migrate() {
   await db.transaction().execute(async (trx) => {
     await addFormatTableColumns(trx)
     await addBookTableColumns(trx)
     await addFingerprintColumns(trx)
+    await cronExpressionSettings(trx)
   })
 }

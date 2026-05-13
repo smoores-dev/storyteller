@@ -9,7 +9,6 @@ type EbookRelationPatch = Partial<
     | "contentHash"
     | "manifest"
     | "pageCount"
-    | "duration"
     | "fileSize"
     | "fingerprint"
   >
@@ -21,7 +20,6 @@ type AudiobookRelationPatch = Partial<
     | "missing"
     | "contentHash"
     | "manifest"
-    | "pageCount"
     | "duration"
     | "fileSize"
     | "fingerprint"

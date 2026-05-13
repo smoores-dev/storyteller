@@ -585,7 +585,6 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "ebook.contentHash",
             "ebook.fingerprint",
             "ebook.pageCount",
-            "ebook.duration",
             "ebook.fileSize",
             ...(includeManifest ? (["ebook.manifest"] as const) : []),
           ])
@@ -602,7 +601,6 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "audiobook.updatedAt",
             "audiobook.contentHash",
             "audiobook.fingerprint",
-            "audiobook.pageCount",
             "audiobook.duration",
             "audiobook.fileSize",
             ...(includeManifest ? (["audiobook.manifest"] as const) : []),

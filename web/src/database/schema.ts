@@ -37,7 +37,6 @@ export interface Audiobook {
   fingerprint: string | null
   manifest: unknown
   missing: Generated<boolean>
-  pageCount: number | null
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
@@ -149,7 +148,6 @@ export interface Ebook {
   bookUuid: import("@/uuid").UUID
   contentHash: string | null
   createdAt: Generated<string>
-  duration: number | null
   fileSize: number | null
   filepath: string
   fingerprint: string | null

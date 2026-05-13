@@ -91,11 +91,15 @@ function Details({
           ) : (
             <>
               {format !== "audiobook" && (
-                <span>{book.pageCount ?? fmt.pageCount} pages</span>
+                <span>
+                  {book.pageCount ?? book[format]?.pageCount ?? "Unknown"} pages
+                </span>
               )}
               {format !== "ebook" && (
                 <span>
-                  {formatTimeHuman(book.duration ?? fmt.duration ?? 0)}
+                  {formatTimeHuman(
+                    book.duration ?? book[format]?.duration ?? 0,
+                  )}
                 </span>
               )}
 
@@ -397,12 +401,16 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
           <Details
             book={book}
             format="readaloud"
-            onUpgradeEpub={permissions?.bookUpdate ? openUpgradeModal : undefined}
+            onUpgradeEpub={
+              permissions?.bookUpdate ? openUpgradeModal : undefined
+            }
           />
           <Details
             book={book}
             format="ebook"
-            onUpgradeEpub={permissions?.bookUpdate ? openUpgradeModal : undefined}
+            onUpgradeEpub={
+              permissions?.bookUpdate ? openUpgradeModal : undefined
+            }
           />
           <Details book={book} format="audiobook" />
           {book.alignedAt && (
