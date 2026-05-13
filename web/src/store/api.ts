@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
-import { Manifest } from "@readium/shared"
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
 import {
@@ -147,35 +146,6 @@ export const api = createApi({
     }),
     getBook: build.query<BookWithRelations, { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}`,
-      transformResponse: (response: BookWithRelations) => {
-        return {
-          ...response,
-          ebook: response.ebook
-            ? {
-                ...response.ebook,
-                manifest: response.ebook.manifest
-                  ? Manifest.deserialize(response.ebook.manifest)
-                  : null,
-              }
-            : null,
-          readaloud: response.readaloud
-            ? {
-                ...response.readaloud,
-                manifest: response.readaloud.manifest
-                  ? Manifest.deserialize(response.readaloud.manifest)
-                  : null,
-              }
-            : null,
-          audiobook: response.audiobook
-            ? {
-                ...response.audiobook,
-                manifest: response.audiobook.manifest
-                  ? Manifest.deserialize(response.audiobook.manifest)
-                  : null,
-              }
-            : null,
-        }
-      },
     }),
     deleteBook: build.mutation<
       void,
