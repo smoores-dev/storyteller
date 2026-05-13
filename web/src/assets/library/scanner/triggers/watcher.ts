@@ -28,7 +28,7 @@ type ControllerKey = UUID | "root" | "assets"
 export class Watcher {
   private readonly entryLocks = new Map<string, AsyncMutex>()
   private readonly controllers = new Map<ControllerKey, AbortController>()
-  private readonly collectionImportPaths = new Map<UUID, string>()
+  private readonly collectionImportPaths = new Map<UUID, string[]>()
   private started = false
 
   async start(): Promise<void> {
@@ -48,33 +48,35 @@ export class Watcher {
 
     if (rootImportPaths) {
       for (const importPath of rootImportPaths) {
-        this.startWatcher(null, importPath, rootController)
+        this.startWatcher("root", importPath, rootController)
       }
     }
 
     for (const collection of collections) {
-      if (!collection.importPath) {
-        continue
-      }
+      const paths = collection.importPaths
+      if (!paths || paths.length === 0) continue
 
       const controller = new AbortController()
       this.controllers.set(collection.uuid, controller)
-      this.collectionImportPaths.set(collection.uuid, collection.importPath)
-      this.startWatcher(collection.uuid, collection.importPath, controller)
+      this.collectionImportPaths.set(collection.uuid, paths)
+
+      for (const importPath of paths) {
+        this.startWatcher(collection.uuid, importPath, controller)
+      }
     }
 
     const assetController = new AbortController()
     this.controllers.set("assets", assetController)
     const assetRegex = /[^/]*\/(text|aligned|audio)\//
-    this.startWatcher(null, ASSETS_DIR, assetController, (path) =>
+    this.startWatcher("root", ASSETS_DIR, assetController, (path) =>
       assetRegex.test(path),
     )
   }
 
-  async update(uuid: UUID | null): Promise<void> {
-    if (!uuid) {
-      console.log("update root")
+  async update(uuid: UUID | "root"): Promise<void> {
+    if (uuid === "root") {
       const rootImportPaths = await getSetting("importPath")
+
       const existingRootController = this.controllers.get("root")
       if (existingRootController) {
         existingRootController.abort()
@@ -82,19 +84,19 @@ export class Watcher {
 
       const rootController = new AbortController()
       this.controllers.set("root", rootController)
-      console.log("rootImportPaths", rootImportPaths)
 
       if (rootImportPaths) {
         for (const importPath of rootImportPaths) {
-          this.startWatcher(null, importPath, rootController)
+          this.startWatcher("root", importPath, rootController)
         }
       }
+
       return
     }
 
-    const previousImportPath = this.collectionImportPaths.get(uuid)
-    if (previousImportPath) {
-      this.entryLocks.delete(previousImportPath)
+    const previousPaths = this.collectionImportPaths.get(uuid)
+    if (previousPaths) {
+      for (const p of previousPaths) this.entryLocks.delete(p)
       this.collectionImportPaths.delete(uuid)
     }
 
@@ -105,20 +107,25 @@ export class Watcher {
     }
 
     const collection = await getCollection(uuid)
-    if (!collection.importPath) {
+    const paths = collection.importPaths
+
+    if (!paths || paths.length === 0) {
       return
     }
 
     const controller = new AbortController()
     this.controllers.set(uuid, controller)
-    this.collectionImportPaths.set(uuid, collection.importPath)
-    this.startWatcher(uuid, collection.importPath, controller)
+    this.collectionImportPaths.set(uuid, paths)
+
+    for (const importPath of paths) {
+      this.startWatcher(uuid, importPath, controller)
+    }
   }
 
   remove(uuid: UUID): Promise<void> {
-    const previousImportPath = this.collectionImportPaths.get(uuid)
-    if (previousImportPath) {
-      this.entryLocks.delete(previousImportPath)
+    const previousPaths = this.collectionImportPaths.get(uuid)
+    if (previousPaths) {
+      for (const p of previousPaths) this.entryLocks.delete(p)
       this.collectionImportPaths.delete(uuid)
     }
 
@@ -145,7 +152,7 @@ export class Watcher {
   }
 
   private startWatcher(
-    collection: UUID | null,
+    collection: UUID | "root",
     importPath: string,
     controller: AbortController,
     filter?: (path: string) => boolean,
@@ -157,7 +164,7 @@ export class Watcher {
     }
 
     if (!entryLock.tryLock()) {
-      console.log("entryLock already locked", importPath)
+      logger.debug({ msg: "entryLock already locked", importPath })
       return
     }
 

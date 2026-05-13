@@ -23,11 +23,11 @@ import { pushRecentReport, withScanLock } from "./state"
 import { type ScanFormat, type ScanInput } from "./types"
 
 export type ScanTask =
-  | { kind: "import-path"; importPath: string; collection: UUID | null }
+  | { kind: "import-path"; importPath: string; collection: UUID | "root" }
   | {
       kind: "changed-paths"
       importPath: string
-      collection: UUID | null
+      collection: UUID | "root"
       changes: ImportPathChange[]
     }
   | { kind: "existing-books"; bookUuids?: UUID[]; exclude?: Set<UUID> }
@@ -44,11 +44,16 @@ function defaultConcurrency(source: ScanSource): number {
   return source === "watcher" ? 2 : 8
 }
 
+function toCollectionUuid(collection: UUID | "root"): UUID | null {
+  return collection === "root" ? null : collection
+}
+
 function scopedByCollection(
   books: BookWithRelations[],
-  collectionUuid: UUID | null,
+  collectionUuid: UUID | "root",
 ): BookWithRelations[] {
-  if (!collectionUuid) return books
+  if (collectionUuid === "root") return books
+
   return books.filter((book) =>
     book.collections.some((c) => c.uuid === collectionUuid),
   )
@@ -190,7 +195,7 @@ async function resolveImportPath(
 
   const reconciled = await reconcileDiscoveredPaths({
     bookPaths,
-    collectionUuid: task.collection,
+    collectionUuid: toCollectionUuid(task.collection),
     allBooks,
     scopedBooks: scoped,
     signal: ctx.signal,
@@ -308,7 +313,7 @@ async function resolveChangedPaths(
 
     const reconciled = await reconcileDiscoveredPaths({
       bookPaths: discovered,
-      collectionUuid: task.collection,
+      collectionUuid: toCollectionUuid(task.collection),
       allBooks,
       scopedBooks: scoped,
       signal: ctx.signal,
@@ -493,19 +498,26 @@ export async function scanLibrary(opts: {
   ])
 
   const tasks: ScanTask[] = []
+
   if (rootImportPaths) {
     for (const importPath of rootImportPaths) {
-      tasks.push({ kind: "import-path", importPath, collection: null })
+      tasks.push({ kind: "import-path", importPath, collection: "root" })
     }
   }
+
   for (const collection of collections) {
-    if (!collection.importPath) continue
-    tasks.push({
-      kind: "import-path",
-      importPath: collection.importPath,
-      collection: collection.uuid,
-    })
+    const paths = collection.importPaths
+    if (!paths || paths.length === 0) continue
+
+    for (const importPath of paths) {
+      tasks.push({
+        kind: "import-path",
+        importPath,
+        collection: collection.uuid,
+      })
+    }
   }
+
   tasks.push({ kind: "existing-books" })
 
   return scan({

@@ -16,16 +16,18 @@ export const GET = withHasPermission("bookList")(async (request) => {
 })
 
 export const POST = withHasPermission("collectionCreate")(async (request) => {
-  const { users, ...values } = (await request.json()) as {
+  const { users, importPaths, ...values } = (await request.json()) as {
     name: string
     description: string
     public: boolean
     users?: UUID[]
+    importPaths?: string[] | null
   }
 
-  const created = await createCollection(values, {
-    users: [...(users ?? []), request.auth.user.id],
-  })
+  const created = await createCollection(
+    { ...values, importPaths },
+    { users: [...(users ?? []), request.auth.user.id] },
+  )
 
   return NextResponse.json(created)
 })

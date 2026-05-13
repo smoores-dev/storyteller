@@ -5,7 +5,7 @@ export type ImportPathChange = {
   type: "create" | "update" | "delete"
 }
 
-function normalizePath(path: string): string {
+export function normalizePath(path: string): string {
   return resolve(path)
 }
 

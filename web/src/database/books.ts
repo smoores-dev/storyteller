@@ -530,7 +530,7 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "collection.name",
             "collection.description",
             "collection.public",
-            "collection.importPath",
+            "collection.importPaths",
             "collection.createdAt",
             "collection.updatedAt",
           ])

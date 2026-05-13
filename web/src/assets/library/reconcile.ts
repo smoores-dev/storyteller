@@ -2,6 +2,7 @@ import {
   type BookWithRelations,
   getBookByAudiobookFilepathPrefix,
 } from "@/database/books"
+import { addBooksToCollections } from "@/database/collections"
 import { addImportSkipPaths } from "@/database/scans"
 import { getSetting } from "@/database/settings"
 import { type UUID } from "@/uuid"
@@ -106,8 +107,24 @@ export async function reconcileDiscoveredPaths(
         ? globalMatch
         : null
 
-    // book exists in another scope/collection — don't touch it here
-    if (globalMatch && !scopedMatch) continue
+    // book exists globally but not in the current collection add it
+    // to this collection so overlapping import paths share the same book
+    if (globalMatch && !scopedMatch) {
+      if (input.collectionUuid) {
+        const alreadyInCollection = globalMatch.collections.some(
+          (c) => c.uuid === input.collectionUuid,
+        )
+
+        if (!alreadyInCollection) {
+          await addBooksToCollections(
+            [input.collectionUuid],
+            [globalMatch.uuid],
+          )
+        }
+      }
+
+      continue
+    }
 
     if (!scopedMatch) {
       if (bookPath.audiobook) {

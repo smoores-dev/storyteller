@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path"
 
 import { hasPermission, nextAuth } from "@/auth/auth"
 import { db } from "@/database/connection"
-import { getSettings } from "@/database/settings"
+import { getCollectionImportPaths, getSettings } from "@/database/settings"
 import { ASSETS_DIR, DATA_DIR } from "@/directories"
 
 type SuggestedImportPathResult = {
@@ -25,11 +25,7 @@ export async function getSuggestedImportPathAction(): Promise<SuggestedImportPat
   const assetsDir = ASSETS_DIR.replace(/([^/])$/, "$1/")
 
   const settings = await getSettings()
-  const collections = await db
-    .selectFrom("collection")
-    .select(["importPath"])
-    .where("importPath", "is not", null)
-    .execute()
+  const collections = await getCollectionImportPaths()
 
   const resolvedAssetsDir = resolve(assetsDir)
 
@@ -37,8 +33,8 @@ export async function getSuggestedImportPathAction(): Promise<SuggestedImportPat
     ASSETS_DIR,
     resolvedAssetsDir,
     ...(settings.importPath ?? []),
-    ...collections.map((c) => c.importPath),
-  ].filter((p): p is string => p !== null)
+    ...collections,
+  ]
 
   const recentBook = await db
     .selectFrom("book")

@@ -38,7 +38,13 @@ export function ImportPathInput({
     }
   }
 
+  function isDuplicate(folder: string, excludeIndex?: number) {
+    return paths.some((p, i) => i !== excludeIndex && p === folder)
+  }
+
   function updatePath(index: number, folder: string) {
+    if (isDuplicate(folder, index)) return
+
     const next = [...paths]
     next[index] = folder
     onChange(next)
@@ -46,6 +52,8 @@ export function ImportPathInput({
   }
 
   function addPath(folder: string) {
+    if (isDuplicate(folder)) return
+
     onChange([...paths, folder])
     setAddingPathIndex(null)
   }

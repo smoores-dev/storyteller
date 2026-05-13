@@ -16,7 +16,7 @@ import { IconSettings } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef } from "react"
 
-import { SingleImportPathInput } from "@/components/ImportPathInput"
+import { ImportPathInput } from "@/components/ImportPathInput"
 import { UserSelect } from "@/components/books/edit/UserSelect"
 import {
   useDeleteCollectionMutation,
@@ -51,7 +51,7 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection?.public ?? true,
       users: collection?.users.map((user) => user.id) ?? [],
       description: collection?.description ?? null,
-      importPath: collection?.importPath ?? null,
+      importPaths: collection?.importPaths ?? null,
     },
   })
 
@@ -63,7 +63,7 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection.public,
       users: collection.users.map((user) => user.id),
       description: collection.description,
-      importPath: collection.importPath,
+      importPaths: collection.importPaths,
     })
   }, [collection]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -140,7 +140,7 @@ export function CollectionSettings({ uuid }: Props) {
               description="Whether this collection (and its books) should be visible to all users"
               {...form.getInputProps("public", { type: "checkbox" })}
             />
-            <SingleImportPathInput {...form.getInputProps("importPath")}>
+            <ImportPathInput {...form.getInputProps("importPaths")}>
               <Text className="text-sm opacity-70 dark:text-white">
                 Storyteller can be configured to automatically import book files
                 from a specific directory.
@@ -152,7 +152,7 @@ export function CollectionSettings({ uuid }: Props) {
                 automatically import any that it finds. They will be added to
                 this collection.
               </Text>
-            </SingleImportPathInput>
+            </ImportPathInput>
             {!form.values.public && (
               <UserSelect
                 label="Share with"

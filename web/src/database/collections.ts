@@ -6,17 +6,71 @@ import {
 } from "kysely"
 import { jsonArrayFrom } from "kysely/helpers/sqlite"
 
+import { scan } from "@/assets/library/scanner/scan"
 import { getWatcher } from "@/assets/library/scanner/triggers/watcher"
 import { BookEvents } from "@/events"
+import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { getBooks } from "./books"
 import { db } from "./connection"
 import { type DB } from "./schema"
+import { getCollectionImportPaths, getSetting } from "./settings"
 
 export type Collection = Selectable<DB["collection"]>
 export type NewCollection = Insertable<DB["collection"]>
 export type CollectionUpdate = Updateable<DB["collection"]>
+
+function serializeImportPaths(paths: string[] | null): string | null {
+  if (!paths || paths.length === 0) return null
+  return JSON.stringify(paths)
+}
+
+function validateNoDuplicatePaths(paths: string[] | null) {
+  if (!paths) return
+
+  const seen = new Set<string>()
+
+  for (const p of paths) {
+    if (seen.has(p)) {
+      throw new Error(`duplicate import path: "${p}"`)
+    }
+    seen.add(p)
+  }
+}
+
+async function getAllImportPaths(
+  excludeCollectionUuid?: UUID,
+): Promise<Set<string>> {
+  const [importPaths, collections] = await Promise.all([
+    getSetting("importPath"),
+    getCollectionImportPaths(),
+  ])
+
+  if (excludeCollectionUuid) {
+    collections.delete(excludeCollectionUuid)
+  }
+
+  const paths = new Set([...(importPaths ?? [])]).union(collections)
+
+  return paths
+}
+
+async function validateImportPaths(
+  paths: string[] | null,
+  collectionUuid?: UUID,
+) {
+  validateNoDuplicatePaths(paths)
+
+  if (!paths || paths.length === 0) return
+
+  const existing = await getAllImportPaths(collectionUuid)
+  const conflicts = paths.filter((p) => existing.has(p))
+
+  if (conflicts.length > 0) {
+    throw new Error(`import path already in use: "${conflicts[0]}"`)
+  }
+}
 
 export type CollectionWithRelations = Awaited<ReturnType<typeof getCollection>>
 
@@ -90,10 +144,27 @@ export async function getCollections(userId?: UUID) {
     .execute()
 }
 
+export type CollectionCreateInput = Omit<NewCollection, "importPaths"> & {
+  importPaths?: string[] | null
+}
+
 export async function createCollection(
-  insert: NewCollection,
+  input: CollectionCreateInput,
   relations: { users?: UUID[] } = {},
 ) {
+  const { importPaths, ...rest } = input
+
+  if (importPaths) {
+    await validateImportPaths(importPaths)
+  }
+
+  const insert: NewCollection = {
+    ...rest,
+    ...(importPaths !== undefined && {
+      importPaths: serializeImportPaths(importPaths),
+    }),
+  }
+
   return await db.transaction().execute(async (tr) => {
     const { uuid } = await tr
       .insertInto("collection")
@@ -119,11 +190,30 @@ export async function createCollection(
   })
 }
 
+export type CollectionInput = Omit<CollectionUpdate, "importPaths"> & {
+  importPaths?: string[] | null
+}
+
 export async function updateCollection(
   uuid: UUID,
-  update: CollectionUpdate,
+  input: CollectionInput,
   relations: { users?: UUID[] } = {},
 ) {
+  const { importPaths, ...rest } = input
+
+  if (importPaths) {
+    await validateImportPaths(importPaths, uuid)
+  }
+
+  const update: CollectionUpdate = {
+    ...rest,
+    ...(importPaths !== undefined && {
+      importPaths: serializeImportPaths(importPaths),
+    }),
+  }
+
+  const previousCollection = await getCollection(uuid)
+
   const collection = await db.transaction().execute(async (tr) => {
     if (Object.keys(update).length) {
       await tr
@@ -132,6 +222,7 @@ export async function updateCollection(
         .where("uuid", "=", uuid)
         .execute()
     }
+
     const collection = await getCollection(uuid, undefined, tr)
 
     if (!collection.public && relations.users) {
@@ -153,7 +244,32 @@ export async function updateCollection(
 
     return collection
   })
+
   await getWatcher().update(uuid)
+
+  const prevPaths = new Set(previousCollection.importPaths ?? [])
+  const newPaths = (collection.importPaths ?? []).filter(
+    (p) => !prevPaths.has(p),
+  )
+
+  if (newPaths.length > 0) {
+    logger.info({
+      msg: "collection import paths changed, triggering scan for new paths",
+      collectionUuid: uuid,
+      newPaths,
+    })
+
+    void scan({
+      source: "manual",
+      tasks: newPaths.map((importPath) => ({
+        kind: "import-path" as const,
+        importPath,
+        collection: uuid,
+      })),
+      signal: new AbortController().signal,
+    })
+  }
+
   return collection
 }
 

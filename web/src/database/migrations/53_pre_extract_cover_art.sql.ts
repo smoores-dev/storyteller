@@ -110,6 +110,7 @@ function booksQuery(userId?: UUID) {
             "bookToCollection.collectionUuid",
             "collection.uuid",
           )
+          // @ts-expect-error importPath has been renamed
           .select([
             "collection.uuid",
             "collection.name",

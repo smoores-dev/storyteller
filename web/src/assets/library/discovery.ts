@@ -30,6 +30,7 @@ import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
+import { normalizePath } from "./changes"
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
 import { type ScanFormat } from "./scanner/types"
 
@@ -61,9 +62,17 @@ export function findMatchingBook(
 ): BookWithRelations | undefined {
   return books.find(
     (book) =>
-      (bookPath.ebook && bookPath.ebook === book.ebook?.filepath) ||
-      (bookPath.audiobook && bookPath.audiobook === book.audiobook?.filepath) ||
-      (bookPath.readaloud && bookPath.readaloud === book.readaloud?.filepath),
+      (bookPath.ebook &&
+        book.ebook?.filepath &&
+        normalizePath(bookPath.ebook) === normalizePath(book.ebook.filepath)) ||
+      (bookPath.audiobook &&
+        book.audiobook?.filepath &&
+        normalizePath(bookPath.audiobook) ===
+          normalizePath(book.audiobook.filepath)) ||
+      (bookPath.readaloud &&
+        book.readaloud?.filepath &&
+        normalizePath(bookPath.readaloud) ===
+          normalizePath(book.readaloud.filepath)),
   )
 }
 

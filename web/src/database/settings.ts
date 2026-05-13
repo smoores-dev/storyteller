@@ -5,6 +5,7 @@ import { ZodError } from "zod"
 import { getScheduler } from "@/assets/library/scanner/triggers/scheduler"
 import { getWatcher } from "@/assets/library/scanner/triggers/watcher"
 import { env } from "@/env"
+import { logger } from "@/logging"
 
 import { db } from "./connection"
 import { ConfigFileSchema, type Settings } from "./settingsTypes"
@@ -116,13 +117,16 @@ function normalizeSettingValue<Name extends keyof Settings>(
 
 export async function getSetting<Name extends keyof Settings>(name: Name) {
   const { settings: configSettings, keys } = loadConfigFile()
+
   if (keys.has(name)) {
     return configSettings[name] as Settings[Name]
   }
+
   const { valueJson } = await db
     .selectFrom("settings")
     .select(["value as valueJson"])
     .where("name", "=", name)
+    .orderBy("createdAt", "desc")
     .executeTakeFirstOrThrow()
 
   return normalizeSettingValue(
@@ -160,44 +164,102 @@ export async function getSettings(): Promise<Settings> {
   return { ...result, ...configSettings }
 }
 
+function computeNewImportPaths(
+  previous: string[] | null,
+  next: string[] | null,
+): string[] {
+  const prevSet = new Set(previous ?? [])
+  return (next ?? []).filter((p) => !prevSet.has(p))
+}
+
+function validateNoDuplicatePaths(paths: string[] | null) {
+  if (!paths) return
+
+  const seen = new Set<string>()
+
+  for (const p of paths) {
+    if (seen.has(p)) {
+      throw new Error(`duplicate import path: "${p}"`)
+    }
+    seen.add(p)
+  }
+}
+
+export async function getCollectionImportPaths(): Promise<Set<string>> {
+  const rows = await db
+    .selectFrom("collection")
+    .select(["importPaths"])
+    .where("importPaths", "is not", null)
+    .execute()
+
+  return new Set(rows.flatMap((row) => row.importPaths ?? []))
+}
+
 export async function updateSettings(settings: Settings) {
   const lockedKeys = getConfigLockedKeys()
   const existingSettings = await getSettings()
 
+  if (settings.importPath) {
+    validateNoDuplicatePaths(settings.importPath)
+
+    const collectionPaths = await getCollectionImportPaths()
+    const conflicts = settings.importPath.filter((p) => collectionPaths.has(p))
+
+    if (conflicts.length > 0) {
+      throw new Error(
+        `import path already used by a collection: "${conflicts[0]}"`,
+      )
+    }
+  }
+
   for (const [settingName, value] of Object.entries(settings)) {
     if (lockedKeys.has(settingName as keyof Settings)) continue
-    // if the same, don't update
-    if (
+
+    const unchanged =
       JSON.stringify(existingSettings[settingName as keyof Settings]) ===
       JSON.stringify(value)
-    ) {
-      continue
-    }
 
-    // if it does not exist in existing settings, create it
-    // this is nice, bc it allows us to recover from failed migrations of settings
-    if (!existingSettings[settingName as keyof Settings]) {
-      await db
-        .insertInto("settings")
-        .values({
-          name: settingName as keyof Settings,
-          value: JSON.stringify(value),
-        })
-        .execute()
-      continue
-    }
+    if (unchanged) continue
 
     await db
-      .updateTable("settings")
-      .set({
+      .insertInto("settings")
+      .values({
+        name: settingName as keyof Settings,
         value: JSON.stringify(value),
       })
-      .where("name", "=", settingName as keyof Settings)
+      .onConflict((oc) =>
+        oc.column("name").doUpdateSet({ value: JSON.stringify(value) }),
+      )
       .execute()
   }
-  console.log("updateSettings", settings)
-  await getWatcher().update(null)
+
+  await getWatcher().update("root")
   await getScheduler().refresh()
+
+  const newPaths = computeNewImportPaths(
+    existingSettings.importPath,
+    settings.importPath,
+  )
+
+  if (newPaths.length > 0) {
+    logger.info({
+      msg: "import paths changed, triggering scan for new paths",
+      newPaths,
+    })
+
+    // dynamic import to avoid circular dependency (scan -> settings -> scan)
+    const { scan } = await import("@/assets/library/scanner/scan")
+
+    void scan({
+      source: "manual",
+      tasks: newPaths.map((importPath) => ({
+        kind: "import-path" as const,
+        importPath,
+        collection: "root" as const,
+      })),
+      signal: new AbortController().signal,
+    })
+  }
 }
 
 // Validate and cache config file on startup (never re-read after this)

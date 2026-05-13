@@ -568,7 +568,7 @@ export const api = createApi({
           public?: boolean
           users?: UUID[]
           books?: UUID[]
-          importPath?: string | null
+          importPaths?: string[] | null
         }
       }
     >({
@@ -608,10 +608,16 @@ export const api = createApi({
         description: string
         public: boolean
         users: string[]
-        importPath: string | null
+        importPaths: string[] | null
       }
     >({
-      query: ({ name, description, public: isPublic, users, importPath }) => ({
+      query: ({
+        name,
+        description,
+        public: isPublic,
+        users,
+        importPaths,
+      }) => ({
         url: "/collections",
         method: "POST",
         body: {
@@ -619,7 +625,7 @@ export const api = createApi({
           description,
           public: isPublic,
           ...(!isPublic && { users }),
-          importPath,
+          importPaths,
         },
       }),
       invalidatesTags: ["Collections"],
