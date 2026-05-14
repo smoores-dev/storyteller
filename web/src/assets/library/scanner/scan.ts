@@ -43,7 +43,7 @@ export type ScanResult = {
 export { cancelActiveScan, getRecentScanReports, getScanState } from "./state"
 
 function defaultConcurrency(source: ScanSource): number {
-  return source === "watcher" ? 2 : 8
+  return source === "watcher" ? 1 : 2
 }
 
 function toCollectionUuid(collection: UUID | "root"): UUID | null {
