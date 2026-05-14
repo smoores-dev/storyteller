@@ -2,7 +2,7 @@ import { sql } from "kysely"
 
 import { minutesToCronExpression } from "@/assets/library/scanner/triggers/cron"
 import { db } from "@/database/connection"
-import { defaultMetadataFieldOverrides } from "../settingsTypes"
+import { defaultMetadataFieldOverrides } from "@/database/settingsTypes"
 
 const hasColumn = async (trx: typeof db, table: string, column: string) => {
   const tableMetadata = (await trx.introspection.getTables()).find(

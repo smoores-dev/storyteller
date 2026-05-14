@@ -101,12 +101,18 @@ type AudiobookManifestExtras = {
 
 export type EbookManifestReady = EbookInput & {
   missing: false
-} & FingerprintedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
+} & FingerprintedExtras & {
+    isEpub2: false
+    epub: Epub
+  } & MetadataExtractedExtras &
   EbookManifestExtras
 
 export type ReadaloudManifestReady = ReadaloudInput & {
   missing: false
-} & FingerprintedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
+} & FingerprintedExtras & {
+    isEpub2: false
+    epub: Epub
+  } & MetadataExtractedExtras &
   ReadaloudManifestExtras
 
 export type AudiobookManifestReady = AudiobookInput & {
