@@ -1,3 +1,5 @@
+import { stat } from "node:fs/promises"
+
 import { AsyncMutex } from "@esfx/async-mutex"
 import watcher from "@parcel/watcher"
 
@@ -334,6 +336,16 @@ export class Watcher {
 
     void (async () => {
       try {
+        const stats = await stat(importPath).catch(() => null)
+        if (!stats?.isDirectory()) {
+          logger.warn({
+            msg: "Import path does not exist or is not a directory, skipping watcher",
+            importPath,
+          })
+          await closeWatcher()
+          return
+        }
+
         subscription = await watcher.subscribe(
           importPath,
           (error, events) => {

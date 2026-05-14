@@ -36,15 +36,18 @@ function snapshotPath(importPath: string): string {
   return join(SNAPSHOT_DIR, snapshotFilename(importPath))
 }
 
-function isENOENT(error: unknown): boolean {
+function isFileNotFound(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false
   }
-  if (!("code" in error)) {
-    return false
+
+  if ("code" in error && error.code === "ENOENT") {
+    return true
   }
 
-  return error.code === "ENOENT"
+  // native @parcel/watcher errors don't carry a `code` property,
+  // they surface the OS message directly in the error string
+  return error.message.includes("No such file or directory")
 }
 
 async function ensureSnapshotDir() {
@@ -73,7 +76,7 @@ export async function readSnapshotChanges(
       })),
     }
   } catch (error) {
-    if (isENOENT(error)) {
+    if (isFileNotFound(error)) {
       return { snapshotExists: false, changes: [] }
     }
 
