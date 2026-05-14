@@ -5,20 +5,18 @@ import { join } from "node:path"
 import watcher from "@parcel/watcher"
 
 import { type ImportPathChange } from "@/assets/library/changes"
+import { INTERNAL_DIRECTORY_NAMES } from "@/assets/library/internalDirs"
 import { DATA_DIR } from "@/directories"
 
 const SNAPSHOT_DIR = join(DATA_DIR, ".autoimport", "watcher-snapshots")
+
 const WATCHER_OPTIONS = {
   backend: "watchman",
   ignore: [
     "**/*.watchman-cookie*",
     "**/*.json",
-    "**/transcoded audio/*",
     "**/.DS_Store",
-    "**/transcriptions/*",
-    "**/ebook cover/*",
-    "**/audiobook cover/*",
-    "**/.storyteller",
+    ...[...INTERNAL_DIRECTORY_NAMES].map((name) => `**/${name}/*`),
   ],
 } as const satisfies watcher.Options
 

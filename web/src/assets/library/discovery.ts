@@ -32,6 +32,7 @@ import { type UUID } from "@/uuid"
 
 import { normalizePath } from "./changes"
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
+import { isInsideInternalDirectory } from "./internalDirs"
 import { type ScanFormat } from "./scanner/types"
 
 export type BookPath = {
@@ -425,6 +426,10 @@ export async function discoverBookPathsForRoots(
 
     for (const entry of entries) {
       if (!entry.isFile() && !entry.isSymbolicLink()) {
+        continue
+      }
+
+      if (isInsideInternalDirectory(entry.parentPath)) {
         continue
       }
 
