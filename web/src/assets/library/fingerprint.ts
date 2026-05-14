@@ -5,8 +5,19 @@ import { xxh3 } from "@node-rs/xxhash"
 
 import { isAudioFile } from "@/audio"
 
+import { isInsideInternalDirectory } from "./internalDirs"
+
 /**
- * A file stat snapshot taken during fingerprinting.
+ * truncate mtime to whole seconds. sub-second precision drifts
+ * across Docker bind mounts, NFS, and CIFS, causing false "changed"
+ * results without any actual file modification.
+ */
+function mtimeSec(mtimeMs: number): number {
+  return Math.floor(mtimeMs / 1000)
+}
+
+/**
+ * A file stat snapshot taken during fingerprinting
  */
 export type StatEntry = {
   absPath: string
@@ -18,19 +29,20 @@ export type Fingerprint = {
   fingerprint: string
   fileSize: number | null
   /**
-   * Single entry for files, sorted list for audiobook directories.
+   * Single entry for files, sorted list for audiobook directories
    */
   entries: StatEntry[]
 }
 
 /**
- * Cheap stat-based fingerprint for a single file.
- * Format: `f:<size>:<mtimeMs>` (sub-ms precision dropped).
+ * stat-based fingerprint for a single file.
+ * Format: `f:<size>:<mtimeSec>`
  */
 export async function fingerprintFile(filepath: string): Promise<Fingerprint> {
   const s = await stat(filepath)
   const fileSize = s.isFile() ? s.size : null
-  const mtime = Math.floor(s.mtimeMs)
+  const mtime = mtimeSec(s.mtimeMs)
+
   return {
     fingerprint: `f:${fileSize ?? 0}:${mtime}`,
     fileSize,
@@ -41,9 +53,12 @@ export async function fingerprintFile(filepath: string): Promise<Fingerprint> {
 }
 
 /**
- * Cheap stat-based fingerprint for an audiobook directory.
- * Walks entries with stat and hashes the sorted
- * `relpath:size:mtime` list. Format: `d:<count>:<totalSize>:<xxh3>`.
+ * stat-based fingerprint for an audiobook directory.
+ * `relpath:size:mtimeSec` list. Format: `d:<count>:<totalSize>:<xxh3>`
+ *
+ * storyteller internal directories (transcoded audio,
+ * transcriptions, covers, etc.) are excluded so that processed outputs
+ * don't affect the fingerprint
  */
 export async function fingerprintAudiobookDirectory(
   dirPath: string,
@@ -53,10 +68,16 @@ export async function fingerprintAudiobookDirectory(
     recursive: true,
     withFileTypes: true,
   })
+
   const filePaths = dirEntries
-    .filter((entry) => entry.isFile() && isAudioFile(entry.name))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        isAudioFile(entry.name) &&
+        !isInsideInternalDirectory(join(entry.parentPath, entry.name)),
+    )
     .map((entry) => join(entry.parentPath, entry.name))
-    .sort((a, b) => a.localeCompare(b))
+    .sort()
 
   const hash = xxh3.Xxh3.withSeed()
   const entries: StatEntry[] = []
@@ -68,6 +89,7 @@ export async function fingerprintAudiobookDirectory(
       err.name = "AbortError"
       throw err
     }
+
     const s = await stat(absPath)
     const relPath = relative(dirPath, absPath)
     totalSize += s.size
@@ -77,7 +99,7 @@ export async function fingerprintAudiobookDirectory(
     hash.update("\0")
     hash.update(String(s.size))
     hash.update("\0")
-    hash.update(String(Math.floor(s.mtimeMs)))
+    hash.update(String(mtimeSec(s.mtimeMs)))
     hash.update("\n")
   }
 
