@@ -54,6 +54,7 @@ const nextConfig = {
     "@node-rs/xxhash",
     "@parcel/watcher",
     "@reflink/reflink",
+    "node-cron",
   ],
   output: "standalone",
   outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../.."),
