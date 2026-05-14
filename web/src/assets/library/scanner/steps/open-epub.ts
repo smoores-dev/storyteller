@@ -2,11 +2,11 @@ import { Epub, EpubVersionError } from "@storyteller-platform/epub"
 
 import { defineStep } from "@/assets/library/scanner/step2"
 import {
-  type EpubHashed,
+  type EpubFingerprinted,
   type EpubOpenState,
 } from "@/assets/library/scanner/types"
 
-export type OpenEpubInput = EpubHashed
+export type OpenEpubInput = EpubFingerprinted
 export type OpenEpubOutput = EpubOpenState
 
 export const openEpubStep = defineStep(

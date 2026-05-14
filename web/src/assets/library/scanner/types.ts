@@ -20,7 +20,6 @@ type ScanInputBase = {
   book: BookWithRelations
   isNew: boolean
   missing: boolean
-  existingHash: string | null
   existingFingerprint: string | null
   /**
    * True for inputs synthesized from discovery's epubUnknown list.
@@ -43,35 +42,31 @@ type FingerprintedExtras = {
   fingerprint: string
   fileSize: number | null
   changed: boolean
-  /**
-   * Stat snapshot from the fingerprint walk, reused by compute-hash to
-   * avoid re-walking and re-statting.
-   */
   statEntries: StatEntry[]
 }
 
 export type Fingerprinted = Existing & FingerprintedExtras
 
-type HashedExtras = FingerprintedExtras & {
-  fileHash: string
-}
-
-export type Hashed = Existing & HashedExtras
-export type EpubHashed = (EbookInput | ReadaloudInput) & {
+export type EpubFingerprinted = (EbookInput | ReadaloudInput) & {
   missing: false
-} & HashedExtras
-export type AudiobookHashed = AudiobookInput & { missing: false } & HashedExtras
+} & FingerprintedExtras
 
-export type EpubOpened = EpubHashed & { isEpub2: false; epub: Epub }
-export type EpubNeedsUpgrade = EpubHashed & { isEpub2: true }
+export type AudiobookFingerprinted = AudiobookInput & {
+  missing: false
+} & FingerprintedExtras
+
+export type EpubOpened = EpubFingerprinted & { isEpub2: false; epub: Epub }
+export type EpubNeedsUpgrade = EpubFingerprinted & { isEpub2: true }
 
 export type EpubOpenState = EpubOpened | EpubNeedsUpgrade
 
 export type FormatKnown = (EbookInput | ReadaloudInput) & {
   missing: false
-} & HashedExtras & { isEpub2: false; epub: Epub }
+} & FingerprintedExtras & { isEpub2: false; epub: Epub }
 
-export type AudiobookOpened = AudiobookHashed & { audiobook: AudiobookAsset }
+export type AudiobookOpened = AudiobookFingerprinted & {
+  audiobook: AudiobookAsset
+}
 
 type MetadataExtractedExtras = {
   extractedMetadata: BookUpdate | null
@@ -106,17 +101,17 @@ type AudiobookManifestExtras = {
 
 export type EbookManifestReady = EbookInput & {
   missing: false
-} & HashedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
+} & FingerprintedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
   EbookManifestExtras
 
 export type ReadaloudManifestReady = ReadaloudInput & {
   missing: false
-} & HashedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
+} & FingerprintedExtras & { isEpub2: false; epub: Epub } & MetadataExtractedExtras &
   ReadaloudManifestExtras
 
 export type AudiobookManifestReady = AudiobookInput & {
   missing: false
-} & HashedExtras & {
+} & FingerprintedExtras & {
     audiobook: AudiobookAsset
   } & MetadataExtractedExtras &
   AudiobookManifestExtras

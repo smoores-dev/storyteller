@@ -91,7 +91,6 @@ function buildInputsForBooks(
         book,
         isNew: isNewFor("ebook"),
         missing: book.ebook.missing,
-        existingHash: book.ebook.contentHash ?? null,
         existingFingerprint: book.ebook.fingerprint ?? null,
       })
     }
@@ -104,7 +103,6 @@ function buildInputsForBooks(
         book,
         isNew: isNewFor("audiobook"),
         missing: book.audiobook.missing,
-        existingHash: book.audiobook.contentHash ?? null,
         existingFingerprint: book.audiobook.fingerprint ?? null,
       })
     }
@@ -117,7 +115,6 @@ function buildInputsForBooks(
         book,
         isNew: isNewFor("readaloud"),
         missing: book.readaloud.missing,
-        existingHash: book.readaloud.contentHash ?? null,
         existingFingerprint: book.readaloud.fingerprint ?? null,
       })
     }
@@ -237,7 +234,6 @@ function buildTentativeInputs(
       book,
       isNew: true,
       missing: false,
-      existingHash: null,
       existingFingerprint: null,
     })
   }

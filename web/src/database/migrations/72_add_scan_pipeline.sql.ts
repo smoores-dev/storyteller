@@ -18,13 +18,6 @@ async function addFormatTableColumns(trx: typeof db) {
   const tables = ["ebook", "audiobook", "readaloud"]
 
   for (const table of tables) {
-    if (!(await hasColumn(trx, table, "content_hash"))) {
-      await trx.schema
-        .alterTable(table)
-        .addColumn("content_hash", "text")
-        .execute()
-    }
-
     if (!(await hasColumn(trx, table, "manifest"))) {
       await trx.schema
         .alterTable(table)

@@ -8,14 +8,14 @@ import {
 
 import { defineStep } from "@/assets/library/scanner/step2"
 import {
-  type AudiobookHashed,
+  type AudiobookFingerprinted,
   type AudiobookOpened,
 } from "@/assets/library/scanner/types"
 import { isAudioFile } from "@/audio"
 
 const STEP = "open-audiobook"
 
-export type OpenAudiobookInput = AudiobookHashed
+export type OpenAudiobookInput = AudiobookFingerprinted
 export type OpenAudiobookOutput = AudiobookOpened
 
 async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {

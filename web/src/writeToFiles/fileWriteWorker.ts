@@ -4,7 +4,10 @@ import { type MessagePort } from "node:worker_threads"
 import { Epub } from "@storyteller-platform/epub"
 
 import { deleteCachedCoverImages } from "@/assets/fs"
-import { hashAudiobookDirectory, hashFile } from "@/assets/hash"
+import {
+  fingerprintAudiobookDirectory,
+  fingerprintFile,
+} from "@/assets/library/fingerprint"
 import {
   writeMetadataToAudiobook,
   writeMetadataToEpub,
@@ -94,15 +97,17 @@ export default async function writeMetadataToFiles({
       await epub.saveAndClose()
       logger.info("Epub saved")
 
-      const { hash, fileSize } = await hashFile(book.ebook.filepath)
+      const { fileSize, fingerprint } = await fingerprintFile(
+        book.ebook.filepath,
+      )
       await send({
         type: "updateBook",
         bookUuid: book.uuid,
         relations: {
           ebook: {
             filepath: book.ebook.filepath,
-            contentHash: hash,
             fileSize,
+            fingerprint,
           },
         },
       })
@@ -120,7 +125,7 @@ export default async function writeMetadataToFiles({
     logger.info("Audiobook saved")
 
     try {
-      const { hash, fileSize } = await hashAudiobookDirectory(
+      const { fileSize, fingerprint } = await fingerprintAudiobookDirectory(
         book.audiobook.filepath,
       )
       await send({
@@ -129,8 +134,8 @@ export default async function writeMetadataToFiles({
         relations: {
           audiobook: {
             filepath: book.audiobook.filepath,
-            contentHash: hash,
             fileSize,
+            fingerprint,
           },
         },
       })
@@ -150,15 +155,17 @@ export default async function writeMetadataToFiles({
       await epub.saveAndClose()
       logger.info("Readaloud saved")
 
-      const { hash, fileSize } = await hashFile(book.readaloud.filepath)
+      const { fileSize, fingerprint } = await fingerprintFile(
+        book.readaloud.filepath,
+      )
       await send({
         type: "updateBook",
         bookUuid: book.uuid,
         relations: {
           readaloud: {
             filepath: book.readaloud.filepath,
-            contentHash: hash,
             fileSize,
+            fingerprint,
             currentStage: book.readaloud.currentStage,
           },
         },

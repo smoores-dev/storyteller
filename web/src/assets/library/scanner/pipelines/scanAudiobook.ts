@@ -1,7 +1,6 @@
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
 import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
-import { computeHashStep } from "@/assets/library/scanner/steps/compute-hash"
 import { extractAudiobookCoverStep } from "@/assets/library/scanner/steps/extract-covers"
 import { extractAudiobookManifestStep } from "@/assets/library/scanner/steps/extract-manifest"
 import { extractAudiobookMetadataStep } from "@/assets/library/scanner/steps/extract-metadata"
@@ -28,9 +27,7 @@ export async function scanAudiobook(input: AudiobookInput, ctx: ScanCtx) {
     return
   }
 
-  const hashed = await computeHashStep(fingerprinted, pipelineCtx)
-
-  const opened = await openAudiobookStep(hashed, pipelineCtx)
+  const opened = await openAudiobookStep(fingerprinted, pipelineCtx)
   if (!opened) {
     // maybe do something
     return

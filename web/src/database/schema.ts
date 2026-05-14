@@ -29,7 +29,6 @@ export interface Account {
 
 export interface Audiobook {
   bookUuid: import("@/uuid").UUID
-  contentHash: string | null
   createdAt: Generated<string>
   duration: number | null
   filepath: string
@@ -163,7 +162,6 @@ export interface DeviceAuthorization {
 
 export interface Ebook {
   bookUuid: import("@/uuid").UUID
-  contentHash: string | null
   createdAt: Generated<string>
   filepath: string
   fileSize: number | null
@@ -211,7 +209,6 @@ export interface Position {
 
 export interface Readaloud {
   bookUuid: import("@/uuid").UUID
-  contentHash: string | null
   createdAt: Generated<string>
   currentStage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
   duration: number | null

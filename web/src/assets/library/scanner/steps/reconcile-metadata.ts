@@ -26,7 +26,6 @@ function buildFormatRelation(
 ): BookRelationsUpdate {
   const shared = {
     manifest: JSON.stringify(input.manifest),
-    contentHash: input.fileHash,
     fingerprint: input.fingerprint,
     missing: false,
     fileSize: input.fileSize,

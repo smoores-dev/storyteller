@@ -6,8 +6,7 @@ import { xxh3 } from "@node-rs/xxhash"
 import { isAudioFile } from "@/audio"
 
 /**
- * A file stat snapshot taken during fingerprinting and reused by the
- * hash step (so we don't need re-walk and re-stat).
+ * A file stat snapshot taken during fingerprinting.
  */
 export type StatEntry = {
   absPath: string

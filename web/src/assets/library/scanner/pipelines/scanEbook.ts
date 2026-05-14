@@ -1,7 +1,6 @@
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
 import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
-import { computeHashStep } from "@/assets/library/scanner/steps/compute-hash"
 import { determineFormatStep } from "@/assets/library/scanner/steps/determine-format"
 import { extractTextCoverStep } from "@/assets/library/scanner/steps/extract-covers"
 import {
@@ -14,7 +13,7 @@ import { reconcileMetadataStep } from "@/assets/library/scanner/steps/reconcile-
 import { upgradeEpubStep } from "@/assets/library/scanner/steps/upgrade-epub"
 import {
   type EbookInput,
-  type EpubHashed,
+  type EpubFingerprinted,
   type ReadaloudInput,
 } from "@/assets/library/scanner/types"
 
@@ -40,9 +39,10 @@ export async function scanEbook(
     return
   }
 
-  const hashed = await computeHashStep(fingerprinted, pipelineCtx)
-
-  const opened = await openEpubStep(hashed as EpubHashed, pipelineCtx)
+  const opened = await openEpubStep(
+    fingerprinted as EpubFingerprinted,
+    pipelineCtx,
+  )
 
   const upgraded = opened.isEpub2
     ? await upgradeEpubStep(opened, pipelineCtx)
