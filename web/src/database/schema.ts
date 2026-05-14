@@ -123,7 +123,11 @@ export interface Changelog {
 export interface Collection {
   createdAt: Generated<string>
   description: string | null
-  importPaths: ColumnType<string[] | null, string | null | undefined, string | null>
+  importPaths: ColumnType<
+    string[] | null,
+    string | null | undefined,
+    string | null
+  >
   name: string
   public: Generated<boolean>
   updatedAt: Generated<string>

@@ -611,13 +611,7 @@ export const api = createApi({
         importPaths: string[] | null
       }
     >({
-      query: ({
-        name,
-        description,
-        public: isPublic,
-        users,
-        importPaths,
-      }) => ({
+      query: ({ name, description, public: isPublic, users, importPaths }) => ({
         url: "/collections",
         method: "POST",
         body: {

@@ -10,7 +10,16 @@ CREATE TABLE collection_new (
   import_paths TEXT DEFAULT NULL
 );
 
-INSERT INTO collection_new (uuid, name, public, description, created_at, updated_at, import_paths)
+INSERT INTO
+  collection_new (
+    uuid,
+    name,
+    public,
+    description,
+    created_at,
+    updated_at,
+    import_paths
+  )
 SELECT
   uuid,
   name,
@@ -19,14 +28,16 @@ SELECT
   created_at,
   updated_at,
   CASE
-    WHEN import_path IS NOT NULL THEN json_array(import_path)
+    WHEN import_path IS NOT NULL THEN json_array (import_path)
     ELSE NULL
   END
-FROM collection;
+FROM
+  collection;
 
 DROP TABLE collection;
 
-ALTER TABLE collection_new RENAME TO collection;
+ALTER TABLE collection_new
+RENAME TO collection;
 
 CREATE TRIGGER collection_update_trigger AFTER
 UPDATE ON "collection" FOR EACH ROW BEGIN
@@ -35,6 +46,7 @@ SET
   updated_at = CURRENT_TIMESTAMP
 WHERE
   uuid = OLD.uuid;
+
 END;
 
 PRAGMA foreign_keys = 1;
