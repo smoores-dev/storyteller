@@ -1,4 +1,4 @@
-import cron, { type ScheduledTask } from "node-cron"
+import { type ScheduledTask } from "node-cron"
 
 import { scanLibrary } from "@/assets/library/scanner/scan"
 import { getSetting } from "@/database/settings"
@@ -14,6 +14,10 @@ export class Scheduler {
     if (!expression) {
       return
     }
+
+    // need to dynamically import, otherwise it ends up in the worker bundle
+    // where it causes issues
+    const cron = await import("node-cron")
 
     this.task = cron.schedule(
       expression,
