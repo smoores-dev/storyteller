@@ -1,6 +1,7 @@
 import {
   type AttachedPic,
   type TrackInfo,
+  type TrackMetadataOptions,
   getTrackMetadata,
   writeTrackMetadata,
 } from "./ffmpeg.ts"
@@ -19,11 +20,17 @@ function splitNames(names: string | undefined): string[] {
 
 export class AudiobookEntry {
   private info: TrackInfo | null = null
+  private metadataOptions: TrackMetadataOptions | undefined
 
-  constructor(public filename: string) {}
+  constructor(
+    public filename: string,
+    metadataOptions?: TrackMetadataOptions,
+  ) {
+    this.metadataOptions = metadataOptions
+  }
 
   async getInfo(): Promise<TrackInfo> {
-    this.info ??= await getTrackMetadata(this.filename)
+    this.info ??= await getTrackMetadata(this.filename, this.metadataOptions)
     return this.info
   }
 

@@ -18,7 +18,9 @@ export const openEpubStep = defineStep(
     }
 
     try {
-      const epub = scope.use(await Epub.from(input.filepath))
+      const epub = scope.use(
+        await Epub.from(input.filepath, { metadataOnly: true }),
+      )
       return { ...input, isEpub2: false as const, epub }
     } catch (error) {
       if (!(error instanceof EpubVersionError)) throw error

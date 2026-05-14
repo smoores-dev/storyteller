@@ -138,7 +138,7 @@ export async function createM4bManifest(
   m4bPath: string,
   options: ManifestOptions,
 ): Promise<Manifest> {
-  using audiobook = await Audiobook.from(m4bPath)
+  using audiobook = await Audiobook.fromForMetadata(m4bPath)
 
   const [codec, metadata, chapters] = await Promise.all([
     getSetting("codec"),

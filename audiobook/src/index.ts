@@ -11,7 +11,7 @@ import { ZipFile } from "yazl"
 import { basename, dirname, extname, join } from "@storyteller-platform/path"
 
 import { AudiobookEntry } from "./entry.ts"
-import { type AttachedPic } from "./ffmpeg.ts"
+import { type AttachedPic, type TrackMetadataOptions } from "./ffmpeg.ts"
 import { AUDIO_FILE_EXTENSIONS } from "./mime.ts"
 import { type AudiobookChapter, type AudiobookResource } from "./resources.ts"
 
@@ -50,9 +50,14 @@ export class Audiobook {
   private entries: AudiobookEntry[] = []
   private extractPath: string | undefined = undefined
   private isZip: boolean
+  private metadataOptions: TrackMetadataOptions | undefined
 
-  private constructor(...inputs: AudiobookInputs) {
+  private constructor(
+    inputs: AudiobookInputs,
+    metadataOptions?: TrackMetadataOptions,
+  ) {
     this.inputs = inputs
+    this.metadataOptions = metadataOptions
 
     const [first] = this.inputs
     this.isZip =
@@ -61,7 +66,22 @@ export class Audiobook {
   }
 
   static async from(...inputs: AudiobookInputs) {
-    const audiobook = new Audiobook(...inputs)
+    const audiobook = new Audiobook(inputs)
+    audiobook.entries = await audiobook.getEntries()
+    return audiobook
+  }
+
+  /**
+   * lightweight variant that skips cover art extraction and id3v2
+   * detection when reading track metadata. significantly faster for
+   * scan-time metadata reads where we only need tags and duration.
+   */
+  static async fromForMetadata(...inputs: AudiobookInputs) {
+    const audiobook = new Audiobook(inputs, {
+      skipCoverArt: true,
+      skipId3Detection: true,
+    })
+
     audiobook.entries = await audiobook.getEntries()
     return audiobook
   }
@@ -85,9 +105,7 @@ export class Audiobook {
 
         for await (const entry of zipfile) {
           if (entry.filename.endsWith("/")) {
-            // Directory file names end with '/'.
-            // Note that entries for directories themselves are optional.
-            // An entry's fileName implicitly requires its parent directories to exist.
+            // directory entries are skipped; parent dirs are created implicitly
           } else {
             entries.push(entry.filename)
             const readStream = await entry.openReadStream()
@@ -109,9 +127,14 @@ export class Audiobook {
           ),
         )
         .sort()
-        .map((entry) => new AudiobookEntry(join(extractPath, entry)))
+        .map(
+          (entry) =>
+            new AudiobookEntry(join(extractPath, entry), this.metadataOptions),
+        )
     } else {
-      return this.inputs.map((input) => new AudiobookEntry(input))
+      return this.inputs.map(
+        (input) => new AudiobookEntry(input, this.metadataOptions),
+      )
     }
   }
 

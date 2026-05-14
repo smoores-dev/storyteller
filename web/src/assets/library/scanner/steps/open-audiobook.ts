@@ -46,7 +46,7 @@ export const openAudiobookStep = defineStep(
       return null
     }
 
-    const audiobook = scope.use(await Audiobook.from(...tracks))
+    const audiobook = scope.use(await Audiobook.fromForMetadata(...tracks))
     return { ...input, audiobook }
   },
 )

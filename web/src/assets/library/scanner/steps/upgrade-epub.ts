@@ -63,7 +63,9 @@ export const upgradeEpubStep = defineStep(
       throw new Error("upgrade-epub step requires ctx.scope")
     }
 
-    const epub = scope.use(await Epub.from(input.filepath))
+    const epub = scope.use(
+      await Epub.from(input.filepath, { metadataOnly: true }),
+    )
     return { ...input, isEpub2: false as const, epub }
   },
 )

@@ -8,7 +8,7 @@ import {
   type AudiobookInputs,
   getAttachedImageFromPath,
 } from "@storyteller-platform/audiobook"
-import { type Epub } from "@storyteller-platform/epub"
+import { type Epub, type EpubMetadataReader } from "@storyteller-platform/epub"
 
 import { isAudioFile } from "@/audio"
 import { isRole } from "@/components/books/edit/marcRelators"
@@ -155,7 +155,7 @@ export function applyFieldOverrides(
   return { metadataUpdate, relationUpdate }
 }
 
-export async function getMetadataFromEpub(epub: Epub): Promise<{
+export async function getMetadataFromEpub(epub: EpubMetadataReader): Promise<{
   update: BookUpdate | null
   relations: BookRelationsUpdate
 }> {
@@ -321,7 +321,7 @@ export async function getMetadataFromAudiobook(audiobook: Audiobook) {
   }
 }
 
-export async function getAudioCoverItem(epub: Epub) {
+export async function getAudioCoverItem(epub: EpubMetadataReader) {
   const manifest = await epub.getManifest()
   return Object.values(manifest).find((item) =>
     item.properties?.includes("stoyteller:audio-cover-image"),

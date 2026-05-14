@@ -213,15 +213,36 @@ function lookup(codecName: "mjpeg" | "jpeg" | "png" | "bmp" | "gif") {
   }
 }
 
-export async function getTrackMetadata(path: string) {
+export interface TrackMetadataOptions {
+  /** skip the ffmpeg subprocess that extracts embedded cover art */
+  skipCoverArt?: boolean
+  /** skip the extra ffprobe -v debug call used to detect id3v2 tag version */
+  skipId3Detection?: boolean
+}
+
+export async function getTrackMetadata(
+  path: string,
+  opts?: TrackMetadataOptions,
+) {
+  const showStreams = !opts?.skipCoverArt
+  const sections = showStreams
+    ? "-show_format -show_chapters -show_streams"
+    : "-show_format -show_chapters"
+
   const stdout = await execCmd(
-    `ffprobe -i ${quotePath(path)} -v quiet -show_format -show_chapters -show_streams -output_format json`,
+    `ffprobe -i ${quotePath(path)} -v quiet ${sections} -output_format json`,
   )
 
-  const { chapters, streams, format } = JSON.parse(stdout) as FfprobeOutput
+  const parsed = JSON.parse(stdout) as Partial<FfprobeOutput> &
+    Pick<FfprobeOutput, "format">
+
+  const format = parsed.format
+  const chapters = parsed.chapters ?? []
+  const streams = parsed.streams ?? []
 
   let id3v2Version: 3 | 4 | null = null
-  if (extname(path).toLowerCase() === ".mp3") {
+
+  if (!opts?.skipId3Detection && extname(path).toLowerCase() === ".mp3") {
     const { stderr: id3v2VersionOut } = await execPromise(
       `ffprobe -i ${quotePath(path)} -v debug`,
     )
@@ -229,35 +250,42 @@ export async function getTrackMetadata(path: string) {
     id3v2Version = (id3v2VersionMatch?.[1] as 3 | 4 | undefined) ?? null
   }
 
-  const attachedPicStream = streams.find(
-    (
-      stream,
-    ): stream is Extract<
-      FfprobeStreamOutput,
-      { disposition: { attached_pic: 1 } }
-    > => !!stream.disposition.attached_pic,
-  )
-  const attachedPic: AttachedPic | undefined = attachedPicStream && {
-    name: attachedPicStream.tags?.title,
-    mimeType: lookup(attachedPicStream.codec_name),
-    kind: "coverFront",
-    description: attachedPicStream.tags?.comment,
-    data: await execCmdBuffer("ffmpeg", [
-      "-nostdin",
-      "-i",
-      path,
-      "-map",
-      "0:v",
-      "-c:v",
-      "copy",
-      "-vframes",
-      "1",
-      "-f",
-      "image2",
-      "-update",
-      "1",
-      "pipe:1",
-    ]),
+  let attachedPic: AttachedPic | undefined
+
+  if (!opts?.skipCoverArt) {
+    const attachedPicStream = streams.find(
+      (
+        stream,
+      ): stream is Extract<
+        FfprobeStreamOutput,
+        { disposition: { attached_pic: 1 } }
+      > => !!stream.disposition.attached_pic,
+    )
+
+    attachedPic = attachedPicStream
+      ? {
+          name: attachedPicStream.tags?.title,
+          mimeType: lookup(attachedPicStream.codec_name),
+          kind: "coverFront",
+          description: attachedPicStream.tags?.comment,
+          data: await execCmdBuffer("ffmpeg", [
+            "-nostdin",
+            "-i",
+            path,
+            "-map",
+            "0:v",
+            "-c:v",
+            "copy",
+            "-vframes",
+            "1",
+            "-f",
+            "image2",
+            "-update",
+            "1",
+            "pipe:1",
+          ]),
+        }
+      : undefined
   }
 
   return {

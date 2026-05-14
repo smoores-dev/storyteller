@@ -1,5 +1,5 @@
 import { type Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook"
-import { type Epub } from "@storyteller-platform/epub"
+import { type EpubMetadataReader } from "@storyteller-platform/epub"
 
 import { type StatEntry } from "@/assets/library/fingerprint"
 import { type SerializedManifest } from "@/components/reader/types"
@@ -55,14 +55,17 @@ export type AudiobookFingerprinted = AudiobookInput & {
   missing: false
 } & FingerprintedExtras
 
-export type EpubOpened = EpubFingerprinted & { isEpub2: false; epub: Epub }
+export type EpubOpened = EpubFingerprinted & {
+  isEpub2: false
+  epub: EpubMetadataReader
+}
 export type EpubNeedsUpgrade = EpubFingerprinted & { isEpub2: true }
 
 export type EpubOpenState = EpubOpened | EpubNeedsUpgrade
 
 export type FormatKnown = (EbookInput | ReadaloudInput) & {
   missing: false
-} & FingerprintedExtras & { isEpub2: false; epub: Epub }
+} & FingerprintedExtras & { isEpub2: false; epub: EpubMetadataReader }
 
 export type AudiobookOpened = AudiobookFingerprinted & {
   audiobook: AudiobookAsset
@@ -103,7 +106,7 @@ export type EbookManifestReady = EbookInput & {
   missing: false
 } & FingerprintedExtras & {
     isEpub2: false
-    epub: Epub
+    epub: EpubMetadataReader
   } & MetadataExtractedExtras &
   EbookManifestExtras
 
@@ -111,7 +114,7 @@ export type ReadaloudManifestReady = ReadaloudInput & {
   missing: false
 } & FingerprintedExtras & {
     isEpub2: false
-    epub: Epub
+    epub: EpubMetadataReader
   } & MetadataExtractedExtras &
   ReadaloudManifestExtras
 
