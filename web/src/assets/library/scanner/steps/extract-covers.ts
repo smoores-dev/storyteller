@@ -40,22 +40,33 @@ export const extractTextCoverStep = defineStep(
       return input
     }
 
-    if (mode === "fill-empty") {
-      const existing = await getExtractedEbookCover(input.book)
+    try {
+      if (mode === "fill-empty") {
+        // we check if the cover has already been extracted
+        const existing = await getExtractedEbookCover(input.book)
 
-      if (existing) {
-        ctx.report.skipped({
-          step: STEP,
-          book: input.book,
-          format: input.format,
-          reason: "cover-already-exists",
-        })
-        return input
+        if (existing) {
+          ctx.report.skipped({
+            step: STEP,
+            book: input.book,
+            format: input.format,
+            reason: "cover-already-exists",
+          })
+          return input
+        }
       }
-    }
 
-    await cacheTextCover(input.book)
-    return input
+      await cacheTextCover(input.book)
+      return input
+    } catch (error) {
+      ctx.report.warn({
+        step: STEP,
+        book: input.book,
+        msg: "Failed to get extracted ebook cover. Continuing...",
+        err: error,
+      })
+      return input
+    }
   },
 )
 
@@ -74,21 +85,30 @@ export const extractAudiobookCoverStep = defineStep(
       return input
     }
 
-    if (mode === "fill-empty") {
-      const existing = await getExtractedAudiobookCover(input.book)
-
-      if (existing) {
-        ctx.report.skipped({
-          step: STEP,
-          book: input.book,
-          format: input.format,
-          reason: "cover-already-exists",
-        })
-        return input
+    try {
+      if (mode === "fill-empty") {
+        const existing = await getExtractedAudiobookCover(input.book)
+        if (existing) {
+          ctx.report.skipped({
+            step: STEP,
+            book: input.book,
+            format: input.format,
+            reason: "cover-already-exists",
+          })
+          return input
+        }
       }
-    }
 
-    await cacheAudioCover(input.book)
-    return input
+      await cacheAudioCover(input.book)
+      return input
+    } catch (error) {
+      ctx.report.warn({
+        step: STEP,
+        book: input.book,
+        msg: "Failed to get extracted audiobook cover. Continuing...",
+        err: error,
+      })
+      return input
+    }
   },
 )
