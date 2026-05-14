@@ -35,6 +35,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "72_add_scan_pipeline.sql": (
     await import("./migrations/72_add_scan_pipeline.sql")
   ).default,
+  "73_schema_cleanup.sql": (
+    await import("./migrations/73_schema_cleanup.sql")
+  ).default,
 }
 
 async function isFirstStartup() {
