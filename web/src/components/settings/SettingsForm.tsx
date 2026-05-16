@@ -22,12 +22,7 @@ import {
   TextInput,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import {
-  IconFlame,
-  IconLock,
-  IconPlus,
-  IconTrash,
-} from "@tabler/icons-react"
+import { IconFlame, IconLock, IconPlus, IconTrash } from "@tabler/icons-react"
 import { useRef, useState } from "react"
 
 import type { Settings } from "@/apiModels"

@@ -85,9 +85,7 @@ export function ActionMenu({ selected, onClear }: Props) {
           {!!permissions?.bookUpdate && (
             <UpgradeEpubItem selected={selected} onCommit={onCommit} />
           )}
-          {!!permissions?.bookProcess && (
-            <ScanBooksItem selected={selected} />
-          )}
+          {!!permissions?.bookProcess && <ScanBooksItem selected={selected} />}
           {!!permissions?.bookProcess && (
             <BeginProcessingItem selected={selected} />
           )}
