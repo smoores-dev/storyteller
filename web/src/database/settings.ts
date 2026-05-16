@@ -8,7 +8,11 @@ import { env } from "@/env"
 import { logger } from "@/logging"
 
 import { db } from "./connection"
-import { ConfigFileSchema, type Settings } from "./settingsTypes"
+import {
+  ConfigFileSchema,
+  type ImportPathEntry,
+  type Settings,
+} from "./settingsTypes"
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
   let details = settings.transcriptionEngine ?? "whisper.cpp"
@@ -97,11 +101,20 @@ export function getConfigLockedKeys(): Set<keyof Settings> {
   return loadConfigFile().keys
 }
 
-// handles legacy single-string values and the literal string "null"
-function normalizeImportPaths(raw: unknown): string[] | null {
+// handles legacy single-string values, string arrays, and the literal string "null"
+function normalizeImportPaths(raw: unknown): ImportPathEntry[] | null {
   if (raw === null || raw === undefined || raw === "null") return null
-  if (Array.isArray(raw)) return raw.length === 0 ? null : raw
-  if (typeof raw === "string") return [raw]
+
+  if (typeof raw === "string") return [{ path: raw }]
+
+  if (Array.isArray(raw)) {
+    if (raw.length === 0) return null
+
+    return raw.map((item) =>
+      typeof item === "string" ? { path: item } : (item as ImportPathEntry),
+    )
+  }
+
   return null
 }
 
@@ -165,23 +178,23 @@ export async function getSettings(): Promise<Settings> {
 }
 
 function computeNewImportPaths(
-  previous: string[] | null,
-  next: string[] | null,
+  previous: ImportPathEntry[] | null,
+  next: ImportPathEntry[] | null,
 ): string[] {
-  const prevSet = new Set(previous ?? [])
-  return (next ?? []).filter((p) => !prevSet.has(p))
+  const prevSet = new Set((previous ?? []).map((e) => e.path))
+  return (next ?? []).filter((e) => !prevSet.has(e.path)).map((e) => e.path)
 }
 
-function validateNoDuplicatePaths(paths: string[] | null) {
+function validateNoDuplicatePaths(paths: ImportPathEntry[] | null) {
   if (!paths) return
 
   const seen = new Set<string>()
 
-  for (const p of paths) {
-    if (seen.has(p)) {
-      throw new Error(`duplicate import path: "${p}"`)
+  for (const entry of paths) {
+    if (seen.has(entry.path)) {
+      throw new Error(`duplicate import path: "${entry.path}"`)
     }
-    seen.add(p)
+    seen.add(entry.path)
   }
 }
 
@@ -192,7 +205,13 @@ export async function getCollectionImportPaths(): Promise<Set<string>> {
     .where("importPaths", "is not", null)
     .execute()
 
-  return new Set(rows.flatMap((row) => row.importPaths ?? []))
+  return new Set(
+    rows.flatMap((row) =>
+      ((row.importPaths ?? []) as (string | ImportPathEntry)[]).map((item) =>
+        typeof item === "string" ? item : item.path,
+      ),
+    ),
+  )
 }
 
 export async function updateSettings(settings: Settings) {
@@ -203,11 +222,13 @@ export async function updateSettings(settings: Settings) {
     validateNoDuplicatePaths(settings.importPath)
 
     const collectionPaths = await getCollectionImportPaths()
-    const conflicts = settings.importPath.filter((p) => collectionPaths.has(p))
+    const conflicts = settings.importPath.filter((e) =>
+      collectionPaths.has(e.path),
+    )
 
     if (conflicts.length > 0) {
       throw new Error(
-        `import path already used by a collection: "${conflicts[0]}"`,
+        `import path already used by a collection: "${conflicts[0]?.path}"`,
       )
     }
   }

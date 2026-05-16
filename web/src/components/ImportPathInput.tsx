@@ -3,18 +3,30 @@ import {
   Button,
   Fieldset,
   Group,
+  NativeSelect,
   Stack,
   Switch,
+  Text,
   useComputedColorScheme,
 } from "@mantine/core"
 import { IconPlus, IconTrash } from "@tabler/icons-react"
 import { type ReactNode, useState } from "react"
 
+import { type ImportPathEntry } from "@/database/settingsTypes"
+
 import { ServerFilePicker } from "./books/modals/ServerFilePicker"
 
+const IMPORT_MODE_OPTIONS = [
+  { value: "", label: "Use default" },
+  { value: "reference", label: "Reference in place" },
+  { value: "copy", label: "Copy to library" },
+  { value: "move", label: "Move to library" },
+  { value: "hardlink", label: "Hard link to library" },
+]
+
 interface MultiPathProps {
-  value?: string[] | null
-  onChange: (update: string[] | null) => void
+  value?: ImportPathEntry[] | null
+  onChange: (update: ImportPathEntry[] | null) => void
   children?: ReactNode
   disabled?: boolean
 }
@@ -25,36 +37,52 @@ export function ImportPathInput({
   children,
   disabled,
 }: MultiPathProps) {
-  const paths = value ?? []
-  const [enableAutoimport, setEnableAutoimport] = useState(paths.length > 0)
+  const entries = value ?? []
+  const [enableAutoimport, setEnableAutoimport] = useState(entries.length > 0)
   const [addingPathIndex, setAddingPathIndex] = useState<number | null>(null)
   const computedColorScheme = useComputedColorScheme()
 
   function removePath(index: number) {
-    const next = paths.filter((_, i) => i !== index)
+    const next = entries.filter((_, i) => i !== index)
     onChange(next.length === 0 ? null : next)
+
     if (next.length === 0) {
       setEnableAutoimport(false)
     }
   }
 
   function isDuplicate(folder: string, excludeIndex?: number) {
-    return paths.some((p, i) => i !== excludeIndex && p === folder)
+    return entries.some((e, i) => i !== excludeIndex && e.path === folder)
   }
 
   function updatePath(index: number, folder: string) {
     if (isDuplicate(folder, index)) return
 
-    const next = [...paths]
-    next[index] = folder
+    const existing = entries[index]
+    if (!existing) return
+
+    const next = [...entries]
+    next[index] = { ...existing, path: folder }
     onChange(next)
     setAddingPathIndex(null)
+  }
+
+  function updateImportMode(index: number, mode: string) {
+    const existing = entries[index]
+    if (!existing) return
+
+    const next = [...entries]
+    next[index] = {
+      ...existing,
+      importMode: mode === "" ? null : (mode as ImportPathEntry["importMode"]),
+    }
+    onChange(next)
   }
 
   function addPath(folder: string) {
     if (isDuplicate(folder)) return
 
-    onChange([...paths, folder])
+    onChange([...entries, { path: folder }])
     setAddingPathIndex(null)
   }
 
@@ -71,7 +99,7 @@ export function ImportPathInput({
         onChange={(event) => {
           if (event.target.checked) {
             setEnableAutoimport(true)
-            setAddingPathIndex(paths.length === 0 ? 0 : null)
+            setAddingPathIndex(entries.length === 0 ? 0 : null)
           } else {
             setEnableAutoimport(false)
             setAddingPathIndex(null)
@@ -79,20 +107,37 @@ export function ImportPathInput({
           }
         }}
       />
+
       {enableAutoimport && (
-        <Stack gap="xs">
-          {paths.map((path, i) => (
-            <Group key={i} gap="xs" wrap="nowrap">
+        <Stack gap="sm">
+          {entries.map((entry, i) => (
+            <Group key={i} gap="xs" wrap="nowrap" align="flex-end">
               <Button
                 variant={computedColorScheme === "dark" ? "default" : "white"}
-                className="flex-1"
+                className="min-w-0 flex-1"
                 classNames={{ inner: "justify-start" }}
                 onClick={() => {
                   setAddingPathIndex(i)
                 }}
               >
-                {path}
+                <Text className="truncate text-sm">{entry.path}</Text>
               </Button>
+
+              <NativeSelect
+                size="xs"
+                className="w-[160px] shrink-0"
+                value={entry.importMode ?? ""}
+                onChange={(e) => {
+                  updateImportMode(i, e.currentTarget.value)
+                }}
+              >
+                {IMPORT_MODE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </NativeSelect>
+
               <ActionIcon
                 variant="subtle"
                 color="red"
@@ -104,15 +149,16 @@ export function ImportPathInput({
               </ActionIcon>
             </Group>
           ))}
+
           {addingPathIndex !== null && (
             <ServerFilePicker
               startPath={
-                addingPathIndex < paths.length
-                  ? paths[addingPathIndex] ?? "/"
-                  : paths[paths.length - 1] ?? "/"
+                addingPathIndex < entries.length
+                  ? entries[addingPathIndex]?.path ?? "/"
+                  : entries[entries.length - 1]?.path ?? "/"
               }
               onChange={(folder) => {
-                if (addingPathIndex < paths.length) {
+                if (addingPathIndex < entries.length) {
                   updatePath(addingPathIndex, folder)
                 } else {
                   addPath(folder)
@@ -120,13 +166,14 @@ export function ImportPathInput({
               }}
             />
           )}
+
           {addingPathIndex === null && (
             <Button
               variant="subtle"
               leftSection={<IconPlus size={14} />}
               className="self-start"
               onClick={() => {
-                setAddingPathIndex(paths.length)
+                setAddingPathIndex(entries.length)
               }}
             >
               Add path
@@ -139,8 +186,8 @@ export function ImportPathInput({
 }
 
 interface SinglePathProps {
-  value?: string | null
-  onChange: (update: string | null) => void
+  value?: ImportPathEntry | null
+  onChange: (update: ImportPathEntry[] | null) => void
   children?: ReactNode
 }
 
@@ -151,12 +198,8 @@ export function SingleImportPathInput({
 }: SinglePathProps) {
   const arrayValue = value ? [value] : null
 
-  function handleChange(paths: string[] | null) {
-    onChange(paths?.[0] ?? null)
-  }
-
   return (
-    <ImportPathInput value={arrayValue} onChange={handleChange}>
+    <ImportPathInput value={arrayValue} onChange={onChange}>
       {children}
     </ImportPathInput>
   )

@@ -25,6 +25,7 @@ import {
   type NewSeriesRelation,
   type Series,
 } from "@/database/series"
+import { type ImportPathEntry } from "@/database/settingsTypes"
 import { type Status } from "@/database/statuses"
 import { type Tag } from "@/database/tags"
 import { type UserPermissionSet } from "@/database/users"
@@ -313,6 +314,14 @@ export const api = createApi({
         }),
       }),
     }),
+    scanBooks: build.mutation<void, { bookUuids: string[]; force?: boolean }>({
+      query: (args) => ({
+        url: "/books/scan",
+        method: "POST",
+        ...(args.force && { params: { force: "true" } }),
+        body: { bookUuids: args.bookUuids },
+      }),
+    }),
     cancelScan: build.mutation<void, void>({
       query: () => ({
         url: "/books/scan",
@@ -568,7 +577,7 @@ export const api = createApi({
           public?: boolean
           users?: UUID[]
           books?: UUID[]
-          importPaths?: string[] | null
+          importPaths?: ImportPathEntry[] | null
         }
       }
     >({
@@ -608,7 +617,7 @@ export const api = createApi({
         description: string
         public: boolean
         users: string[]
-        importPaths: string[] | null
+        importPaths: ImportPathEntry[] | null
       }
     >({
       query: ({ name, description, public: isPublic, users, importPaths }) => ({
@@ -768,6 +777,7 @@ export const {
   useTriggerBookScanMutation,
   useCancelScanMutation,
   useTriggerScanMutation,
+  useScanBooksMutation,
   useRemoveBooksFromCollectionsMutation,
   useRemoveBooksFromSeriesMutation,
   useRemoveTagsFromBooksMutation,

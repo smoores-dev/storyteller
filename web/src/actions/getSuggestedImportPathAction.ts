@@ -32,7 +32,7 @@ export async function getSuggestedImportPathAction(): Promise<SuggestedImportPat
   const excludedPaths = [
     ASSETS_DIR,
     resolvedAssetsDir,
-    ...(settings.importPath ?? []),
+    ...(settings.importPath ?? []).map((e) => e.path),
     ...collections,
   ]
 

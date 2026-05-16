@@ -12,6 +12,7 @@ import { useRef, useState } from "react"
 import { ImportPathInput } from "@/components/ImportPathInput"
 import { UserSelect } from "@/components/books/edit/UserSelect"
 import { SaveState } from "@/components/forms"
+import { type ImportPathEntry } from "@/database/settingsTypes"
 import {
   useCreateCollectionMutation,
   useGetCurrentUserQuery,
@@ -39,7 +40,7 @@ export function CreateCollectionModal({ isOpen, onClose }: Props) {
       public: true,
       users: [] as UUID[],
       description: "",
-      importPaths: null as null | string[],
+      importPaths: null as ImportPathEntry[] | null,
     },
   })
 

@@ -18,6 +18,7 @@ import { useEffect, useRef } from "react"
 
 import { ImportPathInput } from "@/components/ImportPathInput"
 import { UserSelect } from "@/components/books/edit/UserSelect"
+import { type ImportPathEntry } from "@/database/settingsTypes"
 import {
   useDeleteCollectionMutation,
   useListCollectionsQuery,
@@ -25,6 +26,16 @@ import {
   useUpdateCollectionMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
+
+function normalizeImportPathEntries(
+  raw: unknown,
+): ImportPathEntry[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null
+
+  return raw.map((item) =>
+    typeof item === "string" ? { path: item } : (item as ImportPathEntry),
+  )
+}
 
 interface Props {
   uuid: UUID
@@ -51,7 +62,7 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection?.public ?? true,
       users: collection?.users.map((user) => user.id) ?? [],
       description: collection?.description ?? null,
-      importPaths: collection?.importPaths ?? null,
+      importPaths: normalizeImportPathEntries(collection?.importPaths),
     },
   })
 
@@ -63,7 +74,7 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection.public,
       users: collection.users.map((user) => user.id),
       description: collection.description,
-      importPaths: collection.importPaths,
+      importPaths: normalizeImportPathEntries(collection.importPaths),
     })
   }, [collection]) // eslint-disable-line react-hooks/exhaustive-deps
 

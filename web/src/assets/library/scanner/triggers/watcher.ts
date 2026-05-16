@@ -14,9 +14,20 @@ import { isSuppressed } from "@/assets/library/scanner/write-intent"
 import { isAudioFile } from "@/audio"
 import { getCollection, getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
+import { type ImportMode, type ImportPathEntry } from "@/database/settingsTypes"
 import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
+
+function normalizeWatcherEntries(raw: unknown): ImportPathEntry[] {
+  if (!Array.isArray(raw) || raw.length === 0) return []
+
+  return raw.map((item) =>
+    typeof item === "string"
+      ? ({ path: item } satisfies ImportPathEntry)
+      : (item as ImportPathEntry),
+  )
+}
 
 function standardFilter(path: string): boolean {
   return (
@@ -24,6 +35,8 @@ function standardFilter(path: string): boolean {
     !/\.watchman-cookie/.test(path)
   )
 }
+
+const assetRegex = /[^/]*\/(text|aligned|audio)\//
 
 type ControllerKey = UUID | "root" | "assets"
 
@@ -49,27 +62,41 @@ export class Watcher {
     this.controllers.set("root", rootController)
 
     if (rootImportPaths) {
-      for (const importPath of rootImportPaths) {
-        this.startWatcher("root", importPath, rootController)
+      for (const entry of rootImportPaths) {
+        this.startWatcher(
+          "root",
+          entry.path,
+          rootController,
+          undefined,
+          entry.importMode,
+        )
       }
     }
 
     for (const collection of collections) {
-      const paths = collection.importPaths
-      if (!paths || paths.length === 0) continue
+      const entries = normalizeWatcherEntries(collection.importPaths)
+      if (entries.length === 0) continue
 
       const controller = new AbortController()
       this.controllers.set(collection.uuid, controller)
-      this.collectionImportPaths.set(collection.uuid, paths)
+      this.collectionImportPaths.set(
+        collection.uuid,
+        entries.map((e) => e.path),
+      )
 
-      for (const importPath of paths) {
-        this.startWatcher(collection.uuid, importPath, controller)
+      for (const entry of entries) {
+        this.startWatcher(
+          collection.uuid,
+          entry.path,
+          controller,
+          undefined,
+          entry.importMode,
+        )
       }
     }
 
     const assetController = new AbortController()
     this.controllers.set("assets", assetController)
-    const assetRegex = /[^/]*\/(text|aligned|audio)\//
     this.startWatcher("root", ASSETS_DIR, assetController, (path) =>
       assetRegex.test(path),
     )
@@ -88,8 +115,14 @@ export class Watcher {
       this.controllers.set("root", rootController)
 
       if (rootImportPaths) {
-        for (const importPath of rootImportPaths) {
-          this.startWatcher("root", importPath, rootController)
+        for (const entry of rootImportPaths) {
+          this.startWatcher(
+            "root",
+            entry.path,
+            rootController,
+            undefined,
+            entry.importMode,
+          )
         }
       }
 
@@ -109,18 +142,24 @@ export class Watcher {
     }
 
     const collection = await getCollection(uuid)
-    const paths = collection.importPaths
+    const entries = normalizeWatcherEntries(collection.importPaths)
 
-    if (!paths || paths.length === 0) {
+    if (entries.length === 0) {
       return
     }
 
     const controller = new AbortController()
     this.controllers.set(uuid, controller)
-    this.collectionImportPaths.set(uuid, paths)
+    this.collectionImportPaths.set(uuid, entries.map((e) => e.path))
 
-    for (const importPath of paths) {
-      this.startWatcher(uuid, importPath, controller)
+    for (const entry of entries) {
+      this.startWatcher(
+        uuid,
+        entry.path,
+        controller,
+        undefined,
+        entry.importMode,
+      )
     }
   }
 
@@ -158,6 +197,7 @@ export class Watcher {
     importPath: string,
     controller: AbortController,
     filter?: (path: string) => boolean,
+    importMode?: ImportMode | null,
   ) {
     let entryLock = this.entryLocks.get(importPath)
     if (!entryLock) {
@@ -241,7 +281,13 @@ export class Watcher {
         await scan({
           source: "watcher",
           tasks: [
-            { kind: "changed-paths", importPath, collection, changes: batch },
+            {
+              kind: "changed-paths",
+              importPath,
+              importMode,
+              collection,
+              changes: batch,
+            },
           ],
           options: { concurrency: 2 },
           signal: controller.signal,

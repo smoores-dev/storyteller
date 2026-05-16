@@ -16,26 +16,39 @@ import { getBooks } from "./books"
 import { db } from "./connection"
 import { type DB } from "./schema"
 import { getCollectionImportPaths, getSetting } from "./settings"
+import { type ImportPathEntry } from "./settingsTypes"
 
 export type Collection = Selectable<DB["collection"]>
 export type NewCollection = Insertable<DB["collection"]>
 export type CollectionUpdate = Updateable<DB["collection"]>
 
-function serializeImportPaths(paths: string[] | null): string | null {
+function normalizeImportPathEntries(
+  raw: unknown,
+): ImportPathEntry[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null
+
+  return raw.map((item) =>
+    typeof item === "string" ? { path: item } : (item as ImportPathEntry),
+  )
+}
+
+function serializeImportPaths(
+  paths: ImportPathEntry[] | null,
+): string | null {
   if (!paths || paths.length === 0) return null
   return JSON.stringify(paths)
 }
 
-function validateNoDuplicatePaths(paths: string[] | null) {
+function validateNoDuplicatePaths(paths: ImportPathEntry[] | null) {
   if (!paths) return
 
   const seen = new Set<string>()
 
-  for (const p of paths) {
-    if (seen.has(p)) {
-      throw new Error(`duplicate import path: "${p}"`)
+  for (const entry of paths) {
+    if (seen.has(entry.path)) {
+      throw new Error(`duplicate import path: "${entry.path}"`)
     }
-    seen.add(p)
+    seen.add(entry.path)
   }
 }
 
@@ -51,13 +64,13 @@ async function getAllImportPaths(
     collections.delete(excludeCollectionUuid)
   }
 
-  const paths = new Set([...(importPaths ?? [])]).union(collections)
+  const rootPaths = new Set((importPaths ?? []).map((e) => e.path))
 
-  return paths
+  return rootPaths.union(collections)
 }
 
 async function validateImportPaths(
-  paths: string[] | null,
+  paths: ImportPathEntry[] | null,
   collectionUuid?: UUID,
 ) {
   validateNoDuplicatePaths(paths)
@@ -65,10 +78,10 @@ async function validateImportPaths(
   if (!paths || paths.length === 0) return
 
   const existing = await getAllImportPaths(collectionUuid)
-  const conflicts = paths.filter((p) => existing.has(p))
+  const conflicts = paths.filter((e) => existing.has(e.path))
 
   if (conflicts.length > 0) {
-    throw new Error(`import path already in use: "${conflicts[0]}"`)
+    throw new Error(`import path already in use: "${conflicts[0]?.path}"`)
   }
 }
 
@@ -145,7 +158,7 @@ export async function getCollections(userId?: UUID) {
 }
 
 export type CollectionCreateInput = Omit<NewCollection, "importPaths"> & {
-  importPaths?: string[] | null
+  importPaths?: ImportPathEntry[] | null
 }
 
 export async function createCollection(
@@ -191,7 +204,7 @@ export async function createCollection(
 }
 
 export type CollectionInput = Omit<CollectionUpdate, "importPaths"> & {
-  importPaths?: string[] | null
+  importPaths?: ImportPathEntry[] | null
 }
 
 export async function updateCollection(
@@ -247,21 +260,23 @@ export async function updateCollection(
 
   await getWatcher().update(uuid)
 
-  const prevPaths = new Set(previousCollection.importPaths ?? [])
-  const newPaths = (collection.importPaths ?? []).filter(
-    (p) => !prevPaths.has(p),
-  )
+  const prevEntries = normalizeImportPathEntries(previousCollection.importPaths)
+  const nextEntries = normalizeImportPathEntries(collection.importPaths)
+  const prevPathSet = new Set((prevEntries ?? []).map((e) => e.path))
+  const addedPaths = (nextEntries ?? [])
+    .map((e) => e.path)
+    .filter((p) => !prevPathSet.has(p))
 
-  if (newPaths.length > 0) {
+  if (addedPaths.length > 0) {
     logger.info({
       msg: "collection import paths changed, triggering scan for new paths",
       collectionUuid: uuid,
-      newPaths,
+      newPaths: addedPaths,
     })
 
     void scan({
       source: "manual",
-      tasks: newPaths.map((importPath) => ({
+      tasks: addedPaths.map((importPath) => ({
         kind: "import-path" as const,
         importPath,
         collection: uuid,

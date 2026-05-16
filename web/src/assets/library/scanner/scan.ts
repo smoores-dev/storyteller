@@ -13,6 +13,7 @@ import {
 import { type BookWithRelations, getBooks } from "@/database/books"
 import { getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
+import { type ImportMode, type ImportPathEntry } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
@@ -25,10 +26,16 @@ import { ScanAbortedError } from "./step2"
 import { type ScanFormat, type ScanInput } from "./types"
 
 export type ScanTask =
-  | { kind: "import-path"; importPath: string; collection: UUID | "root" }
+  | {
+      kind: "import-path"
+      importPath: string
+      importMode?: ImportMode | null
+      collection: UUID | "root"
+    }
   | {
       kind: "changed-paths"
       importPath: string
+      importMode?: ImportMode | null
       collection: UUID | "root"
       changes: ImportPathChange[]
     }
@@ -198,6 +205,7 @@ async function resolveImportPath(
     allBooks,
     scopedBooks: scoped,
     signal: ctx.signal,
+    importMode: task.importMode ?? undefined,
   })
 
   reportDiscoveries(
@@ -315,6 +323,7 @@ async function resolveChangedPaths(
       allBooks,
       scopedBooks: scoped,
       signal: ctx.signal,
+      importMode: task.importMode ?? undefined,
     })
 
     // Merge discovery-reconciled formats into the change-detected formats.
@@ -485,6 +494,18 @@ export async function scan(opts: {
   }
 }
 
+function normalizeEntries(
+  raw: unknown,
+): ImportPathEntry[] {
+  if (!Array.isArray(raw) || raw.length === 0) return []
+
+  return raw.map((item) =>
+    typeof item === "string"
+      ? ({ path: item } satisfies ImportPathEntry)
+      : (item as ImportPathEntry),
+  )
+}
+
 export async function scanLibrary(opts: {
   source: ScanSource
   options?: ScanOptions
@@ -498,19 +519,25 @@ export async function scanLibrary(opts: {
   const tasks: ScanTask[] = []
 
   if (rootImportPaths) {
-    for (const importPath of rootImportPaths) {
-      tasks.push({ kind: "import-path", importPath, collection: "root" })
+    for (const entry of rootImportPaths) {
+      tasks.push({
+        kind: "import-path",
+        importPath: entry.path,
+        importMode: entry.importMode,
+        collection: "root",
+      })
     }
   }
 
   for (const collection of collections) {
-    const paths = collection.importPaths
-    if (!paths || paths.length === 0) continue
+    const entries = normalizeEntries(collection.importPaths)
+    if (entries.length === 0) continue
 
-    for (const importPath of paths) {
+    for (const entry of entries) {
       tasks.push({
         kind: "import-path",
-        importPath,
+        importPath: entry.path,
+        importMode: entry.importMode,
         collection: collection.uuid,
       })
     }

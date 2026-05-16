@@ -11,7 +11,6 @@ import {
   Fieldset,
   Group,
   List,
-  Menu,
   MultiSelect,
   NativeSelect,
   NumberInput,
@@ -24,7 +23,6 @@ import {
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import {
-  IconChevronDown,
   IconFlame,
   IconLock,
   IconPlus,
@@ -373,8 +371,8 @@ export function SettingsForm({
           import in the settings for that collection.
         </Text>
         <NativeSelect
-          label="Import mode"
-          description="How to handle files found in import directories. Also applies to collections."
+          label="Default import mode"
+          description="How to handle files found in import directories. Individual paths can override this."
           {...form.getInputProps("importMode")}
           disabled={isLocked("importMode")}
         >
@@ -396,39 +394,20 @@ export function SettingsForm({
 
           {permissions?.bookProcess && (
             <Group>
-              <Button.Group>
-                <Button
-                  variant="outline"
-                  loading={isTriggeringScan}
-                  onClick={() => {
-                    void triggerScan({})
-                  }}
-                  disabled={Boolean(scanState?.running)}
-                >
-                  Scan with default settings
-                </Button>
-                <Menu position="bottom-end">
-                  <Menu.Target>
-                    <Button
-                      variant="outline"
-                      disabled={Boolean(scanState?.running) || isTriggeringScan}
-                      px="xs"
-                    >
-                      <IconChevronDown size={14} />
-                    </Button>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item
-                      onClick={() => {
-                        void triggerScan({ force: true })
-                      }}
-                    >
-                      Force rescan (re-read metadata from files even if
-                      unchanged since last scan)
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              </Button.Group>
+              <Button
+                variant="outline"
+                loading={isTriggeringScan}
+                onClick={() => {
+                  void triggerScan({ force: true })
+                }}
+                disabled={Boolean(scanState?.running)}
+              >
+                Scan library
+              </Button>
+              <Text className="text-xs opacity-60">
+                Re-reads all import paths and book metadata, even if files
+                haven&apos;t changed since the last scan.
+              </Text>
             </Group>
           )}
 

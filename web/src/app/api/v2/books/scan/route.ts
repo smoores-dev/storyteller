@@ -4,6 +4,7 @@ import { type ScanOptions } from "@/assets/library/scanner/ctx"
 import {
   cancelActiveScan,
   getScanState,
+  scanBooks,
   scanLibrary,
 } from "@/assets/library/scanner/scan"
 import { withHasPermission } from "@/auth/auth"
@@ -11,6 +12,7 @@ import {
   MetadataFieldOverridesSchema,
   defaultMetadataFieldOverrides,
 } from "@/database/settingsTypes"
+import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
 
@@ -63,7 +65,19 @@ export const POST = withHasPermission("bookProcess")(async (request) => {
   const options = parseScanOptions(request.nextUrl.searchParams, body)
   const controller = new AbortController()
 
-  void scanLibrary({ source: "manual", options, signal: controller.signal })
+  const record = body as Record<string, unknown> | null
+  const rawUuids = record?.["bookUuids"]
+
+  if (Array.isArray(rawUuids) && rawUuids.every((u) => typeof u === "string")) {
+    void scanBooks({
+      source: "manual",
+      bookUuids: rawUuids as UUID[],
+      options,
+      signal: controller.signal,
+    })
+  } else {
+    void scanLibrary({ source: "manual", options, signal: controller.signal })
+  }
 
   return new Response(null, { status: 204 })
 })
