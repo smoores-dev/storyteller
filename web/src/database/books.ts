@@ -1090,7 +1090,7 @@ export async function updateBook(
       } else {
         await tr
           .insertInto("ebook")
-          .values({ bookUuid: uuid, filepath: relations.ebook.filepath })
+          .values({ bookUuid: uuid, ...relations.ebook })
           .execute()
       }
     }
@@ -1111,7 +1111,7 @@ export async function updateBook(
       } else {
         await tr
           .insertInto("audiobook")
-          .values({ bookUuid: uuid, filepath: relations.audiobook.filepath })
+          .values({ bookUuid: uuid, ...relations.audiobook })
           .execute()
       }
     }
