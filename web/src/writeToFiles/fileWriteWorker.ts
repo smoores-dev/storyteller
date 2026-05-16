@@ -179,6 +179,10 @@ export default async function writeMetadataToFiles({
   }
 
   if (textCover || audioCover) {
-    await deleteCachedCoverImages(bookUuid)
+    try {
+      await deleteCachedCoverImages(bookUuid)
+    } catch (e) {
+      logger.error({ msg: "Failed to delete cached cover images", bookUuid, err: e })
+    }
   }
 }

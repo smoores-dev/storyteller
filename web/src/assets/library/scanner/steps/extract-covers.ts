@@ -2,6 +2,7 @@ import {
   getExtractedAudiobookCover,
   getExtractedEbookCover,
 } from "@/assets/covers"
+import { deleteCachedCoverImages } from "@/assets/fs"
 import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { defineStep } from "@/assets/library/scanner/step2"
@@ -55,7 +56,7 @@ export const extractTextCoverStep = defineStep(
           return input
         }
       }
-
+      await deleteCachedCoverImages(input.book.uuid)
       await cacheTextCover(input.book)
       return input
     } catch (error) {
