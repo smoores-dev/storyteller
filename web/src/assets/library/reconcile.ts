@@ -5,6 +5,7 @@ import {
 import { addBooksToCollections } from "@/database/collections"
 import { addImportSkipPaths } from "@/database/scans"
 import { getSetting } from "@/database/settings"
+import { type ImportMode } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"
 
 import {
@@ -27,6 +28,7 @@ type ReconcileInput = {
   allBooks: BookWithRelations[]
   scopedBooks: BookWithRelations[]
   signal: AbortSignal
+  importMode?: ImportMode
 }
 
 export type ReconcileResult = {
@@ -86,7 +88,7 @@ function hasAnyRelationChange(
 export async function reconcileDiscoveredPaths(
   input: ReconcileInput,
 ): Promise<ReconcileResult> {
-  const importMode = await getSetting("importMode")
+  const importMode = input.importMode ?? (await getSetting("importMode"))
   const result: ReconcileResult = {
     formatsByBook: new Map(),
     newFormatsByBook: new Map(),
