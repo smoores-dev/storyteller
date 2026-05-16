@@ -17,6 +17,7 @@ import { useRef, useState } from "react"
 import { Label } from "@/app/(v3)/v3/_/components/ui/label"
 import { DeleteBookModal } from "@/components/books/modals/DeleteBookModal"
 import { SaveState } from "@/components/forms"
+import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import {
   type BookWithRelations,
   type CreatorRelation,
@@ -43,9 +44,11 @@ import { StatusInput } from "./StatusInput"
 import { TagsInput } from "./TagsInput"
 
 function DurationInput({
+  book,
   value,
   onChange,
 }: {
+  book: BookWithRelations
   value: number | null
   onChange: (value: number | null) => void
 }) {
@@ -60,12 +63,27 @@ function DurationInput({
     onChange(total === 0 ? null : total)
   }
 
+  const durationParts: string[] = []
+  if (book.audiobook) {
+    durationParts.push(
+      `audiobook (${book.audiobook.duration ? formatTimeHuman(book.audiobook.duration) : "unknown"})`,
+    )
+  }
+  if (book.readaloud) {
+    durationParts.push(
+      `readaloud (${book.readaloud.duration ? formatTimeHuman(book.readaloud.duration) : "unknown"})`,
+    )
+  }
+
+  const durationDescription = durationParts.length
+    ? `Custom duration. Overrides the value derived from the ${durationParts.join(" or ")} when set.`
+    : "Custom duration. No audiobook or readaloud attached to this book."
+
   return (
     <div className="flex flex-col">
       <Label className="m-0 text-sm font-medium">Audiobook duration</Label>
       <Text className="m-0 text-xs" c="dimmed">
-        Custom duration. Overrides the value derived from the audio file when
-        set.
+        {durationDescription}
       </Text>
 
       <Group grow align="flex-end">
@@ -268,7 +286,23 @@ export function BookEditForm({ book }: Props) {
             <NumberInput
               className="m-0"
               label="Page count"
-              description="Custom page count. Overrides the value derived from the ebook file when set."
+              description={(() => {
+                const parts: string[] = []
+                if (book.ebook) {
+                  parts.push(
+                    `ebook (${book.ebook.pageCount ?? "unknown"})`,
+                  )
+                }
+                if (book.readaloud) {
+                  parts.push(
+                    `readaloud (${book.readaloud.pageCount ?? "unknown"})`,
+                  )
+                }
+
+                return parts.length
+                  ? `Custom page count. Overrides the value derived from the ${parts.join(" or ")} when set.`
+                  : "Custom page count. No ebook or readaloud attached to this book."
+              })()}
               min={0}
               value={form.values.pageCount ?? ""}
               onChange={(val) => {
@@ -277,6 +311,7 @@ export function BookEditForm({ book }: Props) {
             />
 
             <DurationInput
+              book={book}
               value={form.values.duration}
               onChange={(val) => {
                 form.setFieldValue("duration", val)
