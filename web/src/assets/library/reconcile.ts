@@ -11,6 +11,7 @@ import { type UUID } from "@/uuid"
 import {
   type BookPath,
   attachNewRelations,
+  canonicalizePath,
   createNewBook,
   findMatchingBook,
   getBookPathFormats,
@@ -80,6 +81,41 @@ function hasAnyRelationChange(
   )
 }
 
+async function findMatchingBookByRealpath(
+  books: BookWithRelations[],
+  bookPath: BookPath,
+): Promise<BookWithRelations | undefined> {
+  const candidatePaths = [
+    bookPath.ebook,
+    bookPath.audiobook,
+    bookPath.readaloud,
+  ].filter((p): p is string => !!p)
+
+  if (candidatePaths.length === 0) return undefined
+
+  const canonicalCandidates = await Promise.all(
+    candidatePaths.map((p) => canonicalizePath(p)),
+  )
+
+  for (const book of books) {
+    const storedPaths = [
+      book.ebook?.filepath,
+      book.audiobook?.filepath,
+      book.readaloud?.filepath,
+    ].filter((p): p is string => !!p)
+
+    for (const stored of storedPaths) {
+      const canonicalStored = await canonicalizePath(stored)
+
+      if (canonicalCandidates.includes(canonicalStored)) {
+        return book
+      }
+    }
+  }
+
+  return undefined
+}
+
 /**
  * Given a list of discovered book-path groupings, create new books,
  * attach new format relations to existing books, and return the
@@ -102,7 +138,10 @@ export async function reconcileDiscoveredPaths(
   for (const bookPath of input.bookPaths) {
     if (input.signal.aborted) return result
 
-    const globalMatch = findMatchingBook(currentAll, bookPath)
+    const fastMatch = findMatchingBook(currentAll, bookPath)
+    const globalMatch =
+      fastMatch ?? (await findMatchingBookByRealpath(currentAll, bookPath))
+
     const scopedMatch =
       globalMatch &&
       currentScoped.some((book) => book.uuid === globalMatch.uuid)

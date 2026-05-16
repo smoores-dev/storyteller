@@ -19,16 +19,6 @@ import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-function normalizeWatcherEntries(raw: unknown): ImportPathEntry[] {
-  if (!Array.isArray(raw) || raw.length === 0) return []
-
-  return raw.map((item) =>
-    typeof item === "string"
-      ? ({ path: item } satisfies ImportPathEntry)
-      : (item as ImportPathEntry),
-  )
-}
-
 function standardFilter(path: string): boolean {
   return (
     (path.endsWith(".epub") || isAudioFile(path)) &&
@@ -74,7 +64,7 @@ export class Watcher {
     }
 
     for (const collection of collections) {
-      const entries = normalizeWatcherEntries(collection.importPaths)
+      const entries = (collection.importPaths as ImportPathEntry[] | null) ?? []
       if (entries.length === 0) continue
 
       const controller = new AbortController()
@@ -142,7 +132,7 @@ export class Watcher {
     }
 
     const collection = await getCollection(uuid)
-    const entries = normalizeWatcherEntries(collection.importPaths)
+    const entries = (collection.importPaths as ImportPathEntry[] | null) ?? []
 
     if (entries.length === 0) {
       return
@@ -150,7 +140,10 @@ export class Watcher {
 
     const controller = new AbortController()
     this.controllers.set(uuid, controller)
-    this.collectionImportPaths.set(uuid, entries.map((e) => e.path))
+    this.collectionImportPaths.set(
+      uuid,
+      entries.map((e) => e.path),
+    )
 
     for (const entry of entries) {
       this.startWatcher(

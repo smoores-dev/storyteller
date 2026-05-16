@@ -182,7 +182,11 @@ export default async function writeMetadataToFiles({
     try {
       await deleteCachedCoverImages(bookUuid)
     } catch (e) {
-      logger.error({ msg: "Failed to delete cached cover images", bookUuid, err: e })
+      logger.error({
+        msg: "Failed to delete cached cover images",
+        bookUuid,
+        err: e,
+      })
     }
   }
 }

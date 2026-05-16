@@ -64,8 +64,16 @@
             "title": "Automatisch Importeren",
             "description": "Configureer automatische boekimport vanuit een folder",
             "explanation": "Je kan Storyteller instellen om automatisch (audio)boeken te importeren vanuit een specifieke folder. Als je dit inschakelt, zal Storyteller automatisch nieuwe (audio)boeken in de ingestelde folder importeren.",
-            "importPath": "Importpad",
-            "importPathPlaceholder": "/folder/naar/boeken"
+            "importPath": "Importpaden",
+            "importPathPlaceholder": "/folder/naar/boeken",
+            "useDefault": "standaard",
+            "defaultImportMode": "Standaard importmodus",
+            "defaultImportModeDescription": "Hoe bestanden in importmappen verwerkt worden. Individuele paden kunnen dit overschrijven.",
+            "addPath": "Pad toevoegen",
+            "modeReference": "Bewaren in originele folder",
+            "modeCopy": "Kopiëren naar interne Storyteller folder",
+            "modeMove": "Verplaatsen naar interne Storyteller folder",
+            "modeHardlink": "Hard link"
           },
           "readaloudLocation": {
             "title": "Readaloud Locatie",
@@ -86,8 +94,7 @@
             "cronExpressionDescription": "Standaard cron syntax (minuut uur dag maand weekdag). De expressie wordt uitgevoerd in de tijdzone van de server.",
             "cronHelper": "Cron expressie referentie (crontab.guru)",
 
-            "scanWithDefaults": "Start scan",
-            "forceRescan": "Forceer herscan (lees metadata opnieuw uit bestanden ook al is deze ongewijzigd sinds de laatste scan)",
+            "scanNote": "Leest alle importpaden en boekmetadata opnieuw in, ook als bestanden niet zijn gewijzigd sinds de laatste scan.",
             "scanRunning": "Scan wordt uitgevoerd ({source})",
             "cancelScan": "Annuleer scan",
             "enableScheduledScans": "Voer scans op een schema uit",
@@ -100,11 +107,6 @@
             "modeCustom": "Aangepast",
             "showAdvancedOverrides": "Toon instellingen per veld",
             "showSimpleOverrides": "Gebruik een enkele instelling voor alle velden",
-            "scanModalTitle": "Bibliotheek scannen",
-            "scanModalDescription": "Stel het metadata gedrag in voor deze scan. Deze instellingen zijn vooraf ingevuld met je standaard instellingen.",
-            "scanModalConfirm": "Begin scan",
-            "scanModalCancel": "Annuleren",
-
             "fieldTitle": "Titel",
             "fieldSubtitle": "Ondertitel",
             "fieldDescription": "Omschrijving",

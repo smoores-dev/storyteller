@@ -14,6 +14,7 @@ import { type UUID } from "@/uuid"
 
 import { getBooks } from "./books"
 import { db } from "./connection"
+import { validateNoDuplicatePaths } from "./importPaths"
 import { type DB } from "./schema"
 import { getCollectionImportPaths, getSetting } from "./settings"
 import { type ImportPathEntry } from "./settingsTypes"
@@ -21,36 +22,6 @@ import { type ImportPathEntry } from "./settingsTypes"
 export type Collection = Selectable<DB["collection"]>
 export type NewCollection = Insertable<DB["collection"]>
 export type CollectionUpdate = Updateable<DB["collection"]>
-
-function normalizeImportPathEntries(
-  raw: unknown,
-): ImportPathEntry[] | null {
-  if (!Array.isArray(raw) || raw.length === 0) return null
-
-  return raw.map((item) =>
-    typeof item === "string" ? { path: item } : (item as ImportPathEntry),
-  )
-}
-
-function serializeImportPaths(
-  paths: ImportPathEntry[] | null,
-): string | null {
-  if (!paths || paths.length === 0) return null
-  return JSON.stringify(paths)
-}
-
-function validateNoDuplicatePaths(paths: ImportPathEntry[] | null) {
-  if (!paths) return
-
-  const seen = new Set<string>()
-
-  for (const entry of paths) {
-    if (seen.has(entry.path)) {
-      throw new Error(`duplicate import path: "${entry.path}"`)
-    }
-    seen.add(entry.path)
-  }
-}
 
 async function getAllImportPaths(
   excludeCollectionUuid?: UUID,
@@ -174,7 +145,7 @@ export async function createCollection(
   const insert: NewCollection = {
     ...rest,
     ...(importPaths !== undefined && {
-      importPaths: serializeImportPaths(importPaths),
+      importPaths: importPaths ? JSON.stringify(importPaths) : null,
     }),
   }
 
@@ -221,7 +192,7 @@ export async function updateCollection(
   const update: CollectionUpdate = {
     ...rest,
     ...(importPaths !== undefined && {
-      importPaths: serializeImportPaths(importPaths),
+      importPaths: importPaths ? JSON.stringify(importPaths) : null,
     }),
   }
 
@@ -260,8 +231,8 @@ export async function updateCollection(
 
   await getWatcher().update(uuid)
 
-  const prevEntries = normalizeImportPathEntries(previousCollection.importPaths)
-  const nextEntries = normalizeImportPathEntries(collection.importPaths)
+  const prevEntries = previousCollection.importPaths as ImportPathEntry[] | null
+  const nextEntries = collection.importPaths as ImportPathEntry[] | null
   const prevPathSet = new Set((prevEntries ?? []).map((e) => e.path))
   const addedPaths = (nextEntries ?? [])
     .map((e) => e.path)

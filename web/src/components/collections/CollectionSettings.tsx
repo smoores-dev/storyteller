@@ -27,16 +27,6 @@ import {
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
-function normalizeImportPathEntries(
-  raw: unknown,
-): ImportPathEntry[] | null {
-  if (!Array.isArray(raw) || raw.length === 0) return null
-
-  return raw.map((item) =>
-    typeof item === "string" ? { path: item } : (item as ImportPathEntry),
-  )
-}
-
 interface Props {
   uuid: UUID
 }
@@ -62,7 +52,8 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection?.public ?? true,
       users: collection?.users.map((user) => user.id) ?? [],
       description: collection?.description ?? null,
-      importPaths: normalizeImportPathEntries(collection?.importPaths),
+      importPaths:
+        (collection?.importPaths as ImportPathEntry[] | null) ?? null,
     },
   })
 
@@ -74,7 +65,7 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection.public,
       users: collection.users.map((user) => user.id),
       description: collection.description,
-      importPaths: normalizeImportPathEntries(collection.importPaths),
+      importPaths: (collection.importPaths as ImportPathEntry[] | null) ?? null,
     })
   }, [collection]) // eslint-disable-line react-hooks/exhaustive-deps
 

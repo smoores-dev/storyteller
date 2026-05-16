@@ -289,9 +289,7 @@ export function BookEditForm({ book }: Props) {
               description={(() => {
                 const parts: string[] = []
                 if (book.ebook) {
-                  parts.push(
-                    `ebook (${book.ebook.pageCount ?? "unknown"})`,
-                  )
+                  parts.push(`ebook (${book.ebook.pageCount ?? "unknown"})`)
                 }
                 if (book.readaloud) {
                   parts.push(

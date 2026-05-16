@@ -8,6 +8,7 @@ import { env } from "@/env"
 import { logger } from "@/logging"
 
 import { db } from "./connection"
+import { validateNoDuplicatePaths } from "./importPaths"
 import {
   ConfigFileSchema,
   type ImportPathEntry,
@@ -101,33 +102,6 @@ export function getConfigLockedKeys(): Set<keyof Settings> {
   return loadConfigFile().keys
 }
 
-// handles legacy single-string values, string arrays, and the literal string "null"
-function normalizeImportPaths(raw: unknown): ImportPathEntry[] | null {
-  if (raw === null || raw === undefined || raw === "null") return null
-
-  if (typeof raw === "string") return [{ path: raw }]
-
-  if (Array.isArray(raw)) {
-    if (raw.length === 0) return null
-
-    return raw.map((item) =>
-      typeof item === "string" ? { path: item } : (item as ImportPathEntry),
-    )
-  }
-
-  return null
-}
-
-function normalizeSettingValue<Name extends keyof Settings>(
-  name: Name,
-  value: unknown,
-): Settings[Name] {
-  if (name === "importPath") {
-    return normalizeImportPaths(value) as Settings[Name]
-  }
-  return value as Settings[Name]
-}
-
 export async function getSetting<Name extends keyof Settings>(name: Name) {
   const { settings: configSettings, keys } = loadConfigFile()
 
@@ -142,10 +116,10 @@ export async function getSetting<Name extends keyof Settings>(name: Name) {
     .orderBy("createdAt", "desc")
     .executeTakeFirstOrThrow()
 
-  return normalizeSettingValue(
-    name,
-    typeof valueJson === "string" ? JSON.parse(valueJson) : valueJson,
-  )
+  const parsed: unknown =
+    typeof valueJson === "string" ? JSON.parse(valueJson) : valueJson
+
+  return parsed as Settings[Name]
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -162,7 +136,7 @@ export async function getSettings(): Promise<Settings> {
         : row.value
     return {
       ...acc,
-      [name]: normalizeSettingValue(name, parsed),
+      [name]: parsed,
     }
   }, {}) as Settings
 
@@ -185,19 +159,6 @@ function computeNewImportPaths(
   return (next ?? []).filter((e) => !prevSet.has(e.path)).map((e) => e.path)
 }
 
-function validateNoDuplicatePaths(paths: ImportPathEntry[] | null) {
-  if (!paths) return
-
-  const seen = new Set<string>()
-
-  for (const entry of paths) {
-    if (seen.has(entry.path)) {
-      throw new Error(`duplicate import path: "${entry.path}"`)
-    }
-    seen.add(entry.path)
-  }
-}
-
 export async function getCollectionImportPaths(): Promise<Set<string>> {
   const rows = await db
     .selectFrom("collection")
@@ -207,8 +168,8 @@ export async function getCollectionImportPaths(): Promise<Set<string>> {
 
   return new Set(
     rows.flatMap((row) =>
-      ((row.importPaths ?? []) as (string | ImportPathEntry)[]).map((item) =>
-        typeof item === "string" ? item : item.path,
+      ((row.importPaths ?? []) as unknown as ImportPathEntry[]).map(
+        (e) => e.path,
       ),
     ),
   )

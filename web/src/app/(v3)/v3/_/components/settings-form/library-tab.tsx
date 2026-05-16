@@ -1,6 +1,6 @@
 "use client"
 
-import { IconChevronDown } from "@tabler/icons-react"
+import { IconPlus, IconTrash } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useWatch } from "react-hook-form"
@@ -10,6 +10,7 @@ import {
   minutesToCronExpression,
 } from "@/assets/library/scanner/triggers/cron"
 import {
+  type ImportPathEntry,
   METADATA_FIELDS,
   type MetadataField,
   type MetadataFieldMode,
@@ -31,22 +32,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@v3/_/components/ui/card"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@v3/_/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuTrigger,
-} from "@v3/_/components/ui/dropdown-menu"
 import { Input } from "@v3/_/components/ui/input"
 import { Label } from "@v3/_/components/ui/label"
 import {
@@ -114,8 +99,68 @@ function LibrarySection() {
   )
 }
 
+const USE_DEFAULT_VALUE = "__default__"
+
 function AutoImportSection() {
   const t = useTranslations("SettingsPage.tabs.library.sections.autoImport")
+
+  const IMPORT_MODE_OPTIONS = [
+    { value: USE_DEFAULT_VALUE, label: t("useDefault") },
+    { value: "reference", label: t("modeReference") },
+    { value: "copy", label: t("modeCopy") },
+    { value: "move", label: t("modeMove") },
+    { value: "hardlink", label: t("modeHardlink") },
+  ]
+
+  const { form, lockedSettings } = useSettingsForm()
+  const importPath = useWatch({ control: form.control, name: "importPath" })
+  const entries = importPath ?? []
+  const isLocked = lockedSettings.has("importPath")
+
+  const [newPath, setNewPath] = useState("")
+
+  function updateEntries(next: ImportPathEntry[]) {
+    form.setValue("importPath", next.length === 0 ? null : next, {
+      shouldDirty: true,
+    })
+  }
+
+  function addPath() {
+    const trimmed = newPath.trim()
+    if (!trimmed) {
+      return
+    }
+
+    const isDuplicate = entries.some((e) => e.path === trimmed)
+    if (isDuplicate) {
+      return
+    }
+
+    updateEntries([...entries, { path: trimmed }])
+    setNewPath("")
+  }
+
+  function removePath(index: number) {
+    updateEntries(entries.filter((_, i) => i !== index))
+  }
+
+  function updateImportMode(index: number, mode: string) {
+    const existing = entries[index]
+    if (!existing) {
+      return
+    }
+
+    const next = [...entries]
+    next[index] = {
+      ...existing,
+      importMode:
+        mode === USE_DEFAULT_VALUE
+          ? null
+          : (mode as ImportPathEntry["importMode"]),
+    }
+    updateEntries(next)
+  }
+
   return (
     <SettingsSection tab="library" section="autoImport">
       <Card>
@@ -126,23 +171,114 @@ function AutoImportSection() {
           <CardDescription>{t("description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">{t("explanation")}</p>
+          <p className="text-muted-foreground text-xs">{t("explanation")}</p>
+
           <SettingsFormField
-            name="importPath"
-            label={t("importPath")}
-            render={(field, fieldState, isLocked) => (
-              <Input
-                id="importPath"
-                disabled={isLocked}
-                placeholder={t("importPathPlaceholder")}
-                value={field["value"] ?? ""}
-                onChange={(e) => {
-                  field["onChange"](e.target.value || null)
-                }}
-                aria-invalid={fieldState.invalid}
-              />
+            name="importMode"
+            label={t("defaultImportMode")}
+            description={t("defaultImportModeDescription")}
+            render={(field, _, fieldLocked) => (
+              <Select
+                disabled={fieldLocked}
+                value={field.value}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className="max-w-fit">
+                  <SelectValue>
+                    {IMPORT_MODE_OPTIONS.find((o) => o.value === field.value)
+                      ?.label ?? t("defaultImportMode")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {IMPORT_MODE_OPTIONS.filter(
+                    (o) => o.value !== USE_DEFAULT_VALUE,
+                  ).map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           />
+
+          {entries.length > 0 && (
+            <div className="space-y-2">
+              <Label>{t("importPath")}</Label>
+
+              {entries.map((entry, i) => (
+                <div key={i} className="flex items-center gap-2 p-1">
+                  <span className="min-w-0 flex-1 truncate text-xs">
+                    {entry.path}
+                  </span>
+
+                  <Select
+                    disabled={isLocked}
+                    value={entry.importMode ?? USE_DEFAULT_VALUE}
+                    onValueChange={(v: string | null) => {
+                      updateImportMode(i, v ?? "")
+                    }}
+                  >
+                    <SelectTrigger className="shrink-0">
+                      <SelectValue>
+                        {IMPORT_MODE_OPTIONS.find(
+                          (o) => o.value === entry.importMode,
+                        )?.label ?? t("defaultImportMode")}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IMPORT_MODE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={isLocked}
+                    onClick={() => {
+                      removePath(i)
+                    }}
+                    className="text-destructive shrink-0"
+                  >
+                    <IconTrash size={16} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!isLocked && (
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder={t("importPathPlaceholder")}
+                value={newPath}
+                onChange={(e) => {
+                  setNewPath(e.target.value)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    addPath()
+                  }
+                }}
+                className="min-w-0 flex-1"
+              />
+
+              <Button
+                variant="outline"
+                size="default"
+                onClick={addPath}
+                disabled={!newPath.trim()}
+              >
+                <IconPlus size={14} className="mr-1" />
+                {t("addPath")}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </SettingsSection>
@@ -295,138 +431,33 @@ export function MetadataFieldOverridesEditor({
   )
 }
 
-function ScanModal({
-  open,
-  onOpenChange,
-  onConfirm,
-  savedOverrides,
-  t,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onConfirm: (overrides: MetadataFieldOverrides, force: boolean) => void
-  savedOverrides: MetadataFieldOverrides
-  t: ReturnType<typeof useTranslations>
-}) {
-  const [localOverrides, setLocalOverrides] =
-    useState<MetadataFieldOverrides>(savedOverrides)
-  const [force, setForce] = useState(false)
-
-  const handleOpen = (next: boolean) => {
-    if (next) {
-      setLocalOverrides(savedOverrides)
-      setForce(false)
-    }
-    onOpenChange(next)
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("scanModalTitle")}</DialogTitle>
-          <DialogDescription>{t("scanModalDescription")}</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 px-6 pb-2">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="scanModalForce"
-              checked={force}
-              onCheckedChange={setForce}
-            />
-            <Label htmlFor="scanModalForce">{t("forceRescan")}</Label>
-          </div>
-
-          <MetadataFieldOverridesEditor
-            value={localOverrides}
-            onChange={setLocalOverrides}
-            t={t}
-          />
-        </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" size="sm" />}>
-            {t("scanModalCancel")}
-          </DialogClose>
-          <Button
-            size="sm"
-            onClick={() => {
-              onConfirm(localOverrides, force)
-              onOpenChange(false)
-            }}
-          >
-            {t("scanModalConfirm")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 function ScanTriggerButton({
   scanState,
   isTriggeringScan,
   triggerScan,
-  savedOverrides,
 }: {
   scanState: { running: boolean; source: string | null } | undefined
   isTriggeringScan: boolean
-  triggerScan: (args: {
-    force?: boolean
-    metadataFieldOverrides?: MetadataFieldOverrides
-  }) => void
-  savedOverrides: MetadataFieldOverrides
+  triggerScan: (args: { force?: boolean }) => void
 }) {
   const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
-  const [modalOpen, setModalOpen] = useState(false)
   const [cancelScan, { isLoading: isCancelling }] = useCancelScanMutation()
   const isDisabled = scanState?.running || isTriggeringScan
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <div className="flex items-center">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-r-none border-r-0"
-            disabled={isDisabled}
-            onClick={() => {
-              setModalOpen(true)
-            }}
-          >
-            {t("scanLibrary")}
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              disabled={isDisabled}
-              className="border-border dark:bg-input/30 hover:bg-input/50 inline-flex h-6 items-center rounded-r-md border px-1 text-xs disabled:pointer-events-none disabled:opacity-50"
-            >
-              <IconChevronDown size={14} />
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() => {
-                    triggerScan({})
-                  }}
-                >
-                  {t("scanWithDefaults")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    triggerScan({ force: true })
-                  }}
-                >
-                  {t("forceRescan")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenu>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isDisabled}
+          onClick={() => {
+            triggerScan({ force: true })
+          }}
+        >
+          {t("scanLibrary")}
+        </Button>
 
         {scanState?.running && (
           <Button
@@ -443,24 +474,13 @@ function ScanTriggerButton({
         )}
       </div>
 
+      <p className="text-muted-foreground text-xs">{t("scanNote")}</p>
+
       {scanState?.running && (
         <p className="text-muted-foreground text-sm">
           {t("scanRunning", { source: scanState.source ?? "unknown" })}
         </p>
       )}
-
-      <ScanModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        savedOverrides={savedOverrides}
-        onConfirm={(overrides, force) => {
-          triggerScan({
-            ...(force && { force: true }),
-            metadataFieldOverrides: overrides,
-          })
-        }}
-        t={t}
-      />
     </div>
   )
 }
@@ -508,13 +528,9 @@ function ScanControlsSection() {
             <ScanTriggerButton
               scanState={scanState}
               isTriggeringScan={isTriggeringScan}
-              savedOverrides={currentOverrides}
               triggerScan={(args) => {
                 void triggerScan({
                   ...(args.force !== undefined && { force: args.force }),
-                  ...(args.metadataFieldOverrides && {
-                    metadataFieldOverrides: args.metadataFieldOverrides,
-                  }),
                 })
               }}
             />

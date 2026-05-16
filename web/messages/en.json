@@ -64,8 +64,16 @@
             "title": "Auto-Import",
             "description": "Configure automatic book import from a directory",
             "explanation": "Storyteller can be configured to automatically import book files from a specific directory. When enabled, Storyteller will set up a filesystem watcher for the directory and automatically import any new book files it finds.",
-            "importPath": "Import path",
-            "importPathPlaceholder": "/path/to/books"
+            "importPath": "Import paths",
+            "importPathPlaceholder": "/path/to/books",
+            "useDefault": "default",
+            "defaultImportMode": "Default import mode",
+            "defaultImportModeDescription": "How to handle files found in import directories. Individual paths can override this.",
+            "addPath": "Add path",
+            "modeReference": "Reference in place",
+            "modeCopy": "Copy to library",
+            "modeMove": "Move to library",
+            "modeHardlink": "Hard link"
           },
           "readaloudLocation": {
             "title": "Readaloud Location",
@@ -80,8 +88,7 @@
             "title": "Library Scanning",
             "description": "Scan your library for new files and changes. Scans check all tracked books and import paths for additions, removals, and modified files.",
             "scanLibrary": "Scan library",
-            "scanWithDefaults": "Scan with default settings",
-            "forceRescan": "Force rescan (re-read metadata from files even if unchanged since last scan)",
+            "scanNote": "Re-reads all import paths and book metadata, even if files haven't changed since the last scan.",
             "scanRunning": "Scan in progress ({source})",
             "cancelScan": "Cancel scan",
             "enableScheduledScans": "Run scans on a schedule",
@@ -109,11 +116,7 @@
             "modeAlways": "Always override",
             "modeCustom": "Custom",
             "showAdvancedOverrides": "Show per-field settings",
-            "showSimpleOverrides": "Use a single setting for all fields",
-            "scanModalTitle": "Scan library",
-            "scanModalDescription": "Configure the metadata read behavior for this scan. These settings are prefilled from your saved defaults.",
-            "scanModalConfirm": "Start scan",
-            "scanModalCancel": "Cancel"
+            "showSimpleOverrides": "Use a single setting for all fields"
           }
         }
       },

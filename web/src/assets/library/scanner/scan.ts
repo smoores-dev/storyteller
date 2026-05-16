@@ -494,18 +494,6 @@ export async function scan(opts: {
   }
 }
 
-function normalizeEntries(
-  raw: unknown,
-): ImportPathEntry[] {
-  if (!Array.isArray(raw) || raw.length === 0) return []
-
-  return raw.map((item) =>
-    typeof item === "string"
-      ? ({ path: item } satisfies ImportPathEntry)
-      : (item as ImportPathEntry),
-  )
-}
-
 export async function scanLibrary(opts: {
   source: ScanSource
   options?: ScanOptions
@@ -530,7 +518,7 @@ export async function scanLibrary(opts: {
   }
 
   for (const collection of collections) {
-    const entries = normalizeEntries(collection.importPaths)
+    const entries = (collection.importPaths as ImportPathEntry[] | null) ?? []
     if (entries.length === 0) continue
 
     for (const entry of entries) {

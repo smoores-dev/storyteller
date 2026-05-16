@@ -1,5 +1,5 @@
 import { type Dirent } from "node:fs"
-import { mkdir, readdir, rm } from "node:fs/promises"
+import { mkdir, readdir, realpath, rm } from "node:fs/promises"
 import { basename, dirname, extname, join, resolve } from "node:path"
 
 import {
@@ -360,6 +360,15 @@ function isENOENT(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === "ENOENT"
 }
 
+// resolves symlinks, bind mounts, and relative paths to a single canonical form
+export async function canonicalizePath(p: string): Promise<string> {
+  try {
+    return await realpath(p)
+  } catch {
+    return resolve(p)
+  }
+}
+
 function dedupeBookPaths(paths: BookPath[]): BookPath[] {
   const seen = new Set<string>()
   const deduped: BookPath[] = []
@@ -393,12 +402,22 @@ export async function discoverBookPathsForRoots(
   const audiobookPathsSet = new Set<string>()
   const bookPaths: BookPath[] = []
 
+  // canonicalize root paths so different representations of the same
+  // directory (relative, absolute, symlinked, bind-mounted) all produce
+  // identical file paths downstream
+  const canonicalRoots = await Promise.all(
+    roots.map(async (r) => ({
+      ...r,
+      rootPath: await canonicalizePath(r.rootPath),
+    })),
+  )
+
   const epub2BackupSuffix = await getSetting("epub2BackupSuffix")
   const skipPaths = new Set(
     (await getImportSkipPaths()).map((row) => row.filepath),
   )
   const seenSkipPaths = new Set<string>()
-  const walkedRoots = roots.map((r) => resolve(r.rootPath))
+  const walkedRoots = canonicalRoots.map((r) => resolve(r.rootPath))
   const isUnderWalkedRoot = (p: string) => {
     const resolved = resolve(p)
     return walkedRoots.some(
@@ -406,7 +425,7 @@ export async function discoverBookPathsForRoots(
     )
   }
 
-  for (const root of roots) {
+  for (const root of canonicalRoots) {
     if (signal.aborted) {
       return []
     }
