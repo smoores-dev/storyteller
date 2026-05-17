@@ -124,7 +124,7 @@ export interface Collection {
   createdAt: Generated<string>
   description: string | null
   importPaths: ColumnType<
-    string[] | null,
+    import("@/database/settingsTypes").ImportPathEntry[] | null,
     string | null | undefined,
     string | null
   >

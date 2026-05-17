@@ -1,7 +1,4 @@
-import { sql } from "kysely"
-
 import { db } from "@/database/connection"
-import { type UUID } from "@/uuid"
 
 type ImportPathEntry = { path: string; importMode?: string | null }
 
@@ -11,7 +8,7 @@ function normalizeValue(raw: unknown): ImportPathEntry[] | null {
   }
 
   if (typeof raw === "string") {
-    return [{ path: raw }]
+    return [{ path: raw, importMode: null }]
   }
 
   if (!Array.isArray(raw) || raw.length === 0) {
@@ -19,7 +16,9 @@ function normalizeValue(raw: unknown): ImportPathEntry[] | null {
   }
 
   return raw.map((item) =>
-    typeof item === "string" ? { path: item } : (item as ImportPathEntry),
+    typeof item === "string"
+      ? { path: item, importMode: null }
+      : (item as ImportPathEntry),
   )
 }
 
@@ -55,25 +54,23 @@ async function normalizeSettingsImportPath() {
 
 async function normalizeCollectionImportPaths() {
   // need to do raw selection to avoid pre-deserialization
-  const rows = await sql<{
-    uuid: UUID
-    import_paths: string | null
-  }>`SELECT uuid, import_paths FROM collection WHERE import_paths IS NOT NULL`.execute(
-    db,
-  )
+  const importPaths = await db
+    .selectFrom("collection")
+    .select(["importPaths", "uuid"])
+    .where("importPaths", "is not", null)
+    .execute()
 
-  for (const row of rows.rows) {
-    if (!row.import_paths) {
+  for (const row of importPaths) {
+    if (!row.importPaths) {
       continue
     }
 
-    const parsed = JSON.parse(row.import_paths) as unknown
-    const normalized = normalizeValue(parsed)
+    const normalized = normalizeValue(row.importPaths)
     const serialized = normalized ? JSON.stringify(normalized) : null
 
-    if (row.import_paths === serialized) {
-      continue
-    }
+    // if (row.import_paths === serialized) {
+    //   continue
+    // }
 
     await db.transaction().execute(async (trx) => {
       await trx
