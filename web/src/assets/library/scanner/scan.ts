@@ -1,11 +1,14 @@
 import {
   type ImportPathChange,
   coalesceChanges,
-  getDiscoveryRootsFromChanges,
+  groupChangesByBookFolder,
   isWithinPath,
   pathsOverlap,
 } from "@/assets/library/changes"
-import { discoverBookPathsForRoots } from "@/assets/library/discovery"
+import {
+  buildBookPathsFromChanges,
+  discoverBookPathsForRoots,
+} from "@/assets/library/discovery"
 import {
   type UnclassifiedEpub,
   reconcileDiscoveredPaths,
@@ -301,7 +304,10 @@ async function resolveChangedPaths(
   const knownReadaloudPaths = new Set(
     scoped.map((b) => b.readaloud?.filepath).filter((p): p is string => !!p),
   )
-  const discoveryRoots = getDiscoveryRootsFromChanges(
+  const knownAudiobookPaths = new Set(
+    scoped.map((b) => b.audiobook?.filepath).filter((p): p is string => !!p),
+  )
+  const changesByBookFolder = groupChangesByBookFolder(
     task.importPath,
     normalized,
   )
@@ -309,13 +315,15 @@ async function resolveChangedPaths(
   let newFormatsByBook = new Map<UUID, Set<ScanFormat>>()
   let unclassifiedEpubs: UnclassifiedEpub[] = []
 
-  if (discoveryRoots.length) {
-    const discovered = await discoverBookPathsForRoots(
-      discoveryRoots.map((rootPath) => ({ rootPath, warnIfFileAtRoot: false })),
+  if (changesByBookFolder.size) {
+    const discovered = await buildBookPathsFromChanges({
+      importPath: task.importPath,
+      changesByBookFolder,
       knownEbookPaths,
       knownReadaloudPaths,
-      ctx.signal,
-    )
+      knownAudiobookPaths,
+      signal: ctx.signal,
+    })
 
     const reconciled = await reconcileDiscoveredPaths({
       bookPaths: discovered,

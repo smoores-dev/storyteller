@@ -1,3 +1,5 @@
+// TODO: rewrite this shit, it's confusing
+
 import { type Dirent } from "node:fs"
 import { mkdir, readdir, realpath, rm } from "node:fs/promises"
 import { basename, dirname, extname, join, resolve } from "node:path"
@@ -30,7 +32,7 @@ import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { normalizePath } from "./changes"
+import { type ImportPathChange, normalizePath } from "./changes"
 import { cacheAudioCover, cacheTextCover } from "./coverCache"
 import { isInsideInternalDirectory } from "./internalDirs"
 import { type ScanFormat } from "./scanner/types"
@@ -583,6 +585,157 @@ export async function discoverBookPathsForRoots(
   )
   if (staleSkipPaths.length > 0) {
     await removeImportSkipPaths(staleSkipPaths)
+  }
+
+  return dedupeBookPaths(bookPaths)
+}
+
+type BuildFromChangesInput = {
+  importPath: string
+  changesByBookFolder: Map<string, ImportPathChange[]>
+  knownEbookPaths: Set<string>
+  knownReadaloudPaths: Set<string>
+  knownAudiobookPaths: Set<string>
+  signal: AbortSignal
+}
+
+/**
+ * Build BookPath[] directly from watcher change events without doing a
+ * recursive walk of the import root. For each bucket of changes grouped by
+ * book folder, we do at most one non-recursive readdir — and only when there's
+ * an unknown epub or unknown audiobook dir that needs sibling/pairing lookup.
+ * Changes to already-mapped files produce no BookPath at all (the per-change
+ * format detection in formatsAffectedByChanges handles the rescan).
+ */
+export async function buildBookPathsFromChanges(
+  input: BuildFromChangesInput,
+): Promise<BookPath[]> {
+  const epub2BackupSuffix = await getSetting("epub2BackupSuffix")
+  const skipPaths = new Set(
+    (await getImportSkipPaths()).map((row) => row.filepath),
+  )
+
+  const bookPaths: BookPath[] = []
+  const normalizedImportPath = normalizePath(input.importPath)
+
+  for (const [bookFolder, changes] of input.changesByBookFolder) {
+    if (input.signal.aborted) return []
+
+    if (isInsideInternalDirectory(bookFolder)) continue
+
+    // partition changes by format
+    const epubChanges: ImportPathChange[] = []
+    const audioChanges: ImportPathChange[] = []
+    for (const change of changes) {
+      const ext = extname(change.path)
+      if (ext === ".epub") {
+        if (change.path.endsWith(`${epub2BackupSuffix}.epub`)) continue
+        if (skipPaths.has(change.path)) continue
+        epubChanges.push(change)
+      } else if (isAudioFile(ext)) {
+        const parent = dirname(change.path)
+        if (skipPaths.has(parent)) continue
+        audioChanges.push(change)
+      }
+    }
+
+    // collect changed epub paths that exist (skip deletes)
+    const liveEpubPaths = epubChanges
+      .filter((c) => c.type !== "delete")
+      .map((c) => c.path)
+    const liveAudioParents = new Set(
+      audioChanges
+        .filter((c) => c.type !== "delete")
+        .map((c) => dirname(c.path)),
+    )
+
+    if (!liveEpubPaths.length && !liveAudioParents.size) continue
+
+    // figure out if any unknown content requires a sibling readdir
+    const hasUnknownEpub = liveEpubPaths.some(
+      (p) => !input.knownEbookPaths.has(p) && !input.knownReadaloudPaths.has(p),
+    )
+    const hasUnknownAudiobook = [...liveAudioParents].some(
+      (p) => !input.knownAudiobookPaths.has(p),
+    )
+
+    if (!hasUnknownEpub && !hasUnknownAudiobook) {
+      // all changes are to already-mapped files; per-format rescan via
+      // formatsAffectedByChanges is enough — no BookPath needed.
+      continue
+    }
+
+    // a single non-recursive readdir to find sibling epubs in this folder
+    // (the recursive walker pairs same-dir epubs together; we replicate that
+    // without walking deeper). audiobook dirs nested one level deep are
+    // already known via the watcher's separate events for the audio files.
+    let entries: Dirent[] = []
+    try {
+      entries = await readdir(bookFolder, { withFileTypes: true })
+    } catch (error) {
+      if (!isENOENT(error)) throw error
+      // folder gone (rapid delete); nothing to discover
+      continue
+    }
+
+    const epubsInFolder = new Set<string>(liveEpubPaths)
+    const isRootFolder = bookFolder === normalizedImportPath
+    for (const entry of entries) {
+      if (!entry.isFile() && !entry.isSymbolicLink()) continue
+      if (extname(entry.name) !== ".epub") continue
+      if (entry.name.endsWith(`${epub2BackupSuffix}.epub`)) continue
+      const fullPath = join(bookFolder, entry.name)
+      if (skipPaths.has(fullPath)) continue
+      // mirror the recursive walker's root-file warning: when an epub is
+      // directly at the import root we treat the folder as flat — siblings
+      // at the root are NOT considered the same book.
+      if (isRootFolder && !liveEpubPaths.includes(fullPath)) continue
+      epubsInFolder.add(fullPath)
+    }
+
+    let plainEbookPath: string | null = null
+    let readaloudPath: string | null = null
+    const unknownEpubs: string[] = []
+    for (const path of epubsInFolder) {
+      if (input.knownEbookPaths.has(path)) plainEbookPath = path
+      else if (input.knownReadaloudPaths.has(path)) readaloudPath = path
+      else unknownEpubs.push(path)
+    }
+
+    // for each audio change, the parent dir IS the audiobook dir.
+    // pair it with this bookFolder if the audiobook dir is nested under
+    // bookFolder (one level); otherwise emit a standalone audiobook BookPath.
+    let nestedAudiobookPath: string | null = null
+    const standaloneAudiobooks: string[] = []
+    for (const audioParent of liveAudioParents) {
+      if (audioParent === bookFolder) {
+        // audio sitting directly in the bookFolder — treat folder itself
+        // as the audiobook dir
+        if (!nestedAudiobookPath) nestedAudiobookPath = audioParent
+      } else if (dirname(audioParent) === bookFolder) {
+        if (!nestedAudiobookPath) nestedAudiobookPath = audioParent
+      } else {
+        standaloneAudiobooks.push(audioParent)
+      }
+    }
+
+    const hasAnything =
+      plainEbookPath ||
+      readaloudPath ||
+      nestedAudiobookPath ||
+      unknownEpubs.length > 0
+    if (hasAnything) {
+      bookPaths.push({
+        ...(plainEbookPath && { ebook: plainEbookPath }),
+        ...(readaloudPath && { readaloud: readaloudPath }),
+        ...(nestedAudiobookPath && { audiobook: nestedAudiobookPath }),
+        ...(unknownEpubs.length > 0 && { epubUnknown: unknownEpubs }),
+      })
+    }
+
+    for (const audiobookPath of standaloneAudiobooks) {
+      bookPaths.push({ audiobook: audiobookPath })
+    }
   }
 
   return dedupeBookPaths(bookPaths)

@@ -60,32 +60,38 @@ export function coalesceChanges(
   return Array.from(byPath.entries()).map(([path, type]) => ({ path, type }))
 }
 
-export function getDiscoveryRootsFromChanges(
+/**
+ * Bucket changes by the directory that should be treated as their "book
+ * folder". For files (paths with an extension), this is the parent dir;
+ * audiobook directories without an extension are bucketed by themselves.
+ * Falls back to the import root for flat layouts.
+ */
+export function groupChangesByBookFolder(
   importPath: string,
   changes: ImportPathChange[],
-): string[] {
-  const roots = new Set<string>()
+): Map<string, ImportPathChange[]> {
+  const buckets = new Map<string, ImportPathChange[]>()
   const normalizedImportPath = normalizePath(importPath)
 
   for (const change of changes) {
-    if (change.type === "delete") {
-      continue
-    }
+    const normalized = normalizePath(change.path)
+    if (!isWithinPath(normalizedImportPath, normalized)) continue
 
-    const candidateRoot = extname(change.path)
-      ? dirname(change.path)
-      : change.path
-    const normalizedCandidateRoot = normalizePath(candidateRoot)
+    const parent = extname(normalized) ? dirname(normalized) : normalized
+    const normalizedParent = normalizePath(parent)
+    // never bucket above the import root: a change directly at root level
+    // belongs to the root itself (flat layout).
+    const bookFolder = isWithinPath(normalizedImportPath, normalizedParent)
+      ? normalizedParent
+      : normalizedImportPath
 
-    if (!isWithinPath(normalizedImportPath, normalizedCandidateRoot)) {
-      continue
+    const existing = buckets.get(bookFolder)
+    if (existing) {
+      existing.push({ ...change, path: normalized })
+    } else {
+      buckets.set(bookFolder, [{ ...change, path: normalized }])
     }
-    if (normalizedCandidateRoot === normalizedImportPath) {
-      continue
-    }
-
-    roots.add(normalizedCandidateRoot)
   }
 
-  return Array.from(roots)
+  return buckets
 }

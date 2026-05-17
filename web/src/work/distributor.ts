@@ -9,6 +9,7 @@ import {
   suppressPrefix,
   unsuppressPrefix,
 } from "@/assets/library/scanner/write-intent"
+import { getReadaloudFilepath } from "@/assets/paths"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -18,6 +19,8 @@ import {
   getNextQueuePosition,
   updateBook,
 } from "@/database/books"
+import { addImportSkipPaths } from "@/database/scans"
+import { getSettings } from "@/database/settings"
 import { env } from "@/env"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
@@ -131,15 +134,59 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   if (book.readaloud?.filepath) fileSuppression.push(book.readaloud.filepath)
   if (book.audiobook?.filepath) dirSuppression.push(book.audiobook.filepath)
 
+  // predict the readaloud output path and suppress it before the worker spawns,
+  if (book.ebook?.filepath) {
+    try {
+      const settings = await getSettings()
+      const predictedReadaloudPath = getReadaloudFilepath(book, settings)
+      if (!fileSuppression.includes(predictedReadaloudPath)) {
+        fileSuppression.push(predictedReadaloudPath)
+      }
+    } catch (err) {
+      logger.warn({
+        msg: "Failed to predict readaloud filepath for suppression",
+        bookUuid,
+        err,
+      })
+    }
+  }
+
+  const refreshSuppression = () => {
+    for (const fp of fileSuppression) suppressPrefix(fp)
+    for (const dp of dirSuppression) suppressPrefix(dp)
+  }
+
   const { port1, port2 } = new MessageChannel()
 
   port2.on(
     "message",
-    async (message: {
-      requestId: UUID
-      update: BookUpdate | null
-      relations: BookRelationsUpdate
-    }) => {
+    async (
+      message:
+        | {
+            requestId: UUID
+            update: BookUpdate | null
+            relations: BookRelationsUpdate
+          }
+        | {
+            requestId: UUID
+            addSkipPaths: { bookUuid: UUID; filepath: string }[]
+          },
+    ) => {
+      // keep refreshing suppression to ensure the watcher ignores the create event
+      refreshSuppression()
+
+      if ("addSkipPaths" in message) {
+        await addImportSkipPaths(message.addSkipPaths)
+        for (const { filepath } of message.addSkipPaths) {
+          if (!fileSuppression.includes(filepath)) {
+            fileSuppression.push(filepath)
+            suppressPrefix(filepath)
+          }
+        }
+        port2.postMessage({ requestId: message.requestId, book })
+        return
+      }
+
       // readaloud filepath may change during processing, keep suppressed
       if (message.relations.readaloud?.filepath) {
         const fp = message.relations.readaloud.filepath
@@ -158,8 +205,7 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
     },
   )
 
-  for (const fp of fileSuppression) suppressPrefix(fp)
-  for (const dp of dirSuppression) suppressPrefix(dp)
+  refreshSuppression()
 
   try {
     await alignmentPiscina.run(
