@@ -2,7 +2,6 @@ import { randomBytes } from "node:crypto"
 import { rm } from "node:fs/promises"
 import { extname } from "node:path"
 
-import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { FileStore } from "@tus/file-store"
 import { Server } from "@tus/server"
 import { lookup } from "mime-types"
@@ -11,12 +10,7 @@ import { type NextRequest } from "next/server"
 import { Audiobook } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
-import {
-  getAudioCover,
-  getEpubCover,
-  writeExtractedAudiobookCover,
-  writeExtractedEbookCover,
-} from "@/assets/covers"
+import { scanBooks } from "@/assets/library/scanner/scan"
 import { isAudioFile, isZipArchive, lookupAudioMime } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"
@@ -34,8 +28,6 @@ import {
 
 /* the default naming func found in @tus/server */
 const defaultNamingFunc = () => randomBytes(16).toString("hex")
-
-const mutex = new AsyncSemaphore(1)
 
 const server = new Server({
   path: "/api/v2/books/upload",
@@ -74,7 +66,6 @@ const server = new Server({
         body: "Missing required file metadata: bookId, filename, filetype (optional)",
       }
     }
-    await mutex.wait()
 
     try {
       const bookUuid = upload.metadata["bookUuid"] as UUID | undefined
@@ -111,6 +102,7 @@ const server = new Server({
       // This hook is only called when storage has been successfully set
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const uploadPath = upload.storage!.path
+      let book: Awaited<ReturnType<typeof getBook>> = null
       if (isEpub) {
         let epub: Epub
 
@@ -133,9 +125,9 @@ const server = new Server({
           (item) => item.mediaOverlay,
         )
 
-        let book = await getBook(bookUuid)
-        if (book) {
-          book = await handleEpubExistingBook(book, uploadPath, epub, isAligned)
+        const existing = await getBook(bookUuid)
+        if (existing) {
+          book = await handleEpubExistingBook(existing, uploadPath, isAligned)
         } else {
           book = await handleEpubNewBook(
             bookUuid,
@@ -146,25 +138,6 @@ const server = new Server({
             isAligned,
           )
         }
-
-        const epubCover = await getEpubCover(book)
-        if (epubCover) {
-          await writeExtractedEbookCover(
-            book,
-            epubCover.filename,
-            epubCover.data,
-          )
-        }
-        if (isAligned) {
-          const audioCover = await getAudioCover(book)
-          if (audioCover) {
-            await writeExtractedAudiobookCover(
-              book,
-              audioCover.filename,
-              audioCover.data,
-            )
-          }
-        }
       }
 
       if (isAudiobook) {
@@ -174,17 +147,15 @@ const server = new Server({
             ? filename
             : upload.metadata["relativePath"]
 
-        let book = await getBook(bookUuid)
-
-        using audiobook = await Audiobook.from(uploadPath)
-        if (book) {
+        const existing = await getBook(bookUuid)
+        if (existing) {
           book = await handleAudiobookExistingBook(
-            book,
+            existing,
             relativePath,
             uploadPath,
-            audiobook,
           )
         } else {
+          using audiobook = await Audiobook.from(uploadPath)
           book = await handleAudiobookNewBook(
             bookUuid,
             relativePath,
@@ -192,17 +163,18 @@ const server = new Server({
             audiobook,
             collectionUuid,
           )
+          audiobook.discardAndClose()
         }
-        audiobook.discardAndClose()
+      }
 
-        const audioCover = await getAudioCover(book)
-        if (audioCover) {
-          await writeExtractedAudiobookCover(
-            book,
-            audioCover.filename,
-            audioCover.data,
-          )
-        }
+      if (book) {
+        const scanController = new AbortController()
+        await scanBooks({
+          source: "upload",
+          bookUuids: [book.uuid],
+          options: { force: true },
+          signal: scanController.signal,
+        })
       }
 
       return {}
@@ -214,7 +186,6 @@ const server = new Server({
         await rm(upload.storage.path, { force: true })
         await rm(`${upload.storage.path}.json`, { force: true })
       }
-      mutex.release()
     }
   },
 })

@@ -52,7 +52,15 @@ export type ScanResult = {
 export { cancelActiveScan, getRecentScanReports, getScanState } from "./state"
 
 function defaultConcurrency(source: ScanSource): number {
-  return source === "watcher" ? 1 : 2
+  switch (source) {
+    case "watcher":
+    case "upload":
+      return 1
+    case "manual":
+    case "scheduled":
+    case "api":
+      return 2
+  }
 }
 
 function scopedByCollections(

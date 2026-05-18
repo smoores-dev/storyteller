@@ -4,7 +4,12 @@ import { type MetadataFieldOverrides } from "@/database/settingsTypes"
 
 import { type ScanReport } from "./scanReport"
 
-export type ScanSource = "watcher" | "manual" | "scheduled"
+export type ScanSource =
+  | "watcher"
+  | "manual"
+  | "scheduled"
+  | "upload"
+  | "api"
 
 export type ScanOptions = {
   force?: boolean

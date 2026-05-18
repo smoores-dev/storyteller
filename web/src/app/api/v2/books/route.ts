@@ -8,18 +8,8 @@ import {
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
-import {
-  getAudioCover,
-  getEpubCover,
-  writeExtractedAudiobookCover,
-  writeExtractedEbookCover,
-} from "@/assets/covers"
 import { deleteAssets, move } from "@/assets/fs"
-import {
-  applyFieldOverrides,
-  getMetadataFromAudiobook,
-  getMetadataFromEpub,
-} from "@/assets/metadata"
+import { scanBooks } from "@/assets/library/scanner/scan"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -27,6 +17,7 @@ import {
   createBookFromAudiobook,
   createBookFromEpub,
   deleteBook,
+  getBook,
   getBooks,
   updateBook,
 } from "@/database/books"
@@ -184,39 +175,20 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
         },
       )
     } else {
-      const { update: epubUpdate, relations: epubRelations } =
-        await getMetadataFromEpub(epub)
-
-      const overrides = await getSetting("metadataFieldOverrides")
-      const { metadataUpdate, relationUpdate } = applyFieldOverrides(
-        overrides,
-        book,
-        epubUpdate,
-        epubRelations,
-      )
-
-      book = await updateBook(book.uuid, metadataUpdate, {
-        ...relationUpdate,
-        ebook: {
-          filepath: ebook,
-        },
+      book = await updateBook(book.uuid, null, {
+        ebook: { filepath: ebook },
         ...(collection && { collections: [collection] }),
       })
-    }
-
-    const coverImage = await getEpubCover(book)
-    if (coverImage) {
-      await writeExtractedEbookCover(book, coverImage.filename, coverImage.data)
     }
   }
 
   if (audio.length) {
-    using audiobook = await Audiobook.from(...(audio as AudiobookInputs))
     const audioDirectory =
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       audio.length === 1 ? dirname(audio[0]!) : longestPrefix(audio)
 
     if (!book) {
+      using audiobook = await Audiobook.from(...(audio as AudiobookInputs))
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const fallbackTitle = basename(audio[0]!, extname(audio[0]!))
       book = await createBookFromAudiobook(
@@ -228,37 +200,10 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
         },
       )
     } else {
-      const { update: audiobookUpdate, relations: audiobookRelations } =
-        await getMetadataFromAudiobook(audiobook)
-
-      const audioOverrides = await getSetting("metadataFieldOverrides")
-      const {
-        metadataUpdate: audioMetadataUpdate,
-        relationUpdate: audioRelationUpdate,
-      } = applyFieldOverrides(
-        audioOverrides,
-        book,
-        audiobookUpdate,
-        audiobookRelations,
-      )
-
-      book = await updateBook(book.uuid, audioMetadataUpdate, {
-        ...audioRelationUpdate,
-        audiobook: {
-          filepath: audioDirectory,
-        },
+      book = await updateBook(book.uuid, null, {
+        audiobook: { filepath: audioDirectory },
         ...(collection && { collections: [collection] }),
       })
-    }
-
-    const audioCover = await getAudioCover(book)
-
-    if (audioCover) {
-      await writeExtractedAudiobookCover(
-        book,
-        audioCover.filename,
-        audioCover.data,
-      )
     }
   }
 
@@ -269,7 +214,16 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
     )
   }
 
-  return Response.json(book)
+  // trigger book scan to get rest of metadata
+  await scanBooks({
+    source: "api",
+    bookUuids: [book.uuid],
+    options: { force: true },
+    signal: request.signal,
+  })
+
+  const reconciled = await getBook(book.uuid)
+  return Response.json(reconciled ?? book)
 })
 
 function longestPrefix(paths: string[]) {

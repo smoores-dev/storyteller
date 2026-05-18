@@ -6,11 +6,6 @@ import { type Epub } from "@storyteller-platform/epub"
 
 import { move, persistAudio, persistEpub } from "@/assets/fs"
 import {
-  applyFieldOverrides,
-  getMetadataFromAudiobook,
-  getMetadataFromEpub,
-} from "@/assets/metadata"
-import {
   getInternalAudioDirectory,
   getInternalOriginalAudioFilepath,
 } from "@/assets/paths"
@@ -20,7 +15,6 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
-import { getSetting } from "@/database/settings"
 import { type UUID } from "@/uuid"
 
 export async function handleEpubNewBook(
@@ -45,23 +39,11 @@ export async function handleEpubNewBook(
 export async function handleEpubExistingBook(
   book: BookWithRelations,
   uploadPath: string,
-  epub: Epub,
   isAligned: boolean,
 ) {
-  const { update: epubUpdate, relations: epubRelations } =
-    await getMetadataFromEpub(epub)
+  const persisted = await persistEpub(book, uploadPath, isAligned)
 
-  const overrides = await getSetting("metadataFieldOverrides")
-  const { metadataUpdate: update, relationUpdate: relations } =
-    applyFieldOverrides(overrides, book, epubUpdate, epubRelations)
-
-  const updated = await updateBook(
-    book.uuid,
-    { ...update, ...(epubUpdate?.title && { title: epubUpdate.title }) },
-    relations,
-  )
-
-  const persisted = await persistEpub(updated, uploadPath, isAligned)
+  if (!book.audiobook) return persisted
 
   // The audio was uploaded/processed first, and it's going to
   // potentially have an arbitrary book directory name. Better
@@ -101,7 +83,6 @@ export async function handleAudiobookExistingBook(
   book: BookWithRelations,
   relativePath: string,
   uploadPath: string,
-  audiobook: Audiobook,
 ) {
   const filepath = getInternalOriginalAudioFilepath(book, relativePath)
 
@@ -109,20 +90,7 @@ export async function handleAudiobookExistingBook(
 
   let updated: BookWithRelations | null = null
   if (!book.audiobook) {
-    const { update: audiobookUpdate, relations: audiobookRelations } =
-      await getMetadataFromAudiobook(audiobook)
-
-    const audiobookOverrides = await getSetting("metadataFieldOverrides")
-    const { metadataUpdate: update, relationUpdate: relations } =
-      applyFieldOverrides(
-        audiobookOverrides,
-        book,
-        audiobookUpdate,
-        audiobookRelations,
-      )
-
-    updated = await updateBook(book.uuid, update, {
-      ...relations,
+    updated = await updateBook(book.uuid, null, {
       audiobook: {
         filepath: getInternalOriginalAudioFilepath(book),
       },
