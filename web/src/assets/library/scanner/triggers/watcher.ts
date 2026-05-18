@@ -4,6 +4,7 @@ import { AsyncMutex } from "@esfx/async-mutex"
 import watcher from "@parcel/watcher"
 
 import { type ImportPathChange } from "@/assets/library/changes"
+import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
 import { scan } from "@/assets/library/scanner/scan"
 import {
   getWatcherOptions,
@@ -14,13 +15,14 @@ import { isSuppressed } from "@/assets/library/scanner/write-intent"
 import { isAudioFile } from "@/audio"
 import { getCollection, getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
-import { type ImportMode, type ImportPathEntry } from "@/database/settingsTypes"
+import { type ImportMode } from "@/database/settingsTypes"
 import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 function standardFilter(path: string): boolean {
   return (
+    !isInsideInternalDirectory(path) &&
     (path.endsWith(".epub") || isAudioFile(path)) &&
     !/\.watchman-cookie/.test(path)
   )
@@ -64,7 +66,7 @@ export class Watcher {
     }
 
     for (const collection of collections) {
-      const entries = (collection.importPaths as ImportPathEntry[] | null) ?? []
+      const entries = collection.importPaths ?? []
       if (entries.length === 0) continue
 
       const controller = new AbortController()
@@ -132,7 +134,7 @@ export class Watcher {
     }
 
     const collection = await getCollection(uuid)
-    const entries = (collection.importPaths as ImportPathEntry[] | null) ?? []
+    const entries = collection.importPaths ?? []
 
     if (entries.length === 0) {
       return
