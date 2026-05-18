@@ -20,6 +20,8 @@ import {
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useCancelScanMutation,
+  useClearImportSkipPathsMutation,
+  useGetImportSkipPathsQuery,
   useGetScanStateQuery,
   useTriggerScanMutation,
 } from "@/store/api"
@@ -53,6 +55,7 @@ export function LibraryTab() {
       <LibrarySection />
       <AutoImportSection />
       <ScanControlsSection />
+      <SkippedImportPathsSection />
       <ReadaloudLocationSection />
     </TabsContent>
   )
@@ -657,6 +660,69 @@ function ScanControlsSection() {
         </CardContent>
       </Card>
     </SettingsSection>
+  )
+}
+
+function SkippedImportPathsSection() {
+  const t = useTranslations(
+    "SettingsPage.tabs.library.sections.skippedImportPaths",
+  )
+
+  const { data: skipPaths } = useGetImportSkipPathsQuery()
+  const [clearPaths, { isLoading }] = useClearImportSkipPathsMutation()
+
+  const paths = skipPaths ?? []
+
+  const pathsWithoutBook = paths.filter((p) => !p.uuid)
+
+  if (!paths.length) {
+    return null
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("title")}</CardTitle>
+        <CardDescription>{t("description")}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="divide-border divide-y rounded-md border">
+          {paths.map(({ filepath }) => (
+            <div
+              key={filepath}
+              className="flex items-center justify-between gap-2 px-3 py-2"
+            >
+              <span className="text-foreground min-w-0 flex-1 truncate text-xs">
+                {filepath}
+              </span>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={isLoading}
+                className="text-destructive shrink-0"
+                onClick={() => {
+                  void clearPaths({ paths: [filepath] })
+                }}
+              >
+                <IconTrash size={16} />
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={isLoading}
+          onClick={() => {
+            void clearPaths({ paths: paths.map((p) => p.filepath) })
+          }}
+        >
+          {t("clearAll")}
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 

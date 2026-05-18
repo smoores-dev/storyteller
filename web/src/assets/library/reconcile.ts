@@ -3,7 +3,7 @@ import {
   getBookByAudiobookFilepathPrefix,
 } from "@/database/books"
 import { addBooksToCollections } from "@/database/collections"
-import { addImportSkipPaths } from "@/database/scans"
+import { addImportSkipPaths } from "@/database/importSkipPaths"
 import { getSetting } from "@/database/settings"
 import { type ImportMode } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"

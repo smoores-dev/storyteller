@@ -117,6 +117,11 @@
             "modeCustom": "Custom",
             "showAdvancedOverrides": "Show per-field settings",
             "showSimpleOverrides": "Use a single setting for all fields"
+          },
+          "skippedImportPaths": {
+            "title": "Skipped import paths",
+            "description": "These file paths have been excluded from auto-import. Books at these paths will not be re-imported during scans.",
+            "clearAll": "Clear all"
           }
         }
       },

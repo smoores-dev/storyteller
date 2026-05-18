@@ -21,5 +21,9 @@ export async function removeImportSkipPaths(paths: string[]) {
 }
 
 export async function getImportSkipPaths() {
-  return db.selectFrom("importSkipPath").select("filepath").execute()
+  return db
+    .selectFrom("importSkipPath")
+    .leftJoin("book", "importSkipPath.bookUuid", "book.uuid")
+    .select(["importSkipPath.filepath", "book.uuid", "book.title"])
+    .execute()
 }

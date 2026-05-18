@@ -53,9 +53,11 @@ export async function getSuggestedImportPathAction(): Promise<SuggestedImportPat
       ) =>
         eb.and([
           eb(column, "is not", null),
-          ...excludedPaths.map((excluded) =>
-            eb.not(eb(column, "like", `${escapeLike(excluded)}%`)),
-          ),
+          ...excludedPaths
+            .filter(Boolean)
+            .map((excluded) =>
+              eb.not(eb(column, "like", `${escapeLike(excluded)}%`)),
+            ),
         ])
 
       return eb.or([

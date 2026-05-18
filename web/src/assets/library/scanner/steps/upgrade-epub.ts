@@ -4,7 +4,7 @@ import { Epub } from "@storyteller-platform/epub"
 
 import { defineStep } from "@/assets/library/scanner/step2"
 import { type EpubNeedsUpgrade } from "@/assets/library/scanner/types"
-import { addImportSkipPaths } from "@/database/scans"
+import { addImportSkipPaths } from "@/database/importSkipPaths"
 import { getSetting } from "@/database/settings"
 import {
   type Epub2ImportStrategy,

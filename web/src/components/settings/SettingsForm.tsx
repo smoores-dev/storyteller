@@ -47,6 +47,8 @@ import {
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useCancelScanMutation,
+  useClearImportSkipPathsMutation,
+  useGetImportSkipPathsQuery,
   useGetMaxUploadChunkSizeQuery,
   useGetScanStateQuery,
   useTriggerScanMutation,
@@ -202,6 +204,62 @@ function V2MetadataFieldOverrides({
         </Anchor>
       )}
     </Box>
+  )
+}
+
+function SkippedImportPaths() {
+  const { data: skipPaths } = useGetImportSkipPathsQuery()
+  const [clearPaths, { isLoading }] = useClearImportSkipPathsMutation()
+
+  console.log("skipPaths", skipPaths)
+  const paths = skipPaths ?? []
+
+  const pathsWithoutBook = paths.filter((p) => !p.uuid)
+
+  if (!paths.length) {
+    return null
+  }
+
+  return (
+    <Fieldset legend="Skipped import paths">
+      <Stack>
+        <Text className="text-sm text-black opacity-70 dark:text-white">
+          These file paths have been excluded from auto-import. Books at these
+          paths will not be re-imported during scans. You can remove individual
+          paths or clear all of them.
+        </Text>
+
+        {pathsWithoutBook.map(({ filepath }) => (
+          <Group key={filepath} justify="space-between" wrap="nowrap">
+            <Text className="min-w-0 truncate text-sm">{filepath}</Text>
+
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              loading={isLoading}
+              onClick={() => {
+                void clearPaths({ paths: [filepath] })
+              }}
+            >
+              <IconTrash size={14} />
+            </ActionIcon>
+          </Group>
+        ))}
+
+        <Button
+          variant="outline"
+          color="red"
+          size="compact-sm"
+          loading={isLoading}
+          className="self-start"
+          onClick={() => {
+            void clearPaths({ paths: paths.map((p) => p.filepath) })
+          }}
+        >
+          Clear all
+        </Button>
+      </Stack>
+    </Fieldset>
   )
 }
 
@@ -494,6 +552,8 @@ export function SettingsForm({
           />
         </Stack>
       </Fieldset>
+
+      <SkippedImportPaths />
 
       <Fieldset
         legend="EPUB 2 handling"

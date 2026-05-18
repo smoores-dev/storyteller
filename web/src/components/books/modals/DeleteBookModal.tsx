@@ -1,5 +1,6 @@
 import {
   Button,
+  Checkbox,
   Group,
   Modal,
   Radio,
@@ -25,6 +26,7 @@ export function DeleteBookModal({ isOpen, onClose, book }: Props) {
   const form = useForm({
     initialValues: {
       includeAssets: "" as "" | "all" | "internal",
+      preventReImport: false,
     },
   })
 
@@ -44,13 +46,16 @@ export function DeleteBookModal({ isOpen, onClose, book }: Props) {
         </Text>
         <form
           className="flex flex-col gap-4"
-          onSubmit={form.onSubmit(async ({ includeAssets }) => {
-            await deleteBook({
-              uuid: book.uuid,
-              ...(includeAssets && { includeAssets }),
-            })
-            router.back()
-          })}
+          onSubmit={form.onSubmit(
+            async ({ includeAssets, preventReImport }) => {
+              await deleteBook({
+                uuid: book.uuid,
+                ...(includeAssets && { includeAssets }),
+                preventReImport,
+              })
+              router.back()
+            },
+          )}
         >
           <RadioGroup
             label="Delete files?"
@@ -71,6 +76,12 @@ export function DeleteBookModal({ isOpen, onClose, book }: Props) {
               />
             </Stack>
           </RadioGroup>
+
+          <Checkbox
+            label="Prevent this book from being re-imported"
+            {...form.getInputProps("preventReImport", { type: "checkbox" })}
+          />
+
           <Group justify="space-between">
             <Button variant="subtle" onClick={onClose}>
               Cancel

@@ -50,6 +50,7 @@ export const api = createApi({
     "UserReadingPreferences",
     "UserReadingState",
     "GpuBuildWarning",
+    "ImportSkipPaths",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -150,13 +151,18 @@ export const api = createApi({
     }),
     deleteBook: build.mutation<
       void,
-      { uuid: UUID; includeAssets?: "all" | "internal" }
+      {
+        uuid: UUID
+        includeAssets?: "all" | "internal"
+        preventReImport?: boolean
+      }
     >({
-      query: ({ uuid, includeAssets }) => ({
+      query: ({ uuid, includeAssets, preventReImport }) => ({
         url: `/books/${uuid}`,
         method: "DELETE",
         params: {
           includeAssets,
+          preventReImport,
         },
       }),
     }),
@@ -173,16 +179,36 @@ export const api = createApi({
     ),
     deleteBooks: build.mutation<
       void,
-      { books: UUID[]; includeAssets?: "all" | "internal" }
+      {
+        books: UUID[]
+        includeAssets?: "all" | "internal"
+        preventReImport?: boolean
+      }
     >({
-      query: ({ books, includeAssets }) => ({
+      query: ({ books, includeAssets, preventReImport }) => ({
         url: `/books`,
         method: "DELETE",
         body: {
           books,
           includeAssets,
+          preventReImport,
         },
       }),
+    }),
+    getImportSkipPaths: build.query<
+      { filepath: string; uuid: UUID | null; title: string | null }[],
+      void
+    >({
+      query: () => `/books/skip-paths`,
+      providesTags: ["ImportSkipPaths"],
+    }),
+    clearImportSkipPaths: build.mutation<void, { paths: string[] }>({
+      query: ({ paths }) => ({
+        url: `/books/skip-paths`,
+        method: "DELETE",
+        body: { paths },
+      }),
+      invalidatesTags: ["ImportSkipPaths"],
     }),
     getPosition: build.query<Position, { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}/positions`,
@@ -792,6 +818,8 @@ export const {
   useGetChangelogQuery,
   useGetLatestVersionQuery,
   useUpgradeBookEpubMutation,
+  useGetImportSkipPathsQuery,
+  useClearImportSkipPathsMutation,
 } = api
 
 export function getDownloadUrl(

@@ -245,6 +245,7 @@ export async function updateCollection(
       newPaths: addedPaths,
     })
 
+    console.log("addedPaths", addedPaths)
     void scan({
       source: "manual",
       tasks: addedPaths.map((importPath) => ({

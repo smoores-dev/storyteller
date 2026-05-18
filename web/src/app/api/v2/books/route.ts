@@ -51,10 +51,16 @@ export const GET = withHasPermission("bookList")(async (request) => {
 })
 
 export const DELETE = withHasPermission("bookDelete")(async (request) => {
-  const { books: bookUuids, includeAssets } = (await request.json()) as {
+  const {
+    books: bookUuids,
+    includeAssets,
+    preventReImport,
+  } = (await request.json()) as {
     books: UUID[]
     includeAssets?: "all" | "internal"
+    preventReImport?: boolean
   }
+
   const books = await getBooks(bookUuids, request.auth.user.id)
 
   if (books.length !== bookUuids.length) {
@@ -62,7 +68,8 @@ export const DELETE = withHasPermission("bookDelete")(async (request) => {
   }
 
   for (const book of books) {
-    await deleteBook(book.uuid)
+    await deleteBook(book.uuid, { preventReImport })
+
     if (includeAssets) {
       await deleteAssets(book, { all: includeAssets === "all" })
     }

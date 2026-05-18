@@ -26,7 +26,10 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
-import { getImportSkipPaths, removeImportSkipPaths } from "@/database/scans"
+import {
+  getImportSkipPaths,
+  removeImportSkipPaths,
+} from "@/database/importSkipPaths"
 import { getSetting } from "@/database/settings"
 import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
@@ -466,7 +469,7 @@ export async function discoverBookPathsForRoots(
           continue
         }
 
-        // belt-and-suspenders: epub2 backups are also added to importSkipPath
+        // epub2 backups are also added to importSkipPath
         // by upgrade-epub, but skip by suffix too in case the row got purged.
         if (entry.name.endsWith(`${epub2BackupSuffix}.epub`)) {
           continue

@@ -195,6 +195,7 @@ async function resolveImportPath(
     scoped.map((b) => b.readaloud?.filepath).filter((p): p is string => !!p),
   )
 
+  console.log("task.importPath", task)
   const bookPaths = await discoverBookPathsForRoots(
     [{ rootPath: task.importPath, warnIfFileAtRoot: true }],
     knownEbookPaths,

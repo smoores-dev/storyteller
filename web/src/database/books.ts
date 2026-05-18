@@ -742,7 +742,13 @@ export async function getBookByAudiobookFilepathPrefix(
     .executeTakeFirst()
 }
 
-export async function deleteBook(bookUuid: UUID, tr?: Transaction<DB>) {
+export async function deleteBook(
+  bookUuid: UUID,
+  options?: { preventReImport?: boolean },
+  tr?: Transaction<DB>,
+) {
+  const preventReImport = options?.preventReImport ?? false
+
   const callback = async (tr: Transaction<DB>) => {
     await tr
       .deleteFrom("bookToCreator")
@@ -785,13 +791,20 @@ export async function deleteBook(bookUuid: UUID, tr?: Transaction<DB>) {
     await tr.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
     await tr.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
     await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
-    // Note: importSkipPath records are intentionally preserved so deleted books
-    // aren't re-imported. They're cleaned up by the scan when files no longer exist.
-    await tr
-      .updateTable("importSkipPath")
-      .set({ bookUuid: null })
-      .where("bookUuid", "=", bookUuid)
-      .execute()
+
+    if (preventReImport) {
+      // preserve the skip path row so the scanner won't re-import this book
+      await tr
+        .updateTable("importSkipPath")
+        .set({ bookUuid: null })
+        .where("bookUuid", "=", bookUuid)
+        .execute()
+    } else {
+      await tr
+        .deleteFrom("importSkipPath")
+        .where("bookUuid", "=", bookUuid)
+        .execute()
+    }
 
     await tr.deleteFrom("book").where("uuid", "=", bookUuid).execute()
   }
@@ -1163,7 +1176,7 @@ export async function updateBook(
         .execute()
 
       for (const bookUuid of relations.books) {
-        await deleteBook(bookUuid, tr)
+        await deleteBook(bookUuid, undefined, tr)
       }
     }
 

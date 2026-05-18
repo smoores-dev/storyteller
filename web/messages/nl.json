@@ -118,6 +118,11 @@
             "fieldCreators": "Andere creatoren",
             "fieldSeries": "Serie",
             "fieldTags": "Tags"
+          },
+          "skippedImportPaths": {
+            "title": "Overgeslagen importpaden",
+            "description": "Deze bestandspaden zijn uitgesloten van automatische import. Boeken op deze paden worden niet opnieuw ge\u00efmporteerd tijdens scans.",
+            "clearAll": "Alles wissen"
           }
         }
       },

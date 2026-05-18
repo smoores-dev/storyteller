@@ -9,6 +9,7 @@ export const INTERNAL_DIRECTORY_NAMES = new Set([
   "ebook cover",
   "audiobook cover",
   ".storyteller",
+  "cover-cache",
 ])
 
 /**

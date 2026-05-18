@@ -19,7 +19,7 @@ import {
   getNextQueuePosition,
   updateBook,
 } from "@/database/books"
-import { addImportSkipPaths } from "@/database/scans"
+import { addImportSkipPaths } from "@/database/importSkipPaths"
 import { getSettings } from "@/database/settings"
 import { env } from "@/env"
 import { logger } from "@/logging"
