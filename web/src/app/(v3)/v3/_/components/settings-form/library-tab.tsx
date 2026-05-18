@@ -687,7 +687,7 @@ function SkippedImportPathsSection() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="divide-border divide-y rounded-md border">
-          {paths.map(({ filepath }) => (
+          {pathsWithoutBook.map(({ filepath }) => (
             <div
               key={filepath}
               className="flex items-center justify-between gap-2 px-3 py-2"

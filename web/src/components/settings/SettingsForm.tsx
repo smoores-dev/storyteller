@@ -211,7 +211,6 @@ function SkippedImportPaths() {
   const { data: skipPaths } = useGetImportSkipPathsQuery()
   const [clearPaths, { isLoading }] = useClearImportSkipPathsMutation()
 
-  console.log("skipPaths", skipPaths)
   const paths = skipPaths ?? []
 
   const pathsWithoutBook = paths.filter((p) => !p.uuid)
