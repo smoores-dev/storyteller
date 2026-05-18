@@ -4,7 +4,6 @@ import {
   getCollection,
   updateCollection,
 } from "@/database/collections"
-import { type ImportPathEntry } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
@@ -36,19 +35,16 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
 ) => {
   const user = request.auth.user
   const { uuid } = await context.params
-  const { users, importPaths, ...values } = (await request.json()) as {
+  const { users, ...values } = (await request.json()) as {
     name?: string
     description?: string
     public?: boolean
     users?: UUID[]
-    importPaths?: ImportPathEntry[] | null
   }
 
-  const updated = await updateCollection(
-    uuid,
-    { ...values, importPaths },
-    { users: [...(users ?? []), user.id] },
-  )
+  const updated = await updateCollection(uuid, values, {
+    users: [...(users ?? []), user.id],
+  })
 
   return Response.json(updated)
 })

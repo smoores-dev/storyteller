@@ -26,6 +26,7 @@ async function normalizeSettingsImportPath() {
   const row = await db
     .selectFrom("settings")
     .select(["value"])
+    // @ts-expect-error column changed
     .where("name", "=", "importPath")
     .executeTakeFirst()
 
@@ -48,17 +49,18 @@ async function normalizeSettingsImportPath() {
   await db
     .updateTable("settings")
     .set({ value: serialized })
+    // @ts-expect-error column changed
     .where("name", "=", "importPath")
     .execute()
 }
 
 async function normalizeCollectionImportPaths() {
   // need to do raw selection to avoid pre-deserialization
-  const importPaths = await db
+  const importPaths = (await db
     .selectFrom("collection")
     .select(["importPaths", "uuid"])
     .where("importPaths", "is not", null)
-    .execute()
+    .execute()) as unknown as { importPaths: unknown; uuid: UUID }[]
 
   for (const row of importPaths) {
     if (!row.importPaths) {
@@ -76,6 +78,7 @@ async function normalizeCollectionImportPaths() {
       await trx
         .updateTable("collection")
         .set({
+          // @ts-expect-error column changed
           importPaths: serialized,
         })
         .where("uuid", "=", row.uuid)

@@ -85,26 +85,6 @@ export default async function processBook({
     return await promise
   }
 
-  async function registerSkipPath(filepath: string) {
-    const requestId = randomUUID()
-    const promise = new Promise<void>((resolve) => {
-      function listener(message: { requestId: UUID }) {
-        if (message.requestId === requestId) {
-          port.off("message", listener)
-          resolve()
-        }
-      }
-      port.on("message", listener)
-    })
-
-    port.postMessage({
-      requestId,
-      addSkipPaths: [{ bookUuid, filepath }],
-    })
-
-    await promise
-  }
-
   let book = await getBookOrThrow(bookUuid)
 
   if (restart === "full") {
@@ -250,11 +230,6 @@ export default async function processBook({
         const readaloudFilepath = getReadaloudFilepath(book, settings)
         const readaloudDirectory = dirname(readaloudFilepath)
         await mkdir(readaloudDirectory, { recursive: true })
-
-        // pre-register the readaloud output path as an import-skip path before
-        // writing, so a watcher event firing during align() doesn't create a
-        // duplicate book. cleaned up automatically once the relation is set.
-        await registerSkipPath(readaloudFilepath)
 
         await align(
           markupFilepath,

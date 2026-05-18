@@ -1,6 +1,7 @@
 "use client"
 import {
   ActionIcon,
+  Anchor,
   Button,
   Checkbox,
   Group,
@@ -16,16 +17,53 @@ import { IconSettings } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef } from "react"
 
-import { ImportPathInput } from "@/components/ImportPathInput"
 import { UserSelect } from "@/components/books/edit/UserSelect"
-import { type ImportPathEntry } from "@/database/settingsTypes"
 import {
   useDeleteCollectionMutation,
+  useGetImportRulesQuery,
   useListCollectionsQuery,
   useListUsersQuery,
   useUpdateCollectionMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
+
+function LinkedImportRules({ collectionUuid }: { collectionUuid: UUID }) {
+  const { data: allRules = [] } = useGetImportRulesQuery()
+
+  const linkedRules = allRules.filter(
+    (r) =>
+      r.kind === "watch" &&
+      r.collections.some((c) => c.uuid === collectionUuid),
+  )
+
+  if (linkedRules.length === 0) {
+    return (
+      <Text className="text-sm opacity-70">
+        No import rules are configured for this collection.{" "}
+        <Anchor href="/settings" size="sm">
+          Configure in settings
+        </Anchor>
+      </Text>
+    )
+  }
+
+  return (
+    <Stack gap="xs">
+      <Text className="text-sm font-medium">Import rules</Text>
+
+      {linkedRules.map((rule) => (
+        <Text key={rule.uuid} className="text-sm opacity-70">
+          Watch: {rule.path}
+          {rule.importMode ? ` (${rule.importMode})` : ""}
+        </Text>
+      ))}
+
+      <Anchor href="/settings" size="sm">
+        Edit import rules in settings
+      </Anchor>
+    </Stack>
+  )
+}
 
 interface Props {
   uuid: UUID
@@ -52,8 +90,6 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection?.public ?? true,
       users: collection?.users.map((user) => user.id) ?? [],
       description: collection?.description ?? null,
-      importPaths:
-        (collection?.importPaths as ImportPathEntry[] | null) ?? null,
     },
   })
 
@@ -65,7 +101,6 @@ export function CollectionSettings({ uuid }: Props) {
       public: collection.public,
       users: collection.users.map((user) => user.id),
       description: collection.description,
-      importPaths: (collection.importPaths as ImportPathEntry[] | null) ?? null,
     })
   }, [collection]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -142,19 +177,7 @@ export function CollectionSettings({ uuid }: Props) {
               description="Whether this collection (and its books) should be visible to all users"
               {...form.getInputProps("public", { type: "checkbox" })}
             />
-            <ImportPathInput {...form.getInputProps("importPaths")}>
-              <Text className="text-sm opacity-70 dark:text-white">
-                Storyteller can be configured to automatically import book files
-                from a specific directory.
-              </Text>
-              <Text className="text-sm opacity-70 dark:text-white">
-                When enabled, Storyteller will set up a filesystem watcher for
-                the directory. When any files are added or modified within the
-                directory, Storyteller will scan for new book files, and
-                automatically import any that it finds. They will be added to
-                this collection.
-              </Text>
-            </ImportPathInput>
+            <LinkedImportRules collectionUuid={uuid} />
             {!form.values.public && (
               <UserSelect
                 label="Share with"

@@ -6,55 +6,16 @@ import {
 } from "kysely"
 import { jsonArrayFrom } from "kysely/helpers/sqlite"
 
-import { scan } from "@/assets/library/scanner/scan"
-import { getWatcher } from "@/assets/library/scanner/triggers/watcher"
 import { BookEvents } from "@/events"
-import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { getBooks } from "./books"
 import { db } from "./connection"
-import { validateNoDuplicatePaths } from "./importPaths"
 import { type DB } from "./schema"
-import { getCollectionImportPaths, getSetting } from "./settings"
-import { type ImportPathEntry } from "./settingsTypes"
 
 export type Collection = Selectable<DB["collection"]>
 export type NewCollection = Insertable<DB["collection"]>
 export type CollectionUpdate = Updateable<DB["collection"]>
-
-async function getAllImportPaths(
-  excludeCollectionUuid?: UUID,
-): Promise<Set<string>> {
-  const [importPaths, collections] = await Promise.all([
-    getSetting("importPath"),
-    getCollectionImportPaths(),
-  ])
-
-  if (excludeCollectionUuid) {
-    collections.delete(excludeCollectionUuid)
-  }
-
-  const rootPaths = new Set((importPaths ?? []).map((e) => e.path))
-
-  return rootPaths.union(collections)
-}
-
-async function validateImportPaths(
-  paths: ImportPathEntry[] | null,
-  collectionUuid?: UUID,
-) {
-  validateNoDuplicatePaths(paths)
-
-  if (!paths || paths.length === 0) return
-
-  const existing = await getAllImportPaths(collectionUuid)
-  const conflicts = paths.filter((e) => existing.has(e.path))
-
-  if (conflicts.length > 0) {
-    throw new Error(`import path already in use: "${conflicts[0]?.path}"`)
-  }
-}
 
 export type CollectionWithRelations = Awaited<ReturnType<typeof getCollection>>
 
@@ -128,31 +89,14 @@ export async function getCollections(userId?: UUID) {
     .execute()
 }
 
-export type CollectionCreateInput = Omit<NewCollection, "importPaths"> & {
-  importPaths?: ImportPathEntry[] | null
-}
-
 export async function createCollection(
-  input: CollectionCreateInput,
+  input: NewCollection,
   relations: { users?: UUID[] } = {},
 ) {
-  const { importPaths, ...rest } = input
-
-  if (importPaths) {
-    await validateImportPaths(importPaths)
-  }
-
-  const insert: NewCollection = {
-    ...rest,
-    ...(importPaths !== undefined && {
-      importPaths: importPaths ? JSON.stringify(importPaths) : null,
-    }),
-  }
-
   return await db.transaction().execute(async (tr) => {
     const { uuid } = await tr
       .insertInto("collection")
-      .values(insert)
+      .values(input)
       .returning(["uuid as uuid"])
       .executeTakeFirstOrThrow()
 
@@ -174,35 +118,16 @@ export async function createCollection(
   })
 }
 
-export type CollectionInput = Omit<CollectionUpdate, "importPaths"> & {
-  importPaths?: ImportPathEntry[] | null
-}
-
 export async function updateCollection(
   uuid: UUID,
-  input: CollectionInput,
+  input: CollectionUpdate,
   relations: { users?: UUID[] } = {},
 ) {
-  const { importPaths, ...rest } = input
-
-  if (importPaths) {
-    await validateImportPaths(importPaths, uuid)
-  }
-
-  const update: CollectionUpdate = {
-    ...rest,
-    ...(importPaths !== undefined && {
-      importPaths: importPaths ? JSON.stringify(importPaths) : null,
-    }),
-  }
-
-  const previousCollection = await getCollection(uuid)
-
   const collection = await db.transaction().execute(async (tr) => {
-    if (Object.keys(update).length) {
+    if (Object.keys(input).length) {
       await tr
         .updateTable("collection")
-        .set(update)
+        .set(input)
         .where("uuid", "=", uuid)
         .execute()
     }
@@ -228,34 +153,6 @@ export async function updateCollection(
 
     return collection
   })
-
-  await getWatcher().update(uuid)
-
-  const prevEntries = previousCollection.importPaths as ImportPathEntry[] | null
-  const nextEntries = collection.importPaths as ImportPathEntry[] | null
-  const prevPathSet = new Set((prevEntries ?? []).map((e) => e.path))
-  const addedPaths = (nextEntries ?? [])
-    .map((e) => e.path)
-    .filter((p) => !prevPathSet.has(p))
-
-  if (addedPaths.length > 0) {
-    logger.info({
-      msg: "collection import paths changed, triggering scan for new paths",
-      collectionUuid: uuid,
-      newPaths: addedPaths,
-    })
-
-    console.log("addedPaths", addedPaths)
-    void scan({
-      source: "manual",
-      tasks: addedPaths.map((importPath) => ({
-        kind: "import-path" as const,
-        importPath,
-        collection: uuid,
-      })),
-      signal: new AbortController().signal,
-    })
-  }
 
   return collection
 }
@@ -349,6 +246,4 @@ export async function deleteCollection(uuid: UUID, userId: UUID) {
       .execute()
     await tr.deleteFrom("collection").where("uuid", "=", uuid).execute()
   })
-
-  await getWatcher().remove(uuid)
 }

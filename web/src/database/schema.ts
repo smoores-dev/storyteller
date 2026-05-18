@@ -123,11 +123,6 @@ export interface Changelog {
 export interface Collection {
   createdAt: Generated<string>
   description: string | null
-  importPaths: ColumnType<
-    import("@/database/settingsTypes").ImportPathEntry[] | null,
-    string | null | undefined,
-    string | null
-  >
   name: string
   public: Generated<boolean>
   updatedAt: Generated<string>
@@ -184,9 +179,21 @@ export interface Ebook {
   uuid: Generated<import("@/uuid").UUID>
 }
 
-export interface ImportSkipPath {
-  bookUuid: import("@/uuid").UUID | null
-  filepath: string
+export interface ImportRule {
+  uuid: Generated<import("@/uuid").UUID>
+  kind: "watch" | "ignore"
+  path: string
+  importMode: string | null
+  createdAt: Generated<string>
+  updatedAt: Generated<string>
+}
+
+export interface ImportRuleToCollection {
+  uuid: Generated<import("@/uuid").UUID>
+  importRuleUuid: import("@/uuid").UUID
+  collectionUuid: import("@/uuid").UUID
+  createdAt: Generated<string>
+  updatedAt: Generated<string>
 }
 
 export interface Migration {
@@ -346,7 +353,8 @@ export interface DB {
   creator: Creator
   deviceAuthorization: DeviceAuthorization
   ebook: Ebook
-  importSkipPath: ImportSkipPath
+  importRule: ImportRule
+  importRuleToCollection: ImportRuleToCollection
   migration: Migration
   position: Position
   readaloud: Readaloud

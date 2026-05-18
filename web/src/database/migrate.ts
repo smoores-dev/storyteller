@@ -40,6 +40,8 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "74_normalize_import_paths.sql": (
     await import("./migrations/74_normalize_import_paths.sql")
   ).default,
+  "75_import_rules.sql": (await import("./migrations/75_import_rules.sql"))
+    .default,
 }
 
 async function isFirstStartup() {

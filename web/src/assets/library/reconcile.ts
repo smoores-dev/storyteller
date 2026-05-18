@@ -3,7 +3,6 @@ import {
   getBookByAudiobookFilepathPrefix,
 } from "@/database/books"
 import { addBooksToCollections } from "@/database/collections"
-import { addImportSkipPaths } from "@/database/importSkipPaths"
 import { getSetting } from "@/database/settings"
 import { type ImportMode } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"
@@ -25,7 +24,7 @@ export type UnclassifiedEpub = {
 
 type ReconcileInput = {
   bookPaths: BookPath[]
-  collectionUuid: UUID | null
+  collectionUuids: UUID[]
   allBooks: BookWithRelations[]
   scopedBooks: BookWithRelations[]
   signal: AbortSignal
@@ -55,15 +54,11 @@ function collectUnclassifiedEpubs(
   bookUuid: UUID,
   bookPath: BookPath,
   output: UnclassifiedEpub[],
-  newSkipPaths: { bookUuid: UUID; filepath: string }[],
 ) {
   if (!bookPath.epubUnknown?.length) return
+
   for (const filepath of bookPath.epubUnknown) {
     output.push({ bookUuid, filepath })
-    // unclassified epubs aren't relocated — their filepath stays as-is
-    // and the scanner pipeline writes the relation later. record the
-    // skip path now so the next scan won't rediscover the file.
-    newSkipPaths.push({ bookUuid, filepath })
   }
 }
 
@@ -134,7 +129,6 @@ export async function reconcileDiscoveredPaths(
   let currentAll = input.allBooks
   let currentScoped = input.scopedBooks
 
-  const newSkipPaths: { bookUuid: UUID; filepath: string }[] = []
   for (const bookPath of input.bookPaths) {
     if (input.signal.aborted) return result
 
@@ -148,20 +142,15 @@ export async function reconcileDiscoveredPaths(
         ? globalMatch
         : null
 
-    // book exists globally but not in the current collection add it
-    // to this collection so overlapping import paths share the same book
+    // book exists globally but not in the scoped set: add it
+    // to any missing collections so overlapping paths share the same book
     if (globalMatch && !scopedMatch) {
-      if (input.collectionUuid) {
-        const alreadyInCollection = globalMatch.collections.some(
-          (c) => c.uuid === input.collectionUuid,
-        )
+      const missingCollections = input.collectionUuids.filter(
+        (uuid) => !globalMatch.collections.some((c) => c.uuid === uuid),
+      )
 
-        if (!alreadyInCollection) {
-          await addBooksToCollections(
-            [input.collectionUuid],
-            [globalMatch.uuid],
-          )
-        }
+      if (missingCollections.length > 0) {
+        await addBooksToCollections(missingCollections, [globalMatch.uuid])
       }
 
       continue
@@ -175,13 +164,19 @@ export async function reconcileDiscoveredPaths(
         if (nestedBook) continue
       }
 
+      const firstCollection = input.collectionUuids[0] ?? null
+
       const created = await createNewBook(
         bookPath,
-        input.collectionUuid,
+        firstCollection,
         importMode,
-        newSkipPaths,
       )
       if (!created) continue
+
+      const remainingCollections = input.collectionUuids.slice(1)
+      if (remainingCollections.length > 0) {
+        await addBooksToCollections(remainingCollections, [created.uuid])
+      }
 
       const discoveredFormats = getBookPathFormats(bookPath)
       addFormats(result.formatsByBook, created.uuid, discoveredFormats)
@@ -190,7 +185,6 @@ export async function reconcileDiscoveredPaths(
         created.uuid,
         bookPath,
         result.unclassifiedEpubs,
-        newSkipPaths,
       )
 
       currentScoped.push(created)
@@ -200,19 +194,13 @@ export async function reconcileDiscoveredPaths(
 
     if (!hasAnyRelationChange(scopedMatch, bookPath)) continue
 
-    const updated = await attachNewRelations(
-      scopedMatch,
-      bookPath,
-      importMode,
-      newSkipPaths,
-    )
+    const updated = await attachNewRelations(scopedMatch, bookPath, importMode)
     addFormats(result.formatsByBook, updated.book.uuid, updated.newFormats)
     addFormats(result.newFormatsByBook, updated.book.uuid, updated.newFormats)
     collectUnclassifiedEpubs(
       scopedMatch.uuid,
       bookPath,
       result.unclassifiedEpubs,
-      newSkipPaths,
     )
 
     currentScoped = currentScoped.map((book) =>
@@ -221,13 +209,6 @@ export async function reconcileDiscoveredPaths(
     currentAll = currentAll.map((book) =>
       book.uuid === updated.book.uuid ? updated.book : book,
     )
-  }
-
-  // persist skip paths populated by createNewBook / attachNewRelations
-  // (reference mode keeps the original file in the import dir; copy/hardlink
-  // keep the source). without this, those files get re-discovered next scan.
-  if (newSkipPaths.length > 0) {
-    await addImportSkipPaths(newSkipPaths)
   }
 
   return result

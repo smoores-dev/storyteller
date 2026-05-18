@@ -13,8 +13,10 @@ import {
 } from "@/assets/library/scanner/watcher-snapshot"
 import { isSuppressed } from "@/assets/library/scanner/write-intent"
 import { isAudioFile } from "@/audio"
-import { getCollection, getCollections } from "@/database/collections"
-import { getSetting } from "@/database/settings"
+import {
+  type ImportRuleWithCollections,
+  getWatchRules,
+} from "@/database/importRules"
 import { type ImportMode } from "@/database/settingsTypes"
 import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
@@ -30,12 +32,11 @@ function standardFilter(path: string): boolean {
 
 const assetRegex = /[^/]*\/(text|aligned|audio)\//
 
-type ControllerKey = UUID | "root" | "assets"
+type ControllerKey = UUID | "rules" | "assets"
 
 export class Watcher {
   private readonly entryLocks = new Map<string, AsyncMutex>()
   private readonly controllers = new Map<ControllerKey, AbortController>()
-  private readonly collectionImportPaths = new Map<UUID, string[]>()
   private started = false
 
   async start(): Promise<void> {
@@ -45,134 +46,50 @@ export class Watcher {
 
     this.started = true
 
-    const [collections, rootImportPaths] = await Promise.all([
-      getCollections(),
-      getSetting("importPath"),
-    ])
-
-    const rootController = new AbortController()
-    this.controllers.set("root", rootController)
-
-    if (rootImportPaths) {
-      for (const entry of rootImportPaths) {
-        this.startWatcher(
-          "root",
-          entry.path,
-          rootController,
-          undefined,
-          entry.importMode,
-        )
-      }
-    }
-
-    for (const collection of collections) {
-      const entries = collection.importPaths ?? []
-      if (entries.length === 0) continue
-
-      const controller = new AbortController()
-      this.controllers.set(collection.uuid, controller)
-      this.collectionImportPaths.set(
-        collection.uuid,
-        entries.map((e) => e.path),
-      )
-
-      for (const entry of entries) {
-        this.startWatcher(
-          collection.uuid,
-          entry.path,
-          controller,
-          undefined,
-          entry.importMode,
-        )
-      }
-    }
+    const watchRules = await getWatchRules()
+    this.startWatchRules(watchRules)
 
     const assetController = new AbortController()
     this.controllers.set("assets", assetController)
-    this.startWatcher("root", ASSETS_DIR, assetController, (path) =>
+    this.startWatcher([], ASSETS_DIR, assetController, (path) =>
       assetRegex.test(path),
     )
   }
 
-  async update(uuid: UUID | "root"): Promise<void> {
-    if (uuid === "root") {
-      const rootImportPaths = await getSetting("importPath")
+  private startWatchRules(rules: ImportRuleWithCollections[]) {
+    const rulesController = new AbortController()
+    this.controllers.set("rules", rulesController)
 
-      const existingRootController = this.controllers.get("root")
-      if (existingRootController) {
-        existingRootController.abort()
-      }
-
-      const rootController = new AbortController()
-      this.controllers.set("root", rootController)
-
-      if (rootImportPaths) {
-        for (const entry of rootImportPaths) {
-          this.startWatcher(
-            "root",
-            entry.path,
-            rootController,
-            undefined,
-            entry.importMode,
-          )
-        }
-      }
-
-      return
-    }
-
-    const previousPaths = this.collectionImportPaths.get(uuid)
-    if (previousPaths) {
-      for (const p of previousPaths) this.entryLocks.delete(p)
-      this.collectionImportPaths.delete(uuid)
-    }
-
-    const existingController = this.controllers.get(uuid)
-    if (existingController) {
-      existingController.abort()
-      this.controllers.delete(uuid)
-    }
-
-    const collection = await getCollection(uuid)
-    const entries = collection.importPaths ?? []
-
-    if (entries.length === 0) {
-      return
-    }
-
-    const controller = new AbortController()
-    this.controllers.set(uuid, controller)
-    this.collectionImportPaths.set(
-      uuid,
-      entries.map((e) => e.path),
-    )
-
-    for (const entry of entries) {
+    for (const rule of rules) {
       this.startWatcher(
-        uuid,
-        entry.path,
-        controller,
+        rule.collections.map((c) => c.uuid),
+        rule.path,
+        rulesController,
         undefined,
-        entry.importMode,
+        rule.importMode as ImportMode | null,
       )
     }
   }
 
-  remove(uuid: UUID): Promise<void> {
-    const previousPaths = this.collectionImportPaths.get(uuid)
-    if (previousPaths) {
-      for (const p of previousPaths) this.entryLocks.delete(p)
-      this.collectionImportPaths.delete(uuid)
+  async reload(): Promise<void> {
+    const rulesController = this.controllers.get("rules")
+    if (rulesController) {
+      rulesController.abort()
+      this.controllers.delete("rules")
     }
 
+    this.entryLocks.clear()
+
+    const watchRules = await getWatchRules()
+    this.startWatchRules(watchRules)
+  }
+
+  remove(uuid: UUID) {
     const controller = this.controllers.get(uuid)
-    if (!controller) {
-      return Promise.resolve()
-    }
+    if (!controller) return
 
     controller.abort()
     this.controllers.delete(uuid)
-    return Promise.resolve()
   }
 
   stop(): Promise<void> {
@@ -181,14 +98,13 @@ export class Watcher {
     }
 
     this.controllers.clear()
-    this.collectionImportPaths.clear()
     this.entryLocks.clear()
     this.started = false
     return Promise.resolve()
   }
 
   private startWatcher(
-    collection: UUID | "root",
+    collections: UUID[],
     importPath: string,
     controller: AbortController,
     filter?: (path: string) => boolean,
@@ -280,7 +196,7 @@ export class Watcher {
               kind: "changed-paths",
               importPath,
               importMode,
-              collection,
+              collections,
               changes: batch,
             },
           ],
@@ -349,7 +265,7 @@ export class Watcher {
         await scan({
           source: "watcher",
           tasks: [
-            { kind: "import-path", importPath, collection },
+            { kind: "import-path", importPath, collections },
             { kind: "existing-books" },
           ],
           options: { concurrency: 2 },

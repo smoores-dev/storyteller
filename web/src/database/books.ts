@@ -530,7 +530,6 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "collection.name",
             "collection.description",
             "collection.public",
-            "collection.importPaths",
             "collection.createdAt",
             "collection.updatedAt",
           ])
@@ -793,17 +792,37 @@ export async function deleteBook(
     await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
 
     if (preventReImport) {
-      // preserve the skip path row so the scanner won't re-import this book
-      await tr
-        .updateTable("importSkipPath")
-        .set({ bookUuid: null })
-        .where("bookUuid", "=", bookUuid)
-        .execute()
-    } else {
-      await tr
-        .deleteFrom("importSkipPath")
-        .where("bookUuid", "=", bookUuid)
-        .execute()
+      const filePaths: string[] = []
+
+      const [ebook, audiobook, readaloud] = await Promise.all([
+        tr
+          .selectFrom("ebook")
+          .select("filepath")
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst(),
+        tr
+          .selectFrom("audiobook")
+          .select("filepath")
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst(),
+        tr
+          .selectFrom("readaloud")
+          .select("filepath")
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst(),
+      ])
+
+      if (ebook?.filepath) filePaths.push(ebook.filepath)
+      if (audiobook?.filepath) filePaths.push(audiobook.filepath)
+      if (readaloud?.filepath) filePaths.push(readaloud.filepath)
+
+      for (const filepath of filePaths) {
+        await tr
+          .insertInto("importRule")
+          .values({ kind: "ignore", path: filepath })
+          .onConflict((oc) => oc.column("path").doNothing())
+          .execute()
+      }
     }
 
     await tr.deleteFrom("book").where("uuid", "=", bookUuid).execute()

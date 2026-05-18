@@ -3,17 +3,12 @@ import { readFileSync } from "node:fs"
 import { ZodError } from "zod"
 
 import { getScheduler } from "@/assets/library/scanner/triggers/scheduler"
-import { getWatcher } from "@/assets/library/scanner/triggers/watcher"
 import { env } from "@/env"
 import { logger } from "@/logging"
 
 import { db } from "./connection"
-import { validateNoDuplicatePaths } from "./importPaths"
-import {
-  ConfigFileSchema,
-  type ImportPathEntry,
-  type Settings,
-} from "./settingsTypes"
+import { createImportRule, getImportRules } from "./importRules"
+import { ConfigFileSchema, type ImportMode, type Settings } from "./settingsTypes"
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
   let details = settings.transcriptionEngine ?? "whisper.cpp"
@@ -151,48 +146,9 @@ export async function getSettings(): Promise<Settings> {
   return { ...result, ...configSettings }
 }
 
-function computeNewImportPaths(
-  previous: ImportPathEntry[] | null,
-  next: ImportPathEntry[] | null,
-): string[] {
-  const prevSet = new Set((previous ?? []).map((e) => e.path))
-  return (next ?? []).filter((e) => !prevSet.has(e.path)).map((e) => e.path)
-}
-
-export async function getCollectionImportPaths(): Promise<Set<string>> {
-  const rows = await db
-    .selectFrom("collection")
-    .select(["importPaths"])
-    .where("importPaths", "is not", null)
-    .execute()
-
-  return new Set(
-    rows.flatMap((row) =>
-      ((row.importPaths ?? []) as unknown as ImportPathEntry[]).map(
-        (e) => e.path,
-      ),
-    ),
-  )
-}
-
 export async function updateSettings(settings: Settings) {
   const lockedKeys = getConfigLockedKeys()
   const existingSettings = await getSettings()
-
-  if (settings.importPath) {
-    validateNoDuplicatePaths(settings.importPath)
-
-    const collectionPaths = await getCollectionImportPaths()
-    const conflicts = settings.importPath.filter((e) =>
-      collectionPaths.has(e.path),
-    )
-
-    if (conflicts.length > 0) {
-      throw new Error(
-        `import path already used by a collection: "${conflicts[0]?.path}"`,
-      )
-    }
-  }
 
   for (const [settingName, value] of Object.entries(settings)) {
     if (lockedKeys.has(settingName as keyof Settings)) continue
@@ -215,34 +171,62 @@ export async function updateSettings(settings: Settings) {
       .execute()
   }
 
-  await getWatcher().update("root")
   await getScheduler().refresh()
-
-  const newPaths = computeNewImportPaths(
-    existingSettings.importPath,
-    settings.importPath,
-  )
-
-  if (newPaths.length > 0) {
-    logger.info({
-      msg: "import paths changed, triggering scan for new paths",
-      newPaths,
-    })
-
-    // dynamic import to avoid circular dependency (scan -> settings -> scan)
-    const { scan } = await import("@/assets/library/scanner/scan")
-
-    void scan({
-      source: "manual",
-      tasks: newPaths.map((importPath) => ({
-        kind: "import-path" as const,
-        importPath,
-        collection: "root" as const,
-      })),
-      signal: new AbortController().signal,
-    })
-  }
 }
 
 // Validate and cache config file on startup (never re-read after this)
 loadConfigFile()
+
+type ConfigImportPathEntry = { path: string; importMode?: ImportMode | null }
+
+/**
+ * if the config file still has importPath entries, sync them to import rules.
+ * this is a deprecated compatibility path; users should migrate to configuring
+ * import rules through the ui.
+ */
+export async function syncConfigFileImportPaths() {
+  const configPath = env.STORYTELLER_CONFIG
+  if (!configPath) return
+
+  let rawConfig: Record<string, unknown>
+
+  try {
+    const { readFileSync } = await import("node:fs")
+    rawConfig = JSON.parse(readFileSync(configPath, "utf-8")) as Record<
+      string,
+      unknown
+    >
+  } catch {
+    return
+  }
+
+  const rawImportPath = rawConfig["importPath"]
+  if (!rawImportPath) return
+
+  logger.warn(
+    "config file contains 'importPath' which is deprecated. " +
+      "these entries have been synced to import rules. " +
+      "please remove 'importPath' from your config file and use the settings ui instead.",
+  )
+
+  const entries: ConfigImportPathEntry[] = Array.isArray(rawImportPath)
+    ? (rawImportPath as ConfigImportPathEntry[])
+    : typeof rawImportPath === "string"
+      ? [{ path: rawImportPath }]
+      : []
+
+  if (entries.length === 0) return
+
+  const existingRules = await getImportRules("watch")
+  const existingPaths = new Set(existingRules.map((r) => r.path))
+
+  for (const entry of entries) {
+    if (existingPaths.has(entry.path)) continue
+
+    await createImportRule({
+      kind: "watch",
+      path: entry.path,
+      importMode: entry.importMode ?? null,
+    })
+  }
+}

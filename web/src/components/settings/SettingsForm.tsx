@@ -31,12 +31,13 @@ import {
   minutesToCronExpression,
 } from "@/assets/library/scanner/triggers/cron"
 import { type Providers } from "@/auth/providers"
-import { ImportPathInput } from "@/components/ImportPathInput"
+import { ServerFilePicker } from "@/components/books/modals/ServerFilePicker"
 import {
   ADMIN_PERMISSIONS,
   BASIC_PERMISSIONS,
   PERMISSIONS_VALUES,
 } from "@/components/users/CreateInviteForm"
+import { type ImportRuleWithCollections } from "@/database/importRules"
 import {
   METADATA_FIELDS,
   type MetadataField,
@@ -47,13 +48,17 @@ import {
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useCancelScanMutation,
-  useClearImportSkipPathsMutation,
-  useGetImportSkipPathsQuery,
+  useCreateImportRuleMutation,
+  useDeleteImportRulesMutation,
+  useGetImportRulesQuery,
   useGetMaxUploadChunkSizeQuery,
   useGetScanStateQuery,
+  useListCollectionsQuery,
   useTriggerScanMutation,
+  useUpdateImportRuleMutation,
   useUpdateSettingsMutation,
 } from "@/store/api"
+import { type UUID } from "@/uuid"
 
 import { AuthProviderInput } from "./AuthProviderInput"
 
@@ -207,56 +212,279 @@ function V2MetadataFieldOverrides({
   )
 }
 
-function SkippedImportPaths() {
-  const { data: skipPaths } = useGetImportSkipPathsQuery()
-  const [clearPaths, { isLoading }] = useClearImportSkipPathsMutation()
+const IMPORT_MODE_OPTIONS = [
+  { value: "", label: "Use default" },
+  { value: "reference", label: "Reference in place" },
+  { value: "copy", label: "Copy to library" },
+  { value: "move", label: "Move to library" },
+  { value: "hardlink", label: "Hard link to library" },
+]
 
-  const paths = skipPaths ?? []
+function ImportRuleCard({
+  rule,
+  collections,
+  selected,
+  onToggle,
+}: {
+  rule: ImportRuleWithCollections
+  collections: { uuid: UUID; name: string }[]
+  selected: boolean
+  onToggle: () => void
+}) {
+  const [updateRule] = useUpdateImportRuleMutation()
+  const [editingPath, setEditingPath] = useState(false)
 
-  const pathsWithoutBook = paths.filter((p) => !p.uuid)
+  const isWatch = rule.kind === "watch"
 
-  if (!paths.length) {
-    return null
+  return (
+    <Box className="rounded border border-gray-200 p-3 dark:border-neutral-700">
+      <Group gap="sm" wrap="nowrap" align="flex-start">
+        <Checkbox
+          className="mt-1"
+          checked={selected}
+          onChange={onToggle}
+          size="sm"
+        />
+
+        <Stack gap="xs" className="min-w-0 flex-1">
+          <Group gap="xs">
+            <Text
+              // color={isWatch ? "blue" : "orange"}
+              c="dimmed"
+              size="md"
+              className="text-dimmed px-1 text-sm font-bold uppercase"
+            >
+              {isWatch ? "watch" : "ignore"}
+            </Text>
+
+            {editingPath ? (
+              <ServerFilePicker
+                startPath={rule.path}
+                onChange={(folder) => {
+                  void updateRule({ uuid: rule.uuid, path: folder })
+                  setEditingPath(false)
+                }}
+              />
+            ) : (
+              <Button
+                variant="subtle"
+                className="min-w-0 self-start"
+                classNames={{ inner: "justify-start" }}
+                onClick={() => {
+                  setEditingPath(true)
+                }}
+              >
+                <Text className="truncate text-sm">{rule.path}</Text>
+              </Button>
+            )}
+          </Group>
+
+          {isWatch && (
+            <Group gap="sm" wrap="wrap">
+              <NativeSelect
+                size="sm"
+                className="w-[180px]"
+                value={rule.importMode ?? ""}
+                onChange={(e) => {
+                  const mode = e.currentTarget.value || null
+                  void updateRule({ uuid: rule.uuid, importMode: mode })
+                }}
+              >
+                {IMPORT_MODE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </NativeSelect>
+
+              <MultiSelect
+                size="xs"
+                className="min-w-[200px] flex-1"
+                placeholder="No collection"
+                data={collections.map((c) => ({
+                  value: c.uuid,
+                  label: c.name,
+                }))}
+                value={rule.collections.map((c) => c.uuid)}
+                onChange={(uuids) => {
+                  void updateRule({
+                    uuid: rule.uuid,
+                    collectionUuids: uuids as UUID[],
+                  })
+                }}
+              />
+            </Group>
+          )}
+        </Stack>
+      </Group>
+    </Box>
+  )
+}
+
+function ImportRulesSection({
+  importMode,
+  onImportModeChange,
+  isLocked,
+}: {
+  importMode: string
+  onImportModeChange: (mode: string) => void
+  isLocked: boolean
+}) {
+  const { data: rules = [] } = useGetImportRulesQuery()
+  const { data: collections = [] } = useListCollectionsQuery()
+  const [createRule] = useCreateImportRuleMutation()
+  const [deleteRules, { isLoading: isDeleting }] =
+    useDeleteImportRulesMutation()
+
+  const [addingRule, setAddingRule] = useState(false)
+  const [newKind, setNewKind] = useState<"watch" | "ignore">("watch")
+  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
+
+  const watchRules = rules.filter((r) => r.kind === "watch")
+  const ignoreRules = rules.filter((r) => r.kind === "ignore")
+
+  function toggleSelected(uuid: UUID) {
+    setSelectedUuids((prev) => {
+      const next = new Set(prev)
+
+      if (next.has(uuid)) {
+        next.delete(uuid)
+      } else {
+        next.add(uuid)
+      }
+
+      return next
+    })
+  }
+
+  function handleDeleteSelected() {
+    if (selectedUuids.size === 0) return
+
+    void deleteRules({ uuids: [...selectedUuids] })
+    setSelectedUuids(new Set())
   }
 
   return (
-    <Fieldset legend="Skipped import paths">
+    <Fieldset legend="Import rules" disabled={isLocked}>
       <Stack>
         <Text className="text-sm text-black opacity-70 dark:text-white">
-          These file paths have been excluded from auto-import. Books at these
-          paths will not be re-imported during scans. You can remove individual
-          paths or clear all of them.
+          Configure which folders Storyteller watches for new books, and which
+          paths to ignore during scans. Watch rules can optionally add
+          discovered books to one or more collections.
         </Text>
 
-        {pathsWithoutBook.map(({ filepath }) => (
-          <Group key={filepath} justify="space-between" wrap="nowrap">
-            <Text className="min-w-0 truncate text-sm">{filepath}</Text>
-
-            <ActionIcon
-              variant="subtle"
-              color="red"
-              loading={isLoading}
-              onClick={() => {
-                void clearPaths({ paths: [filepath] })
-              }}
-            >
-              <IconTrash size={14} />
-            </ActionIcon>
-          </Group>
-        ))}
-
-        <Button
-          variant="outline"
-          color="red"
-          size="compact-sm"
-          loading={isLoading}
-          className="self-start"
-          onClick={() => {
-            void clearPaths({ paths: pathsWithoutBook.map((p) => p.filepath) })
+        <NativeSelect
+          label="Default import mode"
+          description="How to handle files found in import directories. Individual rules can override this."
+          value={importMode}
+          onChange={(e) => {
+            onImportModeChange(e.currentTarget.value)
           }}
         >
-          Clear all
-        </Button>
+          <option value="reference">Reference in place</option>
+          <option value="copy">Copy to library</option>
+          <option value="move">Move to library</option>
+          <option value="hardlink">Hard link to library</option>
+        </NativeSelect>
+
+        <Group gap="xs" align="center">
+          <NativeSelect
+            size="sm"
+            className="w-[110px] shrink-0"
+            value={newKind}
+            onChange={(e) => {
+              setNewKind(e.currentTarget.value as "watch" | "ignore")
+            }}
+          >
+            <option value="watch">Watch</option>
+            <option value="ignore">Ignore</option>
+          </NativeSelect>
+
+          {addingRule ? (
+            <Box className="min-w-0 flex-1">
+              <ServerFilePicker
+                startPath="/"
+                onChange={(folder) => {
+                  void createRule({ kind: newKind, path: folder })
+                  setAddingRule(false)
+                }}
+              />
+            </Box>
+          ) : (
+            <Button
+              variant="subtle"
+              leftSection={<IconPlus size={14} />}
+              onClick={() => {
+                setAddingRule(true)
+              }}
+            >
+              Add rule
+            </Button>
+          )}
+        </Group>
+
+        {selectedUuids.size > 0 && (
+          <Group gap="xs">
+            <Button
+              variant="light"
+              color="red"
+              size="compact-sm"
+              leftSection={<IconTrash size={14} />}
+              loading={isDeleting}
+              onClick={handleDeleteSelected}
+            >
+              Delete {selectedUuids.size} selected
+            </Button>
+
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              onClick={() => {
+                setSelectedUuids(new Set())
+              }}
+            >
+              Clear selection
+            </Button>
+          </Group>
+        )}
+
+        {watchRules.length > 0 && (
+          <Stack gap="xs">
+            <Text fw={500} size="sm">
+              Watch rules
+            </Text>
+            {watchRules.map((rule) => (
+              <ImportRuleCard
+                key={rule.uuid}
+                rule={rule}
+                collections={collections}
+                selected={selectedUuids.has(rule.uuid)}
+                onToggle={() => {
+                  toggleSelected(rule.uuid)
+                }}
+              />
+            ))}
+          </Stack>
+        )}
+
+        {ignoreRules.length > 0 && (
+          <Stack gap="xs">
+            <Text fw={500} size="sm">
+              Ignore rules
+            </Text>
+            {ignoreRules.map((rule) => (
+              <ImportRuleCard
+                key={rule.uuid}
+                rule={rule}
+                collections={collections}
+                selected={selectedUuids.has(rule.uuid)}
+                onToggle={() => {
+                  toggleSelected(rule.uuid)
+                }}
+              />
+            ))}
+          </Stack>
+        )}
       </Stack>
     </Fieldset>
   )
@@ -325,7 +553,6 @@ export function SettingsForm({
     parallelTranscodes: settings.parallelTranscodes,
     authProviders: settings.authProviders,
     disablePasswordLogin: settings.disablePasswordLogin,
-    importPath: settings.importPath,
     importMode: settings.importMode,
     readaloudLocationType: settings.readaloudLocationType,
     readaloudLocation: settings.readaloudLocation,
@@ -403,37 +630,16 @@ export function SettingsForm({
           disabled={isLocked("webUrl")}
         />
       </Fieldset>
-      <ImportPathInput
-        {...form.getInputProps("importPath")}
-        disabled={isLocked("importPath")}
-      >
-        <Text className="text-sm text-black opacity-70 dark:text-white">
-          Storyteller can be configured to automatically import book files from
-          a specific directory.
-        </Text>
-        <Text className="text-sm text-black opacity-70 dark:text-white">
-          When enabled, Storyteller will set up a filesystem watcher for the
-          directory. When any files are added or modified within the directory,
-          Storyteller will scan for new book files, and automatically import any
-          that it finds.
-        </Text>
-        <Text className="text-sm text-black opacity-70 dark:text-white">
-          Book files found in this directory will not be automatically added to
-          a collection. You can also configure collection-specific automatic
-          import in the settings for that collection.
-        </Text>
-        <NativeSelect
-          label="Default import mode"
-          description="How to handle files found in import directories. Individual paths can override this."
-          {...form.getInputProps("importMode")}
-          disabled={isLocked("importMode")}
-        >
-          <option value="reference">Reference in place</option>
-          <option value="copy">Copy to library</option>
-          <option value="move">Move to library</option>
-          <option value="hardlink">Hard link to library</option>
-        </NativeSelect>
-      </ImportPathInput>
+      <ImportRulesSection
+        importMode={state.importMode}
+        onImportModeChange={(mode) => {
+          form.setFieldValue(
+            "importMode",
+            mode as "reference" | "copy" | "move" | "hardlink",
+          )
+        }}
+        isLocked={isLocked("importMode")}
+      />
       <Fieldset
         legend="Library scanning"
         disabled={isAnyLocked("scanCronExpression", "metadataFieldOverrides")}
@@ -551,8 +757,6 @@ export function SettingsForm({
           />
         </Stack>
       </Fieldset>
-
-      <SkippedImportPaths />
 
       <Fieldset
         legend="EPUB 2 handling"

@@ -14,8 +14,7 @@ import {
   reconcileDiscoveredPaths,
 } from "@/assets/library/reconcile"
 import { type BookWithRelations, getBooks } from "@/database/books"
-import { getCollections } from "@/database/collections"
-import { getSetting } from "@/database/settings"
+import { getWatchRules } from "@/database/importRules"
 import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
@@ -33,13 +32,13 @@ export type ScanTask =
       kind: "import-path"
       importPath: string
       importMode?: ImportMode | null
-      collection: UUID | "root"
+      collections: UUID[]
     }
   | {
       kind: "changed-paths"
       importPath: string
       importMode?: ImportMode | null
-      collection: UUID | "root"
+      collections: UUID[]
       changes: ImportPathChange[]
     }
   | { kind: "existing-books"; bookUuids?: UUID[]; exclude?: Set<UUID> }
@@ -56,18 +55,14 @@ function defaultConcurrency(source: ScanSource): number {
   return source === "watcher" ? 1 : 2
 }
 
-function toCollectionUuid(collection: UUID | "root"): UUID | null {
-  return collection === "root" ? null : collection
-}
-
-function scopedByCollection(
+function scopedByCollections(
   books: BookWithRelations[],
-  collectionUuid: UUID | "root",
+  collectionUuids: UUID[],
 ): BookWithRelations[] {
-  if (collectionUuid === "root") return books
+  if (collectionUuids.length === 0) return books
 
   return books.filter((book) =>
-    book.collections.some((c) => c.uuid === collectionUuid),
+    book.collections.some((c) => collectionUuids.includes(c.uuid)),
   )
 }
 
@@ -187,7 +182,7 @@ async function resolveImportPath(
   const allBooks = await getBooks()
   if (ctx.signal.aborted) return EMPTY_RESOLUTION
 
-  const scoped = scopedByCollection(allBooks, task.collection)
+  const scoped = scopedByCollections(allBooks, task.collections)
   const knownEbookPaths = new Set(
     scoped.map((b) => b.ebook?.filepath).filter((p): p is string => !!p),
   )
@@ -204,14 +199,14 @@ async function resolveImportPath(
 
   const reconciled = await reconcileDiscoveredPaths({
     bookPaths,
-    collectionUuid: toCollectionUuid(task.collection),
+    collectionUuids: task.collections,
     allBooks,
     scopedBooks: scoped,
     signal: ctx.signal,
     importMode: task.importMode ?? undefined,
   })
 
-  const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
+  const refreshedBooks = scopedByCollections(await getBooks(), task.collections)
 
   reportDiscoveries(
     ctx,
@@ -301,7 +296,7 @@ async function resolveChangedPaths(
   const allBooks = await getBooks()
   if (ctx.signal.aborted) return EMPTY_RESOLUTION
 
-  const scoped = scopedByCollection(allBooks, task.collection)
+  const scoped = scopedByCollections(allBooks, task.collections)
   const affectedFormats = formatsAffectedByChanges(scoped, normalized)
 
   const knownEbookPaths = new Set(
@@ -333,7 +328,7 @@ async function resolveChangedPaths(
 
     const reconciled = await reconcileDiscoveredPaths({
       bookPaths: discovered,
-      collectionUuid: toCollectionUuid(task.collection),
+      collectionUuids: task.collections,
       allBooks,
       scopedBooks: scoped,
       signal: ctx.signal,
@@ -354,7 +349,10 @@ async function resolveChangedPaths(
     return EMPTY_RESOLUTION
   }
 
-  const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
+  const refreshedBooks = scopedByCollections(
+    await getBooks(),
+    task.collections,
+  )
 
   if (newFormatsByBook.size > 0 || unclassifiedEpubs.length > 0) {
     reportDiscoveries(
@@ -373,7 +371,7 @@ async function resolveChangedPaths(
   logger.debug({
     msg: "Resolved changed paths",
     importPath: task.importPath,
-    collection: task.collection,
+    collections: task.collections,
     changes: task.changes,
   })
 
@@ -521,36 +519,17 @@ export async function scanLibrary(opts: {
   options?: ScanOptions
   signal: AbortSignal
 }): Promise<ScanResult> {
-  const [rootImportPaths, collections] = await Promise.all([
-    getSetting("importPath"),
-    getCollections(),
-  ])
+  const watchRules = await getWatchRules()
 
   const tasks: ScanTask[] = []
 
-  if (rootImportPaths) {
-    for (const entry of rootImportPaths) {
-      tasks.push({
-        kind: "import-path",
-        importPath: entry.path,
-        importMode: entry.importMode,
-        collection: "root",
-      })
-    }
-  }
-
-  for (const collection of collections) {
-    const entries = collection.importPaths ?? []
-    if (entries.length === 0) continue
-
-    for (const entry of entries) {
-      tasks.push({
-        kind: "import-path",
-        importPath: entry.path,
-        importMode: entry.importMode,
-        collection: collection.uuid,
-      })
-    }
+  for (const rule of watchRules) {
+    tasks.push({
+      kind: "import-path",
+      importPath: rule.path,
+      importMode: rule.importMode as ImportMode | null,
+      collections: rule.collections.map((c) => c.uuid),
+    })
   }
 
   tasks.push({ kind: "existing-books" })

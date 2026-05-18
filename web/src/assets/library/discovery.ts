@@ -26,10 +26,7 @@ import {
   createBookFromEpub,
   updateBook,
 } from "@/database/books"
-import {
-  getImportSkipPaths,
-  removeImportSkipPaths,
-} from "@/database/importSkipPaths"
+import { getIgnorePaths } from "@/database/importRules"
 import { getSetting } from "@/database/settings"
 import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
@@ -118,16 +115,8 @@ async function relocateBookPaths(
   book: BookWithRelations,
   bookPath: BookPath,
   importMode: ImportMode,
-  newSkipPaths: { bookUuid: UUID; filepath: string }[],
 ): Promise<BookPath> {
   if (importMode === "reference") {
-    for (const path of [
-      bookPath.ebook,
-      bookPath.readaloud,
-      bookPath.audiobook,
-    ]) {
-      if (path) newSkipPaths.push({ bookUuid: book.uuid, filepath: path })
-    }
     return bookPath
   }
 
@@ -139,9 +128,6 @@ async function relocateBookPaths(
     await mkdir(dirname(destPath), { recursive: true })
     await relocate(bookPath.ebook, destPath)
     relocated.ebook = destPath
-
-    if (importMode !== "move")
-      newSkipPaths.push({ bookUuid: book.uuid, filepath: bookPath.ebook })
   }
 
   if (bookPath.readaloud) {
@@ -149,9 +135,6 @@ async function relocateBookPaths(
     await mkdir(dirname(destPath), { recursive: true })
     await relocate(bookPath.readaloud, destPath)
     relocated.readaloud = destPath
-
-    if (importMode !== "move")
-      newSkipPaths.push({ bookUuid: book.uuid, filepath: bookPath.readaloud })
   }
 
   if (bookPath.audiobook) {
@@ -170,9 +153,6 @@ async function relocateBookPaths(
     }
 
     relocated.audiobook = destDir
-
-    if (importMode !== "move")
-      newSkipPaths.push({ bookUuid: book.uuid, filepath: bookPath.audiobook })
   }
 
   if (bookPath.epubUnknown?.length) {
@@ -186,7 +166,6 @@ export async function createNewBook(
   bookPath: BookPath,
   collectionUuid: UUID | null,
   importMode: ImportMode,
-  newSkipPaths: { bookUuid: UUID; filepath: string }[],
 ): Promise<BookWithRelations | null> {
   const collectionRelation = collectionUuid
     ? { collections: [collectionUuid] }
@@ -221,12 +200,7 @@ export async function createNewBook(
     )
 
     created = await ensureBookDirectory(created)
-    const relocated = await relocateBookPaths(
-      created,
-      bookPath,
-      importMode,
-      newSkipPaths,
-    )
+    const relocated = await relocateBookPaths(created, bookPath, importMode)
 
     created = await updateBook(created.uuid, null, {
       ...(relocated.ebook && {
@@ -269,12 +243,8 @@ export async function createNewBook(
     )
 
     created = await ensureBookDirectory(created)
-    const relocated = await relocateBookPaths(
-      created,
-      bookPath,
-      importMode,
-      newSkipPaths,
-    )
+    const relocated = await relocateBookPaths(created, bookPath, importMode)
+
     if (relocated.audiobook) {
       created = await updateBook(created.uuid, null, {
         audiobook: { filepath: relocated.audiobook, missing: false },
@@ -310,14 +280,8 @@ export async function attachNewRelations(
   book: BookWithRelations,
   bookPath: BookPath,
   importMode: ImportMode,
-  newSkipPaths: { bookUuid: UUID; filepath: string }[],
 ): Promise<UpdatedBookResult> {
-  const pathToAttach = await relocateBookPaths(
-    book,
-    bookPath,
-    importMode,
-    newSkipPaths,
-  )
+  const pathToAttach = await relocateBookPaths(book, bookPath, importMode)
   const newFormats: ScanFormat[] = []
   const relations: Parameters<typeof updateBook>[2] = {}
 
@@ -417,17 +381,7 @@ export async function discoverBookPathsForRoots(
   )
 
   const epub2BackupSuffix = await getSetting("epub2BackupSuffix")
-  const skipPaths = new Set(
-    (await getImportSkipPaths()).map((row) => row.filepath),
-  )
-  const seenSkipPaths = new Set<string>()
-  const walkedRoots = canonicalRoots.map((r) => resolve(r.rootPath))
-  const isUnderWalkedRoot = (p: string) => {
-    const resolved = resolve(p)
-    return walkedRoots.some(
-      (root) => resolved === root || resolved.startsWith(`${root}/`),
-    )
-  }
+  const ignorePaths = await getIgnorePaths()
 
   for (const root of canonicalRoots) {
     if (signal.aborted) {
@@ -468,14 +422,12 @@ export async function discoverBookPathsForRoots(
           continue
         }
 
-        // epub2 backups are also added to importSkipPath
-        // by upgrade-epub, but skip by suffix too in case the row got purged.
+        // epub2 backups are skipped by suffix detection
         if (entry.name.endsWith(`${epub2BackupSuffix}.epub`)) {
           continue
         }
 
-        if (skipPaths.has(fullPath)) {
-          seenSkipPaths.add(fullPath)
+        if (ignorePaths.has(fullPath)) {
           continue
         }
         epubPaths.push(fullPath)
@@ -493,8 +445,7 @@ export async function discoverBookPathsForRoots(
         continue
       }
 
-      if (skipPaths.has(entry.parentPath)) {
-        seenSkipPaths.add(entry.parentPath)
+      if (ignorePaths.has(entry.parentPath)) {
         continue
       }
 
@@ -580,15 +531,6 @@ export async function discoverBookPathsForRoots(
     bookPaths.push({ audiobook: audiobookPath })
   }
 
-  // only purge skip rows for paths under roots we actually walked; otherwise
-  // a single-root scan would delete entries belonging to other import paths.
-  const staleSkipPaths = [...skipPaths].filter(
-    (p) => isUnderWalkedRoot(p) && !seenSkipPaths.has(p),
-  )
-  if (staleSkipPaths.length > 0) {
-    await removeImportSkipPaths(staleSkipPaths)
-  }
-
   return dedupeBookPaths(bookPaths)
 }
 
@@ -613,9 +555,7 @@ export async function buildBookPathsFromChanges(
   input: BuildFromChangesInput,
 ): Promise<BookPath[]> {
   const epub2BackupSuffix = await getSetting("epub2BackupSuffix")
-  const skipPaths = new Set(
-    (await getImportSkipPaths()).map((row) => row.filepath),
-  )
+  const ignorePaths = await getIgnorePaths()
 
   const bookPaths: BookPath[] = []
   const normalizedImportPath = normalizePath(input.importPath)
@@ -632,11 +572,11 @@ export async function buildBookPathsFromChanges(
       const ext = extname(change.path)
       if (ext === ".epub") {
         if (change.path.endsWith(`${epub2BackupSuffix}.epub`)) continue
-        if (skipPaths.has(change.path)) continue
+        if (ignorePaths.has(change.path)) continue
         epubChanges.push(change)
       } else if (isAudioFile(ext)) {
         const parent = dirname(change.path)
-        if (skipPaths.has(parent)) continue
+        if (ignorePaths.has(parent)) continue
         audioChanges.push(change)
       }
     }
@@ -687,7 +627,7 @@ export async function buildBookPathsFromChanges(
       if (extname(entry.name) !== ".epub") continue
       if (entry.name.endsWith(`${epub2BackupSuffix}.epub`)) continue
       const fullPath = join(bookFolder, entry.name)
-      if (skipPaths.has(fullPath)) continue
+      if (ignorePaths.has(fullPath)) continue
       // mirror the recursive walker's root-file warning: when an epub is
       // directly at the import root we treat the folder as flat — siblings
       // at the root are NOT considered the same book.

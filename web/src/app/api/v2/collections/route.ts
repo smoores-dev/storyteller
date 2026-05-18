@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 
 import { withHasPermission } from "@/auth/auth"
 import { createCollection, getCollections } from "@/database/collections"
-import { type ImportPathEntry } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"
 
 /**
@@ -17,18 +16,16 @@ export const GET = withHasPermission("bookList")(async (request) => {
 })
 
 export const POST = withHasPermission("collectionCreate")(async (request) => {
-  const { users, importPaths, ...values } = (await request.json()) as {
+  const { users, ...values } = (await request.json()) as {
     name: string
     description: string
     public: boolean
     users?: UUID[]
-    importPaths?: ImportPathEntry[] | null
   }
 
-  const created = await createCollection(
-    { ...values, importPaths },
-    { users: [...(users ?? []), request.auth.user.id] },
-  )
+  const created = await createCollection(values, {
+    users: [...(users ?? []), request.auth.user.id],
+  })
 
   return NextResponse.json(created)
 })

@@ -19,7 +19,6 @@ import {
   getNextQueuePosition,
   updateBook,
 } from "@/database/books"
-import { addImportSkipPaths } from "@/database/importSkipPaths"
 import { getSettings } from "@/database/settings"
 import { env } from "@/env"
 import { logger } from "@/logging"
@@ -161,31 +160,14 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   port2.on(
     "message",
     async (
-      message:
-        | {
-            requestId: UUID
-            update: BookUpdate | null
-            relations: BookRelationsUpdate
-          }
-        | {
-            requestId: UUID
-            addSkipPaths: { bookUuid: UUID; filepath: string }[]
-          },
+      message: {
+        requestId: UUID
+        update: BookUpdate | null
+        relations: BookRelationsUpdate
+      },
     ) => {
       // keep refreshing suppression to ensure the watcher ignores the create event
       refreshSuppression()
-
-      if ("addSkipPaths" in message) {
-        await addImportSkipPaths(message.addSkipPaths)
-        for (const { filepath } of message.addSkipPaths) {
-          if (!fileSuppression.includes(filepath)) {
-            fileSuppression.push(filepath)
-            suppressPrefix(filepath)
-          }
-        }
-        port2.postMessage({ requestId: message.requestId, book })
-        return
-      }
 
       // readaloud filepath may change during processing, keep suppressed
       if (message.relations.readaloud?.filepath) {

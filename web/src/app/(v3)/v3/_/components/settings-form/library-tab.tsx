@@ -9,8 +9,8 @@ import {
   cronExpressionToMinutes,
   minutesToCronExpression,
 } from "@/assets/library/scanner/triggers/cron"
+import { type ImportRuleWithCollections } from "@/database/importRules"
 import {
-  type ImportPathEntry,
   METADATA_FIELDS,
   type MetadataField,
   type MetadataFieldMode,
@@ -20,12 +20,17 @@ import {
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useCancelScanMutation,
-  useClearImportSkipPathsMutation,
-  useGetImportSkipPathsQuery,
+  useCreateImportRuleMutation,
+  useDeleteImportRulesMutation,
+  useGetImportRulesQuery,
   useGetScanStateQuery,
+  useListCollectionsQuery,
   useTriggerScanMutation,
+  useUpdateImportRuleMutation,
 } from "@/store/api"
+import { type UUID } from "@/uuid"
 
+import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"
 import {
   Card,
@@ -34,6 +39,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@v3/_/components/ui/card"
+import { Checkbox } from "@v3/_/components/ui/checkbox"
 import { Input } from "@v3/_/components/ui/input"
 import { Label } from "@v3/_/components/ui/label"
 import {
@@ -53,9 +59,8 @@ export function LibraryTab() {
   return (
     <TabsContent value="library" className="space-y-6">
       <LibrarySection />
-      <AutoImportSection />
+      <ImportRulesSection />
       <ScanControlsSection />
-      <SkippedImportPathsSection />
       <ReadaloudLocationSection />
     </TabsContent>
   )
@@ -104,78 +109,207 @@ function LibrarySection() {
 
 const USE_DEFAULT_VALUE = "__default__"
 
-function AutoImportSection() {
+const IMPORT_MODE_OPTIONS = [
+  { value: USE_DEFAULT_VALUE, label: "Use default" },
+  { value: "reference", label: "Reference in place" },
+  { value: "copy", label: "Copy to library" },
+  { value: "move", label: "Move to library" },
+  { value: "hardlink", label: "Hard link to library" },
+]
+
+function ImportRuleCard({
+  rule,
+  collections,
+  selected,
+  onToggle,
+}: {
+  rule: ImportRuleWithCollections
+  collections: { uuid: UUID; name: string }[]
+  selected: boolean
+  onToggle: () => void
+}) {
+  const [updateRule] = useUpdateImportRuleMutation()
+  const [editingPath, setEditingPath] = useState(false)
+  const [editPath, setEditPath] = useState(rule.path)
+
+  const isWatch = rule.kind === "watch"
+
+  return (
+    <div className="flex gap-3 rounded-md border p-3">
+      <Checkbox
+        className="mt-1"
+        checked={selected}
+        onCheckedChange={onToggle}
+      />
+
+      <div className="min-w-0 flex-1 space-y-2">
+        <Badge variant={isWatch ? "default" : "secondary"}>
+          {isWatch ? "watch" : "ignore"}
+        </Badge>
+
+        {editingPath ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={editPath}
+              onChange={(e) => {
+                setEditPath(e.target.value)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  void updateRule({ uuid: rule.uuid, path: editPath })
+                  setEditingPath(false)
+                }
+
+                if (e.key === "Escape") {
+                  setEditPath(rule.path)
+                  setEditingPath(false)
+                }
+              }}
+              className="min-w-0 flex-1"
+            />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void updateRule({ uuid: rule.uuid, path: editPath })
+                setEditingPath(false)
+              }}
+            >
+              Save
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditPath(rule.path)
+                setEditingPath(false)
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground block truncate text-sm underline-offset-2 hover:underline"
+            onClick={() => {
+              setEditingPath(true)
+            }}
+          >
+            {rule.path}
+          </button>
+        )}
+
+        {isWatch && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={rule.importMode ?? USE_DEFAULT_VALUE}
+              onValueChange={(v) => {
+                const mode = v === USE_DEFAULT_VALUE ? null : v
+                void updateRule({ uuid: rule.uuid, importMode: mode })
+              }}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue>
+                  {IMPORT_MODE_OPTIONS.find(
+                    (o) =>
+                      o.value === (rule.importMode ?? USE_DEFAULT_VALUE),
+                  )?.label ?? "Use default"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {IMPORT_MODE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <select
+              multiple
+              className="border-input bg-background h-[60px] min-w-[160px] flex-1 rounded-md border px-2 py-1 text-xs"
+              value={rule.collections.map((c) => c.uuid)}
+              onChange={(e) => {
+                const uuids = Array.from(
+                  e.target.selectedOptions,
+                  (o) => o.value as UUID,
+                )
+                void updateRule({ uuid: rule.uuid, collectionUuids: uuids })
+              }}
+            >
+              {collections.map((c) => (
+                <option key={c.uuid} value={c.uuid}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ImportRulesSection() {
   const t = useTranslations("SettingsPage.tabs.library.sections.autoImport")
 
-  const IMPORT_MODE_OPTIONS = [
-    { value: USE_DEFAULT_VALUE, label: t("useDefault") },
-    { value: "reference", label: t("modeReference") },
-    { value: "copy", label: t("modeCopy") },
-    { value: "move", label: t("modeMove") },
-    { value: "hardlink", label: t("modeHardlink") },
-  ]
-
-  const { form, lockedSettings } = useSettingsForm()
-  const importPath = useWatch({ control: form.control, name: "importPath" })
-  const entries = importPath ?? []
-  const isLocked = lockedSettings.has("importPath")
+  const { data: rules = [] } = useGetImportRulesQuery()
+  const { data: collections = [] } = useListCollectionsQuery()
+  const [createRule] = useCreateImportRuleMutation()
+  const [deleteRules, { isLoading: isDeleting }] =
+    useDeleteImportRulesMutation()
 
   const [newPath, setNewPath] = useState("")
+  const [newKind, setNewKind] = useState<"watch" | "ignore">("watch")
+  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
 
-  function updateEntries(next: ImportPathEntry[]) {
-    form.setValue("importPath", next.length === 0 ? null : next, {
-      shouldDirty: true,
+  const watchRules = rules.filter((r) => r.kind === "watch")
+  const ignoreRules = rules.filter((r) => r.kind === "ignore")
+
+  function toggleSelected(uuid: UUID) {
+    setSelectedUuids((prev) => {
+      const next = new Set(prev)
+
+      if (next.has(uuid)) {
+        next.delete(uuid)
+      } else {
+        next.add(uuid)
+      }
+
+      return next
     })
   }
 
-  function addPath() {
+  function handleDeleteSelected() {
+    if (selectedUuids.size === 0) return
+
+    void deleteRules({ uuids: [...selectedUuids] })
+    setSelectedUuids(new Set())
+  }
+
+  function addRule() {
     const trimmed = newPath.trim()
-    if (!trimmed) {
-      return
-    }
+    if (!trimmed) return
 
-    const isDuplicate = entries.some((e) => e.path === trimmed)
-    if (isDuplicate) {
-      return
-    }
-
-    updateEntries([...entries, { path: trimmed }])
+    void createRule({ kind: newKind, path: trimmed })
     setNewPath("")
-  }
-
-  function removePath(index: number) {
-    updateEntries(entries.filter((_, i) => i !== index))
-  }
-
-  function updateImportMode(index: number, mode: string) {
-    const existing = entries[index]
-    if (!existing) {
-      return
-    }
-
-    const next = [...entries]
-    next[index] = {
-      ...existing,
-      importMode:
-        mode === USE_DEFAULT_VALUE
-          ? null
-          : (mode as ImportPathEntry["importMode"]),
-    }
-    updateEntries(next)
   }
 
   return (
     <SettingsSection tab="library" section="autoImport">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {t("title")}
-          </CardTitle>
-          <CardDescription>{t("description")}</CardDescription>
+          <CardTitle>{t("title")}</CardTitle>
+          <CardDescription>
+            Configure which folders Storyteller watches for new books, and
+            which paths to ignore during scans.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-xs">{t("explanation")}</p>
-
           <SettingsFormField
             name="importMode"
             label={t("defaultImportMode")}
@@ -205,81 +339,99 @@ function AutoImportSection() {
             )}
           />
 
-          {entries.length > 0 && (
+          <div className="flex items-center gap-2">
+            <select
+              className="border-input bg-background h-9 shrink-0 rounded-md border px-2 text-xs"
+              value={newKind}
+              onChange={(e) => {
+                setNewKind(e.target.value as "watch" | "ignore")
+              }}
+            >
+              <option value="watch">Watch</option>
+              <option value="ignore">Ignore</option>
+            </select>
+
+            <Input
+              placeholder="/path/to/folder"
+              value={newPath}
+              onChange={(e) => {
+                setNewPath(e.target.value)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addRule()
+                }
+              }}
+              className="min-w-0 flex-1"
+            />
+
+            <Button
+              variant="outline"
+              size="default"
+              onClick={addRule}
+              disabled={!newPath.trim()}
+            >
+              <IconPlus size={14} className="mr-1" />
+              Add rule
+            </Button>
+          </div>
+
+          {selectedUuids.size > 0 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={isDeleting}
+                onClick={handleDeleteSelected}
+              >
+                <IconTrash size={14} className="mr-1" />
+                Delete {selectedUuids.size} selected
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedUuids(new Set())
+                }}
+              >
+                Clear selection
+              </Button>
+            </div>
+          )}
+
+          {watchRules.length > 0 && (
             <div className="space-y-2">
-              <Label>{t("importPath")}</Label>
-
-              {entries.map((entry, i) => (
-                <div key={i} className="flex items-center gap-2 p-1">
-                  <span className="min-w-0 flex-1 truncate text-xs">
-                    {entry.path}
-                  </span>
-
-                  <Select
-                    disabled={isLocked}
-                    value={entry.importMode ?? USE_DEFAULT_VALUE}
-                    onValueChange={(v: string | null) => {
-                      updateImportMode(i, v ?? "")
-                    }}
-                  >
-                    <SelectTrigger className="shrink-0">
-                      <SelectValue>
-                        {IMPORT_MODE_OPTIONS.find(
-                          (o) => o.value === entry.importMode,
-                        )?.label ?? t("defaultImportMode")}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {IMPORT_MODE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={isLocked}
-                    onClick={() => {
-                      removePath(i)
-                    }}
-                    className="text-destructive shrink-0"
-                  >
-                    <IconTrash size={16} />
-                  </Button>
-                </div>
+              <Label>Watch rules</Label>
+              {watchRules.map((rule) => (
+                <ImportRuleCard
+                  key={rule.uuid}
+                  rule={rule}
+                  collections={collections}
+                  selected={selectedUuids.has(rule.uuid)}
+                  onToggle={() => {
+                    toggleSelected(rule.uuid)
+                  }}
+                />
               ))}
             </div>
           )}
 
-          {!isLocked && (
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder={t("importPathPlaceholder")}
-                value={newPath}
-                onChange={(e) => {
-                  setNewPath(e.target.value)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    addPath()
-                  }
-                }}
-                className="min-w-0 flex-1"
-              />
-
-              <Button
-                variant="outline"
-                size="default"
-                onClick={addPath}
-                disabled={!newPath.trim()}
-              >
-                <IconPlus size={14} className="mr-1" />
-                {t("addPath")}
-              </Button>
+          {ignoreRules.length > 0 && (
+            <div className="space-y-2">
+              <Label>Ignore rules</Label>
+              {ignoreRules.map((rule) => (
+                <ImportRuleCard
+                  key={rule.uuid}
+                  rule={rule}
+                  collections={collections}
+                  selected={selectedUuids.has(rule.uuid)}
+                  onToggle={() => {
+                    toggleSelected(rule.uuid)
+                  }}
+                />
+              ))}
             </div>
           )}
         </CardContent>
@@ -660,69 +812,6 @@ function ScanControlsSection() {
         </CardContent>
       </Card>
     </SettingsSection>
-  )
-}
-
-function SkippedImportPathsSection() {
-  const t = useTranslations(
-    "SettingsPage.tabs.library.sections.skippedImportPaths",
-  )
-
-  const { data: skipPaths } = useGetImportSkipPathsQuery()
-  const [clearPaths, { isLoading }] = useClearImportSkipPathsMutation()
-
-  const paths = skipPaths ?? []
-
-  const pathsWithoutBook = paths.filter((p) => !p.uuid)
-
-  if (!paths.length) {
-    return null
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("title")}</CardTitle>
-        <CardDescription>{t("description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="divide-border divide-y rounded-md border">
-          {pathsWithoutBook.map(({ filepath }) => (
-            <div
-              key={filepath}
-              className="flex items-center justify-between gap-2 px-3 py-2"
-            >
-              <span className="text-foreground min-w-0 flex-1 truncate text-xs">
-                {filepath}
-              </span>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={isLoading}
-                className="text-destructive shrink-0"
-                onClick={() => {
-                  void clearPaths({ paths: [filepath] })
-                }}
-              >
-                <IconTrash size={16} />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          disabled={isLoading}
-          onClick={() => {
-            void clearPaths({ paths: pathsWithoutBook.map((p) => p.filepath) })
-          }}
-        >
-          {t("clearAll")}
-        </Button>
-      </CardContent>
-    </Card>
   )
 }
 

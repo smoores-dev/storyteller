@@ -85,11 +85,11 @@ export const ImportModeSchema = z.enum([
 ])
 export type ImportMode = z.infer<typeof ImportModeSchema>
 
-export const ImportPathEntrySchema = z.object({
-  path: z.string(),
-  importMode: ImportModeSchema.nullable().optional(),
-})
-export type ImportPathEntry = z.infer<typeof ImportPathEntrySchema>
+/** @deprecated use import rules instead */
+export type ImportPathEntry = {
+  path: string
+  importMode?: ImportMode | null
+}
 
 // Auth provider schemas
 export const BuiltInAuthProviderSchema = z.object({
@@ -133,7 +133,6 @@ export const SettingsSchema = z.object({
   // Library settings
   libraryName: z.string(),
   webUrl: z.string(),
-  importPath: z.array(ImportPathEntrySchema).nullable(),
   importMode: ImportModeSchema,
   // Audio settings
   codec: z.string().nullable(),

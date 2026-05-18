@@ -4,7 +4,7 @@ import { Epub } from "@storyteller-platform/epub"
 
 import { defineStep } from "@/assets/library/scanner/step2"
 import { type EpubNeedsUpgrade } from "@/assets/library/scanner/types"
-import { addImportSkipPaths } from "@/database/importSkipPaths"
+import { addIgnoreRule } from "@/database/importRules"
 import { getSetting } from "@/database/settings"
 import {
   type Epub2ImportStrategy,
@@ -48,10 +48,7 @@ export const upgradeEpubStep = defineStep(
         /\.epub$/i,
         `${backupSuffix}.epub`,
       )
-      // ignore backup path
-      await addImportSkipPaths([
-        { bookUuid: input.bookUuid, filepath: backupPath },
-      ])
+      await addIgnoreRule(backupPath)
       await cp(input.filepath, backupPath)
     }
 

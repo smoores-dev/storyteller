@@ -19,13 +19,13 @@ import {
 import { type ChangelogEntry } from "@/database/changelog"
 import { type CollectionWithRelations } from "@/database/collections"
 import { type Creator } from "@/database/creators"
+import { type ImportRuleWithCollections } from "@/database/importRules"
 import { type Position } from "@/database/positions"
 import {
   type NewSeries,
   type NewSeriesRelation,
   type Series,
 } from "@/database/series"
-import { type ImportPathEntry } from "@/database/settingsTypes"
 import { type Status } from "@/database/statuses"
 import { type Tag } from "@/database/tags"
 import { type UserPermissionSet } from "@/database/users"
@@ -50,7 +50,7 @@ export const api = createApi({
     "UserReadingPreferences",
     "UserReadingState",
     "GpuBuildWarning",
-    "ImportSkipPaths",
+    "ImportRules",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -195,20 +195,56 @@ export const api = createApi({
         },
       }),
     }),
-    getImportSkipPaths: build.query<
-      { filepath: string; uuid: UUID | null; title: string | null }[],
-      void
-    >({
-      query: () => `/books/skip-paths`,
-      providesTags: ["ImportSkipPaths"],
+    getImportRules: build.query<ImportRuleWithCollections[], void>({
+      query: () => `/import-rules`,
+      providesTags: ["ImportRules"],
     }),
-    clearImportSkipPaths: build.mutation<void, { paths: string[] }>({
-      query: ({ paths }) => ({
-        url: `/books/skip-paths`,
-        method: "DELETE",
-        body: { paths },
+    createImportRule: build.mutation<
+      ImportRuleWithCollections,
+      {
+        kind: "watch" | "ignore"
+        path: string
+        importMode?: string | null
+        collectionUuids?: UUID[]
+      }
+    >({
+      query: (body) => ({
+        url: `/import-rules`,
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ["ImportSkipPaths"],
+      invalidatesTags: ["ImportRules"],
+    }),
+    updateImportRule: build.mutation<
+      ImportRuleWithCollections,
+      {
+        uuid: UUID
+        path?: string
+        importMode?: string | null
+        collectionUuids?: UUID[]
+      }
+    >({
+      query: ({ uuid, ...body }) => ({
+        url: `/import-rules/${uuid}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["ImportRules"],
+    }),
+    deleteImportRule: build.mutation<void, { uuid: UUID }>({
+      query: ({ uuid }) => ({
+        url: `/import-rules/${uuid}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ImportRules"],
+    }),
+    deleteImportRules: build.mutation<void, { uuids: UUID[] }>({
+      query: ({ uuids }) => ({
+        url: `/import-rules`,
+        method: "DELETE",
+        body: { uuids },
+      }),
+      invalidatesTags: ["ImportRules"],
     }),
     getPosition: build.query<Position, { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}/positions`,
@@ -603,7 +639,6 @@ export const api = createApi({
           public?: boolean
           users?: UUID[]
           books?: UUID[]
-          importPaths?: ImportPathEntry[] | null
         }
       }
     >({
@@ -643,10 +678,9 @@ export const api = createApi({
         description: string
         public: boolean
         users: string[]
-        importPaths: ImportPathEntry[] | null
       }
     >({
-      query: ({ name, description, public: isPublic, users, importPaths }) => ({
+      query: ({ name, description, public: isPublic, users }) => ({
         url: "/collections",
         method: "POST",
         body: {
@@ -654,7 +688,6 @@ export const api = createApi({
           description,
           public: isPublic,
           ...(!isPublic && { users }),
-          importPaths,
         },
       }),
       invalidatesTags: ["Collections"],
@@ -818,8 +851,11 @@ export const {
   useGetChangelogQuery,
   useGetLatestVersionQuery,
   useUpgradeBookEpubMutation,
-  useGetImportSkipPathsQuery,
-  useClearImportSkipPathsMutation,
+  useGetImportRulesQuery,
+  useCreateImportRuleMutation,
+  useUpdateImportRuleMutation,
+  useDeleteImportRuleMutation,
+  useDeleteImportRulesMutation,
 } = api
 
 export function getDownloadUrl(
