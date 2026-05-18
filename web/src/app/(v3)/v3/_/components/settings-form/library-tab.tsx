@@ -716,7 +716,7 @@ function SkippedImportPathsSection() {
           size="sm"
           disabled={isLoading}
           onClick={() => {
-            void clearPaths({ paths: paths.map((p) => p.filepath) })
+            void clearPaths({ paths: pathsWithoutBook.map((p) => p.filepath) })
           }}
         >
           {t("clearAll")}

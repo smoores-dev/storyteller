@@ -252,7 +252,7 @@ function SkippedImportPaths() {
           loading={isLoading}
           className="self-start"
           onClick={() => {
-            void clearPaths({ paths: paths.map((p) => p.filepath) })
+            void clearPaths({ paths: pathsWithoutBook.map((p) => p.filepath) })
           }}
         >
           Clear all
