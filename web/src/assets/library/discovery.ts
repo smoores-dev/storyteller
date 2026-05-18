@@ -285,9 +285,8 @@ export async function createNewBook(
     return created
   }
 
-  // unclassified epubs only -- create a minimal book record.
-  // the scanner pipeline will open the epub, determine its format
-  // (ebook vs readaloud), extract metadata, and create the relation.
+  // unclassified epubs only: when we first encounter an epub that we don't know
+  // whether it's an ebook or readaloud, we create a minimal book record.
   const firstEpub = bookPath.epubUnknown?.[0]
   if (!firstEpub) {
     return null

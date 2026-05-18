@@ -67,6 +67,11 @@ export type ScanFailure = {
   errMsg: string
 }
 
+export type ScanBookEntry = {
+  bookUuid: UUID
+  bookTitle: string
+}
+
 export type ScanSummary = {
   source: ScanSource
   startedAt: number
@@ -79,10 +84,8 @@ export type ScanSummary = {
     skipped: number
     failed: number
   }
-  bookCounts: {
-    added: number
-    newlyMissing: number
-  }
+  addedBooks: ScanBookEntry[]
+  newlyMissingBooks: ScanBookEntry[]
   skipsByReason: Record<string, number>
   timingsByStep: StepTimingAggregate[]
   failures: ScanFailure[]
@@ -126,8 +129,8 @@ export class ScanReport {
   private readonly succeededBooksSet = new Set<UUID>()
   private readonly failedBooksSet = new Set<UUID>()
   private readonly skippedBooksSet = new Set<UUID>()
-  private readonly addedBooksSet = new Set<UUID>()
-  private readonly newlyMissingBooksSet = new Set<UUID>()
+  private readonly addedBooksMap = new Map<UUID, string>()
+  private readonly newlyMissingBooksMap = new Map<UUID, string>()
   private readonly timings: StepTiming[] = []
   private inputsTotal = 0
   private tasksValue: string[] = []
@@ -159,12 +162,12 @@ export class ScanReport {
     this.inputsTotal = total
   }
 
-  recordAdded(bookUuid: UUID) {
-    this.addedBooksSet.add(bookUuid)
+  recordAdded(bookUuid: UUID, bookTitle: string) {
+    this.addedBooksMap.set(bookUuid, bookTitle)
   }
 
-  recordNewlyMissing(bookUuid: UUID) {
-    this.newlyMissingBooksSet.add(bookUuid)
+  recordNewlyMissing(bookUuid: UUID, bookTitle: string) {
+    this.newlyMissingBooksMap.set(bookUuid, bookTitle)
   }
 
   recordTiming(timing: StepTiming) {
@@ -367,10 +370,12 @@ export class ScanReport {
         skipped: counts.skipped,
         failed: counts.failed,
       },
-      bookCounts: {
-        added: this.addedBooksSet.size,
-        newlyMissing: this.newlyMissingBooksSet.size,
-      },
+      addedBooks: [...this.addedBooksMap.entries()].map(
+        ([bookUuid, bookTitle]) => ({ bookUuid, bookTitle }),
+      ),
+      newlyMissingBooks: [...this.newlyMissingBooksMap.entries()].map(
+        ([bookUuid, bookTitle]) => ({ bookUuid, bookTitle }),
+      ),
       skipsByReason: this.skipsByReason(),
       timingsByStep: this.timingsByStep(),
       failures: this.failures(),
@@ -390,10 +395,18 @@ export class ScanReport {
       `  Inputs:    ${s.counts.inputs} ` +
         `(${s.counts.succeeded} succeeded, ${s.counts.skipped} skipped, ${s.counts.failed} failed)`,
     )
-    if (s.bookCounts.added > 0 || s.bookCounts.newlyMissing > 0) {
-      lines.push(
-        `  Books:     ${s.bookCounts.added} added, ${s.bookCounts.newlyMissing} newly missing`,
-      )
+    if (s.addedBooks.length > 0) {
+      lines.push(`  Added (${s.addedBooks.length}):`)
+      for (const b of s.addedBooks) {
+        lines.push(`    - ${b.bookTitle}`)
+      }
+    }
+
+    if (s.newlyMissingBooks.length > 0) {
+      lines.push(`  Newly missing (${s.newlyMissingBooks.length}):`)
+      for (const b of s.newlyMissingBooks) {
+        lines.push(`    - ${b.bookTitle}`)
+      }
     }
 
     const skipReasons = Object.entries(s.skipsByReason).sort(

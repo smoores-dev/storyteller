@@ -45,7 +45,7 @@ async function handleMissing(input: ScanInput, ctx: ScanCtx) {
     getFormatRelationPatch(input, { missing: true }),
   )
 
-  ctx.report.recordNewlyMissing(input.bookUuid)
+  ctx.report.recordNewlyMissing(input.bookUuid, input.book.title)
   ctx.report.info({
     step: STEP,
     msg: `File went missing: ${input.filepath}`,

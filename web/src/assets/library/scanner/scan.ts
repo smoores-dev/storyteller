@@ -16,7 +16,7 @@ import {
 import { type BookWithRelations, getBooks } from "@/database/books"
 import { getCollections } from "@/database/collections"
 import { getSetting } from "@/database/settings"
-import { type ImportMode, type ImportPathEntry } from "@/database/settingsTypes"
+import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
@@ -195,7 +195,6 @@ async function resolveImportPath(
     scoped.map((b) => b.readaloud?.filepath).filter((p): p is string => !!p),
   )
 
-  console.log("task.importPath", task)
   const bookPaths = await discoverBookPathsForRoots(
     [{ rootPath: task.importPath, warnIfFileAtRoot: true }],
     knownEbookPaths,
@@ -212,14 +211,15 @@ async function resolveImportPath(
     importMode: task.importMode ?? undefined,
   })
 
+  const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
+
   reportDiscoveries(
     ctx,
     task.importPath,
     reconciled.newFormatsByBook,
     reconciled.unclassifiedEpubs,
+    refreshedBooks,
   )
-
-  const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
   const inputs = buildInputsForBooks(refreshedBooks, {
     newFormats: reconciled.newFormatsByBook,
   })
@@ -259,9 +259,12 @@ function reportDiscoveries(
   importPath: string,
   newFormatsByBook: Map<UUID, Set<ScanFormat>>,
   unclassified: UnclassifiedEpub[],
+  books: BookWithRelations[],
 ) {
   const tentativeBookUuids = new Set(unclassified.map((u) => u.bookUuid))
   if (newFormatsByBook.size === 0 && tentativeBookUuids.size === 0) return
+
+  const bookByUuid = new Map(books.map((b) => [b.uuid, b]))
 
   let formatCount = 0
   const bookUuids = new Set<UUID>(tentativeBookUuids)
@@ -269,8 +272,10 @@ function reportDiscoveries(
     bookUuids.add(bookUuid)
     formatCount += formats.size
   }
+
   for (const bookUuid of bookUuids) {
-    ctx.report.recordAdded(bookUuid)
+    const title = bookByUuid.get(bookUuid)?.title ?? bookUuid
+    ctx.report.recordAdded(bookUuid, title)
   }
 
   const parts = [`${bookUuids.size} book(s)`]
@@ -343,8 +348,6 @@ async function resolveChangedPaths(
     }
     newFormatsByBook = reconciled.newFormatsByBook
     unclassifiedEpubs = reconciled.unclassifiedEpubs
-
-    reportDiscoveries(ctx, task.importPath, newFormatsByBook, unclassifiedEpubs)
   }
 
   if (!affectedFormats.size && !unclassifiedEpubs.length) {
@@ -352,6 +355,16 @@ async function resolveChangedPaths(
   }
 
   const refreshedBooks = scopedByCollection(await getBooks(), task.collection)
+
+  if (newFormatsByBook.size > 0 || unclassifiedEpubs.length > 0) {
+    reportDiscoveries(
+      ctx,
+      task.importPath,
+      newFormatsByBook,
+      unclassifiedEpubs,
+      refreshedBooks,
+    )
+  }
   const inputs = buildInputsForBooks(refreshedBooks, {
     formatFilter: affectedFormats,
     newFormats: newFormatsByBook,
@@ -527,7 +540,7 @@ export async function scanLibrary(opts: {
   }
 
   for (const collection of collections) {
-    const entries = (collection.importPaths as ImportPathEntry[] | null) ?? []
+    const entries = collection.importPaths ?? []
     if (entries.length === 0) continue
 
     for (const entry of entries) {
