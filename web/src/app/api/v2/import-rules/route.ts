@@ -43,7 +43,10 @@ export const POST = withHasPermission("settingsUpdate")(async (request) => {
 
   if (isForbiddenPath(body.path)) {
     return NextResponse.json(
-      { error: "Cannot use the internal assets or uploads directory as an import rule path." },
+      {
+        error:
+          "Cannot use the internal assets or uploads directory as an import rule path.",
+      },
       { status: 400 },
     )
   }

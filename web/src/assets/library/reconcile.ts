@@ -166,11 +166,7 @@ export async function reconcileDiscoveredPaths(
 
       const firstCollection = input.collectionUuids[0] ?? null
 
-      const created = await createNewBook(
-        bookPath,
-        firstCollection,
-        importMode,
-      )
+      const created = await createNewBook(bookPath, firstCollection, importMode)
       if (!created) continue
 
       const remainingCollections = input.collectionUuids.slice(1)
@@ -181,11 +177,7 @@ export async function reconcileDiscoveredPaths(
       const discoveredFormats = getBookPathFormats(bookPath)
       addFormats(result.formatsByBook, created.uuid, discoveredFormats)
       addFormats(result.newFormatsByBook, created.uuid, discoveredFormats)
-      collectUnclassifiedEpubs(
-        created.uuid,
-        bookPath,
-        result.unclassifiedEpubs,
-      )
+      collectUnclassifiedEpubs(created.uuid, bookPath, result.unclassifiedEpubs)
 
       currentScoped.push(created)
       currentAll.push(created)

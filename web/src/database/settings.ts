@@ -8,7 +8,11 @@ import { logger } from "@/logging"
 
 import { db } from "./connection"
 import { createImportRule, getImportRules } from "./importRules"
-import { ConfigFileSchema, type ImportMode, type Settings } from "./settingsTypes"
+import {
+  ConfigFileSchema,
+  type ImportMode,
+  type Settings,
+} from "./settingsTypes"
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
   let details = settings.transcriptionEngine ?? "whisper.cpp"

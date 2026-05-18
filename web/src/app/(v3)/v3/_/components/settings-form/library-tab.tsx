@@ -215,8 +215,7 @@ function ImportRuleCard({
               <SelectTrigger className="w-[160px]">
                 <SelectValue>
                   {IMPORT_MODE_OPTIONS.find(
-                    (o) =>
-                      o.value === (rule.importMode ?? USE_DEFAULT_VALUE),
+                    (o) => o.value === (rule.importMode ?? USE_DEFAULT_VALUE),
                   )?.label ?? "Use default"}
                 </SelectValue>
               </SelectTrigger>
@@ -305,8 +304,8 @@ function ImportRulesSection() {
         <CardHeader>
           <CardTitle>{t("title")}</CardTitle>
           <CardDescription>
-            Configure which folders Storyteller watches for new books, and
-            which paths to ignore during scans.
+            Configure which folders Storyteller watches for new books, and which
+            paths to ignore during scans.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

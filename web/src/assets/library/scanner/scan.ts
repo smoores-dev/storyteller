@@ -357,10 +357,7 @@ async function resolveChangedPaths(
     return EMPTY_RESOLUTION
   }
 
-  const refreshedBooks = scopedByCollections(
-    await getBooks(),
-    task.collections,
-  )
+  const refreshedBooks = scopedByCollections(await getBooks(), task.collections)
 
   if (newFormatsByBook.size > 0 || unclassifiedEpubs.length > 0) {
     reportDiscoveries(

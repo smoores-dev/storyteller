@@ -29,44 +29,49 @@ function isForbiddenPath(path: string): boolean {
 
 type Params = Promise<{ uuid: UUID }>
 
-export const PUT = withHasPermission<Params>("settingsUpdate")(
-  async (request, context) => {
-    const { uuid } = await context.params
+export const PUT = withHasPermission<Params>("settingsUpdate")(async (
+  request,
+  context,
+) => {
+  const { uuid } = await context.params
 
-    const body = (await request.json()) as {
-      path?: string
-      importMode?: string | null
-      collectionUuids?: UUID[]
-    }
+  const body = (await request.json()) as {
+    path?: string
+    importMode?: string | null
+    collectionUuids?: UUID[]
+  }
 
-    if (body.path && isForbiddenPath(body.path)) {
-      return NextResponse.json(
-        { error: "Cannot use the internal assets or uploads directory as an import rule path." },
-        { status: 400 },
-      )
-    }
+  if (body.path && isForbiddenPath(body.path)) {
+    return NextResponse.json(
+      {
+        error:
+          "Cannot use the internal assets or uploads directory as an import rule path.",
+      },
+      { status: 400 },
+    )
+  }
 
-    const input: UpdateImportRuleInput = {
-      path: body.path,
-      importMode: body.importMode,
-      collectionUuids: body.collectionUuids,
-    }
+  const input: UpdateImportRuleInput = {
+    path: body.path,
+    importMode: body.importMode,
+    collectionUuids: body.collectionUuids,
+  }
 
-    const rule = await updateImportRule(uuid, input)
+  const rule = await updateImportRule(uuid, input)
 
-    await getWatcher().reload()
+  await getWatcher().reload()
 
-    return NextResponse.json(rule)
-  },
-)
+  return NextResponse.json(rule)
+})
 
-export const DELETE = withHasPermission<Params>("settingsUpdate")(
-  async (_request, context) => {
-    const { uuid } = await context.params
+export const DELETE = withHasPermission<Params>("settingsUpdate")(async (
+  _request,
+  context,
+) => {
+  const { uuid } = await context.params
 
-    await deleteImportRule(uuid)
-    await getWatcher().reload()
+  await deleteImportRule(uuid)
+  await getWatcher().reload()
 
-    return new Response(null, { status: 204 })
-  },
-)
+  return new Response(null, { status: 204 })
+})
