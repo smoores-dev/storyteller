@@ -296,9 +296,16 @@ async function resolveChangedPaths(
   task: Extract<ScanTask, { kind: "changed-paths" }>,
   ctx: ScanCtx,
 ): Promise<TaskResolution> {
-  const normalized = coalesceChanges(task.changes).filter((c) =>
-    isWithinPath(task.importPath, c.path),
-  )
+  const coalesced = coalesceChanges(task.changes)
+  console.log("coalesced", coalesced)
+
+  const normalized = coalesced.filter((c) => {
+    console.log("task.importPath", task.importPath)
+    return isWithinPath(task.importPath, c.path)
+  })
+
+  console.log("normalized", normalized)
+
   if (!normalized.length) return EMPTY_RESOLUTION
 
   const allBooks = await getBooks()
@@ -461,6 +468,7 @@ export async function scan(opts: {
 
       for (const task of opts.tasks) {
         if (ctx.signal.aborted) {
+          logger.error({ msg: "Scan aborted" })
           break
         }
 

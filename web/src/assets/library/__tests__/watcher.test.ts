@@ -3,76 +3,118 @@ import { describe, it } from "node:test"
 
 import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createTestLibrary, waitForWatcher } from "@/__tests__/harness/testFs"
+import { canonicalizePath } from "@/assets/library/discovery"
 import { Watcher } from "@/assets/library/scanner/triggers/watcher"
+import { getBooks } from "@/database/books"
 import { createImportRule } from "@/database/importRules"
 
 void describe("Watcher", () => {
-  void it("starts without errors on a valid directory", async () => {
-    using _db = setupTestDb()
-    await using library = await createTestLibrary("watcher-start")
-
-    await createImportRule({ kind: "watch", path: library.root })
-
-    const watcher = new Watcher()
-    await watcher.start()
-    await waitForWatcher(2000)
-    await watcher.stop()
-
-    assert.ok(true)
-  })
-
   void it("detects a new epub file added to a watched directory", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-detect")
 
-    await createImportRule({ kind: "watch", path: library.root })
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
 
-    const watcher = new Watcher()
+    await using watcher = new Watcher()
     await watcher.start()
     await waitForWatcher(2000)
 
-    const folder = await library.createBookFolder("new-detection", {})
-    await folder.add("detected.epub")
+    await library.createBookFolder("new-detection", { ebook: "moby-dick" })
 
-    await waitForWatcher(3000)
-    await watcher.stop()
+    await waitForWatcher(2000)
 
-    assert.ok(true)
+    const books = await getBooks()
+    assert.strictEqual(books.length, 1)
+    assert.strictEqual(books[0]?.title, "moby-dick")
   })
 
-  void it("stops cleanly and ignores subsequent changes", async () => {
+  void it("stops cleanly and ignores subsequent file additions", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-stop")
 
-    await createImportRule({ kind: "watch", path: library.root })
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
 
-    const watcher = new Watcher()
+    await using watcher = new Watcher()
     await watcher.start()
-    await waitForWatcher(500)
+    await waitForWatcher(2000)
 
     await watcher.stop()
 
-    const folder = await library.createBookFolder("after-stop", {})
-    await folder.add("ignored.epub")
+    await library.createBookFolder("after-stop", { ebook: "moby-dick" })
+    await waitForWatcher(2000)
 
-    await waitForWatcher(1000)
-    assert.ok(true)
+    const books = await getBooks()
+    assert.strictEqual(books.length, 0)
   })
 
-  void it("reloads when import rules change", async () => {
+  void it("reloads and watches a newly added import rule", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-reload")
 
-    await createImportRule({ kind: "watch", path: library.root })
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
 
-    const watcher = new Watcher()
+    await using watcher = new Watcher()
     await watcher.start()
-    await waitForWatcher(500)
+    await waitForWatcher(2000)
+
+    // create a second library and add it as a new rule
+    await using library2 = await createTestLibrary("watcher-reload-2")
+    const absoluteRoot2 = await canonicalizePath(library2.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot2 })
 
     await watcher.reload()
-    await waitForWatcher(500)
+    await waitForWatcher(2000)
 
-    await watcher.stop()
-    assert.ok(true)
+    await library2.createBookFolder("reloaded-book", { ebook: "moby-dick" })
+    await waitForWatcher(2000)
+
+    const books = await getBooks()
+    assert.strictEqual(books.length, 1)
+    assert.strictEqual(books[0]?.title, "moby-dick")
+  })
+
+  void it("detects multiple formats added sequentially to same book folder", async () => {
+    using _db = setupTestDb()
+    await using library = await createTestLibrary("watcher-multi")
+
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
+
+    await using watcher = new Watcher()
+    await watcher.start()
+    await waitForWatcher(2000)
+
+    // first add an epub -- watcher picks it up and creates a book
+    const folder = await library.createBookFolder("multi-format", {
+      ebook: "moby-dick",
+    })
+    await waitForWatcher(2000)
+
+    const booksAfterEpub = await getBooks()
+    assert.strictEqual(booksAfterEpub.length, 1)
+
+    const book = booksAfterEpub[0]!
+    assert.strictEqual(book.title, "moby-dick")
+    assert.ok(book.ebook?.filepath)
+    assert.strictEqual(book.audiobook, null)
+
+    // then add audio files to the same folder -- watcher picks them up
+    // and attaches the audiobook relation to the same book
+    await folder.addFixture("moby-dick", {
+      name: "moby-dick",
+      type: "audiobooks",
+      contents: true,
+    })
+    await waitForWatcher(3000)
+
+    const booksAfterAudio = await getBooks()
+    assert.strictEqual(booksAfterAudio.length, 1)
+    assert.ok(
+      booksAfterAudio[0]?.audiobook?.filepath,
+      "audiobook should be attached to the same book after detecting mp3 files",
+    )
   })
 })

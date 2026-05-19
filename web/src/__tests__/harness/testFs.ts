@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { cp, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { basename, join, relative } from "node:path"
+import { join, relative } from "node:path"
 import { cwd } from "node:process"
 
 const FIXTURES_DIR = join(cwd(), "src", "__fixtures__", "books")
@@ -24,7 +24,31 @@ export type TestBookFolder = {
   name: string
 
   add(relativePath: string, content?: Buffer | string): Promise<string>
+  addFixture(
+    relativePath: string,
+    opts: {
+      type: "ebooks" | "audiobooks" | "readalouds"
+      name: string
+      /**
+       * whether to use the contents of the fixture folder, or the folder itself
+       * @default true
+       */
+      contents?: boolean
+    },
+  ): Promise<string>
   replace(relativePath: string, content: Buffer | string): Promise<string>
+  replaceFixture(
+    relativePath: string,
+    opts: {
+      type: "ebooks" | "audiobooks" | "readalouds"
+      name: string
+      /**
+       * whether to use the contents of the fixture folder, or the folder itself
+       * @default true
+       */
+      contents?: boolean
+    },
+  ): Promise<string>
   delete(relativePath: string): Promise<void>
 
   expectFiles(expected: string[]): Promise<void>
@@ -42,7 +66,10 @@ export type TestLibrary = {
   [Symbol.asyncDispose]: () => Promise<void>
 }
 
-function createBookFolderHandle(folderPath: string, name: string): TestBookFolder {
+function createBookFolderHandle(
+  folderPath: string,
+  name: string,
+): TestBookFolder {
   return {
     path: folderPath,
     name,
@@ -54,9 +81,23 @@ function createBookFolderHandle(folderPath: string, name: string): TestBookFolde
       return fullPath
     },
 
+    async addFixture(relativePath, opts) {
+      const fullPath = join(folderPath, relativePath)
+      await mkdir(join(fullPath, ".."), { recursive: true })
+      await copyFixture(opts.type, opts.name, fullPath)
+      return fullPath
+    },
+
     async replace(relativePath, content) {
       const fullPath = join(folderPath, relativePath)
       await writeFile(fullPath, content)
+      return fullPath
+    },
+
+    async replaceFixture(relativePath, opts) {
+      const fullPath = join(folderPath, relativePath)
+      await mkdir(join(fullPath, ".."), { recursive: true })
+      await copyFixture(opts.type, opts.name, fullPath)
       return fullPath
     },
 
@@ -139,9 +180,7 @@ export async function createTestLibrary(prefix: string): Promise<TestLibrary> {
 
       if (opts?.dummyEpub) {
         const epubName =
-          typeof opts.dummyEpub === "string"
-            ? opts.dummyEpub
-            : `${name}.epub`
+          typeof opts.dummyEpub === "string" ? opts.dummyEpub : `${name}.epub`
 
         const epubFilename = epubName.endsWith(".epub")
           ? epubName

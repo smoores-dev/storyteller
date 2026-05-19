@@ -151,6 +151,16 @@ function seedSettings(
   )
 }
 
+function seedStatuses(sqlite: Database) {
+  const insert = sqlite.prepare(
+    `INSERT OR IGNORE INTO status (name, is_default) VALUES (?, ?)`,
+  )
+
+  insert.run("To read", "1")
+  insert.run("Reading", "0")
+  insert.run("Read", "0")
+}
+
 export type TestDbContext = {
   db: Kysely<DB>
   sqlite: Database
@@ -168,6 +178,7 @@ export function setupTestDb(
 
   applySchema(sqlite)
   seedSettings(sqlite, settingsOverrides)
+  seedStatuses(sqlite)
 
   const testDb = createKyselyInstance(sqlite)
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call

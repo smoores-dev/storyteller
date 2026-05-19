@@ -30,7 +30,7 @@ yarn-error.log*
 
 # test fixtures
 src/__fixtures__/__output__/*
-!src/__fixtures__/__output__/.keep
+!src/__fixtures__/__output__/**/.gitkeep
 
 # e.g. uuid.c.so sqlite extension
 *.so
