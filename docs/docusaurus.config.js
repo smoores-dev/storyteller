@@ -224,7 +224,7 @@ const config = {
       },
     }),
   future: {
-    faster: true,
+    experimental_faster: true,
     v4: true,
   },
 }
