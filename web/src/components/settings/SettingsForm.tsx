@@ -240,7 +240,7 @@ function ImportRuleCard({
     <Box className="rounded border border-gray-200 p-3 dark:border-neutral-700">
       <Group gap="sm" wrap="nowrap" align="flex-start">
         <Checkbox
-          className="mt-1"
+          className="mt-2"
           checked={selected}
           onChange={onToggle}
           size="sm"
@@ -248,15 +248,6 @@ function ImportRuleCard({
 
         <Stack gap="xs" className="min-w-0 flex-1">
           <Group gap="xs">
-            <Text
-              // color={isWatch ? "blue" : "orange"}
-              c="dimmed"
-              size="md"
-              className="text-dimmed px-1 text-sm font-bold uppercase"
-            >
-              {isWatch ? "watch" : "ignore"}
-            </Text>
-
             {editingPath ? (
               <ServerFilePicker
                 startPath={rule.path}
@@ -338,13 +329,20 @@ function ImportRulesSection({
 
   const [addingRule, setAddingRule] = useState(false)
   const [newKind, setNewKind] = useState<"watch" | "ignore">("watch")
-  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
+  const [selectedWatchUuids, setSelectedWatchUuids] = useState<Set<UUID>>(
+    new Set(),
+  )
+  const [selectedIgnoreUuids, setSelectedIgnoreUuids] = useState<Set<UUID>>(
+    new Set(),
+  )
 
   const watchRules = rules.filter((r) => r.kind === "watch")
   const ignoreRules = rules.filter((r) => r.kind === "ignore")
 
-  function toggleSelected(uuid: UUID) {
-    setSelectedUuids((prev) => {
+  function toggleSelected(uuid: UUID, kind: "watch" | "ignore") {
+    const set =
+      kind === "watch" ? setSelectedWatchUuids : setSelectedIgnoreUuids
+    set((prev) => {
       const next = new Set(prev)
 
       if (next.has(uuid)) {
@@ -357,11 +355,15 @@ function ImportRulesSection({
     })
   }
 
-  function handleDeleteSelected() {
+  function handleDeleteSelected(kind: "watch" | "ignore") {
+    const selectedUuids =
+      kind === "watch" ? selectedWatchUuids : selectedIgnoreUuids
+    const set =
+      kind === "watch" ? setSelectedWatchUuids : setSelectedIgnoreUuids
     if (selectedUuids.size === 0) return
 
     void deleteRules({ uuids: [...selectedUuids] })
-    setSelectedUuids(new Set())
+    set(new Set())
   }
 
   return (
@@ -423,44 +425,58 @@ function ImportRulesSection({
           )}
         </Group>
 
-        {selectedUuids.size > 0 && (
-          <Group gap="xs">
-            <Button
-              variant="light"
-              color="red"
-              size="compact-sm"
-              leftSection={<IconTrash size={14} />}
-              loading={isDeleting}
-              onClick={handleDeleteSelected}
-            >
-              Delete {selectedUuids.size} selected
-            </Button>
-
-            <Button
-              variant="subtle"
-              size="compact-sm"
-              onClick={() => {
-                setSelectedUuids(new Set())
-              }}
-            >
-              Clear selection
-            </Button>
-          </Group>
-        )}
-
         {watchRules.length > 0 && (
           <Stack gap="xs">
-            <Text fw={500} size="sm">
-              Watch rules
-            </Text>
+            <Group gap="xs">
+              <Text fw={500} size="sm">
+                Watch rules
+              </Text>
+
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                onClick={() => {
+                  setSelectedWatchUuids(new Set(watchRules.map((r) => r.uuid)))
+                }}
+              >
+                Select all
+              </Button>
+
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                disabled={selectedWatchUuids.size === 0}
+                onClick={() => {
+                  setSelectedWatchUuids(new Set())
+                }}
+              >
+                Clear selection
+              </Button>
+
+              {selectedWatchUuids.size > 0 && (
+                <Button
+                  variant="light"
+                  color="red"
+                  size="compact-sm"
+                  disabled={selectedWatchUuids.size === 0}
+                  leftSection={<IconTrash size={14} />}
+                  loading={isDeleting}
+                  onClick={() => {
+                    handleDeleteSelected("watch")
+                  }}
+                >
+                  Delete {selectedWatchUuids.size} selected
+                </Button>
+              )}
+            </Group>
             {watchRules.map((rule) => (
               <ImportRuleCard
                 key={rule.uuid}
                 rule={rule}
                 collections={collections}
-                selected={selectedUuids.has(rule.uuid)}
+                selected={selectedWatchUuids.has(rule.uuid)}
                 onToggle={() => {
-                  toggleSelected(rule.uuid)
+                  toggleSelected(rule.uuid, "watch")
                 }}
               />
             ))}
@@ -469,17 +485,57 @@ function ImportRulesSection({
 
         {ignoreRules.length > 0 && (
           <Stack gap="xs">
-            <Text fw={500} size="sm">
-              Ignore rules
-            </Text>
+            <Group gap="xs">
+              <Text fw={500} size="sm">
+                Ignore rules
+              </Text>
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                onClick={() => {
+                  setSelectedIgnoreUuids(
+                    new Set(ignoreRules.map((r) => r.uuid)),
+                  )
+                }}
+              >
+                Select all
+              </Button>
+
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                disabled={selectedIgnoreUuids.size === 0}
+                onClick={() => {
+                  setSelectedIgnoreUuids(new Set())
+                }}
+              >
+                Clear selection
+              </Button>
+
+              {selectedIgnoreUuids.size > 0 && (
+                <Button
+                  variant="light"
+                  color="red"
+                  size="compact-sm"
+                  disabled={selectedIgnoreUuids.size === 0}
+                  leftSection={<IconTrash size={14} />}
+                  loading={isDeleting}
+                  onClick={() => {
+                    handleDeleteSelected("ignore")
+                  }}
+                >
+                  Delete {selectedIgnoreUuids.size} selected
+                </Button>
+              )}
+            </Group>
             {ignoreRules.map((rule) => (
               <ImportRuleCard
                 key={rule.uuid}
                 rule={rule}
                 collections={collections}
-                selected={selectedUuids.has(rule.uuid)}
+                selected={selectedIgnoreUuids.has(rule.uuid)}
                 onToggle={() => {
-                  toggleSelected(rule.uuid)
+                  toggleSelected(rule.uuid, "ignore")
                 }}
               />
             ))}
