@@ -54,6 +54,8 @@ export class Watcher {
     this.startWatcher([], ASSETS_DIR, assetController, (path) =>
       assetRegex.test(path),
     )
+
+    return
   }
 
   private startWatchRules(rules: ImportRuleWithCollections[]) {
@@ -330,6 +332,10 @@ export class Watcher {
         await closeWatcher()
       }
     })()
+  }
+
+  [Symbol.asyncDispose]() {
+    return this.stop()
   }
 }
 
