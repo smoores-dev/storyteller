@@ -1,4 +1,5 @@
 import { db } from "@/database/connection"
+import { type UUID } from "@/uuid"
 
 type ImportPathEntry = { path: string; importMode?: string | null }
 
@@ -58,7 +59,9 @@ async function normalizeCollectionImportPaths() {
   // need to do raw selection to avoid pre-deserialization
   const importPaths = (await db
     .selectFrom("collection")
+    // @ts-expect-error column changed
     .select(["importPaths", "uuid"])
+    // @ts-expect-error column changed
     .where("importPaths", "is not", null)
     .execute()) as unknown as { importPaths: unknown; uuid: UUID }[]
 
