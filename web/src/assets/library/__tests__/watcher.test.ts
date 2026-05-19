@@ -7,6 +7,7 @@ import { canonicalizePath } from "@/assets/library/discovery"
 import { Watcher } from "@/assets/library/scanner/triggers/watcher"
 import { getBooks } from "@/database/books"
 import { createImportRule } from "@/database/importRules"
+import { join } from "node:path"
 
 void describe("Watcher", () => {
   void it("detects a new epub file added to a watched directory", async () => {
@@ -76,7 +77,7 @@ void describe("Watcher", () => {
     assert.strictEqual(books[0]?.title, "moby-dick")
   })
 
-  void it("detects multiple formats added sequentially to same book folder", async () => {
+  void it.only("detects multiple formats added sequentially to same book folder", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-multi")
 
@@ -98,22 +99,33 @@ void describe("Watcher", () => {
 
     const book = booksAfterEpub[0]!
     assert.strictEqual(book.title, "moby-dick")
-    assert.ok(book.ebook?.filepath)
+    assert.strictEqual(
+      book.ebook?.filepath,
+      join(absoluteRoot, "multi-format", "moby-dick.epub"),
+    )
     assert.strictEqual(book.audiobook, null)
 
     // then add audio files to the same folder -- watcher picks them up
     // and attaches the audiobook relation to the same book
-    await folder.addFixture("moby-dick", {
+    await folder.addFixture(".", {
       name: "moby-dick",
       type: "audiobooks",
       contents: true,
     })
+    await folder.expectFiles([
+      "moby-dick.epub",
+      "mobydick_001_002_melville.mp3",
+    ])
     await waitForWatcher(3000)
 
     const booksAfterAudio = await getBooks()
     assert.strictEqual(booksAfterAudio.length, 1)
-    assert.ok(
+    assert.strictEqual(
       booksAfterAudio[0]?.audiobook?.filepath,
+      join(absoluteRoot, "multi-format"),
+    )
+    assert.ok(
+      booksAfterAudio[0].audiobook.filepath,
       "audiobook should be attached to the same book after detecting mp3 files",
     )
   })
