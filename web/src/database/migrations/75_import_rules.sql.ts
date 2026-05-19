@@ -20,8 +20,6 @@ const hasColumn = async (table: string, column: string) => {
 }
 
 async function createImportRuleTables() {
-  if (await hasTable("import_rule")) return
-
   await sql`
     CREATE TABLE import_rule (
       uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid()),
@@ -48,52 +46,52 @@ async function createImportRuleTables() {
 
   await sql`
     CREATE TABLE import_rule_to_collection (
-      uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid()),
       import_rule_uuid TEXT NOT NULL REFERENCES import_rule (uuid) ON DELETE CASCADE,
       collection_uuid TEXT NOT NULL REFERENCES collection (uuid) ON DELETE CASCADE,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE (import_rule_uuid, collection_uuid)
+      PRIMARY KEY (import_rule_uuid, collection_uuid)
     )
-  `.execute(db)
-
-  await sql`
-    CREATE TRIGGER import_rule_to_collection_update_trigger AFTER
-    UPDATE ON "import_rule_to_collection" FOR EACH ROW BEGIN
-    UPDATE "import_rule_to_collection"
-    SET updated_at = CURRENT_TIMESTAMP
-    WHERE uuid = OLD.uuid;
-    END
   `.execute(db)
 }
 
 async function migrateGlobalImportPaths() {
-  const result = await sql<SettingsRow>`
+  try {
+    const result = await sql<SettingsRow>`
     SELECT value FROM settings WHERE name = 'importPath'
   `.execute(db)
 
-  const row = result.rows[0]
-  if (!row) return
+    const row = result.rows[0]
+    if (!row) return
 
-  const parsed =
-    typeof row.value === "string"
-      ? (JSON.parse(row.value) as unknown)
-      : row.value
+    const parsed =
+      typeof row.value === "string"
+        ? (JSON.parse(row.value) as unknown)
+        : row.value
 
-  if (!Array.isArray(parsed) || parsed.length === 0) return
+    if (!Array.isArray(parsed) || parsed.length === 0) return
 
-  const entries = parsed as ImportPathEntry[]
+    const entries = parsed as ImportPathEntry[]
 
-  for (const entry of entries) {
-    await sql`
+    for (const entry of entries) {
+      await sql`
       INSERT INTO import_rule (kind, path, import_mode)
       VALUES ('watch', ${entry.path}, ${entry.importMode ?? null})
       ON CONFLICT (path) DO NOTHING
     `.execute(db)
+    }
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("no such column: import_paths")
+    ) {
+      return
+    }
+    throw error
   }
 }
 
 async function migrateCollectionImportPaths() {
+  if (!(await hasColumn("collection", "import_paths"))) return
+
   const result = await sql<{ uuid: UUID; import_paths: string }>`
     SELECT uuid, import_paths FROM collection WHERE import_paths IS NOT NULL
   `.execute(db)
@@ -144,8 +142,9 @@ async function migrateCollectionImportPaths() {
 async function migrateSkipPaths() {
   if (!(await hasTable("import_skip_path"))) return
 
+  // only migrate those without a book uuid
   const skipPaths = await sql<{ filepath: string }>`
-    SELECT filepath FROM import_skip_path WHERE filepath IS NOT NULL
+    SELECT filepath FROM import_skip_path WHERE filepath IS NOT NULL AND book_uuid IS NULL
   `.execute(db)
 
   for (const row of skipPaths.rows) {
@@ -156,7 +155,7 @@ async function migrateSkipPaths() {
     `.execute(db)
   }
 
-  await sql`DROP TABLE import_skip_path`.execute(db)
+  await sql`DROP TABLE IF EXISTS import_skip_path`.execute(db)
 }
 
 async function dropCollectionImportPaths() {
@@ -204,7 +203,14 @@ async function removeOldSettings() {
   await sql`DELETE FROM settings WHERE name = 'importPath'`.execute(db)
 }
 
+async function dropImportRuleTables() {
+  // just to reset previous migrations, sorry for the data loss
+  await sql`DROP TABLE IF EXISTS import_rule_to_collection`.execute(db)
+  await sql`DROP TABLE IF EXISTS import_rule`.execute(db)
+}
+
 export default async function migrate() {
+  await dropImportRuleTables()
   await createImportRuleTables()
   await migrateGlobalImportPaths()
   await migrateCollectionImportPaths()

@@ -381,26 +381,6 @@ WHERE
 
 END;
 
-CREATE TABLE collection (
-  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
-  name TEXT NOT NULL UNIQUE,
-  public BOOLEAN NOT NULL DEFAULT 0,
-  description TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  import_path TEXT DEFAULT NULL
-);
-
-CREATE TRIGGER collection_update_trigger AFTER
-UPDATE ON "collection" FOR EACH ROW BEGIN
-UPDATE "collection"
-SET
-  updated_at = CURRENT_TIMESTAMP
-WHERE
-  uuid = OLD.uuid;
-
-END;
-
 CREATE TABLE series (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   name TEXT NOT NULL UNIQUE,
@@ -525,7 +505,50 @@ CREATE TABLE changelog (
 
 CREATE INDEX idx_changelog_component_released_at ON changelog (component, released_at DESC);
 
-CREATE TABLE import_skip_path (
-  book_uuid TEXT REFERENCES book (uuid),
-  filepath TEXT PRIMARY KEY NOT NULL
+CREATE UNIQUE INDEX idx_settings_name ON settings (name);
+
+CREATE TABLE "collection" (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  name TEXT NOT NULL UNIQUE,
+  public BOOLEAN NOT NULL DEFAULT 0,
+  description TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER collection_update_trigger AFTER
+UPDATE ON "collection" FOR EACH ROW BEGIN
+UPDATE "collection"
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE import_rule (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  kind TEXT NOT NULL CHECK (kind IN ('watch', 'ignore')),
+  path TEXT NOT NULL,
+  import_mode TEXT DEFAULT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_import_rule_path ON import_rule (path);
+
+CREATE TRIGGER import_rule_update_trigger AFTER
+UPDATE ON "import_rule" FOR EACH ROW BEGIN
+UPDATE "import_rule"
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE TABLE import_rule_to_collection (
+  import_rule_uuid TEXT NOT NULL REFERENCES import_rule (uuid) ON DELETE CASCADE,
+  collection_uuid TEXT NOT NULL REFERENCES collection (uuid) ON DELETE CASCADE,
+  PRIMARY KEY (import_rule_uuid, collection_uuid)
 );

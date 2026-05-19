@@ -180,22 +180,18 @@ export interface Ebook {
 }
 
 export interface ImportRule {
-  uuid: Generated<import("@/uuid").UUID>
+  createdAt: Generated<string>
+  importMode: Generated<string | null>
   kind: "watch" | "ignore"
   path: string
-  importMode: string | null
-  createdAt: Generated<string>
   updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface ImportRuleToCollection {
-  uuid: Generated<import("@/uuid").UUID>
-  importRuleUuid: import("@/uuid").UUID
   collectionUuid: import("@/uuid").UUID
-  createdAt: Generated<string>
-  updatedAt: Generated<string>
+  importRuleUuid: import("@/uuid").UUID
 }
-
 export interface Migration {
   createdAt: Generated<string>
   hash: string
