@@ -9,7 +9,6 @@ import { Epub, type EpubMetadataReader } from "@storyteller-platform/epub"
 
 import { move } from "@/assets/fs"
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
-import { isReadaloudEpub } from "@/assets/library/scanner/steps/determine-format"
 import { type Candidate, type ScanFormat } from "@/assets/library/scanner/types"
 import { isAudioFile } from "@/audio"
 import {
@@ -24,6 +23,12 @@ import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
+export async function isReadaloudEpub(
+  epub: EpubMetadataReader,
+): Promise<boolean> {
+  const manifest = await epub.getManifest()
+  return Object.values(manifest).some((item) => item.mediaOverlay)
+}
 /**
  * Always returns a reader for an EPUB 3 file at `filepath`.
  */

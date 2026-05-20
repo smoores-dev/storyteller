@@ -3,32 +3,16 @@ import { stat } from "node:fs/promises"
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
 import { defineStep } from "@/assets/library/scanner/step"
-import { type Existing, type ScanInput } from "@/assets/library/scanner/types"
+import { type ScanInput } from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
 const STEP = "check-exists"
-
-export type CheckExistsInput = ScanInput
-export type CheckExistsOutput = Existing
 
 function isENOENT(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === "ENOENT"
 }
 
 async function handleMissing(input: ScanInput, ctx: ScanCtx) {
-  // tentative inputs have no relation row yet, so there's nothing to
-  // mark missing
-  // should not happen, only if somehow between discovery and the scan, the file disappeared
-  if (input.formatTentative) {
-    ctx.report.skipped({
-      step: STEP,
-      book: input.book,
-      format: input.format,
-      reason: "tentative-file-vanished",
-    })
-    return
-  }
-
   if (input.missing) {
     ctx.report.skipped({
       step: STEP,
@@ -55,8 +39,6 @@ async function handleMissing(input: ScanInput, ctx: ScanCtx) {
 }
 
 async function handleFound(input: ScanInput, ctx: ScanCtx) {
-  if (input.formatTentative) return
-
   const isMissing = input.book[input.format]?.missing ?? false
   if (isMissing) {
     await updateBook(
@@ -87,3 +69,5 @@ export const checkExistsStep = defineStep(
     return { ...input, missing: false as const }
   },
 )
+
+export type Existing = ScanInput & { missing: false }

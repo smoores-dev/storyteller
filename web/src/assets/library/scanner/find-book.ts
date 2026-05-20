@@ -8,17 +8,12 @@ import {
 } from "@/database/books"
 
 /**
- * Find an existing book that should own the candidate's file.
- *
- * Lookup order (first hit wins):
- *   1. candidate.existingBook (caller already resolved it).
+ * find an existing book that should own the candidate's file, in this order
+ *   1. candidate.existingBook (already known, eg from a manual/scheduled full library scan).
  *   2. candidate.bookUuidHint (upload route knows the target UUID).
- *   3. Exact filepath match against any format-relation of any book.
- *   4. canonical-path match (handles symlinks / bind mounts).
- *   5. For audiobooks: filepath-prefix match against the audiobook table.
- *
- * No DB writes. Returns null when nothing matches; the caller decides
- * whether to create a new book.
+ *   3. check ebook.filepath, audiobook.filepath, readaloud.filepath against the candidate.filepath
+ *   4. same as 3, but canonicalize the paths first (bind mounts)
+ *   5. check audiobook.filepath prefix against the candidate.filepath
  */
 export async function findExistingBook(
   candidate: Candidate,

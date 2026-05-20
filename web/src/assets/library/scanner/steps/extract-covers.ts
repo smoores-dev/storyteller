@@ -6,15 +6,13 @@ import { deleteCachedCoverImages } from "@/assets/fs"
 import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { defineStep } from "@/assets/library/scanner/step"
-import { type Reconciled } from "@/assets/library/scanner/types"
 import { getSetting } from "@/database/settings"
 import { type MetadataFieldMode } from "@/database/settingsTypes"
 
-export type ExtractTextCoverInput = Reconciled & {
-  format: "ebook" | "readaloud"
-}
-
-export type ExtractAudiobookCoverInput = Reconciled & { format: "audiobook" }
+import {
+  type ExtractedAudiobookMetadata,
+  type ExtractedEpubMetadata,
+} from "./extract-metadata"
 
 const STEP = "extract-cover"
 
@@ -28,7 +26,7 @@ async function getCoverMode(ctx: ScanCtx): Promise<MetadataFieldMode> {
 
 export const extractTextCoverStep = defineStep(
   "extract-text-cover",
-  async (input: ExtractTextCoverInput, ctx) => {
+  async (input: ExtractedEpubMetadata, ctx) => {
     const mode = await getCoverMode(ctx)
 
     if (mode === "skip") {
@@ -73,7 +71,7 @@ export const extractTextCoverStep = defineStep(
 
 export const extractAudiobookCoverStep = defineStep(
   "extract-audiobook-cover",
-  async (input: ExtractAudiobookCoverInput, ctx) => {
+  async (input: ExtractedAudiobookMetadata, ctx) => {
     const mode = await getCoverMode(ctx)
 
     if (mode === "skip") {

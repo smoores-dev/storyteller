@@ -1,24 +1,27 @@
 import { defineStep } from "@/assets/library/scanner/step"
 import {
-  type AudiobookMetadataExtracted,
-  type AudiobookOpened,
-  type EpubMetadataExtracted,
-  type FormatKnown,
-} from "@/assets/library/scanner/types"
-import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
 } from "@/assets/metadata"
+import { type BookRelationsUpdate, type BookUpdate } from "@/database/books"
 
-export type ExtractEpubMetadataInput = FormatKnown
-export type ExtractEpubMetadataOutput = EpubMetadataExtracted
-
-export type ExtractAudiobookMetadataInput = AudiobookOpened
-export type ExtractAudiobookMetadataOutput = AudiobookMetadataExtracted
+import { type OpenedAudiobook, type OpenedEpub } from "./open"
 
 export const extractEpubMetadataStep = defineStep(
   "extract-epub-metadata",
-  async (input: ExtractEpubMetadataInput, _ctx) => {
+  async (input: OpenedEpub, _ctx) => {
+    if (input.isEpub2) {
+      return {
+        ...input,
+        extractedMetadata: null,
+        extractedRelations: {
+          [input.format]: {
+            isEpub2: true,
+          },
+        },
+      }
+    }
+
     const { update, relations } = await getMetadataFromEpub(input.epub)
     return {
       ...input,
@@ -28,9 +31,14 @@ export const extractEpubMetadataStep = defineStep(
   },
 )
 
+export type ExtractedEpubMetadata = OpenedEpub & {
+  extractedMetadata: BookUpdate | null
+  extractedRelations: BookRelationsUpdate
+}
+
 export const extractAudiobookMetadataStep = defineStep(
   "extract-audiobook-metadata",
-  async (input: ExtractAudiobookMetadataInput, _ctx) => {
+  async (input: OpenedAudiobook, _ctx) => {
     const { update, relations } = await getMetadataFromAudiobook(
       input.audiobook,
     )
@@ -41,3 +49,8 @@ export const extractAudiobookMetadataStep = defineStep(
     }
   },
 )
+
+export type ExtractedAudiobookMetadata = OpenedAudiobook & {
+  extractedMetadata: BookUpdate | null
+  extractedRelations: BookRelationsUpdate
+}

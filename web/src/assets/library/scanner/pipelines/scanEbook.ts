@@ -1,27 +1,24 @@
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
-import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
-import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
 import {
   createBookFromOpenedEpub,
   ensureCollections,
   openAndClassifyEpub,
-} from "@/assets/library/scanner/steps/create-book"
-import { determineFormatStep } from "@/assets/library/scanner/steps/determine-format"
+} from "@/assets/library/scanner/create-book"
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { findExistingBook } from "@/assets/library/scanner/find-book"
+import { relocateIfNeeded } from "@/assets/library/scanner/relocate"
+import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
+import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
 import { extractTextCoverStep } from "@/assets/library/scanner/steps/extract-covers"
 import {
   extractEbookManifestStep,
   extractReadaloudManifestStep,
 } from "@/assets/library/scanner/steps/extract-manifest"
 import { extractEpubMetadataStep } from "@/assets/library/scanner/steps/extract-metadata"
-import { findExistingBook } from "@/assets/library/scanner/steps/find-book"
-import { openEpubStep } from "@/assets/library/scanner/steps/open-epub"
+import { openEpubStep } from "@/assets/library/scanner/steps/open"
 import { reconcileMetadataStep } from "@/assets/library/scanner/steps/reconcile-metadata"
-import { relocateIfNeeded } from "@/assets/library/scanner/steps/relocate"
-import { upgradeEpubStep } from "@/assets/library/scanner/steps/upgrade-epub"
 import {
   type Candidate,
   type EbookInput,
-  type EpubFingerprinted,
   type ReadaloudInput,
 } from "@/assets/library/scanner/types"
 import { type BookWithRelations } from "@/database/books"
@@ -39,27 +36,6 @@ function classifyExistingBook(
   if (book.ebook?.filepath === candidate.filepath) return "ebook"
   if (book.readaloud?.filepath === candidate.filepath) return "readaloud"
   return candidate.format === "audiobook" ? "ebook" : candidate.format
-}
-
-function buildEpubInput(
-  book: BookWithRelations,
-  filepath: string,
-  format: EpubFormat,
-  isNew: boolean,
-): EbookInput | ReadaloudInput {
-  const baseRelation = format === "ebook" ? book.ebook : book.readaloud
-  const shared = {
-    bookUuid: book.uuid,
-    filepath,
-    book,
-    isNew,
-    missing: baseRelation?.missing ?? false,
-    existingFingerprint: baseRelation?.fingerprint ?? null,
-  } as const
-
-  return format === "ebook"
-    ? { ...shared, format: "ebook" }
-    : { ...shared, format: "readaloud" }
 }
 
 export async function scanEbook(
@@ -101,7 +77,16 @@ export async function scanEbook(
     isNew = true
   }
 
-  const input = buildEpubInput(book, filepath, format, isNew)
+  // ==== pipeline starts here ====
+  const input = {
+    bookUuid: book.uuid,
+    filepath,
+    book,
+    isNew,
+    missing: book[format]?.missing ?? false,
+    existingFingerprint: book[format]?.fingerprint ?? null,
+    format,
+  } as const satisfies EbookInput | ReadaloudInput
 
   const existing = await checkExistsStep(input, pipelineCtx)
   if (!existing) return book
@@ -118,20 +103,9 @@ export async function scanEbook(
     return book
   }
 
-  const opened = await openEpubStep(
-    fingerprinted as EpubFingerprinted,
-    pipelineCtx,
-  )
+  const opened = await openEpubStep(fingerprinted, pipelineCtx)
 
-  const upgraded = opened.isEpub2
-    ? await upgradeEpubStep(opened, pipelineCtx)
-    : opened
-
-  if (!upgraded) return book
-
-  const formatKnown = await determineFormatStep(upgraded, pipelineCtx)
-
-  const metadata = await extractEpubMetadataStep(formatKnown, ctx)
+  const metadata = await extractEpubMetadataStep(opened, ctx)
 
   const manifest =
     metadata.format === "readaloud"

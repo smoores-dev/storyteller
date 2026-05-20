@@ -1,39 +1,23 @@
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
-import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
-import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
 import {
   createBookFromOpenedAudiobook,
   ensureCollections,
   openAudiobookDir,
-} from "@/assets/library/scanner/steps/create-book"
+} from "@/assets/library/scanner/create-book"
+import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { findExistingBook } from "@/assets/library/scanner/find-book"
+import { relocateIfNeeded } from "@/assets/library/scanner/relocate"
+import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
+import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
 import { extractAudiobookCoverStep } from "@/assets/library/scanner/steps/extract-covers"
 import { extractAudiobookManifestStep } from "@/assets/library/scanner/steps/extract-manifest"
 import { extractAudiobookMetadataStep } from "@/assets/library/scanner/steps/extract-metadata"
-import { findExistingBook } from "@/assets/library/scanner/steps/find-book"
-import { openAudiobookStep } from "@/assets/library/scanner/steps/open-audiobook"
+import { openAudiobookStep } from "@/assets/library/scanner/steps/open"
 import { reconcileMetadataStep } from "@/assets/library/scanner/steps/reconcile-metadata"
-import { relocateIfNeeded } from "@/assets/library/scanner/steps/relocate"
 import {
   type AudiobookInput,
   type Candidate,
 } from "@/assets/library/scanner/types"
 import { type BookWithRelations } from "@/database/books"
-
-function buildAudiobookInput(
-  book: BookWithRelations,
-  filepath: string,
-  isNew: boolean,
-): AudiobookInput {
-  return {
-    bookUuid: book.uuid,
-    filepath,
-    format: "audiobook",
-    book,
-    isNew,
-    missing: book.audiobook?.missing ?? false,
-    existingFingerprint: book.audiobook?.fingerprint ?? null,
-  }
-}
 
 export async function scanAudiobook(
   candidate: Candidate,
@@ -71,7 +55,17 @@ export async function scanAudiobook(
     isNew = true
   }
 
-  const input = buildAudiobookInput(book, filepath, isNew)
+  const input = {
+    bookUuid: book.uuid,
+    filepath,
+    book,
+    isNew,
+    missing: book.audiobook?.missing ?? false,
+    existingFingerprint: book.audiobook?.fingerprint ?? null,
+    format: "audiobook",
+  } as const satisfies AudiobookInput
+
+  // ==== pipeline starts here ====
 
   const existing = await checkExistsStep(input, pipelineCtx)
   if (!existing) return book

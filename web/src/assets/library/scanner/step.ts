@@ -1,10 +1,14 @@
 import { type ScanCtx } from "./ctx"
 import { type ScanInput } from "./types"
 
+type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {}
+
 // annoying hack needed to get type narrowing to work through steps
 type NarrowOutput<Output, Narrowed> = Output extends null
   ? null
-  : Output & Narrowed
+  : Prettify<Output & Narrowed>
 
 export class ScanAbortedError extends Error {
   constructor(step: string) {

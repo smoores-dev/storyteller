@@ -1,18 +1,17 @@
 import {
+  type StatEntry,
   fingerprintAudiobookDirectory,
   fingerprintFile,
 } from "@/assets/library/fingerprint"
 import { defineStep } from "@/assets/library/scanner/step"
-import {
-  type Existing,
-  type Fingerprinted,
-} from "@/assets/library/scanner/types"
+
+import { type Existing } from "./check-exists"
 
 const STEP = "check-fingerprint"
 
 export const checkFingerprintStep = defineStep(
   STEP,
-  async (input: Existing, ctx): Promise<Fingerprinted> => {
+  async (input: Existing, ctx) => {
     const { fingerprint, fileSize, entries } =
       input.format === "audiobook"
         ? await fingerprintAudiobookDirectory(input.filepath, ctx.signal)
@@ -33,3 +32,10 @@ export const checkFingerprintStep = defineStep(
     }
   },
 )
+
+export type FingerPrinted = Existing & {
+  fingerprint: string
+  fileSize: number | null
+  changed: boolean
+  statEntries: StatEntry[]
+}

@@ -5,7 +5,7 @@ import { dirname, extname, join, resolve, sep } from "node:path"
 import { Epub } from "@storyteller-platform/epub"
 
 import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
-import { isReadaloudEpub } from "@/assets/library/scanner/steps/determine-format"
+import { isReadaloudEpub } from "@/assets/library/scanner/create-book"
 import { isAudioFile } from "@/audio"
 import { type BookWithRelations } from "@/database/books"
 import { getIgnorePaths } from "@/database/importRules"

@@ -1,9 +1,5 @@
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
 import { defineStep } from "@/assets/library/scanner/step"
-import {
-  type ManifestReady,
-  type Reconciled,
-} from "@/assets/library/scanner/types"
 import { applyFieldOverrides } from "@/assets/metadata"
 import {
   type BookRelationsUpdate,
@@ -15,10 +11,18 @@ import {
 import { getSetting } from "@/database/settings"
 import { type MetadataFieldOverrides } from "@/database/settingsTypes"
 
-const STEP = "reconcile-metadata"
+import {
+  type ExtractedAudiobookManifest,
+  type ExtractedEbookManifest,
+  type ExtractedReadaloudManifest,
+} from "./extract-manifest"
 
-export type ReconcileMetadataInput = ManifestReady
-export type ReconcileMetadataOutput = Reconciled
+export type ManifestReady =
+  | ExtractedEbookManifest
+  | ExtractedReadaloudManifest
+  | ExtractedAudiobookManifest
+
+const STEP = "reconcile-metadata"
 
 function buildFormatRelation(
   input: ManifestReady,
@@ -74,7 +78,7 @@ function hasChanges(
 
 export const reconcileMetadataStep = defineStep(
   "reconcile-metadata",
-  async (input: ReconcileMetadataInput, ctx) => {
+  async (input: ManifestReady, ctx) => {
     const current = await getBook(input.book.uuid)
     if (!current) {
       ctx.report.warn({
@@ -121,6 +125,6 @@ export const reconcileMetadataStep = defineStep(
       return null
     }
 
-    return { ...input, book: updated } as ManifestReady & Reconciled
+    return { ...input, book: updated }
   },
 )
