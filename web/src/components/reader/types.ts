@@ -1,8 +1,14 @@
-import {
-  type Layout,
-  type Profile,
-  type ReadingProgression,
-} from "@readium/shared"
+type SerializedReadingProgression = "ltr" | "rtl"
+
+const SerializedProfile = {
+  EPUB: "https://readium.org/webpub-manifest/profiles/epub",
+  AUDIOBOOK: "https://readium.org/webpub-manifest/profiles/audiobook",
+  DIVINA: "https://readium.org/webpub-manifest/profiles/divina",
+  PDF: "https://readium.org/webpub-manifest/profiles/pdf",
+} as const
+
+export type SerializedProfile =
+  (typeof SerializedProfile)[keyof typeof SerializedProfile]
 
 export type SerializedSubject = {
   name: SerializedLocalizedString
@@ -54,7 +60,7 @@ export type SerializedAccessibility = {
   hazard: unknown[]
 }
 
-export type SerializedLink = {
+type SerializedLink = {
   href: string
   templated?: boolean
   type?: string
@@ -69,13 +75,15 @@ export type SerializedLink = {
   duration?: number
   bitrate?: number
   languages?: string[]
-  alternates?: SerializedLink[]
-  children?: SerializedLink[]
+  /* these are actually also serializedlinks, but we don't want to include the full type here */
+  alternates?: Record<string, unknown>[]
+  /* these are actually also serializedlinks, but we don't want to include the full type here */
+  children?: Record<string, unknown>[]
 }
 
-export type SerializedLinks = SerializedLink[]
+type SerializedLinks = SerializedLink[]
 
-export type SerializedContributor = {
+type SerializedContributor = {
   /** The name of the contributor. */
   readonly name: SerializedLocalizedString
   /** The string used to sort the name of the contributor. */
@@ -92,27 +100,15 @@ export type SerializedContributor = {
   readonly position?: number
 }
 
-export type Subject = {
-  readonly name: SerializedLocalizedString
-  /** Provides a string that a machine can sort. */
-  readonly sortAs?: string
-  /** EPUB 3.1 opf:term. */
-  readonly code?: string
-  /** EPUB 3.1 opf:authority. */
-  readonly scheme?: string
-  /** PUsed to retrieve similar publications for the given subjects. */
-  readonly links?: SerializedLinks
-}
-
-export type SerializedAltIdentifier = {
+type SerializedAltIdentifier = {
   value: string
   scheme?: string
 }
 
-export type SerializedMetadata = {
+type SerializedMetadata = {
   title: string | SerializedLocalizedString
   typeUri?: string
-  conformsTo?: Array<Profile>
+  conformsTo?: Array<SerializedProfile>
   identifier?: string
   altIdentifier?: SerializedAltIdentifier
   subtitle?: string | SerializedLocalizedString
@@ -139,8 +135,8 @@ export type SerializedMetadata = {
   belongsTo?: SerializedContributor[]
   belongsToCollections?: SerializedContributor[]
   belongsToSeries?: SerializedContributor[]
-  layout?: Layout
-  readingProgression?: ReadingProgression
+  layout?: "reflowable" | "fixed" | "scrolled"
+  readingProgression?: SerializedReadingProgression
   duration?: number
   numberOfPages?: number
   accessibility?: SerializedAccessibility
@@ -158,6 +154,11 @@ export type SerializedMetadata = {
     [key: string]: unknown
   }
 }
+/**
+ * Serialize before using Manifest.deserialize
+ * Do not create recursive types here, it will cause tsc to throw extremely inscrutable errors
+ * something like "Exported variable 'readingSessionSlice' has or is using name 'WritableNonArrayDraft' from external module "/Users/thomas/Projects/storyteller.worktrees/tfk-replace-api/node_modules/immer/dist/immer" but cannot be named.ts(4023)"
+ */
 export type SerializedManifest = {
   readonly context?: Array<string>
   readonly metadata: SerializedMetadata

@@ -587,8 +587,8 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "ebook.fingerprint",
             "ebook.pageCount",
             "ebook.fileSize",
-            ...(includeManifest ? (["ebook.manifest"] as const) : []),
           ])
+          .$if(includeManifest, (eb) => eb.select(["ebook.manifest"]))
           .whereRef("ebook.bookUuid", "=", "book.uuid"),
       ).as("ebook"),
       jsonObjectFrom(
@@ -603,8 +603,8 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "audiobook.fingerprint",
             "audiobook.duration",
             "audiobook.fileSize",
-            ...(includeManifest ? (["audiobook.manifest"] as const) : []),
           ])
+          .$if(includeManifest, (eb) => eb.select(["audiobook.manifest"]))
           .whereRef("audiobook.bookUuid", "=", "book.uuid"),
       ).as("audiobook"),
       jsonObjectFrom(
@@ -626,8 +626,8 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "readaloud.pageCount",
             "readaloud.duration",
             "readaloud.fileSize",
-            ...(includeManifest ? (["readaloud.manifest"] as const) : []),
           ])
+          .$if(includeManifest, (eb) => eb.select(["readaloud.manifest"]))
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),
     ])
