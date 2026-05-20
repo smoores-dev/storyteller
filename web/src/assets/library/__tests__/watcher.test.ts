@@ -115,6 +115,7 @@ void describe("Watcher", () => {
     await folder.expectFiles([
       "moby-dick.epub",
       "mobydick_001_002_melville.mp3",
+      "mobydick_001_003_melville.mp3",
     ])
     await waitForWatcher(3000)
 
@@ -127,6 +128,67 @@ void describe("Watcher", () => {
     assert.ok(
       booksAfterAudio[0].audiobook.filepath,
       "audiobook should be attached to the same book after detecting mp3 files",
+    )
+  })
+
+  void it("treats deeply nested folders as separate books", async () => {
+    using _db = setupTestDb()
+    await using library = await createTestLibrary("watcher-nested")
+
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
+
+    await using watcher = new Watcher()
+    await watcher.start()
+    await waitForWatcher(2000)
+
+    // `Author/BookA` and `Author/BookB` should produce two books, not get
+    // collapsed into a single "Author" folder by an over-eager bucket
+    // heuristic that walks up to the immediate child of the watch root.
+    await library.createBookFolder("Author/BookA", { ebook: "moby-dick" })
+    await library.createBookFolder("Author/BookB", { ebook: "moby-dick" })
+
+    await waitForWatcher(3000)
+
+    const books = await getBooks()
+    assert.strictEqual(books.length, 2)
+    const filepaths = books
+      .map((b) => b.ebook?.filepath)
+      .filter((p): p is string => !!p)
+      .sort()
+    assert.deepStrictEqual(filepaths, [
+      join(absoluteRoot, "Author", "BookA", "moby-dick.epub"),
+      join(absoluteRoot, "Author", "BookB", "moby-dick.epub"),
+    ])
+  })
+
+  void it("ignores writes inside internal data-dir folders that live under the watch root", async () => {
+    using _db = setupTestDb()
+    await using library = await createTestLibrary("watcher-internal")
+
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
+
+    await using watcher = new Watcher()
+    await watcher.start()
+    await waitForWatcher(2000)
+
+    await library.createBookFolder(".autoimport/scratch", {
+      ebook: "moby-dick",
+    })
+    await library.createBookFolder("image-cache/abc", { ebook: "moby-dick" })
+    await library.createBookFolder("uploads/staging", { ebook: "moby-dick" })
+
+    // a real book at a normal location still gets picked up
+    await library.createBookFolder("real-book", { ebook: "moby-dick" })
+
+    await waitForWatcher(3000)
+
+    const books = await getBooks()
+    assert.strictEqual(books.length, 1)
+    assert.strictEqual(
+      books[0]?.ebook?.filepath,
+      join(absoluteRoot, "real-book", "moby-dick.epub"),
     )
   })
 

@@ -20,7 +20,14 @@ const WATCHER_OPTIONS = {
     "**/*.watchman-cookie*",
     "**/*.json",
     "**/.DS_Store",
-    ...[...INTERNAL_DIRECTORY_NAMES].map((name) => `**/${name}/*`),
+    "**/.autoimport/**",
+    "**/image-cache/**",
+    "**/uploads/**",
+    "**/cache/**",
+    "**/*.db",
+    "**/*.db-wal",
+    "**/*.db-shm",
+    ...[...INTERNAL_DIRECTORY_NAMES].map((name) => `**/${name}/**`),
   ],
 } as const satisfies watcher.Options
 

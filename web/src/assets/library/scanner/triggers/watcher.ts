@@ -37,10 +37,8 @@ type WatcherEvent = { path: string; type: "create" | "update" | "delete" }
 type ControllerKey = UUID | "rules" | "assets"
 
 /**
- * Bucket a list of watcher events by the "book folder" they belong to.
- * The book folder is the immediate child of the import root that
- * contains the event path. Events directly at the root level get the
- * root itself as their folder (flat-layout fallback).
+ * bucket a list of watcher events by the folder that *directly* contains
+ * each event path
  */
 function bucketByBookFolder(
   importRoot: string,
@@ -50,21 +48,13 @@ function bucketByBookFolder(
   const normalizedRoot = resolve(importRoot)
 
   for (const event of events) {
-    const filepath = resolve(extname(event.path) ? event.path : event.path)
-    const rel = relative(normalizedRoot, filepath)
-    if (!rel || rel.startsWith("..")) continue
-
-    // walk up from filepath toward root until parent === importRoot
-    let folder = extname(filepath) ? dirname(filepath) : filepath
-    while (dirname(folder) !== normalizedRoot && dirname(folder) !== folder) {
-      folder = dirname(folder)
-    }
-    // if no subfolder under root, fall back to the root itself (flat layout)
-    if (relative(normalizedRoot, folder).startsWith("..")) {
-      folders.add(normalizedRoot)
-    } else {
-      folders.add(folder)
-    }
+    const filepath = resolve(event.path)
+    const folder = extname(filepath) ? dirname(filepath) : filepath
+    const rel = relative(normalizedRoot, folder)
+    // skip anything that resolves outside the watch root
+    // (this shouldn't happen, but in case...)
+    if (rel.startsWith("..")) continue
+    folders.add(folder)
   }
 
   return folders
