@@ -12,6 +12,30 @@ import { type UUID } from "@/uuid"
 
 export type ScanFormat = "ebook" | "audiobook" | "readaloud"
 
+/**
+ * A unit of scannable work. Every entry point (watcher, manual scan,
+ * upload, scheduled, api) produces an array of these. The worker pool
+ * dispatches each one to scanEbook or scanAudiobook.
+ *
+ * - `existingBook` is set when the caller has already resolved the book
+ *   (existing-book sweeps, watcher delete events). The pipeline trusts it
+ *   and skips its own find lookup.
+ * - `bookUuidHint` is for callers that know the target UUID up front
+ *   (uploads). find-book uses it as the first lookup key.
+ * - `isReadaloud` lets folder.ts disambiguate epubs (by media overlay)
+ *   without forcing the pipeline to reopen them.
+ * - `collections` propagates collection associations to newly created books.
+ */
+export type Candidate = {
+  folder: string
+  format: ScanFormat
+  filepath: string
+  isReadaloud?: boolean
+  bookUuidHint?: UUID
+  existingBook?: BookWithRelations
+  collections?: UUID[]
+}
+
 export type EpubScanFormat = Extract<ScanFormat, "ebook" | "readaloud">
 
 type ScanInputBase = {

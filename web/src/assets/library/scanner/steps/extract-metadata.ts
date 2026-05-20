@@ -1,4 +1,4 @@
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import {
   type AudiobookMetadataExtracted,
   type AudiobookOpened,

@@ -2,7 +2,7 @@ import { cp } from "node:fs/promises"
 
 import { Epub } from "@storyteller-platform/epub"
 
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import { type EpubNeedsUpgrade } from "@/assets/library/scanner/types"
 import { addIgnoreRule } from "@/database/importRules"
 import { getSetting } from "@/database/settings"

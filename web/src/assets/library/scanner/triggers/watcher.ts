@@ -1,9 +1,9 @@
 import { stat } from "node:fs/promises"
+import { dirname, extname, relative, resolve } from "node:path"
 
 import { AsyncMutex } from "@esfx/async-mutex"
 import watcher from "@parcel/watcher"
 
-import { type ImportPathChange } from "@/assets/library/changes"
 import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
 import { scan } from "@/assets/library/scanner/scan"
 import {
@@ -32,7 +32,43 @@ function standardFilter(path: string): boolean {
 
 const assetRegex = /[^/]*\/(text|aligned|audio)\//
 
+type WatcherEvent = { path: string; type: "create" | "update" | "delete" }
+
 type ControllerKey = UUID | "rules" | "assets"
+
+/**
+ * Bucket a list of watcher events by the "book folder" they belong to.
+ * The book folder is the immediate child of the import root that
+ * contains the event path. Events directly at the root level get the
+ * root itself as their folder (flat-layout fallback).
+ */
+function bucketByBookFolder(
+  importRoot: string,
+  events: WatcherEvent[],
+): Set<string> {
+  const folders = new Set<string>()
+  const normalizedRoot = resolve(importRoot)
+
+  for (const event of events) {
+    const filepath = resolve(extname(event.path) ? event.path : event.path)
+    const rel = relative(normalizedRoot, filepath)
+    if (!rel || rel.startsWith("..")) continue
+
+    // walk up from filepath toward root until parent === importRoot
+    let folder = extname(filepath) ? dirname(filepath) : filepath
+    while (dirname(folder) !== normalizedRoot && dirname(folder) !== folder) {
+      folder = dirname(folder)
+    }
+    // if no subfolder under root, fall back to the root itself (flat layout)
+    if (relative(normalizedRoot, folder).startsWith("..")) {
+      folders.add(normalizedRoot)
+    } else {
+      folders.add(folder)
+    }
+  }
+
+  return folders
+}
 
 export class Watcher {
   private readonly entryLocks = new Map<string, AsyncMutex>()
@@ -41,6 +77,7 @@ export class Watcher {
 
   async start(): Promise<void> {
     if (this.started) {
+      logger.debug("Watcher already started")
       return
     }
 
@@ -51,7 +88,7 @@ export class Watcher {
 
     const assetController = new AbortController()
     this.controllers.set("assets", assetController)
-    this.startWatcher([], ASSETS_DIR, assetController, (path) =>
+    this.startWatcher([], ASSETS_DIR, assetController, undefined, (path) =>
       assetRegex.test(path),
     )
 
@@ -67,7 +104,6 @@ export class Watcher {
         rule.collections.map((c) => c.uuid),
         rule.path,
         rulesController,
-        undefined,
         rule.importMode as ImportMode | null,
       )
     }
@@ -109,8 +145,8 @@ export class Watcher {
     collections: UUID[],
     importPath: string,
     controller: AbortController,
-    filter?: (path: string) => boolean,
     importMode?: ImportMode | null,
+    filter?: (path: string) => boolean,
   ) {
     let entryLock = this.entryLocks.get(importPath)
     if (!entryLock) {
@@ -124,16 +160,14 @@ export class Watcher {
     }
 
     const scanLock = new AsyncMutex()
-    const pendingChanges: ImportPathChange[] = []
+    const pendingEvents: WatcherEvent[] = []
     let flushTimer: NodeJS.Timeout | null = null
     let closed = false
     let subscription: Awaited<ReturnType<typeof watcher.subscribe>> | null =
       null
 
     const closeWatcher = async () => {
-      if (closed) {
-        return
-      }
+      if (closed) return
 
       closed = true
       if (flushTimer) {
@@ -162,53 +196,45 @@ export class Watcher {
     }
 
     const scheduleFlush = (delayMs: number) => {
-      if (controller.signal.aborted || closed || flushTimer) {
-        return
-      }
+      if (controller.signal.aborted || closed || flushTimer) return
 
       flushTimer = setTimeout(() => {
         flushTimer = null
-        void flushChanges()
+        void flushEvents()
       }, delayMs)
       flushTimer.unref()
     }
 
-    const queueChanges = (changes: ImportPathChange[]) => {
-      if (!changes.length) {
-        return
-      }
-
-      pendingChanges.push(...changes)
+    const queueEvents = (events: WatcherEvent[]) => {
+      if (!events.length) return
+      pendingEvents.push(...events)
       scheduleFlush(750)
     }
 
-    const flushChanges = async () => {
-      if (controller.signal.aborted || closed || !pendingChanges.length) {
-        return
-      }
+    const flushEvents = async () => {
+      if (controller.signal.aborted || closed || !pendingEvents.length) return
 
       await scanLock.lock()
-      const batch = pendingChanges.splice(0, pendingChanges.length)
+      const batch = pendingEvents.splice(0, pendingEvents.length)
 
       try {
-        await scan({
-          source: "watcher",
-          tasks: [
-            {
-              kind: "changed-paths",
-              importPath,
-              importMode,
+        const folders = [...bucketByBookFolder(importPath, batch)]
+        if (folders.length) {
+          await scan({
+            source: "watcher",
+            request: {
+              kind: "folders",
+              folders,
               collections,
-              changes: batch,
             },
-          ],
-          options: { concurrency: 2 },
-          signal: controller.signal,
-        })
+            options: { concurrency: 2, importMode: importMode ?? undefined },
+            signal: controller.signal,
+          })
+        }
         await writeWatcherSnapshot(importPath)
       } catch (error) {
         logger.error({
-          msg: "Watcher scan failed for changed paths",
+          msg: "Watcher scan failed for changed folders",
           importPath,
           err: error,
         })
@@ -216,35 +242,24 @@ export class Watcher {
         scanLock.unlock()
       }
 
-      if (pendingChanges.length) {
-        scheduleFlush(250)
-      }
+      if (pendingEvents.length) scheduleFlush(250)
     }
 
-    const handleEvents = (
-      events: { path: string; type: ImportPathChange["type"] }[],
-    ) => {
-      if (controller.signal.aborted || closed) {
-        return
-      }
+    const handleEvents = (events: WatcherEvent[]) => {
+      if (controller.signal.aborted || closed) return
 
-      const relevantChanges = events
-        .filter(
-          (event) =>
-            !isSuppressed(event.path) &&
-            standardFilter(event.path) &&
-            (filter ? filter(event.path) : true),
-        )
-        .map((event) => ({
-          path: event.path,
-          type: event.type,
-        }))
+      const relevant = events.filter(
+        (event) =>
+          !isSuppressed(event.path) &&
+          standardFilter(event.path) &&
+          (filter ? filter(event.path) : true),
+      )
 
-      if (!relevantChanges.length) {
+      if (!relevant.length) {
         logger.debug({
           msg: "No relevant changes found",
           importPath,
-          changes: events,
+          events,
         })
         return
       }
@@ -252,24 +267,28 @@ export class Watcher {
       logger.debug({
         msg: "Relevant changes found",
         importPath,
-        changes: relevantChanges,
+        events: relevant,
       })
-      queueChanges(relevantChanges)
+      queueEvents(relevant)
     }
 
     const bootstrapWatcher = async () => {
       const startup = await readSnapshotChanges(importPath)
-      if (controller.signal.aborted || closed) {
-        return
-      }
+      if (controller.signal.aborted || closed) return
 
       if (!startup.snapshotExists) {
         await scan({
           source: "watcher",
-          tasks: [
-            { kind: "import-path", importPath, collections },
-            { kind: "existing-books" },
-          ],
+          request: {
+            kind: "roots",
+            roots: [
+              {
+                path: importPath,
+                collections,
+                importMode: importMode ?? undefined,
+              },
+            ],
+          },
           options: { concurrency: 2 },
           signal: controller.signal,
         })
@@ -277,11 +296,9 @@ export class Watcher {
         return
       }
 
-      if (!startup.changes.length) {
-        return
-      }
+      if (!startup.changes.length) return
 
-      queueChanges(startup.changes)
+      queueEvents(startup.changes)
       scheduleFlush(0)
     }
 

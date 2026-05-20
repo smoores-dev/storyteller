@@ -5,7 +5,7 @@ import {
 import { deleteCachedCoverImages } from "@/assets/fs"
 import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import { type Reconciled } from "@/assets/library/scanner/types"
 import { getSetting } from "@/database/settings"
 import { type MetadataFieldMode } from "@/database/settingsTypes"

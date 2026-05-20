@@ -6,7 +6,7 @@ import {
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import {
   type AudiobookFingerprinted,
   type AudiobookOpened,

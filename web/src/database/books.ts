@@ -8,7 +8,7 @@ import {
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 
 import { type Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook"
-import { type Epub } from "@storyteller-platform/epub"
+import { type EpubMetadataReader } from "@storyteller-platform/epub"
 
 import {
   type ProcessingTaskStatus,
@@ -108,7 +108,7 @@ export type NewBook = Insertable<DB["book"]>
 export type BookUpdate = Updateable<DB["book"]>
 
 export async function createBookFromEpub(
-  epub: Epub,
+  epub: EpubMetadataReader,
   {
     uuid,
     title,

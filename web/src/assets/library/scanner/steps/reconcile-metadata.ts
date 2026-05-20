@@ -1,5 +1,5 @@
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import {
   type ManifestReady,
   type Reconciled,

@@ -2,7 +2,7 @@ import {
   fingerprintAudiobookDirectory,
   fingerprintFile,
 } from "@/assets/library/fingerprint"
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import {
   type Existing,
   type Fingerprinted,

@@ -1,6 +1,6 @@
 import { Epub, EpubVersionError } from "@storyteller-platform/epub"
 
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import {
   type EpubFingerprinted,
   type EpubOpenState,

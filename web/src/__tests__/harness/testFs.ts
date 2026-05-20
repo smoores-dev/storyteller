@@ -4,6 +4,8 @@ import { tmpdir } from "node:os"
 import { join, relative } from "node:path"
 import { cwd } from "node:process"
 
+import { move } from "@/assets/fs"
+
 const FIXTURES_DIR = join(cwd(), "src", "__fixtures__", "books")
 
 export type BookFolderOpts = {
@@ -49,6 +51,7 @@ export type TestBookFolder = {
       contents?: boolean
     },
   ): Promise<string>
+  rename(relativePath: string, newName: string): Promise<string>
   delete(relativePath: string): Promise<void>
 
   expectFiles(expected: string[]): Promise<void>
@@ -99,6 +102,13 @@ function createBookFolderHandle(
       await mkdir(join(fullPath, ".."), { recursive: true })
       await copyFixture(opts.type, opts.name, fullPath)
       return fullPath
+    },
+
+    async rename(relativePath, newName) {
+      const fullPath = join(folderPath, relativePath)
+      const newFullPath = join(folderPath, newName)
+      await move(fullPath, newFullPath)
+      return newFullPath
     },
 
     async delete(relativePath) {

@@ -1,5 +1,5 @@
 import { getNumericValue } from "@/assets/library/scanner/manifestValue"
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import {
   type AudiobookManifestReady,
   type AudiobookMetadataExtracted,

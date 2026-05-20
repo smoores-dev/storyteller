@@ -1,13 +1,13 @@
 import assert from "node:assert"
+import { join } from "node:path"
 import { describe, it } from "node:test"
 
 import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createTestLibrary, waitForWatcher } from "@/__tests__/harness/testFs"
-import { canonicalizePath } from "@/assets/library/discovery"
+import { canonicalizePath } from "@/assets/library/scanner/folder"
 import { Watcher } from "@/assets/library/scanner/triggers/watcher"
 import { getBooks } from "@/database/books"
 import { createImportRule } from "@/database/importRules"
-import { join } from "node:path"
 
 void describe("Watcher", () => {
   void it("detects a new epub file added to a watched directory", async () => {
@@ -27,7 +27,7 @@ void describe("Watcher", () => {
 
     const books = await getBooks()
     assert.strictEqual(books.length, 1)
-    assert.strictEqual(books[0]?.title, "moby-dick")
+    assert.strictEqual(books[0]?.title, "Moby Dick; Or, The Whale")
   })
 
   void it("stops cleanly and ignores subsequent file additions", async () => {
@@ -74,10 +74,10 @@ void describe("Watcher", () => {
 
     const books = await getBooks()
     assert.strictEqual(books.length, 1)
-    assert.strictEqual(books[0]?.title, "moby-dick")
+    assert.strictEqual(books[0]?.title, "Moby Dick; Or, The Whale")
   })
 
-  void it.only("detects multiple formats added sequentially to same book folder", async () => {
+  void it("detects multiple formats added sequentially to same book folder", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-multi")
 
@@ -98,7 +98,7 @@ void describe("Watcher", () => {
     assert.strictEqual(booksAfterEpub.length, 1)
 
     const book = booksAfterEpub[0]!
-    assert.strictEqual(book.title, "moby-dick")
+    assert.strictEqual(book.title, "Moby Dick; Or, The Whale")
     assert.strictEqual(
       book.ebook?.filepath,
       join(absoluteRoot, "multi-format", "moby-dick.epub"),

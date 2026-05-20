@@ -4,9 +4,13 @@ import { join } from "node:path"
 
 import watcher from "@parcel/watcher"
 
-import { type ImportPathChange } from "@/assets/library/changes"
 import { INTERNAL_DIRECTORY_NAMES } from "@/assets/library/internalDirs"
 import { DATA_DIR } from "@/directories"
+
+export type ImportPathChange = {
+  path: string
+  type: "create" | "update" | "delete"
+}
 
 const SNAPSHOT_DIR = join(DATA_DIR, ".autoimport", "watcher-snapshots")
 

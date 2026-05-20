@@ -1,51 +1,31 @@
-import {
-  type ImportPathChange,
-  coalesceChanges,
-  groupChangesByBookFolder,
-  isWithinPath,
-  pathsOverlap,
-} from "@/assets/library/changes"
-import {
-  buildBookPathsFromChanges,
-  discoverBookPathsForRoots,
-} from "@/assets/library/discovery"
-import {
-  type UnclassifiedEpub,
-  reconcileDiscoveredPaths,
-} from "@/assets/library/reconcile"
-import { type BookWithRelations, getBooks } from "@/database/books"
+import { getBook, getBooks } from "@/database/books"
 import { getWatchRules } from "@/database/importRules"
+import { getSetting } from "@/database/settings"
 import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { type ScanCtx, type ScanOptions, type ScanSource } from "./ctx"
+import { canonicalizePath, listBookCandidates, walkFolders } from "./folder"
 import { scanAudiobook } from "./pipelines/scanAudiobook"
 import { scanEbook } from "./pipelines/scanEbook"
 import { ScanReport } from "./scanReport"
 import { pushRecentReport, withScanLock } from "./state"
-import { ScanAbortedError } from "./step2"
-import { type ScanFormat, type ScanInput } from "./types"
+import { ScanAbortedError } from "./step"
+import { type Candidate } from "./types"
 
-export type ScanTask =
+export type ScanRequest =
+  | { kind: "folders"; folders: string[]; collections?: UUID[] }
   | {
-      kind: "import-path"
-      importPath: string
-      importMode?: ImportMode | null
-      collections: UUID[]
+      kind: "roots"
+      roots: { path: string; collections?: UUID[]; importMode?: ImportMode }[]
     }
-  | {
-      kind: "changed-paths"
-      importPath: string
-      importMode?: ImportMode | null
-      collections: UUID[]
-      changes: ImportPathChange[]
-    }
-  | { kind: "existing-books"; bookUuids?: UUID[]; exclude?: Set<UUID> }
+  | { kind: "candidates"; candidates: Candidate[] }
+  | { kind: "books"; bookUuids: UUID[] }
 
 export type ScanResult = {
   scannedBookUuids: Set<UUID>
-  processedInputs: number
+  processedCandidates: number
   report: ScanReport | null
 }
 
@@ -63,372 +43,153 @@ function defaultConcurrency(source: ScanSource): number {
   }
 }
 
-function scopedByCollections(
-  books: BookWithRelations[],
-  collectionUuids: UUID[],
-): BookWithRelations[] {
-  if (collectionUuids.length === 0) return books
-
-  return books.filter((book) =>
-    book.collections.some((c) => collectionUuids.includes(c.uuid)),
-  )
-}
-
-function dedupeInputs(inputs: ScanInput[]): ScanInput[] {
-  const seen = new Map<string, ScanInput>()
-  for (const input of inputs) {
-    const key = `${input.bookUuid}:${input.format}:${input.filepath}`
+function dedupeCandidates(candidates: Candidate[]): Candidate[] {
+  const seen = new Map<string, Candidate>()
+  for (const candidate of candidates) {
+    const key = `${candidate.folder}::${candidate.format}::${candidate.filepath}`
     const existing = seen.get(key)
-    if (!existing || input.isNew) seen.set(key, input)
-  }
-  return Array.from(seen.values())
-}
-
-function buildInputsForBooks(
-  books: BookWithRelations[],
-  opts: {
-    formatFilter?: Map<UUID, Set<ScanFormat>>
-    newFormats?: Map<UUID, Set<ScanFormat>>
-  } = {},
-): ScanInput[] {
-  const inputs: ScanInput[] = []
-
-  for (const book of books) {
-    const allowed = opts.formatFilter?.get(book.uuid)
-    const newFormats = opts.newFormats?.get(book.uuid)
-    const isNewFor = (format: ScanFormat) => !!newFormats?.has(format)
-
-    if (book.ebook?.filepath && (!allowed || allowed.has("ebook"))) {
-      inputs.push({
-        bookUuid: book.uuid,
-        filepath: book.ebook.filepath,
-        format: "ebook",
-        book,
-        isNew: isNewFor("ebook"),
-        missing: book.ebook.missing,
-        existingFingerprint: book.ebook.fingerprint ?? null,
-      })
+    if (!existing) {
+      seen.set(key, candidate)
+      continue
     }
-
-    if (book.audiobook?.filepath && (!allowed || allowed.has("audiobook"))) {
-      inputs.push({
-        bookUuid: book.uuid,
-        filepath: book.audiobook.filepath,
-        format: "audiobook",
-        book,
-        isNew: isNewFor("audiobook"),
-        missing: book.audiobook.missing,
-        existingFingerprint: book.audiobook.fingerprint ?? null,
-      })
-    }
-
-    if (book.readaloud?.filepath && (!allowed || allowed.has("readaloud"))) {
-      inputs.push({
-        bookUuid: book.uuid,
-        filepath: book.readaloud.filepath,
-        format: "readaloud",
-        book,
-        isNew: isNewFor("readaloud"),
-        missing: book.readaloud.missing,
-        existingFingerprint: book.readaloud.fingerprint ?? null,
-      })
+    // prefer the candidate that has more context (existingBook/hint)
+    if (!existing.existingBook && candidate.existingBook) {
+      seen.set(key, candidate)
+    } else if (!existing.bookUuidHint && candidate.bookUuidHint) {
+      seen.set(key, candidate)
     }
   }
-
-  return inputs
+  return [...seen.values()]
 }
 
-function formatsAffectedByChanges(
-  books: BookWithRelations[],
-  changes: ImportPathChange[],
-): Map<UUID, Set<ScanFormat>> {
-  const affected = new Map<UUID, Set<ScanFormat>>()
-
-  for (const change of changes) {
-    for (const book of books) {
-      const formats: ScanFormat[] = []
-      if (
-        book.ebook?.filepath &&
-        pathsOverlap(book.ebook.filepath, change.path)
-      ) {
-        formats.push("ebook")
-      }
-      if (
-        book.audiobook?.filepath &&
-        pathsOverlap(book.audiobook.filepath, change.path)
-      ) {
-        formats.push("audiobook")
-      }
-      if (
-        book.readaloud?.filepath &&
-        pathsOverlap(book.readaloud.filepath, change.path)
-      ) {
-        formats.push("readaloud")
-      }
-
-      if (formats.length) {
-        const existing = affected.get(book.uuid) ?? new Set<ScanFormat>()
-        for (const format of formats) existing.add(format)
-        affected.set(book.uuid, existing)
-      }
-    }
-  }
-
-  return affected
-}
-
-type TaskResolution = {
-  inputs: ScanInput[]
-}
-
-const EMPTY_RESOLUTION: TaskResolution = { inputs: [] }
-
-async function resolveImportPath(
-  task: Extract<ScanTask, { kind: "import-path" }>,
-  ctx: ScanCtx,
-): Promise<TaskResolution> {
-  const allBooks = await getBooks()
-  if (ctx.signal.aborted) return EMPTY_RESOLUTION
-
-  const scoped = scopedByCollections(allBooks, task.collections)
-  const knownEbookPaths = new Set(
-    scoped.map((b) => b.ebook?.filepath).filter((p): p is string => !!p),
-  )
-  const knownReadaloudPaths = new Set(
-    scoped.map((b) => b.readaloud?.filepath).filter((p): p is string => !!p),
-  )
-
-  const bookPaths = await discoverBookPathsForRoots(
-    [{ rootPath: task.importPath, warnIfFileAtRoot: true }],
-    knownEbookPaths,
-    knownReadaloudPaths,
-    ctx.signal,
-  )
-
-  const reconciled = await reconcileDiscoveredPaths({
-    bookPaths,
-    collectionUuids: task.collections,
-    allBooks,
-    scopedBooks: scoped,
-    signal: ctx.signal,
-    importMode: task.importMode ?? undefined,
-  })
-
-  const refreshedBooks = scopedByCollections(await getBooks(), task.collections)
-
-  reportDiscoveries(
-    ctx,
-    task.importPath,
-    reconciled.newFormatsByBook,
-    reconciled.unclassifiedEpubs,
-    refreshedBooks,
-  )
-  const inputs = buildInputsForBooks(refreshedBooks, {
-    newFormats: reconciled.newFormatsByBook,
-  })
-  inputs.push(
-    ...buildTentativeInputs(refreshedBooks, reconciled.unclassifiedEpubs),
-  )
-
-  return { inputs }
-}
-
-function buildTentativeInputs(
-  books: BookWithRelations[],
-  unclassified: UnclassifiedEpub[],
-): ScanInput[] {
-  if (!unclassified.length) return []
-  const bookByUuid = new Map(books.map((book) => [book.uuid, book]))
-  const inputs: ScanInput[] = []
-  for (const { bookUuid, filepath } of unclassified) {
-    const book = bookByUuid.get(bookUuid)
-    if (!book) continue
-    inputs.push({
-      bookUuid,
-      filepath,
+async function candidatesFromExistingBook(
+  bookUuid: UUID,
+): Promise<Candidate[]> {
+  const book = await getBook(bookUuid)
+  if (!book) return []
+  const out: Candidate[] = []
+  if (book.ebook?.filepath) {
+    out.push({
+      folder: filepathFolder(book.ebook.filepath),
       format: "ebook",
-      formatTentative: true,
-      book,
-      isNew: true,
-      missing: false,
-      existingFingerprint: null,
+      filepath: book.ebook.filepath,
+      existingBook: book,
     })
   }
-  return inputs
+  if (book.readaloud?.filepath) {
+    out.push({
+      folder: filepathFolder(book.readaloud.filepath),
+      format: "readaloud",
+      filepath: book.readaloud.filepath,
+      existingBook: book,
+    })
+  }
+  if (book.audiobook?.filepath) {
+    out.push({
+      folder: book.audiobook.filepath,
+      format: "audiobook",
+      filepath: book.audiobook.filepath,
+      existingBook: book,
+    })
+  }
+  return out
 }
 
-function reportDiscoveries(
-  ctx: ScanCtx,
-  importPath: string,
-  newFormatsByBook: Map<UUID, Set<ScanFormat>>,
-  unclassified: UnclassifiedEpub[],
-  books: BookWithRelations[],
-) {
-  const tentativeBookUuids = new Set(unclassified.map((u) => u.bookUuid))
-  if (newFormatsByBook.size === 0 && tentativeBookUuids.size === 0) return
-
-  const bookByUuid = new Map(books.map((b) => [b.uuid, b]))
-
-  let formatCount = 0
-  const bookUuids = new Set<UUID>(tentativeBookUuids)
-  for (const [bookUuid, formats] of newFormatsByBook) {
-    bookUuids.add(bookUuid)
-    formatCount += formats.size
-  }
-
-  for (const bookUuid of bookUuids) {
-    const title = bookByUuid.get(bookUuid)?.title ?? bookUuid
-    ctx.report.recordAdded(bookUuid, title)
-  }
-
-  const parts = [`${bookUuids.size} book(s)`]
-  if (formatCount > 0) parts.push(`${formatCount} format(s)`)
-  if (unclassified.length > 0) {
-    parts.push(`${unclassified.length} unclassified epub(s)`)
-  }
-  ctx.report.info({
-    step: "discover",
-    msg: `Discovered ${parts.join("/")} under ${importPath}`,
-  })
+function filepathFolder(filepath: string): string {
+  return filepath.replace(/\/[^/]+$/, "")
 }
 
-async function resolveChangedPaths(
-  task: Extract<ScanTask, { kind: "changed-paths" }>,
+async function materializeCandidates(
+  request: ScanRequest,
   ctx: ScanCtx,
-): Promise<TaskResolution> {
-  const coalesced = coalesceChanges(task.changes)
+): Promise<Candidate[]> {
+  if (request.kind === "candidates") return request.candidates
 
-  const normalized = coalesced.filter((c) => {
-    return isWithinPath(task.importPath, c.path)
-  })
-
-  if (!normalized.length) return EMPTY_RESOLUTION
-
-  const allBooks = await getBooks()
-  if (ctx.signal.aborted) return EMPTY_RESOLUTION
-
-  const scoped = scopedByCollections(allBooks, task.collections)
-  const affectedFormats = formatsAffectedByChanges(scoped, normalized)
-
-  const knownEbookPaths = new Set(
-    scoped.map((b) => b.ebook?.filepath).filter((p): p is string => !!p),
-  )
-  const knownReadaloudPaths = new Set(
-    scoped.map((b) => b.readaloud?.filepath).filter((p): p is string => !!p),
-  )
-  const knownAudiobookPaths = new Set(
-    scoped.map((b) => b.audiobook?.filepath).filter((p): p is string => !!p),
-  )
-  const changesByBookFolder = groupChangesByBookFolder(
-    task.importPath,
-    normalized,
-  )
-
-  let newFormatsByBook = new Map<UUID, Set<ScanFormat>>()
-  let unclassifiedEpubs: UnclassifiedEpub[] = []
-
-  if (changesByBookFolder.size) {
-    const discovered = await buildBookPathsFromChanges({
-      importPath: task.importPath,
-      changesByBookFolder,
-      knownEbookPaths,
-      knownReadaloudPaths,
-      knownAudiobookPaths,
-      signal: ctx.signal,
-    })
-
-    const reconciled = await reconcileDiscoveredPaths({
-      bookPaths: discovered,
-      collectionUuids: task.collections,
-      allBooks,
-      scopedBooks: scoped,
-      signal: ctx.signal,
-      importMode: task.importMode ?? undefined,
-    })
-
-    // Merge discovery-reconciled formats into the change-detected formats.
-    for (const [uuid, formats] of reconciled.formatsByBook) {
-      const existing = affectedFormats.get(uuid) ?? new Set<ScanFormat>()
-      for (const format of formats) existing.add(format)
-      affectedFormats.set(uuid, existing)
+  if (request.kind === "books") {
+    const all: Candidate[] = []
+    for (const bookUuid of request.bookUuids) {
+      if (ctx.signal.aborted) break
+      all.push(...(await candidatesFromExistingBook(bookUuid)))
     }
-    newFormatsByBook = reconciled.newFormatsByBook
-    unclassifiedEpubs = reconciled.unclassifiedEpubs
+    return all
   }
 
-  if (!affectedFormats.size && !unclassifiedEpubs.length) {
-    return EMPTY_RESOLUTION
+  const books = await getBooks()
+  if (ctx.signal.aborted) return []
+
+  if (request.kind === "folders") {
+    const all: Candidate[] = []
+    for (const folder of request.folders) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (ctx.signal.aborted) break
+      const candidates = await listBookCandidates(
+        {
+          folder,
+          books,
+          collections: request.collections,
+        },
+        ctx,
+      )
+      all.push(...candidates)
+    }
+    return all
   }
 
-  const refreshedBooks = scopedByCollections(await getBooks(), task.collections)
-
-  if (newFormatsByBook.size > 0 || unclassifiedEpubs.length > 0) {
-    reportDiscoveries(
-      ctx,
-      task.importPath,
-      newFormatsByBook,
-      unclassifiedEpubs,
-      refreshedBooks,
-    )
+  // kind: "roots"
+  const all: Candidate[] = []
+  for (const root of request.roots) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (ctx.signal.aborted) break
+    const canonicalRoot = await canonicalizePath(root.path)
+    const folders = await walkFolders({ root: canonicalRoot, books }, ctx)
+    for (const folder of folders) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (ctx.signal.aborted) break
+      const candidates = await listBookCandidates(
+        {
+          folder,
+          books,
+          collections: root.collections,
+          warnIfFileAtRoot: true,
+          importRoot: canonicalRoot,
+        },
+        ctx,
+      )
+      all.push(...candidates)
+    }
   }
-  const inputs = buildInputsForBooks(refreshedBooks, {
-    formatFilter: affectedFormats,
-    newFormats: newFormatsByBook,
-  })
-  inputs.push(...buildTentativeInputs(refreshedBooks, unclassifiedEpubs))
-  logger.debug({
-    msg: "Resolved changed paths",
-    importPath: task.importPath,
-    collections: task.collections,
-    changes: task.changes,
-  })
-
-  if (!inputs.length) return EMPTY_RESOLUTION
-
-  return { inputs }
+  return all
 }
 
-async function resolveExistingBooks(
-  task: Extract<ScanTask, { kind: "existing-books" }>,
-  alreadyScanned: Set<UUID>,
-  ctx: ScanCtx,
-): Promise<TaskResolution> {
-  const books = await getBooks(task.bookUuids ?? null)
-  if (ctx.signal.aborted) return EMPTY_RESOLUTION
-
-  const exclude = new Set([...alreadyScanned, ...(task.exclude ?? [])])
-  const filtered =
-    exclude.size > 0 ? books.filter((b) => !exclude.has(b.uuid)) : books
-
-  return { inputs: buildInputsForBooks(filtered) }
+async function resolveImportMode(opts: {
+  options?: ScanOptions
+  request: ScanRequest
+}): Promise<ImportMode> {
+  if (opts.options?.importMode) return opts.options.importMode
+  if (opts.request.kind === "roots") {
+    // if any root specifies a mode, use the first; otherwise fall back.
+    const explicit = opts.request.roots.find((r) => r.importMode)?.importMode
+    if (explicit) return explicit
+  }
+  return await getSetting("importMode")
 }
 
 export async function scan(opts: {
   source: ScanSource
-  tasks: ScanTask[]
+  request: ScanRequest
   options?: ScanOptions
   signal: AbortSignal
 }): Promise<ScanResult> {
-  const options: ScanOptions = {
-    concurrency: defaultConcurrency(opts.source),
-    ...(opts.options ?? {}),
-  }
   const startedAt = Date.now()
   const report = new ScanReport(
     logger.child({ ctx: `[SCAN:${opts.source}]` }),
     startedAt,
     opts.source,
   )
-  const taskKinds = opts.tasks.map((t) => t.kind)
-  report.setTasks(taskKinds)
-  report.logger.info(
-    `Scan started (${taskKinds.length} task${taskKinds.length === 1 ? "" : "s"}: ${taskKinds.join(", ")})`,
-  )
+  report.setTasks([opts.request.kind])
+  report.logger.info(`Scan started (request kind: ${opts.request.kind})`)
 
-  // internal controller that can be aborted from the cancel endpoint.
-  // forwards abort from the caller's signal so both paths cancel the scan.
   const scanController = new AbortController()
-
   if (opts.signal.aborted) {
     scanController.abort()
   } else {
@@ -441,13 +202,23 @@ export async function scan(opts: {
     )
   }
 
+  const importMode = await resolveImportMode({
+    options: opts.options,
+    request: opts.request,
+  })
+
+  const baseOptions: ScanOptions = {
+    concurrency: defaultConcurrency(opts.source),
+    ...(opts.options ?? {}),
+  }
+
   const locked = await withScanLock(
     opts.source,
     startedAt,
     scanController,
     async (setProgress) => {
       if (scanController.signal.aborted) {
-        return { scannedBookUuids: new Set<UUID>(), processedInputs: 0 }
+        return { scannedBookUuids: new Set<UUID>(), processedCandidates: 0 }
       }
 
       const ctx: ScanCtx = {
@@ -455,60 +226,25 @@ export async function scan(opts: {
         report,
         logger: report.logger,
         source: opts.source,
-        options,
+        options: baseOptions,
+        importMode,
         setProgress,
       }
 
+      const allCandidates = await materializeCandidates(opts.request, ctx)
+      if (ctx.signal.aborted || !allCandidates.length) {
+        return { scannedBookUuids: new Set<UUID>(), processedCandidates: 0 }
+      }
+
+      const candidates = dedupeCandidates(allCandidates)
+      report.setInputsTotal(candidates.length)
+
       const scannedBookUuids = new Set<UUID>()
-      const allInputs: ScanInput[] = []
+      const concurrency =
+        baseOptions.concurrency ?? defaultConcurrency(opts.source)
+      await runWorkers(candidates, ctx, concurrency, scannedBookUuids)
 
-      for (const task of opts.tasks) {
-        if (ctx.signal.aborted) {
-          logger.error({ msg: "Scan aborted" })
-          break
-        }
-
-        let resolved: TaskResolution | null = null
-        if (task.kind === "import-path") {
-          resolved = await resolveImportPath(task, ctx)
-        } else if (task.kind === "changed-paths") {
-          resolved = await resolveChangedPaths(task, ctx)
-        }
-
-        if (!resolved) continue
-        for (const input of resolved.inputs)
-          scannedBookUuids.add(input.bookUuid)
-        allInputs.push(...resolved.inputs)
-      }
-
-      const existingBookTask = opts.tasks.find(
-        (task) => task.kind === "existing-books",
-      )
-      if (existingBookTask) {
-        const resolved = await resolveExistingBooks(
-          existingBookTask,
-          scannedBookUuids,
-          ctx,
-        )
-        for (const input of resolved.inputs)
-          scannedBookUuids.add(input.bookUuid)
-        allInputs.push(...resolved.inputs)
-      }
-
-      if (ctx.signal.aborted || !allInputs.length) {
-        return { scannedBookUuids, processedInputs: 0 }
-      }
-
-      const inputs = dedupeInputs(allInputs)
-      report.setInputsTotal(inputs.length)
-
-      await runScans(
-        inputs,
-        ctx,
-        options.concurrency ?? defaultConcurrency(opts.source),
-      )
-
-      return { scannedBookUuids, processedInputs: inputs.length }
+      return { scannedBookUuids, processedCandidates: candidates.length }
     },
   )
 
@@ -518,7 +254,7 @@ export async function scan(opts: {
 
   return {
     scannedBookUuids: locked?.scannedBookUuids ?? new Set<UUID>(),
-    processedInputs: locked?.processedInputs ?? 0,
+    processedCandidates: locked?.processedCandidates ?? 0,
     report,
   }
 }
@@ -529,23 +265,15 @@ export async function scanLibrary(opts: {
   signal: AbortSignal
 }): Promise<ScanResult> {
   const watchRules = await getWatchRules()
-
-  const tasks: ScanTask[] = []
-
-  for (const rule of watchRules) {
-    tasks.push({
-      kind: "import-path",
-      importPath: rule.path,
-      importMode: rule.importMode as ImportMode | null,
-      collections: rule.collections.map((c) => c.uuid),
-    })
-  }
-
-  tasks.push({ kind: "existing-books" })
+  const roots = watchRules.map((rule) => ({
+    path: rule.path,
+    collections: rule.collections.map((c) => c.uuid),
+    importMode: (rule.importMode as ImportMode | null) ?? undefined,
+  }))
 
   return scan({
     source: opts.source,
-    tasks,
+    request: { kind: "roots", roots },
     options: opts.options ?? {},
     signal: opts.signal,
   })
@@ -559,25 +287,28 @@ export async function scanBooks(opts: {
 }): Promise<ScanResult> {
   return scan({
     source: opts.source,
-    tasks: [{ kind: "existing-books", bookUuids: opts.bookUuids }],
+    request: { kind: "books", bookUuids: opts.bookUuids },
     options: opts.options ?? {},
     signal: opts.signal,
   })
 }
 
-async function runScans(
-  inputs: ScanInput[],
+async function runWorkers(
+  candidates: Candidate[],
   ctx: ScanCtx,
   concurrency: number,
+  scannedBookUuids: Set<UUID>,
 ) {
-  const total = inputs.length
+  const total = candidates.length
   if (total === 0) {
     ctx.setProgress(0, 0)
     return
   }
 
   ctx.setProgress(0, total)
-  ctx.logger.debug(`Scanning ${total} input(s) with concurrency ${concurrency}`)
+  ctx.logger.debug(
+    `Scanning ${total} candidate(s) with concurrency ${concurrency}`,
+  )
 
   const workers = Math.max(1, Math.min(concurrency, total))
   let next = 0
@@ -586,38 +317,37 @@ async function runScans(
   const worker = async () => {
     while (!ctx.signal.aborted) {
       const index = next++
-      if (index >= inputs.length) return
+      if (index >= candidates.length) return
 
-      const input = inputs[index]
-      if (!input) return
+      const candidate = candidates[index]
+      if (!candidate) return
 
       ctx.logger.debug(
-        `Scanning ${input.book.title} ${input.format} [${index + 1}/${total}]`,
+        `Scanning ${candidate.filepath} (${candidate.format}) [${index + 1}/${total}]`,
       )
+
       try {
-        switch (input.format) {
-          case "ebook":
-          case "readaloud": {
-            await scanEbook(input, ctx)
-            break
-          }
-          case "audiobook": {
-            await scanAudiobook(input, ctx)
-            break
-          }
+        if (candidate.format === "audiobook") {
+          await scanAudiobook(candidate, ctx)
+        } else {
+          await scanEbook(candidate, ctx)
+        }
+        // record any book that the pipeline associated with this candidate
+        if (candidate.existingBook) {
+          scannedBookUuids.add(candidate.existingBook.uuid)
+        } else if (candidate.bookUuidHint) {
+          scannedBookUuids.add(candidate.bookUuidHint)
         }
       } catch (err) {
         if (err instanceof ScanAbortedError) {
           ctx.logger.debug(
-            `Scan aborted for ${input.book.title} (${input.format})`,
+            `Scan aborted for ${candidate.filepath} (${candidate.format})`,
           )
           return
         }
-
-        ctx.report.failed({
+        ctx.report.warn({
           step: "scan",
-          book: input.book,
-          format: input.format,
+          msg: `Unhandled error scanning ${candidate.filepath} (${candidate.format})`,
           err,
         })
       }

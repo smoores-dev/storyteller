@@ -2,7 +2,7 @@ import { stat } from "node:fs/promises"
 
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
-import { defineStep } from "@/assets/library/scanner/step2"
+import { defineStep } from "@/assets/library/scanner/step"
 import { type Existing, type ScanInput } from "@/assets/library/scanner/types"
 import { updateBook } from "@/database/books"
 
