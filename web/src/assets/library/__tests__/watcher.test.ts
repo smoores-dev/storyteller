@@ -130,7 +130,7 @@ void describe("Watcher", () => {
     )
   })
 
-  void it.only("ignores adding files to ignored paths", async () => {
+  void it("ignores adding files to ignored paths", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-ignore")
 

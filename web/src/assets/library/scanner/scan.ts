@@ -380,6 +380,7 @@ async function runWorkers(
       if (!group) return
 
       for (let i = 0; i < group.length; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (ctx.signal.aborted) return
         const candidate = group[i]
         if (!candidate) continue

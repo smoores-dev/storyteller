@@ -17,20 +17,34 @@ import {
 } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import { type BookWithRelations, updateBook } from "@/database/books"
-
+import { type ImportMode } from "@/database/settingsTypes"
 
 type Relocator = (source: string, destination: string) => Promise<void>
 
 function resolveRelocator(
-  importMode: Exclude<import("@/database/settingsTypes").ImportMode, "reference">,
+  importMode: Exclude<ImportMode, "reference">,
 ): Relocator {
+  let resolver: Relocator
+
   switch (importMode) {
     case "move":
-      return move
+      resolver = move
+      break
     case "hardlink":
-      return copyWithHardlink
+      resolver = copyWithHardlink
+      break
     case "copy":
-      return copyWithReflink
+      resolver = copyWithReflink
+      break
+  }
+
+  return async (source, destination) => {
+    suppressPrefix(destination)
+    try {
+      await resolver(source, destination)
+    } finally {
+      unsuppressPrefix(destination)
+    }
   }
 }
 
@@ -70,9 +84,6 @@ export type RelocateResult = {
  * filepath in the DB. Returns the post-relocation book and filepath.
  *
  * For `reference` mode, no-op: returns the original book and filepath.
- *
- * Wraps writes in suppressPrefix/unsuppressPrefix so the watcher doesn't
- * bounce on the moves.
  */
 export async function relocateIfNeeded(
   book: BookWithRelations,
@@ -80,8 +91,12 @@ export async function relocateIfNeeded(
   format: ScanFormat,
   ctx: ScanCtx,
 ): Promise<RelocateResult> {
-  if (ctx.importMode === "reference") return { book, filepath }
-  if (isAlreadyInternal(filepath, book)) return { book, filepath }
+  if (ctx.importMode === "reference") {
+    return { book, filepath }
+  }
+  if (isAlreadyInternal(filepath, book)) {
+    return { book, filepath }
+  }
 
   const ensuredBook = await ensureBookDirectory(book)
   const relocator = resolveRelocator(ctx.importMode)
@@ -89,12 +104,7 @@ export async function relocateIfNeeded(
   if (format === "ebook") {
     const dest = getInternalEpubFilepath(ensuredBook)
     await mkdir(dirname(dest), { recursive: true })
-    suppressPrefix(dest)
-    try {
-      await relocator(filepath, dest)
-    } finally {
-      unsuppressPrefix(dest)
-    }
+    await relocator(filepath, dest)
     const updated = await updateBook(ensuredBook.uuid, null, {
       ebook: { filepath: dest, missing: false },
     })
@@ -104,12 +114,7 @@ export async function relocateIfNeeded(
   if (format === "readaloud") {
     const dest = getInternalReadaloudFilepath(ensuredBook)
     await mkdir(dirname(dest), { recursive: true })
-    suppressPrefix(dest)
-    try {
-      await relocator(filepath, dest)
-    } finally {
-      unsuppressPrefix(dest)
-    }
+    await relocator(filepath, dest)
     const updated = await updateBook(ensuredBook.uuid, null, {
       readaloud: {
         filepath: dest,
@@ -124,18 +129,13 @@ export async function relocateIfNeeded(
   // audiobook: filepath is the source directory.
   const destDir = getInternalAudioDirectory(ensuredBook)
   await mkdir(destDir, { recursive: true })
-  suppressPrefix(destDir)
-  try {
-    const entries = await readdir(filepath)
-    for (const entry of entries) {
-      if (!isAudioFile(entry)) continue
-      await relocator(join(filepath, entry), join(destDir, entry))
-    }
-    if (ctx.importMode === "move") {
-      await rm(filepath, { recursive: true })
-    }
-  } finally {
-    unsuppressPrefix(destDir)
+  const entries = await readdir(filepath)
+  for (const entry of entries) {
+    if (!isAudioFile(entry)) continue
+    await relocator(join(filepath, entry), join(destDir, entry))
+  }
+  if (ctx.importMode === "move") {
+    await rm(filepath, { recursive: true })
   }
   const updated = await updateBook(ensuredBook.uuid, null, {
     audiobook: { filepath: destDir, missing: false },

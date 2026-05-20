@@ -31,12 +31,11 @@ type EpubFormat = Extract<
   string
 >
 
+/* sort of a failsafe incase we have already classified a readaloud as an ebook or some reason */
 function classifyExistingBook(
   book: BookWithRelations,
   candidate: Candidate,
 ): EpubFormat {
-  // Honor the candidate's stated format, but if the existing book has the
-  // exact filepath under one of its relations, trust that.
   if (book.ebook?.filepath === candidate.filepath) return "ebook"
   if (book.readaloud?.filepath === candidate.filepath) return "readaloud"
   return candidate.format === "audiobook" ? "ebook" : candidate.format
@@ -57,6 +56,7 @@ function buildEpubInput(
     missing: baseRelation?.missing ?? false,
     existingFingerprint: baseRelation?.fingerprint ?? null,
   } as const
+
   return format === "ebook"
     ? { ...shared, format: "ebook" }
     : { ...shared, format: "readaloud" }

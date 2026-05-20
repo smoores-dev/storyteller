@@ -13,32 +13,26 @@ import { type UUID } from "@/uuid"
 export type ScanFormat = "ebook" | "audiobook" | "readaloud"
 
 /**
- * A unit of scannable work. Every entry point (watcher, manual scan,
- * upload, scheduled, api) produces an array of these. The worker pool
- * dispatches each one to scanEbook or scanAudiobook.
- *
- * - `existingBook` is set when the caller has already resolved the book
- *   (existing-book sweeps, watcher delete events). The pipeline trusts it
- *   and skips its own find lookup.
- * - `bookUuidHint` is for callers that know the target UUID up front
- *   (uploads). find-book uses it as the first lookup key.
- * - `isReadaloud` lets folder.ts disambiguate epubs (by media overlay)
- *   without forcing the pipeline to reopen them.
- * - `collections` propagates collection associations to newly created books.
- * - `groupable` marks candidates that share the "one folder = one book"
- *   invariant (watcher / scanLibrary). When set, the worker pool serializes
- *   candidates with the same `folder` and propagates the resulting book to
- *   siblings so they attach instead of creating new books. Manual imports
- *   (upload, POST /books) leave it unset — each candidate stays independent.
+ * thing to be scanned, either exists already in the db or is a new candidate
  */
 export type Candidate = {
   folder: string
   format: ScanFormat
   filepath: string
   isReadaloud?: boolean
+  /**
+   * used for uploads, which uuid the book should be created with
+   */
   bookUuidHint?: UUID
   existingBook?: BookWithRelations
+  /**
+   * which collections newly created books should be added to, through association with import rules
+   */
   collections?: UUID[]
+  /**
+   * marks candidates that are triggered from watchers, makes sure that candidates from the same folder are processed together and end up as one book.
+   * does not apply to eg manual uploads/imports
+   */
   groupable?: boolean
 }
 

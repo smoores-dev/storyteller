@@ -59,7 +59,6 @@ export const DELETE = withHasPermission("bookDelete")(async (request) => {
   }
 
   for (const book of books) {
-    console.log("deleting book", book.title, preventReImport)
     await deleteBook(book.uuid, { preventReImport })
 
     if (includeAssets) {

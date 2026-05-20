@@ -1,16 +1,6 @@
 "use client"
 
-import {
-  Box,
-  Button,
-  Group,
-  Menu,
-  Paper,
-  Progress,
-  Stack,
-  Text,
-} from "@mantine/core"
-import { IconChevronDown } from "@tabler/icons-react"
+import { Box, Button, Group, Paper, Progress, Stack, Text } from "@mantine/core"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import {

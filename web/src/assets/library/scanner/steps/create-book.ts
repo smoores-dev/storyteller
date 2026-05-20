@@ -24,14 +24,7 @@ import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-
 /**
- * Open the epub at `filepath`. If it's EPUB 2, honor the global
- * `epub2ImportStrategy` setting:
- *   - "skip": throw EpubVersionError so the caller can decide.
- *   - "backup-and-convert": copy original aside, then upgrade in place.
- *   - "replace": upgrade in place (no backup).
- *
  * Always returns a reader for an EPUB 3 file at `filepath`.
  */
 export async function openOrUpgradeEpub(
@@ -69,10 +62,6 @@ export type OpenedEpubResult = {
   format: Extract<ScanFormat, "ebook" | "readaloud">
 }
 
-/**
- * Open the file and resolve its format. The returned reader is the
- * caller's to own (typically registered on `ctx.scope` so it gets disposed).
- */
 export async function openAndClassifyEpub(
   candidate: Candidate,
   ctx: ScanCtx,
@@ -138,14 +127,6 @@ export async function openAudiobookDir(
   return { audiobook }
 }
 
-/**
- * Create a new book record for an opened epub. Only called when find-book
- * returned null, so this is the moment the user "gains" a book row.
- *
- * The resulting book carries the original filepath; relocateIfNeeded()
- * runs next to move/copy it into the internal layout when import mode
- * dictates.
- */
 export async function createBookFromOpenedEpub(
   candidate: Candidate,
   opened: OpenedEpubResult,

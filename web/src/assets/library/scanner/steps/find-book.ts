@@ -1,4 +1,3 @@
-
 import { canonicalizePath } from "@/assets/library/scanner/folder"
 import { type Candidate } from "@/assets/library/scanner/types"
 import {

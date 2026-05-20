@@ -36,7 +36,7 @@ type FolderClassification = {
 
 async function classifyFolder(
   folder: string,
-  opts: { epub2BackupSuffix: string; ignorePaths: Set<string> },
+  opts: { epub2BackupSuffix: string; ignorePaths: string[] },
 ): Promise<FolderClassification | null> {
   let entries: Dirent[]
   try {
@@ -331,6 +331,7 @@ export async function walkFolders(
   }
 
   for (const entry of entries) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (ctx.signal.aborted) return []
     if (!entry.isFile() && !entry.isSymbolicLink()) continue
     if (isInsideInternalDirectory(entry.parentPath)) continue

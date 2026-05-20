@@ -30,7 +30,6 @@ import { type DB } from "./schema"
 import { type NewSeries } from "./series"
 import { getDefaultStatus } from "./statuses"
 
-
 /**
  * This function only exists to support old clients that haven't
  * started using UUIDs yet. It's not particularly efficient and should

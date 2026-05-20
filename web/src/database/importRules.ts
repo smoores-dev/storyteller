@@ -48,14 +48,15 @@ export async function getWatchRules(): Promise<ImportRuleWithCollections[]> {
   return getImportRules("watch")
 }
 
-export async function getIgnorePaths(): Promise<Set<string>> {
+export async function getIgnorePaths(): Promise<string[]> {
   const rows = await db
     .selectFrom("importRule")
     .select(["path"])
     .where("kind", "=", "ignore")
+    .distinct()
     .execute()
 
-  return new Set(rows.map((r) => r.path))
+  return rows.map((r) => r.path)
 }
 
 export type CreateImportRuleInput = {

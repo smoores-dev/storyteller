@@ -1,11 +1,8 @@
 import { getNumericValue } from "@/assets/library/scanner/manifestValue"
 import { defineStep } from "@/assets/library/scanner/step"
 import {
-  type AudiobookManifestReady,
   type AudiobookMetadataExtracted,
-  type EbookManifestReady,
   type EpubMetadataExtracted,
-  type ReadaloudManifestReady,
 } from "@/assets/library/scanner/types"
 import { type SerializedManifest } from "@/components/reader/types"
 import { ReadiumService } from "@/services/readiumService"
@@ -14,15 +11,12 @@ import { createAudiobookManifest } from "@/utils/audioManifest"
 export type ExtractEbookManifestInput = EpubMetadataExtracted & {
   format: "ebook"
 }
-export type ExtractEbookManifestOutput = EbookManifestReady
 
 export type ExtractReadaloudManifestInput = EpubMetadataExtracted & {
   format: "readaloud"
 }
-export type ExtractReadaloudManifestOutput = ReadaloudManifestReady
 
 export type ExtractAudiobookManifestInput = AudiobookMetadataExtracted
-export type ExtractAudiobookManifestOutput = AudiobookManifestReady
 
 function deriveAudiobookDuration(manifest: SerializedManifest): number | null {
   let duration = 0
