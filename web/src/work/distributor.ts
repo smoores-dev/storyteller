@@ -1,4 +1,4 @@
-import { join } from "node:path"
+import { extname, join, resolve } from "node:path"
 import { cwd } from "node:process"
 import { MessageChannel } from "node:worker_threads"
 
@@ -27,6 +27,7 @@ import type { UUID } from "@/uuid"
 
 import { STAGE_ORDER } from "./stages"
 import type processBook from "./worker"
+import { pathBelongsTo } from "@/assets/library/scanner/folder"
 
 export type RestartMode = false | "full" | "transcription" | "sync"
 
@@ -128,20 +129,31 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
 
   controllers.set(bookUuid, abortController)
 
-  const fileSuppression: string[] = []
-  const dirSuppression: string[] = []
-  if (book.ebook?.filepath) fileSuppression.push(book.ebook.filepath)
-  if (book.readaloud?.filepath) fileSuppression.push(book.readaloud.filepath)
-  if (book.audiobook?.filepath) dirSuppression.push(book.audiobook.filepath)
+  // same logic as in deleteBook, should probably be a helper function
+  const filePaths = [
+    book.ebook?.filepath,
+    book.audiobook?.filepath,
+    book.readaloud?.filepath,
+  ]
+    .filter((filepath) => filepath != undefined)
+    .map((filepath) => resolve(filepath))
+
+  // if one of the paths is a directory and contains the others, ignore the others, no point in adding them all
+  const dirs = filePaths.filter((dir) => !extname(dir))
+
+  const realFilePaths = filePaths.filter((path) => {
+    // basically no subpaths
+    return !dirs.some((dir) => pathBelongsTo(dir, path))
+  })
+
+  const toSupress = [...dirs, ...realFilePaths]
 
   // predict the readaloud output path and suppress it before the worker spawns,
   if (book.ebook?.filepath) {
     try {
       const settings = await getSettings()
       const predictedReadaloudPath = getReadaloudFilepath(book, settings)
-      if (!fileSuppression.includes(predictedReadaloudPath)) {
-        fileSuppression.push(predictedReadaloudPath)
-      }
+      toSupress.push(predictedReadaloudPath)
     } catch (err) {
       logger.warn({
         msg: "Failed to predict readaloud filepath for suppression",
@@ -152,8 +164,7 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   }
 
   const refreshSuppression = () => {
-    for (const fp of fileSuppression) suppressPrefix(fp)
-    for (const dp of dirSuppression) suppressPrefix(dp)
+    for (const fp of toSupress) suppressPrefix(fp)
   }
 
   const { port1, port2 } = new MessageChannel()
@@ -171,10 +182,7 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
       // readaloud filepath may change during processing, keep suppressed
       if (message.relations.readaloud?.filepath) {
         const fp = message.relations.readaloud.filepath
-        if (!fileSuppression.includes(fp)) {
-          fileSuppression.push(fp)
-          suppressPrefix(fp)
-        }
+        toSupress.push(fp)
       }
 
       const updated = await updateBook(
@@ -247,8 +255,7 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
     logger.error(`Processing for book ${bookUuid} failed unexpectedly`)
     logger.error(err)
   } finally {
-    for (const fp of fileSuppression) unsuppressPrefix(fp)
-    for (const dp of dirSuppression) unsuppressPrefix(dp)
+    for (const fp of toSupress) unsuppressPrefix(fp)
 
     if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
