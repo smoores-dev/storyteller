@@ -128,7 +128,7 @@ function normalizeString(
   return res
 }
 
-const windows = {
+export const windows = {
   normalize(path: string) {
     const len = path.length
     if (len === 0) return "."
@@ -656,7 +656,7 @@ const posixCwd = (() => {
   return () => process.cwd()
 })()
 
-const posix = {
+export const posix = {
   resolve(...args: string[]) {
     if (
       args.length === 0 ||
@@ -901,3 +901,18 @@ export function dirname(path: string) {
 export function join(...args: string[]) {
   return isWindows ? windows.join(...args) : posix.join(...args)
 }
+
+export function hrefToPlatformPath(href: string) {
+  if (!isWindows) return href
+
+  let platformPath = href
+  for (let i = 0; i < platformPath.length; i++) {
+    if (!isPosixPathSeparator(href.charCodeAt(i))) continue
+
+    platformPath = platformPath.slice(0, i) + "\\" + platformPath.slice(i + 1)
+  }
+
+  return platformPath
+}
+
+export const sep = isWindows ? "\\" : "/"

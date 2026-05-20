@@ -452,11 +452,80 @@ publish-align-sea-linux-arm64:
     - apt update
     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
-# publish-align-sea-windows-x64:
-#   extends: .publish-align-sea-base
-#   tags: [saas-windows-medium-amd64]
-#   variables:
-#     VARIANT: "windows-x64"
+publish-align-sea-windows-x64:
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  tags: [saas-windows-medium-amd64]
+  before_script:
+    - |
+      $refreshPath = {
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+      }
+      $requiredNode = "25.9.0"
+      $nodeOk = $false
+      if (Get-Command node -ErrorAction SilentlyContinue) {
+        $installedNode = (node --version).TrimStart('v')
+        if ($installedNode -eq $requiredNode) {
+          $nodeOk = $true
+        }
+      }
+      if (-not $nodeOk) {
+        if (Get-Command choco -ErrorAction SilentlyContinue) {
+          choco install -y nodejs --version=$requiredNode
+          & $refreshPath
+        } else {
+          throw "node $requiredNode is required on the windows runner"
+        }
+      }
+      npm i -g corepack
+      & $refreshPath
+      corepack enable
+      corepack prepare yarn@4.12.0 --activate
+      & $refreshPath
+      node --version
+      yarn --version
+  script:
+    - yarn workspaces focus @storyteller-platform/align
+    - yarn workspace @storyteller-platform/align compile
+    - |
+      # Look up existing package
+      $packagesResponse = Invoke-RestMethod `
+        -Uri "${env:CI_API_V4_URL}/projects/${env:CI_PROJECT_ID}/packages?package_name=stalign&package_version=${env:CI_COMMIT_TAG}" `
+        -Headers @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+
+      $packageId = $packagesResponse[0].id
+
+      if ($packageId) {
+        $filesResponse = Invoke-RestMethod `
+          -Uri "${env:CI_API_V4_URL}/projects/${env:CI_PROJECT_ID}/packages/${packageId}/package_files" `
+          -Headers @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+
+        $fileIds = $filesResponse | Where-Object { $_.file_name -eq "stalign-${env:VARIANT}" } | Select-Object -ExpandProperty id
+
+        foreach ($fileId in $fileIds) {
+          Write-Output "Deleting file ID: $fileId"
+          Invoke-RestMethod `
+            -Method DELETE `
+            -Uri "${env:CI_API_V4_URL}/projects/${env:CI_PROJECT_ID}/packages/${packageId}/package_files/${fileId}" `
+            -Headers @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+        }
+      }
+
+    - Write-Output "Uploading to GitLab Generic Package Registry..."
+    - $version = $env:CI_COMMIT_TAG -replace '^align-v', ''
+    - Write-Output "v${version}"
+    - |
+      $filePath = Resolve-Path "align/stalign.exe"
+      $fileBytes = [System.IO.File]::ReadAllBytes($filePath)
+      Invoke-RestMethod `
+        -Method PUT `
+        -Uri "${env:CI_API_V4_URL}/projects/${env:CI_PROJECT_ID}/packages/generic/stalign/${version}/stalign.exe" `
+        -Headers @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN } `
+        -Body $fileBytes `
+        -ContentType "application/octet-stream"
 
 publish-align:
   image: node:25

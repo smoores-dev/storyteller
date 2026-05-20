@@ -10162,10 +10162,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@next/env@npm:15.5.9":
-  version: 15.5.9
-  resolution: "@next/env@npm:15.5.9"
-  checksum: 10c0/92c4e29d81a8e78c33c2da179648a4f478a9a6852966192e079007b19ec9955e72530d5ca7df55ea0efeccbf5b1c9d0efcaf80433e26af89c6478193e1d088f1
+"@next/env@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/env@npm:15.5.18"
+  checksum: 10c0/cfb628f88b903b2593a778658abd2eed8a35ca91807ef19c08461543ed3ba9143e6f0ea4f29b98693f806f9498d1e6ca7c1efd1e0c3a0595991e2bac202e545a
   languageName: node
   linkType: hard
 
@@ -10178,58 +10178,58 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-arm64@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-darwin-arm64@npm:15.5.7"
+"@next/swc-darwin-arm64@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-darwin-arm64@npm:15.5.18"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-x64@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-darwin-x64@npm:15.5.7"
+"@next/swc-darwin-x64@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-darwin-x64@npm:15.5.18"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-gnu@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-linux-arm64-gnu@npm:15.5.7"
+"@next/swc-linux-arm64-gnu@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-linux-arm64-gnu@npm:15.5.18"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-musl@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-linux-arm64-musl@npm:15.5.7"
+"@next/swc-linux-arm64-musl@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-linux-arm64-musl@npm:15.5.18"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-gnu@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-linux-x64-gnu@npm:15.5.7"
+"@next/swc-linux-x64-gnu@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-linux-x64-gnu@npm:15.5.18"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-musl@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-linux-x64-musl@npm:15.5.7"
+"@next/swc-linux-x64-musl@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-linux-x64-musl@npm:15.5.18"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-win32-arm64-msvc@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-win32-arm64-msvc@npm:15.5.7"
+"@next/swc-win32-arm64-msvc@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-win32-arm64-msvc@npm:15.5.18"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-win32-x64-msvc@npm:15.5.7":
-  version: 15.5.7
-  resolution: "@next/swc-win32-x64-msvc@npm:15.5.7"
+"@next/swc-win32-x64-msvc@npm:15.5.18":
+  version: 15.5.18
+  resolution: "@next/swc-win32-x64-msvc@npm:15.5.18"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -10412,157 +10412,6 @@ __metadata:
     "@node-rs/crc32-win32-x64-msvc":
       optional: true
   checksum: 10c0/536efd0f847f49a12c2c48610dee1de55e88f03873769a04d0d86f3d96610d71ade7d1e021b44fb3e91d54cda2e78c9e659b46cbaf88a0907a2cbf2b16030cb6
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-android-arm-eabi@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-android-arm-eabi@npm:1.7.6"
-  conditions: os=android & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-android-arm64@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-android-arm64@npm:1.7.6"
-  conditions: os=android & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-darwin-arm64@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-darwin-arm64@npm:1.7.6"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-darwin-x64@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-darwin-x64@npm:1.7.6"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-freebsd-x64@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-freebsd-x64@npm:1.7.6"
-  conditions: os=freebsd & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-linux-arm-gnueabihf@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-linux-arm-gnueabihf@npm:1.7.6"
-  conditions: os=linux & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-linux-arm64-gnu@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-linux-arm64-gnu@npm:1.7.6"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-linux-arm64-musl@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-linux-arm64-musl@npm:1.7.6"
-  conditions: os=linux & cpu=arm64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-linux-x64-gnu@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-linux-x64-gnu@npm:1.7.6"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-linux-x64-musl@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-linux-x64-musl@npm:1.7.6"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-wasm32-wasi@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-wasm32-wasi@npm:1.7.6"
-  dependencies:
-    "@napi-rs/wasm-runtime": "npm:^0.2.5"
-  conditions: cpu=wasm32
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-win32-arm64-msvc@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-win32-arm64-msvc@npm:1.7.6"
-  conditions: os=win32 & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-win32-ia32-msvc@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-win32-ia32-msvc@npm:1.7.6"
-  conditions: os=win32 & cpu=ia32
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash-win32-x64-msvc@npm:1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash-win32-x64-msvc@npm:1.7.6"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@node-rs/xxhash@npm:^1.7.6":
-  version: 1.7.6
-  resolution: "@node-rs/xxhash@npm:1.7.6"
-  dependencies:
-    "@node-rs/xxhash-android-arm-eabi": "npm:1.7.6"
-    "@node-rs/xxhash-android-arm64": "npm:1.7.6"
-    "@node-rs/xxhash-darwin-arm64": "npm:1.7.6"
-    "@node-rs/xxhash-darwin-x64": "npm:1.7.6"
-    "@node-rs/xxhash-freebsd-x64": "npm:1.7.6"
-    "@node-rs/xxhash-linux-arm-gnueabihf": "npm:1.7.6"
-    "@node-rs/xxhash-linux-arm64-gnu": "npm:1.7.6"
-    "@node-rs/xxhash-linux-arm64-musl": "npm:1.7.6"
-    "@node-rs/xxhash-linux-x64-gnu": "npm:1.7.6"
-    "@node-rs/xxhash-linux-x64-musl": "npm:1.7.6"
-    "@node-rs/xxhash-wasm32-wasi": "npm:1.7.6"
-    "@node-rs/xxhash-win32-arm64-msvc": "npm:1.7.6"
-    "@node-rs/xxhash-win32-ia32-msvc": "npm:1.7.6"
-    "@node-rs/xxhash-win32-x64-msvc": "npm:1.7.6"
-  dependenciesMeta:
-    "@node-rs/xxhash-android-arm-eabi":
-      optional: true
-    "@node-rs/xxhash-android-arm64":
-      optional: true
-    "@node-rs/xxhash-darwin-arm64":
-      optional: true
-    "@node-rs/xxhash-darwin-x64":
-      optional: true
-    "@node-rs/xxhash-freebsd-x64":
-      optional: true
-    "@node-rs/xxhash-linux-arm-gnueabihf":
-      optional: true
-    "@node-rs/xxhash-linux-arm64-gnu":
-      optional: true
-    "@node-rs/xxhash-linux-arm64-musl":
-      optional: true
-    "@node-rs/xxhash-linux-x64-gnu":
-      optional: true
-    "@node-rs/xxhash-linux-x64-musl":
-      optional: true
-    "@node-rs/xxhash-wasm32-wasi":
-      optional: true
-    "@node-rs/xxhash-win32-arm64-msvc":
-      optional: true
-    "@node-rs/xxhash-win32-ia32-msvc":
-      optional: true
-    "@node-rs/xxhash-win32-x64-msvc":
-      optional: true
-  checksum: 10c0/9ac7dce105664c48fe4c40dc96e453b5665623011346db9651d27ddd7a5fbf26573b61858dc75ac89784ede62256fbf4c44085aff40133bbbdb190824412330f
   languageName: node
   linkType: hard
 
@@ -11065,23 +10914,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/watcher-android-arm64@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-android-arm64@npm:2.5.6"
-  conditions: os=android & cpu=arm64
-  languageName: node
-  linkType: hard
-
 "@parcel/watcher-darwin-arm64@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-darwin-arm64@npm:2.5.1"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@parcel/watcher-darwin-arm64@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-darwin-arm64@npm:2.5.6"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
@@ -11093,23 +10928,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/watcher-darwin-x64@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-darwin-x64@npm:2.5.6"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
 "@parcel/watcher-freebsd-x64@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-freebsd-x64@npm:2.5.1"
-  conditions: os=freebsd & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@parcel/watcher-freebsd-x64@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-freebsd-x64@npm:2.5.6"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
@@ -11121,23 +10942,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/watcher-linux-arm-glibc@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-linux-arm-glibc@npm:2.5.6"
-  conditions: os=linux & cpu=arm & libc=glibc
-  languageName: node
-  linkType: hard
-
 "@parcel/watcher-linux-arm-musl@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-linux-arm-musl@npm:2.5.1"
-  conditions: os=linux & cpu=arm & libc=musl
-  languageName: node
-  linkType: hard
-
-"@parcel/watcher-linux-arm-musl@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-linux-arm-musl@npm:2.5.6"
   conditions: os=linux & cpu=arm & libc=musl
   languageName: node
   linkType: hard
@@ -11149,23 +10956,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/watcher-linux-arm64-glibc@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-linux-arm64-glibc@npm:2.5.6"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
 "@parcel/watcher-linux-arm64-musl@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-linux-arm64-musl@npm:2.5.1"
-  conditions: os=linux & cpu=arm64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@parcel/watcher-linux-arm64-musl@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-linux-arm64-musl@npm:2.5.6"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
@@ -11177,23 +10970,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/watcher-linux-x64-glibc@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-linux-x64-glibc@npm:2.5.6"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
 "@parcel/watcher-linux-x64-musl@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-linux-x64-musl@npm:2.5.1"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@parcel/watcher-linux-x64-musl@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-linux-x64-musl@npm:2.5.6"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
@@ -11205,13 +10984,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/watcher-win32-arm64@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-win32-arm64@npm:2.5.6"
-  conditions: os=win32 & cpu=arm64
-  languageName: node
-  linkType: hard
-
 "@parcel/watcher-win32-ia32@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-win32-ia32@npm:2.5.1"
@@ -11219,23 +10991,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parcel/watcher-win32-ia32@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-win32-ia32@npm:2.5.6"
-  conditions: os=win32 & cpu=ia32
-  languageName: node
-  linkType: hard
-
 "@parcel/watcher-win32-x64@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-win32-x64@npm:2.5.1"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@parcel/watcher-win32-x64@npm:2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher-win32-x64@npm:2.5.6"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -11290,59 +11048,6 @@ __metadata:
     "@parcel/watcher-win32-x64":
       optional: true
   checksum: 10c0/8f35073d0c0b34a63d4c8d2213482f0ebc6a25de7b2cdd415d19cb929964a793cb285b68d1d50bfb732b070b3c82a2fdb4eb9c250eab709a1cd9d63345455a82
-  languageName: node
-  linkType: hard
-
-"@parcel/watcher@npm:^2.5.6":
-  version: 2.5.6
-  resolution: "@parcel/watcher@npm:2.5.6"
-  dependencies:
-    "@parcel/watcher-android-arm64": "npm:2.5.6"
-    "@parcel/watcher-darwin-arm64": "npm:2.5.6"
-    "@parcel/watcher-darwin-x64": "npm:2.5.6"
-    "@parcel/watcher-freebsd-x64": "npm:2.5.6"
-    "@parcel/watcher-linux-arm-glibc": "npm:2.5.6"
-    "@parcel/watcher-linux-arm-musl": "npm:2.5.6"
-    "@parcel/watcher-linux-arm64-glibc": "npm:2.5.6"
-    "@parcel/watcher-linux-arm64-musl": "npm:2.5.6"
-    "@parcel/watcher-linux-x64-glibc": "npm:2.5.6"
-    "@parcel/watcher-linux-x64-musl": "npm:2.5.6"
-    "@parcel/watcher-win32-arm64": "npm:2.5.6"
-    "@parcel/watcher-win32-ia32": "npm:2.5.6"
-    "@parcel/watcher-win32-x64": "npm:2.5.6"
-    detect-libc: "npm:^2.0.3"
-    is-glob: "npm:^4.0.3"
-    node-addon-api: "npm:^7.0.0"
-    node-gyp: "npm:latest"
-    picomatch: "npm:^4.0.3"
-  dependenciesMeta:
-    "@parcel/watcher-android-arm64":
-      optional: true
-    "@parcel/watcher-darwin-arm64":
-      optional: true
-    "@parcel/watcher-darwin-x64":
-      optional: true
-    "@parcel/watcher-freebsd-x64":
-      optional: true
-    "@parcel/watcher-linux-arm-glibc":
-      optional: true
-    "@parcel/watcher-linux-arm-musl":
-      optional: true
-    "@parcel/watcher-linux-arm64-glibc":
-      optional: true
-    "@parcel/watcher-linux-arm64-musl":
-      optional: true
-    "@parcel/watcher-linux-x64-glibc":
-      optional: true
-    "@parcel/watcher-linux-x64-musl":
-      optional: true
-    "@parcel/watcher-win32-arm64":
-      optional: true
-    "@parcel/watcher-win32-ia32":
-      optional: true
-    "@parcel/watcher-win32-x64":
-      optional: true
-  checksum: 10c0/1e1d91f92e94e4640089a7cead243b2b81ca9aa8e1c862a97a25f589e84fbf1ad93abeb503f325c43a8c0e024ae0e74b48ec42c1cd84e8e423a3a87d25ded4f2
   languageName: node
   linkType: hard
 
@@ -15662,8 +15367,6 @@ __metadata:
     "@mantine/dates": "npm:^8.3.0"
     "@mantine/form": "npm:^8.3.0"
     "@mantine/hooks": "npm:^8.3.0"
-    "@node-rs/xxhash": "npm:^1.7.6"
-    "@parcel/watcher": "npm:^2.5.6"
     "@readium/navigator": "npm:2.1.1"
     "@readium/navigator-html-injectables": "npm:2.1.1"
     "@readium/shared": "patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch"
@@ -15686,7 +15389,6 @@ __metadata:
     "@types/better-sqlite3": "npm:^7.6.11"
     "@types/busboy": "npm:^1"
     "@types/content-disposition": "npm:^0.5.8"
-    "@types/fb-watchman": "npm:^2"
     "@types/he": "npm:^1"
     "@types/jsonwebtoken": "npm:^9"
     "@types/mime-types": "npm:^2"
@@ -15721,7 +15423,6 @@ __metadata:
     esbuild: "npm:^0.28.0"
     eslint: "npm:^8.0.0"
     eslint-plugin-react-compiler: "npm:^19.1.0-rc.2"
-    fb-watchman: "npm:^2.0.2"
     fuse.js: "npm:^7.1.0"
     he: "npm:^1.2.0"
     jsonwebtoken: "npm:^9.0.2"
@@ -15731,12 +15432,11 @@ __metadata:
     memoize: "npm:^10.0.0"
     mime-types: "npm:^3.0.1"
     music-metadata: "npm:^11.6.0"
-    next: "npm:15.5.9"
+    next: "npm:15.5.18"
     next-auth: "npm:^5.0.0-beta.28"
     next-intl: "npm:^4.7.0"
     next-openapi-gen: "npm:^0.1.2"
     next-themes: "npm:^0.4.6"
-    node-cron: "npm:^4.2.1"
     nodemailer: "npm:^6.9.13"
     nuqs: "npm:^2.8.6"
     opds-ts: "npm:^2.1.0"
@@ -15748,9 +15448,9 @@ __metadata:
     postcss-preset-mantine: "npm:^1.17.0"
     postcss-simple-vars: "npm:^7.0.1"
     qrcode: "npm:^1.5.4"
-    react: "npm:^19.0.1"
+    react: "npm:^19.2.6"
     react-circular-progressbar: "npm:^2.2.0"
-    react-dom: "npm:^19.0.1"
+    react-dom: "npm:^19.2.6"
     react-hook-form: "npm:^7.70.0"
     react-redux: "npm:^9.2.0"
     react-window: "npm:^2.1.0"
@@ -17573,15 +17273,6 @@ __metadata:
     "@types/qs": "npm:*"
     "@types/serve-static": "npm:^1"
   checksum: 10c0/f42b616d2c9dbc50352c820db7de182f64ebbfa8dba6fb6c98e5f8f0e2ef3edde0131719d9dc6874803d25ad9ca2d53471d0fec2fbc60a6003a43d015bab72c4
-  languageName: node
-  linkType: hard
-
-"@types/fb-watchman@npm:^2":
-  version: 2.0.6
-  resolution: "@types/fb-watchman@npm:2.0.6"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/3cf511a2d24e1dead39e038b22ea25d06fbc25ef143edaa36cdace10060f613082135f3e69f325cd90867521a773d6060af628c798adbd4b8584b9e2bc6a8b16
   languageName: node
   linkType: hard
 
@@ -26647,7 +26338,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fb-watchman@npm:^2.0.0, fb-watchman@npm:^2.0.2":
+"fb-watchman@npm:^2.0.0":
   version: 2.0.2
   resolution: "fb-watchman@npm:2.0.2"
   dependencies:
@@ -34109,19 +33800,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next@npm:15.5.9":
-  version: 15.5.9
-  resolution: "next@npm:15.5.9"
+"next@npm:15.5.18":
+  version: 15.5.18
+  resolution: "next@npm:15.5.18"
   dependencies:
-    "@next/env": "npm:15.5.9"
-    "@next/swc-darwin-arm64": "npm:15.5.7"
-    "@next/swc-darwin-x64": "npm:15.5.7"
-    "@next/swc-linux-arm64-gnu": "npm:15.5.7"
-    "@next/swc-linux-arm64-musl": "npm:15.5.7"
-    "@next/swc-linux-x64-gnu": "npm:15.5.7"
-    "@next/swc-linux-x64-musl": "npm:15.5.7"
-    "@next/swc-win32-arm64-msvc": "npm:15.5.7"
-    "@next/swc-win32-x64-msvc": "npm:15.5.7"
+    "@next/env": "npm:15.5.18"
+    "@next/swc-darwin-arm64": "npm:15.5.18"
+    "@next/swc-darwin-x64": "npm:15.5.18"
+    "@next/swc-linux-arm64-gnu": "npm:15.5.18"
+    "@next/swc-linux-arm64-musl": "npm:15.5.18"
+    "@next/swc-linux-x64-gnu": "npm:15.5.18"
+    "@next/swc-linux-x64-musl": "npm:15.5.18"
+    "@next/swc-win32-arm64-msvc": "npm:15.5.18"
+    "@next/swc-win32-x64-msvc": "npm:15.5.18"
     "@swc/helpers": "npm:0.5.15"
     caniuse-lite: "npm:^1.0.30001579"
     postcss: "npm:8.4.31"
@@ -34164,7 +33855,7 @@ __metadata:
       optional: true
   bin:
     next: dist/bin/next
-  checksum: 10c0/6a120afbc45b96aa14debba6375602d6319093af4e3e8c648cf22b12ffb9db016c889df5e764cf5e0aa414ad60505db4e2095624a19f4b71316561076158651a
+  checksum: 10c0/94c3be1ee04240913ab9d46e70fde3b26a73cedf6c76e946cfd2580d7ddd494b7da66260fe3a9a2be187652f5a10b1d9a6a555f10744d350be7f6ae05157d893
   languageName: node
   linkType: hard
 
@@ -34218,13 +33909,6 @@ __metadata:
   dependencies:
     node-gyp: "npm:latest"
   checksum: 10c0/869fe4fd13aef4feed3e4ca042136fd677675c061b13cde3b720dcd8e60439efe2538fbab841ed273ab8d5b077e1a0af66011141796589a5db0b5e6b183e2191
-  languageName: node
-  linkType: hard
-
-"node-cron@npm:^4.2.1":
-  version: 4.2.1
-  resolution: "node-cron@npm:4.2.1"
-  checksum: 10c0/804df01df230e96fd2f8ffcde004f4d5af953bccdf3ccf993dc450526dd65f553a2f2ad4bc0faf55c90c38cbc99c9ddbb88ee16cba3fc6bc74e606da6efb249e
   languageName: node
   linkType: hard
 
@@ -37546,7 +37230,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^19.0.0, react-dom@npm:^19.0.1":
+"react-dom@npm:^19.2.6":
   version: 19.2.6
   resolution: "react-dom@npm:19.2.6"
   dependencies:
@@ -38217,7 +37901,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^19.0.0, react@npm:^19.0.1":
+"react@npm:^19.2.6":
   version: 19.2.6
   resolution: "react@npm:19.2.6"
   checksum: 10c0/66afde33b9a9ee87b1e1cae39d8e7e040d1262e719524fd70660c4d4ce79929c532ac19fc3df5a911edaf02768fdf2c49de4ede1ba99bc6aad72796e0e26e798
@@ -40896,13 +40580,13 @@ __metadata:
     eslint-plugin-react-hooks: "npm:^4.6.0"
     husky: "npm:^9.0.6"
     lint-staged: "npm:^15.2.0"
-    next: "npm:15.5.9"
+    next: "npm:15.5.18"
     prettier: "npm:^3.2.5"
     prettier-plugin-sql: "npm:^0.19.0"
     prettier-plugin-tailwindcss: "npm:^0.6.9"
     pyright: "npm:^1.1.348"
-    react: "npm:^19.0.0"
-    react-dom: "npm:^19.0.0"
+    react: "npm:^19.2.6"
+    react-dom: "npm:^19.2.6"
     tsup: "npm:^8.5.0"
     typescript: "npm:^5.9.2"
     typescript-plugin-css-modules: "npm:^5.0.2"

@@ -270,9 +270,11 @@ export class ReadiumService {
       : join(DATA_DIR, filepath)
 
     // resolve the path to the absolute path
-    const resolvedPath = resolve(fullBookPath)
+    const resolvedPath = resolve(fullBookPath).slice(1)
+    // manually encode the hash in filepaths, readium makes big sad otherwise
+    const hashEncodedPath = resolvedPath.replace(/#/g, "%23")
 
-    const filePathEncoded = ReadiumService.base64Encode(resolvedPath.slice(1))
+    const filePathEncoded = ReadiumService.base64Encode(hashEncodedPath)
 
     return `/webpub/${filePathEncoded}/${assetPath}`
   }

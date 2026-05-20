@@ -12,7 +12,13 @@ import { nanoid } from "nanoid"
 import { fromBuffer, open } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
-import { dirname, join, resolve } from "@storyteller-platform/path"
+import {
+  dirname,
+  hrefToPlatformPath,
+  join,
+  resolve,
+  sep,
+} from "@storyteller-platform/path"
 
 import * as Upgrade from "./upgrade.ts"
 
@@ -229,11 +235,8 @@ function isMetadataOrCoverEntry(filename: string): boolean {
 }
 
 /**
- * A read-only view of an EPUB focused on metadata and cover image access.
- *
- * Returned by `Epub.from(path, { metadataOnly: true })`. The underlying
- * archive only contains structural XML and image entries, so any attempt
- * to read content documents, audio, fonts, etc. will fail.
+ * read-only view of an EPUB focused on metadata and cover image access.
+ * much faster than unzipping the entire EPUB
  */
 export interface EpubMetadataReader extends Disposable {
   getManifest(): Promise<Record<string, ManifestItem>>
@@ -257,9 +260,7 @@ export interface EpubMetadataReader extends Disposable {
   getPublicationDate(): Promise<Date | null>
   getModifiedDate(): Promise<Date | null>
   getDescription(): Promise<string | null>
-  getCreators(
-    type?: "creator" | "contributor",
-  ): Promise<DcCreator[]>
+  getCreators(type?: "creator" | "contributor"): Promise<DcCreator[]>
   getContributors(): Promise<DcCreator[]>
   getSubjects(): Promise<Array<string | DcSubject>>
   getCollections(): Promise<Collection[]>
@@ -708,7 +709,7 @@ export class Epub {
       })
 
       for await (const entry of zipfile) {
-        if (entry.filename.endsWith("/")) {
+        if (entry.filename.endsWith(sep)) {
           // directory entries are skipped; parent dirs are created implicitly
         } else if (
           options?.entryFilter &&
@@ -2390,7 +2391,11 @@ export class Epub {
    */
   private resolveInternalHref(from: string, href: string) {
     const startPath = dirname(from)
-    return resolve(this.extractPath, startPath, href)
+    return resolve(
+      this.extractPath,
+      hrefToPlatformPath(startPath),
+      hrefToPlatformPath(href),
+    )
   }
 
   /**
