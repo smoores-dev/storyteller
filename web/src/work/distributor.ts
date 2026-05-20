@@ -5,6 +5,7 @@ import { MessageChannel } from "node:worker_threads"
 import { AsyncMutex } from "@esfx/async-mutex"
 import Piscina from "piscina"
 
+import { filepathFolder, scan } from "@/assets/library/scanner/scan"
 import {
   suppressPrefix,
   unsuppressPrefix,
@@ -194,6 +195,29 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
       >[0],
       { transferList: [port1], signal: abortController.signal },
     )
+
+    const book = await getBookOrThrow(bookUuid)
+    if (!book.readaloud?.filepath) {
+      throw new Error(
+        `Book ${book.title} (${bookUuid}) has no readaloud filepath after processing`,
+      )
+    }
+    await scan({
+      source: "readaloud-creation",
+      request: {
+        kind: "candidates",
+        candidates: [
+          {
+            filepath: book.readaloud.filepath,
+            format: "readaloud",
+            existingBook: book,
+            folder: filepathFolder(book.readaloud.filepath),
+          },
+        ],
+      },
+      options: { concurrency: 1 },
+      signal: AbortSignal.timeout(10000),
+    })
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
       logger.info(`Processing for book ${bookUuid} aborted by user`)
@@ -225,6 +249,7 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   } finally {
     for (const fp of fileSuppression) unsuppressPrefix(fp)
     for (const dp of dirSuppression) unsuppressPrefix(dp)
+
     if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
 }

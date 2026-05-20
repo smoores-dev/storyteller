@@ -55,10 +55,6 @@ export async function fingerprintFile(filepath: string): Promise<Fingerprint> {
 /**
  * stat-based fingerprint for an audiobook directory.
  * `relpath:size:mtimeSec` list. Format: `d:<count>:<totalSize>:<xxh3>`
- *
- * storyteller internal directories (transcoded audio,
- * transcriptions, covers, etc.) are excluded so that processed outputs
- * don't affect the fingerprint
  */
 export async function fingerprintAudiobookDirectory(
   dirPath: string,

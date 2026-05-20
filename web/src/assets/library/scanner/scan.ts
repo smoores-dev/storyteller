@@ -35,6 +35,7 @@ function defaultConcurrency(source: ScanSource): number {
   switch (source) {
     case "watcher":
     case "upload":
+    case "readaloud-creation":
       return 1
     case "manual":
     case "scheduled":
@@ -95,7 +96,7 @@ async function candidatesFromExistingBook(
   return out
 }
 
-function filepathFolder(filepath: string): string {
+export function filepathFolder(filepath: string): string {
   return filepath.replace(/\/[^/]+$/, "")
 }
 

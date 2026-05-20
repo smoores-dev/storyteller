@@ -1,10 +1,7 @@
 import { type ScanCtx } from "./ctx"
 import { type ScanInput } from "./types"
 
-// preserves narrowing through steps: if the caller passes a narrower input
-// (e.g. with format: 'audiobook'), the output type reflects that narrowing.
-// null branches are kept as-is; non-null branches get intersected with the
-// caller's narrowed input, which collapses conflicting discriminant branches.
+// annoying hack needed to get type narrowing to work through steps
 type NarrowOutput<Output, Narrowed> = Output extends null
   ? null
   : Output & Narrowed
@@ -16,6 +13,7 @@ export class ScanAbortedError extends Error {
   }
 }
 
+/* helper to describe the value of a change in one line for logging */
 function describeValue(v: unknown): string {
   if (v === null) return "null"
   if (typeof v === "string")

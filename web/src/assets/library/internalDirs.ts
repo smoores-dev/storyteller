@@ -1,7 +1,6 @@
 /**
- * directory names used internally by storyteller inside each book's
- * asset folder. these must be excluded from discovery and fingerprinting
- * to avoid treating processed outputs as new audiobook inputs.
+ * directory names used internally inside each book's
+ * asset folder. these must be excluded from scannig/fingerprinting/watching
  */
 export const INTERNAL_DIRECTORY_NAMES = new Set([
   "transcoded audio",

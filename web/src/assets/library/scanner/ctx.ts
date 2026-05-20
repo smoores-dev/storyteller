@@ -7,7 +7,13 @@ import {
 
 import { type ScanReport } from "./scanReport"
 
-export type ScanSource = "watcher" | "manual" | "scheduled" | "upload" | "api"
+export type ScanSource =
+  | "watcher"
+  | "manual"
+  | "scheduled"
+  | "upload"
+  | "api"
+  | "readaloud-creation"
 
 export type ScanOptions = {
   force?: boolean
