@@ -5,6 +5,7 @@ import { MessageChannel } from "node:worker_threads"
 import { AsyncMutex } from "@esfx/async-mutex"
 import Piscina from "piscina"
 
+import { pathBelongsTo } from "@/assets/library/scanner/folder"
 import { filepathFolder, scan } from "@/assets/library/scanner/scan"
 import {
   suppressPrefix,
@@ -27,7 +28,6 @@ import type { UUID } from "@/uuid"
 
 import { STAGE_ORDER } from "./stages"
 import type processBook from "./worker"
-import { pathBelongsTo } from "@/assets/library/scanner/folder"
 
 export type RestartMode = false | "full" | "transcription" | "sync"
 
