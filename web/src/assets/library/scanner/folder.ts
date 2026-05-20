@@ -54,7 +54,11 @@ async function classifyFolder(
 
     const name = entry.name
     const fullPath = join(folder, name)
-    if (opts.ignorePaths.has(fullPath)) continue
+
+    const isInIgnorePath = Array.from(opts.ignorePaths).some((path) =>
+      pathBelongsTo(path, fullPath),
+    )
+    if (isInIgnorePath) continue
 
     const ext = extname(name)
     if (ext === ".epub") {
@@ -90,7 +94,7 @@ async function classifyFolder(
   }
 }
 
-function pathBelongsTo(folder: string, candidatePath: string): boolean {
+export function pathBelongsTo(folder: string, candidatePath: string): boolean {
   const f = resolve(folder)
   const p = resolve(candidatePath)
   return p === f || p.startsWith(f + sep)
@@ -121,6 +125,7 @@ function candidateFromExistingBook(
       format: "ebook",
       filepath: book.ebook.filepath,
       existingBook: book,
+      groupable: true,
     })
   }
   if (
@@ -132,6 +137,7 @@ function candidateFromExistingBook(
       format: "readaloud",
       filepath: book.readaloud.filepath,
       existingBook: book,
+      groupable: true,
     })
   }
   if (
@@ -143,6 +149,7 @@ function candidateFromExistingBook(
       format: "audiobook",
       filepath: book.audiobook.filepath,
       existingBook: book,
+      groupable: true,
     })
   }
   return out
@@ -255,6 +262,7 @@ export async function listBookCandidates(
       filepath: regularEpub,
       isReadaloud: false,
       collections: opts.collections,
+      groupable: true,
       ...(folderOwner && !folderOwner.ebook && { existingBook: folderOwner }),
     })
   }
@@ -267,6 +275,7 @@ export async function listBookCandidates(
       filepath: readaloudEpub,
       isReadaloud: true,
       collections: opts.collections,
+      groupable: true,
       ...(folderOwner &&
         !folderOwner.readaloud && { existingBook: folderOwner }),
     })
@@ -278,6 +287,7 @@ export async function listBookCandidates(
       format: "audiobook",
       filepath: audiobookDir,
       collections: opts.collections,
+      groupable: true,
       ...(folderOwner &&
         !folderOwner.audiobook && { existingBook: folderOwner }),
     })

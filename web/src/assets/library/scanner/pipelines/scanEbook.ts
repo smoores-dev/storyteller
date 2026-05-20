@@ -62,7 +62,10 @@ function buildEpubInput(
     : { ...shared, format: "readaloud" }
 }
 
-export async function scanEbook(candidate: Candidate, ctx: ScanCtx) {
+export async function scanEbook(
+  candidate: Candidate,
+  ctx: ScanCtx,
+): Promise<BookWithRelations | null> {
   await using scope = new AsyncDisposableStack()
   const pipelineCtx: ScanCtx = { ...ctx, scope }
 
@@ -77,14 +80,14 @@ export async function scanEbook(candidate: Candidate, ctx: ScanCtx) {
     isNew = false
   } else {
     const opened = await openAndClassifyEpub(candidate, pipelineCtx)
-    if (!opened) return
+    if (!opened) return null
 
     const created = await createBookFromOpenedEpub(
       candidate,
       opened,
       pipelineCtx,
     )
-    if (!created) return
+    if (!created) return null
 
     const relocated = await relocateIfNeeded(
       created,
@@ -101,7 +104,7 @@ export async function scanEbook(candidate: Candidate, ctx: ScanCtx) {
   const input = buildEpubInput(book, filepath, format, isNew)
 
   const existing = await checkExistsStep(input, pipelineCtx)
-  if (!existing) return
+  if (!existing) return book
 
   const fingerprinted = await checkFingerprintStep(existing, pipelineCtx)
 
@@ -112,7 +115,7 @@ export async function scanEbook(candidate: Candidate, ctx: ScanCtx) {
       format: input.format,
       reason: "unchanged",
     })
-    return
+    return book
   }
 
   const opened = await openEpubStep(
@@ -124,7 +127,7 @@ export async function scanEbook(candidate: Candidate, ctx: ScanCtx) {
     ? await upgradeEpubStep(opened, pipelineCtx)
     : opened
 
-  if (!upgraded) return
+  if (!upgraded) return book
 
   const formatKnown = await determineFormatStep(upgraded, pipelineCtx)
 
@@ -136,7 +139,7 @@ export async function scanEbook(candidate: Candidate, ctx: ScanCtx) {
       : await extractEbookManifestStep(metadata, ctx)
 
   const reconciled = await reconcileMetadataStep(manifest, ctx)
-  if (!reconciled) return
+  if (!reconciled) return book
 
   await extractTextCoverStep(reconciled, pipelineCtx)
   ctx.report.succeeded({
@@ -144,4 +147,5 @@ export async function scanEbook(candidate: Candidate, ctx: ScanCtx) {
     book: reconciled.book,
     format: reconciled.format,
   })
+  return reconciled.book
 }

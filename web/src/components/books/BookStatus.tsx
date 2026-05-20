@@ -108,40 +108,16 @@ export function BookStatus({ bookUuid }: Props) {
 
         {permissions.bookProcess && (
           <Group gap="xs">
-            <Button.Group>
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                loading={isTriggeringScan}
-                onClick={() => {
-                  void triggerBookScan({ uuid: book.uuid })
-                }}
-              >
-                Scan
-              </Button>
-              <Menu position="bottom-end">
-                <Menu.Target>
-                  <Button
-                    variant="subtle"
-                    size="compact-sm"
-                    disabled={isTriggeringScan}
-                    px={4}
-                  >
-                    <IconChevronDown size={14} />
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item
-                    onClick={() => {
-                      void triggerBookScan({ uuid: book.uuid, force: true })
-                    }}
-                  >
-                    Force rescan (re-read metadata from files even if unchanged
-                    since last scan)
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Button.Group>
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              loading={isTriggeringScan}
+              onClick={() => {
+                void triggerBookScan({ uuid: book.uuid })
+              }}
+            >
+              Scan
+            </Button>
 
             {scanState?.running && (
               <Button

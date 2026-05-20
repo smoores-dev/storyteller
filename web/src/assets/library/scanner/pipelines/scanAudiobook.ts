@@ -35,7 +35,10 @@ function buildAudiobookInput(
   }
 }
 
-export async function scanAudiobook(candidate: Candidate, ctx: ScanCtx) {
+export async function scanAudiobook(
+  candidate: Candidate,
+  ctx: ScanCtx,
+): Promise<BookWithRelations | null> {
   await using scope = new AsyncDisposableStack()
   const pipelineCtx: ScanCtx = { ...ctx, scope }
 
@@ -48,14 +51,14 @@ export async function scanAudiobook(candidate: Candidate, ctx: ScanCtx) {
     isNew = false
   } else {
     const opened = await openAudiobookDir(candidate, pipelineCtx)
-    if (!opened) return
+    if (!opened) return null
 
     const created = await createBookFromOpenedAudiobook(
       candidate,
       opened,
       pipelineCtx,
     )
-    if (!created) return
+    if (!created) return null
 
     const relocated = await relocateIfNeeded(
       created,
@@ -71,7 +74,7 @@ export async function scanAudiobook(candidate: Candidate, ctx: ScanCtx) {
   const input = buildAudiobookInput(book, filepath, isNew)
 
   const existing = await checkExistsStep(input, pipelineCtx)
-  if (!existing) return
+  if (!existing) return book
 
   const fingerprinted = await checkFingerprintStep(existing, pipelineCtx)
 
@@ -82,11 +85,11 @@ export async function scanAudiobook(candidate: Candidate, ctx: ScanCtx) {
       format: input.format,
       reason: "unchanged",
     })
-    return
+    return book
   }
 
   const opened = await openAudiobookStep(fingerprinted, pipelineCtx)
-  if (!opened) return
+  if (!opened) return book
 
   const metadata = await extractAudiobookMetadataStep(opened, pipelineCtx)
 
@@ -94,7 +97,7 @@ export async function scanAudiobook(candidate: Candidate, ctx: ScanCtx) {
 
   const reconciled = await reconcileMetadataStep(manifest, pipelineCtx)
 
-  if (!reconciled) return
+  if (!reconciled) return book
 
   await extractAudiobookCoverStep(reconciled, pipelineCtx)
   ctx.report.succeeded({
@@ -102,4 +105,5 @@ export async function scanAudiobook(candidate: Candidate, ctx: ScanCtx) {
     book: reconciled.book,
     format: "audiobook",
   })
+  return reconciled.book
 }

@@ -1,3 +1,5 @@
+import { extname, resolve } from "path"
+
 import {
   type Insertable,
   type Selectable,
@@ -14,6 +16,7 @@ import {
   type ProcessingTaskStatus,
   type ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
+import { pathBelongsTo } from "@/assets/library/scanner/folder"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
@@ -26,6 +29,7 @@ import { type NewCreator } from "./creators"
 import { type DB } from "./schema"
 import { type NewSeries } from "./series"
 import { getDefaultStatus } from "./statuses"
+
 
 /**
  * This function only exists to support old clients that haven't
@@ -787,13 +791,7 @@ export async function deleteBook(
 
     await tr.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
 
-    await tr.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
-    await tr.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
-    await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
-
     if (preventReImport) {
-      const filePaths: string[] = []
-
       const [ebook, audiobook, readaloud] = await Promise.all([
         tr
           .selectFrom("ebook")
@@ -812,11 +810,23 @@ export async function deleteBook(
           .executeTakeFirst(),
       ])
 
-      if (ebook?.filepath) filePaths.push(ebook.filepath)
-      if (audiobook?.filepath) filePaths.push(audiobook.filepath)
-      if (readaloud?.filepath) filePaths.push(readaloud.filepath)
+      const filePaths = [
+        ebook?.filepath,
+        audiobook?.filepath,
+        readaloud?.filepath,
+      ]
+        .filter((filepath) => filepath != undefined)
+        .map((filepath) => resolve(filepath))
 
-      for (const filepath of filePaths) {
+      // if one of the paths is a directory and contains the others, ignore the others, no point in adding them all
+      const dirs = filePaths.filter((dir) => !extname(dir))
+
+      const realFilePaths = filePaths.filter((path) => {
+        // basically no subpaths
+        return !dirs.some((dir) => pathBelongsTo(dir, path))
+      })
+
+      for (const filepath of realFilePaths) {
         await tr
           .insertInto("importRule")
           .values({ kind: "ignore", path: filepath })
@@ -824,6 +834,10 @@ export async function deleteBook(
           .execute()
       }
     }
+
+    await tr.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
+    await tr.deleteFrom("audiobook").where("bookUuid", "=", bookUuid).execute()
+    await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
 
     await tr.deleteFrom("book").where("uuid", "=", bookUuid).execute()
   }

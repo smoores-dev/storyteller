@@ -129,4 +129,72 @@ void describe("Watcher", () => {
       "audiobook should be attached to the same book after detecting mp3 files",
     )
   })
+
+  void it.only("ignores adding files to ignored paths", async () => {
+    using _db = setupTestDb()
+    await using library = await createTestLibrary("watcher-ignore")
+
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
+
+    const ignoredFolder = await library.createBookFolder("ignored-folder")
+    const folderPath = await canonicalizePath(ignoredFolder.path)
+
+    await createImportRule({
+      kind: "ignore",
+      path: folderPath,
+    })
+
+    const notIgnoredFolder =
+      await library.createBookFolder("not-ignored-folder")
+
+    await using watcher = new Watcher()
+    await watcher.start()
+
+    await ignoredFolder.addFixture(".", {
+      name: "moby-dick",
+      type: "audiobooks",
+      contents: true,
+    })
+    await ignoredFolder.addFixture(".", {
+      name: "moby-dick",
+      type: "ebooks",
+      contents: true,
+    })
+    await ignoredFolder.expectFiles([
+      "moby-dick.epub",
+      "mobydick_001_002_melville.mp3",
+      "mobydick_001_003_melville.mp3",
+    ])
+
+    await notIgnoredFolder.addFixture(".", {
+      name: "moby-dick",
+      type: "ebooks",
+      contents: true,
+    })
+    await notIgnoredFolder.addFixture(".", {
+      name: "moby-dick",
+      type: "audiobooks",
+      contents: true,
+    })
+    await notIgnoredFolder.expectFiles([
+      "moby-dick.epub",
+      "mobydick_001_002_melville.mp3",
+      "mobydick_001_003_melville.mp3",
+    ])
+
+    await waitForWatcher(5000)
+
+    const books = await getBooks()
+    assert.strictEqual(books.length, 1)
+    assert.strictEqual(books[0]?.title, "Moby Dick; Or, The Whale")
+    assert.strictEqual(
+      books[0].ebook?.filepath,
+      join(absoluteRoot, "not-ignored-folder", "moby-dick.epub"),
+    )
+    assert.strictEqual(
+      books[0].audiobook?.filepath,
+      join(absoluteRoot, "not-ignored-folder"),
+    )
+  })
 })

@@ -1,4 +1,4 @@
-import { getBook, getBooks } from "@/database/books"
+import { type BookWithRelations, getBook, getBooks } from "@/database/books"
 import { getWatchRules } from "@/database/importRules"
 import { getSetting } from "@/database/settings"
 import { type ImportMode } from "@/database/settingsTypes"
@@ -310,50 +310,100 @@ async function runWorkers(
     `Scanning ${total} candidate(s) with concurrency ${concurrency}`,
   )
 
-  const workers = Math.max(1, Math.min(concurrency, total))
+  // Groupable candidates from the same folder are serialized in one queue
+  // entry so the first to land creates the book and the rest attach to it
+  // via the `existingBook` hint we propagate below. Non-groupable
+  // candidates (manual import, upload, scanBooks) each get their own entry
+  // and run in parallel — they're independent units of work.
+  const queue: Candidate[][] = []
+  const folderBuckets = new Map<string, Candidate[]>()
+  for (const candidate of candidates) {
+    if (!candidate.groupable) {
+      queue.push([candidate])
+      continue
+    }
+    const bucket = folderBuckets.get(candidate.folder)
+    if (bucket) {
+      bucket.push(candidate)
+    } else {
+      const fresh = [candidate]
+      folderBuckets.set(candidate.folder, fresh)
+      queue.push(fresh)
+    }
+  }
+
+  const workers = Math.max(1, Math.min(concurrency, queue.length))
   let next = 0
   let processed = 0
+
+  const runOne = async (
+    candidate: Candidate,
+    index: number,
+  ): Promise<BookWithRelations | null> => {
+    ctx.logger.debug(
+      `Scanning ${candidate.filepath} (${candidate.format}) [${index + 1}/${total}]`,
+    )
+    try {
+      const book =
+        candidate.format === "audiobook"
+          ? await scanAudiobook(candidate, ctx)
+          : await scanEbook(candidate, ctx)
+      if (book) {
+        scannedBookUuids.add(book.uuid)
+      } else if (candidate.existingBook) {
+        scannedBookUuids.add(candidate.existingBook.uuid)
+      } else if (candidate.bookUuidHint) {
+        scannedBookUuids.add(candidate.bookUuidHint)
+      }
+      return book
+    } catch (err) {
+      if (err instanceof ScanAbortedError) {
+        ctx.logger.debug(
+          `Scan aborted for ${candidate.filepath} (${candidate.format})`,
+        )
+        throw err
+      }
+      ctx.report.warn({
+        step: "scan",
+        msg: `Unhandled error scanning ${candidate.filepath} (${candidate.format})`,
+        err,
+      })
+      return null
+    }
+  }
 
   const worker = async () => {
     while (!ctx.signal.aborted) {
       const index = next++
-      if (index >= candidates.length) return
+      if (index >= queue.length) return
+      const group = queue[index]
+      if (!group) return
 
-      const candidate = candidates[index]
-      if (!candidate) return
+      for (let i = 0; i < group.length; i++) {
+        if (ctx.signal.aborted) return
+        const candidate = group[i]
+        if (!candidate) continue
 
-      ctx.logger.debug(
-        `Scanning ${candidate.filepath} (${candidate.format}) [${index + 1}/${total}]`,
-      )
+        let resultBook: BookWithRelations | null = null
+        try {
+          resultBook = await runOne(candidate, processed)
+        } catch (err) {
+          if (err instanceof ScanAbortedError) return
+          throw err
+        }
 
-      try {
-        if (candidate.format === "audiobook") {
-          await scanAudiobook(candidate, ctx)
-        } else {
-          await scanEbook(candidate, ctx)
+        if (resultBook) {
+          for (let j = i + 1; j < group.length; j++) {
+            const sibling = group[j]
+            if (!sibling) continue
+            if (sibling.existingBook || sibling.bookUuidHint) continue
+            sibling.existingBook = resultBook
+          }
         }
-        // record any book that the pipeline associated with this candidate
-        if (candidate.existingBook) {
-          scannedBookUuids.add(candidate.existingBook.uuid)
-        } else if (candidate.bookUuidHint) {
-          scannedBookUuids.add(candidate.bookUuidHint)
-        }
-      } catch (err) {
-        if (err instanceof ScanAbortedError) {
-          ctx.logger.debug(
-            `Scan aborted for ${candidate.filepath} (${candidate.format})`,
-          )
-          return
-        }
-        ctx.report.warn({
-          step: "scan",
-          msg: `Unhandled error scanning ${candidate.filepath} (${candidate.format})`,
-          err,
-        })
+
+        processed += 1
+        ctx.setProgress(processed, total)
       }
-
-      processed += 1
-      ctx.setProgress(processed, total)
     }
   }
 

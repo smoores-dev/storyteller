@@ -25,6 +25,11 @@ export type ScanFormat = "ebook" | "audiobook" | "readaloud"
  * - `isReadaloud` lets folder.ts disambiguate epubs (by media overlay)
  *   without forcing the pipeline to reopen them.
  * - `collections` propagates collection associations to newly created books.
+ * - `groupable` marks candidates that share the "one folder = one book"
+ *   invariant (watcher / scanLibrary). When set, the worker pool serializes
+ *   candidates with the same `folder` and propagates the resulting book to
+ *   siblings so they attach instead of creating new books. Manual imports
+ *   (upload, POST /books) leave it unset — each candidate stays independent.
  */
 export type Candidate = {
   folder: string
@@ -34,6 +39,7 @@ export type Candidate = {
   bookUuidHint?: UUID
   existingBook?: BookWithRelations
   collections?: UUID[]
+  groupable?: boolean
 }
 
 export type EpubScanFormat = Extract<ScanFormat, "ebook" | "readaloud">
