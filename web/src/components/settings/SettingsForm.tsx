@@ -587,7 +587,10 @@ function TabHeader({
   searchValue,
   onSearchChange,
   selectedCount,
+  selectableCount,
+  allSelected,
   isDeleting,
+  onSelectAll,
   onDeleteSelected,
   onClearSelection,
 }: {
@@ -597,7 +600,10 @@ function TabHeader({
   searchValue: string
   onSearchChange: (value: string) => void
   selectedCount: number
+  selectableCount: number
+  allSelected: boolean
   isDeleting: boolean
+  onSelectAll: () => void
   onDeleteSelected: () => void
   onClearSelection: () => void
 }) {
@@ -625,26 +631,35 @@ function TabHeader({
         </Button>
       )}
 
+      <Button
+        variant="subtle"
+        size="compact-md"
+        disabled={selectableCount === 0 || allSelected}
+        onClick={onSelectAll}
+      >
+        Select all
+      </Button>
+
+      <Button
+        variant="subtle"
+        size="compact-md"
+        disabled={selectedCount === 0}
+        onClick={onClearSelection}
+      >
+        Clear
+      </Button>
+
       {selectedCount > 0 && (
-        <>
-          <Button
-            variant="light"
-            color="red"
-            size="compact-md"
-            leftSection={<IconTrash size={14} />}
-            loading={isDeleting}
-            onClick={onDeleteSelected}
-          >
-            Delete {selectedCount}
-          </Button>
-          <Button
-            variant="subtle"
-            size="compact-md"
-            onClick={onClearSelection}
-          >
-            Clear
-          </Button>
-        </>
+        <Button
+          variant="light"
+          color="red"
+          size="compact-md"
+          leftSection={<IconTrash size={14} />}
+          loading={isDeleting}
+          onClick={onDeleteSelected}
+        >
+          Delete {selectedCount}
+        </Button>
       )}
     </Group>
   )
@@ -724,6 +739,10 @@ function ImportRulesSection({
   const filteredIgnore = filterByPath(userIgnoreRules, searchByTab.ignore)
   const filteredAuto = filterAuto(autoIgnoreRules, searchByTab.auto)
 
+  const watchSelectable = filteredWatch.map((r) => r.uuid)
+  const ignoreSelectable = filteredIgnore.map((r) => r.uuid)
+  const autoSelectable = filteredAuto.map((r) => r.uuid)
+
   function toggleSelected(uuid: UUID) {
     setSelectedUuids((prev) => {
       const next = new Set(prev)
@@ -750,6 +769,15 @@ function ImportRulesSection({
     if (selectedUuids.size === 0) return
     void deleteRules({ uuids: [...selectedUuids] })
     setSelectedUuids(new Set())
+  }
+
+  function selectAllUuids(uuids: UUID[]) {
+    setSelectedUuids(new Set(uuids))
+  }
+
+  function allUuidsSelected(uuids: UUID[]) {
+    if (uuids.length === 0) return false
+    return uuids.every((u) => selectedUuids.has(u))
   }
 
   function setTabSearch(tab: "watch" | "ignore" | "auto", value: string) {
@@ -822,7 +850,12 @@ function ImportRulesSection({
                   setTabSearch("watch", v)
                 }}
                 selectedCount={selectedUuids.size}
+                selectableCount={watchSelectable.length}
+                allSelected={allUuidsSelected(watchSelectable)}
                 isDeleting={isDeleting}
+                onSelectAll={() => {
+                  selectAllUuids(watchSelectable)
+                }}
                 onDeleteSelected={handleDeleteSelected}
                 onClearSelection={() => {
                   setSelectedUuids(new Set())
@@ -871,7 +904,12 @@ function ImportRulesSection({
                   setTabSearch("ignore", v)
                 }}
                 selectedCount={selectedUuids.size}
+                selectableCount={ignoreSelectable.length}
+                allSelected={allUuidsSelected(ignoreSelectable)}
                 isDeleting={isDeleting}
+                onSelectAll={() => {
+                  selectAllUuids(ignoreSelectable)
+                }}
                 onDeleteSelected={handleDeleteSelected}
                 onClearSelection={() => {
                   setSelectedUuids(new Set())
@@ -921,7 +959,12 @@ function ImportRulesSection({
                   setTabSearch("auto", v)
                 }}
                 selectedCount={selectedUuids.size}
+                selectableCount={autoSelectable.length}
+                allSelected={allUuidsSelected(autoSelectable)}
                 isDeleting={isDeleting}
+                onSelectAll={() => {
+                  selectAllUuids(autoSelectable)
+                }}
                 onDeleteSelected={handleDeleteSelected}
                 onClearSelection={() => {
                   setSelectedUuids(new Set())
