@@ -302,7 +302,7 @@ export async function deleteAssets(
 
   await rm(getInternalBookDirectory(book), { recursive: true, force: true })
   if (book.readaloud?.filepath) {
-    await rm(book.readaloud.filepath)
+    await rm(book.readaloud.filepath, { force: true })
   }
   await deleteOriginals(book)
 }
