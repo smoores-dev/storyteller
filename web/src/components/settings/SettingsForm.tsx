@@ -4,6 +4,7 @@ import {
   ActionIcon,
   Alert,
   Anchor,
+  Badge,
   Box,
   Button,
   Checkbox,
@@ -11,6 +12,7 @@ import {
   Fieldset,
   Group,
   List,
+  Modal,
   MultiSelect,
   NativeSelect,
   NumberInput,
@@ -18,12 +20,19 @@ import {
   Select,
   Stack,
   Switch,
+  Tabs,
   Text,
   TextInput,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import { IconFlame, IconLock, IconPlus, IconTrash } from "@tabler/icons-react"
-import { useRef, useState } from "react"
+import {
+  IconFlame,
+  IconLock,
+  IconPlus,
+  IconSearch,
+  IconTrash,
+} from "@tabler/icons-react"
+import { useMemo, useRef, useState } from "react"
 
 import type { Settings } from "@/apiModels"
 import {
@@ -37,7 +46,10 @@ import {
   BASIC_PERMISSIONS,
   PERMISSIONS_VALUES,
 } from "@/components/users/CreateInviteForm"
-import { type ImportRuleWithCollections } from "@/database/importRules"
+import {
+  type ImportRuleSource,
+  type ImportRuleWithCollections,
+} from "@/database/importRules"
 import {
   METADATA_FIELDS,
   type MetadataField,
@@ -220,21 +232,27 @@ const IMPORT_MODE_OPTIONS = [
   { value: "hardlink", label: "Hard link to library" },
 ]
 
-function ImportRuleCard({
+const AUTO_SOURCE_LABELS: Record<Exclude<ImportRuleSource, "user">, string> = {
+  "import-relocate": "Relocated",
+  "import-backup": "Backup copy",
+  "prevent-reimport": "Re-import prevention",
+}
+
+function WatchRuleCard({
   rule,
   collections,
   selected,
   onToggle,
+  onDelete,
 }: {
   rule: ImportRuleWithCollections
   collections: { uuid: UUID; name: string }[]
   selected: boolean
   onToggle: () => void
+  onDelete: () => void
 }) {
   const [updateRule] = useUpdateImportRuleMutation()
   const [editingPath, setEditingPath] = useState(false)
-
-  const isWatch = rule.kind === "watch"
 
   return (
     <Box className="rounded border border-gray-200 p-3 dark:border-neutral-700">
@@ -247,67 +265,397 @@ function ImportRuleCard({
         />
 
         <Stack gap="xs" className="min-w-0 flex-1">
-          <Group gap="xs">
-            {editingPath ? (
-              <ServerFilePicker
-                startPath={rule.path}
-                onChange={(folder) => {
-                  void updateRule({ uuid: rule.uuid, path: folder })
-                  setEditingPath(false)
-                }}
-              />
-            ) : (
-              <Button
-                variant="subtle"
-                className="min-w-0 self-start"
-                classNames={{ inner: "justify-start" }}
-                onClick={() => {
-                  setEditingPath(true)
-                }}
-              >
-                <Text className="truncate text-sm">{rule.path}</Text>
-              </Button>
-            )}
+          {editingPath ? (
+            <ServerFilePicker
+              startPath={rule.path}
+              onChange={(folder) => {
+                void updateRule({ uuid: rule.uuid, path: folder })
+                setEditingPath(false)
+              }}
+            />
+          ) : (
+            <Button
+              variant="subtle"
+              className="min-w-0 self-start"
+              classNames={{ inner: "justify-start" }}
+              onClick={() => {
+                setEditingPath(true)
+              }}
+            >
+              <Text className="truncate text-sm" title={rule.path}>
+                {rule.path}
+              </Text>
+            </Button>
+          )}
+
+          <Group gap="sm" wrap="wrap">
+            <NativeSelect
+              size="sm"
+              className="w-[180px]"
+              value={rule.importMode ?? ""}
+              onChange={(e) => {
+                const mode = e.currentTarget.value || null
+                void updateRule({ uuid: rule.uuid, importMode: mode })
+              }}
+            >
+              {IMPORT_MODE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </NativeSelect>
+
+            <MultiSelect
+              size="xs"
+              className="min-w-[200px] flex-1"
+              placeholder="No collection"
+              data={collections.map((c) => ({
+                value: c.uuid,
+                label: c.name,
+              }))}
+              value={rule.collections.map((c) => c.uuid)}
+              onChange={(uuids) => {
+                void updateRule({
+                  uuid: rule.uuid,
+                  collectionUuids: uuids as UUID[],
+                })
+              }}
+            />
           </Group>
+        </Stack>
 
-          {isWatch && (
-            <Group gap="sm" wrap="wrap">
-              <NativeSelect
-                size="sm"
-                className="w-[180px]"
-                value={rule.importMode ?? ""}
-                onChange={(e) => {
-                  const mode = e.currentTarget.value || null
-                  void updateRule({ uuid: rule.uuid, importMode: mode })
-                }}
-              >
-                {IMPORT_MODE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </NativeSelect>
+        <ActionIcon
+          variant="subtle"
+          color="red"
+          aria-label="Delete rule"
+          onClick={onDelete}
+        >
+          <IconTrash size={14} />
+        </ActionIcon>
+      </Group>
+    </Box>
+  )
+}
 
+function IgnoreRuleRow({
+  rule,
+  selected,
+  onToggle,
+  onDelete,
+}: {
+  rule: ImportRuleWithCollections
+  selected: boolean
+  onToggle: () => void
+  onDelete: () => void
+}) {
+  return (
+    <Group
+      gap="sm"
+      wrap="nowrap"
+      className="rounded border border-gray-200 px-3 py-2 dark:border-neutral-700"
+    >
+      <Checkbox checked={selected} onChange={onToggle} size="sm" />
+      <Text
+        className="min-w-0 flex-1 truncate text-sm"
+        title={rule.path}
+      >
+        {rule.path}
+      </Text>
+      <ActionIcon
+        variant="subtle"
+        color="red"
+        aria-label="Delete rule"
+        onClick={onDelete}
+      >
+        <IconTrash size={14} />
+      </ActionIcon>
+    </Group>
+  )
+}
+
+function AutoIgnoreRuleRow({
+  rule,
+  selected,
+  onToggle,
+}: {
+  rule: ImportRuleWithCollections
+  selected: boolean
+  onToggle: () => void
+}) {
+  const sourceLabel =
+    rule.source !== "user" ? AUTO_SOURCE_LABELS[rule.source] : "Auto"
+
+  return (
+    <Group
+      gap="sm"
+      wrap="nowrap"
+      align="flex-start"
+      className="rounded border border-gray-200 px-3 py-2 dark:border-neutral-700"
+      title={`uuid: ${rule.uuid}${rule.bookUuid ? `\nbook: ${rule.bookUuid}` : ""}`}
+    >
+      <Checkbox
+        className="mt-1"
+        checked={selected}
+        onChange={onToggle}
+        size="sm"
+      />
+      <Stack gap={2} className="min-w-0 flex-1">
+        <Text className="truncate text-sm" title={rule.path}>
+          {rule.path}
+        </Text>
+        <Group gap="xs" wrap="nowrap">
+          <Badge size="xs" variant="light">
+            {sourceLabel}
+          </Badge>
+          {rule.bookTitle ? (
+            <Text
+              className="truncate text-xs opacity-70"
+              title={rule.bookTitle}
+            >
+              {rule.bookTitle}
+            </Text>
+          ) : (
+            <Text className="text-xs opacity-40">no linked book</Text>
+          )}
+        </Group>
+      </Stack>
+    </Group>
+  )
+}
+
+function AddRuleModal({
+  opened,
+  onClose,
+  kind,
+  rules,
+  collections,
+}: {
+  opened: boolean
+  onClose: () => void
+  kind: "watch" | "ignore"
+  rules: ImportRuleWithCollections[]
+  collections: { uuid: UUID; name: string }[]
+}) {
+  const [createRule, { isLoading }] = useCreateImportRuleMutation()
+  const [path, setPath] = useState("")
+  const [importMode, setImportMode] = useState<string>("")
+  const [collectionUuids, setCollectionUuids] = useState<UUID[]>([])
+  const [error, setError] = useState<string | null>(null)
+
+  function reset() {
+    setPath("")
+    setImportMode("")
+    setCollectionUuids([])
+    setError(null)
+  }
+
+  function handleClose() {
+    reset()
+    onClose()
+  }
+
+  async function handleSubmit() {
+    const trimmed = path.trim()
+    if (!trimmed) {
+      setError("Pick a folder first.")
+      return
+    }
+
+    if (kind === "watch") {
+      const existingWatch = rules.find(
+        (r) => r.kind === "watch" && r.path === trimmed,
+      )
+      if (existingWatch) {
+        setError("A watch rule already exists for this path.")
+        return
+      }
+    }
+
+    try {
+      await createRule({
+        kind,
+        path: trimmed,
+        ...(kind === "watch" && importMode && { importMode }),
+        ...(kind === "watch" &&
+          collectionUuids.length > 0 && { collectionUuids }),
+      }).unwrap()
+      handleClose()
+    } catch (err) {
+      const message =
+        err && typeof err === "object" && "data" in err
+          ? (err as { data?: { error?: string } }).data?.error
+          : undefined
+      setError(message ?? "Failed to create rule.")
+    }
+  }
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title={kind === "watch" ? "Add watch rule" : "Add ignore rule"}
+      centered
+      size="xl"
+    >
+      <Stack>
+        <Text size="sm" className="opacity-70">
+          {kind === "watch"
+            ? "Storyteller will scan this folder for new books."
+            : "Storyteller will skip this path during scans."}
+        </Text>
+
+        <Box>
+          <Text size="sm" fw={500} mb={4}>
+            Folder
+          </Text>
+          <ServerFilePicker
+            startPath={path || "/"}
+            onChange={(folder) => {
+              setPath(folder)
+              if (error) setError(null)
+            }}
+          />
+          {path && (
+            <Text size="xs" className="opacity-70" mt="xs">
+              Selected: <Code>{path}</Code>
+            </Text>
+          )}
+        </Box>
+
+        {kind === "watch" && (
+          <>
+            <NativeSelect
+              label="Import mode"
+              value={importMode}
+              onChange={(e) => {
+                setImportMode(e.currentTarget.value)
+              }}
+            >
+              {IMPORT_MODE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </NativeSelect>
+
+            {collections.length > 0 && (
               <MultiSelect
-                size="xs"
-                className="min-w-[200px] flex-1"
+                label="Add new books to collections"
                 placeholder="No collection"
                 data={collections.map((c) => ({
                   value: c.uuid,
                   label: c.name,
                 }))}
-                value={rule.collections.map((c) => c.uuid)}
+                value={collectionUuids}
                 onChange={(uuids) => {
-                  void updateRule({
-                    uuid: rule.uuid,
-                    collectionUuids: uuids as UUID[],
-                  })
+                  setCollectionUuids(uuids as UUID[])
                 }}
               />
-            </Group>
-          )}
-        </Stack>
-      </Group>
+            )}
+          </>
+        )}
+
+        {error && (
+          <Text size="sm" c="red">
+            {error}
+          </Text>
+        )}
+
+        <Group justify="flex-end">
+          <Button variant="subtle" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            loading={isLoading}
+            disabled={!path.trim()}
+            onClick={() => {
+              void handleSubmit()
+            }}
+          >
+            Add rule
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  )
+}
+
+function TabHeader({
+  addLabel,
+  onAdd,
+  searchPlaceholder,
+  searchValue,
+  onSearchChange,
+  selectedCount,
+  isDeleting,
+  onDeleteSelected,
+  onClearSelection,
+}: {
+  addLabel?: string
+  onAdd?: () => void
+  searchPlaceholder: string
+  searchValue: string
+  onSearchChange: (value: string) => void
+  selectedCount: number
+  isDeleting: boolean
+  onDeleteSelected: () => void
+  onClearSelection: () => void
+}) {
+  return (
+    <Group gap="xs" wrap="wrap">
+      <TextInput
+        size="sm"
+        className="min-w-[220px] flex-1"
+        placeholder={searchPlaceholder}
+        leftSection={<IconSearch size={14} />}
+        value={searchValue}
+        onChange={(e) => {
+          onSearchChange(e.currentTarget.value)
+        }}
+      />
+
+      {addLabel && onAdd && (
+        <Button
+          variant="subtle"
+          size="compact-md"
+          leftSection={<IconPlus size={14} />}
+          onClick={onAdd}
+        >
+          {addLabel}
+        </Button>
+      )}
+
+      {selectedCount > 0 && (
+        <>
+          <Button
+            variant="light"
+            color="red"
+            size="compact-md"
+            leftSection={<IconTrash size={14} />}
+            loading={isDeleting}
+            onClick={onDeleteSelected}
+          >
+            Delete {selectedCount}
+          </Button>
+          <Button
+            variant="subtle"
+            size="compact-md"
+            onClick={onClearSelection}
+          >
+            Clear
+          </Button>
+        </>
+      )}
+    </Group>
+  )
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <Box className="rounded border border-dashed border-gray-200 px-4 py-8 text-center dark:border-neutral-700">
+      <Text size="sm" className="opacity-70">
+        {message}
+      </Text>
     </Box>
   )
 }
@@ -323,56 +671,108 @@ function ImportRulesSection({
 }) {
   const { data: rules = [] } = useGetImportRulesQuery()
   const { data: collections = [] } = useListCollectionsQuery()
-  const [createRule] = useCreateImportRuleMutation()
   const [deleteRules, { isLoading: isDeleting }] =
     useDeleteImportRulesMutation()
 
-  const [addingRule, setAddingRule] = useState(false)
-  const [newKind, setNewKind] = useState<"watch" | "ignore">("watch")
-  const [selectedWatchUuids, setSelectedWatchUuids] = useState<Set<UUID>>(
-    new Set(),
+  const [activeTab, setActiveTab] = useState<"watch" | "ignore" | "auto">(
+    "watch",
   )
-  const [selectedIgnoreUuids, setSelectedIgnoreUuids] = useState<Set<UUID>>(
-    new Set(),
+  const [searchByTab, setSearchByTab] = useState<{
+    watch: string
+    ignore: string
+    auto: string
+  }>({ watch: "", ignore: "", auto: "" })
+  const [autoPage, setAutoPage] = useState(1)
+  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
+  const [addModalKind, setAddModalKind] = useState<"watch" | "ignore" | null>(
+    null,
   )
 
-  const watchRules = rules.filter((r) => r.kind === "watch")
-  const ignoreRules = rules.filter((r) => r.kind === "ignore")
+  const { watchRules, userIgnoreRules, autoIgnoreRules } = useMemo(() => {
+    const watch: ImportRuleWithCollections[] = []
+    const userIgnore: ImportRuleWithCollections[] = []
+    const autoIgnore: ImportRuleWithCollections[] = []
+    for (const r of rules) {
+      if (r.kind === "watch") watch.push(r)
+      else if (r.source === "user") userIgnore.push(r)
+      else autoIgnore.push(r)
+    }
+    return {
+      watchRules: watch,
+      userIgnoreRules: userIgnore,
+      autoIgnoreRules: autoIgnore,
+    }
+  }, [rules])
 
-  function toggleSelected(uuid: UUID, kind: "watch" | "ignore") {
-    const set =
-      kind === "watch" ? setSelectedWatchUuids : setSelectedIgnoreUuids
-    set((prev) => {
+  function filterByPath(list: ImportRuleWithCollections[], q: string) {
+    const needle = q.trim().toLowerCase()
+    if (!needle) return list
+    return list.filter((r) => r.path.toLowerCase().includes(needle))
+  }
+
+  function filterAuto(list: ImportRuleWithCollections[], q: string) {
+    const needle = q.trim().toLowerCase()
+    if (!needle) return list
+    return list.filter(
+      (r) =>
+        r.path.toLowerCase().includes(needle) ||
+        (r.bookTitle?.toLowerCase().includes(needle) ?? false),
+    )
+  }
+
+  const filteredWatch = filterByPath(watchRules, searchByTab.watch)
+  const filteredIgnore = filterByPath(userIgnoreRules, searchByTab.ignore)
+  const filteredAuto = filterAuto(autoIgnoreRules, searchByTab.auto)
+
+  function toggleSelected(uuid: UUID) {
+    setSelectedUuids((prev) => {
       const next = new Set(prev)
-
       if (next.has(uuid)) {
         next.delete(uuid)
       } else {
         next.add(uuid)
       }
-
       return next
     })
   }
 
-  function handleDeleteSelected(kind: "watch" | "ignore") {
-    const selectedUuids =
-      kind === "watch" ? selectedWatchUuids : selectedIgnoreUuids
-    const set =
-      kind === "watch" ? setSelectedWatchUuids : setSelectedIgnoreUuids
-    if (selectedUuids.size === 0) return
-
-    void deleteRules({ uuids: [...selectedUuids] })
-    set(new Set())
+  function deleteOne(uuid: UUID) {
+    void deleteRules({ uuids: [uuid] })
+    setSelectedUuids((prev) => {
+      if (!prev.has(uuid)) return prev
+      const next = new Set(prev)
+      next.delete(uuid)
+      return next
+    })
   }
+
+  function handleDeleteSelected() {
+    if (selectedUuids.size === 0) return
+    void deleteRules({ uuids: [...selectedUuids] })
+    setSelectedUuids(new Set())
+  }
+
+  function setTabSearch(tab: "watch" | "ignore" | "auto", value: string) {
+    setSearchByTab((prev) => ({ ...prev, [tab]: value }))
+    if (tab === "auto") setAutoPage(1)
+  }
+
+  const AUTO_PAGE_SIZE = 200
+  const autoPageCount = Math.max(
+    1,
+    Math.ceil(filteredAuto.length / AUTO_PAGE_SIZE),
+  )
+  const clampedAutoPage = Math.min(autoPage, autoPageCount)
+  const autoStart = (clampedAutoPage - 1) * AUTO_PAGE_SIZE
+  const visibleAuto = filteredAuto.slice(autoStart, autoStart + AUTO_PAGE_SIZE)
+  const showAutoPagination = filteredAuto.length > AUTO_PAGE_SIZE
 
   return (
     <Fieldset legend="Import rules" disabled={isLocked}>
       <Stack>
         <Text className="text-sm text-black opacity-70 dark:text-white">
           Configure which folders Storyteller watches for new books, and which
-          paths to ignore during scans. Watch rules can optionally add
-          discovered books to one or more collections.
+          paths to skip during scans.
         </Text>
 
         <NativeSelect
@@ -389,159 +789,217 @@ function ImportRulesSection({
           <option value="hardlink">Hard link to library</option>
         </NativeSelect>
 
-        <Group gap="xs" align="center">
-          <NativeSelect
-            size="sm"
-            className="w-[110px] shrink-0"
-            value={newKind}
-            onChange={(e) => {
-              setNewKind(e.currentTarget.value as "watch" | "ignore")
-            }}
-          >
-            <option value="watch">Watch</option>
-            <option value="ignore">Ignore</option>
-          </NativeSelect>
+        <Tabs
+          value={activeTab}
+          onChange={(value) => {
+            if (!value) return
+            setActiveTab(value as "watch" | "ignore" | "auto")
+            setSelectedUuids(new Set())
+          }}
+        >
+          <Tabs.List>
+            <Tabs.Tab value="watch">
+              Watch <Badge size="xs">{watchRules.length}</Badge>
+            </Tabs.Tab>
+            <Tabs.Tab value="ignore">
+              Ignore <Badge size="xs">{userIgnoreRules.length}</Badge>
+            </Tabs.Tab>
+            <Tabs.Tab value="auto">
+              Auto-ignore <Badge size="xs">{autoIgnoreRules.length}</Badge>
+            </Tabs.Tab>
+          </Tabs.List>
 
-          {addingRule ? (
-            <Box className="min-w-0 flex-1">
-              <ServerFilePicker
-                startPath="/"
-                onChange={(folder) => {
-                  void createRule({ kind: newKind, path: folder })
-                  setAddingRule(false)
+          <Tabs.Panel value="watch" pt="md">
+            <Stack gap="sm">
+              <TabHeader
+                addLabel="Add watch rule"
+                onAdd={() => {
+                  setAddModalKind("watch")
+                }}
+                searchPlaceholder="Search watch rules…"
+                searchValue={searchByTab.watch}
+                onSearchChange={(v) => {
+                  setTabSearch("watch", v)
+                }}
+                selectedCount={selectedUuids.size}
+                isDeleting={isDeleting}
+                onDeleteSelected={handleDeleteSelected}
+                onClearSelection={() => {
+                  setSelectedUuids(new Set())
                 }}
               />
-            </Box>
-          ) : (
-            <Button
-              variant="subtle"
-              leftSection={<IconPlus size={14} />}
-              onClick={() => {
-                setAddingRule(true)
-              }}
-            >
-              Add rule
-            </Button>
-          )}
-        </Group>
 
-        {watchRules.length > 0 && (
-          <Stack gap="xs">
-            <Group gap="xs">
-              <Text fw={500} size="sm">
-                Watch rules
+              {filteredWatch.length === 0 ? (
+                <EmptyState
+                  message={
+                    watchRules.length === 0
+                      ? "No watch rules yet. Add a folder to scan."
+                      : "No watch rules match your search."
+                  }
+                />
+              ) : (
+                <Stack gap="xs">
+                  {filteredWatch.map((rule) => (
+                    <WatchRuleCard
+                      key={rule.uuid}
+                      rule={rule}
+                      collections={collections}
+                      selected={selectedUuids.has(rule.uuid)}
+                      onToggle={() => {
+                        toggleSelected(rule.uuid)
+                      }}
+                      onDelete={() => {
+                        deleteOne(rule.uuid)
+                      }}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="ignore" pt="md">
+            <Stack gap="sm">
+              <TabHeader
+                addLabel="Add ignore rule"
+                onAdd={() => {
+                  setAddModalKind("ignore")
+                }}
+                searchPlaceholder="Search ignore rules…"
+                searchValue={searchByTab.ignore}
+                onSearchChange={(v) => {
+                  setTabSearch("ignore", v)
+                }}
+                selectedCount={selectedUuids.size}
+                isDeleting={isDeleting}
+                onDeleteSelected={handleDeleteSelected}
+                onClearSelection={() => {
+                  setSelectedUuids(new Set())
+                }}
+              />
+
+              {filteredIgnore.length === 0 ? (
+                <EmptyState
+                  message={
+                    userIgnoreRules.length === 0
+                      ? "No ignore rules. Add a path to skip during scans."
+                      : "No ignore rules match your search."
+                  }
+                />
+              ) : (
+                <Stack gap="xs">
+                  {filteredIgnore.map((rule) => (
+                    <IgnoreRuleRow
+                      key={rule.uuid}
+                      rule={rule}
+                      selected={selectedUuids.has(rule.uuid)}
+                      onToggle={() => {
+                        toggleSelected(rule.uuid)
+                      }}
+                      onDelete={() => {
+                        deleteOne(rule.uuid)
+                      }}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="auto" pt="md">
+            <Stack gap="sm">
+              <Text size="xs" className="opacity-70">
+                Auto-ignore rules are added by Storyteller when books are
+                relocated, backed up, or removed with re-import prevention. If a
+                book isn&apos;t importing, search here for its path or title.
               </Text>
 
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                onClick={() => {
-                  setSelectedWatchUuids(new Set(watchRules.map((r) => r.uuid)))
+              <TabHeader
+                searchPlaceholder="Search by path or book title…"
+                searchValue={searchByTab.auto}
+                onSearchChange={(v) => {
+                  setTabSearch("auto", v)
                 }}
-              >
-                Select all
-              </Button>
-
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                disabled={selectedWatchUuids.size === 0}
-                onClick={() => {
-                  setSelectedWatchUuids(new Set())
-                }}
-              >
-                Clear selection
-              </Button>
-
-              {selectedWatchUuids.size > 0 && (
-                <Button
-                  variant="light"
-                  color="red"
-                  size="compact-sm"
-                  disabled={selectedWatchUuids.size === 0}
-                  leftSection={<IconTrash size={14} />}
-                  loading={isDeleting}
-                  onClick={() => {
-                    handleDeleteSelected("watch")
-                  }}
-                >
-                  Delete {selectedWatchUuids.size} selected
-                </Button>
-              )}
-            </Group>
-            {watchRules.map((rule) => (
-              <ImportRuleCard
-                key={rule.uuid}
-                rule={rule}
-                collections={collections}
-                selected={selectedWatchUuids.has(rule.uuid)}
-                onToggle={() => {
-                  toggleSelected(rule.uuid, "watch")
+                selectedCount={selectedUuids.size}
+                isDeleting={isDeleting}
+                onDeleteSelected={handleDeleteSelected}
+                onClearSelection={() => {
+                  setSelectedUuids(new Set())
                 }}
               />
-            ))}
-          </Stack>
-        )}
 
-        {ignoreRules.length > 0 && (
-          <Stack gap="xs">
-            <Group gap="xs">
-              <Text fw={500} size="sm">
-                Ignore rules
-              </Text>
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                onClick={() => {
-                  setSelectedIgnoreUuids(
-                    new Set(ignoreRules.map((r) => r.uuid)),
-                  )
-                }}
-              >
-                Select all
-              </Button>
-
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                disabled={selectedIgnoreUuids.size === 0}
-                onClick={() => {
-                  setSelectedIgnoreUuids(new Set())
-                }}
-              >
-                Clear selection
-              </Button>
-
-              {selectedIgnoreUuids.size > 0 && (
-                <Button
-                  variant="light"
-                  color="red"
-                  size="compact-sm"
-                  disabled={selectedIgnoreUuids.size === 0}
-                  leftSection={<IconTrash size={14} />}
-                  loading={isDeleting}
-                  onClick={() => {
-                    handleDeleteSelected("ignore")
-                  }}
-                >
-                  Delete {selectedIgnoreUuids.size} selected
-                </Button>
+              {filteredAuto.length === 0 ? (
+                <EmptyState
+                  message={
+                    autoIgnoreRules.length === 0
+                      ? "No auto-ignore rules."
+                      : "No auto-ignore rules match your search."
+                  }
+                />
+              ) : (
+                <>
+                  <Text size="xs" className="opacity-70">
+                    {showAutoPagination
+                      ? `Showing ${autoStart + 1}–${autoStart + visibleAuto.length} of ${filteredAuto.length}.`
+                      : `Showing ${filteredAuto.length} of ${autoIgnoreRules.length}.`}
+                  </Text>
+                  <Stack gap="xs">
+                    {visibleAuto.map((rule) => (
+                      <AutoIgnoreRuleRow
+                        key={rule.uuid}
+                        rule={rule}
+                        selected={selectedUuids.has(rule.uuid)}
+                        onToggle={() => {
+                          toggleSelected(rule.uuid)
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                  {showAutoPagination && (
+                    <Group justify="space-between" gap="xs">
+                      <Button
+                        variant="default"
+                        size="compact-sm"
+                        disabled={clampedAutoPage <= 1}
+                        onClick={() => {
+                          setAutoPage(clampedAutoPage - 1)
+                        }}
+                      >
+                        Previous
+                      </Button>
+                      <Text size="xs" className="opacity-70">
+                        Page {clampedAutoPage} of {autoPageCount}
+                      </Text>
+                      <Button
+                        variant="default"
+                        size="compact-sm"
+                        disabled={clampedAutoPage >= autoPageCount}
+                        onClick={() => {
+                          setAutoPage(clampedAutoPage + 1)
+                        }}
+                      >
+                        Next
+                      </Button>
+                    </Group>
+                  )}
+                </>
               )}
-            </Group>
-            {ignoreRules.map((rule) => (
-              <ImportRuleCard
-                key={rule.uuid}
-                rule={rule}
-                collections={collections}
-                selected={selectedIgnoreUuids.has(rule.uuid)}
-                onToggle={() => {
-                  toggleSelected(rule.uuid, "ignore")
-                }}
-              />
-            ))}
-          </Stack>
-        )}
+            </Stack>
+          </Tabs.Panel>
+        </Tabs>
       </Stack>
+
+      {addModalKind && (
+        <AddRuleModal
+          opened={true}
+          onClose={() => {
+            setAddModalKind(null)
+          }}
+          kind={addModalKind}
+          rules={rules}
+          collections={collections}
+        />
+      )}
     </Fieldset>
   )
 }

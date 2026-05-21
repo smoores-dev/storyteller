@@ -4,21 +4,26 @@ import { jsonArrayFrom } from "kysely/helpers/sqlite"
 import { type UUID } from "@/uuid"
 
 import { db } from "./connection"
-import { type DB } from "./schema"
+import { type DB, type ImportRuleSource } from "./schema"
 
 export type ImportRule = Selectable<DB["importRule"]>
 export type ImportRuleKind = ImportRule["kind"]
 
 export type ImportRuleWithCollections = ImportRule & {
   collections: { uuid: UUID; name: string }[]
+  bookTitle: string | null
 }
+
+export type { ImportRuleSource }
 
 export async function getImportRules(
   kind?: ImportRuleKind,
 ): Promise<ImportRuleWithCollections[]> {
   const rules = await db
     .selectFrom("importRule")
+    .leftJoin("book", "book.uuid", "importRule.bookUuid")
     .selectAll("importRule")
+    .select("book.title as bookTitle")
     .select((eb) => [
       jsonArrayFrom(
         eb
@@ -38,6 +43,42 @@ export async function getImportRules(
     ])
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     .$if(!!kind, (qb) => qb.where("importRule.kind", "=", kind!))
+    .orderBy("importRule.createdAt", "asc")
+    .execute()
+
+  return rules
+}
+
+/**
+ * UI-facing list: only rules the user created. auto-rules (relocate / backup /
+ * prevent-reimport) are hidden so they don't clutter the settings page.
+ */
+export async function getUserImportRules(): Promise<
+  ImportRuleWithCollections[]
+> {
+  const rules = await db
+    .selectFrom("importRule")
+    .leftJoin("book", "book.uuid", "importRule.bookUuid")
+    .selectAll("importRule")
+    .select("book.title as bookTitle")
+    .select((eb) => [
+      jsonArrayFrom(
+        eb
+          .selectFrom("importRuleToCollection")
+          .innerJoin(
+            "collection",
+            "importRuleToCollection.collectionUuid",
+            "collection.uuid",
+          )
+          .select(["collection.uuid", "collection.name"])
+          .whereRef(
+            "importRuleToCollection.importRuleUuid",
+            "=",
+            "importRule.uuid",
+          ),
+      ).as("collections"),
+    ])
+    .where("importRule.source", "=", "user")
     .orderBy("importRule.createdAt", "asc")
     .execute()
 
@@ -96,7 +137,9 @@ export async function createImportRule(
 
     const rule = await tr
       .selectFrom("importRule")
+      .leftJoin("book", "book.uuid", "importRule.bookUuid")
       .selectAll("importRule")
+      .select("book.title as bookTitle")
       .select((eb) => [
         jsonArrayFrom(
           eb
@@ -169,7 +212,9 @@ export async function updateImportRule(
 
     return await tr
       .selectFrom("importRule")
+      .leftJoin("book", "book.uuid", "importRule.bookUuid")
       .selectAll("importRule")
+      .select("book.title as bookTitle")
       .select((eb) => [
         jsonArrayFrom(
           eb
@@ -202,10 +247,20 @@ export async function deleteImportRules(uuids: UUID[]) {
   await db.deleteFrom("importRule").where("uuid", "in", uuids).execute()
 }
 
-export async function addIgnoreRule(path: string) {
+export async function addIgnoreRule(
+  path: string,
+  attribution?: { source?: ImportRuleSource; bookUuid?: UUID | null },
+) {
   await db
     .insertInto("importRule")
-    .values({ kind: "ignore", path })
+    .values({
+      kind: "ignore",
+      path,
+      ...(attribution?.source && { source: attribution.source }),
+      ...(attribution?.bookUuid !== undefined && {
+        bookUuid: attribution.bookUuid,
+      }),
+    })
     .onConflict((oc) => oc.column("path").doNothing())
     .execute()
 }
@@ -230,7 +285,9 @@ export async function getImportRulesForCollection(
       "importRuleToCollection.importRuleUuid",
       "importRule.uuid",
     )
+    .leftJoin("book", "book.uuid", "importRule.bookUuid")
     .selectAll("importRule")
+    .select("book.title as bookTitle")
     .select((eb) => [
       jsonArrayFrom(
         eb

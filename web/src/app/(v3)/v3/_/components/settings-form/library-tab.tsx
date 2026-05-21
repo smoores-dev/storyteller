@@ -1,15 +1,29 @@
 "use client"
 
-import { IconPlus, IconTrash } from "@tabler/icons-react"
+import { IconPlus, IconSearch, IconTrash } from "@tabler/icons-react"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useWatch } from "react-hook-form"
 
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+} from "@/app/(v3)/v3/_/components/ui/combobox"
 import {
   cronExpressionToMinutes,
   minutesToCronExpression,
 } from "@/assets/library/scanner/triggers/cron"
-import { type ImportRuleWithCollections } from "@/database/importRules"
+import {
+  type ImportRuleSource,
+  type ImportRuleWithCollections,
+} from "@/database/importRules"
 import {
   validateWatchRulePath,
   watchRuleValidationMessage,
@@ -44,6 +58,15 @@ import {
   CardTitle,
 } from "@v3/_/components/ui/card"
 import { Checkbox } from "@v3/_/components/ui/checkbox"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v3/_/components/ui/dialog"
 import { Input } from "@v3/_/components/ui/input"
 import { Label } from "@v3/_/components/ui/label"
 import {
@@ -54,7 +77,12 @@ import {
   SelectValue,
 } from "@v3/_/components/ui/select"
 import { Switch } from "@v3/_/components/ui/switch"
-import { TabsContent } from "@v3/_/components/ui/tabs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@v3/_/components/ui/tabs"
 
 import { SettingsFormField, useSettingsForm } from "./SettingsFormProvider"
 import { SettingsSection } from "./shared"
@@ -113,6 +141,7 @@ function LibrarySection() {
 
 const USE_DEFAULT_VALUE = "__default__"
 
+// TODO: internationalize
 const IMPORT_MODE_OPTIONS = [
   { value: USE_DEFAULT_VALUE, label: "Use default" },
   { value: "reference", label: "Reference in place" },
@@ -121,40 +150,44 @@ const IMPORT_MODE_OPTIONS = [
   { value: "hardlink", label: "Hard link to library" },
 ]
 
-function ImportRuleCard({
+const AUTO_SOURCE_LABELS: Record<Exclude<ImportRuleSource, "user">, string> = {
+  "import-relocate": "Relocated",
+  "import-backup": "Backup copy",
+  "prevent-reimport": "Re-import prevention",
+}
+
+function WatchRuleCard({
   rule,
   rules,
   collections,
   selected,
   onToggle,
+  onDelete,
 }: {
   rule: ImportRuleWithCollections
   rules: ImportRuleWithCollections[]
   collections: { uuid: UUID; name: string }[]
   selected: boolean
   onToggle: () => void
+  onDelete: () => void
 }) {
   const [updateRule] = useUpdateImportRuleMutation()
   const [editingPath, setEditingPath] = useState(false)
   const [editPath, setEditPath] = useState(rule.path)
   const [editError, setEditError] = useState<string | null>(null)
 
-  const isWatch = rule.kind === "watch"
-
   function trySave() {
-    if (isWatch) {
-      const result = validateWatchRulePath({
-        path: editPath,
-        existingRules: rules,
-        excludeUuid: rule.uuid,
-      })
-      if (!result.ok) {
-        const conflictingPath = result.conflictWith
-          ? rules.find((r) => r.uuid === result.conflictWith)?.path
-          : undefined
-        setEditError(watchRuleValidationMessage(result, { conflictingPath }))
-        return
-      }
+    const result = validateWatchRulePath({
+      path: editPath,
+      existingRules: rules,
+      excludeUuid: rule.uuid,
+    })
+    if (!result.ok) {
+      const conflictingPath = result.conflictWith
+        ? rules.find((r) => r.uuid === result.conflictWith)?.path
+        : undefined
+      setEditError(watchRuleValidationMessage(result, { conflictingPath }))
+      return
     }
     setEditError(null)
     void updateRule({ uuid: rule.uuid, path: editPath })
@@ -170,10 +203,6 @@ function ImportRuleCard({
       />
 
       <div className="min-w-0 flex-1 space-y-2">
-        <Badge variant={isWatch ? "default" : "secondary"}>
-          {isWatch ? "watch" : "ignore"}
-        </Badge>
-
         {editingPath ? (
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -222,7 +251,8 @@ function ImportRuleCard({
         ) : (
           <button
             type="button"
-            className="text-muted-foreground hover:text-foreground block truncate text-sm underline-offset-2 hover:underline"
+            className="text-foreground hover:text-foreground block max-w-full truncate text-left text-xs underline-offset-2 hover:underline"
+            title={rule.path}
             onClick={() => {
               setEditingPath(true)
             }}
@@ -231,99 +261,183 @@ function ImportRuleCard({
           </button>
         )}
 
-        {isWatch && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Select
-              value={rule.importMode ?? USE_DEFAULT_VALUE}
-              onValueChange={(v) => {
-                const mode = v === USE_DEFAULT_VALUE ? null : v
-                void updateRule({ uuid: rule.uuid, importMode: mode })
-              }}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue>
-                  {IMPORT_MODE_OPTIONS.find(
-                    (o) => o.value === (rule.importMode ?? USE_DEFAULT_VALUE),
-                  )?.label ?? "Use default"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {IMPORT_MODE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <select
-              multiple
-              className="border-input bg-background h-[60px] min-w-[160px] flex-1 rounded-md border px-2 py-1 text-xs"
-              value={rule.collections.map((c) => c.uuid)}
-              onChange={(e) => {
-                const uuids = Array.from(
-                  e.target.selectedOptions,
-                  (o) => o.value as UUID,
-                )
-                void updateRule({ uuid: rule.uuid, collectionUuids: uuids })
-              }}
-            >
-              {collections.map((c) => (
-                <option key={c.uuid} value={c.uuid}>
-                  {c.name}
-                </option>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={rule.importMode ?? USE_DEFAULT_VALUE}
+            onValueChange={(v) => {
+              const mode = v === USE_DEFAULT_VALUE ? null : v
+              void updateRule({ uuid: rule.uuid, importMode: mode })
+            }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue>
+                {IMPORT_MODE_OPTIONS.find(
+                  (o) => o.value === (rule.importMode ?? USE_DEFAULT_VALUE),
+                )?.label ?? "Use default"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {IMPORT_MODE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
               ))}
-            </select>
-          </div>
-        )}
+            </SelectContent>
+          </Select>
+
+          <Combobox
+            items={collections.map((c) => ({ value: c.uuid, label: c.name }))}
+            multiple
+            value={rule.collections.map((c) => c.uuid)}
+            onValueChange={(uuids) => {
+              void updateRule({
+                uuid: rule.uuid,
+                collectionUuids: uuids,
+              })
+            }}
+          >
+            <ComboboxChips className="min-w-[200px] flex-1">
+              <ComboboxValue>
+                {rule.collections
+                  .map(
+                    (c) =>
+                      collections.find((cc) => cc.uuid === c.uuid)?.name ??
+                      c.uuid,
+                  )
+                  .map((name) => (
+                    <ComboboxChip key={name}>{name}</ComboboxChip>
+                  ))}
+              </ComboboxValue>
+              <ComboboxChipsInput placeholder="Add collection" />
+            </ComboboxChips>
+          </Combobox>
+        </div>
+      </div>
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Delete rule"
+        onClick={onDelete}
+      >
+        <IconTrash size={14} className="text-destructive" />
+      </Button>
+    </div>
+  )
+}
+
+function IgnoreRuleRow({
+  rule,
+  selected,
+  onToggle,
+  onDelete,
+}: {
+  rule: ImportRuleWithCollections
+  selected: boolean
+  onToggle: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border px-3 py-2">
+      <Checkbox checked={selected} onCheckedChange={onToggle} />
+
+      <span
+        className="text-foreground min-w-0 flex-1 truncate text-xs"
+        title={rule.path}
+      >
+        {rule.path}
+      </span>
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Delete rule"
+        onClick={onDelete}
+      >
+        <IconTrash size={14} className="text-destructive" />
+      </Button>
+    </div>
+  )
+}
+
+function AutoIgnoreRuleRow({
+  rule,
+  selected,
+  onToggle,
+}: {
+  rule: ImportRuleWithCollections
+  selected: boolean
+  onToggle: () => void
+}) {
+  const sourceLabel =
+    rule.source !== "user" ? AUTO_SOURCE_LABELS[rule.source] : "Auto"
+
+  return (
+    <div
+      className="flex items-start gap-3 rounded-md border px-3 py-2"
+      title={`uuid: ${rule.uuid}${rule.bookUuid ? `\nbook: ${rule.bookUuid}` : ""}`}
+    >
+      <Checkbox
+        className="mt-0.5"
+        checked={selected}
+        onCheckedChange={onToggle}
+      />
+
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <span className="text-foreground truncate text-xs" title={rule.path}>
+          {rule.path}
+        </span>
+        <div className="text-muted-foreground flex items-center gap-2 text-xs">
+          <Badge variant="secondary" className="shrink-0">
+            {sourceLabel}
+          </Badge>
+          {rule.bookTitle ? (
+            <span className="truncate" title={rule.bookTitle}>
+              {rule.bookTitle}
+            </span>
+          ) : (
+            <span className="opacity-50">no linked book</span>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function ImportRulesSection() {
-  const t = useTranslations("SettingsPage.tabs.library.sections.autoImport")
+function AddRuleDialog({
+  open,
+  onOpenChange,
+  kind,
+  rules,
+  collections,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  kind: "watch" | "ignore"
+  rules: ImportRuleWithCollections[]
+  collections: { uuid: UUID; name: string }[]
+}) {
+  const [createRule, { isLoading }] = useCreateImportRuleMutation()
+  const [path, setPath] = useState("")
+  const [importMode, setImportMode] = useState<string>(USE_DEFAULT_VALUE)
+  const [collectionUuids, setCollectionUuids] = useState<UUID[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  const { data: rules = [] } = useGetImportRulesQuery()
-  const { data: collections = [] } = useListCollectionsQuery()
-  const [createRule] = useCreateImportRuleMutation()
-  const [deleteRules, { isLoading: isDeleting }] =
-    useDeleteImportRulesMutation()
-
-  const [newPath, setNewPath] = useState("")
-  const [newKind, setNewKind] = useState<"watch" | "ignore">("watch")
-  const [newPathError, setNewPathError] = useState<string | null>(null)
-  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
-
-  const watchRules = rules.filter((r) => r.kind === "watch")
-  const ignoreRules = rules.filter((r) => r.kind === "ignore")
-
-  function toggleSelected(uuid: UUID) {
-    setSelectedUuids((prev) => {
-      const next = new Set(prev)
-
-      if (next.has(uuid)) {
-        next.delete(uuid)
-      } else {
-        next.add(uuid)
-      }
-
-      return next
-    })
+  function reset() {
+    setPath("")
+    setImportMode(USE_DEFAULT_VALUE)
+    setCollectionUuids([])
+    setError(null)
   }
 
-  function handleDeleteSelected() {
-    if (selectedUuids.size === 0) return
+  async function handleSubmit() {
+    const trimmed = path.trim()
+    if (!trimmed) {
+      setError("Pick a folder first.")
+      return
+    }
 
-    void deleteRules({ uuids: [...selectedUuids] })
-    setSelectedUuids(new Set())
-  }
-
-  function addRule() {
-    const trimmed = newPath.trim()
-    if (!trimmed) return
-
-    if (newKind === "watch") {
+    if (kind === "watch") {
       const result = validateWatchRulePath({
         path: trimmed,
         existingRules: rules,
@@ -332,17 +446,258 @@ function ImportRulesSection() {
         const conflictingPath = result.conflictWith
           ? rules.find((r) => r.uuid === result.conflictWith)?.path
           : undefined
-        setNewPathError(
-          watchRuleValidationMessage(result, { conflictingPath }),
-        )
+        setError(watchRuleValidationMessage(result, { conflictingPath }))
         return
       }
     }
 
-    setNewPathError(null)
-    void createRule({ kind: newKind, path: trimmed })
-    setNewPath("")
+    try {
+      await createRule({
+        kind,
+        path: trimmed,
+        ...(kind === "watch" &&
+          importMode !== USE_DEFAULT_VALUE && { importMode }),
+        ...(kind === "watch" &&
+          collectionUuids.length > 0 && { collectionUuids }),
+      }).unwrap()
+      reset()
+      onOpenChange(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create rule.")
+    }
   }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset()
+        onOpenChange(next)
+      }}
+    >
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>
+            {kind === "watch" ? "Add watch rule" : "Add ignore rule"}
+          </DialogTitle>
+          <DialogDescription>
+            {kind === "watch"
+              ? "Storyteller will scan this folder for new books."
+              : "Storyteller will skip this path during scans."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 px-6 pb-2">
+          <div className="space-y-1.5">
+            <Label>Folder</Label>
+            <Input
+              defaultValue={path || "/"}
+              onChange={(e) => {
+                const folder = e.target.value
+                setPath(folder)
+                if (error) setError(null)
+              }}
+            />
+            {path && (
+              <p className="text-muted-foreground text-xs">
+                Selected: <span className="text-foreground">{path}</span>
+              </p>
+            )}
+          </div>
+
+          {kind === "watch" && (
+            <>
+              <div className="space-y-1.5">
+                <Label>Import mode</Label>
+                <Select
+                  value={importMode}
+                  onValueChange={(v) => {
+                    setImportMode(v ?? USE_DEFAULT_VALUE)
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {IMPORT_MODE_OPTIONS.find((o) => o.value === importMode)
+                        ?.label ?? "Use default"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {IMPORT_MODE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {collections.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label>Add new books to collections</Label>
+                  <Combobox
+                    items={collections.map((c) => ({
+                      value: c.uuid,
+                      label: c.name,
+                    }))}
+                    multiple
+                    value={collectionUuids}
+                    onValueChange={(uuids) => {
+                      setCollectionUuids(uuids)
+                    }}
+                  >
+                    <ComboboxChips>
+                      <ComboboxValue>
+                        {collections
+                          .filter((c) => collectionUuids.includes(c.uuid))
+                          .map((item) => (
+                            <ComboboxChip key={item.uuid}>
+                              {item.name}
+                            </ComboboxChip>
+                          ))}
+                      </ComboboxValue>
+                      <ComboboxChipsInput placeholder="Add collection" />
+                    </ComboboxChips>
+                    <ComboboxContent>
+                      <ComboboxEmpty>No items found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {collections.map((c) => (
+                          <ComboboxItem key={c.uuid} value={c.uuid}>
+                            {c.name}
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                </div>
+              )}
+            </>
+          )}
+
+          {error && <p className="text-destructive text-xs">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <DialogClose
+            render={
+              <Button variant="ghost" size="sm">
+                Cancel
+              </Button>
+            }
+          />
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSubmit}
+            disabled={isLoading || !path.trim()}
+          >
+            Add rule
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ImportRulesSection() {
+  const t = useTranslations("SettingsPage.tabs.library.sections.autoImport")
+
+  const { data: rules = [] } = useGetImportRulesQuery()
+  const { data: collections = [] } = useListCollectionsQuery()
+  const [deleteRules, { isLoading: isDeleting }] =
+    useDeleteImportRulesMutation()
+
+  const [activeTab, setActiveTab] = useState<"watch" | "ignore" | "auto">(
+    "watch",
+  )
+  const [searchByTab, setSearchByTab] = useState<{
+    watch: string
+    ignore: string
+    auto: string
+  }>({ watch: "", ignore: "", auto: "" })
+  const [autoPage, setAutoPage] = useState(1)
+  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
+  const [addDialogKind, setAddDialogKind] = useState<"watch" | "ignore" | null>(
+    null,
+  )
+
+  const { watchRules, userIgnoreRules, autoIgnoreRules } = useMemo(() => {
+    const watch: ImportRuleWithCollections[] = []
+    const userIgnore: ImportRuleWithCollections[] = []
+    const autoIgnore: ImportRuleWithCollections[] = []
+    for (const r of rules) {
+      if (r.kind === "watch") watch.push(r)
+      else if (r.source === "user") userIgnore.push(r)
+      else autoIgnore.push(r)
+    }
+    return {
+      watchRules: watch,
+      userIgnoreRules: userIgnore,
+      autoIgnoreRules: autoIgnore,
+    }
+  }, [rules])
+
+  function filterByPath(list: ImportRuleWithCollections[], q: string) {
+    const needle = q.trim().toLowerCase()
+    if (!needle) return list
+    return list.filter((r) => r.path.toLowerCase().includes(needle))
+  }
+
+  function filterAuto(list: ImportRuleWithCollections[], q: string) {
+    const needle = q.trim().toLowerCase()
+    if (!needle) return list
+    return list.filter(
+      (r) =>
+        r.path.toLowerCase().includes(needle) ||
+        (r.bookTitle?.toLowerCase().includes(needle) ?? false),
+    )
+  }
+
+  const filteredWatch = filterByPath(watchRules, searchByTab.watch)
+  const filteredIgnore = filterByPath(userIgnoreRules, searchByTab.ignore)
+  const filteredAuto = filterAuto(autoIgnoreRules, searchByTab.auto)
+
+  function toggleSelected(uuid: UUID) {
+    setSelectedUuids((prev) => {
+      const next = new Set(prev)
+      if (next.has(uuid)) {
+        next.delete(uuid)
+      } else {
+        next.add(uuid)
+      }
+      return next
+    })
+  }
+
+  function deleteOne(uuid: UUID) {
+    void deleteRules({ uuids: [uuid] })
+    setSelectedUuids((prev) => {
+      if (!prev.has(uuid)) return prev
+      const next = new Set(prev)
+      next.delete(uuid)
+      return next
+    })
+  }
+
+  function handleDeleteSelected() {
+    if (selectedUuids.size === 0) return
+    void deleteRules({ uuids: [...selectedUuids] })
+    setSelectedUuids(new Set())
+  }
+
+  function setTabSearch(tab: "watch" | "ignore" | "auto", value: string) {
+    setSearchByTab((prev) => ({ ...prev, [tab]: value }))
+    if (tab === "auto") setAutoPage(1)
+  }
+
+  const AUTO_PAGE_SIZE = 200
+  const autoPageCount = Math.max(
+    1,
+    Math.ceil(filteredAuto.length / AUTO_PAGE_SIZE),
+  )
+  const clampedAutoPage = Math.min(autoPage, autoPageCount)
+  const autoStart = (clampedAutoPage - 1) * AUTO_PAGE_SIZE
+  const visibleAuto = filteredAuto.slice(autoStart, autoStart + AUTO_PAGE_SIZE)
+  const showAutoPagination = filteredAuto.length > AUTO_PAGE_SIZE
 
   return (
     <SettingsSection tab="library" section="autoImport">
@@ -351,7 +706,7 @@ function ImportRulesSection() {
           <CardTitle>{t("title")}</CardTitle>
           <CardDescription>
             Configure which folders Storyteller watches for new books, and which
-            paths to ignore during scans.
+            paths to skip during scans.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -384,111 +739,289 @@ function ImportRulesSection() {
             )}
           />
 
-          <div className="flex items-center gap-2">
-            <select
-              className="border-input bg-background h-9 shrink-0 rounded-md border px-2 text-xs"
-              value={newKind}
-              onChange={(e) => {
-                setNewKind(e.target.value as "watch" | "ignore")
-              }}
-            >
-              <option value="watch">Watch</option>
-              <option value="ignore">Ignore</option>
-            </select>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => {
+              setActiveTab(v as "watch" | "ignore" | "auto")
+              setSelectedUuids(new Set())
+            }}
+          >
+            <TabsList>
+              <TabsTrigger value="watch">
+                Watch
+                <Badge variant="secondary">{watchRules.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="ignore">
+                Ignore
+                <Badge variant="secondary">{userIgnoreRules.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="auto">
+                Auto-ignore
+                <Badge variant="secondary">{autoIgnoreRules.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
 
-            <Input
-              placeholder="/path/to/folder"
-              value={newPath}
-              onChange={(e) => {
-                setNewPath(e.target.value)
-                if (newPathError) setNewPathError(null)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  addRule()
-                }
-              }}
-              className="min-w-0 flex-1"
-              aria-invalid={!!newPathError}
-            />
-
-            <Button
-              variant="outline"
-              size="default"
-              onClick={addRule}
-              disabled={!newPath.trim()}
-            >
-              <IconPlus size={14} className="mr-1" />
-              Add rule
-            </Button>
-          </div>
-          {newPathError && (
-            <p className="text-destructive text-xs">{newPathError}</p>
-          )}
-
-          {selectedUuids.size > 0 && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="destructive"
-                size="sm"
-                disabled={isDeleting}
-                onClick={handleDeleteSelected}
-              >
-                <IconTrash size={14} className="mr-1" />
-                Delete {selectedUuids.size} selected
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
+            <TabsContent value="watch" className="space-y-3">
+              <TabHeader
+                addLabel="Add watch rule"
+                onAdd={() => {
+                  setAddDialogKind("watch")
+                }}
+                searchPlaceholder="Search watch rules…"
+                searchValue={searchByTab.watch}
+                onSearchChange={(v) => {
+                  setTabSearch("watch", v)
+                }}
+                selectedCount={selectedUuids.size}
+                isDeleting={isDeleting}
+                onDeleteSelected={handleDeleteSelected}
+                onClearSelection={() => {
                   setSelectedUuids(new Set())
                 }}
-              >
-                Clear selection
-              </Button>
-            </div>
-          )}
+              />
 
-          {watchRules.length > 0 && (
-            <div className="space-y-2">
-              <Label>Watch rules</Label>
-              {watchRules.map((rule) => (
-                <ImportRuleCard
-                  key={rule.uuid}
-                  rule={rule}
-                  rules={rules}
-                  collections={collections}
-                  selected={selectedUuids.has(rule.uuid)}
-                  onToggle={() => {
-                    toggleSelected(rule.uuid)
-                  }}
+              {filteredWatch.length === 0 ? (
+                <EmptyState
+                  message={
+                    watchRules.length === 0
+                      ? "No watch rules yet. Add a folder to scan."
+                      : "No watch rules match your search."
+                  }
                 />
-              ))}
-            </div>
-          )}
+              ) : (
+                <div className="space-y-2">
+                  {filteredWatch.map((rule) => (
+                    <WatchRuleCard
+                      key={rule.uuid}
+                      rule={rule}
+                      rules={rules}
+                      collections={collections}
+                      selected={selectedUuids.has(rule.uuid)}
+                      onToggle={() => {
+                        toggleSelected(rule.uuid)
+                      }}
+                      onDelete={() => {
+                        deleteOne(rule.uuid)
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-          {ignoreRules.length > 0 && (
-            <div className="space-y-2">
-              <Label>Ignore rules</Label>
-              {ignoreRules.map((rule) => (
-                <ImportRuleCard
-                  key={rule.uuid}
-                  rule={rule}
-                  rules={rules}
-                  collections={collections}
-                  selected={selectedUuids.has(rule.uuid)}
-                  onToggle={() => {
-                    toggleSelected(rule.uuid)
-                  }}
+            <TabsContent value="ignore" className="space-y-3">
+              <TabHeader
+                addLabel="Add ignore rule"
+                onAdd={() => {
+                  setAddDialogKind("ignore")
+                }}
+                searchPlaceholder="Search ignore rules…"
+                searchValue={searchByTab.ignore}
+                onSearchChange={(v) => {
+                  setTabSearch("ignore", v)
+                }}
+                selectedCount={selectedUuids.size}
+                isDeleting={isDeleting}
+                onDeleteSelected={handleDeleteSelected}
+                onClearSelection={() => {
+                  setSelectedUuids(new Set())
+                }}
+              />
+
+              {filteredIgnore.length === 0 ? (
+                <EmptyState
+                  message={
+                    userIgnoreRules.length === 0
+                      ? "No ignore rules. Add a path to skip during scans."
+                      : "No ignore rules match your search."
+                  }
                 />
-              ))}
-            </div>
-          )}
+              ) : (
+                <div className="space-y-1.5">
+                  {filteredIgnore.map((rule) => (
+                    <IgnoreRuleRow
+                      key={rule.uuid}
+                      rule={rule}
+                      selected={selectedUuids.has(rule.uuid)}
+                      onToggle={() => {
+                        toggleSelected(rule.uuid)
+                      }}
+                      onDelete={() => {
+                        deleteOne(rule.uuid)
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="auto" className="space-y-3">
+              <p className="text-muted-foreground text-xs">
+                Auto-ignore rules are added by Storyteller when books are
+                relocated, backed up, or removed with re-import prevention. If a
+                book isn&apos;t importing, search here for its path or title.
+              </p>
+
+              <TabHeader
+                searchPlaceholder="Search by path or book title…"
+                searchValue={searchByTab.auto}
+                onSearchChange={(v) => {
+                  setTabSearch("auto", v)
+                }}
+                selectedCount={selectedUuids.size}
+                isDeleting={isDeleting}
+                onDeleteSelected={handleDeleteSelected}
+                onClearSelection={() => {
+                  setSelectedUuids(new Set())
+                }}
+              />
+
+              {filteredAuto.length === 0 ? (
+                <EmptyState
+                  message={
+                    autoIgnoreRules.length === 0
+                      ? "No auto-ignore rules."
+                      : "No auto-ignore rules match your search."
+                  }
+                />
+              ) : (
+                <>
+                  <p className="text-muted-foreground text-xs">
+                    {showAutoPagination
+                      ? `Showing ${autoStart + 1}–${autoStart + visibleAuto.length} of ${filteredAuto.length}.`
+                      : `Showing ${filteredAuto.length} of ${autoIgnoreRules.length}.`}
+                  </p>
+                  <div className="space-y-1.5">
+                    {visibleAuto.map((rule) => (
+                      <AutoIgnoreRuleRow
+                        key={rule.uuid}
+                        rule={rule}
+                        selected={selectedUuids.has(rule.uuid)}
+                        onToggle={() => {
+                          toggleSelected(rule.uuid)
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {showAutoPagination && (
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={clampedAutoPage <= 1}
+                        onClick={() => {
+                          setAutoPage(clampedAutoPage - 1)
+                        }}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-muted-foreground text-xs">
+                        Page {clampedAutoPage} of {autoPageCount}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={clampedAutoPage >= autoPageCount}
+                        onClick={() => {
+                          setAutoPage(clampedAutoPage + 1)
+                        }}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
+
+      {addDialogKind && (
+        <AddRuleDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setAddDialogKind(null)
+          }}
+          kind={addDialogKind}
+          rules={rules}
+          collections={collections}
+        />
+      )}
     </SettingsSection>
+  )
+}
+
+function TabHeader({
+  addLabel,
+  onAdd,
+  searchPlaceholder,
+  searchValue,
+  onSearchChange,
+  selectedCount,
+  isDeleting,
+  onDeleteSelected,
+  onClearSelection,
+}: {
+  addLabel?: string
+  onAdd?: () => void
+  searchPlaceholder: string
+  searchValue: string
+  onSearchChange: (value: string) => void
+  selectedCount: number
+  isDeleting: boolean
+  onDeleteSelected: () => void
+  onClearSelection: () => void
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="relative min-w-[200px] flex-1">
+        <IconSearch
+          size={14}
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 -translate-y-1/2"
+        />
+        <Input
+          value={searchValue}
+          onChange={(e) => {
+            onSearchChange(e.target.value)
+          }}
+          placeholder={searchPlaceholder}
+          className="pl-7"
+        />
+      </div>
+
+      {addLabel && onAdd && (
+        <Button variant="outline" size="sm" onClick={onAdd}>
+          <IconPlus size={14} className="mr-1" />
+          {addLabel}
+        </Button>
+      )}
+
+      {selectedCount > 0 && (
+        <>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={isDeleting}
+            onClick={onDeleteSelected}
+          >
+            <IconTrash size={14} className="mr-1" />
+            Delete {selectedCount}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClearSelection}>
+            Clear
+          </Button>
+        </>
+      )}
+    </div>
+  )
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="border-border text-muted-foreground rounded-md border border-dashed px-4 py-8 text-center text-xs">
+      {message}
+    </div>
   )
 }
 

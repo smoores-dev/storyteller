@@ -24,7 +24,7 @@
     "start": "./start.sh"
   },
   "dependencies": {
-    "@base-ui/react": "^1.0.0",
+    "@base-ui/react": "^1.5.0",
     "@echogarden/espeak-ng-emscripten": "^0.3.5",
     "@esfx/async-mutex": "^1.0.0",
     "@esfx/async-semaphore": "^1.0.0",

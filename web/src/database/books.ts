@@ -790,7 +790,14 @@ export async function deleteBook(
 
     await tr.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
 
-    if (preventReImport) {
+    if (!preventReImport) {
+      // delete all ignore rules for this book
+      await tr
+        .deleteFrom("importRule")
+        .where("kind", "=", "ignore")
+        .where("bookUuid", "=", bookUuid)
+        .execute()
+    } else {
       const [ebook, audiobook, readaloud] = await Promise.all([
         tr
           .selectFrom("ebook")
@@ -825,13 +832,40 @@ export async function deleteBook(
         return !dirs.some((dir) => pathBelongsTo(dir, path))
       })
 
-      for (const filepath of realFilePaths) {
-        await tr
-          .insertInto("importRule")
-          .values({ kind: "ignore", path: filepath })
-          .onConflict((oc) => oc.column("path").doNothing())
-          .execute()
-      }
+      // if there's existing ignore rules for this which are 'relocate' rules
+      // then we should keep those rules (file has been reflinked/copied)
+      // just change the source to 'prevent-reimport'
+      // and get rid of uuid (otherwise itll get deleted)
+      const existingIgnoreRules = await tr
+        .updateTable("importRule")
+        .set({
+          source: "prevent-reimport",
+          bookUuid: null,
+        })
+        .where("kind", "=", "ignore")
+        .where("source", "=", "import-relocate")
+        .where("bookUuid", "=", bookUuid)
+        .returning(["path"])
+        .execute()
+
+      const newIgnorePats = realFilePaths.filter(
+        (filepath) =>
+          !existingIgnoreRules.map((rule) => rule.path).includes(filepath),
+      )
+
+      // add back import rules if necessary
+      await tr
+        .insertInto("importRule")
+        .values(
+          newIgnorePats.map((filepath) => ({
+            kind: "ignore",
+            path: filepath,
+            source: "prevent-reimport",
+            // bookuuid stays null
+          })),
+        )
+        .onConflict((oc) => oc.column("path").doNothing())
+        .execute()
     }
 
     await tr.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()

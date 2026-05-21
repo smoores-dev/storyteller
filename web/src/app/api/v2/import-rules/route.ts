@@ -7,6 +7,7 @@ import {
   createImportRule,
   deleteImportRules,
   getImportRules,
+  getUserImportRules,
 } from "@/database/importRules"
 import {
   validateWatchRulePath,
@@ -17,8 +18,10 @@ import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
 
-export const GET = withHasPermission("settingsUpdate")(async () => {
-  const rules = await getImportRules()
+export const GET = withHasPermission("settingsUpdate")(async (request) => {
+  const source = new URL(request.url).searchParams.get("source")
+  const rules =
+    source === "user" ? await getUserImportRules() : await getImportRules()
   return NextResponse.json(rules)
 })
 

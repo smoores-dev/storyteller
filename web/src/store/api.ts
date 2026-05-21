@@ -199,6 +199,10 @@ export const api = createApi({
       query: () => `/import-rules`,
       providesTags: ["ImportRules"],
     }),
+    getUserImportRules: build.query<ImportRuleWithCollections[], void>({
+      query: () => `/import-rules?source=user`,
+      providesTags: ["ImportRules"],
+    }),
     createImportRule: build.mutation<
       ImportRuleWithCollections,
       {
@@ -852,6 +856,7 @@ export const {
   useGetLatestVersionQuery,
   useUpgradeBookEpubMutation,
   useGetImportRulesQuery,
+  useGetUserImportRulesQuery,
   useCreateImportRuleMutation,
   useUpdateImportRuleMutation,
   useDeleteImportRuleMutation,
