@@ -377,9 +377,9 @@ export function useFilterSortedBooks(books: BookWithRelations[]): {
                 }
                 case "missing": {
                   return (
-                    book.ebook?.missing === true ||
-                    book.audiobook?.missing === true ||
-                    book.readaloud?.missing === true
+                    book.ebook?.missing ||
+                    book.audiobook?.missing ||
+                    book.readaloud?.missing
                   )
                 }
               }
