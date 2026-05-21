@@ -21,13 +21,8 @@ const EPUB_STEP = "open-epub" as const
 export const openEpubStep = defineStep(
   EPUB_STEP,
   async (input: FingerPrinted & { format: "ebook" | "readaloud" }, ctx) => {
-    const scope = ctx.scope
-    if (!scope) {
-      throw new Error("open-epub step requires ctx.scope")
-    }
-
     try {
-      const epub = scope.use(
+      const epub = ctx.scope.use(
         await Epub.from(input.filepath, { metadataOnly: true }),
       )
       return { ...input, isEpub2: false as const, epub }
@@ -63,11 +58,6 @@ async function getAudiobookTracks(directory: string): Promise<AudiobookInputs> {
 export const openAudiobookStep = defineStep(
   AUDIOBOOK_STEP,
   async (input: FingerPrinted & { format: "audiobook" }, ctx) => {
-    const scope = ctx.scope
-    if (!scope) {
-      throw new Error("open-audiobook step requires ctx.scope")
-    }
-
     const tracks = await getAudiobookTracks(input.filepath)
 
     if (tracks.length === 0) {
@@ -80,7 +70,7 @@ export const openAudiobookStep = defineStep(
       return null
     }
 
-    const audiobook = scope.use(await Audiobook.fromForMetadata(...tracks))
+    const audiobook = ctx.scope.use(await Audiobook.fromForMetadata(...tracks))
     return { ...input, audiobook }
   },
 )

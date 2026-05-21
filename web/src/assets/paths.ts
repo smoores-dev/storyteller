@@ -43,7 +43,7 @@ function sanitizeFilename(title: string): string {
     .replace(/[/\\:*?"<>|]/g, "-") // Windows illegal chars
     .replace(/\s+/g, " ") // Normalize whitespace
     .trim() // Trim trailing whitespace
-    .replace(/[.]+$/, "") // No trailing dots
+    .replace(/[.-]+$/, "") // No trailing dots or dashes
 }
 
 function truncate(input: string, byteLimit: number, suffix = ""): string {

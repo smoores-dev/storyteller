@@ -3,7 +3,7 @@ import {
   ensureCollections,
   openAndClassifyEpub,
 } from "@/assets/library/scanner/create-book"
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { type PipelineCtx } from "@/assets/library/scanner/ctx"
 import { findExistingBook } from "@/assets/library/scanner/find-book"
 import { relocateIfNeeded } from "@/assets/library/scanner/relocate"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
@@ -15,7 +15,7 @@ import {
 } from "@/assets/library/scanner/steps/extract-manifest"
 import { extractEpubMetadataStep } from "@/assets/library/scanner/steps/extract-metadata"
 import { openEpubStep } from "@/assets/library/scanner/steps/open"
-import { reconcileMetadataStep } from "@/assets/library/scanner/steps/reconcile-metadata"
+import { reconcileMetadataStep } from "@/assets/library/scanner/steps/update-book"
 import {
   type Candidate,
   type EbookInput,
@@ -40,11 +40,8 @@ function classifyExistingBook(
 
 export async function scanEbook(
   candidate: Candidate,
-  ctx: ScanCtx,
+  ctx: PipelineCtx,
 ): Promise<BookWithRelations | null> {
-  await using scope = new AsyncDisposableStack()
-  const pipelineCtx: ScanCtx = { ...ctx, scope }
-
   let book = await findExistingBook(candidate)
   let filepath = candidate.filepath
   let format: EpubFormat
@@ -55,21 +52,17 @@ export async function scanEbook(
     format = classifyExistingBook(book, candidate)
     isNew = false
   } else {
-    const opened = await openAndClassifyEpub(candidate, pipelineCtx)
+    const opened = await openAndClassifyEpub(candidate, ctx)
     if (!opened) return null
 
-    const created = await createBookFromOpenedEpub(
-      candidate,
-      opened,
-      pipelineCtx,
-    )
+    const created = await createBookFromOpenedEpub(candidate, opened, ctx)
     if (!created) return null
 
     const relocated = await relocateIfNeeded(
       created,
       candidate.filepath,
       opened.format,
-      pipelineCtx,
+      candidate.importMode ?? ctx.defaultImportMode,
     )
     book = relocated.book
     filepath = relocated.filepath
@@ -88,10 +81,10 @@ export async function scanEbook(
     format,
   } as const satisfies EbookInput | ReadaloudInput
 
-  const existing = await checkExistsStep(input, pipelineCtx)
+  const existing = await checkExistsStep(input, ctx)
   if (!existing) return book
 
-  const fingerprinted = await checkFingerprintStep(existing, pipelineCtx)
+  const fingerprinted = await checkFingerprintStep(existing, ctx)
 
   if (!fingerprinted.changed) {
     ctx.report.skipped({
@@ -103,9 +96,15 @@ export async function scanEbook(
     return book
   }
 
-  const opened = await openEpubStep(fingerprinted, pipelineCtx)
+  const opened = await openEpubStep(fingerprinted, ctx)
 
   const metadata = await extractEpubMetadataStep(opened, ctx)
+
+  // cover extraction runs before the metadata commit. if it fails, no DB
+  // update happens so the next scan retries the whole pipeline. running it
+  // after reconcile would leave the DB updated but the cover missing, and
+  // the next fingerprint check would skip the retry.
+  await extractTextCoverStep(metadata, ctx)
 
   const manifest =
     metadata.format === "readaloud"
@@ -115,7 +114,6 @@ export async function scanEbook(
   const reconciled = await reconcileMetadataStep(manifest, ctx)
   if (!reconciled) return book
 
-  await extractTextCoverStep(reconciled, pipelineCtx)
   ctx.report.succeeded({
     step: "scan-ebook",
     book: reconciled.book,

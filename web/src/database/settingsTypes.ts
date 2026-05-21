@@ -40,7 +40,7 @@ export const METADATA_FIELDS = [
 
 export type MetadataField = (typeof METADATA_FIELDS)[number]
 
-export const MetadataFieldModeSchema = z.enum(["skip", "fill-empty", "always"])
+export const MetadataFieldModeSchema = z.enum(["skip", "merge", "always"])
 export type MetadataFieldMode = z.infer<typeof MetadataFieldModeSchema>
 
 export const MetadataFieldOverridesSchema = z.object(
@@ -53,7 +53,7 @@ export type MetadataFieldOverrides = z.infer<
 >
 
 export function defaultMetadataFieldOverrides(
-  mode: MetadataFieldMode = "fill-empty",
+  mode: MetadataFieldMode = "merge",
 ): MetadataFieldOverrides {
   return Object.fromEntries(
     METADATA_FIELDS.map((field) => [field, mode]),

@@ -40,8 +40,9 @@ export const extractTextCoverStep = defineStep(
     }
 
     try {
-      if (mode === "fill-empty") {
-        // we check if the cover has already been extracted
+      if (mode === "merge") {
+        // covers are scalar, so merge keeps the current cover when there is
+        // one and only writes the extracted one when none exists yet.
         const existing = await getExtractedEbookCover(input.book)
 
         if (existing) {
@@ -85,7 +86,7 @@ export const extractAudiobookCoverStep = defineStep(
     }
 
     try {
-      if (mode === "fill-empty") {
+      if (mode === "merge") {
         const existing = await getExtractedAudiobookCover(input.book)
         if (existing) {
           ctx.report.skipped({

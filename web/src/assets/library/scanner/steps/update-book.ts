@@ -1,3 +1,4 @@
+import { renameBookAssets } from "@/assets/fs"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
 import { defineStep } from "@/assets/library/scanner/step"
 import { applyFieldOverrides } from "@/assets/metadata"
@@ -22,7 +23,7 @@ export type ManifestReady =
   | ExtractedReadaloudManifest
   | ExtractedAudiobookManifest
 
-const STEP = "reconcile-metadata"
+const STEP = "update-book"
 
 function buildFormatRelation(
   input: ManifestReady,
@@ -77,7 +78,7 @@ function hasChanges(
 }
 
 export const reconcileMetadataStep = defineStep(
-  "reconcile-metadata",
+  STEP,
   async (input: ManifestReady, ctx) => {
     const current = await getBook(input.book.uuid)
     if (!current) {
@@ -124,6 +125,8 @@ export const reconcileMetadataStep = defineStep(
       })
       return null
     }
+
+    await renameBookAssets(current, updated)
 
     return { ...input, book: updated }
   },

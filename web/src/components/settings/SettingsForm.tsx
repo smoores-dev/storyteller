@@ -93,7 +93,7 @@ const FIELD_LABELS: Record<MetadataField, string> = {
 
 const MODE_OPTIONS: { value: MetadataFieldMode; label: string }[] = [
   { value: "skip", label: "Skip" },
-  { value: "fill-empty", label: "Fill empty" },
+  { value: "merge", label: "Merge" },
   { value: "always", label: "Always override" },
 ]
 

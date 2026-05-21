@@ -8,7 +8,7 @@ import {
 import { Epub, type EpubMetadataReader } from "@storyteller-platform/epub"
 
 import { move } from "@/assets/fs"
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { type PipelineCtx, type ScanCtx } from "@/assets/library/scanner/ctx"
 import { type Candidate, type ScanFormat } from "@/assets/library/scanner/types"
 import { isAudioFile } from "@/audio"
 import {
@@ -69,11 +69,11 @@ export type OpenedEpubResult = {
 
 export async function openAndClassifyEpub(
   candidate: Candidate,
-  ctx: ScanCtx,
+  ctx: PipelineCtx,
 ): Promise<OpenedEpubResult | null> {
   let epub: EpubMetadataReader
   try {
-    epub = await openOrUpgradeEpub(candidate.filepath)
+    epub = ctx.scope.use(await openOrUpgradeEpub(candidate.filepath))
   } catch (error) {
     ctx.report.warn({
       step: "open-epub",
@@ -82,8 +82,6 @@ export async function openAndClassifyEpub(
     })
     return null
   }
-
-  ctx.scope?.use(epub)
 
   const isReadaloud =
     candidate.isReadaloud ??
@@ -97,7 +95,7 @@ export type OpenedAudiobookResult = {
 
 export async function openAudiobookDir(
   candidate: Candidate,
-  ctx: ScanCtx,
+  ctx: PipelineCtx,
 ): Promise<OpenedAudiobookResult | null> {
   let tracks: AudiobookInputs
   try {
@@ -118,7 +116,7 @@ export async function openAudiobookDir(
 
   let audiobook: Audiobook
   try {
-    audiobook = await Audiobook.fromForMetadata(...tracks)
+    audiobook = ctx.scope.use(await Audiobook.fromForMetadata(...tracks))
   } catch (error) {
     ctx.report.warn({
       step: "open-audiobook",
@@ -128,7 +126,6 @@ export async function openAudiobookDir(
     return null
   }
 
-  ctx.scope?.use(audiobook)
   return { audiobook }
 }
 

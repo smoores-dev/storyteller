@@ -1,4 +1,4 @@
-import { type ScanCtx } from "./ctx"
+import { type PipelineCtx } from "./ctx"
 import { type ScanInput } from "./types"
 
 type Prettify<T> = {
@@ -52,11 +52,11 @@ function summarizeDelta(input: ScanInput, output: unknown): string | null {
  */
 export function defineStep<Input extends ScanInput, Output>(
   step: string,
-  fn: (input: Input, ctx: ScanCtx) => Promise<Output>,
+  fn: (input: Input, ctx: PipelineCtx) => Promise<Output>,
 ) {
   return async <N extends Input>(
     input: N,
-    ctx: ScanCtx,
+    ctx: PipelineCtx,
   ): Promise<NarrowOutput<Output, N>> => {
     if (ctx.signal.aborted) {
       throw new ScanAbortedError(step)

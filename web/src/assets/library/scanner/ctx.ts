@@ -29,8 +29,20 @@ export type ScanCtx = {
   logger: Logger
   source: ScanSource
   options: ScanOptions
-  /** Resolved at scan() entry. Falls back to the global setting. */
-  importMode: ImportMode
-  scope?: AsyncDisposableStack
+  /**
+   * fallback import mode for candidates that arrive without a per-rule one.
+   * candidate.importMode wins when set.
+   */
+  defaultImportMode: ImportMode
   setProgress: (processed: number, total: number) => void
+}
+
+/**
+ * a ScanCtx augmented with a disposable scope. scopes are owned by the
+ * per-candidate pipeline so opened epubs and audiobooks get released as soon
+ * as one book is done. steps require this type because they may register
+ * resources for cleanup.
+ */
+export type PipelineCtx = ScanCtx & {
+  scope: AsyncDisposableStack
 }

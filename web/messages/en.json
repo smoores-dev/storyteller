@@ -112,7 +112,7 @@
             "fieldSeries": "Series",
             "fieldTags": "Tags",
             "modeSkip": "Skip",
-            "modeFillEmpty": "Fill empty",
+            "modeMerge": "Merge",
             "modeAlways": "Always override",
             "modeCustom": "Custom",
             "showAdvancedOverrides": "Show per-field settings",

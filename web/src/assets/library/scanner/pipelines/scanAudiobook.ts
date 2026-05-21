@@ -3,7 +3,7 @@ import {
   ensureCollections,
   openAudiobookDir,
 } from "@/assets/library/scanner/create-book"
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
+import { type PipelineCtx } from "@/assets/library/scanner/ctx"
 import { findExistingBook } from "@/assets/library/scanner/find-book"
 import { relocateIfNeeded } from "@/assets/library/scanner/relocate"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
@@ -12,7 +12,7 @@ import { extractAudiobookCoverStep } from "@/assets/library/scanner/steps/extrac
 import { extractAudiobookManifestStep } from "@/assets/library/scanner/steps/extract-manifest"
 import { extractAudiobookMetadataStep } from "@/assets/library/scanner/steps/extract-metadata"
 import { openAudiobookStep } from "@/assets/library/scanner/steps/open"
-import { reconcileMetadataStep } from "@/assets/library/scanner/steps/reconcile-metadata"
+import { reconcileMetadataStep } from "@/assets/library/scanner/steps/update-book"
 import {
   type AudiobookInput,
   type Candidate,
@@ -21,11 +21,8 @@ import { type BookWithRelations } from "@/database/books"
 
 export async function scanAudiobook(
   candidate: Candidate,
-  ctx: ScanCtx,
+  ctx: PipelineCtx,
 ): Promise<BookWithRelations | null> {
-  await using scope = new AsyncDisposableStack()
-  const pipelineCtx: ScanCtx = { ...ctx, scope }
-
   let book = await findExistingBook(candidate)
   let filepath = candidate.filepath
   let isNew: boolean
@@ -34,21 +31,17 @@ export async function scanAudiobook(
     await ensureCollections(book, candidate.collections)
     isNew = false
   } else {
-    const opened = await openAudiobookDir(candidate, pipelineCtx)
+    const opened = await openAudiobookDir(candidate, ctx)
     if (!opened) return null
 
-    const created = await createBookFromOpenedAudiobook(
-      candidate,
-      opened,
-      pipelineCtx,
-    )
+    const created = await createBookFromOpenedAudiobook(candidate, opened, ctx)
     if (!created) return null
 
     const relocated = await relocateIfNeeded(
       created,
       candidate.filepath,
       "audiobook",
-      pipelineCtx,
+      candidate.importMode ?? ctx.defaultImportMode,
     )
     book = relocated.book
     filepath = relocated.filepath
@@ -67,10 +60,10 @@ export async function scanAudiobook(
 
   // ==== pipeline starts here ====
 
-  const existing = await checkExistsStep(input, pipelineCtx)
+  const existing = await checkExistsStep(input, ctx)
   if (!existing) return book
 
-  const fingerprinted = await checkFingerprintStep(existing, pipelineCtx)
+  const fingerprinted = await checkFingerprintStep(existing, ctx)
 
   if (!fingerprinted.changed) {
     ctx.report.skipped({
@@ -82,18 +75,20 @@ export async function scanAudiobook(
     return book
   }
 
-  const opened = await openAudiobookStep(fingerprinted, pipelineCtx)
+  const opened = await openAudiobookStep(fingerprinted, ctx)
   if (!opened) return book
 
-  const metadata = await extractAudiobookMetadataStep(opened, pipelineCtx)
+  const metadata = await extractAudiobookMetadataStep(opened, ctx)
 
-  const manifest = await extractAudiobookManifestStep(metadata, pipelineCtx)
+  // cover extraction runs before the metadata commit, see scanEbook.ts.
+  await extractAudiobookCoverStep(metadata, ctx)
 
-  const reconciled = await reconcileMetadataStep(manifest, pipelineCtx)
+  const manifest = await extractAudiobookManifestStep(metadata, ctx)
+
+  const reconciled = await reconcileMetadataStep(manifest, ctx)
 
   if (!reconciled) return book
 
-  await extractAudiobookCoverStep(reconciled, pipelineCtx)
   ctx.report.succeeded({
     step: "scan-audiobook",
     book: reconciled.book,

@@ -42,7 +42,7 @@ export function parseScanOptions(
   const override = params.get("metadataOverride")
   if (
     !options.metadataFieldOverrides &&
-    (override === "skip" || override === "fill-empty" || override === "always")
+    (override === "skip" || override === "merge" || override === "always")
   ) {
     options.metadataFieldOverrides = defaultMetadataFieldOverrides(override)
   }

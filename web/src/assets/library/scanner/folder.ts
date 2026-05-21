@@ -10,6 +10,7 @@ import { isAudioFile } from "@/audio"
 import { type BookWithRelations } from "@/database/books"
 import { getIgnorePaths } from "@/database/importRules"
 import { getSetting } from "@/database/settings"
+import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 
 import { type ScanCtx } from "./ctx"
@@ -161,6 +162,7 @@ export type ListCandidatesOpts = {
   collections?: UUIDList
   warnIfFileAtRoot?: boolean
   importRoot?: string
+  importMode?: ImportMode
 }
 
 type UUIDList = Candidate["collections"]
@@ -263,6 +265,7 @@ export async function listBookCandidates(
       isReadaloud: false,
       collections: opts.collections,
       groupable: true,
+      ...(opts.importMode && { importMode: opts.importMode }),
       ...(folderOwner && !folderOwner.ebook && { existingBook: folderOwner }),
     })
   }
@@ -276,6 +279,7 @@ export async function listBookCandidates(
       isReadaloud: true,
       collections: opts.collections,
       groupable: true,
+      ...(opts.importMode && { importMode: opts.importMode }),
       ...(folderOwner &&
         !folderOwner.readaloud && { existingBook: folderOwner }),
     })
@@ -288,6 +292,7 @@ export async function listBookCandidates(
       filepath: audiobookDir,
       collections: opts.collections,
       groupable: true,
+      ...(opts.importMode && { importMode: opts.importMode }),
       ...(folderOwner &&
         !folderOwner.audiobook && { existingBook: folderOwner }),
     })

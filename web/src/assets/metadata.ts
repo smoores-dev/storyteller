@@ -11,7 +11,7 @@ import {
 import { type Epub, type EpubMetadataReader } from "@storyteller-platform/epub"
 
 import { isAudioFile } from "@/audio"
-import { isRole } from "@/components/books/edit/marcRelators"
+import { type Role, isRole } from "@/components/books/edit/marcRelators"
 import {
   type Book,
   type BookRelationsUpdate,
@@ -52,10 +52,63 @@ const SCALAR_FIELDS: ScalarFieldMapping[] = [
   },
 ]
 
-function shouldInclude(mode: MetadataFieldMode, isEmpty: boolean): boolean {
+function shouldIncludeScalar(
+  mode: MetadataFieldMode,
+  isEmpty: boolean,
+): boolean {
   if (mode === "skip") return false
   if (mode === "always") return true
   return isEmpty
+}
+
+// merge unions current and extracted, keyed by `keyOf`. extracted items with
+// a key that already exists in current are dropped (we never edit a tag to
+// rename it, we just add new ones). always overwrites; skip drops the field.
+function applyListOverride<C, X>(
+  mode: MetadataFieldMode,
+  current: C[],
+  extracted: X[] | undefined,
+  keyOfCurrent: (item: C) => string,
+  keyOfExtracted: (item: X) => string,
+  toExtracted: (item: C) => X,
+): X[] | null {
+  if (mode === "skip") return null
+  if (mode === "always") return extracted ?? null
+  if (!extracted?.length && !current.length) return null
+  const seen = new Set<string>()
+  const out: X[] = []
+  for (const item of current) {
+    const k = keyOfCurrent(item)
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push(toExtracted(item))
+  }
+  for (const item of extracted ?? []) {
+    const k = keyOfExtracted(item)
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push(item)
+  }
+  return out
+}
+
+function creatorKey(name: string, role: string): string {
+  return `${role}::${name}`
+}
+
+type StoredAuthor = BookWithRelations["authors"][number]
+type StoredOtherCreator = BookWithRelations["creators"][number]
+
+function authorToRelation(c: StoredAuthor, role: Role): CreatorRelation {
+  return { name: c.name, role, fileAs: c.fileAs ?? c.name }
+}
+
+function otherToRelation(c: StoredOtherCreator): CreatorRelation {
+  return {
+    name: c.name,
+    role: (c.role ?? "oth") as Role,
+    fileAs: c.fileAs ?? c.name,
+  }
 }
 
 export function applyFieldOverrides(
@@ -72,7 +125,7 @@ export function applyFieldOverrides(
       const mode = overrides[field]
       const value = extracted[key]
 
-      if (value !== undefined && shouldInclude(mode, isEmpty(current))) {
+      if (value !== undefined && shouldIncludeScalar(mode, isEmpty(current))) {
         metadataUpdate ??= {}
         ;(metadataUpdate as Record<string, unknown>)[key] = value
       }
@@ -101,55 +154,82 @@ export function applyFieldOverrides(
   // relation fields
   const relationUpdate: BookRelationsUpdate = {}
 
-  const incomingAuthors = extractedRelations.creators?.filter(
-    (c) => c.role === "aut",
+  const incomingAuthors =
+    extractedRelations.creators?.filter((c) => c.role === "aut") ?? []
+  const incomingNarrators =
+    extractedRelations.creators?.filter((c) => c.role === "nrt") ?? []
+  const incomingOtherCreators =
+    extractedRelations.creators?.filter(
+      (c) => c.role !== "aut" && c.role !== "nrt",
+    ) ?? []
+
+  const mergedAuthors = applyListOverride(
+    overrides.authors,
+    current.authors,
+    incomingAuthors,
+    (c) => creatorKey(c.name, "aut"),
+    (c) => creatorKey(c.name, "aut"),
+    (c) => authorToRelation(c, "aut"),
   )
-  const incomingNarrators = extractedRelations.creators?.filter(
-    (c) => c.role === "nrt",
+  const mergedNarrators = applyListOverride(
+    overrides.narrators,
+    current.narrators,
+    incomingNarrators,
+    (c) => creatorKey(c.name, "nrt"),
+    (c) => creatorKey(c.name, "nrt"),
+    (c) => authorToRelation(c, "nrt"),
   )
-  const incomingOtherCreators = extractedRelations.creators?.filter(
-    (c) => c.role !== "aut" && c.role !== "nrt",
+  const mergedOthers = applyListOverride(
+    overrides.creators,
+    current.creators,
+    incomingOtherCreators,
+    (c) => creatorKey(c.name, c.role ?? ""),
+    (c) => creatorKey(c.name, c.role ?? ""),
+    (c) => otherToRelation(c),
   )
 
-  const creators: CreatorRelation[] = []
-
-  if (
-    incomingAuthors?.length &&
-    shouldInclude(overrides.authors, current.authors.length === 0)
-  ) {
-    creators.push(...incomingAuthors)
+  // because creators / authors / narrators all share one DB relation, only
+  // emit a creators patch when at least one of the three modes asked us to
+  // produce content. otherwise we'd wipe everything.
+  const anyCreatorPatch =
+    mergedAuthors !== null || mergedNarrators !== null || mergedOthers !== null
+  if (anyCreatorPatch) {
+    const next: CreatorRelation[] = [
+      ...(mergedAuthors ??
+        current.authors.map((c) => authorToRelation(c, "aut"))),
+      ...(mergedNarrators ??
+        current.narrators.map((c) => authorToRelation(c, "nrt"))),
+      ...(mergedOthers ?? current.creators.map((c) => otherToRelation(c))),
+    ]
+    relationUpdate.creators = next
   }
 
-  if (
-    incomingNarrators?.length &&
-    shouldInclude(overrides.narrators, current.narrators.length === 0)
-  ) {
-    creators.push(...incomingNarrators)
+  const mergedSeries = applyListOverride(
+    overrides.series,
+    current.series,
+    extractedRelations.series,
+    (s) => s.name,
+    (s) => s.name,
+    (s) => ({
+      name: s.name,
+      featured: s.featured,
+      ...(s.position !== null && { position: s.position }),
+    }),
+  )
+  if (mergedSeries !== null) {
+    relationUpdate.series = mergedSeries
   }
 
-  if (
-    incomingOtherCreators?.length &&
-    shouldInclude(overrides.creators, current.creators.length === 0)
-  ) {
-    creators.push(...incomingOtherCreators)
-  }
-
-  if (creators.length > 0) {
-    relationUpdate.creators = creators
-  }
-
-  if (
-    extractedRelations.series?.length &&
-    shouldInclude(overrides.series, current.series.length === 0)
-  ) {
-    relationUpdate.series = extractedRelations.series
-  }
-
-  if (
-    extractedRelations.tags?.length &&
-    shouldInclude(overrides.tags, current.tags.length === 0)
-  ) {
-    relationUpdate.tags = extractedRelations.tags
+  const mergedTags = applyListOverride(
+    overrides.tags,
+    current.tags,
+    extractedRelations.tags,
+    (t) => t.name,
+    (t) => t,
+    (t) => t.name,
+  )
+  if (mergedTags !== null) {
+    relationUpdate.tags = mergedTags
   }
 
   return { metadataUpdate, relationUpdate }

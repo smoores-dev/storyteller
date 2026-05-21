@@ -2,7 +2,6 @@ import { mkdir, readdir, rm } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
 import { copyWithHardlink, copyWithReflink, move } from "@/assets/fs"
-import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { type ScanFormat } from "@/assets/library/scanner/types"
 import {
   suppressPrefix,
@@ -89,9 +88,9 @@ export async function relocateIfNeeded(
   book: BookWithRelations,
   filepath: string,
   format: ScanFormat,
-  ctx: ScanCtx,
+  importMode: ImportMode,
 ): Promise<RelocateResult> {
-  if (ctx.importMode === "reference") {
+  if (importMode === "reference") {
     return { book, filepath }
   }
   if (isAlreadyInternal(filepath, book)) {
@@ -99,7 +98,7 @@ export async function relocateIfNeeded(
   }
 
   const ensuredBook = await ensureBookDirectory(book)
-  const relocator = resolveRelocator(ctx.importMode)
+  const relocator = resolveRelocator(importMode)
 
   if (format === "ebook") {
     const dest = getInternalEpubFilepath(ensuredBook)
@@ -134,7 +133,7 @@ export async function relocateIfNeeded(
     if (!isAudioFile(entry)) continue
     await relocator(join(filepath, entry), join(destDir, entry))
   }
-  if (ctx.importMode === "move") {
+  if (importMode === "move") {
     await rm(filepath, { recursive: true })
   }
   const updated = await updateBook(ensuredBook.uuid, null, {

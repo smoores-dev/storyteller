@@ -102,7 +102,7 @@
             "metadataFieldOverrides": "Metadata gedrag",
             "metadataFieldOverridesDescription": "Bepaalt hoe Storyteller metadata uit boekbestanden verwerkt tijdens scans. Het standaardgedrag (alleen lege velden invullen) is geschikt voor de meeste gebruikers. Als je je boeken ook met andere tools beheert (bijv. Calibre, Audiobookshelf) en wilt dat die wijzigingen in Storyteller worden overgenomen, kies dan voor altijd overschrijven.",
             "modeSkip": "Overslaan",
-            "modeFillEmpty": "Alleen lege velden invullen",
+            "modeMerge": "Samenvoegen",
             "modeAlways": "Altijd overschrijven",
             "modeCustom": "Aangepast",
             "showAdvancedOverrides": "Toon instellingen per veld",

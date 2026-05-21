@@ -5,7 +5,12 @@ import { type ImportMode } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { type ScanCtx, type ScanOptions, type ScanSource } from "./ctx"
+import {
+  type PipelineCtx,
+  type ScanCtx,
+  type ScanOptions,
+  type ScanSource,
+} from "./ctx"
 import { canonicalizePath, listBookCandidates, walkFolders } from "./folder"
 import { scanAudiobook } from "./pipelines/scanAudiobook"
 import { scanEbook } from "./pipelines/scanEbook"
@@ -69,6 +74,9 @@ async function candidatesFromExistingBook(
   const book = await getBook(bookUuid)
   if (!book) return []
   const out: Candidate[] = []
+  // existing-book candidates skip relocate (paths are typically already
+  // internal or the user originally chose reference mode), so we don't stamp
+  // them with an importMode.
   if (book.ebook?.filepath) {
     out.push({
       folder: filepathFolder(book.ebook.filepath),
@@ -119,6 +127,9 @@ async function materializeCandidates(
   if (ctx.signal.aborted) return []
 
   if (request.kind === "folders") {
+    // folders requests come from a single watcher flush, so options.importMode
+    // identifies the rule. stamp every candidate so relocate honors it even
+    // if defaultImportMode happens to differ.
     const all: Candidate[] = []
     for (const folder of request.folders) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -128,6 +139,7 @@ async function materializeCandidates(
           folder,
           books,
           collections: request.collections,
+          importMode: ctx.options.importMode,
         },
         ctx,
       )
@@ -153,6 +165,7 @@ async function materializeCandidates(
           collections: root.collections,
           warnIfFileAtRoot: true,
           importRoot: canonicalRoot,
+          importMode: root.importMode,
         },
         ctx,
       )
@@ -162,16 +175,10 @@ async function materializeCandidates(
   return all
 }
 
-async function resolveImportMode(opts: {
+async function resolveDefaultImportMode(opts: {
   options?: ScanOptions
-  request: ScanRequest
 }): Promise<ImportMode> {
   if (opts.options?.importMode) return opts.options.importMode
-  if (opts.request.kind === "roots") {
-    // if any root specifies a mode, use the first; otherwise fall back.
-    const explicit = opts.request.roots.find((r) => r.importMode)?.importMode
-    if (explicit) return explicit
-  }
   return await getSetting("importMode")
 }
 
@@ -203,9 +210,8 @@ export async function scan(opts: {
     )
   }
 
-  const importMode = await resolveImportMode({
+  const defaultImportMode = await resolveDefaultImportMode({
     options: opts.options,
-    request: opts.request,
   })
 
   const baseOptions: ScanOptions = {
@@ -228,7 +234,7 @@ export async function scan(opts: {
         logger: report.logger,
         source: opts.source,
         options: baseOptions,
-        importMode,
+        defaultImportMode,
         setProgress,
       }
 
@@ -344,17 +350,17 @@ async function runWorkers(
     ctx.logger.debug(
       `Scanning ${candidate.filepath} (${candidate.format}) [${index + 1}/${total}]`,
     )
+    // one disposable scope per candidate: opened epubs and audiobooks live
+    // only for the duration of this candidate's pipeline.
+    await using scope = new AsyncDisposableStack()
+    const pipelineCtx: PipelineCtx = { ...ctx, scope }
     try {
       const book =
         candidate.format === "audiobook"
-          ? await scanAudiobook(candidate, ctx)
-          : await scanEbook(candidate, ctx)
+          ? await scanAudiobook(candidate, pipelineCtx)
+          : await scanEbook(candidate, pipelineCtx)
       if (book) {
         scannedBookUuids.add(book.uuid)
-      } else if (candidate.existingBook) {
-        scannedBookUuids.add(candidate.existingBook.uuid)
-      } else if (candidate.bookUuidHint) {
-        scannedBookUuids.add(candidate.bookUuidHint)
       }
       return book
     } catch (err) {

@@ -1,4 +1,5 @@
 import { type BookWithRelations } from "@/database/books"
+import { type ImportMode } from "@/database/settingsTypes"
 import { type UUID } from "@/uuid"
 
 export type ScanFormat = "ebook" | "audiobook" | "readaloud"
@@ -25,6 +26,11 @@ export type Candidate = {
    * does not apply to eg manual uploads/imports
    */
   groupable?: boolean
+  /**
+   * import mode for this candidate's source rule. falls back to the scan's
+   * default when absent. lets one scan honor different modes per rule.
+   */
+  importMode?: ImportMode
 }
 
 export type EpubScanFormat = Extract<ScanFormat, "ebook" | "readaloud">

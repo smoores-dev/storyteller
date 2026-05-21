@@ -88,7 +88,7 @@ void describe("Watcher", () => {
     await watcher.start()
     await waitForWatcher(2000)
 
-    // first add an epub -- watcher picks it up and creates a book
+    // first add an epub, watcher picks it up and creates a book
     const folder = await library.createBookFolder("multi-format", {
       ebook: "moby-dick",
     })
@@ -105,7 +105,7 @@ void describe("Watcher", () => {
     )
     assert.strictEqual(book.audiobook, null)
 
-    // then add audio files to the same folder -- watcher picks them up
+    // then add audio files to the same folder, watcher picks them up
     // and attaches the audiobook relation to the same book
     await folder.addFixture(".", {
       name: "moby-dick",

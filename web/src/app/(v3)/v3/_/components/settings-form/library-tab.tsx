@@ -11,6 +11,10 @@ import {
 } from "@/assets/library/scanner/triggers/cron"
 import { type ImportRuleWithCollections } from "@/database/importRules"
 import {
+  validateWatchRulePath,
+  watchRuleValidationMessage,
+} from "@/database/importRules.validation"
+import {
   METADATA_FIELDS,
   type MetadataField,
   type MetadataFieldMode,
@@ -119,11 +123,13 @@ const IMPORT_MODE_OPTIONS = [
 
 function ImportRuleCard({
   rule,
+  rules,
   collections,
   selected,
   onToggle,
 }: {
   rule: ImportRuleWithCollections
+  rules: ImportRuleWithCollections[]
   collections: { uuid: UUID; name: string }[]
   selected: boolean
   onToggle: () => void
@@ -131,8 +137,29 @@ function ImportRuleCard({
   const [updateRule] = useUpdateImportRuleMutation()
   const [editingPath, setEditingPath] = useState(false)
   const [editPath, setEditPath] = useState(rule.path)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const isWatch = rule.kind === "watch"
+
+  function trySave() {
+    if (isWatch) {
+      const result = validateWatchRulePath({
+        path: editPath,
+        existingRules: rules,
+        excludeUuid: rule.uuid,
+      })
+      if (!result.ok) {
+        const conflictingPath = result.conflictWith
+          ? rules.find((r) => r.uuid === result.conflictWith)?.path
+          : undefined
+        setEditError(watchRuleValidationMessage(result, { conflictingPath }))
+        return
+      }
+    }
+    setEditError(null)
+    void updateRule({ uuid: rule.uuid, path: editPath })
+    setEditingPath(false)
+  }
 
   return (
     <div className="flex gap-3 rounded-md border p-3">
@@ -148,48 +175,49 @@ function ImportRuleCard({
         </Badge>
 
         {editingPath ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={editPath}
-              onChange={(e) => {
-                setEditPath(e.target.value)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  void updateRule({ uuid: rule.uuid, path: editPath })
-                  setEditingPath(false)
-                }
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Input
+                value={editPath}
+                onChange={(e) => {
+                  setEditPath(e.target.value)
+                  if (editError) setEditError(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    trySave()
+                  }
 
-                if (e.key === "Escape") {
+                  if (e.key === "Escape") {
+                    setEditPath(rule.path)
+                    setEditError(null)
+                    setEditingPath(false)
+                  }
+                }}
+                className="min-w-0 flex-1"
+                aria-invalid={!!editError}
+              />
+
+              <Button variant="outline" size="sm" onClick={trySave}>
+                Save
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
                   setEditPath(rule.path)
+                  setEditError(null)
                   setEditingPath(false)
-                }
-              }}
-              className="min-w-0 flex-1"
-            />
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                void updateRule({ uuid: rule.uuid, path: editPath })
-                setEditingPath(false)
-              }}
-            >
-              Save
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setEditPath(rule.path)
-                setEditingPath(false)
-              }}
-            >
-              Cancel
-            </Button>
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+            {editError && (
+              <p className="text-destructive text-xs">{editError}</p>
+            )}
           </div>
         ) : (
           <button
@@ -264,6 +292,7 @@ function ImportRulesSection() {
 
   const [newPath, setNewPath] = useState("")
   const [newKind, setNewKind] = useState<"watch" | "ignore">("watch")
+  const [newPathError, setNewPathError] = useState<string | null>(null)
   const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
 
   const watchRules = rules.filter((r) => r.kind === "watch")
@@ -294,6 +323,23 @@ function ImportRulesSection() {
     const trimmed = newPath.trim()
     if (!trimmed) return
 
+    if (newKind === "watch") {
+      const result = validateWatchRulePath({
+        path: trimmed,
+        existingRules: rules,
+      })
+      if (!result.ok) {
+        const conflictingPath = result.conflictWith
+          ? rules.find((r) => r.uuid === result.conflictWith)?.path
+          : undefined
+        setNewPathError(
+          watchRuleValidationMessage(result, { conflictingPath }),
+        )
+        return
+      }
+    }
+
+    setNewPathError(null)
     void createRule({ kind: newKind, path: trimmed })
     setNewPath("")
   }
@@ -355,6 +401,7 @@ function ImportRulesSection() {
               value={newPath}
               onChange={(e) => {
                 setNewPath(e.target.value)
+                if (newPathError) setNewPathError(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -363,6 +410,7 @@ function ImportRulesSection() {
                 }
               }}
               className="min-w-0 flex-1"
+              aria-invalid={!!newPathError}
             />
 
             <Button
@@ -375,6 +423,9 @@ function ImportRulesSection() {
               Add rule
             </Button>
           </div>
+          {newPathError && (
+            <p className="text-destructive text-xs">{newPathError}</p>
+          )}
 
           {selectedUuids.size > 0 && (
             <div className="flex items-center gap-2">
@@ -407,6 +458,7 @@ function ImportRulesSection() {
                 <ImportRuleCard
                   key={rule.uuid}
                   rule={rule}
+                  rules={rules}
                   collections={collections}
                   selected={selectedUuids.has(rule.uuid)}
                   onToggle={() => {
@@ -424,6 +476,7 @@ function ImportRulesSection() {
                 <ImportRuleCard
                   key={rule.uuid}
                   rule={rule}
+                  rules={rules}
                   collections={collections}
                   selected={selectedUuids.has(rule.uuid)}
                   onToggle={() => {
@@ -455,7 +508,7 @@ const FIELD_LABEL_KEYS = {
 
 const MODE_OPTIONS = [
   { value: "skip", labelKey: "modeSkip" },
-  { value: "fill-empty", labelKey: "modeFillEmpty" },
+  { value: "merge", labelKey: "modeMerge" },
   { value: "always", labelKey: "modeAlways" },
 ] as const satisfies { value: MetadataFieldMode; labelKey: string }[]
 
@@ -498,7 +551,7 @@ function PerFieldOverridesEditor({
               <SelectValue>
                 {t(
                   MODE_OPTIONS.find((opt) => opt.value === value[field])
-                    ?.labelKey ?? "modeFillEmpty",
+                    ?.labelKey ?? "modeMerge",
                 )}
               </SelectValue>
             </SelectTrigger>
@@ -543,7 +596,7 @@ export function MetadataFieldOverridesEditor({
               ? t("modeCustom")
               : t(
                   MODE_OPTIONS.find((opt) => opt.value === uniformMode)
-                    ?.labelKey ?? "modeFillEmpty",
+                    ?.labelKey ?? "modeMerge",
                 )}
           </SelectValue>
         </SelectTrigger>

@@ -1,5 +1,3 @@
-import { resolve } from "node:path"
-
 import { NextResponse } from "next/server"
 
 import { getWatcher } from "@/assets/library/scanner/triggers/watcher"
@@ -10,23 +8,14 @@ import {
   deleteImportRules,
   getImportRules,
 } from "@/database/importRules"
+import {
+  validateWatchRulePath,
+  watchRuleValidationMessage,
+} from "@/database/importRules.validation"
 import { ASSETS_DIR, UPLOADS_DIR } from "@/directories"
 import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
-
-function isForbiddenPath(path: string): boolean {
-  const resolved = resolve(path)
-  const assetsResolved = resolve(ASSETS_DIR)
-  const uploadsResolved = resolve(UPLOADS_DIR)
-
-  return (
-    resolved === assetsResolved ||
-    resolved.startsWith(assetsResolved + "/") ||
-    resolved === uploadsResolved ||
-    resolved.startsWith(uploadsResolved + "/")
-  )
-}
 
 export const GET = withHasPermission("settingsUpdate")(async () => {
   const rules = await getImportRules()
@@ -41,14 +30,27 @@ export const POST = withHasPermission("settingsUpdate")(async (request) => {
     collectionUuids?: UUID[]
   }
 
-  if (isForbiddenPath(body.path)) {
-    return NextResponse.json(
-      {
-        error:
-          "Cannot use the internal assets or uploads directory as an import rule path.",
-      },
-      { status: 400 },
-    )
+  const existing = await getImportRules()
+
+  if (body.kind === "watch") {
+    const result = validateWatchRulePath({
+      path: body.path,
+      existingRules: existing,
+      forbiddenRoots: [ASSETS_DIR, UPLOADS_DIR],
+    })
+    if (!result.ok) {
+      const conflictingPath = result.conflictWith
+        ? existing.find((r) => r.uuid === result.conflictWith)?.path
+        : undefined
+      return NextResponse.json(
+        {
+          error: watchRuleValidationMessage(result, { conflictingPath }),
+          code: result.error,
+          ...(result.conflictWith && { conflictWith: result.conflictWith }),
+        },
+        { status: 400 },
+      )
+    }
   }
 
   const input: CreateImportRuleInput = {
