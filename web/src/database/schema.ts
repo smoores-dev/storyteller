@@ -59,7 +59,7 @@ export interface Book {
   publicationDate: string | null
   rating: number | null
   subtitle: string | null
-  suffix: Generated<string>
+  assetDir: Generated<string>
   title: string
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>

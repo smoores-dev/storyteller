@@ -25,9 +25,25 @@ import { type UUID } from "@/uuid"
 function standardFilter(path: string): boolean {
   return (
     !isInsideInternalDirectory(path) &&
-    (path.endsWith(".epub") || isAudioFile(path)) &&
+    (path.endsWith(".epub") || isAudioFile(path) || !extname(path)) &&
     !/\.watchman-cookie/.test(path)
   )
+}
+
+const STABILITY_THRESHOLD_MS = 2000
+const MAX_STABILITY_RETRIES = 5
+
+async function areFilesStable(paths: string[]): Promise<boolean> {
+  const now = Date.now()
+  for (const p of paths) {
+    try {
+      const s = await stat(p)
+      if (now - s.mtimeMs < STABILITY_THRESHOLD_MS) return false
+    } catch {
+      // gone or inaccessible, treat as stable
+    }
+  }
+  return true
 }
 
 const assetRegex = /[^/]*\/(text|aligned|audio)\//
@@ -207,8 +223,25 @@ export class Watcher {
       scheduleFlush(750)
     }
 
+    let stabilityRetries = 0
+
     const flushEvents = async () => {
       if (controller.signal.aborted || closed || !pendingEvents.length) return
+
+      const filePaths = pendingEvents
+        .filter((e) => !!extname(e.path))
+        .map((e) => e.path)
+
+      if (
+        filePaths.length > 0 &&
+        stabilityRetries < MAX_STABILITY_RETRIES &&
+        !(await areFilesStable(filePaths))
+      ) {
+        stabilityRetries++
+        scheduleFlush(STABILITY_THRESHOLD_MS)
+        return
+      }
+      stabilityRetries = 0
 
       await scanLock.lock()
       const batch = pendingEvents.splice(0, pendingEvents.length)

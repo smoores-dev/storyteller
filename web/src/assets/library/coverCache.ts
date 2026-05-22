@@ -1,8 +1,7 @@
 import {
   getAudioCover,
   getEpubCover,
-  writeExtractedAudiobookCover,
-  writeExtractedEbookCover,
+  writeExtractedCover,
 } from "@/assets/covers"
 import { writeCachedCoverImage } from "@/assets/fs"
 import { type BookWithRelations } from "@/database/books"
@@ -14,7 +13,7 @@ export async function cacheTextCover(book: BookWithRelations) {
     return
   }
 
-  await writeExtractedEbookCover(book, coverImage.filename, coverImage.data)
+  await writeExtractedCover(book, "ebook", coverImage.filename, coverImage.data)
   const optimized = await optimizeImage({
     buffer: coverImage.data,
     height: 225,
@@ -30,11 +29,20 @@ export async function cacheTextCover(book: BookWithRelations) {
 
 export async function cacheAudioCover(book: BookWithRelations) {
   const audioCover = await getAudioCover(book)
+  console.log("cacheAudioCover", audioCover)
   if (!audioCover) {
+    console.log("no audio cover for book", book.title)
     return
   }
 
-  await writeExtractedAudiobookCover(book, audioCover.filename, audioCover.data)
+  await writeExtractedCover(
+    book,
+    "audiobook",
+    audioCover.filename,
+    audioCover.data,
+  )
+  console.log("wrote audio cover", audioCover.filename)
+  console.log("writing optimized audio cover")
   const optimized = await optimizeImage({
     buffer: Buffer.from(audioCover.data),
     height: 147,
@@ -42,6 +50,7 @@ export async function cacheAudioCover(book: BookWithRelations) {
     contentType: audioCover.mimeType,
   })
 
+  console.log("writing optimized audio cover to cache")
   await writeCachedCoverImage(book.uuid, "audio", 147, 147, {
     ...audioCover,
     data: optimized,

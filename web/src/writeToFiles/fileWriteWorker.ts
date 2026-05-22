@@ -90,7 +90,7 @@ export default async function writeMetadataToFiles({
     )
 
   if (book.ebook) {
-    logger.info(`Writing metadata to epub ${book.title} ${book.suffix}`)
+    logger.info(`Writing metadata to epub ${book.title} ${book.assetDir}`)
     try {
       using epub = await Epub.from(book.ebook.filepath)
       await writeMetadataToEpub(book, epub, { textCover })
@@ -114,13 +114,13 @@ export default async function writeMetadataToFiles({
     } catch (e) {
       logger.error({
         err: e,
-        msg: `Failed to write metadata to epub ${book.title} ${book.suffix}, skipping`,
+        msg: `Failed to write metadata to epub ${book.title} ${book.assetDir}, skipping`,
       })
     }
   }
 
   if (book.audiobook) {
-    logger.info(`Writing metadata to audiobook ${book.title} ${book.suffix}`)
+    logger.info(`Writing metadata to audiobook ${book.title} ${book.assetDir}`)
     await writeMetadataToAudiobook(book, audioCover)
     logger.info("Audiobook saved")
 
@@ -142,13 +142,13 @@ export default async function writeMetadataToFiles({
     } catch (e) {
       logger.error({
         err: e,
-        msg: `Failed to update audiobook hash for ${book.title} ${book.suffix}`,
+        msg: `Failed to update audiobook hash for ${book.title} ${book.assetDir}`,
       })
     }
   }
 
   if (book.readaloud?.filepath) {
-    logger.info(`Writing metadata to readaloud ${book.title} ${book.suffix}`)
+    logger.info(`Writing metadata to readaloud ${book.title} ${book.assetDir}`)
     try {
       using epub = await Epub.from(book.readaloud.filepath)
       await writeMetadataToEpub(book, epub, { textCover, audioCover })
@@ -172,7 +172,7 @@ export default async function writeMetadataToFiles({
       })
     } catch (e) {
       logger.error(
-        `Failed to write metadata to readaloud ${book.title} ${book.suffix}, skipping`,
+        `Failed to write metadata to readaloud ${book.title} ${book.assetDir}, skipping`,
       )
       logger.error(e)
     }

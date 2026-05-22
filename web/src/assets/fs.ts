@@ -19,6 +19,7 @@ import { getFileChunks } from "@storyteller-platform/fs"
 
 import { isAudioFile } from "@/audio"
 import { type Book, type BookWithRelations, updateBook } from "@/database/books"
+import { db } from "@/database/connection"
 import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
@@ -45,47 +46,28 @@ import {
 } from "./paths"
 
 /**
- * Reserve a unique on-disk directory for this book by mkdir'ing it. on
- * EEXIST we bump the book's suffix once (uuid-derived, deterministic) and
- * retry. callers must invoke this before writing anything into the asset
- * folder so two same-title books cannot collide.
+ * Reserve a unique on-disk directory for this book. checks the DB for
+ * asset_dir collisions (rather than relying on filesystem EEXIST) and
+ * bumps to a uuid-derived suffix when needed.
  */
 export async function reserveBookDirectory(
   book: BookWithRelations,
 ): Promise<BookWithRelations> {
-  try {
-    await mkdir(getInternalBookDirectory(book))
-    return book
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      !("code" in error) ||
-      error.code !== "EEXIST"
-    ) {
-      throw error
-    }
-  }
-  const defaultSuffix = getDefaultSuffix(book.uuid)
-  if (book.suffix === defaultSuffix) {
-    throw new Error(
-      `Failed to reserve unique book directory for ${book.uuid}: ${getInternalBookDirectory(book)} already exists with the uuid suffix applied`,
-    )
-  }
-  const updated = await updateBook(book.uuid, { suffix: defaultSuffix })
-  try {
-    await mkdir(getInternalBookDirectory(updated))
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      !("code" in error) ||
-      error.code !== "EEXIST"
-    ) {
-      throw error
-    }
-    throw new Error(
-      `Failed to reserve unique book directory for ${book.uuid}: ${getInternalBookDirectory(updated)} already exists after suffix bump`,
-    )
-  }
+  const desired = getSafeFilepathSegment(book.title)
+
+  const collision = await db
+    .selectFrom("book")
+    .select(["uuid"])
+    .where("assetDir", "=", desired)
+    .where("uuid", "!=", book.uuid)
+    .executeTakeFirst()
+
+  const folder = collision
+    ? getSafeFilepathSegment(book.title, getDefaultSuffix(book.uuid))
+    : desired
+
+  const updated = await updateBook(book.uuid, { assetDir: folder })
+  await mkdir(getInternalBookDirectory(updated), { recursive: true })
   return updated
 }
 
@@ -155,25 +137,25 @@ export async function renameBookAssets(
   updated: BookWithRelations,
 ): Promise<BookWithRelations> {
   if (book.title !== updated.title) {
-    try {
-      await move(
-        getInternalBookDirectory(book),
-        getInternalBookDirectory(updated),
-      )
-    } catch (e) {
-      if (
-        e instanceof Error &&
-        "code" in e &&
-        (e.code === "EEXIST" || e.code === "ENOTEMPTY")
-      ) {
-        updated = await updateBook(updated.uuid, {
-          suffix: getDefaultSuffix(updated.uuid),
-        })
-        return renameBookAssets(book, updated)
-      }
+    const desired = getSafeFilepathSegment(updated.title)
 
-      throw e
-    }
+    const collision = await db
+      .selectFrom("book")
+      .select(["uuid"])
+      .where("assetDir", "=", desired)
+      .where("uuid", "!=", updated.uuid)
+      .executeTakeFirst()
+
+    const newFolder = collision
+      ? getSafeFilepathSegment(updated.title, getDefaultSuffix(updated.uuid))
+      : desired
+
+    updated = await updateBook(updated.uuid, { assetDir: newFolder })
+
+    const oldDir = getInternalBookDirectory(book)
+    const newDir = getInternalBookDirectory(updated)
+    await move(oldDir, newDir)
+
     if (updated.ebook?.filepath === getInternalEpubFilepath(book)) {
       await move(
         join(
@@ -399,6 +381,7 @@ export async function writeCachedCoverImage(
     mimeType: image.mimeType,
     stats: image.stats,
   })
+  console.log("writing cached cover image", uuid, kind, height, width)
   const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
   const lock = cachedCoverImageLocks.get(dir) ?? new AsyncMutex()
   cachedCoverImageLocks.set(dir, lock)
@@ -409,13 +392,24 @@ export async function writeCachedCoverImage(
   })
 
   await lock.lock()
+  console.log("writing cached cover image to directory", dir)
   await mkdir(join(dir), { recursive: true })
+  console.log("writing info.json to directory", join(dir, "info.json"))
   await writeFile(join(dir, "info.json"), infoJSON, { encoding: "utf-8" })
+  console.log("writing cover image to directory", join(dir, image.filename))
   await writeFile(join(dir, image.filename), image.data)
 }
 
 export async function deleteCachedCoverImages(uuid: UUID) {
   const dir = getCoverImageCacheDirectory(uuid)
+  await rm(dir, { recursive: true, force: true })
+}
+
+export async function deleteCachedCoverImagesByKind(
+  uuid: UUID,
+  kind: "text" | "audio",
+) {
+  const dir = join(getCoverImageCacheDirectory(uuid), kind)
   await rm(dir, { recursive: true, force: true })
 }
 

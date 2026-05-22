@@ -4,10 +4,7 @@ import { extname } from "node:path"
 
 import contentDisposition from "content-disposition"
 
-import {
-  getExtractedAudiobookCover,
-  getExtractedEbookCover,
-} from "@/assets/covers"
+import { getExtractedCover } from "@/assets/covers"
 import { getCachedCoverImage, writeCachedCoverImage } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
@@ -93,16 +90,14 @@ export const GET = withHasPermission<Params>("bookRead", {
 
   const coverImage =
     cachedImage ??
-    (audio
-      ? await getExtractedAudiobookCover(book)
-      : await getExtractedEbookCover(book))
+    (await getExtractedCover(book, audio ? "audiobook" : "ebook"))
+
+  console.log("coverImage", coverImage)
 
   if (!coverImage) {
     return new Response(null, {
       status: 404,
-      ...(updatedAt
-        ? { headers: { "Cache-Control": "public, max-age=3600, immutable" } }
-        : {}),
+      headers: { "Cache-Control": "no-store" },
     })
   }
 

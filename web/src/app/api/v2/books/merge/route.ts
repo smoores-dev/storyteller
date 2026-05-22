@@ -1,8 +1,7 @@
 import {
   getAudioCover,
   getEpubCover,
-  writeExtractedAudiobookCover,
-  writeExtractedEbookCover,
+  writeExtractedCover,
 } from "@/assets/covers"
 import { deleteCachedCoverImages } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
@@ -83,13 +82,14 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
 
   const ebookCover = await getEpubCover(merged)
   if (ebookCover) {
-    await writeExtractedEbookCover(merged, ebookCover.filename, ebookCover.data)
+    await writeExtractedCover(merged, "ebook", ebookCover.filename, ebookCover.data)
   }
 
   const audioCover = await getAudioCover(merged)
   if (audioCover) {
-    await writeExtractedAudiobookCover(
+    await writeExtractedCover(
       merged,
+      "audiobook",
       audioCover.filename,
       audioCover.data,
     )

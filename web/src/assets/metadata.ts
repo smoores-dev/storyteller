@@ -722,7 +722,7 @@ export async function writeMetadataToAudiobook(
     }
   } catch (e) {
     logger.error(
-      `Failed to write metadata to audiobook ${book.title} ${book.suffix}, skipping`,
+      `Failed to write metadata to audiobook ${book.title} ${book.assetDir}, skipping`,
     )
     logger.error(e)
   }

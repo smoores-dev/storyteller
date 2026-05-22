@@ -205,6 +205,7 @@ export async function getAudioCoverFromReadaloudAudio(book: BookWithRelations) {
 }
 
 export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
+  console.log("getAudioCoverFromAudiobook", book.audiobook)
   if (!book.audiobook || book.audiobook.missing) return null
   const directory = book.audiobook.filepath
 
@@ -215,7 +216,9 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
     image: { data: Uint8Array; mimeType: string }
   } | null = null
   for (const entry of entries) {
+    console.log("checking entry", entry)
     if (!isAudioFile(entry)) continue
+    console.log("is audio file", entry)
     const path = join(directory, entry)
     try {
       using audiobook = await Audiobook.from(path)
@@ -287,8 +290,16 @@ export async function getEpubCover(book: BookWithRelations) {
   }
 }
 
-export async function getExtractedEbookCover(book: Book) {
-  const coverDir = getEbookCoverDirectory(book)
+export type CoverKind = "ebook" | "audiobook"
+
+function getCoverDirectory(book: Book, kind: CoverKind) {
+  return kind === "ebook"
+    ? getEbookCoverDirectory(book)
+    : getAudiobookCoverDirectory(book)
+}
+
+export async function getExtractedCover(book: Book, kind: CoverKind) {
+  const coverDir = getCoverDirectory(book, kind)
   try {
     const entries = await readdir(coverDir)
     const coverEntry = entries.find((entry) =>
@@ -314,59 +325,24 @@ export async function getExtractedEbookCover(book: Book) {
   }
 }
 
-export async function getExtractedAudiobookCover(book: Book) {
-  const coverDir = getAudiobookCoverDirectory(book)
-  try {
-    const entries = await readdir(coverDir)
-    const coverEntry = entries.find((entry) =>
-      COVER_IMAGE_FILE_EXTENSIONS.includes(extname(entry)),
-    )
-    if (!coverEntry) return null
-
-    const file = await open(join(coverDir, coverEntry))
-    const stats = await file.stat()
-    const data = await file.readFile()
-    await file.close()
-
-    const mimeType = lookup(coverEntry) || "image/jpeg"
-
-    return {
-      filename: basename(coverEntry),
-      mimeType,
-      stats,
-      data,
-    }
-  } catch {
-    return null
-  }
-}
-
-export async function writeExtractedEbookCover(
+export async function writeExtractedCover(
   book: Book,
+  kind: CoverKind,
   filename: string,
   data: Uint8Array,
 ) {
-  const ebookCoverDir = getEbookCoverDirectory(book)
-  const existing = await getExtractedEbookCover(book)
+  const coverDir = getCoverDirectory(book, kind)
+  console.log("writeExtractedCover", coverDir)
+  const existing = await getExtractedCover(book, kind)
+  console.log("existing", existing)
   if (existing) {
-    await rm(join(ebookCoverDir, existing.filename))
+    console.log("removing existing cover", existing.filename)
+    await rm(join(coverDir, existing.filename))
   }
-  await mkdir(ebookCoverDir, { recursive: true })
-  await writeFile(join(ebookCoverDir, filename), data)
-  await touchBook(book.uuid)
-}
-
-export async function writeExtractedAudiobookCover(
-  book: Book,
-  filename: string,
-  data: Uint8Array,
-) {
-  const audiobookCoverDir = getAudiobookCoverDirectory(book)
-  const existing = await getExtractedAudiobookCover(book)
-  if (existing) {
-    await rm(join(audiobookCoverDir, existing.filename))
-  }
-  await mkdir(audiobookCoverDir, { recursive: true })
-  await writeFile(join(audiobookCoverDir, filename), data)
+  console.log("writing cover", filename)
+  await mkdir(coverDir, { recursive: true })
+  console.log("writing file", join(coverDir, filename))
+  await writeFile(join(coverDir, filename), data)
+  console.log("touching book", book.uuid)
   await touchBook(book.uuid)
 }

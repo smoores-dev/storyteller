@@ -19,6 +19,10 @@ import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
 } from "@/assets/metadata"
+import {
+  getDefaultSuffix,
+  getSafeFilepathSegment,
+} from "@/assets/paths"
 import { ASSETS_DIR } from "@/directories"
 import { BookEvents, type BookUpdatePayload } from "@/events"
 import { type UUID } from "@/uuid"
@@ -193,6 +197,24 @@ export async function createBook(
       .executeTakeFirstOrThrow()
 
     uuid = row.uuid
+
+    const desired = getSafeFilepathSegment(insert.title)
+    const collision = await tr
+      .selectFrom("book")
+      .select(["uuid"])
+      .where("assetDir", "=", desired)
+      .where("uuid", "!=", uuid)
+      .executeTakeFirst()
+
+    const assetDir = collision
+      ? getSafeFilepathSegment(insert.title, getDefaultSuffix(uuid))
+      : desired
+
+    await tr
+      .updateTable("book")
+      .set({ assetDir })
+      .where("uuid", "=", uuid)
+      .execute()
 
     if (relations.creators) {
       for (const creator of relations.creators) {
@@ -944,8 +966,7 @@ export async function updateBook(
   userId?: UUID,
 ): Promise<BookWithRelations> {
   // capture the prior state when title is about to change so we can move
-  // the asset folder afterwards. fetched only when needed; the suffix-only
-  // path (used by reserveBookDirectory before any assets exist) skips this.
+  // the asset folder afterwards.
   const before =
     update && update.title !== undefined ? await getBook(uuid, userId) : null
 

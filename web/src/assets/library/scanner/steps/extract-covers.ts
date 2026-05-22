@@ -1,8 +1,5 @@
-import {
-  getExtractedAudiobookCover,
-  getExtractedEbookCover,
-} from "@/assets/covers"
-import { deleteCachedCoverImages } from "@/assets/fs"
+import { getExtractedCover } from "@/assets/covers"
+import { deleteCachedCoverImagesByKind } from "@/assets/fs"
 import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { defineStep } from "@/assets/library/scanner/step"
@@ -43,7 +40,7 @@ export const extractTextCoverStep = defineStep(
       if (mode === "merge") {
         // covers are scalar, so merge keeps the current cover when there is
         // one and only writes the extracted one when none exists yet.
-        const existing = await getExtractedEbookCover(input.book)
+        const existing = await getExtractedCover(input.book, "ebook")
 
         if (existing) {
           ctx.report.skipped({
@@ -55,7 +52,7 @@ export const extractTextCoverStep = defineStep(
           return input
         }
       }
-      await deleteCachedCoverImages(input.book.uuid)
+      await deleteCachedCoverImagesByKind(input.book.uuid, "text")
       await cacheTextCover(input.book)
       return input
     } catch (error) {
@@ -75,6 +72,7 @@ export const extractAudiobookCoverStep = defineStep(
   async (input: ExtractedAudiobookMetadata, ctx) => {
     const mode = await getCoverMode(ctx)
 
+    console.log("mode", mode)
     if (mode === "skip") {
       ctx.report.skipped({
         step: STEP,
@@ -87,7 +85,7 @@ export const extractAudiobookCoverStep = defineStep(
 
     try {
       if (mode === "merge") {
-        const existing = await getExtractedAudiobookCover(input.book)
+        const existing = await getExtractedCover(input.book, "audiobook")
         if (existing) {
           ctx.report.skipped({
             step: STEP,
@@ -99,6 +97,7 @@ export const extractAudiobookCoverStep = defineStep(
         }
       }
 
+      await deleteCachedCoverImagesByKind(input.book.uuid, "audio")
       await cacheAudioCover(input.book)
       return input
     } catch (error) {

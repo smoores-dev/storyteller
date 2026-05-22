@@ -11,6 +11,7 @@ import {
   SqliteDialect,
 } from "kysely"
 
+import { getSafeFilepathSegment } from "@/assets/paths"
 import { replaceDatabase } from "@/database/connection"
 import { BooleanPlugin } from "@/database/plugins/booleanPlugin"
 import { DatePlugin } from "@/database/plugins/datePlugin"
@@ -203,7 +204,7 @@ export function seedBooks(
   }[],
 ) {
   const insertBook = ctx.sqlite.prepare(
-    `INSERT INTO book (title) VALUES (?) RETURNING uuid`,
+    `INSERT INTO book (title, asset_dir) VALUES (?, ?) RETURNING uuid`,
   )
 
   const insertEbook = ctx.sqlite.prepare(
@@ -230,7 +231,8 @@ export function seedBooks(
       const uuids: string[] = []
 
       for (const item of items) {
-        const row = insertBook.get(item.title) as { uuid: string }
+        const assetDir = getSafeFilepathSegment(item.title)
+        const row = insertBook.get(item.title, assetDir) as { uuid: string }
         uuids.push(row.uuid)
 
         if (item.ebook) insertEbook.run(row.uuid, item.ebook)

@@ -335,12 +335,10 @@ void describe("scanner import modes", () => {
     assert.strictEqual(books.length, 2)
     const [first, second] = books
     assert.ok(first && second)
-    // both books share a title, so one must have a non-empty suffix to
-    // disambiguate the asset directory.
     assert.notStrictEqual(
-      first.suffix,
-      second.suffix,
-      "same-title books must end up with distinct suffixes",
+      first.assetDir,
+      second.assetDir,
+      "same-title books must end up with distinct asset directories",
     )
   })
 

@@ -45,6 +45,7 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "76_metadata_override_merge.sql": (
     await import("./migrations/76_metadata_override_merge.sql")
   ).default,
+  "78_asset_dir.sql": (await import("./migrations/78_asset_dir.sql")).default,
 }
 
 async function isFirstStartup() {

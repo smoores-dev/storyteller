@@ -86,11 +86,13 @@ export default async function migrate() {
           .updateTable("book")
           .set({
             suffix: paths.getDefaultSuffix(book.uuid),
-          })
+          } as never)
           .where("uuid", "=", book.uuid)
           .execute()
 
-        book.suffix = paths.getDefaultSuffix(book.uuid)
+        ;(book as Record<string, unknown>)["suffix"] = paths.getDefaultSuffix(
+          book.uuid,
+        )
 
         newBookDir = paths.getInternalBookDirectory(book)
         try {

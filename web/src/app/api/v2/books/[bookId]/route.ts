@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server"
 
-import {
-  writeExtractedAudiobookCover,
-  writeExtractedEbookCover,
-} from "@/assets/covers"
+import { writeExtractedCover } from "@/assets/covers"
 import { deleteAssets } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -171,15 +168,17 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const audioCover = formData.get("audioCover")?.valueOf() as File | undefined
 
   if (textCover) {
-    await writeExtractedEbookCover(
+    await writeExtractedCover(
       updated,
+      "ebook",
       textCover.name,
       await textCover.bytes(),
     )
   }
   if (audioCover) {
-    await writeExtractedAudiobookCover(
+    await writeExtractedCover(
       updated,
+      "audiobook",
       audioCover.name,
       await audioCover.bytes(),
     )

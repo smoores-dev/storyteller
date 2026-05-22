@@ -613,6 +613,12 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
               {book.alignedByStorytellerVersion}
             </Text>
           )}
+          {!!permissions?.bookUpdate && book.assetDir && (
+            <Text>
+              <span className="font-bold">Asset folder:</span>{" "}
+              {book.assetDir}
+            </Text>
+          )}
         </Stack>
 
         <Group className="mt-8 justify-end">

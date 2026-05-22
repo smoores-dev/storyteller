@@ -67,8 +67,9 @@ export function getSafeFilepathSegment(name: string, suffix: string = "") {
 }
 
 export function getInternalBookDirectory(book: Book) {
-  const filename = getSafeFilepathSegment(book.title, book.suffix)
-  return join(ASSETS_DIR, filename)
+  // assetDir may be empty during old migrations that predate the column
+  const dir = book.assetDir || getSafeFilepathSegment(book.title)
+  return join(ASSETS_DIR, dir)
 }
 
 export function getInternalEpubDirectory(book: Book) {

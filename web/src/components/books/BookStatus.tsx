@@ -103,7 +103,7 @@ export function BookStatus({ bookUuid }: Props) {
               size="compact-sm"
               loading={isTriggeringScan}
               onClick={() => {
-                void triggerBookScan({ uuid: book.uuid })
+                void triggerBookScan({ uuid: book.uuid, force: true })
               }}
             >
               Scan

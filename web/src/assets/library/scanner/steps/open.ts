@@ -59,6 +59,7 @@ export const openAudiobookStep = defineStep(
   AUDIOBOOK_STEP,
   async (input: FingerPrinted & { format: "audiobook" }, ctx) => {
     const tracks = await getAudiobookTracks(input.filepath)
+    console.log("tracks", tracks)
 
     if (tracks.length === 0) {
       ctx.report.skipped({

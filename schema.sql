@@ -30,7 +30,7 @@ CREATE TABLE "book" (
   aligned_with TEXT,
   description TEXT,
   rating REAL,
-  suffix TEXT NOT NULL DEFAULT '',
+  asset_dir TEXT NOT NULL DEFAULT '',
   subtitle TEXT,
   "duration" real,
   "page_count" integer
@@ -451,6 +451,8 @@ CREATE TABLE collection_to_user (
   FOREIGN KEY (collection_uuid) REFERENCES "collection" (uuid),
   FOREIGN KEY (user_id) REFERENCES user (id)
 );
+
+CREATE UNIQUE INDEX idx_book_asset_dir ON book (asset_dir);
 
 CREATE INDEX idx_book_to_creator_book_role ON book_to_creator (book_uuid, role);
 

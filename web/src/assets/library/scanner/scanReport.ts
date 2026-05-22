@@ -13,6 +13,11 @@ type BaseEntry = {
   format?: ScanFormat
 }
 
+export enum SkipReason {
+  NO_AUDIO_TRACKS = "no-audio-tracks",
+  UNCHANGED = "unchanged",
+}
+
 export type ReportEntry =
   | (BaseEntry & { kind: "info"; msg: string })
   | (BaseEntry & { kind: "warn"; msg: string; err?: unknown })

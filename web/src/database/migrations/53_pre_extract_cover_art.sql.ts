@@ -3,8 +3,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 import {
   getAudioCover,
   getEpubCover,
-  writeExtractedAudiobookCover,
-  writeExtractedEbookCover,
+  writeExtractedCover,
 } from "@/assets/covers"
 import { type BookWithRelations } from "@/database/books"
 import { db } from "@/database/connection"
@@ -252,14 +251,15 @@ export default async function migrate() {
     logger.info(`Extracting ebook cover for ${book.title}`)
     const ebookCover = await getEpubCover(book as BookWithRelations)
     if (ebookCover) {
-      await writeExtractedEbookCover(book, ebookCover.filename, ebookCover.data)
+      await writeExtractedCover(book, "ebook", ebookCover.filename, ebookCover.data)
     }
 
     logger.info(`Extracting audiobook cover for ${book.title}`)
     const audiobookCover = await getAudioCover(book as BookWithRelations)
     if (audiobookCover) {
-      await writeExtractedAudiobookCover(
+      await writeExtractedCover(
         book,
+        "audiobook",
         audiobookCover.filename,
         audiobookCover.data,
       )
