@@ -1,10 +1,8 @@
 import { randomUUID } from "node:crypto"
-import { mkdir, readFile } from "node:fs/promises"
+import { mkdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { basename, dirname, join } from "node:path"
+import { dirname, join } from "node:path"
 import type { MessagePort } from "node:worker_threads"
-
-import { extension } from "mime-types"
 
 import {
   align,
@@ -18,7 +16,7 @@ import {
   formatSingleReport,
 } from "@storyteller-platform/ghost-story"
 
-import { getAudioCoverFilepath, getFirstCoverImage } from "@/assets/covers"
+import { getExtractedCover } from "@/assets/covers"
 import { deleteProcessed, deleteTranscriptions } from "@/assets/fs"
 import { writeMetadataToEpub } from "@/assets/metadata"
 import {
@@ -261,23 +259,13 @@ export default async function processBook({
           alignedWith: formatTranscriptionEngineDetails(settings),
         })
 
-        const coverFilepath = await getAudioCoverFilepath(book)
-        let audioCover: File | null = null
-        if (coverFilepath) {
-          audioCover = new File(
-            [new Uint8Array(await readFile(coverFilepath))],
-            basename(coverFilepath),
-          )
-        } else {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          const coverImage = await getFirstCoverImage(book.audiobook!.filepath)
-          if (coverImage) {
-            audioCover = new File(
-              [new Uint8Array(coverImage.data)],
-              `Audio Cover.${extension(coverImage.format) || ".jpg"}`,
+        const extractedCover = await getExtractedCover(book, "audiobook")
+        const audioCover = extractedCover
+          ? new File(
+              [new Uint8Array(extractedCover.data)],
+              extractedCover.filename,
             )
-          }
-        }
+          : null
 
         logger.info(
           `Writing metadata to aligned readaloud file (title: ${book.title})`,

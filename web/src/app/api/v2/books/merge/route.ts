@@ -1,9 +1,7 @@
 import {
-  getAudioCover,
-  getEpubCover,
-  writeExtractedCover,
+  extractAndPersistAudioCover,
+  extractAndPersistTextCover,
 } from "@/assets/covers"
-import { deleteCachedCoverImages } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
   type BookRelationsUpdate,
@@ -78,22 +76,12 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
     request.auth.user.id,
   )
 
-  await deleteCachedCoverImages(merged.uuid)
+  const ebookPath = merged.ebook?.filepath ?? null
+  const readaloudPath = merged.readaloud?.filepath ?? null
+  const audiobookPath = merged.audiobook?.filepath ?? null
 
-  const ebookCover = await getEpubCover(merged)
-  if (ebookCover) {
-    await writeExtractedCover(merged, "ebook", ebookCover.filename, ebookCover.data)
-  }
-
-  const audioCover = await getAudioCover(merged)
-  if (audioCover) {
-    await writeExtractedCover(
-      merged,
-      "audiobook",
-      audioCover.filename,
-      audioCover.data,
-    )
-  }
+  await extractAndPersistTextCover(merged, ebookPath, readaloudPath)
+  await extractAndPersistAudioCover(merged, audiobookPath, readaloudPath)
 
   void queueWritesToFiles(merged.uuid)
 

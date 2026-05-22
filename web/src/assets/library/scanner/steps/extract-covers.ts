@@ -1,6 +1,8 @@
-import { getExtractedCover } from "@/assets/covers"
-import { deleteCachedCoverImagesByKind } from "@/assets/fs"
-import { cacheAudioCover, cacheTextCover } from "@/assets/library/coverCache"
+import {
+  extractAndPersistAudioCover,
+  extractAndPersistTextCover,
+  getExtractedCover,
+} from "@/assets/covers"
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { defineStep } from "@/assets/library/scanner/step"
 import { getSetting } from "@/database/settings"
@@ -38,8 +40,6 @@ export const extractTextCoverStep = defineStep(
 
     try {
       if (mode === "merge") {
-        // covers are scalar, so merge keeps the current cover when there is
-        // one and only writes the extracted one when none exists yet.
         const existing = await getExtractedCover(input.book, "ebook")
 
         if (existing) {
@@ -52,8 +52,15 @@ export const extractTextCoverStep = defineStep(
           return input
         }
       }
-      await deleteCachedCoverImagesByKind(input.book.uuid, "text")
-      await cacheTextCover(input.book)
+
+      const readaloudPath = input.book.readaloud?.filepath ?? null
+      const ebookPath =
+        input.format === "ebook"
+          ? input.filepath
+          : input.book.ebook?.filepath ?? null
+
+      await extractAndPersistTextCover(input.book, ebookPath, readaloudPath)
+
       return input
     } catch (error) {
       ctx.report.warn({
@@ -72,7 +79,6 @@ export const extractAudiobookCoverStep = defineStep(
   async (input: ExtractedAudiobookMetadata, ctx) => {
     const mode = await getCoverMode(ctx)
 
-    console.log("mode", mode)
     if (mode === "skip") {
       ctx.report.skipped({
         step: STEP,
@@ -86,6 +92,7 @@ export const extractAudiobookCoverStep = defineStep(
     try {
       if (mode === "merge") {
         const existing = await getExtractedCover(input.book, "audiobook")
+
         if (existing) {
           ctx.report.skipped({
             step: STEP,
@@ -97,8 +104,14 @@ export const extractAudiobookCoverStep = defineStep(
         }
       }
 
-      await deleteCachedCoverImagesByKind(input.book.uuid, "audio")
-      await cacheAudioCover(input.book)
+      const readaloudPath = input.book.readaloud?.filepath ?? null
+
+      await extractAndPersistAudioCover(
+        input.book,
+        input.filepath,
+        readaloudPath,
+      )
+
       return input
     } catch (error) {
       ctx.report.warn({

@@ -15,7 +15,7 @@ import {
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 
-import { getAudioCover } from "@/assets/covers"
+import { getExtractedCover } from "@/assets/covers"
 import { computeFileHash } from "@/assets/fs"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
@@ -100,7 +100,7 @@ async function getFilepath(
       ) as AudiobookInputs),
     )
 
-    const audiocover = await getAudioCover(book)
+    const audiocover = await getExtractedCover(book, "audiobook")
     if (audiocover) {
       zipfile.addBuffer(audiocover.data, audiocover.filename)
     }

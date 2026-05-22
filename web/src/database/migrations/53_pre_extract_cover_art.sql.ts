@@ -1,11 +1,9 @@
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 
 import {
-  getAudioCover,
-  getEpubCover,
-  writeExtractedCover,
+  extractAndPersistAudioCover,
+  extractAndPersistTextCover,
 } from "@/assets/covers"
-import { type BookWithRelations } from "@/database/books"
 import { db } from "@/database/connection"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
@@ -248,21 +246,17 @@ export default async function migrate() {
   const books = await booksQuery().execute()
 
   for (const book of books) {
+    const ebookPath =
+      (book.ebook as { filepath?: string } | null)?.filepath ?? null
+    const readaloudPath =
+      (book.readaloud as { filepath?: string } | null)?.filepath ?? null
+    const audiobookPath =
+      (book.audiobook as { filepath?: string } | null)?.filepath ?? null
+
     logger.info(`Extracting ebook cover for ${book.title}`)
-    const ebookCover = await getEpubCover(book as BookWithRelations)
-    if (ebookCover) {
-      await writeExtractedCover(book, "ebook", ebookCover.filename, ebookCover.data)
-    }
+    await extractAndPersistTextCover(book, ebookPath, readaloudPath)
 
     logger.info(`Extracting audiobook cover for ${book.title}`)
-    const audiobookCover = await getAudioCover(book as BookWithRelations)
-    if (audiobookCover) {
-      await writeExtractedCover(
-        book,
-        "audiobook",
-        audiobookCover.filename,
-        audiobookCover.data,
-      )
-    }
+    await extractAndPersistAudioCover(book, audiobookPath, readaloudPath)
   }
 }

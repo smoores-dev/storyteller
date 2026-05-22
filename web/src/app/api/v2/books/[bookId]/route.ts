@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { writeExtractedCover } from "@/assets/covers"
+import { type CoverData, persistCover } from "@/assets/covers"
 import { deleteAssets } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -168,19 +168,14 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const audioCover = formData.get("audioCover")?.valueOf() as File | undefined
 
   if (textCover) {
-    await writeExtractedCover(
-      updated,
-      "ebook",
-      textCover.name,
-      await textCover.bytes(),
-    )
+    await persistCover(updated, "ebook", await coverDataFromFile(textCover))
   }
+
   if (audioCover) {
-    await writeExtractedCover(
+    await persistCover(
       updated,
       "audiobook",
-      audioCover.name,
-      await audioCover.bytes(),
+      await coverDataFromFile(audioCover),
     )
   }
 
@@ -188,6 +183,14 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
 
   return NextResponse.json(updated)
 })
+
+async function coverDataFromFile(file: File): Promise<CoverData> {
+  return {
+    filename: file.name,
+    mimeType: file.type || "image/jpeg",
+    data: await file.bytes(),
+  }
+}
 
 /**
  * @summary Get metadata for a book

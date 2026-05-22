@@ -26,9 +26,9 @@ import {
 } from "@/database/settingsTypes"
 import { logger } from "@/logging"
 
-import { persistCustomAudioCover } from "./covers"
+import { persistCover } from "./covers"
 import { getProcessedAudioFiles } from "./fs"
-import { getProcessedAudioFilepath } from "./paths"
+import { getAudiobookCoverDirectory, getProcessedAudioFilepath } from "./paths"
 
 type ScalarFieldMapping = {
   field: MetadataField
@@ -36,7 +36,7 @@ type ScalarFieldMapping = {
   isEmpty: (book: Book) => boolean
 }
 
-const SCALAR_FIELDS: ScalarFieldMapping[] = [
+const SCALAR_FIELDS = [
   { field: "title", key: "title", isEmpty: (b) => b.title === "" },
   { field: "subtitle", key: "subtitle", isEmpty: (b) => b.subtitle === null },
   {
@@ -50,15 +50,20 @@ const SCALAR_FIELDS: ScalarFieldMapping[] = [
     key: "publicationDate",
     isEmpty: (b) => b.publicationDate === null,
   },
-]
+] as const satisfies ScalarFieldMapping[]
 
 function shouldIncludeScalar(
   mode: MetadataFieldMode,
   isEmpty: boolean,
 ): boolean {
-  if (mode === "skip") return false
-  if (mode === "always") return true
-  return isEmpty
+  switch (mode) {
+    case "skip":
+      return false
+    case "always":
+      return true
+    default:
+      return isEmpty
+  }
 }
 
 // merge unions current and extracted, keyed by `keyOf`. extracted items with
@@ -72,23 +77,32 @@ function applyListOverride<C, X>(
   keyOfExtracted: (item: X) => string,
   toExtracted: (item: C) => X,
 ): X[] | null {
-  if (mode === "skip") return null
-  if (mode === "always") return extracted ?? null
-  if (!extracted?.length && !current.length) return null
+  const nothingToDo = !extracted?.length && !current.length
+  if (mode === "skip" || nothingToDo) {
+    return null
+  }
+
+  if (mode === "always") {
+    return extracted ?? null
+  }
+
   const seen = new Set<string>()
   const out: X[] = []
+
   for (const item of current) {
     const k = keyOfCurrent(item)
     if (seen.has(k)) continue
     seen.add(k)
     out.push(toExtracted(item))
   }
+
   for (const item of extracted ?? []) {
     const k = keyOfExtracted(item)
     if (seen.has(k)) continue
     seen.add(k)
     out.push(item)
   }
+
   return out
 }
 
@@ -100,14 +114,14 @@ type StoredAuthor = BookWithRelations["authors"][number]
 type StoredOtherCreator = BookWithRelations["creators"][number]
 
 function authorToRelation(c: StoredAuthor, role: Role): CreatorRelation {
-  return { name: c.name, role, fileAs: c.fileAs ?? c.name }
+  return { name: c.name, role, fileAs: c.fileAs || c.name }
 }
 
 function otherToRelation(c: StoredOtherCreator): CreatorRelation {
   return {
     name: c.name,
-    role: (c.role ?? "oth") as Role,
-    fileAs: c.fileAs ?? c.name,
+    role: c.role || "oth",
+    fileAs: c.fileAs || c.name,
   }
 }
 
@@ -151,7 +165,6 @@ export function applyFieldOverrides(
     }
   }
 
-  // relation fields
   const relationUpdate: BookRelationsUpdate = {}
 
   const incomingAuthors =
@@ -188,9 +201,6 @@ export function applyFieldOverrides(
     (c) => otherToRelation(c),
   )
 
-  // because creators / authors / narrators all share one DB relation, only
-  // emit a creators patch when at least one of the three modes asked us to
-  // produce content. otherwise we'd wipe everything.
   const anyCreatorPatch =
     mergedAuthors !== null || mergedNarrators !== null || mergedOthers !== null
   if (anyCreatorPatch) {
@@ -694,11 +704,16 @@ export async function writeMetadataToAudiobook(
   let coverPath: null | string = null
   if (cover) {
     const ext = extname(cover.name) || extension(cover.type) || ".jpeg"
-    const arrayBuffer = await cover.arrayBuffer()
-    const data = new Uint8Array(arrayBuffer)
-    await persistCustomAudioCover(book.uuid, `Audio Cover${ext}`, data)
+    const filename = `Audio Cover${ext}`
+    const data = new Uint8Array(await cover.arrayBuffer())
 
-    coverPath = join(book.audiobook.filepath, `Audio Cover${ext}`)
+    await persistCover(book, "audiobook", {
+      filename,
+      mimeType: cover.type || "image/jpeg",
+      data,
+    })
+
+    coverPath = join(getAudiobookCoverDirectory(book), filename)
   }
 
   try {

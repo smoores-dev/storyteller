@@ -381,7 +381,6 @@ export async function writeCachedCoverImage(
     mimeType: image.mimeType,
     stats: image.stats,
   })
-  console.log("writing cached cover image", uuid, kind, height, width)
   const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
   const lock = cachedCoverImageLocks.get(dir) ?? new AsyncMutex()
   cachedCoverImageLocks.set(dir, lock)
@@ -392,11 +391,8 @@ export async function writeCachedCoverImage(
   })
 
   await lock.lock()
-  console.log("writing cached cover image to directory", dir)
   await mkdir(join(dir), { recursive: true })
-  console.log("writing info.json to directory", join(dir, "info.json"))
   await writeFile(join(dir, "info.json"), infoJSON, { encoding: "utf-8" })
-  console.log("writing cover image to directory", join(dir, image.filename))
   await writeFile(join(dir, image.filename), image.data)
 }
 

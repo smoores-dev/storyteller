@@ -92,8 +92,6 @@ export const GET = withHasPermission<Params>("bookRead", {
     cachedImage ??
     (await getExtractedCover(book, audio ? "audiobook" : "ebook"))
 
-  console.log("coverImage", coverImage)
-
   if (!coverImage) {
     return new Response(null, {
       status: 404,
