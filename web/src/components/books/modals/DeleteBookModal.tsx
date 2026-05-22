@@ -1,13 +1,4 @@
-import {
-  Button,
-  Checkbox,
-  Group,
-  Modal,
-  Radio,
-  RadioGroup,
-  Stack,
-  Text,
-} from "@mantine/core"
+import { Button, Checkbox, Group, Modal, Stack, Text } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { useRouter } from "next/navigation"
 
@@ -25,7 +16,6 @@ export function DeleteBookModal({ isOpen, onClose, book }: Props) {
 
   const form = useForm({
     initialValues: {
-      includeAssets: "" as "" | "all" | "internal",
       preventReImport: false,
     },
   })
@@ -44,39 +34,20 @@ export function DeleteBookModal({ isOpen, onClose, book }: Props) {
           Are you sure you want to delete <strong>{book.title}</strong> by{" "}
           {book.authors[0]?.name}?
         </Text>
+        <Text size="sm" c="dimmed">
+          Library-owned files will be deleted. Files in your watch folders
+          (reference imports) are left on disk.
+        </Text>
         <form
           className="flex flex-col gap-4"
-          onSubmit={form.onSubmit(
-            async ({ includeAssets, preventReImport }) => {
-              await deleteBook({
-                uuid: book.uuid,
-                ...(includeAssets && { includeAssets }),
-                preventReImport,
-              })
-              router.back()
-            },
-          )}
+          onSubmit={form.onSubmit(async ({ preventReImport }) => {
+            await deleteBook({
+              uuid: book.uuid,
+              preventReImport,
+            })
+            router.back()
+          })}
         >
-          <RadioGroup
-            label="Delete files?"
-            classNames={{
-              label: "my-2",
-            }}
-            {...form.getInputProps("includeAssets")}
-          >
-            <Stack gap={12}>
-              <Radio value="" label="Leave all files in place" />
-              <Radio
-                value="internal"
-                label="Delete Storyteller files, like transcriptions and processed audio files"
-              />
-              <Radio
-                value="all"
-                label="Delete all files, including the book assets (EPUB and audio files)"
-              />
-            </Stack>
-          </RadioGroup>
-
           <Checkbox
             label="Prevent this book from being re-imported"
             {...form.getInputProps("preventReImport", { type: "checkbox" })}

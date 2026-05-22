@@ -1,4 +1,7 @@
-import { canonicalizePath } from "@/assets/library/scanner/folder"
+import {
+  canonicalizePath,
+  pathBelongsTo,
+} from "@/assets/library/scanner/folder"
 import { type Candidate } from "@/assets/library/scanner/types"
 import {
   type BookWithRelations,
@@ -6,6 +9,8 @@ import {
   getBookByAudiobookFilepathPrefix,
   getBooks,
 } from "@/database/books"
+import { ASSETS_DIR } from "@/directories"
+import { logger } from "@/logging"
 
 /**
  * find an existing book that should own the candidate's file, in this order
@@ -50,6 +55,24 @@ export async function findExistingBook(
   }
 
   return null
+}
+
+/**
+ * ASSETS_DIR is library-owned: orphan files there are integrity errors, not
+ * new books to adopt.
+ */
+export function isOrphanInAssetsDir(
+  candidate: Candidate,
+  existingBook: BookWithRelations | null,
+): boolean {
+  if (existingBook) return false
+  if (!pathBelongsTo(ASSETS_DIR, candidate.filepath)) return false
+  logger.warn({
+    msg: "Skipping orphan file in ASSETS_DIR: no matching book row, not adopting",
+    filepath: candidate.filepath,
+    format: candidate.format,
+  })
+  return true
 }
 
 function pathForFormat(

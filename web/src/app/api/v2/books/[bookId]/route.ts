@@ -229,18 +229,11 @@ export const DELETE = withHasPermission<Params>("bookDelete")(async (
     )
   }
 
-  const includeAssets = request.nextUrl.searchParams.get("includeAssets")
   const preventReImport =
     request.nextUrl.searchParams.get("preventReImport") === "true"
 
-  await deleteBook(book.uuid, {
-    preventReImport,
-    includeAssets: includeAssets === "all",
-  })
-
-  if (includeAssets) {
-    await deleteAssets(book, { all: includeAssets === "all" })
-  }
+  await deleteBook(book.uuid, { preventReImport })
+  await deleteAssets(book)
 
   return new Response(null, { status: 204 })
 })

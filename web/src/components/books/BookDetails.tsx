@@ -6,6 +6,8 @@ import {
   Box,
   Button,
   Group,
+  Menu,
+  Modal,
   RingProgress,
   Spoiler,
   Stack,
@@ -21,10 +23,14 @@ import {
   IconHeadphonesFilled,
   IconPencil,
   IconPlayerPlay,
+  IconPlus,
   IconProgressX,
+  IconRefresh,
   IconTagFilled,
+  IconTrash,
 } from "@tabler/icons-react"
 import Link from "next/link"
+import { useState } from "react"
 
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
@@ -35,6 +41,7 @@ import {
   useCancelProcessingMutation,
   useGetBookQuery,
   useListStatusesQuery,
+  useRemoveBookAssetMutation,
   useUpdateStatusMutation,
 } from "@/store/api"
 import { formatFileSize } from "@/utils/formatFileSize"
@@ -44,6 +51,7 @@ import { BookStatus } from "./BookStatus"
 import { BookThumbnailImage } from "./BookThumbnailImage"
 import { StatusInput } from "./edit/StatusInput"
 import { DeleteBookModal } from "./modals/DeleteBookModal"
+import { ReplaceFileModal } from "./modals/ReplaceFileModal"
 import { UpgradeEpubModal } from "./modals/UpgradeEpubModal"
 
 interface Props {
@@ -51,19 +59,32 @@ interface Props {
   hideReadButton?: boolean
 }
 
+const FORMAT_LABELS: Record<"ebook" | "audiobook" | "readaloud", string> = {
+  ebook: "ebook",
+  audiobook: "audiobook",
+  readaloud: "readaloud",
+}
+
 function Details({
   book,
   format,
   onUpgradeEpub,
+  canReplace,
+  canRemove,
 }: {
   book: BookWithRelations
   format: "ebook" | "audiobook" | "readaloud"
   onUpgradeEpub?: () => void
+  canReplace?: boolean
+  canRemove?: boolean
 }) {
+  const [replaceOpen, { open: openReplace, close: closeReplace }] =
+    useDisclosure()
+  const [removeOpen, { open: openRemove, close: closeRemove }] = useDisclosure()
+  const [removeAsset, { isLoading: isRemoving }] = useRemoveBookAssetMutation()
+
   const fmt = book[format]
-  if (!fmt) {
-    return null
-  }
+  if (!fmt) return null
 
   const Icon =
     format === "ebook"
@@ -74,6 +95,11 @@ function Details({
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
   const isEpub2 = Boolean("isEpub2" in fmt && fmt.isEpub2)
+
+  async function handleConfirmRemove() {
+    await removeAsset({ uuid: book.uuid, format }).unwrap()
+    closeRemove()
+  }
 
   return (
     <Text className="flex flex-row items-center gap-2">
@@ -87,7 +113,20 @@ function Details({
         </div>
         <div className="flex flex-row items-center gap-2 text-xs">
           {fmt.missing ? (
-            <span className="text-red-500">Missing</span>
+            <>
+              <span className="font-semibold text-red-500">File missing</span>
+              {canReplace && (
+                <Button
+                  variant="light"
+                  color="red"
+                  size="compact-xs"
+                  leftSection={<IconRefresh size={12} />}
+                  onClick={openReplace}
+                >
+                  Replace file
+                </Button>
+              )}
+            </>
           ) : (
             <>
               {format !== "audiobook" && (
@@ -133,8 +172,82 @@ function Details({
               )}
             </>
           )}
+          {canReplace && (
+            <Tooltip label="Replace file" position="top" withArrow>
+              <ActionIcon
+                variant="subtle"
+                size="xs"
+                onClick={openReplace}
+                aria-label={`Replace ${format} file`}
+              >
+                <IconRefresh size={14} />
+              </ActionIcon>
+            </Tooltip>
+          )}
+          {canReplace && canRemove && (
+            <Tooltip
+              label={`Remove ${FORMAT_LABELS[format]} from book`}
+              position="top"
+              withArrow
+            >
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                size="xs"
+                onClick={openRemove}
+                aria-label={`Remove ${format} from book`}
+              >
+                <IconTrash size={14} />
+              </ActionIcon>
+            </Tooltip>
+          )}
         </div>
       </div>
+      {canReplace && (
+        <>
+          <ReplaceFileModal
+            isOpen={replaceOpen}
+            onClose={closeReplace}
+            book={book}
+            format={format}
+          />
+          <Modal
+            opened={removeOpen}
+            onClose={closeRemove}
+            title={`Remove ${FORMAT_LABELS[format]} from book`}
+            centered
+            size="sm"
+          >
+            <Stack>
+              <Text size="sm">
+                Are you sure you want to remove the {FORMAT_LABELS[format]} from{" "}
+                <strong>{book.title}</strong>?
+              </Text>
+              <Text size="xs" c="dimmed">
+                {format === "readaloud"
+                  ? "The readaloud file will be deleted from disk."
+                  : "Library-owned files will be deleted. Files in your watch folders are left on disk."}
+              </Text>
+              <Group justify="space-between">
+                <Button
+                  variant="subtle"
+                  onClick={closeRemove}
+                  disabled={isRemoving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="red"
+                  onClick={handleConfirmRemove}
+                  loading={isRemoving}
+                >
+                  Remove
+                </Button>
+              </Group>
+            </Stack>
+          </Modal>
+        </>
+      )}
     </Text>
   )
 }
@@ -153,7 +266,16 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const [updateStatus] = useUpdateStatusMutation()
   const [cancelProcessing] = useCancelProcessingMutation()
 
+  const [addFormat, setAddFormat] = useState<
+    "ebook" | "audiobook" | "readaloud" | null
+  >(null)
+
   if (!book) return null
+
+  const missingFormats = (["ebook", "audiobook", "readaloud"] as const).filter(
+    (f) => !book[f],
+  )
+  const presentFormatCount = 3 - missingFormats.length
 
   return (
     <>
@@ -164,6 +286,17 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
         isOpen={upgradeModalOpen}
         onClose={closeUpgradeModal}
       />
+
+      {addFormat && (
+        <ReplaceFileModal
+          isOpen
+          onClose={() => {
+            setAddFormat(null)
+          }}
+          book={book}
+          format={addFormat}
+        />
+      )}
 
       <Stack>
         <Group gap={48} align="flex-start">
@@ -363,30 +496,68 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
 
               <Stack gap={4}>
                 <Text className="self-end">Download</Text>
-                <Group className="bg-st-orange-50 dark:bg-st-orange-500 h-10 self-end rounded-sm px-4">
-                  {!!book.readaloud?.filepath && (
-                    <Anchor
-                      href={getDownloadUrl(book.uuid, "readaloud")}
-                      className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
-                    >
-                      <IconReadaloud />
-                    </Anchor>
-                  )}
-                  {book.ebook && (
-                    <Anchor
-                      href={getDownloadUrl(book.uuid, "ebook")}
-                      className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
-                    >
-                      <IconBook2 />
-                    </Anchor>
-                  )}
-                  {book.audiobook && (
-                    <Anchor
-                      href={getDownloadUrl(book.uuid, "audiobook")}
-                      className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
-                    >
-                      <IconHeadphonesFilled />
-                    </Anchor>
+                <Group gap="xs" className="self-end">
+                  <Group className="bg-st-orange-50 dark:bg-st-orange-500 h-10 rounded-sm px-4">
+                    {!!book.readaloud?.filepath && (
+                      <Anchor
+                        href={getDownloadUrl(book.uuid, "readaloud")}
+                        className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
+                      >
+                        <IconReadaloud />
+                      </Anchor>
+                    )}
+                    {book.ebook && (
+                      <Anchor
+                        href={getDownloadUrl(book.uuid, "ebook")}
+                        className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
+                      >
+                        <IconBook2 />
+                      </Anchor>
+                    )}
+                    {book.audiobook && (
+                      <Anchor
+                        href={getDownloadUrl(book.uuid, "audiobook")}
+                        className="hover:text-st-orange-100 dark:text-st-orange-50 rounded-md"
+                      >
+                        <IconHeadphonesFilled />
+                      </Anchor>
+                    )}
+                  </Group>
+                  {permissions.bookUpdate && missingFormats.length > 0 && (
+                    <Menu position="bottom-end" withArrow>
+                      <Menu.Target>
+                        <Tooltip label="Add file" position="top" withArrow>
+                          <ActionIcon
+                            variant="light"
+                            size="lg"
+                            aria-label="Add file"
+                          >
+                            <IconPlus size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        {missingFormats.map((f) => {
+                          const FormatIcon =
+                            f === "ebook"
+                              ? IconBook2
+                              : f === "audiobook"
+                                ? IconHeadphonesFilled
+                                : IconReadaloud
+                          return (
+                            <Menu.Item
+                              key={f}
+                              leftSection={<FormatIcon size={14} />}
+                              onClick={() => {
+                                setAddFormat(f)
+                              }}
+                            >
+                              Add {FORMAT_LABELS[f]}
+                            </Menu.Item>
+                          )
+                        })}
+                      </Menu.Dropdown>
+                    </Menu>
                   )}
                 </Group>
               </Stack>
@@ -404,6 +575,8 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
             onUpgradeEpub={
               permissions?.bookUpdate ? openUpgradeModal : undefined
             }
+            canReplace={permissions?.bookUpdate}
+            canRemove={presentFormatCount > 1}
           />
           <Details
             book={book}
@@ -411,8 +584,15 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
             onUpgradeEpub={
               permissions?.bookUpdate ? openUpgradeModal : undefined
             }
+            canReplace={permissions?.bookUpdate}
+            canRemove={presentFormatCount > 1}
           />
-          <Details book={book} format="audiobook" />
+          <Details
+            book={book}
+            format="audiobook"
+            canReplace={permissions?.bookUpdate}
+            canRemove={presentFormatCount > 1}
+          />
           {book.alignedAt && (
             <Text>
               <span className="font-bold">Last aligned:</span>{" "}

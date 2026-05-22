@@ -50,13 +50,6 @@ import {
   type ImportRuleSource,
   type ImportRuleWithCollections,
 } from "@/database/importRules"
-import {
-  METADATA_FIELDS,
-  type MetadataField,
-  type MetadataFieldMode,
-  type MetadataFieldOverrides,
-  defaultMetadataFieldOverrides,
-} from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useCancelScanMutation,
@@ -73,6 +66,7 @@ import {
 import { type UUID } from "@/uuid"
 
 import { AuthProviderInput } from "./AuthProviderInput"
+import { MetadataFieldOverridesEditor } from "./MetadataFieldOverridesEditor"
 
 interface Props {
   settings: Settings
@@ -87,141 +81,6 @@ function safeUrl(base: string, path: string) {
   } catch {
     return `${base}/${path}`
   }
-}
-
-const FIELD_LABELS: Record<MetadataField, string> = {
-  cover: "Cover",
-  title: "Title",
-  subtitle: "Subtitle",
-  description: "Description",
-  language: "Language",
-  publicationDate: "Publication date",
-  authors: "Authors",
-  narrators: "Narrators",
-  creators: "Other creators",
-  series: "Series",
-  tags: "Tags",
-}
-
-const MODE_OPTIONS: { value: MetadataFieldMode; label: string }[] = [
-  { value: "skip", label: "Skip" },
-  { value: "merge", label: "Merge" },
-  { value: "always", label: "Always override" },
-]
-
-function getUniformMode(
-  overrides: MetadataFieldOverrides,
-): MetadataFieldMode | "custom" {
-  const first = overrides[METADATA_FIELDS[0]]
-  const allSame = METADATA_FIELDS.every((f) => overrides[f] === first)
-
-  return allSame ? first : "custom"
-}
-
-function V2MetadataFieldOverrides({
-  value,
-  onChange,
-}: {
-  value: MetadataFieldOverrides
-  onChange: (overrides: MetadataFieldOverrides) => void
-}) {
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const uniformMode = getUniformMode(value)
-
-  return (
-    <Box>
-      <Text fw={500} size="sm" mb={4}>
-        Metadata read behavior
-      </Text>
-      <Text size="xs" c="dimmed" mb="sm">
-        Controls how Storyteller handles metadata changes in existing book files
-        made outside of Storyteller during scans. If you manage your books with
-        other tools (e.g. Calibre, Audiobookshelf) and want those changes
-        reflected in Storyteller, consider using always override. The default
-        (fill empty) is suitable for most users. For example, when importing the
-        book it didn&apos;t have a description, so that field was empty. When
-        scanning the book again, we now see it has a description, so when
-        &apos;fill empty&apos; is used, the description found in the .epub will
-        be used.
-      </Text>
-
-      <NativeSelect
-        size="sm"
-        value={uniformMode}
-        onChange={(event) => {
-          const mode = event.currentTarget.value
-          if (mode === "custom") return
-
-          onChange(defaultMetadataFieldOverrides(mode as MetadataFieldMode))
-        }}
-        style={{ maxWidth: 240 }}
-      >
-        {MODE_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-        {uniformMode === "custom" && (
-          <option value="custom" disabled>
-            Custom
-          </option>
-        )}
-      </NativeSelect>
-
-      {showAdvanced ? (
-        <>
-          <Stack gap="xs" mt="sm">
-            {METADATA_FIELDS.map((field) => (
-              <Group key={field} justify="space-between" wrap="nowrap">
-                <Text size="sm">{FIELD_LABELS[field]}</Text>
-                <NativeSelect
-                  size="xs"
-                  value={value[field]}
-                  onChange={(event) => {
-                    onChange({
-                      ...value,
-                      [field]: event.currentTarget.value as MetadataFieldMode,
-                    })
-                  }}
-                  style={{ width: 160 }}
-                >
-                  {MODE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Group>
-            ))}
-          </Stack>
-
-          <Anchor
-            component="button"
-            type="button"
-            size="xs"
-            mt="xs"
-            onClick={() => {
-              setShowAdvanced(false)
-            }}
-          >
-            Use a single setting for all fields
-          </Anchor>
-        </>
-      ) : (
-        <Anchor
-          component="button"
-          type="button"
-          size="xs"
-          mt="xs"
-          onClick={() => {
-            setShowAdvanced(true)
-          }}
-        >
-          Show per-field settings
-        </Anchor>
-      )}
-    </Box>
-  )
 }
 
 const IMPORT_MODE_OPTIONS = [
@@ -355,10 +214,7 @@ function IgnoreRuleRow({
       className="rounded border border-gray-200 px-3 py-2 dark:border-neutral-700"
     >
       <Checkbox checked={selected} onChange={onToggle} size="sm" />
-      <Text
-        className="min-w-0 flex-1 truncate text-sm"
-        title={rule.path}
-      >
+      <Text className="min-w-0 flex-1 truncate text-sm" title={rule.path}>
         {rule.path}
       </Text>
       <ActionIcon
@@ -1306,11 +1162,12 @@ export function SettingsForm({
             </>
           )}
 
-          <V2MetadataFieldOverrides
+          <MetadataFieldOverridesEditor
             value={state.metadataFieldOverrides}
             onChange={(overrides) => {
               form.setFieldValue("metadataFieldOverrides", overrides)
             }}
+            description="Controls how Storyteller handles metadata changes in existing book files made outside of Storyteller during scans. If you manage your books with other tools (e.g. Calibre, Audiobookshelf) and want those changes reflected in Storyteller, consider using always override. The default (fill empty) is suitable for most users. For example, when importing the book it didn't have a description, so that field was empty. When scanning the book again, we now see it has a description, so when 'fill empty' is used, the description found in the .epub will be used."
           />
         </Stack>
       </Fieldset>

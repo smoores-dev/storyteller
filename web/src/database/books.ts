@@ -1,5 +1,3 @@
-import { extname, resolve } from "path"
-
 import {
   type Insertable,
   type Selectable,
@@ -21,7 +19,8 @@ import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
 } from "@/assets/metadata"
-import { BookEvents } from "@/events"
+import { ASSETS_DIR } from "@/directories"
+import { BookEvents, type BookUpdatePayload } from "@/events"
 import { type UUID } from "@/uuid"
 
 import { db } from "./connection"
@@ -748,10 +747,6 @@ export async function deleteBook(
   bookUuid: UUID,
   options?: {
     preventReImport?: boolean
-    /**
-     * this is just for what to do with the import rules
-     */
-    includeAssets?: boolean
   },
   tr?: Transaction<DB>,
 ) {
@@ -803,8 +798,7 @@ export async function deleteBook(
         .where("bookUuid", "=", bookUuid)
         .execute()
     } else {
-      // convert any existing rules (typically import-relocate) so they
-      // survive the FK cascade when the book row is deleted.
+      // preserve existing rules across the FK cascade
       await tr
         .updateTable("importRule")
         .set({ source: "prevent-reimport", bookUuid: null })
@@ -812,59 +806,46 @@ export async function deleteBook(
         .where("bookUuid", "=", bookUuid)
         .execute()
 
-      // if asset files survive the delete, the scanner could still pick them the ASSETS_DIR watcher fires on non-create events, which go
-      // through findExistingBook by filepath and create a new book on miss.
-      // add prevent-reimport rules for whatever filepaths the book still
-      // owns. onConflict handles overlaps with the rules we just converted
-      // and any pre-existing user rules.
-      if (!options?.includeAssets) {
-        const [ebook, audiobook, readaloud] = await Promise.all([
-          tr
-            .selectFrom("ebook")
-            .select("filepath")
-            .where("bookUuid", "=", bookUuid)
-            .executeTakeFirst(),
-          tr
-            .selectFrom("audiobook")
-            .select("filepath")
-            .where("bookUuid", "=", bookUuid)
-            .executeTakeFirst(),
-          tr
-            .selectFrom("readaloud")
-            .select("filepath")
-            .where("bookUuid", "=", bookUuid)
-            .executeTakeFirst(),
-        ])
+      // reference-mode source files survive the delete, add a rule for them
+      const [ebook, audiobook, readaloud] = await Promise.all([
+        tr
+          .selectFrom("ebook")
+          .select("filepath")
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst(),
+        tr
+          .selectFrom("audiobook")
+          .select("filepath")
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst(),
+        tr
+          .selectFrom("readaloud")
+          .select("filepath")
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst(),
+      ])
 
-        const filePaths = [
-          ebook?.filepath,
-          audiobook?.filepath,
-          readaloud?.filepath,
-        ]
-          .filter((p): p is string => p != null)
-          .map((p) => resolve(p))
+      const externalPaths = [
+        ebook?.filepath,
+        audiobook?.filepath,
+        readaloud?.filepath,
+      ].filter((p): p is string => p != null && !pathBelongsTo(ASSETS_DIR, p))
 
-        const dirs = filePaths.filter((p) => !extname(p))
-        const distinct = filePaths.filter(
-          (p) => !dirs.some((d) => d !== p && pathBelongsTo(d, p)),
-        )
-
-        if (distinct.length) {
-          await tr
-            .insertInto("importRule")
-            .values(
-              distinct.map(
-                (path) =>
-                  ({
-                    kind: "ignore",
-                    path,
-                    source: "prevent-reimport",
-                  }) as const,
-              ),
-            )
-            .onConflict((oc) => oc.column("path").doNothing())
-            .execute()
-        }
+      if (externalPaths.length) {
+        await tr
+          .insertInto("importRule")
+          .values(
+            externalPaths.map(
+              (path) =>
+                ({
+                  kind: "ignore",
+                  path,
+                  source: "prevent-reimport",
+                }) as const,
+            ),
+          )
+          .onConflict((oc) => oc.column("path").doNothing())
+          .execute()
       }
     }
 
@@ -886,6 +867,62 @@ export async function deleteBook(
     bookUuid,
     payload: undefined,
   })
+}
+
+/**
+ * Drops the row from the format table, returns the filepath that was removed
+ * so the caller can decide what to do with the file on disk.
+ */
+export async function removeBookFormat(
+  bookUuid: UUID,
+  format: "ebook" | "audiobook" | "readaloud",
+): Promise<string | null> {
+  const filepath = await db.transaction().execute(async (tr) => {
+    let existing: { filepath: string | null } | undefined
+    if (format === "ebook") {
+      existing = await tr
+        .selectFrom("ebook")
+        .select("filepath")
+        .where("bookUuid", "=", bookUuid)
+        .executeTakeFirst()
+      if (existing) {
+        await tr.deleteFrom("ebook").where("bookUuid", "=", bookUuid).execute()
+      }
+    } else if (format === "audiobook") {
+      existing = await tr
+        .selectFrom("audiobook")
+        .select("filepath")
+        .where("bookUuid", "=", bookUuid)
+        .executeTakeFirst()
+      if (existing) {
+        await tr
+          .deleteFrom("audiobook")
+          .where("bookUuid", "=", bookUuid)
+          .execute()
+      }
+    } else {
+      existing = await tr
+        .selectFrom("readaloud")
+        .select("filepath")
+        .where("bookUuid", "=", bookUuid)
+        .executeTakeFirst()
+      if (existing) {
+        await tr
+          .deleteFrom("readaloud")
+          .where("bookUuid", "=", bookUuid)
+          .execute()
+      }
+    }
+    return existing?.filepath ?? null
+  })
+
+  BookEvents.emit("message", {
+    type: "bookUpdated",
+    bookUuid,
+    payload: { [format]: null } as BookUpdatePayload,
+  })
+
+  return filepath
 }
 
 export type BookRelationsUpdate = {

@@ -42,13 +42,8 @@ export const GET = withHasPermission("bookList")(async (request) => {
 })
 
 export const DELETE = withHasPermission("bookDelete")(async (request) => {
-  const {
-    books: bookUuids,
-    includeAssets,
-    preventReImport,
-  } = (await request.json()) as {
+  const { books: bookUuids, preventReImport } = (await request.json()) as {
     books: UUID[]
-    includeAssets?: "all" | "internal"
     preventReImport?: boolean
   }
 
@@ -59,14 +54,8 @@ export const DELETE = withHasPermission("bookDelete")(async (request) => {
   }
 
   for (const book of books) {
-    await deleteBook(book.uuid, {
-      preventReImport,
-      includeAssets: includeAssets === "all",
-    })
-
-    if (includeAssets) {
-      await deleteAssets(book, { all: includeAssets === "all" })
-    }
+    await deleteBook(book.uuid, { preventReImport })
+    await deleteAssets(book)
   }
 
   return new Response(null, { status: 204 })

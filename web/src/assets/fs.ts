@@ -19,9 +19,11 @@ import { getFileChunks } from "@storyteller-platform/fs"
 
 import { isAudioFile } from "@/audio"
 import { type Book, type BookWithRelations, updateBook } from "@/database/books"
+import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
+import { pathBelongsTo } from "./library/scanner/folder"
 import {
   suppressPrefix,
   unsuppressPrefix,
@@ -320,25 +322,35 @@ export async function deleteOriginals(book: BookWithRelations) {
   }
 }
 
-export async function deleteAssets(
-  book: BookWithRelations,
-  { all }: { all?: boolean } = {},
-) {
-  if (!all) {
-    await deleteProcessed(book)
-    return
-  }
-
+/**
+ * Library-owned assets and the readaloud artifact are deleted. Reference-mode
+ * source files (ebook/audiobook outside ASSETS_DIR) are left on disk.
+ */
+export async function deleteAssets(book: BookWithRelations) {
   const bookDir = getInternalBookDirectory(book)
   suppressPrefix(bookDir)
   await rm(bookDir, { recursive: true, force: true })
   unsuppressPrefix(bookDir)
-  if (book.readaloud?.filepath) {
+
+  if (
+    book.readaloud?.filepath &&
+    !pathBelongsTo(bookDir, book.readaloud.filepath)
+  ) {
     suppressPrefix(book.readaloud.filepath)
     await rm(book.readaloud.filepath, { force: true })
     unsuppressPrefix(book.readaloud.filepath)
   }
-  await deleteOriginals(book)
+
+  if (book.ebook && pathBelongsTo(ASSETS_DIR, book.ebook.filepath)) {
+    suppressPrefix(book.ebook.filepath)
+    await rm(book.ebook.filepath, { force: true })
+    unsuppressPrefix(book.ebook.filepath)
+  }
+  if (book.audiobook && pathBelongsTo(ASSETS_DIR, book.audiobook.filepath)) {
+    suppressPrefix(book.audiobook.filepath)
+    await rm(book.audiobook.filepath, { recursive: true, force: true })
+    unsuppressPrefix(book.audiobook.filepath)
+  }
 }
 
 const cachedCoverImageLocks = new Map<string, AsyncMutex>()

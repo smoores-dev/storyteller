@@ -5,7 +5,10 @@ import {
   openAndClassifyEpub,
 } from "@/assets/library/scanner/create-book"
 import { type PipelineCtx } from "@/assets/library/scanner/ctx"
-import { findExistingBook } from "@/assets/library/scanner/find-book"
+import {
+  findExistingBook,
+  isOrphanInAssetsDir,
+} from "@/assets/library/scanner/find-book"
 import { relocateIfNeeded } from "@/assets/library/scanner/relocate"
 import { checkExistsStep } from "@/assets/library/scanner/steps/check-exists"
 import { checkFingerprintStep } from "@/assets/library/scanner/steps/check-fingerprint"
@@ -53,6 +56,7 @@ export async function scanEbook(
     format = classifyExistingBook(book, candidate)
     isNew = false
   } else {
+    if (isOrphanInAssetsDir(candidate, book)) return null
     const opened = await openAndClassifyEpub(candidate, ctx)
     if (!opened) return null
 

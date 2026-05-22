@@ -26,6 +26,10 @@ import {
   type NewSeriesRelation,
   type Series,
 } from "@/database/series"
+import {
+  type ImportMode,
+  type MetadataFieldOverrides,
+} from "@/database/settingsTypes"
 import { type Status } from "@/database/statuses"
 import { type Tag } from "@/database/tags"
 import { type UserPermissionSet } from "@/database/users"
@@ -148,20 +152,45 @@ export const api = createApi({
     }),
     getBook: build.query<BookWithRelations, { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}`,
+      onCacheEntryAdded: async (
+        { uuid },
+        /* eslint-disable-next-line @typescript-eslint/unbound-method */
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
+      ) => {
+        try {
+          await cacheDataLoaded
+        } catch {
+          /* empty */
+        }
+
+        if (typeof EventSource === "undefined") return
+
+        const eventSource = new EventSource("/api/v2/books/events")
+        eventSource.addEventListener("message", (m: MessageEvent<string>) => {
+          const event = JSON.parse(m.data) as BookEvent
+          if (event.bookUuid !== uuid) return
+          if (event.type !== "bookUpdated") return
+
+          updateCachedData((draft) => {
+            Object.assign(draft, event.payload)
+          })
+        })
+
+        await cacheEntryRemoved
+        eventSource.close()
+      },
     }),
     deleteBook: build.mutation<
       void,
       {
         uuid: UUID
-        includeAssets?: "all" | "internal"
         preventReImport?: boolean
       }
     >({
-      query: ({ uuid, includeAssets, preventReImport }) => ({
+      query: ({ uuid, preventReImport }) => ({
         url: `/books/${uuid}`,
         method: "DELETE",
         params: {
-          includeAssets,
           preventReImport,
         },
       }),
@@ -181,18 +210,45 @@ export const api = createApi({
       void,
       {
         books: UUID[]
-        includeAssets?: "all" | "internal"
         preventReImport?: boolean
       }
     >({
-      query: ({ books, includeAssets, preventReImport }) => ({
+      query: ({ books, preventReImport }) => ({
         url: `/books`,
         method: "DELETE",
         body: {
           books,
-          includeAssets,
           preventReImport,
         },
+      }),
+    }),
+    replaceBookAsset: build.mutation<
+      BookWithRelations,
+      {
+        uuid: UUID
+        format: "ebook" | "audiobook" | "readaloud"
+        path: string
+        importMode?: ImportMode
+        metadataFieldOverrides?: MetadataFieldOverrides
+      }
+    >({
+      query: ({ uuid, ...body }) => ({
+        url: `/books/${uuid}/replace-asset`,
+        method: "POST",
+        body,
+      }),
+    }),
+    removeBookAsset: build.mutation<
+      BookWithRelations,
+      {
+        uuid: UUID
+        format: "ebook" | "audiobook" | "readaloud"
+      }
+    >({
+      query: ({ uuid, format }) => ({
+        url: `/books/${uuid}/replace-asset`,
+        method: "DELETE",
+        params: { format },
       }),
     }),
     getImportRules: build.query<ImportRuleWithCollections[], void>({
@@ -811,6 +867,8 @@ export const {
   useDeleteBookAssetsMutation,
   useDeleteBookMutation,
   useDeleteBooksMutation,
+  useReplaceBookAssetMutation,
+  useRemoveBookAssetMutation,
   useGetPositionQuery,
   useGetBookQuery,
   useUpdatePositionMutation,

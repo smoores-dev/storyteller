@@ -4,8 +4,6 @@ import {
   Group,
   MenuItem,
   Modal,
-  Radio,
-  RadioGroup,
   Stack,
   Text,
 } from "@mantine/core"
@@ -43,7 +41,6 @@ export function DeleteBooksItem({ selected, onCommit }: Props) {
 
   const form = useForm({
     initialValues: {
-      includeAssets: "" as "" | "all" | "internal",
       preventReImport: false,
     },
   })
@@ -65,40 +62,21 @@ export function DeleteBooksItem({ selected, onCommit }: Props) {
           <Text>
             Are you sure you want to delete <TitleSummary books={books} />?
           </Text>
+          <Text size="sm" c="dimmed">
+            Library-owned files will be deleted. Files in your watch folders
+            (reference imports) are left on disk.
+          </Text>
           <form
             className="flex flex-col gap-4"
-            onSubmit={form.onSubmit(
-              async ({ includeAssets, preventReImport }) => {
-                onCommit()
+            onSubmit={form.onSubmit(async ({ preventReImport }) => {
+              onCommit()
 
-                await deleteBooks({
-                  books: Array.from(selected),
-                  ...(includeAssets && { includeAssets }),
-                  preventReImport,
-                })
-              },
-            )}
+              await deleteBooks({
+                books: Array.from(selected),
+                preventReImport,
+              })
+            })}
           >
-            <RadioGroup
-              label="Delete files?"
-              classNames={{
-                label: "my-2",
-              }}
-              {...form.getInputProps("includeAssets")}
-            >
-              <Stack gap={12}>
-                <Radio value="" label="Leave all files in place" />
-                <Radio
-                  value="internal"
-                  label="Delete Storyteller files, like transcriptions and processed audio files"
-                />
-                <Radio
-                  value="all"
-                  label="Delete all files, including the book assets (EPUB and audio files)"
-                />
-              </Stack>
-            </RadioGroup>
-
             <Checkbox
               label="Prevent these books from being re-imported"
               {...form.getInputProps("preventReImport", { type: "checkbox" })}

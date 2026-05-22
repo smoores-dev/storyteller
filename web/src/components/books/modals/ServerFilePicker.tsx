@@ -27,7 +27,10 @@ function basename(path: string) {
   return segments[segments.length - 1] ?? ""
 }
 
-function useListDirectoryAction(currentSearchDirectory: string) {
+function useListDirectoryAction(
+  currentSearchDirectory: string,
+  fileFilter?: (entry: DirectoryEntry) => boolean,
+) {
   const [entries, setEntries] = useState<DirectoryEntry[]>([])
 
   const [actionIsPending, setActionIsPending] = useState(false)
@@ -36,11 +39,15 @@ function useListDirectoryAction(currentSearchDirectory: string) {
     setActionIsPending(true)
     void listDirectoryAction(dirname(currentSearchDirectory)).then(
       ({ entries }) => {
-        setEntries(entries.filter((entry) => entry.isDirectory))
+        setEntries(
+          entries.filter(
+            (entry) => entry.isDirectory || (fileFilter?.(entry) ?? false),
+          ),
+        )
         setActionIsPending(false)
       },
     )
-  }, [currentSearchDirectory])
+  }, [currentSearchDirectory, fileFilter])
 
   const matchedEntries = useMemo(() => {
     return matchSorter(entries, basename(currentSearchDirectory), {
@@ -54,9 +61,13 @@ function useListDirectoryAction(currentSearchDirectory: string) {
 export function ServerFilePicker({
   startPath,
   onChange,
+  fileFilter,
+  saveLabel = "Save",
 }: {
   startPath: string
   onChange: (path: string) => void
+  fileFilter?: (entry: DirectoryEntry) => boolean
+  saveLabel?: string
 }) {
   const combobox = useCombobox()
 
@@ -71,6 +82,7 @@ export function ServerFilePicker({
 
   const { entries, actionIsPending } = useListDirectoryAction(
     currentSearchDirectory,
+    fileFilter,
   )
 
   // Whenever we change the list of entries, reset the selection
@@ -91,7 +103,7 @@ export function ServerFilePicker({
           onChange(currentSearchDirectory)
         }}
       >
-        Save
+        {saveLabel}
       </Button>
       <Combobox
         store={combobox}
