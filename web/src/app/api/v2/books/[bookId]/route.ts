@@ -4,7 +4,7 @@ import {
   writeExtractedAudiobookCover,
   writeExtractedEbookCover,
 } from "@/assets/covers"
-import { deleteAssets, renameBookAssets } from "@/assets/fs"
+import { deleteAssets } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
   type CreatorRelation,
@@ -139,7 +139,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     return Response.json({ message: `Could not find book with id ${bookUuid}` })
   }
 
-  let updated = await updateBook(
+  const updated = await updateBook(
     bookUuid,
     {
       // We already confirmed that these are non-null above, if they're in
@@ -166,8 +166,6 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     },
     request.auth.user.id,
   )
-
-  updated = await renameBookAssets(book, updated)
 
   const textCover = formData.get("textCover")?.valueOf() as File | undefined
   const audioCover = formData.get("audioCover")?.valueOf() as File | undefined
@@ -235,7 +233,10 @@ export const DELETE = withHasPermission<Params>("bookDelete")(async (
   const preventReImport =
     request.nextUrl.searchParams.get("preventReImport") === "true"
 
-  await deleteBook(book.uuid, { preventReImport })
+  await deleteBook(book.uuid, {
+    preventReImport,
+    includeAssets: includeAssets === "all",
+  })
 
   if (includeAssets) {
     await deleteAssets(book, { all: includeAssets === "all" })

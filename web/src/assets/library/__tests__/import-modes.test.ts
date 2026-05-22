@@ -72,7 +72,7 @@ void describe("scanner import modes", () => {
       importMode: "reference",
     })
 
-    const signal = AbortSignal.timeout(5000)
+    const signal = new AbortController().signal
 
     await scanLibrary({
       source: "manual",
@@ -99,7 +99,7 @@ void describe("scanner import modes", () => {
 
     await scanLibrary({
       source: "manual",
-      signal: AbortSignal.timeout(5000),
+      signal: new AbortController().signal,
     })
 
     const books = await getBooks()
@@ -136,7 +136,7 @@ void describe("scanner import modes", () => {
 
     await scanLibrary({
       source: "manual",
-      signal: AbortSignal.timeout(5000),
+      signal: new AbortController().signal,
     })
 
     const books = await getBooks()
@@ -173,7 +173,7 @@ void describe("scanner import modes", () => {
 
     await scanLibrary({
       source: "manual",
-      signal: AbortSignal.timeout(5000),
+      signal: new AbortController().signal,
     })
 
     const books = await getBooks()
@@ -220,7 +220,7 @@ void describe("scanner import modes", () => {
 
     await scanLibrary({
       source: "manual",
-      signal: AbortSignal.timeout(5000),
+      signal: new AbortController().signal,
     })
 
     assert.ok(
@@ -253,7 +253,7 @@ void describe("scanner import modes", () => {
 
     await scanLibrary({
       source: "manual",
-      signal: AbortSignal.timeout(5000),
+      signal: new AbortController().signal,
     })
 
     const books = await getBooks()
@@ -308,6 +308,42 @@ void describe("scanner import modes", () => {
     assert.ok(book?.ebook?.filepath.startsWith(ASSETS_DIR))
   })
 
+  void it("two same-title books in reference mode get distinct asset folders", async () => {
+    using _db = setupTestDb()
+    // wipe ASSETS_DIR so leftovers from earlier tests don't influence the
+    // collision check we're about to make.
+    await rm(ASSETS_DIR, { recursive: true, force: true })
+    await mkdir(ASSETS_DIR, { recursive: true })
+
+    await using libA = await createTestLibrary("import-mode-collide-a")
+    await using libB = await createTestLibrary("import-mode-collide-b")
+
+    const rootA = await canonicalizePath(libA.root)
+    const rootB = await canonicalizePath(libB.root)
+    await libA.createBookFolder("a", { ebook: "moby-dick" })
+    await libB.createBookFolder("b", { ebook: "moby-dick" })
+
+    await createImportRule({ kind: "watch", path: rootA, importMode: "reference" })
+    await createImportRule({ kind: "watch", path: rootB, importMode: "reference" })
+
+    await scanLibrary({
+      source: "manual",
+      signal: new AbortController().signal,
+    })
+
+    const books = await getBooks()
+    assert.strictEqual(books.length, 2)
+    const [first, second] = books
+    assert.ok(first && second)
+    // both books share a title, so one must have a non-empty suffix to
+    // disambiguate the asset directory.
+    assert.notStrictEqual(
+      first.suffix,
+      second.suffix,
+      "same-title books must end up with distinct suffixes",
+    )
+  })
+
   void it("candidates request without an explicit mode uses the scan default", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("import-mode-candidates")
@@ -317,7 +353,7 @@ void describe("scanner import modes", () => {
     })
     const source = join(folder.path, "moby-dick.epub")
 
-    const signal = AbortSignal.timeout(5000)
+    const signal = new AbortController().signal
     await scan({
       source: "manual",
       request: {

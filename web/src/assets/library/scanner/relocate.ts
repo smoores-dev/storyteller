@@ -8,7 +8,6 @@ import {
   unsuppressPrefix,
 } from "@/assets/library/scanner/write-intent"
 import {
-  getDefaultSuffix,
   getInternalAudioDirectory,
   getInternalBookDirectory,
   getInternalEpubFilepath,
@@ -16,12 +15,14 @@ import {
 } from "@/assets/paths"
 import { isAudioFile } from "@/audio"
 import { type BookWithRelations, updateBook } from "@/database/books"
+import { addIgnoreRule } from "@/database/importRules"
 import { type ImportMode } from "@/database/settingsTypes"
 
 type Relocator = (source: string, destination: string) => Promise<void>
 
 function resolveRelocator(
   importMode: Exclude<ImportMode, "reference">,
+  bookUuid: BookWithRelations["uuid"],
 ): Relocator {
   let resolver: Relocator
 
@@ -38,33 +39,21 @@ function resolveRelocator(
   }
 
   return async (source, destination) => {
+    suppressPrefix(source)
     suppressPrefix(destination)
     try {
+      // tag the auto-ignore with the book that triggered it. the UI hides
+      // these, and the FK cascades them away when the book is deleted.
+      await addIgnoreRule(source, {
+        source: "import-relocate",
+        bookUuid,
+      })
       await resolver(source, destination)
     } finally {
       unsuppressPrefix(destination)
+      unsuppressPrefix(source)
     }
   }
-}
-
-async function ensureBookDirectory(
-  book: BookWithRelations,
-): Promise<BookWithRelations> {
-  try {
-    await mkdir(getInternalBookDirectory(book))
-    return book
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      !("code" in error) ||
-      error.code !== "EEXIST"
-    ) {
-      throw error
-    }
-  }
-  return await updateBook(book.uuid, {
-    suffix: getDefaultSuffix(book.uuid),
-  })
 }
 
 function isAlreadyInternal(filepath: string, book: BookWithRelations): boolean {
@@ -97,36 +86,35 @@ export async function relocateIfNeeded(
     return { book, filepath }
   }
 
-  const ensuredBook = await ensureBookDirectory(book)
-  const relocator = resolveRelocator(importMode)
+  const relocator = resolveRelocator(importMode, book.uuid)
 
   if (format === "ebook") {
-    const dest = getInternalEpubFilepath(ensuredBook)
+    const dest = getInternalEpubFilepath(book)
     await mkdir(dirname(dest), { recursive: true })
     await relocator(filepath, dest)
-    const updated = await updateBook(ensuredBook.uuid, null, {
+    const updated = await updateBook(book.uuid, null, {
       ebook: { filepath: dest, missing: false },
     })
     return { book: updated, filepath: dest }
   }
 
   if (format === "readaloud") {
-    const dest = getInternalReadaloudFilepath(ensuredBook)
+    const dest = getInternalReadaloudFilepath(book)
     await mkdir(dirname(dest), { recursive: true })
     await relocator(filepath, dest)
-    const updated = await updateBook(ensuredBook.uuid, null, {
+    const updated = await updateBook(book.uuid, null, {
       readaloud: {
         filepath: dest,
         missing: false,
-        status: ensuredBook.readaloud?.status ?? "ALIGNED",
-        currentStage: ensuredBook.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        status: book.readaloud?.status ?? "ALIGNED",
+        currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
       },
     })
     return { book: updated, filepath: dest }
   }
 
   // audiobook: filepath is the source directory.
-  const destDir = getInternalAudioDirectory(ensuredBook)
+  const destDir = getInternalAudioDirectory(book)
   await mkdir(destDir, { recursive: true })
   const entries = await readdir(filepath)
   for (const entry of entries) {
@@ -136,7 +124,7 @@ export async function relocateIfNeeded(
   if (importMode === "move") {
     await rm(filepath, { recursive: true })
   }
-  const updated = await updateBook(ensuredBook.uuid, null, {
+  const updated = await updateBook(book.uuid, null, {
     audiobook: { filepath: destDir, missing: false },
   })
   return { book: updated, filepath: destDir }

@@ -179,11 +179,19 @@ export interface Ebook {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export type ImportRuleSource =
+  | "user"
+  | "import-relocate"
+  | "import-backup"
+  | "prevent-reimport"
+
 export interface ImportRule {
+  bookUuid: Generated<import("@/uuid").UUID | null>
   createdAt: Generated<string>
   importMode: Generated<string | null>
   kind: "watch" | "ignore"
   path: string
+  source: Generated<ImportRuleSource>
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }

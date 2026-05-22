@@ -746,7 +746,13 @@ export async function getBookByAudiobookFilepathPrefix(
 
 export async function deleteBook(
   bookUuid: UUID,
-  options?: { preventReImport?: boolean },
+  options?: {
+    preventReImport?: boolean
+    /**
+     * this is just for what to do with the import rules
+     */
+    includeAssets?: boolean
+  },
   tr?: Transaction<DB>,
 ) {
   const preventReImport = options?.preventReImport ?? false
@@ -791,81 +797,75 @@ export async function deleteBook(
     await tr.deleteFrom("position").where("bookUuid", "=", bookUuid).execute()
 
     if (!preventReImport) {
-      // delete all ignore rules for this book
       await tr
         .deleteFrom("importRule")
         .where("kind", "=", "ignore")
         .where("bookUuid", "=", bookUuid)
         .execute()
     } else {
-      const [ebook, audiobook, readaloud] = await Promise.all([
-        tr
-          .selectFrom("ebook")
-          .select("filepath")
-          .where("bookUuid", "=", bookUuid)
-          .executeTakeFirst(),
-        tr
-          .selectFrom("audiobook")
-          .select("filepath")
-          .where("bookUuid", "=", bookUuid)
-          .executeTakeFirst(),
-        tr
-          .selectFrom("readaloud")
-          .select("filepath")
-          .where("bookUuid", "=", bookUuid)
-          .executeTakeFirst(),
-      ])
-
-      const filePaths = [
-        ebook?.filepath,
-        audiobook?.filepath,
-        readaloud?.filepath,
-      ]
-        .filter((filepath) => filepath != undefined)
-        .map((filepath) => resolve(filepath))
-
-      // if one of the paths is a directory and contains the others, ignore the others, no point in adding them all
-      const dirs = filePaths.filter((dir) => !extname(dir))
-
-      const realFilePaths = filePaths.filter((path) => {
-        // basically no subpaths
-        return !dirs.some((dir) => pathBelongsTo(dir, path))
-      })
-
-      // if there's existing ignore rules for this which are 'relocate' rules
-      // then we should keep those rules (file has been reflinked/copied)
-      // just change the source to 'prevent-reimport'
-      // and get rid of uuid (otherwise itll get deleted)
-      const existingIgnoreRules = await tr
-        .updateTable("importRule")
-        .set({
-          source: "prevent-reimport",
-          bookUuid: null,
-        })
-        .where("kind", "=", "ignore")
-        .where("source", "=", "import-relocate")
-        .where("bookUuid", "=", bookUuid)
-        .returning(["path"])
-        .execute()
-
-      const newIgnorePats = realFilePaths.filter(
-        (filepath) =>
-          !existingIgnoreRules.map((rule) => rule.path).includes(filepath),
-      )
-
-      // add back import rules if necessary
+      // convert any existing rules (typically import-relocate) so they
+      // survive the FK cascade when the book row is deleted.
       await tr
-        .insertInto("importRule")
-        .values(
-          newIgnorePats.map((filepath) => ({
-            kind: "ignore",
-            path: filepath,
-            source: "prevent-reimport",
-            // bookuuid stays null
-          })),
-        )
-        .onConflict((oc) => oc.column("path").doNothing())
+        .updateTable("importRule")
+        .set({ source: "prevent-reimport", bookUuid: null })
+        .where("kind", "=", "ignore")
+        .where("bookUuid", "=", bookUuid)
         .execute()
+
+      // if asset files survive the delete, the scanner could still pick them the ASSETS_DIR watcher fires on non-create events, which go
+      // through findExistingBook by filepath and create a new book on miss.
+      // add prevent-reimport rules for whatever filepaths the book still
+      // owns. onConflict handles overlaps with the rules we just converted
+      // and any pre-existing user rules.
+      if (!options?.includeAssets) {
+        const [ebook, audiobook, readaloud] = await Promise.all([
+          tr
+            .selectFrom("ebook")
+            .select("filepath")
+            .where("bookUuid", "=", bookUuid)
+            .executeTakeFirst(),
+          tr
+            .selectFrom("audiobook")
+            .select("filepath")
+            .where("bookUuid", "=", bookUuid)
+            .executeTakeFirst(),
+          tr
+            .selectFrom("readaloud")
+            .select("filepath")
+            .where("bookUuid", "=", bookUuid)
+            .executeTakeFirst(),
+        ])
+
+        const filePaths = [
+          ebook?.filepath,
+          audiobook?.filepath,
+          readaloud?.filepath,
+        ]
+          .filter((p): p is string => p != null)
+          .map((p) => resolve(p))
+
+        const dirs = filePaths.filter((p) => !extname(p))
+        const distinct = filePaths.filter(
+          (p) => !dirs.some((d) => d !== p && pathBelongsTo(d, p)),
+        )
+
+        if (distinct.length) {
+          await tr
+            .insertInto("importRule")
+            .values(
+              distinct.map(
+                (path) =>
+                  ({
+                    kind: "ignore",
+                    path,
+                    source: "prevent-reimport",
+                  }) as const,
+              ),
+            )
+            .onConflict((oc) => oc.column("path").doNothing())
+            .execute()
+        }
+      }
     }
 
     await tr.deleteFrom("readaloud").where("bookUuid", "=", bookUuid).execute()
@@ -905,7 +905,13 @@ export async function updateBook(
   update: BookUpdate | null,
   relations: BookRelationsUpdate = {},
   userId?: UUID,
-) {
+): Promise<BookWithRelations> {
+  // capture the prior state when title is about to change so we can move
+  // the asset folder afterwards. fetched only when needed; the suffix-only
+  // path (used by reserveBookDirectory before any assets exist) skips this.
+  const before =
+    update && update.title !== undefined ? await getBook(uuid, userId) : null
+
   await db.transaction().execute(async (tr) => {
     if (update && Object.keys(update).length) {
       await tr
@@ -1256,9 +1262,17 @@ export async function updateBook(
     }
   })
 
-  const book = await getBook(uuid, userId)
+  let book = await getBook(uuid, userId)
 
   if (!book) throw new Error(`Failed to retrieve book with uuid ${uuid}`)
+
+  // move the asset folder when title actually changed. renameBookAssets is
+  // imported dynamically to break the books.ts <-> fs.ts cycle at module
+  // load; both files are loaded by the time updateBook ever runs.
+  if (before && before.title !== book.title) {
+    const { renameBookAssets } = await import("@/assets/fs")
+    book = await renameBookAssets(before, book)
+  }
 
   BookEvents.emit("message", {
     type: "bookUpdated",

@@ -1,3 +1,4 @@
+import { reserveBookDirectory } from "@/assets/fs"
 import {
   createBookFromOpenedEpub,
   ensureCollections,
@@ -58,8 +59,14 @@ export async function scanEbook(
     const created = await createBookFromOpenedEpub(candidate, opened, ctx)
     if (!created) return null
 
+    // reserve a unique asset dir before any pipeline step (cover writes,
+    // text extracts) can land in it. without this, two same-title books in
+    // reference mode share the same asset folder
+    // bc they don't know about each other
+    const reserved = await reserveBookDirectory(created)
+
     const relocated = await relocateIfNeeded(
-      created,
+      reserved,
       candidate.filepath,
       opened.format,
       candidate.importMode ?? ctx.defaultImportMode,

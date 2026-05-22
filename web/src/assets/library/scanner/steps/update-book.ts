@@ -1,4 +1,3 @@
-import { renameBookAssets } from "@/assets/fs"
 import { getFormatRelationPatch } from "@/assets/library/scanner/formatRelations"
 import { defineStep } from "@/assets/library/scanner/step"
 import { applyFieldOverrides } from "@/assets/metadata"
@@ -125,8 +124,6 @@ export const reconcileMetadataStep = defineStep(
       })
       return null
     }
-
-    await renameBookAssets(current, updated)
 
     return { ...input, book: updated }
   },

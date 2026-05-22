@@ -49,7 +49,9 @@ export async function openOrUpgradeEpub(
 
     if (strategy === "backup-and-convert") {
       const backupPath = filepath.replace(/\.epub$/i, `${backupSuffix}.epub`)
-      await addIgnoreRule(backupPath)
+      // attribute with bookUuid null: the book isn't created yet and the
+      // backup persists across the book's lifetime regardless.
+      await addIgnoreRule(backupPath, { source: "import-backup" })
       await move(filepath, backupPath)
       using upgraded = await Epub.upgrade(backupPath, { outputPath: filepath })
       await upgraded.saveAndClose()

@@ -31,7 +31,8 @@ export type AudioIndex = {
 }
 
 export async function getFirstCoverImage(directory: string) {
-  const entries = await readdir(directory, { recursive: true })
+  // non-recursive, we won't traverse nested layouts
+  const entries = await readdir(directory)
 
   const firstTrack = entries.find((entry) => isAudioFile(entry))
   if (!firstTrack) return null
@@ -53,7 +54,8 @@ export async function getFirstCoverImage(directory: string) {
 }
 
 async function findValidAudioCoverFile(directory: string) {
-  const entries = await readdir(directory, { recursive: true })
+  // top-level only: cover.jpg / audio cover.jpg sit alongside tracks.
+  const entries = await readdir(directory)
 
   let cover: null | string = null
   let audioCover: null | string = null
@@ -206,20 +208,27 @@ export async function getAudioCoverFromAudiobook(book: BookWithRelations) {
   if (!book.audiobook || book.audiobook.missing) return null
   const directory = book.audiobook.filepath
 
-  const entries = await readdir(directory, { recursive: true })
+  const entries = await readdir(directory)
 
-  const firstCover = await Promise.any(
-    entries
-      .filter((entry) => isAudioFile(entry))
-      .map((relativeTrack) => join(directory, relativeTrack))
-      .map(async (path) => {
-        using audiobook = await Audiobook.from(path)
-        const coverArt = await audiobook.getCoverArt()
-        audiobook.discardAndClose()
-        if (!coverArt) throw new Error()
-        return { audiofile: path, image: coverArt }
-      }),
-  ).catch(() => null)
+  let firstCover: {
+    audiofile: string
+    image: { data: Uint8Array; mimeType: string }
+  } | null = null
+  for (const entry of entries) {
+    if (!isAudioFile(entry)) continue
+    const path = join(directory, entry)
+    try {
+      using audiobook = await Audiobook.from(path)
+      const coverArt = await audiobook.getCoverArt()
+      audiobook.discardAndClose()
+      if (coverArt) {
+        firstCover = { audiofile: path, image: coverArt }
+        break
+      }
+    } catch {
+      // try the next track
+    }
+  }
 
   if (!firstCover) return null
 

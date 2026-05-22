@@ -531,11 +531,22 @@ CREATE TABLE import_rule (
   kind TEXT NOT NULL CHECK (kind IN ('watch', 'ignore')),
   path TEXT NOT NULL,
   import_mode TEXT DEFAULT NULL,
+  source TEXT NOT NULL DEFAULT 'user' CHECK (
+    source IN (
+      'user',
+      'import-relocate',
+      'import-backup',
+      'prevent-reimport'
+    )
+  ),
+  book_uuid TEXT DEFAULT NULL REFERENCES book (uuid) ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX idx_import_rule_path ON import_rule (path);
+
+CREATE INDEX idx_import_rule_book_uuid ON import_rule (book_uuid);
 
 CREATE TRIGGER import_rule_update_trigger AFTER
 UPDATE ON "import_rule" FOR EACH ROW BEGIN

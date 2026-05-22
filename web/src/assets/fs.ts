@@ -23,6 +23,10 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import {
+  suppressPrefix,
+  unsuppressPrefix,
+} from "./library/scanner/write-intent"
+import {
   getCachedCoverImageDirectory,
   getCoverImageCacheDirectory,
   getDefaultSuffix,
@@ -37,6 +41,51 @@ import {
   getSafeFilepathSegment,
   getTranscriptionsFilepath,
 } from "./paths"
+
+/**
+ * Reserve a unique on-disk directory for this book by mkdir'ing it. on
+ * EEXIST we bump the book's suffix once (uuid-derived, deterministic) and
+ * retry. callers must invoke this before writing anything into the asset
+ * folder so two same-title books cannot collide.
+ */
+export async function reserveBookDirectory(
+  book: BookWithRelations,
+): Promise<BookWithRelations> {
+  try {
+    await mkdir(getInternalBookDirectory(book))
+    return book
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !("code" in error) ||
+      error.code !== "EEXIST"
+    ) {
+      throw error
+    }
+  }
+  const defaultSuffix = getDefaultSuffix(book.uuid)
+  if (book.suffix === defaultSuffix) {
+    throw new Error(
+      `Failed to reserve unique book directory for ${book.uuid}: ${getInternalBookDirectory(book)} already exists with the uuid suffix applied`,
+    )
+  }
+  const updated = await updateBook(book.uuid, { suffix: defaultSuffix })
+  try {
+    await mkdir(getInternalBookDirectory(updated))
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !("code" in error) ||
+      error.code !== "EEXIST"
+    ) {
+      throw error
+    }
+    throw new Error(
+      `Failed to reserve unique book directory for ${book.uuid}: ${getInternalBookDirectory(updated)} already exists after suffix bump`,
+    )
+  }
+  return updated
+}
 
 export async function move(source: string, destination: string) {
   await cp(source, destination, { recursive: true })
@@ -102,7 +151,7 @@ export async function getProcessedAudioFiles(book: Book) {
 export async function renameBookAssets(
   book: BookWithRelations,
   updated: BookWithRelations,
-) {
+): Promise<BookWithRelations> {
   if (book.title !== updated.title) {
     try {
       await move(
@@ -162,32 +211,20 @@ export async function renameBookAssets(
 }
 
 export async function persistEpub(
-  book: Book,
+  book: BookWithRelations,
   tmpPath: string,
   aligned?: boolean,
 ) {
+  const reserved = await reserveBookDirectory(book)
   const filepath = aligned
-    ? getInternalReadaloudFilepath(book)
-    : getInternalEpubFilepath(book)
-
-  try {
-    await mkdir(getInternalBookDirectory(book))
-  } catch (e) {
-    if (e instanceof Error && "code" in e && e.code === "EEXIST") {
-      book = await updateBook(book.uuid, {
-        suffix: getDefaultSuffix(book.uuid),
-      })
-      return persistEpub(book, tmpPath, aligned)
-    }
-
-    throw e
-  }
+    ? getInternalReadaloudFilepath(reserved)
+    : getInternalEpubFilepath(reserved)
 
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
   await move(tmpPath, filepath)
 
-  return updateBook(book.uuid, null, {
+  return updateBook(reserved.uuid, null, {
     ...(aligned
       ? {
           readaloud: {
@@ -205,26 +242,14 @@ export async function persistAudio(
   tmpPath: string,
   relativePath: string,
 ) {
-  const filepath = getInternalOriginalAudioFilepath(book, relativePath)
-
-  try {
-    await mkdir(getInternalBookDirectory(book))
-  } catch (e) {
-    if (e instanceof Error && "code" in e && e.code === "EEXIST") {
-      book = await updateBook(book.uuid, {
-        suffix: getDefaultSuffix(book.uuid),
-      })
-      return persistAudio(book, tmpPath, relativePath)
-    }
-
-    throw e
-  }
+  const reserved = await reserveBookDirectory(book)
+  const filepath = getInternalOriginalAudioFilepath(reserved, relativePath)
 
   const directory = dirname(filepath)
   await mkdir(directory, { recursive: true })
   await move(tmpPath, filepath)
 
-  const updated = await updateBook(book.uuid, null, {
+  const updated = await updateBook(reserved.uuid, null, {
     audiobook: { filepath: directory },
   })
   return updated
@@ -255,39 +280,43 @@ export async function originalAudioExists(book: BookWithRelations) {
 }
 
 export async function deleteProcessed(book: BookWithRelations) {
-  await rm(getProcessedAudioFilepath(book), {
-    recursive: true,
-    force: true,
-  })
-  await rm(getTranscriptionsFilepath(book), {
-    recursive: true,
-    force: true,
-  })
+  await deleteProcessedAudio(book)
+  await deleteTranscriptions(book)
 }
 
 export async function deleteTranscriptions(book: BookWithRelations) {
+  const transcriptionsDir = getTranscriptionsFilepath(book)
+  suppressPrefix(transcriptionsDir)
   await rm(getTranscriptionsFilepath(book), {
     recursive: true,
     force: true,
   })
+  unsuppressPrefix(transcriptionsDir)
 }
 
 export async function deleteProcessedAudio(book: BookWithRelations) {
-  await rm(getProcessedAudioFilepath(book), {
+  const processedAudioDir = getProcessedAudioFilepath(book)
+  suppressPrefix(processedAudioDir)
+  await rm(processedAudioDir, {
     recursive: true,
     force: true,
   })
+  unsuppressPrefix(processedAudioDir)
 }
 
 export async function deleteOriginals(book: BookWithRelations) {
   if (book.ebook) {
+    suppressPrefix(book.ebook.filepath)
     await rm(book.ebook.filepath, { force: true })
+    unsuppressPrefix(book.ebook.filepath)
   }
   if (book.audiobook) {
+    suppressPrefix(book.audiobook.filepath)
     await rm(book.audiobook.filepath, {
       recursive: true,
       force: true,
     })
+    unsuppressPrefix(book.audiobook.filepath)
   }
 }
 
@@ -300,9 +329,14 @@ export async function deleteAssets(
     return
   }
 
-  await rm(getInternalBookDirectory(book), { recursive: true, force: true })
+  const bookDir = getInternalBookDirectory(book)
+  suppressPrefix(bookDir)
+  await rm(bookDir, { recursive: true, force: true })
+  unsuppressPrefix(bookDir)
   if (book.readaloud?.filepath) {
+    suppressPrefix(book.readaloud.filepath)
     await rm(book.readaloud.filepath, { force: true })
+    unsuppressPrefix(book.readaloud.filepath)
   }
   await deleteOriginals(book)
 }

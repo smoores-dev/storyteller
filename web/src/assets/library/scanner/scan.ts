@@ -12,6 +12,7 @@ import {
   type ScanSource,
 } from "./ctx"
 import { canonicalizePath, listBookCandidates, walkFolders } from "./folder"
+import { reportDelta, snapshot } from "./memoryReport"
 import { scanAudiobook } from "./pipelines/scanAudiobook"
 import { scanEbook } from "./pipelines/scanEbook"
 import { ScanReport } from "./scanReport"
@@ -350,8 +351,8 @@ async function runWorkers(
     ctx.logger.debug(
       `Scanning ${candidate.filepath} (${candidate.format}) [${index + 1}/${total}]`,
     )
-    // one disposable scope per candidate: opened epubs and audiobooks live
-    // only for the duration of this candidate's pipeline.
+    const memBefore = snapshot()
+
     await using scope = new AsyncDisposableStack()
     const pipelineCtx: PipelineCtx = { ...ctx, scope }
     try {
@@ -362,6 +363,7 @@ async function runWorkers(
       if (book) {
         scannedBookUuids.add(book.uuid)
       }
+      reportDelta(`${candidate.format} ${candidate.filepath}`, memBefore)
       return book
     } catch (err) {
       if (err instanceof ScanAbortedError) {

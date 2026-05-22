@@ -78,8 +78,14 @@ export class Watcher {
 
     const assetController = new AbortController()
     this.controllers.set("assets", assetController)
-    this.startWatcher([], ASSETS_DIR, assetController, undefined, (path) =>
-      assetRegex.test(path),
+    this.startWatcher(
+      [],
+      ASSETS_DIR,
+      assetController,
+      undefined,
+      (event) =>
+        // do not create new books on asset folder changes
+        event.type !== "create" && assetRegex.test(event.path),
     )
 
     return
@@ -136,7 +142,7 @@ export class Watcher {
     importPath: string,
     controller: AbortController,
     importMode?: ImportMode | null,
-    filter?: (path: string) => boolean,
+    filter?: (event: WatcherEvent) => boolean,
   ) {
     let entryLock = this.entryLocks.get(importPath)
     if (!entryLock) {
@@ -242,7 +248,7 @@ export class Watcher {
         (event) =>
           !isSuppressed(event.path) &&
           standardFilter(event.path) &&
-          (filter ? filter(event.path) : true),
+          (filter ? filter(event) : true),
       )
 
       if (!relevant.length) {

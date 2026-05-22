@@ -35,6 +35,12 @@ export const documentedServerEnvVars = {
     .describe(
       "Directory where Storyteller will store its database files. | `STORYTELLER_DATA_DIR`",
     ),
+  STORYTELLER_SNAPSHOT_DIR: z
+    .string()
+    .optional()
+    .describe(
+      "Directory where the watcher stores its parcel-watcher snapshots. | `STORYTELLER_DATA_DIR/.autoimport/watcher-snapshots`",
+    ),
   STORYTELLER_DB_FILENAME: z
     .string()
     .default("storyteller.db")

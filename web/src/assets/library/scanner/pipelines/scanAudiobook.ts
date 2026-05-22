@@ -1,3 +1,4 @@
+import { reserveBookDirectory } from "@/assets/fs"
 import {
   createBookFromOpenedAudiobook,
   ensureCollections,
@@ -37,8 +38,11 @@ export async function scanAudiobook(
     const created = await createBookFromOpenedAudiobook(candidate, opened, ctx)
     if (!created) return null
 
+    // see scanEbook.ts: reserve before any pipeline step writes into it.
+    const reserved = await reserveBookDirectory(created)
+
     const relocated = await relocateIfNeeded(
-      created,
+      reserved,
       candidate.filepath,
       "audiobook",
       candidate.importMode ?? ctx.defaultImportMode,
