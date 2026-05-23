@@ -23,7 +23,7 @@ If you'd like to use Obtainium rather than the Google or Aurora Store for
 installing Storyteller, you can import
 [this Obtainium config](./storyteller-obtainium-config.json).
 
-## Loging into the application for the first time.
+## Logging into the application for the first time.
 
 When you first install the Storyteller mobile app, you will need to configure
 your server URL in the app settings. This should be set to the URL for your

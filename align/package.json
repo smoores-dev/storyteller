@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/align",
-  "version": "0.1.39",
+  "version": "0.1.40",
   "description": "A library and CLI for automatically aligning audiobooks and EPUBs to produce Media Overlays",
   "author": "Shane Friedman",
   "license": "MIT",
@@ -53,7 +53,7 @@
     "@esfx/async-semaphore": "^1.0.0",
     "@optique/core": "^0.10.7",
     "@optique/run": "^0.10.7",
-    "@readium/shared": "patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch",
+    "@readium/shared": "^2.2.0",
     "@storyteller-platform/audiobook": "workspace:^",
     "@storyteller-platform/epub": "workspace:^",
     "@storyteller-platform/ghost-story": "workspace:^",

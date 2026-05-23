@@ -39,7 +39,7 @@
     "@parcel/watcher": "^2.5.6",
     "@readium/navigator": "2.1.1",
     "@readium/navigator-html-injectables": "2.1.1",
-    "@readium/shared": "patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch",
+    "@readium/shared": "^2.2.0",
     "@reduxjs/toolkit": "^2.11.2",
     "@reflink/reflink": "^0.1.19",
     "@remix-run/node": "^2.17.0",

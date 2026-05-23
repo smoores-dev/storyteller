@@ -1,6 +1,6 @@
 import { ColorSchemeScript, MantineProvider } from "@mantine/core"
 import type { Metadata, Viewport } from "next"
-import { Inter, Young_Serif } from "next/font/google"
+import localFont from "next/font/local"
 import Script from "next/script"
 
 import StoreProvider from "@/components/StoreProvider"
@@ -11,16 +11,15 @@ import { theme } from "@/theme/theme"
 
 import "./globals.css"
 
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "../../../public/fonts/Inter-VariableFont_slnt,wght.ttf",
   display: "swap",
   variable: "--font-inter",
 })
 
-const youngSerif = Young_Serif({
-  subsets: ["latin"],
+const youngSerif = localFont({
+  src: "../../../public/fonts/YoungSerif.ttf",
   display: "swap",
-  weight: "400",
   variable: "--font-young-serif",
 })
 

@@ -12945,21 +12945,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@readium/shared@npm:2.1.5":
-  version: 2.1.5
-  resolution: "@readium/shared@npm:2.1.5"
+"@readium/shared@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@readium/shared@npm:2.2.0"
   dependencies:
     "@edrlab/thorium-locales": "github:edrlab/thorium-locales"
-  checksum: 10c0/a7b7b9974a2f6c626885baef5b879ed22f8ad65a10fd4d293f1326b1e6f4deda7af2d4ab6f051a15de1d01b1f0fc1d22156b94f179ca9ea9432fbccd611e24dd
-  languageName: node
-  linkType: hard
-
-"@readium/shared@patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch":
-  version: 2.1.5
-  resolution: "@readium/shared@patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch::version=2.1.5&hash=937c63"
-  dependencies:
-    "@edrlab/thorium-locales": "github:edrlab/thorium-locales"
-  checksum: 10c0/cbd6cabb776f8491bfa2d44c2db2b126804ff09a23e8f522ff57d1cbd859514161bc3cbfea13c22936015be996c74d067f08578f8036d47511d9d742eb138c85
+  checksum: 10c0/83ce30f1aba155338df4544bbf38c4283c149a00cf681d49a576503533cfe8b9b8ed4fbd666f1e2b8f63dfacc05a424f525cf13deb85d93ad76cc04543a377ec
   languageName: node
   linkType: hard
 
@@ -15323,7 +15314,7 @@ __metadata:
     "@esfx/async-semaphore": "npm:^1.0.0"
     "@optique/core": "npm:^0.10.7"
     "@optique/run": "npm:^0.10.7"
-    "@readium/shared": "patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch"
+    "@readium/shared": "npm:^2.2.0"
     "@storyteller-platform/audiobook": "workspace:^"
     "@storyteller-platform/epub": "workspace:^"
     "@storyteller-platform/eslint": "workspace:*"
@@ -15715,7 +15706,7 @@ __metadata:
     "@parcel/watcher": "npm:^2.5.6"
     "@readium/navigator": "npm:2.1.1"
     "@readium/navigator-html-injectables": "npm:2.1.1"
-    "@readium/shared": "patch:@readium/shared@npm%3A2.1.5#~/.yarn/patches/@readium-shared-npm-2.1.5-8d6f9d2432.patch"
+    "@readium/shared": "npm:^2.2.0"
     "@reduxjs/toolkit": "npm:^2.11.2"
     "@reflink/reflink": "npm:^0.1.19"
     "@remix-run/node": "npm:^2.17.0"

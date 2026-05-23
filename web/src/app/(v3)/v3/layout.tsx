@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Young_Serif } from "next/font/google"
+import localFont from "next/font/local"
 import Script from "next/script"
 import { NextIntlClientProvider } from "next-intl"
 import { getTranslations } from "next-intl/server"
@@ -15,16 +15,15 @@ import { Toaster } from "@v3/_/components/ui/sonner"
 
 import "./globals.css"
 
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "../../../../public/fonts/Inter-VariableFont_slnt,wght.ttf",
   display: "swap",
   variable: "--font-inter",
 })
 
-const youngSerif = Young_Serif({
-  subsets: ["latin"],
+const youngSerif = localFont({
+  src: "../../../../public/fonts/YoungSerif.ttf",
   display: "swap",
-  weight: "400",
   variable: "--font-young-serif",
 })
 
