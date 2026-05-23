@@ -4,23 +4,14 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { pathBelongsTo } from "@/assets/library/scanner/folder"
-import { relocateIfNeeded } from "@/assets/library/scanner/relocate"
-import { scanBooks } from "@/assets/library/scanner/scan"
-import { type ScanFormat } from "@/assets/library/scanner/types"
+import { replaceBookAsset } from "@/assets/library/scanner/replaceAsset"
 import { withHasPermission } from "@/auth/auth"
-import {
-  getBook,
-  getBookUuid,
-  removeBookFormat,
-  updateBook,
-} from "@/database/books"
-import { getSetting } from "@/database/settings"
+import { getBook, getBookUuid, removeBookFormat } from "@/database/books"
 import {
   ImportModeSchema,
   MetadataFieldOverridesSchema,
 } from "@/database/settingsTypes"
 import { ASSETS_DIR } from "@/directories"
-import { BookEvents } from "@/events"
 import { logger } from "@/logging"
 
 export const dynamic = "force-dynamic"
@@ -45,6 +36,7 @@ export const POST = withHasPermission<Params>("bookUpdate")(async (
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
   const book = await getBook(bookUuid, request.auth.user.id)
+
   if (!book) {
     return NextResponse.json(
       { message: `Could not find book with id ${bookId}` },
@@ -54,22 +46,26 @@ export const POST = withHasPermission<Params>("bookUpdate")(async (
 
   const json = (await request.json().catch(() => null)) as unknown
   const parsed = BodySchema.safeParse(json)
+
   if (!parsed.success) {
     return NextResponse.json(
       { message: "Invalid request body", issues: parsed.error.issues },
       { status: 400 },
     )
   }
+
   const { format, path, importMode, metadataFieldOverrides } = parsed.data
 
   try {
     const stats = await stat(path)
+
     if (format === "audiobook" && !stats.isDirectory()) {
       return NextResponse.json(
         { message: "Audiobook source path must be a directory" },
         { status: 400 },
       )
     }
+
     if (format !== "audiobook" && !stats.isFile()) {
       return NextResponse.json(
         { message: `${format} source path must be a file` },
@@ -83,44 +79,17 @@ export const POST = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const resolvedImportMode = importMode ?? (await getSetting("importMode"))
-
-  await relocateIfNeeded(book, path, format as ScanFormat, resolvedImportMode)
-
-  if (resolvedImportMode === "reference") {
-    await updateBook(book.uuid, null, {
-      [format]: {
-        filepath: path,
-        missing: false,
-        ...(format === "readaloud" && {
-          status: book.readaloud?.status ?? "ALIGNED",
-          currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
-        }),
-      },
-    })
-  }
-
-  await scanBooks({
-    source: "api",
-    bookUuids: [book.uuid],
-    options: {
-      force: true,
-      importMode: resolvedImportMode,
-      ...(metadataFieldOverrides && { metadataFieldOverrides }),
-    },
+  const updated = await replaceBookAsset({
+    book,
+    filepath: path,
+    format,
+    importMode,
+    metadataFieldOverrides,
     signal: request.signal,
+    userId: request.auth.user.id,
   })
 
-  const updated = await getBook(book.uuid, request.auth.user.id)
-  if (updated) {
-    BookEvents.emit("message", {
-      type: "bookUpdated",
-      bookUuid: book.uuid,
-      payload: updated,
-    })
-  }
-
-  return NextResponse.json(updated ?? book)
+  return NextResponse.json(updated)
 })
 
 export const DELETE = withHasPermission<Params>("bookUpdate")(async (

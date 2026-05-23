@@ -26,8 +26,10 @@ import {
   IconPlus,
   IconProgressX,
   IconRefresh,
+  IconServer,
   IconTagFilled,
   IconTrash,
+  IconUpload,
 } from "@tabler/icons-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -53,6 +55,7 @@ import { StatusInput } from "./edit/StatusInput"
 import { DeleteBookModal } from "./modals/DeleteBookModal"
 import { ReplaceFileModal } from "./modals/ReplaceFileModal"
 import { UpgradeEpubModal } from "./modals/UpgradeEpubModal"
+import { UploadReplaceModal } from "./modals/UploadReplaceModal"
 
 interface Props {
   bookUuid: UUID
@@ -80,6 +83,7 @@ function Details({
 }) {
   const [replaceOpen, { open: openReplace, close: closeReplace }] =
     useDisclosure()
+  const [uploadOpen, { open: openUpload, close: closeUpload }] = useDisclosure()
   const [removeOpen, { open: openRemove, close: closeRemove }] = useDisclosure()
   const [removeAsset, { isLoading: isRemoving }] = useRemoveBookAssetMutation()
 
@@ -102,29 +106,46 @@ function Details({
   }
 
   return (
-    <Text className="flex flex-row items-center gap-2">
+    <div className="flex flex-row items-center gap-2">
       <Icon />
       <div className="flex flex-col gap-0.5">
-        <div
+        <Text
           className="line-clamp-1 text-sm font-semibold"
           title={fmt.filepath ?? ""}
         >
           {fmt.filepath}
-        </div>
+        </Text>
         <div className="flex flex-row items-center gap-2 text-xs">
           {fmt.missing ? (
             <>
               <span className="font-semibold text-red-500">File missing</span>
               {canReplace && (
-                <Button
-                  variant="light"
-                  color="red"
-                  size="compact-xs"
-                  leftSection={<IconRefresh size={12} />}
-                  onClick={openReplace}
-                >
-                  Replace file
-                </Button>
+                <Menu position="bottom" withArrow>
+                  <Menu.Target>
+                    <Button
+                      variant="light"
+                      color="red"
+                      size="compact-xs"
+                      leftSection={<IconRefresh size={12} />}
+                    >
+                      Replace file
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      leftSection={<IconServer size={14} />}
+                      onClick={openReplace}
+                    >
+                      Import from server
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconUpload size={14} />}
+                      onClick={openUpload}
+                    >
+                      Upload
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
               )}
             </>
           ) : (
@@ -173,16 +194,33 @@ function Details({
             </>
           )}
           {canReplace && (
-            <Tooltip label="Replace file" position="top" withArrow>
-              <ActionIcon
-                variant="subtle"
-                size="xs"
-                onClick={openReplace}
-                aria-label={`Replace ${format} file`}
-              >
-                <IconRefresh size={14} />
-              </ActionIcon>
-            </Tooltip>
+            <Menu position="bottom" withArrow>
+              <Menu.Target>
+                <Tooltip label="Replace file" position="top" withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    size="xs"
+                    aria-label={`Replace ${format} file`}
+                  >
+                    <IconRefresh size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconServer size={14} />}
+                  onClick={openReplace}
+                >
+                  Import from server
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconUpload size={14} />}
+                  onClick={openUpload}
+                >
+                  Upload
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           )}
           {canReplace && canRemove && (
             <Tooltip
@@ -208,6 +246,12 @@ function Details({
           <ReplaceFileModal
             isOpen={replaceOpen}
             onClose={closeReplace}
+            book={book}
+            format={format}
+          />
+          <UploadReplaceModal
+            isOpen={uploadOpen}
+            onClose={closeUpload}
             book={book}
             format={format}
           />
@@ -248,7 +292,7 @@ function Details({
           </Modal>
         </>
       )}
-    </Text>
+    </div>
   )
 }
 
@@ -266,9 +310,10 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const [updateStatus] = useUpdateStatusMutation()
   const [cancelProcessing] = useCancelProcessingMutation()
 
-  const [addFormat, setAddFormat] = useState<
-    "ebook" | "audiobook" | "readaloud" | null
-  >(null)
+  const [addFormat, setAddFormat] = useState<{
+    format: "ebook" | "audiobook" | "readaloud"
+    mode: "server" | "upload"
+  } | null>(null)
 
   if (!book) return null
 
@@ -287,14 +332,24 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
         onClose={closeUpgradeModal}
       />
 
-      {addFormat && (
+      {addFormat?.mode === "server" && (
         <ReplaceFileModal
           isOpen
           onClose={() => {
             setAddFormat(null)
           }}
           book={book}
-          format={addFormat}
+          format={addFormat.format}
+        />
+      )}
+      {addFormat?.mode === "upload" && (
+        <UploadReplaceModal
+          isOpen
+          onClose={() => {
+            setAddFormat(null)
+          }}
+          book={book}
+          format={addFormat.format}
         />
       )}
 
@@ -537,23 +592,40 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                         </Tooltip>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        {missingFormats.map((f) => {
+                        {missingFormats.map((f, i) => {
                           const FormatIcon =
                             f === "ebook"
                               ? IconBook2
                               : f === "audiobook"
                                 ? IconHeadphonesFilled
                                 : IconReadaloud
+
                           return (
-                            <Menu.Item
-                              key={f}
-                              leftSection={<FormatIcon size={14} />}
-                              onClick={() => {
-                                setAddFormat(f)
-                              }}
-                            >
-                              Add {FORMAT_LABELS[f]}
-                            </Menu.Item>
+                            <div key={f}>
+                              {i > 0 && <Menu.Divider />}
+                              <Menu.Label>
+                                <Group gap={6}>
+                                  <FormatIcon size={12} />
+                                  {FORMAT_LABELS[f]}
+                                </Group>
+                              </Menu.Label>
+                              <Menu.Item
+                                leftSection={<IconServer size={14} />}
+                                onClick={() => {
+                                  setAddFormat({ format: f, mode: "server" })
+                                }}
+                              >
+                                Import from server
+                              </Menu.Item>
+                              <Menu.Item
+                                leftSection={<IconUpload size={14} />}
+                                onClick={() => {
+                                  setAddFormat({ format: f, mode: "upload" })
+                                }}
+                              >
+                                Upload
+                              </Menu.Item>
+                            </div>
                           )
                         })}
                       </Menu.Dropdown>
@@ -615,8 +687,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
           )}
           {!!permissions?.bookUpdate && book.assetDir && (
             <Text>
-              <span className="font-bold">Asset folder:</span>{" "}
-              {book.assetDir}
+              <span className="font-bold">Asset folder:</span> {book.assetDir}
             </Text>
           )}
         </Stack>

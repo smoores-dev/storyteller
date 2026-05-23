@@ -76,12 +76,15 @@ function siblingDir(book: BookWithRelations, format: Format): string {
   const others: Format[] = (
     ["ebook", "audiobook", "readaloud"] as const
   ).filter((f) => f !== format)
+
   for (const f of others) {
     const filepath = book[f]?.filepath
     if (!filepath) continue
+
     const i = filepath.lastIndexOf("/")
     return i === -1 ? "" : filepath.slice(0, i + 1)
   }
+
   return ""
 }
 
@@ -106,13 +109,15 @@ export function ReplaceFileModal({ isOpen, onClose, book, format }: Props) {
 
   async function handleSubmit() {
     setError(null)
+
     if (!path) {
       setError("Pick a file or directory")
       return
     }
+
     try {
       let finalPath = path
-      // chop off optional file name
+
       if (format === "audiobook") {
         const dirName = path.replace(/(\/|\\)[^/\\]*?$/, "$1")
         finalPath = dirName
@@ -125,6 +130,7 @@ export function ReplaceFileModal({ isOpen, onClose, book, format }: Props) {
         importMode,
         metadataFieldOverrides: overrides,
       }).unwrap()
+
       onClose()
     } catch (e) {
       setError(
@@ -141,8 +147,8 @@ export function ReplaceFileModal({ isOpen, onClose, book, format }: Props) {
       onClose={onClose}
       title={
         isAdd
-          ? `Add ${FORMAT_LABELS[format]} file`
-          : `Replace ${FORMAT_LABELS[format]} file`
+          ? `Import ${FORMAT_LABELS[format]} from server`
+          : `Replace ${FORMAT_LABELS[format]} from server`
       }
       centered
       size="lg"
@@ -212,8 +218,8 @@ export function ReplaceFileModal({ isOpen, onClose, book, format }: Props) {
           <Button variant="subtle" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} loading={isLoading}>
-            {isAdd ? "Add file" : "Replace file"}
+          <Button onClick={() => void handleSubmit()} loading={isLoading}>
+            {isAdd ? "Import" : "Replace"}
           </Button>
         </Group>
       </Stack>
