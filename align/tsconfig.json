@@ -14,7 +14,7 @@
     "lib": ["esnext"],
     "outDir": "dist"
   },
-  "include": ["package.json", "src/**/*.ts", "test/**/*.ts"],
+  "include": ["package.json", "src/**/*.ts"],
   "references": [
     {
       "path": "../epub"

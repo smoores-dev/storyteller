@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { cp, stat } from "node:fs/promises"
+import { cp, readdir, stat } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 
@@ -7,6 +8,7 @@ import { streamFile } from "@storyteller-platform/fs"
 
 import {
   Epub,
+  EpubReadOnlyError,
   type MetadataEntry,
   type ParsedXml,
   type XmlElement,
@@ -490,5 +492,147 @@ void describe("Epub", () => {
     assert.strictEqual(collections[0]?.name, "Series")
     assert.strictEqual(collections[0].position, "1")
     assert.strictEqual(collections[0].type, "series")
+  })
+})
+
+void describe("Epub.fromZip (read-only, in-memory)", () => {
+  const fixture = join("__fixtures__", "moby-dick.epub")
+
+  void it("reads metadata and content from an in-memory zip", async () => {
+    using epub = await Epub.fromZip(fixture)
+    assert.strictEqual(epub.storage, "zip")
+    const title = await epub.getTitle()
+    assert.ok(title && title.length > 0)
+    const spine = await epub.getSpineItems()
+    assert.ok(spine.length > 0)
+  })
+
+  void it("refuses mutations with EpubReadOnlyError", async () => {
+    using reader = await Epub.fromZip(fixture)
+    const asWriter = reader as unknown as Epub
+
+    await assert.rejects(
+      asWriter.setTitle("Mutated"),
+      (err) => err instanceof EpubReadOnlyError,
+      "setTitle should throw EpubReadOnlyError",
+    )
+    await assert.rejects(
+      asWriter.addCreator({ name: "Someone" }),
+      (err) => err instanceof EpubReadOnlyError,
+      "addCreator should throw EpubReadOnlyError",
+    )
+    await assert.rejects(
+      asWriter.saveAndClose(),
+      (err) => err instanceof EpubReadOnlyError,
+      "saveAndClose should throw EpubReadOnlyError",
+    )
+  })
+
+  void it("does not leave a temp directory on disk", async () => {
+    // the virtualRoot path is constructed for href anchoring but never written
+    const prefix = "storyteller-platform-epub-zip-"
+    const before = (await readdir(tmpdir())).filter((n) => n.startsWith(prefix))
+
+    // sneaky scope
+    {
+      using _epub = await Epub.fromZip(fixture)
+      const during = (await readdir(tmpdir())).filter((n) =>
+        n.startsWith(prefix),
+      )
+      assert.deepStrictEqual(
+        during,
+        before,
+        "fromZip should not create any temp dir matching the in-memory prefix before disposal",
+      )
+    }
+
+    const after = (await readdir(tmpdir())).filter((n) => n.startsWith(prefix))
+    assert.deepStrictEqual(
+      after,
+      before,
+      "fromZip should not create any temp dir matching the in-memory prefix",
+    )
+  })
+
+  void it("clears the entry index on dispose", async () => {
+    const epub = await Epub.fromZip(fixture)
+    await epub.getTitle()
+    epub.discardAndClose()
+
+    await assert.rejects(
+      epub.getTitle(),
+      "reading after discardAndClose should fail",
+    )
+  })
+
+  void it("respects cache: false (repeated reads still work)", async () => {
+    using epub = await Epub.fromZip(fixture, { cache: false })
+    // read a non-xhtml entry twice. xhtml is memoized separately by `mem`
+    // on readXhtmlItemContents, so use a different entry to actually
+    // exercise the cache path.
+    const manifest = await epub.getManifest()
+    const imageEntry = Object.values(manifest).find((item) =>
+      item.mediaType?.startsWith("image/"),
+    )
+    assert.ok(imageEntry, "fixture should contain an image")
+    const first = await epub.readItemContents(imageEntry.id)
+    const second = await epub.readItemContents(imageEntry.id)
+    assert.strictEqual(
+      first.byteLength,
+      second.byteLength,
+      "repeated reads should yield the same bytes regardless of caching",
+    )
+  })
+
+  void it("aborts when the signal is already triggered", async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await assert.rejects(
+      Epub.fromZip(fixture, { signal: controller.signal }),
+      "should throw when signal is pre-aborted",
+    )
+  })
+})
+
+void describe("Epub.from (read-only, extracted-dir)", () => {
+  const fixture = join("__fixtures__", "moby-dick.epub")
+
+  void it("reads metadata with { readonly: true }", async () => {
+    using epub = await Epub.from(fixture, { readonly: true })
+    // storage remains extracted-dir; only mutations are gated
+    assert.strictEqual(epub.storage, "extracted-dir")
+    const title = await epub.getTitle()
+    assert.ok(title && title.length > 0)
+  })
+
+  void it("refuses mutations with EpubReadOnlyError", async () => {
+    // cast through Epub so we can call mutators that EpubReader hides
+    // at the type level. the runtime guard should still trigger.
+    using reader = await Epub.from(fixture, { readonly: true })
+    const asWriter = reader as unknown as Epub
+
+    await assert.rejects(
+      asWriter.setTitle("Mutated"),
+      (err) => err instanceof EpubReadOnlyError,
+      "setTitle should throw EpubReadOnlyError",
+    )
+    await assert.rejects(
+      asWriter.addCreator({ name: "Someone" }),
+      (err) => err instanceof EpubReadOnlyError,
+      "addCreator should throw EpubReadOnlyError",
+    )
+    await assert.rejects(
+      asWriter.saveAndClose(),
+      (err) => err instanceof EpubReadOnlyError,
+      "saveAndClose should throw EpubReadOnlyError",
+    )
+  })
+
+  void it("Epub.from without readonly still allows mutations", async () => {
+    using epub = await Epub.from(fixture)
+    // we're not actually saving; this just verifies the writer path
+    // doesn't have the runtime guard tripped
+    await epub.setTitle("Mutated")
+    assert.strictEqual(await epub.getTitle(), "Mutated")
   })
 })
