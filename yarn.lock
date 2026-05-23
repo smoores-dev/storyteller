@@ -15074,6 +15074,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/epub@workspace:epub"
   dependencies:
+    "@readium/shared": "npm:^2.2.0"
     "@storyteller-platform/eslint": "workspace:*"
     "@storyteller-platform/fs": "workspace:^"
     "@storyteller-platform/path": "workspace:^"

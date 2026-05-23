@@ -43,6 +43,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@readium/shared": "^2.2.0",
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
     "@zip.js/zip.js": "^2.0.0",

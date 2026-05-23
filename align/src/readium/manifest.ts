@@ -22,7 +22,38 @@ import type {
   NavigationList,
 } from "@storyteller-platform/epub"
 
-export async function generateManifest(epub: Epub) {
+import { type ReadiumWebPublicationManifest } from "../../../epub/toipes.ts"
+import { type Rel } from "../../../epub/types.ts"
+
+export interface ReadiumManifestOptions {
+  /**
+   * If true, read each XHTML spine item and infer a `numberOfPages`
+   * value by summing character counts and dividing by a fixed
+   * characters-per-page constant. This matches Readium-go's
+   * per-resource positions heuristic.
+   */
+  inferPageCount?: boolean
+  signal?: AbortSignal
+}
+
+// matches Readium-go's RecommendedReflowableStrategy:
+// archive entry length split by 1024-byte pages.
+// see readium-go-toolkit/pkg/parser/epub/positions_service.go:202.
+const BYTES_PER_PAGE = 1024
+
+/**
+ * Build a Readium WebPub manifest for an EPUB by reading metadata,
+ * spine, manifest, navigation, and (optionally) per-spine character
+ * counts. Returns the serialized manifest JSON object — same shape
+ * that the `readium manifest` CLI produces.
+ *
+ * Lifted from `align/src/readium/manifest.ts` (`generateManifest`) so
+ * the scanner can stop shelling out to the Go binary.
+ */
+export async function generateReadiumManifest(
+  epub: Epub,
+  options: ReadiumManifestOptions = {},
+) {
   const primaryLocale = (await epub.getLanguage()) ?? new Intl.Locale("en-US")
 
   const creators = await epub.getCreators()
@@ -112,6 +143,7 @@ export async function generateManifest(epub: Epub) {
   const duration = epubMetadata.find(
     ({ properties }) => properties["property"] === "media:duration",
   )?.value
+  const durationMs = duration !== undefined ? clockvalue(duration) : undefined
 
   const otherMetadata = epubMetadata
     .filter(
@@ -124,6 +156,13 @@ export async function generateManifest(epub: Epub) {
       const scheme = vocab[prefix!]!
       return [`${scheme}#${property}`, meta.value] as const
     })
+
+  const spine = await epub.getSpineItems()
+  const epubManifest = await epub.getManifest()
+
+  const numberOfPages = options.inferPageCount
+    ? await inferPageCount(epub, spine, options.signal)
+    : undefined
 
   const metadata = new Metadata({
     title: new LocalizedString(title ?? ""),
@@ -155,12 +194,10 @@ export async function generateManifest(epub: Epub) {
         dir === "ltr" ? ReadingProgression.ltr : ReadingProgression.rtl,
     }),
     // TODO: is this meant to be in milliseconds (as here) or seconds?
-    ...(duration !== undefined && { duration: clockvalue(duration) }),
+    ...(durationMs !== undefined && { duration: durationMs }),
+    ...(numberOfPages !== undefined && { numberOfPages }),
     otherMetadata: Object.fromEntries(otherMetadata),
   })
-
-  const spine = await epub.getSpineItems()
-  const epubManifest = await epub.getManifest()
 
   const readingOrder = await Promise.all(
     spine.map(async (item) => {
@@ -192,17 +229,17 @@ export async function generateManifest(epub: Epub) {
 
   const resources = await Promise.all(
     Object.values(epubManifest).map(async (item) => {
-      const rels = new Set<string>()
+      const rels = new Set<Rel>()
 
       if (item.id === coverItem?.id) {
         rels.add("cover")
       }
 
       if (item.mediaType === "application/xhtml+xml") {
-        rels.add("content")
+        rels.add("contents")
       }
 
-      const otherMetadata = epubMetadata
+      const otherResourceMetadata = epubMetadata
         .filter((meta) => meta.properties["refines"] === `#${item.id}`)
         .filter(
           (meta) => (meta.properties["property"]?.split(":")[0] ?? "") in vocab,
@@ -219,7 +256,7 @@ export async function generateManifest(epub: Epub) {
         href: await epub.resolveHref(item.href, undefined, { toRoot: true }),
         ...(item.mediaType && { type: item.mediaType }),
         rels,
-        properties: new Properties(Object.fromEntries(otherMetadata)),
+        properties: new Properties(Object.fromEntries(otherResourceMetadata)),
       })
 
       if (!item.mediaOverlay) return link
@@ -235,13 +272,14 @@ export async function generateManifest(epub: Epub) {
 
       if (!refinedBy?.value) return link
 
-      const duration = clockvalue(refinedBy.value)
+      const itemDuration = clockvalue(refinedBy.value)
+      if (itemDuration === undefined) return link
 
       return new Link({
         href: link.href,
         type: link.mediaType.string,
         ...(link.properties && { properties: link.properties }),
-        duration,
+        duration: itemDuration,
       })
     }),
   )
@@ -272,7 +310,7 @@ export async function generateManifest(epub: Epub) {
     ])
   }
 
-  return new Manifest({
+  const manifest = new Manifest({
     context: ["https://readium.org/webpub-manifest/context.jsonld"],
     metadata,
     readingOrder: new Links(readingOrder),
@@ -287,6 +325,39 @@ export async function generateManifest(epub: Epub) {
     ...(toc && { toc: new Links(toc) }),
     subcollections,
   })
+
+  return manifest.serialize() as ReadiumWebPublicationManifest
+}
+
+async function inferPageCount(
+  epub: Epub,
+  spine: Awaited<ReturnType<Epub["getSpineItems"]>>,
+  signal?: AbortSignal,
+): Promise<number | undefined> {
+  let total = 0
+  for (const item of spine) {
+    if (signal?.aborted) {
+      throw new (
+        signal.reason instanceof Error
+          ? (signal.reason.constructor as ErrorConstructor)
+          : Error
+      )(
+        signal.reason instanceof Error
+          ? signal.reason.message
+          : "Aborted while inferring page count",
+      )
+    }
+    if (item.mediaType !== "application/xhtml+xml") continue
+    try {
+      const length = await epub.getItemArchiveLength(item.id)
+      total += Math.max(1, Math.ceil(length / BYTES_PER_PAGE))
+    } catch {
+      // a missing or unreadable spine item shouldn't fail the whole
+      // manifest. fall back to a single page for the item.
+      total += 1
+    }
+  }
+  return total > 0 ? total : undefined
 }
 
 function createContributor(dcCreator: DcCreator, primaryLocale: Intl.Locale) {
