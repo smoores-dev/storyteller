@@ -262,6 +262,7 @@ startAppListening({
         listenerApi.getState(),
       )
       if (!currentBookUuid) return
+
       const locator = clip.locator
 
       const payload = {

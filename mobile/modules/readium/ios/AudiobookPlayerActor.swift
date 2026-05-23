@@ -104,6 +104,7 @@ public actor AudiobookPlayerActor {
     private var trackChangedCallbacks: [TrackChangedCallback] = [TrackChangedCallback]()
     private var positionChangedCallbacks: [PositionChangedCallback] = [PositionChangedCallback]()
     private var isPlayingChangedCallbacks: [IsPlayingChangedCallback] = [IsPlayingChangedCallback]()
+    private var scheduledClipEventObserver: Any?
 
     private var currentImageTask: URLSessionDataTask?
 
@@ -466,6 +467,7 @@ public actor AudiobookPlayerActor {
         }
 
         observers.removeAll()
+        cancelScheduledClipEvent()
 
         if let playToEndObserver = self.playToEndObserver {
             NotificationCenter.default.removeObserver(playToEndObserver)
@@ -670,6 +672,34 @@ public actor AudiobookPlayerActor {
 
     func observeIsPlayingChanged(_ callback: @escaping IsPlayingChangedCallback) {
         isPlayingChangedCallbacks.append(callback)
+    }
+
+    func scheduleClipEvent(fragmentId: String, fragmentProgress: Double, handler: @escaping @Sendable () -> Void) {
+        cancelScheduledClipEvent()
+
+        guard let track = getCurrentTrack(),
+              let clips = relativeUriToClips[track.relativeUri.string],
+              let clip = clips.first(where: { $0.fragmentId == fragmentId }) else { return }
+
+        let position = clip.start + fragmentProgress * (clip.end - clip.start)
+        let time = CMTime(seconds: position, preferredTimescale: 1000)
+
+        scheduledClipEventObserver = player.addBoundaryTimeObserver(
+            forTimes: [NSValue(time: time)],
+            queue: .main
+        ) {
+            Task { @AudiobookPlayerActor in
+                await AudiobookPlayerActor.shared.cancelScheduledClipEvent()
+            }
+            handler()
+        }
+    }
+
+    func cancelScheduledClipEvent() {
+        if let observer = scheduledClipEventObserver {
+            player.removeTimeObserver(observer)
+            scheduledClipEventObserver = nil
+        }
     }
 
 }

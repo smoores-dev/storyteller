@@ -12,28 +12,28 @@ public class ReadiumModule: Module {
                 await AudiobookPlayerActor.shared.observePositionChanged(self.onPositionChanged(position:))
             }
         }
-        
+
         Name("Readium")
-        
+
         Events("clipChanged", "isPlayingChanged", "positionChanged", "trackChanged")
-        
+
         AsyncFunction("getIsPlaying") {
             return await AudiobookPlayerActor.shared.getIsPlaying()
         }
-        
+
         AsyncFunction("getCurrentClip") {
             return await AudiobookPlayerActor.shared.getCurrentClip()?.toJson()
         }
-        
+
         AsyncFunction("loadTracks") { (tracksJson: [[String:Any?]]) in
             let tracks = tracksJson.map { Track.fromJson(json: $0) }
             return try? await AudiobookPlayerActor.shared.loadTracks(tracks: tracks)
         }
-        
+
         AsyncFunction("getPosition") {
             return await AudiobookPlayerActor.shared.getPosition()
         }
-        
+
         AsyncFunction("getCurrentTrack") {
             return await AudiobookPlayerActor.shared.getCurrentTrack()?.toJson()
         }
@@ -41,39 +41,39 @@ public class ReadiumModule: Module {
         AsyncFunction("getCurrentTrackIndex") {
             return await AudiobookPlayerActor.shared.getCurrentTrackIndex()
         }
-        
+
         AsyncFunction("getTracks") {
             return await AudiobookPlayerActor.shared.getTracks().map { $0.toJson() }
         }
-        
+
         AsyncFunction("play") { (automaticRewind: Bool?) in
             await AudiobookPlayerActor.shared.play(automaticRewind: automaticRewind ?? true)
         }
-        
+
         AsyncFunction("pause") {
             await AudiobookPlayerActor.shared.pause()
         }
-        
+
         AsyncFunction("unload") {
             await AudiobookPlayerActor.shared.unload()
         }
-        
+
         AsyncFunction("skip") { (position: Double) in
             await AudiobookPlayerActor.shared.skip(to: position)
         }
-        
+
         AsyncFunction("seekTo") { (relativeUri: String, position: Double, skipEmit: Bool?) in
             await AudiobookPlayerActor.shared.seekTo(relativeUri: relativeUri, position: position, skipEmit: skipEmit ?? false)
         }
-        
+
         AsyncFunction("seekBy") { (amount: Double) in
             await AudiobookPlayerActor.shared.seekBy(amount: amount, bounded: false)
         }
-        
+
         AsyncFunction("next") {
             await AudiobookPlayerActor.shared.next()
         }
-        
+
         AsyncFunction("prev") {
             await AudiobookPlayerActor.shared.prev()
         }
@@ -81,7 +81,7 @@ public class ReadiumModule: Module {
         AsyncFunction("setRate") { (rate: Double) in
             await AudiobookPlayerActor.shared.setRate(rate: rate)
         }
-        
+
         AsyncFunction("setAutomaticRewind") { (config: [String:Any]) in
             await AudiobookPlayerActor.shared.setAutomaticRewind(
                 enabled: config["enabled"] as! Bool,
@@ -89,7 +89,7 @@ public class ReadiumModule: Module {
                 afterBreak: config["afterBreak"] as! Double
             )
         }
-        
+
         AsyncFunction("extractArchive") { (archiveUrl: URL, extractedUrl: URL) in
             try BookService.shared.extractArchive(archiveUrl: archiveUrl, extractedUrl: extractedUrl)
         }
@@ -99,7 +99,7 @@ public class ReadiumModule: Module {
             let pub = try await BookService.shared.openPublication(for: bookId, at: FileURL(url: publicationUri)!, clips: clips)
             return pub.jsonManifest ?? "{}"
         }
-        
+
         AsyncFunction("getOverlayClips") { (bookId: String) in
             return BookService.shared.getOverlayClips(for: bookId).map { $0.toJson() }
         }
@@ -182,6 +182,18 @@ public class ReadiumModule: Module {
 
         View(EPUBView.self) {
             Events("onLocatorChange", "onMiddleTouch", "onSelection", "onDoubleTouch", "onError", "onHighlightTap", "onBookmarksActivate")
+
+            AsyncFunction("goForward") { (view: EPUBView) in
+                await view.navigator?.goForward(options: .animated)
+            }
+
+            AsyncFunction("goBackward") { (view: EPUBView) in
+                await view.navigator?.goBackward(options: .animated)
+            }
+
+            AsyncFunction("getFragmentPageProportion") { (view: EPUBView, fragmentId: String) -> [String: Any]? in
+                return await view.getFragmentPageProportion(fragmentId: fragmentId)
+            }
 
             Prop("bookUuid") { (view: EPUBView, prop: String) in
                 view.pendingProps.bookId = prop
@@ -290,7 +302,7 @@ public class ReadiumModule: Module {
             }
         }
     }
-    
+
     func onClipChanged(overlayPar: OverlayPar) {
         sendEvent("clipChanged", [
             "relativeUrl": overlayPar.relativeUrl.absoluteString,
@@ -301,16 +313,17 @@ public class ReadiumModule: Module {
             "locator": overlayPar.locator.json
         ])
     }
-    
+
     func onIsPlayingChanged(isPlaying: Bool) {
         sendEvent("isPlayingChanged", ["isPlaying": isPlaying])
     }
-    
+
     func onPositionChanged(position: Double) {
         sendEvent("positionChanged", ["position": position])
     }
-    
+
     func onTrackChanged(track: Track, position: Double, index: Int) {
         sendEvent("trackChanged", ["track": track.toJson(), "position": position, "index": index])
     }
+
 }

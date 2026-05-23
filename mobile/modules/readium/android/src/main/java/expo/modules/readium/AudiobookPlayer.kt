@@ -13,10 +13,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import androidx.annotation.RequiresApi
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.PlayerMessage
 import androidx.media3.session.MediaSession
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.exception.Exceptions
@@ -148,6 +150,7 @@ class PlaybackService : MediaLibraryService() {
     private var mediaSession: MediaLibrarySession? = null
     private var player: ExoPlayer? = null
     private var mediaIdToClips = mapOf<String, List<OverlayPar>>()
+    private var clipEventMessage: PlayerMessage? = null
     private var root = MediaItem.Builder()
         .setMediaId(ROOT_ID)
         .setMediaMetadata(
@@ -726,7 +729,36 @@ class PlaybackService : MediaLibraryService() {
                                 }
                             })
                         }
+                    }
 
+                    "SCHEDULE_CLIP_EVENT" -> {
+                        clipEventMessage?.cancel()
+
+                        val fragmentId = args.getString("fragmentId") ?: return result
+                        val fragmentProgress = args.getDouble("fragmentProgress")
+                        val mediaItemIndex = session.player.currentMediaItemIndex
+                        val mediaId = session.player.currentMediaItem?.mediaId ?: return result
+                        val clips = mediaIdToClips[mediaId] ?: return result
+                        val clip = clips.find { it.fragmentId == fragmentId } ?: return result
+
+                        val positionMs = ((clip.start + fragmentProgress * (clip.end - clip.start)) * 1000).roundToLong()
+
+                        clipEventMessage = player?.createMessage { _, _ ->
+                            session.broadcastCustomCommand(
+                                SessionCommand("CLIP_EVENT_FIRED", Bundle.EMPTY),
+                                Bundle.EMPTY
+                            )
+                            clipEventMessage = null
+                        }?.apply {
+                            setPosition(mediaItemIndex, positionMs)
+                            setDeleteAfterDelivery(true)
+                            send()
+                        }
+                    }
+
+                    "CANCEL_CLIP_EVENT" -> {
+                        clipEventMessage?.cancel()
+                        clipEventMessage = null
                     }
                 }
 
@@ -752,6 +784,8 @@ class PlaybackService : MediaLibraryService() {
                 val availableSessionCommands =
                     MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
                         .add(SessionCommand("TRACK_LOAD_STARTED", Bundle.EMPTY))
+                        .add(SessionCommand("SCHEDULE_CLIP_EVENT", Bundle.EMPTY))
+                        .add(SessionCommand("CANCEL_CLIP_EVENT", Bundle.EMPTY))
                         .build()
 
                 val availablePlayerCommands =
@@ -789,6 +823,7 @@ class AudiobookPlayer(
     var relativeUriToIndex: Map<String, Int> = mapOf()
     var relativeUriToClips: Map<String, List<OverlayPar>> = mapOf()
     var audioProgressCollector: Job? = null
+    private var clipEventHandler: (() -> Unit)? = null
 
     private var automaticRewind = false
     private var afterInterruptionRewind = 0.0
@@ -1097,23 +1132,60 @@ class AudiobookPlayer(
         args: Bundle
     ): ListenableFuture<SessionResult> {
         val result = Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
-        // TODO: Is this isPlaying check correct?
-        if (command.customAction == "CLIP_CHANGED" && controller.isPlaying) {
-            val clipData = args.getString("clip") ?: return result
-            val clipMap = JSONObject(clipData).toMap()
-            val clip = OverlayPar(
-                clipMap["audioResource"] as String,
-                clipMap["fragmentId"] as String,
-                clipMap["textResource"] as String,
-                clipMap["start"] as? Double ?: (clipMap["start"] as Int).toDouble(),
-                clipMap["end"] as? Double ?: (clipMap["end"] as Int).toDouble(),
-                Locator.fromJSON(JSONObject(clipMap["locator"] as Map<String, Any>))!!
-            )
-            listener.onClipChanged(clip)
+
+        when (command.customAction) {
+            "CLIP_CHANGED" -> {
+                if (!controller.isPlaying) return result
+
+                val clipData = args.getString("clip") ?: return result
+                val clipMap = JSONObject(clipData).toMap()
+                val clip = OverlayPar(
+                    clipMap["audioResource"] as String,
+                    clipMap["fragmentId"] as String,
+                    clipMap["textResource"] as String,
+                    clipMap["start"] as? Double ?: (clipMap["start"] as Int).toDouble(),
+                    clipMap["end"] as? Double ?: (clipMap["end"] as Int).toDouble(),
+                    Locator.fromJSON(JSONObject(clipMap["locator"] as Map<String, Any>))!!
+                )
+                listener.onClipChanged(clip)
+            }
+
+            "CLIP_EVENT_FIRED" -> {
+                clipEventHandler?.invoke()
+                clipEventHandler = null
+            }
         }
+
         return result
     }
 
+
+    fun scheduleClipEvent(fragmentId: String, fragmentProgress: Double, handler: () -> Unit) {
+        clipEventHandler = handler
+
+        val ctrl = controller ?: return
+        Handler(ctrl.applicationLooper).post {
+            ctrl.sendCustomCommand(
+                SessionCommand("SCHEDULE_CLIP_EVENT", Bundle.EMPTY),
+                Bundle().apply {
+                    putString("fragmentId", fragmentId)
+                    putDouble("fragmentProgress", fragmentProgress)
+                }
+            )
+        }
+    }
+
+    fun cancelScheduledClipEvent() {
+        clipEventHandler = null
+
+        val ctrl = controller ?: return
+        Handler(ctrl.applicationLooper).post {
+            ctrl.sendCustomCommand(
+                SessionCommand("CANCEL_CLIP_EVENT", Bundle.EMPTY),
+                Bundle.EMPTY
+            )
+        }
+    }
 
     private fun audioProgress(player: Player) = flow {
         while (true) {

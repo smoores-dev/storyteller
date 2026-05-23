@@ -279,9 +279,17 @@ export type EPUBViewProps = {
   isPlaying?: boolean
 }
 
+export type FragmentPageProportion = {
+  crossesPage: boolean
+  proportionOnCurrentPage: number
+}
+
 export type EPUBViewRef = {
   goForward: () => Promise<void>
   goBackward: () => Promise<void>
+  getFragmentPageProportion: (
+    fragmentId: string,
+  ) => Promise<FragmentPageProportion | null>
 }
 
 export interface StorytellerTrack {

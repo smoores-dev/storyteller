@@ -30,6 +30,7 @@ import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.AbsoluteUrl
+import org.json.JSONObject
 import kotlin.math.ceil
 
 data class Highlight(val id: String, @ColorInt val color: Int, val locator: Locator)
@@ -76,6 +77,10 @@ data class FinalizedProps(
 class EpubView(context: Context, appContext: AppContext) : ExpoView(context, appContext),
     EpubNavigatorFragment.Listener, DecorableNavigator.Listener {
 
+    companion object {
+        var current: EpubView? = null
+    }
+
     // Required for proper layout! Forces Expo to
     // use the Android layout system for this view,
     // rather than React Native's. Without this,
@@ -115,6 +120,7 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     val onHighlightTap by EventDispatcher()
 
     var navigator: EpubNavigatorFragment? = null
+    var player: AudiobookPlayer? = null
 
     var locationEmitter: Job? = null
 
@@ -179,6 +185,17 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         if (finalProps.isPlaying && finalProps.locator != null) {
             highlightFragment(finalProps.locator!!)
+
+            val newFragment = finalProps.locator?.locations?.fragments?.firstOrNull()
+            val oldFragment = oldProps?.locator?.locations?.fragments?.firstOrNull()
+
+            if (newFragment != null && newFragment != oldFragment) {
+                val p = player
+
+                if (p != null) {
+                    handleClipChanged(newFragment, p)
+                }
+            }
         } else {
             clearHighlightFragment()
         }
@@ -254,6 +271,8 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             }
             emitCurrentLocator()
         }
+
+        current = this
     }
 
     fun destroyNavigator() {
@@ -267,6 +286,10 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         removeView(navigator.view)
 
         this.navigator = null
+
+        if (current === this) {
+            current = null
+        }
     }
 
     private suspend fun emitCurrentLocator() {
@@ -336,6 +359,50 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
             changingResource = true
         }
         navigator!!.go(locator, true)
+    }
+
+    suspend fun getFragmentPageProportion(fragmentId: String): Map<String, Any>? {
+        val nav = navigator ?: return null
+
+        val result = nav.evaluateJavascript("""
+            (function() {
+                return storyteller.getFragmentPageProportion("$fragmentId");
+            })();
+        """.trimIndent()) ?: return null
+
+        return try {
+            val json = JSONObject(result)
+            mapOf(
+                "crossesPage" to json.getBoolean("crossesPage"),
+                "proportionOnCurrentPage" to json.getDouble("proportionOnCurrentPage")
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun handleClipChanged(fragmentId: String, player: AudiobookPlayer) {
+        val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
+
+        activity?.lifecycleScope?.launch {
+            val result = getFragmentPageProportion(fragmentId) ?: return@launch
+            val crossesPage = result["crossesPage"] as? Boolean ?: return@launch
+            if (!crossesPage) return@launch
+
+            val proportion = result["proportionOnCurrentPage"] as? Double ?: return@launch
+
+            player.scheduleClipEvent(fragmentId, proportion) {
+                activity.lifecycleScope.launch {
+                    val recheck = getFragmentPageProportion(fragmentId)
+                    val overflowsRight = (recheck?.get("crossesPage") as? Boolean) ?: false
+
+                    if (overflowsRight) {
+                        // not animated
+                        navigator?.goForward()
+                    }
+                }
+            }
+        }
     }
 
     override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
@@ -538,6 +605,40 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
                 storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
                     storyteller.observer.observe(element)
                 })
+
+                storyteller.getFragmentPageProportion = function getFragmentPageProportion(fragmentId) {
+                    const element = document.getElementById(fragmentId);
+                    if (!element) return null;
+
+                    const rects = Array.from(element.getClientRects());
+                    if (rects.length === 0) return null;
+
+                    const viewportWidth = window.innerWidth;
+                    let visibleWidth = 0;
+                    let totalWidth = 0;
+                    let overflowsRight = false;
+
+                    for (const rect of rects) {
+                        totalWidth += rect.width;
+
+                        if (rect.right > viewportWidth) {
+                            overflowsRight = true;
+                        }
+
+                        if (rect.left >= 0 && rect.right <= viewportWidth) {
+                            visibleWidth += rect.width;
+                        } else if (rect.left < viewportWidth && rect.right > 0) {
+                            const visibleLeft = Math.max(rect.left, 0);
+                            const visibleRight = Math.min(rect.right, viewportWidth);
+                            visibleWidth += visibleRight - visibleLeft;
+                        }
+                    }
+
+                    if (totalWidth === 0) return null;
+
+                    const proportion = visibleWidth / totalWidth;
+                    return { crossesPage: overflowsRight, proportionOnCurrentPage: proportion };
+                };
                 """.trimIndent()
             )
         }

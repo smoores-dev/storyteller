@@ -23,6 +23,8 @@ import org.readium.r2.shared.util.data.readDecodeOrNull
 import androidx.core.graphics.toColorInt
 
 class ReadiumModule : Module(), Listener {
+    private lateinit var player: AudiobookPlayer
+
     // Each module class must implement the definition function. The definition consists of
     // components
     // that describes the module's functionality and behavior.
@@ -30,7 +32,7 @@ class ReadiumModule : Module(), Listener {
     @RequiresApi(Build.VERSION_CODES.O)
     @OptIn(ExperimentalReadiumApi::class)
     override fun definition() = ModuleDefinition {
-        val player = AudiobookPlayer(appContext, this@ReadiumModule)
+        player = AudiobookPlayer(appContext, this@ReadiumModule)
 
         // Sets the name of the module that JavaScript code will use to refer to the module. Takes a
         // string as an argument.
@@ -232,6 +234,10 @@ class ReadiumModule : Module(), Listener {
                 navigator.goBackward(animated = false)
             }
 
+            AsyncFunction("getFragmentPageProportion") Coroutine { view: EpubView, fragmentId: String ->
+                return@Coroutine view.getFragmentPageProportion(fragmentId)
+            }
+
             Prop("locator") { view: EpubView, prop: Map<String, Any>? ->
                 if (prop == null) {
                     view.pendingProps.locator = null
@@ -321,6 +327,7 @@ class ReadiumModule : Module(), Listener {
             }
 
             OnViewDidUpdateProps { view: EpubView ->
+                view.player = player
                 view.finalizeProps()
             }
         }
@@ -343,4 +350,5 @@ class ReadiumModule : Module(), Listener {
     override fun onTrackChanged(track: Track, position: Double, index: Int) {
         this.sendEvent("trackChanged", mapOf("track" to track.toJson(), "position" to position, "index" to index))
     }
+
 }

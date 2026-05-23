@@ -51,6 +51,8 @@ struct FinalizedProps {
 }
 
 class EPUBView: ExpoView {
+    static weak var current: EPUBView?
+
     private let templates = HTMLDecorationTemplate.defaultTemplates()
     let onLocatorChange = EventDispatcher()
     let onMiddleTouch = EventDispatcher()
@@ -64,6 +66,7 @@ class EPUBView: ExpoView {
 
     public var pendingProps: Props = Props()
     public var props: FinalizedProps?
+
 
     private var changingResource = false
 
@@ -100,6 +103,13 @@ class EPUBView: ExpoView {
 
         if props!.isPlaying, let locator = finalProps.locator {
             highlightFragment(locator: locator)
+
+            let newFragment = locator.locations.fragments.first
+            let oldFragment = oldProps?.locator?.locations.fragments.first
+
+            if let fragmentId = newFragment, fragmentId != oldFragment {
+                handleClipChanged(fragmentId: fragmentId)
+            }
         } else {
             clearHighlightedFragment()
         }
@@ -217,6 +227,8 @@ class EPUBView: ExpoView {
             }
             self?.onHighlightTap(["decoration": event.decoration.id, "x": rect.midX, "y": rect.minY])
         }
+        EPUBView.current = self
+
         Task {
             await emitCurrentLocator()
         }
@@ -224,6 +236,10 @@ class EPUBView: ExpoView {
 
     public func destroyNavigator() {
         self.navigator?.view.removeFromSuperview()
+
+        if EPUBView.current === self {
+            EPUBView.current = nil
+        }
     }
 
     func emitCurrentLocator() async {
@@ -340,6 +356,51 @@ class EPUBView: ExpoView {
 
     func clearHighlightedFragment() {
         navigator?.apply(decorations: [], in: "overlay")
+    }
+
+    func getFragmentPageProportion(fragmentId: String) async -> [String: Any]? {
+        guard let navigator = navigator else { return nil }
+
+        let result = await navigator.evaluateJavaScript("""
+            (function() {
+                return storyteller.getFragmentPageProportion("\(fragmentId)");
+            })();
+        """)
+
+        switch result {
+        case .success(let value):
+            guard let dict = value as? [String: Any] else { return nil }
+            return dict
+        case .failure(let e):
+            print(e)
+            return nil
+        }
+    }
+
+    func handleClipChanged(fragmentId: String) {
+        Task {
+            guard let result = await getFragmentPageProportion(fragmentId: fragmentId) else { return }
+            guard let crossesPage = result["crossesPage"] as? Bool, crossesPage else { return }
+            guard let proportion = result["proportionOnCurrentPage"] as? Double else { return }
+
+            await AudiobookPlayerActor.shared.scheduleClipEvent(
+                fragmentId: fragmentId,
+                fragmentProgress: proportion
+            ) { [weak self] in
+                guard let self else { return }
+
+                Task {
+                    let result = await self.getFragmentPageProportion(fragmentId: fragmentId)
+                    // check necessary to avoid going forward again if user manually moved the page
+                    let overflowsRight = (result?["crossesPage"] as? Bool) ?? false
+
+                    if overflowsRight {
+                        // not animated
+                        await self.navigator?.goForward()
+                    }
+                }
+            }
+        }
     }
 
     override func layoutSubviews() {
@@ -578,6 +639,40 @@ extension EPUBView: EPUBNavigatorDelegate {
             storyteller.fragmentIds.map((id) => document.getElementById(id)).forEach((element) => {
                 storyteller.observer.observe(element)
             })
+
+            storyteller.getFragmentPageProportion = function getFragmentPageProportion(fragmentId) {
+                const element = document.getElementById(fragmentId);
+                if (!element) return null;
+
+                const rects = Array.from(element.getClientRects());
+                if (rects.length === 0) return null;
+
+                const viewportWidth = window.innerWidth;
+                let visibleWidth = 0;
+                let totalWidth = 0;
+                let overflowsRight = false;
+
+                for (const rect of rects) {
+                    totalWidth += rect.width;
+
+                    if (rect.right > viewportWidth) {
+                        overflowsRight = true;
+                    }
+
+                    if (rect.left >= 0 && rect.right <= viewportWidth) {
+                        visibleWidth += rect.width;
+                    } else if (rect.left < viewportWidth && rect.right > 0) {
+                        const visibleLeft = Math.max(rect.left, 0);
+                        const visibleRight = Math.min(rect.right, viewportWidth);
+                        visibleWidth += visibleRight - visibleLeft;
+                    }
+                }
+
+                if (totalWidth === 0) return null;
+
+                const proportion = visibleWidth / totalWidth;
+                return { crossesPage: overflowsRight, proportionOnCurrentPage: proportion };
+            }
         """
 
         userContentController.addUserScript(WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
