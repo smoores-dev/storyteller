@@ -203,6 +203,75 @@ function isAudioFile(filenameOrExt: string): boolean {
   return AUDIO_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))
 }
 
+const IMAGE_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".svg",
+  ".bmp",
+  ".tiff",
+  ".tif",
+])
+
+function extLower(filename: string): string {
+  const dot = filename.lastIndexOf(".")
+  return dot === -1 ? "" : filename.slice(dot).toLowerCase()
+}
+
+/**
+ * returns true for entries that are needed for metadata + cover reading:
+ * META-INF files, package documents, NCX navigation, and images.
+ */
+function isMetadataOrCoverEntry(filename: string): boolean {
+  if (filename.startsWith("META-INF/")) return true
+
+  const ext = extLower(filename)
+  if (ext === ".opf" || ext === ".ncx" || ext === ".xml") return true
+  if (IMAGE_EXTENSIONS.has(ext)) return true
+
+  return false
+}
+
+/**
+ * read-only view of an EPUB focused on metadata and cover image access.
+ * much faster than unzipping the entire EPUB
+ */
+export interface EpubMetadataReader extends Disposable {
+  getManifest(): Promise<Record<string, ManifestItem>>
+  getVersion(): Promise<string>
+  getLayout(): Promise<"reflowable" | "pre-paginated">
+  getBaseDirection(): Promise<"ltr" | "rtl" | "auto">
+
+  getMetadata(): Promise<EpubMetadata>
+  findMetadataItem(
+    predicate: (entry: MetadataEntry) => boolean,
+  ): Promise<MetadataEntry | null>
+  findAllMetadataItems(
+    predicate: (entry: MetadataEntry) => boolean,
+  ): Promise<MetadataEntry[]>
+
+  getIdentifier(): Promise<string | null>
+  getTitle(expanded?: boolean): Promise<string | null>
+  getSubtitle(): Promise<string | null>
+  getTitles(): Promise<{ title: string; type: string | null }[]>
+  getLanguage(): Promise<Intl.Locale | null>
+  getPublicationDate(): Promise<Date | null>
+  getModifiedDate(): Promise<Date | null>
+  getDescription(): Promise<string | null>
+  getCreators(type?: "creator" | "contributor"): Promise<DcCreator[]>
+  getContributors(): Promise<DcCreator[]>
+  getSubjects(): Promise<Array<string | DcSubject>>
+  getCollections(): Promise<Collection[]>
+  getPackageVocabularyPrefixes(): Promise<Record<string, string>>
+
+  getCoverImageItem(): Promise<ManifestItem | null>
+  getCoverImage(): Promise<Uint8Array | null | undefined>
+
+  discardAndClose(): void
+}
+
 export class EpubVersionError extends Error {}
 
 /**
@@ -585,9 +654,26 @@ export class Epub {
    * @param pathOrData Must be either a string representing the
    *        path to an EPUB file on disk, or a Uint8Array representing
    *        the data of the EPUB publication.
+   * @param options.metadataOnly When true, only extracts structural XML
+   *        and image entries from the archive, returning an
+   *        {@link EpubMetadataReader} that cannot access content documents
+   *        or audio. This is dramatically faster for large readaloud EPUBs.
    */
-  static async from(pathOrData: string | Uint8Array): Promise<Epub> {
-    const epub = await this.open(pathOrData)
+  static async from(
+    pathOrData: string | Uint8Array,
+    options: { metadataOnly: true },
+  ): Promise<EpubMetadataReader>
+  static async from(
+    pathOrData: string | Uint8Array,
+    options?: { metadataOnly?: false },
+  ): Promise<Epub>
+  static async from(
+    pathOrData: string | Uint8Array,
+    options?: { metadataOnly?: boolean },
+  ): Promise<Epub | EpubMetadataReader> {
+    const epub = options?.metadataOnly
+      ? await this.open(pathOrData, { entryFilter: isMetadataOrCoverEntry })
+      : await this.open(pathOrData)
 
     const version = await epub.getVersion()
     if (!version.startsWith("3.")) {
@@ -603,7 +689,10 @@ export class Epub {
   /**
    * Open an EPUB publication and return an Epub instance.
    */
-  private static async open(pathOrData: string | Uint8Array): Promise<Epub> {
+  private static async open(
+    pathOrData: string | Uint8Array,
+    options?: { entryFilter?: (filename: string) => boolean },
+  ): Promise<Epub> {
     const extractPath = join(
       tmpdir(),
       `storyteller-platform-epub-${randomUUID()}.epub`,
@@ -621,9 +710,12 @@ export class Epub {
 
       for await (const entry of zipfile) {
         if (entry.filename.endsWith(sep)) {
-          // Directory file names end with '/'.
-          // Note that entries for directories themselves are optional.
-          // An entry's filename implicitly requires its parent directories to exist.
+          // directory entries are skipped; parent dirs are created implicitly
+        } else if (
+          options?.entryFilter &&
+          !options.entryFilter(entry.filename)
+        ) {
+          // skip entries that don't pass the filter
         } else {
           const writePath = join(extractPath, entry.filename)
           const readStream = await entry.openReadStream()
