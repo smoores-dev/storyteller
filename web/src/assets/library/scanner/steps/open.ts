@@ -7,8 +7,8 @@ import {
 } from "@storyteller-platform/audiobook"
 import {
   Epub,
-  type EpubMetadataReader,
   EpubVersionError,
+  type InMemoryEpubReader,
 } from "@storyteller-platform/epub"
 
 import { defineStep } from "@/assets/library/scanner/step"
@@ -22,9 +22,7 @@ export const openEpubStep = defineStep(
   EPUB_STEP,
   async (input: FingerPrinted & { format: "ebook" | "readaloud" }, ctx) => {
     try {
-      const epub = ctx.scope.use(
-        await Epub.from(input.filepath, { metadataOnly: true }),
-      )
+      const epub = ctx.scope.use(await Epub.fromZip(input.filepath))
       return { ...input, isEpub2: false as const, epub }
     } catch (error) {
       if (!(error instanceof EpubVersionError)) throw error
@@ -35,7 +33,7 @@ export const openEpubStep = defineStep(
 
 export type OpenedEpub = FingerPrinted & { format: "ebook" | "readaloud" } & (
     | {
-        epub: EpubMetadataReader
+        epub: InMemoryEpubReader
         isEpub2: false
       }
     | {

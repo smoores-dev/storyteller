@@ -5,7 +5,7 @@ import {
   Audiobook,
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
-import { Epub, type EpubMetadataReader } from "@storyteller-platform/epub"
+import { Epub, type InMemoryEpubReader } from "@storyteller-platform/epub"
 
 import { move } from "@/assets/fs"
 import { type PipelineCtx, type ScanCtx } from "@/assets/library/scanner/ctx"
@@ -24,7 +24,7 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 export async function isReadaloudEpub(
-  epub: EpubMetadataReader,
+  epub: InMemoryEpubReader,
 ): Promise<boolean> {
   const manifest = await epub.getManifest()
   return Object.values(manifest).some((item) => item.mediaOverlay)
@@ -34,9 +34,9 @@ export async function isReadaloudEpub(
  */
 export async function openOrUpgradeEpub(
   filepath: string,
-): Promise<EpubMetadataReader> {
+): Promise<InMemoryEpubReader> {
   try {
-    return await Epub.from(filepath, { metadataOnly: true })
+    return await Epub.fromZip(filepath)
   } catch (error) {
     if (!isEpubVersionError(error)) throw error
 
@@ -60,12 +60,12 @@ export async function openOrUpgradeEpub(
       await upgraded.saveAndClose()
     }
 
-    return await Epub.from(filepath, { metadataOnly: true })
+    return await Epub.fromZip(filepath)
   }
 }
 
 export type OpenedEpubResult = {
-  epub: EpubMetadataReader
+  epub: InMemoryEpubReader
   format: Extract<ScanFormat, "ebook" | "readaloud">
 }
 
@@ -73,7 +73,7 @@ export async function openAndClassifyEpub(
   candidate: Candidate,
   ctx: PipelineCtx,
 ): Promise<OpenedEpubResult | null> {
-  let epub: EpubMetadataReader
+  let epub: InMemoryEpubReader
   try {
     epub = ctx.scope.use(await openOrUpgradeEpub(candidate.filepath))
   } catch (error) {

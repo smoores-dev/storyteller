@@ -25,10 +25,6 @@ export type CoverData = {
 
 export type CoverKind = "ebook" | "audiobook"
 
-// ---------------------------------------------------------------------------
-// filepath-based extraction (no Book / BookWithRelations required)
-// ---------------------------------------------------------------------------
-
 export async function extractCoverFromEpub(
   epubPath: string,
 ): Promise<CoverData | null> {

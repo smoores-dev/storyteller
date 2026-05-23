@@ -56,7 +56,7 @@ export default async function migrate() {
       )
     }
 
-    if (!(await hasColumn(trx, "book", "suffix"))) {
+    if (await hasColumn(trx, "book", "suffix")) {
       await sql`
       ALTER TABLE book
       DROP COLUMN suffix;

@@ -75,7 +75,7 @@ async function classifyFolder(
   for (const epubPath of epubPaths) {
     let aligned = false
     try {
-      using epub = await Epub.from(epubPath, { metadataOnly: true })
+      using epub = await Epub.fromZip(epubPath)
       aligned = await isReadaloudEpub(epub)
     } catch (error) {
       logger.warn({

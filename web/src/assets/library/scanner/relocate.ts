@@ -42,12 +42,14 @@ function resolveRelocator(
     suppressPrefix(source)
     suppressPrefix(destination)
     try {
-      // tag the auto-ignore with the book that triggered it. the UI hides
-      // these, and the FK cascades them away when the book is deleted.
-      await addIgnoreRule(source, {
-        source: "import-relocate",
-        bookUuid,
-      })
+      // doesn't make sense to add for move
+      if (importMode === "hardlink" || importMode === "copy") {
+        // make sure og file that's left behind isnt reimported
+        await addIgnoreRule(source, {
+          source: "import-relocate",
+          bookUuid,
+        })
+      }
       await resolver(source, destination)
     } finally {
       unsuppressPrefix(destination)
