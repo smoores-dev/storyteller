@@ -29,28 +29,17 @@ import {
 
 export interface ReadiumManifestOptions {
   /**
-   * If true, read each XHTML spine item and infer a `numberOfPages`
-   * value by summing character counts and dividing by a fixed
-   * characters-per-page constant. This matches Readium-go's
-   * per-resource positions heuristic.
+   * if true, infer a `numberOfPages`
+   * uses the compressed size of the entries, see {@link https://github.com/readium/architecture/issues/123}
    */
   inferPageCount?: boolean
   signal?: AbortSignal
 }
 
-// matches Readium-go's RecommendedReflowableStrategy:
-// archive entry length split by 1024-byte pages.
-// see readium-go-toolkit/pkg/parser/epub/positions_service.go:202.
 const BYTES_PER_PAGE = 1024
 
 /**
- * Build a Readium WebPub manifest for an EPUB by reading metadata,
- * spine, manifest, navigation, and (optionally) per-spine character
- * counts. Returns the serialized manifest JSON object — same shape
- * that the `readium manifest` CLI produces.
- *
- * Lifted from `align/src/readium/manifest.ts` (`generateManifest`) so
- * the scanner can stop shelling out to the Go binary.
+ * build a Readium WebPub manifest for an EPUB
  */
 export async function generateReadiumManifest(
   epub: EpubReader,
@@ -354,8 +343,8 @@ async function inferPageCount(
     }
     if (item.mediaType !== "application/xhtml+xml") continue
     try {
-      const itemContents = await epub.readItemContents(item.id, "utf-8")
-      const length = itemContents.length
+      // matches weird readium strat https://github.com/readium/architecture/issues/123
+      const length = await epub.getItemArchiveLength(item.id)
       total += Math.max(1, Math.ceil(length / BYTES_PER_PAGE))
     } catch {
       // a missing or unreadable spine item shouldn't fail the whole

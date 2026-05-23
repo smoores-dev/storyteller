@@ -208,32 +208,47 @@ function isAudioFile(filenameOrExt: string): boolean {
   return AUDIO_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))
 }
 
-/**
- * Storage backend for the Epub class.
- *
- * - "extracted-dir" backs writers: the archive is unzipped to a temp directory
- *   and reads/writes go through the filesystem. saveAndClose re-zips the tree.
- * - "zip" backs read-only views (Epub.fromForMetadata): the zip stays open as
- *   a yauzl handle and entries are read lazily into memory on demand. there
- *   is no temp directory, and mutation methods refuse via assertWritable.
- */
+export type EpubMode = "reader" | "full"
+
+export type EpubStorageKind = "extracted-dir" | "zip"
+
 type EpubSource =
   | { kind: "extracted-dir" }
   | {
       kind: "zip"
       zip: YauzlZipFile
       entries: Map<string, YauzlEntry>
-      cache: Map<string, Buffer>
+      // null means caching is disabled
+      // callers force this via Epub.fromZip(path, { cache: false })
+      cache: Map<string, Buffer> | null
     }
 
+export interface FromOptions {
+  /**
+   * when true, mutation methods throw {@link EpubReadOnlyError} at runtime
+   * @default false
+   */
+  readonly?: boolean
+}
+
+export interface FromZipOptions {
+  /**
+   * per-entry decompressed buffer cache
+   * turn it off when opening many EPUBs and reading each entry at most once
+   * keeps resident size bounded by the entry index, not the decompressed payload sum
+   * @default true
+   */
+  cache?: boolean
+  signal?: AbortSignal
+}
+
 /**
- * read-only view of an EPUB. backed by the same Epub class but opened
- * via Epub.fromForMetadata, which holds the archive as an in-memory zip
- * handle and reads entries lazily. every mutation method is omitted from
- * this type and throws at runtime via assertWritable if reached via a cast.
+ * Read-only view of an EPUB
+ * Returned by Epub.fromZip and by Epub.from(path, { readonly: true })
  */
 export type EpubReader = Pick<
   Epub,
+  | "storage"
   | "getManifest"
   | "getVersion"
   | "getLayout"
@@ -272,8 +287,11 @@ export type EpubReader = Pick<
 > &
   Disposable
 
-// kept for one cycle to ease external migration. prefer EpubReader.
-export type EpubMetadataReader = EpubReader
+/**
+ * Readonly Epub-instance backed by an in-memory zip handle
+ * Returned by {@link Epub.fromZip}
+ */
+export type InMemoryEpubReader = EpubReader & { readonly storage: "zip" }
 
 export class EpubVersionError extends Error {}
 export class EpubReadOnlyError extends Error {}
@@ -556,12 +574,21 @@ export class Epub {
 
   private packageMutex = new Mutex()
 
+  /**
+   * Storage backend in use for this instance
+   *
+   * Public so callers can declare type-level requirements via {@link InMemoryEpubReader}
+   * Orthogonal to the read-only / writable axis (controlled by `mode`)
+   */
+  readonly storage: EpubStorageKind
+
   protected constructor(
     protected extractPath: string,
     protected inputPath: string | undefined,
-    protected mode: "reader" | "full" = "full",
+    protected mode: EpubMode = "full",
     protected source: EpubSource = { kind: "extracted-dir" },
   ) {
+    this.storage = source.kind
     this.readXhtmlItemContents = memoize(
       this.readXhtmlItemContents.bind(this),
       // This isn't unnecessary, the generic here just isn't handling the
@@ -572,12 +599,16 @@ export class Epub {
   }
 
   /**
-   * ensures that readers don't accidentally try to read ureadable files
+   * Runtime guard for mutation methods
+   *
+   * mode = "reader" is set by Epub.fromZip and by Epub.from(path, { readonly: true })
+   * any attempt to mutate the package or write entries throws here
+   * so a misplaced cast can't silently corrupt the archive
    */
   private assertWritable(): void {
     if (this.mode === "reader") {
       throw new EpubReadOnlyError(
-        "cannot mutate an Epub opened with fromForMetadata. open with Epub.from to modify.",
+        "cannot mutate a read-only Epub. open with Epub.from(path) (without { readonly: true }) to modify.",
       )
     }
   }
@@ -665,30 +696,59 @@ export class Epub {
   }
 
   /**
-   * Construct an editable Epub instance by reading an existing
-   * EPUB publication.
+   * Open an existing EPUB publication
    *
-   * @param pathOrData Must be either a string representing the
-   *        path to an EPUB file on disk, or a Uint8Array representing
-   *        the data of the EPUB publication.
+   * Extracts the archive to a temp directory so writes can mutate the unpacked tree
+   * and can rezip with saveAndClose
+   *
+   * Pass `{ readonly: true }` to disable mutations
+   * use {@link Epub.fromZip} to also avoid the temp directory
+   *
+   * @param pathOrData a path to an EPUB on disk, or a Uint8Array with the EPUB data
+   * @param options see {@link FromOptions}
+   * @throws {EpubVersionError} when the archive is not a valid EPUB 3
    */
-  static async from(pathOrData: string | Uint8Array): Promise<Epub> {
-    const epub = await this.open(pathOrData)
+  static async from(pathOrData: string | Uint8Array): Promise<Epub>
+  static async from(
+    pathOrData: string | Uint8Array,
+    options: FromOptions & { readonly: true },
+  ): Promise<EpubReader>
+  static async from(
+    pathOrData: string | Uint8Array,
+    options?: FromOptions,
+  ): Promise<Epub | EpubReader>
+  static async from(
+    pathOrData: string | Uint8Array,
+    options: FromOptions = {},
+  ): Promise<Epub | EpubReader> {
+    const epub = await this.open(
+      pathOrData,
+      options.readonly ? "reader" : "full",
+    )
     await Epub.assertEpub3(epub)
     return epub
   }
 
   /**
-   * Create a readonly Epub in mem
+   * Open an EPUB read-only, backed by an in-memory zip handle
    *
-   * @throws {EpubReadOnlyError} when attempting to use mutation methods from the main Epub class
+   * No temp directory is created
+   * Entries are decompressed lazily on read and (by default) cached on the instance
+   * Mutation methods throw {@link EpubReadOnlyError}
+   * Opening for editing requires {@link Epub.from} without `{ readonly: true }`
+   *
+   * Returns a branded type incompatible with a normal `Epub`
+   *
+   * @throws {EpubReadOnlyError} when a mutation method is called on the result
+   * @throws {EpubVersionError} when the archive is not a valid EPUB 3
    */
-  static async fromForMetadata(
+  static async fromZip(
     pathOrData: string | Uint8Array,
-  ): Promise<EpubReader> {
-    const epub = await this.openZip(pathOrData)
+    options: FromZipOptions = {},
+  ): Promise<InMemoryEpubReader> {
+    const epub = await this.openZip(pathOrData, options)
     await Epub.assertEpub3(epub)
-    return epub
+    return epub as InMemoryEpubReader
   }
 
   private static async assertEpub3(epub: Epub): Promise<void> {
@@ -702,13 +762,18 @@ export class Epub {
   }
 
   /**
-   * Open an EPUB publication and return an Epub instance.
+   * Open an EPUB publication and return an Epub instance
    *
-   * Extracts the archive to a temp directory so writes can mutate
-   * the unpacked tree and `saveAndClose()` can re-zip it. For read-only
-   * use, prefer `Epub.fromForMetadata` which avoids extraction entirely.
+   * Extracts the archive to a temp directory
+   * Writes mutate the unpacked tree and saveAndClose re-zips it
+   * For read-only use, prefer {@link Epub.fromZip} which avoids extraction entirely
+   *
+   * @param mode "full" allows mutations; "reader" makes assertWritable refuse them
    */
-  private static async open(pathOrData: string | Uint8Array): Promise<Epub> {
+  private static async open(
+    pathOrData: string | Uint8Array,
+    mode: EpubMode = "full",
+  ): Promise<Epub> {
     const extractPath = join(
       tmpdir(),
       `storyteller-platform-epub-${randomUUID()}.epub`,
@@ -744,7 +809,7 @@ export class Epub {
     const epub = new this(
       extractPath,
       typeof pathOrData === "string" ? pathOrData : undefined,
-      "full",
+      mode,
       { kind: "extracted-dir" },
     )
 
@@ -762,12 +827,20 @@ export class Epub {
   }
 
   /**
-   * Open an EPUB as an in-memory zip handle. Used by `fromForMetadata`.
-   * The yauzl ZipFile and its entry index are retained on the instance;
-   * reads go through `getFileData` which decompresses entries lazily and
-   * caches the resulting buffers.
+   * Open an EPUB as an in-memory zip handle
+   *
+   * Used by {@link Epub.fromZip}
+   * The yauzl ZipFile and its entry index are retained on the instance
+   * Reads go through `getFileData` which decompresses entries lazily
+   * Decompressed buffers are cached per entry unless `cache: false` is passed
    */
-  private static async openZip(pathOrData: string | Uint8Array): Promise<Epub> {
+  private static async openZip(
+    pathOrData: string | Uint8Array,
+    options: FromZipOptions = {},
+  ): Promise<Epub> {
+    const { cache = true, signal } = options
+    signal?.throwIfAborted()
+
     const zip =
       typeof pathOrData === "string"
         ? await open(pathOrData)
@@ -776,6 +849,7 @@ export class Epub {
     const entries = new Map<string, YauzlEntry>()
     try {
       for await (const entry of zip) {
+        signal?.throwIfAborted()
         if (entry.filename.endsWith("/")) continue
         entries.set(entry.filename, entry)
       }
@@ -784,6 +858,8 @@ export class Epub {
       throw error
     }
 
+    // virtual root anchors absolute paths used elsewhere (resolveInternalHref,
+    // getRootfile). nothing is written to this path; it's a key prefix only.
     const virtualRoot = join(
       tmpdir(),
       `storyteller-platform-epub-zip-${randomUUID()}.epub`,
@@ -793,7 +869,7 @@ export class Epub {
       virtualRoot,
       typeof pathOrData === "string" ? pathOrData : undefined,
       "reader",
-      { kind: "zip", zip, entries, cache: new Map() },
+      { kind: "zip", zip, entries, cache: cache ? new Map() : null },
     )
 
     try {
@@ -834,6 +910,11 @@ export class Epub {
     await rm(filename)
   }
 
+  /**
+   * Get files data, either reading it from disk or from the zip file
+   * In the latter case, subsequent reads will be cached unless
+   * `cache: false` is passed to `fromZip`
+   */
   private async getFileData(path: string): Promise<Uint8Array>
   private async getFileData(path: string, encoding: "utf-8"): Promise<string>
   private async getFileData(
@@ -845,7 +926,7 @@ export class Epub {
     }
 
     const key = this.toZipEntryKey(path)
-    const cached = this.source.cache.get(key)
+    const cached = this.source.cache?.get(key)
     if (cached) {
       return encoding ? cached.toString(encoding) : new Uint8Array(cached)
     }
@@ -865,13 +946,13 @@ export class Epub {
       chunks.push(chunk as Buffer)
     }
     const buf = Buffer.concat(chunks)
-    this.source.cache.set(key, buf)
+    this.source.cache?.set(key, buf)
     return encoding ? buf.toString(encoding) : new Uint8Array(buf)
   }
 
   /**
-   * convert an absolute (possibly virtual) path under `this.extractPath`
-   * into the slash-separated entry name used to key zip entries.
+   * Convert an absolute (possibly virtual) path under `this.extractPath`
+   * into the slash-separated entry name used to key zip entries
    */
   private toZipEntryKey(path: string): string {
     const prefix = this.extractPath.endsWith(sep)
@@ -882,13 +963,9 @@ export class Epub {
   }
 
   /**
-   * Length of the underlying archive entry for a manifest item, in bytes.
-   *
-   * Ported from Readium-go's `ArchiveEntryLength` implementation.
-   *
-   * For the zip-backed reader, this comes from the yauzl Entry directly
-   * (no decompression). For the extracted-dir backend the file is already
-   * unpacked so the on-disk size is the uncompressed bytes.
+   * Length of the underlying archive entry for a manifest item, in bytes
+   * Necessary to compute the readium page count which is for COMPRESSED content
+   * @see {@link https://github.com/readium/architecture/issues/123}
    */
   async getItemArchiveLength(id: string): Promise<number> {
     const rootfile = await this.getRootfile()
@@ -3179,7 +3256,7 @@ export class Epub {
     } else {
       const { zip } = this.source
       this.source.entries.clear()
-      this.source.cache.clear()
+      this.source.cache?.clear()
       // fire-and-forget: closing the handle just releases the fd
       zip.close().catch(() => undefined)
     }
