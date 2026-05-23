@@ -89,7 +89,6 @@ export default async function migrate() {
           } as never)
           .where("uuid", "=", book.uuid)
           .execute()
-
         ;(book as Record<string, unknown>)["suffix"] = paths.getDefaultSuffix(
           book.uuid,
         )

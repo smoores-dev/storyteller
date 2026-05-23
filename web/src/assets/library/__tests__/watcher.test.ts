@@ -18,6 +18,7 @@ void describe("Watcher", () => {
     await createImportRule({ kind: "watch", path: absoluteRoot })
 
     await using watcher = new Watcher()
+
     await watcher.start()
     await waitForWatcher(2000)
 

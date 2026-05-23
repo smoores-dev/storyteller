@@ -1,1 +1,2 @@
-ALTER TABLE book DROP COLUMN suffix;
+ALTER TABLE book
+DROP COLUMN suffix;

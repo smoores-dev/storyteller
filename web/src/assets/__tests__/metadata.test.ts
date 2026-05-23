@@ -43,7 +43,9 @@ function tagRow(name: string): TagRow {
   }
 }
 
-function makeBook(overrides: Partial<BookWithRelations> = {}): BookWithRelations {
+function makeBook(
+  overrides: Partial<BookWithRelations> = {},
+): BookWithRelations {
   const base = {
     uuid: "00000000-0000-0000-0000-000000000000",
     title: "",
@@ -95,7 +97,9 @@ void describe("applyFieldOverrides", () => {
         { title: "Extracted Title" },
         {},
       )
-      assert.deepStrictEqual(result.metadataUpdate, { title: "Extracted Title" })
+      assert.deepStrictEqual(result.metadataUpdate, {
+        title: "Extracted Title",
+      })
     })
 
     void it("skip ignores extracted scalar even when storyteller is empty", () => {
@@ -117,7 +121,10 @@ void describe("applyFieldOverrides", () => {
         null,
         { tags: ["interesting"] },
       )
-      assert.deepStrictEqual(result.relationUpdate.tags, ["lame", "interesting"])
+      assert.deepStrictEqual(result.relationUpdate.tags, [
+        "lame",
+        "interesting",
+      ])
     })
 
     void it("dedupes when extracted tag matches a current tag", () => {
@@ -221,9 +228,7 @@ void describe("applyFieldOverrides", () => {
         }),
         null,
         {
-          creators: [
-            { name: "Carol", role: "nrt", fileAs: "Carol" },
-          ],
+          creators: [{ name: "Carol", role: "nrt", fileAs: "Carol" }],
         },
       )
       const narrators =
@@ -231,13 +236,16 @@ void describe("applyFieldOverrides", () => {
       const authors =
         result.relationUpdate.creators?.filter((c) => c.role === "aut") ?? []
       // narrators are merged (Bob + Carol)
-      assert.deepStrictEqual(
-        narrators.map((c) => c.name).sort(),
-        ["Bob", "Carol"],
-      )
+      assert.deepStrictEqual(narrators.map((c) => c.name).sort(), [
+        "Bob",
+        "Carol",
+      ])
       // authors are preserved (Alice) because we never produce a creators
       // patch that wipes a role that's set to skip.
-      assert.deepStrictEqual(authors.map((c) => c.name), ["Alice"])
+      assert.deepStrictEqual(
+        authors.map((c) => c.name),
+        ["Alice"],
+      )
     })
   })
 })

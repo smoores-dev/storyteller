@@ -144,10 +144,7 @@ void describe("import rule attribution", () => {
 
     const remaining = await getImportRules()
     assert.strictEqual(remaining.length, 1)
-    assert.strictEqual(
-      remaining[0]!.path,
-      "/watch/folder/reference-book.epub",
-    )
+    assert.strictEqual(remaining[0]!.path, "/watch/folder/reference-book.epub")
     assert.strictEqual(remaining[0]!.source, "prevent-reimport")
     assert.strictEqual(remaining[0]!.bookUuid, null)
   })

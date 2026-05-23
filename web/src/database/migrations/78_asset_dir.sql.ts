@@ -21,10 +21,7 @@ export default async function migrate() {
       logger.warn(
         `asset_dir collision during migration: "${folder}" already used by ${seen.get(folder)}, adding suffix for ${book.uuid}`,
       )
-      folder = getSafeFilepathSegment(
-        book.title,
-        getDefaultSuffix(book.uuid),
-      )
+      folder = getSafeFilepathSegment(book.title, getDefaultSuffix(book.uuid))
     }
 
     seen.set(folder, book.uuid)

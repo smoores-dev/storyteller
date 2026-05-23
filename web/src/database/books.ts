@@ -19,10 +19,7 @@ import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,
 } from "@/assets/metadata"
-import {
-  getDefaultSuffix,
-  getSafeFilepathSegment,
-} from "@/assets/paths"
+import { getDefaultSuffix, getSafeFilepathSegment } from "@/assets/paths"
 import { ASSETS_DIR } from "@/directories"
 import { BookEvents, type BookUpdatePayload } from "@/events"
 import { type UUID } from "@/uuid"

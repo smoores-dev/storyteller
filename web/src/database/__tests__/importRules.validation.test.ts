@@ -53,7 +53,6 @@ void describe("validateWatchRulePath", () => {
       existingRules: [rule("u1", "watch", "/library/a")],
     })
     assert.strictEqual(result.ok, false)
-    if (result.ok) return
     assert.strictEqual(result.error, "duplicate")
     assert.strictEqual(result.conflictWith, "u1")
   })
@@ -64,7 +63,6 @@ void describe("validateWatchRulePath", () => {
       existingRules: [rule("u1", "watch", "/library/a")],
     })
     assert.strictEqual(result.ok, false)
-    if (result.ok) return
     assert.strictEqual(result.error, "child-of")
     assert.strictEqual(result.conflictWith, "u1")
   })
@@ -75,7 +73,6 @@ void describe("validateWatchRulePath", () => {
       existingRules: [rule("u1", "watch", "/library/a")],
     })
     assert.strictEqual(result.ok, false)
-    if (result.ok) return
     assert.strictEqual(result.error, "parent-of")
     assert.strictEqual(result.conflictWith, "u1")
   })
@@ -103,7 +100,6 @@ void describe("validateWatchRulePath", () => {
       forbiddenRoots: ["/data/assets", "/data/uploads"],
     })
     assert.strictEqual(result.ok, false)
-    if (result.ok) return
     assert.strictEqual(result.error, "asset-folder")
   })
 
@@ -114,7 +110,6 @@ void describe("validateWatchRulePath", () => {
       forbiddenRoots: ["/data/assets"],
     })
     assert.strictEqual(result.ok, false)
-    if (result.ok) return
     assert.strictEqual(result.error, "asset-folder")
   })
 
@@ -133,7 +128,6 @@ void describe("validateWatchRulePath", () => {
       existingRules: [rule("u1", "watch", "/library/a")],
     })
     assert.strictEqual(result.ok, false)
-    if (result.ok) return
     assert.strictEqual(result.error, "duplicate")
   })
 
