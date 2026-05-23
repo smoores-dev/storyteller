@@ -37,6 +37,9 @@ async function exists(path: string): Promise<boolean> {
 // care about inode sharing we put the fixture next to ASSETS_DIR instead.
 async function createSameDeviceLibrary(prefix: string) {
   const parent = dirname(ASSETS_DIR)
+  if (await exists(parent)) {
+    await rm(parent, { recursive: true, force: true })
+  }
   await mkdir(parent, { recursive: true })
   const root = await mkdtemp(join(parent, `import-mode-test-${prefix}-`))
   return {
@@ -158,7 +161,10 @@ void describe("scanner import modes", () => {
       dstStat.ino,
       "hardlink should share an inode with the source",
     )
-    assert.ok(srcStat.nlink >= 2, "hardlink should have nlink >= 2")
+    assert.ok(
+      srcStat.nlink >= 2,
+      "hardlink should have nlink >= 2, was: " + srcStat.nlink.toString(),
+    )
   })
 
   void it("move mode relocates the file and removes the source", async () => {
@@ -323,8 +329,16 @@ void describe("scanner import modes", () => {
     await libA.createBookFolder("a", { ebook: "moby-dick" })
     await libB.createBookFolder("b", { ebook: "moby-dick" })
 
-    await createImportRule({ kind: "watch", path: rootA, importMode: "reference" })
-    await createImportRule({ kind: "watch", path: rootB, importMode: "reference" })
+    await createImportRule({
+      kind: "watch",
+      path: rootA,
+      importMode: "reference",
+    })
+    await createImportRule({
+      kind: "watch",
+      path: rootB,
+      importMode: "reference",
+    })
 
     await scanLibrary({
       source: "manual",
