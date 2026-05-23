@@ -18,12 +18,14 @@ import clockvalue from "smil-clockvalue"
 
 import type {
   DcCreator,
-  Epub,
+  EpubReader,
   NavigationList,
 } from "@storyteller-platform/epub"
 
-import { type ReadiumWebPublicationManifest } from "../../../epub/toipes.ts"
-import { type Rel } from "../../../epub/types.ts"
+import {
+  type ReadiumWebPublicationManifest,
+  type Rel,
+} from "./manifest.types.ts"
 
 export interface ReadiumManifestOptions {
   /**
@@ -51,7 +53,7 @@ const BYTES_PER_PAGE = 1024
  * the scanner can stop shelling out to the Go binary.
  */
 export async function generateReadiumManifest(
-  epub: Epub,
+  epub: EpubReader,
   options: ReadiumManifestOptions = {},
 ) {
   const primaryLocale = (await epub.getLanguage()) ?? new Intl.Locale("en-US")
@@ -98,9 +100,13 @@ export async function generateReadiumManifest(
   const dcSubjects = await epub.getSubjects()
   const subjects = dcSubjects.map<Subject>((subject) => {
     if (typeof subject === "string") {
-      return new Subject({ name: new LocalizedString(subject) })
+      return new Subject({
+        // TODO: should this be in primary locale?
+        name: new LocalizedString(subject),
+      })
     }
     return new Subject({
+      // TODO: should this be in primary locale?
       name: new LocalizedString(subject.value),
       scheme: subject.authority,
       code: subject.term,
@@ -273,7 +279,6 @@ export async function generateReadiumManifest(
       if (!refinedBy?.value) return link
 
       const itemDuration = clockvalue(refinedBy.value)
-      if (itemDuration === undefined) return link
 
       return new Link({
         href: link.href,
@@ -330,8 +335,8 @@ export async function generateReadiumManifest(
 }
 
 async function inferPageCount(
-  epub: Epub,
-  spine: Awaited<ReturnType<Epub["getSpineItems"]>>,
+  epub: EpubReader,
+  spine: Awaited<ReturnType<EpubReader["getSpineItems"]>>,
   signal?: AbortSignal,
 ): Promise<number | undefined> {
   let total = 0
@@ -349,7 +354,8 @@ async function inferPageCount(
     }
     if (item.mediaType !== "application/xhtml+xml") continue
     try {
-      const length = await epub.getItemArchiveLength(item.id)
+      const itemContents = await epub.readItemContents(item.id, "utf-8")
+      const length = itemContents.length
       total += Math.max(1, Math.ceil(length / BYTES_PER_PAGE))
     } catch {
       // a missing or unreadable spine item shouldn't fail the whole

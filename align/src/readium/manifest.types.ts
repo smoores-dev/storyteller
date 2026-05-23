@@ -1,7 +1,5 @@
 // generated using json-schema-to-typescript from https://github.com/readium/webpub-manifest/blob/379522e/schema/webpub-manifest.schema.json
 
-import { type Rel } from "./rel.types.ts"
-
 export type ReadiumWebPublicationManifest = EPUBExtensionSubCollections & {
   "@context"?: string | string[]
   metadata: Metadata
@@ -733,3 +731,19 @@ export interface VolumeObject {
   storyArc?: StoryArc
   [k: string]: unknown
 }
+
+// this is not a part of the generated webpub schema
+
+/**
+ * @see https://readium.org/webpub-manifest/relationships.html
+ */
+export type Rel =
+  | "alternate"
+  | "contents"
+  | "cover"
+  | "first"
+  | "last"
+  | "manifest"
+  | "search"
+  | "self"
+  | "start"

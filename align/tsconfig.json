@@ -14,13 +14,7 @@
     "lib": ["esnext"],
     "outDir": "dist"
   },
-  "include": [
-    "package.json",
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "test/**/*.ts",
-    "./src/types/smil-clockvalue.d.ts"
-  ],
+  "include": ["package.json", "src/**/*.ts"],
   "references": [
     {
       "path": "../epub"
