@@ -305,7 +305,7 @@ export async function deleteOriginals(book: BookWithRelations) {
 }
 
 /**
- * Library-owned assets and the readaloud artifact are deleted. Reference-mode
+ * Library-owned assets are deleted. Reference-mode
  * source files (ebook/audiobook outside ASSETS_DIR) are left on disk.
  */
 export async function deleteAssets(book: BookWithRelations) {
@@ -316,7 +316,7 @@ export async function deleteAssets(book: BookWithRelations) {
 
   if (
     book.readaloud?.filepath &&
-    !pathBelongsTo(bookDir, book.readaloud.filepath)
+    pathBelongsTo(ASSETS_DIR, book.readaloud.filepath)
   ) {
     suppressPrefix(book.readaloud.filepath)
     await rm(book.readaloud.filepath, { force: true })
@@ -333,6 +333,8 @@ export async function deleteAssets(book: BookWithRelations) {
     await rm(book.audiobook.filepath, { recursive: true, force: true })
     unsuppressPrefix(book.audiobook.filepath)
   }
+
+  await deleteCachedCoverImages(book.uuid)
 }
 
 const cachedCoverImageLocks = new Map<string, AsyncMutex>()
