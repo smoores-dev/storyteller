@@ -159,44 +159,59 @@ build-whisper-linux-arm64-cpu:
 
 # Linux CUDA builds (use cuda base images)
 
-build-whisper-linux-x64-cuda-13.1.0:
+.whisper-build-base-cuda:
   extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-13.1
+  tags: [saas-linux-large-amd64]
+  before_script:
+    - wget
+      "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu${UBUNTU_VERSION}/x86_64/cuda-keyring_1.1-1_all.deb"
+    - dpkg -i cuda-keyring_1.1-1_all.deb
+    - apt-get update
+    - apt-get install -y --no-install-recommends "cuda-nvcc-${CUDA_VERSION}"
+      "cuda-cudart-dev-${CUDA_VERSION}" "libcublas-dev-${CUDA_VERSION}"
+    - ln -sf "/usr/local/cuda-${CUDA_VERSION_DOT}" /usr/local/cuda
+    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
+      /usr/local/cuda/lib64/stubs/libcuda.so.1
+
+build-whisper-linux-x64-cuda-13.1.0:
+  extends: .whisper-build-base-cuda
   image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-13.1
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-cuda-13.1.0"
+    UBUNTU_VERSION: "2404"
+    CUDA_VERSION: "13-1"
+    CUDA_VERSION_DOT: "13.1"
     CMAKE_FLAGS: "-DGGML_CUDA=1"
     LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
     LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-  before_script:
-    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
-      /usr/local/cuda/lib64/stubs/libcuda.so.1
 
 build-whisper-linux-x64-cuda-12.9.0:
-  extends: .whisper-build-base
+  extends: .whisper-build-base-cuda
   image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-12.9
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-cuda-12.9.0"
+    UBUNTU_VERSION: "2404"
+    CUDA_VERSION: "12-9"
+    CUDA_VERSION_DOT: "12-9"
     CMAKE_FLAGS: "-DGGML_CUDA=1"
     LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
     LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-  before_script:
-    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
-      /usr/local/cuda/lib64/stubs/libcuda.so.1
 
 build-whisper-linux-x64-cuda-11.8.0:
-  extends: .whisper-build-base
+  extends: .whisper-build-base-cuda
   image: $CI_REGISTRY_IMAGE/storyteller-base:cuda-11.8
   tags: [saas-linux-large-amd64]
   variables:
     VARIANT: "linux-x64-cuda-11.8.0"
+    UBUNTU_VERSION: "2204"
+    CUDA_VERSION: "11-8"
+    CUDA_VERSION_DOT: "11-8"
     CMAKE_FLAGS: "-DGGML_CUDA=1"
     LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
     LD_LIBRARY_PATH: "/usr/local/cuda/lib64/stubs"
-  before_script:
-    - ln -sf /usr/local/cuda/lib64/stubs/libcuda.so
-      /usr/local/cuda/lib64/stubs/libcuda.so.1
 
 build-whisper-linux-x64-cuda-13.1.0-legacy:
   extends: build-whisper-linux-x64-cuda-13.1.0
@@ -601,7 +616,7 @@ build-whisper-windows-x64-rocm:
           exit 1
         }
         # amd installers vary between /S (nsis) and -install (amd format)
-        Start-Process "$env:TEMP\hip_installer.exe" -ArgumentList '-install' -NoNewWindow -Wait 
+        Start-Process "$env:TEMP\hip_installer.exe" -ArgumentList '-install' -NoNewWindow -Wait
         if (-not (Test-Path $rocmBase)) {
           Write-Error "HIP SDK installation failed, trying again?"
           Start-Process "$env:TEMP\hip_installer.exe"-ArgumentList '-install'  -NoNewWindow  -Wait

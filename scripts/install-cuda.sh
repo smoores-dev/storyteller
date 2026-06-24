@@ -15,7 +15,7 @@ dpkg -i cuda-keyring_1.1-1_all.deb
 rm cuda-keyring_1.1-1_all.deb
 
 apt-get update
-apt-get install -y --no-install-recommends "cuda-toolkit-${CUDA_VERSION}"
+apt-get install -y --no-install-recommends "cuda-cudart-${CUDA_VERSION}" "libcublas-${CUDA_VERSION}"
 rm -rf /var/lib/apt/lists/*
 
 # create symlink so /usr/local/cuda always points to the installed version
