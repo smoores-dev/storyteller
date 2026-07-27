@@ -7,6 +7,7 @@ bump-versions:
     - apt update && apt install -y --no-install-recommends git-lfs
     - git remote set-url origin
       https://ci-push-tag-token:${CI_PUSH_TAG_TOKEN}@gitlab.com/storyteller-platform/storyteller.git
+    - npm i -g corepack
     - yarn workspaces focus storyteller
     - yarn node ./scripts/bumpVersions.mts
 
