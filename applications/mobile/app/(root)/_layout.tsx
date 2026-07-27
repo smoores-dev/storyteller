@@ -88,36 +88,42 @@ export default function ModalLayout() {
         name="listen/[uuid]"
         options={{
           presentation: modalPresentation,
+          sheetShouldOverflowTopInset: true,
         }}
       />
       <Stack.Screen
         name="custom-theme/index"
         options={{
           presentation: modalPresentation,
+          sheetShouldOverflowTopInset: true,
         }}
       />
       <Stack.Screen
         name="custom-theme/new"
         options={{
           presentation: modalPresentation,
+          sheetShouldOverflowTopInset: true,
         }}
       />
       <Stack.Screen
         name="custom-theme/[name]"
         options={{
           presentation: modalPresentation,
+          sheetShouldOverflowTopInset: true,
         }}
       />
       <Stack.Screen
         name="custom-fonts"
         options={{
           presentation: modalPresentation,
+          sheetShouldOverflowTopInset: true,
         }}
       />
       <Stack.Screen
         name="log"
         options={{
           presentation: modalPresentation,
+          sheetShouldOverflowTopInset: true,
         }}
       />
     </Stack>

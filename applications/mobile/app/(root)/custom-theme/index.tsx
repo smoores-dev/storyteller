@@ -27,7 +27,7 @@ export default function CustomThemeListScreen() {
   const { colorThemes } = preferences
 
   return (
-    <View className="w-full flex-1">
+    <View className="android:pt-safe w-full flex-1">
       <View className="mb-2 w-full flex-row items-center px-4 pt-3">
         <Button
           accessibilityLabel="Close custom themes"

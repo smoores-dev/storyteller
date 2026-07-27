@@ -228,7 +228,7 @@ export default function PlayerScreen() {
   if (!book) return null
 
   return (
-    <View className="relative flex-1">
+    <View className="android:pt-safe relative flex-1">
       <PortalHost>
         <View className="w-full flex-row items-center justify-between px-4 pt-3 pb-2">
           <TouchableOpacity
