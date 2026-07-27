@@ -9,7 +9,6 @@ import {
   useReaderFormSheetBottomInset,
   useReaderFormSheetHeight,
 } from "@/components/toolbarItems/readerFormSheetLayout"
-import { PortalHost } from "@/components/ui/portal-context"
 import { type UUID } from "@/uuid"
 
 type ReadingSettingsParams = {
@@ -37,14 +36,12 @@ export default function ReadingSettingsScreen() {
       >
         <View className="bg-muted-foreground/40 h-1 w-12 rounded-full" />
       </View>
-      <PortalHost>
-        <ScrollView
-          style={{ height: scrollHeight }}
-          contentContainerClassName="px-6 pb-20"
-        >
-          <ReadingSettings {...(uuid ? { bookUuid: uuid } : {})} />
-        </ScrollView>
-      </PortalHost>
+      <ScrollView
+        style={{ height: scrollHeight }}
+        contentContainerClassName="px-6 pb-20"
+      >
+        <ReadingSettings {...(uuid ? { bookUuid: uuid } : {})} />
+      </ScrollView>
     </View>
   )
 }

@@ -1,7 +1,6 @@
 import { Link, useRouter } from "expo-router"
 import { BookOpen, Headphones } from "lucide-react-native"
-import { useRef } from "react"
-import { Platform, Pressable, View, type ViewStyle } from "react-native"
+import { Pressable, View, type ViewStyle } from "react-native"
 
 import { type BookWithRelations } from "@/database/books"
 import { useAvailableFormats } from "@/hooks/useAvailableFormats"
@@ -21,7 +20,7 @@ import { Stack } from "./ui/Stack"
 import { Button } from "./ui/button"
 import { Icon } from "./ui/icon"
 import { ReadaloudIcon } from "./ui/icon-readaloud"
-import { Menu, type MenuAction, type MenuRef } from "./ui/menu"
+import { Menu, type MenuAction } from "./ui/menu"
 import { Text } from "./ui/text"
 
 const DEFAULT_THUMBNAIL_WIDTH = 116
@@ -37,7 +36,6 @@ export function BookThumbnail({
   width = DEFAULT_THUMBNAIL_WIDTH,
 }: Props) {
   const router = useRouter()
-  const androidMenuRef = useRef<MenuRef>(null)
   const height = Math.round(width * THUMBNAIL_HEIGHT_RATIO)
   const titleFontSize = Math.max(11, Math.min(16, Math.round(width * 0.11)))
   const authorFontSize = Math.max(10, Math.min(14, Math.round(width * 0.1)))
@@ -182,53 +180,24 @@ export function BookThumbnail({
     </>
   )
 
-  const thumbnail = (
-    // Pressable instead of Link alone for Boox device compat
+  return (
     <View className="overflow-visible" style={{ width }}>
-      <Link asChild href={`/book/${book.uuid}`}>
-        <Pressable
-          accessibilityLabel={`Open details for ${book.title}`}
-          accessibilityRole="button"
-          style={{ width }}
-          className="overflow-visible"
-        >
-          {cover}
-          {renderMetadata(width)}
-        </Pressable>
-      </Link>
-      <BookThumbnailActionButtons book={book} height={height} width={width} />
-    </View>
-  )
-
-  if (Platform.OS === "android") {
-    return (
-      <Menu actions={menuActions} androidManualTrigger menuRef={androidMenuRef}>
-        <View className="overflow-visible" style={{ width }}>
+      <Menu actions={menuActions} shouldOpenOnLongPress>
+        {/* asChild + Pressable instead of Link alone for Boox device compat */}
+        <Link asChild href={`/book/${book.uuid}`}>
           <Pressable
             accessibilityLabel={`Open details for ${book.title}`}
             accessibilityRole="link"
             className="overflow-visible"
-            onLongPress={() => androidMenuRef.current?.show()}
-            onPress={openBookDetails}
             style={{ width }}
           >
             {cover}
             {renderMetadata(width)}
           </Pressable>
-          <BookThumbnailActionButtons
-            book={book}
-            height={height}
-            width={width}
-          />
-        </View>
+        </Link>
       </Menu>
-    )
-  }
-
-  return (
-    <Menu actions={menuActions} shouldOpenOnLongPress>
-      {thumbnail}
-    </Menu>
+      <BookThumbnailActionButtons book={book} height={height} width={width} />
+    </View>
   )
 }
 

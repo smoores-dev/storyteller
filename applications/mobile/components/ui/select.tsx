@@ -1,6 +1,6 @@
 import { ChevronDown } from "lucide-react-native"
 import * as React from "react"
-import { Platform, View } from "react-native"
+import { Platform, Pressable } from "react-native"
 
 import { Icon } from "@/components/ui/icon"
 import { Menu, type MenuAction } from "@/components/ui/menu"
@@ -108,8 +108,8 @@ export function SelectTrigger({
   ref,
   size = "default",
   ...props
-}: React.ComponentProps<typeof View> &
-  React.RefAttributes<View> & {
+}: React.ComponentProps<typeof Pressable> &
+  React.RefAttributes<typeof Pressable> & {
     disabled?: boolean
     iconColor?: string
     size?: "default" | "sm"
@@ -132,16 +132,17 @@ export function SelectTrigger({
   )
 
   return (
-    <Menu
-      actions={actions}
-      {...(accessibilityLabel ? { title: accessibilityLabel } : {})}
-    >
-      <TextClassContext.Provider value="text-foreground text-sm">
-        <View
+    <TextClassContext.Provider value="text-foreground text-sm">
+      <Menu
+        actions={actions}
+        {...(accessibilityLabel ? { title: accessibilityLabel } : {})}
+      >
+        <Pressable
           ref={ref}
           accessibilityLabel={accessibilityLabel}
           accessibilityRole="button"
           accessibilityState={{ disabled }}
+          disabled={disabled}
           className={cn(
             "border-input bg-background dark:bg-input/30 dark:active:bg-input/50 flex flex-row items-center justify-between gap-2 rounded-md border px-3 py-2 shadow-xs shadow-black/5",
             Platform.select({
@@ -159,9 +160,9 @@ export function SelectTrigger({
             aria-hidden={true}
             className={cn("size-4", "text-" + iconColor)}
           />
-        </View>
-      </TextClassContext.Provider>
-    </Menu>
+        </Pressable>
+      </Menu>
+    </TextClassContext.Provider>
   )
 }
 
