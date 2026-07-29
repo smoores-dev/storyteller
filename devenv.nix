@@ -1,9 +1,9 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 
 let
-  patched-whisper = pkgs.whisper-cpp.overrideAttrs (finalAttrs: oldAttrs: {
-    cudaSupport = true;
-    rocmSupport = true;
+  patched-whisper = (pkgs.whisper-cpp.override {
+    vulkanSupport = true; # you cant compile for both cuda&rocm at once, but vulkan supports both and is only ~10-20% slower
+  }).overrideAttrs (finalAttrs: oldAttrs: {
     version = "1.8.3";
     src = pkgs.fetchFromGitHub {
       owner = "ggml-org";
