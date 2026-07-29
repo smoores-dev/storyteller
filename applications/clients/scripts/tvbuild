@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+DESTINATION="${STORYTELLER_TVOS_DESTINATION:-platform=tvOS Simulator,name=Apple TV}"
+XCODEBUILD_OPTIONS=(build)
+if [[ "${STORYTELLER_DISABLE_CODE_SIGNING:-0}" == "1" ]]; then
+    XCODEBUILD_OPTIONS=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build)
+fi
+
+xcodebuild -project Storyteller.xcodeproj \
+    -scheme "Storyteller (tvOS)" \
+    -configuration Debug \
+    -destination "${DESTINATION}" \
+    -derivedDataPath .buildTV "${XCODEBUILD_OPTIONS[@]}" | xcbeautify

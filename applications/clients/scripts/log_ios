@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+xcrun simctl spawn booted log stream \
+  --style compact \
+  --level debug \
+  --predicate 'subsystem == "dev.smoores.Storyteller"'

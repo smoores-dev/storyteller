@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+SDK="${ANDROID_HOME:-${HOME}/Library/Android/sdk}"
+ADB="${SDK}/platform-tools/adb"
+APK="AndroidApp/app/build/outputs/apk/debug/app-debug.apk"
+AVD="${STORYTELLER_ANDROID_AVD:-$("${SDK}/emulator/emulator" -list-avds | head -1)}"
+
+if ! "${ADB}" get-state >/dev/null 2>&1; then
+    "${SDK}/emulator/emulator" -avd "${AVD}" >/dev/null 2>&1 &
+    disown
+fi
+"${ADB}" wait-for-device shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
+
+"${ADB}" install -r "${APK}"
+"${ADB}" shell am start -n dev.smoores.Storyteller.dev3/dev.smoores.storyteller.MainActivity

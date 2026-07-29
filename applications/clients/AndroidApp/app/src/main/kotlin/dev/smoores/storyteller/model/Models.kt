@@ -1,0 +1,352 @@
+package dev.smoores.storyteller.model
+
+import java.io.Serializable
+import org.json.JSONArray
+import org.json.JSONObject
+
+data class BookID(
+    val sourceID: String,
+    val uuid: String,
+) : Serializable
+
+data class Book(
+    val id: BookID,
+    val title: String,
+    val subtitle: String?,
+    val authors: String,
+    val authorNames: List<String>,
+    val narrators: List<String>,
+    val series: List<BookSeries>,
+    val tags: List<String>,
+    val collections: List<String>,
+    val description: String?,
+    val language: String?,
+    val publicationDateDisplay: String,
+    val createdAt: String?,
+    val createdAtDisplay: String,
+    val updatedAtDisplay: String,
+    val rating: Double?,
+    val progress: Double,
+    val pageCount: Int?,
+    val durationDisplay: String,
+    val durationSeconds: Double,
+    val sortTitle: String,
+    val sortAuthor: String,
+    val sortNarrator: String,
+    val sortSeriesName: String,
+    val sortSeriesPosition: Double,
+    val sortAdded: String,
+    val sortLastRead: String,
+    val sortPublicationDate: String,
+    val publicationYear: String,
+    val status: String?,
+    val fileSizeBytes: Long,
+    val coverVersion: String,
+    val media: List<BookMedia>,
+    val playbackOwner: String?,
+) {
+    val hasEbook: Boolean get() = media.any { it.category == "ebook" }
+    val hasAudio: Boolean get() = media.any { it.category == "audio" }
+    val hasReadaloud: Boolean get() = media.any { it.category == "synced" }
+    val hasDownloadedMedia: Boolean get() = media.any(BookMedia::downloaded)
+}
+
+data class BookDetails(
+    val version: String,
+    val description: String?,
+    val publicationDateDisplay: String,
+    val createdAtDisplay: String,
+    val updatedAtDisplay: String,
+)
+
+data class BookSeries(
+    val name: String,
+    val position: Double?,
+)
+
+data class BookMedia(
+    val category: String,
+    val format: String?,
+    val pageCount: Int?,
+    val durationDisplay: String,
+    val fileSizeDisplay: String,
+    val status: String?,
+    val downloaded: Boolean,
+    val removable: Boolean,
+    val downloadState: String?,
+    val downloadProgress: Double?,
+)
+
+data class LibrarySnapshot(
+    val books: List<Book>,
+    val homeSections: List<HomeSection>,
+    val sourceStatus: String,
+    val sourceMessage: String?,
+)
+
+data class HomeSection(
+    val kind: String,
+    val title: String,
+    val bookIDs: List<BookID>,
+)
+
+data class DownloadOperation(
+    val bookID: BookID,
+    val category: String,
+)
+
+data class DownloadUpdate(
+    val operation: DownloadOperation,
+    val state: String,
+    val progress: Double?,
+)
+
+data class SourceStatusUpdate(
+    val status: String,
+    val message: String?,
+)
+
+data class AppSettings(
+    val progressSyncIntervalSeconds: Double,
+    val metadataRefreshIntervalSeconds: Double,
+    val autoSyncToNewerServerPosition: Boolean,
+    val liveReadingSyncEnabled: Boolean,
+)
+
+data class StorytellerSettings(
+    val configured: Boolean = false,
+    val sourceID: String? = null,
+    val serverURL: String = "",
+    val username: String = "",
+    val connectionStatus: String = "notConfigured",
+    val connectionMessage: String? = null,
+)
+
+data class AudiobookChapter(
+    val id: String,
+    val title: String,
+    val duration: Double,
+)
+
+data class ServerPosition(
+    val title: String?,
+    val totalProgression: Double?,
+)
+
+data class AudiobookPlayerState(
+    val bookID: BookID,
+    val title: String,
+    val author: String,
+    val isPlaying: Boolean,
+    val currentTime: Double,
+    val duration: Double,
+    val bookProgress: Double,
+    val currentChapterID: String?,
+    val currentChapterIndex: Int?,
+    val chapterElapsed: Double,
+    val chapterDuration: Double,
+    val chapterProgress: Double,
+    val playbackRate: Double,
+    val volume: Double,
+    val chapters: List<AudiobookChapter>,
+    val sleepTimerMode: String?,
+    val sleepTimerRemaining: Double?,
+    val pendingServerPosition: ServerPosition?,
+)
+
+data class ReaderOpenResult(
+    val readerPath: String,
+    val originalPath: String,
+    val hasAudioNarration: Boolean,
+    val title: String,
+)
+
+enum class SessionKind { Readaloud, Audiobook }
+
+data class SessionState(
+    val kind: SessionKind,
+    val bookID: BookID,
+    val title: String,
+    val author: String?,
+    val isPlaying: Boolean,
+    val playbackRate: Double,
+)
+
+data class ReaderTocEntry(
+    val label: String,
+    val href: String,
+    val level: Int,
+    val sectionIndex: Int,
+)
+
+data class ReaderTheme(
+    val id: String,
+    val name: String,
+    val isBuiltIn: Boolean,
+    val isEdited: Boolean,
+    val appearance: String,
+    val backgroundColor: String,
+    val foregroundColor: String,
+    val highlightColor: String,
+    val highlightThickness: Double,
+    val readaloudHighlightMode: String,
+    val userHighlightMode: String,
+    val userHighlightColors: List<String>,
+    val userHighlightLabels: List<String>,
+    val customCSS: String?,
+) {
+    fun availableForLight(): Boolean = appearance != "dark"
+
+    fun availableForDark(): Boolean = appearance != "light"
+
+    fun toEditJson(includeId: Boolean): String = JSONObject().apply {
+        if (includeId) put("id", id)
+        put("name", name)
+        put("appearance", appearance)
+        put("backgroundColor", backgroundColor)
+        put("foregroundColor", foregroundColor)
+        put("highlightColor", highlightColor)
+        put("highlightThickness", highlightThickness)
+        put("readaloudHighlightMode", readaloudHighlightMode)
+        put("userHighlightMode", userHighlightMode)
+        put("userHighlightColors", JSONArray(userHighlightColors))
+        put("userHighlightLabels", JSONArray(userHighlightLabels))
+        put("customCSS", customCSS.orEmpty())
+    }.toString()
+}
+
+// Defaults mirror AndroidReaderSettings, which mirrors SettingsDefaults.swift.
+data class ReaderDisplaySettings(
+    val fontSize: Double = 24.0,
+    val fontFamily: String = "System Default",
+    val lineSpacing: Double = 1.4,
+    val marginLeftRight: Double = 2.0,
+    val marginTopBottom: Double = 8.0,
+    val wordSpacing: Double = 0.0,
+    val letterSpacing: Double = 0.0,
+    val textAlignment: String = "justify",
+    val singleColumnMode: Boolean = true,
+    val scrollingMode: Boolean = false,
+    val enableMarginClickNavigation: Boolean = true,
+    val lockViewToAudio: Boolean = true,
+) {
+    fun toUpdateJson(): String = JSONObject().apply {
+        put("fontSize", fontSize)
+        put("fontFamily", fontFamily)
+        put("lineSpacing", lineSpacing)
+        put("marginLeftRight", marginLeftRight)
+        put("marginTopBottom", marginTopBottom)
+        put("wordSpacing", wordSpacing)
+        put("letterSpacing", letterSpacing)
+        put("textAlignment", textAlignment)
+        put("singleColumnMode", singleColumnMode)
+        put("scrollingMode", scrollingMode)
+        put("enableMarginClickNavigation", enableMarginClickNavigation)
+        put("lockViewToAudio", lockViewToAudio)
+    }.toString()
+}
+
+data class ReaderSearchResult(
+    val cfi: String,
+    val pre: String,
+    val match: String,
+    val post: String,
+)
+
+data class ReaderSearchSection(
+    val label: String,
+    val results: List<ReaderSearchResult>,
+)
+
+data class ReaderSearchState(
+    val query: String = "",
+    val isSearching: Boolean = false,
+    val progress: Double = 0.0,
+    val totalCount: Int = 0,
+    val sections: List<ReaderSearchSection> = emptyList(),
+    val error: String? = null,
+)
+
+data class ReaderHighlight(
+    val id: String,
+    val text: String,
+    val colorId: String?,
+    val note: String?,
+    val isBookmark: Boolean,
+    val chapterTitle: String?,
+)
+
+data class ReaderHighlightPaletteEntry(
+    val id: String,
+    val color: String,
+    val label: String,
+)
+
+data class ReaderPendingEdit(
+    val id: String,
+    val text: String,
+    val colorId: String?,
+    val note: String?,
+)
+
+data class ReaderOverlayOptions(
+    val showProgress: Boolean = true,
+    val showPageNumber: Boolean = true,
+    val showTimeRemainingInBook: Boolean = true,
+    val showTimeRemainingInChapter: Boolean = true,
+    val showSkipBackward: Boolean = true,
+    val showPlayPause: Boolean = true,
+    val showSkipForward: Boolean = true,
+    val alwaysShowMiniPlayer: Boolean = false,
+    val showMiniPlayerStats: Boolean = false,
+) {
+    fun toUpdateJson(): String = JSONObject().apply {
+        put("showProgress", showProgress)
+        put("showPageNumber", showPageNumber)
+        put("showTimeRemainingInBook", showTimeRemainingInBook)
+        put("showTimeRemainingInChapter", showTimeRemainingInChapter)
+        put("showSkipBackward", showSkipBackward)
+        put("showPlayPause", showPlayPause)
+        put("showSkipForward", showSkipForward)
+        put("alwaysShowMiniPlayer", alwaysShowMiniPlayer)
+        put("showMiniPlayerStats", showMiniPlayerStats)
+    }.toString()
+}
+
+data class ReaderState(
+    val title: String,
+    val author: String,
+    val hasAudioNarration: Boolean,
+    val toc: List<ReaderTocEntry>,
+    val selectedChapterId: Int?,
+    val bookFraction: Double?,
+    val chapterFraction: Double?,
+    val chapterCurrentPage: Int?,
+    val chapterTotalPages: Int?,
+    val isPlaying: Boolean,
+    val playbackRate: Double,
+    val volume: Double,
+    val bookTimeRemaining: Double?,
+    val chapterTimeRemaining: Double?,
+    val chapterElapsedSeconds: Double?,
+    val chapterTotalSeconds: Double?,
+    val sleepTimerActive: Boolean,
+    val sleepTimerRemaining: Double?,
+    val sleepTimerType: String?,
+    val overlayToggleCount: Int,
+    val keepScreenOn: Boolean,
+    val backgroundColor: String?,
+    val foregroundColor: String?,
+    val activeThemeId: String?,
+    val selectedLightThemeId: String?,
+    val selectedDarkThemeId: String?,
+    val themes: List<ReaderTheme>,
+    val settings: ReaderDisplaySettings?,
+    val overlay: ReaderOverlayOptions,
+    val search: ReaderSearchState,
+    val highlights: List<ReaderHighlight>,
+    val highlightPalette: List<ReaderHighlightPaletteEntry>,
+    val pendingSelectionText: String?,
+    val pendingEdit: ReaderPendingEdit?,
+    val pendingServerPosition: ServerPosition?,
+)

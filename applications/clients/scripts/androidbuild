@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/androidbuild [--swift-only|--apk-only]
+
+Cross-compiles the StorytellerAndroidBridge dynamic library (AndroidApp/swift, with
+jextract-generated JNI bindings) using the Swift SDK for Android, stages it
+plus the Swift runtime into AndroidApp jniLibs, and assembles the debug APK
+with Gradle.
+
+Options:
+  -h, --help      Show this help.
+  --swift-only    Build and stage the Swift .so files, skip Gradle.
+  --apk-only      Skip the Swift build, only run Gradle.
+
+Environment:
+  ANDROID_HOME                Android SDK path. Default: ~/Library/Android/sdk
+  ANDROID_NDK_HOME            NDK path. Default: newest under ANDROID_HOME/ndk
+  STORYTELLER_SWIFT_TOOLCHAIN    Swift toolchain directory or identifier. If unset,
+                              infer the matching installed toolchain from the SDK.
+                              Set empty to use PATH.
+  STORYTELLER_SWIFT_ANDROID_SDK_BUNDLE
+                              Swift Android SDK artifact bundle path.
+EOF
+}
+
+SWIFT_ONLY=0
+APK_ONLY=0
+case "${1:-}" in
+-h | --help)
+    usage
+    exit 0
+    ;;
+--swift-only)
+    SWIFT_ONLY=1
+    shift
+    ;;
+--apk-only)
+    APK_ONLY=1
+    shift
+    ;;
+esac
+
+if [[ "$#" -ne 0 ]]; then
+    usage >&2
+    exit 2
+fi
+
+# The Android project currently packages one ABI. Keep the Swift target,
+# runtime staging path, libc++, and Gradle abiFilter as one validated set.
+TRIPLE="aarch64-unknown-linux-android28"
+SDK_BUNDLE="${STORYTELLER_SWIFT_ANDROID_SDK_BUNDLE:-${HOME}/Library/org.swift.swiftpm/swift-sdks/swift-6.2.3-RELEASE_android.artifactbundle}"
+JNILIBS="AndroidApp/app/src/main/jniLibs/arm64-v8a"
+
+SDK_BUNDLE_NAME="$(basename "${SDK_BUNDLE}")"
+SDK_VERSION="${SDK_BUNDLE_NAME#swift-}"
+SDK_VERSION="${SDK_VERSION%-RELEASE_android.artifactbundle}"
+TOOLCHAIN="${STORYTELLER_SWIFT_TOOLCHAIN-}"
+if [[ -z "${STORYTELLER_SWIFT_TOOLCHAIN+x}" ]]; then
+    for candidate in \
+        "${HOME}/Library/Developer/Toolchains/swift-${SDK_VERSION}-RELEASE.xctoolchain" \
+        "/Library/Developer/Toolchains/swift-${SDK_VERSION}-RELEASE.xctoolchain"; do
+        if [[ -x "${candidate}/usr/bin/swift" ]]; then
+            TOOLCHAIN="${candidate}"
+            break
+        fi
+    done
+fi
+
+export ANDROID_HOME="${ANDROID_HOME:-${HOME}/Library/Android/sdk}"
+if [[ -z "${JAVA_HOME:-}" && -x /usr/libexec/java_home ]]; then
+    JAVA_HOME="$(/usr/libexec/java_home)"
+    export JAVA_HOME
+fi
+if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
+    ANDROID_NDK_HOME="$(ls -d "${ANDROID_HOME}"/ndk/* | sort -V | tail -1)"
+    export ANDROID_NDK_HOME
+fi
+
+if [[ "${APK_ONLY}" -eq 0 ]]; then
+    # jextract does not remove Java sources when an exported Swift declaration
+    # disappears. Its Java output is also not declared to SwiftPM, so remove one
+    # declared thunk as well to ensure the generator reruns after this cleanup.
+    JEXTRACT_OUTPUT="AndroidApp/swift/.build/plugins/outputs/swift/StorytellerAndroidBridge/destination/JExtractSwiftPlugin"
+    rm -rf "${JEXTRACT_OUTPUT}/src/generated/java"
+    rm -f "${JEXTRACT_OUTPUT}/Sources/StorytellerAndroidBridgeModule+SwiftJava.swift"
+
+    if [[ -z "${TOOLCHAIN}" ]]; then
+        SWIFT_BIN="$(command -v swift)"
+        unset TOOLCHAINS
+    elif [[ -x "${TOOLCHAIN}/usr/bin/swift" ]]; then
+        SWIFT_BIN="${TOOLCHAIN}/usr/bin/swift"
+        unset TOOLCHAINS
+    elif [[ -x "${TOOLCHAIN}" ]]; then
+        SWIFT_BIN="${TOOLCHAIN}"
+        unset TOOLCHAINS
+    else
+        export TOOLCHAINS="${TOOLCHAIN}"
+        SWIFT_BIN="$(xcrun --find swift)"
+    fi
+
+    SWIFT_VERSION_OUTPUT="$("${SWIFT_BIN}" --version)"
+    if [[ "${SWIFT_VERSION_OUTPUT}" != *"Swift version ${SDK_VERSION}"* ]]; then
+        echo "Swift compiler and Android SDK versions do not match." >&2
+        echo "Compiler: ${SWIFT_VERSION_OUTPUT%%$'\n'*}" >&2
+        echo "Android SDK: Swift ${SDK_VERSION} (${SDK_BUNDLE})" >&2
+        exit 1
+    fi
+    echo "Swift compiler: ${SWIFT_BIN} (${SDK_VERSION})"
+    export PATH="$(dirname "${SWIFT_BIN}"):${PATH}"
+
+    # SwiftPM does not invalidate host tools or target modules when the active
+    # Swift compiler changes. Clean derived products once for each build
+    # environment so modules from (for example) Swift 6.3 cannot be reused by
+    # the Swift 6.2 Android toolchain. Dependency checkouts remain cached.
+    SWIFT_BUILD_DIR="AndroidApp/swift/.build"
+    SWIFT_BUILD_ENVIRONMENT="${SWIFT_BIN}|${SWIFT_VERSION_OUTPUT%%$'\n'*}|${SDK_BUNDLE}|${TRIPLE}"
+    SWIFT_BUILD_ENVIRONMENT_FILE="${SWIFT_BUILD_DIR}/.storyteller-build-environment"
+    PREVIOUS_SWIFT_BUILD_ENVIRONMENT=""
+    if [[ -f "${SWIFT_BUILD_ENVIRONMENT_FILE}" ]]; then
+        PREVIOUS_SWIFT_BUILD_ENVIRONMENT="$(<"${SWIFT_BUILD_ENVIRONMENT_FILE}")"
+    fi
+    if [[ "${PREVIOUS_SWIFT_BUILD_ENVIRONMENT}" != "${SWIFT_BUILD_ENVIRONMENT}" ]]; then
+        echo "Swift build environment changed; cleaning derived SwiftPM products"
+        (cd AndroidApp/swift && "${SWIFT_BIN}" package clean)
+    fi
+
+    (cd AndroidApp/swift && "${SWIFT_BIN}" build \
+            --disable-sandbox \
+            --swift-sdk "${TRIPLE}" \
+            --product StorytellerAndroidBridge)
+    mkdir -p "${SWIFT_BUILD_DIR}"
+    printf '%s\n' "${SWIFT_BUILD_ENVIRONMENT}" > "${SWIFT_BUILD_ENVIRONMENT_FILE}"
+
+    rm -rf "${JNILIBS}"
+    mkdir -p "${JNILIBS}"
+    cp "AndroidApp/swift/.build/${TRIPLE}/debug/libStorytellerAndroidBridge.so" "${JNILIBS}/"
+    cp "AndroidApp/swift/.build/${TRIPLE}/debug/libSwiftJava.so" "${JNILIBS}/"
+
+    RUNTIME_LIBS="${SDK_BUNDLE}/swift-android/swift-resources/usr/lib/swift-aarch64/android"
+    for lib in "${RUNTIME_LIBS}"/*.so; do
+        case "$(basename "${lib}")" in
+        libTesting.so | libXCTest.so | lib_Testing_Foundation.so) continue ;;
+        esac
+        cp "${lib}" "${JNILIBS}/"
+    done
+    cp "${SDK_BUNDLE}/swift-android/ndk-sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" "${JNILIBS}/"
+    echo "Staged $(ls "${JNILIBS}" | wc -l | tr -d ' ') libraries into ${JNILIBS}"
+
+    # swiftkit-core (swift-java's Java runtime) is not on Maven Central; build
+    # the jar from the resolved checkout so it always matches the generated
+    # bindings. Its sources use jdk.jfr annotations, so it must be compiled
+    # with the host JDK rather than against android.jar.
+    SWIFTKIT_SRC="AndroidApp/swift/.build/checkouts/swift-java/SwiftKitCore/src/main/java"
+    SWIFTKIT_OUT="AndroidApp/app/libs"
+    SWIFTKIT_CLASSES="$(mktemp -d)"
+    trap 'rm -rf "${SWIFTKIT_CLASSES}"' EXIT
+    mkdir -p "${SWIFTKIT_OUT}"
+    find "${SWIFTKIT_SRC}" -name '*.java' > "${SWIFTKIT_CLASSES}/sources.txt"
+    javac --release 17 -d "${SWIFTKIT_CLASSES}" @"${SWIFTKIT_CLASSES}/sources.txt"
+    jar cf "${SWIFTKIT_OUT}/swiftkit-core.jar" -C "${SWIFTKIT_CLASSES}" org
+    echo "Built ${SWIFTKIT_OUT}/swiftkit-core.jar"
+fi
+
+if [[ "${SWIFT_ONLY}" -eq 0 ]]; then
+    (cd AndroidApp && ./gradlew :app:assembleDebug)
+    echo "APK: AndroidApp/app/build/outputs/apk/debug/app-debug.apk"
+fi

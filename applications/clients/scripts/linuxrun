@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+# Mounts and builds use the monorepo root so the applications/clients/LinuxApp package can reach the root manifest.
+cd "${SCRIPT_DIR}/../../.."
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/linuxrun [--container|--docker]
+
+Options:
+  -h, --help     Show this help.
+  --container    Run the Apple container build through XQuartz.
+  --docker       Run the Docker build through XQuartz.
+
+Default with no flags runs the native build on the current machine.
+
+Environment:
+  STORYTELLER_CONTAINER_CPUS          CPU count for Apple container runs. Default: 4
+  STORYTELLER_CONTAINER_MEMORY        Memory for Apple container runs. Default: 32G
+  STORYTELLER_CONTAINER_DISPLAY_HOST  Display host for Apple container. Default: host.container.internal
+EOF
+}
+
+IMAGE=storyteller-linux-dev
+DISPLAY_HOST="${STORYTELLER_CONTAINER_DISPLAY_HOST:-host.container.internal}"
+CONTAINER_CPUS="${STORYTELLER_CONTAINER_CPUS:-4}"
+CONTAINER_MEMORY="${STORYTELLER_CONTAINER_MEMORY:-32G}"
+
+setup_xquartz() {
+    if [[ ! -d /opt/X11 ]]; then
+        echo "XQuartz is required to display the containerized GTK app." >&2
+        echo "Install it with: brew install --cask xquartz (then log out/in once)." >&2
+        exit 1
+    fi
+
+    if [[ "$(defaults read org.xquartz.X11 nolisten_tcp 2>/dev/null || echo 1)" != "0" ]]; then
+        defaults write org.xquartz.X11 nolisten_tcp -bool false
+        echo "Enabled XQuartz TCP listening; restarting XQuartz."
+        osascript -e 'quit app "XQuartz"' 2>/dev/null || true
+        sleep 1
+    fi
+    open -a XQuartz
+    sleep 2
+    DISPLAY_LOCAL="$(launchctl getenv DISPLAY 2>/dev/null || true)"
+    XQUARTZ_DISPLAY="${DISPLAY_LOCAL:-:0}"
+    DISPLAY="${XQUARTZ_DISPLAY}" /opt/X11/bin/xhost +127.0.0.1 +localhost +203.0.113.113 >/dev/null
+}
+
+case "${1:-}" in
+-h | --help)
+    usage
+    exit 0
+    ;;
+--container)
+    setup_xquartz
+    if ! command -v container >/dev/null 2>&1; then
+        echo "Apple container is not installed." >&2
+        exit 1
+    fi
+    if ! container system dns list | awk 'NR > 1 { print $1 }' | grep -qx "${DISPLAY_HOST}"; then
+        echo "Apple container cannot resolve '${DISPLAY_HOST}' yet." >&2
+        echo "Run once: sudo container system dns create ${DISPLAY_HOST} --localhost 203.0.113.113" >&2
+        exit 1
+    fi
+    if ! container image inspect "${IMAGE}" >/dev/null 2>&1; then
+        applications/clients/scripts/linuxbuild --container
+    fi
+    DISPLAY="${XQUARTZ_DISPLAY}" /opt/X11/bin/xhost + >/dev/null
+    trap 'DISPLAY="${XQUARTZ_DISPLAY}" /opt/X11/bin/xhost - >/dev/null 2>&1 || true' EXIT
+    container run --rm --tty \
+        --cpus "${CONTAINER_CPUS}" \
+        --memory "${CONTAINER_MEMORY}" \
+        --env DISPLAY="${DISPLAY_HOST}:0" \
+        --env GDK_BACKEND=x11 \
+        --env GSK_RENDERER=cairo \
+        --env WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 \
+        --volume "$PWD":/workspace \
+        --volume "$PWD/applications/clients/LinuxApp/.build-container":/build \
+        "${IMAGE}" \
+        dbus-run-session -- /build/debug/StorytellerLinuxApp
+    exit $?
+    ;;
+--docker)
+    setup_xquartz
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Docker is not installed." >&2
+        exit 1
+    fi
+    if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+        applications/clients/scripts/linuxbuild --docker
+    fi
+    exec docker run --rm -it \
+        -e DISPLAY=host.docker.internal:0 \
+        -e GDK_BACKEND=x11 \
+        -e GSK_RENDERER=cairo \
+        -e WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 \
+        -v "$PWD":/workspace \
+        -v "$PWD/applications/clients/LinuxApp/.build-docker":/build \
+        -w /workspace \
+        "${IMAGE}" \
+        dbus-run-session -- /build/debug/StorytellerLinuxApp
+    ;;
+--host)
+    echo "Use no flag for a native run." >&2
+    exit 1
+    ;;
+*)
+    exec ./applications/clients/LinuxApp/.build/debug/StorytellerLinuxApp
+    ;;
+esac

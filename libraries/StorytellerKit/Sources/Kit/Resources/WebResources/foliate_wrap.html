@@ -1,0 +1,43 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="color-scheme" content="light dark" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>E-Book Reader</title>
+<style>
+    :root {
+        --active-bg: rgba(0, 0, 0, 0.05);
+    }
+    @supports (color-scheme: light dark) {
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --active-bg: rgba(255, 255, 255, 0.1);
+            }
+        }
+    }
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+    }
+    body {
+        font-family: system-ui, sans-serif;
+    }
+    #reader-container {
+        width: 100%;
+        height: 100%;
+    }
+    foliate-view {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+
+<div id="reader-container"></div>
+
+<script type="module">
+    import "./main.js";
+</script>

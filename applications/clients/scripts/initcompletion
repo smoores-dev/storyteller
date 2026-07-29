@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+# The Storyteller package manifest lives at the monorepo root.
+cd "${SCRIPT_DIR}/../../.."
+
+swift build --target StorytellerAppleKit
+swift build --target StorytellerAppleKit \
+      --sdk $(xcrun --sdk iphonesimulator --show-sdk-path) \
+      --triple arm64-apple-ios18.0-simulator

@@ -1,0 +1,10 @@
+DEVELOPMENT_TEAM = XZZA7493Q2
+APP_BUNDLE_ID = dev.smoores.Storyteller
+WATCH_APP_BUNDLE_ID = $(APP_BUNDLE_ID).watchkitapp
+APP_GROUP_ID = group.$(APP_BUNDLE_ID)
+// macOS only auto-grants sandbox access to Team-ID-prefixed group containers;
+// group.* style prompts the user for consent on macOS 15+.
+MAC_APP_GROUP_ID = $(DEVELOPMENT_TEAM).group.$(APP_BUNDLE_ID)
+KEYCHAIN_GROUP_SUFFIX = dev.smoores.storyteller.shared
+KEYCHAIN_SERVICE = dev.smoores.storyteller.storyteller
+KEYCHAIN_ACCESS_GROUP = $(AppIdentifierPrefix)$(KEYCHAIN_GROUP_SUFFIX)

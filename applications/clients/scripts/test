@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+# The Storyteller package manifest lives at the monorepo root.
+cd "${SCRIPT_DIR}/../../.."
+
+swift test "$@"

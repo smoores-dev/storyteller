@@ -83,3 +83,7 @@ flake.*
 **/dist
 
 /libraries/opds/schemas/ajv/standalone.cjs
+
+/applications/clients/XCodeApps/Assets.xcassets/
+/applications/clients/XCodeApps/TVAssets.xcassets/
+/libraries/StorytellerKit/Sources/Kit/Resources/WebResources/

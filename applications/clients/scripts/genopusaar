@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/genopusaar
+
+Regenerates AndroidApp/app/prebuilt/media3-decoder-opus-<version>.aar, the
+software Opus decoder the Android app falls back to when a device's firmware
+does not register a platform Opus decoder.
+
+This is NOT part of scripts/androidbuild. The .aar is checked in, and this
+script only needs to run when media3Version in AndroidApp/app/build.gradle.kts
+changes. It clones media3 and libopus into a scratch directory and drives their
+CMake build, which is why it is kept out of the normal build path.
+
+Environment:
+  ANDROID_HOME                Android SDK path. Default: ~/Library/Android/sdk
+  STORYTELLER_OPUS_AAR_WORKDIR
+                              Scratch directory for the media3 and libopus
+                              checkouts. Default: a mktemp -d that is removed on
+                              exit. Set this to keep the ~400MB of checkouts
+                              between runs.
+EOF
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    usage
+    exit 0
+fi
+if [[ "$#" -ne 0 ]]; then
+    usage >&2
+    exit 2
+fi
+
+GRADLE_FILE="AndroidApp/app/build.gradle.kts"
+MEDIA3_VERSION="$(sed -n 's/.*val media3Version = "\(.*\)".*/\1/p' "${GRADLE_FILE}")"
+if [[ -z "${MEDIA3_VERSION}" ]]; then
+    echo "Could not read media3Version from ${GRADLE_FILE}" >&2
+    exit 1
+fi
+
+OUT_DIR="AndroidApp/app/prebuilt"
+OUT_AAR="${OUT_DIR}/media3-decoder-opus-${MEDIA3_VERSION}.aar"
+export ANDROID_HOME="${ANDROID_HOME:-${HOME}/Library/Android/sdk}"
+export ANDROID_SDK_ROOT="${ANDROID_HOME}"
+
+if [[ -n "${STORYTELLER_OPUS_AAR_WORKDIR:-}" ]]; then
+    WORK_DIR="${STORYTELLER_OPUS_AAR_WORKDIR}"
+    mkdir -p "${WORK_DIR}"
+else
+    WORK_DIR="$(mktemp -d)"
+    trap 'rm -rf "${WORK_DIR}"' EXIT
+fi
+
+MEDIA3_DIR="${WORK_DIR}/media3"
+if [[ ! -d "${MEDIA3_DIR}/.git" ]]; then
+    echo "Cloning media3 ${MEDIA3_VERSION}"
+    git clone --depth=1 --branch "${MEDIA3_VERSION}" \
+        https://github.com/androidx/media.git "${MEDIA3_DIR}"
+fi
+
+LIBOPUS_DIR="${MEDIA3_DIR}/libraries/decoder_opus/src/main/jni/libopus"
+if [[ ! -d "${LIBOPUS_DIR}/.git" ]]; then
+    echo "Cloning libopus"
+    git clone --depth=1 https://github.com/xiph/opus.git "${LIBOPUS_DIR}"
+fi
+
+# arm64-v8a matches the single-ABI contract shared by scripts/androidbuild and
+# the app's abiFilters. The 16 KB page size flag matches the alignment of the
+# Swift runtime .so files staged into jniLibs; without it the decoder would be
+# the only library in the APK that cannot load on a 16 KB page device.
+INIT_SCRIPT="${WORK_DIR}/storyteller-opus.init.gradle"
+cat > "${INIT_SCRIPT}" <<'EOF'
+allprojects {
+    plugins.withId('com.android.library') {
+        if (project.name == 'lib-decoder-opus') {
+            project.android {
+                defaultConfig {
+                    ndk {
+                        abiFilters 'arm64-v8a'
+                    }
+                    externalNativeBuild {
+                        cmake {
+                            arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+EOF
+
+echo "Building lib-decoder-opus"
+(cd "${MEDIA3_DIR}" && ./gradlew --no-daemon -I "${INIT_SCRIPT}" \
+    :lib-decoder-opus:assembleRelease)
+
+BUILT_AAR="${MEDIA3_DIR}/libraries/decoder_opus/buildout/outputs/aar/lib-decoder-opus-release.aar"
+if [[ ! -f "${BUILT_AAR}" ]]; then
+    echo "Expected AAR not produced at ${BUILT_AAR}" >&2
+    exit 1
+fi
+
+VERIFY_DIR="${WORK_DIR}/verify"
+rm -rf "${VERIFY_DIR}"
+mkdir -p "${VERIFY_DIR}"
+unzip -q "${BUILT_AAR}" -d "${VERIFY_DIR}"
+
+JNI_SO="${VERIFY_DIR}/jni/arm64-v8a/libopusV2JNI.so"
+if [[ ! -f "${JNI_SO}" ]]; then
+    echo "AAR contains no arm64-v8a slice; abiFilters would package no decoder" >&2
+    exit 1
+fi
+
+READELF="$(ls -d "${ANDROID_HOME}"/ndk/* | sort -V | tail -1)/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-readelf"
+if [[ -x "${READELF}" ]]; then
+    if "${READELF}" -l "${JNI_SO}" | awk '$1 == "LOAD" { print $NF }' | grep -qv "0x4000"; then
+        echo "libopusV2JNI.so is not 16 KB aligned" >&2
+        exit 1
+    fi
+    echo "Verified 16 KB alignment"
+fi
+
+mkdir -p "${OUT_DIR}"
+cp "${BUILT_AAR}" "${OUT_AAR}"
+echo "Wrote ${OUT_AAR}"
