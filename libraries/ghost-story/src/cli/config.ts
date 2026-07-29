@@ -91,6 +91,8 @@ export function getWhisperBaseDir(): string {
 }
 
 export function getInstallDir(variant?: BuildVariant): string {
+  if (process.env["WHISPER_CPP_PATH"] !== undefined)
+    return process.env["WHISPER_CPP_PATH"]
   const baseDir = getWhisperBaseDir()
   const resolved = variant ?? resolveVariant()
   return path.join(baseDir, resolved)

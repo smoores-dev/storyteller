@@ -1,19 +1,53 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
+let
+  patched-whisper = pkgs.whisper-cpp.overrideAttrs (finalAttrs: oldAttrs: {
+    cudaSupport = true;
+    rocmSupport = true;
+    version = "1.8.3";
+    src = pkgs.fetchFromGitHub {
+      owner = "ggml-org";
+      repo = "whisper.cpp";
+      tag = "v${finalAttrs.version}";
+      hash = "sha256-TeS1lGKEzkHOoBemy/tMGtIsy0iouj9DTYIgTjUNcQk=";
+    };
+    patches = (oldAttrs.patches or []) ++ [
+      ./scripts/whisper-server-config.patch
+      ./scripts/whisper-sycl-compat-fix.patch
+      ./scripts/whisper-utf8-json-fix.patch
+    ];
+  });
+in
 {
-  packages = [
-    pkgs.ffmpeg
+  packages = with pkgs; [
+    ffmpeg
     # Order is important here — we need sqlite-interactive's
     # sqlite3 executable to come first in the path,
     # but we also want the development headers, which are
     # in the sqlite package.
-    pkgs.sqlite-interactive
-    pkgs.sqlite
-    pkgs.git-lfs
-    pkgs.vtsls
-    pkgs.google-cloud-sdk
-    # note: readium cli will be installed via task below
+    sqlite-interactive
+    sqlite
+    git-lfs
+    vtsls
+    google-cloud-sdk
+  ] ++ [
+    # https://github.com/NixOS/nixpkgs/pull/546525
+    (pkgs.buildGoModule (finalAttrs: {
+      pname = "readium";
+      version = "0.6.5";
+      __structuredAttrs = true;
+      src = pkgs.fetchFromGitHub {
+        owner = "readium";
+        repo = "cli";
+        tag = "v${finalAttrs.version}";
+        hash = "sha256-z6z4CYM/zlm0mmMRSDgCmr1Kq7XSz228vuwvgquFnVk=";
+      };
+      vendorHash = "sha256-o4vUwITfdxsHEDgd6uGOkMZ96r51pdG8KO97Kge7K1w=";
+      postInstall = "mv $out/bin/cmd $out/bin/readium";
+    }))
+    patched-whisper
   ];
+  env.WHISPER_CPP_PATH = "${patched-whisper}";
 
   languages.javascript = {
     enable = true;
@@ -26,10 +60,6 @@
     exec = ''
       yarn install
       git lfs pull
-
-      # install readium cli for development using our reusable script
-      ./web/install-readium-cli.sh 0.6.5
-
       touch .devenv-initialized'';
     status = "test -f .devenv-initialized";
     before = [
