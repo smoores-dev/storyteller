@@ -117,7 +117,8 @@ export function HeroSection({
   return (
     <div
       className={cn(
-        "from-cover-header/80 to-cover-well/80 dark:from-cover-header/70 dark:to-cover-well/70 relative bg-linear-to-t",
+        "to-cover-well dark:to-cover-well relative bg-linear-to-t/oklch from-transparent via-[color-mix(in_oklch,var(--cover-well)_40%,var(--cover-background-mix))] dark:via-[color-mix(in_oklch,var(--cover-header)_70%,var(--cover-background-mix))]",
+        "via-30% pb-4 @xl/book:via-40%",
       )}
       style={heroContrast}
     >
@@ -147,7 +148,7 @@ export function HeroSection({
               name="title"
               as="h1"
               className={cn(
-                "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-normal tracking-tight text-balance",
+                "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-medium text-balance",
                 `@xl/book:w-auto @xl/book:text-left`,
               )}
               placeholder={c.plain("fields.label.title")}
@@ -157,7 +158,10 @@ export function HeroSection({
               <EditableText
                 name="subtitle"
                 as="p"
-                className="font-heading text-tinted -mt-1 text-sm italic"
+                className={cn(
+                  // "font-heading italic",
+                  "text-tinted -mt-1 text-sm",
+                )}
                 placeholder={c.plain("fields.label.subtitle")}
               />
             )}
@@ -264,7 +268,15 @@ export function HeroSection({
                     canEdit && "cursor-pointer",
                   )}
                 >
-                  <span className="font-heading italic">{t("narratedBy")}</span>
+                  <span
+                    className={
+                      cn()
+                      // "font-heading",
+                      // "italic"
+                    }
+                  >
+                    {t("narratedBy")}
+                  </span>
 
                   {visibleNarrators.map((narrator, idx) => (
                     <V3Link
@@ -373,6 +385,7 @@ export function HeroSection({
                     variant="default"
                     size="sm"
                     nativeButton={false}
+                    className="rounded-xl"
                     render={
                       <V3Link href={`/books/${book.uuid}/read?mode=readaloud`}>
                         <icon.Readaloud className="h-4 w-4" />
@@ -387,6 +400,7 @@ export function HeroSection({
                     variant="default"
                     size="sm"
                     nativeButton={false}
+                    className="rounded-xl"
                     render={
                       <V3Link href={`/books/${book.uuid}/read?mode=epub`}>
                         <icon.BookAlt className="mr-1 h-4 w-4" />
@@ -509,7 +523,7 @@ export function HeroSection({
         <ProgressDisplayBar
           progress={getReadingProgress(book) ?? 0}
           book={book}
-          className="absolute right-0 bottom-0 left-0 rounded-none"
+          className="bg-cover-wash/20 absolute right-0 bottom-0 left-0 rounded-none"
         />
       )}
     </div>

@@ -570,11 +570,22 @@ function SidebarNavGroup({
               <SidebarGroupLabel className="w-full cursor-pointer gap-1.5 pr-1 font-sans">
                 <icon.ChevronRight
                   className={cn(
-                    "text-muted-foreground size-3 shrink-0 transition-transform duration-200",
+                    "text-muted-foreground size-3 shrink-0 stroke-[1.5] transition-transform duration-200",
                     !isCollapsed && "rotate-90",
                   )}
                 />
-                <span className="text-[11px] font-medium tracking-[0.12em] uppercase opacity-70">
+                <span
+                  className={cn(
+                    // "text-xs",
+
+                    "small-caps",
+
+                    "tracking-[0.08em]",
+                    // ATKINS
+                    // "font-medium tracking-[0.12em] uppercase opacity-70",
+                    // "opacity-70",
+                  )}
+                >
                   {group.name}
                 </span>
                 <span

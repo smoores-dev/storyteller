@@ -256,23 +256,26 @@ export function MultidimensionalRating({
             endAngle={-270}
           >
             <PolarGrid width={SIZE} height={SIZE} />
+
             <PolarRadiusAxis
               domain={[RATING_DIMENSION_MIN, RATING_DIMENSION_MAX]}
-              tickCount={RATING_DIMENSION_MAX + 1}
+              tickCount={1}
+              tickLine={false}
               tick={false}
               axisLine={false}
             />
             <Radar
               dataKey="value"
               stroke="var(--color-value)"
+              strokeWidth={2}
               fill="var(--color-value)"
-              fillOpacity={0.45}
-              dot={{ r: 3, fillOpacity: 1 }}
+              fillOpacity={0.35}
+              dot={{ r: 0, fillOpacity: 1 }}
               isAnimationActive={false}
             />
           </RadarChart>
 
-          {/* manual labels; driving them through the chart config makes recharts
+          {/* manual labels, driving them through the chart config makes recharts
               flash the labels on every edit */}
           {inUseDimensions.map((d, i) => {
             const radAngle = axisAngleRad(i, count)
@@ -283,11 +286,11 @@ export function MultidimensionalRating({
                 style={{
                   left: cx + outerRadius * Math.cos(radAngle),
                   top: cy - outerRadius * Math.sin(radAngle),
-                  transform: `translate(calc(${i === 0 ? 0 : Math.sign(Math.cos(radAngle)) * 30}px - 50%), calc(${-Math.sin(radAngle) * 20}px - 50%))`,
+                  transform: `translate(calc(${i % (count / 2) === 0 ? 0 : Math.sign(Math.cos(radAngle)) * 30}px - 50%), calc(${-Math.sin(radAngle) * 20}px - 50%))`,
                 }}
               >
                 <span>{d.label}</span>
-                <span className="text-muted-foreground text-xs tabular-nums">
+                <span className="text-muted-foreground -mt-0.5 text-xs tabular-nums">
                   {formatRating(draft[d.id] ?? 0)}
                 </span>
                 <Button
@@ -306,7 +309,7 @@ export function MultidimensionalRating({
           })}
         </ChartContainer>
 
-        <svg
+        {/* <svg
           ref={svgRef}
           width={SIZE}
           height={SIZE}
@@ -331,7 +334,7 @@ export function MultidimensionalRating({
               />
             )
           })}
-        </svg>
+        </svg> */}
       </div>
 
       <div className="flex flex-col items-center gap-1">

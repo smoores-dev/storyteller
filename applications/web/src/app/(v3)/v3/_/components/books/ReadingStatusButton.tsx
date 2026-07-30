@@ -51,7 +51,10 @@ export function ReadingStatusButton({
           <Button
             variant="outline"
             size={size}
-            className={cn("gap-2", showAccent && "text-primary border-primary")}
+            className={cn(
+              "gap-2 rounded-xl",
+              showAccent && "text-primary border-primary",
+            )}
           >
             <icon.BookAlt className="h-4 w-4" />
             {currentStatus ? statusDisplayLabel(currentStatus) : "Set Status"}

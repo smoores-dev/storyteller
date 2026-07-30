@@ -48,11 +48,12 @@ export default async function AppLayout({
     preferenceDefaults,
   )
 
+  // --sidebar-accent and --facet-accent derive from these in globals.css, so
+  // a custom accent recolors the selection washes in both shell themes
   const accentStyle: React.CSSProperties = preferences.accentColor
     ? ({
         "--primary": preferences.accentColor,
         "--sidebar-primary": preferences.accentColor,
-        "--sidebar-accent": `color-mix(in oklab, ${preferences.accentColor} 60%, var(--sidebar))`,
       } as React.CSSProperties)
     : {}
 
@@ -64,6 +65,7 @@ export default async function AppLayout({
       <SidebarProvider
         defaultOpen={defaultOpen}
         className="z-50"
+        data-shell={preferences.shellTheme}
         style={
           {
             "--sidebar-width": "calc(var(--spacing) * 56)",

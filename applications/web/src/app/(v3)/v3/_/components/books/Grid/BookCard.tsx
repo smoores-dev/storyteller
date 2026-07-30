@@ -8,7 +8,10 @@ import { cn } from "@v3/_/lib/utils"
 
 import { useCoverScope } from "@/app/(v3)/v3/_/components/books/BookDetails/sections/CoverScope"
 import { Cover, isDual } from "@/app/(v3)/v3/_/components/books/Cover"
-import { MissingBadge, hasMissingMedia } from "@/app/(v3)/v3/_/components/books/MissingBadge"
+import {
+  MissingBadge,
+  hasMissingMedia,
+} from "@/app/(v3)/v3/_/components/books/MissingBadge"
 import { ProcessingIndicator } from "@/app/(v3)/v3/_/components/books/ProcessingIndicator"
 import {
   ProgressDisplayBar,
@@ -36,7 +39,6 @@ import {
   selectShowReadaloudBadge,
 } from "@/store/slices/uiSettingsSlice"
 import { type UUID } from "@/uuid"
-
 
 type BookCardProps = {
   book: BookWithRelations
@@ -351,7 +353,12 @@ export const BookCard = memo(function BookCard({
   const cardContent = (
     <>
       <div className="relative flex aspect-13/16 shrink-0 flex-col items-center justify-center transition-shadow">
-        <div className="from-cover-well to-cover-well/80 rounded-card absolute inset-0 flex flex-col-reverse overflow-hidden bg-linear-to-t">
+        <div
+          className={cn(
+            "from-cover-well to-cover-wash",
+            "rounded-card absolute inset-0 flex flex-col-reverse overflow-hidden bg-linear-to-t",
+          )}
+        >
           {progress !== null && progress > 0 && (
             <ProgressDisplayBar progress={progress} book={book} />
           )}
@@ -435,7 +442,14 @@ export const BookCard = memo(function BookCard({
                   prefetch={false}
                   className={cn(!onClick && "big-link")}
                 >
-                  <h3 className="group-hover:text-tinted-strong font-heading line-clamp-2 text-[0.9375rem] leading-tight font-normal">
+                  <h3
+                    className={cn(
+                      "group-hover:text-tinted-strong line-clamp-2",
+                      // "font-sans font-medium",
+                      "font-seriff font-medium",
+                      "leading-tight",
+                    )}
+                  >
                     {book.title}
                   </h3>
                 </V3Link>

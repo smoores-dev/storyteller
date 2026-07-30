@@ -65,7 +65,6 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 import { type UUID } from "@/uuid"
 
-
 import { ColumnValue, columnWidths } from "./BookListColumns"
 
 type BookTableProps = {
@@ -279,7 +278,7 @@ export function BookTable({
     })
     const headerEl = root.querySelector(`[data-col-header="${field}"]`)
     if (headerEl) {
-      measure(headerEl, "text-[11px] font-medium tracking-wider uppercase")
+      measure(headerEl, "text-xs font-medium tracking-wider uppercase")
     }
     probe.remove()
     if (widest === 0) return
@@ -452,7 +451,7 @@ export function BookTable({
           { "--book-table-cols": gridTemplateColumns } as React.CSSProperties
         }
       >
-        <TableHeader className="bg-surface-base sticky -top-6 z-10 -mx-6 grid px-6">
+        <TableHeader className="bg-surface-base sticky top-11 z-10 -mx-6 grid px-6">
           <Reorder.Group
             as="tr"
             axis="x"
@@ -498,12 +497,12 @@ export function BookTable({
                     : "descending"
                   : undefined
               }
-              className="text-muted-foreground relative flex h-auto items-center p-0 text-[11px] font-medium tracking-wider uppercase"
+              className="text-muted-foreground relative flex h-auto items-center p-0 text-xs font-medium tracking-wider uppercase"
             >
               <button
                 type="button"
                 className={cn(
-                  "text-muted-foreground flex min-w-0 cursor-pointer items-center gap-0.5 truncate text-[11px] font-medium tracking-wider uppercase",
+                  "text-muted-foreground flex min-w-0 cursor-pointer items-center gap-0.5 truncate text-xs font-medium tracking-wider uppercase",
                   sortField === "title" && "text-foreground",
                   sortField !== "title" && "hover:text-foreground",
                 )}
@@ -878,7 +877,7 @@ function BookTableHeader({
         <button
           type="button"
           className={cn(
-            "text-muted-foreground hover:text-foreground flex min-w-0 grow cursor-pointer items-center justify-end gap-0.5 truncate text-[11px] font-medium tracking-wider uppercase",
+            "text-muted-foreground hover:text-foreground flex min-w-0 grow cursor-pointer items-center justify-end gap-0.5 truncate text-xs font-medium tracking-wider uppercase",
             isActive && "text-foreground",
           )}
           aria-label={`Sort by ${label}`}
@@ -894,7 +893,7 @@ function BookTableHeader({
           {labelContent}
         </button>
       ) : (
-        <span className="text-muted-foreground flex min-w-0 grow items-center justify-end gap-0.5 truncate text-[11px] font-medium tracking-wider uppercase">
+        <span className="text-muted-foreground flex min-w-0 grow items-center justify-end gap-0.5 truncate text-xs font-medium tracking-wider uppercase">
           {labelContent}
         </span>
       )}
@@ -1079,7 +1078,7 @@ function BookRow({
         >
           <span
             className={cn(
-              "group-hover:text-tinted-strong font-heading text-sm",
+              "group-hover:text-tinted-strong font-seriff text-sm",
               book.uuid === selectedBookUuid && "text-tinted-strong",
             )}
           >

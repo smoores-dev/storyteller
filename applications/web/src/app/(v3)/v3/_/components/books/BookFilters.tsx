@@ -141,7 +141,7 @@ export function BookFilters({
       // DONT MAKE FLEX CONTAINER THE SEARCH INPUT WILL NOT BE THE CORRECT HEIGHT IT WILL HAUNT YOU
       // panel-open tracking comes from PageMain's --panel-reveal rule, not here
       className={cn(
-        "bg-surface-base sticky top-0 z-30 space-y-2 px-4 pb-3",
+        "bg-surface-base sticky top-0 z-30 space-y-2 px-0 pb-3 pl-0",
         className,
       )}
     >

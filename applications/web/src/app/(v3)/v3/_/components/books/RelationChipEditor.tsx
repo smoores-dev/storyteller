@@ -144,8 +144,8 @@ export function RelationChipEditor<T extends RelationItem>({
       className={cn(
         `group/${source}`,
         "flex flex-wrap items-center gap-1.5",
-        level !== "minimal" &&
-          "*:data-[slot=badge]:border-primary *:data-[slot=badge]:text-primary! *:data-[slot=badge]:hover:bg-primary/10 *:data-[slot=badge]:bg-none *:data-[slot=badge]:font-medium!",
+        // level !== "minimal" &&
+        //   "*:data-[slot=badge]:border-primary *:data-[slot=badge]:text-primary! *:data-[slot=badge]:hover:bg-primary/10 *:data-[slot=badge]:bg-none *:data-[slot=badge]:font-medium!",
         className,
       )}
     >

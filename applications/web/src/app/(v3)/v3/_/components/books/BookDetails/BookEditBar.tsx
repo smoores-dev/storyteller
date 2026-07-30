@@ -56,8 +56,7 @@ export function BookEditBar() {
         tooltip={c("actions.discard")}
         aria-label={c("actions.discard")}
         variant="real-ghost"
-        onMouseDown={(e) => {
-          e.preventDefault()
+        onClick={(e) => {
           handleDiscard()
         }}
         disabled={isSaving}
@@ -69,8 +68,8 @@ export function BookEditBar() {
       <TooltipButton
         tooltip={isSaving ? c("states.saving") : c("actions.save")}
         aria-label={c("actions.save")}
-        onMouseDown={(e) => {
-          e.preventDefault()
+        onClick={(e) => {
+          console.log("saveAndClose")
           void saveAndClose()
         }}
         className="bg-primary text-primary-foreground rounded-full hover:opacity-90"

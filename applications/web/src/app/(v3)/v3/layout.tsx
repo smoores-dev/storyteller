@@ -21,6 +21,7 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 
 import "./globals.css"
+import { TweaksPanel } from "./tweaks-panel"
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -100,6 +101,7 @@ export default async function RootLayout({
         )}
       </head>
       <body suppressHydrationWarning>
+        {/* <TweaksPanel /> */}
         <VersionProvider basePath={basePath}>
           <NextIntlClientProvider>
             <StoreProvider initialUISettings={initialUISettings}>

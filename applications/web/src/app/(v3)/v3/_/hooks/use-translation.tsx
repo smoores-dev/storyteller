@@ -38,17 +38,17 @@ type NamespacedMessageKeys<
 
 export function MissingMessageFallback({
   result,
-  key,
+  k,
   namespace,
 }: {
   result: string
-  key: string
+  k: string
   namespace?: string
 }) {
   return (
     <span
       className="underline decoration-dashed"
-      title={`Missing message: ${namespace ? `${namespace}.` : ""}${key}`}
+      title={`Missing message: ${namespace ? `${namespace}.` : ""}${k}`}
     >
       {result}
     </span>
@@ -83,11 +83,12 @@ export function useTranslation<
     })
 
     if (typeof result === "string" && result.includes("__fallback__")) {
-      const [key, ...rest] = result.split("__fallback__")
+      const [_key, ...rest] = result.split("__fallback__")
+      const k = args[0] as string
       return (
         <MissingMessageFallback
           namespace={namespace}
-          key={key ?? ""}
+          k={k ?? ""}
           result={rest.join("__fallback__")}
         />
       )

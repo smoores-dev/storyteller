@@ -63,7 +63,7 @@ export function CollapsibleSection({
             aria-label={"Toggle section"}
           >
             <span className="section-label flex flex-1 items-center gap-2 truncate whitespace-nowrap">
-              {icon}
+              {/* {icon} */}
               {title}
             </span>
           </CollapsibleTrigger>
@@ -79,7 +79,7 @@ export function CollapsibleSection({
             >
               <icons.ChevronDown
                 className={cn(
-                  "text-muted-foreground size-3.5 stroke-[1.5]",
+                  "text-muted-foreground/80 size-3.5 stroke-[1.5]",
                   isOpen && "rotate-180",
                 )}
               />

@@ -45,6 +45,7 @@ import {
 import { formatFileSize } from "@/utils/formatFileSize"
 
 import { CollapsibleSection } from "./CollapsibleSection"
+import { cn } from "@/cn"
 
 const EBOOK_FILTERS = [{ name: "Ebooks", extensions: ["epub"] }]
 const AUDIO_FILTERS = [
@@ -90,11 +91,11 @@ function IdentifierChip({
   const [copied, setCopied] = useState(false)
 
   const valueClasses =
-    "flex min-w-0 items-center gap-1 px-1.5 py-0.5 font-mono text-[11px]/[1.7]"
+    "flex min-w-0 items-center gap-1 px-1.5 py-0.5 font-mono text-xs"
 
   return (
-    <span className="group/chip border-border/70 bg-muted/30 inline-flex max-w-full items-stretch overflow-hidden rounded-md border text-xs">
-      <span className="text-muted-foreground border-border/70 bg-muted/50 flex items-center border-r px-1.5 font-sans text-[9px] tracking-wide uppercase">
+    <span className="group/chip inline-flex max-w-full items-stretch overflow-hidden rounded-md border text-xs">
+      <span className="border-border/70 bg-muted/50 small-caps flex items-center border-r px-1.5 font-sans">
         {label}
       </span>
 
@@ -219,32 +220,26 @@ function FormatFileRow({
     <div className="flex items-start gap-2">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground font-sans text-xs uppercase">
+          <span className="text-muted-foreground font-sans text-sm">
             {FORMAT_LABELS[format]}
           </span>
           <Icon className="text-muted-foreground h-4 w-4 shrink-0 stroke-1" />
           {fmt.missing && (
-            <Badge
-              variant="destructive"
-              className="h-4 gap-0.5 px-1 text-[10px]"
-            >
+            <Badge variant="destructive" className="h-4 gap-0.5 px-1 text-xs">
               <icon.AlertTriangle className="h-2.5 w-2.5" />
               {tLabels("missing")}
             </Badge>
           )}
           {isEpub2 && (
-            <Badge variant="outline" className="h-4 px-1 text-[10px]">
+            <Badge variant="outline" className="h-4 px-1 text-xs">
               EPUB 2
             </Badge>
           )}
         </div>
 
-        <div className="text-sm" title={filepath}>
-          <span className="text-muted-foreground line-clamp-1">
-            {directory}
-          </span>
-          <code className="text-xs font-medium">{filename}</code>
-        </div>
+        <p className="truncate text-left text-sm" title={filepath}>
+          {filepath}
+        </p>
 
         <div className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 text-xs">
           {pageCount != null && <span>{pageCount} pages</span>}
@@ -291,7 +286,7 @@ function FormatFileRow({
                   onClick={() => {
                     setEditingIdentifiers(true)
                   }}
-                  className="border-border/70 text-muted-foreground/70 hover:text-foreground hover:border-border inline-flex items-center gap-1 rounded-md border border-dashed px-1.5 py-0.5 font-sans text-[10px] tracking-wide uppercase transition-colors"
+                  className="border-border/70 text-muted-foreground/70 hover:text-foreground hover:border-border inline-flex items-center gap-1 rounded-md border border-dashed px-1.5 py-0.5 font-sans text-xs tracking-wide uppercase transition-colors"
                 >
                   <icon.Plus className="size-2.5" />
                   {t("identifiers.add")}
@@ -377,15 +372,16 @@ function FormatFileRow({
           )}
 
           {canRemove && (
-            <Button
+            <TooltipButton
               variant="ghost"
               size="icon-sm"
-              className="text-destructive"
-              aria-label={`Remove ${format} from book`}
+              tooltip={c.plain("actions.remove")}
+              className="text-muted-foreground/60 hover:text-foreground"
+              aria-label={c.plain("actions.remove")}
               onClick={onRemove}
             >
               <icon.Trash className="h-3.5 w-3.5" />
-            </Button>
+            </TooltipButton>
           )}
         </div>
       )}
@@ -589,7 +585,7 @@ export function FileSection({
         {canEdit && assetFolder && (
           <div className="flex flex-col gap-0.5 text-xs">
             <div className="flex items-center justify-between gap-1">
-              <span className="text-muted-foreground font-sans text-xs uppercase">
+              <span className="text-muted-foreground font-sans text-xs">
                 {t("fileInformation.assetFolder")}
               </span>
 
@@ -622,7 +618,7 @@ export function FileSection({
               </div>
             </div>
 
-            <code className="font-mono break-all">{assetFolder}</code>
+            <code className={cn("break-all")}>{assetFolder}</code>
           </div>
         )}
       </div>

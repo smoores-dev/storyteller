@@ -1062,6 +1062,16 @@
       "appearance": {
         "title": "Weergave",
         "sections": {
+          "shell": {
+            "title": "Interfacethema",
+            "description": "Hoe het kader rond je bibliotheek eruitziet.",
+            "label": "Thema",
+            "hint": "Papier houdt het hele kader licht, als vellen op een bureau. Boekrug geeft de navigatiebalk een donkere leren look.",
+            "options": {
+              "paper": "Papier",
+              "spine": "Boekrug"
+            }
+          },
           "accent": {
             "title": "Accentkleur",
             "description": "Kies de primaire kleur die in de hele app wordt gebruikt.",

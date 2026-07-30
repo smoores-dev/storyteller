@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useMemo } from "react"
+import { createContext, useContext, useEffect, useMemo } from "react"
 
 import {
   type PreferenceDefaults,
@@ -29,6 +29,14 @@ export function UserPreferencesProvider({
     if (!rawSettings) return initialPreferences
     return resolveUserPreferences(rawSettings, preferenceDefaults)
   }, [rawSettings, initialPreferences, preferenceDefaults])
+
+  // the shell theme attribute is server-rendered by the app layout, which
+  // doesn't re-render when the client cache updates -- keep it live here
+  useEffect(() => {
+    for (const el of document.querySelectorAll<HTMLElement>("[data-shell]")) {
+      el.dataset["shell"] = preferences.shellTheme
+    }
+  }, [preferences.shellTheme])
 
   return (
     <UserPreferencesContext.Provider value={preferences}>

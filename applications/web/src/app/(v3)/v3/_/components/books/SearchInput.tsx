@@ -27,7 +27,7 @@ export function SearchInput({
         className,
       )}
     >
-      <icon.Search className="text-muted-foreground h-4 w-4 shrink-0" />
+      <icon.Search className="text-muted-foreground size-3 shrink-0" />
       <input
         placeholder={placeholder}
         value={value}

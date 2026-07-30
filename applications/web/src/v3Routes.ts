@@ -20,6 +20,7 @@ export const V3_ROOTS = [
   "quality",
   "identifiers",
   "not-found",
+  "test",
 ]
 
 export const V2_ONLY_PATTERNS = [/^\/books\/[^/]+\/read$/]

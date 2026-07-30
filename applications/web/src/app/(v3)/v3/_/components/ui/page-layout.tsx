@@ -33,7 +33,10 @@ function PageLayout({
   return (
     <div
       data-slot="page-layout"
-      className={cn("relative flex h-screen overflow-hidden", className)}
+      className={cn(
+        "group/layout relative flex h-screen overflow-hidden",
+        className,
+      )}
       {...props}
     >
       {children}
@@ -50,12 +53,13 @@ function PageMain({
     <div
       data-slot="page-main"
       className={cn(
-        "bg-surface-base flex min-w-0 flex-1 flex-col overflow-hidden [--page-surface:var(--surface-base)]",
+        "flex min-w-0 flex-1 flex-col overflow-hidden bg-transparent [--page-surface:var(--surface-base)]",
         // while the detail panel slides as an overlay, in-flow chrome (header,
         // filters, anything that isn't the scroll content) tracks the panel
         // edge through the --panel-reveal var the width driver animates. at
         // rest the var is 0px and this is a no-op.
         "[&>*:not([data-slot=page-content])]:max-w-[calc(100%-var(--panel-reveal,0px))]",
+        // "group-has-data-[slot=page-panel]/layout:shadow-(--shell-inset-shadow)!",
         className,
       )}
       {...props}
@@ -94,7 +98,7 @@ function PageContent({
     <div
       data-slot="page-content"
       className={cn(
-        "scroll-y @container/page-content @container-size flex-1",
+        "scroll-y @container-size @container/page-content flex-1",
         className,
       )}
       {...props}
@@ -120,7 +124,7 @@ export function ResizeHandle({
       data-slot="resize-handle"
       {...props}
       className={cn(
-        "group hover:border-primary/50 relative z-30 flex w-0 items-stretch border-l transition-colors",
+        "group hover:border-primary/50 relative z-50 flex w-0 items-stretch border-l transition-colors",
         className,
       )}
     >
@@ -187,7 +191,12 @@ function PagePanel({
           {...colors}
           // keeps its 1px border space during the slide so the swap into flex
           // only changes the layout by the panel width itself
-          className={cn("border-l-primary/30", overlay && "invisible")}
+          className={cn(
+            // "border-l-primary/30",
+            "border-0",
+
+            overlay && "invisible",
+          )}
         />
       )}
 
@@ -195,7 +204,9 @@ function PagePanel({
         ref={panelRef}
         data-slot="page-panel"
         className={cn(
-          "bg-surface-raised shrink-0 overflow-hidden",
+          "bg-surface-base shrink-0",
+          // "shadow-2xl",
+          "z-50",
           overlay
             ? "border-l-primary/30 absolute inset-y-0 right-0 z-40 border-l"
             : "relative",
@@ -213,7 +224,7 @@ function PagePanel({
       >
         {/* right-anchored reveal mask: content keeps its layout while the
             panel's left edge sweeps open/closed */}
-        <div className="absolute inset-y-0 right-0 flex w-full min-w-(--panel-content-min)">
+        <div className="absolute inset-y-0 right-0 flex w-full min-w-(--panel-content-min) overflow-hidden">
           {children}
         </div>
       </div>
@@ -297,7 +308,7 @@ function PageSidebar({
         ref={sidebarRef}
         data-slot="page-sidebar"
         className={cn(
-          "bg-surface-soft flex h-full shrink-0 flex-col overflow-y-auto",
+          "bg-surface-base flex h-full shrink-0 flex-col overflow-y-auto",
           className,
         )}
         style={{ width }}
@@ -311,6 +322,7 @@ function PageSidebar({
           side="right"
           dragging={dragging}
           onPointerDown={handleResizeStart}
+          className={cn("border-0")}
         />
       )}
     </>

@@ -770,21 +770,20 @@ function BookListPageInner({
 
             {beforeFilters}
 
-            <BookFilters
-              className={filtersClassName}
-              controller={controller}
-              seedLabel={seedLabel}
-              sortOptions={sortFieldOptions}
-              onSortChange={setSort}
-              displayOverrides={gridDisplayFields}
-              onDisplayOverridesChange={handleDisplayFieldsChange}
-              currentFields={displayFields}
-              forceLayout={forceDisplayMode?.layout}
-            />
-
             {afterFilters}
 
-            <PageContent className={contentClassName ?? "p-6"}>
+            <PageContent className={"relative" ?? "relative p-6"}>
+              <BookFilters
+                className={filtersClassName}
+                controller={controller}
+                seedLabel={seedLabel}
+                sortOptions={sortFieldOptions}
+                onSortChange={setSort}
+                displayOverrides={gridDisplayFields}
+                onDisplayOverridesChange={handleDisplayFieldsChange}
+                currentFields={displayFields}
+                forceLayout={forceDisplayMode?.layout}
+              />
               <BooksView
                 books={books}
                 isLoading={isLoading}
@@ -853,21 +852,22 @@ function BookListPageInner({
 
             {beforeFilters}
 
-            <BookFilters
-              className={filtersClassName}
-              controller={controller}
-              seedLabel={seedLabel}
-              sortOptions={sortFieldOptions}
-              onSortChange={setSort}
-              displayOverrides={gridDisplayFields}
-              onDisplayOverridesChange={handleDisplayFieldsChange}
-              currentFields={displayFields}
-              forceLayout={forceDisplayMode?.layout}
-            />
-
             {afterFilters}
 
-            <PageContent className={cn(contentClassName ?? "p-6", "relative")}>
+            <PageContent
+              className={cn(contentClassName ?? "p-6 pt-0", "relative")}
+            >
+              <BookFilters
+                className={filtersClassName}
+                controller={controller}
+                seedLabel={seedLabel}
+                sortOptions={sortFieldOptions}
+                onSortChange={setSort}
+                displayOverrides={gridDisplayFields}
+                onDisplayOverridesChange={handleDisplayFieldsChange}
+                currentFields={displayFields}
+                forceLayout={forceDisplayMode?.layout}
+              />
               <BooksView
                 books={books}
                 isLoading={isLoading}

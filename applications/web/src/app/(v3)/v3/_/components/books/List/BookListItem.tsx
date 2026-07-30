@@ -224,7 +224,7 @@ export const BookListItem = memo(function BookListItem(
               if (onClick) e.preventDefault()
             }}
           >
-            <span className="group-hover:text-tinted-strong font-heading truncate text-[0.9375rem]">
+            <span className="group-hover:text-tinted-strong font-seriff truncate font-medium">
               {book.title}
             </span>
           </V3Link>

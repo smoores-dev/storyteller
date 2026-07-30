@@ -19,6 +19,8 @@ import { cn } from "@/cn"
 import * as icon from "@/icons"
 
 import { useBookForm } from "./BookFormProvider"
+import { V3Link } from "../../v3-link"
+import { router } from "next/client"
 
 const pill =
   "flex items-center gap-0.5 rounded-full bg-background/55 p-0.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:ring-white/10"
@@ -87,6 +89,7 @@ export function BookPanelHeader({
   const showCheckbox = !!selection && (selection.isSelecting || isSelected)
 
   const [actionMenuOpen, setActionMenuOpen] = useState(false)
+  const router = useRouter()
 
   const handleToggleSelection = () => {
     if (!selection) return
@@ -101,7 +104,15 @@ export function BookPanelHeader({
     },
     !!onClose,
   )
+  useHotkey("O", () => {
+    router.push(`/books/${book.uuid}`)
+  })
+
   useHotkey("E", () => {
+    setIsEditing(!isEditing)
+  })
+
+  useHotkey("M", () => {
     setActionMenuOpen((prev) => !prev)
   })
 
@@ -174,6 +185,32 @@ export function BookPanelHeader({
       )}
 
       <div className={cn("absolute top-2.5 right-3 z-50", pill)}>
+        <TooltipButton
+          variant="real-ghost"
+          size="icon-sm"
+          tooltip="Open in full page"
+          aria-label="Open in full page"
+          shortcut={["O"]}
+          render={
+            <V3Link href={`/books/${book.uuid}`}>
+              <icon.BookFilled className="size-3.5 stroke-[1.5]" />
+            </V3Link>
+          }
+        >
+          <icon.ArrowLeft className="size-3.5 stroke-[1.5]" />
+        </TooltipButton>
+        <TooltipButton
+          variant="real-ghost"
+          size="icon-sm"
+          onClick={() => {
+            setIsEditing(!isEditing)
+          }}
+          tooltip="Edit"
+          aria-label="Edit"
+          shortcut={["E"]}
+        >
+          <icon.Pencil className="size-3.5 stroke-[1.5]" />
+        </TooltipButton>
         <BookActionsMenu
           book={book}
           open={actionMenuOpen}

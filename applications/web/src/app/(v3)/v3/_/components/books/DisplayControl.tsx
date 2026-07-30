@@ -471,7 +471,7 @@ export function DisplayControl({
 
 function IntensitySubmenu({ strength }: { strength: number }) {
   const [updateSetting] = useSetUserSettingMutation()
-  const steps = [0, 25, 50, 65, 85, 100]
+  const steps = [0, 25, 50, 70, 85, 100]
   const current = Math.round(strength * 100)
 
   return (

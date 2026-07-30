@@ -8,9 +8,6 @@ import { useBookForm } from "./BookDetails/BookFormProvider"
 import { CreateCollectionDialog } from "./CreateCollectionDialog"
 import { RelationFormField } from "./RelationFormField"
 
-// form-backed collection editor. collections are referenced by uuid, so a
-// brand-new one is created (entity) immediately via the dialog and only *staged*
-// onto the book in form state; it attaches when the book is saved.
 export function CollectionEditor({ className }: { className?: string }) {
   const { form } = useBookForm()
   const tActions = useTranslation("BookActions")

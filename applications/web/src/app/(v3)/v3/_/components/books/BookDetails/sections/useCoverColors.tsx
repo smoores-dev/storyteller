@@ -251,7 +251,11 @@ export function useHeroContrast(
     "--tinted-foreground": tinted.solid,
     // "--tinted-foreground": heroIsDark ? tinted.onColor : tinted.solid,
     "--tinted-foreground-strong": heroIsDark ? "#fff" : "#000",
-    "--tinted-foreground-subtle": heroIsDark ? "#fff" : "#000",
+
+    // ...(intensity > 0.5 && {
+    "--cover-background-mix": isDark ? "black" : "white",
+    // }),
+    // "--tinted-foreground-subtle": tinted.onColor,
     // // plain body/muted text inside the hero also has to clear the blend
     // "--foreground": heroIsDark ? "oklch(0.98 0 0)" : "oklch(0.15 0 0)",
     // "--muted-foreground": heroIsDark

@@ -60,7 +60,7 @@ function CollapsibleDescription({
           if (canEdit) onEdit()
         }}
         className={cn(
-          "prose prose-sm dark:prose-invert max-w-none overflow-hidden font-serif text-xs transition-[max-height] duration-300",
+          "prose dark:prose-invert text-foreground max-w-none overflow-hidden font-serif text-sm leading-snug transition-[max-height] duration-300",
           mustExpandFirst && "cursor-pointer",
           editableNow &&
             "hover:bg-input/10 -mx-1.5 cursor-text rounded-md px-1.5",
@@ -76,7 +76,7 @@ function CollapsibleDescription({
       />
 
       {mustExpandFirst && (
-        <div className="from-surface-raised pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-t to-transparent" />
+        <div className="from-background pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-t to-transparent" />
       )}
 
       {isOverflowing && (

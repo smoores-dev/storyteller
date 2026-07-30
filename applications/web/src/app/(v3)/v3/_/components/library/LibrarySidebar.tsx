@@ -215,9 +215,17 @@ export function LibrarySidebar({
     <div className="relative h-full">
       <div className="scroll-y relative flex h-full flex-col">
         {/* DONT MAKE FLEX CONTAINER THE SEARCH INPUT WILL NOT BE THE CORRECT HEIGHT IT WILL HAUNT YOU */}
-        <div className="bg-surface-soft sticky top-0 z-10 shrink-0 flex-col px-3 pb-2">
+        <div className="bg-surface-base sticky top-0 z-10 shrink-0 flex-col px-3">
           <div className="flex h-(--header-height) items-center justify-between">
-            <h2 className="font-heading text-base">{title}</h2>
+            <h2
+              className={cn(
+                "font-heading",
+                "text-base",
+                // "font-medium",
+              )}
+            >
+              {title}
+            </h2>
 
             <div className="flex items-center gap-0.5">
               {canCreate && (
@@ -302,13 +310,6 @@ export function LibrarySidebar({
               </DropdownMenu>
             </div>
           </div>
-
-          <SearchInput
-            placeholder={t("search")}
-            value={search}
-            onChange={onSearchChange}
-            className="h-8! shrink-0 grow"
-          />
         </div>
 
         <SidebarItemList
@@ -324,6 +325,15 @@ export function LibrarySidebar({
           menuTarget={menuTarget}
           isItemLocked={isItemLocked}
         />
+
+        <div className="bg-surface-base/95 sticky bottom-0 z-10 mt-auto shrink-0 px-3 pt-2 pb-3 backdrop-blur-sm">
+          <SearchInput
+            placeholder={t("search")}
+            value={search}
+            onChange={onSearchChange}
+            className="h-8! shrink-0"
+          />
+        </div>
 
         <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpen}>
           <DropdownMenuContent
@@ -639,8 +649,9 @@ function SidebarRow({
       className={cn(
         "group/item relative flex items-center rounded-sm",
         isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "hover:bg-sidebar-accent/50",
+          ? // ATKINS ? "bg-facet-accent text-facet-accent-foreground"
+            "text-facet-accent-foreground"
+          : "hover:bg-facet-accent/50",
       )}
     >
       <V3Link
@@ -665,7 +676,7 @@ function SidebarRow({
           onItemClick(item.key)
         }}
         className={cn(
-          "flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left font-serif text-sm",
+          "flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left text-sm",
           canSelect ? "pr-2 pl-1.5" : "px-2",
           isActive && "font-medium",
         )}
@@ -724,8 +735,7 @@ function SidebarRow({
         <span
           className={cn(
             "text-muted-foreground flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs tabular-nums",
-            isActive &&
-              "bg-sidebar-accent-foreground text-foreground dark:text-background",
+            isActive && "text-facet-accent-foreground/80",
             isSelecting && "hidden",
             hasRowActions && !isSelecting && "group-hover/item:hidden",
           )}

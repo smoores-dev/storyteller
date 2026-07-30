@@ -50,6 +50,10 @@ export function useCoverScope(
       "--cover-accent-rgb": channels(accent),
       "--cover-accent-solid-rgb": cAccent.channels,
       "--cover-intensity": intensity,
+
+      ...(intensity > 0.5 && {
+        "--cover-background-mix": isDark ? "black" : "white",
+      }),
     }
 
     if (showAccent) {

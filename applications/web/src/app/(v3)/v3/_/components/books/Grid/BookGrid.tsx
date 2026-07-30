@@ -93,8 +93,8 @@ const MOBILE_COLUMNS = 2
 function metaHeightFor(fields: DisplayField[]): number {
   if (fields.length === 0) return 0
   const TOP = 8 // mt-2
-  const TITLE = 38 // 2 lines, leading-tight
-  const LINE = 18 // one text-xs line + gap-0.5
+  const TITLE = 40 // 2 lines, leading-tight
+  const LINE = 20 // one text-xs line + gap-0.5
   const rows = groupDisplayRows(fields)
   const titleRows = rows.filter((row) => row[0] === "title").length
   return TOP + titleRows * TITLE + (rows.length - titleRows) * LINE

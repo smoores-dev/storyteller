@@ -96,22 +96,18 @@ function Hero({ book }: { book: BookWithRelations }) {
 
   return (
     <section
-      className="bg-cover-wash relative -mx-4 flex flex-col gap-0"
+      className="via-cover-wash to-cover-header/80 relative -mx-4 flex flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
       {...scope}
     >
-      <p className="text-tinted mx-6 mt-8 text-xs font-medium tracking-[0.18em] uppercase">
-        {t("hero.eyebrow")}
-      </p>
+      <p className="text-tinted small-caps mx-6 mt-8">{t("hero.eyebrow")}</p>
       <div className="flex flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
         <div className="flex flex-1 flex-col justify-between pb-4">
           <div slot="main-info">
-            <h2 className="font-heading text-subtle-foreground text-3xl leading-tight @xl/main:text-4xl">
+            <h2 className="font-heading text-subtle-foreground text-2xl leading-tight @xl/main:text-3xl">
               {book.title}
             </h2>
 
-            {byline && (
-              <p className="text-tinted font-heading mt-2 text-sm">{byline}</p>
-            )}
+            {byline && <p className="text-tinted mt-2 text-sm">{byline}</p>}
           </div>
 
           <div slot="stats-and-actions" className="flex flex-col gap-4">
@@ -132,9 +128,10 @@ function Hero({ book }: { book: BookWithRelations }) {
               <Button
                 variant="default"
                 nativeButton={false}
+                className="rounded-lg"
                 render={
                   <V3Link href={read.href}>
-                    <ReadIcon className="mr-1 h-4 w-4" />
+                    <ReadIcon className="mr-1 size-3.5" />
                     {t(`hero.${read.labelKey}`)}
                   </V3Link>
                 }

@@ -800,7 +800,7 @@ export function FilterableMenuSubTrigger({
   return (
     <Popover.Trigger
       openOnHover
-      delay={50}
+      delay={0}
       closeDelay={0}
       disabled={disabled}
       nativeButton={false}

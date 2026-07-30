@@ -11,6 +11,7 @@ import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import * as icon from "@/icons"
 
 import { CollapsibleSection } from "./CollapsibleSection"
+import { cn } from "@/cn"
 
 // a single label + value pair occupying two grid cells, so the grid keeps the
 // same shape whether the value is read-only or an inline editor.
@@ -25,7 +26,13 @@ function DetailRow({
 
   return (
     <>
-      <span className="text-muted-foreground self-center text-xs uppercase">
+      <span
+        className={cn(
+          "text-muted-foreground self-center text-xs",
+          // ATKINS
+          // "uppercase",
+        )}
+      >
         {label}
       </span>
       <div className="text-sm">{children}</div>

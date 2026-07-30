@@ -14,7 +14,7 @@ import { Slider } from "@v3/_/components/ui/slider"
 import { Switch } from "@v3/_/components/ui/switch"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { ColorModes } from "@/database/userPreferencesTypes"
+import { ColorModes, ShellThemes } from "@/database/userPreferencesTypes"
 
 import { AccentColorPicker } from "./accent-color-picker"
 import { ColorfulnessPreview } from "./colorfulness-preview"
@@ -49,8 +49,43 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
     useWatch({ control: form.control, name: "colorIntensity" }) ??
     colorIntensityDefault
 
+  const shellThemeOptions = ShellThemes.map((key) => ({
+    value: key,
+    label: t(`shell.options.${key}`),
+  }))
+
   return (
     <div className="space-y-6">
+      <PreferencesSection tab="appearance" section="shell">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("shell.title")}</CardTitle>
+            <CardDescription>{t("shell.description")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Controller
+              name="shellTheme"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <SettingLabel field="shellTheme">
+                    {t("shell.label")}
+                  </SettingLabel>
+                  <FieldDescription>{t("shell.hint")}</FieldDescription>
+                  <SegmentedControl
+                    value={field.value}
+                    onChange={(value) => {
+                      field.onChange(value)
+                    }}
+                    options={shellThemeOptions}
+                  />
+                </Field>
+              )}
+            />
+          </CardContent>
+        </Card>
+      </PreferencesSection>
+
       <PreferencesSection tab="appearance" section="accent">
         <Card>
           <CardHeader>

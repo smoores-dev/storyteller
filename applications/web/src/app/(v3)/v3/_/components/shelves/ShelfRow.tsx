@@ -68,7 +68,7 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
     return (
       <div className={cn("flex flex-col gap-2", className)}>
         <div className="flex items-center justify-between px-4">
-          <h2 className="font-heading text-lg font-semibold">{displayName}</h2>
+          <h2 className="text-lg">{displayName}</h2>
         </div>
 
         <div className="flex gap-4 overflow-hidden px-4">
@@ -90,7 +90,9 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
     <div className={cn("group/shelf flex flex-col gap-2", className)}>
       <div className="flex items-center justify-between px-4">
         <div className="flex items-baseline gap-3">
-          <h2 className="font-heading text-lg font-medium">{displayName}</h2>
+          <h2 className={cn("text-lg", "font-medium", "font-heading")}>
+            {displayName}
+          </h2>
 
           <V3Link
             href={seeAllHref}

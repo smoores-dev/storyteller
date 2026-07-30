@@ -34,7 +34,7 @@ export function SiteHeader({
           className,
         )}
       >
-        <div className="flex w-full min-w-0 items-center gap-3 px-3 pl-4">
+        <div className="flex w-full min-w-0 items-center gap-3 px-3 pl-5">
           {current && (
             <div className="flex min-w-0 flex-col justify-center">
               {parents.length > 0 && (

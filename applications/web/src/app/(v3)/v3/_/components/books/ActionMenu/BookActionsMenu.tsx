@@ -81,7 +81,7 @@ export function BookActionsMenu({
               className={className}
               tooltip="Open actions"
               aria-label="Open book actions menu"
-              shortcut={["E"]}
+              shortcut={["M"]}
             >
               <icon.DotsVertical className="size-3.5 stroke-[1.5]" />
               <span className="sr-only">Open book actions menu</span>

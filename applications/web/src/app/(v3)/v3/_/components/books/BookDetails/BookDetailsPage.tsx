@@ -182,7 +182,7 @@ function BookDetailsContentInner({
           "relative h-full w-full",
           // in the side panel the raised surface tone is the background; the
           // full page keeps the plain app background
-          compact ? "bg-surface-raised" : "bg-background",
+          compact ? "bg-surface-base" : "bg-background",
         )}
         {...scope}
       >
@@ -196,18 +196,18 @@ function BookDetailsContentInner({
         )}
         <BookEditBar />
 
-        <div className="scroll-y @container/book @container-size h-full flex-1">
+        <div className="scroll-y @container-size @container/book h-full flex-1">
           {/* this is some fucked up structure but its necessary in order to get full width background
         for full page view
          */}
           <HeroSection
             compact={compact || false}
-            className={cn(!compact && "mx-auto max-w-5xl")}
+            className={cn(!compact && "mx-auto max-w-3xl")}
           />
           <div
             className={cn(
               "flex flex-col gap-4 transition-[height]",
-              !compact && "mx-auto max-w-5xl",
+              !compact && "mx-auto max-w-3xl",
             )}
           >
             {showReport ? (

@@ -183,13 +183,25 @@ void describe("book totals", () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
-    const [b1, b2, b3] = seedBooks(ctx, [
+    const [b1, b2, b3, hidden] = seedBooks(ctx, [
       { title: "one" },
       { title: "two" },
       { title: "three" },
+      { title: "hidden" },
     ])
     void b2
     void b3
+
+    // a private collection this user does not belong to
+    //  `hidden` must not count  toward their totals in either code path.
+    ctx.sqlite
+      .prepare(`INSERT INTO collection (uuid, name, public) VALUES (?, ?, 0)`)
+      .run("55555555-5555-5555-5555-555555555555", "Private")
+    ctx.sqlite
+      .prepare(
+        `INSERT INTO book_to_collection (book_uuid, collection_uuid) VALUES (?, ?)`,
+      )
+      .run(hidden, "55555555-5555-5555-5555-555555555555")
 
     const counts = await getLibraryCounts(userId)
     assert.strictEqual(counts.books, 3)
