@@ -571,7 +571,14 @@ public final class ReadingSession {
             }
             onReadaloudAvailabilityChanged?(hasAudioNarration)
 
-            if isJoiningExistingSession {
+            // A recreated view can attach to a live session (kept open for
+            // background readaloud); the fresh document needs the initial seek
+            // again even though it already ran once.
+            let isViewReattach = progressManager?.hasPerformedInitialSeek == true
+            if isViewReattach {
+                progressManager?.hasPerformedInitialSeek = false
+            }
+            if isJoiningExistingSession || isViewReattach {
                 debugLog("[ReadingSession] Joining session - navigating to current actor position")
                 await navigateToCurrentActorPosition(bridge: bridge)
             } else {
