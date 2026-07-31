@@ -9,6 +9,11 @@ export type NapiInputImage = InputImage
 
 export declare function colors(input: InputImage): Array<JsColor>
 
+export declare function colorsDetailed(
+  input: InputImage,
+  config?: JsConfig | undefined | null,
+): Array<JsScoredColor>
+
 export declare function colorsWithConfig(
   input: InputImage,
   config: JsConfig,
@@ -25,4 +30,16 @@ export interface JsConfig {
   maskWeight: number
   maskWeightedCountsWeight: number
   chromaWeight: number
+}
+
+export interface JsScoredColor {
+  r: number
+  g: number
+  b: number
+  /** mask-weighted fraction of pixels assigned to this color, in [0, 1] */
+  fraction: number
+  /** oklab chroma normalized to [0, 1] */
+  chroma: number
+  /** the final ranking score combining coverage and chroma */
+  score: number
 }

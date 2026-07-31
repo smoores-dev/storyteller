@@ -3,7 +3,7 @@ import chalk, { supportsColor } from "chalk"
 import assert from "node:assert"
 import { test } from "node:test"
 
-import { colors, InputImage } from "../index.js"
+import { colors, colorsDetailed, InputImage } from "../index.js"
 
 test("extracts colors from raw RGB buffer", () => {
   const buf = Buffer.from([255, 0, 0, 0, 255, 0, 255, 0, 0, 255, 0, 0])
@@ -29,6 +29,31 @@ test("extracts colors from a JPEG file", async (ctx) => {
     const outputColors = result
       .map((c) => `${chalk.bgRgb(c.r, c.g, c.b)("   ")}`)
       .join(" ")
+    console.log("Output")
+    console.log(outputColors)
+  }
+
+  ctx.assert.snapshot(result)
+})
+
+test("extracts colors from a JPEG file w more info", async (ctx) => {
+  const fixture = await readFile(
+    new URL(
+      "../../audiobook/src/__fixtures__/sleepy_hollow.jpg",
+      import.meta.url,
+    ),
+  )
+
+  const img = InputImage.fromImage(fixture)
+  const result = colorsDetailed(img)
+
+  if (supportsColor) {
+    const outputColors = result
+      .map(
+        (c) =>
+          `${chalk.bgRgb(c.r, c.g, c.b)("   ")} ${(c.fraction * 100).toFixed(2)}% ${c.chroma.toFixed(2)}C ${c.score.toFixed(2)} score`,
+      )
+      .join("\n")
     console.log("Output")
     console.log(outputColors)
   }
