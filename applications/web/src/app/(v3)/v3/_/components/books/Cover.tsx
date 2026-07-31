@@ -20,8 +20,8 @@ import { type BookWithRelations } from "@/database/books"
 import * as icon from "@/icons"
 import { getCoverUrl } from "@/store/api"
 
-import { useCoverColors } from "./BookDetails/sections/useCoverColors"
 import { getBlurhashDataUri } from "./blurhash-data-uri"
+import { coverSwatches } from "./coverSwatches"
 
 // potential target for user-configurable override
 const ROUNDED_CLASS = "rounded-cover"
@@ -453,7 +453,11 @@ export function FallbackCover({
   className?: string
   colors?: JsColor[] | null
 }) {
-  const { primary } = useCoverColors(colors ?? [])
+  const { primary, hasColors } = coverSwatches(colors ?? [])
+  // a format without its own extracted colors borrows the surrounding cover
+  // scope accent (usually the book's other format) instead of the app orange
+  const bg = hasColors ? primary.css : "var(--cover-accent)"
+  const fg = hasColors ? primary.onColor : "var(--cover-accent-foreground)"
 
   return (
     <div
@@ -462,23 +466,23 @@ export function FallbackCover({
         className,
       )}
       style={{
-        background: primary.solid,
+        background: bg,
       }}
     >
       {type === "audiobook" ? (
         <icon.HeadphonesFilled
           className="h-12 w-12"
-          style={{ color: primary.onColor }}
+          style={{ color: fg }}
         />
       ) : (
         <icon.BookFilled
           className="h-12 w-12"
-          style={{ color: primary.onColor }}
+          style={{ color: fg }}
         />
       )}
       <h3
         className="line-clamp-2 max-w-full text-center text-sm font-medium"
-        style={{ color: primary.onColor }}
+        style={{ color: fg }}
       >
         {title}
       </h3>

@@ -11,8 +11,6 @@ import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
 import * as icon from "@/icons"
 
-import { useColorPreferences } from "./BookDetails/sections/useCoverColors"
-
 export type RelationChipItem = {
   uuid: string
   name: string
@@ -137,15 +135,12 @@ export function RelationChipEditor<T extends RelationItem>({
   className,
 }: RelationChipEditorProps<T>) {
   const tLabels = useTranslation("Labels")
-  const { level } = useColorPreferences()
 
   return (
     <div
       className={cn(
         `group/${source}`,
         "flex flex-wrap items-center gap-1.5",
-        // level !== "minimal" &&
-        //   "*:data-[slot=badge]:border-primary *:data-[slot=badge]:text-primary! *:data-[slot=badge]:hover:bg-primary/10 *:data-[slot=badge]:bg-none *:data-[slot=badge]:font-medium!",
         className,
       )}
     >

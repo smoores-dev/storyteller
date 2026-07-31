@@ -85,7 +85,7 @@ function CollapsibleDescription({
           onClick={() => {
             setExpanded((prev) => !prev)
           }}
-          className="text-primary relative z-10 mt-1 text-xs font-medium hover:underline"
+          className="text-cover-accent relative z-10 mt-1 text-xs font-medium hover:underline"
           aria-label={expanded ? t("showLess") : t("showMore")}
         >
           {expanded ? t("showLess") : t("showMore")}

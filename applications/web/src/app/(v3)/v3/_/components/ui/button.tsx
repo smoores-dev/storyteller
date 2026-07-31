@@ -11,8 +11,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        // solid cover-accent button. outside a cover scope (or with colors
+        // minimal) --cover-accent falls back to --primary, so this renders
+        // exactly like `default`
+        cover:
+          "bg-cover-accent text-cover-accent-foreground hover:bg-cover-accent/85",
         outline:
           "border-border dark:bg-input/30 hover:bg-input/50 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+        // neutral outline that picks up the cover accent only inside an active
+        // cover scope, so minimal mode keeps the plain outline look
+        "cover-outline":
+          "border-border dark:bg-input/30 hover:bg-input/50 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground cover:border-cover-accent cover:text-cover-accent cover:hover:bg-cover-accent/10 cover:hover:text-cover-accent cover:aria-expanded:bg-cover-accent/10 cover:aria-expanded:text-cover-accent",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

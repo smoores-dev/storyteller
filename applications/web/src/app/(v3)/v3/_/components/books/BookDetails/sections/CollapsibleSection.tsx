@@ -54,7 +54,7 @@ export function CollapsibleSection({
 
   return (
     <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
-      <div className="group/section">
+      <div className="group/section [&_svg]:stroke-muted-foreground [&_svg]:size-3.5 [&_svg]:stroke-[1.5]">
         <div
           className={cn("relative flex items-center gap-3", isOpen && "mb-3")}
         >

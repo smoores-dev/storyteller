@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 
 import { Book3D } from "@v3/_/components/books/Book3D"
-import { useCoverScope } from "@v3/_/components/books/BookDetails/sections/CoverScope"
+import { useCoverScope } from "@v3/_/components/books/CoverScope"
 import { Button } from "@v3/_/components/ui/button"
 import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
@@ -96,14 +96,14 @@ function Hero({ book }: { book: BookWithRelations }) {
 
   return (
     <section
-      className="via-cover-wash to-cover-header/80 relative -mx-4 flex flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
+      className="via-cover-wash to-cover-header relative -mx-4 flex flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
       {...scope}
     >
       <p className="text-tinted small-caps mx-6 mt-8">{t("hero.eyebrow")}</p>
       <div className="flex flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
         <div className="flex flex-1 flex-col justify-between pb-4">
           <div slot="main-info">
-            <h2 className="font-heading text-subtle-foreground text-2xl leading-tight @xl/main:text-3xl">
+            <h2 className="font-heading text-subtle-foreground text-2xl leading-tight font-medium tracking-tight @xl/main:text-3xl">
               {book.title}
             </h2>
 
@@ -114,7 +114,7 @@ function Hero({ book }: { book: BookWithRelations }) {
             <div className="flex items-center gap-3">
               <div className="bg-foreground/10 h-1.5 w-48 max-w-full overflow-hidden rounded-full">
                 <div
-                  className="bg-primary h-full transition-all"
+                  className="bg-cover-accent h-full transition-all"
                   style={{ width: `${Math.round(progress * 100)}%` }}
                 />
               </div>
@@ -126,7 +126,7 @@ function Hero({ book }: { book: BookWithRelations }) {
 
             <div className="flex items-center gap-3">
               <Button
-                variant="default"
+                variant="cover"
                 nativeButton={false}
                 className="rounded-lg"
                 render={

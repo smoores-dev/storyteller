@@ -6,7 +6,7 @@ import { useIsMobile } from "@v3/_/hooks/use-mobile"
 import { useFormatDuration } from "@v3/_/lib/formatters"
 import { cn } from "@v3/_/lib/utils"
 
-import { useCoverScope } from "@/app/(v3)/v3/_/components/books/BookDetails/sections/CoverScope"
+import { useCoverScope } from "@/app/(v3)/v3/_/components/books/CoverScope"
 import { Cover, isDual } from "@/app/(v3)/v3/_/components/books/Cover"
 import {
   MissingBadge,

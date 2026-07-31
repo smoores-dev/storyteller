@@ -5,7 +5,7 @@ import { DEFAULT_RATING_DIMENSIONS } from "./ratingDimensions"
 export const ViewKinds = ["grid", "list", "table"] as const
 export type ViewKind = (typeof ViewKinds)[number]
 
-export const ColorModes = ["full", "medium", "minimal"] as const
+export const ColorModes = ["full", "minimal"] as const
 export type ColorMode = (typeof ColorModes)[number]
 
 // how the app frame is dressed: "paper" keeps the whole shell one light
@@ -44,7 +44,6 @@ export const UserPreferencesSchema = z.object({
   locale: z.string().nullable(),
   defaultView: z.enum(ViewKinds),
   colorMode: z.enum(ColorModes),
-  colorIntensity: z.number().min(0).max(1),
   shellTheme: z.enum(ShellThemes),
   gridCoverDisplay: z.enum(GridCoverDisplays),
   gridCardSize: z.enum(GridCardSizes),
@@ -66,14 +65,11 @@ export const UserPreferencesSchema = z.object({
   animatePanelOpen: z.boolean(),
 })
 
-export const NEUTRAL_COLOR_STRENGTH = 0.65
-
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>
 
 export const UserPreferencesFormSchema = UserPreferencesSchema.extend({
   defaultView: UserPreferencesSchema.shape.defaultView.nullable(),
   colorMode: UserPreferencesSchema.shape.colorMode.nullable(),
-  colorIntensity: UserPreferencesSchema.shape.colorIntensity.nullable(),
   gridCoverDisplay: UserPreferencesSchema.shape.gridCoverDisplay.nullable(),
   gridCardSize: UserPreferencesSchema.shape.gridCardSize.nullable(),
   doubleCoverAlignment:
@@ -117,7 +113,6 @@ export const defaultUserPreferences: UserPreferences = {
   locale: null,
   defaultView: "grid",
   colorMode: "full",
-  colorIntensity: NEUTRAL_COLOR_STRENGTH,
   shellTheme: "paper",
   gridCoverDisplay: "auto",
   gridCardSize: "medium",
@@ -137,6 +132,8 @@ export const defaultUserPreferences: UserPreferences = {
 const LEGACY_COLOR_MODES: Record<string, ColorMode> = {
   colorful: "full",
   subdued: "minimal",
+  // the intensity slider is gone; the old middle mode maps to full
+  medium: "full",
 }
 
 const LIBRARY_DEFAULT_KEY_SET = new Set<string>(LIBRARY_DEFAULT_KEYS)

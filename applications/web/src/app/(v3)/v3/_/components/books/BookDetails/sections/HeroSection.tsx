@@ -1,7 +1,6 @@
 "use client"
 
 import { motion } from "motion/react"
-import { useTheme } from "next-themes"
 import { useState } from "react"
 
 import {
@@ -44,12 +43,6 @@ import {
   useDeleteUserBookRatingMutation,
   useSetUserBookRatingMutation,
 } from "@/store/api"
-
-import {
-  ensureContrast,
-  useCoverColors,
-  useHeroContrast,
-} from "./useCoverColors"
 
 const MAX_CREATORS = 5
 
@@ -107,20 +100,14 @@ export function HeroSection({
     }
   }
 
-  const { primary } = useCoverColors(book)
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
-  const ratingColor = ensureContrast(primary, isDark).solid
-
-  const heroContrast = useHeroContrast(book)
+  const ratingColor = "var(--cover-accent)"
 
   return (
     <div
       className={cn(
-        "to-cover-well dark:to-cover-well relative bg-linear-to-t/oklch from-transparent via-[color-mix(in_oklch,var(--cover-well)_40%,var(--cover-background-mix))] dark:via-[color-mix(in_oklch,var(--cover-header)_70%,var(--cover-background-mix))]",
+        "via-cover-wash to-cover-header relative bg-linear-to-t/oklch from-transparent",
         "via-30% pb-4 @xl/book:via-40%",
       )}
-      style={heroContrast}
     >
       <div
         className={cn(
@@ -148,7 +135,7 @@ export function HeroSection({
               name="title"
               as="h1"
               className={cn(
-                "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-medium text-balance",
+                "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-medium tracking-tight text-balance",
                 `@xl/book:w-auto @xl/book:text-left`,
               )}
               placeholder={c.plain("fields.label.title")}
@@ -382,7 +369,7 @@ export function HeroSection({
               <div className="flex flex-wrap justify-center gap-2">
                 {book.readaloud?.status === "ALIGNED" && (
                   <Button
-                    variant="default"
+                    variant="cover"
                     size="sm"
                     nativeButton={false}
                     className="rounded-xl"
@@ -397,7 +384,7 @@ export function HeroSection({
 
                 {book.readaloud?.status !== "ALIGNED" && book.ebook && (
                   <Button
-                    variant="default"
+                    variant="cover"
                     size="sm"
                     nativeButton={false}
                     className="rounded-xl"
@@ -412,7 +399,7 @@ export function HeroSection({
 
                 {book.readaloud?.status !== "ALIGNED" && book.audiobook && (
                   <Button
-                    variant="default"
+                    variant="cover"
                     size="sm"
                     nativeButton={false}
                     render={
@@ -433,9 +420,8 @@ export function HeroSection({
                     <DropdownMenuTrigger
                       render={
                         <TooltipButton
-                          variant="outline"
+                          variant="cover-outline"
                           size="icon-sm"
-                          className="border-primary text-primary"
                           aria-label={t("downloads.download")}
                           tooltip={t("downloads.download")}
                         >
@@ -583,6 +569,7 @@ function QuickAddEmptyFields({
       <DropdownMenuTrigger
         render={
           <TooltipButton
+            variant="cover"
             className={cn("rounded-full")}
             tooltip={c("actions.add")}
             aria-label={c("actions.add")}

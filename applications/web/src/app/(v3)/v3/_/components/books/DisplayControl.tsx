@@ -15,6 +15,7 @@ import {
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { useTranslation } from "@/app/(v3)/v3/_/hooks/use-translation"
+import { type ColorMode, ColorModes } from "@/database/userPreferencesTypes"
 import { getFieldDef } from "@/fields"
 import { FieldIcon } from "@/icons"
 import * as icon from "@/icons"
@@ -35,8 +36,6 @@ import {
   selectShowReadaloudBadge,
   uiSettingsSlice,
 } from "@/store/slices/uiSettingsSlice"
-
-import { useColorPreferences } from "./BookDetails/sections/useCoverColors"
 
 const displayHotKey = "Shift+D"
 
@@ -64,9 +63,8 @@ export function DisplayControl({
   const tLabels = useTranslation("Common.fields.label")
   const t = useTranslation("BooksPage")
 
-  const { gridCoverDisplay } = useUserPreferences()
+  const { gridCoverDisplay, colorMode } = useUserPreferences()
   const [updateSetting] = useSetUserSettingMutation()
-  const { strength } = useColorPreferences()
 
   const dispatch = useAppDispatch()
   const bookLayout = useAppSelector(selectBookLayout)
@@ -237,7 +235,7 @@ export function DisplayControl({
               {t("displayOptions.intensity")}
             </FilterableMenuSubTrigger>
             <FilterableMenuSubContent>
-              <IntensitySubmenu strength={strength} />
+              <ColorModeSubmenu current={colorMode} />
             </FilterableMenuSubContent>
           </FilterableMenuSub>
         </FilterableMenuGroup>
@@ -469,26 +467,22 @@ export function DisplayControl({
 
 // ---- sub-menus -------------------------------------------------------------
 
-function IntensitySubmenu({ strength }: { strength: number }) {
+function ColorModeSubmenu({ current }: { current: ColorMode }) {
   const [updateSetting] = useSetUserSettingMutation()
-  const steps = [0, 25, 50, 70, 85, 100]
-  const current = Math.round(strength * 100)
 
   return (
     <>
-      {steps.map((pct) => (
+      {ColorModes.map((mode) => (
         <FilterableMenuItem
-          key={pct}
+          key={mode}
           closeOnClick={false}
-          textValue={`${pct}%`}
+          textValue={mode}
           onSelect={() => {
-            void updateSetting({
-              name: "colorIntensity",
-              value: pct / 100,
-            })
+            void updateSetting({ name: "colorMode", value: mode })
           }}
         >
-          {pct}%{current === pct && <icon.Check className="ml-auto" />}
+          {mode === "full" ? "Full" : "Minimal"}
+          {current === mode && <icon.Check className="ml-auto" />}
         </FilterableMenuItem>
       ))}
     </>

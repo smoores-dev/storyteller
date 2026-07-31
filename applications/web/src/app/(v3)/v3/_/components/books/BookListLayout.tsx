@@ -49,7 +49,7 @@ import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { uiSettingsSlice } from "@/store/slices/uiSettingsSlice"
 import { type UUID } from "@/uuid"
 
-import { useCoverScope } from "./BookDetails/sections/CoverScope"
+import { useCoverScope } from "./CoverScope"
 
 const DynamicBookDetailsContent = dynamic(
   () =>

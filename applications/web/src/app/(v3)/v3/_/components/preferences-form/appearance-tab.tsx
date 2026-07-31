@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@v3/_/components/ui/card"
 import { Field, FieldDescription } from "@v3/_/components/ui/field"
-import { Slider } from "@v3/_/components/ui/slider"
 import { Switch } from "@v3/_/components/ui/switch"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
@@ -39,15 +38,11 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
 
   const accentDefault = useLibraryDefaultValue("accentColor")
   const colorModeDefault = useResolvedDefault("colorMode")
-  const colorIntensityDefault = useResolvedDefault("colorIntensity")
   const layoutAnimationsDefault = useResolvedDefault("layoutAnimations")
   const animatePanelOpenDefault = useResolvedDefault("animatePanelOpen")
 
   const colorMode =
     useWatch({ control: form.control, name: "colorMode" }) ?? colorModeDefault
-  const colorIntensity =
-    useWatch({ control: form.control, name: "colorIntensity" }) ??
-    colorIntensityDefault
 
   const shellThemeOptions = ShellThemes.map((key) => ({
     value: key,
@@ -145,33 +140,7 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
               )}
             />
 
-            <Controller
-              name="colorIntensity"
-              control={form.control}
-              render={({ field }) => (
-                <Field data-disabled={colorMode === "minimal"}>
-                  <SettingLabel field="colorIntensity">
-                    {t("colorfulness.intensity.label")}
-                  </SettingLabel>
-                  <FieldDescription>
-                    {t("colorfulness.intensity.hint")}
-                  </FieldDescription>
-                  <Slider
-                    className="max-w-xs"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    disabled={colorMode === "minimal"}
-                    value={field.value ?? colorIntensityDefault}
-                    onValueChange={(value) => {
-                      field.onChange(Array.isArray(value) ? value[0] : value)
-                    }}
-                  />
-                </Field>
-              )}
-            />
-
-            <ColorfulnessPreview level={colorMode} intensity={colorIntensity} />
+            <ColorfulnessPreview level={colorMode} />
           </CardContent>
         </Card>
       </PreferencesSection>

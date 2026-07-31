@@ -1,6 +1,5 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { useBookForm } from "@v3/_/components/books/BookDetails/BookFormProvider"
@@ -27,7 +26,6 @@ import {
 } from "@/store/api"
 
 import { CollapsibleSection } from "./CollapsibleSection"
-import { ensureContrast, useCoverColors } from "./useCoverColors"
 
 function InlineRatingNumber({
   value,
@@ -129,10 +127,7 @@ export function ReviewSection({ className }: { className?: string }) {
   const hasDimensions =
     !!currentDimensions && Object.keys(currentDimensions).length > 0
 
-  const { primary } = useCoverColors(book)
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
-  const ratingColor = ensureContrast(primary, isDark).solid
+  const ratingColor = "var(--cover-accent)"
 
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState("")

@@ -88,7 +88,7 @@ import { type UUID } from "@/uuid"
 
 import { BookCountIndicator } from "./BookCountIndicator"
 import { BookDetailsSkeleton } from "./BookDetails/BookDetailsSkeleton"
-import { useCoverScope } from "./BookDetails/sections/CoverScope"
+import { useCoverScope } from "./CoverScope"
 import { GRID_CARD_WIDTHS, GRID_SPACING_PX } from "./Grid/BookGrid"
 import { PanelResizeProvider } from "./panel-resize-context"
 

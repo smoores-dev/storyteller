@@ -564,6 +564,7 @@ function SidebarNavGroup({
     >
       <SidebarGroup>
         <div className="group/group-header relative">
+          {/* <div className="bg-sidebar-ring absolute inset-x-0 top-4 h-1 w-full opacity-100 transition-opacity duration-200 ease-linear group-not-data-[collapsible=icon]:opacity-0" /> */}
           <CollapsibleTrigger
             nativeButton={false}
             render={

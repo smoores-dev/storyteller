@@ -30,12 +30,8 @@ import { getCoverUrl } from "@/store/api"
 import { type UUID } from "@/uuid"
 
 import { isDualFormat } from "./BookCover"
-import {
-  type CoverColor,
-  useCoverColors,
-} from "./BookDetails/sections/useCoverColors"
 import { CoverImage } from "./CoverImage"
-
+import { type Swatch, bookCoverSwatches } from "./coverSwatches"
 
 const DPR =
   typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 2
@@ -235,7 +231,7 @@ function DescriptionBack({
   width,
 }: {
   book: Book3DBook
-  primary: CoverColor
+  primary: Swatch
   width: number
 }) {
   const year = publicationYear(book)
@@ -252,7 +248,7 @@ function DescriptionBack({
     <div
       className="relative flex h-full w-full flex-col overflow-hidden"
       style={{
-        background: primary.solid,
+        background: primary.css,
         color: primary.onColor,
         padding: pad,
       }}
@@ -294,9 +290,9 @@ type SlabProps = {
   height: number
   thickness: number
   front: ReactNode
-  primary: CoverColor
-  accent: CoverColor
-  back?: CoverColor
+  primary: Swatch
+  accent: Swatch
+  back?: Swatch
   edge: "paper" | "plastic"
   spine: SpineInfo
   interactive: boolean
@@ -328,7 +324,7 @@ function Slab({
   const half = thickness / 2
   const edgeOffset = (5 * width) / BASE_WIDTH
   const body = back ?? primary
-  const spineText = accent === primary ? body.onColor : accent.solid
+  const spineText = accent === primary ? body.onColor : accent.css
   const formatDuration = useFormatDuration()
   const { left, right } = spineLabel(book, spine, formatDuration)
 
@@ -548,7 +544,7 @@ function Slab({
             width: thickness,
             left: -half,
             transform: "rotateY(-90deg)",
-            background: body.solid,
+            background: body.css,
             backfaceVisibility: "visible",
             ...AA_EDGE,
           }}
@@ -678,9 +674,9 @@ function SingleBookStage({
   onViewChange?: (view: number, format: Book3DFormat) => void
   slabActions?: (format: Book3DFormat) => ReactNode
 }) {
-  const colors = useCoverColors(book)
+  const colors = bookCoverSwatches(book)
   // the back/spine follow the ebook's own cover, not the resolved primary
-  const ebookColors = useCoverColors(book, { type: "ebook" })
+  const ebookColors = bookCoverSwatches(book, "ebook")
   const bodyColor = ebookColors.hasColors ? ebookColors.primary : colors.primary
   const audiobookOnly = !!book.audiobook && !book.ebook
   const format: Book3DFormat = audiobookOnly ? "audiobook" : "ebook"
@@ -701,7 +697,7 @@ function SingleBookStage({
         height={height}
         thickness={thickness}
         primary={colors.primary}
-        accent={colors.accent}
+        accent={colors.secondary}
         back={bodyColor}
         edge={audiobookOnly ? "plastic" : "paper"}
         spine={spine}
@@ -738,8 +734,13 @@ function DualStage({
   onViewChange?: (view: number, format: Book3DFormat) => void
   slabActions?: (format: Book3DFormat) => ReactNode
 }) {
-  const ebookColors = useCoverColors(book, { type: "ebook" })
-  const audioColors = useCoverColors(book, { type: "audiobook" })
+  // a format without its own extracted colors borrows the book-level swatches
+  // (usually the other format's) so its spine/back never fall to app orange
+  const bookColors = bookCoverSwatches(book)
+  const ebookOwn = bookCoverSwatches(book, "ebook")
+  const audioOwn = bookCoverSwatches(book, "audiobook")
+  const ebookColors = ebookOwn.hasColors ? ebookOwn : bookColors
+  const audioColors = audioOwn.hasColors ? audioOwn : bookColors
 
   const w = Math.round(width * 0.78)
   const ebookThickness = getBookThickness(book, w)
@@ -774,7 +775,7 @@ function DualStage({
           height={Math.round(w * 1.5)}
           thickness={ebookThickness}
           primary={ebookColors.primary}
-          accent={ebookColors.accent}
+          accent={ebookColors.secondary}
           edge="paper"
           spine={spine}
           interactive={true}
@@ -799,7 +800,7 @@ function DualStage({
           height={w}
           thickness={audioThickness}
           primary={audioColors.primary}
-          accent={audioColors.accent}
+          accent={audioColors.secondary}
           edge="plastic"
           spine={spine}
           interactive={true}

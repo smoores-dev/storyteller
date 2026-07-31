@@ -201,7 +201,7 @@
       "table": "Tabel",
       "thumbnails": "Thumbnails",
       "appearance": "Uiterlijk",
-      "intensity": "Kleurintensiteit",
+      "intensity": "Kleuren",
       "badges": "Badges",
       "card": "Kaart",
       "row": "Rij",
@@ -1087,12 +1087,7 @@
             "hint": "Vol gebruikt coverkleuren overal; minimaal houdt een neutraal thema aan.",
             "levels": {
               "full": "Vol",
-              "medium": "Gemiddeld",
               "minimal": "Minimaal"
-            },
-            "intensity": {
-              "label": "Kleurintensiteit",
-              "hint": "Hoe sterk de coverkleur-tinten verschijnen."
             }
           },
           "motion": {

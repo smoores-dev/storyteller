@@ -219,7 +219,7 @@
       "table": "Table",
       "thumbnails": "Thumbnails",
       "appearance": "Appearance",
-      "intensity": "Intensity",
+      "intensity": "Colors",
       "badges": "Badges",
       "card": "Card",
       "row": "Row",
@@ -1129,12 +1129,7 @@
             "hint": "Full uses cover colors everywhere; minimal keeps a neutral theme.",
             "levels": {
               "full": "Full",
-              "medium": "Medium",
               "minimal": "Minimal"
-            },
-            "intensity": {
-              "label": "Color intensity",
-              "hint": "How strong the cover-color tints appear."
             }
           },
           "motion": {

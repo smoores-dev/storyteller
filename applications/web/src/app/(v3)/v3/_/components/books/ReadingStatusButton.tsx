@@ -14,8 +14,6 @@ import { statusDisplayLabel } from "@/database/statusKinds"
 import * as icon from "@/icons"
 import { useListStatusesQuery, useUpdateStatusMutation } from "@/store/api"
 
-import { useColorPreferences } from "./BookDetails/sections/useCoverColors"
-
 export function ReadingStatusButton({
   book,
   size,
@@ -29,8 +27,6 @@ export function ReadingStatusButton({
   const [updateStatus] = useUpdateStatusMutation()
 
   const currentStatus = book.status
-
-  const { showAccent } = useColorPreferences()
 
   const handleStatusChange = useCallback(
     async (statusUuid: string) => {
@@ -49,12 +45,9 @@ export function ReadingStatusButton({
       <DropdownMenuTrigger
         render={
           <Button
-            variant="outline"
+            variant="cover-outline"
             size={size}
-            className={cn(
-              "gap-2 rounded-xl",
-              showAccent && "text-primary border-primary",
-            )}
+            className="gap-2 rounded-xl"
           >
             <icon.BookAlt className="h-4 w-4" />
             {currentStatus ? statusDisplayLabel(currentStatus) : "Set Status"}

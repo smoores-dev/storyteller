@@ -29,8 +29,8 @@ import {
   findScrollParent,
   useBookActionMenu,
 } from "@/app/(v3)/v3/_/components/books/ActionMenu/useBookActionMenu"
-import { useCoverScope } from "@/app/(v3)/v3/_/components/books/BookDetails/sections/CoverScope"
 import { Cover } from "@/app/(v3)/v3/_/components/books/Cover"
+import { useCoverScope } from "@/app/(v3)/v3/_/components/books/CoverScope"
 import {
   MissingBadge,
   hasMissingMedia,
@@ -998,6 +998,7 @@ function BookRow({
       key={book.uuid}
       data-index={index}
       data-book-uuid={book.uuid}
+      {...scope}
       className={cn(
         "group hover:bg-tint absolute top-0 left-0 grid w-full cursor-pointer items-center gap-3 rounded-md transition-colors",
         isBookSelected && "bg-tint/50 ring-cover-header ring-1 ring-inset",

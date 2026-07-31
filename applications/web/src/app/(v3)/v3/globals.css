@@ -167,8 +167,7 @@
   --color-highlight: var(--highlight-edge);
   --color-highlight-bg: var(--highlight-wash);
 
-  /* cover-color toolkit: semantic tokens resolved once by CoverScope. see the
-     :root defaults and the [data-cover-*] blocks below. */
+  /* cover-color toolkit, see CoverScope */
   --color-tinted: var(--tinted-foreground);
   --color-tinted-strong: var(--tinted-foreground-strong);
   --color-tinted-subtle: var(--tinted-foreground-subtle);
@@ -177,11 +176,11 @@
   --color-cover-wash: var(--cover-wash);
   --color-cover-well: var(--cover-well);
   --color-cover-header: var(--cover-header);
-  --color-cover: var(--cover-primary);
-  --color-cover-foreground: var(--cover-primary-foreground);
-  --color-cover-accent: var(--cover-accent-color);
+  --color-cover-accent: var(--cover-accent);
   --color-cover-accent-foreground: var(--cover-accent-foreground);
 }
+
+@custom-variant cover (&:where([data-cover], [data-cover] *));
 
 :root {
   --background: oklch(1 0.0011 17.18);
@@ -300,7 +299,6 @@
   --radius-card: var(--radius-lg);
   --radius-cover: var(--radius-md);
 
-  --cover-intensity: 1;
   --cover-wash: transparent; /* faint ambient bg, hero / page */
   --cover-well: var(--muted); /* medium ambient bg, the well behind a cover */
   --cover-header: var(--muted); /* stronger ambient header bg */
@@ -309,12 +307,8 @@
   --tinted-foreground: var(--muted-foreground); /* secondary text near a tint */
   --tinted-foreground-strong: var(--foreground); /* emphasized secondary text */
   --tinted-foreground-subtle: var(--foreground); /* subtle secondary text */
-  --cover-primary: var(--primary);
-  --cover-primary-foreground: var(--primary-foreground);
-  --cover-accent-color: var(--primary);
+  --cover-accent: var(--primary); /* controls that opt into the cover color */
   --cover-accent-foreground: var(--primary-foreground);
-
-  --cover-background-mix: var(--background);
 
   --text-xs: 0.875rem;
   --text-xs--line-height: calc(1.25 / 0.875);
@@ -437,8 +431,6 @@
 
   --shell-inset-shadow: none;
   --shell-main-edge: none;
-
-  --cover-background-mix: var(--background);
 }
 
 @media (min-width: 768px) {
@@ -446,10 +438,11 @@
     overscroll-behavior: none;
   }
   [data-slot="sidebar"] {
+    z-index: 50;
     box-shadow: var(--shell-inset-shadow, none);
   }
   [data-slot="page-main"] {
-    z-index: 50;
+    z-index: 40;
     position: relative;
     box-shadow: var(--shell-main-edge, none);
   }
@@ -474,132 +467,53 @@
   }
 }
 
-[data-cover-tint] {
-  --cover-wash: rgb(var(--cover-rgb) / calc(0.08 * var(--cover-intensity)));
-  --cover-well: rgb(var(--cover-rgb) / calc(0.3 * var(--cover-intensity)));
-  --cover-header: rgb(var(--cover-rgb) / calc(0.5 * var(--cover-intensity)));
-  /* decorative / secondary text picks up the cover whenever tints are on, so it
-     stays coherent with the tinted surfaces instead of falling back to primary */
-  --tinted-foreground: rgb(var(--cover-solid-rgb) / 0.75);
-  --tinted-foreground-strong: rgb(var(--cover-solid-rgb));
-  --tinted-foreground-subtle: rgb(var(--cover-solid-rgb) / 0.05);
-}
-[data-cover-accent] {
-  --tint: rgb(var(--cover-solid-rgb) / calc(0.12 * var(--cover-intensity)));
-  --tint-strong: rgb(
-    var(--cover-solid-rgb) / calc(0.2 * var(--cover-intensity))
+[data-cover] {
+  --cover-2: var(--cover-1);
+
+  --cover-wash: oklch(from var(--cover-1) 0.96 min(calc(c * 0.55), 0.035) h);
+  --cover-well: oklch(from var(--cover-1) 0.92 min(calc(c * 0.65), 0.06) h);
+  --cover-header: oklch(from var(--cover-1) 0.86 min(calc(c * 0.75), 0.09) h);
+
+  --tint: oklch(from var(--cover-1) 0.945 min(calc(c * 0.55), 0.045) h);
+  --tint-strong: oklch(from var(--cover-1) 0.9 min(calc(c * 0.65), 0.065) h);
+
+  --tinted-foreground: oklch(from var(--cover-1) 0.44 min(c, 0.11) h);
+  --tinted-foreground-strong: oklch(from var(--cover-1) 0.3 min(c, 0.09) h);
+  --tinted-foreground-subtle: oklch(
+    from var(--cover-1) 0.24 min(calc(c * 0.6), 0.06) h
   );
+
+  --cover-accent: oklch(from var(--cover-1) 0.47 min(c, 0.14) h);
+  --cover-accent-foreground: oklch(0.985 0.005 60);
 }
 
-@supports (color: color-mix(in oklch, red, blue)) {
-  [data-cover-tint] {
-    --cover-wash: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-rgb)) l c h)
-        min(calc(18% * var(--cover-intensity)), 96%),
-      var(--cover-background-mix)
-    );
-    --cover-well: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-rgb)) l c h)
-        min(calc(30% * var(--cover-intensity)), 96%),
-      var(--cover-background-mix)
-    );
-    /* --cover-well: rgba(var(--cover-rgb)  30%); */
-    --cover-header: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-rgb)) l c h)
-        min(calc(50% * var(--cover-intensity)), 96%),
-      var(--cover-background-mix)
-    );
-    --tinted-foreground: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-solid-rgb)) l c h) 40%,
-      var(--muted-foreground)
-    );
-    --tinted-foreground-strong: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-solid-rgb)) l c h) 65%,
-      var(--foreground)
-    );
-    --tinted-foreground-subtle: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-solid-rgb)) l c h) 25%,
-      var(--foreground)
-    );
-  }
-  [data-cover-accent] {
-    --tint: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-solid-rgb)) l c h)
-        min(calc(12% * var(--cover-intensity)), 96%),
-      var(--cover-background-mix)
-    );
-    --tint-strong: color-mix(
-      in oklch,
-      oklch(from rgb(var(--cover-solid-rgb)) l c h)
-        min(calc(20% * var(--cover-intensity)), 96%),
-      var(--cover-background-mix)
-    );
-  }
-  .dark {
-    [data-cover-tint] {
-      --cover-wash: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-rgb)) l c h)
-          min(calc(60% * var(--cover-intensity)), 96%),
-        var(--cover-background-mix)
-      );
-      --cover-well: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-rgb)) l c h)
-          min(calc(70% * var(--cover-intensity)), 96%),
-        var(--cover-background-mix)
-      );
-      /* --cover-well: rgba(
-        var(--cover-rgb) / min(calc(70% * var(--cover-intensity)), 96%),
-        var(--cover-background-mix)
-      ); */
-      /* --cover */
+/* richer colors for dark mode */
+.dark [data-cover] {
+  --cover-wash: oklch(
+    from var(--cover-1) clamp(0.21, calc(l * 0.6), 0.53)
+      min(calc(c * 0.75), 0.09) h
+  );
+  --cover-well: oklch(
+    from var(--cover-1) clamp(0.25, calc(l * 0.7), 0.62)
+      min(calc(c * 0.85), 0.11) h
+  );
+  --cover-header: oklch(
+    from var(--cover-1) clamp(0.28, calc(l * 0.8), 0.7)
+      min(calc(c * 0.95), 0.13) h
+  );
 
-      --cover-header: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-rgb)) l c h)
-          min(calc(80% * var(--cover-intensity)), 96%),
-        var(--cover-background-mix)
-      );
-      --tinted-foreground: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-solid-rgb)) l c h) 40%,
-        var(--muted-foreground),
-        white 30%
-      );
-      --tinted-foreground-strong: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-solid-rgb)) l c h) 65%,
-        var(--foreground)
-      );
-      --tinted-foreground-subtle: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-solid-rgb)) l c h) 5%,
-        var(--foreground)
-      );
-    }
-    [data-cover-accent] {
-      --tint: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-solid-rgb)) l c h)
-          min(calc(12% * var(--cover-intensity)), 96%),
-        var(--cover-background-mix)
-      );
-      --tint-strong: color-mix(
-        in oklch,
-        oklch(from rgb(var(--cover-solid-rgb)) l c h)
-          min(calc(20% * var(--cover-intensity)), 96%),
-        var(--cover-background-mix)
-      );
-    }
-  }
+  --tint: oklch(from var(--cover-1) 0.28 min(calc(c * 0.65), 0.07) h);
+  --tint-strong: oklch(from var(--cover-1) 0.34 min(calc(c * 0.75), 0.09) h);
+
+  /* makes sure these lean light, so theyll always be readable  */
+  --tinted-foreground: oklch(from var(--cover-1) 0.8 min(c, 0.1) h);
+  --tinted-foreground-strong: oklch(from var(--cover-1) 0.92 min(c, 0.07) h);
+  --tinted-foreground-subtle: oklch(
+    from var(--cover-1) 0.96 min(calc(c * 0.5), 0.04) h
+  );
+
+  --cover-accent: oklch(from var(--cover-1) 0.74 min(c, 0.13) h);
+  --cover-accent-foreground: oklch(0.17 0.004 49);
 }
 
 /* fonts offered by the theme tweaks panel that aren't loaded via next/font */
@@ -695,14 +609,14 @@
       flex: 1;
       height: 1px;
       /* background: var(--border); */
-      @apply bg-muted-foreground/20;
+      @apply bg-muted-foreground/30;
     }
 
     & svg {
       flex-shrink: 0;
       /* @apply text-muted-foreground/50; */
     }
-    @apply text-muted-foreground/70;
+    @apply text-muted-foreground/80;
   }
   .scroll-y {
     @apply scroll overflow-y-auto;
@@ -720,159 +634,6 @@
 
   code {
     font-family: var(--ibm-plex-sans) !important;
-  }
-
-  /* from daisy ui https://github.com/saadeghi/daisyui/blob/7a1998dfcbfb8bff3023682af80899de54faca73/packages/daisyui/src/components/hover3d.css#L4 */
-  .hover-3d {
-    display: inline-grid;
-    perspective: 75rem;
-    --transform: 0, 0;
-    --shine: 100% 100%;
-    --shadow: 0rem 0rem 0rem;
-    --ease: linear(
-      0,
-      0.931 13.8%,
-      1.196 21.4%,
-      1.343 29.8%,
-      1.378 36%,
-      1.365 43.2%,
-      1.059 78%,
-      1
-    );
-    /* transform-style: preserve-3d; */
-
-    filter: drop-shadow(var(--shadow) 0.1rem #00000003)
-      drop-shadow(var(--shadow) 0.2rem #00000003)
-      drop-shadow(var(--shadow) 0.3rem #00000003)
-      drop-shadow(var(--shadow) 0.4rem #00000003);
-    transition: filter ease-out 400ms;
-    > :nth-child(n + 2) {
-      isolation: isolate;
-      z-index: 1;
-    }
-    > :first-child {
-      overflow: hidden;
-      grid-area: 1/1/4/4;
-      transform: rotate3d(var(--transform), 0, 10deg);
-      transition:
-        transform var(--ease) 500ms,
-        scale var(--ease) 500ms,
-        outline-color ease-out 500ms;
-      outline: 0.5px solid #0000;
-      outline-offset: -1px;
-      &:before {
-        @apply size-1/3;
-        content: "";
-        pointer-events: none;
-        position: absolute;
-        z-index: 1;
-        scale: 500%;
-        opacity: 0;
-        filter: blur(0.75rem);
-        background-image: radial-gradient(
-          circle at 50%,
-          #fff3 10%,
-          transparent 50%
-        );
-        translate: var(--shine);
-        transition:
-          translate ease-out 400ms,
-          opacity ease-out 400ms;
-      }
-    }
-    &:hover {
-      --ease: linear(
-        0,
-        0.708 15.2%,
-        0.927 23.6%,
-        1.067 33%,
-        1.12 41%,
-        1.13 50.2%,
-        1.019 83.2%,
-        1
-      );
-      & > :first-child {
-        outline-color: #fff1;
-        &:before,
-        &:after {
-          opacity: 1;
-        }
-      }
-    }
-    > :nth-child(n + 2) {
-      scale: 1.2;
-    }
-    > :nth-child(2) {
-      grid-area: 1/1/2/2;
-    }
-    > :nth-child(3) {
-      grid-area: 1/2/2/3;
-    }
-    > :nth-child(4) {
-      grid-area: 1/3/2/4;
-    }
-    > :nth-child(5) {
-      grid-area: 2/1/3/2;
-    }
-    > :nth-child(6) {
-      grid-area: 2/3/3/4;
-    }
-    > :nth-child(7) {
-      grid-area: 3/1/4/2;
-    }
-    > :nth-child(8) {
-      grid-area: 3/2/4/3;
-    }
-
-    > :nth-child(9) {
-      grid-area: 3/3/4/4;
-    }
-    &:hover {
-      > :first-child {
-        scale: 1.05;
-      }
-    }
-
-    &:has(> :nth-child(2):hover) {
-      --transform: -1, 1;
-      --shine: 0% 0%;
-      --shadow: -0.5rem -0.5rem;
-    }
-    &:has(> :nth-child(3):hover) {
-      --transform: -1, 0;
-      --shine: 100% 0%;
-      --shadow: 0rem -0.5rem;
-    }
-    &:has(> :nth-child(4):hover) {
-      --transform: -1, -1;
-      --shine: 200% 0%;
-      --shadow: 0.5rem -0.5rem;
-    }
-    &:has(> :nth-child(5):hover) {
-      --transform: 0, 1;
-      --shine: 0% 100%;
-      --shadow: -0.5rem 0rem;
-    }
-    &:has(> :nth-child(6):hover) {
-      --transform: 0, -1;
-      --shine: 200% 100%;
-      --shadow: 0.5rem 0rem;
-    }
-    &:has(> :nth-child(7):hover) {
-      --transform: 1, 1;
-      --shine: 0% 200%;
-      --shadow: -0.5rem 0.5rem;
-    }
-    &:has(> :nth-child(8):hover) {
-      --transform: 1, 0;
-      --shine: 100% 200%;
-      --shadow: 0rem 0.5rem;
-    }
-    &:has(> :nth-child(9):hover) {
-      --transform: 1, -1;
-      --shine: 200% 200%;
-      --shadow: 0.5rem 0.5rem;
-    }
   }
 }
 

@@ -5,47 +5,27 @@ import { cn } from "@v3/_/lib/utils"
 import { type ColorMode } from "@/database/userPreferencesTypes"
 
 const SAMPLE = { r: 37, g: 99, b: 235 }
-const solid = `rgb(${SAMPLE.r}, ${SAMPLE.g}, ${SAMPLE.b})`
-const alpha = (a: number) => `rgba(${SAMPLE.r}, ${SAMPLE.g}, ${SAMPLE.b}, ${a})`
-const channels = `${SAMPLE.r} ${SAMPLE.g} ${SAMPLE.b}`
+const solid = `rgb(${SAMPLE.r} ${SAMPLE.g} ${SAMPLE.b})`
 
-function sampleScope(level: ColorMode, intensity: number) {
-  const style: Record<string, string | number> = {
-    "--cover-rgb": channels,
-    "--cover-solid-rgb": channels,
-    "--cover-accent-rgb": channels,
-    "--cover-accent-solid-rgb": channels,
-    "--cover-intensity": intensity,
-  }
-  if (level === "full") {
-    style["--primary"] = solid
-    style["--primary-foreground"] = "#fff"
-    style["--cover-accent-color"] = solid
-    style["--cover-accent-foreground"] = "#fff"
-  }
+// mirrors what CoverScope emits so the preview exercises the real css ladder
+function sampleScope(level: ColorMode) {
+  if (level === "minimal") return {}
   return {
-    style: style as React.CSSProperties,
-    ...(level !== "minimal" ? { "data-cover-tint": "" } : {}),
-    ...(level === "full" ? { "data-cover-accent": "" } : {}),
+    style: { "--cover-1": solid } as React.CSSProperties,
+    "data-cover": "" as const,
   }
 }
 
-export function ColorfulnessPreview({
-  level,
-  intensity,
-}: {
-  level: ColorMode
-  intensity: number
-}) {
+export function ColorfulnessPreview({ level }: { level: ColorMode }) {
   return (
-    <div className="flex items-end gap-4" {...sampleScope(level, intensity)}>
+    <div className="flex items-end gap-4" {...sampleScope(level)}>
       {/* a grid card */}
       <div className="w-28 shrink-0">
         <div className="bg-cover-well flex aspect-13/16 items-center justify-center rounded-lg p-2">
           <div
             className="h-full w-3/4 rounded shadow-md"
             style={{
-              background: `linear-gradient(145deg, ${solid}, ${alpha(0.7)})`,
+              background: `linear-gradient(145deg, ${solid}, rgb(${SAMPLE.r} ${SAMPLE.g} ${SAMPLE.b} / 0.7))`,
             }}
           />
         </div>
@@ -54,7 +34,7 @@ export function ColorfulnessPreview({
           <p
             className={cn(
               "text-[0.8rem] leading-tight font-medium",
-              level === "full" && "text-primary",
+              level === "full" && "text-tinted-strong",
             )}
           >
             Sample title
@@ -64,13 +44,13 @@ export function ColorfulnessPreview({
 
       {/* a details panel snippet */}
       <div className="border-border w-36 shrink-0 overflow-hidden rounded-lg border">
-        <div className="bg-cover-header flex h-7 items-center px-2 text-[0.7rem]">
+        <div className="bg-cover-header text-tinted-strong flex h-7 items-center px-2 text-[0.7rem]">
           Details
         </div>
         <div className="space-y-1 p-2">
           <div className="bg-muted-foreground/20 h-1.5 w-full rounded-full" />
           <div className="bg-muted-foreground/20 h-1.5 w-2/3 rounded-full" />
-          <div className="bg-primary mt-2 inline-flex h-5 items-center rounded-md px-2 text-[0.65rem] font-medium text-white">
+          <div className="bg-cover-accent text-cover-accent-foreground mt-2 inline-flex h-5 items-center rounded-md px-2 text-[0.65rem] font-medium">
             Read
           </div>
         </div>

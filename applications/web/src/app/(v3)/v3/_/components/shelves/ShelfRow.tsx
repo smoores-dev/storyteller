@@ -90,7 +90,7 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
     <div className={cn("group/shelf flex flex-col gap-2", className)}>
       <div className="flex items-center justify-between px-4">
         <div className="flex items-baseline gap-3">
-          <h2 className={cn("text-lg", "font-medium", "font-heading")}>
+          <h2 className={cn("text-[20px]", "", "font-heading tracking-tight")}>
             {displayName}
           </h2>
 

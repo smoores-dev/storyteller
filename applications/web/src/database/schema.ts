@@ -52,7 +52,7 @@ export interface Audiobook {
   coverBlurhash: string | null
   coverColors:
     | import("kysely").ColumnType<
-        import("@storyteller-platform/okmain").JsColor[],
+        import("@/database/coverColors").StoredCoverColor[],
         string,
         string
       >
@@ -75,7 +75,7 @@ export interface Book {
   assetDir: Generated<string>
   coverColorsOverride:
     | import("kysely").ColumnType<
-        import("@storyteller-platform/okmain").JsColor[],
+        import("@/database/coverColors").StoredCoverColor[],
         string,
         string
       >
@@ -195,7 +195,7 @@ export interface Ebook {
   coverBlurhash: string | null
   coverColors:
     | import("kysely").ColumnType<
-        import("@storyteller-platform/okmain").JsColor[],
+        import("@/database/coverColors").StoredCoverColor[],
         string,
         string
       >
@@ -349,7 +349,7 @@ export interface Readaloud {
   coverBlurhash: string | null
   coverColors:
     | import("kysely").ColumnType<
-        import("@storyteller-platform/okmain").JsColor[],
+        import("@/database/coverColors").StoredCoverColor[],
         string,
         string
       >

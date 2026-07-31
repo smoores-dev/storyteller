@@ -5,7 +5,7 @@ import { useCallback, useState } from "react"
 
 import { cn } from "@v3/_/lib/utils"
 
-import { type CoverScopeProps } from "@/app/(v3)/v3/_/components/books/BookDetails/sections/CoverScope"
+import { type CoverScopeProps } from "@/app/(v3)/v3/_/components/books/CoverScope"
 
 /**
  * composable page layout that supports a full-height side panel

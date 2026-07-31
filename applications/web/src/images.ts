@@ -1,7 +1,9 @@
 import { encode } from "blurhash"
 
-import { InputImage, type JsColor, colors } from "@storyteller-platform/okmain"
+import * as okmain from "@storyteller-platform/okmain"
+import { InputImage } from "@storyteller-platform/okmain"
 
+import { type StoredCoverColor } from "./database/coverColors"
 import { env } from "./env"
 
 let _sharp: typeof import("sharp") | undefined
@@ -99,14 +101,39 @@ export async function generateBlurhash(
   }
 }
 
+type ColorsDetailedFn = (input: InputImage) => {
+  r: number
+  g: number
+  b: number
+  fraction: number
+  chroma: number
+  score: number
+}[]
+
+const round3 = (n: number) => Math.round(n * 1000) / 1000
+
 export function getCoverColors(
   imageData: Buffer,
   // type: "ebook" | "audiobook",
-): JsColor[] | null {
+): StoredCoverColor[] | null {
   try {
-    const col = colors(InputImage.fromImage(imageData))
+    const input = InputImage.fromImage(imageData)
 
-    return col
+    // colorsDetailed ships in okmain >= 0.2.5; the feature-detect keeps the
+    // currently pinned older build working until the new version is published
+    const detailed = (okmain as { colorsDetailed?: ColorsDetailedFn })
+      .colorsDetailed
+    if (detailed) {
+      return detailed(input).map(({ r, g, b, fraction, chroma }) => ({
+        r,
+        g,
+        b,
+        fraction: round3(fraction),
+        chroma: round3(chroma),
+      }))
+    }
+
+    return okmain.colors(input)
   } catch {
     return null
   }
