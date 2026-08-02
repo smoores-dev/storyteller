@@ -56,7 +56,12 @@ export function CollapsibleSection({
     <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
       <div className="group/section [&_svg]:stroke-muted-foreground [&_svg]:size-3.5 [&_svg]:stroke-[1.5]">
         <div
-          className={cn("relative flex items-center gap-3", isOpen && "mb-3")}
+          className={cn(
+            "relative flex h-6 items-center gap-3",
+            isOpen && "mb-3",
+
+            "[&_button]:h-6",
+          )}
         >
           <CollapsibleTrigger
             className="flex h-full w-full cursor-pointer items-center justify-between gap-3"

@@ -63,10 +63,6 @@ type RelationFormFieldProps<N extends RelationFieldName, C> = {
   children?: ReactNode
 }
 
-// display + editing chrome shared by every form-backed relation editor. it owns
-// the form value: every mutation reads the current entries at event time
-// (form.getValues), never from a render closure, so picks from a portaled
-// popover can never operate on a stale list.
 export function RelationFormField<
   N extends RelationFieldName,
   C extends RelationChipItem,
@@ -175,9 +171,6 @@ export function RelationFormField<
   )
 }
 
-// the add menu: a filterable list of existing options (fetched via `source`)
-// plus an optional create-new row. picks and creates only mutate form state -
-// nothing persists until the book is saved.
 function RelationAddMenu({
   source,
   applied,

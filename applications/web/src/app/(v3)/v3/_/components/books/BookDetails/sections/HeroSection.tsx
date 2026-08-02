@@ -175,7 +175,7 @@ export function HeroSection({
                     type="button"
                     size="icon-sm"
                     variant="real-ghost"
-                    className="hover:text-foreground absolute top-0 -right-6 h-4 underline opacity-0 transition-opacity group-hover/series:opacity-100"
+                    className="hover:text-foreground absolute top-0.5 -right-6 h-4 underline opacity-0 transition-opacity group-hover/series:opacity-100"
                     onClick={() => {
                       setEditingField("series")
                     }}
@@ -230,7 +230,7 @@ export function HeroSection({
                       type="button"
                       size="icon-sm"
                       variant="real-ghost"
-                      className="hover:text-foreground absolute top-0 -right-6 h-4 underline opacity-0 transition-opacity group-hover/authors:opacity-100"
+                      className="hover:text-foreground absolute top-0.5 -right-6 h-4 underline opacity-0 transition-opacity group-hover/authors:opacity-100"
                       onClick={() => {
                         setEditingField("authors")
                       }}
@@ -293,7 +293,7 @@ export function HeroSection({
                       type="button"
                       size="icon-sm"
                       variant="real-ghost"
-                      className="hover:text-foreground absolute top-0 -right-6 h-4 underline opacity-0 transition-opacity group-hover/narrators:opacity-100"
+                      className="hover:text-foreground absolute top-0.5 -right-6 h-4 underline opacity-0 transition-opacity group-hover/narrators:opacity-100"
                       onClick={() => {
                         setEditingField("narrators")
                       }}

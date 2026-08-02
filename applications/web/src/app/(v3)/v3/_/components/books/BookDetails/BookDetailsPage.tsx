@@ -238,8 +238,6 @@ function BookDetailsContentInner({
                 <FileSection book={book} assetsDir={assetsDir} />
               </div>
             )}
-
-            {permissions?.bookDelete && <DeleteBookModal book={book} />}
           </div>
         </div>
       </article>

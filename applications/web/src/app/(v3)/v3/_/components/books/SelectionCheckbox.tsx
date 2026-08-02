@@ -61,6 +61,7 @@ export function SelectionCheckbox({
         tabIndex={-1}
         className={cn(
           "hover:border-primary bg-background size-5 cursor-pointer rounded-full border-2 shadow-sm transition-colors data-checked:border-2",
+
           !showCheckbox && "[&_svg]:hidden",
         )}
       />

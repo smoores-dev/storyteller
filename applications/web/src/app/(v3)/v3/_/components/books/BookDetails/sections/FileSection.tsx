@@ -497,6 +497,7 @@ export function FileSection({
               render={
                 <TooltipButton
                   variant="ghost"
+                  size="icon-xs"
                   className="text-muted-foreground font-thin"
                   onClick={(e) => {
                     e.stopPropagation()

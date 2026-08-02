@@ -233,6 +233,7 @@ export function ReviewSection({ className }: { className?: string }) {
           {!editing && (
             <TooltipButton
               variant="ghost"
+              size="icon-xs"
               className="text-muted-foreground font-thin"
               onClick={(e) => {
                 e.stopPropagation()
@@ -245,12 +246,13 @@ export function ReviewSection({ className }: { className?: string }) {
                 currentReview ? c("actions.edit") : t("review.addReview")
               }
             >
-              <icon.Edit className="size-3.5 stroke-[1.5]" />
+              <icon.Pencil className="size-3.5 stroke-[1.5]" />
             </TooltipButton>
           )}
           {!hasDimensions && (
             <TooltipButton
               variant="ghost"
+              size="icon-xs"
               className="text-muted-foreground ml-auto"
               onClick={(e) => {
                 e.stopPropagation()
@@ -259,7 +261,7 @@ export function ReviewSection({ className }: { className?: string }) {
               tooltip={t("review.addAdvanced")}
               aria-label={t("review.addAdvanced")}
             >
-              <icon.ChartRadar className="mr-1 h-3.5 w-3.5" />
+              <icon.ChartRadar className="size-3.5" />
             </TooltipButton>
           )}
         </div>
