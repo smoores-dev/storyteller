@@ -178,12 +178,7 @@ function BookDetailsContentInner({
       onEditingChange={handleEditingChange}
     >
       <article
-        className={cn(
-          "relative h-full w-full",
-          // in the side panel the raised surface tone is the background; the
-          // full page keeps the plain app background
-          compact ? "bg-surface-base" : "bg-background",
-        )}
+        className={cn("relative h-full w-full", "bg-background")}
         {...scope}
       >
         {!compact && <BookPageHeader />}

@@ -144,7 +144,7 @@ export function BookGrid({
       gapX: gridGap,
       gapY: gridGap,
       padX: 0,
-      padY: 0,
+      padY: 4,
       rowHeightForColumnWidth: (w) => w * COVER_ASPECT + metaHeight,
       ...(isMobile ? { fixedColumns: MOBILE_COLUMNS } : {}),
     }),

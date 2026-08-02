@@ -148,7 +148,7 @@ function FloatingBookPanel({ suppressed }: { suppressed: boolean }) {
       role="dialog"
       aria-label="Book details"
       className={cn(
-        "bg-surface-raised fixed top-2 right-2 bottom-2 z-50 flex max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl shadow-2xl",
+        "bg-card fixed top-2 right-2 bottom-2 z-50 flex max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl shadow-2xl",
         "transition-transform",
         slidIn ? "translate-x-0" : "translate-x-[calc(100%+1rem)]",
       )}

@@ -768,11 +768,7 @@ function BookListPageInner({
               />
             </PageHeader>
 
-            {beforeFilters}
-
-            {afterFilters}
-
-            <PageContent className={"relative" ?? "relative p-6"}>
+            <PageContent className={"relative"}>
               <BookFilters
                 className={filtersClassName}
                 controller={controller}

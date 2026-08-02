@@ -53,7 +53,7 @@ function PageMain({
     <div
       data-slot="page-main"
       className={cn(
-        "flex min-w-0 flex-1 flex-col overflow-hidden bg-transparent [--page-surface:var(--surface-base)]",
+        "flex min-w-0 flex-1 flex-col overflow-hidden bg-transparent",
         // while the detail panel slides as an overlay, in-flow chrome (header,
         // filters, anything that isn't the scroll content) tracks the panel
         // edge through the --panel-reveal var the width driver animates. at
@@ -124,7 +124,7 @@ export function ResizeHandle({
       data-slot="resize-handle"
       {...props}
       className={cn(
-        "group hover:border-primary/50 relative z-50 flex w-0 items-stretch border-l transition-colors",
+        "group hover:border-primary/50 relative z-60 flex w-0 items-stretch border-l transition-colors",
         className,
       )}
     >
@@ -204,7 +204,7 @@ function PagePanel({
         ref={panelRef}
         data-slot="page-panel"
         className={cn(
-          "bg-surface-base shrink-0",
+          "bg-background shrink-0",
           // "shadow-2xl",
           "z-50",
           overlay
@@ -308,7 +308,7 @@ function PageSidebar({
         ref={sidebarRef}
         data-slot="page-sidebar"
         className={cn(
-          "bg-surface-base flex h-full shrink-0 flex-col overflow-y-auto",
+          "bg-background flex h-full shrink-0 flex-col overflow-y-auto",
           className,
         )}
         style={{ width }}

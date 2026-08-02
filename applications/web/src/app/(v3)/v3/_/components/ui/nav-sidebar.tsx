@@ -7,6 +7,7 @@ import { SearchInput } from "@v3/_/components/books/SearchInput"
 import { Button } from "@v3/_/components/ui/button"
 import { V3Link } from "@v3/_/components/v3-link"
 import { cn } from "@v3/_/lib/utils"
+import { usePathname } from "next/navigation"
 
 /**
  * composable settings-style sidebar: grouped vertical tab lists with an
@@ -138,22 +139,25 @@ function NavSidebarItem<T extends string>({
   active: boolean
   onSelect: (tab: T) => void
 }) {
+  const pathname = usePathname()
+  const href = `${pathname}?tab=${tab.value}`
   return (
-    <button
-      type="button"
-      onClick={() => {
+    <V3Link
+      href={href}
+      onClick={(e) => {
+        e.preventDefault()
         onSelect(tab.value)
       }}
       className={cn(
         "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
         active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          ? "text-sidebar-accent-foreground font-medium"
           : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground",
       )}
     >
       <tab.icon className="h-4 w-4 shrink-0" />
       <span className="truncate">{tab.label}</span>
-    </button>
+    </V3Link>
   )
 }
 

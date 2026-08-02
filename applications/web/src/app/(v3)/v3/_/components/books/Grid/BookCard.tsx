@@ -355,7 +355,7 @@ export const BookCard = memo(function BookCard({
       <div className="relative flex aspect-13/16 shrink-0 flex-col items-center justify-center transition-shadow">
         <div
           className={cn(
-            "from-cover-well to-cover-wash",
+            "from-cover-well to-cover-wash dark:to-cover-header",
             "rounded-card absolute inset-0 flex flex-col-reverse overflow-hidden bg-linear-to-t",
           )}
         >
@@ -388,13 +388,13 @@ export const BookCard = memo(function BookCard({
             isSelecting={isSelecting}
             onToggle={onToggleSelection}
             onSelectRange={onSelectRange}
-            className="absolute top-1.5 left-1.5 z-30"
+            className={cn("absolute top-1.5 left-1.5 z-30")}
           />
         )}
 
         {isSynced && !isMobile && (
           <div className="absolute top-[7%] right-[6%] aspect-square w-[12%]">
-            <div className="bg-cover-header flex size-full items-center justify-center rounded-full shadow-md">
+            <div className="bg-cover-wash flex size-full items-center justify-center rounded-full shadow-md">
               <IconReadaloud className="size-[110%] text-white" />
             </div>
           </div>

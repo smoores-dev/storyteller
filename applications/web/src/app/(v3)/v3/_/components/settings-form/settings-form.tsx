@@ -3,7 +3,14 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { type SingleParser, parseAsString, useQueryState } from "nuqs"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { type FieldErrors, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
@@ -67,6 +74,7 @@ import {
 } from "./tabs"
 import { UploadTab } from "./upload-tab"
 import { UsersTab } from "./users-tab"
+import { useSearchParams } from "next/navigation"
 
 type ErrorPathSegment = string | number
 
@@ -350,22 +358,30 @@ export function SettingsForm({
     [t, hasUsers, isTauri],
   )
 
+  const searchParams = useSearchParams()
+
   const [activeTabRaw, setActiveTab] = useQueryState(
     "tab",
-    parseAsString as SingleParser<Tab>,
+    // this could be easier with `shallow: false`, but would be slower as would
+    // force RSC update
+    parseAsString.withOptions({ history: "push" }) as SingleParser<Tab>,
   )
+  const setActiveTabEvent = useEffectEvent((tab: Tab) => {
+    void setActiveTab(tab)
+  })
+
+  useEffect(() => {
+    const searchTab = searchParams.get("tab")
+    // react to changes in the search params, eg pressing back
+    if (searchTab !== activeTabRaw) {
+      void setActiveTab(searchTab as Tab)
+    }
+  }, [searchParams])
 
   const activeTab: Tab | null = isMobile
     ? activeTabRaw
     : activeTabRaw ?? "library"
   const showMobileSidebar = isMobile && !activeTab
-
-  const setActiveTabEvent = useCallback(
-    (tab: Tab) => {
-      void setActiveTab(tab)
-    },
-    [setActiveTab],
-  )
 
   const matchingSections = useMemo(() => {
     if (!searchQuery) return new Set(allTabs.map((t) => t.value))

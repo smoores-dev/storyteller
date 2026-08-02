@@ -451,7 +451,7 @@ export function BookTable({
           { "--book-table-cols": gridTemplateColumns } as React.CSSProperties
         }
       >
-        <TableHeader className="bg-surface-base sticky top-11 z-10 -mx-6 grid px-6">
+        <TableHeader className="bg-background sticky top-11 z-10 -mx-6 grid px-6">
           <Reorder.Group
             as="tr"
             axis="x"

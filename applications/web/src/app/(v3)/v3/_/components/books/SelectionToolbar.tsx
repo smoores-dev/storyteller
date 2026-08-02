@@ -79,7 +79,7 @@ export function SelectionToolbar({
             "pointer-events-auto max-w-full min-w-0 gap-1.5 pr-1.5 pl-4",
           )}
         >
-          <span className="font-heading mr-1 min-w-0 truncate text-sm">
+          <span className="mr-1 min-w-0 truncate text-sm">
             {t.rich("selectedBooks", {
               count: selectedBooks.size,
               sel: (chunks) => <span className="italic">{chunks}</span>,
@@ -95,7 +95,7 @@ export function SelectionToolbar({
                 <Button
                   variant="real-ghost"
                   size="sm"
-                  className="shrink-0 gap-1.5 rounded-md"
+                  className="shrink-0 gap-1.5 rounded-md font-normal"
                 >
                   <icon.SquareCheck className="size-3.5 stroke-[1.5]" />
                   <span className="hidden @md:inline">
@@ -135,7 +135,7 @@ export function SelectionToolbar({
                 <Button
                   variant="real-ghost"
                   size="sm"
-                  className="shrink-0 gap-1.5 rounded-md"
+                  className="shrink-0 gap-1.5 rounded-md font-normal"
                   disabled={!hasSelection}
                 >
                   <icon.Pointer className="size-3.5 stroke-[1.5]" />

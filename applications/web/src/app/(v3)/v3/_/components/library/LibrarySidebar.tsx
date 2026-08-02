@@ -215,7 +215,7 @@ export function LibrarySidebar({
     <div className="relative h-full">
       <div className="scroll-y relative flex h-full flex-col">
         {/* DONT MAKE FLEX CONTAINER THE SEARCH INPUT WILL NOT BE THE CORRECT HEIGHT IT WILL HAUNT YOU */}
-        <div className="bg-surface-base sticky top-0 z-10 shrink-0 flex-col px-3">
+        <div className="bg-background sticky top-0 z-10 shrink-0 flex-col px-3">
           <div className="flex h-(--header-height) items-center justify-between">
             <h2
               className={cn(
@@ -326,7 +326,7 @@ export function LibrarySidebar({
           isItemLocked={isItemLocked}
         />
 
-        <div className="bg-surface-base/95 sticky bottom-0 z-10 mt-auto shrink-0 px-3 pt-2 pb-3 backdrop-blur-sm">
+        <div className="bg-background sticky bottom-0 z-10 mt-auto shrink-0 px-3 pt-2 pb-2">
           <SearchInput
             placeholder={t("search")}
             value={search}
