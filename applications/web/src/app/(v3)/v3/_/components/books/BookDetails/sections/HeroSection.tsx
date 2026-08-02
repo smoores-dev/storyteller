@@ -148,11 +148,14 @@ export function HeroSection({
     ? ({ duration: 0 } as const)
     : ({ type: "spring", duration: 0.35, bounce: 0 } as const)
 
+  const readingProgress = getReadingProgress(book)
+
   return (
     <div
       className={cn(
         "via-cover-wash to-cover-well dark:to-cover-header relative bg-linear-to-t/oklch from-transparent",
-        "via-30% pb-4 @xl/book:via-40%",
+        "via-30% @xl/book:via-40%",
+        readingProgress !== null && "pb-4",
       )}
     >
       <div
@@ -576,9 +579,9 @@ export function HeroSection({
           </motion.div>
         </motion.div>
       </div>
-      {getReadingProgress(book) !== null && (
+      {readingProgress !== null && (
         <ProgressDisplayBar
-          progress={getReadingProgress(book) ?? 0}
+          progress={readingProgress}
           book={book}
           className="bg-cover-wash/20 absolute right-0 bottom-0 left-0 rounded-none"
         />

@@ -21,7 +21,7 @@ export function ProgressDisplayBar({
   className?: string
 }) {
   return (
-    <div className={cn("h-1 w-full bg-black/5", className)}>
+    <div data-progress-bar className={cn("h-1 w-full bg-black/5", className)}>
       <div
         className="bg-cover-accent h-full transition-all"
         style={{ width: `${progress * 100}%` }}
