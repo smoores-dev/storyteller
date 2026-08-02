@@ -179,7 +179,6 @@ export function BookFormProvider({
   )
 
   const submitForm = useCallback(async (): Promise<boolean> => {
-    console.log("submitForm", isDirty)
     if (!isDirty) {
       return true
     }
@@ -260,7 +259,6 @@ export function BookFormProvider({
 
   const saveAndClose = useCallback(async (): Promise<boolean> => {
     const ok = await submitForm()
-    console.log("saveAndClose", ok)
     if (ok) {
       setEditingFieldState(null)
       setEditingCoversState(false)

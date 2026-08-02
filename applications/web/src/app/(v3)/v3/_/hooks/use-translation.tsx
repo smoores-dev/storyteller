@@ -88,7 +88,7 @@ export function useTranslation<
       return (
         <MissingMessageFallback
           namespace={namespace}
-          k={k ?? ""}
+          k={k}
           result={rest.join("__fallback__")}
         />
       )

@@ -1,8 +1,8 @@
 import { Popover } from "@base-ui/react/popover"
 import { Fragment, memo, useCallback } from "react"
 
-import { useCoverScope } from "@/app/(v3)/v3/_/components/books/CoverScope"
 import { Cover } from "@/app/(v3)/v3/_/components/books/Cover"
+import { useCoverScope } from "@/app/(v3)/v3/_/components/books/CoverScope"
 import {
   CreatorsLine,
   SecondaryText,

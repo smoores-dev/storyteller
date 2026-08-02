@@ -72,7 +72,6 @@ export async function updateUserSettings(
     const unchanged =
       JSON.stringify(existingSettings[name]) === JSON.stringify(value)
 
-    console.log("unchanged", name, unchanged, value)
     if (unchanged) continue
 
     await setUserSetting(userId, name, value)

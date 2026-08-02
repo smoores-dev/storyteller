@@ -15,12 +15,11 @@ import {
 
 import { ButtonGroup } from "@/app/(v3)/v3/_/components/ui/button-group"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
+import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
 import { cn } from "@/cn"
 import * as icon from "@/icons"
 
 import { useBookForm } from "./BookFormProvider"
-import { V3Link } from "../../v3-link"
-import { router } from "next/client"
 
 const pill =
   "flex items-center gap-0.5 rounded-full bg-background/55 p-0.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:ring-white/10"

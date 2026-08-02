@@ -1,7 +1,5 @@
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
-import { type RelationSource } from "@/app/(v3)/v3/_/hooks/use-relation-items"
-
 import { RelationFormField } from "./RelationFormField"
 
 export function AuthorEditor({ className }: { className?: string }) {

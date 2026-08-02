@@ -7,11 +7,11 @@ import { bookDuration, bookPageCount } from "@v3/_/lib/bookMetrics"
 import { useFormatDate } from "@v3/_/lib/formatters"
 
 import { EditableText } from "@/app/(v3)/v3/_/components/books/BookDetails/EditableText"
+import { cn } from "@/cn"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import * as icon from "@/icons"
 
 import { CollapsibleSection } from "./CollapsibleSection"
-import { cn } from "@/cn"
 
 // a single label + value pair occupying two grid cells, so the grid keeps the
 // same shape whether the value is read-only or an inline editor.

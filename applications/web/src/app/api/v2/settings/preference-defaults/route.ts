@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
  * @summary Update the library-wide default preferences
  */
 export const PUT = withHasPermission("settingsUpdate")(async (request) => {
-  if (isPreferenceDefaultsLocked()) {
+  if (await isPreferenceDefaultsLocked()) {
     return NextResponse.json(
       { error: "Preference defaults are managed by the config file" },
       { status: 423 },

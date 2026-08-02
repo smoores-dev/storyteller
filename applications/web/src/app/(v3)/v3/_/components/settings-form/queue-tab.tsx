@@ -6,7 +6,7 @@ import {
   parseAsStringEnum,
   useQueryState,
 } from "nuqs"
-import { useEffect, useState } from "react"
+import { useEffect, useEffectEvent, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import { Input } from "@v3/_/components/ui/input"
@@ -148,11 +148,15 @@ function FinishedJobs() {
   )
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(0))
 
+  const setDebouncedSearchEvent = useEffectEvent((search: string) => {
+    void setDebouncedSearch(search)
+    void setPage(0)
+  })
+
   // debounce the search input so we are not refetching on every keystroke.
   useEffect(() => {
     const id = setTimeout(() => {
-      void setDebouncedSearch(search)
-      void setPage(0)
+      setDebouncedSearchEvent(search)
     }, 300)
     return () => {
       clearTimeout(id)

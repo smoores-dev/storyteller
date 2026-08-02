@@ -21,7 +21,6 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 
 import "./globals.css"
-import { TweaksPanel } from "./tweaks-panel"
 
 const fraunces = Fraunces({
   subsets: ["latin"],

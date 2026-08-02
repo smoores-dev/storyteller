@@ -18,7 +18,6 @@ import {
 export function CollapsibleSection({
   title,
   sectionKey,
-  icon,
   children,
   defaultOpen = true,
   className,
@@ -26,7 +25,6 @@ export function CollapsibleSection({
 }: {
   title: string
   sectionKey: string
-  icon?: React.ReactNode
   children: React.ReactNode
   defaultOpen?: boolean
   className?: string

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs"
+import { readFile } from "node:fs/promises"
 
 import { ZodError, z } from "zod"
 
@@ -81,7 +82,7 @@ function resolveFileReferences(obj: unknown): unknown {
   return result
 }
 
-function loadConfigFile(): ConfigFileCache {
+async function loadConfigFile(): Promise<ConfigFileCache> {
   if (globalThis.configFileCache) return globalThis.configFileCache
 
   const configPath = env.STORYTELLER_CONFIG
@@ -97,7 +98,7 @@ function loadConfigFile(): ConfigFileCache {
 
   let rawConfig: unknown
   try {
-    rawConfig = JSON.parse(readFileSync(configPath, "utf-8")) as unknown
+    rawConfig = JSON.parse(await readFile(configPath, "utf-8")) as unknown
   } catch (err) {
     throw new Error(
       `Failed to read config file "${configPath}": ${err instanceof Error ? err.message : String(err)}`,
@@ -174,12 +175,13 @@ function loadConfigFile(): ConfigFileCache {
 }
 
 /** Returns the set of setting keys that are locked by the config file */
-export function getConfigLockedKeys(): Set<keyof Settings> {
-  return loadConfigFile().keys
+export async function getConfigLockedKeys(): Promise<Set<keyof Settings>> {
+  const configFileCache = await loadConfigFile()
+  return configFileCache.keys
 }
 
 export async function getSetting<Name extends keyof Settings>(name: Name) {
-  const { settings: configSettings, keys } = loadConfigFile()
+  const { settings: configSettings, keys } = await loadConfigFile()
 
   if (keys.has(name)) {
     return configSettings[name] as Settings[Name]
@@ -216,7 +218,7 @@ export async function getSettings(): Promise<Settings> {
     }
   }, {}) as Settings
 
-  const { settings: configSettings } = loadConfigFile()
+  const { settings: configSettings } = await loadConfigFile()
 
   const result = {
     ...dbDesttings,
@@ -230,7 +232,7 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function updateSettings(settings: Settings) {
-  const lockedKeys = getConfigLockedKeys()
+  const lockedKeys = await getConfigLockedKeys()
   const existingSettings = await getSettings()
 
   for (const [settingName, value] of Object.entries(settings)) {
@@ -265,7 +267,7 @@ export async function updateSettings(settings: Settings) {
 // admin-set default preferences. stored as a single JSON row; absent means "{}"
 // (getSetting throws when the row is missing, so query directly here).
 export async function getPreferenceDefaults(): Promise<PreferenceDefaults> {
-  const { settings: configSettings, keys } = loadConfigFile()
+  const { settings: configSettings, keys } = await loadConfigFile()
 
   if (keys.has("preferenceDefaults")) {
     return configSettings["preferenceDefaults"] ?? {}
@@ -287,8 +289,9 @@ export async function getPreferenceDefaults(): Promise<PreferenceDefaults> {
   return result.success ? result.data : {}
 }
 
-export function isPreferenceDefaultsLocked(): boolean {
-  return getConfigLockedKeys().has("preferenceDefaults")
+export async function isPreferenceDefaultsLocked(): Promise<boolean> {
+  const lockedKeys = await getConfigLockedKeys()
+  return lockedKeys.has("preferenceDefaults")
 }
 
 export async function setPreferenceDefaults(update: PreferenceDefaultsUpdate) {
@@ -311,8 +314,9 @@ export async function setPreferenceDefaults(update: PreferenceDefaultsUpdate) {
 }
 
 // validate and cache config file on startup (never re-read after this)
-loadConfigFile()
+void loadConfigFile()
 
-export function getConfigImportRules(): ConfigImportRuleEntry[] {
-  return loadConfigFile().importRules
+export async function getConfigImportRules(): Promise<ConfigImportRuleEntry[]> {
+  const configFileCache = await loadConfigFile()
+  return configFileCache.importRules
 }

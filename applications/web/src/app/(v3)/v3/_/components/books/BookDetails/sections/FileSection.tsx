@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 
+import { useBookForm } from "@/app/(v3)/v3/_/components/books/BookDetails/BookFormProvider"
 import { EditAssetDirDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/EditAssetDirDialog"
 import { EditIdentifiersDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/EditIdentifiersDialog"
 import { ReplaceFileDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/ReplaceFileDialog"
@@ -45,8 +46,8 @@ import {
 } from "@/store/api"
 import { formatFileSize } from "@/utils/formatFileSize"
 
+
 import { CollapsibleSection } from "./CollapsibleSection"
-import { useBookForm } from "../BookFormProvider"
 
 const EBOOK_FILTERS = [{ name: "Ebooks", extensions: ["epub"] }]
 const AUDIO_FILTERS = [

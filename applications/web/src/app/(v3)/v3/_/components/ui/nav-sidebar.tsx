@@ -1,13 +1,13 @@
 "use client"
 
 import { useHotkey } from "@tanstack/react-hotkeys"
+import { usePathname } from "next/navigation"
 import { useRef } from "react"
 
 import { SearchInput } from "@v3/_/components/books/SearchInput"
 import { Button } from "@v3/_/components/ui/button"
 import { V3Link } from "@v3/_/components/v3-link"
 import { cn } from "@v3/_/lib/utils"
-import { usePathname } from "next/navigation"
 
 /**
  * composable settings-style sidebar: grouped vertical tab lists with an
