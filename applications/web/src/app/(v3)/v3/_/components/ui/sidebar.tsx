@@ -658,7 +658,12 @@ function SidebarMenuButton({
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const { isMobile, state } = useSidebar()
+  // the menu vocabulary is reused by panel sidebars (settings, library) that
+  // aren't the collapsible shell. only the collapsed-state tooltip needs the
+  // context, so fall back instead of throwing when there's no provider
+  const ctx = useSidebarMaybe()
+  const isMobile = ctx?.isMobile ?? false
+  const state = ctx?.state ?? "expanded"
   const comp = useRender({
     defaultTagName: "button",
     props: mergeProps<"button">(

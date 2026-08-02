@@ -31,6 +31,13 @@ import {
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 import { DynamicIcon } from "@v3/_/components/ui/dynamic-icon"
+import {
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@v3/_/components/ui/sidebar"
 import { V3Link } from "@v3/_/components/v3-link"
 import { type BookFiltersController } from "@v3/_/hooks/use-book-filters"
 import { useDeleteEntity } from "@v3/_/hooks/use-delete-entity"
@@ -512,7 +519,7 @@ function SidebarItemList({
 
   // callback ref so the scroll parent is found when the list actually mounts
   // (not during the loading skeleton phase when the container isn't in the DOM)
-  const containerRef = useCallback((node: HTMLDivElement | null) => {
+  const containerRef = useCallback((node: HTMLUListElement | null) => {
     if (!node) return
 
     const parent = findScrollParent(node)
@@ -533,23 +540,25 @@ function SidebarItemList({
   })
 
   if (isLoading) {
+    // fixed widths, not SidebarMenuSkeleton's random ones: this renders during
+    // SSR too, and a random width hydrates as a mismatch
     const widths = [60, 45, 72, 50, 38, 65, 55, 42, 68, 48, 58, 44]
 
     return (
-      <div className="flex flex-col gap-0.5 px-2 py-1">
+      <SidebarMenu className="gap-0.5 px-2 py-1">
         {widths.map((w, i) => (
-          <div
+          <SidebarMenuItem
             key={i}
-            className="flex items-center justify-between rounded-md px-2 py-1.5"
+            className="flex h-8 items-center justify-between"
           >
             <div
               className="bg-muted/60 h-4 animate-pulse rounded"
               style={{ width: `${w}%` }}
             />
             <div className="bg-muted/40 h-4 w-6 animate-pulse rounded-full" />
-          </div>
+          </SidebarMenuItem>
         ))}
-      </div>
+      </SidebarMenu>
     )
   }
 
@@ -564,51 +573,46 @@ function SidebarItemList({
   const virtualItems = virtualizer.getVirtualItems()
 
   return (
-    <div className="px-2">
-      <div
-        ref={containerRef}
-        className="relative px-2 py-1"
-        style={{ height: virtualizer.getTotalSize() }}
-      >
-        {virtualItems.map((virtualItem) => {
-          const item = items[virtualItem.index]
-          if (!item) return null
+    <SidebarMenu
+      ref={containerRef}
+      className="relative gap-0 px-2 py-1"
+      style={{ height: virtualizer.getTotalSize() }}
+    >
+      {virtualItems.map((virtualItem) => {
+        const item = items[virtualItem.index]
+        if (!item) return null
 
-          return (
-            <div
-              key={item.key}
-              className="absolute top-0 left-0 w-full"
-              style={{
-                height: virtualItem.size,
-                transform: `translateY(${virtualItem.start - virtualizer.options.scrollMargin}px)`,
-              }}
-            >
-              <SidebarRow
-                item={item}
-                isActive={item.key === selectedKey}
-                isChecked={itemSelection?.isSelected(item.key) ?? false}
-                isSelecting={isSelecting}
-                isLocked={isItemLocked?.(item) ?? false}
-                canSelect={canSelect && item.key !== NONE_KEY}
-                hasRowActions={hasRowActions && item.key !== NONE_KEY}
-                onItemClick={handleRowClick}
-                onHover={handleRowHover}
-                onHoverLeave={handleRowHoverLeave}
-                onToggle={handleRowToggle}
-                onSelectRange={handleRowSelectRange}
-                onOpenMenu={handleRowMenu}
-                isMenuTarget={menuTarget?.key === item.key}
-              />
-            </div>
-          )
-        })}
-      </div>
-    </div>
+        return (
+          <SidebarRow
+            key={item.key}
+            item={item}
+            style={{
+              height: virtualItem.size,
+              transform: `translateY(${virtualItem.start - virtualizer.options.scrollMargin}px)`,
+            }}
+            isActive={item.key === selectedKey}
+            isChecked={itemSelection?.isSelected(item.key) ?? false}
+            isSelecting={isSelecting}
+            isLocked={isItemLocked?.(item) ?? false}
+            canSelect={canSelect && item.key !== NONE_KEY}
+            hasRowActions={hasRowActions && item.key !== NONE_KEY}
+            onItemClick={handleRowClick}
+            onHover={handleRowHover}
+            onHoverLeave={handleRowHoverLeave}
+            onToggle={handleRowToggle}
+            onSelectRange={handleRowSelectRange}
+            onOpenMenu={handleRowMenu}
+            isMenuTarget={menuTarget?.key === item.key}
+          />
+        )
+      })}
+    </SidebarMenu>
   )
 }
 
 function SidebarRow({
   item,
+  style,
   isActive,
   isChecked,
   isSelecting,
@@ -624,6 +628,7 @@ function SidebarRow({
   onOpenMenu,
 }: {
   item: FacetValue
+  style: React.CSSProperties
   isActive: boolean
   isChecked: boolean
   isSelecting: boolean
@@ -645,104 +650,102 @@ function SidebarRow({
   if (!firstPathSegment) return null
 
   return (
-    <div
-      className={cn(
-        "group/item relative flex items-center rounded-sm",
-        isActive
-          ? // ATKINS ? "bg-facet-accent text-facet-accent-foreground"
-            "text-facet-accent-foreground"
-          : "hover:bg-facet-accent/50",
-      )}
-    >
-      <V3Link
-        href={`/${firstPathSegment}?item=${item.key}${selectedBookUuid ? `&book=${selectedBookUuid}` : ""}`}
-        onPointerEnter={() => {
-          onHover(item.key)
-        }}
-        onPointerLeave={onHoverLeave}
-        onClick={(e) => {
-          e.preventDefault()
-          if (canSelect && e.shiftKey) {
-            window.getSelection()?.empty()
-            onSelectRange(item.key)
-            return
-          }
-
-          if (isSelecting && canSelect) {
-            onToggle(item.key)
-            return
-          }
-
-          onItemClick(item.key)
-        }}
+    <SidebarMenuItem className="absolute top-0 left-0 w-full" style={style}>
+      <SidebarMenuButton
+        isActive={isActive}
+        // facet rows carry their own accent, so every sidebar-accent token the
+        // menu button ships with is remapped onto the facet family
         className={cn(
-          "flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left text-sm",
+          "hover:text-facet-accent-foreground active:text-facet-accent-foreground data-active:text-facet-accent-foreground rounded-sm",
           canSelect ? "pr-2 pl-1.5" : "px-2",
-          isActive && "font-medium",
         )}
-      >
-        {item.icon ? (
-          <DynamicIcon
-            iconId={item.icon}
-            color={item.color}
-            className="size-4 shrink-0"
-          />
-        ) : item.color ? (
-          <span
-            className="size-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: item.color }}
-          />
-        ) : null}
-        <span className="min-w-0 truncate">{item.name}</span>
-
-        {(isLocked || (item.kind && isWellKnownStatus(item.kind))) && (
-          <icon.Lock className="text-muted-foreground/60 size-3 shrink-0" />
-        )}
-      </V3Link>
-
-      <div className="flex shrink-0 items-center gap-1 pr-2">
-        {hasRowActions && !isSelecting && (
-          <button
-            type="button"
-            onClick={(e) => {
-              onOpenMenu(item, e.currentTarget)
+        render={
+          <V3Link
+            href={`/${firstPathSegment}?item=${item.key}${selectedBookUuid ? `&book=${selectedBookUuid}` : ""}`}
+            onPointerEnter={() => {
+              onHover(item.key)
             }}
-            className={cn(
-              "text-muted-foreground hover:text-foreground pointer-events-none hidden rounded p-0.5 opacity-0 transition-opacity group-hover/item:pointer-events-auto group-hover/item:block group-hover/item:opacity-100 peer-focus/item:pointer-events-auto peer-focus/item:block peer-focus/item:opacity-100 focus-visible:opacity-100",
-              isMenuTarget && "visible block opacity-100",
-            )}
+            onPointerLeave={onHoverLeave}
+            onClick={(e) => {
+              e.preventDefault()
+              if (canSelect && e.shiftKey) {
+                window.getSelection()?.empty()
+                onSelectRange(item.key)
+                return
+              }
+
+              if (isSelecting && canSelect) {
+                onToggle(item.key)
+                return
+              }
+
+              onItemClick(item.key)
+            }}
           >
-            <icon.DotsVertical className="size-3.5" />
-          </button>
-        )}
+            {item.icon ? (
+              <DynamicIcon
+                iconId={item.icon}
+                color={item.color}
+                className="size-4 shrink-0"
+              />
+            ) : item.color ? (
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: item.color }}
+              />
+            ) : null}
+            <span className="min-w-0 truncate">{item.name}</span>
 
-        {canSelect && (
-          <SelectionCheckbox
-            showCheckbox
-            checked={isChecked}
-            onSelectRange={onSelectRange}
-            onToggle={onToggle}
-            // yeah yeah
-            uuid={item.key as UUID}
-            isSelecting={isSelecting}
-            className={cn(
-              "group-focus-within:block! group-focus-within:opacity-100! group-hover/item:block! group-hover/item:opacity-100!",
-              !isSelecting && "hidden",
+            {(isLocked || (item.kind && isWellKnownStatus(item.kind))) && (
+              <icon.Lock className="text-muted-foreground/60 size-3 shrink-0" />
             )}
-          />
-        )}
+          </V3Link>
+        }
+      />
 
-        <span
+      {hasRowActions && !isSelecting && (
+        <SidebarMenuAction
+          showOnHover
+          onClick={(e) => {
+            onOpenMenu(item, e.currentTarget)
+          }}
           className={cn(
-            "text-muted-foreground flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs tabular-nums",
-            isActive && "text-facet-accent-foreground/80",
-            isSelecting && "hidden",
-            hasRowActions && !isSelecting && "group-hover/item:hidden",
+            "text-muted-foreground hover:text-foreground",
+            // sits left of the checkbox when rows are selectable
+            canSelect && "right-9",
+            isMenuTarget && "opacity-100",
           )}
         >
-          {item.bookCount}
-        </span>
-      </div>
-    </div>
+          <icon.DotsVertical className="size-3.5" />
+        </SidebarMenuAction>
+      )}
+
+      {canSelect && (
+        <SelectionCheckbox
+          showCheckbox
+          checked={isChecked}
+          onSelectRange={onSelectRange}
+          onToggle={onToggle}
+          // yeah yeah
+          uuid={item.key as UUID}
+          isSelecting={isSelecting}
+          className={cn(
+            "absolute top-1.5 right-3",
+            "group-focus-within/menu-item:block! group-focus-within/menu-item:opacity-100! group-hover/menu-item:block! group-hover/menu-item:opacity-100!",
+            !isSelecting && "hidden",
+          )}
+        />
+      )}
+
+      <SidebarMenuBadge
+        className={cn(
+          "text-muted-foreground peer-hover/menu-button:text-muted-foreground peer-data-active/menu-button:text-facet-accent-foreground/80 rounded-full px-1.5 text-xs",
+          isSelecting && "hidden",
+          hasRowActions && !isSelecting && "group-hover/menu-item:hidden",
+        )}
+      >
+        {item.bookCount}
+      </SidebarMenuBadge>
+    </SidebarMenuItem>
   )
 }

@@ -5,26 +5,18 @@ import { usePathname } from "next/navigation"
 import { useRef } from "react"
 
 import { SearchInput } from "@v3/_/components/books/SearchInput"
-import { Button } from "@v3/_/components/ui/button"
+import {
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@v3/_/components/ui/sidebar"
 import { V3Link } from "@v3/_/components/v3-link"
 import { cn } from "@v3/_/lib/utils"
-
-/**
- * composable settings-style sidebar: grouped vertical tab lists with an
- * optional search box and a footer link. shared by the preferences and
- * settings forms, which differ only in their groups, tabs and search wiring.
- *
- * usage:
- *   <NavSidebar>
- *     <NavSidebarBody>
- *       <NavSidebarGroup label="Preferences">
- *         <NavSidebarSearch value={q} onChange={setQ} placeholder="Search" />
- *         <NavSidebarList tabs={tabs} activeTab={tab} onTabChange={setTab} />
- *       </NavSidebarGroup>
- *     </NavSidebarBody>
- *     <NavSidebarFooterLink href="/settings" icon={icon.Settings} label="Settings" />
- *   </NavSidebar>
- */
 
 export type NavSidebarTab<T extends string = string> = {
   value: T
@@ -40,7 +32,7 @@ function NavSidebar({
   return (
     <div
       data-slot="nav-sidebar"
-      className={cn("scroll-y flex h-full flex-col", className)}
+      className={cn("flex h-full flex-col", className)}
       {...props}
     >
       {children}
@@ -48,24 +40,22 @@ function NavSidebar({
   )
 }
 
-/** padded column holding the groups; footer sits below via its own mt-auto. */
 function NavSidebarBody({
   className,
   children,
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div
+    <SidebarContent
       data-slot="nav-sidebar-body"
-      className={cn("flex flex-col gap-4 px-2 pt-3 pb-3", className)}
+      className={cn("gap-4 px-2 py-3", className)}
       {...props}
     >
       {children}
-    </div>
+    </SidebarContent>
   )
 }
 
-/** a labelled group; children are a NavSidebarList, optionally led by a search. */
 function NavSidebarGroup({
   label,
   className,
@@ -73,19 +63,19 @@ function NavSidebarGroup({
   ...props
 }: React.ComponentProps<"div"> & { label: string }) {
   return (
-    <div data-slot="nav-sidebar-group" className={className} {...props}>
-      <p className="text-muted-foreground mb-1.5 px-2 text-xs font-medium tracking-wider uppercase">
+    <SidebarGroup
+      data-slot="nav-sidebar-group"
+      className={cn("p-0", className)}
+      {...props}
+    >
+      <SidebarGroupLabel className="text-muted-foreground mb-1.5 h-auto font-medium tracking-wider uppercase">
         {label}
-      </p>
+      </SidebarGroupLabel>
       {children}
-    </div>
+    </SidebarGroup>
   )
 }
 
-/**
- * search box that focuses on "/" (or the first key in `shortcut`). owns its own
- * input ref + hotkey so callers don't repeat that wiring.
- */
 function NavSidebarSearch({
   shortcut = ["/"],
   className,
@@ -117,16 +107,18 @@ function NavSidebarList<T extends string>({
   onTabChange: (tab: T) => void
 }) {
   return (
-    <div data-slot="nav-sidebar-list" className="flex flex-col gap-0.5">
-      {tabs.map((tab) => (
-        <NavSidebarItem
-          key={tab.value}
-          tab={tab}
-          active={activeTab === tab.value}
-          onSelect={onTabChange}
-        />
-      ))}
-    </div>
+    <SidebarGroupContent data-slot="nav-sidebar-list">
+      <SidebarMenu className="gap-0.5">
+        {tabs.map((tab) => (
+          <NavSidebarItem
+            key={tab.value}
+            tab={tab}
+            active={activeTab === tab.value}
+            onSelect={onTabChange}
+          />
+        ))}
+      </SidebarMenu>
+    </SidebarGroupContent>
   )
 }
 
@@ -141,27 +133,30 @@ function NavSidebarItem<T extends string>({
 }) {
   const pathname = usePathname()
   const href = `${pathname}?tab=${tab.value}`
+
   return (
-    <V3Link
-      href={href}
-      onClick={(e) => {
-        e.preventDefault()
-        onSelect(tab.value)
-      }}
-      className={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-        active
-          ? "text-sidebar-accent-foreground font-medium"
-          : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground",
-      )}
-    >
-      <tab.icon className="h-4 w-4 shrink-0" />
-      <span className="truncate">{tab.label}</span>
-    </V3Link>
+    // the body already pads the column, so the item doesn't pad again
+    <SidebarMenuItem className="px-0">
+      <SidebarMenuButton
+        isActive={active}
+        className={cn(!active && "text-muted-foreground hover:text-foreground")}
+        render={
+          <V3Link
+            href={href}
+            onClick={(e) => {
+              e.preventDefault()
+              onSelect(tab.value)
+            }}
+          >
+            <tab.icon className="size-4 shrink-0" />
+            <span className="truncate">{tab.label}</span>
+          </V3Link>
+        }
+      />
+    </SidebarMenuItem>
   )
 }
 
-/** bottom-pinned link to the sibling settings/preferences page. */
 function NavSidebarFooterLink({
   href,
   icon: Icon,
@@ -172,20 +167,22 @@ function NavSidebarFooterLink({
   label: string
 }) {
   return (
-    <div className="border-border mt-auto border-t py-3">
-      <Button
-        variant="real-ghost"
-        size="sm"
-        nativeButton={false}
-        className="text-muted-foreground hover:text-foreground w-full justify-start gap-2 font-normal"
-        render={
-          <V3Link href={href}>
-            <Icon className="h-4 w-4" />
-            {label}
-          </V3Link>
-        }
-      />
-    </div>
+    <SidebarFooter className="border-border mt-auto border-t px-2 py-3">
+      <SidebarMenu>
+        <SidebarMenuItem className="px-0">
+          <SidebarMenuButton
+            size="sm"
+            className="text-muted-foreground hover:text-foreground font-normal"
+            render={
+              <V3Link href={href}>
+                <Icon className="size-4" />
+                <span className="truncate">{label}</span>
+              </V3Link>
+            }
+          />
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarFooter>
   )
 }
 
