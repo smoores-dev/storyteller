@@ -54,7 +54,7 @@ type PanelWidthDriverOptions = {
  */
 export function usePanelWidthDriver({
   open,
-  storedWidth,
+  storedWidth: rawStoredWidth,
   animate,
   animateOpenClose = animate,
   slideMode = "width",
@@ -62,6 +62,10 @@ export function usePanelWidthDriver({
   snapOnRelease,
   commit,
 }: PanelWidthDriverOptions) {
+  // in animate mode the driver writes the width to the DOM itself, so a stored
+  // value outside the bounds has to be clamped here too
+  const storedWidth = clampWidth(rawStoredWidth)
+
   const panelRef = useRef<HTMLDivElement | null>(null)
   const widthRef = useRef(open ? storedWidth : 0)
   const rafRef = useRef(0)

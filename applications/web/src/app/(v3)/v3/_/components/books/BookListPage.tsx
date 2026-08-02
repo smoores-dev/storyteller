@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { Drawer } from "vaul-base"
 
 import { BookFilters } from "@v3/_/components/books"
 import { BooksView } from "@v3/_/components/books/BooksView"

@@ -147,11 +147,9 @@ export function ResizeHandle({
   )
 }
 
-export const MIN_PANEL_WIDTH = 240
-export const MAX_PANEL_WIDTH = 800
-// panel content never squishes below this; while the panel animates it is
-// revealed from the right edge instead of reflowing.
 export const PANEL_CONTENT_MIN_WIDTH = 300
+export const MIN_PANEL_WIDTH = PANEL_CONTENT_MIN_WIDTH
+export const MAX_PANEL_WIDTH = 800
 
 function PagePanel({
   open,
@@ -177,6 +175,11 @@ function PagePanel({
   if (!open) return null
 
   const overlay = phase !== null
+  // widths persisted before the min was raised would still overlap the handle
+  const restingWidth = Math.max(
+    MIN_PANEL_WIDTH,
+    Math.min(MAX_PANEL_WIDTH, width),
+  )
 
   return (
     <>
@@ -212,7 +215,7 @@ function PagePanel({
         {...props}
         style={
           {
-            width,
+            width: restingWidth,
             "--panel-content-min": `${PANEL_CONTENT_MIN_WIDTH}px`,
             ...(overlay ? colors?.style : {}),
             ...props.style,
