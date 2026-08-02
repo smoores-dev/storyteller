@@ -209,7 +209,7 @@ export function BookPanelHeader({
           aria-label="Edit"
           shortcut={["E"]}
         >
-          <icon.Pencil className="size-3.5 stroke-[1.5]" />
+          <icon.Edit className="size-3.5 stroke-[1.5]" />
         </TooltipButton>
         <BookActionsMenu
           book={book}

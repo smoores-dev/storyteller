@@ -780,7 +780,7 @@ function EditableItem({
           className="text-muted-foreground size-5"
           title={t("editItem")}
         >
-          <icon.Pencil className="size-3" />
+          <icon.Edit className="size-3" />
         </Button>
       )}
 

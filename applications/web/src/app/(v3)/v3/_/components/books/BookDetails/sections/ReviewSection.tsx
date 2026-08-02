@@ -245,7 +245,7 @@ export function ReviewSection({ className }: { className?: string }) {
                 currentReview ? c("actions.edit") : t("review.addReview")
               }
             >
-              <icon.Pencil className="size-3.5 stroke-[1.5]" />
+              <icon.Edit className="size-3.5 stroke-[1.5]" />
             </TooltipButton>
           )}
           {!hasDimensions && (

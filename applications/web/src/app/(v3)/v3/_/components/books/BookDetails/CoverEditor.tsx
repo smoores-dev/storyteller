@@ -197,7 +197,7 @@ export function CoverEditor({ compact }: { compact: boolean }) {
         tooltip={t("cover.edit")}
         className="tint-surface bg-background/85 text-foreground/70 hover:text-foreground rounded-full p-1.5"
       >
-        <icon.Pencil className="size-4" />
+        <icon.Edit className="size-4" />
       </TooltipButton>
     )
 

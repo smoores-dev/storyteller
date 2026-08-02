@@ -22,7 +22,10 @@ import {
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import { ConfirmDialog, useConfirmAction } from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
+import {
+  ConfirmDialog,
+  useConfirmAction,
+} from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
 import { type HomeSectionKind, type ShelfWithBooks } from "@/database/shelves"
 import * as icon from "@/icons"
 import {
@@ -32,7 +35,6 @@ import {
   useSetHomeShelvesMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
-
 
 import { ShelfEditor } from "./ShelfEditor"
 
@@ -474,7 +476,7 @@ function ShelfItem({
 
       {onEdit && (
         <Button variant="ghost" size="icon-sm" onClick={onEdit}>
-          <icon.Pencil className="size-4" />
+          <icon.Edit className="size-4" />
         </Button>
       )}
 

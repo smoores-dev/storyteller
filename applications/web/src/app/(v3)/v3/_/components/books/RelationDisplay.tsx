@@ -49,7 +49,7 @@ export function RelationDisplay({
           tooltip={c("actions.edit")}
           aria-label={c("actions.edit")}
         >
-          <icon.Pencil className="size-3.5 stroke-[1.5]" />
+          <icon.Edit className="size-3.5 stroke-[1.5]" />
         </TooltipButton>
       )}
     </div>
