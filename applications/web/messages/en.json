@@ -1339,6 +1339,7 @@
     "deleteBook": "Delete book",
     "editing": "Editing…",
     "saveFailed": "Failed to save changes",
+    "more": "+ {count, number} more",
     "review": {
       "title": "My rating & review",
       "addReview": "Add a review",

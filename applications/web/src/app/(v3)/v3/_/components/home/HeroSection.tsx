@@ -96,7 +96,7 @@ function Hero({ book }: { book: BookWithRelations }) {
 
   return (
     <section
-      className="via-cover-wash to-cover-header relative -mx-4 flex flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
+      className="to-cover-well relative -mx-4 flex flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
       {...scope}
     >
       <p className="text-tinted small-caps mx-6 mt-8">{t("hero.eyebrow")}</p>

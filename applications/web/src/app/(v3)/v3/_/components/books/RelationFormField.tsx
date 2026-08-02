@@ -163,7 +163,7 @@ export function RelationFormField<
 
   return (
     <div className="mt-3">
-      <span className="text-muted-foreground mb-1.5 block text-xs font-medium uppercase">
+      <span className="text-tinted-subtle mb-1.5 block text-xs font-medium">
         {label}
       </span>
       {editor}

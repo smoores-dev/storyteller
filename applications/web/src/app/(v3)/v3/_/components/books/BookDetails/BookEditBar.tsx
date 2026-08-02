@@ -43,7 +43,7 @@ export function BookEditBar() {
   return (
     <ActionTray
       show={show}
-      className="absolute bottom-0 left-1/2 z-50 -translate-x-1/2 gap-2 pr-1.5 pl-3"
+      className="absolute bottom-0 left-1/2 z-50 -translate-x-1/2 gap-2 border-l-0 pr-1.5 pl-3"
     >
       <span className="font-serif text-sm whitespace-nowrap">
         {isSaving ? c("states.saving") : t("editing")}
@@ -56,7 +56,7 @@ export function BookEditBar() {
         tooltip={c("actions.discard")}
         aria-label={c("actions.discard")}
         variant="real-ghost"
-        onClick={(e) => {
+        onClick={() => {
           handleDiscard()
         }}
         disabled={isSaving}
@@ -68,11 +68,11 @@ export function BookEditBar() {
       <TooltipButton
         tooltip={isSaving ? c("states.saving") : c("actions.save")}
         aria-label={c("actions.save")}
-        onClick={(e) => {
-          console.log("saveAndClose")
+        onClick={() => {
           void saveAndClose()
         }}
-        className="bg-primary text-primary-foreground rounded-full hover:opacity-90"
+        variant="cover"
+        className="rounded-full hover:opacity-90"
         disabled={isSaving}
         shortcut={["Mod+Enter"]}
       >

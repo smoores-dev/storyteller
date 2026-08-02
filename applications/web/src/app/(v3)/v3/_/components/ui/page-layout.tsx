@@ -131,7 +131,7 @@ export function ResizeHandle({
       <div
         className={cn(
           "absolute top-0 bottom-0 flex w-3.5 cursor-col-resize touch-none items-center justify-center",
-          side === "left" ? "-left-[7px]" : "-right-[7px]",
+          side === "left" ? "-left-[7.5px]" : "-right-[7.5px]",
         )}
         data-dragging={dragging || undefined}
         onPointerDown={onPointerDown}

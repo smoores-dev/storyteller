@@ -271,6 +271,7 @@ export function CoverColorsEditor({ book }: { book: BookWithRelations }) {
       <div className="mt-3 flex items-center gap-2">
         <Button
           type="button"
+          variant="cover"
           size="sm"
           onClick={() => void save()}
           disabled={isLoading || !dirty || draft.length === 0}

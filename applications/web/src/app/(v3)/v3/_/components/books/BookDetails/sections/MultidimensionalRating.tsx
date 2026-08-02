@@ -243,6 +243,40 @@ export function MultidimensionalRating({
   return (
     <div className={cn("relative flex flex-col items-center gap-4", className)}>
       <div className="relative mx-auto h-[280px] w-[280px]" aria-hidden>
+        <div className="absolute z-100 size-[280px]">
+          <svg
+            ref={svgRef}
+            width={SIZE}
+            height={SIZE}
+            style={{
+              width: SIZE,
+              height: SIZE,
+            }}
+            // className="size-full"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+          >
+            {inUseDimensions.map((d, i) => {
+              const r =
+                ((draft[d.id] ?? 0) / RATING_DIMENSION_MAX) * outerRadius
+              const a = axisAngleRad(i, count)
+              const x = cx + r * Math.cos(a)
+              const y = cy - r * Math.sin(a)
+              return (
+                <circle
+                  key={d.id}
+                  cx={x}
+                  cy={y}
+                  r={7}
+                  className="cursor-grab fill-transparent stroke-transparent stroke-0"
+                />
+              )
+            })}
+          </svg>
+        </div>
+
         <ChartContainer
           config={chartConfig}
           className="relative flex h-full w-full items-center"
@@ -256,33 +290,31 @@ export function MultidimensionalRating({
             endAngle={-270}
           >
             <PolarGrid width={SIZE} height={SIZE} />
-
             <PolarRadiusAxis
               domain={[RATING_DIMENSION_MIN, RATING_DIMENSION_MAX]}
               tickCount={1}
-              tickLine={false}
               tick={false}
               axisLine={false}
             />
             <Radar
               dataKey="value"
               stroke="var(--color-value)"
-              strokeWidth={2}
               fill="var(--color-value)"
-              fillOpacity={0.35}
-              dot={{ r: 0, fillOpacity: 1 }}
-              isAnimationActive={false}
+              fillOpacity={0.45}
+              dot={{ r: 5, fillOpacity: 1 }}
+              isAnimationActive={true}
+              animationDuration={200}
             />
           </RadarChart>
 
-          {/* manual labels, driving them through the chart config makes recharts
+          {/* manual labels; driving them through the chart config makes recharts
               flash the labels on every edit */}
           {inUseDimensions.map((d, i) => {
             const radAngle = axisAngleRad(i, count)
             return (
               <div
                 key={d.id}
-                className="group/label absolute z-30 flex flex-col items-center justify-center text-center text-sm"
+                className="group/label absolute z-60 flex flex-col items-center justify-center text-center text-sm"
                 style={{
                   left: cx + outerRadius * Math.cos(radAngle),
                   top: cy - outerRadius * Math.sin(radAngle),
@@ -290,7 +322,7 @@ export function MultidimensionalRating({
                 }}
               >
                 <span>{d.label}</span>
-                <span className="text-muted-foreground -mt-0.5 text-xs tabular-nums">
+                <span className="text-muted-foreground text-xs tabular-nums">
                   {formatRating(draft[d.id] ?? 0)}
                 </span>
                 <Button
@@ -308,33 +340,6 @@ export function MultidimensionalRating({
             )
           })}
         </ChartContainer>
-
-        {/* <svg
-          ref={svgRef}
-          width={SIZE}
-          height={SIZE}
-          className="absolute inset-0 h-full w-full touch-none"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-        >
-          {inUseDimensions.map((d, i) => {
-            const r = ((draft[d.id] ?? 0) / RATING_DIMENSION_MAX) * outerRadius
-            const a = axisAngleRad(i, count)
-            const x = cx + r * Math.cos(a)
-            const y = cy - r * Math.sin(a)
-            return (
-              <circle
-                key={d.id}
-                cx={x}
-                cy={y}
-                r={7}
-                className="fill-primary stroke-background cursor-grab stroke-2"
-              />
-            )
-          })}
-        </svg> */}
       </div>
 
       <div className="flex flex-col items-center gap-1">

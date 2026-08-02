@@ -2,6 +2,7 @@
 
 import { type UUID } from "crypto"
 
+import { motion } from "motion/react"
 import dynamic from "next/dynamic"
 import { useCallback, useRef, useState } from "react"
 
@@ -191,7 +192,11 @@ function BookDetailsContentInner({
         )}
         <BookEditBar />
 
-        <div className="scroll-y @container-size @container/book h-full flex-1">
+        <motion.div
+          layoutScroll
+          data-book-container
+          className="scroll-y @container/book @container-size h-full flex-1"
+        >
           {/* this is some fucked up structure but its necessary in order to get full width background
         for full page view
          */}
@@ -239,7 +244,7 @@ function BookDetailsContentInner({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       </article>
     </BookFormProvider>
   )

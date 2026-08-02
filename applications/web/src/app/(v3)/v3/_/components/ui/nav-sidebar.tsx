@@ -172,12 +172,12 @@ function NavSidebarFooterLink({
   label: string
 }) {
   return (
-    <div className="border-border mt-auto border-t px-3 py-3">
+    <div className="border-border mt-auto border-t py-3">
       <Button
-        variant="ghost"
+        variant="real-ghost"
         size="sm"
         nativeButton={false}
-        className="text-muted-foreground hover:text-foreground w-full justify-start gap-2"
+        className="text-muted-foreground hover:text-foreground w-full justify-start gap-2 font-normal"
         render={
           <V3Link href={href}>
             <Icon className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { useTranslation } from "@v3/_/hooks/use-translation"
+import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { useBookForm } from "./BookDetails/BookFormProvider"
@@ -11,6 +11,7 @@ function seriesKey(s: { uuid?: string; name: string }): string {
 export function SeriesEditor({ className }: { className?: string }) {
   const { form } = useBookForm()
   const tActions = useTranslation("BookActions")
+  const c = useCommon()
 
   const setPosition = (key: string, position: number | null) => {
     const current = form.getValues("series")
@@ -26,6 +27,7 @@ export function SeriesEditor({ className }: { className?: string }) {
       name="series"
       source="series"
       entryId={seriesKey}
+      label={c("fields.label.series")}
       itemId={(item) => item.uuid}
       toChip={(s) => ({
         uuid: seriesKey(s),

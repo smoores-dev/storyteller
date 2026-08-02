@@ -394,7 +394,7 @@ export const BookCard = memo(function BookCard({
 
         {isSynced && !isMobile && (
           <div className="absolute top-[7%] right-[6%] aspect-square w-[12%]">
-            <div className="bg-cover-wash flex size-full items-center justify-center rounded-full shadow-md">
+            <div className="bg-cover-header flex size-full items-center justify-center rounded-full shadow-md">
               <IconReadaloud className="size-[110%] text-white" />
             </div>
           </div>

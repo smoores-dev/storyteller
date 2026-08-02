@@ -443,9 +443,13 @@
 [data-cover] {
   --cover-2: var(--cover-1);
 
-  --cover-wash: oklch(from var(--cover-1) 0.96 min(calc(c * 0.55), 0.035) h);
-  --cover-well: oklch(from var(--cover-1) 0.92 min(calc(c * 0.65), 0.06) h);
-  --cover-header: oklch(from var(--cover-1) 0.86 min(calc(c * 0.75), 0.09) h);
+  --cover-wash: oklch(from var(--cover-1) 0.96 min(calc(c * 0.55), 0.135) h);
+  --cover-well: oklch(from var(--cover-1) 0.92 min(calc(c * 0.65), 0.26) h);
+  --cover-header: oklch(from var(--cover-1) 0.86 min(calc(c * 0.95), 0.39) h);
+
+  /* --cover-wash: oklch(from var(--cover-1) 0.96 c h);
+  --cover-well: oklch(from var(--cover-1) 0.89 c h);
+  --cover-header: oklch(from var(--cover-1) 0.85 c h); */
 
   --tint: oklch(from var(--cover-1) 0.945 min(calc(c * 0.55), 0.045) h);
   --tint-strong: oklch(from var(--cover-1) 0.9 min(calc(c * 0.65), 0.065) h);
@@ -463,15 +467,15 @@
 /* richer colors for dark mode */
 .dark [data-cover] {
   --cover-wash: oklch(
-    from var(--cover-1) clamp(0.21, calc(l * 0.6), 0.53)
+    from var(--cover-1) clamp(0.21, calc(l * 0.6), 0.63)
       min(calc(c * 0.75), 0.09) h
   );
   --cover-well: oklch(
-    from var(--cover-1) clamp(0.25, calc(l * 0.7), 0.62)
+    from var(--cover-1) clamp(0.25, calc(l * 0.7), 0.72)
       min(calc(c * 0.85), 0.11) h
   );
   --cover-header: oklch(
-    from var(--cover-1) clamp(0.28, calc(l * 0.8), 0.7)
+    from var(--cover-1) clamp(0.28, calc(l * 0.8), 0.8)
       min(calc(c * 0.95), 0.13) h
   );
 

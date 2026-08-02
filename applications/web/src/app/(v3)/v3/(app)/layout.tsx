@@ -48,12 +48,15 @@ export default async function AppLayout({
     preferenceDefaults,
   )
 
+  console.log("preferences", preferences)
   // --sidebar-accent and --facet-accent derive from these in globals.css, so
   // a custom accent recolors the selection washes in both shell themes
   const accentStyle: React.CSSProperties = preferences.accentColor
     ? ({
         "--primary": preferences.accentColor,
         "--sidebar-primary": preferences.accentColor,
+        "--facet-accent": preferences.accentColor,
+        "--sidebar-accent-foreground": preferences.accentColor,
       } as React.CSSProperties)
     : {}
 

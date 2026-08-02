@@ -1,7 +1,7 @@
 "use client"
 
-import { motion } from "motion/react"
-import { useState } from "react"
+import { motion, useReducedMotion } from "motion/react"
+import { type RefObject, useLayoutEffect, useRef, useState } from "react"
 
 import {
   AuthorEditor,
@@ -45,6 +45,36 @@ import {
 } from "@/store/api"
 
 const MAX_CREATORS = 5
+
+// tailwind @xl container breakpoint
+const XL_BOOK_REM = 36
+
+// mirrors the @xl/book container query in js so the flex-col/flex-row switch
+// happens in a react render, where motion can flip-animate it. returns null
+// until the first client measurement, when the css container query still rules
+function useBookContainerIsWide(ref: RefObject<HTMLDivElement | null>) {
+  const [isWide, setIsWide] = useState<boolean | null>(null)
+
+  useLayoutEffect(() => {
+    const container = ref.current?.closest("[data-book-container]")
+    if (!(container instanceof HTMLElement)) return
+
+    const update = () => {
+      const rem =
+        parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      setIsWide(container.clientWidth >= XL_BOOK_REM * rem)
+    }
+    update()
+
+    const observer = new ResizeObserver(update)
+    observer.observe(container)
+    return () => {
+      observer.disconnect()
+    }
+  }, [ref])
+
+  return isWide
+}
 
 export function HeroSection({
   compact,
@@ -102,33 +132,66 @@ export function HeroSection({
 
   const ratingColor = "var(--cover-accent)"
 
+  const heroRef = useRef<HTMLDivElement>(null)
+  const isWide = useBookContainerIsWide(heroRef)
+  const reducedMotion = useReducedMotion()
+
+  // pre-measurement renders keep the @xl/book fallback so ssr paints correctly
+  const wide = (queryCls: string, wideCls: string) =>
+    isWide === null ? queryCls : isWide ? wideCls : null
+
+  // layout must be truthy from the very first render, the projection node
+  // copies it into its options once at creation and never updates them, so a
+  // false initial value permanently disables flip animations. layoutDependency
+  // restricts snapshots to breakpoint crossings
+  const layoutTransition = reducedMotion
+    ? ({ duration: 0 } as const)
+    : ({ type: "spring", duration: 0.35, bounce: 0 } as const)
+
   return (
     <div
       className={cn(
-        "via-cover-wash to-cover-header relative bg-linear-to-t/oklch from-transparent",
+        "via-cover-wash to-cover-well dark:to-cover-header relative bg-linear-to-t/oklch from-transparent",
         "via-30% pb-4 @xl/book:via-40%",
       )}
     >
       <div
+        ref={heroRef}
         className={cn(
           "group/hero relative flex flex-col items-center gap-5 px-6 pt-14 pb-5 text-center",
-          `@xl/book:flex-row @xl/book:items-center @xl/book:gap-8 @xl/book:text-left`,
-          !isEditing && !editingCovers && `@xl/book:h-80`,
+          wide(
+            `@xl/book:flex-row @xl/book:items-center @xl/book:gap-8 @xl/book:text-left`,
+            "flex-row items-center gap-8 text-left",
+          ),
+          !isEditing && !editingCovers && wide(`@xl/book:min-h-80`, "min-h-80"),
           className,
         )}
       >
-        <CoverEditor compact={compact} />
+        <motion.div
+          layout="position"
+          layoutDependency={isWide}
+          transition={layoutTransition}
+          className="shrink-0"
+        >
+          <CoverEditor compact={compact} />
+        </motion.div>
 
         <motion.div
+          layout="position"
+          layoutDependency={isWide}
+          transition={layoutTransition}
           className={cn(
             "flex h-full w-full grow flex-col items-center gap-5",
-            `@xl/book:items-start @xl/book:justify-between @xl/book:gap-1.5`,
+            wide(
+              `@xl/book:items-start @xl/book:justify-between @xl/book:gap-1.5`,
+              "items-start justify-between gap-1.5",
+            ),
           )}
         >
           <div
             className={cn(
               "flex w-full flex-col items-center gap-1",
-              `@xl/book:items-start`,
+              wide(`@xl/book:items-start`, "items-start"),
             )}
           >
             <EditableText
@@ -136,7 +199,7 @@ export function HeroSection({
               as="h1"
               className={cn(
                 "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-medium tracking-tight text-balance",
-                `@xl/book:w-auto @xl/book:text-left`,
+                wide(`@xl/book:w-auto @xl/book:text-left`, "w-auto text-left"),
               )}
               placeholder={c.plain("fields.label.title")}
             />
@@ -195,7 +258,7 @@ export function HeroSection({
                 <p
                   className={cn(
                     "text-tinted group/authors relative mt-0.5 flex flex-wrap justify-center gap-x-1 text-xs",
-                    `@xl/book:justify-start`,
+                    wide(`@xl/book:justify-start`, "justify-start"),
                     canEdit && "cursor-pointer",
                   )}
                 >
@@ -221,7 +284,7 @@ export function HeroSection({
                         setAuthorsExpanded(true)
                       }}
                     >
-                      +{hiddenAuthorCount} more
+                      {t("more", { count: hiddenAuthorCount })}
                     </button>
                   )}
 
@@ -251,7 +314,7 @@ export function HeroSection({
                 <p
                   className={cn(
                     "text-tinted group/narrators relative flex flex-wrap justify-center gap-x-1 text-xs",
-                    `@xl/book:justify-start`,
+                    wide(`@xl/book:justify-start`, "justify-start"),
                     canEdit && "cursor-pointer",
                   )}
                 >
@@ -285,7 +348,7 @@ export function HeroSection({
                         setNarratorsExpanded(true)
                       }}
                     >
-                      +{hiddenNarratorCount} more
+                      {t("more", { count: hiddenNarratorCount })}
                     </button>
                   )}
                   {canEdit && (
@@ -319,7 +382,7 @@ export function HeroSection({
                 <p
                   className={cn(
                     "text-tinted flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs",
-                    `@xl/book:justify-start`,
+                    wide(`@xl/book:justify-start`, "justify-start"),
                   )}
                 >
                   {(book.pageCount || book.ebook || book.readaloud) && (
@@ -357,13 +420,21 @@ export function HeroSection({
             </div>
           </div>
 
-          <div
+          <motion.div
+            layout="position"
+            layoutDependency={isWide}
+            transition={layoutTransition}
             className={cn(
-              "flex flex-wrap justify-center gap-2",
-              `w-full @xl/book:justify-between`,
+              "flex w-full flex-wrap justify-center gap-2",
+              wide(`@xl/book:justify-between`, "justify-between"),
             )}
           >
-            <div className="flex grow flex-wrap justify-center gap-2 @xl/book:justify-start">
+            <div
+              className={cn(
+                "flex grow flex-wrap justify-center gap-2",
+                wide(`@xl/book:justify-start`, "justify-start"),
+              )}
+            >
               <ReadingStatusButton book={book} size="sm" />
 
               <div className="flex flex-wrap justify-center gap-2">
@@ -502,7 +573,7 @@ export function HeroSection({
                 />
               )}
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
       {getReadingProgress(book) !== null && (
