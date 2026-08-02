@@ -2,23 +2,11 @@
 
 import { cn } from "@v3/_/lib/utils"
 
+import {
+  ACCENT_PRESETS as PRESETS,
+  DEFAULT_ACCENT_COLOR as DEFAULT_SWATCH,
+} from "@/accent-presets"
 import * as icon from "@/icons"
-
-// the visual for the "default" swatch (null value) — storyteller orange
-const DEFAULT_SWATCH = "#eb722f"
-
-const PRESETS = [
-  "#ef4444",
-  "#f97316",
-  "#f59e0b",
-  "#22c55e",
-  "#14b8a6",
-  "#3b82f6",
-  "#6366f1",
-  "#8b5cf6",
-  "#ec4899",
-  "#f43f5e",
-] as const
 
 function Swatch({
   color,

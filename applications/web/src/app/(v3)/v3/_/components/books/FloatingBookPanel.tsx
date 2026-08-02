@@ -11,7 +11,6 @@ import {
   useState,
 } from "react"
 
-import { BookDetailDrawer } from "@v3/_/components/books/BookListLayout"
 import {
   MAX_PANEL_WIDTH,
   MIN_PANEL_WIDTH,
@@ -31,6 +30,8 @@ import { useIsMobile } from "@/app/(v3)/v3/_/hooks/use-mobile"
 import { cn } from "@/cn"
 import { useAppSelector } from "@/store/appState"
 import { type UUID } from "@/uuid"
+
+import { BookDetailDrawer } from "./BookListPage"
 
 const DynamicBookDetailsContent = dynamic(
   () =>

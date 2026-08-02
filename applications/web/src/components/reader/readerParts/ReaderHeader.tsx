@@ -1,6 +1,7 @@
 import { Text, Title } from "@mantine/core"
 import { IconChevronLeft } from "@tabler/icons-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { cn } from "@/cn"
 import { ResponsiveSettingsControls } from "@/components/reader/ResponsiveSettingsControls"
@@ -19,6 +20,7 @@ export const ReaderHeader = ({
   isFullscreen,
   onToggleFullscreen,
 }: Props) => {
+  const router = useRouter()
   return (
     <header
       className={cn(
@@ -26,13 +28,15 @@ export const ReaderHeader = ({
         isVisible ? "translate-y-0" : "-translate-y-full",
       )}
     >
-      <Link
-        href={`/books/${book.uuid}`}
+      <button
+        onClick={() => {
+          router.back()
+        }}
         className="text-reader-accent hover:bg-reader-surface-hover flex h-full flex-col items-center justify-center px-4"
       >
         {<span className="sr-only">Back to book</span>}
         <IconChevronLeft />
-      </Link>
+      </button>
 
       <div className="mr-4 flex items-center gap-1">
         <ResponsiveSettingsControls

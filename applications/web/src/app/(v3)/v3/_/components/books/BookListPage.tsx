@@ -15,10 +15,6 @@ import {
 } from "react"
 
 import { BookFilters } from "@v3/_/components/books"
-import {
-  BookDetailDrawer,
-  SkipToBooksLink,
-} from "@v3/_/components/books/BookListLayout"
 import { BooksView } from "@v3/_/components/books/BooksView"
 import { useClaimBookPanel } from "@v3/_/components/books/FloatingBookPanel"
 import { SelectionToolbar } from "@v3/_/components/books/SelectionToolbar"
@@ -768,7 +764,7 @@ function BookListPageInner({
               />
             </PageHeader>
 
-            <PageContent className={"relative"}>
+            <PageContent className={"relative p-6 pt-0 md:p-0"}>
               <BookFilters
                 className={filtersClassName}
                 controller={controller}
@@ -943,5 +939,86 @@ export function BookListPage(props: BookListPageProps) {
     <BookSelectionProvider>
       <BookListPageInner {...props} />
     </BookSelectionProvider>
+  )
+}
+
+// a11y skip link
+export function SkipToBooksLink() {
+  return (
+    <a
+      href={`#${BOOK_COLLECTION_ID}`}
+      onClick={(e) => {
+        e.preventDefault()
+        document.getElementById(BOOK_COLLECTION_ID)?.focus()
+      }}
+      className="bg-background focus:ring-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:border focus:px-3 focus:py-2 focus:text-sm focus:shadow focus:ring-2 focus:outline-none"
+    >
+      Skip to books
+    </a>
+  )
+}
+
+// mobile
+export function BookDetailDrawer({
+  selectedBookUuid,
+  selectedBook,
+  onClose,
+  nextBook,
+  previousBook,
+}: {
+  selectedBookUuid: string | null
+  selectedBook?: BookWithRelations
+  onClose: () => void
+  nextBook?: () => void
+  previousBook?: () => void
+}) {
+  // keep the closing drawer's content mounted while it slides shut; vaul
+  // unmounts the portal itself once the exit animation finishes
+  const lastSelectedRef = useRef<{
+    uuid: string
+    book: BookWithRelations | undefined
+  } | null>(null)
+  useEffect(() => {
+    if (selectedBookUuid) {
+      lastSelectedRef.current = { uuid: selectedBookUuid, book: selectedBook }
+    }
+  }, [selectedBookUuid, selectedBook])
+
+  const shownUuid = selectedBookUuid ?? lastSelectedRef.current?.uuid ?? null
+  const shownBook = selectedBookUuid
+    ? selectedBook
+    : lastSelectedRef.current?.book
+
+  return (
+    <Drawer.Root
+      open={!!selectedBookUuid}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
+
+        <Drawer.Content className="bg-background fixed right-0 bottom-0 left-0 z-40 flex h-[85svh] flex-col overflow-hidden rounded-t-2xl">
+          <div
+            id="book-detail-drawer-handle"
+            className="bg-muted-foreground/20 relative z-10 mx-auto mt-4 -mb-6 h-1.5 w-12 shrink-0 rounded-full"
+          />
+
+          <Drawer.Title className="sr-only">Book Details</Drawer.Title>
+
+          {shownUuid && (
+            <DynamicBookDetailsContent
+              uuid={shownUuid as UUID}
+              initialBook={shownBook}
+              compact
+              onClose={onClose}
+              nextBook={nextBook}
+              previousBook={previousBook}
+            />
+          )}
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   )
 }

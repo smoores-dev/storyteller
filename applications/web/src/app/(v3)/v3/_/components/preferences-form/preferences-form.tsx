@@ -70,6 +70,9 @@ export function PreferencesForm({
   preferenceDefaultsLocked,
 }: {
   user: User
+  // the user's own stored values only (null = inherit), not the values resolved
+  // against the library defaults: the form edits what's persisted, and the save
+  // diff needs that same baseline. see formUserPreferences
   preferences: UserPreferencesForm
   sectionKeywords: SectionKeywords
   linkedAccounts: Array<{ provider: string; providerAccountId: string }>
@@ -91,13 +94,23 @@ export function PreferencesForm({
   const [updateSettings, { isLoading: isSaving }] =
     useUpdateUserSettingsMutation()
 
+  // what's currently persisted for this user (null = inherit). react-hook-form
+  // only keeps dirty state for the parts of formState something read during
+  // render, and reset() rebuilds that bookkeeping off a snapshot a memoized
+  // subtree may never re-render against, so a changed field can end up absent
+  // from dirtyFields and silently never save. diff against this instead
+  const savedValues = useRef(preferences)
+
   const onSubmit = async (data: z.output<typeof UserPreferencesFormSchema>) => {
     // only persist fields the user actually changed. the baseline is the raw
-    // stored values (null = inherit), so dirty means "differs from what's
-    // stored" — explicit values persist even when equal to the org default,
-    // and a restored (null) field persists the inherit
-    const dirty = form.formState.dirtyFields
-    const changed = Object.keys(dirty) as (keyof UserPreferencesForm)[]
+    // stored values, so changed means "differs from what's stored": explicit
+    // values persist even when equal to the org default, and a restored (null)
+    // field persists the inherit
+    const changed = (Object.keys(data) as (keyof UserPreferencesForm)[]).filter(
+      (key) =>
+        JSON.stringify(data[key] ?? null) !==
+        JSON.stringify(savedValues.current[key] ?? null),
+    )
     const payload = Object.fromEntries(
       changed.map((key) => [key, data[key]]),
     ) as Partial<UserPreferencesForm>
@@ -107,12 +120,15 @@ export function PreferencesForm({
         await updateSettings(payload).unwrap()
       }
 
-      if (dirty.locale && data.locale) {
+      if (changed.includes("locale") && data.locale) {
         await changeLocaleAction(data.locale as Locale)
       }
 
-      // reset the dirty baseline to the just-saved values
-      form.reset(data)
+      // move the baseline to the just-saved values. no form.reset here: the
+      // values on screen already are `data`, and resetting drops every field
+      // registration, which only re-attaches if the field's subtree happens to
+      // re-render
+      savedValues.current = data
       toast.success(t("savedSuccessfully"))
     } catch {
       toast.error(t("failedToSave"))

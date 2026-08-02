@@ -167,9 +167,6 @@ function PagePanel({
 }: React.ComponentProps<"div"> & {
   open: boolean
   width: number
-  // open/close slide in progress (transform mode): the panel leaves flex flow
-  // and overlays the content while translateX moves it, so the layout only
-  // changes once, at rest
   phase?: "opening" | "closing" | null
   panelRef?: React.Ref<HTMLDivElement>
   // pointer-down on the resize handle. width changes are driven externally

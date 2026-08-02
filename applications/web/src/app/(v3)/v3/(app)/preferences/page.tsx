@@ -79,12 +79,14 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([])(
       ])
 
     // seed the form with the user's own stored values only (null = inherit),
-    // so the dirty baseline matches what's persisted rather than the resolved
-    // org defaults — see formUserPreferences
+    // so the save diff matches what's persisted rather than the resolved org
+    // defaults. the live cascade after a save is handled by
+    // UserPreferencesProvider, not by feeding the form resolved values
     const preferences = formUserPreferences(rawPreferences)
 
-    const preferenceDefaultsLocked =
-      getConfigLockedKeys().has("preferenceDefaults")
+    const preferenceDefaultsLocked = (await getConfigLockedKeys()).has(
+      "preferenceDefaults",
+    )
 
     const preferencesMessages = messages.PreferencesPage as {
       tabs: Record<string, { sections?: Record<string, unknown> }>

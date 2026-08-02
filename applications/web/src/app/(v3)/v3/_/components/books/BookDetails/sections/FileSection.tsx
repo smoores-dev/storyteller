@@ -4,7 +4,6 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener"
 import { type ComponentType, useMemo, useState } from "react"
 
 import { Badge } from "@v3/_/components/ui/badge"
-import { Button } from "@v3/_/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +44,6 @@ import {
   useReplaceBookAssetMutation,
 } from "@/store/api"
 import { formatFileSize } from "@/utils/formatFileSize"
-
 
 import { CollapsibleSection } from "./CollapsibleSection"
 
@@ -291,7 +289,26 @@ function FormatFileRow({
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-
+              {identifiers.length === 0 && (
+                <TooltipButton
+                  variant="ghost"
+                  onClick={() => {
+                    setEditingIdentifiers(true)
+                  }}
+                  size="xs"
+                  className={cn(
+                    "text-muted-foreground/60 relative font-sans text-xs tracking-wide uppercase transition-colors",
+                    "font-normal opacity-0 transition-opacity",
+                    "group-hover/file:opacity-100",
+                    isEditing && "opacity-100",
+                  )}
+                  tooltip={t("identifiers.add")}
+                  aria-label={t("identifiers.add")}
+                >
+                  <span>ID</span>
+                  <icon.Plus className="absolute -top-0.5 -right-0.5 size-2.5" />
+                </TooltipButton>
+              )}
               {canRemove && (
                 <TooltipButton
                   variant="ghost"
@@ -341,41 +358,24 @@ function FormatFileRow({
               />
             ))}
 
-            {canEdit &&
-              (identifiers.length > 0 ? (
-                <TooltipButton
-                  variant="ghost"
-                  size="icon-sm"
-                  tooltip={t.plain("identifiers.edit")}
-                  aria-label={t.plain("identifiers.edit")}
-                  className={cn(
-                    "text-muted-foreground/60 hover:text-foreground h-auto w-6 self-stretch opacity-0 transition-opacity",
-                    "group-hover/identifiers:opacity-100",
-                    isEditing && "opacity-100",
-                  )}
-                  onClick={() => {
-                    setEditingIdentifiers(true)
-                  }}
-                >
-                  <icon.Edit className="size-3 stroke-[1.5]" />
-                </TooltipButton>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingIdentifiers(true)
-                  }}
-                  className={cn(
-                    "border-border/70 text-muted-foreground/70 hover:text-foreground hover:border-border inline-flex items-center gap-1 rounded-md border border-dashed px-1.5 py-0.5 font-sans text-xs tracking-wide uppercase transition-colors",
-                    "opacity-0 transition-opacity",
-                    "group-hover/identifiers:opacity-100",
-                    isEditing && "opacity-100",
-                  )}
-                >
-                  <icon.Plus className="size-2.5" />
-                  {t("identifiers.add")}
-                </button>
-              ))}
+            {canEdit && identifiers.length > 0 && (
+              <TooltipButton
+                variant="ghost"
+                size="icon-sm"
+                tooltip={t.plain("identifiers.edit")}
+                aria-label={t.plain("identifiers.edit")}
+                className={cn(
+                  "text-muted-foreground/60 hover:text-foreground h-auto w-6 self-stretch opacity-0 transition-opacity",
+                  "group-hover/identifiers:opacity-100",
+                  isEditing && "opacity-100",
+                )}
+                onClick={() => {
+                  setEditingIdentifiers(true)
+                }}
+              >
+                <icon.Edit className="size-3 stroke-[1.5]" />
+              </TooltipButton>
+            )}
           </div>
         )}
       </div>
@@ -504,11 +504,12 @@ export function FileSection({
   const assetFolder =
     assetsDir && book.assetDir ? `${assetsDir}/${book.assetDir}` : book.assetDir
 
+  const { isEditing } = useBookForm()
+
   return (
     <CollapsibleSection
       sectionKey="files"
       title={t("fileInformation.title")}
-      icon={<icon.FileText className="size-3.5 stroke-1" />}
       className={className}
       rightElement={
         canEdit &&
@@ -605,37 +606,45 @@ export function FileSection({
         ))}
 
         {canEdit && assetFolder && (
-          <div className="flex flex-col gap-0.5 text-xs">
+          <div className="group/asset-folder flex flex-col gap-0.5 text-xs">
             <div className="flex items-center justify-between gap-1">
               <span className="text-muted-foreground font-sans text-xs">
                 {t("fileInformation.assetFolder")}
               </span>
 
               <div className="flex items-center gap-1">
-                <Button
+                <TooltipButton
                   variant="ghost"
-                  size="icon-sm"
-                  className="text-muted-foreground -my-1 h-5 w-5"
+                  tooltip={t.plain("fileInformation.editAssetFolder")}
                   aria-label={t.plain("fileInformation.editAssetFolder")}
                   onClick={() => {
                     setEditingAssetDir(true)
                   }}
+                  className={cn(
+                    "opacity-0 transition-opacity group-hover/asset-folder:opacity-100",
+                    "text-muted-foreground -my-1 h-5 w-5",
+                    isEditing && "opacity-100",
+                  )}
                 >
                   <icon.Edit className="h-3 w-3" />
-                </Button>
+                </TooltipButton>
 
                 {isTauri && (
-                  <Button
+                  <TooltipButton
                     variant="ghost"
-                    size="icon-sm"
-                    className="text-muted-foreground -my-1 h-5 w-5"
+                    tooltip="Show asset folder in file manager"
                     aria-label="Show asset folder in file manager"
+                    className={cn(
+                      "opacity-0 transition-opacity group-hover/asset-folder:opacity-100",
+                      "text-muted-foreground -my-1 h-5 w-5",
+                      isEditing && "opacity-100",
+                    )}
                     onClick={() => {
                       void revealItemInDir(assetFolder)
                     }}
                   >
                     <icon.ExternalLink className="h-3 w-3" />
-                  </Button>
+                  </TooltipButton>
                 )}
               </div>
             </div>

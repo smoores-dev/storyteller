@@ -1,6 +1,8 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo } from "react"
+import { createContext, useContext, useEffect } from "react"
+
+import { ACCENT_TOKENS } from "@v3/_/lib/accent-tokens"
 
 import {
   type PreferenceDefaults,
@@ -25,18 +27,46 @@ export function UserPreferencesProvider({
 }) {
   const { data: rawSettings } = useGetUserSettingsQuery()
 
-  const preferences = useMemo(() => {
-    if (!rawSettings) return initialPreferences
-    return resolveUserPreferences(rawSettings, preferenceDefaults)
-  }, [rawSettings, initialPreferences, preferenceDefaults])
+  const preferences = rawSettings
+    ? resolveUserPreferences(rawSettings, preferenceDefaults)
+    : initialPreferences
 
-  // the shell theme attribute is server-rendered by the app layout, which
-  // doesn't re-render when the client cache updates -- keep it live here
+  // the shell theme and the accent tokens are server-rendered onto the app
+  // layout, which does not re-render when the client cache updates after a
+  // save. keep both live here so a saved preference lands without a refresh.
+  // <html> gets them too, so portalled surfaces (dialogs, toasts, the mobile
+  // sidebar sheet) sit inside the theme instead of falling back to the defaults
   useEffect(() => {
     for (const el of document.querySelectorAll<HTMLElement>("[data-shell]")) {
       el.dataset["shell"] = preferences.shellTheme
     }
+    document.documentElement.dataset["shell"] = preferences.shellTheme
   }, [preferences.shellTheme])
+
+  const accentColor = preferences.accentColor
+
+  useEffect(() => {
+    const targets = [
+      document.documentElement,
+      ...document.querySelectorAll<HTMLElement>("[data-shell]"),
+    ]
+
+    const apply = (color: string | null) => {
+      for (const el of targets) {
+        for (const token of ACCENT_TOKENS) {
+          if (color === null) el.style.removeProperty(token)
+          else el.style.setProperty(token, color)
+        }
+      }
+    }
+
+    apply(accentColor)
+
+    // leaving the app shell should not strand an accent on <html>
+    return () => {
+      apply(null)
+    }
+  }, [accentColor])
 
   return (
     <UserPreferencesContext.Provider value={preferences}>

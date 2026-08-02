@@ -1705,7 +1705,7 @@ export const api = createApi({
 
     getUserSettings: build.query<UserPreferences, void>({
       query: () => "/user/settings",
-      providesTags: ["UserSettings"],
+      providesTags: (s) => ["UserSettings"],
     }),
     updateUserSettings: build.mutation<void, Partial<UserPreferencesForm>>({
       query: (body) => ({
@@ -1732,8 +1732,6 @@ export const api = createApi({
       invalidatesTags: ["UserSettings"],
     }),
 
-    // generic escape hatch for settings keys outside the typed UserPreferences
-    // schema (onboarding flags etc.); the settings store is a free-form kv.
     setUserSettingRaw: build.mutation<void, { name: string; value: unknown }>({
       query: ({ name, value }) => ({
         url: `/user/settings`,

@@ -9,11 +9,6 @@ import { FACET_SECTION_REGISTRY, FACET_SECTION_SLUGS } from "@/facet-sections"
 
 import { SectionPageClient } from "./sectionPageClient"
 
-// the generic page behind every registry-driven facet section (/authors,
-// /series, /identifiers, ...). sections with bespoke needs (collections'
-// nested [uuid] route, shelves) keep their own directories; static segments
-// win over this dynamic one.
-
 type SectionPageProps = {
   params: Promise<{ section: string }>
   searchParams: Promise<{ item?: string }>

@@ -772,7 +772,7 @@ function SidebarNavItem({
             <DropdownMenuTrigger
               render={
                 <SidebarMenuAction showOnHover className="peer/item-action">
-                  <icon.DotsVertical className="size-3.5" />
+                  <icon.DotsVertical className={"hidden size-3.5 md:block"} />
                 </SidebarMenuAction>
               }
             />

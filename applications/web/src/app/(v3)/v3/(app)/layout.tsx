@@ -8,6 +8,7 @@ import { ProcessingToast } from "@v3/_/components/processing/ProcessingToast"
 import { SidebarInset, SidebarProvider } from "@v3/_/components/ui/sidebar"
 import { UserPreferencesProvider } from "@v3/_/components/user-preferences-provider"
 import { EscapeCascadeProvider } from "@v3/_/hooks/use-escape-cascade"
+import { accentStyle } from "@v3/_/lib/accent-tokens"
 
 import { assertAuthenticatedUser } from "@/auth/auth"
 import { getPendingAnnouncements } from "@/database/announcements"
@@ -48,18 +49,6 @@ export default async function AppLayout({
     preferenceDefaults,
   )
 
-  console.log("preferences", preferences)
-  // --sidebar-accent and --facet-accent derive from these in globals.css, so
-  // a custom accent recolors the selection washes in both shell themes
-  const accentStyle: React.CSSProperties = preferences.accentColor
-    ? ({
-        "--primary": preferences.accentColor,
-        "--sidebar-primary": preferences.accentColor,
-        "--facet-accent": preferences.accentColor,
-        "--sidebar-accent-foreground": preferences.accentColor,
-      } as React.CSSProperties)
-    : {}
-
   return (
     <UserPreferencesProvider
       initialPreferences={preferences}
@@ -73,7 +62,7 @@ export default async function AppLayout({
           {
             "--sidebar-width": "calc(var(--spacing) * 56)",
             "--header-height": "calc(var(--spacing) * 14)",
-            ...accentStyle,
+            ...accentStyle(preferences.accentColor),
           } as React.CSSProperties
         }
       >

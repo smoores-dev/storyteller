@@ -9,12 +9,9 @@ import { useFormatDate } from "@v3/_/lib/formatters"
 import { EditableText } from "@/app/(v3)/v3/_/components/books/BookDetails/EditableText"
 import { cn } from "@/cn"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
-import * as icon from "@/icons"
 
 import { CollapsibleSection } from "./CollapsibleSection"
 
-// a single label + value pair occupying two grid cells, so the grid keeps the
-// same shape whether the value is read-only or an inline editor.
 function DetailRow({
   label,
   children,
@@ -53,7 +50,6 @@ export function DetailsSection({ className }: { className?: string }) {
     <CollapsibleSection
       title={tLabels("bookDetails")}
       sectionKey="details"
-      icon={<icon.BookAlt className="size-3.5 stroke-[1.5]" />}
       className={className}
     >
       <div className="grid grid-cols-2 items-start gap-x-4 gap-y-2">
@@ -87,11 +83,15 @@ export function DetailsSection({ className }: { className?: string }) {
         )}
 
         <DetailRow label={c("fields.short.createdAt")}>
-          {formatDate(book.createdAt)}
+          <time dateTime={book.createdAt} title={formatDate(book.createdAt)}>
+            {formatDate(book.createdAt, { timeStyle: undefined })}
+          </time>
         </DetailRow>
 
         <DetailRow label={c("fields.label.updatedAt")}>
-          {formatDate(book.updatedAt)}
+          <time dateTime={book.updatedAt} title={formatDate(book.updatedAt)}>
+            {formatDate(book.updatedAt, { timeStyle: undefined })}
+          </time>
         </DetailRow>
       </div>
     </CollapsibleSection>

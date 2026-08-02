@@ -4,12 +4,9 @@ import { useRouter } from "next/navigation"
 
 import { BookListPage } from "@v3/_/components/books/BookListPage"
 import { ShelfActionsMenu } from "@v3/_/components/shelves/ShelfActionsMenu"
-import { Button } from "@v3/_/components/ui/button"
-import { V3Link } from "@v3/_/components/v3-link"
 import { useVersionBasePath } from "@v3/_/components/version-context"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import * as icon from "@/icons"
 import { useListUserShelvesQuery } from "@/store/api"
 import { extractEmojiIcon } from "@/strings"
 import { type UUID } from "@/uuid"
@@ -35,18 +32,12 @@ export function ShelfPageClient({ shelfUuid }: { shelfUuid: UUID }) {
       ]}
       headerActions={
         <>
-          <Button
-            variant="ghost"
-            size="sm"
-            render={
-              <V3Link href={`/shelves?item=${shelfUuid}`}>
-                <icon.ArrowRight className="mr-1 size-3.5" />
-                {t("goToAllShelves")}
-              </V3Link>
-            }
-          />
           <ShelfActionsMenu
             shelf={shelf}
+            allEntitiesPageHref={{
+              label: t("goToAllShelves"),
+              href: `/shelves?item=${shelfUuid}`,
+            }}
             onDeleted={() => {
               router.push(`${basePath}/shelves`)
             }}

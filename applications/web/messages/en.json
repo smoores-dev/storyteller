@@ -1104,23 +1104,22 @@
       "appearance": {
         "title": "Appearance",
         "sections": {
-          "shell": {
-            "title": "Shell theme",
-            "description": "How the app frame around your library is dressed.",
-            "label": "Shell",
-            "hint": "Paper keeps the whole frame light, like sheets on a desk. Spine gives the navigation rail a dark leather look.",
-            "options": {
-              "paper": "Paper",
-              "spine": "Spine"
-            }
-          },
           "accent": {
-            "title": "Accent color",
-            "description": "Pick the primary color used across the app.",
+            "title": "Accent & shell",
+            "description": "The color the app leans on, and how the frame around your library is dressed.",
             "label": "Accent color",
             "hint": "Applies to buttons, highlights and the sidebar.",
             "useDefault": "Use default color",
-            "custom": "Custom color"
+            "custom": "Custom color",
+            "shell": {
+              "label": "Shell",
+              "hint": "Light or dark sidebar",
+              "lightOnly": "Light mode only",
+              "options": {
+                "paper": "Paper",
+                "spine": "Spine"
+              }
+            }
           },
           "colorfulness": {
             "title": "Colorfulness",

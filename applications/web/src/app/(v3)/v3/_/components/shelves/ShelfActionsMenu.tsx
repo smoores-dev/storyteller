@@ -21,13 +21,20 @@ import { type ShelfWithBooks } from "@/database/shelves"
 import * as icon from "@/icons"
 import { useDeleteUserShelfMutation } from "@/store/api"
 
-// edit / delete dropdown for a single shelf, mirroring EntityActionsMenu.
-// owns its editor dialog and delete confirmation.
+import { V3Link } from "../v3-link"
+
 export function ShelfActionsMenu({
   shelf,
+  allEntitiesPageHref,
   onDeleted,
 }: {
   shelf: ShelfWithBooks | undefined
+  allEntitiesPageHref?:
+    | {
+        label: string
+        href: string
+      }
+    | undefined
   onDeleted?: (() => void) | undefined
 }) {
   const tEntity = useTranslation("EntityActions")
@@ -65,6 +72,16 @@ export function ShelfActionsMenu({
         />
 
         <DropdownMenuContent align="end" className="min-w-40">
+          {allEntitiesPageHref && (
+            <DropdownMenuItem
+              render={
+                <V3Link href={allEntitiesPageHref.href}>
+                  <icon.ArrowRight className="mr-2 h-4 w-4" />
+                  {allEntitiesPageHref.label}
+                </V3Link>
+              }
+            />
+          )}
           <DropdownMenuItem
             onClick={() => {
               setEditorOpen(true)

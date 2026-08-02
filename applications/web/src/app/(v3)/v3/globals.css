@@ -179,7 +179,7 @@
 @custom-variant cover (&:where([data-cover], [data-cover] *));
 
 :root {
-  --background: oklch(0.992 0.0034 67.78);
+  --background: oklch(0.992 0.005 67.78);
   --foreground: oklch(0.215 0.014 52);
   --card: oklch(0.9876 0.0085 67.73);
   --card-foreground: oklch(0.215 0.014 52);
@@ -257,10 +257,10 @@
     var(--foreground)
   );
 
-  --shell-inset-shadow: -1px 0 0 oklch(0.885 0.015 68),
-    -10px 0 22px oklch(0.35 0.04 55 / 0.06);
-  --shell-main-edge: -1px 0 0 oklch(0.895 0.014 68),
-    -8px 0 18px oklch(0.35 0.04 55 / 0.05);
+  --shell-inset-shadow: -1px 0 0 oklch(0.885 0.015 78),
+    -10px 0 22px oklch(0.35 0.04 65 / 0.06);
+  --shell-main-edge: -1px 0 0 oklch(0.895 0.014 78),
+    -8px 0 18px oklch(0.35 0.04 65 / 0.05);
 
   --st-orange-50: oklch(0.966 0.02 58.1);
   --st-orange-100: oklch(0.929 0.034 53.1);
@@ -362,6 +362,36 @@
   font-size: 12px;
   /* letter-spacing: 0.18em; */
   text-transform: uppercase;
+}
+
+/* the spine shell dresses the frame in dark leather: the rail and the gutter
+   around the page turn a rich brown while the page itself stays cream. light
+   mode only, dark mode is already dark on dark either way */
+html:not(.dark)[data-shell="spine"],
+html:not(.dark) [data-shell="spine"] {
+  --sidebar: oklch(0.29 0.043 50);
+  --sidebar-foreground: oklch(0.87 0.022 72);
+  --sidebar-border: oklch(0.38 0.036 50);
+  --sidebar-ring: oklch(0.55 0.05 55);
+  --sidebar-accent: color-mix(
+    in oklab,
+    var(--sidebar-primary) 26%,
+    var(--sidebar)
+  );
+
+  --shell-inset-shadow: inset -1px 0 0 oklch(1 0.02 80 / 0.08),
+    10px 0 24px -14px oklch(0.15 0.025 40 / 0.5);
+  /* --shell-main-edge: none; */
+}
+
+/* slightly lighen up accent color for spine shell */
+html:not(.dark)[data-shell="spine"] [data-slot="sidebar"],
+html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
+  --sidebar-accent-foreground: color-mix(
+    in oklab,
+    var(--sidebar-primary) 80%,
+    oklch(0.97 0.02 80)
+  );
 }
 
 .dark {
@@ -602,9 +632,9 @@
     @apply scroll overflow-x-auto;
   }
 
-  .font-mono:not(#id#id#id) {
+  /* .font-mono:not(#id#id#id) {
     font-family: var(--ibm-plex-sans) !important;
-  }
+  } */
   /* .uppercase:not(#id#id#id) {
     text-transform: none !important;
   } */

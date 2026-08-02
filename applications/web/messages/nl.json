@@ -1062,23 +1062,22 @@
       "appearance": {
         "title": "Weergave",
         "sections": {
-          "shell": {
-            "title": "Interfacethema",
-            "description": "Hoe het kader rond je bibliotheek eruitziet.",
-            "label": "Thema",
-            "hint": "Papier houdt het hele kader licht, als vellen op een bureau. Boekrug geeft de navigatiebalk een donkere leren look.",
-            "options": {
-              "paper": "Papier",
-              "spine": "Boekrug"
-            }
-          },
           "accent": {
-            "title": "Accentkleur",
-            "description": "Kies de primaire kleur die in de hele app wordt gebruikt.",
+            "title": "Accent & kader",
+            "description": "De kleur waar de app op leunt, en hoe het kader rond je bibliotheek eruitziet.",
             "label": "Accentkleur",
             "hint": "Wordt toegepast op knoppen, accenten en de zijbalk.",
             "useDefault": "Standaardkleur gebruiken",
-            "custom": "Aangepaste kleur"
+            "custom": "Aangepaste kleur",
+            "shell": {
+              "label": "Thema",
+              "hint": "Papier houdt het hele kader licht, als vellen op een bureau. Boekrug geeft de navigatiebalk een donkere leren look.",
+              "lightOnly": "Alleen in lichte modus. In donkere modus is het kader hetzelfde.",
+              "options": {
+                "paper": "Papier",
+                "spine": "Boekrug"
+              }
+            }
           },
           "colorfulness": {
             "title": "Kleurrijkheid",

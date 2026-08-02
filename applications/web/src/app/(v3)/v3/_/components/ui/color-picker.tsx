@@ -5,29 +5,11 @@ import { memo, useState } from "react"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
+import { ACCENT_PRESETS } from "@/accent-presets"
 
 import { Button } from "./button"
 import { Input } from "./input"
 import { Popover, PopoverContent, PopoverTrigger } from "./popover"
-
-const PRESET_COLORS = [
-  "#ef4444", // red
-  "#f97316", // orange
-  "#f59e0b", // amber
-  "#eab308", // yellow
-  "#84cc16", // lime
-  "#22c55e", // green
-  "#14b8a6", // teal
-  "#06b6d4", // cyan
-  "#3b82f6", // blue
-  "#6366f1", // indigo
-  "#8b5cf6", // violet
-  "#a855f7", // purple
-  "#d946ef", // fuchsia
-  "#ec4899", // pink
-  "#78716c", // stone
-  "#64748b", // slate
-]
 
 type ColorPickerProps = {
   value: string | null | undefined
@@ -68,7 +50,7 @@ export const ColorPicker = memo(function ColorPicker({
       <PopoverContent className="w-56 p-3" align="start">
         <div className="flex flex-col gap-2">
           <div className="grid grid-cols-8 gap-1">
-            {PRESET_COLORS.map((color) => (
+            {ACCENT_PRESETS.map((color) => (
               <button
                 key={color}
                 type="button"

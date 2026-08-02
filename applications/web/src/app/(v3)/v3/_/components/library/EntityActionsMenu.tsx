@@ -27,22 +27,27 @@ import { isWellKnownStatus } from "@/database/statusKinds"
 import * as icon from "@/icons"
 import { type ShelfFilterNode } from "@/shelves"
 import { type UUID } from "@/uuid"
+import { V3Link } from "../v3-link"
 
-// the edit / pin-as-shelf / delete dropdown for a single library entity
-// (tag, creator, series, collection, status). owns its edit dialog and delete
-// confirmation, so any page header can offer the full set of entity actions.
 export function EntityActionsMenu({
   entityType,
   item,
   toShelfFilter,
   isItemLocked,
   onDeleted,
+  allEntitiesPageHref,
 }: {
   entityType?: LibraryEntityType | undefined
   item: FacetValue | null
   toShelfFilter?: ((itemKey: string) => ShelfFilterNode) | undefined
   isItemLocked?: ((item: FacetValue) => boolean) | undefined
   onDeleted?: (() => void) | undefined
+  allEntitiesPageHref?:
+    | {
+        label: string
+        href: string
+      }
+    | undefined
 }) {
   const t = useTranslation("LibraryPage")
   const tEntity = useTranslation("EntityActions")
@@ -92,6 +97,16 @@ export function EntityActionsMenu({
         />
 
         <DropdownMenuContent align="end" className="min-w-40">
+          {allEntitiesPageHref && (
+            <DropdownMenuItem
+              render={
+                <V3Link href={allEntitiesPageHref.href}>
+                  <icon.ArrowRight className="mr-2 h-4 w-4" />
+                  {allEntitiesPageHref.label}
+                </V3Link>
+              }
+            />
+          )}
           {entityType && !isLocked && (
             <DropdownMenuItem
               onClick={() => {

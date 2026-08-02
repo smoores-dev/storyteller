@@ -46,48 +46,18 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
 
   const shellThemeOptions = ShellThemes.map((key) => ({
     value: key,
-    label: t(`shell.options.${key}`),
+    label: t(`accent.shell.options.${key}`),
   }))
 
   return (
     <div className="space-y-6">
-      <PreferencesSection tab="appearance" section="shell">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("shell.title")}</CardTitle>
-            <CardDescription>{t("shell.description")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Controller
-              name="shellTheme"
-              control={form.control}
-              render={({ field }) => (
-                <Field>
-                  <SettingLabel field="shellTheme">
-                    {t("shell.label")}
-                  </SettingLabel>
-                  <FieldDescription>{t("shell.hint")}</FieldDescription>
-                  <SegmentedControl
-                    value={field.value}
-                    onChange={(value) => {
-                      field.onChange(value)
-                    }}
-                    options={shellThemeOptions}
-                  />
-                </Field>
-              )}
-            />
-          </CardContent>
-        </Card>
-      </PreferencesSection>
-
       <PreferencesSection tab="appearance" section="accent">
         <Card>
           <CardHeader>
             <CardTitle>{t("accent.title")}</CardTitle>
             <CardDescription>{t("accent.description")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <Controller
               name="accentColor"
               control={form.control}
@@ -106,6 +76,29 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
                     customLabel={t("accent.custom")}
                     defaultColor={accentDefault ?? null}
                   />
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="shellTheme"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <SettingLabel field="shellTheme">
+                    {t("accent.shell.label")}
+                  </SettingLabel>
+                  <FieldDescription>{t("accent.shell.hint")}</FieldDescription>
+                  <SegmentedControl
+                    value={field.value}
+                    onChange={(value) => {
+                      field.onChange(value)
+                    }}
+                    options={shellThemeOptions}
+                  />
+                  <FieldDescription>
+                    {t("accent.shell.lightOnly")}
+                  </FieldDescription>
                 </Field>
               )}
             />

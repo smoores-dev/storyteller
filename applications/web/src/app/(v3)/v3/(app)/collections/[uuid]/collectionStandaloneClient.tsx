@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation"
 import { BookListPage } from "@v3/_/components/books/BookListPage"
 import { EntityActionsMenu } from "@v3/_/components/library/EntityActionsMenu"
 import { librarySections } from "@v3/_/components/library/library-sections"
-import { Button } from "@v3/_/components/ui/button"
-import { V3Link } from "@v3/_/components/v3-link"
 import { useVersionBasePath } from "@v3/_/components/version-context"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import * as icon from "@/icons"
 import { useListCollectionsQuery } from "@/store/api"
 import { extractEmojiIcon } from "@/strings"
 import { type UUID } from "@/uuid"
@@ -40,18 +37,12 @@ export function CollectionStandalonePage({
       ]}
       headerActions={
         <>
-          <Button
-            variant="ghost"
-            size="sm"
-            render={
-              <V3Link href={`/collections?item=${collectionUuid}`}>
-                <icon.ArrowRight className="mr-1 size-3.5" />
-                {t("goToAllCollections")}
-              </V3Link>
-            }
-          />
           <EntityActionsMenu
             entityType="collection"
+            allEntitiesPageHref={{
+              label: t("goToAllCollections"),
+              href: `/collections?item=${collectionUuid}`,
+            }}
             item={{ key: collectionUuid, name: collectionName, bookCount: 0 }}
             toShelfFilter={librarySections.collections.toShelfFilter}
             onDeleted={() => {
