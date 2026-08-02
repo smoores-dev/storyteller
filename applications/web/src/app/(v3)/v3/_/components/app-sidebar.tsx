@@ -562,46 +562,48 @@ function SidebarNavGroup({
         )
       }}
     >
-      <SidebarGroup>
+      <SidebarGroup className="py-0">
         <div className="group/group-header relative">
-          {/* <div className="bg-sidebar-ring absolute inset-x-0 top-4 h-1 w-full opacity-100 transition-opacity duration-200 ease-linear group-not-data-[collapsible=icon]:opacity-0" /> */}
           <CollapsibleTrigger
             nativeButton={false}
             render={
-              <SidebarGroupLabel className="w-full cursor-pointer gap-1.5 pr-1 font-sans">
-                <icon.ChevronRight
-                  className={cn(
-                    "text-muted-foreground size-3 shrink-0 stroke-[1.5] transition-transform duration-200",
-                    !isCollapsed && "rotate-90",
-                  )}
-                />
-                <span
-                  className={cn(
-                    // "text-xs",
+              <button className="relative w-full cursor-pointer gap-1.5 font-sans">
+                <div className="bg-sidebar-foreground/50 absolute inset-x-4 top-4 z-10 h-px opacity-100 transition-opacity duration-100 ease-linear group-not-data-[collapsible=icon]:opacity-0" />
+                <SidebarGroupLabel className="w-full gap-1.5 pr-1">
+                  <icon.ChevronRight
+                    className={cn(
+                      "text-muted-foreground size-3 shrink-0 stroke-[1.5] transition-transform duration-200",
+                      !isCollapsed && "rotate-90",
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      // "text-xs",
 
-                    "small-caps",
+                      "small-caps",
 
-                    "tracking-[0.08em]",
-                    // ATKINS
-                    // "font-medium tracking-[0.12em] uppercase opacity-70",
-                    // "opacity-70",
-                  )}
-                >
-                  {group.name}
-                </span>
-                <span
-                  aria-hidden
-                  className={cn(
-                    "bg-muted-foreground/60 h-px min-w-3 flex-1",
-                    totalCount == null && "mr-3",
-                  )}
-                />
-                {totalCount != null && (
-                  <span className="text-sidebar-foreground/60 mr-2 flex h-5 min-w-5 items-center justify-center text-[11px] tabular-nums transition-opacity group-hover/group-header:opacity-0 group-has-data-popup-open/group-header:opacity-0">
-                    {totalCount}
+                      "tracking-[0.08em]",
+                      // ATKINS
+                      // "font-medium tracking-[0.12em] uppercase opacity-70",
+                      // "opacity-70",
+                    )}
+                  >
+                    {group.name}
                   </span>
-                )}
-              </SidebarGroupLabel>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "bg-muted-foreground/60 h-px min-w-3 flex-1",
+                      totalCount == null && "mr-3",
+                    )}
+                  />
+                  {totalCount != null && (
+                    <span className="text-sidebar-foreground/60 mr-2 flex h-5 min-w-5 items-center justify-center text-[11px] tabular-nums transition-opacity group-hover/group-header:opacity-0 group-has-data-popup-open/group-header:opacity-0">
+                      {totalCount}
+                    </span>
+                  )}
+                </SidebarGroupLabel>
+              </button>
             }
           />
 
