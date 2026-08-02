@@ -7,14 +7,17 @@ import {
   deleteImportRules,
   getImportRules,
   getUserImportRules,
-  isConfigImportRule,
   updateImportRule,
 } from "@/database/importRules"
 import {
   validateWatchRulePath,
   watchRuleValidationMessage,
 } from "@/database/importRules.validation"
-import { getSettings, updateSettings } from "@/database/settings"
+import {
+  getConfigImportRules,
+  getSettings,
+  updateSettings,
+} from "@/database/settings"
 import { type ImportRuleInput, type Settings } from "@/database/settingsTypes"
 import { ASSETS_DIR, UPLOADS_DIR } from "@/directories"
 import { type UUID } from "@/uuid"
@@ -100,8 +103,9 @@ export const PUT = withHasPermission("settingsUpdate")(async (request) => {
 
   if (incomingRules) {
     // don't update config rules
+    const configRules = await getConfigImportRules()
     const userRules = incomingRules.filter(
-      (r) => !isConfigImportRule(r.kind, r.path),
+      (r) => !configRules.some((c) => c.kind === r.kind && c.path === r.path),
     )
 
     const validationError = await reconcileImportRules(userRules)

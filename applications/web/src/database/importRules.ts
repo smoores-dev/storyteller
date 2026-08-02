@@ -29,12 +29,12 @@ declare global {
   var _configImportRuleObjects: ImportRuleWithCollections[] | undefined
 }
 
-function getConfigRuleObjects(): ImportRuleWithCollections[] {
+async function getConfigRuleObjects(): Promise<ImportRuleWithCollections[]> {
   if (globalThis._configImportRuleObjects) {
     return globalThis._configImportRuleObjects
   }
 
-  const entries = getConfigImportRules()
+  const entries = await getConfigImportRules()
   const now = new Date().toISOString()
 
   const rules: ImportRuleWithCollections[] = entries.map((entry) => ({
@@ -56,20 +56,10 @@ function getConfigRuleObjects(): ImportRuleWithCollections[] {
   return rules
 }
 
-/**
- * Check if a rule is a config rule.
- */
-export function isConfigImportRule(
-  kind: ImportRuleKind,
-  path: string,
-): boolean {
-  return getConfigRuleObjects().some((r) => r.kind === kind && r.path === path)
-}
-
 export async function getImportRules(
   kind?: ImportRuleKind,
 ): Promise<ImportRuleWithCollections[]> {
-  const configRules = getConfigRuleObjects()
+  const configRules = await getConfigRuleObjects()
   const filteredConfigRules = kind
     ? configRules.filter((r) => r.kind === kind)
     : configRules
@@ -145,7 +135,8 @@ export async function getWatchRules(): Promise<ImportRuleWithCollections[]> {
 }
 
 export async function getIgnorePaths(): Promise<string[]> {
-  const configPaths = getConfigRuleObjects()
+  const configRules = await getConfigRuleObjects()
+  const configPaths = configRules
     .filter((r) => r.kind === "ignore")
     .map((r) => r.path)
 
