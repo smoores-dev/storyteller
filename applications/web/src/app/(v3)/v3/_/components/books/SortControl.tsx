@@ -101,10 +101,7 @@ export function SortControl({
               aria-label={label}
               shortcut={[sortHotKey]}
             >
-              <span className="flex items-center gap-1.5">
-                <FieldIcon field={field} className="h-3.5 w-3.5" />
-                <span className="sr-only">{label}</span>
-              </span>
+              <FieldIcon field={field} className="h-3.5 w-3.5 stroke-[1.5]" />
             </TooltipButton>
           }
         />
@@ -182,9 +179,9 @@ export function SortControl({
         onClick={flip}
       >
         {direction === "asc" ? (
-          <icon.ArrowUp size="sm" />
+          <icon.ArrowUp size="sm" strokeWidth={1.5} />
         ) : (
-          <icon.ArrowDown size="sm" />
+          <icon.ArrowDown size="sm" strokeWidth={1.5} />
         )}
       </TooltipButton>
     </div>

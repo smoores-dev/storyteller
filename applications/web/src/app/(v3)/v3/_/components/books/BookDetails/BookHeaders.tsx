@@ -214,10 +214,6 @@ export function BookPanelHeader({
           book={book}
           open={actionMenuOpen}
           onOpenChange={setActionMenuOpen}
-          showOpenFullPage
-          onEdit={() => {
-            setIsEditing(!isEditing)
-          }}
           onDeleted={onClose}
         />
 

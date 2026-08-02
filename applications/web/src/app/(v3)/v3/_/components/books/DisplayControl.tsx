@@ -116,7 +116,7 @@ export function DisplayControl({
             tooltip={t("displayOptions.tooltip")}
             shortcut={[displayHotKey]}
           >
-            <icon.Columns />
+            <icon.Columns strokeWidth={1.5} />
           </TooltipButton>
         }
       />
