@@ -20,7 +20,6 @@ import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
 import * as icon from "@/icons"
 import { formatBytes } from "@/strings"
 
-
 function dirname(path: string) {
   const segments = path.split("/")
   const dirSegments = segments.slice(0, -1)

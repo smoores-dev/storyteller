@@ -470,15 +470,9 @@ export function FallbackCover({
       }}
     >
       {type === "audiobook" ? (
-        <icon.HeadphonesFilled
-          className="h-12 w-12"
-          style={{ color: fg }}
-        />
+        <icon.HeadphonesFilled className="h-12 w-12" style={{ color: fg }} />
       ) : (
-        <icon.BookFilled
-          className="h-12 w-12"
-          style={{ color: fg }}
-        />
+        <icon.BookFilled className="h-12 w-12" style={{ color: fg }} />
       )}
       <h3
         className="line-clamp-2 max-w-full text-center text-sm font-medium"

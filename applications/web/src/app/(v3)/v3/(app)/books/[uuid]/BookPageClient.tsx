@@ -5,7 +5,6 @@ import { useClaimBookPanel } from "@/app/(v3)/v3/_/components/books/FloatingBook
 import { type BookWithRelations } from "@/database/books"
 import { type UUID } from "@/uuid"
 
-
 export function BookPageClient({
   uuid,
   assetsDir,

@@ -98,7 +98,7 @@ function PageContent({
     <div
       data-slot="page-content"
       className={cn(
-        "scroll-y @container-size @container/page-content flex-1",
+        "scroll-y @container/page-content @container-size flex-1",
         className,
       )}
       {...props}

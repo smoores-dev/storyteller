@@ -207,7 +207,10 @@ export function useBookActionItems({
     setIsRelocating(true)
     try {
       if (books.length === 1 && books[0]) {
-        await relocateToInternal({ uuid: books[0].uuid, mode: relocateMode }).unwrap()
+        await relocateToInternal({
+          uuid: books[0].uuid,
+          mode: relocateMode,
+        }).unwrap()
       } else {
         await bulkRelocateToInternal({ bookUuids, mode: relocateMode }).unwrap()
       }
@@ -222,7 +225,14 @@ export function useBookActionItems({
     } finally {
       setIsRelocating(false)
     }
-  }, [books, bookUuids, relocateMode, relocateToInternal, bulkRelocateToInternal, t])
+  }, [
+    books,
+    bookUuids,
+    relocateMode,
+    relocateToInternal,
+    bulkRelocateToInternal,
+    t,
+  ])
 
   const canMerge = useMemo(() => {
     return (
@@ -631,24 +641,20 @@ export function useBookActionItems({
       <Dialog open={relocateOpen} onOpenChange={setRelocateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {t("relocateToInternalTitle", { count })}
-            </DialogTitle>
+            <DialogTitle>{t("relocateToInternalTitle", { count })}</DialogTitle>
             <DialogDescription>
               {t("relocateToInternalDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2 py-2">
-            <p className="text-sm font-medium">
-              {t("relocateModeLabel")}
-            </p>
+            <p className="text-sm font-medium">{t("relocateModeLabel")}</p>
 
             <RadioGroup
               value={relocateMode}
-              onValueChange={(v) =>
-                { setRelocateMode(v as "copy" | "move" | "hardlink"); }
-              }
+              onValueChange={(v) => {
+                setRelocateMode(v as "copy" | "move" | "hardlink")
+              }}
               className="gap-2"
             >
               <label className="flex items-center gap-2 text-sm">
@@ -671,7 +677,9 @@ export function useBookActionItems({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => { setRelocateOpen(false); }}
+              onClick={() => {
+                setRelocateOpen(false)
+              }}
               disabled={isRelocating}
             >
               {c("actions.cancel")}
