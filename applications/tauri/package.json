@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/tauri",
-  "version": "0.0.0-alpha.14",
+  "version": "0.0.0-alpha.15",
   "private": true,
   "type": "module",
   "scripts": {
