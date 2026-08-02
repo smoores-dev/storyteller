@@ -225,7 +225,6 @@ export function ReviewSection({ className }: { className?: string }) {
   return (
     <CollapsibleSection
       title={t("review.title")}
-      icon={<icon.Star className="size-3.5 stroke-1" />}
       sectionKey="review"
       className={className}
       rightElement={

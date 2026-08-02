@@ -16,11 +16,7 @@ export function TagsSection() {
   const t = useTranslation("BookDetailsPage.tags")
 
   return (
-    <CollapsibleSection
-      title={c("fields.label.tags")}
-      sectionKey="tags"
-      icon={<icon.Tag className="size-3.5 stroke-[1.5]" />}
-    >
+    <CollapsibleSection title={c("fields.label.tags")} sectionKey="tags">
       {isFieldActive("tags") ? (
         <TagEditor />
       ) : (
@@ -47,7 +43,6 @@ export function CollectionsSection() {
     <CollapsibleSection
       title={c("fields.label.collections")}
       sectionKey="collections"
-      icon={<icon.Folder className="size-3.5 stroke-[1.5]" />}
     >
       {isFieldActive("collections") ? (
         <CollectionEditor />

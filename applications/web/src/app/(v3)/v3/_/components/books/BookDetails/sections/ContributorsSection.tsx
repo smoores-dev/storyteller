@@ -35,7 +35,6 @@ export function ContributorsSection({ className }: { className?: string }) {
     <CollapsibleSection
       title={tLabels("otherContributors")}
       sectionKey="contributors"
-      icon={<icon.User className="size-3.5 stroke-[1.5]" />}
       className={className}
     >
       {isEditing ? (
