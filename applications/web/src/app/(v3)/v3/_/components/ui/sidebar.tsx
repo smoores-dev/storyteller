@@ -269,12 +269,14 @@ function Sidebar({
           data-slot="sidebar"
           data-mobile="true"
           className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          side={side}
+          {...props}
           style={
             {
+              ...props.style,
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
           }
-          side={side}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
@@ -622,7 +624,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "ring-sidebar-ring font-sans   hover:text-sidebar-accent-foreground rounded-none rounded-md  hover:bg-sidebar-accent/50 active:text-sidebar-accent-foreground  data-active:text-sidebar-accent-foreground hover:bg-transparent overflow-x-visible! data-open:hover:bg-sidebar-accent/50 data-open:hover:text-sidebar-accent-foreground gap-2 p-2 text-left text-xs transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-has-data-[sidebar=menu-badge]/menu-item:pr-8 focus-visible:ring-2 peer/menu-button flex w-full items-center overflow-hidden outline-hidden group/menu-button disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:shrink-0   scrollbar-none",
+  "ring-sidebar-ring font-sans   hover:text-sidebar-accent-foreground rounded-none rounded-md  hover:bg-sidebar-accent/50 active:text-sidebar-accent-foreground data-active:font-medium data-active:[&_svg:first-child]:stroke-2 data-active:text-sidebar-accent-foreground hover:bg-transparent overflow-x-visible! data-open:hover:bg-sidebar-accent/50 data-open:hover:text-sidebar-accent-foreground gap-2 p-2 text-left text-xs transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-has-data-[sidebar=menu-badge]/menu-item:pr-8 focus-visible:ring-2 peer/menu-button flex w-full items-center overflow-hidden outline-hidden group/menu-button disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:shrink-0   scrollbar-none",
   {
     variants: {
       variant: {
