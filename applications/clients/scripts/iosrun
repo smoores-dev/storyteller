@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+xcrun simctl boot "iPhone 17 Pro Max"
+open -a Simulator
+xcrun simctl install booted ".buildIos/Build/Products/Debug-iphonesimulator/Storyteller.app"
+BUNDLE_ID="${STORYTELLER_BUNDLE_ID:-dev.smoores.Storyteller}"
+xcrun simctl launch booted "${BUNDLE_ID}"

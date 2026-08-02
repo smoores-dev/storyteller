@@ -56,7 +56,7 @@ export function CustomThemeEditor({
 
   return (
     <>
-      <View className="bg-background w-full flex-row items-center px-4 pb-4">
+      <View className="bg-background android:pt-safe w-full flex-row items-center px-4 pb-4">
         <Button
           accessibilityLabel="Close custom theme editor"
           variant="ghost"

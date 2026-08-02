@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+# The v2 app's Icon Composer bundle is the single source of truth for the
+# Storyteller mark. Everything below is derived from it and gitignored, so no
+# copy of the artwork is checked in under applications/clients.
+#
+# Icon Composer covers iOS, macOS, and watchOS on its own; this script produces
+# what it cannot: the tvOS imagestacks, the Android launcher icons, and the
+# in-app sidebar lockup imageset.
+
+SOURCE_ICON_BUNDLE="../mobile/assets/storyteller-ios.icon"
+ICON_BUNDLE="XCodeApps/Storyteller.icon"
+STORYTELLER_LOGO="${ICON_BUNDLE}/Assets/Storyteller_Logo.png"
+TV_ASSETS_DIR="XCodeApps/TVAssets.xcassets/App Icon.brandassets"
+SIDEBAR_IMAGESET="XCodeApps/Assets.xcassets/StorytellerLogo.imageset"
+ANDROID_GENERATED_DIR="AndroidApp/generated"
+
+if [ ! -f "${SOURCE_ICON_BUNDLE}/Assets/Storyteller_Logo.png" ]; then
+    echo "Error: Icon Composer bundle not found at ${SOURCE_ICON_BUNDLE}"
+    exit 1
+fi
+
+if ! command -v magick &> /dev/null; then
+    echo "Error: ImageMagick not found. Install with: brew install imagemagick"
+    exit 1
+fi
+
+echo "Staging Storyteller.icon from ${SOURCE_ICON_BUNDLE}..."
+rm -rf "${ICON_BUNDLE}"
+cp -R "${SOURCE_ICON_BUNDLE}" "${ICON_BUNDLE}"
+
+echo "Generating tvOS, Android, and sidebar artwork from Storyteller.icon..."
+
+SRGB_PROFILE="/System/Library/ColorSync/Profiles/sRGB Profile.icc"
+ICON_WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "$ICON_WORK_DIR"' EXIT
+MAIN_ICON="${ICON_WORK_DIR}/storyteller_app_icon.png"
+mkdir -p "${ANDROID_GENERATED_DIR}"
+
+# Flattened approximation of the Storyteller.icon composition: the logo over
+# the same cream gradient fill.
+magick -size 1024x1024 gradient:'#fbfffe-#fffbee' \
+    \( "${STORYTELLER_LOGO}" -trim +repage -resize 700x700 \) \
+    -gravity center -compose over -composite \
+    -colorspace sRGB -profile "${SRGB_PROFILE}" "${MAIN_ICON}"
+
+magick "${MAIN_ICON}" "${ANDROID_GENERATED_DIR}/app_icon.png"
+magick -size 2048x2048 canvas:none \
+    \( "${STORYTELLER_LOGO}" -trim +repage -resize 1024x1024 \) \
+    -gravity center -compose over -composite "${ANDROID_GENERATED_DIR}/icon_android_foreground.png"
+
+# Sidebar lockup renders at 50pt, so 256px covers @3x with headroom.
+magick "${STORYTELLER_LOGO}" -resize 256x256 "${SIDEBAR_IMAGESET}/Storyteller_Logo.png"
+
+generate_tv_image() {
+    local width=$1
+    local height=$2
+    local output_file=$3
+    local logo_size=$(( height * 700 / 1024 ))
+    magick -size ${width}x${height} gradient:'#fbfffe-#fffbee' \
+        \( "${STORYTELLER_LOGO}" -trim +repage -resize ${logo_size}x${logo_size} \) \
+        -gravity center -compose over -composite \
+        -colorspace sRGB -profile "${SRGB_PROFILE}" -alpha off "${output_file}"
+}
+
+generate_tv_image 400 240 "${TV_ASSETS_DIR}/App Icon.imagestack/Back.imagestacklayer/Content.imageset/back.png"
+generate_tv_image 800 480 "${TV_ASSETS_DIR}/App Icon.imagestack/Back.imagestacklayer/Content.imageset/back@2x.png"
+generate_tv_image 400 240 "${TV_ASSETS_DIR}/App Icon.imagestack/Front.imagestacklayer/Content.imageset/front.png"
+generate_tv_image 800 480 "${TV_ASSETS_DIR}/App Icon.imagestack/Front.imagestacklayer/Content.imageset/front@2x.png"
+generate_tv_image 1280 768 "${TV_ASSETS_DIR}/App Icon - App Store.imagestack/Back.imagestacklayer/Content.imageset/back_store.png"
+generate_tv_image 1280 768 "${TV_ASSETS_DIR}/App Icon - App Store.imagestack/Front.imagestacklayer/Content.imageset/front_store.png"
+
+generate_tv_image 1920 720 "${TV_ASSETS_DIR}/Top Shelf Image.imageset/shelf.png"
+generate_tv_image 3840 1440 "${TV_ASSETS_DIR}/Top Shelf Image.imageset/shelf@2x.png"
+generate_tv_image 2320 720 "${TV_ASSETS_DIR}/Top Shelf Image Wide.imageset/shelf_wide.png"
+generate_tv_image 4640 1440 "${TV_ASSETS_DIR}/Top Shelf Image Wide.imageset/shelf_wide@2x.png"
+
+echo "Generated Storyteller.icon, tvOS, Android, and sidebar artwork"

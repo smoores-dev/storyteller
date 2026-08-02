@@ -20,6 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       "expo-background-task",
+      "expo-status-bar",
       [
         "expo-camera",
         {

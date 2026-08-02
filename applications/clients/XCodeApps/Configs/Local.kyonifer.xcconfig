@@ -1,0 +1,9 @@
+// Working local override for @kyonifer. Copy to Local.xcconfig to use:
+//   cp XCodeApps/Configs/Local.kyonifer.xcconfig XCodeApps/Configs/Local.xcconfig
+
+DEVELOPMENT_TEAM = 9CJ7KG7UKQ
+
+APP_BUNDLE_ID = com.kyonifer.Storyteller
+WATCH_APP_BUNDLE_ID = $(APP_BUNDLE_ID).watchkitapp
+KEYCHAIN_GROUP_SUFFIX = com.kyonifer.storyteller.shared
+KEYCHAIN_SERVICE = com.kyonifer.storyteller.storyteller

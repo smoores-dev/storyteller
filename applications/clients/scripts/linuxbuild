@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+# Mounts and builds use the monorepo root so the applications/clients/LinuxApp package can reach the root manifest.
+cd "${SCRIPT_DIR}/../../.."
+
+usage() {
+    cat <<'EOF'
+Usage: applications/clients/scripts/linuxbuild [--container|--docker] [swift build options]
+
+Options:
+  -h, --help     Show this help.
+  --container    Build in Apple container.
+  --docker       Build in Docker.
+
+Default with no flags builds natively on the current machine.
+
+Environment:
+  STORYTELLER_CONTAINER_CPUS     CPU count for Apple container builds. Default: 4
+  STORYTELLER_CONTAINER_MEMORY   Memory for Apple container builds. Default: 32G
+EOF
+}
+
+IMAGE=storyteller-linux-dev
+CONTAINER_CPUS="${STORYTELLER_CONTAINER_CPUS:-4}"
+CONTAINER_MEMORY="${STORYTELLER_CONTAINER_MEMORY:-32G}"
+
+case "${1:-}" in
+-h | --help)
+    usage
+    exit 0
+    ;;
+--container)
+    shift
+    mkdir -p applications/clients/LinuxApp/.build-container applications/clients/LinuxApp/.cache-container
+    if ! command -v container >/dev/null 2>&1; then
+        echo "Apple container is not installed." >&2
+        exit 1
+    fi
+    if ! container image inspect "${IMAGE}" >/dev/null 2>&1; then
+        container build --tag "${IMAGE}" --file applications/clients/LinuxApp/Containerfile applications/clients/LinuxApp
+    fi
+    exec container run --rm \
+        --cpus "${CONTAINER_CPUS}" \
+        --memory "${CONTAINER_MEMORY}" \
+        --volume "$PWD":/workspace \
+        --volume "$PWD/applications/clients/LinuxApp/.build-container":/build \
+        --volume "$PWD/applications/clients/LinuxApp/.cache-container":/root/.cache \
+        "${IMAGE}" \
+        sh -lc 'cd /workspace && swift build --package-path applications/clients/LinuxApp --scratch-path /build --product StorytellerLinuxApp "$@"' \
+        sh "$@"
+    ;;
+--docker)
+    shift
+    mkdir -p applications/clients/LinuxApp/.build-docker applications/clients/LinuxApp/.cache-docker
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Docker is not installed." >&2
+        exit 1
+    fi
+    if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+        docker build -t "${IMAGE}" -f applications/clients/LinuxApp/Containerfile applications/clients/LinuxApp
+    fi
+    exec docker run --rm \
+        -v "$PWD":/workspace \
+        -v "$PWD/applications/clients/LinuxApp/.build-docker":/build \
+        -v "$PWD/applications/clients/LinuxApp/.cache-docker":/root/.cache \
+        -w /workspace \
+        "${IMAGE}" \
+        swift build --package-path applications/clients/LinuxApp --scratch-path /build --product StorytellerLinuxApp "$@"
+    ;;
+container)
+    echo "Use --container, not container." >&2
+    exit 1
+    ;;
+--host)
+    echo "Use no flag for a native build." >&2
+    exit 1
+    ;;
+*)
+    swift build --package-path applications/clients/LinuxApp --product StorytellerLinuxApp "$@"
+    ;;
+esac

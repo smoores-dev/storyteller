@@ -5,50 +5,11 @@ bump-versions:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
     - apt update && apt install -y --no-install-recommends git-lfs
-    - cd applications/web
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag web-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../docs
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag docs-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../mobile
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag mobile-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../../libraries/fs
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag fs-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../epub
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag epub-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../audiobook
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag audiobook-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../path
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag path-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../ghost-story
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag ghost-story-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../align
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag align-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../okmain
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag okmain-v${PACKAGE_VERSION}
-    - git push --tags
-    - cd ../../applications/tauri
-    - PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
-    - ../../scripts/if-version-change.sh git tag tauri-v${PACKAGE_VERSION}
-    - git push --tags
+    - git remote set-url origin
+      https://ci-push-tag-token:${CI_PUSH_TAG_TOKEN}@gitlab.com/storyteller-platform/storyteller.git
+    - npm i -g corepack
+    - yarn workspaces focus storyteller
+    - yarn node ./scripts/bumpVersions.mts
 
 pages:
   image: node:24-alpine

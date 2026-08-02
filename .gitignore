@@ -35,8 +35,16 @@ local.envrc
 # An option to put data not in the root repo directory
 /dev-data/
 /data/
+/tmp/
 
 /.idea/*
 /.helix/
+<<<<<<< HEAD
 
 logs/
+||||||| e27eba0bd
+=======
+
+/.build/
+/.swiftpm/
+>>>>>>> main

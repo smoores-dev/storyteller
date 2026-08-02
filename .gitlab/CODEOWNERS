@@ -1,0 +1,39 @@
+[BDFL]
+* @smoores
+!/applications/clients/
+!/applications/docs/
+!/applications/mobile/
+!/applications/tauri/
+!/applications/web/
+!/Dockerfile*
+!/libraries/ghost-story/
+!/libraries/okmain/
+!/libraries/opds/
+!/libraries/StorytellerKit/
+!/Package.swift
+!/Package.resolved
+!/config/
+!/yarn.lock
+!/.yarn/versions/*.yml
+
+[Applications]
+/applications/clients/ @smoores @kyonifer
+/applications/docs/ @smoores @@maintainer
+/applications/mobile/ @smoores @trcoffman
+/applications/tauri/ @smoores @tefkah
+/applications/web/ @smoores @tefkah
+/Dockerfile* @smoores @tefkah
+
+[Libraries]
+/libraries/ghost-story/ @smoores @tefkah
+/libraries/okmain/ @smoores @tefkah
+/libraries/opds/ @smoores @tefkah
+/libraries/StorytellerKit/ @smoores @kyonifer
+/Package.swift @smoores @kyonifer
+/Package.resolved @smoores @kyonifer
+
+[Config]
+/config/ @smoores @tefkah
+
+[Dependencies]
+/yarn.lock @smoores @tefkah @trcoffman

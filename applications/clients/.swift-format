@@ -1,0 +1,10 @@
+{
+  "indentation": {
+    "spaces": 4,
+  },
+  "indentConditionalCompilationBlocks": false,
+  "lineBreakBeforeEachArgument": true,
+  "indentSwitchCaseLabels": true,
+  "multilineTrailingCommaBehavior": "alwaysUsed",
+  "reflowMultilineStringLiterals": "always",
+}

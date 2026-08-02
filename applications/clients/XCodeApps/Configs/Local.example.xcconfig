@@ -1,0 +1,9 @@
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+
+// The default APP_BUNDLE_ID (dev.smoores.Storyteller) can only be signed by the
+// official Storyteller team. For local development, override the namespace and
+// keychain details with identifiers registered to your own account:
+APP_BUNDLE_ID = com.example.Storyteller
+WATCH_APP_BUNDLE_ID = $(APP_BUNDLE_ID).watchkitapp
+KEYCHAIN_GROUP_SUFFIX = com.example.storyteller.shared
+KEYCHAIN_SERVICE = com.example.storyteller.storyteller

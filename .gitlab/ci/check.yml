@@ -19,7 +19,8 @@ check-versions:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - git fetch origin main --depth 1
-    - ./scripts/check-versions.sh
+    - yarn workspaces focus storyteller
+    - yarn node ./scripts/checkVersions.mts
 
 check-docs:
   image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main

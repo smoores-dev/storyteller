@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SDK="${ANDROID_HOME:-${HOME}/Library/Android/sdk}"
+ADB="${SDK}/platform-tools/adb"
+DHU="${STORYTELLER_ANDROID_DHU:-${SDK}/extras/google/auto/desktop-head-unit}"
+
+ADB_COMMAND=("${ADB}")
+if [[ -n "${ANDROID_SERIAL:-}" ]]; then
+    ADB_COMMAND+=(-s "${ANDROID_SERIAL}")
+fi
+
+if [[ ! -x "${ADB}" ]]; then
+    echo "Android Debug Bridge not found: ${ADB}" >&2
+    exit 1
+fi
+if [[ ! -x "${DHU}" ]]; then
+    echo "Android Auto Desktop Head Unit not found: ${DHU}" >&2
+    exit 1
+fi
+if ! DEVICE_STATE="$("${ADB_COMMAND[@]}" get-state 2>/dev/null)" || [[ "${DEVICE_STATE}" != "device" ]]; then
+    echo "No single running Android device found. Run scripts/androidrun first." >&2
+    echo "Set ANDROID_SERIAL when more than one device is attached." >&2
+    exit 1
+fi
+if ! "${ADB_COMMAND[@]}" shell pm path com.google.android.projection.gearhead >/dev/null 2>&1; then
+    echo "Android Auto is not installed on the running device." >&2
+    exit 1
+fi
+
+LISTENERS="$("${ADB_COMMAND[@]}" shell ss -ltn 2>/dev/null || true)"
+if [[ "${LISTENERS}" != *":5277"* ]]; then
+    echo "Android Auto's Head Unit Server is not running." >&2
+    echo "In Android Auto settings, open the overflow menu and tap 'Start head unit server', then rerun this script." >&2
+    exit 1
+fi
+
+"${ADB_COMMAND[@]}" forward tcp:5277 tcp:5277 >/dev/null
+echo "Forwarded localhost:5277 to the Android Auto Head Unit Server."
+echo "Launching Android Auto Desktop Head Unit..."
+exec "${DHU}" "$@"

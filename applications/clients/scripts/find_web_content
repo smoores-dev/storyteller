@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+ps aux | grep WebContent | grep -i simulator

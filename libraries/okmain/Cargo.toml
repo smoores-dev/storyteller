@@ -11,7 +11,8 @@ description = "napi-rs bindings for okmain dominant color extraction"
 crate-type = ["cdylib"]
 
 [dependencies]
-okmain = { version = "0.2.0", features = ["image"] }
+# need unstable feature for colors_debug
+okmain = { version = "0.2.0", features = ["image", "unstable"] }
 napi = "3"
 napi-derive = "3"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp"] }

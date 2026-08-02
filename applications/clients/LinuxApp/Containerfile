@@ -1,0 +1,16 @@
+FROM docker.io/library/swift:6.2-noble
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgtk-4-dev \
+    libwebkitgtk-6.0-dev \
+    libmpv-dev \
+    pkg-config \
+    fonts-dejavu-core \
+    adwaita-icon-theme \
+    shared-mime-info \
+    gsettings-desktop-schemas \
+    dbus \
+    dbus-x11 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace

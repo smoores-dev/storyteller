@@ -44,7 +44,7 @@ export default function LogModal() {
   }, [])
 
   return (
-    <View className="h-full">
+    <View className="android:pt-safe h-full">
       <View className="w-full flex-row items-center justify-between px-4 pt-3">
         <Button
           accessibilityLabel="Close logs"

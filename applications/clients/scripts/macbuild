@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+XCODEBUILD_OPTIONS=(build)
+if [[ "${STORYTELLER_DISABLE_CODE_SIGNING:-0}" == "1" ]]; then
+	XCODEBUILD_OPTIONS=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build)
+fi
+
+xcodebuild -project Storyteller.xcodeproj \
+	-scheme "Storyteller (macOS)" \
+	-configuration Debug \
+	-destination 'generic/platform=macOS' \
+	-derivedDataPath .buildMac "${XCODEBUILD_OPTIONS[@]}" | xcbeautify

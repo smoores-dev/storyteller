@@ -1,0 +1,391 @@
+name: Storyteller
+options:
+  minimumXcodeGenVersion: 2.38.0
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+    watchOS: "10.0"
+    tvOS: "17.0"
+configs:
+  Debug: debug
+  Release: release
+packages:
+  Storyteller:
+    path: ../..
+targetTemplates:
+  appBase:
+    type: application
+    productName: "Storyteller"
+    configFiles:
+      Debug: XCodeApps/Configs/Debug.xcconfig
+      Release: XCodeApps/Configs/Release.xcconfig
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: Storyteller
+        CURRENT_PROJECT_VERSION: 1
+        DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
+        GENERATE_INFOPLIST_FILE: NO
+        MARKETING_VERSION: 0.1
+        PRODUCT_NAME: Storyteller
+        SWIFT_VERSION: 6.2
+
+targets:
+  Storyteller (macOS):
+    templates:
+      - appBase
+    platform: macOS
+    supportedDestinations: [macOS]
+    settings:
+      base:
+        MACOSX_DEPLOYMENT_TARGET: 15.0
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderMac.entitlements
+        INFOPLIST_FILE: XCodeApps/Info-macOS.plist
+        PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID)"
+        #INFOPLIST_KEY_CFBundleDisplayName: Storyteller
+        #INFOPLIST_KEY_CFBundleName: Storyteller
+        # Unknown why this redundant definition is needed for XCode to honor the app name
+        #SWIFT_UPCOMING_FEATURE_NONSENDING_NONISOLATING_BY_DEFAULT: YES
+    info:
+      path: XCodeApps/Info-macOS.plist
+      properties:
+        CFBundleName: "Storyteller"
+        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundlePackageType: "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        KEYCHAIN_ACCESS_GROUP: "$(KEYCHAIN_ACCESS_GROUP)"
+        KEYCHAIN_SERVICE: "$(KEYCHAIN_SERVICE)"
+        STORYTELLER_WIDGET_APP_GROUP: "$(MAC_APP_GROUP_ID)"
+        LSApplicationCategoryType: "public.app-category.books"
+        NSLocalNetworkUsageDescription:
+          "Storyteller needs local network access to connect to your Storyteller
+          server."
+        NSBonjourServices:
+          - "_storyteller-lrs._udp"
+        ITSAppUsesNonExemptEncryption: false
+        ATSApplicationFontsPath: "fonts"
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.smoores.Storyteller
+            CFBundleURLSchemes:
+              - storyteller
+    sources:
+      - path: XCodeApps
+        includes:
+          - "**/*.swift"
+      - path: XCodeApps/Assets.xcassets
+        type: assetcatalog
+      - path: XCodeApps/Storyteller.icon
+        buildPhase: resources
+      - path: XCodeApps/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    dependencies:
+      - package: Storyteller
+        product: StorytellerAppleKit
+      - package: Storyteller
+        product: StorytellerContentServer
+      - package: Storyteller
+        product: StorytellerReadaloud
+      - target: "Storyteller Widgets (macOS)"
+        embed: true
+
+  Storyteller (iOS):
+    templates:
+      - appBase
+    platform: iOS
+    settings:
+      base:
+        IPHONEOS_DEPLOYMENT_TARGET: 18.0
+        CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderIos.entitlements
+        CODE_SIGN_STYLE: Automatic
+        INFOPLIST_FILE: XCodeApps/Info-iOS.plist
+        PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID)"
+        #INFOPLIST_KEY_CFBundleDisplayName: Storyteller
+        #INFOPLIST_KEY_CFBundleName: Storyteller
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        #SWIFT_UPCOMING_FEATURE_NONSENDING_NONISOLATING_BY_DEFAULT: YES
+    info:
+      path: XCodeApps/Info-iOS.plist
+      properties:
+        CFBundleName: "Storyteller"
+        CFBundleDisplayName: "Storyteller"
+        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundlePackageType: "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        KEYCHAIN_ACCESS_GROUP: "$(KEYCHAIN_ACCESS_GROUP)"
+        KEYCHAIN_SERVICE: "$(KEYCHAIN_SERVICE)"
+        STORYTELLER_WIDGET_APP_GROUP: "$(APP_GROUP_ID)"
+        LSApplicationCategoryType: "public.app-category.books"
+        LSSupportsOpeningDocumentsInPlace: true
+        UIFileSharingEnabled: true
+        NSLocalNetworkUsageDescription:
+          "Storyteller needs local network access to connect to your Storyteller
+          server."
+        NSBonjourServices:
+          - "_storyteller-lrs._udp"
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.smoores.Storyteller
+            CFBundleURLSchemes:
+              - storyteller
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIBackgroundModes:
+          - audio
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - dev.smoores.storyteller.progresssync.refresh
+        ITSAppUsesNonExemptEncryption: false
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+          UISceneConfigurations:
+            CPTemplateApplicationSceneSessionRoleApplication:
+              - UISceneConfigurationName: CarPlay
+                UISceneDelegateClassName: StorytellerAppleKit.CarPlaySceneDelegate
+    sources:
+      - path: XCodeApps
+        includes:
+          - "**/*.swift"
+      - path: XCodeApps/Assets.xcassets
+        type: assetcatalog
+      - path: XCodeApps/Storyteller.icon
+        buildPhase: resources
+      - path: XCodeApps/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    dependencies:
+      - package: Storyteller
+        product: StorytellerAppleKit
+      - package: Storyteller
+        product: StorytellerReadaloud
+      - target: "Storyteller Widgets (iOS)"
+        embed: true
+      - target: "Storyteller (watchOS)"
+        embed: true
+  Storyteller Widgets (iOS):
+    type: app-extension
+    platform: iOS
+    configFiles:
+      Debug: XCodeApps/Configs/Debug.xcconfig
+      Release: XCodeApps/Configs/Release.xcconfig
+    settings:
+      base:
+        IPHONEOS_DEPLOYMENT_TARGET: 18.0
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderWidgets.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
+        INFOPLIST_FILE: XCodeApps/Info-Widgets-iOS.plist
+        MARKETING_VERSION: 0.1
+        PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID).widgets"
+        PRODUCT_NAME: Storyteller Widgets
+        SWIFT_VERSION: 6.2
+    info:
+      path: XCodeApps/Info-Widgets-iOS.plist
+      properties:
+        CFBundleName: "Storyteller Widgets"
+        CFBundleDisplayName: "Storyteller"
+        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundlePackageType: "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        STORYTELLER_WIDGET_APP_GROUP: "$(APP_GROUP_ID)"
+    sources:
+      - path: StorytellerWidgets/Sources
+    dependencies:
+      - package: Storyteller
+        product: StorytellerAppleWidgets
+  Storyteller Widgets (macOS):
+    type: app-extension
+    platform: macOS
+    configFiles:
+      Debug: XCodeApps/Configs/Debug.xcconfig
+      Release: XCodeApps/Configs/Release.xcconfig
+    settings:
+      base:
+        MACOSX_DEPLOYMENT_TARGET: 15.0
+        APPLICATION_EXTENSION_API_ONLY: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderWidgetsMac.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
+        INFOPLIST_FILE: XCodeApps/Info-Widgets-macOS.plist
+        MARKETING_VERSION: 0.1
+        PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID).widgets"
+        PRODUCT_NAME: Storyteller Widgets
+        SWIFT_VERSION: 6.2
+    info:
+      path: XCodeApps/Info-Widgets-macOS.plist
+      properties:
+        CFBundleName: "Storyteller Widgets"
+        CFBundleDisplayName: "Storyteller"
+        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundlePackageType: "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        STORYTELLER_WIDGET_APP_GROUP: "$(MAC_APP_GROUP_ID)"
+    sources:
+      - path: StorytellerWidgets/Sources
+    dependencies:
+      - package: Storyteller
+        product: StorytellerAppleWidgets
+  Storyteller (watchOS):
+    templates:
+      - appBase
+    platform: watchOS
+    settings:
+      base:
+        WATCHOS_DEPLOYMENT_TARGET: 10.0
+        CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderWatch.entitlements
+        CODE_SIGN_STYLE: Automatic
+        INFOPLIST_FILE: XCodeApps/Info-watchOS.plist
+        PRODUCT_BUNDLE_IDENTIFIER: "$(WATCH_APP_BUNDLE_ID)"
+    info:
+      path: XCodeApps/Info-watchOS.plist
+      properties:
+        CFBundleName: "Storyteller"
+        CFBundleDisplayName: "Storyteller"
+        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundlePackageType: "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        KEYCHAIN_ACCESS_GROUP: "$(KEYCHAIN_ACCESS_GROUP)"
+        KEYCHAIN_SERVICE: "$(KEYCHAIN_SERVICE)"
+        WKApplication: true
+        UIBackgroundModes:
+          - audio
+        WKCompanionAppBundleIdentifier: "$(APP_BUNDLE_ID)"
+    sources:
+      - path: XCodeApps/EntryPointStub.swift
+      - path: XCodeApps/Storyteller.icon
+        buildPhase: resources
+    dependencies:
+      - package: Storyteller
+        product: StorytellerAppleKit
+  Storyteller (tvOS):
+    templates:
+      - appBase
+    platform: tvOS
+    settings:
+      base:
+        TVOS_DEPLOYMENT_TARGET: 17.0
+        CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderTV.entitlements
+        CODE_SIGN_STYLE: Automatic
+        INFOPLIST_FILE: XCodeApps/Info-tvOS.plist
+        PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID)"
+        ASSETCATALOG_COMPILER_APPICON_NAME: "App Icon"
+    info:
+      path: XCodeApps/Info-tvOS.plist
+      properties:
+        CFBundleName: "Storyteller"
+        CFBundleDisplayName: "Storyteller"
+        CFBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundlePackageType: "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        KEYCHAIN_ACCESS_GROUP: "$(KEYCHAIN_ACCESS_GROUP)"
+        KEYCHAIN_SERVICE: "$(KEYCHAIN_SERVICE)"
+        LSApplicationCategoryType: "public.app-category.books"
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Automatic
+        UIBackgroundModes:
+          - audio
+        ITSAppUsesNonExemptEncryption: false
+    sources:
+      - path: XCodeApps/EntryPointStub.swift
+      - path: XCodeApps/TVAssets.xcassets
+        type: assetcatalog
+    dependencies:
+      - package: Storyteller
+        product: StorytellerAppleKit
+schemes:
+  "Storyteller (macOS)":
+    shared: true
+    build:
+      targets:
+        "Storyteller (macOS)": all
+        "Storyteller Widgets (macOS)": all
+    run:
+      config: Debug
+      executable: "Storyteller (macOS)"
+    test:
+      config: Debug
+      targets: []
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  "Storyteller (iOS)":
+    shared: true
+    build:
+      targets:
+        "Storyteller (iOS)": all
+        "Storyteller Widgets (iOS)": all
+        "Storyteller (watchOS)": all
+    run:
+      config: Debug
+      executable: "Storyteller (iOS)"
+    test:
+      config: Debug
+      targets: []
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  "Storyteller (watchOS)":
+    shared: true
+    build:
+      targets:
+        "Storyteller (watchOS)": all
+    run:
+      config: Debug
+      executable: "Storyteller (watchOS)"
+    test:
+      config: Debug
+      targets: []
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  "Storyteller (tvOS)":
+    shared: true
+    build:
+      targets:
+        "Storyteller (tvOS)": all
+    run:
+      config: Debug
+      executable: "Storyteller (tvOS)"
+    test:
+      config: Debug
+      targets: []
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

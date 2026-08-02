@@ -91,6 +91,8 @@ export function getWhisperBaseDir(): string {
 }
 
 export function getInstallDir(variant?: BuildVariant): string {
+  if (process.env["WHISPER_CPP_PATH"] !== undefined)
+    return process.env["WHISPER_CPP_PATH"]
   const baseDir = getWhisperBaseDir()
   const resolved = variant ?? resolveVariant()
   return path.join(baseDir, resolved)
@@ -243,15 +245,17 @@ function getLinuxCpuCapabilities(): CpuCapabilities {
 export function applyLegacyCpuFallback(variant: BuildVariant): BuildVariant {
   if (process.platform !== "linux") return variant
   if (process.arch !== "x64") return variant
+  if (variant.endsWith("-legacy")) return variant
 
   const caps = getLinuxCpuCapabilities()
   if (caps.avx2 && caps.fma) return variant
 
+  const legacyVariant = `${variant}-legacy` as BuildVariant
   console.warn(
     `CPU lacks ${[!caps.avx2 && "AVX2", !caps.fma && "FMA"].filter(Boolean).join(" and ")} support. ` +
-      `Falling back to ${variant}-legacy variant.`,
+      `Falling back to ${legacyVariant} variant.`,
   )
-  return `${variant}-legacy` as BuildVariant
+  return legacyVariant
 }
 
 /**
