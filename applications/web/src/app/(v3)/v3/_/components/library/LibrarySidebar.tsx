@@ -219,8 +219,8 @@ export function LibrarySidebar({
   )
 
   return (
-    <div className="relative h-full">
-      <div className="scroll-y relative flex h-full flex-col">
+    <div className="relative flex h-full min-h-0 flex-col">
+      <div className="scroll-y relative flex min-h-0 flex-1 flex-col">
         {/* DONT MAKE FLEX CONTAINER THE SEARCH INPUT WILL NOT BE THE CORRECT HEIGHT IT WILL HAUNT YOU */}
         <div className="bg-background sticky top-0 z-10 shrink-0 flex-col px-3">
           <div className="flex h-(--header-height) items-center justify-between">
@@ -333,15 +333,6 @@ export function LibrarySidebar({
           isItemLocked={isItemLocked}
         />
 
-        <div className="bg-background sticky bottom-0 z-10 mt-auto shrink-0 px-3 pt-2 pb-2">
-          <SearchInput
-            placeholder={t("search")}
-            value={search}
-            onChange={onSearchChange}
-            className="h-8! shrink-0"
-          />
-        </div>
-
         <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpen}>
           <DropdownMenuContent
             align="end"
@@ -417,6 +408,15 @@ export function LibrarySidebar({
             onOpenChange={setCreateDialogOpen}
           />
         )}
+      </div>
+
+      <div className="bg-background z-10 shrink-0 px-3 pt-2 pb-2">
+        <SearchInput
+          placeholder={t("search")}
+          value={search}
+          onChange={onSearchChange}
+          className="h-8! shrink-0"
+        />
       </div>
 
       {entityType && entityType !== "status" && (
@@ -575,7 +575,7 @@ function SidebarItemList({
   return (
     <SidebarMenu
       ref={containerRef}
-      className="relative gap-0 px-2 py-1"
+      className="relative shrink-0 gap-0 px-2 py-1"
       style={{ height: virtualizer.getTotalSize() }}
     >
       {virtualItems.map((virtualItem) => {
