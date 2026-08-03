@@ -19,6 +19,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@v3/_/components/ui/radio-group"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
+import { AddToShelfList } from "@/app/(v3)/v3/_/components/books/ActionMenu/AddToShelfList"
 import { useProcessingRun } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
 import { CreateCollectionDialog } from "@/app/(v3)/v3/_/components/books/CreateCollectionDialog"
 import { CreateSeriesDialog } from "@/app/(v3)/v3/_/components/books/CreateSeriesDialog"
@@ -28,6 +29,7 @@ import {
   RelationEditList,
   membershipFromBooks,
 } from "@/app/(v3)/v3/_/components/books/relation-picker/RelationEditList"
+import { ShelfEditor } from "@/app/(v3)/v3/_/components/shelves/ShelfEditor"
 import {
   type ActivationModifiers,
   FilterableMenuItem,
@@ -156,6 +158,8 @@ export function useBookActionItems({
   const [createSeriesName, setCreateSeriesName] = useState("")
   const [createTagOpen, setCreateTagOpen] = useState(false)
   const [createTagName, setCreateTagName] = useState("")
+  const [createShelfOpen, setCreateShelfOpen] = useState(false)
+  const [createShelfName, setCreateShelfName] = useState("")
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const epubBooks = books.filter((b) => b.ebook)
@@ -379,6 +383,23 @@ export function useBookActionItems({
               },
               createLabel: () => t.plain("newCollection"),
             })}
+          />
+        ),
+      })
+
+      entries.push({
+        key: "shelves",
+        label: t.plain("addToShelf"),
+        icon: <icon.BookmarkPlus className="size-4" />,
+        submenuSearchable: true,
+        submenuSearchPlaceholder: t.plain("search"),
+        submenu: () => (
+          <AddToShelfList
+            bookUuids={bookUuids}
+            onCreate={(name) => {
+              setCreateShelfName(name)
+              setCreateShelfOpen(true)
+            }}
           />
         ),
       })
@@ -701,6 +722,16 @@ export function useBookActionItems({
           onOpenChange={setCreateCollectionOpen}
           initialName={createCollectionName}
           onCreated={handleCollectionCreated}
+        />
+      )}
+
+      {mode === "bulk" && (
+        <ShelfEditor
+          open={createShelfOpen}
+          onOpenChange={setCreateShelfOpen}
+          shelf={null}
+          initialName={createShelfName}
+          initialBooks={bookUuids}
         />
       )}
 
