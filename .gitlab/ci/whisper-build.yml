@@ -11,8 +11,8 @@
     WHISPER_UPSTREAM_VERSION: "1.8.3"
     WHISPER_VERSION: "1.8.3-st.2"
     CMAKE_FLAGS: ""
-    CFLAGS: "-mno-avx512f"
-    CXXFLAGS: "-mno-avx512f"
+    CFLAGS: "-mno-avx512f -mno-avx512vl"
+    CXXFLAGS: "-mno-avx512f -mno-avx512vl"
     LEGACY: ""
   rules:
     - when: manual
@@ -27,8 +27,8 @@
     - cd whisper-src
     - |
       if [ "$LEGACY" = "1" ]; then
-        export CFLAGS="-mno-avx512f -mno-avx2 -mno-fma -mno-bmi2"
-        export CXXFLAGS="-mno-avx512f -mno-avx2 -mno-fma -mno-bmi2"
+        export CFLAGS="-mno-avx512f -mno-avx512vl -mno-avx2 -mno-fma -mno-bmi2"
+        export CXXFLAGS="-mno-avx512f -mno-avx512vl -mno-avx2 -mno-fma -mno-bmi2"
       fi
     - cmake -B build -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS} -DGGML_NATIVE=OFF
       -DGGML_AVX512=OFF ${LEGACY:+-DGGML_AVX2=OFF -DGGML_FMA=OFF
