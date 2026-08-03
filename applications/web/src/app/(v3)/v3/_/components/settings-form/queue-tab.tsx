@@ -98,7 +98,7 @@ export function QueueTab() {
       <div className="flex flex-col gap-3">
         {list.length > 0 && (
           <div>
-            <h2 className="font-serif text-lg font-medium">{t("title")}</h2>
+            <h2 className="font-heading text-lg font-medium">{t("title")}</h2>
             <p className="text-muted-foreground text-sm">
               {t("subtitle", { count: list.length })}
             </p>
@@ -182,7 +182,7 @@ function FinishedJobs() {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="font-serif text-lg font-medium">{t("finishedTitle")}</h2>
+      <h2 className="text-lg font-medium">{t("finishedTitle")}</h2>
 
       <div className="flex items-center gap-2">
         <Input

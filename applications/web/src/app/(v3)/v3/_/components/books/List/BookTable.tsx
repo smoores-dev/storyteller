@@ -1079,7 +1079,7 @@ function BookRow({
         >
           <span
             className={cn(
-              "group-hover:text-tinted-strong font-seriff text-sm",
+              "group-hover:text-tinted-strong text-sm",
               book.uuid === selectedBookUuid && "text-tinted-strong",
             )}
           >

@@ -462,8 +462,7 @@ export const BookCard = memo(function BookCard({
                   <h3
                     className={cn(
                       "group-hover:text-tinted-strong line-clamp-2",
-                      // "font-sans font-medium",
-                      "font-seriff font-medium",
+                      "font-heading font-medium",
                       "leading-tight",
                     )}
                   >

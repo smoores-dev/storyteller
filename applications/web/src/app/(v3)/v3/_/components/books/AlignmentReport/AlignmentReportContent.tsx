@@ -263,7 +263,7 @@ function ReportHeader({
             {!embedded && (
               <h1
                 className={cn(
-                  "font-serif font-medium",
+                  "font-heading font-medium",
                   compact ? "text-base" : "text-xl",
                 )}
               >
@@ -512,12 +512,12 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
             TILE_TONE[tone],
           )}
         >
-          <span className="font-serif text-5xl leading-none font-medium">
+          <span className="font-heading text-5xl leading-none font-medium">
             {summary.grade}
           </span>
         </div>
         <div className="min-w-[16rem] flex-1">
-          <h2 className="font-serif text-2xl leading-tight font-normal">
+          <h2 className="text-2xl leading-tight font-normal">
             {verdict.lead}
             {/* <em className="text-primary italic">{verdict.em}</em>. */}
           </h2>
@@ -535,7 +535,7 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
           <div key={m.key} className="bg-card p-3.5">
             <div
               className={cn(
-                "font-serif text-xl leading-none font-medium tabular-nums",
+                "text-xl leading-none font-medium tabular-nums",
                 MARK_TONE[m.tone],
               )}
             >
@@ -589,7 +589,7 @@ const getColumns = (
       accessorFn: (r) => r.label,
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span className="font-serif font-medium">{row.original.label}</span>
+          <span className="font-heading font-medium">{row.original.label}</span>
           {row.original.title && (
             <span className="text-muted-foreground truncate font-mono text-[10px]">
               {shortHref(row.original.href)}
@@ -796,7 +796,7 @@ function ChapterTable({
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="font-serif text-lg font-normal">
+        <h2 className="text-lg font-normal">
           {tCommon("Nouns.chapter", { count: data.length })}{" "}
           <span className="text-muted-foreground font-mono text-xs">
             ({tCommon("outOf", { count: data.length, total: chapters.length })})
@@ -954,7 +954,7 @@ function MatchCard({
         <span className="text-muted-foreground flex items-center gap-1 text-[9px] font-medium tracking-wider uppercase">
           <icon.Book className="size-3" /> {tNouns("ebook", { count: 1 })}
         </span>
-        <p className="mt-1 font-serif text-sm leading-relaxed">
+        <p className="mt-1 text-sm leading-relaxed">
           {ebook.prevSentence && (
             <span className="text-muted-foreground/60">
               {ebook.prevSentence}{" "}
@@ -1069,7 +1069,7 @@ function UnalignedChapters({
   if (view.unalignedChapters.length === 0) return null
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="font-serif text-lg font-normal">
+      <h2 className="text-lg font-normal">
         {t("unalignedChapters")}{" "}
         <span className="text-muted-foreground font-mono text-xs">
           ({view.unalignedChapters.length})
@@ -1129,7 +1129,7 @@ function UnalignedAudio({
   if (view.unalignedAudioFiles.length === 0) return null
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-poor dark:text-poor flex items-center gap-1.5 font-serif text-lg font-normal">
+      <h2 className="text-poor dark:text-poor flex items-center gap-1.5 text-lg font-normal">
         <icon.Headphones className="size-4" />
         {t("unalignedAudio.title")}{" "}
         <span className="text-muted-foreground font-mono text-xs">

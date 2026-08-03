@@ -324,7 +324,7 @@ export function ReviewSection({ className }: { className?: string }) {
                 setDraft(e.target.value)
               }}
               placeholder={t("review.reviewPlaceholder")}
-              className="min-h-24 resize-y font-serif"
+              className="min-h-24 resize-y"
               autoFocus
             />
             <div className="flex gap-2">
@@ -351,9 +351,7 @@ export function ReviewSection({ className }: { className?: string }) {
           </Field>
         ) : (
           currentReview && (
-            <p className="font-serif text-sm whitespace-pre-wrap">
-              {currentReview}
-            </p>
+            <p className="text-sm whitespace-pre-wrap">{currentReview}</p>
           )
         )}
       </div>

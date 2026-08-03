@@ -229,7 +229,7 @@ export function HeroSection({
                   <V3Link
                     href={`/series?item=${s.uuid}&book=${book.uuid}`}
                     key={s.uuid}
-                    className="hover:text-tinted-strong text-tinted font-serif font-medium hover:underline"
+                    className="hover:text-tinted-strong text-tinted font-medium hover:underline"
                   >
                     {s.name.trim()} {s.position ? `#${s.position}` : ""}
                     {idx < book.series.length - 1 && <span>,</span>}
@@ -265,12 +265,12 @@ export function HeroSection({
                     canEdit && "cursor-pointer",
                   )}
                 >
-                  <span className="font-serif">{t("writtenBy")}</span>
+                  <span>{t("writtenBy")}</span>
 
                   {visibleAuthors.map((author, idx) => (
                     <V3Link
                       key={author.uuid}
-                      className="hover:text-tinted-strong text-tinted font-serif font-medium hover:underline"
+                      className="hover:text-tinted-strong text-tinted font-medium hover:underline"
                       href={`/authors?item=${author.uuid}&book=${book.uuid}`}
                     >
                       {author.name.trim()}

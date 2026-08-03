@@ -45,7 +45,7 @@ export function BookEditBar() {
       show={show}
       className="absolute bottom-0 left-1/2 z-50 -translate-x-1/2 gap-2 border-l-0 pr-1.5 pl-3"
     >
-      <span className="font-serif text-sm whitespace-nowrap">
+      <span className="text-sm whitespace-nowrap">
         {isSaving ? c("states.saving") : t("editing")}
       </span>
 

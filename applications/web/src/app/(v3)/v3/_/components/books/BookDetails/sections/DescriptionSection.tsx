@@ -60,7 +60,7 @@ function CollapsibleDescription({
           if (canEdit) onEdit()
         }}
         className={cn(
-          "prose dark:prose-invert text-foreground max-w-none overflow-hidden font-serif text-sm leading-snug transition-[max-height] duration-300",
+          "prose dark:prose-invert text-foreground max-w-none overflow-hidden text-sm leading-snug transition-[max-height] duration-300",
           mustExpandFirst && "cursor-pointer",
           editableNow &&
             "hover:bg-input/10 -mx-1.5 cursor-text rounded-md px-1.5",
@@ -130,7 +130,7 @@ export function DescriptionSection({ className }: { className?: string }) {
                   placeholder={t("noDescriptionAvailable")}
                   aria-invalid={fieldState.invalid || undefined}
                   className={cn(
-                    "field-sizing-content w-full resize-y font-serif text-xs outline-none",
+                    "field-sizing-content w-full resize-y text-xs outline-none",
                     inlineMode
                       ? // the chrome card supplies the frame; the textarea is bare
                         "aria-invalid:text-destructive bg-transparent px-0 py-0.5"
