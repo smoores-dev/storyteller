@@ -574,8 +574,6 @@ END;
 
 CREATE INDEX idx_job_status_position ON job (status, position);
 
-CREATE INDEX idx_job_book ON job (book_uuid);
-
 CREATE UNIQUE INDEX idx_sidebar_group_user_kind ON sidebar_group (user_id, kind)
 WHERE
   kind IS NOT NULL;
@@ -986,11 +984,21 @@ WHERE
 
 END;
 
+CREATE TRIGGER changelog_update_trigger AFTER
+UPDATE ON changelog FOR EACH ROW BEGIN
+UPDATE changelog
+SET
+  updated_at = datetime ('now')
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
 CREATE TABLE alignment_report (
   uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
   job_uuid TEXT REFERENCES job (uuid) ON DELETE SET NULL,
   book_uuid TEXT REFERENCES book (uuid) ON DELETE CASCADE,
-  report TEXT NOT NULL,
+  report TEXT,
   grade TEXT,
   score REAL,
   chapters INTEGER,
@@ -1004,14 +1012,10 @@ CREATE TABLE alignment_report (
 
 CREATE INDEX idx_alignment_report_job ON alignment_report (job_uuid);
 
-CREATE INDEX idx_alignment_report_book ON alignment_report (book_uuid);
+CREATE INDEX idx_alignment_report_book_created ON alignment_report (book_uuid, created_at DESC);
 
-CREATE TRIGGER changelog_update_trigger AFTER
-UPDATE ON changelog FOR EACH ROW BEGIN
-UPDATE changelog
-SET
-  updated_at = datetime ('now')
-WHERE
-  uuid = OLD.uuid;
+CREATE INDEX idx_identifier_book ON identifier (book_uuid);
 
-END;
+CREATE INDEX idx_job_book_created ON job (book_uuid, created_at DESC);
+
+CREATE INDEX idx_book_created_at ON book (created_at DESC);

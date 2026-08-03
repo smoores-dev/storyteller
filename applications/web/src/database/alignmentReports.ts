@@ -144,7 +144,8 @@ export type AlignmentReport = Omit<
   uuid: UUID
   jobUuid: UUID | null
   bookUuid: UUID | null
-  report: Report
+  // null on old reports
+  report: Report | null
 }
 
 function parseAlignmentReport(row: AlignmentReportRow): AlignmentReport {
@@ -158,22 +159,36 @@ export async function createAlignmentReport(input: {
 }): Promise<AlignmentReport> {
   const s = summarizeReport(input.report)
 
-  const row = await db
-    .insertInto("alignmentReport")
-    .values({
-      jobUuid: input.jobUuid,
-      bookUuid: input.bookUuid,
-      report: JSON.stringify(input.report),
-      grade: s.grade,
-      score: s.score,
-      chapters: s.chapters,
-      missingSentences: s.missingSentences,
-      mutedChapters: s.mutedChapters,
-      failedChapters: s.failedChapters,
-      unalignedAudio: s.unalignedAudio,
-    })
-    .returningAll()
-    .executeTakeFirstOrThrow()
+  const row = await db.transaction().execute(async (tr) => {
+    const inserted = await tr
+      .insertInto("alignmentReport")
+      .values({
+        jobUuid: input.jobUuid,
+        bookUuid: input.bookUuid,
+        report: JSON.stringify(input.report),
+        grade: s.grade,
+        score: s.score,
+        chapters: s.chapters,
+        missingSentences: s.missingSentences,
+        mutedChapters: s.mutedChapters,
+        failedChapters: s.failedChapters,
+        unalignedAudio: s.unalignedAudio,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow()
+
+    // clear report col of old reports
+    if (input.bookUuid) {
+      await tr
+        .updateTable("alignmentReport")
+        .set({ report: null })
+        .where("bookUuid", "=", input.bookUuid)
+        .where("uuid", "!=", inserted.uuid)
+        .execute()
+    }
+
+    return inserted
+  })
 
   return parseAlignmentReport(row)
 }
@@ -187,6 +202,8 @@ export async function getAlignmentReportForJob(
     .selectAll()
     .where("jobUuid", "=", jobUuid)
     .orderBy("createdAt", "desc")
+    // deterministic when two runs land in the same second
+    .orderBy(sql`rowid`, "desc")
     .limit(1)
     .executeTakeFirst()
 
@@ -201,6 +218,8 @@ export async function getAlignmentReportForBook(
     .selectAll()
     .where("bookUuid", "=", bookUuid)
     .orderBy("createdAt", "desc")
+    // deterministic when two runs land in the same second
+    .orderBy(sql`rowid`, "desc")
     .limit(1)
     .executeTakeFirst()
 
@@ -216,6 +235,12 @@ export async function updateAlignmentOverrides(
     .selectAll()
     .where("uuid", "=", reportUuid)
     .executeTakeFirstOrThrow()
+
+  if (!existing.report) {
+    throw new Error(
+      `Alignment report ${reportUuid} has been superseded and its payload pruned; overrides can only be set on the latest report`,
+    )
+  }
 
   const s = summarizeReport(existing.report, overrides)
 

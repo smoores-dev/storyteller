@@ -38,9 +38,9 @@ export interface AlignmentReport {
   mutedChapters: number | null
   overrides: string | null
   report: ColumnType<
-    import("@storyteller-platform/align").Report,
-    string,
-    string
+    import("@storyteller-platform/align").Report | null,
+    string | null,
+    string | null
   >
   score: number | null
   unalignedAudio: number | null

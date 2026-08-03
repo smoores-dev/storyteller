@@ -31,7 +31,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
   const bookUuid = bookId as UUID
 
   const report = await getAlignmentReportForBook(bookUuid)
-  if (!report) {
+  if (!report?.report) {
     return Response.json(
       { message: `No alignment report for book ${bookId}` },
       { status: 404 },

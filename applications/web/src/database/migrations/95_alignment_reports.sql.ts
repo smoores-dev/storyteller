@@ -132,6 +132,7 @@ async function backfillSummaries() {
 
   let count = 0
   for (const row of rows) {
+    if (row.report == null) continue
     const report: Report =
       typeof row.report === "string"
         ? (JSON.parse(row.report) as Report)
@@ -170,6 +171,7 @@ async function enrichUnalignedAudio() {
 
   let enriched = 0
   for (const row of rows) {
+    if (row.report == null) continue
     const report: Partial<Report> =
       typeof row.report === "string"
         ? (JSON.parse(row.report) as Report)
