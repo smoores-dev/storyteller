@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic"
  * @desc Returns the list of setting keys that are managed via a
  *   declarative configuration file and cannot be changed through the API.
  */
-export const GET = withHasPermission("settingsUpdate")(() =>
-  NextResponse.json([...getConfigLockedKeys()]),
-)
+export const GET = withHasPermission("settingsUpdate")(async () => {
+  const keys = await getConfigLockedKeys()
+  return NextResponse.json([...keys])
+})

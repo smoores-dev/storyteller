@@ -23,12 +23,12 @@ import { useDeleteEntity } from "@v3/_/hooks/use-delete-entity"
 import { usePinShelf } from "@v3/_/hooks/use-pin-shelf"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
+import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
 import { isWellKnownStatus } from "@/database/statusKinds"
 import * as icon from "@/icons"
 import { type ShelfFilterNode } from "@/shelves"
 import { type UUID } from "@/uuid"
 
-import { V3Link } from "../v3-link"
 
 export function EntityActionsMenu({
   entityType,

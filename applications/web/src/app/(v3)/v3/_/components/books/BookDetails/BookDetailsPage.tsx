@@ -194,7 +194,7 @@ function BookDetailsContentInner({
         <motion.div
           layoutScroll
           data-book-container
-          className="scroll-y @container/book @container-size h-full flex-1"
+          className="scroll-y @container-size @container/book h-full flex-1"
         >
           {/* this is some fucked up structure but its necessary in order to get full width background
         for full page view

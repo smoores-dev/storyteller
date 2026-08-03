@@ -17,11 +17,11 @@ import {
 } from "@v3/_/components/ui/dropdown-menu"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
+import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
 import { type ShelfWithBooks } from "@/database/shelves"
 import * as icon from "@/icons"
 import { useDeleteUserShelfMutation } from "@/store/api"
 
-import { V3Link } from "../v3-link"
 
 export function ShelfActionsMenu({
   shelf,

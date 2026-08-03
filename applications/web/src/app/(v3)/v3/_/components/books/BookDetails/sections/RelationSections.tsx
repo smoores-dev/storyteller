@@ -6,7 +6,6 @@ import { TagEditor } from "@v3/_/components/books/TagEditor"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import { useBookForm } from "@/app/(v3)/v3/_/components/books/BookDetails/BookFormProvider"
-import * as icon from "@/icons"
 
 import { CollapsibleSection } from "./CollapsibleSection"
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-useless-default-assignment */
 import { type FrameManager } from "@readium/navigator"
 import {
   createContext,

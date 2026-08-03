@@ -14,6 +14,7 @@ import { VersionProvider } from "@v3/_/components/version-context"
 import StoreProvider from "@/components/StoreProvider"
 import { AudioProviderRedux } from "@/components/reader/AudioProviderRedux"
 import { PiPProvider } from "@/components/reader/PipProvider"
+import { getSetting } from "@/database/settings"
 import { env } from "@/env"
 import {
   type UISettings,
@@ -21,8 +22,6 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 
 import "./globals.css"
-
-import { getSetting } from "@/database/settings"
 
 const literata = localFont({
   src: [
