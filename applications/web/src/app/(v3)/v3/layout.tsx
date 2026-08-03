@@ -21,6 +21,7 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 
 import "./globals.css"
+
 import { getSetting } from "@/database/settings"
 
 const literata = localFont({
@@ -64,11 +65,15 @@ const ibmPlexSans = localFont({
 })
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("Layout")
+  const [t, libraryName] = await Promise.all([
+    getTranslations("Layout"),
+    getSetting("libraryName"),
+  ])
+  const title = libraryName || t("title")
   return {
     title: {
-      template: `%s • ${t("title")}`,
-      default: t("title"),
+      template: `%s • ${title}`,
+      default: title,
     },
     description: t("description"),
   }
