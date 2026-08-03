@@ -16,7 +16,23 @@ import { UPLOADS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-const inProgressAudioUploads = new Set<string>()
+const inProgressBatchScans = new Set<string>()
+
+function parseCount(raw: string | null | undefined): number | null {
+  return raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : null
+}
+
+function isEpubFilename(name: string) {
+  return extname(name).toLowerCase() === ".epub"
+}
+
+// what the scanner can actually import out of the upload folder
+async function importableEntries(dir: string): Promise<string[]> {
+  const entries = await readdir(dir).catch(() => [] as string[])
+  return entries.filter(
+    (name) => isEpubFilename(name) || isAudioFile(name) || isZipArchive(name),
+  )
+}
 
 /* the default naming func found in @tus/server */
 const defaultNamingFunc = () => randomBytes(16).toString("hex")
@@ -85,63 +101,78 @@ const server = new Server({
       const newUploadPath = join(uuidDir, filename)
       await move(uploadPath, newUploadPath)
 
-      const candidates: Candidate[] = []
-      if (isEpub) {
-        candidates.push({
-          folder: uuidDir,
-          format: "ebook",
-          filepath: newUploadPath,
-          titleHint: basename(filename, extname(filename)),
-          bookUuidHint: bookUuid,
-          ...(collectionUuid && { collections: [collectionUuid] }),
-          importMode: "move",
-          // override other possible strategy, doesn't make sense to skip or backup-and-convert
-          epub2ImportStrategy: "replace",
-        })
+      // one book is uploaded as one batch (an epub, a pile of mp3s, or both),
+      // and it has to be imported exactly once, after the last file lands.
+      // scanning per file imported whatever part of the folder had arrived so
+      // far, which is how half-imported audiobooks happened.
+      const totalFiles = parseCount(upload.metadata["totalFiles"]) ?? 1
+      let claimedScan = false
+
+      if (totalFiles > 1) {
+        if (inProgressBatchScans.has(bookUuid)) return {}
+
+        const arrived = (await importableEntries(uuidDir)).length
+        if (arrived < totalFiles) return {}
+
+        // no await between the check and the claim, so exactly one sibling wins
+        if (inProgressBatchScans.has(bookUuid)) return {}
+        inProgressBatchScans.add(bookUuid)
+        claimedScan = true
       }
 
-      if (isAudiobook) {
-        // wait until all audio files have landed in uuidDir before scanning
-        const totalAudioFilesMeta = upload.metadata["totalAudioFiles"]
-        const totalAudioFiles =
-          totalAudioFilesMeta && /^\d+$/.test(totalAudioFilesMeta)
-            ? parseInt(totalAudioFilesMeta, 10)
-            : null
+      try {
+        const entries = await importableEntries(uuidDir)
+        const audioEntries = entries.filter(
+          (name) => isAudioFile(name) || isZipArchive(name),
+        )
+        const epubEntries = entries.filter(isEpubFilename)
 
-        if (totalAudioFiles !== null && totalAudioFiles > 1) {
-          const entries = await readdir(uuidDir).catch(() => [] as string[])
-          const arrived = entries.filter(
-            (name) => isAudioFile(name) || isZipArchive(name),
-          ).length
-          const stillInFlight = inProgressAudioUploads.has(bookUuid)
-          if (arrived < totalAudioFiles || stillInFlight) {
-            // siblings still in flight; the last one to arrive will scan.
-            return {}
-          }
-          inProgressAudioUploads.add(bookUuid)
-          const stack = new DisposableStack()
-          stack.defer(() => {
-            inProgressAudioUploads.delete(bookUuid)
-          })
-        }
+        const collections = collectionUuid
+          ? { collections: [collectionUuid] }
+          : {}
 
-        candidates.push({
-          folder: uuidDir,
-          format: "audiobook",
-          filepath: uuidDir,
-          titleHint: basename(filename, extname(filename)),
-          bookUuidHint: bookUuid,
-          ...(collectionUuid && { collections: [collectionUuid] }),
-          importMode: "move",
+        const candidates: Candidate[] = [
+          ...epubEntries.map<Candidate>((name) => ({
+            folder: uuidDir,
+            format: "ebook",
+            filepath: join(uuidDir, name),
+            titleHint: basename(name, extname(name)),
+            bookUuidHint: bookUuid,
+            ...collections,
+            importMode: "move",
+            // override other possible strategy, doesn't make sense to skip or backup-and-convert
+            epub2ImportStrategy: "replace",
+          })),
+          // the whole folder is one audiobook, however many tracks it holds
+          ...(audioEntries.length
+            ? [
+                {
+                  folder: uuidDir,
+                  format: "audiobook" as const,
+                  filepath: uuidDir,
+                  titleHint: basename(
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    audioEntries[0]!,
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    extname(audioEntries[0]!),
+                  ),
+                  bookUuidHint: bookUuid,
+                  ...collections,
+                  importMode: "move" as const,
+                },
+              ]
+            : []),
+        ]
+
+        await scan({
+          source: "upload",
+          request: { kind: "candidates", candidates },
+          options: { force: true },
+          signal: new AbortController().signal,
         })
+      } finally {
+        if (claimedScan) inProgressBatchScans.delete(bookUuid)
       }
-
-      await scan({
-        source: "upload",
-        request: { kind: "candidates", candidates },
-        options: { force: true },
-        signal: new AbortController().signal,
-      })
 
       return {}
     } catch (e) {

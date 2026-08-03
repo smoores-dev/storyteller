@@ -161,34 +161,33 @@ const server = new Server({
         return {}
       }
 
+      // siblings may finish at the same time; whoever sees the complete batch
+      // first claims the import. the claim is taken with no await between the
+      // check and the add, so exactly one sibling can win it.
+      if (inProgressBatches.has(batchId)) return {}
+
       const entries = await readdir(batchUuidDir)
       const arrived = entries.filter(
         (name) => isAudioFile(name) || isZipArchive(name),
       ).length
-      // its possible multiple uploads arrive at the same time, so we need to wait for the mutex to be available
-      const inProgress = inProgressBatches.has(batchId)
 
-      if (arrived < total || inProgress) {
-        // siblings still in flight; the last one to arrive will scan.
-        return {}
-      }
+      if (arrived < total) return {}
+      if (inProgressBatches.has(batchId)) return {}
 
       inProgressBatches.add(batchId)
-      const stack = new DisposableStack()
-      stack.defer(() => {
+
+      try {
+        await replaceBookAssetFromUpload({
+          book,
+          uploadPath: batchUuidDir,
+          metadataFieldOverrides,
+          format: format.data as ScanFormat,
+          relativePath,
+          signal: new AbortController().signal,
+        })
+      } finally {
         inProgressBatches.delete(batchId)
-      })
-
-      // we've received all the files, scan the audiobook
-
-      await replaceBookAssetFromUpload({
-        book,
-        uploadPath: batchUuidDir,
-        metadataFieldOverrides,
-        format: format.data as ScanFormat,
-        relativePath,
-        signal: new AbortController().signal,
-      })
+      }
 
       return {}
     } catch (e) {

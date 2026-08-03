@@ -3,6 +3,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { usePathname } from "next/navigation"
 import { useCallback, useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
 
 import { useOptionalBookListPageState } from "@v3/_/components/books/BookListPage"
 import { SearchInput } from "@v3/_/components/books/SearchInput"
@@ -48,7 +49,9 @@ import {
 import { useItemSelection } from "@v3/_/hooks/use-item-selection"
 import { useBookInSidePanel } from "@v3/_/hooks/use-open-book"
 import { usePinShelf } from "@v3/_/hooks/use-pin-shelf"
+import { useSidebarVisibility } from "@v3/_/hooks/use-sidebar-visibility"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
+import { apiErrorMessage } from "@v3/_/lib/api-error"
 import { cn } from "@v3/_/lib/utils"
 
 import { isWellKnownStatus } from "@/database/statusKinds"
@@ -57,6 +60,11 @@ import { type ShelfFilterNode } from "@/shelves"
 import { type UUID } from "@/uuid"
 
 const SIDEBAR_ROW_HEIGHT = 32
+
+// row affordances appear on hover, or on keyboard focus, but never on plain
+// focus (a clicked row keeps focus and would leave them stuck on screen)
+const REVEAL_ON_HOVER =
+  "md:opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100 data-open:opacity-100 data-popup-open:opacity-100"
 
 const HOVER_PREFETCH_DELAY_MS = 50
 
@@ -210,6 +218,40 @@ export function LibrarySidebar({
   const { pinShelf } = usePinShelf()
   const canPin = !!toShelfFilter
 
+  // collections and shelves double as app-sidebar rows, so each facet row shows
+  // whether it is currently hidden there and can toggle it
+  const sidebarItemKind =
+    entityType === "collection"
+      ? ("collection" as const)
+      : entityType === "shelf"
+        ? ("shelf" as const)
+        : null
+  const {
+    isHidden,
+    setHidden,
+    isSaving: isTogglingVisibility,
+  } = useSidebarVisibility()
+
+  const isHiddenInSidebar = useCallback(
+    (item: FacetValue) =>
+      !!sidebarItemKind && item.key !== NONE_KEY && isHidden(item.key),
+    [sidebarItemKind, isHidden],
+  )
+
+  const handleToggleSidebarVisibility = useCallback(
+    (item: FacetValue) => {
+      if (!sidebarItemKind) return
+      void setHidden(sidebarItemKind, item.key, !isHidden(item.key)).catch(
+        (error: unknown) => {
+          toast.error(tEntity("sidebarVisibilityFailed"), {
+            description: apiErrorMessage(error),
+          })
+        },
+      )
+    },
+    [sidebarItemKind, setHidden, isHidden, tEntity],
+  )
+
   const handlePinItem = useCallback(
     (item: FacetValue) => {
       if (!toShelfFilter) return
@@ -331,6 +373,9 @@ export function LibrarySidebar({
           onOpenItemMenu={handleOpenItemMenu}
           menuTarget={menuTarget}
           isItemLocked={isItemLocked}
+          isItemHiddenInSidebar={
+            sidebarItemKind ? isHiddenInSidebar : undefined
+          }
         />
 
         <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpen}>
@@ -361,6 +406,28 @@ export function LibrarySidebar({
               >
                 <icon.BookmarkPlus className="mr-2 h-4 w-4" />
                 {t("pinAsShelf")}
+              </DropdownMenuItem>
+            )}
+
+            {sidebarItemKind && menuTarget && menuTarget.key !== NONE_KEY && (
+              <DropdownMenuItem
+                disabled={isTogglingVisibility}
+                onClick={() => {
+                  handleToggleSidebarVisibility(menuTarget)
+                  setMenuOpen(false)
+                }}
+              >
+                {isHiddenInSidebar(menuTarget) ? (
+                  <>
+                    <icon.Eye className="mr-2 h-4 w-4" />
+                    {tEntity("showInSidebar")}
+                  </>
+                ) : (
+                  <>
+                    <icon.EyeOff className="mr-2 h-4 w-4" />
+                    {tEntity("hideFromSidebar")}
+                  </>
+                )}
               </DropdownMenuItem>
             )}
 
@@ -446,6 +513,7 @@ function SidebarItemList({
   onOpenItemMenu,
   menuTarget,
   isItemLocked,
+  isItemHiddenInSidebar,
 }: {
   items: FacetValue[]
   selectedKey: string | null
@@ -458,6 +526,7 @@ function SidebarItemList({
   onOpenItemMenu?: (item: FacetValue, anchor: HTMLElement) => void
   menuTarget?: FacetValue | null
   isItemLocked?: ((item: FacetValue) => boolean) | undefined
+  isItemHiddenInSidebar?: ((item: FacetValue) => boolean) | undefined
 }) {
   const isSelecting = itemSelection?.isSelecting ?? false
   const canSelect = !!entityType && !!itemSelection
@@ -594,6 +663,7 @@ function SidebarItemList({
             isChecked={itemSelection?.isSelected(item.key) ?? false}
             isSelecting={isSelecting}
             isLocked={isItemLocked?.(item) ?? false}
+            isHiddenInSidebar={isItemHiddenInSidebar?.(item) ?? false}
             canSelect={canSelect && item.key !== NONE_KEY}
             hasRowActions={hasRowActions && item.key !== NONE_KEY}
             onItemClick={handleRowClick}
@@ -617,6 +687,7 @@ function SidebarRow({
   isChecked,
   isSelecting,
   isLocked,
+  isHiddenInSidebar,
   canSelect,
   hasRowActions,
   isMenuTarget,
@@ -633,6 +704,7 @@ function SidebarRow({
   isChecked: boolean
   isSelecting: boolean
   isLocked: boolean
+  isHiddenInSidebar: boolean
   canSelect: boolean
   hasRowActions: boolean
   isMenuTarget: boolean
@@ -646,8 +718,14 @@ function SidebarRow({
   const pathname = usePathname()
   const firstPathSegment = pathname.split("/")[1]
   const { selectedBookUuid } = useBookInSidePanel()
+  const tEntity = useTranslation("EntityActions")
+  const hiddenLabel = tEntity.plain("hiddenFromSidebar")
 
   if (!firstPathSegment) return null
+
+  // the count sits where the row actions and the checkbox appear, so it steps
+  // aside whenever either of them can show
+  const revealsOnHover = hasRowActions || canSelect
 
   return (
     <SidebarMenuItem className="absolute top-0 left-0 w-full" style={style}>
@@ -699,13 +777,19 @@ function SidebarRow({
             {(isLocked || (item.kind && isWellKnownStatus(item.kind))) && (
               <icon.Lock className="text-muted-foreground/60 size-3 shrink-0" />
             )}
+
+            {isHiddenInSidebar && (
+              <icon.EyeOff
+                className="text-muted-foreground/60 size-3 shrink-0"
+                aria-label={hiddenLabel}
+              />
+            )}
           </V3Link>
         }
       />
 
       {hasRowActions && !isSelecting && (
         <SidebarMenuAction
-          showOnHover
           onClick={(e) => {
             onOpenMenu(item, e.currentTarget)
           }}
@@ -713,6 +797,9 @@ function SidebarRow({
             "text-muted-foreground hover:text-foreground",
             // sits left of the checkbox when rows are selectable
             canSelect && "right-9",
+            // deliberately not focus-within: clicking a row leaves it focused,
+            // which would pin the actions open over the count
+            REVEAL_ON_HOVER,
             isMenuTarget && "opacity-100",
           )}
         >
@@ -731,7 +818,7 @@ function SidebarRow({
           isSelecting={isSelecting}
           className={cn(
             "absolute top-1.5 right-3",
-            "group-focus-within/menu-item:block! group-focus-within/menu-item:opacity-100! group-hover/menu-item:block! group-hover/menu-item:opacity-100!",
+            "group-hover/menu-item:block! group-hover/menu-item:opacity-100! group-has-[:focus-visible]/menu-item:block! group-has-[:focus-visible]/menu-item:opacity-100!",
             !isSelecting && "hidden",
           )}
         />
@@ -741,7 +828,9 @@ function SidebarRow({
         className={cn(
           "text-muted-foreground peer-hover/menu-button:text-muted-foreground peer-data-active/menu-button:text-facet-accent-foreground/80 rounded-full px-1.5 text-xs",
           isSelecting && "hidden",
-          hasRowActions && !isSelecting && "group-hover/menu-item:hidden",
+          revealsOnHover &&
+            !isSelecting &&
+            "group-hover/menu-item:hidden group-has-[:focus-visible]/menu-item:hidden",
         )}
       >
         {item.bookCount}

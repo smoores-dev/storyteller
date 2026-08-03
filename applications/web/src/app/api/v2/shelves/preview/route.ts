@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
 import { withHasPermission } from "@/auth/auth"
 import { booksQuery } from "@/database/books"
@@ -34,7 +35,7 @@ export const POST = withHasPermission("bookList")(async (request) => {
   const validated = shelfFilterSchema.safeParse(filter)
   if (!validated.success) {
     return NextResponse.json(
-      { error: validated.error.message },
+      { message: `Invalid filter: ${z.prettifyError(validated.error)}` },
       { status: 400 },
     )
   }

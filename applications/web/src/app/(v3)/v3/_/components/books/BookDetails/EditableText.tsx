@@ -6,6 +6,8 @@ import { Controller, type FieldPath, useWatch } from "react-hook-form"
 import { Field, FieldError } from "@v3/_/components/ui/field"
 import { cn } from "@v3/_/lib/utils"
 
+import { toDateInputValue } from "@/dates"
+
 import { InlineFieldChrome } from "./InlineEditChrome"
 import { type BookFormValues } from "./schema"
 import { useInlineField } from "./use-inline-field"
@@ -47,7 +49,9 @@ export function EditableText({
   const { form, canEdit, active, inlineMode, size, beginEdit } =
     useInlineField(name)
 
-  const value = useWatch({ control: form.control, name }) as string | null
+  const rawValue = useWatch({ control: form.control, name }) as unknown
+  const value =
+    rawValue instanceof Date ? rawValue.toISOString() : (rawValue as string)
 
   const originalRef = useRef<HTMLDivElement | null>(null)
 
@@ -93,9 +97,16 @@ export function EditableText({
       name={name}
       control={form.control}
       render={({ field, fieldState }) => {
+        // a date input can only display "yyyy-MM-dd"; a stored timestamp would
+        // render as blank and silently wipe the value on the next edit
+        const fieldValue =
+          type === "date"
+            ? toDateInputValue(field.value)
+            : (field.value as string | null) ?? ""
+
         const commonProps = {
           id: name,
-          value: (field.value as string | null) ?? "",
+          value: fieldValue,
           name: field.name,
           placeholder,
           "aria-invalid": fieldState.invalid || undefined,

@@ -237,7 +237,7 @@ export function SidebarEntityActions({
         show={count > 0}
         className="absolute bottom-12 gap-1 border-x-0 border-b-0 p-1 pl-2.5"
       >
-        <span className="flex-1 font-serif text-sm whitespace-nowrap">
+        <span className="flex-1 text-sm whitespace-nowrap">
           {c.rich("selectedCount", {
             count,
             em: (chunks) => <em>{chunks}</em>,

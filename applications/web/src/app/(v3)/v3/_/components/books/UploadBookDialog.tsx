@@ -4,6 +4,7 @@ import { useRef } from "react"
 import { v4 as uuidv4 } from "uuid"
 
 import { UploadDialog } from "@v3/_/components/files/UploadDialog"
+import { isAudioLikeFile, isEpubFile } from "@v3/_/components/files/file-kinds"
 import { type UppyFileType } from "@v3/_/components/files/useTusUpload"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
@@ -45,12 +46,16 @@ export function UploadBookDialog({
   const c = useCommon()
   const bookUuidRef = useRef<UUID>(uuidv4() as UUID)
 
-  function buildMeta(file: UppyFileType) {
+  function buildMeta(file: UppyFileType, batch: UppyFileType[]) {
     file.meta["bookUuid"] = bookUuidRef.current
 
     if (collection) {
       file.meta["collection"] = collection
     }
+
+    // without this the server imports the upload folder as soon as the first
+    // file lands, taking whatever part of the batch happens to be there
+    file.meta["totalFiles"] = String(batch.length)
   }
 
   async function handleFinalize() {
@@ -85,9 +90,23 @@ export function UploadBookDialog({
       restrictions={{
         allowedFileTypes: ios ? null : allowedFileTypes,
       }}
-      accept=".epub,audio/*,video/mp4,.m4b,.m4a,.zip"
-      multiple
-      hint={t("uploadBookHint")}
+      zones={[
+        {
+          key: "ebook",
+          label: t.plain("zoneEbook"),
+          hint: t.plain("zoneEbookHint"),
+          accept: ".epub",
+          filter: isEpubFile,
+        },
+        {
+          key: "audio",
+          label: t.plain("zoneAudio"),
+          hint: t.plain("zoneAudioHint"),
+          accept: "audio/*,video/mp4,.m4b,.m4a,.zip",
+          multiple: true,
+          filter: isAudioLikeFile,
+        },
+      ]}
       buildMeta={buildMeta}
       onFinalize={handleFinalize}
       onComplete={handleComplete}
@@ -101,7 +120,6 @@ export function UploadBookDialog({
         cancel: c.plain("actions.cancel"),
         upload: c.plain("actions.upload"),
         done: c.plain("actions.done"),
-        uploadAnother: t("uploadAnother"),
       }}
     />
   )

@@ -136,9 +136,7 @@
     }
   },
   "CollectionsPage": {
-    "title": "Collections",
-    "hiddenInSidebar": "{count, number} of {total, number} collections are hidden from your sidebar",
-    "showAllInSidebar": "Show them"
+    "title": "Collections"
   },
   "NotFoundPage": {
     "title": "Page not found",
@@ -375,7 +373,11 @@
     "editIdentifierDescription": "Update the identifier name and link template.",
     "identifierName": "Identifier name",
     "identifierUrlTemplate": "Link template",
-    "identifierUrlTemplateHint": "Used to link identifier values to a website. '{value}' is replaced with the identifier's value."
+    "identifierUrlTemplateHint": "Used to link identifier values to a website. '{value}' is replaced with the identifier's value.",
+    "hiddenFromSidebar": "Hidden from sidebar",
+    "showInSidebar": "Show in sidebar",
+    "hideFromSidebar": "Hide from sidebar",
+    "sidebarVisibilityFailed": "Could not change sidebar visibility"
   },
   "SelectionToolbar": {
     "selectAll": "Select all",
@@ -1696,7 +1698,6 @@
   "UploadDialog": {
     "metadataBehavior": "Metadata behavior",
     "failedFiles": "{count, number} file(s) failed to upload, process the rest anyway",
-    "uploadAnother": "Upload another",
     "uploadFormat": "Upload {format}",
     "uploadReplacementFormat": "Upload replacement {format}",
     "audioDescription": "Upload audio files from your device.",
@@ -1708,7 +1709,11 @@
     "ebookHint": ".epub file",
     "uploadBookTitle": "Upload book",
     "uploadBookDescription": "Upload an EPUB file or audio files to create a new book.",
-    "uploadBookHint": "EPUB, M4B, MP3, or other audio files"
+    "uploadBookHint": "EPUB, M4B, MP3, or other audio files",
+    "zoneEbook": "Drop an EPUB here or click to browse",
+    "zoneEbookHint": "One EPUB file",
+    "zoneAudio": "Drop audio files here or click to browse",
+    "zoneAudioHint": "M4B, MP3 or other audio files, or a zip archive"
   },
   "ImportFromServerDialog": {
     "importMode": "Import mode",

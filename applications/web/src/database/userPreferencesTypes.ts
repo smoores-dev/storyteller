@@ -8,9 +8,6 @@ export type ViewKind = (typeof ViewKinds)[number]
 export const ColorModes = ["full", "minimal"] as const
 export type ColorMode = (typeof ColorModes)[number]
 
-// how the app frame is dressed: "paper" keeps the whole shell one light
-// material stepped darker toward the rail, "spine" gives the nav rail a dark
-// leather look. dark mode renders the same either way.
 export const ShellThemes = ["paper", "spine"] as const
 export type ShellTheme = (typeof ShellThemes)[number]
 
@@ -44,7 +41,7 @@ export const UserPreferencesSchema = z.object({
   locale: z.string().nullable(),
   defaultView: z.enum(ViewKinds),
   colorMode: z.enum(ColorModes),
-  shellTheme: z.enum(ShellThemes),
+  shellTheme: z.enum(ShellThemes).default("paper"),
   gridCoverDisplay: z.enum(GridCoverDisplays),
   gridCardSize: z.enum(GridCardSizes),
   doubleCoverAlignment: z.enum(DoubleCoverAlignments),

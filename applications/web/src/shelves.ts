@@ -485,7 +485,7 @@ export const shelfFilterNodeSchema: z.ZodType<ShelfFilterNode> = z.lazy(() =>
   ]),
 )
 
-export const shelfFilterRootSchema = z.discriminatedUnion("type", [
+export const shelfFilterBlockSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("and"),
     children: z.array(shelfFilterNodeSchema),
@@ -500,7 +500,20 @@ export const shelfFilterRootSchema = z.discriminatedUnion("type", [
   }),
 ])
 
-export const shelfFilterSchema = z.union([shelfFilterRootSchema])
+// a stored filter is always a block, but callers may hand us a bare condition
+// (pinning a facet as a shelf); wrap it instead of rejecting it.
+export const shelfFilterRootSchema = z.preprocess((val) => {
+  if (
+    val &&
+    typeof val === "object" &&
+    (val as { type?: unknown }).type === "condition"
+  ) {
+    return { type: "and", children: [val] }
+  }
+  return val
+}, shelfFilterBlockSchema)
+
+export const shelfFilterSchema = shelfFilterRootSchema
 
 export const OPERATOR_LABELS: Record<ShelfFilterOperator, string> = {
   is: "is",

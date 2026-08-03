@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { Button } from "@v3/_/components/ui/button"
@@ -28,6 +29,7 @@ import {
 import { Textarea } from "@v3/_/components/ui/textarea"
 import { useDebounce } from "@v3/_/hooks/use-debounce"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
+import { apiErrorMessage } from "@v3/_/lib/api-error"
 import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
@@ -197,7 +199,9 @@ export function ShelfEditor({
 
       onOpenChange(false)
     } catch (error) {
-      console.error("Failed to save shelf:", error)
+      toast.error("Failed to save shelf", {
+        description: apiErrorMessage(error),
+      })
     }
   })
 

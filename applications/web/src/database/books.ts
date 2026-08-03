@@ -23,6 +23,7 @@ import {
   getMetadataFromEpub,
 } from "@/assets/metadata"
 import { getDefaultSuffix, getSafeFilepathSegment } from "@/assets/paths"
+import { toIsoDateString } from "@/dates"
 import { ASSETS_DIR } from "@/directories"
 import { BookEvents, type BookUpdatePayload } from "@/events"
 import { type DistinctFacetField } from "@/fields"
@@ -1073,7 +1074,14 @@ export async function getBooks(
     query = query.orderBy(sql`book.created_at`, "desc")
   }
 
-  return await query.execute()
+  const rows = await query.execute()
+
+  // the date plugin hands back a Date for iso-shaped columns, but the type (and
+  // every consumer, since the api round-trips through json) says string
+  return rows.map((row) => ({
+    ...row,
+    publicationDate: toIsoDateString(row.publicationDate),
+  }))
 }
 
 export type BookWithRelations = NonNullable<Awaited<ReturnType<typeof getBook>>>
@@ -1742,6 +1750,16 @@ export async function updateBook(
     bookUuid: uuid,
     payload: book,
   })
+  // these are books that are being merged into the target book
+  if (relations.books) {
+    for (const bookUuid of relations.books) {
+      BookEvents.emit("message", {
+        type: "bookDeleted",
+        bookUuid: bookUuid,
+        payload: undefined,
+      })
+    }
+  }
 
   return book
 }

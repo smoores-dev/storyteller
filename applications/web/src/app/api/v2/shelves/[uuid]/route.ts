@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -48,14 +49,16 @@ export const PUT = withHasPermission<Params>("bookList")(async (
     color?: string | null
   }
 
+  let filter: ShelfFilter | null = null
   if (body.filter) {
     const validated = shelfFilterSchema.safeParse(body.filter)
     if (!validated.success) {
       return NextResponse.json(
-        { error: validated.error.message },
+        { message: `Invalid filter: ${z.prettifyError(validated.error)}` },
         { status: 400 },
       )
     }
+    filter = validated.data
   }
 
   const shelf = await updateShelf(
@@ -67,7 +70,7 @@ export const PUT = withHasPermission<Params>("bookList")(async (
         ? { description: body.description }
         : {}),
       ...(body.filter !== undefined
-        ? { filter: body.filter ? JSON.stringify(body.filter) : null }
+        ? { filter: filter ? JSON.stringify(filter) : null }
         : {}),
       ...(body.orderBy !== undefined
         ? { orderBy: (body.orderBy ?? undefined) as ShelfOrderBy | undefined }

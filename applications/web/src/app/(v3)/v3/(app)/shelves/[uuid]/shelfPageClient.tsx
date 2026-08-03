@@ -7,6 +7,7 @@ import { ShelfActionsMenu } from "@v3/_/components/shelves/ShelfActionsMenu"
 import { useVersionBasePath } from "@v3/_/components/version-context"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
+import { type SortDirection, type SortField } from "@/sort"
 import { useListUserShelvesQuery } from "@/store/api"
 import { extractEmojiIcon } from "@/strings"
 import { type UUID } from "@/uuid"
@@ -23,9 +24,25 @@ export function ShelfPageClient({ shelfUuid }: { shelfUuid: UUID }) {
     ? extractEmojiIcon(shelf.name).label || shelf.name
     : "Shelf"
 
+  // the shelf's saved ordering is the page's default sort. manual "position"
+  // isn't part of the sort vocabulary, so it rides along on the source instead.
+  const shelfOrderBy = shelf?.orderBy ?? null
+  const shelfDirection: SortDirection =
+    shelf?.orderDirection === "asc" ? "asc" : "desc"
+  const defaultSort =
+    shelfOrderBy && shelfOrderBy !== "position"
+      ? { field: shelfOrderBy as SortField, direction: shelfDirection }
+      : undefined
+
   return (
     <BookListPage
-      source={{ kind: "shelf", shelfUuid }}
+      source={{
+        kind: "shelf",
+        shelfUuid,
+        orderBy: shelfOrderBy,
+        orderDirection: shelf?.orderDirection ?? null,
+      }}
+      {...(defaultSort ? { defaultSort } : {})}
       breadcrumbs={[
         { label: t("breadcrumb"), url: "/shelves" },
         { label: shelfName },

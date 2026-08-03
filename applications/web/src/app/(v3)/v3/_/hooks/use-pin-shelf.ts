@@ -3,6 +3,8 @@
 import { useCallback } from "react"
 import { toast } from "sonner"
 
+import { apiErrorMessage } from "@v3/_/lib/api-error"
+
 import { type ShelfFilterNode } from "@/shelves"
 import { useCreateUserShelfMutation } from "@/store/api"
 
@@ -27,8 +29,10 @@ export function usePinShelf() {
         }).unwrap()
 
         toast.success(`Pinned "${name}" to the sidebar`)
-      } catch {
-        toast.error("Failed to pin shelf")
+      } catch (error) {
+        toast.error("Failed to pin shelf", {
+          description: apiErrorMessage(error),
+        })
       }
     },
     [createShelf],

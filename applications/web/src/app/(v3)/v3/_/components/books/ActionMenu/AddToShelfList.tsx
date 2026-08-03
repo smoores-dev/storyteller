@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { toast } from "sonner"
 
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
+import { apiErrorMessage } from "@v3/_/lib/api-error"
 
 import { RelationSelectList } from "@/app/(v3)/v3/_/components/books/relation-picker/RelationSelectList"
 import { type ShelfWithBooks } from "@/database/shelves"
@@ -70,7 +71,7 @@ export function AddToShelfList({
       toast.success(t.plain("addedToShelf", { count: bookUuids.length, name }))
     } catch (error) {
       toast.error(t.plain("addToShelfFailed"), {
-        description: (error as Error).message,
+        description: apiErrorMessage(error),
       })
     }
   }

@@ -57,7 +57,7 @@ import { useIsMobile } from "@/app/(v3)/v3/_/hooks/use-mobile"
 import { usePanelWidthDriver } from "@/app/(v3)/v3/_/hooks/use-panel-width-driver"
 import { cn } from "@/cn"
 import { type BookWithRelations } from "@/database/books"
-import { type ShelfFilterNode } from "@/shelves"
+import { type ShelfFilterNode, type ShelfOrderBy } from "@/shelves"
 import {
   type BookSort,
   type DisplayField,
@@ -110,7 +110,15 @@ export type BookListSource =
       collectionContext?: UUID
       limit?: number
     }
-  | { kind: "shelf"; shelfUuid: UUID }
+  | {
+      kind: "shelf"
+      shelfUuid: UUID
+      // the shelf's own stored ordering, applied until the user picks a sort.
+      // "position" (manual order) has no equivalent in the sort vocabulary, so
+      // it has to travel as the shelf-level orderBy instead of a sortField.
+      orderBy?: ShelfOrderBy | null
+      orderDirection?: "asc" | "desc" | null
+    }
 
 export type BookListBreadcrumbs = (
   | { label: string; url?: string }
@@ -271,16 +279,25 @@ function BookListPageInner({
     { skip: skip || !isBooksSource },
   )
 
-  const shelfQueryArg = useMemo<ListShelfBooksQueryArg>(
-    () => ({
-      shelfUuid: source.kind === "shelf" ? source.shelfUuid : "",
-      sortField: sort.field,
-      orderDirection: sort.direction,
+  const shelfQueryArg = useMemo<ListShelfBooksQueryArg>(() => {
+    const shelf = source.kind === "shelf" ? source : null
+    // a manually ordered shelf has no sortField equivalent, so it stays on the
+    // shelf-level orderBy until the user picks a sort of their own
+    const usesManualOrder =
+      shelf?.orderBy === "position" && controller.isDefaultSort
+
+    return {
+      shelfUuid: shelf?.shelfUuid ?? "",
+      ...(usesManualOrder
+        ? {
+            orderBy: "position" as const,
+            orderDirection: shelf.orderDirection ?? "asc",
+          }
+        : { sortField: sort.field, orderDirection: sort.direction }),
       ...(deferredSearch ? { search: deferredSearch } : {}),
       ...(effectiveFilter ? { filter: effectiveFilter } : {}),
-    }),
-    [source, sort, deferredSearch, effectiveFilter],
-  )
+    }
+  }, [source, sort, deferredSearch, effectiveFilter, controller.isDefaultSort])
   // this could technically also be a books query, but w a filter, buuuuut
   // lets just do it like this for now.
   const shelfQueryResult = useListInfiniteShelfBooksInfiniteQuery(

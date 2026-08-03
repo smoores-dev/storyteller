@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { withHasPermission } from "@/auth/auth"
 import { createCollection, getCollections } from "@/database/collections"
+import { isUniqueConstraintError } from "@/database/errors"
 import { type UUID } from "@/uuid"
 
 /**
@@ -29,9 +30,20 @@ export const POST = withHasPermission("collectionCreate")(async (request) => {
     users?: UUID[]
   }
 
-  const created = await createCollection(values, {
-    users: [...(users ?? []), request.auth.user.id],
-  })
+  let created
+  try {
+    created = await createCollection(values, {
+      users: [...(users ?? []), request.auth.user.id],
+    })
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return NextResponse.json(
+        { message: `A collection named "${values.name}" already exists` },
+        { status: 409 },
+      )
+    }
+    throw error
+  }
 
   // the sidebar picks the new collection up via ensureSidebarDefaults on its
   // next read (the client invalidates the Sidebar tag after this mutation)

@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@v3/_/components/ui/dialog"
 import { Input } from "@v3/_/components/ui/input"
+import { apiErrorMessage } from "@v3/_/lib/api-error"
 
 import { type ShelfFilterNode, type ShelfOrderBy } from "@/shelves"
 import { type SortField } from "@/sort"
@@ -58,8 +59,10 @@ export function SaveAsShelfDialog({
       toast.success(`Saved "${trimmed}" as a shelf`)
       setName("")
       onOpenChange(false)
-    } catch {
-      toast.error("Failed to save shelf")
+    } catch (error) {
+      toast.error("Failed to save shelf", {
+        description: apiErrorMessage(error),
+      })
     }
   }
 

@@ -58,6 +58,7 @@ export function ColumnValue({
       if (!book.publicationDate) return "\u2014"
       return dateTime(new Date(book.publicationDate), {
         year: "numeric",
+        timeZone: "UTC",
       })
     case "createdAt":
       return dateTime(new Date(book.createdAt), {

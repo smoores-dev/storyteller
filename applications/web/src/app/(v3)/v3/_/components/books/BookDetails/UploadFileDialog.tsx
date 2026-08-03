@@ -48,11 +48,16 @@ export function UploadFileDialog({
   const isAdd = !book[format]?.filepath
   const [metadataMode, setMetadataMode] = useState<MetadataFieldMode>("merge")
 
-  function buildMeta(file: UppyFileType) {
+  function buildMeta(file: UppyFileType, batch: UppyFileType[]) {
     const overrides = defaultMetadataFieldOverrides(metadataMode)
     file.meta["bookUuid"] = book.uuid
     file.meta["format"] = format
     file.meta["metadataFieldOverrides"] = JSON.stringify(overrides)
+
+    // the server only waits for the whole batch when it knows how big it is
+    if (format === "audiobook") {
+      file.meta["totalAudioFiles"] = String(batch.length)
+    }
   }
 
   async function handleFinalize() {
@@ -108,7 +113,6 @@ export function UploadFileDialog({
         cancel: c.plain("actions.cancel"),
         upload: c.plain("actions.upload"),
         done: c.plain("actions.done"),
-        uploadAnother: t("uploadAnother"),
       }}
     />
   )

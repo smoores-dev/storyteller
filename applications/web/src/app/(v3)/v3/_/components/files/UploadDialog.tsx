@@ -1,6 +1,6 @@
 "use client"
 
-import { type ReactNode, useRef, useState } from "react"
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
 import { UploadDropzone } from "@v3/_/components/files/UploadDropzone"
@@ -27,6 +27,7 @@ import {
 } from "@v3/_/components/ui/select"
 
 import { type MetadataFieldMode } from "@/database/settingsTypes"
+import * as icon from "@/icons"
 
 type Restrictions = {
   maxNumberOfFiles?: number | null
@@ -42,7 +43,17 @@ export type UploadDialogLabels = {
   cancel: ReactNode
   upload: ReactNode
   done: ReactNode
-  uploadAnother: ReactNode
+}
+
+// one drop target. a dialog can show several (an epub box and an audio box)
+// over the same upload batch; each lists only the files it matches.
+export type UploadZone = {
+  key: string
+  label: string
+  accept?: string
+  multiple?: boolean
+  hint?: string
+  filter: (name: string) => boolean
 }
 
 export type UploadDialogProps = {
@@ -55,7 +66,8 @@ export type UploadDialogProps = {
   accept?: string
   multiple?: boolean
   hint?: string
-  buildMeta?: (file: UppyFileType) => void
+  zones?: UploadZone[]
+  buildMeta?: (file: UppyFileType, files: UppyFileType[]) => void
   onFinalize?: () => Promise<void>
   onComplete?: () => void
   showMetadataMode?: boolean
@@ -75,6 +87,7 @@ export function UploadDialog({
   accept,
   multiple,
   hint,
+  zones,
   buildMeta,
   onFinalize,
   onComplete,
@@ -99,26 +112,42 @@ export function UploadDialog({
 
   const batchIdRef = useRef(uuidv4())
 
-  const { uppy, files, isComplete, failedCount, reset, startUpload } =
-    useTusUpload({
-      endpoint,
-      restrictions,
-      buildMeta: (file) => {
-        file.meta["batchId"] = batchIdRef.current
-        buildMeta?.(file)
-      },
-    })
+  const {
+    uppy,
+    files,
+    isComplete,
+    isUploading,
+    failedCount,
+    reset,
+    startUpload,
+  } = useTusUpload({
+    endpoint,
+    restrictions,
+    buildMeta: (file, batch) => {
+      file.meta["batchId"] = batchIdRef.current
+      buildMeta?.(file, batch)
+    },
+  })
 
-  function handleClose() {
+  const handleClose = useCallback(() => {
     reset()
     onComplete?.()
     onOpenChange(false)
-  }
+  }, [reset, onComplete, onOpenChange])
 
-  function handleUploadAnother() {
-    reset()
-    batchIdRef.current = uuidv4()
-  }
+  // a finished upload has nothing left to show: close and let the caller take
+  // over (opening the new book). anything that failed keeps the dialog up so
+  // the retry/finalize affordance stays reachable.
+  const closedRef = useRef(false)
+  useEffect(() => {
+    if (!open) {
+      closedRef.current = false
+      return
+    }
+    if (!isComplete || failedCount > 0 || closedRef.current) return
+    closedRef.current = true
+    handleClose()
+  }, [open, isComplete, failedCount, handleClose])
 
   function handleUpload() {
     batchIdRef.current = uuidv4()
@@ -152,12 +181,30 @@ export function UploadDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <UploadDropzone
-          uppy={uppy}
-          accept={accept}
-          multiple={multiple}
-          hint={hint}
-        />
+        {zones ? (
+          <div className="flex flex-col gap-3">
+            {zones.map((zone) => (
+              <UploadDropzone
+                key={zone.key}
+                uppy={uppy}
+                label={zone.label}
+                accept={zone.accept}
+                multiple={zone.multiple}
+                hint={zone.hint}
+                filter={zone.filter}
+                disabled={isUploading}
+              />
+            ))}
+          </div>
+        ) : (
+          <UploadDropzone
+            uppy={uppy}
+            accept={accept}
+            multiple={multiple}
+            hint={hint}
+            disabled={isUploading}
+          />
+        )}
 
         {children}
 
@@ -200,16 +247,12 @@ export function UploadDialog({
 
         <DialogFooter>
           {isComplete ? (
-            <>
-              <Button variant="ghost" onClick={handleUploadAnother}>
-                {labels.uploadAnother}
-              </Button>
-              <Button onClick={handleClose}>{labels.done}</Button>
-            </>
+            <Button onClick={handleClose}>{labels.done}</Button>
           ) : (
             <>
               <Button
                 variant="ghost"
+                disabled={isUploading}
                 onClick={() => {
                   reset()
                   onOpenChange(false)
@@ -217,8 +260,15 @@ export function UploadDialog({
               >
                 {labels.cancel}
               </Button>
-              <Button disabled={!files.length} onClick={handleUpload}>
-                {labels.upload}
+              <Button
+                disabled={!files.length || isUploading}
+                onClick={handleUpload}
+              >
+                {isUploading ? (
+                  <icon.Loader className="size-4 animate-spin" />
+                ) : (
+                  labels.upload
+                )}
               </Button>
             </>
           )}

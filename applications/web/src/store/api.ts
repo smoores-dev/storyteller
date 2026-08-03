@@ -108,6 +108,35 @@ type HomeSectionBody = {
 
 type SidebarGroupBody = SidebarGroupInput
 
+// books appearing or disappearing (an upload, a scan, a delete, a merge) changes
+// list membership, which no cached page can patch itself into: those events
+// invalidate the Books tag and let providesTags drive the refetch. bookUpdated
+// stays a targeted patch (see getBook) so editing a book doesn't refetch grids.
+//
+// one subscription per page: several list caches are usually mounted at once
+// (the grid plus hover prefetches) and each of them invalidating would fan the
+// same event out into N refetches. bursts (a scan importing a folder) coalesce
+// into a single invalidation.
+const MEMBERSHIP_EVENT_DEBOUNCE_MS = 300
+
+let membershipBridgeStarted = false
+
+function startBookMembershipBridge(dispatch: (action: unknown) => unknown) {
+  if (membershipBridgeStarted) return
+  membershipBridgeStarted = true
+
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  subscribeToBookEventStream((event) => {
+    if (event.type !== "bookCreated" && event.type !== "bookDeleted") return
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = null
+      dispatch(api.util.invalidateTags(["Books", "HomeShelves", "HomeStats"]))
+    }, MEMBERSHIP_EVENT_DEBOUNCE_MS)
+  })
+}
+
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/v2" }),
@@ -330,6 +359,11 @@ export const api = createApi({
           preventReImport,
         },
       }),
+      invalidatesTags: (_result, _error, { uuid }) => [
+        "Books",
+        { type: "Books", id: uuid },
+        "ImportRules",
+      ],
     }),
     deleteBookAssets: build.mutation<void, { uuid: UUID; originals?: boolean }>(
       {
@@ -364,6 +398,11 @@ export const api = createApi({
           preventReImport,
         },
       }),
+      invalidatesTags: (_result, _error, { books }) => [
+        "Books",
+        ...books.map((uuid) => ({ type: "Books" as const, id: uuid })),
+        "ImportRules",
+      ],
     }),
     replaceBookAsset: build.mutation<
       BookWithRelations,
@@ -380,6 +419,10 @@ export const api = createApi({
         method: "POST",
         body,
       }),
+      invalidatesTags: (_result, _error, { uuid }) => [
+        "Books",
+        { type: "Books", id: uuid },
+      ],
     }),
     removeBookAsset: build.mutation<
       BookWithRelations,
@@ -393,6 +436,10 @@ export const api = createApi({
         method: "DELETE",
         params: { format },
       }),
+      invalidatesTags: (_result, _error, { uuid }) => [
+        "Books",
+        { type: "Books", id: uuid },
+      ],
     }),
     updateBookAssetDir: build.mutation<
       BookWithRelations,
@@ -602,6 +649,19 @@ export const api = createApi({
         return `/books?${params.toString()}`
       },
       providesTags: ["Books"],
+      onCacheEntryAdded: async (
+        _arg,
+        /* eslint-disable-next-line @typescript-eslint/unbound-method */
+        { dispatch, cacheDataLoaded },
+      ) => {
+        try {
+          await cacheDataLoaded
+        } catch {
+          /* empty */
+        }
+
+        startBookMembershipBridge(dispatch)
+      },
     }),
     processBook: build.mutation<
       void,
@@ -704,6 +764,18 @@ export const api = createApi({
         method: "POST",
         body,
       }),
+      // the merge target absorbs the sources and the sources are deleted, so
+      // every list and every detail cache involved is stale
+      invalidatesTags: (_result, _error, { update, from }) => [
+        "Books",
+        "Series",
+        "Creators",
+        "Authors",
+        "Tags",
+        "Collections",
+        ...(update.uuid ? [{ type: "Books" as const, id: update.uuid }] : []),
+        ...from.map((uuid) => ({ type: "Books" as const, id: uuid })),
+      ],
     }),
     createBook: build.mutation<
       BookWithRelations | { epub2Detected: true; paths: string[] },
@@ -719,6 +791,7 @@ export const api = createApi({
         method: "POST",
         body,
       }),
+      invalidatesTags: ["Books"],
     }),
     updateBook: build.mutation<
       BookWithRelations,
@@ -1705,7 +1778,7 @@ export const api = createApi({
 
     getUserSettings: build.query<UserPreferences, void>({
       query: () => "/user/settings",
-      providesTags: (s) => ["UserSettings"],
+      providesTags: () => ["UserSettings"],
     }),
     updateUserSettings: build.mutation<void, Partial<UserPreferencesForm>>({
       query: (body) => ({
@@ -2068,6 +2141,7 @@ export const api = createApi({
         searchParams.set("limit", String(limit))
         searchParams.set("offset", String(pageParam * limit))
         if (params.sortField) searchParams.set("sortField", params.sortField)
+        if (params.orderBy) searchParams.set("orderBy", params.orderBy)
         if (params.orderDirection)
           searchParams.set("orderDirection", params.orderDirection)
         if (params.search) searchParams.set("search", params.search)
@@ -2523,6 +2597,9 @@ export type ListShelfBooksQueryArg = {
   shelfUuid: string
   limit?: number | undefined
   sortField?: SortField | undefined
+  // the shelf's own ordering vocabulary, including manual "position". only used
+  // when no sortField is given.
+  orderBy?: ShelfOrderBy | undefined
   orderDirection?: "asc" | "desc" | undefined
   search?: string | undefined
   filter?: ShelfFilter | undefined

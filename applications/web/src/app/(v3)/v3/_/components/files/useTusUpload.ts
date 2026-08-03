@@ -26,8 +26,10 @@ export function useTusUpload({
 }: {
   endpoint: string
   restrictions?: Restrictions
-  // attach per-file metadata immediately before upload starts
-  buildMeta?: (file: UppyFileType) => void
+  // attach per-file metadata immediately before upload starts. the whole batch
+  // comes along so a file can describe its siblings (how many audio files the
+  // server should wait for before scanning).
+  buildMeta?: (file: UppyFileType, files: UppyFileType[]) => void
   // register extra plugins (e.g. thumbnail generation) on the instance
   configureUppy?: (uppy: Uppy) => void
 }) {
@@ -35,6 +37,7 @@ export function useTusUpload({
   const maxUploadChunkSize = data?.maxUploadChunkSize
 
   const [isComplete, setIsComplete] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [failedCount, setFailedCount] = useState(0)
 
   // create the instance once; the chunk size (which loads async) is applied at
@@ -50,7 +53,12 @@ export function useTusUpload({
 
   useUppyEvent(uppy, "complete", (result) => {
     setIsComplete(true)
+    setIsUploading(false)
     setFailedCount(result.failed?.length ?? 0)
+  })
+
+  useUppyEvent(uppy, "error", () => {
+    setIsUploading(false)
   })
 
   const filesRecord = useUppyState(uppy, (state) => state.files)
@@ -59,6 +67,7 @@ export function useTusUpload({
   function reset() {
     uppy.clear()
     setIsComplete(false)
+    setIsUploading(false)
     setFailedCount(0)
   }
 
@@ -66,13 +75,26 @@ export function useTusUpload({
     if (maxUploadChunkSize) {
       uppy.getPlugin("Tus")?.setOptions({ chunkSize: maxUploadChunkSize })
     }
+    const batch = uppy.getFiles()
     if (buildMeta) {
-      uppy.getFiles().forEach(buildMeta)
+      batch.forEach((file) => {
+        buildMeta(file, batch)
+      })
     }
+    setIsUploading(true)
     uppy.upload().catch((e: unknown) => {
       console.error(e)
+      setIsUploading(false)
     })
   }
 
-  return { uppy, files, isComplete, failedCount, reset, startUpload }
+  return {
+    uppy,
+    files,
+    isComplete,
+    isUploading,
+    failedCount,
+    reset,
+    startUpload,
+  }
 }

@@ -123,9 +123,7 @@
     }
   },
   "CollectionsPage": {
-    "title": "Verzamelingen",
-    "hiddenInSidebar": "{count, number} van {total, number} collecties zijn verborgen in je zijbalk",
-    "showAllInSidebar": "Laat ze zien"
+    "title": "Verzamelingen"
   },
   "NotFoundPage": {
     "title": "Pagina niet gevonden",
@@ -350,7 +348,11 @@
     "editIdentifierDescription": "Pas de naam en linksjabloon van deze identifier aan.",
     "identifierName": "Naam",
     "identifierUrlTemplate": "Linksjabloon",
-    "identifierUrlTemplateHint": "Wordt gebruikt om identifiers naar een website te linken. '{value}' wordt vervangen door de waarde van de identifier."
+    "identifierUrlTemplateHint": "Wordt gebruikt om identifiers naar een website te linken. '{value}' wordt vervangen door de waarde van de identifier.",
+    "hiddenFromSidebar": "Verborgen in zijbalk",
+    "showInSidebar": "Toon in zijbalk",
+    "hideFromSidebar": "Verberg in zijbalk",
+    "sidebarVisibilityFailed": "Kon zichtbaarheid in de zijbalk niet wijzigen"
   },
   "SelectionToolbar": {
     "selectAll": "Alles selecteren",
@@ -1470,7 +1472,6 @@
   "UploadDialog": {
     "metadataBehavior": "Metadata-gedrag",
     "failedFiles": "{count} bestand(en) niet geüpload — verwerk de rest toch",
-    "uploadAnother": "Nog een uploaden",
     "uploadFormat": "Upload {format}",
     "uploadReplacementFormat": "Upload vervanging {format}",
     "audioDescription": "Upload audiobestanden vanaf je apparaat.",
@@ -1482,7 +1483,11 @@
     "ebookHint": ".epub-bestand",
     "uploadBookTitle": "Upload boek",
     "uploadBookDescription": "Upload een EPUB-bestand of audiobestanden om een nieuw boek aan te maken.",
-    "uploadBookHint": "EPUB, M4B, MP3 of andere audiobestanden"
+    "uploadBookHint": "EPUB, M4B, MP3 of andere audiobestanden",
+    "zoneEbook": "Sleep een EPUB hierheen of klik om te kiezen",
+    "zoneEbookHint": "Eén EPUB-bestand",
+    "zoneAudio": "Sleep audiobestanden hierheen of klik om te kiezen",
+    "zoneAudioHint": "M4B, MP3 of andere audiobestanden, of een zip-archief"
   },
   "ImportFromServerDialog": {
     "importMode": "Importmodus",

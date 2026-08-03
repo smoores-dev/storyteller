@@ -22,19 +22,27 @@ export function UploadDropzone({
   accept,
   multiple,
   disabled,
+  label,
   hint,
+  filter,
 }: {
   uppy: Uppy
   accept?: string
   multiple?: boolean
   disabled?: boolean
+  label?: string
   hint?: string
+  // when several zones share one uppy instance, each only lists its own files
+  filter?: (name: string) => boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
   const filesRecord = useUppyState(uppy, (state) => state.files)
-  const files = Object.values(filesRecord)
+  const allFiles = Object.values(filesRecord)
+  const files = filter
+    ? allFiles.filter((file) => filter(file.name ?? ""))
+    : allFiles
 
   function addFiles(fileList: FileList | File[]) {
     for (const file of Array.from(fileList)) {
@@ -68,14 +76,14 @@ export function UploadDropzone({
           addFiles(e.dataTransfer.files)
         }}
         className={cn(
-          "border-input flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-8 text-center transition-colors",
+          "border-input flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-center transition-colors",
           isDragging && "border-primary bg-primary/5",
           disabled ? "opacity-50" : "hover:border-primary/50 cursor-pointer",
         )}
       >
-        <icon.Upload className="text-muted-foreground h-6 w-6" />
+        <icon.Upload className="text-muted-foreground h-5 w-5" />
         <span className="text-sm font-medium">
-          Drop files here or click to browse
+          {label ?? "Drop files here or click to browse"}
         </span>
         {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
         <input
@@ -100,16 +108,19 @@ export function UploadDropzone({
             return (
               <Item
                 key={file.id}
-                className="bg-muted/50 flex items-center gap-2 rounded-md px-3 py-2"
+                className="bg-muted/50 flex min-w-0 items-center gap-2 rounded-md px-3 py-2"
               >
                 <ItemMedia variant="icon">
                   <icon.File className="text-muted-foreground h-4 w-4 shrink-0" />
                 </ItemMedia>
-                <ItemContent className="gap-1">
-                  <ItemTitle className="truncate text-sm">
+                <ItemContent className="min-w-0 flex-1 gap-1">
+                  <ItemTitle
+                    className="block w-full truncate text-sm"
+                    title={file.name}
+                  >
                     {file.name}
                   </ItemTitle>
-                  <ItemDescription className="text-muted-foreground shrink-0 text-xs">
+                  <ItemDescription className="text-muted-foreground w-full min-w-0 text-xs">
                     <span className="text-muted-foreground shrink-0 text-xs">
                       {formatBytes(file.size ?? 0)}
                     </span>

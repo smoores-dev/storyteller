@@ -66,9 +66,11 @@ function parseShelfFilter(raw: unknown): ShelfFilter {
 // distinct-value counts (the sidebar badges)
 // ---------------------------------------------------------------------------
 
-async function countCreatorsByRole(userId: UUID, role: Role) {
-  const row = await visibleBooks(userId)
-    .innerJoin("bookToCreator", "bookToCreator.bookUuid", "book.uuid")
+// the badge counts how many rows the section's list has, so it matches what the
+// sidebar actually shows (including values with no books yet)
+async function countCreatorsByRole(_userId: UUID, role: Role) {
+  const row = await db
+    .selectFrom("bookToCreator")
     .where("bookToCreator.role", "=", role)
     .select((eb) =>
       eb.fn.count<number>("bookToCreator.creatorUuid").distinct().as("count"),
@@ -79,12 +81,10 @@ async function countCreatorsByRole(userId: UUID, role: Role) {
 }
 
 const DISTINCT_COUNTS = {
-  series: async (userId) => {
-    const row = await visibleBooks(userId)
-      .innerJoin("bookToSeries", "bookToSeries.bookUuid", "book.uuid")
-      .select((eb) =>
-        eb.fn.count<number>("bookToSeries.seriesUuid").distinct().as("count"),
-      )
+  series: async () => {
+    const row = await db
+      .selectFrom("series")
+      .select((eb) => eb.fn.count<number>("series.uuid").as("count"))
       .executeTakeFirst()
     return row?.count ?? 0
   },
@@ -93,23 +93,18 @@ const DISTINCT_COUNTS = {
   narrators: (userId) => countCreatorsByRole(userId, "nrt"),
   translators: (userId) => countCreatorsByRole(userId, "trl"),
 
-  tags: async (userId) => {
-    const row = await visibleBooks(userId)
-      .innerJoin("bookToTag", "bookToTag.bookUuid", "book.uuid")
-      .select((eb) =>
-        eb.fn.count<number>("bookToTag.tagUuid").distinct().as("count"),
-      )
+  tags: async () => {
+    const row = await db
+      .selectFrom("tag")
+      .select((eb) => eb.fn.count<number>("tag.uuid").as("count"))
       .executeTakeFirst()
     return row?.count ?? 0
   },
 
-  statuses: async (userId) => {
+  statuses: async () => {
     const row = await db
-      .selectFrom("bookToStatus")
-      .where("bookToStatus.userId", "=", userId)
-      .select((eb) =>
-        eb.fn.count<number>("bookToStatus.statusUuid").distinct().as("count"),
-      )
+      .selectFrom("status")
+      .select((eb) => eb.fn.count<number>("status.uuid").as("count"))
       .executeTakeFirst()
     return row?.count ?? 0
   },
@@ -139,15 +134,10 @@ const DISTINCT_COUNTS = {
     return row?.count ?? 0
   },
 
-  identifiers: async (userId) => {
-    const row = await visibleBooks(userId)
-      .innerJoin("identifier", "identifier.bookUuid", "book.uuid")
-      .select((eb) =>
-        eb.fn
-          .count<number>("identifier.identifierTypeUuid")
-          .distinct()
-          .as("count"),
-      )
+  identifiers: async () => {
+    const row = await db
+      .selectFrom("identifierType")
+      .select((eb) => eb.fn.count<number>("identifierType.uuid").as("count"))
       .executeTakeFirst()
     return row?.count ?? 0
   },
@@ -231,87 +221,133 @@ export async function getLibraryCounts(userId: UUID): Promise<LibraryCounts> {
 
 const creatorName = sql<string>`coalesce(nullif(creator.file_as, ''), creator.name)`
 
+// every facet list is "all the values that exist" joined to "how many visible
+// books each has", never the other way around: an empty collection, tag or
+// series has to stay visible or it becomes impossible to find (and impossible
+// to create again, since names are unique).
+function countMap(rows: { key: string; bookCount: number }[]) {
+  return new Map(rows.map((row) => [row.key, row.bookCount]))
+}
+
 async function seriesFacets(userId: UUID): Promise<FacetValue[]> {
-  return visibleBooks(userId)
-    .innerJoin("bookToSeries", "bookToSeries.bookUuid", "book.uuid")
-    .innerJoin("series", "series.uuid", "bookToSeries.seriesUuid")
-    .select((eb) => [
-      "series.uuid as key",
-      "series.name as name",
-      eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
-    ])
-    .groupBy(["series.uuid", "series.name"])
-    .execute()
+  const [series, counts] = await Promise.all([
+    db.selectFrom("series").select(["uuid as key", "name"]).execute(),
+    visibleBooks(userId)
+      .innerJoin("bookToSeries", "bookToSeries.bookUuid", "book.uuid")
+      .select((eb) => [
+        "bookToSeries.seriesUuid as key",
+        eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
+      ])
+      .groupBy("bookToSeries.seriesUuid")
+      .execute(),
+  ])
+
+  const byUuid = countMap(counts)
+  return series.map((row) => ({ ...row, bookCount: byUuid.get(row.key) ?? 0 }))
 }
 
 async function creatorFacets(userId: UUID, role: Role): Promise<FacetValue[]> {
-  return visibleBooks(userId)
-    .innerJoin("bookToCreator", "bookToCreator.bookUuid", "book.uuid")
-    .innerJoin("creator", "creator.uuid", "bookToCreator.creatorUuid")
-    .where("bookToCreator.role", "=", role)
-    .select((eb) => [
-      "creator.uuid as key",
-      creatorName.as("name"),
-      eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
-    ])
-    .groupBy(["creator.uuid", creatorName])
-    .execute()
+  // a creator belongs to a role list as long as it holds that role on some
+  // book, even when no book carrying it is visible to this user
+  const [creators, counts] = await Promise.all([
+    db
+      .selectFrom("creator")
+      .select(["creator.uuid as key", creatorName.as("name")])
+      .where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom("bookToCreator")
+            .select(sql.lit(1).as("one"))
+            .whereRef("bookToCreator.creatorUuid", "=", "creator.uuid")
+            .where("bookToCreator.role", "=", role),
+        ),
+      )
+      .execute(),
+    visibleBooks(userId)
+      .innerJoin("bookToCreator", "bookToCreator.bookUuid", "book.uuid")
+      .where("bookToCreator.role", "=", role)
+      .select((eb) => [
+        "bookToCreator.creatorUuid as key",
+        eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
+      ])
+      .groupBy("bookToCreator.creatorUuid")
+      .execute(),
+  ])
+
+  const byUuid = countMap(counts)
+  return creators.map((row) => ({
+    ...row,
+    bookCount: byUuid.get(row.key) ?? 0,
+  }))
 }
 
 async function tagFacets(userId: UUID): Promise<FacetValue[]> {
-  return visibleBooks(userId)
-    .innerJoin("bookToTag", "bookToTag.bookUuid", "book.uuid")
-    .innerJoin("tag", "tag.uuid", "bookToTag.tagUuid")
-    .select((eb) => [
-      "tag.uuid as key",
-      "tag.name as name",
-      "tag.icon as icon",
-      "tag.color as color",
-      eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
-    ])
-    .groupBy(["tag.uuid", "tag.name", "tag.icon", "tag.color"])
-    .execute()
+  const [tags, counts] = await Promise.all([
+    db
+      .selectFrom("tag")
+      .select(["uuid as key", "name", "icon", "color"])
+      .execute(),
+    visibleBooks(userId)
+      .innerJoin("bookToTag", "bookToTag.bookUuid", "book.uuid")
+      .select((eb) => [
+        "bookToTag.tagUuid as key",
+        eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
+      ])
+      .groupBy("bookToTag.tagUuid")
+      .execute(),
+  ])
+
+  const byUuid = countMap(counts)
+  return tags.map((row) => ({ ...row, bookCount: byUuid.get(row.key) ?? 0 }))
 }
 
 async function collectionFacets(userId: UUID): Promise<FacetValue[]> {
-  // collection visibility is the gate here, so the collection table is the base
-  // (its columns are non-null) rather than visibleBooks' left-joined collection.
-  return db
-    .selectFrom("collection")
-    .innerJoin(
-      "bookToCollection",
-      "bookToCollection.collectionUuid",
-      "collection.uuid",
-    )
-    .leftJoin(
-      "collectionToUser",
-      "collectionToUser.collectionUuid",
-      "collection.uuid",
-    )
-    .where((eb) =>
-      eb.or([
-        eb("collectionToUser.userId", "=", userId),
-        eb("collection.public", "=", true),
-        eb("collection.public", "is", null),
-      ]),
-    )
-    .select((eb) => [
-      "collection.uuid as key",
-      "collection.name as name",
-      "collection.icon as icon",
-      "collection.color as color",
-      eb.fn
-        .count<number>("bookToCollection.bookUuid")
-        .distinct()
-        .as("bookCount"),
-    ])
-    .groupBy([
-      "collection.uuid",
-      "collection.name",
-      "collection.icon",
-      "collection.color",
-    ])
-    .execute()
+  const [collections, counts] = await Promise.all([
+    db
+      .selectFrom("collection")
+      .leftJoin(
+        "collectionToUser",
+        "collectionToUser.collectionUuid",
+        "collection.uuid",
+      )
+      .where((eb) =>
+        eb.or([
+          eb("collectionToUser.userId", "=", userId),
+          eb("collection.public", "=", true),
+          eb("collection.public", "is", null),
+        ]),
+      )
+      .select([
+        "collection.uuid as key",
+        "collection.name as name",
+        "collection.icon as icon",
+        "collection.color as color",
+      ])
+      .groupBy([
+        "collection.uuid",
+        "collection.name",
+        "collection.icon",
+        "collection.color",
+      ])
+      .execute(),
+    db
+      .selectFrom("bookToCollection")
+      .select((eb) => [
+        "bookToCollection.collectionUuid as key",
+        eb.fn
+          .count<number>("bookToCollection.bookUuid")
+          .distinct()
+          .as("bookCount"),
+      ])
+      .groupBy("bookToCollection.collectionUuid")
+      .execute(),
+  ])
+
+  const byUuid = countMap(counts)
+  return collections.map((row) => ({
+    ...row,
+    bookCount: byUuid.get(row.key) ?? 0,
+  }))
 }
 
 async function statusFacets(userId: UUID): Promise<FacetValue[]> {
@@ -395,24 +431,29 @@ async function ratingFacets(userId: UUID): Promise<FacetValue[]> {
 // one row per identifier type in use; the key is the type uuid, matching the
 // identifiers field's qualifier.
 async function identifierFacets(userId: UUID): Promise<FacetValue[]> {
-  const rows = await visibleBooks(userId)
-    .innerJoin("identifier", "identifier.bookUuid", "book.uuid")
-    .innerJoin(
-      "identifierType",
-      "identifierType.uuid",
-      "identifier.identifierTypeUuid",
-    )
-    .select((eb) => [
-      "identifierType.uuid as key",
-      "identifierType.name as name",
-      "identifierType.kind as kind",
-      eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
-    ])
-    .groupBy(["identifierType.uuid", "identifierType.name"])
-    .execute()
+  const [types, counts] = await Promise.all([
+    db
+      .selectFrom("identifierType")
+      .select([
+        "identifierType.uuid as key",
+        "identifierType.name as name",
+        "identifierType.kind as kind",
+      ])
+      .execute(),
+    visibleBooks(userId)
+      .innerJoin("identifier", "identifier.bookUuid", "book.uuid")
+      .select((eb) => [
+        "identifier.identifierTypeUuid as key",
+        eb.fn.count<number>("book.uuid").distinct().as("bookCount"),
+      ])
+      .groupBy("identifier.identifierTypeUuid")
+      .execute(),
+  ])
 
-  return rows.map(({ kind, ...row }) => ({
+  const byUuid = countMap(counts)
+  return types.map(({ kind, ...row }) => ({
     ...row,
+    bookCount: byUuid.get(row.key) ?? 0,
     ...(kind ? { kind } : {}),
   }))
 }

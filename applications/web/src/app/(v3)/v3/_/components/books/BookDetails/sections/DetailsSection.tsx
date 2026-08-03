@@ -63,7 +63,8 @@ export function DetailsSection({ className }: { className?: string }) {
             type="date"
             className="min-h-6 py-0 text-sm"
             renderDisplay={(value) =>
-              formatDate(value, { timeStyle: undefined })
+              // stored as utc midnight; formatting it locally shifts the day
+              formatDate(value, { timeStyle: undefined, timeZone: "UTC" })
             }
           />
         </DetailRow>

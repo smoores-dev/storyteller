@@ -36,8 +36,12 @@ import { useBookInSidePanel } from "@v3/_/hooks/use-open-book"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import * as icon from "@/icons"
-import { type DisplayField } from "@/sort"
-import { api, useGetSectionFacetsQuery } from "@/store/api"
+import { type DisplayField, type SortField } from "@/sort"
+import {
+  api,
+  useGetSectionFacetsQuery,
+  useListUserShelvesQuery,
+} from "@/store/api"
 import { useAppDispatch } from "@/store/appState"
 import { type UUID } from "@/uuid"
 
@@ -264,17 +268,51 @@ export function LibraryPage({
     [section, selectedItem],
   )
 
-  const source = useMemo<BookListSource>(
-    () => ({
+  // a shelf's membership can't be expressed as a filter (it may be a manual
+  // list), so picking one switches the grid onto the shelf source, carrying the
+  // shelf's own ordering the way the dedicated shelf page does
+  const isShelfSection = section.entityType === "shelf"
+  const { data: shelves = [] } = useListUserShelvesQuery(undefined, {
+    skip: !isShelfSection,
+  })
+  const selectedShelf =
+    isShelfSection && selectedItem
+      ? shelves.find((shelf) => shelf.uuid === selectedItem)
+      : undefined
+
+  const source = useMemo<BookListSource>(() => {
+    if (selectedShelf) {
+      return {
+        kind: "shelf",
+        shelfUuid: selectedShelf.uuid,
+        orderBy: selectedShelf.orderBy,
+        orderDirection:
+          selectedShelf.orderDirection === "asc" ? "asc" : ("desc" as const),
+      }
+    }
+
+    return {
       kind: "books",
       seed: seedArg.filter ?? null,
       ...(seedArg.series ? { seriesContext: seedArg.series as UUID } : {}),
       ...(seedArg.collection
         ? { collectionContext: seedArg.collection as UUID }
         : {}),
-    }),
-    [seedArg],
-  )
+    }
+  }, [seedArg, selectedShelf])
+
+  const shelfDefaultSort = useMemo(() => {
+    if (!selectedShelf?.orderBy || selectedShelf.orderBy === "position") {
+      return undefined
+    }
+    return {
+      field: selectedShelf.orderBy as SortField,
+      direction:
+        selectedShelf.orderDirection === "asc"
+          ? ("asc" as const)
+          : ("desc" as const),
+    }
+  }, [selectedShelf])
 
   const headerActions = selectedFacet && selectedFacet.key !== NONE_KEY && (
     <EntityActionsMenu
@@ -314,7 +352,7 @@ export function LibraryPage({
         source={source}
         skip={!selectedItem}
         seedLabel={selectedItemName}
-        defaultSort={section.sort}
+        defaultSort={shelfDefaultSort ?? section.sort}
         {...(isSeriesSection ? { extraSortFields: ["seriesPosition"] } : {})}
         breadcrumbs={
           isMobile

@@ -161,11 +161,10 @@ function useShelfBooks(shelf: HomeSectionWithDetails): UseShelfBooksResult {
   const { data: shelfBooks = [], isLoading: isLoadingShelfBooks } =
     useListShelfBooksQuery(
       {
+        // no orderBy: the server falls back to the shelf's own stored ordering
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         shelfUuid: shelf.shelfUuid!,
         limit: SHELF_LIMIT,
-        orderBy: "createdAt",
-        orderDirection: "desc",
       },
       { skip: !isCustomShelf },
     )

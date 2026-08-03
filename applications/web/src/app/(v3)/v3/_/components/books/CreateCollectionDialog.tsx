@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useCallback, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod/v4"
 
 import { Button } from "@v3/_/components/ui/button"
@@ -35,6 +36,7 @@ import { IconPicker } from "@v3/_/components/ui/icon-picker"
 import { Input } from "@v3/_/components/ui/input"
 import { Switch } from "@v3/_/components/ui/switch"
 import { Textarea } from "@v3/_/components/ui/textarea"
+import { apiErrorMessage } from "@v3/_/lib/api-error"
 
 import { BookSelector } from "@/app/(v3)/v3/_/components/shelves/ShelfEditor"
 import {
@@ -192,8 +194,15 @@ export function CreateCollectionDialog({
         }
 
         handleClose()
-      } catch {
-        // error handling is done via the mutation error state
+      } catch (error) {
+        toast.error(
+          isEditing
+            ? "Failed to save collection"
+            : "Failed to create collection",
+          {
+            description: apiErrorMessage(error),
+          },
+        )
       }
     },
     [

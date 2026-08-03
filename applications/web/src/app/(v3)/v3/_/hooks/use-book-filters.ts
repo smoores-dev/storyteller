@@ -29,6 +29,14 @@ import { type UUID } from "@/uuid"
 
 const EXCLUDED_SORT_SAVE_PAGES = ["shelves", "quality"]
 
+// the page a saved sort belongs to: the first segment past the version prefix,
+// so "/v3/collections/uuid" and "/collections" both key on "collections"
+export function sortPageKey(pathname: string): string {
+  const segments = pathname.split("/").filter(Boolean)
+  const [first, second] = segments
+  return (first === "v3" ? second : first) ?? ""
+}
+
 type UseBookFiltersOptions = {
   // a locked condition contributed by the page context (e.g. "series is Dune").
   // rendered as a non-removable chip and always ANDed into the query.
@@ -118,13 +126,14 @@ const defaultSortDefault = {
 
 export function useBookFilters(options: UseBookFiltersOptions = {}) {
   const pathName = usePathname()
-  const currentPage = pathName.split("/").shift()
+  const currentPage = sortPageKey(pathName)
+  const canSaveSort = !EXCLUDED_SORT_SAVE_PAGES.includes(currentPage)
   const defaultSorts = useAppSelector(selectDefaultSorts)
-  const defaultSort = !EXCLUDED_SORT_SAVE_PAGES.includes(currentPage ?? "")
-    ? defaultSorts[currentPage ?? ""] ??
-      options.defaultSort ??
-      defaultSortDefault
-    : defaultSortDefault
+  // pages that don't persist a sort still get their page-supplied default (a
+  // shelf's own ordering), they just never read or write the cookie
+  const defaultSort = canSaveSort
+    ? defaultSorts[currentPage] ?? options.defaultSort ?? defaultSortDefault
+    : options.defaultSort ?? defaultSortDefault
 
   const [userFilter, setUserFilterRaw] = useQueryState("f", filterParser)
   const [searchQueryParam, setSearchQueryParam] = useQueryState(
@@ -209,10 +218,8 @@ export function useBookFilters(options: UseBookFiltersOptions = {}) {
   const dispatch = useAppDispatch()
   const setSort = useCallback(
     (field: SortField, direction: SortDirection) => {
-      // get the current page, dont want to depend on usePathname tho
       void setSortRaw({ field, direction })
-      const currentPage = window.location.pathname.split("/").shift()
-      if (currentPage && !EXCLUDED_SORT_SAVE_PAGES.includes(currentPage)) {
+      if (currentPage && canSaveSort) {
         void dispatch(
           uiSettingsSlice.actions.setDefaultSort({
             page: currentPage,
@@ -221,7 +228,7 @@ export function useBookFilters(options: UseBookFiltersOptions = {}) {
         )
       }
     },
-    [setSortRaw, dispatch],
+    [setSortRaw, dispatch, currentPage, canSaveSort],
   )
 
   const clearAll = useCallback(() => {
@@ -270,7 +277,7 @@ export function useBookFilters(options: UseBookFiltersOptions = {}) {
     sort.direction === (options.defaultSort?.direction ?? "desc")
 
   const baseSort = options.defaultSort ?? defaultSortDefault
-  const hasSavedSort = !!defaultSorts[currentPage ?? ""]
+  const hasSavedSort = !!defaultSorts[currentPage]
   const canResetSort =
     hasSavedSort ||
     sort.field !== baseSort.field ||
@@ -279,7 +286,7 @@ export function useBookFilters(options: UseBookFiltersOptions = {}) {
   const resetSort = useCallback(() => {
     void setSortRaw({ field: baseSort.field, direction: baseSort.direction })
     void dispatch(
-      uiSettingsSlice.actions.clearDefaultSort({ page: currentPage ?? "" }),
+      uiSettingsSlice.actions.clearDefaultSort({ page: currentPage }),
     )
   }, [setSortRaw, dispatch, currentPage, baseSort.field, baseSort.direction])
 

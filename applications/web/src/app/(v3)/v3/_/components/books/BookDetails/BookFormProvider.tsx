@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner"
 
 import { useTranslation } from "@v3/_/hooks/use-translation"
+import { apiErrorMessage } from "@v3/_/lib/api-error"
 
 import { type Role } from "@/components/books/edit/marcRelators"
 import { type BookWithRelations } from "@/database/books"
@@ -167,15 +168,20 @@ export function BookFormProvider({
         audioCover: values.audioCover,
       })
 
-      if (result.error == null) {
-        // mark the form clean so the post-save refetch (keepDirtyValues reset
-        // above) fully applies the server's normalized values
-        form.reset(values)
+      if (result.error != null) {
+        toast.error(t("saveFailed"), {
+          description: apiErrorMessage(result.error),
+        })
+        return false
       }
 
-      return result.error == null
+      // mark the form clean so the post-save refetch (keepDirtyValues reset
+      // above) fully applies the server's normalized values
+      form.reset(values)
+
+      return true
     },
-    [book.uuid, updateBook, form],
+    [book.uuid, updateBook, form, t],
   )
 
   const submitForm = useCallback(async (): Promise<boolean> => {
@@ -266,9 +272,9 @@ export function BookFormProvider({
       return true
     }
 
-    toast.error(t("saveFailed"))
+    // submitFormValues (server error) and the form-error effect already toasted
     return false
-  }, [submitForm, onEditingChange, t])
+  }, [submitForm, onEditingChange])
 
   // one place decides what cmd+enter means: commit the inline field if there is
   // one, otherwise save the whole book and leave edit mode.

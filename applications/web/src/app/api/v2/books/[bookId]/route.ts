@@ -16,13 +16,10 @@ import {
   setFormatCoverData,
   updateBook,
 } from "@/database/books"
+import { toIsoDateString } from "@/dates"
 import { generateBlurhash, getCoverColors } from "@/images"
 import { type UUID } from "@/uuid"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
-
-function isIso8601(dateString: string) {
-  return dateString === new Date(dateString).toISOString()
-}
 
 // This is just a convenience to avoid type casting at the call site
 /* eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters */
@@ -109,17 +106,22 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     "coverColorsOverride",
   )
 
-  const publicationDate =
+  const publicationDateInput =
     getField<string | null>(formData, "publicationDate") ?? null
 
+  // a year, a "yyyy-MM-dd" date and a full timestamp are all valid input
+  const publicationDate = publicationDateInput
+    ? toIsoDateString(publicationDateInput)
+    : null
+
   if (
-    publicationDate &&
+    publicationDateInput &&
     fields.has("publicationDate") &&
-    !isIso8601(publicationDate)
+    !publicationDate
   ) {
     return NextResponse.json(
       {
-        message: "Invalid publicationDate",
+        message: `"${publicationDateInput}" is not a valid publication date. Use a year, YYYY-MM-DD, or a full ISO timestamp.`,
       },
       { status: 405 },
     )
