@@ -85,6 +85,7 @@ function BackupsSection() {
           <Button
             variant="outline"
             size="sm"
+            nativeButton={false}
             render={<a href="/api/v2/backups/download" download />}
           >
             <icon.Download aria-hidden />

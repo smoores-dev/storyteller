@@ -190,6 +190,7 @@ export function BookPanelHeader({
           tooltip="Open in full page"
           aria-label="Open in full page"
           shortcut={["O"]}
+          nativeButton={false}
           render={
             <V3Link href={`/books/${book.uuid}`}>
               <icon.BookFilled className="size-3.5 stroke-[1.5]" />

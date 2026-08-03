@@ -17,8 +17,6 @@ import {
 import * as icon from "@/icons"
 import { formatBytes } from "@/strings"
 
-// v3-styled replacement for the Uppy Dashboard: a drop target + file list with
-// progress, driven by Uppy core state. No Mantine, no Uppy default chrome.
 export function UploadDropzone({
   uppy,
   accept,

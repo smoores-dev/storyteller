@@ -506,6 +506,7 @@ export function HeroSection({
                     <DropdownMenuContent align="end" className="w-fit">
                       {book.readaloud?.filepath && (
                         <DropdownMenuItem
+                          nativeButton={false}
                           render={
                             <a
                               href={getDownloadUrl(book.uuid, "readaloud")}
@@ -520,6 +521,7 @@ export function HeroSection({
 
                       {book.ebook && (
                         <DropdownMenuItem
+                          nativeButton={false}
                           render={
                             <a
                               href={getDownloadUrl(book.uuid, "ebook")}
@@ -535,6 +537,7 @@ export function HeroSection({
                       {book.audiobook && (
                         <DropdownMenuItem
                           disabled={book.audiobook.missing}
+                          nativeButton={false}
                           render={
                             <a
                               href={getDownloadUrl(book.uuid, "audiobook")}
