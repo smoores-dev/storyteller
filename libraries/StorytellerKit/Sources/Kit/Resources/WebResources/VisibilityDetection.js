@@ -8,7 +8,7 @@
  * These are kept for reference and potential future debugging.
  */
 
-import { debugLog } from "./DebugConfig.js";
+import { debugLog } from "./DebugConfig.js"
 
 /**
  * Strategy 1: Fully Contained (WINNER - Currently in use)
@@ -19,33 +19,38 @@ import { debugLog } from "./DebugConfig.js";
  * Logic: range.start <= element.start AND range.end >= element.end
  */
 export function getFullyContainedElements(doc, range) {
-  const ids = [];
+  const ids = []
   try {
-    const allElements = doc.querySelectorAll('[id]');
+    const allElements = doc.querySelectorAll("[id]")
 
     for (const el of allElements) {
-      if (!range.intersectsNode(el)) continue;
+      if (!range.intersectsNode(el)) continue
 
-      const nodeRange = doc.createRange();
+      const nodeRange = doc.createRange()
       try {
-        nodeRange.selectNodeContents(el);
+        nodeRange.selectNodeContents(el)
 
-        const startsAfterRangeStart = range.compareBoundaryPoints(Range.START_TO_START, nodeRange) <= 0;
-        const endsBeforeRangeEnd = range.compareBoundaryPoints(Range.END_TO_END, nodeRange) >= 0;
+        const startsAfterRangeStart =
+          range.compareBoundaryPoints(Range.START_TO_START, nodeRange) <= 0
+        const endsBeforeRangeEnd =
+          range.compareBoundaryPoints(Range.END_TO_END, nodeRange) >= 0
 
         if (startsAfterRangeStart && endsBeforeRangeEnd) {
-          ids.push(el.id);
+          ids.push(el.id)
         }
       } finally {
-        nodeRange.detach?.();
+        nodeRange.detach?.()
       }
     }
 
-    debugLog("VisibilityDetection", `Strategy 1 (fully contained): found ${ids.length} IDs`);
+    debugLog(
+      "VisibilityDetection",
+      `Strategy 1 (fully contained): found ${ids.length} IDs`,
+    )
   } catch (err) {
-    console.warn("[VisibilityDetection] Strategy 1 failed:", err);
+    console.warn("[VisibilityDetection] Strategy 1 failed:", err)
   }
-  return ids;
+  return ids
 }
 
 /**
@@ -57,33 +62,39 @@ export function getFullyContainedElements(doc, range) {
  * Logic: range.start <= element.start
  */
 export function getElementsStartingAfterRangeStart(doc, range) {
-  const ids = [];
+  const ids = []
   try {
-    const allElements = doc.querySelectorAll('[id]');
+    const allElements = doc.querySelectorAll("[id]")
 
     for (const el of allElements) {
-      if (!range.intersectsNode(el)) continue;
+      if (!range.intersectsNode(el)) continue
 
-      const nodeRange = doc.createRange();
+      const nodeRange = doc.createRange()
       try {
-        nodeRange.selectNodeContents(el);
+        nodeRange.selectNodeContents(el)
 
-        const startComparison = range.compareBoundaryPoints(Range.START_TO_START, nodeRange);
-        const isAfterRangeStart = startComparison <= 0;
+        const startComparison = range.compareBoundaryPoints(
+          Range.START_TO_START,
+          nodeRange,
+        )
+        const isAfterRangeStart = startComparison <= 0
 
         if (isAfterRangeStart) {
-          ids.push(el.id);
+          ids.push(el.id)
         }
       } finally {
-        nodeRange.detach?.();
+        nodeRange.detach?.()
       }
     }
 
-    debugLog("VisibilityDetection", `Strategy 2 (starts after): found ${ids.length} IDs`);
+    debugLog(
+      "VisibilityDetection",
+      `Strategy 2 (starts after): found ${ids.length} IDs`,
+    )
   } catch (err) {
-    console.warn("[VisibilityDetection] Strategy 2 failed:", err);
+    console.warn("[VisibilityDetection] Strategy 2 failed:", err)
   }
-  return ids;
+  return ids
 }
 
 /**
@@ -95,19 +106,22 @@ export function getElementsStartingAfterRangeStart(doc, range) {
  * Logic: range.intersectsNode(element)
  */
 export function getIntersectingElements(doc, range) {
-  const ids = [];
+  const ids = []
   try {
-    const allElements = doc.querySelectorAll('[id]');
+    const allElements = doc.querySelectorAll("[id]")
 
     for (const el of allElements) {
       if (range.intersectsNode(el)) {
-        ids.push(el.id);
+        ids.push(el.id)
       }
     }
 
-    debugLog("VisibilityDetection", `Strategy 3 (simple intersect): found ${ids.length} IDs`);
+    debugLog(
+      "VisibilityDetection",
+      `Strategy 3 (simple intersect): found ${ids.length} IDs`,
+    )
   } catch (err) {
-    console.warn("[VisibilityDetection] Strategy 3 failed:", err);
+    console.warn("[VisibilityDetection] Strategy 3 failed:", err)
   }
-  return ids;
+  return ids
 }

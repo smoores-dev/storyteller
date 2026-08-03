@@ -8,21 +8,21 @@ export const DEBUG_CATEGORIES = {
   trace: false,
   overlay: false,
   initial: false,
-};
+}
 
 export const DEBUG_CONFIG = {
   anchorFindingMode: 1,
-};
+}
 
 export function debugLog(category, ...args) {
-  const enabled = DEBUG_CATEGORIES[category];
+  const enabled = DEBUG_CATEGORIES[category]
 
   if (enabled === undefined) {
-    console.warn(`[DebugConfig] Unknown debug category: ${category}`);
-    return;
+    console.warn(`[DebugConfig] Unknown debug category: ${category}`)
+    return
   }
 
   if (enabled) {
-    console.log(`[${category}]`, ...args);
+    console.log(`[${category}]`, ...args)
   }
 }

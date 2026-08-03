@@ -1,4 +1,5 @@
 .yarn
+.jj/
 
 storyteller
 
@@ -85,5 +86,10 @@ flake.*
 /libraries/opds/schemas/ajv/standalone.cjs
 
 /applications/clients/XCodeApps/Assets.xcassets/
+
+**/.build/**
+/applications/clients/AndroidApp/app/build/
 /applications/clients/XCodeApps/TVAssets.xcassets/
-/libraries/StorytellerKit/Sources/Kit/Resources/WebResources/
+
+/libraries/StorytellerKit/Sources/Kit/Resources/WebResources/foliate-js/vendor/fflate.js
+/libraries/StorytellerKit/Sources/Kit/Resources/WebResources/foliate-js/vendor/zip.js

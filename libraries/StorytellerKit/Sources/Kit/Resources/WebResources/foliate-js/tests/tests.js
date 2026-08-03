@@ -1,1 +1,1 @@
-import './epubcfi-tests.js'
+import "./epubcfi-tests.js"
