@@ -6,10 +6,15 @@ import {
   PageLayout,
   PageMain,
 } from "@/app/(v3)/v3/_/components/ui/page-layout"
+import { type HomeSectionWithDetails } from "@/database/shelves"
 
 import { HomeSections, HomeSectionsActions } from "./HomeSections"
 
-export function HomePage() {
+export function HomePage({
+  initialSections,
+}: {
+  initialSections?: HomeSectionWithDetails[]
+}) {
   return (
     <PageLayout>
       <PageMain>
@@ -19,7 +24,7 @@ export function HomePage() {
           className="absolute z-50 w-full bg-transparent!"
         />
         <PageContent>
-          <HomeSections />
+          <HomeSections initialSections={initialSections} />
         </PageContent>
       </PageMain>
     </PageLayout>

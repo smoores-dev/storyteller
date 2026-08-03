@@ -38,8 +38,6 @@ function Widget({
 }
 
 function Section({ section }: { section: HomeSectionWithDetails }) {
-  // shelves manage their own px-4 gutter (with scroll bleed); widgets don't, so
-  // pad them to line up with the shelf headers.
   switch (section.kind) {
     case "hero":
       return (
@@ -72,11 +70,16 @@ function Section({ section }: { section: HomeSectionWithDetails }) {
   }
 }
 
-export function HomeSections() {
+export function HomeSections({
+  initialSections,
+}: {
+  initialSections?: HomeSectionWithDetails[]
+}) {
   const t = useTranslation("HomePage")
-  const { data: sections, isLoading } = useListHomeShelvesQuery()
+  const { data: fetchedSections, isLoading } = useListHomeShelvesQuery()
+  const sections = fetchedSections ?? initialSections
 
-  if (isLoading) {
+  if (isLoading && !sections) {
     return (
       <div className="flex flex-1 items-center justify-center py-12">
         <icon.Loader className="text-muted-foreground size-6 animate-spin" />

@@ -14,10 +14,32 @@ type Tile = {
   detail?: string
 }
 
+function StatsSkeleton() {
+  return (
+    <section className="grid grid-cols-2 gap-px overflow-hidden rounded-xl @2xl/main:grid-cols-4">
+      <div className="bg-muted/40 px-5 py-5">
+        <div className="bg-muted/40 h-20 w-full" />
+      </div>
+      <div className="bg-muted/40 px-5 py-5">
+        <div className="bg-muted/40 h-20 w-full" />
+      </div>
+      <div className="bg-muted/40 px-5 py-5">
+        <div className="bg-muted/40 h-20 w-full" />
+      </div>
+      <div className="bg-muted/40 px-5 py-5">
+        <div className="bg-muted/40 h-20 w-full" />
+      </div>
+    </section>
+  )
+}
+
 export function StatsBar() {
   const t = useTranslation("HomePage")
-  const { data: stats } = useGetHomeStatsQuery()
-  const { data: statuses } = useListStatusesQuery()
+  const { data: stats, isLoading } = useGetHomeStatsQuery()
+  const { data: statuses, isLoading: isStatusesLoading } =
+    useListStatusesQuery()
+
+  if (isLoading || isStatusesLoading) return <StatsSkeleton />
 
   if (!stats || !statuses) return null
   const readingStatus = statuses.find((s) => s.name === STATUS_READING)

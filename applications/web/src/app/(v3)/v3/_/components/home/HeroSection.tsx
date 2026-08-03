@@ -1,10 +1,9 @@
 "use client"
 
-import { useMemo } from "react"
-
 import { Book3D } from "@v3/_/components/books/Book3D"
 import { useCoverScope } from "@v3/_/components/books/CoverScope"
 import { Button } from "@v3/_/components/ui/button"
+import { Skeleton } from "@v3/_/components/ui/skeleton"
 import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
@@ -12,7 +11,10 @@ import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
 import { STATUS_READING } from "@/database/statusKinds"
 import * as icon from "@/icons"
-import { useListBooksQuery } from "@/store/api"
+import {
+  useListInfiniteBooksInfiniteQuery,
+  useListStatusesQuery,
+} from "@/store/api"
 
 type ReadLink = {
   href: string
@@ -43,19 +45,64 @@ function getReadLink(book: BookWithRelations): ReadLink {
 }
 
 export function HeroSection() {
-  const { data: books = [] } = useListBooksQuery(undefined)
+  const { data: statuses } = useListStatusesQuery()
+  const readingStatus = statuses?.find((s) => s.name === STATUS_READING)
 
-  const book = useMemo(() => {
-    return books
-      .filter((b) => b.status?.name === STATUS_READING)
-      .sort(
-        (a, b) => (b.position?.timestamp ?? 0) - (a.position?.timestamp ?? 0),
-      )[0]
-  }, [books])
+  // only the single most recently read book with the reading status; fetching
+  // the whole library to pick one client-side made large libraries crawl
+  const { data } = useListInfiniteBooksInfiniteQuery(
+    {
+      limit: 1,
+      orderBy: "lastRead",
+      orderDirection: "desc",
+      filter: {
+        type: "condition",
+        field: "status",
+        operator: "is",
+        // the query is skipped until the status resolves; null never runs
+        value: readingStatus?.uuid ?? null,
+      },
+    },
+    { skip: !readingStatus },
+  )
 
-  if (!book) return null
+  const book = data?.pages[0]?.[0]
+
+  if (!book) return data === undefined ? <HeroSkeleton /> : null
 
   return <Hero book={book} />
+}
+
+function HeroSkeleton() {
+  return (
+    <section className="to-cover-well relative -mx-4 flex min-h-96 flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8">
+      <Skeleton className="mx-6 mt-8 h-3 w-28 animate-none" />
+      <div className="flex flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
+        <div className="flex flex-1 flex-col justify-between gap-8 pb-4">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-7 w-3/5 animate-none" />
+            <Skeleton className="h-4 w-2/5 animate-none" />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-1.5 w-48 max-w-full animate-none rounded-full" />
+              <Skeleton className="h-4 w-24 animate-none" />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-28 animate-none rounded-lg" />
+              <Skeleton className="h-8 w-24 animate-none rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex w-full justify-center @xl/main:w-auto">
+          <Skeleton className="h-[290px] w-[200px] animate-none rounded-md" />
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function Hero({ book }: { book: BookWithRelations }) {
@@ -96,11 +143,11 @@ function Hero({ book }: { book: BookWithRelations }) {
 
   return (
     <section
-      className="to-cover-well relative -mx-4 flex flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
+      className="to-cover-well relative -mx-4 flex min-h-96 flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
       {...scope}
     >
       <p className="text-tinted small-caps mx-6 mt-8">{t("hero.eyebrow")}</p>
-      <div className="flex flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
+      <div className="flex grow flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
         <div className="flex flex-1 flex-col justify-between pb-4">
           <div slot="main-info">
             <h2 className="font-heading text-subtle-foreground text-2xl leading-tight font-medium tracking-tight @xl/main:text-3xl">

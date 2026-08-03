@@ -240,8 +240,8 @@ export function BookGrid({
         style={{
           gap: gridGap,
           gridTemplateColumns: isMobile
-            ? "minmax(0, 1fr)"
-            : `repeat(auto-fill, ${cardWidth}px)`,
+            ? `repeat(${MOBILE_COLUMNS}, minmax(0, 1fr))`
+            : `repeat(auto-fill, minmax(${cardWidth}px, 1fr))`,
         }}
       >
         {Array.from({ length: 40 }).map((_, i) => (
