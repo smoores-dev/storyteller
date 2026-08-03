@@ -321,12 +321,13 @@ export function AppSidebar({
   return (
     <>
       <Sidebar variant="inset" collapsible="icon" {...props}>
-        <SidebarHeader className="flex h-(--header-height) flex-row items-center justify-between gap-2">
+        <SidebarHeader className="flex h-[var(--header-height,3.5rem)] shrink-0 flex-row items-center justify-between gap-2">
           <TooltipButton
             size="sm"
             variant="real-ghost"
             tooltip={`Version: ${currentVersion}`}
             aria-label={`Storyteller version ${currentVersion}`}
+            nativeButton={false}
             render={
               <V3Link
                 href="/"
@@ -484,6 +485,8 @@ function SidebarNavGroup({
   const dispatch = useAppDispatch()
   const collapsedGroups = useAppSelector(selectCollapsedSidebarGroups)
   const isCollapsed = collapsedGroups[group.uuid] ?? false
+  const { state: shellState, isMobile } = useSidebar()
+  const isIconCollapsed = shellState === "collapsed" && !isMobile
 
   // header count for the special groups; RTK dedupes these across groups
   const { data: collections = [] } = useListCollectionsQuery()
@@ -565,10 +568,11 @@ function SidebarNavGroup({
       <SidebarGroup className="py-0">
         <div className="group/group-header relative">
           <CollapsibleTrigger
-            nativeButton={false}
             render={
               <button className="relative w-full cursor-pointer gap-1.5 font-sans">
-                <div className="bg-sidebar-foreground/50 absolute inset-x-4 top-4 z-10 h-px opacity-100 transition-opacity duration-100 ease-linear group-not-data-[collapsible=icon]:opacity-0" />
+                {isIconCollapsed && (
+                  <div className="bg-sidebar-foreground/50 absolute inset-x-4 top-4 z-10 h-px" />
+                )}
                 <SidebarGroupLabel className="w-full gap-1.5 pr-1">
                   <icon.ChevronRight
                     className={cn(

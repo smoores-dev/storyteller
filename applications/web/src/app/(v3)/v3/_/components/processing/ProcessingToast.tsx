@@ -172,6 +172,7 @@ export function ProcessingToast() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="z-50">
                   <DropdownMenuItem
+                    nativeButton={false}
                     render={<V3Link href="/settings?tab=queue" />}
                   >
                     <icon.ListNumbers className="size-4" />
