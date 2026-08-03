@@ -17,7 +17,7 @@ export const ICON_REGISTRY: IconEntry[] = [
   },
   {
     id: "book-open",
-    tabler: "IconBookOpen",
+    tabler: "IconBook2",
     sfSymbol: "book.pages",
     lucide: "book-open",
     tags: ["book", "reading", "open"],

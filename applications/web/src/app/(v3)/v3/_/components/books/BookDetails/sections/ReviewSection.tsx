@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { useBookForm } from "@v3/_/components/books/BookDetails/BookFormProvider"
-import { MultidimensionalRating } from "@v3/_/components/books/BookDetails/sections/MultidimensionalRating"
+import { MultidimensionalRating } from "@v3/_/components/books/BookDetails/sections/MultidimensionalRatingLazy"
 import { RatingInput } from "@v3/_/components/books/RatingInput"
 import { Button } from "@v3/_/components/ui/button"
 import { Field, FieldLabel } from "@v3/_/components/ui/field"

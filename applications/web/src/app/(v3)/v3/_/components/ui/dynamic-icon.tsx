@@ -20,8 +20,10 @@ function getLazyIcon(
   if (cached) return cached
 
   const component = lazy(async () => {
-    const mod = await import("@tabler/icons-react")
-    const Icon = (mod as unknown as Record<string, IconComponent>)[tablerName]
+    const { REGISTRY_ICON_COMPONENTS } = await import(
+      "@/icons/registry-components"
+    )
+    const Icon = REGISTRY_ICON_COMPONENTS[tablerName]
 
     if (!Icon) {
       return { default: FallbackIcon as IconComponent }

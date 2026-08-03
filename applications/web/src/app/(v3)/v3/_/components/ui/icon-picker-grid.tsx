@@ -32,15 +32,13 @@ function IconPickerGrid({
   useEffect(() => {
     let cancelled = false
 
-    void import("@tabler/icons-react").then((mod) => {
+    void import("@/icons/registry-components").then((mod) => {
       if (cancelled) return
 
       const resolved: Record<string, TablerIconComponent> = {}
 
       for (const entry of icons) {
-        const Icon = (mod as unknown as Record<string, TablerIconComponent>)[
-          entry.tabler
-        ]
+        const Icon = mod.REGISTRY_ICON_COMPONENTS[entry.tabler]
         if (Icon) {
           resolved[entry.id] = Icon
         }

@@ -1,4 +1,6 @@
-import { type EpubPreferences, TextAlignment } from "@readium/navigator"
+// type-only: a value import here would pull the whole @readium/navigator
+// bundle into every page through the global store
+import { type EpubPreferences, type TextAlignment } from "@readium/navigator"
 import {
   type PayloadAction,
   createAction,
@@ -114,7 +116,7 @@ export const defaultPreferences: ReadingPreferences = {
   fontSize: 100,
   fontFamily: "publisher",
   theme: "auto",
-  align: TextAlignment.justify,
+  align: "justify" as TextAlignment,
   spacing: "default",
   layout: "paginated",
   columns: 0, // 0 means auto
