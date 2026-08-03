@@ -174,10 +174,10 @@ export function AppSidebar({
   const hasUpdate = useMemo(() => {
     if (!latestVersion) return false
 
-    const dismissed =
-      typeof window !== "undefined"
-        ? localStorage.getItem(DISMISSED_VERSION_KEY)
-        : null
+    const dismissed = false
+    // typeof window !== "undefined"
+    //   ? localStorage.getItem(DISMISSED_VERSION_KEY)
+    //   : null
 
     const isNewerThanCurrent = compareVersions(latestVersion, currentVersion)
     const isNewerThanDismissed =
@@ -203,15 +203,16 @@ export function AppSidebar({
       latestChangelog?.description,
     )
 
-    toast.info(`A new version (v${latestVersion}) is available`, {
+    toast(`A new version (v${latestVersion}) is available`, {
       dismissible: true,
       closeButton: true,
       onDismiss: () => {
         localStorage.setItem(DISMISSED_VERSION_KEY, latestVersion)
       },
+      className: "flex flex-col gap-2",
       description: cleanedDescription ? (
         <div
-          className="prose prose-sm dark:prose-invert"
+          className="prose prose-sm dark:prose-invert leading-tight"
           dangerouslySetInnerHTML={{
             __html: cleanedDescription,
           }}
@@ -570,13 +571,15 @@ function SidebarNavGroup({
           <CollapsibleTrigger
             render={
               <button className="relative w-full cursor-pointer gap-1.5 font-sans">
-                {isIconCollapsed && (
+                {/* {isIconCollapsed && (
                   <div className="bg-sidebar-foreground/50 absolute inset-x-4 top-4 z-10 h-px" />
-                )}
-                <SidebarGroupLabel className="w-full gap-1.5 pr-1">
+                )} */}
+                <SidebarGroupLabel className="w-full gap-1.5 pr-1 group-data-[collapsible=icon]:gap-0">
                   <icon.ChevronRight
                     className={cn(
-                      "text-muted-foreground size-3 shrink-0 stroke-[1.5] transition-transform duration-200",
+                      "text-muted-foreground size-3 shrink-0 stroke-[1.5] opacity-100 transition-transform duration-200",
+                      "group-data-[collapsible=icon]:opacity-0",
+                      "group-data-[collapsible=icon]:w-0",
                       !isCollapsed && "rotate-90",
                     )}
                   />
@@ -585,6 +588,8 @@ function SidebarNavGroup({
                       // "text-xs",
 
                       "small-caps",
+                      "group-data-[collapsible=icon]:opacity-0",
+                      "group-data-[collapsible=icon]:w-0",
 
                       "tracking-[0.08em]",
                       // ATKINS
@@ -597,12 +602,13 @@ function SidebarNavGroup({
                   <span
                     aria-hidden
                     className={cn(
-                      "bg-muted-foreground/60 h-px min-w-3 flex-1",
-                      totalCount == null && "mr-3",
+                      "bg-muted-foreground/60 group-data-[collapsible=icon]:bg-muted-foreground h-px min-w-3 flex-1 group-data-[collapsible=icon]:ml-0.75 group-data-[collapsible=icon]:max-w-6 group-data-[collapsible=icon]:min-w-6",
+                      totalCount == null &&
+                        "mr-3 group-data-[collapsible=icon]:mr-0",
                     )}
                   />
                   {totalCount != null && (
-                    <span className="text-sidebar-foreground/60 mr-2 flex h-5 min-w-5 items-center justify-center text-[11px] tabular-nums transition-opacity group-hover/group-header:opacity-0 group-has-data-popup-open/group-header:opacity-0">
+                    <span className="text-sidebar-foreground/60 mr-2 flex h-5 min-w-5 items-center justify-center text-[11px] tabular-nums opacity-100 transition-opacity group-hover/group-header:opacity-0 group-has-data-popup-open/group-header:opacity-0 group-data-[collapsible=icon]:opacity-0">
                       {totalCount}
                     </span>
                   )}
