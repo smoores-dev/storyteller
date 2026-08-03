@@ -100,6 +100,7 @@ function CoverSlot({
           size="icon-sm"
           tooltip={c.plain("actions.download")}
           aria-label={c.plain("actions.download")}
+          nativeButton={false}
           render={
             <a
               href={currentUrl}

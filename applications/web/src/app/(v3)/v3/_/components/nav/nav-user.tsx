@@ -91,6 +91,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem
+                nativeButton={false}
                 render={
                   <Link
                     href={`${basePath}/preferences?tab=general`}
@@ -103,6 +104,7 @@ export function NavUser({
               />
 
               <DropdownMenuItem
+                nativeButton={false}
                 render={
                   <Link
                     href="https://storyteller-platform.gitlab.io/storyteller/"
