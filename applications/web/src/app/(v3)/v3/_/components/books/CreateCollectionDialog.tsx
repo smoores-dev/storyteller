@@ -36,7 +36,9 @@ import { Input } from "@v3/_/components/ui/input"
 import { Switch } from "@v3/_/components/ui/switch"
 import { Textarea } from "@v3/_/components/ui/textarea"
 
+import { BookSelector } from "@/app/(v3)/v3/_/components/shelves/ShelfEditor"
 import {
+  useAddBooksToCollectionsMutation,
   useCreateCollectionMutation,
   useGetCurrentUserQuery,
   useListCollectionsQuery,
@@ -92,6 +94,8 @@ export function CreateCollectionDialog({
   const [color, setColor] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
   const [memberIds, setMemberIds] = useState<UUID[]>([])
+  const [bookUuids, setBookUuids] = useState<string[]>([])
+  const [addBooksToCollections] = useAddBooksToCollectionsMutation()
 
   const {
     register,
@@ -128,6 +132,7 @@ export function CreateCollectionDialog({
       setColor(null)
       setIsPublic(true)
       setMemberIds([])
+      setBookUuids([])
     }
   }, [
     open,
@@ -176,6 +181,13 @@ export function CreateCollectionDialog({
             }).unwrap()
           }
 
+          if (bookUuids.length > 0) {
+            await addBooksToCollections({
+              collections: [result.uuid],
+              books: bookUuids as UUID[],
+            }).unwrap()
+          }
+
           onCreated?.(result.uuid)
         }
 
@@ -187,12 +199,14 @@ export function CreateCollectionDialog({
     [
       createCollection,
       updateCollection,
+      addBooksToCollections,
       collectionUuid,
       isEditing,
       icon,
       color,
       isPublic,
       memberIds,
+      bookUuids,
       onCreated,
       handleClose,
     ],
@@ -242,6 +256,23 @@ export function CreateCollectionDialog({
                 <ColorPicker value={color} onChange={setColor} />
               </div>
             </Field>
+
+            {!isEditing && (
+              <Field>
+                <FieldLabel>Books</FieldLabel>
+                <BookSelector
+                  selectedBookUuids={bookUuids}
+                  onAdd={(uuid) => {
+                    setBookUuids((prev) =>
+                      prev.includes(uuid) ? prev : [...prev, uuid],
+                    )
+                  }}
+                  onRemove={(uuid) => {
+                    setBookUuids((prev) => prev.filter((u) => u !== uuid))
+                  }}
+                />
+              </Field>
+            )}
 
             <Field orientation="horizontal">
               <Switch

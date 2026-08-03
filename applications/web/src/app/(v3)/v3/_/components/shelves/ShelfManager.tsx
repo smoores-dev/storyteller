@@ -50,7 +50,6 @@ export function ShelfManager({ className, trigger }: ShelfManagerProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        {...(trigger ? { nativeButton: false } : {})}
         render={
           trigger ?? (
             <Button variant="default" size="sm" className={className}>

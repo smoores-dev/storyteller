@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@v3/_/components/ui/select"
 import { Textarea } from "@v3/_/components/ui/textarea"
+import { useDebounce } from "@v3/_/hooks/use-debounce"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
@@ -41,10 +42,12 @@ import { SORTABLE_FIELDS } from "@/sort"
 import {
   getCoverUrl,
   useCreateUserShelfMutation,
-  useListBooksQuery,
+  useGetBookQuery,
+  useListInfiniteBooksInfiniteQuery,
   usePreviewShelfFilterMutation,
   useUpdateUserShelfMutation,
 } from "@/store/api"
+import { type UUID } from "@/uuid"
 
 import {
   FilterPreview,
@@ -69,6 +72,7 @@ type ShelfEditorProps = {
   onSaved?: (shelf: ShelfWithBooks) => void
   initialFilter?: ShelfFilterNode | null
   initialName?: string
+  initialBooks?: string[]
 }
 
 type SelectionMode = "filter" | "manual"
@@ -80,6 +84,7 @@ export function ShelfEditor({
   onSaved,
   initialFilter,
   initialName,
+  initialBooks,
 }: ShelfEditorProps) {
   const t = useTranslation("ShelfEditor")
   const c = useCommon()
@@ -99,8 +104,10 @@ export function ShelfEditor({
   )
 
   const [selectedBookUuids, setSelectedBookUuids] = useState<string[]>(
-    shelf?.books.map((b) => b.bookUuid) ?? [],
+    shelf?.books.map((b) => b.bookUuid) ?? initialBooks ?? [],
   )
+
+  const initialBooksKey = initialBooks?.join(",") ?? ""
 
   const [shelfIcon, setShelfIcon] = useState<string | null>(shelf?.icon ?? null)
   const [shelfColor, setShelfColor] = useState<string | null>(
@@ -150,12 +157,12 @@ export function ShelfEditor({
       })
 
       setFilter(initialFilter ?? null)
-      setSelectedBookUuids([])
+      setSelectedBookUuids(initialBooksKey ? initialBooksKey.split(",") : [])
       setShelfIcon(null)
       setShelfColor(null)
-      setSelectionMode("filter")
+      setSelectionMode(initialBooksKey ? "manual" : "filter")
     }
-  }, [open, shelf, form, initialFilter, initialName])
+  }, [open, shelf, form, initialFilter, initialName, initialBooksKey])
 
   const [createShelf, { isLoading: isCreating }] = useCreateUserShelfMutation()
   const [updateShelf, { isLoading: isUpdating }] = useUpdateUserShelfMutation()
@@ -567,7 +574,7 @@ type BookSelectorProps = {
   onRemove: (uuid: string) => void
 }
 
-function BookSelector({
+export function BookSelector({
   selectedBookUuids,
   onAdd,
   onRemove,
@@ -575,28 +582,20 @@ function BookSelector({
   const t = useTranslation("ShelfEditor")
   const c = useCommon()
   const [searchQuery, setSearchQuery] = useState("")
-  const { data: allBooks = [], isLoading } = useListBooksQuery()
+  const debouncedSearch = useDebounce(searchQuery.trim(), 200)
 
-  const selectedBooks = useMemo(() => {
-    return selectedBookUuids
-      .map((uuid) => allBooks.find((b) => b.uuid === uuid))
-      .filter((b): b is BookWithRelations => b !== undefined)
-  }, [allBooks, selectedBookUuids])
+  const { data: searchData, isFetching: isLoading } =
+    useListInfiniteBooksInfiniteQuery(
+      { limit: 10, search: debouncedSearch },
+      { skip: !debouncedSearch },
+    )
 
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return []
-
-    const query = searchQuery.toLowerCase()
-
-    return allBooks
-      .filter(
-        (book) =>
-          !selectedBookUuids.includes(book.uuid) &&
-          (book.title.toLowerCase().includes(query) ||
-            book.authors.some((a) => a.name.toLowerCase().includes(query))),
-      )
-      .slice(0, 10)
-  }, [allBooks, searchQuery, selectedBookUuids])
+    if (!debouncedSearch) return []
+    return (searchData?.pages[0] ?? []).filter(
+      (book) => !selectedBookUuids.includes(book.uuid),
+    )
+  }, [searchData, debouncedSearch, selectedBookUuids])
 
   return (
     <div className="flex flex-col gap-2">
@@ -647,41 +646,60 @@ function BookSelector({
         </div>
       )}
 
-      {selectedBooks.length > 0 && (
+      {selectedBookUuids.length > 0 && (
         <div className="flex flex-col gap-1">
           <Label className="text-muted-foreground text-xs">
-            {c.plain("selectedCount", { count: selectedBooks.length })}
+            {c.plain("selectedCount", { count: selectedBookUuids.length })}
           </Label>
 
           <div className="scroll-y flex max-h-[140px] flex-col gap-0.5">
-            {selectedBooks.map((book) => (
-              <BookListItem
-                key={book.uuid}
-                book={book}
-                action={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => {
-                      onRemove(book.uuid)
-                    }}
-                  >
-                    <icon.Close className="size-3" />
-                  </Button>
-                }
+            {selectedBookUuids.map((uuid) => (
+              <SelectedBookItem
+                key={uuid}
+                uuid={uuid as UUID}
+                onRemove={onRemove}
               />
             ))}
           </div>
         </div>
       )}
 
-      {selectedBooks.length === 0 && !searchQuery.trim() && (
+      {selectedBookUuids.length === 0 && !searchQuery.trim() && (
         <div className="text-muted-foreground py-2 text-center text-xs">
           {t.plain("searchToAdd")}
         </div>
       )}
     </div>
+  )
+}
+
+function SelectedBookItem({
+  uuid,
+  onRemove,
+}: {
+  uuid: UUID
+  onRemove: (uuid: string) => void
+}) {
+  const { data: book } = useGetBookQuery({ uuid })
+
+  if (!book) return null
+
+  return (
+    <BookListItem
+      book={book}
+      action={
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          onClick={() => {
+            onRemove(book.uuid)
+          }}
+        >
+          <icon.Close className="size-3" />
+        </Button>
+      }
+    />
   )
 }
 
