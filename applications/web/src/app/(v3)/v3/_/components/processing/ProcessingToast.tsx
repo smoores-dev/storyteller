@@ -112,9 +112,11 @@ export function ProcessingToast() {
         size="sm"
         className="bg-popover text-popover-foreground items-start shadow-lg"
       >
-        <ItemMedia variant="image" className="h-18! w-10! object-contain!">
-          {book && <BookCover disableHover book={book} width={96} />}
-        </ItemMedia>
+        {!minimized && (
+          <ItemMedia variant="image" className="h-18! w-10! object-contain!">
+            {book && <BookCover disableHover book={book} width={96} />}
+          </ItemMedia>
+        )}
 
         <ItemContent className="gap-1.5">
           <ItemTitle className="max-w-full">
