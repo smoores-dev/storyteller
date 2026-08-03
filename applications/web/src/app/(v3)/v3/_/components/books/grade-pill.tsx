@@ -13,9 +13,6 @@ const GRADE_STYLES: Record<string, string> = {
   F: "bg-poor-bg text-poor dark:bg-poor-900 dark:text-poor-200",
 }
 
-// the same grade → colour ramp as GRADE_STYLES, as raw css variables so a
-// facet colour dot can carry the grade's signature colour. mid-tone oklch that
-// reads on both light and dark.
 export const GRADE_COLORS: Record<string, string> = {
   "A+": "var(--positive)",
   A: "var(--good)",
@@ -37,7 +34,7 @@ export function GradePill({
   return (
     <span
       className={cn(
-        "inline-block rounded px-1.5 py-0.5 text-xs font-bold tabular-nums",
+        "inline-flex shrink-0 items-center rounded px-1 py-px text-[12px] leading-[1.15] font-bold tabular-nums",
         GRADE_STYLES[grade] ?? "bg-muted text-muted-foreground",
         className,
       )}

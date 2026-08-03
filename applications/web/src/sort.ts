@@ -99,7 +99,7 @@ const COMPACT_DISPLAY_FIELDS: ReadonlySet<DisplayField> = new Set([
   // "alignmentMissingChapters",
 ])
 
-const MAX_COMPACT_PER_ROW = 2
+const MAX_COMPACT_PER_ROW = 3
 
 export function groupDisplayRows(fields: DisplayField[]): DisplayField[][] {
   const rows: DisplayField[][] = []

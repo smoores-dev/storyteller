@@ -68,7 +68,10 @@ export function useFormatDuration() {
   const t = useTranslation("Common.Duration")
 
   return useCallback(
-    (seconds: number, options?: { approximate?: boolean }): string => {
+    (
+      seconds: number,
+      options?: { approximate?: boolean; compact?: boolean },
+    ): string => {
       const totalMinutes = Math.round(seconds / 60)
 
       if (totalMinutes < 1) {
@@ -77,18 +80,21 @@ export function useFormatDuration() {
 
       const hours = Math.floor(totalMinutes / 60)
       const minutes = totalMinutes % 60
+      const compact = options?.compact ?? false
 
       let result: string
 
       if (hours > 0 && minutes > 0) {
-        result = t("hoursAndMinutes", {
+        result = t(compact ? "compactHoursAndMinutes" : "hoursAndMinutes", {
           hours: String(hours),
           minutes: String(minutes),
         })
       } else if (hours > 0) {
-        result = t("hours", { hours: String(hours) })
+        result = t(compact ? "compactHours" : "hours", { hours: String(hours) })
       } else {
-        result = t("minutes", { minutes: String(minutes) })
+        result = t(compact ? "compactMinutes" : "minutes", {
+          minutes: String(minutes),
+        })
       }
 
       if (options?.approximate) {

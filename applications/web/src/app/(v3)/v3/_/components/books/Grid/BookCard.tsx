@@ -3,6 +3,7 @@ import { useFormatter, useLocale } from "next-intl"
 import { Fragment, memo, useCallback, useMemo } from "react"
 
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
+import { useCommon } from "@v3/_/hooks/use-translation"
 import { useFormatDuration } from "@v3/_/lib/formatters"
 import { cn } from "@v3/_/lib/utils"
 
@@ -80,15 +81,18 @@ export function SecondaryText({
   book,
   field,
   ctx,
+  compact = false,
 }: {
   book: BookWithRelations
   field: DisplayField
   ctx: SortContext | undefined
+  compact?: boolean
 }): React.ReactNode {
   const { dateTime, relativeTime } = useFormatter()
   const { ratingIcon } = useUserPreferences()
   const locale = useLocale()
   const formatDuration = useFormatDuration()
+  const c = useCommon()
 
   const none = <span className="text-muted-foreground">{"\u2014"}</span>
 
@@ -167,11 +171,24 @@ export function SecondaryText({
       )
     case "pageCount": {
       const p = book.ebook?.pageCount ?? book.pageCount
-      return p != null ? <span>{p} pages</span> : none
+      if (p == null) return none
+      return (
+        <span>
+          {compact
+            ? c("units.pagesShort", { count: p })
+            : c("units.pages", { count: p })}
+        </span>
+      )
     }
     case "duration": {
       const d = book.audiobook?.duration ?? book.duration
-      return d != null ? <span>{formatDuration(d)}</span> : none
+      return d != null ? (
+        <span>
+          {formatDuration(d, compact ? { compact: true } : undefined)}
+        </span>
+      ) : (
+        none
+      )
     }
     case "fileSize": {
       const f = book.ebook?.fileSize ?? book.audiobook?.fileSize ?? null
@@ -460,20 +477,34 @@ export const BookCard = memo(function BookCard({
               return <CreatorsLine key={field} book={book} field={field} />
             }
 
+            const hasPill = row.includes("alignmentGrade")
+
             return (
-              <p
+              <div
                 key={row.join("+")}
-                className="text-muted-foreground line-clamp-1 text-xs tabular-nums"
+                className={cn(
+                  "text-muted-foreground text-xs tabular-nums",
+                  hasPill
+                    ? "flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap"
+                    : "line-clamp-1",
+                )}
               >
                 {row.map((f, i) => (
                   <Fragment key={f}>
                     {i > 0 && (
-                      <span className="text-muted-foreground/50"> · </span>
+                      <span className="text-muted-foreground/50">
+                        {hasPill ? "·" : " · "}
+                      </span>
                     )}
-                    <SecondaryText book={book} field={f} ctx={displayContext} />
+                    <SecondaryText
+                      book={book}
+                      field={f}
+                      ctx={displayContext}
+                      compact
+                    />
                   </Fragment>
                 ))}
-              </p>
+              </div>
             )
           })}
         </div>
