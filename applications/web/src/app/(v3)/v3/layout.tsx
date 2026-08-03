@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Fraunces, IBM_Plex_Sans, IBM_Plex_Serif } from "next/font/google"
+import localFont from "next/font/local"
 import { cookies, headers } from "next/headers"
 import Script from "next/script"
 import { NextIntlClientProvider } from "next-intl"
@@ -21,27 +21,46 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 
 import "./globals.css"
+import { getSetting } from "@/database/settings"
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
+const literata = localFont({
+  src: [
+    {
+      path: "../../../fonts/Literata.woff2",
+      // 200-900
+      weight: "200 900",
+      style: "normal",
+    },
+    {
+      path: "../../../fonts/Literata-Italic.woff2",
+      // 200-900
+      weight: "200 900",
+      style: "italic",
+    },
+  ],
   display: "swap",
-  variable: "--font-fraunces",
-  style: ["normal", "italic"],
+  variable: "--font-literata",
+  fallback: ["Georgia", "serif"],
 })
 
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
+const ibmPlexSans = localFont({
+  src: [
+    {
+      path: "../../../fonts/IBMPlexSans.woff2",
+      // 100-700
+      weight: "100 700",
+      style: "normal",
+    },
+    {
+      path: "../../../fonts/IBMPlexSans-Italic.woff2",
+      // 100-700
+      weight: "100 700",
+      style: "italic",
+    },
+  ],
   display: "swap",
-  weight: ["400", "500", "600"],
   variable: "--font-ibm-plex-sans",
-})
-
-const trySerif = IBM_Plex_Serif({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-  weight: ["400", "500", "700"],
-  variable: "--font-try-serif",
+  fallback: ["system-ui", "sans-serif"],
 })
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -88,7 +107,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${fraunces.variable} ${ibmPlexSans.variable} ${trySerif.variable} antialiased`}
+      className={`${literata.variable} ${ibmPlexSans.variable} antialiased`}
     >
       <head>
         {env.NODE_ENV === "development" && env.ENABLE_REACT_SCAN && (

@@ -85,10 +85,9 @@
 @theme inline {
   --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-heading: var(--font-literata);
-  --font-seriff: var(--font-try-serif), Georgia, serif;
-  --font-serif: var(--font-ibm-plex-sans), ui-sans-serif;
-  --font-literata: Literata;
+  --font-heading: var(--font-literata), Georgia, serif;
+  --font-seriff: var(--font-literata), Georgia, serif;
+  --font-serif: var(--font-literata), Georgia, serif;
   --font-open-dyslexic: OpenDyslexic;
   /* --font-mono: var(--font-geist-mono); */
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -532,13 +531,29 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 }
 @font-face {
   font-family: "Literata";
-  src: url("/fonts/Literata.ttf") format("truetype");
+  src: url("/fonts/Literata.woff2") format("woff2");
+  font-weight: 200 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Literata";
-  src: url("/fonts/Literata-Italic.ttf") format("truetype");
+  src: url("/fonts/Literata-Italic.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Italic.woff2") format("woff2");
+  font-weight: 100 700;
   font-style: italic;
   font-display: swap;
 }
