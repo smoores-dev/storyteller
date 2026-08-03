@@ -2,7 +2,6 @@
 
 import { open } from "@tauri-apps/plugin-dialog"
 import { matchSorter } from "match-sorter"
-import { lookup } from "mime-types"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Badge } from "@v3/_/components/ui/badge"
@@ -84,13 +83,43 @@ function useListDirectory(
   return { entries, actionIsPending }
 }
 
+// just the formats this library deals with; the full mime-types database is
+// 150+ KB of client bundle for the same answer
+const EXTENSION_MIME: Record<string, string> = {
+  epub: "application/epub+zip",
+  zip: "application/zip",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  m4b: "audio/mp4",
+  aac: "audio/aac",
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
+  opus: "audio/opus",
+  flac: "audio/flac",
+  wav: "audio/wav",
+  webm: "audio/webm",
+  mp4: "video/mp4",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  svg: "image/svg+xml",
+}
+
+function lookupMime(filename: string): string | null {
+  const ext = filename.split(".").pop()?.toLowerCase()
+  return (ext && EXTENSION_MIME[ext]) || null
+}
+
 function matchesAcceptFilter(entryName: string, fileTypes: string[]): boolean {
   return fileTypes.some((type) => {
     if (type.startsWith(".")) {
       return entryName.endsWith(type)
     }
 
-    const contentType = lookup(entryName)
+    const contentType = lookupMime(entryName)
     if (!contentType) return false
 
     if (type.endsWith("/*")) {
