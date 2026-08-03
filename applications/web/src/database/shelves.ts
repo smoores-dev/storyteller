@@ -49,10 +49,20 @@ function parseFilter(filter: string | ShelfFilter | null): ShelfFilter | null {
   }
 }
 
-export async function getShelf(uuid: UUID, userId: UUID, tr?: Transaction<DB>) {
-  const shelf = await (tr ?? db)
+function getShelfBase(uuid: UUID, userId: UUID, tr?: Transaction<DB>) {
+  return (tr ?? db)
     .selectFrom("shelf")
     .selectAll("shelf")
+    .where("shelf.uuid", "=", uuid)
+    .where("shelf.userId", "=", userId)
+}
+
+export function getShelfBare(uuid: UUID, userId: UUID, tr?: Transaction<DB>) {
+  return getShelfBase(uuid, userId, tr).executeTakeFirstOrThrow()
+}
+
+export async function getShelf(uuid: UUID, userId: UUID, tr?: Transaction<DB>) {
+  const shelf = await getShelfBase(uuid, userId, tr)
     .select((eb) => [
       jsonArrayFrom(
         eb
@@ -62,8 +72,6 @@ export async function getShelf(uuid: UUID, userId: UUID, tr?: Transaction<DB>) {
           .orderBy("shelfBook.position", "asc"),
       ).as("books"),
     ])
-    .where("shelf.uuid", "=", uuid)
-    .where("shelf.userId", "=", userId)
     .executeTakeFirstOrThrow()
 
   return {
