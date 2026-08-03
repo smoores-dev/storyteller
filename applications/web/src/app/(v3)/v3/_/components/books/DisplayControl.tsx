@@ -12,19 +12,25 @@ import {
   FilterableMenuSubTrigger,
   FilterableMenuTrigger,
 } from "@/app/(v3)/v3/_/components/ui/filterable-menu"
+import { ResetButton } from "@/app/(v3)/v3/_/components/ui/reset-button"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { useTranslation } from "@/app/(v3)/v3/_/hooks/use-translation"
-import { type ColorMode, ColorModes } from "@/database/userPreferencesTypes"
+import {
+  type ColorMode,
+  ColorModes,
+  defaultUserPreferences,
+} from "@/database/userPreferencesTypes"
 import { getFieldDef } from "@/fields"
-import { FieldIcon } from "@/icons"
 import * as icon from "@/icons"
+import { FieldIcon } from "@/icons"
 import { DISPLAY_FIELDS, type DisplayField, insertDisplayField } from "@/sort"
 import { useSetUserSettingMutation } from "@/store/api"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   type BookLayout,
   type GridSpacing,
+  UI_SETTINGS_DEFAULTS,
   selectBookLayout,
   selectGridSpacing,
   selectGridView,
@@ -92,6 +98,106 @@ export function DisplayControl({
 
   const shown = isGrid ? displayOverrides ?? currentFields : listDisplayFields
 
+  const resetLayout = () => {
+    dispatch(
+      uiSettingsSlice.actions.setBookLayout(UI_SETTINGS_DEFAULTS.bookLayout),
+    )
+  }
+
+  const resetView = () => {
+    dispatch(uiSettingsSlice.actions.setGridView(UI_SETTINGS_DEFAULTS.gridView))
+    dispatch(uiSettingsSlice.actions.setListView(UI_SETTINGS_DEFAULTS.listView))
+  }
+
+  const resetAppearance = () => {
+    void updateSetting({
+      name: "colorMode",
+      value: defaultUserPreferences.colorMode,
+    })
+  }
+
+  const resetBadges = () => {
+    dispatch(
+      uiSettingsSlice.actions.setShowReadaloudBadge(
+        UI_SETTINGS_DEFAULTS.showReadaloudBadge,
+      ),
+    )
+    dispatch(
+      uiSettingsSlice.actions.setShowProcessingBadge(
+        UI_SETTINGS_DEFAULTS.showProcessingBadge,
+      ),
+    )
+    dispatch(
+      uiSettingsSlice.actions.setShowMissingBadge(
+        UI_SETTINGS_DEFAULTS.showMissingBadge,
+      ),
+    )
+  }
+
+  const resetCard = () => {
+    void updateSetting({
+      name: "gridCoverDisplay",
+      value: defaultUserPreferences.gridCoverDisplay,
+    })
+    dispatch(
+      uiSettingsSlice.actions.setGridCardSize(
+        UI_SETTINGS_DEFAULTS.gridCardSize,
+      ),
+    )
+    dispatch(
+      uiSettingsSlice.actions.setGridSpacing(UI_SETTINGS_DEFAULTS.gridSpacing),
+    )
+  }
+
+  const resetRow = () => {
+    dispatch(
+      uiSettingsSlice.actions.setListShowThumbnail(
+        UI_SETTINGS_DEFAULTS.listShowThumbnail,
+      ),
+    )
+  }
+
+  const resetShownFields = () => {
+    if (isGrid) {
+      onDisplayOverridesChange(UI_SETTINGS_DEFAULTS.gridDisplayFields)
+      return
+    }
+    dispatch(
+      uiSettingsSlice.actions.setListDisplayFields(
+        UI_SETTINGS_DEFAULTS.listDisplayFields,
+      ),
+    )
+  }
+
+  const layoutIsDefault = bookLayout === UI_SETTINGS_DEFAULTS.bookLayout
+
+  const viewIsDefault =
+    gridView === UI_SETTINGS_DEFAULTS.gridView &&
+    listView === UI_SETTINGS_DEFAULTS.listView
+
+  const appearanceIsDefault = colorMode === defaultUserPreferences.colorMode
+
+  const badgesAreDefault =
+    showReadaloudBadge === UI_SETTINGS_DEFAULTS.showReadaloudBadge &&
+    showProcessingBadge === UI_SETTINGS_DEFAULTS.showProcessingBadge &&
+    showMissingBadge === UI_SETTINGS_DEFAULTS.showMissingBadge
+
+  const cardIsDefault =
+    gridCoverDisplay === defaultUserPreferences.gridCoverDisplay &&
+    gridCardSize === UI_SETTINGS_DEFAULTS.gridCardSize &&
+    gridSpacing === UI_SETTINGS_DEFAULTS.gridSpacing
+
+  const rowIsDefault =
+    listShowThumbnail === UI_SETTINGS_DEFAULTS.listShowThumbnail
+
+  const shownFieldsAreDefault = isGrid
+    ? displayOverrides === UI_SETTINGS_DEFAULTS.gridDisplayFields
+    : listDisplayFields.length ===
+        UI_SETTINGS_DEFAULTS.listDisplayFields.length &&
+      listDisplayFields.every(
+        (field, i) => UI_SETTINGS_DEFAULTS.listDisplayFields[i] === field,
+      )
+
   const toggleField = (field: DisplayField) => {
     const base = isGrid ? displayOverrides ?? currentFields : listDisplayFields
     const next = base.includes(field)
@@ -128,8 +234,15 @@ export function DisplayControl({
           <>
             {!forceLayout && (
               <FilterableMenuGroup>
-                <FilterableMenuLabel>
-                  {t("displayOptions.layout")}
+                <FilterableMenuLabel
+                  action={
+                    <ResetButton
+                      onReset={resetLayout}
+                      disabled={layoutIsDefault}
+                    />
+                  }
+                >
+                  {t.plain("displayOptions.layout")}
                 </FilterableMenuLabel>
 
                 <FilterableMenuItem
@@ -159,8 +272,12 @@ export function DisplayControl({
             )}
 
             <FilterableMenuGroup>
-              <FilterableMenuLabel>
-                {t("displayOptions.view")}
+              <FilterableMenuLabel
+                action={
+                  <ResetButton onReset={resetView} disabled={viewIsDefault} />
+                }
+              >
+                {t.plain("displayOptions.view")}
               </FilterableMenuLabel>
 
               {isGrid ? (
@@ -226,8 +343,15 @@ export function DisplayControl({
 
         {/* ---- appearance ---- */}
         <FilterableMenuGroup>
-          <FilterableMenuLabel>
-            {t("displayOptions.appearance")}
+          <FilterableMenuLabel
+            action={
+              <ResetButton
+                onReset={resetAppearance}
+                disabled={appearanceIsDefault}
+              />
+            }
+          >
+            {t.plain("displayOptions.appearance")}
           </FilterableMenuLabel>
 
           <FilterableMenuSub>
@@ -244,8 +368,12 @@ export function DisplayControl({
 
         {/* ---- badges (shared between grid and list) ---- */}
         <FilterableMenuGroup>
-          <FilterableMenuLabel>
-            {t("displayOptions.badges")}
+          <FilterableMenuLabel
+            action={
+              <ResetButton onReset={resetBadges} disabled={badgesAreDefault} />
+            }
+          >
+            {t.plain("displayOptions.badges")}
           </FilterableMenuLabel>
 
           <FilterableMenuItem
@@ -301,8 +429,12 @@ export function DisplayControl({
         {isGrid && (
           <>
             <FilterableMenuGroup>
-              <FilterableMenuLabel>
-                {t("displayOptions.card")}
+              <FilterableMenuLabel
+                action={
+                  <ResetButton onReset={resetCard} disabled={cardIsDefault} />
+                }
+              >
+                {t.plain("displayOptions.card")}
               </FilterableMenuLabel>
 
               <FilterableMenuSub>
@@ -372,8 +504,12 @@ export function DisplayControl({
         {!isGrid && (
           <>
             <FilterableMenuGroup>
-              <FilterableMenuLabel>
-                {t("displayOptions.row")}
+              <FilterableMenuLabel
+                action={
+                  <ResetButton onReset={resetRow} disabled={rowIsDefault} />
+                }
+              >
+                {t.plain("displayOptions.row")}
               </FilterableMenuLabel>
 
               <FilterableMenuItem
@@ -399,7 +535,14 @@ export function DisplayControl({
 
         {/* ---- show on card ---- */}
         <FilterableMenuGroup>
-          <FilterableMenuLabel>
+          <FilterableMenuLabel
+            action={
+              <ResetButton
+                onReset={resetShownFields}
+                disabled={shownFieldsAreDefault}
+              />
+            }
+          >
             {t.plain("displayOptions.hint")}
           </FilterableMenuLabel>
 

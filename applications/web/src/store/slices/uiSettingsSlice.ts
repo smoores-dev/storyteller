@@ -98,6 +98,8 @@ const defaults: UISettings = {
   defaultSorts: {},
 }
 
+export { defaults as UI_SETTINGS_DEFAULTS }
+
 export function parseCookie(cookieString: string): Partial<UISettings> | null {
   try {
     const match = cookieString
@@ -331,6 +333,15 @@ export const uiSettingsSlice = createSlice({
       action: PayloadAction<{ page: string; sort: BookSort[number] }>,
     ) => {
       state.defaultSorts[action.payload.page] = action.payload.sort
+      saveToCookie(state)
+    },
+
+    clearDefaultSort: (state, action: PayloadAction<{ page: string }>) => {
+      state.defaultSorts = Object.fromEntries(
+        Object.entries(state.defaultSorts).filter(
+          ([page]) => page !== action.payload.page,
+        ),
+      )
       saveToCookie(state)
     },
   },

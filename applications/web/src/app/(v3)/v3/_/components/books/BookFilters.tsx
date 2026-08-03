@@ -172,6 +172,8 @@ export function BookFilters({
           field={sort.field}
           direction={sort.direction}
           onChange={onSortChange}
+          onReset={controller.resetSort}
+          canReset={controller.canResetSort}
           onOpenChange={setSortMenuOpen}
           open={sortMenuOpen}
         />

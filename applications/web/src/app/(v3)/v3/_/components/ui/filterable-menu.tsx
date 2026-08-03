@@ -638,9 +638,11 @@ export function FilterableMenuGroup({
 export function FilterableMenuLabel({
   children,
   className,
+  action,
 }: {
   children: ReactNode
   className?: string
+  action?: ReactNode
 }) {
   const { query } = useContext(FilterableMenuContext)
   const group = useContext(FilterableMenuGroupContext)
@@ -654,7 +656,22 @@ export function FilterableMenuLabel({
   if (!inGroup) return null
   if (query.trim() !== "" && !group.groupMatches) return null
 
-  return <div className={cn(menuLabelClassName, className)}>{children}</div>
+  if (!action) {
+    return <div className={cn(menuLabelClassName, className)}>{children}</div>
+  }
+
+  return (
+    <div
+      className={cn(
+        menuLabelClassName,
+        "flex items-center justify-between gap-2 py-0.5 pr-1",
+        className,
+      )}
+    >
+      <span>{children}</span>
+      {action}
+    </div>
+  )
 }
 
 export function FilterableMenuSeparator({ className }: { className?: string }) {

@@ -4,12 +4,15 @@ import { useMemo } from "react"
 import {
   FilterableMenu,
   FilterableMenuContent,
+  FilterableMenuGroup,
   FilterableMenuItem,
+  FilterableMenuLabel,
   FilterableMenuSub,
   FilterableMenuSubContent,
   FilterableMenuSubTrigger,
   FilterableMenuTrigger,
 } from "@/app/(v3)/v3/_/components/ui/filterable-menu"
+import { ResetButton } from "@/app/(v3)/v3/_/components/ui/reset-button"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import {
   useCommon,
@@ -34,6 +37,8 @@ export function SortControl({
   field,
   direction,
   onChange,
+  onReset,
+  canReset = false,
   onOpenChange,
   open,
 }: {
@@ -41,6 +46,8 @@ export function SortControl({
   field: SortField
   direction: "asc" | "desc"
   onChange: (field: SortField, direction: "asc" | "desc") => void
+  onReset?: () => void
+  canReset?: boolean
   onOpenChange: (open: boolean) => void
   open: boolean
 }) {
@@ -106,6 +113,22 @@ export function SortControl({
           }
         />
         <FilterableMenuContent searchPlaceholder={t.plain("sortBy.searchHint")}>
+          {onReset && (
+            <FilterableMenuGroup>
+              <FilterableMenuLabel
+                action={
+                  <ResetButton
+                    onReset={onReset}
+                    disabled={!canReset}
+                    tooltip={t.plain("sortBy.reset")}
+                  />
+                }
+              >
+                {t.plain("sortBy.tooltip")}
+              </FilterableMenuLabel>
+            </FilterableMenuGroup>
+          )}
+
           {Object.entries(grouped).flatMap(([group, options]) =>
             group !== "alignment" ? (
               options.map((option) => (

@@ -269,7 +269,23 @@ export function useBookFilters(options: UseBookFiltersOptions = {}) {
     sort.field === (options.defaultSort?.field ?? "createdAt") &&
     sort.direction === (options.defaultSort?.direction ?? "desc")
 
+  const baseSort = options.defaultSort ?? defaultSortDefault
+  const hasSavedSort = !!defaultSorts[currentPage ?? ""]
+  const canResetSort =
+    hasSavedSort ||
+    sort.field !== baseSort.field ||
+    sort.direction !== baseSort.direction
+
+  const resetSort = useCallback(() => {
+    void setSortRaw({ field: baseSort.field, direction: baseSort.direction })
+    void dispatch(
+      uiSettingsSlice.actions.clearDefaultSort({ page: currentPage ?? "" }),
+    )
+  }, [setSortRaw, dispatch, currentPage, baseSort.field, baseSort.direction])
+
   return {
+    canResetSort,
+    resetSort,
     userFilter,
     isAdvanced,
     seed: options.seed ?? null,
