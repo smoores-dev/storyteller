@@ -41,7 +41,7 @@ export const UserPreferencesSchema = z.object({
   locale: z.string().nullable(),
   defaultView: z.enum(ViewKinds),
   colorMode: z.enum(ColorModes),
-  shellTheme: z.enum(ShellThemes).default("paper"),
+  shellTheme: z.enum(ShellThemes),
   gridCoverDisplay: z.enum(GridCoverDisplays),
   gridCardSize: z.enum(GridCardSizes),
   doubleCoverAlignment: z.enum(DoubleCoverAlignments),

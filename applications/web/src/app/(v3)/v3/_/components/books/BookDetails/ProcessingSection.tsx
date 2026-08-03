@@ -157,7 +157,6 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
     <CollapsibleSection
       sectionKey="alignment"
       title={t("title")}
-      icon={<icon.Progress className="size-3.5 stroke-[1.5]" />}
       className="mb-3 flex flex-col gap-2"
     >
       {readaloudStatus === "ALIGNED" && (
