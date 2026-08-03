@@ -123,7 +123,9 @@
     }
   },
   "CollectionsPage": {
-    "title": "Verzamelingen"
+    "title": "Verzamelingen",
+    "hiddenInSidebar": "{count, number} van {total, number} collecties zijn verborgen in je zijbalk",
+    "showAllInSidebar": "Laat ze zien"
   },
   "NotFoundPage": {
     "title": "Pagina niet gevonden",
@@ -164,7 +166,8 @@
       "createdAt": "Toegevoegd op",
       "updatedAt": "Bijgewerkt op",
       "title": "Titel",
-      "publicationDate": "Publicatie datum"
+      "publicationDate": "Publicatie datum",
+      "reset": "Sortering herstellen"
     },
     "displayOptions": {
       "layout": "Layout",
@@ -397,7 +400,11 @@
     "upgradeDescription": "Converteert EPUB 2-bestanden naar EPUB 3.",
     "upgradeStarted": "EPUB-upgrade gestart",
     "mergeTitle": "Samenvoegen in \"{target}\"?",
-    "mergeDescription": "De andere geselecteerde boeken worden hierin samengevoegd en daarna verwijderd. Dit kan niet ongedaan worden."
+    "mergeDescription": "De andere geselecteerde boeken worden hierin samengevoegd en daarna verwijderd. Dit kan niet ongedaan worden.",
+    "addToShelf": "Aan schap toevoegen",
+    "newShelf": "Nieuw schap...",
+    "addedToShelf": "{count, number} boek(en) toegevoegd aan {name}",
+    "addToShelfFailed": "Toevoegen aan schap mislukt"
   },
   "ShelfPage": {
     "emptyShelf": "Deze plank is leeg",
@@ -1519,7 +1526,10 @@
       "minutes": "{minutes} min",
       "hours": "{hours} u",
       "hoursAndMinutes": "{hours} u {minutes} min",
-      "approximate": "~{duration}"
+      "approximate": "~{duration}",
+      "compactHours": "{hours}u",
+      "compactMinutes": "{minutes}m",
+      "compactHoursAndMinutes": "{hours}u {minutes}m"
     },
     "actions": {
       "save": "Opslaan",
@@ -1544,7 +1554,8 @@
       "confirm": "Bevestigen",
       "selectFolder": "Selecteer map",
       "search": "Zoeken",
-      "download": "Downloaden"
+      "download": "Downloaden",
+      "resetToDefaults": "Standaardwaarden herstellen"
     },
     "states": {
       "saving": "Opslaan...",
@@ -1660,7 +1671,11 @@
       "overwrite": "Overschrijven vanuit nieuw bestand"
     },
     "selectedCount": "{count} geselecteerd",
-    "outOf": "{count, number} van {total, number}"
+    "outOf": "{count, number} van {total, number}",
+    "units": {
+      "pages": "{count, number} pagina's",
+      "pagesShort": "{count, number} p."
+    }
   },
   "Processing": {
     "menuTitle": "Verwerken",

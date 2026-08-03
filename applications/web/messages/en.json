@@ -136,7 +136,9 @@
     }
   },
   "CollectionsPage": {
-    "title": "Collections"
+    "title": "Collections",
+    "hiddenInSidebar": "{count, number} of {total, number} collections are hidden from your sidebar",
+    "showAllInSidebar": "Show them"
   },
   "NotFoundPage": {
     "title": "Page not found",
@@ -179,7 +181,8 @@
       "title": "Title",
       "publicationDate": "Publication date",
       "searchHint": "Search sort options...",
-      "tooltip": "Sort by"
+      "tooltip": "Sort by",
+      "reset": "Reset sorting"
     },
     "toggleSort": {
       "tooltip": "Toggle sort direction"
@@ -433,7 +436,11 @@
     "relocateModeCopy": "Copy (keep originals)",
     "relocateModeMove": "Move (delete originals)",
     "relocateModeHardlink": "Hard link (share disk blocks)",
-    "relocateModeLabel": "Transfer mode"
+    "relocateModeLabel": "Transfer mode",
+    "addToShelf": "Add to shelf",
+    "newShelf": "New shelf...",
+    "addedToShelf": "Added {count, number} book(s) to {name}",
+    "addToShelfFailed": "Failed to add to shelf"
   },
   "ShelfPage": {
     "breadcrumb": "Shelves",
@@ -1467,7 +1474,10 @@
       "minutes": "{minutes} min",
       "hours": "{hours} h",
       "hoursAndMinutes": "{hours} h {minutes} min",
-      "approximate": "~{duration}"
+      "approximate": "~{duration}",
+      "compactHours": "{hours}h",
+      "compactMinutes": "{minutes}m",
+      "compactHoursAndMinutes": "{hours}h {minutes}m"
     },
     "actions": {
       "save": "Save",
@@ -1492,7 +1502,8 @@
       "deselect": "Deselect",
       "confirm": "Confirm",
       "selectFolder": "Select folder",
-      "download": "Download"
+      "download": "Download",
+      "resetToDefaults": "Reset to defaults"
     },
     "states": {
       "saving": "Saving...",
@@ -1610,7 +1621,11 @@
       "overwrite": "Overwrite from new file"
     },
     "selectedCount": "{count, number} <em>selected</em>",
-    "outOf": "{count, number} of {total, number}"
+    "outOf": "{count, number} of {total, number}",
+    "units": {
+      "pages": "{count, number} pages",
+      "pagesShort": "{count, number} pp."
+    }
   },
   "Labels": {
     "bookDetails": "Book Details",
