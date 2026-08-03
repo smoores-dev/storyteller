@@ -22,7 +22,7 @@ import {
 } from "@v3/_/components/ui/select"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { MultidimensionalRating } from "@/app/(v3)/v3/_/components/books/BookDetails/sections/MultidimensionalRating"
+import { MultidimensionalRating } from "@/app/(v3)/v3/_/components/books/BookDetails/sections/MultidimensionalRatingLazy"
 import { RatingInput } from "@/app/(v3)/v3/_/components/books/RatingInput"
 import { statusDisplayLabel } from "@/database/statusKinds"
 import {
