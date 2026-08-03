@@ -54,7 +54,6 @@ struct StorytellerReaderApp: App {
         debugLogScene
         readaloudGeneratorScene
         contentServerScene
-        liveReadingSyncScene
         mp3ToM4BConverterScene
         serverMediaManagementScene
         uploadNewBookScene
@@ -233,10 +232,6 @@ struct StorytellerReaderApp: App {
                 }
                 .keyboardShortcut("m", modifiers: [.command, .shift])
 
-                Button("Live Reading Sync") {
-                    openWindow(id: "LiveReadingSync")
-                }
-
                 if AppLaunchContext.environment.readaloudAligner != nil {
                     Button("Create Readaloud...") {
                         openWindow(id: "ReadaloudGenerator")
@@ -257,15 +252,6 @@ struct StorytellerReaderApp: App {
     private var contentServerScene: some Scene {
         Window("Content Server", id: "ContentServer") {
             ContentServerView()
-                .environment(AppLaunchContext.environment)
-        }
-        .windowResizability(.contentSize)
-        .disableWindowRestoration()
-    }
-
-    private var liveReadingSyncScene: some Scene {
-        Window("Live Reading Sync", id: "LiveReadingSync") {
-            LiveReadingSyncView()
                 .environment(AppLaunchContext.environment)
         }
         .windowResizability(.contentSize)

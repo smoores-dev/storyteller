@@ -1,37 +1,6 @@
 #if os(iOS) || os(macOS)
 import SwiftUI
 
-enum AlignmentOverridesAssembly {
-    // PATCH replaces stored overrides wholesale, so every save sends the full state;
-    // the top-level maps stay present even when empty so clearing the last toggle
-    // still wipes what the server has.
-    static func assemble(
-        markedOkChapters: [String: Bool],
-        excludedChapters: [String: Bool],
-        intendedUnalignedChapters: [String: Bool],
-        excludedAudioFiles: [String: Bool],
-    ) -> AlignmentOverrides {
-        var chapters: [String: AlignmentOverrides.ChapterOverride] = [:]
-        for (href, isOn) in markedOkChapters where isOn {
-            chapters[href, default: AlignmentOverrides.ChapterOverride()].markedOk = true
-        }
-        for (href, isOn) in excludedChapters where isOn {
-            chapters[href, default: AlignmentOverrides.ChapterOverride()].excludeFromScore = true
-        }
-        let unalignedChapters = intendedUnalignedChapters
-            .filter(\.value)
-            .mapValues { _ in AlignmentOverrides.UnalignedChapterOverride(intended: true) }
-        let audioFiles = excludedAudioFiles
-            .filter(\.value)
-            .mapValues { _ in AlignmentOverrides.AudioFileOverride(excluded: true) }
-        return AlignmentOverrides(
-            chapters: chapters,
-            unalignedChapters: unalignedChapters,
-            audioFiles: audioFiles,
-        )
-    }
-}
-
 @MainActor
 @Observable
 final class BookAlignmentReportModel {

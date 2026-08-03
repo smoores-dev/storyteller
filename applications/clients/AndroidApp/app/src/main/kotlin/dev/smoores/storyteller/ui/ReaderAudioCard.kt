@@ -37,6 +37,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -90,6 +91,15 @@ private val CompactBarBottomSpace = 14.dp
 private val CompactStatsStripHeight = 32.dp
 // Above this the inset is a button bar, which cannot be encroached on.
 private val GestureInsetMax = 32.dp
+
+internal fun readerAudioCardCompactHeight(showStats: Boolean, navInset: Dp): Dp {
+    val bottomStripHeight = when {
+        showStats -> maxOf(navInset, CompactStatsStripHeight)
+        navInset > GestureInsetMax -> navInset
+        else -> CompactBarBottomSpace
+    }
+    return CompactBarTopSpace + ReaderMiniPlayerHeight + bottomStripHeight
+}
 
 /**
  * Reader playback card with the two detents of the iOS DraggableAudioCard: a
@@ -179,12 +189,7 @@ internal fun ReaderAudioCard(
     BoxWithConstraints(modifier) {
         val fullHeight = maxHeight
         val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val bottomStripHeight = when {
-            showStats -> maxOf(navInset, CompactStatsStripHeight)
-            navInset > GestureInsetMax -> navInset
-            else -> CompactBarBottomSpace
-        }
-        val compactHeight = CompactBarTopSpace + ReaderMiniPlayerHeight + bottomStripHeight
+        val compactHeight = readerAudioCardCompactHeight(showStats, navInset)
         val target = if (expanded) fullHeight else compactHeight
         val settled by animateDpAsState(
             targetValue = target,

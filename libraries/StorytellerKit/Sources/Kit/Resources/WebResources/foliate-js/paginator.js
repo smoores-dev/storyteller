@@ -379,7 +379,11 @@ class View {
             const contentStart = this.#vertical ? 0
                 : this.#rtl ? rootRect.right - contentRect.right : contentRect.left - rootRect.left
             const contentSize = contentStart + contentRect[side]
-            const pageCount = Math.ceil(contentSize / this.#size)
+            // Epsilon absorbs 1/64px layout quantization of fractional page
+            // sizes (e.g. 992.00006px at dpr 1.875), which otherwise rounds
+            // a re-measured width up past an exact page multiple and adds a
+            // phantom page on every expand.
+            const pageCount = Math.ceil(contentSize / this.#size - 0.001)
             const expandedSize = pageCount * this.#size
             this.#element.style.padding = '0'
             this.#iframe.style[side] = `${expandedSize}px`

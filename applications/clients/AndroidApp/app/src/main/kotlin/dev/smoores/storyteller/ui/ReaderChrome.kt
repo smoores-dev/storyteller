@@ -457,6 +457,18 @@ internal fun ReaderSearchSheet(
     }
 }
 
+// Fixed band heights so toggling individual items never resizes the fitted
+// webview. Only enabling/disabling playback controls changes the band. The
+// overlay is only visible while system bars are hidden (nav inset 0), so the
+// band the webview reserves is exactly padding + content + padding.
+private val OverlayControlsContentHeight = 56.dp
+private val OverlayStatsContentHeight = 34.dp
+
+// The webview may run right up to the overlay content. Only the content box
+// and the padding below it stay clear.
+internal fun readerOverlayReservedInset(withPlaybackControls: Boolean): Dp =
+    (if (withPlaybackControls) OverlayControlsContentHeight else OverlayStatsContentHeight) + 22.dp
+
 @Composable
 internal fun ReaderBottomOverlay(
     statsVisible: Boolean,
@@ -480,9 +492,11 @@ internal fun ReaderBottomOverlay(
     val hasTimeStats = hasAudioNarration &&
         (options.showTimeRemainingInBook || options.showTimeRemainingInChapter)
     val hasStats = statsVisible && (hasBookStats || hasTimeStats)
-    // The mini player owns the playback controls whenever it is on screen.
-    val hasControls = hasAudioNarration && !miniPlayerVisible &&
+    // Sizing must ignore transient visibility so the band height stays stable.
+    val controlsEnabled = hasAudioNarration &&
         (options.showSkipBackward || options.showPlayPause || options.showSkipForward)
+    // The mini player owns the playback controls whenever it is on screen.
+    val hasControls = controlsEnabled && !miniPlayerVisible
 
     Surface(
         color = if (hasStats || hasControls) backgroundColor else Color.Transparent,
@@ -503,6 +517,19 @@ internal fun ReaderBottomOverlay(
                     end = 20.dp,
                     top = 8.dp,
                     bottom = if (positionAtTop) 8.dp else 22.dp,
+                )
+                .then(
+                    if (positionAtTop) {
+                        Modifier
+                    } else {
+                        Modifier.height(
+                            if (controlsEnabled) {
+                                OverlayControlsContentHeight
+                            } else {
+                                OverlayStatsContentHeight
+                            }
+                        )
+                    }
                 ),
         ) {
             if (statsVisible) {

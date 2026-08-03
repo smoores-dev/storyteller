@@ -8,8 +8,10 @@ import androidx.lifecycle.viewModelScope
 import dev.smoores.storyteller.bridge.StorytellerBridgeClient
 import dev.smoores.storyteller.data.LastOpenBookRoute
 import dev.smoores.storyteller.data.LastOpenBookStore
+import dev.smoores.storyteller.model.AlignmentOverrideState
 import dev.smoores.storyteller.model.AppSettings
 import dev.smoores.storyteller.model.AudiobookPlayerState
+import dev.smoores.storyteller.model.BookAlignmentReport
 import dev.smoores.storyteller.model.SessionKind
 import dev.smoores.storyteller.model.SessionState
 import dev.smoores.storyteller.model.Book
@@ -18,6 +20,17 @@ import dev.smoores.storyteller.model.BookID
 import dev.smoores.storyteller.model.DownloadOperation
 import dev.smoores.storyteller.model.DownloadUpdate
 import dev.smoores.storyteller.model.HomeSection
+import dev.smoores.storyteller.model.LiveSyncStatus
+import dev.smoores.storyteller.model.BulkActionOptions
+import dev.smoores.storyteller.model.IdentifierContext
+import dev.smoores.storyteller.model.IdentifierRow
+import dev.smoores.storyteller.model.IdentifierType
+import dev.smoores.storyteller.model.QuickEditContext
+import dev.smoores.storyteller.model.QuickEditFields
+import dev.smoores.storyteller.model.QuickEditResult
+import dev.smoores.storyteller.model.RatingContext
+import dev.smoores.storyteller.model.RatingDraft
+import dev.smoores.storyteller.model.RatingSaveResult
 import dev.smoores.storyteller.model.ReaderOpenResult
 import dev.smoores.storyteller.model.ReaderState
 import dev.smoores.storyteller.model.SourceStatusUpdate
@@ -143,19 +156,79 @@ class StorytellerViewModel private constructor(
         }
     }
 
+    suspend fun bulkActionOptions(books: List<Book>): BulkActionOptions =
+        client.bulkActionOptions(books)
+
+    suspend fun bulkAction(
+        action: String,
+        books: List<Book>,
+        sourceID: String? = null,
+        names: List<String>? = null,
+        uuids: List<String>? = null,
+        role: String? = null,
+        statusUUID: String? = null,
+        statusName: String? = null,
+        preventReImport: Boolean? = null,
+    ): Boolean = client.bulkAction(
+        action = action,
+        books = books,
+        sourceID = sourceID,
+        names = names,
+        uuids = uuids,
+        role = role,
+        statusUUID = statusUUID,
+        statusName = statusName,
+        preventReImport = preventReImport,
+    )
+
+    suspend fun liveSyncStatus(): LiveSyncStatus = client.liveSyncStatus()
+
+    suspend fun alignmentReport(book: Book): BookAlignmentReport = client.alignmentReport(book)
+
+    suspend fun saveAlignmentOverrides(book: Book, state: AlignmentOverrideState): Boolean =
+        client.saveAlignmentOverrides(book, state)
+
+    suspend fun quickEditContext(book: Book): QuickEditContext = client.quickEditContext(book)
+
+    suspend fun updateBookMetadata(book: Book, fields: QuickEditFields): QuickEditResult =
+        client.updateBookMetadata(book, fields)
+
+    suspend fun identifierContext(book: Book): IdentifierContext =
+        client.bookIdentifierContext(book)
+
+    suspend fun saveIdentifiers(book: Book, rows: List<IdentifierRow>): Boolean =
+        client.saveBookIdentifiers(book, rows)
+
+    suspend fun createIdentifierType(
+        sourceID: String,
+        name: String,
+        urlTemplate: String,
+    ): IdentifierType = client.createIdentifierType(sourceID, name, urlTemplate)
+
+    suspend fun ratingContext(book: Book): RatingContext = client.bookRatingContext(book)
+
+    suspend fun saveRating(book: Book, draft: RatingDraft): RatingSaveResult =
+        client.saveBookRating(book, draft)
+
+    suspend fun removeRating(book: Book): RatingSaveResult = client.deleteBookRating(book)
+
     fun saveSettings(serverURL: String, username: String, password: String) {
         mutableState.value = mutableState.value.copy(savingSettings = true, error = null)
         viewModelScope.launch {
             runCatching {
-                val settings = client.saveStorytellerSettings(serverURL, username, password)
+                val settings = client.saveAndConnectStorytellerSettings(serverURL, username, password)
+                val connected = settings.connected == true
                 mutableState.value = mutableState.value.copy(
                     settingsLoaded = true,
                     settings = settings,
                     savingSettings = false,
-                    successfulSettingsSaves = mutableState.value.successfulSettingsSaves + 1,
+                    // Credentials that fail to connect keep the screen open showing the
+                    // server's error instead of dismissing.
+                    successfulSettingsSaves = mutableState.value.successfulSettingsSaves +
+                        if (connected) 1 else 0,
                 )
-                // The save bridge has already refreshed the source.
-                refreshLibraryNow(refresh = false)
+                // The connect bridge has already fetched the library.
+                if (connected) refreshLibraryNow(refresh = false)
             }.onFailure { error ->
                 mutableState.value = mutableState.value.copy(savingSettings = false)
                 showError(error)
@@ -168,6 +241,9 @@ class StorytellerViewModel private constructor(
         metadataRefreshIntervalSeconds: Double? = null,
         autoSyncToNewerServerPosition: Boolean? = null,
         liveReadingSyncEnabled: Boolean? = null,
+        colorMode: String? = null,
+        colorIntensity: Double? = null,
+        doubleCoverAlignment: String? = null,
     ) {
         viewModelScope.launch {
             runCatching {
@@ -176,9 +252,13 @@ class StorytellerViewModel private constructor(
                     metadataRefreshIntervalSeconds = metadataRefreshIntervalSeconds,
                     autoSyncToNewerServerPosition = autoSyncToNewerServerPosition,
                     liveReadingSyncEnabled = liveReadingSyncEnabled,
+                    colorMode = colorMode,
+                    colorIntensity = colorIntensity,
+                    doubleCoverAlignment = doubleCoverAlignment,
                 )
             }
                 .onSuccess { saved ->
+                    CoverColorSettings.update(saved)
                     mutableState.value = mutableState.value.copy(appSettings = saved)
                 }
                 .onFailure(::showError)
@@ -398,6 +478,7 @@ class StorytellerViewModel private constructor(
             settings = settings,
         )
         runCatching { client.appSettings() }.onSuccess { loaded ->
+            CoverColorSettings.update(loaded)
             mutableState.value = mutableState.value.copy(appSettings = loaded)
         }
     }

@@ -12,7 +12,7 @@ const getCSS = ({
   fontSize = 16,
   fontFamily = null,
   marginLeftRight = 8,
-  marginTopBottom = 8,
+  marginTopBottom = 2,
   wordSpacing = 0,
   letterSpacing = 0,
   highlightColor = "#333333",
@@ -64,7 +64,8 @@ const getCSS = ({
         -webkit-hyphenate-limit-after: 2;
         -webkit-hyphenate-limit-lines: 2;
         hanging-punctuation: allow-end last;
-        widows: 2;
+        widows: 1 !important;
+        orphans: 1 !important;
         word-spacing: ${wordSpacing}em !important;
         letter-spacing: ${letterSpacing}em !important;
         ${foregroundColorCSS}
@@ -136,7 +137,7 @@ class FoliateManager {
   #lineSpacing = 1.4;
   #isDarkMode = false;
   #marginLeftRight = 0;
-  #marginTopBottom = 8;
+  #marginTopBottom = 2;
   #wordSpacing = 0;
   #letterSpacing = 0;
   #textAlign = "justify";
@@ -909,9 +910,13 @@ class FoliateManager {
     }
 
     const overlayer = new Overlayer();
-    const container = doc.body || doc.documentElement;
+    // Attached after body, not inside it: foliate's expand() measures
+    // selectNodeContents(body), and a width:100% overlay inside body pins
+    // that measurement to the expanded iframe width, growing a phantom
+    // page per expand on fractional-dpr devices. Zero-sizing instead is
+    // not an option: SVG disables rendering at width or height 0.
     overlayer.element.style.overflow = "visible";
-    container.appendChild(overlayer.element);
+    doc.documentElement.appendChild(overlayer.element);
     this.#readaloudOverlayers.set(sectionIndex, overlayer);
     return overlayer;
   }

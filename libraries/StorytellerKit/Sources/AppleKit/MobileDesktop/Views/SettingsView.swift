@@ -340,6 +340,8 @@ extension SettingsView {
 
                 GeneralSettingsFields(sync: $config.sync).autoNavigateSection
 
+                LiveReadingSyncSettingsSections()
+
                 Section("Tab Bar") {
                     Picker("First Tab", selection: $config.library.tabBarSlot1) {
                         ForEach(ConfigurableTab.allCases) { tab in
@@ -608,6 +610,11 @@ private struct MacGeneralSettingsView: View {
                 .help(
                     "When the server has a newer reading position (from another device), automatically jump to that position."
                 )
+
+                Divider()
+                    .padding(.vertical, 8)
+
+                MacLiveReadingSyncSettings()
 
                 Divider()
                     .padding(.vertical, 8)

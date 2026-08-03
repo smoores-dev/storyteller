@@ -3,6 +3,7 @@ package dev.smoores.storyteller.platform
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
+import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.annotation.Keep
 import dev.smoores.storyteller.bridge.StorytellerAndroidBridge
@@ -15,6 +16,10 @@ object LiveSyncNsdBridge {
     private const val SERVICE_TYPE = "_storyteller-lrs._udp"
 
     private var nsdManager: NsdManager? = null
+    private var wifiManager: WifiManager? = null
+    // Wi-Fi power saving drops multicast frames by default; mDNS discovery needs a
+    // multicast lock held while active.
+    private var multicastLock: WifiManager.MulticastLock? = null
     private var registrationListener: NsdManager.RegistrationListener? = null
     private var discoveryListener: NsdManager.DiscoveryListener? = null
     private var ownInstanceID = ""
@@ -32,6 +37,10 @@ object LiveSyncNsdBridge {
             nsdManager = context.applicationContext
                 .getSystemService(Context.NSD_SERVICE) as? NsdManager
         }
+        if (wifiManager == null) {
+            wifiManager = context.applicationContext
+                .getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        }
     }
 
     @JvmStatic
@@ -42,6 +51,13 @@ object LiveSyncNsdBridge {
         }
         stop()
         ownInstanceID = instanceID
+
+        if (multicastLock == null) {
+            multicastLock = wifiManager?.createMulticastLock(TAG)?.apply {
+                setReferenceCounted(false)
+            }
+        }
+        runCatching { multicastLock?.acquire() }
 
         val info = NsdServiceInfo().apply {
             serviceName = instanceID
@@ -94,6 +110,7 @@ object LiveSyncNsdBridge {
 
     @JvmStatic
     fun stop() {
+        runCatching { multicastLock?.takeIf { it.isHeld }?.release() }
         val manager = nsdManager ?: return
         discoveryListener?.let { runCatching { manager.stopServiceDiscovery(it) } }
         discoveryListener = null

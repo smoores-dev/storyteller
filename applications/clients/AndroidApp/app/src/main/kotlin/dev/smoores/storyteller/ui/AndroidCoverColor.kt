@@ -5,9 +5,31 @@ import android.graphics.Color as AndroidColor
 import android.util.Base64
 import androidx.compose.ui.graphics.Color
 import dev.smoores.storyteller.bridge.StorytellerAndroidBridge
+import dev.smoores.storyteller.model.AppSettings
 import org.json.JSONObject
 
 private const val SAMPLE_SIZE = 8
+
+// Process-wide colorfulness config, mirrored from the shared settings so palette
+// derivation sites do not have to thread it through every composable.
+internal object CoverColorSettings {
+    @Volatile var colorMode: String = "full"
+        private set
+
+    @Volatile var colorIntensity: Double = 0.65
+        private set
+
+    @Volatile var doubleCoverAlignment: String = "auto"
+        private set
+
+    fun update(settings: AppSettings) {
+        colorMode = settings.colorMode
+        colorIntensity = settings.colorIntensity
+        doubleCoverAlignment = settings.doubleCoverAlignment
+    }
+
+    val key: String get() = "$colorMode-$colorIntensity"
+}
 
 internal data class CoverBackgroundPalette(
     val surface: Color,
@@ -21,12 +43,24 @@ internal data class CoverBackgroundPalette(
 )
 
 internal fun coverBackgroundColor(bitmap: Bitmap?, darkTheme: Boolean): Color {
-    return Color(StorytellerAndroidBridge.coverSurfaceColorARGB(sampledRgbaBase64(bitmap), darkTheme))
+    return Color(
+        StorytellerAndroidBridge.coverSurfaceColorARGB(
+            sampledRgbaBase64(bitmap),
+            darkTheme,
+            CoverColorSettings.colorMode,
+            CoverColorSettings.colorIntensity,
+        ),
+    )
 }
 
 internal fun coverBackgroundPalette(bitmap: Bitmap?, darkTheme: Boolean): CoverBackgroundPalette {
     val palette = JSONObject(
-        StorytellerAndroidBridge.coverPaletteJSON(sampledRgbaBase64(bitmap), darkTheme),
+        StorytellerAndroidBridge.coverPaletteJSON(
+            sampledRgbaBase64(bitmap),
+            darkTheme,
+            CoverColorSettings.colorMode,
+            CoverColorSettings.colorIntensity,
+        ),
     )
     return CoverBackgroundPalette(
         surface = palette.color("surface"),

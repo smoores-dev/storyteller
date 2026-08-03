@@ -13,8 +13,6 @@ public struct MetadataEditorView: View {
     @State private var selectedScope: MetadataEditorScope = .work
     @State private var selectedCoverScope: MetadataCoverScope = .audiobook
     @State private var showsEditionScopes = false
-    @AppStorage("metadataEditor.hideWarning") private var hideWarning = false
-    @State private var showWarning = true
     @State private var showHardcoverImportSheet = false
     @State private var showCoverImportSheet = false
     @State private var showHardcoverDataDump = false
@@ -45,10 +43,6 @@ public struct MetadataEditorView: View {
     public var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                if showWarning && !hideWarning {
-                    warningBanner
-                }
-
                 #if os(iOS)
                 if isCompactIOS {
                     sectionContent
@@ -208,78 +202,6 @@ public struct MetadataEditorView: View {
                     pendingSaveBookId = nil
                 }
             },
-        )
-    }
-
-    @ViewBuilder
-    private var warningBanner: some View {
-        Group {
-            if isCompactIOS {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.yellow)
-                            .font(.title3)
-                        Text("Experimental Feature")
-                            .font(.headline)
-                        Spacer()
-                        Button(action: { showWarning = false }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.borderless)
-                    }
-
-                    Text(
-                        "Back up your database before editing metadata. This feature could cause data corruption."
-                    )
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                    Toggle("Don't show again", isOn: $hideWarning)
-                        .font(.callout)
-                }
-            } else {
-                HStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                        .font(.title3)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Experimental Feature")
-                            .font(.headline)
-                        Text(
-                            "Back up your database before editing metadata. This feature could cause data corruption."
-                        )
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Toggle("Don't show again", isOn: $hideWarning)
-                        #if os(macOS)
-                    .toggleStyle(.checkbox)
-                        #endif
-                        .font(.callout)
-
-                    Button(action: { showWarning = false }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-        }
-        .padding(12)
-        .background(.yellow.opacity(0.1))
-        .clipped()
-        .overlay(
-            Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(.yellow.opacity(0.3)),
-            alignment: .bottom,
         )
     }
 

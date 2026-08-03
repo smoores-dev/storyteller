@@ -5,8 +5,17 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import android.util.LruCache
+import dev.smoores.storyteller.model.AlignmentOverrideState
+import dev.smoores.storyteller.model.AlignmentReportChapter
+import dev.smoores.storyteller.model.AlignmentReportFlag
+import dev.smoores.storyteller.model.AlignmentSentenceContext
+import dev.smoores.storyteller.model.AlignmentSummary
+import dev.smoores.storyteller.model.AlignmentTranscriptionContext
+import dev.smoores.storyteller.model.AlignmentUnalignedAudioFile
+import dev.smoores.storyteller.model.AlignmentUnalignedChapter
 import dev.smoores.storyteller.model.AppSettings
 import dev.smoores.storyteller.model.AudiobookChapter
+import dev.smoores.storyteller.model.BookAlignmentReport
 import dev.smoores.storyteller.model.AudiobookPlayerState
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookDetails
@@ -15,7 +24,22 @@ import dev.smoores.storyteller.model.BookMedia
 import dev.smoores.storyteller.model.DownloadOperation
 import dev.smoores.storyteller.model.DownloadUpdate
 import dev.smoores.storyteller.model.HomeSection
+import dev.smoores.storyteller.model.BulkActionOptions
+import dev.smoores.storyteller.model.IdentifierContext
+import dev.smoores.storyteller.model.IdentifierDisplayRow
+import dev.smoores.storyteller.model.IdentifierRow
+import dev.smoores.storyteller.model.IdentifierType
 import dev.smoores.storyteller.model.LibrarySnapshot
+import dev.smoores.storyteller.model.LiveSyncStatus
+import dev.smoores.storyteller.model.QuickEditContext
+import dev.smoores.storyteller.model.QuickEditFields
+import dev.smoores.storyteller.model.QuickEditResult
+import dev.smoores.storyteller.model.NamedUuid
+import dev.smoores.storyteller.model.RatingContext
+import dev.smoores.storyteller.model.RatingDimensionInfo
+import dev.smoores.storyteller.model.RatingDraft
+import dev.smoores.storyteller.model.RatingSaveResult
+import dev.smoores.storyteller.model.UserRating
 import dev.smoores.storyteller.model.SessionKind
 import dev.smoores.storyteller.model.SessionState
 import dev.smoores.storyteller.model.ReaderDisplaySettings
@@ -144,12 +168,18 @@ class StorytellerBridgeClient(context: Context) {
         metadataRefreshIntervalSeconds: Double? = null,
         autoSyncToNewerServerPosition: Boolean? = null,
         liveReadingSyncEnabled: Boolean? = null,
+        colorMode: String? = null,
+        colorIntensity: Double? = null,
+        doubleCoverAlignment: String? = null,
     ): AppSettings {
         val update = JSONObject().apply {
             progressSyncIntervalSeconds?.let { put("progressSyncIntervalSeconds", it) }
             metadataRefreshIntervalSeconds?.let { put("metadataRefreshIntervalSeconds", it) }
             autoSyncToNewerServerPosition?.let { put("autoSyncToNewerServerPosition", it) }
             liveReadingSyncEnabled?.let { put("liveReadingSyncEnabled", it) }
+            colorMode?.let { put("colorMode", it) }
+            colorIntensity?.let { put("colorIntensity", it) }
+            doubleCoverAlignment?.let { put("doubleCoverAlignment", it) }
         }.toString()
         val json = AndroidBridgeCallbacks.requestPayload { requestID ->
             StorytellerAndroidBridge.saveAppSettings(requestID, update)
@@ -167,6 +197,9 @@ class StorytellerBridgeClient(context: Context) {
             ),
             autoSyncToNewerServerPosition = obj.optBoolean("autoSyncToNewerServerPosition"),
             liveReadingSyncEnabled = obj.optBoolean("liveReadingSyncEnabled"),
+            colorMode = obj.optString("colorMode", "full"),
+            colorIntensity = obj.optDouble("colorIntensity", 0.65),
+            doubleCoverAlignment = obj.optString("doubleCoverAlignment", "auto"),
         )
     }
 
@@ -672,6 +705,488 @@ class StorytellerBridgeClient(context: Context) {
         return withContext(Dispatchers.Default) { parseSettings(json) }
     }
 
+    suspend fun saveAndConnectStorytellerSettings(
+        serverURL: String,
+        username: String,
+        password: String,
+    ): StorytellerSettings {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.saveAndConnectStorytellerSettings(
+                requestID,
+                serverURL,
+                username,
+                password,
+            )
+        }
+        return withContext(Dispatchers.Default) { parseSettings(json) }
+    }
+
+    suspend fun liveSyncStatus(): LiveSyncStatus {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.liveSyncStatusJSON(requestID)
+        }
+        val root = JSONObject(json)
+        return LiveSyncStatus(
+            isActive = root.optBoolean("isActive"),
+            packetsSent = root.optInt("packetsSent"),
+            packetsReceived = root.optInt("packetsReceived"),
+            peerCount = root.optInt("peerCount"),
+            lastError = root.optionalString("lastError"),
+        )
+    }
+
+    suspend fun alignmentReport(book: Book): BookAlignmentReport {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.alignmentReportJSON(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+            )
+        }
+        return withContext(Dispatchers.Default) { parseAlignmentReport(json) }
+    }
+
+    suspend fun saveAlignmentOverrides(book: Book, state: AlignmentOverrideState): Boolean {
+        fun boolMap(values: Map<String, Boolean>) = JSONObject().apply {
+            values.forEach { (key, value) -> put(key, value) }
+        }
+        val body = JSONObject().apply {
+            put("markedOkChapters", boolMap(state.markedOkChapters))
+            put("excludedChapters", boolMap(state.excludedChapters))
+            put("intendedUnalignedChapters", boolMap(state.intendedUnalignedChapters))
+            put("excludedAudioFiles", boolMap(state.excludedAudioFiles))
+        }.toString()
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.saveAlignmentOverrides(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+                body,
+            )
+        }
+        return JSONObject(json).optBoolean("success")
+    }
+
+    private fun parseAlignmentSummary(obj: JSONObject): AlignmentSummary = AlignmentSummary(
+        grade = obj.optString("grade"),
+        score = if (obj.has("score") && !obj.isNull("score")) obj.getInt("score") else null,
+        chapters = obj.optInt("chapters"),
+        missingSentences = obj.optInt("missingSentences"),
+        mutedChapters = obj.optInt("mutedChapters"),
+        failedChapters = obj.optInt("failedChapters"),
+        unalignedAudio = obj.optInt("unalignedAudio"),
+    )
+
+    private fun parseAlignmentReport(json: String): BookAlignmentReport {
+        val root = JSONObject(json)
+        fun sentenceContext(obj: JSONObject?): AlignmentSentenceContext? = obj?.let {
+            AlignmentSentenceContext(
+                prevSentence = it.optionalString("prevSentence"),
+                matchedSentence = it.optionalString("matchedSentence"),
+                nextSentence = it.optionalString("nextSentence"),
+            )
+        }
+        fun transcriptionContext(obj: JSONObject?): AlignmentTranscriptionContext? = obj?.let {
+            AlignmentTranscriptionContext(
+                before = it.optionalString("before"),
+                after = it.optionalString("after"),
+            )
+        }
+        val chapters = root.optJSONArray("chapters")?.let { array ->
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                val audioDuration = item.optJSONArray("audioFiles")?.let { files ->
+                    (0 until files.length()).sumOf { fileIndex ->
+                        val file = files.getJSONObject(fileIndex)
+                        file.getDouble("end") - file.getDouble("start")
+                    }
+                } ?: 0.0
+                AlignmentReportChapter(
+                    href = item.getString("href"),
+                    label = item.optString("label"),
+                    chapterSentenceCount = item.optInt("chapterSentenceCount"),
+                    alignedSentenceCount = item.optInt("alignedSentenceCount"),
+                    coverage = if (item.has("coverage") && !item.isNull("coverage")) {
+                        item.getDouble("coverage")
+                    } else {
+                        null
+                    },
+                    delta = item.optInt("delta"),
+                    flagged = item.optBoolean("flagged"),
+                    flags = item.optJSONArray("flags")?.let { flags ->
+                        List(flags.length()) { flagIndex ->
+                            val flag = flags.getJSONObject(flagIndex)
+                            AlignmentReportFlag(
+                                label = flag.getString("label"),
+                                tone = flag.optString("tone"),
+                            )
+                        }
+                    } ?: emptyList(),
+                    firstMatchedSentenceContext = sentenceContext(
+                        item.optJSONObject("firstMatchedSentenceContext"),
+                    ),
+                    lastMatchedSentenceContext = sentenceContext(
+                        item.optJSONObject("lastMatchedSentenceContext"),
+                    ),
+                    transcriptionContext = transcriptionContext(
+                        item.optJSONObject("transcriptionContext"),
+                    ),
+                    endTranscriptionContext = transcriptionContext(
+                        item.optJSONObject("endTranscriptionContext"),
+                    ),
+                    audioDuration = audioDuration,
+                    markedOk = item.optBoolean("markedOk"),
+                    excludedFromScore = item.optBoolean("excludedFromScore"),
+                )
+            }
+        } ?: emptyList()
+        val unalignedChapters = root.optJSONArray("unalignedChapters")?.let { array ->
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                AlignmentUnalignedChapter(
+                    href = item.getString("href"),
+                    label = item.optString("label"),
+                    reason = item.optString("reason"),
+                    preview = item.optionalString("preview"),
+                    intended = item.optBoolean("intended"),
+                )
+            }
+        } ?: emptyList()
+        val unalignedAudioFiles = root.optJSONArray("unalignedAudioFiles")?.let { array ->
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                AlignmentUnalignedAudioFile(
+                    filepath = item.getString("filepath"),
+                    title = item.optionalString("title"),
+                    duration = item.optionalDouble("duration"),
+                    transcription = item.optionalString("transcription"),
+                    excluded = item.optBoolean("excluded"),
+                )
+            }
+        } ?: emptyList()
+        return BookAlignmentReport(
+            createdAt = root.optionalString("createdAt"),
+            summary = parseAlignmentSummary(root.getJSONObject("summary")),
+            totalAudioDuration = root.optDouble("totalAudioDuration", 0.0),
+            alignedAudioDuration = root.optDouble("alignedAudioDuration", 0.0),
+            totalSentences = root.optInt("totalSentences"),
+            alignedSentences = root.optInt("alignedSentences"),
+            chapters = chapters,
+            unalignedChapters = unalignedChapters,
+            unalignedAudioFiles = unalignedAudioFiles,
+        )
+    }
+
+    suspend fun quickEditContext(book: Book): QuickEditContext {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.quickEditContextJSON(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+            )
+        }
+        val root = JSONObject(json)
+        return QuickEditContext(
+            editable = root.optBoolean("editable"),
+            hint = root.optionalString("hint"),
+        )
+    }
+
+    suspend fun updateBookMetadata(book: Book, fields: QuickEditFields): QuickEditResult {
+        val body = JSONObject().apply {
+            fields.title?.let { put("title", it) }
+            fields.subtitle?.let { put("subtitle", it) }
+            fields.description?.let { put("description", it) }
+            fields.authors?.let { put("authors", it) }
+            fields.narrators?.let { put("narrators", it) }
+            fields.seriesName?.let { put("seriesName", it) }
+            fields.seriesPosition?.let { put("seriesPosition", it) }
+            fields.publicationDate?.let { put("publicationDate", it) }
+            fields.tags?.let { put("tags", it) }
+        }.toString()
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.updateBookMetadata(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+                body,
+            )
+        }
+        val root = JSONObject(json)
+        return QuickEditResult(
+            outcome = root.getString("outcome"),
+            field = root.optionalString("field"),
+            message = root.optionalString("message"),
+        )
+    }
+
+    suspend fun bookIdentifierContext(book: Book): IdentifierContext {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.bookIdentifierContextJSON(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+            )
+        }
+        return withContext(Dispatchers.Default) { parseIdentifierContext(json) }
+    }
+
+    suspend fun saveBookIdentifiers(book: Book, rows: List<IdentifierRow>): Boolean {
+        val body = JSONArray(
+            rows.map { row ->
+                JSONObject().apply {
+                    row.typeUuid?.let { put("typeUuid", it) }
+                    put("value", row.value)
+                    put("scope", row.scope)
+                    row.formatUuid?.let { put("formatUuid", it) }
+                }
+            },
+        ).toString()
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.saveBookIdentifiers(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+                body,
+            )
+        }
+        return JSONObject(json).optBoolean("success")
+    }
+
+    suspend fun createIdentifierType(
+        sourceID: String,
+        name: String,
+        urlTemplate: String,
+    ): IdentifierType {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.createIdentifierType(
+                requestID,
+                sourceID,
+                name,
+                urlTemplate,
+            )
+        }
+        val root = JSONObject(json)
+        return IdentifierType(
+            uuid = root.getString("uuid"),
+            displayName = root.getString("displayName"),
+        )
+    }
+
+    private fun parseIdentifierContext(json: String): IdentifierContext {
+        val root = JSONObject(json)
+        val displayRows = root.optJSONArray("displayRows")?.let { array ->
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                IdentifierDisplayRow(
+                    label = item.getString("label"),
+                    value = item.getString("value"),
+                    url = item.optionalString("url"),
+                    audiobookScoped = item.optBoolean("audiobookScoped"),
+                )
+            }
+        } ?: emptyList()
+        val rows = root.optJSONArray("rows")?.let { array ->
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                IdentifierRow(
+                    typeUuid = item.optionalString("typeUuid"),
+                    value = item.getString("value"),
+                    scope = item.optString("scope", "book"),
+                    formatUuid = item.optionalString("formatUuid"),
+                )
+            }
+        } ?: emptyList()
+        val types = root.optJSONArray("types")?.let { array ->
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                IdentifierType(
+                    uuid = item.getString("uuid"),
+                    displayName = item.getString("displayName"),
+                )
+            }
+        } ?: emptyList()
+        val scopes = root.optJSONArray("scopes")?.let { array ->
+            List(array.length()) { index -> array.getString(index) }
+        } ?: listOf("book")
+        return IdentifierContext(
+            editable = root.optBoolean("editable"),
+            failureMessage = root.optionalString("failureMessage"),
+            displayRows = displayRows,
+            rows = rows,
+            types = types,
+            scopes = scopes,
+        )
+    }
+
+    suspend fun bookRatingContext(book: Book): RatingContext {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.bookRatingContextJSON(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+            )
+        }
+        return withContext(Dispatchers.Default) { parseRatingContext(json) }
+    }
+
+    suspend fun saveBookRating(book: Book, draft: RatingDraft): RatingSaveResult {
+        val body = JSONObject().apply {
+            put("starsEdited", draft.starsEdited)
+            draft.stars?.let { put("stars", it) }
+            put("sendDimensions", draft.sendDimensions)
+            draft.dimensions?.let { dimensions ->
+                put(
+                    "dimensions",
+                    JSONObject().apply {
+                        dimensions.forEach { (id, value) -> put(id, value) }
+                    },
+                )
+            }
+            put("reviewChanged", draft.reviewChanged)
+            put("review", draft.review)
+        }.toString()
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.saveBookRating(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+                body,
+            )
+        }
+        return withContext(Dispatchers.Default) { parseRatingSaveResult(json) }
+    }
+
+    suspend fun deleteBookRating(book: Book): RatingSaveResult {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.deleteBookRating(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+            )
+        }
+        return withContext(Dispatchers.Default) { parseRatingSaveResult(json) }
+    }
+
+    suspend fun bulkActionOptions(books: List<Book>): BulkActionOptions {
+        val ids = bookIDsJson(books)
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.bulkActionOptionsJSON(requestID, ids)
+        }
+        return withContext(Dispatchers.Default) { parseBulkOptions(json) }
+    }
+
+    suspend fun bulkAction(
+        action: String,
+        books: List<Book>,
+        sourceID: String? = null,
+        names: List<String>? = null,
+        uuids: List<String>? = null,
+        role: String? = null,
+        statusUUID: String? = null,
+        statusName: String? = null,
+        preventReImport: Boolean? = null,
+    ): Boolean {
+        val body = JSONObject().apply {
+            put("action", action)
+            put("bookIDs", JSONArray(bookIDsJson(books)))
+            sourceID?.let { put("sourceID", it) }
+            names?.let { put("names", JSONArray(it)) }
+            uuids?.let { put("uuids", JSONArray(it)) }
+            role?.let { put("role", it) }
+            statusUUID?.let { put("statusUUID", it) }
+            statusName?.let { put("statusName", it) }
+            preventReImport?.let { put("preventReImport", it) }
+        }.toString()
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.bulkBookAction(requestID, body)
+        }
+        return JSONObject(json).optBoolean("success")
+    }
+
+    private fun bookIDsJson(books: List<Book>): String =
+        JSONArray(
+            books.map { book ->
+                JSONObject().apply {
+                    put("uuid", book.id.uuid)
+                    put("sourceID", book.id.sourceID)
+                }
+            },
+        ).toString()
+
+    private fun parseBulkOptions(json: String): BulkActionOptions {
+        val root = JSONObject(json)
+        fun namedList(array: JSONArray?): List<NamedUuid> {
+            array ?: return emptyList()
+            return List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                NamedUuid(
+                    uuid = item.optionalString("uuid"),
+                    name = item.getString("name"),
+                )
+            }
+        }
+        return BulkActionOptions(
+            singleServerSourceID = root.optionalString("singleServerSourceID"),
+            statuses = namedList(root.optJSONArray("statuses")),
+            collections = namedList(root.optJSONArray("collections")),
+            removableCollections = namedList(root.optJSONArray("removableCollections")),
+            removableTags = namedList(root.optJSONArray("removableTags")),
+            removableCreators = root.optJSONObject("removableCreators")?.let { creators ->
+                buildMap {
+                    creators.keys().forEach { key ->
+                        put(key, namedList(creators.optJSONArray(key)))
+                    }
+                }
+            } ?: emptyMap(),
+        )
+    }
+
+    private fun parseRatingContext(json: String): RatingContext {
+        val root = JSONObject(json)
+        val dimensions = root.optJSONArray("dimensions")?.let { array ->
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                RatingDimensionInfo(
+                    id = item.getString("id"),
+                    label = item.getString("label"),
+                )
+            }
+        } ?: emptyList()
+        return RatingContext(
+            editable = root.optBoolean("editable"),
+            record = root.optJSONObject("record")?.let(::parseUserRating),
+            dimensions = dimensions,
+            reviewerName = root.optionalString("reviewerName"),
+        )
+    }
+
+    private fun parseRatingSaveResult(json: String): RatingSaveResult {
+        val root = JSONObject(json)
+        return RatingSaveResult(
+            outcome = root.getString("outcome"),
+            record = root.optJSONObject("record")?.let(::parseUserRating),
+            message = root.optionalString("message"),
+        )
+    }
+
+    private fun parseUserRating(obj: JSONObject): UserRating {
+        val dimensions = obj.optJSONObject("dimensions")?.let { values ->
+            buildMap {
+                values.keys().forEach { key -> put(key, values.getDouble(key)) }
+            }
+        }
+        return UserRating(
+            rating = if (obj.has("rating") && !obj.isNull("rating")) {
+                obj.getDouble("rating")
+            } else {
+                null
+            },
+            review = obj.optionalString("review"),
+            dimensions = dimensions,
+        )
+    }
+
     private fun parseSettings(json: String): StorytellerSettings {
         val root = JSONObject(json)
         return StorytellerSettings(
@@ -681,6 +1196,11 @@ class StorytellerBridgeClient(context: Context) {
             username = root.optString("username"),
             connectionStatus = root.optString("connectionStatus", "notConfigured"),
             connectionMessage = root.optionalString("connectionMessage"),
+            connected = if (root.has("connected") && !root.isNull("connected")) {
+                root.getBoolean("connected")
+            } else {
+                null
+            },
         )
     }
 
@@ -751,6 +1271,13 @@ class StorytellerBridgeClient(context: Context) {
                     )
                 },
                 playbackOwner = item.optionalString("playbackOwner"),
+                showOnItem = item.optJSONObject("showOnItem")?.let { values ->
+                    buildMap {
+                        values.keys().forEach { key -> put(key, values.getString(key)) }
+                    }
+                } ?: emptyMap(),
+                alignmentSummary = item.optJSONObject("alignmentSummary")
+                    ?.let(::parseAlignmentSummary),
             )
         }
         return LibrarySnapshot(

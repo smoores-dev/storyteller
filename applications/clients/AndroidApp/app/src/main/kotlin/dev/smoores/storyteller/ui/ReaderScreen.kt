@@ -33,7 +33,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.AlertDialog
@@ -53,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -177,42 +180,72 @@ internal fun ReaderScreen(
         if (statusBarTop > webViewTopInset) webViewTopInset = statusBarTop
     }
 
+    val overlayOptions = readerState?.overlay ?: ReaderOverlayOptions()
+    val hasAudioNarration = readerState?.hasAudioNarration == true
+    // An always-visible mini player owns the bottom, so the stats move up.
+    val statsAtTop = hasAudioNarration && overlayOptions.alwaysShowMiniPlayer
+    val miniPlayerVisible = hasAudioNarration &&
+        (chromeVisible || overlayOptions.alwaysShowMiniPlayer)
+    val overlayItemsEnabled = overlayOptions.showProgress || overlayOptions.showPageNumber ||
+        (
+            hasAudioNarration && (
+                overlayOptions.showTimeRemainingInBook ||
+                    overlayOptions.showTimeRemainingInChapter ||
+                    overlayOptions.showSkipBackward ||
+                    overlayOptions.showPlayPause ||
+                    overlayOptions.showSkipForward
+                )
+            )
+    val overlayControlsEnabled = hasAudioNarration && (
+        overlayOptions.showSkipBackward ||
+            overlayOptions.showPlayPause ||
+            overlayOptions.showSkipForward
+        )
+    val reservedBottomInset = when {
+        statsAtTop -> readerAudioCardCompactHeight(
+            showStats = overlayOptions.showMiniPlayerStats,
+            navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+        )
+        overlayItemsEnabled -> readerOverlayReservedInset(
+            withPlaybackControls = overlayControlsEnabled,
+        )
+        else -> 0.dp
+    }
+
     Box(modifier = modifier.fillMaxSize().background(chromeBg)) {
         AndroidView(
             factory = { webView },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = with(density) { webViewTopInset.toDp() }),
+                .padding(
+                    top = with(density) { webViewTopInset.toDp() },
+                    bottom = reservedBottomInset,
+                ),
         )
         if (openResult == null) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
-        val overlayOptions = readerState?.overlay ?: ReaderOverlayOptions()
-        val hasAudioNarration = readerState?.hasAudioNarration == true
-        // An always-visible mini player owns the bottom, so the stats move up.
-        val statsAtTop = hasAudioNarration && overlayOptions.alwaysShowMiniPlayer
-        val miniPlayerVisible = hasAudioNarration &&
-            (chromeVisible || overlayOptions.alwaysShowMiniPlayer)
-
-        ReaderBottomOverlay(
-            statsVisible = !chromeVisible,
-            hasAudioNarration = hasAudioNarration,
-            isPlaying = readerState?.isPlaying == true,
-            options = overlayOptions,
-            positionAtTop = statsAtTop,
-            miniPlayerVisible = miniPlayerVisible,
-            bookFraction = readerState?.bookFraction,
-            currentPage = readerState?.chapterCurrentPage,
-            totalPages = readerState?.chapterTotalPages,
-            bookTimeRemaining = readerState?.bookTimeRemaining,
-            chapterTimeRemaining = readerState?.chapterTimeRemaining,
-            backgroundColor = chromeBg,
-            readerControl = readerControl,
-            modifier = Modifier.align(
-                if (statsAtTop) Alignment.TopCenter else Alignment.BottomCenter
-            ),
-        )
+        if (overlayItemsEnabled) {
+            ReaderBottomOverlay(
+                statsVisible = !chromeVisible,
+                hasAudioNarration = hasAudioNarration,
+                isPlaying = readerState?.isPlaying == true,
+                options = overlayOptions,
+                positionAtTop = statsAtTop,
+                miniPlayerVisible = miniPlayerVisible,
+                bookFraction = readerState?.bookFraction,
+                currentPage = readerState?.chapterCurrentPage,
+                totalPages = readerState?.chapterTotalPages,
+                bookTimeRemaining = readerState?.bookTimeRemaining,
+                chapterTimeRemaining = readerState?.chapterTimeRemaining,
+                backgroundColor = chromeBg,
+                readerControl = readerControl,
+                modifier = Modifier.align(
+                    if (statsAtTop) Alignment.TopCenter else Alignment.BottomCenter
+                ),
+            )
+        }
 
         ReaderProgressHairline(
             fraction = readerState?.chapterFraction ?: 0.0,

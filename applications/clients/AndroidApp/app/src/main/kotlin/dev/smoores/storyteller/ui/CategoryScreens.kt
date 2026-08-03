@@ -42,7 +42,7 @@ internal enum class LibraryCategoryKind(val label: String) {
     Tags("Tags"),
     Collections("Collections"),
     Years("Publication Years"),
-    Ratings("Ratings");
+    Ratings("User Ratings");
 
     val icon: ImageVector
         get() = when (this) {
@@ -105,6 +105,7 @@ internal fun CategoryBrowserScreen(
     cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
     cachedCover: (Book, Boolean) -> Bitmap?,
     modifier: Modifier = Modifier,
+    viewOptions: LibraryViewOptions = LibraryViewOptions(),
 ) {
     if (group != null) {
         val groupBooks = remember(books, kind, group) { kind.booksIn(group, books) }
@@ -115,6 +116,7 @@ internal fun CategoryBrowserScreen(
                 coverRevision = coverRevision,
                 cover = cover,
                 cachedCover = cachedCover,
+                viewOptions = viewOptions,
             )
         }
         return

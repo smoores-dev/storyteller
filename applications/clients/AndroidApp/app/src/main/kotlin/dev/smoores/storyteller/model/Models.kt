@@ -44,6 +44,8 @@ data class Book(
     val coverVersion: String,
     val media: List<BookMedia>,
     val playbackOwner: String?,
+    val showOnItem: Map<String, String> = emptyMap(),
+    val alignmentSummary: AlignmentSummary? = null,
 ) {
     val hasEbook: Boolean get() = media.any { it.category == "ebook" }
     val hasAudio: Boolean get() = media.any { it.category == "audio" }
@@ -111,6 +113,9 @@ data class AppSettings(
     val metadataRefreshIntervalSeconds: Double,
     val autoSyncToNewerServerPosition: Boolean,
     val liveReadingSyncEnabled: Boolean,
+    val colorMode: String = "full",
+    val colorIntensity: Double = 0.65,
+    val doubleCoverAlignment: String = "auto",
 )
 
 data class StorytellerSettings(
@@ -120,6 +125,192 @@ data class StorytellerSettings(
     val username: String = "",
     val connectionStatus: String = "notConfigured",
     val connectionMessage: String? = null,
+    val connected: Boolean? = null,
+)
+
+data class RatingDimensionInfo(
+    val id: String,
+    val label: String,
+)
+
+data class UserRating(
+    val rating: Double?,
+    val review: String?,
+    val dimensions: Map<String, Double>?,
+)
+
+data class RatingContext(
+    val editable: Boolean = false,
+    val record: UserRating? = null,
+    val dimensions: List<RatingDimensionInfo> = emptyList(),
+    val reviewerName: String? = null,
+)
+
+data class RatingDraft(
+    val starsEdited: Boolean,
+    val stars: Double?,
+    val sendDimensions: Boolean,
+    val dimensions: Map<String, Double>?,
+    val reviewChanged: Boolean,
+    val review: String,
+)
+
+data class RatingSaveResult(
+    val outcome: String,
+    val record: UserRating?,
+    val message: String?,
+)
+
+data class NamedUuid(
+    val uuid: String?,
+    val name: String,
+)
+
+data class IdentifierDisplayRow(
+    val label: String,
+    val value: String,
+    val url: String?,
+    val audiobookScoped: Boolean,
+)
+
+data class IdentifierRow(
+    val typeUuid: String?,
+    val value: String,
+    val scope: String,
+    val formatUuid: String?,
+)
+
+data class IdentifierType(
+    val uuid: String,
+    val displayName: String,
+)
+
+data class LiveSyncStatus(
+    val isActive: Boolean,
+    val packetsSent: Int,
+    val packetsReceived: Int,
+    val peerCount: Int,
+    val lastError: String?,
+)
+
+data class AlignmentSummary(
+    val grade: String,
+    val score: Int?,
+    val chapters: Int,
+    val missingSentences: Int,
+    val mutedChapters: Int,
+    val failedChapters: Int,
+    val unalignedAudio: Int,
+)
+
+data class AlignmentReportFlag(
+    val label: String,
+    val tone: String,
+)
+
+data class AlignmentSentenceContext(
+    val prevSentence: String?,
+    val matchedSentence: String?,
+    val nextSentence: String?,
+)
+
+data class AlignmentTranscriptionContext(
+    val before: String?,
+    val after: String?,
+)
+
+data class AlignmentReportChapter(
+    val href: String,
+    val label: String,
+    val chapterSentenceCount: Int,
+    val alignedSentenceCount: Int,
+    val coverage: Double?,
+    val delta: Int,
+    val flagged: Boolean,
+    val flags: List<AlignmentReportFlag>,
+    val firstMatchedSentenceContext: AlignmentSentenceContext?,
+    val lastMatchedSentenceContext: AlignmentSentenceContext?,
+    val transcriptionContext: AlignmentTranscriptionContext?,
+    val endTranscriptionContext: AlignmentTranscriptionContext?,
+    val audioDuration: Double,
+    val markedOk: Boolean,
+    val excludedFromScore: Boolean,
+)
+
+data class AlignmentUnalignedChapter(
+    val href: String,
+    val label: String,
+    val reason: String,
+    val preview: String?,
+    val intended: Boolean,
+)
+
+data class AlignmentUnalignedAudioFile(
+    val filepath: String,
+    val title: String?,
+    val duration: Double?,
+    val transcription: String?,
+    val excluded: Boolean,
+)
+
+data class BookAlignmentReport(
+    val createdAt: String?,
+    val summary: AlignmentSummary,
+    val totalAudioDuration: Double,
+    val alignedAudioDuration: Double,
+    val totalSentences: Int,
+    val alignedSentences: Int,
+    val chapters: List<AlignmentReportChapter>,
+    val unalignedChapters: List<AlignmentUnalignedChapter>,
+    val unalignedAudioFiles: List<AlignmentUnalignedAudioFile>,
+)
+
+data class AlignmentOverrideState(
+    val markedOkChapters: Map<String, Boolean>,
+    val excludedChapters: Map<String, Boolean>,
+    val intendedUnalignedChapters: Map<String, Boolean>,
+    val excludedAudioFiles: Map<String, Boolean>,
+)
+
+data class QuickEditContext(
+    val editable: Boolean = false,
+    val hint: String? = null,
+)
+
+data class QuickEditFields(
+    val title: String? = null,
+    val subtitle: String? = null,
+    val description: String? = null,
+    val authors: String? = null,
+    val narrators: String? = null,
+    val seriesName: String? = null,
+    val seriesPosition: String? = null,
+    val publicationDate: String? = null,
+    val tags: String? = null,
+)
+
+data class QuickEditResult(
+    val outcome: String,
+    val field: String?,
+    val message: String?,
+)
+
+data class IdentifierContext(
+    val editable: Boolean = false,
+    val failureMessage: String? = null,
+    val displayRows: List<IdentifierDisplayRow> = emptyList(),
+    val rows: List<IdentifierRow> = emptyList(),
+    val types: List<IdentifierType> = emptyList(),
+    val scopes: List<String> = listOf("book"),
+)
+
+data class BulkActionOptions(
+    val singleServerSourceID: String? = null,
+    val statuses: List<NamedUuid> = emptyList(),
+    val collections: List<NamedUuid> = emptyList(),
+    val removableCollections: List<NamedUuid> = emptyList(),
+    val removableTags: List<NamedUuid> = emptyList(),
+    val removableCreators: Map<String, List<NamedUuid>> = emptyMap(),
 )
 
 data class AudiobookChapter(
@@ -221,7 +412,7 @@ data class ReaderDisplaySettings(
     val fontFamily: String = "System Default",
     val lineSpacing: Double = 1.4,
     val marginLeftRight: Double = 2.0,
-    val marginTopBottom: Double = 8.0,
+    val marginTopBottom: Double = 2.0,
     val wordSpacing: Double = 0.0,
     val letterSpacing: Double = 0.0,
     val textAlignment: String = "justify",

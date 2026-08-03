@@ -480,7 +480,8 @@ public struct EbookPlayerView: View {
                             },
                         )
                     )
-                    .ignoresSafeArea(.all)
+                    .padding(.bottom, webViewBottomInset)
+                    .ignoresSafeArea(edges: bottomEdgeReserved ? [] : .bottom)
                     #else
                     AnyView(
                         EbookPlayerWebView(
@@ -505,6 +506,7 @@ public struct EbookPlayerView: View {
             let alwaysShowMini = viewModel.settingsVM.alwaysShowMiniPlayer
             let shouldShowStatsOverlay =
                 !viewModel.showAudioSidebar && !viewModel.isTopBarVisible
+                && hasEnabledOverlayItems
 
             if shouldShowStatsOverlay {
                 EbookOverlayIos(
@@ -629,6 +631,43 @@ public struct EbookPlayerView: View {
     #if os(iOS)
     private var isPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
+    }
+
+    private var hasEnabledOverlayItems: Bool {
+        let settings = viewModel.settingsVM
+        if settings.showProgress || settings.showPageNumber { return true }
+        guard viewModel.hasAudioNarration else { return false }
+        return settings.showTimeRemainingInBook || settings.showTimeRemainingInChapter
+            || settings.showOverlaySkipBackward || settings.showOverlayPlayPause
+            || settings.showOverlaySkipForward
+    }
+
+    private var overlayBandReserved: Bool {
+        hasEnabledOverlayItems && !viewModel.settingsVM.alwaysShowMiniPlayer
+    }
+
+    private var bottomEdgeReserved: Bool {
+        overlayBandReserved || viewModel.settingsVM.alwaysShowMiniPlayer
+    }
+
+    private var hasEnabledOverlayControls: Bool {
+        let settings = viewModel.settingsVM
+        return viewModel.hasAudioNarration
+            && (settings.showOverlaySkipBackward || settings.showOverlayPlayPause
+                || settings.showOverlaySkipForward)
+    }
+
+    // The band is measured from the physical screen bottom but the padded
+    // webview bottoms out at the safe area, so deduct the safe-area inset.
+    private var webViewBottomInset: CGFloat {
+        if viewModel.settingsVM.alwaysShowMiniPlayer {
+            return MiniPlayerMetrics.compactHeight(
+                showStats: viewModel.settingsVM.showMiniPlayerStats)
+        }
+        guard overlayBandReserved else { return 0 }
+        let band = EbookOverlayIos.reservedBottomInset(
+            withPlaybackControls: hasEnabledOverlayControls)
+        return max(0, band - safeAreaInsets.bottom)
     }
 
     private var safeAreaInsets: EdgeInsets {

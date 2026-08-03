@@ -20,10 +20,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,11 +41,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.smoores.storyteller.model.AppSettings
+import dev.smoores.storyteller.model.LiveSyncStatus
 import dev.smoores.storyteller.model.StorytellerSettings
 
 @Composable
@@ -52,6 +59,9 @@ internal fun SettingsScreen(
     modifier: Modifier,
     save: (String, String, String) -> Unit,
     updateAppSettings: (Double?, Double?, Boolean?) -> Unit,
+    updateLibrarySettings: (String?, Double?, String?) -> Unit,
+    setLiveSyncEnabled: (Boolean) -> Unit = {},
+    loadLiveSyncStatus: (suspend () -> LiveSyncStatus)? = null,
 ) {
     var serverURL by rememberSaveable { mutableStateOf("") }
     var username by rememberSaveable { mutableStateOf("") }
@@ -131,14 +141,26 @@ internal fun SettingsScreen(
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            Text(if (saving) "Saving" else "Save server")
+            Text(if (saving) "Connecting" else "Save & Connect")
         }
         if (settings.configured) {
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text("Saved", style = MaterialTheme.typography.titleMedium)
-            Text(connectionText(settings.connectionStatus, settings.connectionMessage))
+            val connectionFailed = settings.connectionStatus == "error" ||
+                settings.connected == false
+            Text(
+                connectionText(settings.connectionStatus, settings.connectionMessage),
+                color = if (connectionFailed) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    Color.Unspecified
+                },
+            )
         }
         if (appSettings != null) {
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Text("Colorfulness", style = MaterialTheme.typography.titleMedium)
+            ColorfulnessSettings(appSettings, updateLibrarySettings)
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text("Sync", style = MaterialTheme.typography.titleMedium)
             IntervalPicker(
@@ -172,6 +194,104 @@ internal fun SettingsScreen(
                     onCheckedChange = { updateAppSettings(null, null, it) },
                 )
             }
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            LiveReadingSyncSection(
+                appSettings = appSettings,
+                setEnabled = setLiveSyncEnabled,
+                loadStatus = loadLiveSyncStatus,
+            )
+        }
+    }
+}
+
+private val colorModes = listOf(
+    "full" to "Full",
+    "medium" to "Medium",
+    "minimal" to "Minimal",
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ColorfulnessSettings(
+    appSettings: AppSettings,
+    updateLibrarySettings: (String?, Double?, String?) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Color Level", style = MaterialTheme.typography.bodyLarge)
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            colorModes.forEachIndexed { index, (value, label) ->
+                SegmentedButton(
+                    selected = appSettings.colorMode == value,
+                    onClick = {
+                        if (appSettings.colorMode != value) {
+                            updateLibrarySettings(value, null, null)
+                        }
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = colorModes.size,
+                    ),
+                ) { Text(label) }
+            }
+        }
+
+        val intensityEnabled = appSettings.colorMode != "minimal"
+        // The slider is local state while dragging; the setting persists on release.
+        var intensity by remember(appSettings.colorIntensity) {
+            mutableStateOf(appSettings.colorIntensity.toFloat())
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Color Intensity",
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (intensityEnabled) {
+                    Color.Unspecified
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                "${(intensity * 100).toInt()}%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Slider(
+            value = intensity,
+            onValueChange = { intensity = (it * 20).toInt() / 20f },
+            onValueChangeFinished = {
+                updateLibrarySettings(null, intensity.toDouble(), null)
+            },
+            valueRange = 0f..1f,
+            enabled = intensityEnabled,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Tilt Covers When Not Synced",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    "In the double-cover style, an ebook and audiobook pair without a " +
+                        "readaloud alignment sits slightly askew until it is synced.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = appSettings.doubleCoverAlignment != "straight",
+                onCheckedChange = { tilted ->
+                    updateLibrarySettings(null, null, if (tilted) "auto" else "straight")
+                },
+            )
         }
     }
 }

@@ -148,10 +148,12 @@ class BookmarkManager {
     }
 
     const overlayer = new Overlayer();
-    const container = doc.body || doc.documentElement;
+    // Attached after body, not inside it, so foliate's expand() content
+    // measurement (selectNodeContents(body)) never includes the overlay;
+    // see FoliateManager #getReadaloudOverlayer.
     overlayer.element.style.overflow = 'visible';
     this.#applyOverlayerStyle(overlayer);
-    container.appendChild(overlayer.element);
+    doc.documentElement.appendChild(overlayer.element);
     this.#overlayers.set(sectionIndex, overlayer);
 
     const spanHighlighter = new SpanHighlighter();

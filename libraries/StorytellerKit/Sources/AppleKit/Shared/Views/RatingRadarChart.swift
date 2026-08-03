@@ -1,55 +1,33 @@
 #if os(iOS) || os(macOS) || os(tvOS)
 import SwiftUI
 
-enum RadarGeometry {
-    static let deadZone: CGFloat = 8
-
-    static func axisAngle(_ index: Int, count: Int) -> Double {
-        -Double.pi / 2 + Double(index) * (2 * .pi / Double(count))
+// CGPoint conveniences over the shared Double-based RadarGeometry in Kit.
+extension RadarGeometry {
+    fileprivate static func point(center: CGPoint, radius: CGFloat, angle: Double) -> CGPoint {
+        let point = point(centerX: center.x, centerY: center.y, radius: radius, angle: angle)
+        return CGPoint(x: point.x, y: point.y)
     }
 
-    static func point(center: CGPoint, radius: CGFloat, angle: Double) -> CGPoint {
-        CGPoint(
-            x: center.x + radius * CGFloat(cos(angle)),
-            y: center.y + radius * CGFloat(sin(angle)),
-        )
+    fileprivate static func nearestAxis(to location: CGPoint, center: CGPoint, count: Int) -> Int? {
+        nearestAxis(toX: location.x, y: location.y, centerX: center.x, centerY: center.y, count: count)
     }
 
-    static func nearestAxis(to location: CGPoint, center: CGPoint, count: Int) -> Int? {
-        guard count > 0 else { return nil }
-        let dx = Double(location.x - center.x)
-        let dy = Double(location.y - center.y)
-        guard (dx * dx + dy * dy).squareRoot() > Double(deadZone) else { return nil }
-        let angle = atan2(dy, dx)
-        var best = 0
-        var bestDelta = Double.infinity
-        for index in 0..<count {
-            var delta = abs(angle - axisAngle(index, count: count))
-            delta = min(delta, 2 * .pi - delta)
-            if delta < bestDelta {
-                bestDelta = delta
-                best = index
-            }
-        }
-        return best
-    }
-
-    static func value(
+    fileprivate static func value(
         at location: CGPoint,
         center: CGPoint,
         axisIndex: Int,
         count: Int,
         outerRadius: CGFloat,
-        maximum: Double = RatingDimension.scoreMaximum,
-        step: Double = 1,
     ) -> Double {
-        let angle = axisAngle(axisIndex, count: count)
-        let dx = Double(location.x - center.x)
-        let dy = Double(location.y - center.y)
-        let projection = dx * cos(angle) + dy * sin(angle)
-        let raw = projection / Double(outerRadius) * maximum
-        let snapped = (raw / step).rounded() * step
-        return min(max(snapped, 0), maximum)
+        value(
+            atX: location.x,
+            y: location.y,
+            centerX: center.x,
+            centerY: center.y,
+            axisIndex: axisIndex,
+            count: count,
+            outerRadius: outerRadius,
+        )
     }
 }
 

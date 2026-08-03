@@ -4,6 +4,17 @@ import SwiftUI
 /// iOS stats overlay showing progress and time remaining
 /// Supports both bottom position (default) and top position (when mini player covers bottom)
 struct EbookOverlayIos: View {
+    // Fixed band heights so toggling individual items never resizes the fitted
+    // webview. Only enabling/disabling playback controls changes the band.
+    static let controlsContentHeight: CGFloat = 44
+    static let statsContentHeight: CGFloat = 30
+
+    // The webview may run right up to the overlay content. Only the content box
+    // and the padding below it stay clear.
+    static func reservedBottomInset(withPlaybackControls: Bool) -> CGFloat {
+        (withPlaybackControls ? controlsContentHeight : statsContentHeight) + 20
+    }
+
     let showProgress: Bool
     let showTimeRemainingInBook: Bool
     let showTimeRemainingInChapter: Bool
@@ -146,6 +157,10 @@ struct EbookOverlayIos: View {
                     playbackControls
                 }
             }
+            .frame(
+                height: hasPlaybackControlsToDisplay
+                    ? Self.controlsContentHeight : Self.statsContentHeight,
+            )
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
             .padding(.top, 8)

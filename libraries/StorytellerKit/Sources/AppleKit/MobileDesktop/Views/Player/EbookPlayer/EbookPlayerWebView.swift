@@ -463,9 +463,6 @@ struct EbookPlayerWebView: View {
             onContentPurged: onContentPurged,
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        #if os(iOS)
-        .ignoresSafeArea(edges: .top)
-        #endif
     }
 }
 
@@ -580,14 +577,12 @@ private struct WebViewRepresentable2: PlatformViewRepresentable {
         wkWebView.isOpaque = false
         wkWebView.backgroundColor = .clear
         wkWebView.scrollView.backgroundColor = .clear
-        // The reader menu toggles the status bar, which on iPad changes the top
-        // safe-area inset (0 <-> ~24pt). With the default .automatic behavior WebKit
-        // subtracts safe-area insets from the web layout viewport, so every menu
-        // toggle fires window.resize and Foliate repaginates, shuffling the text.
-        // Notched iPhones keep constant insets (layout relies on them), so only iPad.
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            wkWebView.scrollView.contentInsetAdjustmentBehavior = .never
-        }
+        // The native layout fits the webview between notch and bottom chrome, so
+        // WebKit must not also subtract safe-area insets from the layout viewport:
+        // with .automatic every status-bar toggle fires window.resize and Foliate
+        // repaginates, and the intentional full-bleed bottom (no overlay items)
+        // would lose the home-indicator strip.
+        wkWebView.scrollView.contentInsetAdjustmentBehavior = .never
         #endif
 
         wkWebView.navigationDelegate = context.coordinator

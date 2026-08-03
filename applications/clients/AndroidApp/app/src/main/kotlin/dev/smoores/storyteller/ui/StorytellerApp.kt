@@ -15,7 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.WifiTethering
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,6 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import dev.smoores.storyteller.data.ViewOptionsStore
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookDetails
 import dev.smoores.storyteller.model.BookID
@@ -57,7 +59,7 @@ private enum class Screen {
     Settings,
     Details,
     Reader,
-    LiveReadingSync,
+    BookReports,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,6 +79,16 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
     var categoryGroup by rememberSaveable { mutableStateOf("") }
     var settingsSavePending by remember { mutableStateOf(false) }
     var restoreAttempted by rememberSaveable { mutableStateOf(false) }
+    val appContext = LocalContext.current.applicationContext
+    val viewOptionsStore = remember { ViewOptionsStore(appContext) }
+    var viewOptionsByKey by remember {
+        mutableStateOf(
+            LibraryTab.entries.associate { tab ->
+                tab.name to viewOptionsStore.load(tab.name)
+            },
+        )
+    }
+    var showViewOptions by remember { mutableStateOf(false) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val drawerScope = rememberCoroutineScope()
     val screen = Screen.valueOf(screenName)
@@ -96,7 +108,7 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
             ?: book
     }
     val canNavigateBack = screen == Screen.Details || screen == Screen.Reader ||
-        screen == Screen.Category || screen == Screen.LiveReadingSync ||
+        screen == Screen.Category || screen == Screen.BookReports ||
         (screen == Screen.Settings && state.settings.configured)
     val navigateBack = {
         if (screen == Screen.Reader) {
@@ -214,8 +226,8 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                         viewModel.refreshLibrary()
                         drawerScope.launch { drawerState.close() }
                     },
-                    onOpenLiveReadingSync = {
-                        screenName = Screen.LiveReadingSync.name
+                    onOpenBookReports = {
+                        screenName = Screen.BookReports.name
                         drawerScope.launch { drawerState.close() }
                     },
                 )
@@ -233,6 +245,7 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                         updateSearch = { librarySearchText = it },
                         openMenu = { drawerScope.launch { drawerState.open() } },
                         openSettings = { screenName = Screen.Settings.name },
+                        openViewOptions = { showViewOptions = true },
                     )
                 } else if (screen != Screen.Details &&
                     !(screen == Screen.Reader && readerMode != "audio")
@@ -247,7 +260,7 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                                     Screen.Settings -> "Server settings"
                                     Screen.Details -> ""
                                     Screen.Reader -> if (readerMode == "audio") "Player" else "Reader"
-                                    Screen.LiveReadingSync -> "Live Reading Sync"
+                                    Screen.BookReports -> "Book Reports"
                                 },
                                 maxLines = 1,
                             )
@@ -291,6 +304,21 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                     coverRevision = state.coverRevision,
                     cover = viewModel::cover,
                     cachedCover = viewModel::cachedCover,
+                    viewOptions = viewOptionsByKey[libraryTab.name] ?: LibraryViewOptions(),
+                    bulkOptions = viewModel::bulkActionOptions,
+                    bulkAction = { request ->
+                        viewModel.bulkAction(
+                            action = request.action,
+                            books = request.books,
+                            sourceID = request.sourceID,
+                            names = request.names,
+                            uuids = request.uuids,
+                            role = request.role,
+                            statusUUID = request.statusUUID,
+                            statusName = request.statusName,
+                            preventReImport = request.preventReImport,
+                        )
+                    },
                 )
                 Screen.Category -> categoryKind?.let { kind ->
                     CategoryBrowserScreen(
@@ -306,6 +334,8 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                         cover = viewModel::cover,
                         cachedCover = viewModel::cachedCover,
                         modifier = Modifier.padding(padding),
+                        viewOptions = viewOptionsByKey[LibraryTab.Library.name]
+                            ?: LibraryViewOptions(),
                     )
                 }
                 Screen.Settings -> SettingsScreen(
@@ -325,13 +355,26 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                             autoSyncToNewerServerPosition = autoNavigate,
                         )
                     },
-                )
-                Screen.LiveReadingSync -> LiveReadingSyncScreen(
-                    appSettings = state.appSettings,
-                    modifier = Modifier.padding(padding),
-                    setEnabled = { enabled ->
+                    updateLibrarySettings = { colorMode, colorIntensity, doubleCoverAlignment ->
+                        viewModel.updateAppSettings(
+                            colorMode = colorMode,
+                            colorIntensity = colorIntensity,
+                            doubleCoverAlignment = doubleCoverAlignment,
+                        )
+                    },
+                    setLiveSyncEnabled = { enabled ->
                         viewModel.updateAppSettings(liveReadingSyncEnabled = enabled)
                     },
+                    loadLiveSyncStatus = viewModel::liveSyncStatus,
+                )
+                Screen.BookReports -> BookReportsScreen(
+                    books = state.books,
+                    coverRevision = state.coverRevision,
+                    cover = viewModel::cover,
+                    cachedCover = viewModel::cachedCover,
+                    loadReport = viewModel::alignmentReport,
+                    saveOverrides = viewModel::saveAlignmentOverrides,
+                    modifier = Modifier.padding(padding),
                 )
                 Screen.Details -> selectedBook?.let { book ->
                     BookDetailsScreen(
@@ -356,6 +399,28 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                             screenName = Screen.Reader.name
                         },
                         selectRelated = { related -> selectedBookID = related.id },
+                        webURL = state.settings.serverURL
+                            .trim()
+                            .trimEnd('/')
+                            .takeIf {
+                                it.isNotEmpty() && book.id.sourceID == state.settings.sourceID
+                            }
+                            ?.let { "$it/books/${book.id.uuid}" },
+                        loadRatingContext = viewModel::ratingContext,
+                        saveRating = viewModel::saveRating,
+                        removeRating = viewModel::removeRating,
+                        openCategory = { kind, group ->
+                            categoryKindName = kind.name
+                            categoryGroup = group
+                            screenName = Screen.Category.name
+                        },
+                        loadIdentifierContext = viewModel::identifierContext,
+                        saveIdentifiers = viewModel::saveIdentifiers,
+                        createIdentifierType = viewModel::createIdentifierType,
+                        loadQuickEditContext = viewModel::quickEditContext,
+                        updateMetadata = viewModel::updateBookMetadata,
+                        loadAlignmentReport = viewModel::alignmentReport,
+                        saveAlignmentOverrides = viewModel::saveAlignmentOverrides,
                     )
                 }
                 Screen.Reader -> selectedBook?.let { book ->
@@ -424,6 +489,18 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
+            if (showViewOptions) {
+                val viewKey = libraryTab.name
+                ViewOptionsSheet(
+                    options = viewOptionsByKey[viewKey] ?: LibraryViewOptions(),
+                    showsShowOnItem = true,
+                    onChange = { updated ->
+                        viewOptionsByKey = viewOptionsByKey + (viewKey to updated)
+                        viewOptionsStore.save(viewKey, updated)
+                    },
+                    onDismiss = { showViewOptions = false },
+                )
+            }
             }
         }
         }
@@ -436,7 +513,7 @@ private fun LibraryDrawer(
     onSelectTab: (LibraryTab) -> Unit,
     onSelectCategory: (LibraryCategoryKind) -> Unit,
     onRefresh: () -> Unit,
-    onOpenLiveReadingSync: () -> Unit,
+    onOpenBookReports: () -> Unit,
 ) {
     ModalDrawerSheet {
         Column(
@@ -482,10 +559,10 @@ private fun LibraryDrawer(
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             NavigationDrawerItem(
-                label = { Text("Live Reading Sync") },
-                icon = { Icon(Icons.Filled.WifiTethering, contentDescription = null) },
+                label = { Text("Book Reports") },
+                icon = { Icon(Icons.Filled.Verified, contentDescription = null) },
                 selected = false,
-                onClick = onOpenLiveReadingSync,
+                onClick = onOpenBookReports,
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             Spacer(modifier = Modifier.height(12.dp))

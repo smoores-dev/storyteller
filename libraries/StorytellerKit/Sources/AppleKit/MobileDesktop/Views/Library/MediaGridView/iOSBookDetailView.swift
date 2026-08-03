@@ -12,11 +12,17 @@ struct iOSBookDetailView: View {
     @State private var isUpdatingStatus = false
     @State private var showOfflineError = false
     @State private var showingOptionsSheet = false
-    @State private var isShowingRelatedBook = false
+    @State private var relatedBook: BookMetadata?
     @State private var inlineEdit = InlineMetadataEditModel()
 
-    private var currentItem: BookMetadata {
+    private var baseItem: BookMetadata {
         mediaViewModel.library.bookMetaData.first { $0.id == item.id } ?? item
+    }
+
+    private var currentItem: BookMetadata {
+        let requestedItem = relatedBook ?? item
+        return mediaViewModel.library.bookMetaData.first { $0.id == requestedItem.id }
+            ?? requestedItem
     }
 
     private var sortedStatuses: [BookStatus] {
@@ -25,14 +31,14 @@ struct iOSBookDetailView: View {
 
     var body: some View {
         MediaGridInfoSidebar(
-            item: currentItem,
+            item: baseItem,
             mediaKind: mediaKind,
             onClose: {},
             onReadNow: {},
             onRename: {},
             onDelete: {},
             showsInspectorToolbar: false,
-            onRelatedItemChange: { isShowingRelatedBook = $0 },
+            onRelatedItemChange: { relatedBook = $0 },
             inlineEditModel: inlineEdit,
         )
         .metadataLinkDestinations(mediaKind: mediaKind)
@@ -40,7 +46,7 @@ struct iOSBookDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .navigationBarBackButtonHidden(isShowingRelatedBook)
+        .navigationBarBackButtonHidden(relatedBook != nil)
         .toolbar {
             if inlineEdit.isEditing {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -129,6 +135,7 @@ private struct BookOptionsSheet: View {
 
     @Environment(MediaViewModel.self) private var mediaViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @State private var showDeleteConfirmation = false
 
     private var currentItem: BookMetadata {
@@ -190,6 +197,16 @@ private struct BookOptionsSheet: View {
                     }
                 }
 
+                if mediaViewModel.isServerBook(item.id) {
+                    Button {
+                        Task { @MainActor in
+                            await openInWeb()
+                        }
+                    } label: {
+                        Label("Open in Web", systemImage: "safari")
+                    }
+                }
+
                 if mediaViewModel.isLocalFolderBook(item.id) {
                     Section {
                         Button(role: .destructive) {
@@ -232,6 +249,18 @@ private struct BookOptionsSheet: View {
                 selectedStatusName = currentItem.status?.name
             }
         }
+    }
+
+    private func openInWeb() async {
+        guard
+            let credentials = try? await AuthenticationActor.shared.loadCredentials(
+                sourceID: item.sourceID
+            ),
+            var url = URL(string: credentials.url)
+        else { return }
+        url.append(path: "books/\(item.id.uuid)")
+        openURL(url)
+        dismiss()
     }
 }
 

@@ -608,7 +608,6 @@ struct MoreMenuView: View {
         case addBook
         case createReadaloud
         case appleWatch
-        case liveReadingSync
     }
 
     private var hasConnectionError: Bool {
@@ -711,9 +710,6 @@ struct MoreMenuView: View {
                     NavigationLink(value: MoreDestination.appleWatch) {
                         Label("Apple Watch", systemImage: "applewatch")
                     }
-                }
-                NavigationLink(value: MoreDestination.liveReadingSync) {
-                    Label("Live Reading Sync", systemImage: "dot.radiowaves.left.and.right")
                 }
             }
         }
@@ -856,9 +852,6 @@ struct MoreMenuView: View {
                             showSettings: $showSettings,
                             showOfflineSheet: $showOfflineSheet,
                         )
-                case .liveReadingSync:
-                    LiveReadingSyncView()
-                        .navigationBarTitleDisplayMode(.inline)
             }
         }
         .libraryNavigationDestinations(

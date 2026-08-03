@@ -2,6 +2,12 @@
 import SwiftUI
 
 #if os(iOS)
+// Height of the compact card above the safe-area inset. The card itself adds
+// the inset below this.
+enum MiniPlayerMetrics {
+    static func compactHeight(showStats: Bool) -> CGFloat { showStats ? 54 : 50 }
+}
+
 struct DraggableAudioCard<FullContent: View>: View {
     @Binding var isPresented: Bool
     let alwaysShow: Bool
@@ -53,7 +59,9 @@ struct DraggableAudioCard<FullContent: View>: View {
     @State private var isDraggingSlider = false
     @AppStorage("showEbookCoverInAudioView") private var showEbookCover = false
 
-    private var compactHeight: CGFloat { showMiniPlayerStats ? 54 : 50 }
+    private var compactHeight: CGFloat {
+        MiniPlayerMetrics.compactHeight(showStats: showMiniPlayerStats)
+    }
     private let expandedFraction: CGFloat = 1.0
     private let scrubberFraction: CGFloat = 0.28
     private let dragThreshold: CGFloat = 40

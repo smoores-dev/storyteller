@@ -1,6 +1,8 @@
 package dev.smoores.storyteller.ui
 
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,19 +35,25 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,9 +64,11 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +79,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontStyle
@@ -78,8 +89,20 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import dev.smoores.storyteller.model.AlignmentOverrideState
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.BookAlignmentReport
 import dev.smoores.storyteller.model.DownloadOperation
+import dev.smoores.storyteller.model.IdentifierContext
+import dev.smoores.storyteller.model.IdentifierRow
+import dev.smoores.storyteller.model.IdentifierType
+import dev.smoores.storyteller.model.QuickEditContext
+import dev.smoores.storyteller.model.QuickEditFields
+import dev.smoores.storyteller.model.QuickEditResult
+import dev.smoores.storyteller.model.RatingContext
+import dev.smoores.storyteller.model.RatingDraft
+import dev.smoores.storyteller.model.RatingSaveResult
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun BookDetailsScreen(
@@ -97,10 +120,49 @@ internal fun BookDetailsScreen(
     deleteDownload: (String) -> Unit,
     open: (String) -> Unit,
     selectRelated: (Book) -> Unit,
+    webURL: String?,
+    loadRatingContext: suspend (Book) -> RatingContext,
+    saveRating: suspend (Book, RatingDraft) -> RatingSaveResult,
+    removeRating: suspend (Book) -> RatingSaveResult,
+    openCategory: (LibraryCategoryKind, String) -> Unit = { _, _ -> },
+    loadIdentifierContext: (suspend (Book) -> IdentifierContext)? = null,
+    saveIdentifiers: suspend (Book, List<IdentifierRow>) -> Boolean = { _, _ -> false },
+    createIdentifierType: suspend (String, String, String) -> IdentifierType =
+        { _, _, _ -> throw IllegalStateException("unavailable") },
+    loadQuickEditContext: (suspend (Book) -> QuickEditContext)? = null,
+    updateMetadata: suspend (Book, QuickEditFields) -> QuickEditResult =
+        { _, _ -> QuickEditResult("failed", null, null) },
+    loadAlignmentReport: (suspend (Book) -> BookAlignmentReport)? = null,
+    saveAlignmentOverrides: suspend (Book, AlignmentOverrideState) -> Boolean = { _, _ -> false },
 ) {
+    var showAlignmentReport by remember(book.id) { mutableStateOf(false) }
+    var quickEditState by remember(book.id) { mutableStateOf<QuickEditContext?>(null) }
+    var showQuickEdit by remember(book.id) { mutableStateOf(false) }
+    LaunchedEffect(book.id) {
+        loadQuickEditContext?.let { load ->
+            quickEditState = runCatching { load(book) }.getOrNull()
+        }
+    }
+    val ratingScope = rememberCoroutineScope()
+    var ratingState by remember(book.id) { mutableStateOf<RatingContext?>(null) }
+    var showRatingEditor by remember(book.id) { mutableStateOf(false) }
+    var identifierState by remember(book.id) { mutableStateOf<IdentifierContext?>(null) }
+    var showIdentifierEditor by remember(book.id) { mutableStateOf(false) }
+    var identifierRevision by remember(book.id) { mutableStateOf(0) }
+    LaunchedEffect(book.id) {
+        ratingState = runCatching { loadRatingContext(book) }.getOrNull()
+    }
+    LaunchedEffect(book.id, identifierRevision) {
+        loadIdentifierContext?.let { load ->
+            identifierState = runCatching { load(book) }.getOrNull()
+        }
+    }
     val darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val fallbackPalette = remember(darkTheme) { coverBackgroundPalette(null, darkTheme) }
-    var backgroundPalette by remember(book.id, darkTheme) {
+    val colorfulnessKey = CoverColorSettings.key
+    val fallbackPalette = remember(darkTheme, colorfulnessKey) {
+        coverBackgroundPalette(null, darkTheme)
+    }
+    var backgroundPalette by remember(book.id, darkTheme, colorfulnessKey) {
         mutableStateOf(fallbackPalette)
     }
     val heroColor = backgroundPalette.surface
@@ -162,25 +224,71 @@ internal fun BookDetailsScreen(
                     IconButton(onClick = openSettings, modifier = Modifier.size(40.dp)) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings", tint = onHero)
                     }
-                    IconButton(
-                        onClick = {
-                            if (removable.isNotEmpty()) {
-                                pendingDeletion = removable.first().let { media ->
-                                    MediaActionOption(
-                                        category = media.category,
-                                        title = mediaTitle(media.category),
-                                        downloaded = true,
-                                        removable = true,
-                                        downloadState = media.downloadState,
-                                        progress = media.downloadProgress,
-                                    )
-                                }
+                    Box {
+                        val context = LocalContext.current
+                        var optionsExpanded by remember { mutableStateOf(false) }
+                        IconButton(
+                            onClick = { optionsExpanded = true },
+                            enabled = webURL != null || removable.isNotEmpty() ||
+                                quickEditState?.editable == true,
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(Icons.Default.MoreHoriz, contentDescription = "Options", tint = onHero)
+                        }
+                        DropdownMenu(
+                            expanded = optionsExpanded,
+                            onDismissRequest = { optionsExpanded = false },
+                        ) {
+                            if (quickEditState?.editable == true) {
+                                DropdownMenuItem(
+                                    text = { Text("Quick Edit") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Edit, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        optionsExpanded = false
+                                        showQuickEdit = true
+                                    },
+                                )
                             }
-                        },
-                        enabled = removable.isNotEmpty(),
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Icon(Icons.Default.MoreHoriz, contentDescription = "Options", tint = onHero)
+                            webURL?.let { url ->
+                                DropdownMenuItem(
+                                    text = { Text("Open in Web") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.OpenInBrowser, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        optionsExpanded = false
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                                            )
+                                        }
+                                    },
+                                )
+                            }
+                            if (removable.isNotEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text("Delete Download") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Delete, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        optionsExpanded = false
+                                        pendingDeletion = removable.first().let { media ->
+                                            MediaActionOption(
+                                                category = media.category,
+                                                title = mediaTitle(media.category),
+                                                downloaded = true,
+                                                removable = true,
+                                                downloadState = media.downloadState,
+                                                progress = media.downloadProgress,
+                                            )
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -212,9 +320,60 @@ internal fun BookDetailsScreen(
             book.subtitle?.takeIf(String::isNotBlank)?.let {
                 Text(it, color = onHero.copy(alpha = 0.78f), style = MaterialTheme.typography.titleMedium)
             }
-            CreatorSummary(book, onHero)
-            SeriesSummary(book, onHero)
-            Rating(book.rating, onHero)
+            CreatorSummary(book, onHero, openCategory)
+            SeriesSummary(book, onHero, openCategory)
+            val ratingContext = ratingState
+            if (ratingContext?.editable == true) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    InteractiveRatingStars(
+                        value = ratingContext.record?.rating ?: book.rating,
+                        starSize = 17.dp,
+                        spacing = 0.dp,
+                        fillColor = Color(0xffffc107),
+                        emptyColor = onHero.copy(alpha = 0.22f),
+                        onCommit = { value ->
+                            ratingScope.launch {
+                                val result = runCatching {
+                                    saveRating(
+                                        book,
+                                        RatingDraft(
+                                            starsEdited = true,
+                                            stars = value,
+                                            sendDimensions = false,
+                                            dimensions = null,
+                                            reviewChanged = false,
+                                            review = "",
+                                        ),
+                                    )
+                                }.getOrNull()
+                                if (result?.outcome == "saved") {
+                                    ratingState = ratingContext.copy(record = result.record)
+                                }
+                            }
+                        },
+                    )
+                    (ratingContext.record?.rating ?: book.rating)?.takeIf { it > 0 }?.let {
+                        Text(
+                            RatingMath.format(it),
+                            color = onHero.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Rate & review",
+                        tint = onHero.copy(alpha = 0.72f),
+                        modifier = Modifier
+                            .size(15.dp)
+                            .clickable { showRatingEditor = true },
+                    )
+                }
+            } else {
+                Rating(book.rating, onHero)
+            }
             HeroMediaSummary(book, onHero)
             MediaActions(
                 book = book,
@@ -227,7 +386,12 @@ internal fun BookDetailsScreen(
                 requestDelete = { pendingDeletion = it },
             )
             if (book.tags.isNotEmpty()) {
-                TagRow(book.tags, onHero, Modifier.padding(top = 3.dp))
+                TagRow(
+                    book.tags,
+                    onHero,
+                    Modifier.padding(top = 3.dp),
+                    openTag = { openCategory(LibraryCategoryKind.Tags, it) },
+                )
             }
         }
 
@@ -237,13 +401,40 @@ internal fun BookDetailsScreen(
                 .padding(top = 18.dp, bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            book.description?.takeIf(String::isNotBlank)?.let {
+            val userReview = ratingState?.record?.review?.trim()?.takeIf { it.isNotEmpty() }
+            val description = book.description?.takeIf(String::isNotBlank)
+            if (description != null || userReview != null) {
                 DetailCard(
-                    "Description",
+                    if (userReview != null) "Description & Reviews" else "Description",
                     Icons.AutoMirrored.Filled.FormatAlignLeft,
                     palette = backgroundPalette,
                     initiallyExpanded = true,
-                ) { DescriptionContent(it) }
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        description?.let {
+                            if (userReview != null) {
+                                Text(
+                                    "Description",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                            DescriptionContent(it)
+                        }
+                        userReview?.let { review ->
+                            if (description != null) HorizontalDivider()
+                            Text(
+                                ratingState?.reviewerName?.let { "Review by $it" }
+                                    ?: "User Review",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            ReviewContent(review)
+                        }
+                    }
+                }
             }
             if (relatedSeries.isNotEmpty()) {
                 RelatedShelf(
@@ -272,7 +463,23 @@ internal fun BookDetailsScreen(
                 Icons.Default.Info,
                 palette = backgroundPalette,
                 initiallyExpanded = true,
-            ) { BookInfo(book) }
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BookInfo(book, openCategory)
+                    identifierState?.let { identifiers ->
+                        if (identifiers.displayRows.isNotEmpty() || identifiers.editable) {
+                            IdentifiersSection(
+                                context = identifiers,
+                                onEdit = if (identifiers.editable) {
+                                    { showIdentifierEditor = true }
+                                } else {
+                                    null
+                                },
+                            )
+                        }
+                    }
+                }
+            }
             DetailCard(
                 "Media Info",
                 Icons.Default.Inventory2,
@@ -281,6 +488,84 @@ internal fun BookDetailsScreen(
             ) {
                 MediaInfo(book)
             }
+            book.alignmentSummary?.let { summary ->
+                if (loadAlignmentReport != null) {
+                    DetailCard(
+                        "Alignment",
+                        Icons.Default.Verified,
+                        palette = backgroundPalette,
+                        initiallyExpanded = true,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showAlignmentReport = true },
+                        ) {
+                            GradePill(summary.grade)
+                            Text("Alignment report", modifier = Modifier.weight(1f))
+                            summary.score?.let {
+                                Text(
+                                    "$it%",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAlignmentReport && loadAlignmentReport != null) {
+        AlignmentReportDialogHost(
+            book = book,
+            loadReport = loadAlignmentReport,
+            saveOverrides = saveAlignmentOverrides,
+            onDismiss = { showAlignmentReport = false },
+        )
+    }
+
+    if (showQuickEdit && quickEditState?.editable == true) {
+        QuickEditSheet(
+            book = book,
+            save = updateMetadata,
+            onDismiss = { showQuickEdit = false },
+        )
+    }
+
+    identifierState?.let { context ->
+        if (showIdentifierEditor && context.editable) {
+            IdentifierEditorSheet(
+                book = book,
+                context = context,
+                save = saveIdentifiers,
+                createType = createIdentifierType,
+                onSaved = { identifierRevision += 1 },
+                onDismiss = { showIdentifierEditor = false },
+            )
+        }
+    }
+
+    ratingState?.let { context ->
+        if (showRatingEditor && context.editable) {
+            RatingEditorSheet(
+                book = book,
+                context = context,
+                accent = backgroundPalette.accent,
+                saveRating = saveRating,
+                removeRating = removeRating,
+                onSaved = { result ->
+                    ratingState = context.copy(record = result.record)
+                },
+                onDismiss = { showRatingEditor = false },
+            )
         }
     }
 
@@ -301,21 +586,75 @@ internal fun BookDetailsScreen(
 }
 
 @Composable
-private fun CreatorSummary(book: Book, color: Color) {
-    if (book.authors.isNotBlank()) {
+private fun CreatorSummary(
+    book: Book,
+    color: Color,
+    openCategory: (LibraryCategoryKind, String) -> Unit,
+) {
+    if (book.authorNames.isNotEmpty()) {
+        CreatorLine(
+            prefix = "Written by",
+            names = book.authorNames,
+            color = color.copy(alpha = 0.78f),
+            style = MaterialTheme.typography.bodyMedium,
+            open = { openCategory(LibraryCategoryKind.Authors, it) },
+        )
+    } else if (book.authors.isNotBlank()) {
         Text("Written by ${book.authors}", color = color.copy(alpha = 0.78f), style = MaterialTheme.typography.bodyMedium)
     }
     if (book.narrators.isNotEmpty()) {
-        Text(
-            "Narrated by ${book.narrators.joinToString()}",
+        CreatorLine(
+            prefix = "Narrated by",
+            names = book.narrators,
             color = color.copy(alpha = 0.74f),
             style = MaterialTheme.typography.bodySmall,
+            open = { openCategory(LibraryCategoryKind.Narrators, it) },
         )
     }
 }
 
+// Long creator lists collapse to the first two names, matching the iOS disclosure rule.
 @Composable
-private fun SeriesSummary(book: Book, color: Color) {
+private fun CreatorLine(
+    prefix: String,
+    names: List<String>,
+    color: Color,
+    style: androidx.compose.ui.text.TextStyle,
+    open: (String) -> Unit,
+) {
+    var expanded by remember(names) { mutableStateOf(false) }
+    val visible = if (expanded || names.size <= 2) names else names.take(2)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(prefix, color = color, style = style)
+        // Commas trail each name so wrapped lines never start with one.
+        visible.forEachIndexed { index, name ->
+            Text(
+                name + (if (index < visible.size - 1) "," else ""),
+                color = color,
+                style = style,
+                modifier = Modifier.clickable { open(name) },
+            )
+        }
+        if (!expanded && names.size > 2) {
+            Text(
+                "+${names.size - 2} more",
+                color = color.copy(alpha = 0.6f),
+                style = style,
+                modifier = Modifier.clickable { expanded = true },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SeriesSummary(
+    book: Book,
+    color: Color,
+    openCategory: (LibraryCategoryKind, String) -> Unit,
+) {
     book.series.forEach { series ->
         val position = series.position?.let {
             if (it % 1.0 == 0.0) it.roundToInt().toString() else it.toString()
@@ -324,6 +663,9 @@ private fun SeriesSummary(book: Book, color: Color) {
             position?.let { "${series.name} • Book $it" } ?: series.name,
             color = color.copy(alpha = 0.86f),
             style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.clickable {
+                openCategory(LibraryCategoryKind.Series, series.name)
+            },
         )
     }
 }
@@ -362,7 +704,12 @@ private fun HeroMediaSummary(book: Book, color: Color) {
 }
 
 @Composable
-private fun TagRow(tags: List<String>, color: Color, modifier: Modifier = Modifier) {
+private fun TagRow(
+    tags: List<String>,
+    color: Color,
+    modifier: Modifier = Modifier,
+    openTag: ((String) -> Unit)? = null,
+) {
     val uniqueTags = remember(tags) { tags.distinct() }
     var expanded by remember(tags) { mutableStateOf(false) }
     val visibleTags = if (expanded) uniqueTags else uniqueTags.take(3)
@@ -385,6 +732,9 @@ private fun TagRow(tags: List<String>, color: Color, modifier: Modifier = Modifi
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(color.copy(alpha = 0.12f))
+                        .let { base ->
+                            if (openTag == null) base else base.clickable { openTag(tag) }
+                        }
                         .padding(horizontal = 9.dp, vertical = 4.dp),
                 )
             }
@@ -452,6 +802,27 @@ private fun DetailCard(
 }
 
 @Composable
+private fun ReviewContent(review: String) {
+    var showsAll by remember(review) { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            review,
+            maxLines = if (showsAll) Int.MAX_VALUE else 8,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        if (review.length > 280) {
+            Text(
+                if (showsAll) "Show Less" else "Show More",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.clickable { showsAll = !showsAll },
+            )
+        }
+    }
+}
+
+@Composable
 private fun DescriptionContent(description: String) {
     var showsAll by remember(description) { mutableStateOf(false) }
     val formatted = remember(description) { markdownDescription(description) }
@@ -503,19 +874,180 @@ private fun markdownDescription(value: String) = buildAnnotatedString {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun BookInfo(book: Book) {
-    val rows = buildList {
-        book.language?.takeIf(String::isNotBlank)?.let { add("Language" to it) }
-        book.publicationDateDisplay.takeIf(String::isNotBlank)?.let {
-            add("Published" to it)
-        }
-        if (book.tags.isNotEmpty()) add("Tags" to book.tags.joinToString())
-        if (book.collections.isNotEmpty()) add("Collections" to book.collections.joinToString())
-        book.createdAtDisplay.takeIf(String::isNotBlank)?.let { add("Added" to it) }
-        book.updatedAtDisplay.takeIf(String::isNotBlank)?.let { add("Updated" to it) }
+private fun AlignmentReportDialogHost(
+    book: Book,
+    loadReport: suspend (Book) -> BookAlignmentReport,
+    saveOverrides: suspend (Book, AlignmentOverrideState) -> Boolean,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+        ),
+    ) {
+        BookAlignmentReportScreen(
+            book = book,
+            loadReport = loadReport,
+            saveOverrides = saveOverrides,
+            navigateBack = onDismiss,
+            modifier = Modifier.heightIn(max = 640.dp),
+        )
     }
-    MetadataRows(rows)
+}
+
+@Composable
+private fun IdentifiersSection(
+    context: IdentifierContext,
+    onEdit: (() -> Unit)?,
+) {
+    val androidContext = LocalContext.current
+    HorizontalDivider(Modifier.padding(start = 104.dp))
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.width(104.dp),
+        ) {
+            Text("Identifiers", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            onEdit?.let {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit identifiers",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .size(14.dp)
+                        .clickable { it() },
+                )
+            }
+        }
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.weight(1f),
+        ) {
+            if (context.displayRows.isEmpty()) {
+                Text("None", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            context.displayRows.forEach { row ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (row.label == "ISBN-13") {
+                        Icon(
+                            if (row.audiobookScoped) {
+                                Icons.Default.Headphones
+                            } else {
+                                Icons.AutoMirrored.Filled.MenuBook
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 4.dp).size(14.dp),
+                        )
+                    }
+                    Text(
+                        "${row.label}: ${row.value}",
+                        textAlign = TextAlign.End,
+                        color = if (row.url != null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.Unspecified
+                        },
+                        modifier = if (row.url == null) {
+                            Modifier
+                        } else {
+                            Modifier.clickable {
+                                runCatching {
+                                    androidContext.startActivity(
+                                        Intent(Intent.ACTION_VIEW, Uri.parse(row.url)),
+                                    )
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+private sealed interface BookInfoRow {
+    data class Plain(val label: String, val value: String) : BookInfoRow
+    data class Linked(
+        val label: String,
+        val values: List<String>,
+        val open: (String) -> Unit,
+    ) : BookInfoRow
+}
+
+@Composable
+private fun BookInfo(book: Book, openCategory: (LibraryCategoryKind, String) -> Unit) {
+    val rows = buildList {
+        book.language?.takeIf(String::isNotBlank)?.let { add(BookInfoRow.Plain("Language", it)) }
+        book.publicationDateDisplay.takeIf(String::isNotBlank)?.let { published ->
+            if (book.publicationYear.isNotBlank()) {
+                add(
+                    BookInfoRow.Linked("Published", listOf(published)) {
+                        openCategory(LibraryCategoryKind.Years, book.publicationYear)
+                    },
+                )
+            } else {
+                add(BookInfoRow.Plain("Published", published))
+            }
+        }
+        if (book.tags.isNotEmpty()) {
+            add(
+                BookInfoRow.Linked("Tags", book.tags.distinct()) {
+                    openCategory(LibraryCategoryKind.Tags, it)
+                },
+            )
+        }
+        if (book.collections.isNotEmpty()) {
+            add(
+                BookInfoRow.Linked("Collections", book.collections) {
+                    openCategory(LibraryCategoryKind.Collections, it)
+                },
+            )
+        }
+        book.createdAtDisplay.takeIf(String::isNotBlank)?.let { add(BookInfoRow.Plain("Added", it)) }
+        book.updatedAtDisplay.takeIf(String::isNotBlank)?.let { add(BookInfoRow.Plain("Updated", it)) }
+    }
+    Column {
+        rows.forEachIndexed { index, row ->
+            if (index > 0) HorizontalDivider(Modifier.padding(start = 104.dp))
+            when (row) {
+                is BookInfoRow.Plain -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text(
+                        row.label,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(104.dp),
+                    )
+                    Text(row.value, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+                }
+                is BookInfoRow.Linked -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text(
+                        row.label,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(104.dp),
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        // Commas trail each value so wrapped lines never start with one.
+                        row.values.forEachIndexed { valueIndex, value ->
+                            Text(
+                                value + (if (valueIndex < row.values.size - 1) "," else ""),
+                                textAlign = TextAlign.End,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable { row.open(value) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

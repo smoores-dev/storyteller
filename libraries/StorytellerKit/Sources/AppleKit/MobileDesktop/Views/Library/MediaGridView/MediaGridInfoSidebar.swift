@@ -17,7 +17,7 @@ struct MediaGridInfoSidebar: View {
     let onSeriesSelected: ((String) -> Void)?
     let showsInspectorToolbar: Bool
     let roundsTopTrailingCorner: Bool
-    let onRelatedItemChange: ((Bool) -> Void)?
+    let onRelatedItemChange: ((BookMetadata?) -> Void)?
 
     @Environment(MediaViewModel.self) private var mediaViewModel: MediaViewModel
     @Environment(\.colorScheme) private var colorScheme
@@ -51,7 +51,7 @@ struct MediaGridInfoSidebar: View {
         onSeriesSelected: ((String) -> Void)? = nil,
         showsInspectorToolbar: Bool = true,
         roundsTopTrailingCorner: Bool = false,
-        onRelatedItemChange: ((Bool) -> Void)? = nil,
+        onRelatedItemChange: ((BookMetadata?) -> Void)? = nil,
         inlineEditModel: InlineMetadataEditModel? = nil,
     ) {
         self.item = item
@@ -142,8 +142,8 @@ struct MediaGridInfoSidebar: View {
         .onChange(of: item.id) { _, _ in
             relatedItemOverride = nil
         }
-        .onChange(of: relatedItemOverride?.id) { _, newValue in
-            onRelatedItemChange?(newValue != nil)
+        .onChange(of: relatedItemOverride?.id) { _, _ in
+            onRelatedItemChange?(relatedItemOverride)
         }
         .onChange(of: currentItem.id) { _, _ in
             coverPalette = CoverDerivedPalette.fallback()

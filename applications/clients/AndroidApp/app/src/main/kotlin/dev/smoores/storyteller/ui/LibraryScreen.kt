@@ -1,8 +1,11 @@
 package dev.smoores.storyteller.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -34,11 +37,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -65,6 +72,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
@@ -78,6 +86,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import dev.smoores.storyteller.R
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.BookID
+import dev.smoores.storyteller.model.BulkActionOptions
 
 private const val COVER_SCALE = 0.72f
 private const val COVER_SPREAD = 0.08f
@@ -121,7 +131,12 @@ internal fun LibraryScreen(
     coverRevision: Int,
     cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
     cachedCover: (Book, Boolean) -> Bitmap?,
+    viewOptions: LibraryViewOptions = LibraryViewOptions(),
+    bulkOptions: (suspend (List<Book>) -> BulkActionOptions)? = null,
+    bulkAction: (suspend (BulkActionRequest) -> Boolean)? = null,
 ) {
+    var selecting by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(setOf<BookID>()) }
     val query = searchText.trim()
     val visibleBooks = remember(
         state.books, tab, query, sortField, sortAscending, filters,
@@ -163,6 +178,16 @@ internal fun LibraryScreen(
                 )
             }
         }
+        val bulkAvailable = tab != LibraryTab.Home &&
+            bulkOptions != null && bulkAction != null
+        // Selected books that filtered out of view no longer participate in actions.
+        LaunchedEffect(visibleBooks, selecting) {
+            if (selecting) {
+                selectedIds = selectedIds.intersect(visibleBooks.mapTo(mutableSetOf()) { it.id })
+            } else {
+                selectedIds = emptySet()
+            }
+        }
         if (tab != LibraryTab.Home && state.books.isNotEmpty()) {
             SortFilterBar(
                 sortField = sortField,
@@ -171,6 +196,8 @@ internal fun LibraryScreen(
                 options = filterOptions,
                 selectSort = selectSort,
                 updateFilters = updateFilters,
+                selecting = if (bulkAvailable) selecting else null,
+                toggleSelecting = { selecting = !selecting },
             )
         }
         when {
@@ -210,21 +237,56 @@ internal fun LibraryScreen(
                 coverRevision = coverRevision,
                 cover = cover,
                 cachedCover = cachedCover,
+                viewOptions = viewOptions,
             )
-            else -> BookGrid(
-                books = visibleBooks,
-                select = select,
-                coverRevision = coverRevision,
-                cover = cover,
-                cachedCover = cachedCover,
-            )
+            else -> Box(Modifier.fillMaxSize()) {
+                BookGrid(
+                    books = visibleBooks,
+                    select = select,
+                    coverRevision = coverRevision,
+                    cover = cover,
+                    cachedCover = cachedCover,
+                    viewOptions = viewOptions,
+                    selecting = bulkAvailable && selecting,
+                    selectedIds = selectedIds,
+                    toggleSelected = { id ->
+                        selecting = true
+                        selectedIds = if (id in selectedIds) {
+                            selectedIds - id
+                        } else {
+                            selectedIds + id
+                        }
+                    },
+                )
+                if (bulkAvailable && selecting) {
+                    val selectedBooks = visibleBooks.filter { it.id in selectedIds }
+                    BulkSelectionBar(
+                        selectedBooks = selectedBooks,
+                        allSelected = visibleBooks.isNotEmpty() &&
+                            selectedBooks.size == visibleBooks.size,
+                        selectAll = {
+                            selectedIds = visibleBooks.mapTo(mutableSetOf()) { it.id }
+                        },
+                        deselectAll = { selectedIds = emptySet() },
+                        clear = {
+                            selectedIds = emptySet()
+                            selecting = false
+                        },
+                        loadOptions = bulkOptions!!,
+                        runAction = bulkAction!!,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 16.dp),
+                    )
+                }
+            }
         }
     }
 }
 
 private enum class FilterDimension(val label: String) {
     Format("Format"),
-    Rating("Rating"),
+    Rating("User Rating"),
     Author("Author"),
     Narrator("Narrator"),
     Series("Series"),
@@ -243,6 +305,8 @@ private fun SortFilterBar(
     options: LibraryFilterOptions,
     selectSort: (LibrarySortField, Boolean) -> Unit,
     updateFilters: (LibraryFilterState) -> Unit,
+    selecting: Boolean? = null,
+    toggleSelecting: () -> Unit = {},
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var filterMenuOpen by remember { mutableStateOf(false) }
@@ -344,6 +408,21 @@ private fun SortFilterBar(
             }
         }
 
+        selecting?.let { isSelecting ->
+            FilterChip(
+                selected = isSelecting,
+                onClick = toggleSelecting,
+                label = { Text(if (isSelecting) "Done" else "Multiple") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Checklist,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                },
+            )
+        }
+
         ActiveFilterChips(filters = filters, updateFilters = updateFilters)
     }
 }
@@ -418,7 +497,7 @@ private fun FilterMenuContent(
             }
         }
         FilterDimension.Rating -> {
-            option("All Ratings", filters.rating == null) {
+            option("All User Ratings", filters.rating == null) {
                 apply(filters.copy(rating = null))
             }
             options.ratings.forEach { value ->
@@ -567,6 +646,7 @@ private fun HomeSections(
     coverRevision: Int,
     cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
     cachedCover: (Book, Boolean) -> Bitmap?,
+    viewOptions: LibraryViewOptions = LibraryViewOptions(),
 ) {
     LazyColumn(
         contentPadding = PaddingValues(vertical = 16.dp),
@@ -598,7 +678,9 @@ private fun HomeSections(
                     LazyRow(
                         state = rowState,
                         contentPadding = PaddingValues(horizontal = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            viewOptions.spacing.points.dp * 0.75f,
+                        ),
                     ) {
                         listItems(section.books, key = Book::id) { book ->
                             BookTile(
@@ -607,7 +689,8 @@ private fun HomeSections(
                                 coverRevision = coverRevision,
                                 cover = cover,
                                 cachedCover = cachedCover,
-                                modifier = Modifier.width(112.dp),
+                                modifier = Modifier.width((96 + viewOptions.coverSize * 48).dp),
+                                viewOptions = viewOptions,
                             )
                         }
                     }
@@ -624,12 +707,19 @@ internal fun BookGrid(
     coverRevision: Int,
     cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
     cachedCover: (Book, Boolean) -> Bitmap?,
+    viewOptions: LibraryViewOptions = LibraryViewOptions(),
+    selecting: Boolean = false,
+    selectedIds: Set<BookID> = emptySet(),
+    toggleSelected: ((BookID) -> Unit)? = null,
 ) {
+    // The size slider maps to a minimum tile width; columns flex to fill the row.
+    val minTileWidth = (96 + viewOptions.coverSize * 104).dp
+    val spacing = viewOptions.spacing.points.dp
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Adaptive(minSize = minTileWidth),
         contentPadding = PaddingValues(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(spacing),
+        verticalArrangement = Arrangement.spacedBy(spacing + 4.dp),
     ) {
         gridItems(books, key = Book::id) { book ->
             BookTile(
@@ -639,12 +729,17 @@ internal fun BookGrid(
                 cover = cover,
                 cachedCover = cachedCover,
                 modifier = Modifier.fillMaxWidth(),
+                viewOptions = viewOptions,
+                selecting = selecting,
+                selected = book.id in selectedIds,
+                toggleSelected = toggleSelected,
             )
         }
     }
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 private fun BookTile(
     book: Book,
     select: (Book) -> Unit,
@@ -652,29 +747,88 @@ private fun BookTile(
     cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
     cachedCover: (Book, Boolean) -> Bitmap?,
     modifier: Modifier,
+    viewOptions: LibraryViewOptions = LibraryViewOptions(),
+    selecting: Boolean = false,
+    selected: Boolean = false,
+    toggleSelected: ((BookID) -> Unit)? = null,
 ) {
-    Column(modifier.clickable { select(book) }) {
-        BookCover(
-            book = book,
-            width = 320,
-            height = 480,
-            revision = coverRevision,
-            load = cover,
-            cached = cachedCover,
-            modifier = Modifier.fillMaxWidth().aspectRatio(COVER_PANEL_ASPECT_RATIO),
+    val tileModifier = if (toggleSelected == null) {
+        modifier.clickable { select(book) }
+    } else {
+        modifier.combinedClickable(
+            onClick = {
+                if (selecting) toggleSelected(book.id) else select(book)
+            },
+            onLongClick = { toggleSelected(book.id) },
         )
+    }
+    Column(
+        tileModifier
+            .let { base ->
+                if (selected) {
+                    base
+                        .border(
+                            2.dp,
+                            MaterialTheme.colorScheme.primary,
+                            RoundedCornerShape(8.dp),
+                        )
+                        .padding(2.dp)
+                } else {
+                    base
+                }
+            },
+    ) {
+        Box {
+            BookCover(
+                book = book,
+                width = 320,
+                height = 480,
+                revision = coverRevision,
+                load = cover,
+                cached = cachedCover,
+                modifier = Modifier.fillMaxWidth().aspectRatio(COVER_PANEL_ASPECT_RATIO),
+                preferredArtwork = viewOptions.style,
+                showsReadaloudBadge = viewOptions.showReadaloudBadge,
+                showsProgressBadge = viewOptions.showProgressBadge,
+            )
+            if (selecting) {
+                Icon(
+                    if (selected) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                    contentDescription = if (selected) "Selected" else "Not selected",
+                    tint = if (selected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .size(22.dp),
+                )
+            }
+        }
         Text(
             book.title,
             style = MaterialTheme.typography.titleSmall,
             maxLines = 2,
             modifier = Modifier.padding(top = 6.dp),
         )
-        if (book.authors.isNotBlank()) {
-            Text(
-                book.authors,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-            )
+        val rows = ShowOnItem.displayRows(viewOptions.showOnItemSelection)
+        when {
+            rows == null -> if (book.authors.isNotBlank()) {
+                Text(
+                    book.authors,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                )
+            }
+            else -> rows.forEach { row ->
+                Text(
+                    ShowOnItem.rowText(row, book),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
@@ -698,6 +852,7 @@ internal fun LibraryHeader(
     updateSearch: (String) -> Unit,
     openMenu: () -> Unit,
     openSettings: () -> Unit,
+    openViewOptions: (() -> Unit)? = null,
 ) {
     val focusManager = LocalFocusManager.current
     LaunchedEffect(Unit) {
@@ -744,6 +899,11 @@ internal fun LibraryHeader(
                         unfocusedIndicatorColor = Color.Transparent,
                     ),
                 )
+                openViewOptions?.let { open ->
+                    IconButton(onClick = open) {
+                        Icon(Icons.Default.Tune, contentDescription = "View options")
+                    }
+                }
                 IconButton(onClick = openSettings) {
                     Icon(Icons.Default.Settings, contentDescription = "Server settings")
                 }
@@ -793,6 +953,7 @@ internal fun BookCover(
     showsProgressBadge: Boolean = false,
     progressColor: Color? = null,
     progressBackgroundColor: Color? = null,
+    preferredArtwork: CoverStyle = CoverStyle.Auto,
 ) {
     val ebookState = rememberCoverLoadState(
         book = book,
@@ -816,10 +977,21 @@ internal fun BookCover(
     )
     val ebookBitmap = (ebookState as? CoverLoadState.Loaded)?.bitmap
     val audioBitmap = (audioState as? CoverLoadState.Loaded)?.bitmap
-    val ebookImage = remember(ebookBitmap) { ebookBitmap?.asImageBitmap() }
-    val audioImage = remember(audioBitmap) { audioBitmap?.asImageBitmap() }
+    val loadedEbookImage = remember(ebookBitmap) { ebookBitmap?.asImageBitmap() }
+    val loadedAudioImage = remember(audioBitmap) { audioBitmap?.asImageBitmap() }
+    val ebookImage = if (preferredArtwork == CoverStyle.Audio && loadedAudioImage != null) {
+        null
+    } else {
+        loadedEbookImage
+    }
+    val audioImage = if (preferredArtwork == CoverStyle.Ebook && loadedEbookImage != null) {
+        null
+    } else {
+        loadedAudioImage
+    }
     val darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val backgroundColor = remember(ebookBitmap, audioBitmap, darkTheme, showsPanel) {
+    val colorfulnessKey = CoverColorSettings.key
+    val backgroundColor = remember(ebookBitmap, audioBitmap, darkTheme, showsPanel, colorfulnessKey) {
         if (showsPanel) {
             coverBackgroundColor(ebookBitmap ?: audioBitmap, darkTheme)
         } else {
@@ -843,6 +1015,10 @@ internal fun BookCover(
             val ebookHeight = coverWidth / EBOOK_ASPECT_RATIO
             val shift = maxWidth * COVER_SPREAD
             val hasBothCovers = layersMedia && ebookImage != null && audioImage != null
+            // Unsynced ebook+audiobook pairs sit slightly askew until aligned, unless
+            // the double-cover alignment setting forces them straight.
+            val tilted = hasBothCovers && !book.hasReadaloud &&
+                CoverColorSettings.doubleCoverAlignment != "straight"
 
             if (audioImage != null && (layersMedia || ebookImage == null)) {
                 Image(
@@ -852,6 +1028,7 @@ internal fun BookCover(
                     modifier = Modifier
                         .size(coverWidth)
                         .offset(x = if (hasBothCovers) shift else 0.dp)
+                        .rotate(if (tilted) 2.5f else 0f)
                         .clip(coverShape)
                         .zIndex(1f),
                 )
@@ -866,6 +1043,7 @@ internal fun BookCover(
                         .width(coverWidth)
                         .height(ebookHeight)
                         .offset(x = if (hasBothCovers) -shift else 0.dp)
+                        .rotate(if (tilted) -2.5f else 0f)
                         .clip(coverShape)
                         .zIndex(2f),
                 )
