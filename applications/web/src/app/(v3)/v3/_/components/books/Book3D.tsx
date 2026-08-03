@@ -144,8 +144,9 @@ function DiscStack({
         return (
           <div
             key={i}
-            className="pointer-events-none absolute top-1/2 left-1/2 rounded-full"
+            className="pointer-events-none absolute top-1/2 left-1/2"
             style={{
+              borderRadius: "100%",
               width: diameter,
               height: diameter,
               transform: `translate(-50%, -50%) translateZ(${z}px)`,
@@ -157,8 +158,9 @@ function DiscStack({
             }}
           >
             <div
-              className="absolute top-1/2 left-1/2 rounded-full"
+              className="absolute top-1/2 left-1/2"
               style={{
+                borderRadius: "100%",
                 width: diameter * 0.17,
                 height: diameter * 0.17,
                 transform: "translate(-50%, -50%)",
