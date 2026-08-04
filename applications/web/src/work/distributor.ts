@@ -122,7 +122,10 @@ export async function enqueueBookAlign(
 ): Promise<Job> {
   // dedupe: one active job per book.
   const existing = await getActiveJobForBook(bookUuid)
-  if (existing) return existing
+  if (existing) {
+    void pump()
+    return existing
+  }
 
   const book = await getBookOrThrow(bookUuid)
   const settings = await getSettings()

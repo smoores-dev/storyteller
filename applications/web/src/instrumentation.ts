@@ -17,7 +17,7 @@ export async function register() {
   const { migrate } = await import("./database/migrate")
   const { syncChangelog } = await import("./database/changelog")
   const { getQueuedBooks } = await import("./database/books")
-  const { startProcessing } = await import("./work/distributor")
+  const { startProcessing, pump } = await import("./work/distributor")
   const { getReadiumService } = await import("./services/readiumService")
   const { env } = await import("./env")
 
@@ -83,6 +83,9 @@ export async function register() {
     for (const book of queue) {
       logger.info(`Adding ${book.title} to the queue`)
       void startProcessing(book.uuid, book.readaloud?.restartPending || false)
+    }
+    if (queue.length) {
+      void pump()
     }
   } catch (err) {
     logger.error("Failed to restart processing queue")
