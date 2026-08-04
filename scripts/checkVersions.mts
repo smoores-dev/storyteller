@@ -95,7 +95,11 @@ async function main() {
   if (unreleasedWorkspaces.length) {
     console.error(`The following workspaces have been changed, but have no release strategy:
 
-${unreleasedWorkspaces.map((w) => `@${w.manifest.name?.scope}/${w.manifest.name?.name}`).join("\n")}`)
+${unreleasedWorkspaces.map((w) => `@${w.manifest.name?.scope}/${w.manifest.name?.name}`).join("\n")}
+
+These are the files that have been changed when compared to origin/main:
+
+${(await Promise.all(await gitUtils.fetchChangedFiles(project.cwd, { base: "origin/main", project }))).join("\n")}`)
     process.exit(1)
   }
 
