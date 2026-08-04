@@ -55,6 +55,8 @@ apple_setup:
 
 apple_apps:
   extends: [.macos_runner, .clients-rules, .clients-variables]
+  tags:
+    - saas-macos-large-m2pro
   stage: check
   needs:
     - job: apple_setup
