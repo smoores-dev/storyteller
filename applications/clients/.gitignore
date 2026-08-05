@@ -4,6 +4,7 @@ xcshareddata/swiftpm/Package.resolved
 **/swiftpm/Package.resolved
 *.swp
 *.lock
+!Gemfile.lock
 .build*
 LinuxApp/.cache-container/
 LinuxApp/.cache-docker/
@@ -30,3 +31,7 @@ XCodeApps/Info-macOS.plist
 XCodeApps/Info-tvOS.plist
 XCodeApps/Info-watchOS.plist
 AndroidApp/generated/
+*.ipa
+*.dSYM.zip
+fastlane/report.xml
+vendor/bundle/

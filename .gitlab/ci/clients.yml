@@ -26,10 +26,36 @@
     STORYTELLER_IOS_DESTINATION: generic/platform=iOS Simulator
     STORYTELLER_TVOS_DESTINATION: generic/platform=tvOS Simulator
     STORYTELLER_WATCHOS_DESTINATION: generic/platform=watchOS Simulator
+    LC_ALL: "en_US.UTF-8"
+
+.apple_bundler:
+  variables:
+    BUNDLE_PATH: vendor/bundle
+  cache:
+    key:
+      files:
+        - applications/clients/Gemfile.lock
+      prefix: apple-gems
+    paths:
+      - applications/clients/vendor/bundle/
 
 apple_setup:
-  extends: [.macos_runner, .clients-rules, .clients-variables]
+  extends: [.macos_runner, .clients-variables, .apple_bundler]
   stage: check
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^apple-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+    - if:
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
+      changes:
+        - applications/clients/**/*
+        - applications/mobile/assets/storyteller-ios.icon/**/*
+        - libraries/StorytellerKit/**/*
+        - Package.swift
+        - Package.resolved
+        - .gitlab/ci/clients.yml
   script:
     - cd applications/clients
     - brew install imagemagick xcbeautify xcodegen
@@ -53,26 +79,69 @@ apple_setup:
       - applications/clients/XCodeApps/Assets.xcassets/StorytellerLogo.imageset/
       - applications/clients/XCodeApps/TVAssets.xcassets/
 
-apple_apps:
-  extends: [.macos_runner, .clients-rules, .clients-variables]
+.apple_fastlane_job:
+  extends: [.macos_runner, .apple_bundler]
   tags:
     - saas-macos-large-m2pro
-  stage: check
   needs:
     - job: apple_setup
       artifacts: true
-  parallel:
-    matrix:
-      - BUILD_SCRIPT:
-          - macbuild
-          - iosbuild
-          - tvbuild
-          - watchbuild
   before_script:
     - export PATH="${CI_PROJECT_DIR}/applications/clients/.ci-tools:${PATH}"
-  script:
     - cd applications/clients
-    - "./scripts/${BUILD_SCRIPT}"
+    - gem install bundler
+    - bundle install
+  script:
+    - bundle exec fastlane "${FASTLANE_LANE}"
+
+apple_debug:
+  extends: [.apple_fastlane_job, .clients-rules, .clients-variables]
+  stage: check
+  parallel:
+    matrix:
+      - FASTLANE_LANE:
+          - macos_debug
+          - ios_debug
+          - tvos_debug
+          - watchos_debug
+
+.apple_deploy_variables:
+  variables:
+    HOMEBREW_NO_AUTO_UPDATE: "1"
+    LANG: en_US.UTF-8
+    LC_ALL: "en_US.UTF-8"
+    STORYTELLER_DISABLE_CODE_SIGNING: "0"
+
+apple_testflight:
+  extends: [.apple_fastlane_job, .apple_deploy_variables]
+  stage: prerelease
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^apple-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  parallel:
+    matrix:
+      - FASTLANE_LANE:
+          - ios_beta
+          - macos_beta
+          - tvos_beta
+
+apple_release:
+  extends: [.apple_fastlane_job, .apple_deploy_variables]
+  stage: release
+  needs:
+    - job: apple_setup
+      artifacts: true
+    - job: apple_testflight
+      artifacts: false
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^apple-v?\d+\.\d+\.\d+$/'
+  parallel:
+    matrix:
+      - FASTLANE_LANE:
+          - ios_release
+          - macos_release
+          - tvos_release
 
 android_app:
   extends: [.macos_runner, .clients-rules, .clients-variables]

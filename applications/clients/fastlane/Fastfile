@@ -1,0 +1,330 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  PLATFORMS = {
+    ios: {
+      scheme: "Storyteller (iOS)",
+      debug_destination_env: "STORYTELLER_IOS_DESTINATION",
+      debug_destination_default: "platform=iOS Simulator,name=iPhone 17 Pro Max",
+      release_destination: nil,
+      debug_derived_data: ".buildIos",
+      release_derived_data: ".buildIosRelease",
+      asc_platform: "ios",
+      match_platform: "ios",
+      # The watch app and widgets are embedded in the iOS app, so the iOS
+      # build needs profiles for all three.
+      match_app_identifiers: [
+        "dev.smoores.Storyteller",
+        "dev.smoores.Storyteller.watchkitapp",
+        "dev.smoores.Storyteller.widgets"
+      ]
+    },
+    macos: {
+      scheme: "Storyteller (macOS)",
+      debug_destination_env: nil,
+      debug_destination_default: "generic/platform=macOS",
+      release_destination: "generic/platform=macOS",
+      debug_derived_data: ".buildMac",
+      release_derived_data: ".buildMacRelease",
+      asc_platform: "osx",
+      match_platform: "macos",
+      match_app_identifiers: [
+        "dev.smoores.Storyteller",
+        "dev.smoores.Storyteller.widgets"
+      ],
+      # Mac App Store packages are wrapped in a signed installer .pkg
+      match_additional_cert_types: ["mac_installer_distribution"]
+    },
+    tvos: {
+      scheme: "Storyteller (tvOS)",
+      debug_destination_env: "STORYTELLER_TVOS_DESTINATION",
+      debug_destination_default: "platform=tvOS Simulator,name=Apple TV",
+      release_destination: "generic/platform=tvOS",
+      debug_derived_data: ".buildTV",
+      release_derived_data: ".buildTVRelease",
+      asc_platform: "appletvos",
+      match_platform: "tvos",
+      match_app_identifiers: ["dev.smoores.Storyteller"]
+    },
+    watchos: {
+      scheme: "Storyteller (watchOS)",
+      debug_destination_env: "STORYTELLER_WATCHOS_DESTINATION",
+      debug_destination_default: "platform=watchOS Simulator,id=08EC1854-5E75-4159-B897-0C37B6FAC2CD",
+      release_destination: nil,
+      debug_derived_data: ".buildWatch",
+      release_derived_data: ".buildWatchRelease",
+      # watchOS apps are signed with iOS-platform profiles
+      match_platform: "ios",
+      match_app_identifiers: ["dev.smoores.Storyteller.watchkitapp"]
+    }
+  }
+
+  # Platforms with their own cert/profile sets. watchOS is excluded because
+  # its profiles live under the iOS platform and are covered by the ios entry.
+  MATCH_PLATFORM_KEYS = [:ios, :macos, :tvos]
+
+  def match_signing(config, type, readonly: true)
+    match(
+      type: type,
+      platform: config[:match_platform],
+      app_identifier: config[:match_app_identifiers],
+      additional_cert_types: config[:match_additional_cert_types],
+      readonly: readonly
+    )
+  end
+
+  # Authenticate to App Store Connect with an API key when one is configured
+  # (CI), so uploads run headlessly. Without it, fastlane falls back to an
+  # interactive Apple ID session, which only works locally. The EXPO_ prefix is
+  # historical — these CI variables predate the move away from Expo.
+  def configure_asc_api_key
+    key_id = ENV["EXPO_ASC_KEY_ID"]
+    issuer_id = ENV["EXPO_ASC_ISSUER_ID"]
+    return unless key_id && issuer_id
+
+    if ENV["EXPO_ASC_API_KEY_BASE64"]
+      app_store_connect_api_key(
+        key_id: key_id,
+        issuer_id: issuer_id,
+        key_content: ENV["EXPO_ASC_API_KEY_BASE64"],
+        is_key_content_base64: true
+      )
+    end
+  end
+
+  # Extract the numeric marketing version from a CI tag like
+  # "apple-v3.0.0" or "apple-v3.0.0-beta.1".
+  def release_version_from_tag
+    tag = ENV["CI_COMMIT_TAG"]
+    return nil unless tag
+
+    match = tag.match(/^apple-v?(\d+\.\d+\.\d+)/)
+    return nil unless match
+
+    match[1]
+  end
+
+  def set_release_version
+    version = release_version_from_tag
+    return unless version
+
+    increment_version_number(
+      version_number: version,
+      xcodeproj: "Storyteller.xcodeproj"
+    )
+  end
+
+  def debug_destination(platform_key)
+    config = PLATFORMS[platform_key]
+    env_var = config[:debug_destination_env]
+    if env_var
+      ENV.fetch(env_var, config[:debug_destination_default])
+    else
+      config[:debug_destination_default]
+    end
+  end
+
+  def debug_build(platform_key)
+    config = PLATFORMS[platform_key]
+    scheme = config[:scheme]
+    disable_code_signing = ENV["STORYTELLER_DISABLE_CODE_SIGNING"] == "1"
+
+    if disable_code_signing
+      # `sh` calls run from within the `fastlane/` dir for some reason
+      Dir.chdir("..") do
+        sh(
+          "xcodebuild",
+          "-project", "Storyteller.xcodeproj",
+          "-scheme", scheme,
+          "-configuration", "Debug",
+          "-destination", debug_destination(platform_key),
+          "-derivedDataPath", config[:debug_derived_data],
+          "CODE_SIGNING_ALLOWED=NO",
+          "CODE_SIGNING_REQUIRED=NO",
+          "build"
+        )
+      end
+    else
+      match_signing(config, "development")
+
+      build_app(
+        project: "Storyteller.xcodeproj",
+        scheme: scheme,
+        configuration: "Debug",
+        export_method: "development",
+        derived_data_path: config[:debug_derived_data],
+        destination: debug_destination(platform_key)
+      )
+    end
+  end
+
+  def release_build(platform_key, testflight: false, select_existing_build: false)
+    config = PLATFORMS[platform_key]
+
+    setup_ci
+
+    match_signing(config, "appstore")
+
+    # In CI the Xcode project is regenerated fresh with CURRENT_PROJECT_VERSION=1,
+    # so a bare increment would yield build number 2 on every pipeline and App
+    # Store Connect would reject the second upload as a duplicate. Use the
+    # monotonic pipeline IID in CI; locally (env var absent) fall back to +1.
+    increment_build_number(
+      xcodeproj: "Storyteller.xcodeproj",
+      build_number: ENV["CI_PIPELINE_IID"]
+    )
+
+    set_release_version
+
+    configure_asc_api_key
+
+    if testflight
+      build_app(
+        project: "Storyteller.xcodeproj",
+        scheme: config[:scheme],
+        configuration: "Release",
+        export_method: "app-store",
+        derived_data_path: config[:release_derived_data],
+        destination: config[:release_destination],
+      )
+
+      upload_to_testflight(
+        app_platform: config[:asc_platform],
+        skip_waiting_for_build_processing: true
+      )
+    elsif select_existing_build
+      upload_to_app_store(
+        platform: config[:asc_platform],
+        app_version: release_version_from_tag,
+        build_number: ENV["CI_PIPELINE_IID"],
+        precheck_include_in_app_purchases: false,
+        skip_binary_upload: true,
+        skip_metadata: true,
+        skip_screenshots: true,
+        submit_for_review: true,
+        automatic_release: true
+      )
+    else
+      build_app(
+        project: "Storyteller.xcodeproj",
+        scheme: config[:scheme],
+        configuration: "Release",
+        export_method: "app-store",
+        derived_data_path: config[:release_derived_data],
+        destination: config[:release_destination],
+      )
+
+      upload_to_app_store(
+        platform: config[:asc_platform],
+        precheck_include_in_app_purchases: false
+      )
+    end
+  end
+
+  # --- Debug lanes ---
+
+  desc "Build the iOS app in Debug configuration"
+  lane :ios_debug do
+    debug_build(:ios)
+  end
+
+  desc "Build the macOS app in Debug configuration"
+  lane :macos_debug do
+    debug_build(:macos)
+  end
+
+  desc "Build the tvOS app in Debug configuration"
+  lane :tvos_debug do
+    debug_build(:tvos)
+  end
+
+  desc "Build the watchOS app in Debug configuration"
+  lane :watchos_debug do
+    debug_build(:watchos)
+  end
+
+  desc "Build all Apple platforms in Debug configuration"
+  lane :debug_all do
+    ios_debug
+    macos_debug
+    tvos_debug
+    watchos_debug
+  end
+
+  # --- Beta lanes (TestFlight) ---
+
+  desc "Build and push a new release build of the iOS app to TestFlight"
+  lane :ios_beta do
+    release_build(:ios, testflight: true)
+  end
+
+  desc "Build and push a new release build of the macOS app to TestFlight"
+  lane :macos_beta do
+    release_build(:macos, testflight: true)
+  end
+
+  desc "Build and push a new release build of the tvOS app to TestFlight"
+  lane :tvos_beta do
+    release_build(:tvos, testflight: true)
+  end
+
+  desc "Build and push new release builds of all Apple platforms to TestFlight"
+  lane :beta_all do
+    ios_beta
+    macos_beta
+    tvos_beta
+  end
+
+  # --- Release lanes (App Store) ---
+
+  desc "Build, upload, and submit the iOS app to the App Store for a stable tag"
+  lane :ios_release do
+    release_build(:ios, select_existing_build: true)
+  end
+
+  desc "Build, upload, and submit the macOS app to the Mac App Store for a stable tag"
+  lane :macos_release do
+    release_build(:macos, select_existing_build: true)
+  end
+
+  desc "Build, upload, and submit the tvOS app to the App Store for a stable tag"
+  lane :tvos_release do
+    release_build(:tvos, select_existing_build: true)
+  end
+
+  desc "Build and push new release builds of all Apple platforms to the App Store"
+  lane :release_all do
+    ios_release
+    macos_release
+    tvos_release
+  end
+
+  # --- Certificate management ---
+
+  desc "Generate or renew certs and provisioning profiles for every platform.
+    Writes to the Developer Portal and match storage; requires Apple and GitLab
+    credentials. Build lanes only ever read what this lane provisions."
+  lane :provision do
+    MATCH_PLATFORM_KEYS.each do |platform_key|
+      config = PLATFORMS[platform_key]
+      ["development", "appstore"].each do |type|
+        match_signing(config, type, readonly: false)
+      end
+    end
+  end
+end

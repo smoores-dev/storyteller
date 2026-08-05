@@ -18,7 +18,7 @@ check-versions:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
-    - git fetch origin main --depth 1
+    - git fetch origin main --depth 25
     - yarn workspaces focus storyteller
     - yarn node ./scripts/checkVersions.mts
 

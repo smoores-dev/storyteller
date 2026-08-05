@@ -46,6 +46,12 @@ targets:
         #INFOPLIST_KEY_CFBundleName: Storyteller
         # Unknown why this redundant definition is needed for XCode to honor the app name
         #SWIFT_UPCOMING_FEATURE_NONSENDING_NONISOLATING_BY_DEFAULT: YES
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER:
+            "match AppStore $(PRODUCT_BUNDLE_IDENTIFIER) macos"
     info:
       path: XCodeApps/Info-macOS.plist
       properties:
@@ -105,6 +111,12 @@ targets:
         #INFOPLIST_KEY_CFBundleName: Storyteller
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
         #SWIFT_UPCOMING_FEATURE_NONSENDING_NONISOLATING_BY_DEFAULT: YES
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER:
+            "match AppStore $(PRODUCT_BUNDLE_IDENTIFIER)"
     info:
       path: XCodeApps/Info-iOS.plist
       properties:
@@ -190,6 +202,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID).widgets"
         PRODUCT_NAME: Storyteller Widgets
         SWIFT_VERSION: 6.2
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER:
+            "match AppStore $(PRODUCT_BUNDLE_IDENTIFIER)"
     info:
       path: XCodeApps/Info-Widgets-iOS.plist
       properties:
@@ -228,6 +246,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID).widgets"
         PRODUCT_NAME: Storyteller Widgets
         SWIFT_VERSION: 6.2
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER:
+            "match AppStore $(PRODUCT_BUNDLE_IDENTIFIER) macos"
     info:
       path: XCodeApps/Info-Widgets-macOS.plist
       properties:
@@ -257,6 +281,12 @@ targets:
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_FILE: XCodeApps/Info-watchOS.plist
         PRODUCT_BUNDLE_IDENTIFIER: "$(WATCH_APP_BUNDLE_ID)"
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER:
+            "match AppStore $(PRODUCT_BUNDLE_IDENTIFIER)"
     info:
       path: XCodeApps/Info-watchOS.plist
       properties:
@@ -292,6 +322,12 @@ targets:
         INFOPLIST_FILE: XCodeApps/Info-tvOS.plist
         PRODUCT_BUNDLE_IDENTIFIER: "$(APP_BUNDLE_ID)"
         ASSETCATALOG_COMPILER_APPICON_NAME: "App Icon"
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER:
+            "match AppStore $(PRODUCT_BUNDLE_IDENTIFIER) tvos"
     info:
       path: XCodeApps/Info-tvOS.plist
       properties:
