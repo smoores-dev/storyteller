@@ -19,26 +19,18 @@ import { bookVisibleTo, buildFilterExpression } from "./shelfFilter"
 
 export { type FacetSection, isFacetSection }
 
-// a single row within a facet (one status, one rating bucket, one author). a
-// facet (aka section, see FacetSection) is the dimension; a FacetValue is one
-// value along it.
 export type FacetValue = {
   key: string
   name: string
   bookCount: number
   icon?: string | null
   color?: string | null
-  // the machine-readable kind, used for status facets to determine if the
-  // status is a well-known/core status
   kind?: string
 }
 
 export const NONE_FACET_KEY = "__none__"
 
-// per-collection / per-shelf counts stay keyed by entity uuid; the badge
-// sections contribute one distinct-value count each.
 export type LibraryCounts = Record<BadgeFacetSection, number> & {
-  // total visible books in the whole library
   books: number
   collections: Record<string, number>
   shelves: Record<string, number>

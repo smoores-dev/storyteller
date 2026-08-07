@@ -2,7 +2,7 @@
 
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { usePathname } from "next/navigation"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { useOptionalBookListPageState } from "@v3/_/components/books/BookListPage"
@@ -54,7 +54,6 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { apiErrorMessage } from "@v3/_/lib/api-error"
 import { cn } from "@v3/_/lib/utils"
 
-import { isWellKnownStatus } from "@/database/statusKinds"
 import * as icon from "@/icons"
 import { type ShelfFilterNode } from "@/shelves"
 import { type UUID } from "@/uuid"
@@ -431,29 +430,22 @@ export function LibrarySidebar({
               </DropdownMenuItem>
             )}
 
-            {entityType &&
-              menuTarget &&
-              !isItemLocked?.(menuTarget) &&
-              !(
-                entityType === "status" &&
-                menuTarget.kind &&
-                isWellKnownStatus(menuTarget.kind)
-              ) && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    closeOnClick={false}
-                    onClick={(event) => {
-                      rowDeleteAction.confirm(event)
-                      // setMenuOpen(false)
-                    }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <icon.Trash className="mr-2 h-4 w-4" />
-                    {c("actions.delete")}
-                  </DropdownMenuItem>
-                </>
-              )}
+            {entityType && menuTarget && !isItemLocked?.(menuTarget) && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  closeOnClick={false}
+                  onClick={(event) => {
+                    rowDeleteAction.confirm(event)
+                    // setMenuOpen(false)
+                  }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <icon.Trash className="mr-2 h-4 w-4" />
+                  {c("actions.delete")}
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -532,11 +524,8 @@ function SidebarItemList({
   const canSelect = !!entityType && !!itemSelection
   const hasRowActions = !!onOpenItemMenu && !!entityType
 
-  // the visible order, used to resolve shift-click ranges
-  const orderedKeys = useMemo(() => items.map((item) => item.key), [items])
+  const orderedKeys = items.map((item) => item.key)
 
-  // store unstable callback references so SidebarRow doesn't receive
-  // new function identities on every parent re-render
   const callbacksRef = useRef({
     onItemClick,
     onHoverItem,
@@ -723,16 +712,12 @@ function SidebarRow({
 
   if (!firstPathSegment) return null
 
-  // the count sits where the row actions and the checkbox appear, so it steps
-  // aside whenever either of them can show
   const revealsOnHover = hasRowActions || canSelect
 
   return (
     <SidebarMenuItem className="absolute top-0 left-0 w-full" style={style}>
       <SidebarMenuButton
         isActive={isActive}
-        // facet rows carry their own accent, so every sidebar-accent token the
-        // menu button ships with is remapped onto the facet family
         className={cn(
           "hover:text-facet-accent-foreground active:text-facet-accent-foreground data-active:text-facet-accent-foreground rounded-sm",
           canSelect ? "pr-2 pl-1.5" : "px-2",
@@ -774,7 +759,7 @@ function SidebarRow({
             ) : null}
             <span className="min-w-0 truncate">{item.name}</span>
 
-            {(isLocked || (item.kind && isWellKnownStatus(item.kind))) && (
+            {isLocked && (
               <icon.Lock className="text-muted-foreground/60 size-3 shrink-0" />
             )}
 

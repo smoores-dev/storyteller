@@ -36,30 +36,14 @@ export type LibraryEntityType =
   | "identifier"
 
 export type LibrarySectionDef = {
-  /* the section identifier, used to fetch its facet list from the server. */
   key: FacetSection
-  /* build a shelf filter matching a single facet, for "pin as shelf". absent
-  when the facet can't be expressed as a saved filter (e.g. publication year). */
   toShelfFilter?: (itemKey: string) => ShelfFilterNode
-  /* the filter seeding the "(no author)" / "(no series)" bucket's grid. absent
-  for sections that have no none bucket (formats, grades). */
   noneFilter?: ShelfFilterNode
-  /* the filter behind a synthetic "all" row pinned at the top of the sidebar,
-  for sections whose facets don't span the whole library (grades → "All graded") */
   allFilter?: ShelfFilterNode
-  /* when present, the sidebar supports edit/delete/merge for this entity type */
   entityType?: LibraryEntityType
-  /* built-in facet values (core identifier kinds) that can't be edited,
-  deleted, or merged away; they show a lock in the sidebar */
   isItemLocked?: (item: FacetValue) => boolean
-  /* replaces the alphabetical "name" ordering in the sidebar when facet names
-  have a domain order (grades sort by rank, not by text) */
   compareItems?: (a: FacetValue, b: FacetValue) => number
-  /* when present, matching items are pinned to the top of the sidebar
-  regardless of the active sort mode */
   pinItem?: (item: FacetValue) => boolean
-  /* a signature colour per facet value, keyed by facet key (grades → their
-  grade-pill colour). takes precedence over any entity colour. */
   itemColor?: (itemKey: string) => string | null | undefined
   sort?: {
     field: SortField
@@ -166,6 +150,13 @@ export const librarySections = {
     }),
     noneFilter: sectionNoneFilter("statuses"),
     pinItem: (item) => !!item.kind && isWellKnownStatus(item.kind),
+    isItemLocked: (item) =>
+      (!!item.kind && isWellKnownStatus(item.kind)) || item.key === NONE_KEY,
+    compareItems: (a, b) => {
+      if (a.key === NONE_KEY) return -1
+      if (b.key === NONE_KEY) return 1
+      return a.name.localeCompare(b.name)
+    },
   },
   // facet values are identifier types (isbn, asin, ...); picking one filters
   // to books carrying any identifier of that type
@@ -179,8 +170,6 @@ export const librarySections = {
       qualifier: itemKey,
     }),
     noneFilter: sectionNoneFilter("identifiers"),
-    // core kinds (asin, isbn-13, ...) are code-defined; renaming or merging
-    // them away would break scheme resolution on the next scan
     isItemLocked: (item) => !!item.kind,
   },
   publicationYears: {
