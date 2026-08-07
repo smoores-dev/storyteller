@@ -722,12 +722,13 @@ function CardSizeSubmenu({
   const t = useTranslation("BooksPage.displayOptions.cardSize")
 
   const options = [
-    { id: "smallest", label: t("extraSmall") },
-    { id: "small", label: t("small") },
-    { id: "medium", label: t("medium") },
-    { id: "large", label: t("large") },
-    { id: "largest", label: t("extraLarge") },
+    { id: "smallest", label: t("small") },
+    { id: "small", label: t("medium") },
+    { id: "medium", label: t("large") },
+    { id: "large", label: t("extraLarge") },
   ]
+
+  const current = value === "largest" ? "large" : value
 
   return (
     <>
@@ -741,7 +742,7 @@ function CardSizeSubmenu({
           }}
         >
           {opt.label}
-          {value === opt.id && <icon.Check className="ml-auto" />}
+          {current === opt.id && <icon.Check className="ml-auto" />}
         </FilterableMenuItem>
       ))}
     </>
