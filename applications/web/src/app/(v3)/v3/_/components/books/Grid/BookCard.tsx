@@ -460,10 +460,11 @@ export const BookCard = memo(function BookCard({
                   className={cn(!onClick && "big-link")}
                 >
                   <h3
+                    lang={book.language ?? undefined}
                     className={cn(
                       "group-hover:text-tinted-strong line-clamp-2",
                       "font-heading font-medium",
-                      "leading-tight",
+                      "leading-[1.125] hyphens-auto",
                     )}
                   >
                     {book.title}

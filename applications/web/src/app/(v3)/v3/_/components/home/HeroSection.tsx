@@ -150,7 +150,7 @@ function Hero({ book }: { book: BookWithRelations }) {
       <div className="flex grow flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
         <div className="flex flex-1 flex-col justify-between pb-4">
           <div slot="main-info">
-            <h2 className="font-heading text-subtle-foreground text-2xl leading-tight font-medium tracking-tight @xl/main:text-3xl">
+            <h2 className="font-heading text-subtle-foreground text-xl leading-tight font-semibold @xl/main:text-2xl">
               {book.title}
             </h2>
 

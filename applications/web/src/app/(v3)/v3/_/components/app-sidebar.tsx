@@ -174,10 +174,10 @@ export function AppSidebar({
   const hasUpdate = useMemo(() => {
     if (!latestVersion) return false
 
-    const dismissed = false
-    // typeof window !== "undefined"
-    //   ? localStorage.getItem(DISMISSED_VERSION_KEY)
-    //   : null
+    const dismissed =
+      typeof window !== "undefined"
+        ? localStorage.getItem(DISMISSED_VERSION_KEY)
+        : null
 
     const isNewerThanCurrent = compareVersions(latestVersion, currentVersion)
     const isNewerThanDismissed =

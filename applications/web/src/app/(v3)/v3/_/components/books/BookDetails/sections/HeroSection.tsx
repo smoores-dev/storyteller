@@ -9,6 +9,7 @@ import {
 } from "@v3/_/components/books/AuthorEditor"
 import { useBookForm } from "@v3/_/components/books/BookDetails/BookFormProvider"
 import { CoverEditor } from "@v3/_/components/books/BookDetails/CoverEditor"
+import { useProcessingRun } from "@v3/_/components/books/BookDetails/useProcessingRun"
 import {
   ProgressDisplayBar,
   getReadingProgress,
@@ -93,9 +94,20 @@ export function HeroSection({
   } = useBookForm()
   const tLabels = useTranslation("Labels")
   const t = useTranslation("BookDetailsPage")
+  const tAlignment = useTranslation("BookDetailsPage.alignment")
   const c = useCommon()
 
   const permissions = usePermissions()
+  const { start: startProcessing, dialog: processingDialog } = useProcessingRun(
+    [book],
+  )
+
+  // both source formats are in place but nothing has been aligned yet
+  const canCreateReadaloud =
+    !!permissions?.bookProcess &&
+    !!book.ebook &&
+    !!book.audiobook &&
+    !book.readaloud
   const [setUserBookRating] = useSetUserBookRatingMutation()
   const [deleteUserBookRating] = useDeleteUserBookRatingMutation()
 
@@ -201,7 +213,7 @@ export function HeroSection({
               name="title"
               as="h1"
               className={cn(
-                "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-medium tracking-tight text-balance",
+                "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-semibold text-balance",
                 wide(`@xl/book:w-auto @xl/book:text-left`, "w-auto text-left"),
               )}
               placeholder={c.plain("fields.label.title")}
@@ -441,6 +453,20 @@ export function HeroSection({
               <ReadingStatusButton book={book} size="sm" />
 
               <div className="flex flex-wrap justify-center gap-2">
+                {canCreateReadaloud && (
+                  <Button
+                    variant="cover"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={(event) => {
+                      startProcessing(false, { shiftKey: event.shiftKey })
+                    }}
+                  >
+                    <IconReadaloud className="h-4 w-4" />
+                    {tAlignment("createReadaloud")}
+                  </Button>
+                )}
+
                 {book.readaloud?.status === "ALIGNED" && (
                   <Button
                     variant="cover"
@@ -476,6 +502,7 @@ export function HeroSection({
                     variant="cover"
                     size="sm"
                     nativeButton={false}
+                    className="rounded-xl"
                     render={
                       <V3Link href={`/books/${book.uuid}/read?mode=audiobook`}>
                         <icon.Headphones className="mr-1 h-4 w-4" />
@@ -589,6 +616,8 @@ export function HeroSection({
           className="bg-cover-wash/20 absolute right-0 bottom-0 left-0 rounded-none"
         />
       )}
+
+      {processingDialog}
     </div>
   )
 }

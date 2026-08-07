@@ -83,7 +83,7 @@ export function StatsBar() {
 const Tile = ({ tile }: { tile: Tile }) => {
   const content = (
     <>
-      <p className="font-heading text-primary text-3xl leading-none font-medium @xl/main:text-4xl">
+      <p className="font-heading text-primary text-xl leading-none font-medium @xl/main:text-xl">
         {tile.value}
       </p>
       <p className="text-muted-foreground mt-2 text-xs font-medium tracking-[0.12em] uppercase">
