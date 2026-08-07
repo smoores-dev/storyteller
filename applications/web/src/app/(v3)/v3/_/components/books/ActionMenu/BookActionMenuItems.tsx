@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@v3/_/components/ui/radio-group"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import { AddToShelfList } from "@/app/(v3)/v3/_/components/books/ActionMenu/AddToShelfList"
+import { SetStatusList } from "@/app/(v3)/v3/_/components/books/ActionMenu/SetStatusList"
 import { useProcessingRun } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
 import { CreateCollectionDialog } from "@/app/(v3)/v3/_/components/books/CreateCollectionDialog"
 import { CreateSeriesDialog } from "@/app/(v3)/v3/_/components/books/CreateSeriesDialog"
@@ -48,7 +49,6 @@ import {
   useDeleteBooksMutation,
   useGetCurrentUserQuery,
   useMergeBooksMutation,
-  useProcessBookMutation,
   useRelocateToInternalMutation,
   useScanBooksMutation,
   useUpgradeBookEpubMutation,
@@ -70,6 +70,8 @@ export type BookActionEntry = {
   variant?: "destructive"
   separatorBefore?: boolean
   disabled?: boolean
+  // native hover hint, e.g. why the row is greyed out
+  title?: string
 }
 
 const actionRowClassName =
@@ -88,6 +90,7 @@ export function ActionEntryList({ entries }: { entries: BookActionEntry[] }) {
                 textValue={entry.label}
                 keywords={entry.keywords}
                 disabled={entry.disabled}
+                title={entry.title}
               >
                 {entry.label}
               </FilterableMenuSubTrigger>
@@ -105,6 +108,7 @@ export function ActionEntryList({ entries }: { entries: BookActionEntry[] }) {
               keywords={entry.keywords}
               variant={entry.variant}
               disabled={entry.disabled}
+              title={entry.title}
               onSelect={entry.onSelect}
             >
               {entry.label}
@@ -141,7 +145,6 @@ export function useBookActionItems({
 
   const [addToCollections] = useAddBooksToCollectionsMutation()
   const [scanBooks] = useScanBooksMutation()
-  const [processBook] = useProcessBookMutation()
   const [clearCache] = useClearBooksCacheMutation()
   const [upgradeEpub] = useUpgradeBookEpubMutation()
   const [deleteBooks, { isLoading: isDeleting }] = useDeleteBooksMutation()
@@ -149,9 +152,7 @@ export function useBookActionItems({
   const [relocateToInternal] = useRelocateToInternalMutation()
   const [bulkRelocateToInternal] = useBulkRelocateToInternalMutation()
 
-  const processingRun = useProcessingRun(
-    mode === "single" ? books[0] : undefined,
-  )
+  const processingRun = useProcessingRun(books)
   const [createCollectionOpen, setCreateCollectionOpen] = useState(false)
   const [createCollectionName, setCreateCollectionName] = useState("")
   const [createSeriesOpen, setCreateSeriesOpen] = useState(false)
@@ -187,12 +188,6 @@ export function useBookActionItems({
   const handleClearCache = useCallback(async () => {
     await clearCache({ bookUuids }).unwrap()
   }, [clearCache, bookUuids])
-
-  const handleProcess = useCallback(async () => {
-    await Promise.all(
-      bookUuids.map((uuid) => processBook({ uuid, restart: false }).unwrap()),
-    )
-  }, [processBook, bookUuids])
 
   const handleUpgrade = useCallback(async () => {
     await Promise.all(
@@ -329,13 +324,6 @@ export function useBookActionItems({
     variant: "destructive",
   })
 
-  const processAction = useConfirmAction({
-    onConfirm: handleProcess,
-    title: t("processTitle", { count }),
-    description: t("processDescription"),
-    confirmLabel: c("states.processing"),
-  })
-
   const upgradeAction = useConfirmAction({
     onConfirm: handleUpgrade,
     title: t("upgradeTitle", { count: epubBooks.length }),
@@ -389,7 +377,8 @@ export function useBookActionItems({
 
       entries.push({
         key: "shelves",
-        label: t.plain("addToShelf"),
+        label: t.plain("editShelves"),
+        keywords: t.plain("addToShelf"),
         icon: <icon.BookmarkPlus className="size-4" />,
         submenuSearchable: true,
         submenuSearchPlaceholder: t.plain("search"),
@@ -504,14 +493,7 @@ export function useBookActionItems({
       icon: <icon.BookAlt className="size-4" />,
       submenuSearchable: true,
       submenuSearchPlaceholder: t.plain("search"),
-      submenu: () => (
-        <RelationEditList
-          source="statuses"
-          bookUuids={bookUuids}
-          membership={membershipFromBooks(books, "statuses")}
-          enabled
-        />
-      ),
+      submenu: () => <SetStatusList books={books} bookUuids={bookUuids} />,
     })
 
     if (canMerge) {
@@ -542,65 +524,54 @@ export function useBookActionItems({
   }
 
   if (canProcess) {
-    const singleBook = mode === "single" ? books[0] : undefined
-    const hasProcessable =
-      mode === "bulk"
-        ? books.some((b) => b.audiobook || b.ebook)
-        : !!singleBook &&
-          ((!!singleBook.ebook &&
-            !singleBook.ebook.missing &&
-            !!singleBook.audiobook &&
-            !singleBook.audiobook.missing) ||
-            !!singleBook.readaloud)
+    const unprocessable = processingRun.blockedBooks
+    const blockedTitle = (titles: string[]) =>
+      titles.length > 0
+        ? t.plain("processingUnavailable", { books: titles.join(", ") })
+        : undefined
 
-    if (hasProcessable) {
-      if (mode === "single") {
-        entries.push({
-          key: "processing",
-          separatorBefore: true,
-          label: tp.plain("menuTitle"),
-          icon: <icon.Progress className="size-4" />,
-          submenu: ({ close }) => (
-            <div className="flex flex-col">
-              {processingRun.positions.map((position) => (
-                <button
-                  key={position.key}
-                  type="button"
-                  disabled={position.disabled}
-                  onClick={() => {
-                    processingRun.start(position.restart)
-                    close()
-                  }}
-                  className={actionRowClassName}
-                >
-                  {position.icon}
-                  {tp(position.labelKey)}
-                </button>
-              ))}
-            </div>
-          ),
-        })
-      } else {
-        entries.push({
-          key: "process",
-          separatorBefore: true,
-          label: c.plain("states.processing"),
-          icon: <icon.Progress className="size-4" />,
-          onSelect: (modifiers) => {
-            processAction.confirm(modifiers)
-          },
-        })
-      }
+    entries.push({
+      key: "processing",
+      separatorBefore: true,
+      label: tp.plain("menuTitle"),
+      icon: <icon.Progress className="size-4" />,
+      disabled: !processingRun.canProcessAny,
+      title: blockedTitle(unprocessable.map((b) => b.title)),
+      submenuSearchable: false,
+      submenu: ({ close }) => (
+        <div className="flex flex-col">
+          {processingRun.positions.map((position) => (
+            <button
+              key={position.key}
+              type="button"
+              disabled={position.disabled}
+              // for a single book the blocker is the book itself, which says
+              // nothing useful; only a multi-book selection gets the hint
+              title={count > 1 ? blockedTitle(position.blockedBy) : undefined}
+              onClick={(event) => {
+                processingRun.start(position.restart, {
+                  shiftKey: event.shiftKey,
+                })
+                close()
+              }}
+              className={actionRowClassName}
+            >
+              {position.icon}
+              {tp(position.labelKey)}
+            </button>
+          ))}
+        </div>
+      ),
+    })
 
-      entries.push({
-        key: "clearCache",
-        label: t.plain("clearCache"),
-        icon: <icon.Refresh className="size-4" />,
-        onSelect: (modifiers) => {
-          clearCacheAction.confirm(modifiers)
-        },
-      })
-    }
+    entries.push({
+      key: "clearCache",
+      label: t.plain("clearCache"),
+      icon: <icon.Refresh className="size-4" />,
+      onSelect: (modifiers) => {
+        clearCacheAction.confirm(modifiers)
+      },
+    })
   }
 
   if (canUpdate) {
@@ -655,7 +626,6 @@ export function useBookActionItems({
         isLoading={isDeleting}
       />
       <ConfirmDialog {...clearCacheAction.dialogProps} />
-      <ConfirmDialog {...processAction.dialogProps} />
       <ConfirmDialog {...upgradeAction.dialogProps} />
       <ConfirmDialog {...mergeAction.dialogProps} isLoading={isMerging} />
 

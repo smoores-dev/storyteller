@@ -406,7 +406,12 @@
     "addToShelf": "Aan schap toevoegen",
     "newShelf": "Nieuw schap...",
     "addedToShelf": "{count, number} boek(en) toegevoegd aan {name}",
-    "addToShelfFailed": "Toevoegen aan schap mislukt"
+    "addToShelfFailed": "Toevoegen aan schap mislukt",
+    "clearStatus": "Leesstatus wissen",
+    "editShelves": "Schappen bewerken",
+    "removedFromShelf": "{count, number} boek(en) verwijderd van {name}",
+    "processingUnavailable": "Niet beschikbaar voor: {books}",
+    "updateShelfFailed": "Bijwerken van schap mislukt"
   },
   "ShelfPage": {
     "emptyShelf": "Deze plank is leeg",
@@ -1401,7 +1406,8 @@
       "copied": "Gekopieerd",
       "copyValue": "Waarde kopiëren",
       "openLink": "Link openen"
-    }
+    },
+    "addContributor": "Bijdrager toevoegen"
   },
   "Labels": {
     "bookDetails": "Details",
@@ -1467,7 +1473,9 @@
       "strategyBackupAndConvert": "Back-up & converteren",
       "strategyReplace": "Ter plekke vervangen",
       "strategySkip": "Overslaan"
-    }
+    },
+    "commonRoles": "Veelgebruikte rollen",
+    "allRoles": "Alle rollen"
   },
   "UploadDialog": {
     "metadataBehavior": "Metadata-gedrag",
@@ -1560,7 +1568,8 @@
       "selectFolder": "Selecteer map",
       "search": "Zoeken",
       "download": "Downloaden",
-      "resetToDefaults": "Standaardwaarden herstellen"
+      "resetToDefaults": "Standaardwaarden herstellen",
+      "none": "Geen"
     },
     "states": {
       "saving": "Opslaan...",

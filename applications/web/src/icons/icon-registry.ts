@@ -1,3 +1,7 @@
+import { BookWithRelations } from "@/database/books";
+import { UUID } from "@/uuid";
+import { z } from "zod";
+
 export type IconEntry = {
   id: string
   tabler: string
@@ -418,3 +422,12 @@ export const ICON_REGISTRY: IconEntry[] = [
 export const ICON_MAP = Object.fromEntries(
   ICON_REGISTRY.map((entry) => [entry.id, entry]),
 ) as Record<string, IconEntry>
+
+
+export const zUuid = z.uuid() as z.ZodType<UUID>
+export type Uuid = z.infer<typeof zUuid> 
+//           ^? 
+
+export const A = z.object({
+
+}) satisfies z.ZodType<BookWithRelations>

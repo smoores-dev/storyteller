@@ -320,7 +320,7 @@
   --text-lg--line-height: calc(1.75 / 1.4);
   --text-xl: 1.4rem;
   --text-xl--line-height: calc(1.75 / 1.4);
-  --text-2xl: 1.4rem;
+  /* --text-2xl: 1.4rem;
   --text-2xl--line-height: calc(1.75 / 1.4);
   --text-3xl: 1.4rem;
   --text-3xl--line-height: calc(1.75 / 1.4);
@@ -329,7 +329,7 @@
   --text-5xl: 1.4rem;
   --text-5xl--line-height: calc(1.75 / 1.4);
   --text-7xl: 1.4rem;
-  --text-7xl--line-height: calc(1.75 / 1.4);
+  --text-7xl--line-height: calc(1.75 / 1.4); */
 
   /* --text-xs: .75rem;
     --text-xs--line-height: calc(1 / .75);

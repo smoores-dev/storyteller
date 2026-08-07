@@ -62,19 +62,41 @@ export function AddToShelfList({
     return map
   }, [staticShelves])
 
-  const handleSelect = async (uuid: string, name: string) => {
+  // clicking a shelf every selected book already sits on takes them off it
+  // again, the way the tag and collection lists toggle membership
+  const handleSelect = async (
+    uuid: string,
+    name: string,
+    isMember: boolean,
+  ) => {
     const existing = memberships.get(uuid) ?? new Set<string>()
-    const merged = [...existing, ...bookUuids.filter((b) => !existing.has(b))]
+    const selected = new Set<string>(bookUuids)
+
+    const books = isMember
+      ? [...existing].filter((b) => !selected.has(b))
+      : [...existing, ...bookUuids.filter((b) => !existing.has(b))]
 
     try {
-      await updateShelf({ uuid, books: merged }).unwrap()
-      toast.success(t.plain("addedToShelf", { count: bookUuids.length, name }))
+      await updateShelf({ uuid, books }).unwrap()
+      toast.success(
+        t.plain(isMember ? "removedFromShelf" : "addedToShelf", {
+          count: bookUuids.length,
+          name,
+        }),
+      )
     } catch (error) {
-      toast.error(t.plain("addToShelfFailed"), {
+      toast.error(t.plain("updateShelfFailed"), {
         description: apiErrorMessage(error),
       })
     }
   }
+
+  const stateOf = (uuid: string) =>
+    bookUuids.every((b) => memberships.get(uuid)?.has(b))
+      ? "primary"
+      : bookUuids.some((b) => memberships.get(uuid)?.has(b))
+        ? "secondary"
+        : "none"
 
   return (
     <RelationSelectList
@@ -82,19 +104,18 @@ export function AddToShelfList({
       loading={isLoading}
       enabled
       emptyText={c.plain("empty.noItemsFound")}
-      stateOf={(item) =>
-        bookUuids.every((uuid) => memberships.get(item.uuid)?.has(uuid))
-          ? "primary"
-          : bookUuids.some((uuid) => memberships.get(item.uuid)?.has(uuid))
-            ? "secondary"
-            : "none"
-      }
+      stateOf={(item) => stateOf(item.uuid)}
       onSelect={(item) => {
-        void handleSelect(item.uuid, item.name)
+        void handleSelect(
+          item.uuid,
+          item.name,
+          stateOf(item.uuid) === "primary",
+        )
       }}
       create={{
         label: () => t.plain("newShelf"),
         onCreate,
+        allowEmptyQuery: true,
       }}
     />
   )

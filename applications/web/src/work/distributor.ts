@@ -123,7 +123,6 @@ export async function enqueueBookAlign(
   // dedupe: one active job per book.
   const existing = await getActiveJobForBook(bookUuid)
   if (existing) {
-    void pump()
     return existing
   }
 
@@ -164,7 +163,7 @@ async function claimNextJob(): Promise<Job | undefined> {
   try {
     if (controllers.size >= MAX_CONCURRENT) return undefined
 
-    const [next] = await getJobs({ statuses: ["QUEUED"] })
+    const [next] = await getJobs({ statuses: ["QUEUED", "RUNNING"] })
     if (!next) return undefined
 
     const abortController = new AbortController()
@@ -180,7 +179,7 @@ async function claimNextJob(): Promise<Job | undefined> {
 }
 
 // pick the next queued job and run it when a slot frees.
-async function pump(): Promise<void> {
+export async function pump(): Promise<void> {
   const job = await claimNextJob()
   if (!job) return
 

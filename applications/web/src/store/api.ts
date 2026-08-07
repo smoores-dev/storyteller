@@ -1032,7 +1032,11 @@ export const api = createApi({
         }
       },
     }),
-    updateStatus: build.mutation<void, { bookUuid: UUID; statusUuid: UUID }>({
+    // a null statusUuid clears the book's reading status
+    updateStatus: build.mutation<
+      void,
+      { bookUuid: UUID; statusUuid: UUID | null }
+    >({
       query: ({ bookUuid, statusUuid }) => ({
         url: `/books/${bookUuid}/status`,
         method: "PUT",
@@ -1044,7 +1048,7 @@ export const api = createApi({
         "Books",
         "Statuses",
         { type: "Books", id: bookUuid },
-        { type: "Statuses", id: statusUuid },
+        ...(statusUuid ? [{ type: "Statuses" as const, id: statusUuid }] : []),
       ],
 
       onQueryStarted: async (
@@ -1055,20 +1059,22 @@ export const api = createApi({
         const statuses = api.endpoints.listStatuses.select()(getState())
         const status = statuses.data?.find((s) => s.uuid === statusUuid)
 
-        if (!status) {
+        if (statusUuid !== null && !status) {
           await queryFulfilled
           return
         }
 
         const patchResult = dispatch(
           api.util.updateQueryData("getBook", { uuid: bookUuid }, (draft) => {
-            draft.status = {
-              uuid: status.uuid,
-              name: status.name,
-              label: status.label,
-              createdAt: status.createdAt,
-              updatedAt: status.updatedAt,
-            }
+            draft.status = status
+              ? {
+                  uuid: status.uuid,
+                  name: status.name,
+                  label: status.label,
+                  createdAt: status.createdAt,
+                  updatedAt: status.updatedAt,
+                }
+              : null
           }),
         )
 
@@ -1639,9 +1645,10 @@ export const api = createApi({
       }),
       invalidatesTags: ["Collections", "Books", "UserShelves"],
     }),
+    // a null status clears the reading status for every selected book
     updateReadingStatus: build.mutation<
       BookWithRelations,
-      { status: UUID; books: UUID[] }
+      { status: UUID | null; books: UUID[] }
     >({
       query: (body) => ({
         url: "/books/status",

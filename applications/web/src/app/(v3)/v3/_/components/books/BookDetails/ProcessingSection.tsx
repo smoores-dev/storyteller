@@ -49,7 +49,7 @@ function ProcessingDropdown({
   triggerIcon,
 }: {
   positions: ProcessingPosition[]
-  onSelect: (restart: ProcessRestart) => void
+  onSelect: (restart: ProcessRestart, modifiers: { shiftKey: boolean }) => void
   triggerLabel: string
   triggerIcon?: ReactNode
 }) {
@@ -69,8 +69,8 @@ function ProcessingDropdown({
           <DropdownMenuItem
             key={position.key}
             disabled={position.disabled}
-            onClick={() => {
-              onSelect(position.restart)
+            onClick={(event) => {
+              onSelect(position.restart, { shiftKey: event.shiftKey })
             }}
           >
             {position.icon}
@@ -85,7 +85,7 @@ function ProcessingDropdown({
 export function ProcessingSection({ book }: { book: BookWithRelations }) {
   const [cancelProcessing] = useCancelProcessingMutation()
   const canProcess = usePermission("bookProcess")
-  const { start, dialog, positions } = useProcessingRun(book)
+  const { start, dialog, positions } = useProcessingRun([book])
 
   const hasEbook = book.ebook !== null
   const hasAudiobook = book.audiobook !== null
@@ -250,8 +250,8 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
         <Button
           size="sm"
           className="bg-cover-header max-w-40"
-          onClick={() => {
-            start(false)
+          onClick={(event) => {
+            start(false, { shiftKey: event.shiftKey })
           }}
         >
           <IconReadaloud className="mr-1 h-4 w-4" />

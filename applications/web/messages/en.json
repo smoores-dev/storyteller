@@ -412,7 +412,7 @@
     "newNarrator": "Add narrator {input}",
     "editTranslators": "Edit translators",
     "newTranslator": "Add translator {input}",
-    "setStatus": "Set reading status",
+    "setStatus": "Set status",
     "upgradeEpub": "Upgrade EPUB",
     "clearCache": "Clear cache",
     "merge": "Merge books",
@@ -442,7 +442,12 @@
     "addToShelf": "Add to shelf",
     "newShelf": "New shelf...",
     "addedToShelf": "Added {count, number} book(s) to {name}",
-    "addToShelfFailed": "Failed to add to shelf"
+    "addToShelfFailed": "Failed to add to shelf",
+    "clearStatus": "Clear status",
+    "editShelves": "Edit shelves",
+    "removedFromShelf": "Removed {count, number} book(s) from {name}",
+    "processingUnavailable": "Not available for: {books}",
+    "updateShelfFailed": "Failed to update shelf"
   },
   "ShelfPage": {
     "breadcrumb": "Shelves",
@@ -1449,7 +1454,8 @@
       "copied": "Copied",
       "copyValue": "Copy value",
       "openLink": "Open link"
-    }
+    },
+    "addContributor": "Add contributor"
   },
   "Common": {
     "Nouns": {
@@ -1505,7 +1511,8 @@
       "confirm": "Confirm",
       "selectFolder": "Select folder",
       "download": "Download",
-      "resetToDefaults": "Reset to defaults"
+      "resetToDefaults": "Reset to defaults",
+      "none": "None"
     },
     "states": {
       "saving": "Saving...",
@@ -1540,7 +1547,7 @@
         "seriesPosition": "Series Position",
         "subtitle": "Subtitle",
         "description": "Description",
-        "status": "Reading Status",
+        "status": "Status",
         "tags": "Tags",
         "collections": "Collections",
         "series": "Series",
@@ -1693,7 +1700,9 @@
       "strategyBackupAndConvert": "Backup & convert",
       "strategyReplace": "Replace in place",
       "strategySkip": "Skip"
-    }
+    },
+    "commonRoles": "Common roles",
+    "allRoles": "All roles"
   },
   "UploadDialog": {
     "metadataBehavior": "Metadata behavior",
