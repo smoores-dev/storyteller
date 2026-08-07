@@ -697,6 +697,8 @@ export type FilterableMenuItemProps = {
   disabled?: boolean
   closeOnClick?: boolean
   className?: string
+  // native hover hint, e.g. why a row is disabled
+  title?: string
   // pass false when the rows are already filtered upstream (e.g. server
   // search results) so the query doesn't hide them again client-side.
   filter?: boolean
@@ -710,6 +712,7 @@ export function FilterableMenuItem({
   disabled,
   closeOnClick,
   className,
+  title,
   textValue,
   keywords,
   filter = true,
@@ -745,6 +748,7 @@ export function FilterableMenuItem({
       data-highlighted={active || undefined}
       data-disabled={disabled || undefined}
       data-variant={variant}
+      title={title}
       className={cn(menuItemClassName, className)}
       onMouseMove={(event) => {
         if (!disabled && pointerMoved(lastPointer, event)) setActive()
@@ -784,6 +788,7 @@ export function FilterableMenuSubTrigger({
   icon,
   disabled,
   className,
+  title,
   textValue,
   keywords,
 }: {
@@ -791,6 +796,8 @@ export function FilterableMenuSubTrigger({
   icon?: ReactNode
   disabled?: boolean
   className?: string
+  // native hover hint, e.g. why a row is disabled
+  title?: string
   textValue?: string
   keywords?: string
 }) {
@@ -829,6 +836,7 @@ export function FilterableMenuSubTrigger({
           data-highlighted={active || undefined}
           data-disabled={disabled || undefined}
           data-open={open || undefined}
+          title={title}
           className={cn(menuSubTriggerClassName, className)}
           onMouseMove={(event) => {
             if (!disabled && pointerMoved(lastPointer, event)) setActive()
@@ -939,6 +947,10 @@ export function VirtualizedFilterableMenuItems<T>({
   create?: {
     label: (query: string) => string
     onCreate: (query: string) => void
+    // creates that open a dialog don't need a name typed first, so their row
+    // stays visible on an empty query. creates that attach a new item straight
+    // from the typed text leave this off.
+    allowEmptyQuery?: boolean
   }
   footer?: ReactNode
   loading?: boolean
@@ -967,7 +979,7 @@ export function VirtualizedFilterableMenuItems<T>({
   const trimmed = query.trim()
   const showCreate =
     !!create &&
-    trimmed.length > 0 &&
+    (trimmed.length > 0 || !!create.allowEmptyQuery) &&
     !items.some((i) => getTextRef.current(i).toLowerCase() === q)
   const createIndex = showCreate ? filtered.length : -1
   const rowCount = filtered.length + (showCreate ? 1 : 0)

@@ -11,15 +11,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v3/_/components/ui/dialog"
-import { Input } from "@v3/_/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v3/_/components/ui/select"
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuItem,
+  FilterableMenuSeparator,
+  FilterableMenuTrigger,
+} from "@v3/_/components/ui/filterable-menu"
+import { Input } from "@v3/_/components/ui/input"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
+import { cn } from "@v3/_/lib/utils"
 
 import {
   type BookWithRelations,
@@ -94,14 +95,12 @@ export function EditIdentifiersDialog({
   }, [open, book, format])
 
   const typeItems = useMemo(
-    () => [
-      ...types.map((type) => ({
-        value: type.uuid,
+    () =>
+      types.map((type) => ({
+        value: type.uuid as string,
         label: getCoreIdentifier(type.kind)?.displayName ?? type.name,
       })),
-      { value: NEW_TYPE, label: t.plain("identifiers.newType") },
-    ],
-    [types, t],
+    [types],
   )
 
   const typeByUuid = useMemo(
@@ -248,27 +247,15 @@ export function EditIdentifiersDialog({
             return (
               <div key={row.id} className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <Select
-                    value={row.typeUuid || null}
-                    onValueChange={(typeUuid) => {
-                      patchRow(row.id, { typeUuid: typeUuid ?? "" })
-                    }}
+                  <IdentifierTypeMenu
                     items={typeItems}
-                  >
-                    <SelectTrigger
-                      className="w-40 shrink-0"
-                      aria-label={t.plain("identifiers.type")}
-                    >
-                      <SelectValue placeholder={t.plain("identifiers.type")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {typeItems.map(({ value, label }) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    value={row.typeUuid}
+                    placeholder={t.plain("identifiers.type")}
+                    newTypeLabel={t.plain("identifiers.newType")}
+                    onChange={(typeUuid) => {
+                      patchRow(row.id, { typeUuid })
+                    }}
+                  />
 
                   <Input
                     value={row.value}
@@ -346,5 +333,72 @@ export function EditIdentifiersDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function IdentifierTypeMenu({
+  items,
+  value,
+  placeholder,
+  newTypeLabel,
+  onChange,
+}: {
+  items: { value: string; label: string }[]
+  value: string
+  placeholder: string
+  newTypeLabel: string
+  onChange: (value: string) => void
+}) {
+  const current = items.find((item) => item.value === value)
+  const label =
+    value === NEW_TYPE ? newTypeLabel : current?.label ?? placeholder
+
+  return (
+    <FilterableMenu>
+      <FilterableMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label={placeholder}
+            className="bg-input/20 dark:bg-input/30 border-input w-40 shrink-0 justify-between rounded-md font-normal"
+          >
+            <span
+              className={cn("truncate", !current && "text-muted-foreground")}
+            >
+              {label}
+            </span>
+            <icon.ChevronDown className="size-3 shrink-0" />
+          </Button>
+        }
+      />
+      <FilterableMenuContent align="start" searchable={items.length > 8}>
+        {items.map((item) => (
+          <FilterableMenuItem
+            key={item.value}
+            textValue={item.label}
+            onSelect={() => {
+              onChange(item.value)
+            }}
+          >
+            {item.label}
+            {item.value === value && <icon.Check className="ml-auto" />}
+          </FilterableMenuItem>
+        ))}
+
+        <FilterableMenuSeparator />
+
+        <FilterableMenuItem
+          textValue={newTypeLabel}
+          icon={<icon.Add className="size-3.5" />}
+          onSelect={() => {
+            onChange(NEW_TYPE)
+          }}
+        >
+          {newTypeLabel}
+        </FilterableMenuItem>
+      </FilterableMenuContent>
+    </FilterableMenu>
   )
 }
