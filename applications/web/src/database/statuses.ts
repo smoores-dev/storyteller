@@ -105,43 +105,47 @@ export async function updateStatusLabel(uuid: UUID, label: string) {
 }
 
 export async function updateStatusForBooks(
-  statusUuid: UUID,
+  statusUuid: UUID | null,
   bookUuids: UUID[],
   userId: UUID,
 ) {
   if (bookUuids.length === 0) return
 
-  // bookToStatus has no unique (bookUuid, userId) constraint, so upsert by hand:
-  // update the rows that exist and insert one for every book that has none yet.
-  // a plain UPDATE would silently skip books that never got a status row (e.g.
-  // imported while the library had no default status).
-  await db.transaction().execute(async (tr) => {
-    const existing = await tr
-      .selectFrom("bookToStatus")
-      .select("bookUuid")
+  if (statusUuid === null) {
+    await db
+      .deleteFrom("bookToStatus")
       .where("bookUuid", "in", bookUuids)
       .where("userId", "=", userId)
       .execute()
-
-    await tr
-      .updateTable("bookToStatus")
-      .set({ statusUuid })
-      .where("bookUuid", "in", bookUuids)
-      .where("userId", "=", userId)
-      .execute()
-
-    const existingBooks = new Set(existing.map((row) => row.bookUuid))
-    const missing = bookUuids.filter((uuid) => !existingBooks.has(uuid))
-
-    if (missing.length > 0) {
-      await tr
-        .insertInto("bookToStatus")
-        .values(missing.map((bookUuid) => ({ bookUuid, statusUuid, userId })))
+  } else {
+    await db.transaction().execute(async (tr) => {
+      const existing = await tr
+        .selectFrom("bookToStatus")
+        .select("bookUuid")
+        .where("bookUuid", "in", bookUuids)
+        .where("userId", "=", userId)
         .execute()
-    }
-  })
 
-  const status = await getStatus(statusUuid)
+      await tr
+        .updateTable("bookToStatus")
+        .set({ statusUuid })
+        .where("bookUuid", "in", bookUuids)
+        .where("userId", "=", userId)
+        .execute()
+
+      const existingBooks = new Set(existing.map((row) => row.bookUuid))
+      const missing = bookUuids.filter((uuid) => !existingBooks.has(uuid))
+
+      if (missing.length > 0) {
+        await tr
+          .insertInto("bookToStatus")
+          .values(missing.map((bookUuid) => ({ bookUuid, statusUuid, userId })))
+          .execute()
+      }
+    })
+  }
+
+  const status = statusUuid === null ? null : await getStatus(statusUuid)
 
   bookUuids.forEach((bookUuid) => {
     BookEvents.emit("message", {
