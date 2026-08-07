@@ -1,4 +1,9 @@
-import { type Insertable, type Selectable, type Updateable } from "kysely"
+import {
+  type Insertable,
+  type Selectable,
+  type Updateable,
+  sql,
+} from "kysely"
 
 import { type Role } from "@/components/books/edit/marcRelators"
 import { BookEvents } from "@/events"
@@ -16,27 +21,27 @@ export type CreatorUpdate = Updateable<DB["creator"]>
 export async function getCreators(
   userId?: UUID,
   role?: Role,
-): Promise<(Creator & { roles?: Role[] })[]> {
+): Promise<(Creator & { roles: Role[] })[]> {
   return (
     db
       .selectFrom("creator")
-      // one bookToCreator join serves the roles aggregation, the role filter,
-      // and the visibility check (joining it multiple times multiplied rows
-      // and produced duplicate roles).
       .innerJoin("bookToCreator", "bookToCreator.creatorUuid", "creator.uuid")
-      .$if(!role, (qb) =>
-        qb.select((eb) =>
-          eb.fn
-            .agg<Role[]>("json_group_array", ["bookToCreator.role"])
-            .distinct()
-            .as("roles"),
-        ),
+      // every role the creator holds, once each, nulls dropped
+      .select((eb) =>
+        eb.fn
+          .agg<Role[]>("json_group_array", ["bookToCreator.role"])
+          .distinct()
+          .filterWhere("bookToCreator.role", "is not", null)
+          .as("roles"),
       )
+      // filtering by role narrows which creators come back, but each one still
+      // reports its full role set, so having beats a where here
       .$if(!!role, (qb) =>
-        // The $if condition ensures that this only runs when role
-        // is not null
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        qb.where("bookToCreator.role", "=", role!),
+        qb.having(
+          sql<number>`sum(${sql.ref("bookToCreator.role")} = ${role})`,
+          ">",
+          0,
+        ),
       )
       .$if(!!userId, (qb) =>
         qb

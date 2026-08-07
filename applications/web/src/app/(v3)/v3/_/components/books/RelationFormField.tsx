@@ -28,6 +28,7 @@ import { RelationSelectList } from "./relation-picker/RelationSelectList"
 export type RelationFieldName =
   | "authors"
   | "narrators"
+  | "creators"
   | "tags"
   | "collections"
   | "series"

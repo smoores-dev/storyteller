@@ -130,6 +130,9 @@ export function RelationEditList({
             if (onCreate) onCreate(s)
             else actions.createAndAdd?.(bookUuids, s)
           },
+          // a dialog-driven create needs no typed name, so its row stays
+          // visible; creating straight from the typed text does need one.
+          allowEmptyQuery: !!onCreate,
         }
       : undefined
 

@@ -325,3 +325,41 @@ export type CreatorRole = Exclude<Role, "aut" | "nrt">
 export const creatorRelators = marcRelators.filter(
   (r) => r.value !== "aut" && r.value !== "nrt",
 ) as { value: CreatorRole; label: string }[]
+
+/**
+ * The roles that are common to all books
+ */
+const COMMON_ROLE_CODES = [
+  "aut",
+  "nrt",
+  "trl",
+  "edt",
+  "ill",
+  "wfw",
+  "win",
+  "wpr",
+  "waw",
+  "com",
+  "adp",
+  "cov",
+  "pbl",
+  "ctb",
+] as const satisfies readonly Role[]
+
+export type MarcRelator = { value: Role; label: string }
+
+// flatMap over the code list (rather than mapping the relator list) so the
+// pinned order is the one written above, not the alphabetical MARC order
+export const commonMarcRelators: MarcRelator[] = COMMON_ROLE_CODES.flatMap(
+  (code) =>
+    marcRelators.filter(
+      (r): r is (typeof marcRelators)[number] => r.value === code,
+    ),
+)
+
+export const commonCreatorRelators: MarcRelator[] = commonMarcRelators.filter(
+  (r) => r.value !== "aut" && r.value !== "nrt",
+)
+
+/** The role a newly added "other contributor" starts out with. */
+export const DEFAULT_CREATOR_ROLE: CreatorRole = "ctb"

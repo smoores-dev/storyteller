@@ -1,21 +1,17 @@
 "use client"
 
-import { Controller, useFieldArray } from "react-hook-form"
-
 import { useBookForm } from "@v3/_/components/books/BookDetails/BookFormProvider"
+import { RelationFormField } from "@v3/_/components/books/RelationFormField"
+import { RoleMenuItems, roleLabel } from "@v3/_/components/books/RolePicker"
 import { Badge } from "@v3/_/components/ui/badge"
-import { Button } from "@v3/_/components/ui/button"
-import { Input } from "@v3/_/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v3/_/components/ui/select"
-import { useTranslation } from "@v3/_/hooks/use-translation"
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuTrigger,
+} from "@v3/_/components/ui/filterable-menu"
+import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
-import { creatorRelators } from "@/components/books/edit/marcRelators"
+import { DEFAULT_CREATOR_ROLE } from "@/components/books/edit/marcRelators"
 import * as icon from "@/icons"
 
 import { CollapsibleSection } from "./CollapsibleSection"
@@ -46,7 +42,7 @@ export function ContributorsSection({ className }: { className?: string }) {
               {creator.name}
               {creator.role && (
                 <span className="text-muted-foreground ml-1">
-                  ({creator.role})
+                  ({roleLabel(creator.role)})
                 </span>
               )}
             </Badge>
@@ -59,73 +55,77 @@ export function ContributorsSection({ className }: { className?: string }) {
 
 function ContributorsEditor() {
   const { form } = useBookForm()
+  const t = useTranslation("BookDetailsPage")
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "creators",
-  })
+  const setRole = (name: string, role: string) => {
+    form.setValue(
+      "creators",
+      form
+        .getValues("creators")
+        .map((entry) => (entry.name === name ? { ...entry, role } : entry)),
+      { shouldDirty: true },
+    )
+  }
 
   return (
-    <div className="flex flex-col gap-3">
-      {fields.map((field, idx) => (
-        <div key={field.id} className="flex items-center gap-2">
-          <Input
-            {...form.register(`creators.${idx}.name`)}
-            placeholder="Name"
-            className="h-8 flex-1 text-sm"
-          />
+    <RelationFormField
+      name="creators"
+      source="creators"
+      entryId={(entry) => entry.name}
+      itemId={(item) => item.name}
+      toChip={(entry) => ({
+        uuid: entry.name,
+        name: entry.name,
+        role: entry.role,
+      })}
+      entryFromPick={(item) => ({
+        name: item.name,
+        role: DEFAULT_CREATOR_ROLE,
+      })}
+      createEntry={(name) => ({ name, role: DEFAULT_CREATOR_ROLE })}
+      searchPlaceholder={t.plain("addContributor")}
+      renderBadgeExtra={(chip) => (
+        <ContributorRolePicker
+          value={chip.role}
+          onChange={(role) => {
+            setRole(chip.name, role)
+          }}
+        />
+      )}
+    />
+  )
+}
 
-          <Controller
-            control={form.control}
-            name={`creators.${idx}.role`}
-            render={({ field: roleField }) => (
-              <Select
-                items={creatorRelators}
-                value={roleField.value}
-                onValueChange={(value) => {
-                  roleField.onChange(value ?? "")
-                }}
-              >
-                <SelectTrigger className="h-8 w-48 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
+function ContributorRolePicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (role: string) => void
+}) {
+  const c = useCommon()
 
-                <SelectContent>
-                  {creatorRelators.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-
-          <Button
+  return (
+    <FilterableMenu>
+      <FilterableMenuTrigger
+        render={
+          <button
             type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => {
-              remove(idx)
+            aria-label={c.plain("actions.edit")}
+            className="text-muted-foreground hover:text-foreground -mr-0.5 ml-0.5 flex items-center gap-0.5 rounded-full text-[0.65rem]"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
             }}
           >
-            <icon.Close className="h-3 w-3" />
-          </Button>
-        </div>
-      ))}
-
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="self-start"
-        onClick={() => {
-          append({ name: "", role: "" })
-        }}
-      >
-        <icon.Add className="size-4" />
-        Add contributor
-      </Button>
-    </div>
+            {roleLabel(value) || c.plain("actions.select")}
+            <icon.ChevronDown className="size-2.5" />
+          </button>
+        }
+      />
+      <FilterableMenuContent align="start" className="max-h-110">
+        <RoleMenuItems value={value} onSelect={onChange} />
+      </FilterableMenuContent>
+    </FilterableMenu>
   )
 }

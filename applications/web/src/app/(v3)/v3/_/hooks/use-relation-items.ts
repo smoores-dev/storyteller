@@ -66,8 +66,6 @@ export function useRelationItems(
 ): { items: RelationItem[]; loading: boolean } {
   const locale = useLocale()
 
-  // each source has its own endpoint; only the active one is fetched, and only
-  // once the picker is enabled (opened).
   const on = (s: RelationSource) => enabled && source === s
 
   const tags = useListTagsQuery(undefined, { skip: !on("tags") })
@@ -133,15 +131,15 @@ export function useRelationItems(
     }
 
     const rows = (data ?? []) as readonly RelationRow[]
-    const list =
-      source === "creators"
-        ? rows.filter(
-            (c) =>
-              !c.roles?.includes("aut") &&
-              !c.roles?.includes("nrt") &&
-              !c.roles?.includes("trl"),
-          )
-        : rows
+    const list = rows
+    // source === "creators"
+    //   ? rows.filter(
+    //       (c) =>
+    //         !c.roles?.includes("aut") &&
+    //         !c.roles?.includes("nrt") &&
+    //         !c.roles?.includes("trl"),
+    //     )
+    //   : rows
     return list
       .map((d) => ({
         uuid: d.uuid,

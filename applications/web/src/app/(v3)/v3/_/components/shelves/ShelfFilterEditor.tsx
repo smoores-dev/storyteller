@@ -24,6 +24,10 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import {
+  RoleMenuItems,
+  roleLabel,
+} from "@/app/(v3)/v3/_/components/books/RolePicker"
+import {
   DurationInput,
   FileSizeInput,
   MultiCombobox,
@@ -39,7 +43,6 @@ import {
   FilterableMenuTrigger,
 } from "@/app/(v3)/v3/_/components/ui/filterable-menu"
 import { useRelationItems } from "@/app/(v3)/v3/_/hooks/use-relation-items"
-import { marcRelators } from "@/components/books/edit/marcRelators"
 import { type BookWithRelations } from "@/database/books"
 import { DEFAULT_RATING_DIMENSIONS } from "@/database/ratingDimensions"
 import { statusDisplayLabel } from "@/database/statusKinds"
@@ -869,7 +872,9 @@ function ConditionEditor({
           </FilterableMenuContent>
         </FilterableMenu>
 
-        {qualifierKind && (
+        {/* datePart is declared on the date fields but nothing in the sql layer
+        reads it, so it gets no picker */}
+        {qualifierKind && qualifierKind !== "datePart" && (
           <QualifierPicker
             kind={qualifierKind}
             value={condition.qualifier}
@@ -1005,17 +1010,22 @@ function QualifierPicker({
         ? t.plain("qualifier.anyType")
         : t.plain("qualifier.anyRole")
 
-  const options: { id: string; label: string }[] =
-    kind === "ratingAxis"
+  const isRole = kind === "role"
+
+  const options: { id: string; label: string }[] = isRole
+    ? []
+    : kind === "ratingAxis"
       ? (ratingDimensions.length
           ? ratingDimensions
           : DEFAULT_RATING_DIMENSIONS
         ).map((d) => ({ id: d.id, label: d.label }))
-      : kind === "identifierScheme"
-        ? identifierTypes.map((i) => ({ id: i.uuid, label: i.name }))
-        : marcRelators.map((r) => ({ id: r.value, label: r.label }))
+      : identifierTypes.map((i) => ({ id: i.uuid, label: i.name }))
 
-  const current = options.find((o) => o.id === value)
+  const current = isRole
+    ? value
+      ? { label: roleLabel(value) }
+      : undefined
+    : options.find((o) => o.id === value)
 
   return (
     <FilterableMenu>
@@ -1031,7 +1041,7 @@ function QualifierPicker({
           </Button>
         }
       />
-      <FilterableMenuContent searchable={options.length > 10}>
+      <FilterableMenuContent searchable={isRole || options.length > 10}>
         <FilterableMenuItem
           textValue={anyLabel}
           onSelect={() => {
@@ -1040,17 +1050,26 @@ function QualifierPicker({
         >
           {anyLabel}
         </FilterableMenuItem>
-        {options.map((o) => (
-          <FilterableMenuItem
-            key={o.id}
-            textValue={o.label}
-            onSelect={() => {
-              onChange(o.id)
-            }}
-          >
-            {o.label}
-          </FilterableMenuItem>
-        ))}
+
+        {isRole ? (
+          <RoleMenuItems
+            value={value}
+            onSelect={onChange}
+            includeAuthorNarrator
+          />
+        ) : (
+          options.map((o) => (
+            <FilterableMenuItem
+              key={o.id}
+              textValue={o.label}
+              onSelect={() => {
+                onChange(o.id)
+              }}
+            >
+              {o.label}
+            </FilterableMenuItem>
+          ))
+        )}
       </FilterableMenuContent>
     </FilterableMenu>
   )

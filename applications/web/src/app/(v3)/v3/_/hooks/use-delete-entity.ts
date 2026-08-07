@@ -11,6 +11,7 @@ import {
   useDeleteSeriesMutation,
   useDeleteStatusMutation,
   useDeleteTagMutation,
+  useDeleteUserShelfMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
@@ -21,6 +22,7 @@ export function useDeleteEntity(entityType?: LibraryEntityType) {
   const [deleteCollection] = useDeleteCollectionMutation()
   const [deleteStatusMut] = useDeleteStatusMutation()
   const [deleteIdentifierType] = useDeleteIdentifierTypeMutation()
+  const [deleteShelf] = useDeleteUserShelfMutation()
 
   return useCallback(
     async (uuid: UUID) => {
@@ -37,6 +39,8 @@ export function useDeleteEntity(entityType?: LibraryEntityType) {
           return deleteStatusMut({ uuid }).unwrap()
         case "identifier":
           return deleteIdentifierType({ uuid }).unwrap()
+        case "shelf":
+          return deleteShelf({ uuid }).unwrap()
       }
     },
     [
@@ -47,6 +51,7 @@ export function useDeleteEntity(entityType?: LibraryEntityType) {
       deleteCollection,
       deleteStatusMut,
       deleteIdentifierType,
+      deleteShelf,
     ],
   )
 }

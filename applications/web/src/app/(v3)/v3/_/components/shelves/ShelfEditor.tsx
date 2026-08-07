@@ -300,10 +300,10 @@ export function ShelfEditor({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         forceRender={true}
-        className="top-10 max-h-[90vh] translate-y-0 overflow-x-hidden overflow-y-auto sm:max-w-xl lg:max-w-4xl"
+        className="top-10 flex max-h-[90vh] translate-y-0 flex-col overflow-hidden sm:max-w-xl lg:max-w-4xl"
       >
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle>
               {isEditing ? t.plain("editTitle") : t.plain("createTitle")}
             </DialogTitle>
@@ -316,9 +316,10 @@ export function ShelfEditor({
 
           <div
             className={cn(
-              "flex flex-col gap-4 py-4",
-              selectionMode === "filter" &&
-                "lg:grid lg:grid-cols-[1fr_14rem] lg:gap-6",
+              "min-h-0 flex-1 gap-4 overflow-x-hidden overflow-y-auto py-4",
+              selectionMode === "filter"
+                ? "flex flex-col lg:grid lg:grid-cols-[1fr_14rem] lg:gap-6"
+                : "flex flex-col",
             )}
           >
             <div className="flex flex-col gap-4">
@@ -550,7 +551,7 @@ export function ShelfEditor({
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="bg-background shrink-0 border-t pt-3">
             <Button
               type="button"
               variant="outline"
