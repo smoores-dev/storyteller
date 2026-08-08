@@ -131,7 +131,7 @@ final class BookService {
         }
         return await publication.positions().getOrNil() ?? []
     }
-    
+
     func getOverlayClips(for bookUuid: String) -> [OverlayPar] {
         return clips[bookUuid] ?? []
     }
@@ -140,11 +140,11 @@ final class BookService {
         guard let bookClips = clips[bookId] else {
             return nil
         }
-        
+
         guard let fragment = locator.locations.fragments.first else {
             return nil
         }
-        
+
         return bookClips.first {
             RelativeURL(epubHREF: $0.textResource)?.string == locator.href.string &&
             $0.fragmentId == fragment
@@ -203,10 +203,10 @@ final class BookService {
         guard let currentIndex = bookClips.firstIndex(where: { RelativeURL(epubHREF: $0.textResource)?.string == locator.href.string && $0.fragmentId == currentFragment }) else {
             return nil
         }
-        if currentIndex == bookClips.endIndex {
+        let nextIndex = bookClips.index(after: currentIndex)
+        if nextIndex == bookClips.endIndex {
             return nil
         }
-        let nextIndex = bookClips.index(after: currentIndex)
         return bookClips[nextIndex]
     }
 
@@ -233,8 +233,13 @@ final class BookService {
                     return nil
                 }
                 let nextChapterIndex = publication.readingOrder.index(after: chapterIndex)
-                let nextChapterLink = publication.readingOrder[nextChapterIndex]
-                let startOfNextChapterProgression = try await locateFromPositions(for: bookId, link: nextChapterLink).locations.totalProgression ?? 1
+                let startOfNextChapterProgression = nextChapterIndex == publication.readingOrder.endIndex ?
+                    1 :
+                    try await locateFromPositions(
+                        for: bookId,
+                        link: publication.readingOrder[nextChapterIndex]
+                    ).locations.totalProgression
+                    ?? 1
                 let totalProgression = startOfChapterProgression + (progression * (startOfNextChapterProgression - startOfChapterProgression))
                 return Locator(
                     href: RelativeURL(epubHREF: href)!,
@@ -261,9 +266,9 @@ final class BookService {
         guard let bookClips = clips[bookId] else {
             return nil
         }
-        
+
         let clipsInUrl = bookClips.filter { $0.relativeUrl.relativeString == clipUrl.relativeString }
-        
+
         return searchForClip(clips: clipsInUrl, position: position)
     }
 
