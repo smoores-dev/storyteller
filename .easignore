@@ -23,6 +23,7 @@ __pycache__
 node_modules
 
 .yarn/*
+!.yarn/patches
 
 .eslintcache
 tsconfig.tsbuildinfo
