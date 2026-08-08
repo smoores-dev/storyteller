@@ -4,15 +4,16 @@ __pycache__
 .direnv
 .devenv
 
-/docs
-/web
-/epub
-/fs
-/path
-/audiobook
+/libraries
 /config/*
 !/config/eslint
-/align
+/applications/*
+!/applications/mobile
+/applications/mobile/modules/*/android/build
+/applications/mobile/modules/*/ios/.build
+/applications/mobile/ios
+/applications/mobile/android
+/applications/mobile/.env
 
 /dev-data
 
@@ -22,12 +23,6 @@ __pycache__
 node_modules
 
 .yarn/*
-!.yarn/cache
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
 
 .eslintcache
 tsconfig.tsbuildinfo
@@ -35,17 +30,9 @@ tsconfig.tsbuildinfo
 .expo
 dist
 
-/mobile/modules/*/android/build
-/mobile/modules/*/ios/.build
-
-/mobile/ios
-/mobile/android
-
 /dev-data
 storyteller.db
 storyteller.db*
 .env.local
-
-/mobile/.env
 
 public

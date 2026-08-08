@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/mobile",
-  "version": "2.11.4",
+  "version": "2.11.5",
   "main": "index.ts",
   "scripts": {
     "start:device": "APP_VARIANT=development expo start --dev-client",

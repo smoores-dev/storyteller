@@ -32,7 +32,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-sharing",
       "expo-web-browser",
       "expo-router",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          faceIDPermission:
+            "Storyteller uses Face ID to unlock your securely stored sign-in credentials.",
+        },
+      ],
       [
         "expo-build-properties",
         {
@@ -173,7 +179,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         NSCameraUsageDescription:
           "Allow Storyteller to use the camera to scan QR codes for device sign-in.",
         NSMicrophoneUsageDescription:
-          "This permission is not needed by the app, but it is required by an underlying API. If you see this dialog, contact us.",
+          "Storyteller only uses the camera to scan QR codes for device sign-in, but the camera component can also capture video with sound, which requires microphone access. Storyteller never records audio.",
+        NSLocalNetworkUsageDescription:
+          "Storyteller connects to your self-hosted Storyteller server over your local network to browse, stream, and download your books.",
         CFBundleDocumentTypes: [
           {
             CFBundleTypeName: "EPUB",
