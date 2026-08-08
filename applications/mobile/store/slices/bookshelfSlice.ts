@@ -112,6 +112,7 @@ export const bookshelfSlice = createSlice({
       state.currentlyPlayingFormat = action.payload.format
       state.tracks = action.payload.tracks
       state.isAudioLoading = false
+      state.playbackSpeedContext = "listening"
     },
     audioPositionChanged(state, action: PayloadAction<{ position: number }>) {
       state.position = action.payload.position

@@ -1,4 +1,4 @@
-import { getBook, getOverlayClipsForBook } from "@/database/books"
+import { getOverlayClipsForBook } from "@/database/books"
 import { logger } from "@/logger"
 import { Storyteller, openPublication } from "@/modules/readium"
 import { type AppStore } from "@/store/appState"
@@ -6,6 +6,9 @@ import { getLocalBookExtractedUrl } from "@/store/persistence/files"
 import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 import { generateTracks } from "@/store/tracks"
 import { type UUID } from "@/uuid"
+
+import { localApi } from "./localApi"
+import { getPlaybackRate } from "./selectors/bookshelfSelectors"
 
 /**
  * Attaches the JS layer to a playback session that was started outside the app
@@ -22,7 +25,15 @@ export async function attachToAndroidAutoSession(
   store: AppStore,
   { bookUuid, format }: { bookUuid: UUID; format: "audiobook" | "readaloud" },
 ): Promise<void> {
-  const book = await getBook(bookUuid)
+  const book = await store
+    .dispatch(
+      localApi.endpoints.getBook.initiate(
+        { uuid: bookUuid },
+        { subscribe: false },
+      ),
+    )
+    .unwrap()
+
   if (!book) {
     logger.debug(`attachToAndroidAutoSession: no book for ${bookUuid}`)
     return
@@ -51,6 +62,20 @@ export async function attachToAndroidAutoSession(
   )
 
   await Storyteller.connectToActiveSession(tracks)
+
+  // Ensure that we've loaded the book preferences before selecting
+  // the playback rate
+  await store.dispatch(
+    localApi.endpoints.getBookPreferences.initiate(
+      { uuid: bookUuid },
+      { subscribe: false },
+    ),
+  )
+
+  const speed = getPlaybackRate(store.getState())
+
+  await Storyteller.setRate(speed)
+
   logger.debug(
     `attachToAndroidAutoSession: attached to ${bookUuid} (${format})`,
   )
