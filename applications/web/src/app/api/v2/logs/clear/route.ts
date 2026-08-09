@@ -13,10 +13,7 @@ export const POST = withHasPermission("settingsUpdate")(async () => {
   try {
     await writeFile(filePath, "")
   } catch {
-    return NextResponse.json(
-      { error: "Failed to clear logs" },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: "Failed to clear logs" }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

@@ -213,7 +213,7 @@ export function HeroSection({
               name="title"
               as="h1"
               className={cn(
-                "text-tinted-subtle font-heading w-full text-center text-xl leading-tight font-semibold text-balance",
+                "text-tinted-subtle font-heading w-full text-center text-lg leading-tight font-semibold text-balance",
                 wide(`@xl/book:w-auto @xl/book:text-left`, "w-auto text-left"),
               )}
               placeholder={c.plain("fields.label.title")}

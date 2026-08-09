@@ -381,6 +381,7 @@
   },
   "SelectionToolbar": {
     "selectAll": "Select all",
+    "selectVisible": "Select visible",
     "selectNone": "Select none",
     "invertSelection": "Invert selection",
     "selectedBooks": "{count, plural, one {# book} other {# books}} <sel>selected</sel>",

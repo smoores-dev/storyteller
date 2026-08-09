@@ -488,7 +488,7 @@ function SidebarNavGroup({
   const dispatch = useAppDispatch()
   const collapsedGroups = useAppSelector(selectCollapsedSidebarGroups)
   const isCollapsed = collapsedGroups[group.uuid] ?? false
-  const { state: shellState, isMobile } = useSidebar()
+  // const { state: shellState, isMobile } = useSidebar()
   // const isIconCollapsed = shellState === "collapsed" && !isMobile
 
   const { data: collections = [] } = useListCollectionsQuery()
