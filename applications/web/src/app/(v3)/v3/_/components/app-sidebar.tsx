@@ -487,9 +487,8 @@ function SidebarNavGroup({
   const collapsedGroups = useAppSelector(selectCollapsedSidebarGroups)
   const isCollapsed = collapsedGroups[group.uuid] ?? false
   const { state: shellState, isMobile } = useSidebar()
-  const isIconCollapsed = shellState === "collapsed" && !isMobile
+  // const isIconCollapsed = shellState === "collapsed" && !isMobile
 
-  // header count for the special groups; RTK dedupes these across groups
   const { data: collections = [] } = useListCollectionsQuery()
   const { data: rawShelves = [] } = useListUserShelvesQuery()
 

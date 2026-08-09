@@ -1,6 +1,7 @@
-import { BookWithRelations } from "@/database/books";
-import { UUID } from "@/uuid";
 import { z } from "zod";
+
+import { type BookWithRelations } from "@/database/books";
+import { type UUID } from "@/uuid";
 
 export type IconEntry = {
   id: string

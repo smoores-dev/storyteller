@@ -70,7 +70,6 @@ export function RelationSelectList({
   emptyText?: string
 }) {
   const fetched = useRelationItems(source, enabled && !itemsProp, field)
-  console.log("fetched", fetched)
   const rawItems = itemsProp ?? fetched.items
   const loading = loadingProp ?? (itemsProp ? false : fetched.loading)
 
