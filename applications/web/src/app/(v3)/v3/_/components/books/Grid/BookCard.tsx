@@ -464,7 +464,9 @@ export const BookCard = memo(function BookCard({
                     className={cn(
                       "group-hover:text-tinted-strong line-clamp-2",
                       "font-heading font-medium",
-                      "leading-[1.125] hyphens-auto",
+                      "leading-[1.3] hyphens-auto",
+                      // looks better to have ligatures disabled for titles this small imo
+                      "[font-variant-ligatures:none]",
                     )}
                   >
                     {book.title}
