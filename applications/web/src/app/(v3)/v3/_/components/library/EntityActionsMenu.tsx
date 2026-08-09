@@ -29,7 +29,6 @@ import * as icon from "@/icons"
 import { type ShelfFilterNode } from "@/shelves"
 import { type UUID } from "@/uuid"
 
-
 export function EntityActionsMenu({
   entityType,
   item,

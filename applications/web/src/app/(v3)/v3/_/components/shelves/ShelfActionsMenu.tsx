@@ -22,7 +22,6 @@ import { type ShelfWithBooks } from "@/database/shelves"
 import * as icon from "@/icons"
 import { useDeleteUserShelfMutation } from "@/store/api"
 
-
 export function ShelfActionsMenu({
   shelf,
   allEntitiesPageHref,
