@@ -1286,12 +1286,16 @@
     "hideFromSidebar": "Verbergen uit zijbalk",
     "showInSidebar": "Tonen in zijbalk",
     "editItem": "Bewerken",
-    "hidden": "Verborgen",
+    "hidden": "Verborgen items",
     "hiddenEmpty": "Sleep items hierheen om ze te verbergen",
     "collection": "Verzameling",
     "shelf": "Plank",
     "createShelf": "Nieuwe plank",
-    "customizeHome": "Homepagina aanpassen"
+    "customizeHome": "Homepagina aanpassen",
+    "moveSection": "Sectie verplaatsen",
+    "hideSection": "Sectie verbergen",
+    "showSection": "Sectie tonen",
+    "hiddenSections": "Verborgen secties"
   },
   "BookDetailsPage": {
     "bookNotFound": "Boek niet gevonden",

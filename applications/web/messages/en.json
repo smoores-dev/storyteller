@@ -1325,12 +1325,16 @@
     "hideFromSidebar": "Hide from sidebar",
     "showInSidebar": "Show in sidebar",
     "editItem": "Edit",
-    "hidden": "Hidden",
+    "hidden": "Hidden items",
     "hiddenEmpty": "Drag items here to hide them",
     "collection": "Collection",
     "shelf": "Shelf",
     "createShelf": "New shelf",
-    "customizeHome": "Customize homepage"
+    "customizeHome": "Customize homepage",
+    "moveSection": "Move section",
+    "hideSection": "Hide section",
+    "showSection": "Show section",
+    "hiddenSections": "Hidden sections"
   },
   "BookDetailsPage": {
     "bookNotFound": "Book not found",

@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo } from "react"
 
+import { toSidebarGroupInputs } from "@v3/_/components/nav/sidebar-payload"
+
 import { type SidebarItemKind } from "@/database/sidebar"
 import {
   useListSidebarGroupsQuery,
@@ -20,7 +22,7 @@ export function useSidebarVisibility() {
     const hidden = new Set<string>()
     for (const group of sidebarGroups) {
       for (const item of group.items) {
-        if (!item.hidden) continue
+        if (!item.hidden && !group.hidden) continue
         const uuid = item.collectionUuid ?? item.shelfUuid
         if (uuid) hidden.add(uuid)
       }
@@ -41,18 +43,13 @@ export function useSidebarVisibility() {
     ) => {
       const key = kind === "collection" ? "collectionUuid" : "shelfUuid"
 
-      const updated = sidebarGroups.map((group) => ({
-        uuid: group.uuid,
-        name: group.name,
-        kind: group.kind,
-        items: group.items.map((item) => ({
-          kind: item.kind,
-          builtinKey: item.builtinKey,
-          collectionUuid: item.collectionUuid,
-          shelfUuid: item.shelfUuid,
-          hidden: item[key] === uuid ? hidden : item.hidden,
-        })),
-      }))
+      const updated = toSidebarGroupInputs(sidebarGroups, {
+        item: (item) => (item[key] === uuid ? { hidden } : {}),
+        group: (group) =>
+          !hidden && group.items.some((item) => item[key] === uuid)
+            ? { hidden: false }
+            : {},
+      })
 
       return setSidebarGroups(updated).unwrap()
     },

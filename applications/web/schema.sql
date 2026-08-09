@@ -496,7 +496,8 @@ CREATE TABLE sidebar_group (
   position integer NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  kind TEXT
+  kind TEXT,
+  hidden INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TRIGGER sidebar_group_update_trigger AFTER

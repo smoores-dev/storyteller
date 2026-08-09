@@ -439,6 +439,7 @@ export interface ShelfFilterReference {
 
 export interface SidebarGroup {
   createdAt: Generated<string>
+  hidden: Generated<number>
   kind: string | null
   name: string
   position: number

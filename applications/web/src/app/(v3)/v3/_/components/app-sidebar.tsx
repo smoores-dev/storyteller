@@ -76,6 +76,7 @@ import {
   COLLECTION_ICON,
   SHELF_ICON,
 } from "./nav/sidebar-items"
+import { toSidebarGroupInputs } from "./nav/sidebar-payload"
 import {
   DISMISSED_VERSION_KEY,
   formatChangelogDescription,
@@ -120,6 +121,8 @@ export function AppSidebar({
   const { data: sidebarGroups = initialSidebarGroups } =
     useListSidebarGroupsQuery()
 
+  const visibleGroups = sidebarGroups.filter((group) => !group.hidden)
+
   const libraryCounts = useLibraryCounts()
   const {
     handlePointerEnter: prefetchOnEnter,
@@ -145,20 +148,19 @@ export function AppSidebar({
       group: SidebarGroupWithItems,
     ) => boolean,
   ) => {
-    const updated = sidebarGroups.map((g) => ({
-      uuid: g.uuid,
-      name: g.name,
-      kind: g.kind,
-      items: g.items.map((i) => ({
-        kind: i.kind,
-        builtinKey: i.builtinKey,
-        collectionUuid: i.collectionUuid,
-        shelfUuid: i.shelfUuid,
-        hidden: predicate(i, g) ? true : i.hidden,
-      })),
-    }))
+    void setSidebarGroupsMut(
+      toSidebarGroupInputs(sidebarGroups, {
+        item: (item, group) => (predicate(item, group) ? { hidden: true } : {}),
+      }),
+    )
+  }
 
-    void setSidebarGroupsMut(updated)
+  const hideGroup = (groupUuid: string) => {
+    void setSidebarGroupsMut(
+      toSidebarGroupInputs(sidebarGroups, {
+        group: (group) => (group.uuid === groupUuid ? { hidden: true } : {}),
+      }),
+    )
   }
 
   const { data: latestChangelog } = useGetLatestChangelogQuery(
@@ -376,8 +378,8 @@ export function AppSidebar({
             />
           ) : (
             <>
-              {sidebarGroups.map((group, index) => {
-                const startIndex = sidebarGroups
+              {visibleGroups.map((group, index) => {
+                const startIndex = visibleGroups
                   .slice(0, index)
                   .reduce((acc, group) => acc + group.items.length, 0)
 
@@ -396,7 +398,7 @@ export function AppSidebar({
                       hideWhere((i) => i.uuid === itemUuid)
                     }}
                     onHideAll={() => {
-                      hideWhere((_, g) => g.uuid === group.uuid)
+                      hideGroup(group.uuid)
                     }}
                     onCreateNew={
                       group.kind === "collections"

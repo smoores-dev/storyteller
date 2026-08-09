@@ -27,6 +27,7 @@ export type SidebarGroupInput = {
   uuid?: string | null
   name: string
   kind?: SidebarGroupKind
+  hidden?: boolean
   items: SidebarItemInput[]
 }
 
@@ -35,6 +36,7 @@ export type SidebarGroupWithItems = {
   name: string
   kind: SidebarGroupKind
   position: number
+  hidden: boolean
   items: SidebarItemDetail[]
 }
 
@@ -134,6 +136,7 @@ export async function getSidebarGroups(
     name: group.name,
     kind: (group.kind as SidebarGroupKind) ?? null,
     position: group.position,
+    hidden: group.hidden !== 0,
     items: itemsByGroup.get(group.uuid) ?? [],
   }))
 }
@@ -337,6 +340,7 @@ export async function ensureSidebarDefaults(
     // 5. accessible collections / shelves without a row are appended, unhidden
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const collectionsGroup = groupUuidByKind.get("collections")!
+    let addedCollection = false
     for (const collectionUuid of collectionUuids) {
       if (seenCollections.has(collectionUuid)) continue
 
@@ -351,10 +355,12 @@ export async function ensureSidebarDefaults(
           hidden: 0,
         })
         .execute()
+      addedCollection = true
     }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const shelvesGroup = groupUuidByKind.get("shelves")!
+    let addedShelf = false
     for (const shelfUuid of shelfUuids) {
       if (seenShelves.has(shelfUuid)) continue
 
@@ -368,6 +374,20 @@ export async function ensureSidebarDefaults(
           position: nextPosition(shelvesGroup),
           hidden: 0,
         })
+        .execute()
+      addedShelf = true
+    }
+
+    const revealedGroups = [
+      ...(addedCollection ? [collectionsGroup] : []),
+      ...(addedShelf ? [shelvesGroup] : []),
+    ]
+
+    if (revealedGroups.length > 0) {
+      await trx
+        .updateTable("sidebarGroup")
+        .set({ hidden: 0 })
+        .where("uuid", "in", revealedGroups)
         .execute()
     }
   }
@@ -427,6 +447,7 @@ export async function setSidebarGroups(
           name: group.name,
           kind,
           position: gi,
+          hidden: group.hidden ? 1 : 0,
         })
         .execute()
 
