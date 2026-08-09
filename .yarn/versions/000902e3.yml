@@ -1,5 +1,8 @@
 releases:
-  "@storyteller-platform/web": patch
+  "@storyteller-platform/web": major
+  "@storyteller-platform/tauri": major
+  "@storyteller-platform/docs": major
+  "@storyteller-platform/align": patch
 
 declined:
   - "@storyteller-platform/epub"
