@@ -109,7 +109,10 @@ export function HomeSections({
 
   return (
     <div
-      className={cn("flex flex-col gap-8 py-4", heroFirst ? "-mt-5" : "pt-6")}
+      className={cn(
+        "flex flex-col gap-8 py-4",
+        heroFirst ? "-mt-5" : "pt-(--header-height)",
+      )}
     >
       {enabled.map((section) => (
         <Section key={section.uuid} section={section} />

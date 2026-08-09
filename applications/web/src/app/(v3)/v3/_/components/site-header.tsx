@@ -36,7 +36,7 @@ export function SiteHeader({
       >
         <div className="flex w-full min-w-0 items-center gap-3 px-3 pl-5">
           {current && (
-            <div className="flex min-w-0 flex-col justify-center">
+            <div className="pointer-events-auto flex min-w-0 flex-col justify-center">
               {parents.length > 0 && (
                 <div className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">
                   {parents.map((crumb, idx) => (
@@ -85,7 +85,7 @@ export function SiteHeader({
           )}
 
           {actions && (
-            <div className="ml-auto flex shrink-0 items-center justify-end gap-2">
+            <div className="pointer-events-auto ml-auto flex shrink-0 items-center justify-end gap-2">
               {actions}
             </div>
           )}

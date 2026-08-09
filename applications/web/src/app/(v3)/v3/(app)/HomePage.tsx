@@ -21,7 +21,7 @@ export function HomePage({
         <SiteHeader
           breadcrumbs={[]}
           actions={<HomeSectionsActions />}
-          className="absolute z-50 w-full bg-transparent!"
+          className="pointer-events-none absolute z-50 w-full bg-transparent!"
         />
         <PageContent>
           <HomeSections initialSections={initialSections} />
