@@ -1,5 +1,6 @@
 "use client"
 
+import { useCommandSearch } from "@v3/_/components/command-search"
 import { AddSectionSection } from "@v3/_/components/home/AddSectionSection"
 import { GetStartedSection } from "@v3/_/components/home/GetStartedSection"
 import { HeroSection } from "@v3/_/components/home/HeroSection"
@@ -123,18 +124,34 @@ export function HomeSections({
 
 export function HomeSectionsActions() {
   const t = useTranslation("HomePage")
+  const tSidebar = useTranslation("AppSidebar")
+  const { openSearch } = useCommandSearch()
+
   return (
-    <ShelfManager
-      trigger={
-        <TooltipButton
-          variant="ghost"
-          size="sm"
-          tooltip={t("sections.customize")}
-          aria-label={t("sections.customize")}
-        >
-          <icon.Books className="mr-2 size-4" />
-        </TooltipButton>
-      }
-    />
+    <>
+      <TooltipButton
+        variant="ghost"
+        size="sm"
+        onClick={openSearch}
+        tooltip={tSidebar("search")}
+        aria-label={tSidebar("search")}
+        shortcut={["Mod+K"]}
+      >
+        <icon.Search className="size-4" />
+      </TooltipButton>
+
+      <ShelfManager
+        trigger={
+          <TooltipButton
+            variant="ghost"
+            size="sm"
+            tooltip={t("sections.customize")}
+            aria-label={t("sections.customize")}
+          >
+            <icon.Books className="mr-2 size-4" />
+          </TooltipButton>
+        }
+      />
+    </>
   )
 }
