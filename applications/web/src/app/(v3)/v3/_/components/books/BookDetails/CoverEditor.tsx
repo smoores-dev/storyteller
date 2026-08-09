@@ -15,13 +15,110 @@ import { useUserPreferences } from "@v3/_/components/user-preferences-provider"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
+import { cn } from "@/cn"
 import * as icon from "@/icons"
 import { getCoverUrl, useSetUserSettingMutation } from "@/store/api"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
+import {
+  selectDetailCoverWidth,
+  uiSettingsSlice,
+} from "@/store/slices/uiSettingsSlice"
 
 import { useBookForm } from "./BookFormProvider"
 import { CoverColorsEditor } from "./CoverColorsEditor"
 
 const SPINE_INFO: SpineInfo = "title"
+
+const COMPACT_COVER_WIDTH = 150
+const PAGE_COVER_WIDTH = 176
+const MIN_COVER_WIDTH = 96
+const MAX_COVER_WIDTH = 240
+
+const clampCoverWidth = (width: number) =>
+  Math.max(MIN_COVER_WIDTH, Math.min(MAX_COVER_WIDTH, Math.round(width)))
+
+const setBodyDragCursor = (on: boolean) => {
+  document.body.style.cursor = on ? "ew-resize" : ""
+  document.body.style.userSelect = on ? "none" : ""
+}
+
+function useCoverResize(defaultWidth: number) {
+  const dispatch = useAppDispatch()
+  const storedWidth = useAppSelector(selectDetailCoverWidth)
+  const [dragWidth, setDragWidth] = useState<number | null>(null)
+
+  const width = clampCoverWidth(dragWidth ?? storedWidth ?? defaultWidth)
+
+  const startResize = (event: React.PointerEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const startX = event.clientX
+    const startWidth = width
+    let latest = startWidth
+
+    const abortController = new AbortController()
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      latest = clampCoverWidth(startWidth + (startX - moveEvent.clientX))
+      setDragWidth(latest)
+    }
+
+    const handleUp = () => {
+      abortController.abort()
+      setBodyDragCursor(false)
+      setDragWidth(null)
+      dispatch(uiSettingsSlice.actions.setDetailCoverWidth(latest))
+    }
+
+    setBodyDragCursor(true)
+
+    document.addEventListener("pointermove", handleMove, {
+      signal: abortController.signal,
+    })
+    document.addEventListener("pointerup", handleUp, {
+      signal: abortController.signal,
+    })
+    document.addEventListener("pointercancel", handleUp, {
+      signal: abortController.signal,
+    })
+  }
+
+  const reset = () => {
+    setDragWidth(null)
+    dispatch(uiSettingsSlice.actions.setDetailCoverWidth(null))
+  }
+
+  return { width, startResize, reset, isResizing: dragWidth !== null }
+}
+
+function CoverResizeHandle({
+  onPointerDown,
+  onReset,
+  active,
+  label,
+}: {
+  onPointerDown: (event: React.PointerEvent) => void
+  onReset: () => void
+  active: boolean
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onPointerDown={onPointerDown}
+      onDoubleClick={onReset}
+      className={cn(
+        "text-foreground/60 hover:text-foreground bg-background/85 absolute -bottom-2 -left-2 z-30 flex size-5 cursor-ew-resize touch-none items-center justify-center rounded-full opacity-0 shadow-sm transition-opacity group-hover/cover-size:opacity-100 focus-visible:opacity-100",
+        active && "text-primary opacity-100",
+      )}
+    >
+      <icon.ChevronRight className="size-3 -rotate-45" />
+    </button>
+  )
+}
 
 function useFilePreview(file: File | null): string | null {
   const [url, setUrl] = useState<string | null>(null)
@@ -144,7 +241,12 @@ export function CoverEditor({ compact }: { compact: boolean }) {
     setEditingCovers,
   } = useBookForm()
   const t = useTranslation("BookDetailsPage")
-  const coverWidth = compact ? 150 : 176
+  const {
+    width: coverWidth,
+    startResize,
+    reset: resetCoverWidth,
+    isResizing,
+  } = useCoverResize(compact ? COMPACT_COVER_WIDTH : PAGE_COVER_WIDTH)
 
   const {
     bookDetailDisplay,
@@ -202,9 +304,18 @@ export function CoverEditor({ compact }: { compact: boolean }) {
       </TooltipButton>
     )
 
+    const resizeHandle = (
+      <CoverResizeHandle
+        onPointerDown={startResize}
+        onReset={resetCoverWidth}
+        active={isResizing}
+        label={t.plain("cover.resize")}
+      />
+    )
+
     if (bookDetailDisplay === "cover") {
       return (
-        <div className="group relative flex min-h-50 w-fit shrink-0 items-center justify-center select-none">
+        <div className="group group/cover-size relative flex min-h-50 w-fit shrink-0 items-center justify-center select-none">
           <div style={{ width: coverWidth }}>
             <BookCover
               book={book}
@@ -217,47 +328,51 @@ export function CoverEditor({ compact }: { compact: boolean }) {
               {editAction}
             </div>
           )}
+          {resizeHandle}
         </div>
       )
     }
 
     return (
-      <Book3D
-        book={book}
-        width={coverWidth}
-        spine={SPINE_INFO}
-        initialViews={defaultViews}
-        onViewChange={(view, format) => {
-          setCurrentViews((views) => ({ ...views, [format]: view }))
-        }}
-        slabActions={(format) =>
-          currentViews[format] !== defaultViews[format] ? (
-            <TooltipButton
-              variant="secondary"
-              size="icon-sm"
-              onClick={() => {
-                void handleSaveDefaultView(format)
-              }}
-              aria-label={t("cover.setDefaultPosition")}
-              tooltip={t("cover.setDefaultPosition")}
-              className="tint-surface bg-background/85 text-foreground/70 hover:text-foreground rounded-full p-1.5"
-            >
-              <icon.Pin className="size-4" />
-            </TooltipButton>
-          ) : null
-        }
-        actions={
-          <>
-            {editAction}
+      <div className="group/cover-size relative w-fit">
+        {resizeHandle}
+        <Book3D
+          book={book}
+          width={coverWidth}
+          spine={SPINE_INFO}
+          initialViews={defaultViews}
+          onViewChange={(view, format) => {
+            setCurrentViews((views) => ({ ...views, [format]: view }))
+          }}
+          slabActions={(format) =>
+            currentViews[format] !== defaultViews[format] ? (
+              <TooltipButton
+                variant="secondary"
+                size="icon-sm"
+                onClick={() => {
+                  void handleSaveDefaultView(format)
+                }}
+                aria-label={t("cover.setDefaultPosition")}
+                tooltip={t("cover.setDefaultPosition")}
+                className="tint-surface bg-background/85 text-foreground/70 hover:text-foreground rounded-full p-1.5"
+              >
+                <icon.Pin className="size-4" />
+              </TooltipButton>
+            ) : null
+          }
+          actions={
+            <>
+              {editAction}
 
-            <BookFullscreenButton
-              book={book}
-              width={coverWidth}
-              spine={SPINE_INFO}
-            />
-          </>
-        }
-      />
+              <BookFullscreenButton
+                book={book}
+                width={coverWidth}
+                spine={SPINE_INFO}
+              />
+            </>
+          }
+        />
+      </div>
     )
   }
 

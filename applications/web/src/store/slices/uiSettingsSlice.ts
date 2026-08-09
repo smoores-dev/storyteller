@@ -54,6 +54,7 @@ export type UISettings = {
   collapsedDetailSections: Record<string, boolean>
   detailSectionOrder: string[] | null
   hiddenDetailSections: string[]
+  detailCoverWidth: number | null
 
   theme: "light" | "dark" | "system"
 }
@@ -98,6 +99,7 @@ const defaults: UISettings = {
   collapsedDetailSections: {},
   detailSectionOrder: null,
   hiddenDetailSections: [],
+  detailCoverWidth: null,
   theme: "system",
   defaultSorts: {},
 }
@@ -342,6 +344,12 @@ export const uiSettingsSlice = createSlice({
       saveToCookie(state)
     },
 
+    setDetailCoverWidth: (state, action: PayloadAction<number | null>) => {
+      state.detailCoverWidth = action.payload
+
+      saveToCookie(state)
+    },
+
     setDefaultSort: (
       state,
       action: PayloadAction<{ page: string; sort: BookSort[number] }>,
@@ -427,6 +435,9 @@ export const selectDetailSectionOrder = (state: { uiSettings: UISettings }) =>
 
 export const selectHiddenDetailSections = (state: { uiSettings: UISettings }) =>
   state.uiSettings.hiddenDetailSections
+
+export const selectDetailCoverWidth = (state: { uiSettings: UISettings }) =>
+  state.uiSettings.detailCoverWidth
 
 export const selectTheme = (state: { uiSettings: UISettings }) =>
   state.uiSettings.theme

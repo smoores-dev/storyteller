@@ -1342,7 +1342,8 @@
       "uploadEbook": "Upload ebook cover",
       "uploadAudiobook": "Upload audiobook cover",
       "setDefaultPosition": "Set as default position",
-      "savedDefaultPosition": "Saved default position"
+      "savedDefaultPosition": "Saved default position",
+      "resize": "Drag to resize the cover, double-click to reset"
     },
     "narratedBy": "narrated by",
     "writtenBy": "by",

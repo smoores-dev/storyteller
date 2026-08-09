@@ -1303,7 +1303,8 @@
       "uploadEbook": "Ebook-cover uploaden",
       "uploadAudiobook": "Audioboek-cover uploaden",
       "setDefaultPosition": "Als standaardpositie instellen",
-      "savedDefaultPosition": "Standaardpositie opgeslagen"
+      "savedDefaultPosition": "Standaardpositie opgeslagen",
+      "resize": "Sleep om de omslag te vergroten, dubbelklik om te herstellen"
     },
     "narratedBy": "verteld door",
     "writtenBy": "door",
