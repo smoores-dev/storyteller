@@ -166,6 +166,8 @@ prerelease-web:
         "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-web" \
         | jq -r .notes)
 
+      changelog=$(echo "$changelog" | grep -v '^- chore:')
+
       has_entries=false
       if echo "$changelog" | grep -q '^- '; then
         has_entries=true
@@ -179,7 +181,7 @@ prerelease-web:
           echo "" >> release_notes.md
           curl -s -H "PRIVATE-TOKEN: $CI_API_TOKEN" \
             "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/compare?from=${from_sha}&to=${to_sha}" \
-            | jq -r '.commits | reverse | .[] | "- \(.title)"' >> release_notes.md
+            | jq -r '.commits | reverse | .[] | select(.title | startswith("chore:") | not) | "- \(.title)"' >> release_notes.md
         fi
       fi
   artifacts:
