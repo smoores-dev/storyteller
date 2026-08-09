@@ -27,6 +27,10 @@ import { DescriptionSection } from "./sections/DescriptionSection"
 import { DetailsSection } from "./sections/DetailsSection"
 import { FileSection } from "./sections/FileSection"
 import { HeroSection } from "./sections/HeroSection"
+import {
+  MoreByAuthorSection,
+  MoreInSeriesSection,
+} from "./sections/RelatedBooksSections"
 import { CollectionsSection, TagsSection } from "./sections/RelationSections"
 import { ReviewSection } from "./sections/ReviewSection"
 
@@ -230,6 +234,10 @@ function BookDetailsContentInner({
                 </div>
 
                 <ContributorsSection />
+
+                <MoreByAuthorSection />
+
+                <MoreInSeriesSection />
 
                 {permissions?.bookProcess &&
                   ((book.ebook &&

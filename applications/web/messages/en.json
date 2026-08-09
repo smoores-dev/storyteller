@@ -1455,7 +1455,9 @@
       "copyValue": "Copy value",
       "openLink": "Open link"
     },
-    "addContributor": "Add contributor"
+    "addContributor": "Add contributor",
+    "moreByAuthor": "More books by {name}",
+    "moreInSeries": "More books in {name}"
   },
   "Common": {
     "Nouns": {

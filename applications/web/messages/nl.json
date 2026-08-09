@@ -1407,7 +1407,9 @@
       "copyValue": "Waarde kopiëren",
       "openLink": "Link openen"
     },
-    "addContributor": "Bijdrager toevoegen"
+    "addContributor": "Bijdrager toevoegen",
+    "moreByAuthor": "Meer boeken van {name}",
+    "moreInSeries": "Meer boeken in {name}"
   },
   "Labels": {
     "bookDetails": "Details",
