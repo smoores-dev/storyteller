@@ -8,6 +8,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -334,12 +335,26 @@ function BookListPageInner({
   const { data: baselineCount } = useGetBooksCountQuery(baselineQueryArg, {
     skip: skip || !isBooksSource,
   })
+  const { toggleSelection, selectAll } = useBookSelection()
 
   // "load all": drain every remaining page. driven by the persisted preference
   // or a one-shot "load remaining" request; clears itself once fully paged in.
   const alwaysLoadAll = useAppSelector(selectAlwaysLoadAllBooks)
   const [drainRequested, setDrainRequested] = useState(false)
   const shouldDrain = alwaysLoadAll || drainRequested
+  const [requestSelectAll, setRequestSelectAll] = useState(false)
+
+  const requestAllBooks = () => {
+    setDrainRequested(true)
+    setRequestSelectAll(true)
+  }
+
+  const selectAllEvent = useEffectEvent(() => {
+    if (requestSelectAll) {
+      selectAll(bookUuids)
+      setRequestSelectAll(false)
+    }
+  })
 
   useEffect(() => {
     if (skip) return
@@ -347,6 +362,7 @@ function BookListPageInner({
       void fetchNextPage()
     } else if (drainRequested && !hasNextPage) {
       setDrainRequested(false)
+      selectAllEvent()
     }
   }, [
     skip,
@@ -383,7 +399,6 @@ function BookListPageInner({
 
   const { selectedBookUuid, setSelectedBookUuid } = useBookInSidePanel()
   const { setReportMode } = useReportPanel()
-  const { toggleSelection } = useBookSelection()
 
   const selectedBook = useMemo(
     () => books.find((b) => b.uuid === selectedBookUuid),
@@ -913,7 +928,13 @@ function BookListPageInner({
                 onSortChange={handleColumnSort}
               />
 
-              <SelectionToolbar allBooks={books} />
+              <SelectionToolbar
+                books={books}
+                requestAllBooks={requestAllBooks}
+                allBooksCount={baselineCount ?? 0}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+              />
             </PageContent>
           </PageMain>
 

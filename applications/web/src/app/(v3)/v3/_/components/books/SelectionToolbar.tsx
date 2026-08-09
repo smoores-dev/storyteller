@@ -29,13 +29,21 @@ import {
 } from "./ActionMenu/BookActionMenuItems"
 
 type SelectionToolbarProps = {
-  allBooks: BookWithRelations[]
+  books: BookWithRelations[]
+  requestAllBooks: () => void
+  allBooksCount: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
   className?: string
 }
 
 export function SelectionToolbar({
+  books,
+  requestAllBooks,
+  allBooksCount,
+  hasNextPage,
+  isFetchingNextPage,
   className,
-  allBooks,
 }: SelectionToolbarProps) {
   const t = useTranslation("SelectionToolbar")
   const tActions = useTranslation("BookActions")
@@ -50,8 +58,8 @@ export function SelectionToolbar({
     stopSelecting,
   } = useBookSelection()
 
-  const allBookUuids = allBooks.map((book) => book.uuid)
-  const selectedBookObjects = allBooks.filter((book) =>
+  const bookUuids = books.map((book) => book.uuid)
+  const selectedBookObjects = books.filter((book) =>
     selectedBooks.has(book.uuid),
   )
   useEscapeHandler(ESCAPE_PRIORITY.listSelection, stopSelecting, isSelecting)
@@ -106,13 +114,26 @@ export function SelectionToolbar({
               }
             />
             <DropdownMenuContent align="start">
+              {hasNextPage && (
+                <DropdownMenuItem
+                  onClick={requestAllBooks}
+                  closeOnClick={false}
+                >
+                  {isFetchingNextPage ? (
+                    <icon.Loader className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <icon.Check className="mr-2 h-4 w-4" />
+                  )}
+                  {t("selectAll")} ({allBooksCount})
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={() => {
-                  selectAll(allBookUuids)
+                  selectAll(bookUuids)
                 }}
               >
                 <icon.Check className="mr-2 h-4 w-4" />
-                {t("selectAll")}
+                {t("selectVisible")} ({books.length})
               </DropdownMenuItem>
               <DropdownMenuItem onClick={selectNone}>
                 <icon.Square className="mr-2 h-4 w-4" />
@@ -120,7 +141,7 @@ export function SelectionToolbar({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  invertSelection(allBookUuids)
+                  invertSelection(bookUuids)
                 }}
               >
                 <icon.SquareCheck className="mr-2 h-4 w-4" />
