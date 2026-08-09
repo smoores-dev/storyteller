@@ -1457,7 +1457,20 @@
     },
     "addContributor": "Add contributor",
     "moreByAuthor": "More books by {name}",
-    "moreInSeries": "More books in {name}"
+    "moreInSeries": "More books in {name}",
+    "customize": {
+      "action": "Customize sections",
+      "title": "Customize sections",
+      "description": "Reorder the sections of this page, or hide the ones you don't use.",
+      "hidden": "Hidden sections",
+      "hiddenEmpty": "Drag sections here to hide them",
+      "reset": "Reset to default",
+      "hide": "Hide section",
+      "show": "Show section",
+      "move": "Move section",
+      "moreByAuthor": "More by author",
+      "moreInSeries": "More in series"
+    }
   },
   "Common": {
     "Nouns": {

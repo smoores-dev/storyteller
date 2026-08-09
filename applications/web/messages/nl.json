@@ -1409,7 +1409,20 @@
     },
     "addContributor": "Bijdrager toevoegen",
     "moreByAuthor": "Meer boeken van {name}",
-    "moreInSeries": "Meer boeken in {name}"
+    "moreInSeries": "Meer boeken in {name}",
+    "customize": {
+      "action": "Secties aanpassen",
+      "title": "Secties aanpassen",
+      "description": "Verander de volgorde van de secties, of verberg wat je niet gebruikt.",
+      "hidden": "Verborgen secties",
+      "hiddenEmpty": "Sleep secties hierheen om ze te verbergen",
+      "reset": "Terug naar standaard",
+      "hide": "Sectie verbergen",
+      "show": "Sectie tonen",
+      "move": "Sectie verplaatsen",
+      "moreByAuthor": "Meer van auteur",
+      "moreInSeries": "Meer in serie"
+    }
   },
   "Labels": {
     "bookDetails": "Details",

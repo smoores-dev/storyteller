@@ -24,6 +24,7 @@ export function BookActionsMenu({
   book,
   showOpenFullPage = false,
   onEdit,
+  onCustomize,
   onDeleted,
   fullPageHref,
   className,
@@ -33,6 +34,7 @@ export function BookActionsMenu({
   book: BookWithRelations
   showOpenFullPage?: boolean
   onEdit?: () => void
+  onCustomize?: () => void
   // called after the book is deleted, so the panel/page can close or navigate
   onDeleted?: () => void
   fullPageHref?: string
@@ -41,6 +43,7 @@ export function BookActionsMenu({
   onOpenChange?: (open: boolean) => void
 }) {
   const t = useTranslation("BookActions")
+  const tCustomize = useTranslation("BookDetailsPage.customize")
   const c = useCommon()
   const router = useRouter()
   const canEdit = usePermission("bookUpdate")
@@ -67,6 +70,14 @@ export function BookActionsMenu({
       label: c.plain("actions.edit"),
       icon: <icon.Edit className="size-4" />,
       onSelect: onEdit,
+    })
+  }
+  if (onCustomize) {
+    leading.push({
+      key: "customize",
+      label: tCustomize.plain("action"),
+      icon: <icon.AdjustmentsHorizontal className="size-4" />,
+      onSelect: onCustomize,
     })
   }
 

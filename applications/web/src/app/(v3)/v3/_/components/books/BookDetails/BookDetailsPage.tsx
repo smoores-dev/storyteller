@@ -4,7 +4,7 @@ import { type UUID } from "crypto"
 
 import { motion } from "motion/react"
 import dynamic from "next/dynamic"
-import { useCallback, useRef, useState } from "react"
+import { Fragment, useCallback, useRef, useState } from "react"
 
 import { SiteHeader } from "@v3/_/components/site-header"
 import { useReportPanel } from "@v3/_/hooks/use-report-panel"
@@ -21,7 +21,9 @@ import { useAppDispatch } from "@/store/appState"
 import { BookEditBar } from "./BookEditBar"
 import { BookFormProvider } from "./BookFormProvider"
 import { BookPageHeader, BookPanelHeader } from "./BookHeaders"
+import { BookSectionsDialog } from "./BookSectionsDialog"
 import { ProcessingSection } from "./ProcessingSection"
+import { type DetailSectionKey, useDetailSections } from "./detail-sections"
 import { ContributorsSection } from "./sections/ContributorsSection"
 import { DescriptionSection } from "./sections/DescriptionSection"
 import { DetailsSection } from "./sections/DetailsSection"
@@ -154,7 +156,9 @@ function BookDetailsContentInner({
 }) {
   const permissions = usePermissions()
   const [localIsEditing, setLocalIsEditing] = useState(false)
+  const [customizeOpen, setCustomizeOpen] = useState(false)
   const { reportMode, setReportMode } = useReportPanel()
+  const { visible: visibleSections } = useDetailSections()
 
   // only honor report mode when there is actually a report to show.
   const showReport = reportMode && !!book.alignmentSummary?.grade
@@ -175,6 +179,28 @@ function BookDetailsContentInner({
 
   const scope = useCoverScope(book)
 
+  const showAlignment =
+    !!permissions?.bookProcess &&
+    ((!!book.ebook &&
+      !book.ebook.missing &&
+      !!book.audiobook &&
+      !book.audiobook.missing) ||
+      !!book.readaloud ||
+      !!book.alignedAt)
+
+  const sectionNodes: Record<DetailSectionKey, React.ReactNode> = {
+    review: <ReviewSection />,
+    description: <DescriptionSection />,
+    details: <DetailsSection />,
+    tags: <TagsSection />,
+    collections: <CollectionsSection />,
+    contributors: <ContributorsSection />,
+    moreByAuthor: <MoreByAuthorSection />,
+    moreInSeries: <MoreInSeriesSection />,
+    alignment: showAlignment ? <ProcessingSection book={book} /> : null,
+    files: <FileSection book={book} assetsDir={assetsDir} />,
+  }
+
   return (
     <BookFormProvider
       book={book}
@@ -185,12 +211,21 @@ function BookDetailsContentInner({
         className={cn("relative h-full w-full", "bg-background")}
         {...scope}
       >
-        {!compact && <BookPageHeader />}
+        {!compact && (
+          <BookPageHeader
+            onCustomize={() => {
+              setCustomizeOpen(true)
+            }}
+          />
+        )}
         {compact && (
           <BookPanelHeader
             onClose={onClose}
             nextBook={nextBook}
             previousBook={previousBook}
+            onCustomize={() => {
+              setCustomizeOpen(true)
+            }}
           />
         )}
         <BookEditBar />
@@ -222,37 +257,50 @@ function BookDetailsContentInner({
               />
             ) : (
               <div className="flex flex-col gap-5 p-6">
-                <ReviewSection />
-
-                <DescriptionSection />
-
-                <DetailsSection />
-
-                <div className="flex w-full flex-col gap-4 @xl/book:grid @xl/book:grid-cols-2 @xl/book:gap-10">
-                  <TagsSection />
-                  <CollectionsSection />
-                </div>
-
-                <ContributorsSection />
-
-                <MoreByAuthorSection />
-
-                <MoreInSeriesSection />
-
-                {permissions?.bookProcess &&
-                  ((book.ebook &&
-                    !book.ebook.missing &&
-                    book.audiobook &&
-                    !book.audiobook.missing) ||
-                    book.readaloud ||
-                    book.alignedAt) && <ProcessingSection book={book} />}
-
-                <FileSection book={book} assetsDir={assetsDir} />
+                {renderSections(visibleSections, sectionNodes)}
               </div>
             )}
           </div>
         </motion.div>
       </article>
+
+      <BookSectionsDialog
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+      />
     </BookFormProvider>
   )
+}
+
+const SIDE_BY_SIDE: DetailSectionKey[] = ["tags", "collections"]
+
+function renderSections(
+  keys: DetailSectionKey[],
+  nodes: Record<DetailSectionKey, React.ReactNode>,
+) {
+  const rendered: React.ReactNode[] = []
+
+  for (let index = 0; index < keys.length; index++) {
+    const key = keys[index]
+    if (!key) continue
+
+    const next = keys[index + 1]
+    if (next && SIDE_BY_SIDE.includes(key) && SIDE_BY_SIDE.includes(next)) {
+      rendered.push(
+        <div
+          key={key}
+          className="flex w-full flex-col gap-4 @xl/book:grid @xl/book:grid-cols-2 @xl/book:gap-10"
+        >
+          {nodes[key]}
+          {nodes[next]}
+        </div>,
+      )
+      index++
+      continue
+    }
+
+    rendered.push(<Fragment key={key}>{nodes[key]}</Fragment>)
+  }
+
+  return rendered
 }

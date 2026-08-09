@@ -24,7 +24,7 @@ import { useBookForm } from "./BookFormProvider"
 const pill =
   "flex items-center gap-0.5 rounded-full bg-background/55 p-0.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:ring-white/10"
 
-export function BookPageHeader() {
+export function BookPageHeader({ onCustomize }: { onCustomize?: () => void }) {
   const { book, isEditing, setIsEditing } = useBookForm()
   const router = useRouter()
 
@@ -63,6 +63,7 @@ export function BookPageHeader() {
         onEdit={() => {
           setIsEditing(!isEditing)
         }}
+        {...(onCustomize && { onCustomize })}
         onDeleted={() => {
           router.back()
         }}
@@ -76,10 +77,12 @@ export function BookPanelHeader({
   onClose,
   nextBook,
   previousBook,
+  onCustomize,
 }: {
   onClose: (() => void) | undefined
   nextBook?: () => void
   previousBook?: () => void
+  onCustomize?: () => void
 }) {
   const { book, isEditing, setIsEditing } = useBookForm()
 
@@ -215,6 +218,7 @@ export function BookPanelHeader({
           book={book}
           open={actionMenuOpen}
           onOpenChange={setActionMenuOpen}
+          {...(onCustomize && { onCustomize })}
           onDeleted={onClose}
         />
 

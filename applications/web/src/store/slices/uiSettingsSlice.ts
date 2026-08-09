@@ -52,6 +52,8 @@ export type UISettings = {
   logDisplay: LogDisplayPrefs
   collapsedSidebarGroups: Record<string, boolean>
   collapsedDetailSections: Record<string, boolean>
+  detailSectionOrder: string[] | null
+  hiddenDetailSections: string[]
 
   theme: "light" | "dark" | "system"
 }
@@ -94,6 +96,8 @@ const defaults: UISettings = {
   logDisplay: defaultLogDisplay,
   collapsedSidebarGroups: {},
   collapsedDetailSections: {},
+  detailSectionOrder: null,
+  hiddenDetailSections: [],
   theme: "system",
   defaultSorts: {},
 }
@@ -328,6 +332,16 @@ export const uiSettingsSlice = createSlice({
       saveToCookie(state)
     },
 
+    setDetailSections: (
+      state,
+      action: PayloadAction<{ order: string[] | null; hidden: string[] }>,
+    ) => {
+      state.detailSectionOrder = action.payload.order
+      state.hiddenDetailSections = action.payload.hidden
+
+      saveToCookie(state)
+    },
+
     setDefaultSort: (
       state,
       action: PayloadAction<{ page: string; sort: BookSort[number] }>,
@@ -407,6 +421,12 @@ export const selectCollapsedSidebarGroups = (state: {
 export const selectCollapsedDetailSections = (state: {
   uiSettings: UISettings
 }) => state.uiSettings.collapsedDetailSections
+
+export const selectDetailSectionOrder = (state: { uiSettings: UISettings }) =>
+  state.uiSettings.detailSectionOrder
+
+export const selectHiddenDetailSections = (state: { uiSettings: UISettings }) =>
+  state.uiSettings.hiddenDetailSections
 
 export const selectTheme = (state: { uiSettings: UISettings }) =>
   state.uiSettings.theme
