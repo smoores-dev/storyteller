@@ -78,27 +78,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.MiniPlayerCustomization
+import dev.smoores.storyteller.model.MiniPlayerSize
+import dev.smoores.storyteller.model.PlayerComplication
 import dev.smoores.storyteller.model.ReaderState
+import dev.smoores.storyteller.model.hasActiveComplication
 import kotlin.math.roundToInt
 
 private val DragThreshold = 40.dp
 private const val FlingVelocity = 500f
-// Raise CompactBarBottomSpace to lift the compact bar row, lower it to drop the
-// row toward the screen edge.
-private val CompactBarTopSpace = 20.dp
-private val CompactBarBottomSpace = 14.dp
-// Tall enough that the stats clear the gesture pill drawn inside the inset.
-private val CompactStatsStripHeight = 32.dp
-// Above this the inset is a button bar, which cannot be encroached on.
-private val GestureInsetMax = 32.dp
 
-internal fun readerAudioCardCompactHeight(showStats: Boolean, navInset: Dp): Dp {
-    val bottomStripHeight = when {
-        showStats -> maxOf(navInset, CompactStatsStripHeight)
-        navInset > GestureInsetMax -> navInset
-        else -> CompactBarBottomSpace
-    }
-    return CompactBarTopSpace + ReaderMiniPlayerHeight + bottomStripHeight
+// Single source of truth with ReaderScreen's webview inset arithmetic; heights
+// come from MiniPlayerMetrics so the drawn card and the reserved space agree.
+internal fun readerAudioCardCompactHeight(
+    config: MiniPlayerCustomization,
+    hasAudioNarration: Boolean,
+    navInset: Dp,
+): Dp {
+    val size = if (hasAudioNarration) config.size else MiniPlayerSize.COMPACT
+    val showStats = hasAudioNarration && config.statSlots.hasActiveComplication
+    return MiniPlayerMetrics.compactHeight(size, showStats) +
+        MiniPlayerMetrics.bottomBandHeight(
+            showStats,
+            navInset,
+            PlayerComplication.PLAYBACK_SPEED in config.contentRowSlots,
+        )
 }
 
 /**
@@ -112,7 +116,10 @@ internal fun ReaderAudioCard(
     book: Book,
     readerState: ReaderState?,
     chapterLabel: String?,
-    showStats: Boolean,
+    config: MiniPlayerCustomization,
+    display: PlayerDisplayModel,
+    actions: PlayerActions,
+    isOrientationLocked: Boolean,
     backgroundColor: Color,
     contentColor: Color,
     readerControl: (String, Double, String) -> Unit,
@@ -189,7 +196,12 @@ internal fun ReaderAudioCard(
     BoxWithConstraints(modifier) {
         val fullHeight = maxHeight
         val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val compactHeight = readerAudioCardCompactHeight(showStats, navInset)
+        val compactHeight = readerAudioCardCompactHeight(
+            config,
+            display.hasAudioNarration,
+            navInset,
+        )
+        val hasStatBand = display.hasAudioNarration && config.statSlots.hasActiveComplication
         val target = if (expanded) fullHeight else compactHeight
         val settled by animateDpAsState(
             targetValue = target,
@@ -249,75 +261,39 @@ internal fun ReaderAudioCard(
                                 ) { expanded = true },
                         )
                         Column(Modifier.fillMaxSize()) {
-                            Box(
-                                Modifier.fillMaxWidth().height(CompactBarTopSpace),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                DragHandle()
-                            }
-                            ReaderMiniPlayer(
-                                book = book,
-                                chapterLabel = chapterLabel,
-                                isPlaying = readerState?.isPlaying == true,
-                                playbackRate = readerState?.playbackRate ?: 1.0,
-                                onTogglePlay = { readerControl("togglePlayPause", 0.0, "") },
-                                onRateChange = { readerControl("setRate", it, "") },
-                                coverRevision = coverRevision,
-                                cover = cover,
-                                cachedCover = cachedCover,
+                            MiniPlayerCardContent(
+                                config = config,
+                                display = display,
+                                actions = actions,
+                                onExpandTap = { expanded = true },
+                                contentColor = contentColor,
+                                backgroundColor = backgroundColor,
+                                isOrientationLocked = isOrientationLocked,
                             )
-                            Box(
-                                Modifier.fillMaxWidth().weight(1f),
-                                contentAlignment = Alignment.TopCenter,
-                            ) {
-                                if (showStats) {
-                                    CompactStats(readerState)
+                            Box(Modifier.fillMaxWidth().weight(1f)) {
+                                if (hasStatBand) {
+                                    MiniPlayerStatBand(
+                                        config = config,
+                                        display = display,
+                                        actions = actions,
+                                        contentColor = contentColor,
+                                        isOrientationLocked = isOrientationLocked,
+                                        modifier = Modifier.align(Alignment.BottomCenter),
+                                    )
                                 }
                             }
+                        }
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = MiniPlayerMetrics.grabberTopPadding),
+                            contentAlignment = Alignment.TopCenter,
+                        ) {
+                            DragHandle()
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CompactStats(readerState: ReaderState?) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        readerState?.bookTimeRemaining?.let {
-            CompactStat(
-                formatTimeHoursMinutes(it),
-                Icons.AutoMirrored.Filled.MenuBook,
-                iconLeading = true,
-            )
-        }
-        readerState?.chapterTimeRemaining?.let {
-            CompactStat(
-                formatTimeMinutesSeconds(it),
-                Icons.Filled.Bookmark,
-                iconLeading = false,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompactStat(text: String, icon: ImageVector, iconLeading: Boolean) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (iconLeading) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp))
-        }
-        Text(text, style = MaterialTheme.typography.labelSmall)
-        if (!iconLeading) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp))
         }
     }
 }

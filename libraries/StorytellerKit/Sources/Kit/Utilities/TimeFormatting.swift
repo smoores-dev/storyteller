@@ -16,6 +16,18 @@ public func formatTimeMinutesSeconds(_ time: TimeInterval?) -> String {
     return "\(minutes)m\(seconds)s"
 }
 
+public func formatTimeClock(_ time: TimeInterval?) -> String {
+    guard let time, time.isFinite else { return "--:--" }
+    let totalSeconds = max(Int(time.rounded()), 0)
+    let hours = totalSeconds / 3600
+    let minutes = (totalSeconds % 3600) / 60
+    let seconds = totalSeconds % 60
+    if hours > 0 {
+        return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+    }
+    return String(format: "%d:%02d", minutes, seconds)
+}
+
 public func formatSpeedPickerLabel(_ speed: Double, includeNormalLabel: Bool = false) -> String {
     if speed == 1.0 {
         return includeNormalLabel ? "Normal (1x)" : "Normal"

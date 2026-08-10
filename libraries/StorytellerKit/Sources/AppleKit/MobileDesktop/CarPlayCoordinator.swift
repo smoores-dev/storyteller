@@ -5,14 +5,13 @@ import UIKit
 public struct CarPlayChapter: Identifiable, Sendable {
     public let id: Int
     public let label: String
-    public let sectionIndex: Int
-    public let href: String?
+    /// Engine-agnostic chapter identity; the session actor resolves it.
+    public let chapterID: String
 
-    init(id: Int, label: String, sectionIndex: Int, href: String? = nil) {
+    init(id: Int, label: String, chapterID: String) {
         self.id = id
         self.label = label
-        self.sectionIndex = sectionIndex
-        self.href = href
+        self.chapterID = chapterID
     }
 }
 
@@ -36,21 +35,26 @@ public final class CarPlayCoordinator {
     private var lmaObserverId: UUID?
     private var currentPlaybackState: SMILPlaybackState?
     private var currentAudiobookState: AudiobookPlaybackState?
-    private var cachedBookStructure: [SectionInfo] = []
+    private var cachedSMILChapters: [SMILChapterSummary] = []
     private var cachedAudiobookChapters: [AudiobookSessionChapter] = []
-    private var wasPlaying: Bool = false
     private var activePlayer: ActivePlayer?
     private var currentBookID: BookID?
-    private var currentBookTitle: String?
-    private var currentAudiobookHref: String?
-    private var isInitialized = false
 
     private init() {
         Task {
             await observeSMILPlayerActor()
+            await observeAudiobookActor()
             await observeLocalMediaActor()
             await ensureLocalMediaScanned()
-            isInitialized = true
+        }
+    }
+
+    private func observeAudiobookActor() async {
+        audiobookObserverId = await AudiobookActor.shared.addStateObserver {
+            [weak self] state in
+            Task { @MainActor [weak self] in
+                self?.handleAudiobookStateChange(state)
+            }
         }
     }
 
@@ -100,7 +104,6 @@ public final class CarPlayCoordinator {
                 debugLog("[CarPlayCoordinator] SMIL book unloaded")
                 self.currentBookID = nil
                 self.activePlayer = nil
-                self.currentAudiobookHref = nil
             }
 
             self.onPlaybackStateChanged?()
@@ -114,14 +117,13 @@ public final class CarPlayCoordinator {
         guard activePlayer == .audiobook else { return }
 
         currentAudiobookState = state
-        wasPlaying = state.isPlaying
 
         // Audiobook progress syncing is owned by AudioSessionActor.
         onPlaybackStateChanged?()
     }
 
     private func refreshBookStructure() async {
-        cachedBookStructure = await SMILPlayerActor.shared.getBookStructure()
+        cachedSMILChapters = await SMILPlayerActor.shared.getChapterSummaries()
         onChaptersUpdated?()
     }
 
@@ -158,64 +160,52 @@ public final class CarPlayCoordinator {
         switch activePlayer {
             case .audiobook:
                 return cachedAudiobookChapters.enumerated().map { idx, chapter in
-                    CarPlayChapter(
-                        id: idx,
-                        label: chapter.title,
-                        sectionIndex: idx,
-                        href: chapter.id,
-                    )
+                    CarPlayChapter(id: idx, label: chapter.title, chapterID: chapter.id)
                 }
             case .smil, .none:
-                return
-                    cachedBookStructure
-                    .filter { !$0.mediaOverlay.isEmpty }
-                    .enumerated()
-                    .map { idx, section in
-                        CarPlayChapter(
-                            id: idx,
-                            label: section.label ?? "Chapter \(idx + 1)",
-                            sectionIndex: section.index,
-                        )
-                    }
+                return cachedSMILChapters.enumerated().map { idx, chapter in
+                    CarPlayChapter(id: idx, label: chapter.title, chapterID: chapter.id)
+                }
         }
     }
 
-    public var currentChapterSectionIndex: Int? {
+    public var currentChapterID: String? {
         switch activePlayer {
             case .audiobook:
                 return currentAudiobookState?.currentChapterIndex
+                    .flatMap { cachedAudiobookChapters[safe: $0]?.id }
             case .smil, .none:
-                return currentPlaybackState?.currentSectionIndex
+                guard let sectionIndex = currentPlaybackState?.currentSectionIndex else {
+                    return nil
+                }
+                return cachedSMILChapters.first { $0.sectionIndex == sectionIndex }?.id
         }
     }
 
-    public func selectChapter(sectionIndex: Int) {
-        debugLog("[CarPlayCoordinator] selectChapter: sectionIndex=\(sectionIndex)")
-        Task {
-            let wasPlaying = isPlaying
+    private var currentChapterPosition: Int? {
+        guard let id = currentChapterID else { return nil }
+        return chapters.firstIndex { $0.chapterID == id }
+    }
 
-            switch activePlayer {
-                case .audiobook:
-                    guard sectionIndex < cachedAudiobookChapters.count else { return }
-                    let chapter = cachedAudiobookChapters[sectionIndex]
-                    await AudiobookActor.shared.seekToChapter(href: chapter.id)
-                    if wasPlaying {
-                        try? await AudiobookActor.shared.play()
-                    }
-                case .smil, .none:
-                    do {
-                        try await SMILPlayerActor.shared.seekToEntry(
-                            sectionIndex: sectionIndex,
-                            entryIndex: 0,
-                        )
-                        if wasPlaying {
-                            try? await SMILPlayerActor.shared.play()
-                        }
-                    } catch {
-                        debugLog("[CarPlayCoordinator] Failed to seek to chapter: \(error)")
-                    }
-            }
-        }
+    public var hasPreviousChapter: Bool {
+        chapters.count > 1
+    }
+
+    public var hasNextChapter: Bool {
+        guard let position = currentChapterPosition else { return false }
+        return position + 1 < chapters.count
+    }
+
+    public func goToPreviousChapter() {
+        Task { await AudioSessionActor.shared.previousChapter() }
+    }
+
+    public func goToNextChapter() {
+        Task { await AudioSessionActor.shared.nextChapter() }
+    }
+
+    public func selectChapter(id: String) {
+        Task { await AudioSessionActor.shared.selectChapter(id: id) }
     }
 
     public func loadAndPlayBook(_ metadata: BookMetadata, category: LocalMediaCategory) async throws
@@ -224,18 +214,6 @@ public final class CarPlayCoordinator {
 
         activePlayer = category == .audio ? .audiobook : .smil
         currentBookID = metadata.id
-        currentBookTitle = metadata.title
-        currentAudiobookHref = nil
-        wasPlaying = false
-
-        if category == .audio, audiobookObserverId == nil {
-            audiobookObserverId = await AudiobookActor.shared.addStateObserver {
-                [weak self] state in
-                Task { @MainActor [weak self] in
-                    self?.handleAudiobookStateChange(state)
-                }
-            }
-        }
 
         try await HeadlessAudioSession.open(bookID: metadata.id, category: category)
         try await AudioSessionActor.shared.transport(.play)

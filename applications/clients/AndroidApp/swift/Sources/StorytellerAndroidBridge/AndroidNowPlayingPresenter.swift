@@ -20,6 +20,9 @@ extension JavaClass<JavaAndroidNowPlayingBridge> {
     )
 
     @JavaStaticMethod
+    func updateChapters(_ payload: String)
+
+    @JavaStaticMethod
     func clear()
 
     @JavaStaticMethod
@@ -66,6 +69,29 @@ actor AndroidNowPlayingPresenter: NowPlayingPresenting {
         } catch {
             // A later periodic update will retry, including unchanged artwork.
         }
+    }
+
+    func updateChapters(_ chapters: NowPlayingChapters?) {
+        guard let chapters, !chapters.chapters.isEmpty else {
+            try? JavaClass<JavaAndroidNowPlayingBridge>().updateChapters("")
+            return
+        }
+        let payload = EncodedChapters(
+            currentChapterID: chapters.currentChapterID,
+            currentChapterIndex: chapters.currentChapterIndex,
+            // JSONEncoder throws on non-finite values, which would abandon the
+            // whole payload and strand the previously published list.
+            chapters: chapters.chapters.map {
+                EncodedChapters.Chapter(
+                    id: $0.id,
+                    title: $0.title,
+                    duration: $0.duration.isFinite ? max(0, $0.duration) : 0,
+                )
+            },
+        )
+        guard let data = try? JSONEncoder().encode(payload) else { return }
+        try? JavaClass<JavaAndroidNowPlayingBridge>()
+            .updateChapters(String(decoding: data, as: UTF8.self))
     }
 
     func clear() {
@@ -123,14 +149,26 @@ actor AndroidNowPlayingPresenter: NowPlayingPresenting {
             case "changePlaybackRate":
                 commandHandler(.changePlaybackRate(value))
             case "selectChapter":
-                try? await AudioSessionActor.shared.control(.selectChapter(text))
-            case "nextTrack":
-                commandHandler(.nextTrack)
-            case "previousTrack":
-                commandHandler(.previousTrack)
+                commandHandler(.selectChapter(text))
+            case "nextChapter":
+                commandHandler(.nextChapter)
+            case "previousChapter":
+                commandHandler(.previousChapter)
             default:
                 break
         }
+    }
+
+    private struct EncodedChapters: Encodable {
+        struct Chapter: Encodable {
+            let id: String
+            let title: String
+            let duration: Double
+        }
+
+        let currentChapterID: String?
+        let currentChapterIndex: Int?
+        let chapters: [Chapter]
     }
 
     private func bridgeTime(_ value: TimeInterval?) -> Double {

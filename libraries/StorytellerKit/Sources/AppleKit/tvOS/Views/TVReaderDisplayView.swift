@@ -114,12 +114,8 @@ private enum TVReaderDisplayDestination: Hashable {
 }
 
 private enum TVReaderDisplayOption {
-    static let builtInFonts: [(label: String, value: String)] = [
-        ("System Default", "System Default"),
-        ("Serif", "serif"),
-        ("Sans-Serif", "sans-serif"),
-        ("Monospace", "monospace"),
-    ]
+    static let builtInFonts: [(label: String, value: String)] =
+        CustomFontsActor.bundledFamilies.map { ($0, $0) }
 
     static let subtitleSizes: [(label: String, value: Double)] = [
         ("Small", 36.0),

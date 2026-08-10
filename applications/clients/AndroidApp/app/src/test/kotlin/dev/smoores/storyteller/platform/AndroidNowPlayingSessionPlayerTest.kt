@@ -134,19 +134,7 @@ class AndroidNowPlayingSessionPlayerTest {
         }
         player.configureCommands(commandConfiguration())
         player.update(snapshot())
-        player.updateAudiobookState(
-            AndroidNowPlayingAudiobookState(
-                currentChapterID = "chapter-4",
-                currentChapterIndex = 3,
-                chapters = listOf(
-                    AndroidNowPlayingChapter("chapter-1", "Intro", 100.0),
-                    AndroidNowPlayingChapter("chapter-2", "Rising", 120.0),
-                    AndroidNowPlayingChapter("chapter-3", "Climax", 140.0),
-                    AndroidNowPlayingChapter("chapter-4", "Falling", 160.0),
-                    AndroidNowPlayingChapter("chapter-5", "Ending", 180.0),
-                ),
-            ),
-        )
+        player.updateAudiobookState(windowedAudiobookState())
 
         assertEquals(5, player.mediaItemCount)
         assertEquals(1, player.currentMediaItemIndex)
@@ -166,6 +154,57 @@ class AndroidNowPlayingSessionPlayerTest {
             ),
             commands.removeFirst(),
         )
+    }
+
+    @Test
+    fun nextAndPreviousTravelAsChapterGesturesWithoutLocalResolution() {
+        val commands = mutableListOf<ReceivedCommand>()
+        val player = AndroidNowPlayingSessionPlayer(
+            Looper.getMainLooper(),
+        ) { token, command, value, text ->
+            commands += ReceivedCommand(token, command, value, text)
+        }
+        player.configureCommands(commandConfiguration())
+        player.update(snapshot())
+        player.updateAudiobookState(windowedAudiobookState())
+
+        assertTrue(player.isCommandAvailable(Player.COMMAND_SEEK_TO_NEXT))
+        assertTrue(player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS))
+
+        player.seekToNext()
+        assertEquals(
+            ReceivedCommand("commands", "nextChapter", 0.0, ""),
+            commands.removeFirst(),
+        )
+
+        // The gesture carries no chapter id.
+        player.seekToPrevious()
+        player.seekToPrevious()
+        assertEquals(
+            listOf(
+                ReceivedCommand("commands", "previousChapter", 0.0, ""),
+                ReceivedCommand("commands", "previousChapter", 0.0, ""),
+            ),
+            commands.toList(),
+        )
+    }
+
+    @Test
+    fun singleChapterBooksOfferNoChapterSeeking() {
+        val player = AndroidNowPlayingSessionPlayer(Looper.getMainLooper()) { _, _, _, _ -> }
+        player.configureCommands(commandConfiguration())
+        player.update(snapshot())
+        player.updateAudiobookState(
+            AndroidNowPlayingAudiobookState(
+                currentChapterID = "chapter-1",
+                currentChapterIndex = 0,
+                chapters = listOf(AndroidNowPlayingChapter("chapter-1", "Chapter 1", 100.0)),
+            ),
+        )
+
+        assertFalse(player.isCommandAvailable(Player.COMMAND_SEEK_TO_NEXT))
+        assertFalse(player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS))
+        assertFalse(player.isCommandAvailable(Player.COMMAND_SEEK_TO_MEDIA_ITEM))
     }
 
     @Test
@@ -209,6 +248,18 @@ class AndroidNowPlayingSessionPlayerTest {
         playbackRate = 1.25,
         isPlaying = true,
         artwork = byteArrayOf(1, 2, 3),
+    )
+
+    private fun windowedAudiobookState() = AndroidNowPlayingAudiobookState(
+        currentChapterID = "chapter-4",
+        currentChapterIndex = 3,
+        chapters = listOf(
+            AndroidNowPlayingChapter("chapter-1", "Intro", 100.0),
+            AndroidNowPlayingChapter("chapter-2", "Rising", 120.0),
+            AndroidNowPlayingChapter("chapter-3", "Climax", 140.0),
+            AndroidNowPlayingChapter("chapter-4", "Falling", 160.0),
+            AndroidNowPlayingChapter("chapter-5", "Ending", 180.0),
+        ),
     )
 
     private fun commandConfiguration() = AndroidNowPlayingCommandConfiguration(

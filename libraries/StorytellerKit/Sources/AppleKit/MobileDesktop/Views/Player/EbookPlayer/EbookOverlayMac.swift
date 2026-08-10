@@ -107,13 +107,13 @@ struct EbookOverlayMac: View {
             Button(action: onPrevChapter) {
                 Image(systemName: "backward.end.fill")
                     .font(.system(size: iconSize))
-                    .foregroundStyle(overlayColor.opacity(readingBarConfig.overlayTransparency))
+                    .foregroundStyle(overlayColor.opacity(readingBarConfig.dockTransparency))
                     .frame(width: buttonSize, height: buttonSize)
                     .background(
                         Circle()
                             .fill(
                                 overlayButtonBackground.opacity(
-                                    0.2 * readingBarConfig.overlayTransparency
+                                    0.2 * readingBarConfig.dockTransparency
                                 )
                             )
                     )
@@ -124,13 +124,13 @@ struct EbookOverlayMac: View {
             Button(action: onSkipBackward) {
                 Image(systemName: "arrow.counterclockwise")
                     .font(.system(size: iconSize))
-                    .foregroundStyle(overlayColor.opacity(readingBarConfig.overlayTransparency))
+                    .foregroundStyle(overlayColor.opacity(readingBarConfig.dockTransparency))
                     .frame(width: buttonSize, height: buttonSize)
                     .background(
                         Circle()
                             .fill(
                                 overlayButtonBackground.opacity(
-                                    0.2 * readingBarConfig.overlayTransparency
+                                    0.2 * readingBarConfig.dockTransparency
                                 )
                             )
                     )
@@ -141,13 +141,13 @@ struct EbookOverlayMac: View {
             Button(action: onPlayPause) {
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: iconSize))
-                    .foregroundStyle(overlayColor.opacity(readingBarConfig.overlayTransparency))
+                    .foregroundStyle(overlayColor.opacity(readingBarConfig.dockTransparency))
                     .frame(width: buttonSize * 1.2, height: buttonSize * 1.2)
                     .background(
                         Circle()
                             .fill(
                                 overlayButtonBackground.opacity(
-                                    0.3 * readingBarConfig.overlayTransparency
+                                    0.3 * readingBarConfig.dockTransparency
                                 )
                             )
                     )
@@ -158,13 +158,13 @@ struct EbookOverlayMac: View {
             Button(action: onSkipForward) {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: iconSize))
-                    .foregroundStyle(overlayColor.opacity(readingBarConfig.overlayTransparency))
+                    .foregroundStyle(overlayColor.opacity(readingBarConfig.dockTransparency))
                     .frame(width: buttonSize, height: buttonSize)
                     .background(
                         Circle()
                             .fill(
                                 overlayButtonBackground.opacity(
-                                    0.2 * readingBarConfig.overlayTransparency
+                                    0.2 * readingBarConfig.dockTransparency
                                 )
                             )
                     )
@@ -175,13 +175,13 @@ struct EbookOverlayMac: View {
             Button(action: onNextChapter) {
                 Image(systemName: "forward.end.fill")
                     .font(.system(size: iconSize))
-                    .foregroundStyle(overlayColor.opacity(readingBarConfig.overlayTransparency))
+                    .foregroundStyle(overlayColor.opacity(readingBarConfig.dockTransparency))
                     .frame(width: buttonSize, height: buttonSize)
                     .background(
                         Circle()
                             .fill(
                                 overlayButtonBackground.opacity(
-                                    0.2 * readingBarConfig.overlayTransparency
+                                    0.2 * readingBarConfig.dockTransparency
                                 )
                             )
                     )
@@ -266,8 +266,8 @@ struct EbookOverlayMac: View {
                 }
             },
         )
-        .tint(overlayColor.opacity(0.9 * readingBarConfig.overlayTransparency))
-        .opacity(readingBarConfig.overlayTransparency)
+        .tint(overlayColor.opacity(0.9 * readingBarConfig.dockTransparency))
+        .opacity(readingBarConfig.dockTransparency)
     }
 
     private var seekBarWithTimes: some View {
@@ -288,19 +288,19 @@ struct EbookOverlayMac: View {
                 Text(formatOptionalTime(chapterElapsed))
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(
-                        overlayColor.opacity(0.7 * readingBarConfig.overlayTransparency)
+                        overlayColor.opacity(0.7 * readingBarConfig.dockTransparency)
                     )
                 Spacer()
                 Text(
                     "-\(formatOptionalTime(chapterRemainingAtRate ?? rawRemaining)) (\(formatPlaybackRate(playbackRate)))"
                 )
                 .font(.caption2)
-                .foregroundStyle(overlayColor.opacity(0.6 * readingBarConfig.overlayTransparency))
+                .foregroundStyle(overlayColor.opacity(0.6 * readingBarConfig.dockTransparency))
                 Spacer()
                 Text(formatOptionalTime(chapterTotal))
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(
-                        overlayColor.opacity(0.7 * readingBarConfig.overlayTransparency)
+                        overlayColor.opacity(0.7 * readingBarConfig.dockTransparency)
                     )
             }
         }
@@ -330,7 +330,7 @@ struct EbookOverlayMac: View {
                     Text(formatTimeHoursMinutes(timeRemaining))
                         .font(.caption2.monospacedDigit())
                 }
-                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.overlayTransparency))
+                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.dockTransparency))
             }
 
             if readingBarConfig.showTimeRemainingInChapter, let timeRemaining = chapterTimeRemaining
@@ -341,7 +341,7 @@ struct EbookOverlayMac: View {
                     Text(formatTimeMinutesSeconds(timeRemaining))
                         .font(.caption2.monospacedDigit())
                 }
-                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.overlayTransparency))
+                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.dockTransparency))
             }
         }
     }
@@ -355,7 +355,7 @@ struct EbookOverlayMac: View {
                     Image(systemName: "book.fill")
                         .font(.caption2)
                 }
-                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.overlayTransparency))
+                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.dockTransparency))
             }
 
             if readingBarConfig.showPageNumber, let current = progressData?.chapterCurrentPage,
@@ -367,7 +367,7 @@ struct EbookOverlayMac: View {
                     Image(systemName: "bookmark.fill")
                         .font(.caption2)
                 }
-                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.overlayTransparency))
+                .foregroundStyle(overlayColor.opacity(0.7 * readingBarConfig.dockTransparency))
             }
         }
     }

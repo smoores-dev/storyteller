@@ -125,8 +125,8 @@ class EbookPlayerViewModel {
         }
     }
     var showAudioSheet = false
-    var isReadingBarVisible = true
-    var isTopBarVisible = true
+    var isDockVisible = true
+    var isMenuBarVisible = true
     var collapseCardTrigger = 0
     #endif
     var showCustomizePopover = false
@@ -194,6 +194,7 @@ class EbookPlayerViewModel {
     var showTranslation = false
     var translationText = ""
     var showBookmarksPanel = false
+    var showSleepTimerSheet = false
     var bookmarksPanelInitialTab: BookmarksPanel.Tab = .bookmarks
     var highlights: [Highlight] = []
     var pendingSelection: TextSelectionMessage? = nil
@@ -296,34 +297,17 @@ class EbookPlayerViewModel {
             return
         }
 
-        let currentChapter = bookStructure[safe: currentIndex]
-        let currentProgress = progressManager?.chapterSeekBarValue ?? 0.0
-        let now = Date()
+        let restarts = previousChapterRestarts(
+            progressInChapter: progressManager?.chapterSeekBarValue ?? 0,
+            lastRestartAt: lastRestartTime,
+        )
 
-        let justRestarted =
-            if let lastRestart = lastRestartTime {
-                now.timeIntervalSince(lastRestart) < 2.0
-            } else {
-                false
-            }
-
-        if currentProgress > 0.01 && !justRestarted {
-            debugLog(
-                "[EbookPlayerViewModel] Restarting current chapter: \(currentChapter?.label ?? "nil") (was at \(Int(currentProgress * 100))%)"
-            )
-            handleProgressSeek(0.0)
-            lastRestartTime = now
-        } else if currentIndex > 0 {
-            let prevChapter = bookStructure[safe: currentIndex - 1]
-            debugLog(
-                "[EbookPlayerViewModel] Navigating to previous chapter: \(prevChapter?.label ?? "nil")"
-            )
+        if !restarts && currentIndex > 0 {
             progressManager?.handleUserChapterSelected(currentIndex - 1)
             lastRestartTime = nil
         } else {
-            debugLog("[EbookPlayerViewModel] Already at beginning of first chapter")
             handleProgressSeek(0.0)
-            lastRestartTime = now
+            lastRestartTime = Date()
         }
     }
 
@@ -392,15 +376,15 @@ class EbookPlayerViewModel {
     func handleToggleOverlay() {
         #if os(iOS)
         if settingsVM.alwaysShowMiniPlayer {
-            isTopBarVisible.toggle()
-            if !isTopBarVisible {
+            isMenuBarVisible.toggle()
+            if !isMenuBarVisible {
                 collapseCardTrigger += 1
             }
-            debugLog("[EbookPlayerViewModel] Toggled top bar visibility: \(isTopBarVisible)")
+            debugLog("[EbookPlayerViewModel] Toggled menu bar visibility: \(isMenuBarVisible)")
         } else {
-            isReadingBarVisible.toggle()
-            isTopBarVisible = isReadingBarVisible
-            debugLog("[EbookPlayerViewModel] Toggled overlay visibility: \(isReadingBarVisible)")
+            isDockVisible.toggle()
+            isMenuBarVisible = isDockVisible
+            debugLog("[EbookPlayerViewModel] Toggled dock visibility: \(isDockVisible)")
         }
         #endif
     }

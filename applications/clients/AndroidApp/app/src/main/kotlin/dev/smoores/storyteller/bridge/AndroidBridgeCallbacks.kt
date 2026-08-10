@@ -84,7 +84,6 @@ object AndroidBridgeCallbacks {
 
     @JvmStatic
     fun audiobookStateDidChange(payload: String) {
-        AndroidNowPlayingBridge.updateAudiobookState(payload)
         audiobookListener?.callback?.invoke(payload)
     }
 

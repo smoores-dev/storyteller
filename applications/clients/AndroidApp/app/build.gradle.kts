@@ -137,17 +137,32 @@ abstract class GenerateSharedResources : DefaultTask() {
  * Stages the shared reader web stack (foliate_wrap.html, FoliateManager.js,
  * foliate-js, ...) from the common core into APK assets under reader/, where
  * WebViewAssetLoader serves it at https://appassets.androidplatform.net/reader/.
+ * Also stages the bundled reader fonts under reader-fonts/, extracted to
+ * filesDir at startup for Swift CustomFontsActor (Bundle.module is
+ * unavailable on Android).
  */
 abstract class GenerateReaderAssets : DefaultTask() {
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val webResources: DirectoryProperty
 
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val readerFonts: DirectoryProperty
+
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
     @TaskAction
     fun generate() {
+        val fontsOutput = outputDirectory.dir("reader-fonts").get().asFile
+        fontsOutput.deleteRecursively()
+        fontsOutput.mkdirs()
+        readerFonts.get().asFile.listFiles()
+            .orEmpty()
+            .filter { it.isFile && it.extension.lowercase() in setOf("ttf", "otf") }
+            .forEach { it.copyTo(fontsOutput.resolve(it.name), overwrite = true) }
+
         val source = webResources.get().asFile
         val output = outputDirectory.dir("reader").get().asFile
         output.deleteRecursively()
@@ -307,6 +322,11 @@ val generateReaderAssets = tasks.register<GenerateReaderAssets>("generateReaderA
     webResources.set(
         rootProject.layout.projectDirectory.dir(
             "../../../libraries/StorytellerKit/Sources/Kit/Resources/WebResources"
+        )
+    )
+    readerFonts.set(
+        rootProject.layout.projectDirectory.dir(
+            "../../../libraries/StorytellerKit/Sources/Kit/Resources/assets/fonts"
         )
     )
 }

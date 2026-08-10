@@ -22,6 +22,7 @@ import dev.smoores.storyteller.model.BookDetails
 import dev.smoores.storyteller.model.BookID
 import dev.smoores.storyteller.model.BookMedia
 import dev.smoores.storyteller.model.DownloadOperation
+import dev.smoores.storyteller.model.DebugLogState
 import dev.smoores.storyteller.model.DownloadUpdate
 import dev.smoores.storyteller.model.HomeSection
 import dev.smoores.storyteller.model.BulkActionOptions
@@ -42,7 +43,12 @@ import dev.smoores.storyteller.model.RatingSaveResult
 import dev.smoores.storyteller.model.UserRating
 import dev.smoores.storyteller.model.SessionKind
 import dev.smoores.storyteller.model.SessionState
+import dev.smoores.storyteller.model.DockCustomization
+import dev.smoores.storyteller.model.MiniPlayerCustomization
+import dev.smoores.storyteller.model.PlaybackModes
 import dev.smoores.storyteller.model.ReaderDisplaySettings
+import dev.smoores.storyteller.model.MenuBarCustomization
+import dev.smoores.storyteller.model.customizationUpdateJson
 import dev.smoores.storyteller.model.ReaderHighlight
 import dev.smoores.storyteller.model.ReaderHighlightPaletteEntry
 import dev.smoores.storyteller.model.ReaderOpenResult
@@ -171,6 +177,7 @@ class StorytellerBridgeClient(context: Context) {
         colorMode: String? = null,
         colorIntensity: Double? = null,
         doubleCoverAlignment: String? = null,
+        experimentalSettings: Boolean? = null,
     ): AppSettings {
         val update = JSONObject().apply {
             progressSyncIntervalSeconds?.let { put("progressSyncIntervalSeconds", it) }
@@ -180,6 +187,7 @@ class StorytellerBridgeClient(context: Context) {
             colorMode?.let { put("colorMode", it) }
             colorIntensity?.let { put("colorIntensity", it) }
             doubleCoverAlignment?.let { put("doubleCoverAlignment", it) }
+            experimentalSettings?.let { put("experimentalSettings", it) }
         }.toString()
         val json = AndroidBridgeCallbacks.requestPayload { requestID ->
             StorytellerAndroidBridge.saveAppSettings(requestID, update)
@@ -200,6 +208,7 @@ class StorytellerBridgeClient(context: Context) {
             colorMode = obj.optString("colorMode", "full"),
             colorIntensity = obj.optDouble("colorIntensity", 0.65),
             doubleCoverAlignment = obj.optString("doubleCoverAlignment", "auto"),
+            experimentalSettings = obj.optBoolean("experimentalSettings", false),
         )
     }
 
@@ -320,6 +329,19 @@ class StorytellerBridgeClient(context: Context) {
         StorytellerAndroidBridge.readerControl(command, value, text).awaitResult()
     }
 
+    suspend fun updateCustomization(
+        miniPlayer: MiniPlayerCustomization? = null,
+        dock: DockCustomization? = null,
+        menuBar: MenuBarCustomization? = null,
+        playbackModes: PlaybackModes? = null,
+    ) {
+        readerControl(
+            "updateCustomization",
+            0.0,
+            customizationUpdateJson(miniPlayer, dock, menuBar, playbackModes),
+        )
+    }
+
     // Called from the WebView's JavascriptInterface thread; fire-and-forget.
     fun readerMessageFromJS(name: String, body: String) {
         StorytellerAndroidBridge.readerMessageFromJS(name, body)
@@ -408,6 +430,7 @@ class StorytellerBridgeClient(context: Context) {
             hasAudioNarration = obj.optBoolean("hasAudioNarration"),
             toc = toc,
             selectedChapterId = obj.optionalInt("selectedChapterId"),
+            chapterCount = obj.optionalInt("chapterCount"),
             bookFraction = obj.optionalDouble("bookFraction"),
             chapterFraction = obj.optionalDouble("chapterFraction"),
             chapterCurrentPage = obj.optionalInt("chapterCurrentPage"),
@@ -422,6 +445,7 @@ class StorytellerBridgeClient(context: Context) {
             sleepTimerActive = obj.optBoolean("sleepTimerActive"),
             sleepTimerRemaining = obj.optionalDouble("sleepTimerRemaining"),
             sleepTimerType = obj.optionalString("sleepTimerType"),
+            sleepTimerEndOfChapter = obj.optBoolean("sleepTimerEndOfChapter"),
             overlayToggleCount = obj.optInt("overlayToggleCount"),
             keepScreenOn = obj.optBoolean("keepScreenOn"),
             backgroundColor = obj.optString("backgroundColor").takeIf { it.isNotEmpty() },
@@ -433,6 +457,15 @@ class StorytellerBridgeClient(context: Context) {
             settings = obj.optJSONObject("settings")?.let(::parseReaderDisplaySettings),
             overlay = obj.optJSONObject("overlay")?.let(::parseReaderOverlayOptions)
                 ?: ReaderOverlayOptions(),
+            miniPlayer = obj.optJSONObject("miniPlayer")?.let(MiniPlayerCustomization::parse)
+                ?: MiniPlayerCustomization(),
+            dock = obj.optJSONObject("dock")?.let(DockCustomization::parse)
+                ?: DockCustomization(),
+            menuBar = obj.optJSONObject("menuBar")?.let(MenuBarCustomization::parse)
+                ?: MenuBarCustomization(),
+            playbackModes = obj.optJSONObject("playbackModes")?.let(PlaybackModes::parse)
+                ?: PlaybackModes(),
+            experimentalSettings = obj.optBoolean("experimentalSettings", false),
             search = obj.optJSONObject("search")?.let(::parseReaderSearch)
                 ?: ReaderSearchState(),
             highlights = parseReaderHighlights(obj.optJSONArray("highlights")),
@@ -585,6 +618,13 @@ class StorytellerBridgeClient(context: Context) {
                         userHighlightColors = parseStringList(theme.optJSONArray("userHighlightColors")),
                         userHighlightLabels = parseStringList(theme.optJSONArray("userHighlightLabels")),
                         customCSS = theme.optionalString("customCSS"),
+                        readaloudHighlightFade = theme.optDouble("readaloudHighlightFade", 0.0),
+                        readaloudTextItalic = theme.optBoolean("readaloudTextItalic", false),
+                        readaloudTextBold = theme.optBoolean("readaloudTextBold", false),
+                        readaloudUnderlineStyle = theme.optString(
+                            "readaloudUnderlineStyle",
+                            "solid",
+                        ),
                     )
                 )
             }
@@ -599,8 +639,19 @@ class StorytellerBridgeClient(context: Context) {
             lineSpacing = obj.optDouble("lineSpacing", defaults.lineSpacing),
             marginLeftRight = obj.optDouble("marginLeftRight", defaults.marginLeftRight),
             marginTopBottom = obj.optDouble("marginTopBottom", defaults.marginTopBottom),
+            // Older Swift payloads carry only the combined marginTopBottom.
+            marginTop = obj.optDouble(
+                "marginTop",
+                obj.optDouble("marginTopBottom", defaults.marginTop),
+            ),
+            marginBottom = obj.optDouble(
+                "marginBottom",
+                obj.optDouble("marginTopBottom", defaults.marginBottom),
+            ),
             wordSpacing = obj.optDouble("wordSpacing", defaults.wordSpacing),
             letterSpacing = obj.optDouble("letterSpacing", defaults.letterSpacing),
+            paragraphSpacing = obj.optDouble("paragraphSpacing", defaults.paragraphSpacing),
+            firstLineIndent = obj.optBoolean("firstLineIndent", defaults.firstLineIndent),
             textAlignment = obj.optString("textAlignment", defaults.textAlignment),
             singleColumnMode = obj.optBoolean("singleColumnMode", defaults.singleColumnMode),
             scrollingMode = obj.optBoolean("scrollingMode", defaults.scrollingMode),
@@ -609,6 +660,14 @@ class StorytellerBridgeClient(context: Context) {
                 defaults.enableMarginClickNavigation,
             ),
             lockViewToAudio = obj.optBoolean("lockViewToAudio", defaults.lockViewToAudio),
+            readaloudDimOthers = obj.optBoolean(
+                "readaloudDimOthers",
+                defaults.readaloudDimOthers,
+            ),
+            readaloudDimAmount = obj.optDouble(
+                "readaloudDimAmount",
+                defaults.readaloudDimAmount,
+            ),
         )
     }
 
@@ -733,6 +792,31 @@ class StorytellerBridgeClient(context: Context) {
             peerCount = root.optInt("peerCount"),
             lastError = root.optionalString("lastError"),
         )
+    }
+
+    suspend fun debugLog(): DebugLogState {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.debugLogJSON(requestID)
+        }
+        return withContext(Dispatchers.Default) {
+            val root = JSONObject(json)
+            DebugLogState(
+                verbose = root.optBoolean("verbose"),
+                messages = parseStringList(root.optJSONArray("messages")),
+            )
+        }
+    }
+
+    suspend fun clearDebugLog() {
+        AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.clearDebugLog(requestID)
+        }
+    }
+
+    suspend fun setVerboseLogging(enabled: Boolean) {
+        AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.setVerboseLogging(requestID, enabled)
+        }
     }
 
     suspend fun alignmentReport(book: Book): BookAlignmentReport {

@@ -1,5 +1,6 @@
 package dev.smoores.storyteller.ui
 
+import android.content.ClipData
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -29,6 +31,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,18 +40,30 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import dev.smoores.storyteller.data.AUTO_UI_SCALE
+import dev.smoores.storyteller.data.DisplayOptions
+import dev.smoores.storyteller.data.EinkOptions
 import dev.smoores.storyteller.model.AppSettings
+import dev.smoores.storyteller.model.DebugLogState
 import dev.smoores.storyteller.model.LiveSyncStatus
 import dev.smoores.storyteller.model.StorytellerSettings
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun SettingsScreen(
@@ -60,8 +75,17 @@ internal fun SettingsScreen(
     save: (String, String, String) -> Unit,
     updateAppSettings: (Double?, Double?, Boolean?) -> Unit,
     updateLibrarySettings: (String?, Double?, String?) -> Unit,
+    updateExperimentalSettings: (Boolean) -> Unit = {},
     setLiveSyncEnabled: (Boolean) -> Unit = {},
     loadLiveSyncStatus: (suspend () -> LiveSyncStatus)? = null,
+    loadDebugLog: (suspend () -> DebugLogState)? = null,
+    clearDebugLog: (suspend () -> Unit)? = null,
+    setVerboseLogging: (Boolean) -> Unit = {},
+    einkOptions: EinkOptions? = null,
+    updateEinkOptions: (EinkOptions) -> Unit = {},
+    displayOptions: DisplayOptions = DisplayOptions(),
+    automaticUiScale: Float = 1f,
+    updateDisplayOptions: (DisplayOptions) -> Unit = {},
 ) {
     var serverURL by rememberSaveable { mutableStateOf("") }
     var username by rememberSaveable { mutableStateOf("") }
@@ -200,6 +224,280 @@ internal fun SettingsScreen(
                 setEnabled = setLiveSyncEnabled,
                 loadStatus = loadLiveSyncStatus,
             )
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Text("Advanced", style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Enable Experimental Settings",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        "Unlocks in-development options, like the readaloud highlight " +
+                            "visibility modes.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = appSettings.experimentalSettings,
+                    onCheckedChange = updateExperimentalSettings,
+                )
+            }
+        }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Text("Display", style = MaterialTheme.typography.titleMedium)
+        UiScaleSetting(
+            options = displayOptions,
+            automaticScale = automaticUiScale,
+            update = updateDisplayOptions,
+        )
+        SettingToggleRow(
+            title = "Volume keys turn pages",
+            subtitle = "Flip pages with the volume rocker while reading. The rocker " +
+                "controls volume as usual whenever audio is playing.",
+            checked = displayOptions.volumeKeyPageTurn,
+            onCheckedChange = { updateDisplayOptions(displayOptions.copy(volumeKeyPageTurn = it)) },
+        )
+        if (einkOptions != null) {
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Text("E-Ink", style = MaterialTheme.typography.titleMedium)
+            SettingToggleRow(
+                title = "Optimize screen refresh",
+                subtitle = "Request a full-quality refresh on reader page turns and " +
+                    "clear ghosting when leaving the reader.",
+                checked = einkOptions.optimizeRefresh,
+                onCheckedChange = { updateEinkOptions(einkOptions.copy(optimizeRefresh = it)) },
+            )
+            SettingToggleRow(
+                title = "Reduce animations",
+                subtitle = "Skip UI animations that smear on e-ink displays.",
+                checked = einkOptions.reduceAnimations,
+                onCheckedChange = { updateEinkOptions(einkOptions.copy(reduceAnimations = it)) },
+            )
+            SettingToggleRow(
+                title = "Book cover sleep screen",
+                subtitle = "Set the device sleep screensaver to the cover of the book " +
+                    "being read. Replaces any screensaver image configured in the " +
+                    "device settings.",
+                checked = einkOptions.coverScreensaver,
+                onCheckedChange = { updateEinkOptions(einkOptions.copy(coverScreensaver = it)) },
+            )
+        }
+        if (loadDebugLog != null) {
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Text("Debug", style = MaterialTheme.typography.titleMedium)
+            DebugLogSection(
+                loadDebugLog = loadDebugLog,
+                clearDebugLog = clearDebugLog,
+                setVerboseLogging = setVerboseLogging,
+            )
+        }
+    }
+}
+
+@Composable
+private fun UiScaleSetting(
+    options: DisplayOptions,
+    automaticScale: Float,
+    update: (DisplayOptions) -> Unit,
+) {
+    val isAutomatic = options.uiScale == AUTO_UI_SCALE
+    val effectiveScale = if (isAutomatic) automaticScale else options.uiScale
+    var preview by remember(options.uiScale, automaticScale) {
+        mutableStateOf(effectiveScale)
+    }
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("UI scale", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Sizes the app's controls and text. Auto matches standard " +
+                        "tablet sizing on large screens.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(
+                onClick = { update(options.copy(uiScale = AUTO_UI_SCALE)) },
+                enabled = !isAutomatic,
+            ) {
+                Text("Auto")
+            }
+        }
+        SettingSlider(
+            label = if (isAutomatic) "Automatic" else "Scale",
+            value = preview.toDouble(),
+            range = UiScale.MIN..UiScale.MAX,
+            format = { "${(it * 100).roundToInt()}%" },
+            onPreview = { preview = it },
+            onCommit = { update(options.copy(uiScale = UiScale.quantize(it))) },
+        )
+    }
+}
+
+@Composable
+private fun SettingToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun DebugLogSection(
+    loadDebugLog: suspend () -> DebugLogState,
+    clearDebugLog: (suspend () -> Unit)?,
+    setVerboseLogging: (Boolean) -> Unit,
+) {
+    var dialogOpen by rememberSaveable { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("Debug Log", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "Recent app activity, for bug reports.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = { dialogOpen = true }) { Text("View") }
+    }
+    if (dialogOpen) {
+        DebugLogDialog(
+            onDismiss = { dialogOpen = false },
+            loadDebugLog = loadDebugLog,
+            clearDebugLog = clearDebugLog,
+            setVerboseLogging = setVerboseLogging,
+        )
+    }
+}
+
+@Composable
+private fun DebugLogDialog(
+    onDismiss: () -> Unit,
+    loadDebugLog: suspend () -> DebugLogState,
+    clearDebugLog: (suspend () -> Unit)?,
+    setVerboseLogging: (Boolean) -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val clipboard = LocalClipboard.current
+    var verbose by remember { mutableStateOf(false) }
+    var messages by remember { mutableStateOf(listOf<String>()) }
+    val refresh: suspend () -> Unit = {
+        runCatching { loadDebugLog() }.getOrNull()?.let {
+            verbose = it.verbose
+            messages = it.messages
+        }
+    }
+    LaunchedEffect(Unit) { refresh() }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(Modifier.fillMaxSize()) {
+            Column(
+                Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Debug Log",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onDismiss) { Text("Close") }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Verbose logging", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Includes high-volume performance diagnostics. Turn this on, " +
+                                "reproduce the issue, then copy the log.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = verbose,
+                        onCheckedChange = {
+                            verbose = it
+                            setVerboseLogging(it)
+                        },
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "${messages.size} messages",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = {
+                        scope.launch {
+                            clipboard.setClipEntry(
+                                ClipEntry(
+                                    ClipData.newPlainText(
+                                        "Debug Log",
+                                        messages.joinToString("\n"),
+                                    ),
+                                ),
+                            )
+                        }
+                    }) { Text("Copy") }
+                    if (clearDebugLog != null) {
+                        TextButton(onClick = {
+                            scope.launch {
+                                runCatching { clearDebugLog() }
+                                refresh()
+                            }
+                        }) { Text("Clear") }
+                    }
+                    TextButton(onClick = { scope.launch { refresh() } }) { Text("Refresh") }
+                }
+                SelectionContainer(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Text(
+                        messages.joinToString("\n"),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+            }
         }
     }
 }

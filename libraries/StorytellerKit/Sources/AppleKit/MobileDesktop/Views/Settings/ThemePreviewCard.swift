@@ -2,7 +2,7 @@
 import SwiftUI
 
 // Sample paragraph rendering the readaloud and user highlight spans in the
-// theme's actual modes and colors, mirroring the Android editor's preview.
+// theme's actual modes and colors.
 // Background-mode thickness is not simulated; the span shows at line height.
 struct ThemePreviewCard: View {
     let theme: ReaderTheme
@@ -15,7 +15,7 @@ struct ThemePreviewCard: View {
     private static let tail = " with your own highlights."
 
     var body: some View {
-        Text(attributedSample)
+        sampleText
             .font(.system(.subheadline, design: .serif))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
@@ -29,7 +29,26 @@ struct ThemePreviewCard: View {
             )
     }
 
-    private var attributedSample: AttributedString {
+    private var needsDecoration: Bool {
+        theme.readaloudHighlightMode == "underline"
+            && theme.readaloudUnderlineStyle != "solid"
+    }
+
+    @ViewBuilder
+    private var sampleText: some View {
+        if needsDecoration {
+            combinedText.textRenderer(
+                UnderlineDecorationRenderer(
+                    style: theme.readaloudUnderlineStyle,
+                    color: Color(hex: theme.highlightColor) ?? .yellow,
+                )
+            )
+        } else {
+            combinedText
+        }
+    }
+
+    private var combinedText: Text {
         let foreground = Color(hex: theme.foregroundColor) ?? .black
 
         var lead = AttributedString(Self.lead)
@@ -40,9 +59,10 @@ struct ThemePreviewCard: View {
         applyHighlight(
             mode: theme.readaloudHighlightMode,
             color: Color(hex: theme.highlightColor),
+            fade: theme.readaloudHighlightFade,
+            underlineAttribute: !needsDecoration,
             to: &readaloudSpan,
         )
-
         var mid = AttributedString(Self.mid)
         mid.foregroundColor = foreground
 
@@ -57,12 +77,23 @@ struct ThemePreviewCard: View {
         var tail = AttributedString(Self.tail)
         tail.foregroundColor = foreground
 
-        return lead + readaloudSpan + mid + userSpan + tail
+        var readaloudText =
+            needsDecoration
+            ? Text(readaloudSpan).customAttribute(ReadaloudUnderlineMark())
+            : Text(readaloudSpan)
+        if theme.readaloudHighlightMode == "text" {
+            if theme.readaloudTextItalic { readaloudText = readaloudText.italic() }
+            if theme.readaloudTextBold { readaloudText = readaloudText.bold() }
+        }
+
+        return Text(lead) + readaloudText + Text(mid) + Text(userSpan) + Text(tail)
     }
 
     private func applyHighlight(
         mode: String,
         color: Color?,
+        fade: Double = 0,
+        underlineAttribute: Bool = true,
         to span: inout AttributedString,
     ) {
         guard let color else { return }
@@ -70,9 +101,47 @@ struct ThemePreviewCard: View {
             case "text":
                 span.foregroundColor = color
             case "underline":
-                span.underlineStyle = Text.LineStyle(pattern: .solid, color: color)
+                if underlineAttribute {
+                    span.underlineStyle = Text.LineStyle(pattern: .solid, color: color)
+                }
             default:
-                span.backgroundColor = color
+                span.backgroundColor = color.opacity(1 - fade)
+        }
+    }
+}
+
+struct ReadaloudUnderlineMark: TextAttribute {}
+
+struct UnderlineDecorationRenderer: TextRenderer {
+    let style: String
+    let color: Color
+
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+        for line in layout {
+            for run in line {
+                context.draw(run)
+                guard run[ReadaloudUnderlineMark.self] != nil else { continue }
+                let rect = run.typographicBounds.rect
+                let y = rect.maxY - 2
+                var path = Path()
+                if style == "double" {
+                    path.move(to: CGPoint(x: rect.minX, y: y - 2.5))
+                    path.addLine(to: CGPoint(x: rect.maxX, y: y - 2.5))
+                    path.move(to: CGPoint(x: rect.minX, y: y))
+                    path.addLine(to: CGPoint(x: rect.maxX, y: y))
+                    context.stroke(path, with: .color(color), lineWidth: 1)
+                } else {
+                    var x = rect.minX
+                    var up = true
+                    path.move(to: CGPoint(x: x, y: y))
+                    while x < rect.maxX {
+                        x = min(x + 2.5, rect.maxX)
+                        path.addLine(to: CGPoint(x: x, y: up ? y - 2 : y))
+                        up.toggle()
+                    }
+                    context.stroke(path, with: .color(color), lineWidth: 1.2)
+                }
+            }
         }
     }
 }

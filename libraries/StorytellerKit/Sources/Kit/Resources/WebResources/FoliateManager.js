@@ -4,6 +4,54 @@ import { SpanHighlighter } from "./SpanHighlighter.js"
 import { debugLog } from "./DebugConfig.js"
 import BookmarkManager from "./BookmarkManager.js"
 
+const getReadaloudCSS = ({
+  activeClass,
+  dimOthers,
+  dimAmount,
+  highlightMode,
+  textItalic,
+  textBold,
+  foregroundColor,
+  backgroundColor,
+}) => {
+  const rules = []
+  const root = "html.storyteller-readaloud-active"
+  const block = ":is(p, li, blockquote, dd, h1, h2, h3, h4, h5, h6)"
+  if (dimOthers) {
+    const keep = Math.max(0.05, 1 - dimAmount)
+    const unspokenBlocks = `${root} ${block}:not(.${activeClass}):not(:has(.${activeClass}))`
+    const spokenBlock = `${root} ${block}:has(.${activeClass})`
+    const spokenWords = `${root} .${activeClass}`
+    rules.push(`
+    ${unspokenBlocks} {
+        opacity: ${keep.toFixed(2)} !important;
+        transition: opacity 0.25s ease;
+    }`)
+    if (foregroundColor) {
+      const dimmedColor = `color-mix(in srgb, ${foregroundColor} ${(keep * 100).toFixed(0)}%, ${backgroundColor || "transparent"})`
+      rules.push(`
+    ${spokenBlock},
+    ${spokenBlock} *:not(.${activeClass}):not(.${activeClass} *) {
+        color: ${dimmedColor} !important;
+        transition: color 0.25s ease;
+    }
+    ${spokenWords},
+    ${spokenWords} * {
+        color: ${foregroundColor} !important;
+    }`)
+    }
+  }
+  if (highlightMode === "text" && (textItalic || textBold)) {
+    rules.push(`
+    .${activeClass},
+    .${activeClass} * {
+        ${textItalic ? "font-style: italic !important;" : ""}
+        ${textBold ? "font-weight: bold !important;" : ""}
+    }`)
+  }
+  return rules.join("")
+}
+
 const getCSS = ({
   lineSpacing = 1.4,
   textAlign = "justify",
@@ -12,29 +60,44 @@ const getCSS = ({
   fontSize = 16,
   fontFamily = null,
   marginLeftRight = 8,
-  marginTopBottom = 2,
   wordSpacing = 0,
   letterSpacing = 0,
+  paragraphSpacing = 0,
+  firstLineIndent = false,
   highlightColor = "#333333",
   highlightThickness = 1.0,
   backgroundColor = null,
   foregroundColor = null,
   customCSS = null,
+  readaloudDimOthers = false,
+  readaloudDimAmount = 0.5,
+  readaloudHighlightMode = "background",
+  readaloudTextItalic = false,
+  readaloudTextBold = false,
 }) => {
   const activeClass = mediaActiveClass || "epub-media-overlay-active"
   const resolvedFontFamily =
     fontFamily === "System Default" ? "serif" : fontFamily
+  const genericFamilies = ["serif", "sans-serif", "monospace"]
   const fontFamilyCSS = resolvedFontFamily
-    ? `font-family: ${resolvedFontFamily} !important;`
+    ? genericFamilies.includes(resolvedFontFamily)
+      ? `font-family: ${resolvedFontFamily} !important;`
+      : `font-family: "${resolvedFontFamily}", serif !important;`
     : ""
   const marginLR = `${marginLeftRight}%`
-  const marginTB = `${marginTopBottom}%`
 
   const backgroundColorCSS = backgroundColor
     ? `background-color: ${backgroundColor} !important;`
     : "background-color: transparent !important;"
   const foregroundColorCSS = foregroundColor
     ? `color: ${foregroundColor} !important;`
+    : ""
+  const paragraphSpacingCSS =
+    paragraphSpacing > 0
+      ? `p { margin-top: 0 !important; margin-bottom: ${paragraphSpacing}em !important; }`
+      : ""
+  const firstLineIndentCSS = firstLineIndent
+    ? "p { text-indent: 1.4em !important; }"
     : ""
 
   return `
@@ -112,11 +175,23 @@ const getCSS = ({
         background-color: transparent !important;
         color: inherit !important;
     }
+    ${getReadaloudCSS({
+      activeClass,
+      dimOthers: readaloudDimOthers,
+      dimAmount: readaloudDimAmount,
+      highlightMode: readaloudHighlightMode,
+      textItalic: readaloudTextItalic,
+      textBold: readaloudTextBold,
+      foregroundColor,
+      backgroundColor,
+    })}
     /* Highlight z-index layering: text floats above SVG overlay */
     p, span, em, strong, i, b, a, div, li, h1, h2, h3, h4, h5, h6, blockquote, dd, dt, pre, code, td, th, caption, label, figcaption {
         position: relative !important;
         z-index: 1 !important;
     }
+    ${paragraphSpacingCSS}
+    ${firstLineIndentCSS}
     ${customCSS || ""}
 `
 }
@@ -138,9 +213,12 @@ class FoliateManager {
   #lineSpacing = 1.4
   #isDarkMode = false
   #marginLeftRight = 0
-  #marginTopBottom = 2
+  #marginTop = 6
+  #marginBottom = 4
   #wordSpacing = 0
   #letterSpacing = 0
+  #paragraphSpacing = 0
+  #firstLineIndent = false
   #textAlign = "justify"
   #highlightColor = "#333333"
   #highlightThickness = 1.0
@@ -149,6 +227,14 @@ class FoliateManager {
   #customCSS = null
   #readaloudOverlayers = new Map()
   #readaloudHighlightMode = "background"
+  #readaloudDimOthers = false
+  #readaloudDimAmount = 0.5
+  #readaloudHighlightFade = 0
+  #readaloudTextItalic = false
+  #readaloudTextBold = false
+  #readaloudUnderlineStyle = "solid"
+  #playbackActive = false
+  #lastDoubleClickAt = 0
   #readaloudSpanHighlighter = new SpanHighlighter()
   #lastSpanHighlightedElement = null
   #lastSpanHighlightedColor = null
@@ -238,6 +324,7 @@ class FoliateManager {
           if (clickTimer !== null) {
             clearTimeout(clickTimer)
             clickTimer = null
+            this.#handleDoubleClick(event, index, doc)
             return
           }
 
@@ -726,13 +813,32 @@ class FoliateManager {
       styles.marginTopBottom !== undefined &&
       styles.marginTopBottom !== null
     ) {
-      this.#marginTopBottom = styles.marginTopBottom
+      this.#marginTop = styles.marginTopBottom
+      this.#marginBottom = styles.marginTopBottom
+    }
+    if (styles.marginTop !== undefined && styles.marginTop !== null) {
+      this.#marginTop = styles.marginTop
+    }
+    if (styles.marginBottom !== undefined && styles.marginBottom !== null) {
+      this.#marginBottom = styles.marginBottom
     }
     if (styles.wordSpacing !== undefined && styles.wordSpacing !== null) {
       this.#wordSpacing = styles.wordSpacing
     }
     if (styles.letterSpacing !== undefined && styles.letterSpacing !== null) {
       this.#letterSpacing = styles.letterSpacing
+    }
+    if (
+      styles.paragraphSpacing !== undefined &&
+      styles.paragraphSpacing !== null
+    ) {
+      this.#paragraphSpacing = styles.paragraphSpacing
+    }
+    if (
+      styles.firstLineIndent !== undefined &&
+      styles.firstLineIndent !== null
+    ) {
+      this.#firstLineIndent = styles.firstLineIndent
     }
     if (styles.textAlign !== undefined && styles.textAlign !== null) {
       this.#textAlign = styles.textAlign
@@ -754,6 +860,24 @@ class FoliateManager {
     ) {
       this.#readaloudHighlightMode = styles.readaloudHighlightMode
       this.#refreshReadaloudHighlight()
+    }
+    if (styles.readaloudDimOthers != null) {
+      this.#readaloudDimOthers = styles.readaloudDimOthers
+    }
+    if (styles.readaloudDimAmount != null) {
+      this.#readaloudDimAmount = styles.readaloudDimAmount
+    }
+    if (styles.readaloudHighlightFade != null) {
+      this.#readaloudHighlightFade = styles.readaloudHighlightFade
+    }
+    if (styles.readaloudTextItalic != null) {
+      this.#readaloudTextItalic = styles.readaloudTextItalic
+    }
+    if (styles.readaloudTextBold != null) {
+      this.#readaloudTextBold = styles.readaloudTextBold
+    }
+    if (styles.readaloudUnderlineStyle != null) {
+      this.#readaloudUnderlineStyle = styles.readaloudUnderlineStyle
     }
     if ("backgroundColor" in styles) {
       this.#backgroundColor = styles.backgroundColor
@@ -821,13 +945,19 @@ class FoliateManager {
         fontSize: this.#fontSize,
         fontFamily: this.#fontFamily,
         marginLeftRight: this.#marginLeftRight,
-        marginTopBottom: this.#marginTopBottom,
         wordSpacing: this.#wordSpacing,
         letterSpacing: this.#letterSpacing,
+        paragraphSpacing: this.#paragraphSpacing,
+        firstLineIndent: this.#firstLineIndent,
         highlightColor: this.#highlightColor,
         backgroundColor: this.#backgroundColor,
         foregroundColor: this.#foregroundColor,
         customCSS: this.#customCSS,
+        readaloudDimOthers: this.#readaloudDimOthers,
+        readaloudDimAmount: this.#readaloudDimAmount,
+        readaloudHighlightMode: this.#readaloudHighlightMode,
+        readaloudTextItalic: this.#readaloudTextItalic,
+        readaloudTextBold: this.#readaloudTextBold,
       }),
     )
 
@@ -840,9 +970,14 @@ class FoliateManager {
     this.#view.renderer.setAttribute("max-column-count", columnCount)
     debugLog("FoliateManager", `Set max-column-count to ${columnCount}`)
 
-    const marginPx = Math.round((this.#marginTopBottom / 100) * 800)
-    this.#view.renderer.setAttribute("margin", `${marginPx}px`)
-    debugLog("FoliateManager", `Set margin to ${marginPx}px`)
+    const marginTopPx = Math.round((this.#marginTop / 100) * 800)
+    const marginBottomPx = Math.round((this.#marginBottom / 100) * 800)
+    this.#view.renderer.setAttribute("margin", `${marginTopPx}px`)
+    this.#view.renderer.setAttribute("margin-bottom", `${marginBottomPx}px`)
+    debugLog(
+      "FoliateManager",
+      `Set margin to ${marginTopPx}px / ${marginBottomPx}px`,
+    )
 
     this.#view.renderer.setAttribute("gap", "0%")
     this.#updateMaxInlineSize()
@@ -888,20 +1023,25 @@ class FoliateManager {
   }
 
   #handleDoubleClick(event, sectionIndex, doc) {
+    const now = Date.now()
+    if (now - this.#lastDoubleClickAt < 400) return
+    this.#lastDoubleClickAt = now
+
     debugLog(
       "FoliateManager",
       `Double-click detected in section ${sectionIndex}`,
     )
 
     const selection = doc.getSelection?.()
-    if (!selection) {
-      console.warn("[FM2] No selection available from double-click")
-      return
+    let range =
+      selection && selection.rangeCount > 0 && !selection.isCollapsed
+        ? selection.getRangeAt(0)
+        : null
+    if (!range && typeof doc.caretRangeFromPoint === "function") {
+      range = doc.caretRangeFromPoint(event.clientX, event.clientY)
     }
-
-    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null
     if (!range) {
-      console.warn("[FM2] No range from selection")
+      console.warn("[FM2] No range from double-click")
       return
     }
 
@@ -933,7 +1073,7 @@ class FoliateManager {
     )
     this.#reportSeekEvent(sectionIndex, anchor)
 
-    selection.removeAllRanges()
+    selection?.removeAllRanges()
   }
 
   #reportSeekEvent(sectionIndex, anchor) {
@@ -1058,8 +1198,47 @@ class FoliateManager {
     return overlayer
   }
 
+  // Ranges give one rect per inline fragment; overlapping fragments at
+  // slightly different bottoms stack per-fragment squiggles into a mess.
+  #mergeLineRects(rects, avgHeight, writingMode) {
+    if (writingMode === "vertical-rl" || writingMode === "vertical-lr") {
+      return rects
+    }
+    const tolerance = avgHeight / 2
+    const lines = []
+    for (const rect of [...rects].sort((a, b) => a.bottom - b.bottom)) {
+      const line = lines.find(
+        (l) => Math.abs(l.bottom - rect.bottom) < tolerance,
+      )
+      if (line) {
+        line.left = Math.min(line.left, rect.left)
+        line.right = Math.max(line.right, rect.right)
+        line.top = Math.min(line.top, rect.top)
+        line.bottom = Math.max(line.bottom, rect.bottom)
+      } else {
+        lines.push({
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+        })
+      }
+    }
+    return lines.map((l) => ({
+      ...l,
+      width: l.right - l.left,
+      height: l.bottom - l.top,
+    }))
+  }
+
   #drawReadaloudHighlight(rects, options = {}) {
-    const { color, thickness = 1, underline = false, writingMode } = options
+    const {
+      color,
+      thickness = 1,
+      underline = false,
+      underlineStyle = "solid",
+      writingMode,
+    } = options
     const scale = Number.isFinite(thickness) && thickness > 0 ? thickness : 1
     const rectList = Array.from(rects).filter(
       (rect) => rect.width > 0 && rect.height > 0,
@@ -1071,9 +1250,29 @@ class FoliateManager {
     if (underline) {
       const avgHeight =
         rectList.reduce((sum, rect) => sum + rect.height, 0) / rectList.length
-      const baseWidth = Math.max(1, avgHeight * 0.08)
-      const width = baseWidth * scale
-      return Overlayer.underline(rectList, { color, width, writingMode })
+      const lineRects = this.#mergeLineRects(rectList, avgHeight, writingMode)
+      if (underlineStyle === "squiggle") {
+        const width = Math.max(1, avgHeight * 0.05)
+        return Overlayer.squiggly(lineRects, { color, width, writingMode })
+      }
+      if (underlineStyle === "double") {
+        // The lower line hugs the line-box bottom; the box abuts the next
+        // line's, so the pair must stack upward into the descender strip.
+        const width = Math.max(1, avgHeight * 0.06)
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g")
+        const upper = lineRects.map((rect) => ({
+          ...rect,
+          bottom: rect.bottom - width * 2,
+          right: rect.right - width * 2,
+        }))
+        g.append(
+          Overlayer.underline(upper, { color, width, writingMode }),
+          Overlayer.underline(lineRects, { color, width, writingMode }),
+        )
+        return g
+      }
+      const width = Math.max(1, avgHeight * 0.08)
+      return Overlayer.underline(lineRects, { color, width, writingMode })
     }
 
     const adjustedRects = rectList.map((rect) => {
@@ -1131,7 +1330,10 @@ class FoliateManager {
       }
       overlayer.element.style.opacity = "1"
       overlayer.element.style.zIndex = "0"
-      overlayer.element.style.setProperty("--overlayer-highlight-opacity", "1")
+      overlayer.element.style.setProperty(
+        "--overlayer-highlight-opacity",
+        String(Math.max(0, 1 - this.#readaloudHighlightFade)),
+      )
       overlayer.element.style.setProperty(
         "--overlayer-highlight-blend-mode",
         "normal",
@@ -1144,6 +1346,7 @@ class FoliateManager {
           color: this.#highlightColor,
           thickness: this.#highlightThickness,
           underline: isUnderline,
+          underlineStyle: this.#readaloudUnderlineStyle,
           writingMode,
         },
       )
@@ -1159,11 +1362,32 @@ class FoliateManager {
     this.#highlightedSectionIndex = null
   }
 
+  get #dimActive() {
+    return this.#readaloudDimOthers && this.#playbackActive
+  }
+
+  setPlaybackActive(active) {
+    if (this.#playbackActive === !!active) return
+    this.#playbackActive = !!active
+    const activeEl = this.#highlightedElement?.deref?.()
+    const doc = activeEl?.ownerDocument
+    if (doc?.documentElement) {
+      doc.documentElement.classList.toggle(
+        "storyteller-readaloud-active",
+        this.#dimActive,
+      )
+    }
+  }
+
   #refreshReadaloudHighlight() {
     const activeEl = this.#highlightedElement?.deref?.()
     if (!activeEl || this.#highlightedSectionIndex == null) return
     const doc = activeEl.ownerDocument
     if (!doc) return
+    doc.documentElement.classList.toggle(
+      "storyteller-readaloud-active",
+      this.#dimActive,
+    )
     this.#renderReadaloudHighlight(this.#highlightedSectionIndex, activeEl, doc)
   }
 
@@ -1269,6 +1493,10 @@ class FoliateManager {
     if (playbackActiveClass) {
       doc.documentElement.classList.add(playbackActiveClass)
     }
+    doc.documentElement.classList.toggle(
+      "storyteller-readaloud-active",
+      this.#dimActive,
+    )
 
     const splitInfo = this.#getElementSplitInfo(el, doc, renderer)
     const visibleRatio = splitInfo?.visibleRatio ?? 1.0
@@ -1298,6 +1526,7 @@ class FoliateManager {
         if (playbackActiveClass) {
           doc.documentElement.classList.remove(playbackActiveClass)
         }
+        doc.documentElement.classList.remove("storyteller-readaloud-active")
       }
     }
     this.#highlightedElement = null

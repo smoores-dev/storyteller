@@ -93,6 +93,15 @@ class StorytellerAppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?,
+    ) -> UIInterfaceOrientationMask {
+        MainActor.assumeIsolated {
+            OrientationLock.shared.lockedMask ?? OrientationLock.shared.defaultMask
+        }
+    }
+
     func applicationDidReceiveMemoryWarning(_ application: UIApplication) {
         let available = os_proc_available_memory()
         debugLog(

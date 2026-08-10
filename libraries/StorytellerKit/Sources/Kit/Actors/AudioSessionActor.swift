@@ -133,11 +133,14 @@ public actor AudioSessionActor {
         0.75, 1.0, 1.1, 1.2, 1.3, 1.5, 2.0, 5.0,
     ]
 
+    public static let skipInterval: TimeInterval = 15
+
     private var currentKind: AudioSessionKind?
     private var artworkData: Data?
     private var readaloudTitle: String?
     private var readaloudAuthor: String?
     private var smilObserverID: UUID?
+    private var lastPublishedChapters: NowPlayingChapters?
     private var attachments: Set<UUID> = []
     private var snapshotObservers: [UUID: @Sendable (AudioSessionSnapshot?) -> Void] = [:]
 
@@ -410,19 +413,19 @@ public actor AudioSessionActor {
 
         switch command {
             case .togglePlayPause:
-                try await AudiobookActor.shared.togglePlayPause()
+                try await transport(.togglePlayPause)
             case .skipBackward:
-                await AudiobookActor.shared.skipBackward()
+                await skip(by: -Self.skipInterval)
             case .skipForward:
-                await AudiobookActor.shared.skipForward()
+                await skip(by: Self.skipInterval)
             case .previousChapter:
                 await previousChapter()
             case .nextChapter:
-                await AudiobookActor.shared.skipToNextChapter()
+                await nextChapter()
             case .seekChapterFraction(let fraction):
-                await seekWithinCurrentChapter(fraction: fraction)
+                await scrubWithinCurrentChapter(fraction: fraction)
             case .selectChapter(let chapterID):
-                await AudiobookActor.shared.seekToChapter(href: chapterID)
+                await selectChapter(id: chapterID)
             case .setPlaybackRate(let value):
                 await setPlaybackRate(value)
             case .setVolume(let value):
@@ -541,6 +544,7 @@ public actor AudioSessionActor {
         }
         notifySnapshotObservers(readaloudSnapshot(from: state, fallbackBookID: bookID))
         await updateNowPlaying(readaloudNowPlaying(from: state))
+        await updateNowPlayingChapters()
     }
 
     private func readaloudSnapshot(
@@ -588,6 +592,9 @@ public actor AudioSessionActor {
                 guard !Task.isCancelled, let self else { return }
                 await self.handlePlaybackStateChange(state, sessionID: sessionID)
             }
+        }
+        if let playbackObserverID {
+            await AudiobookActor.shared.removeStateObserver(id: playbackObserverID)
         }
         playbackObserverID = await AudiobookActor.shared.addStateObserver { state in
             continuation.yield(state)
@@ -638,44 +645,124 @@ public actor AudioSessionActor {
         pendingServerPosition = nil
     }
 
-    private func previousChapter() async {
-        guard let metadata,
-            let index = await AudiobookActor.shared.getCurrentChapterIndex(),
-            metadata.chapters.indices.contains(index),
-            let state = await AudiobookActor.shared.getCurrentState()
-        else { return }
-
-        let chapter = metadata.chapters[index]
-        let progress =
-            chapter.duration > 0
-            ? max(0, state.currentTime - chapter.startTime) / chapter.duration
-            : 0
-        let now = Date()
-        let justRestarted = lastRestartTime.map { now.timeIntervalSince($0) < 2 } ?? false
-
-        if progress > 0.01 && !justRestarted {
-            await AudiobookActor.shared.seekToChapter(href: chapter.id)
-            lastRestartTime = now
-        } else if index > 0 {
-            await AudiobookActor.shared.seekToChapter(href: metadata.chapters[index - 1].id)
-            lastRestartTime = nil
-        } else {
-            await AudiobookActor.shared.seekToChapter(href: chapter.id)
-            lastRestartTime = now
+    private func chapterContext() async -> (
+        ids: [String], position: Int, progress: Double
+    )? {
+        switch currentKind {
+            case .audiobook:
+                guard let metadata,
+                    let index = await AudiobookActor.shared.getCurrentChapterIndex(),
+                    let chapter = metadata.chapters[safe: index],
+                    let state = await AudiobookActor.shared.getCurrentState()
+                else { return nil }
+                let elapsed = max(0, state.currentTime - chapter.startTime)
+                return (
+                    metadata.chapters.map(\.id),
+                    index,
+                    chapter.duration > 0 ? elapsed / chapter.duration : 0
+                )
+            case .readaloud:
+                let listing = await SMILPlayerActor.shared.getChapterListing()
+                guard let currentID = listing.currentChapterID,
+                    let position = listing.chapters.firstIndex(where: { $0.id == currentID })
+                else { return nil }
+                let state = await SMILPlayerActor.shared.getCurrentState()
+                let progress = (state?.chapterTotal ?? 0) > 0
+                    ? (state?.chapterElapsed ?? 0) / (state?.chapterTotal ?? 1)
+                    : 0
+                return (listing.chapters.map(\.id), position, progress)
+            case nil:
+                return nil
         }
     }
 
-    private func seekWithinCurrentChapter(fraction: Double) async {
-        guard let metadata,
-            let index = await AudiobookActor.shared.getCurrentChapterIndex(),
-            metadata.chapters.indices.contains(index)
-        else { return }
-
-        let chapter = metadata.chapters[index]
-        let clampedFraction = min(max(fraction, 0), 1)
-        await AudiobookActor.shared.seek(
-            to: chapter.startTime + chapter.duration * clampedFraction
+    public func previousChapter() async {
+        guard let context = await chapterContext() else { return }
+        let restarts = previousChapterRestarts(
+            progressInChapter: context.progress,
+            lastRestartAt: lastRestartTime,
         )
+        let target =
+            !restarts && context.position > 0 ? context.position - 1 : context.position
+        lastRestartTime = target == context.position ? Date() : nil
+        await selectChapter(id: context.ids[target])
+    }
+
+    public func nextChapter() async {
+        guard let context = await chapterContext(),
+            let next = context.ids[safe: context.position + 1]
+        else { return }
+        lastRestartTime = nil
+        await selectChapter(id: next)
+    }
+
+    public func selectChapter(id: String) async {
+        switch currentKind {
+            case .audiobook:
+                await AudiobookActor.shared.seekToChapter(href: id)
+            case .readaloud:
+                _ = await SMILPlayerActor.shared.seekToSection(id: id)
+            case nil:
+                break
+        }
+    }
+
+    /// Where the playing chapter starts in engine time, and how long it runs.
+    private func currentChapterWindow() async -> (start: TimeInterval, duration: TimeInterval)? {
+        switch currentKind {
+            case .audiobook:
+                guard let metadata,
+                    let index = await AudiobookActor.shared.getCurrentChapterIndex(),
+                    let chapter = metadata.chapters[safe: index]
+                else { return nil }
+                return (chapter.startTime, chapter.duration)
+            case .readaloud:
+                guard let state = await SMILPlayerActor.shared.getCurrentState() else { return nil }
+                return (0, state.chapterTotal)
+            case nil:
+                return nil
+        }
+    }
+
+    /// Staying off both chapter edges keeps a scrub to the end from tripping
+    /// the end-of-chapter advance straight into the next one.
+    private func scrubWithinCurrentChapter(toSeconds seconds: TimeInterval) async {
+        guard let window = await currentChapterWindow() else { return }
+        let clamped = max(0.1, min(seconds, max(0.1, window.duration - 0.5)))
+        switch currentKind {
+            case .audiobook:
+                await AudiobookActor.shared.seek(to: window.start + clamped)
+            case .readaloud:
+                _ = await SMILPlayerActor.shared.seekWithinCurrentChapter(to: clamped)
+            case nil:
+                break
+        }
+    }
+
+    private func scrubWithinCurrentChapter(fraction: Double) async {
+        guard let window = await currentChapterWindow() else { return }
+        await scrubWithinCurrentChapter(
+            toSeconds: window.duration * min(max(fraction, 0), 1)
+        )
+    }
+
+    private func skip(by seconds: TimeInterval) async {
+        switch currentKind {
+            case .audiobook:
+                if seconds >= 0 {
+                    await AudiobookActor.shared.skipForward(seconds)
+                } else {
+                    await AudiobookActor.shared.skipBackward(-seconds)
+                }
+            case .readaloud:
+                if seconds >= 0 {
+                    await SMILPlayerActor.shared.skipForward(seconds: seconds)
+                } else {
+                    await SMILPlayerActor.shared.skipBackward(seconds: -seconds)
+                }
+            case nil:
+                break
+        }
     }
 
     private func startSleepTimer(seconds: TimeInterval) {
@@ -760,7 +847,56 @@ public actor AudioSessionActor {
         notifyObservers(state)
         if case .audiobook = currentKind {
             await updateNowPlaying(audiobookNowPlaying(from: state))
+            await updateNowPlayingChapters(from: state)
         }
+    }
+
+    private func updateNowPlayingChapters(from state: AudiobookSessionState?) async {
+        guard let state else {
+            await publishNowPlayingChapters(nil, for: currentKind)
+            return
+        }
+        await publishNowPlayingChapters(
+            NowPlayingChapters(
+                currentChapterID: state.currentChapterID,
+                currentChapterIndex: state.currentChapterIndex,
+                chapters: state.chapters.map {
+                    NowPlayingChapter(id: $0.id, title: $0.title, duration: $0.duration)
+                },
+            ),
+            for: currentKind,
+        )
+    }
+
+    private func updateNowPlayingChapters() async {
+        let kind = currentKind
+        let listing = await SMILPlayerActor.shared.getChapterListing()
+        let index = listing.currentChapterID.flatMap { id in
+            listing.chapters.firstIndex { $0.id == id }
+        }
+        await publishNowPlayingChapters(
+            NowPlayingChapters(
+                currentChapterID: listing.currentChapterID,
+                currentChapterIndex: index,
+                chapters: listing.chapters.map {
+                    NowPlayingChapter(id: $0.id, title: $0.title, duration: $0.duration)
+                },
+            ),
+            for: kind,
+        )
+    }
+
+    /// Reading the listing suspends; `kind` guards against publishing chapters
+    /// for a session torn down mid-read.
+    private func publishNowPlayingChapters(
+        _ chapters: NowPlayingChapters?,
+        for kind: AudioSessionKind?,
+    ) async {
+        guard let presenter = StorytellerPlatform.nowPlaying else { return }
+        guard kind == currentKind else { return }
+        guard chapters != lastPublishedChapters else { return }
+        await presenter.updateChapters(chapters)
+        lastPublishedChapters = chapters
     }
 
     private func makeState(
@@ -982,16 +1118,10 @@ public actor AudioSessionActor {
 
     private func configureNowPlayingCommands(for kind: AudioSessionKind) async {
         guard let presenter = StorytellerPlatform.nowPlaying else { return }
-        let supportsChangePlaybackPosition: Bool
-        if case .audiobook = kind {
-            supportsChangePlaybackPosition = true
-        } else {
-            supportsChangePlaybackPosition = false
-        }
         await presenter.configureCommands(
-            skipForwardInterval: 15,
-            skipBackwardInterval: 15,
-            supportsChangePlaybackPosition: supportsChangePlaybackPosition,
+            skipForwardInterval: Self.skipInterval,
+            skipBackwardInterval: Self.skipInterval,
+            supportsChangePlaybackPosition: true,
             supportsChangePlaybackRate: false,
         ) { command in
             Task { await AudioSessionActor.shared.handleRemoteCommand(command) }
@@ -999,7 +1129,11 @@ public actor AudioSessionActor {
     }
 
     private func teardownNowPlayingCommands() async {
+        // Cleared directly: publishNowPlayingChapters' kind guard drops calls
+        // made after currentKind is nil, which close paths are.
+        lastPublishedChapters = nil
         guard let presenter = StorytellerPlatform.nowPlaying else { return }
+        await presenter.updateChapters(nil)
         await presenter.clear()
         await presenter.teardownCommands()
     }
@@ -1015,36 +1149,36 @@ public actor AudioSessionActor {
 
     private func handleRemoteCommand(_ command: RemoteCommand) async {
         switch command {
-            case .play, .togglePlayPause:
-                try? await transport(.togglePlayPause)
+            case .play:
+                try? await transport(.play)
             case .pause:
                 try? await transport(.pause)
+            case .togglePlayPause:
+                try? await transport(.togglePlayPause)
             case .skipForward(let interval):
-                switch currentKind {
-                    case .audiobook:
-                        await AudiobookActor.shared.skipForward(interval)
-                    case .readaloud:
-                        await SMILPlayerActor.shared.skipForward(seconds: interval)
-                    case nil:
-                        break
-                }
+                await skip(by: interval)
             case .skipBackward(let interval):
-                switch currentKind {
-                    case .audiobook:
-                        await AudiobookActor.shared.skipBackward(interval)
-                    case .readaloud:
-                        await SMILPlayerActor.shared.skipBackward(seconds: interval)
-                    case nil:
-                        break
-                }
+                await skip(by: -interval)
             case .changePlaybackPosition(let position):
-                if case .audiobook = currentKind {
-                    await AudiobookActor.shared.seekWithinCurrentChapter(to: position)
-                }
+                await scrubWithinCurrentChapter(toSeconds: position)
             case .changePlaybackRate(let rate):
                 await setPlaybackRate(rate)
-            case .nextTrack, .previousTrack:
-                break
+            case .selectChapter(let chapterID):
+                await selectChapter(id: chapterID)
+            case .nextChapter:
+                await nextChapter()
+            case .previousChapter:
+                await previousChapter()
+            // Spoken audio convention: the dedicated track keys (AirPods
+            // double/triple press) skip rather than change chapter.
+            case .nextTrack:
+                await skip(by: Self.skipInterval)
+            case .previousTrack:
+                await skip(by: -Self.skipInterval)
+        }
+
+        if case .audiobook = currentKind {
+            await publishState()
         }
     }
 

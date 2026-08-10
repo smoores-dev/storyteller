@@ -55,11 +55,15 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -67,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import dev.smoores.storyteller.model.ReaderTheme
+import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -120,6 +125,38 @@ internal fun ManageThemesSheet(
     onResetTheme: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        ManageThemesContent(
+            themes = themes,
+            selectedLightThemeId = selectedLightThemeId,
+            selectedDarkThemeId = selectedDarkThemeId,
+            onSelectLightTheme = onSelectLightTheme,
+            onSelectDarkTheme = onSelectDarkTheme,
+            onSaveTheme = onSaveTheme,
+            onDeleteTheme = onDeleteTheme,
+            onResetTheme = onResetTheme,
+            listModifier = Modifier
+                .fillMaxHeight(0.75f)
+                .navigationBarsPadding(),
+        )
+    }
+}
+
+@Composable
+internal fun ManageThemesContent(
+    themes: List<ReaderTheme>,
+    selectedLightThemeId: String?,
+    selectedDarkThemeId: String?,
+    onSelectLightTheme: (String) -> Unit,
+    onSelectDarkTheme: (String) -> Unit,
+    onSaveTheme: (String) -> Unit,
+    onDeleteTheme: (String) -> Unit,
+    onResetTheme: (String) -> Unit,
+    listModifier: Modifier = Modifier,
+) {
     var editorRequest by remember { mutableStateOf<ThemeEditorRequest?>(null) }
     var confirmDelete by remember { mutableStateOf<ReaderTheme?>(null) }
     var newThemeMenuOpen by remember { mutableStateOf(false) }
@@ -127,10 +164,7 @@ internal fun ManageThemesSheet(
     val builtIn = themes.filter { it.isBuiltIn }
     val custom = themes.filter { !it.isBuiltIn }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -165,11 +199,7 @@ internal fun ManageThemesSheet(
                 }
             }
         }
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxHeight(0.75f)
-                .navigationBarsPadding(),
-        ) {
+        LazyColumn(modifier = listModifier) {
             item { ThemeListSectionHeader("Built-in Themes") }
             items(builtIn, key = { it.id }) { theme ->
                 ThemeManageRow(
@@ -423,6 +453,10 @@ private fun ThemePreviewCard(
     readaloudColor: String,
     readaloudMode: String,
     readaloudThickness: Float,
+    readaloudFade: Float,
+    readaloudItalic: Boolean,
+    readaloudBold: Boolean,
+    readaloudUnderlineStyle: String,
     userColor: String,
     userMode: String,
     modifier: Modifier = Modifier,
@@ -440,7 +474,15 @@ private fun ThemePreviewCard(
     val annotated = buildAnnotatedString {
         append(kPreviewLead)
         if (readaloudMode == "text") {
-            withStyle(SpanStyle(color = readaloudParsed)) { append(kPreviewReadaloud) }
+            withStyle(
+                SpanStyle(
+                    color = readaloudParsed,
+                    fontStyle = if (readaloudItalic) FontStyle.Italic else null,
+                    fontWeight = if (readaloudBold) FontWeight.Bold else null,
+                ),
+            ) {
+                append(kPreviewReadaloud)
+            }
         } else {
             append(kPreviewReadaloud)
         }
@@ -472,6 +514,8 @@ private fun ThemePreviewCard(
                         drawRangeHighlight(
                             it, readaloudStart, readaloudEnd,
                             readaloudParsed, readaloudMode, readaloudThickness,
+                            alpha = (1f - readaloudFade).coerceIn(0f, 1f),
+                            underlineStyle = readaloudUnderlineStyle,
                         )
                         drawRangeHighlight(it, userStart, userEnd, userParsed, userMode, 1f)
                     }
@@ -487,6 +531,8 @@ private fun DrawScope.drawRangeHighlight(
     color: Color,
     mode: String,
     thickness: Float,
+    alpha: Float = 1f,
+    underlineStyle: String = "solid",
 ) {
     if (mode == "text") return
     val startLine = layout.getLineForOffset(start)
@@ -500,14 +546,47 @@ private fun DrawScope.drawRangeHighlight(
         if (right <= left) continue
         if (mode == "underline") {
             val y = layout.getLineBaseline(line) + 3.dp.toPx()
-            drawRect(color, topLeft = Offset(left, y), size = Size(right - left, 2.dp.toPx()))
+            when (underlineStyle) {
+                "double" -> {
+                    val gap = 2.5.dp.toPx()
+                    drawRect(
+                        color,
+                        topLeft = Offset(left, y - gap),
+                        size = Size(right - left, 1.dp.toPx()),
+                    )
+                    drawRect(
+                        color,
+                        topLeft = Offset(left, y),
+                        size = Size(right - left, 1.dp.toPx()),
+                    )
+                }
+                "squiggle" -> {
+                    val period = 2.5.dp.toPx()
+                    val amplitude = 2.dp.toPx()
+                    val path = Path()
+                    var x = left
+                    var up = true
+                    path.moveTo(x, y)
+                    while (x < right) {
+                        x = minOf(x + period, right)
+                        path.lineTo(x, if (up) y - amplitude else y)
+                        up = !up
+                    }
+                    drawPath(path, color, style = Stroke(width = 1.2f.dp.toPx()))
+                }
+                else -> drawRect(
+                    color,
+                    topLeft = Offset(left, y),
+                    size = Size(right - left, 2.dp.toPx()),
+                )
+            }
         } else {
             val top = layout.getLineTop(line)
             val bottom = layout.getLineBottom(line)
             val center = (top + bottom) / 2f
             val halfHeight = (bottom - top) / 2f * thickness
             drawRect(
-                color,
+                color.copy(alpha = color.alpha * alpha),
                 topLeft = Offset(left, center - halfHeight),
                 size = Size(right - left, halfHeight * 2f),
             )
@@ -522,6 +601,8 @@ internal fun ThemeEditorDialog(
     onSave: (String) -> Unit,
     onDelete: (() -> Unit)?,
     onDismiss: () -> Unit,
+    // 0 Theme, 1 Readaloud, 2 Highlights, 3 Advanced; mirrors ThemeEditorTab.
+    initialTab: Int = 0,
 ) {
     val isBuiltInEdit = initial.isBuiltIn && existingId != null
     var name by remember { mutableStateOf(initial.name) }
@@ -531,6 +612,10 @@ internal fun ThemeEditorDialog(
     var highlight by remember { mutableStateOf(initial.highlightColor) }
     var highlightThickness by remember { mutableStateOf(initial.highlightThickness) }
     var readaloudMode by remember { mutableStateOf(initial.readaloudHighlightMode) }
+    var readaloudFade by remember { mutableStateOf(initial.readaloudHighlightFade) }
+    var readaloudItalic by remember { mutableStateOf(initial.readaloudTextItalic) }
+    var readaloudBold by remember { mutableStateOf(initial.readaloudTextBold) }
+    var readaloudUnderlineStyle by remember { mutableStateOf(initial.readaloudUnderlineStyle) }
     var userMode by remember { mutableStateOf(initial.userHighlightMode) }
     var userColors by remember {
         mutableStateOf(List(6) { initial.userHighlightColors.getOrElse(it) { "#FFFFFF" } })
@@ -539,7 +624,7 @@ internal fun ThemeEditorDialog(
         mutableStateOf(List(6) { initial.userHighlightLabels.getOrElse(it) { "" } })
     }
     var customCSS by remember { mutableStateOf(initial.customCSS.orEmpty()) }
-    var tab by remember { mutableIntStateOf(0) }
+    var tab by remember { mutableIntStateOf(initialTab) }
     var previewUserIndex by remember { mutableIntStateOf(0) }
 
     val valid = (isBuiltInEdit || name.isNotBlank()) &&
@@ -592,6 +677,10 @@ internal fun ThemeEditorDialog(
                                 put("userHighlightColors", JSONArray(userColors.map { it.trim() }))
                                 put("userHighlightLabels", JSONArray(userLabels))
                                 put("customCSS", customCSS.trim())
+                                put("readaloudHighlightFade", readaloudFade)
+                                put("readaloudTextItalic", readaloudItalic)
+                                put("readaloudTextBold", readaloudBold)
+                                put("readaloudUnderlineStyle", readaloudUnderlineStyle)
                             }.toString()
                             onSave(json)
                         },
@@ -605,6 +694,10 @@ internal fun ThemeEditorDialog(
                     readaloudColor = highlight,
                     readaloudMode = readaloudMode,
                     readaloudThickness = highlightThickness.toFloat(),
+                    readaloudFade = readaloudFade.toFloat(),
+                    readaloudItalic = readaloudItalic,
+                    readaloudBold = readaloudBold,
+                    readaloudUnderlineStyle = readaloudUnderlineStyle,
                     userColor = userColors.getOrElse(previewUserIndex) { "#FFFFFF" },
                     userMode = userMode,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
@@ -685,15 +778,53 @@ internal fun ThemeEditorDialog(
                                 value = highlight,
                                 onChange = { highlight = it },
                             )
-                            if (readaloudMode == "background") {
-                                SettingSlider(
-                                    label = "Highlight Height",
-                                    value = highlightThickness,
-                                    range = 0.6f..4f,
-                                    format = { String.format("%.1fx", it) },
-                                    onPreview = { highlightThickness = roundTo(it, 1) },
-                                    onCommit = { highlightThickness = roundTo(it, 1) },
+                            // Mirrors ThemeEditorView.readaloudSection.
+                            when (readaloudMode) {
+                                "text" -> {
+                                    SettingSwitch(
+                                        label = "Italic",
+                                        checked = readaloudItalic,
+                                        onToggle = { readaloudItalic = it },
+                                    )
+                                    SettingSwitch(
+                                        label = "Bold",
+                                        checked = readaloudBold,
+                                        onToggle = { readaloudBold = it },
+                                    )
+                                }
+                                "underline" -> ChipRow(
+                                    label = "Underline Style",
+                                    options = listOf(
+                                        "solid" to "Single",
+                                        "double" to "Double",
+                                        "squiggle" to "Squiggle",
+                                    ),
+                                    selected = readaloudUnderlineStyle,
+                                    onSelect = { readaloudUnderlineStyle = it },
                                 )
+                                else -> {
+                                    SettingSlider(
+                                        label = "Highlight Transparency",
+                                        value = readaloudFade,
+                                        range = 0f..0.9f,
+                                        format = { "${(it * 100).roundToInt()}%" },
+                                        onPreview = { readaloudFade = roundTo(it, 2) },
+                                        onCommit = { readaloudFade = roundTo(it, 2) },
+                                    )
+                                    Text(
+                                        "Fades the highlight block into the page.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    SettingSlider(
+                                        label = "Line Height",
+                                        value = highlightThickness,
+                                        range = 0.6f..4f,
+                                        format = { String.format("%.1fx", it) },
+                                        onPreview = { highlightThickness = roundTo(it, 1) },
+                                        onCommit = { highlightThickness = roundTo(it, 1) },
+                                    )
+                                }
                             }
                         }
                         2 -> {

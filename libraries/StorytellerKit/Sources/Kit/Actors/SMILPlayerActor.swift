@@ -61,6 +61,8 @@ public struct SMILPlaybackState: Sendable {
     public let playbackRate: Double
     public let volume: Double
     public let bookID: BookID?
+    /// Increments on deliberate seeks, never on auto-advance.
+    public let userSeekCount: Int
 
     public init(
         isPlaying: Bool,
@@ -75,6 +77,7 @@ public struct SMILPlaybackState: Sendable {
         playbackRate: Double,
         volume: Double,
         bookID: BookID?,
+        userSeekCount: Int = 0,
     ) {
         self.isPlaying = isPlaying
         self.currentSectionIndex = currentSectionIndex
@@ -88,6 +91,7 @@ public struct SMILPlaybackState: Sendable {
         self.playbackRate = playbackRate
         self.volume = volume
         self.bookID = bookID
+        self.userSeekCount = userSeekCount
     }
 }
 
@@ -129,7 +133,8 @@ public actor SMILPlayerActor {
     private var volume: Double = 1.0
 
     private var updateTask: Task<Void, Never>?
-    private var isAdvancing: Bool = false
+    private var advanceSuppressionCount: Int = 0
+    private var userSeekCount: Int = 0
 
     private var stateObservers: [UUID: @Sendable @StorytellerUIActor (SMILPlaybackState) -> Void] =
         [:]
@@ -188,6 +193,44 @@ public actor SMILPlayerActor {
 
     public func getBookStructure() -> [SectionInfo] {
         return bookStructure
+    }
+
+    /// Chapter list plus the playing chapter, read together so a caller cannot
+    /// pair a list with a position from a different book.
+    public func getChapterListing() -> SMILChapterListing {
+        SMILChapterListing(
+            chapters: getChapterSummaries(),
+            currentChapterID: bookStructure[safe: currentSectionIndex]?.id,
+        )
+    }
+
+    /// Narration-free spine items are not selectable, so they are omitted and
+    /// fallback numbering runs over what remains.
+    public func getChapterSummaries() -> [SMILChapterSummary] {
+        bookStructure
+            .filter { !$0.mediaOverlay.isEmpty }
+            .enumerated()
+            .map { offset, section in
+                let start = cachedChapterStartCumSums[section.index] ?? 0
+                let end = section.mediaOverlay.last?.cumSumAtEnd ?? start
+                return SMILChapterSummary(
+                    id: section.id,
+                    title: section.label ?? "Chapter \(offset + 1)",
+                    duration: max(0, end - start),
+                    sectionIndex: section.index,
+                )
+            }
+    }
+
+    public func seekToSection(id: String) async -> Bool {
+        guard let index = findSectionIndex(for: id, in: bookStructure) else { return false }
+        do {
+            try await seekToEntry(sectionIndex: index, entryIndex: 0)
+            return true
+        } catch {
+            debugLog("[SMILPlayerActor] seekToSection failed for \(id): \(error)")
+            return false
+        }
     }
 
     public func getTocEntries() -> [TocEntry] {
@@ -258,6 +301,7 @@ public actor SMILPlayerActor {
         }
 
         let entry = section.mediaOverlay[entryIndex]
+        userSeekCount += 1
         await setCurrentEntry(
             sectionIndex: sectionIndex,
             entryIndex: entryIndex,
@@ -281,6 +325,7 @@ public actor SMILPlayerActor {
         }
 
         let entry = section.mediaOverlay[entryIndex]
+        userSeekCount += 1
         await setCurrentEntry(
             sectionIndex: sectionIndex,
             entryIndex: entryIndex,
@@ -292,32 +337,45 @@ public actor SMILPlayerActor {
     }
 
     public func seekToTotalProgression(_ progression: Double) async -> Bool {
-        guard let (sectionIndex, entryIndex, entry) = findEntryByTotalProgression(progression)
+        guard let (sectionIndex, entryIndex, entry, offset) =
+            findEntryByTotalProgression(progression)
         else {
             return false
         }
 
+        userSeekCount += 1
         await setCurrentEntry(
             sectionIndex: sectionIndex,
             entryIndex: entryIndex,
             audioFile: entry.audioFile,
             beginTime: entry.begin,
             endTime: entry.end,
+            offsetIntoEntry: offset,
         )
         return true
+    }
+
+    /// Seeks to `seconds` measured from the start of the playing section.
+    public func seekWithinCurrentChapter(to seconds: Double) async -> Bool {
+        guard cachedBookTotal > 0, currentSectionIndex < bookStructure.count else { return false }
+        let section = bookStructure[currentSectionIndex]
+        guard let lastEntry = section.mediaOverlay.last else { return false }
+        let start = cachedChapterStartCumSums[section.index] ?? 0
+        let clamped = min(max(seconds, 0), max(0, lastEntry.cumSumAtEnd - start))
+        return await seekToTotalProgression((start + clamped) / cachedBookTotal)
     }
 
     public func findPositionByTotalProgression(_ progression: Double) -> (
         sectionIndex: Int, textId: String
     )? {
-        guard let (sectionIndex, _, entry) = findEntryByTotalProgression(progression) else {
+        guard let (sectionIndex, _, entry, _) = findEntryByTotalProgression(progression) else {
             return nil
         }
         return (sectionIndex, entry.textId)
     }
 
     private func findEntryByTotalProgression(_ progression: Double) -> (
-        sectionIndex: Int, entryIndex: Int, entry: SMILEntry
+        sectionIndex: Int, entryIndex: Int, entry: SMILEntry, offsetIntoEntry: Double
     )? {
         guard !bookStructure.isEmpty else { return nil }
 
@@ -336,34 +394,28 @@ public actor SMILPlayerActor {
             "[SMILPlayerActor] findEntryByTotalProgression: \(progression) -> targetTime \(targetTime)s of \(totalDuration)s"
         )
 
-        for (sectionIndex, section) in bookStructure.enumerated() {
-            for (entryIndex, entry) in section.mediaOverlay.enumerated() {
-                if entry.cumSumAtEnd >= targetTime {
-                    return (sectionIndex, entryIndex, entry)
-                }
-            }
-        }
-
-        return nil
+        guard let match = findEntry(atTotalTime: targetTime, in: bookStructure) else { return nil }
+        let entry = bookStructure[match.sectionIndex].mediaOverlay[match.entryIndex]
+        return (match.sectionIndex, match.entryIndex, entry, match.offsetIntoEntry)
     }
 
     public func skipForward(seconds: Double = 15) async {
-        guard let player = player else { return }
-        let duration = await player.duration
-        let currentTime = await player.currentTime
-        let newTime = min(currentTime + seconds, duration)
-        await player.seek(to: newTime)
-        reconcileEntryFromTime(newTime)
-        await notifyStateChange()
+        await skip(by: seconds)
     }
 
     public func skipBackward(seconds: Double = 15) async {
-        guard let player = player else { return }
-        let currentTime = await player.currentTime
-        let newTime = max(currentTime - seconds, 0)
-        await player.seek(to: newTime)
-        reconcileEntryFromTime(newTime)
-        await notifyStateChange()
+        await skip(by: -seconds)
+    }
+
+    private func skip(by delta: Double) async {
+        guard !bookStructure.isEmpty, cachedBookTotal > 0 else { return }
+        guard let state = await buildCurrentState() else { return }
+        let target = skipTarget(
+            fromBookElapsed: state.bookElapsed,
+            by: delta,
+            bookTotal: cachedBookTotal,
+        )
+        _ = await seekToTotalProgression(target / cachedBookTotal)
     }
 
     public func setPlaybackRate(_ rate: Double) async {
@@ -491,12 +543,15 @@ public actor SMILPlayerActor {
         await StorytellerPlatform.audioPlayerFactory?.deactivateSession()
     }
 
+    /// `offsetIntoEntry` lands partway through the entry; callers navigating to
+    /// an entry leave it at zero to start from its beginning.
     private func setCurrentEntry(
         sectionIndex: Int,
         entryIndex: Int,
         audioFile: String,
         beginTime: Double,
         endTime: Double,
+        offsetIntoEntry: Double = 0,
     ) async {
         debugLog(
             "[SMILPlayerActor] setCurrentEntry: section=\(sectionIndex), entry=\(entryIndex), file=\(audioFile)"
@@ -507,7 +562,14 @@ public actor SMILPlayerActor {
         currentEntryBeginTime = beginTime
         currentEntryEndTime = endTime
 
-        if audioFile != currentAudioFile {
+        // Loading suspends, and actors are reentrant, so the update tick could
+        // otherwise compare the new entry's end against the old file's position
+        // and auto-advance over the position being set here.
+        advanceSuppressionCount += 1
+        defer { advanceSuppressionCount -= 1 }
+
+        let reloadedAudioFile = audioFile != currentAudioFile
+        if reloadedAudioFile {
             currentAudioFile = audioFile
             await loadAudioFile(audioFile)
         }
@@ -515,14 +577,20 @@ public actor SMILPlayerActor {
         if let player = player {
             let duration = await player.duration
             let timeBefore = await player.currentTime
+            let target = beginTime + min(max(offsetIntoEntry, 0), max(0, endTime - beginTime))
             debugLog(
-                "[SMILPlayerActor] setCurrentEntry: BEFORE seek - currentTime=\(timeBefore), duration=\(duration), target=\(beginTime)"
+                "[SMILPlayerActor] setCurrentEntry: BEFORE seek - currentTime=\(timeBefore), duration=\(duration), target=\(target)"
             )
-            await player.seek(to: beginTime)
+            await player.seek(to: target)
             let timeAfter = await player.currentTime
             debugLog(
                 "[SMILPlayerActor] setCurrentEntry: AFTER seek - currentTime=\(timeAfter)"
             )
+            // Loading leaves the new file paused, so a seek that crosses an
+            // audio file has to restart it or the timer counts against silence.
+            if reloadedAudioFile && isPlaying {
+                await player.play()
+            }
         }
 
         await notifyStateChange()
@@ -702,12 +770,12 @@ public actor SMILPlayerActor {
     }
 
     private func advanceToNextEntry() async {
-        guard !isAdvancing else {
+        guard advanceSuppressionCount == 0 else {
             debugLog("[SMILPlayerActor] advanceToNextEntry already in progress, skipping")
             return
         }
-        isAdvancing = true
-        defer { isAdvancing = false }
+        advanceSuppressionCount += 1
+        defer { advanceSuppressionCount -= 1 }
 
         guard currentSectionIndex < bookStructure.count else {
             debugLog(
@@ -881,6 +949,7 @@ public actor SMILPlayerActor {
             playbackRate: playbackRate,
             volume: volume,
             bookID: bookID,
+            userSeekCount: userSeekCount,
         )
     }
 

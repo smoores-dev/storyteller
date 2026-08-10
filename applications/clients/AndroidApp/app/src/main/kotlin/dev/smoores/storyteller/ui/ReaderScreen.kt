@@ -9,6 +9,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -27,6 +28,8 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.browser.customtabs.CustomTabsServiceConnection
 import androidx.browser.customtabs.CustomTabsSession
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -48,10 +51,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -65,7 +72,16 @@ import androidx.webkit.WebViewClientCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.DockCustomization
+import dev.smoores.storyteller.model.MenuBarCustomization
+import dev.smoores.storyteller.model.MiniPlayerCustomization
+import dev.smoores.storyteller.model.MiniPlayerProgressScope
+import dev.smoores.storyteller.model.PlaybackModes
+import dev.smoores.storyteller.model.PlayerComplication
 import dev.smoores.storyteller.model.ReaderDisplaySettings
+import dev.smoores.storyteller.model.customizationUpdateJson
+import dev.smoores.storyteller.model.hasActiveComplication
+import dev.smoores.storyteller.platform.EinkDisplay
 import dev.smoores.storyteller.model.ReaderOpenResult
 import dev.smoores.storyteller.model.ReaderOverlayOptions
 import dev.smoores.storyteller.model.ReaderSearchState
@@ -96,9 +112,10 @@ internal fun ReaderScreen(
     val context = LocalContext.current
     val view = LocalView.current
     val isDark = isSystemInDarkTheme()
+    val eink = LocalEink.current
 
     val webView = remember(book.id, mode) {
-        createReaderWebView(context, readerMessageFromJS)
+        createReaderWebView(UiScale.unscaledContext(context), readerMessageFromJS)
     }
 
     var displaySettings by remember(book.id, mode) { mutableStateOf(ReaderDisplaySettings()) }
@@ -106,11 +123,15 @@ internal fun ReaderScreen(
     var chromeVisible by remember(book.id, mode) { mutableStateOf(true) }
     var lastToggleCount by remember(book.id, mode) { mutableIntStateOf(0) }
     var showToc by remember { mutableStateOf(false) }
-    var showSettings by remember { mutableStateOf(false) }
     var showManageThemes by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var showBookmarks by remember { mutableStateOf(false) }
-    var showDisplayOptions by remember { mutableStateOf(false) }
+    var showSleepTimer by remember { mutableStateOf(false) }
+    var showReadaloudThemeEditor by remember { mutableStateOf(false) }
+    var customizeCard by rememberSaveable { mutableStateOf<CustomizeCard?>(null) }
+    // Session-only, like OrientationLock.shared on iOS.
+    var isOrientationLocked by rememberSaveable(book.id, mode) { mutableStateOf(false) }
+    val sessionStartMillis = remember(book.id, mode) { System.currentTimeMillis() }
 
     DisposableEffect(webView) {
         registerWebView(webView, webView)
@@ -155,6 +176,39 @@ internal fun ReaderScreen(
         view.keepScreenOn = readerState?.keepScreenOn == true
     }
 
+    // Page turns leave ghosting in the system's default fast mode; ask the
+    // firmware for a full-quality waveform after the WebView repaints. Keyed
+    // off page numbers so audio narration playback does not
+    // trigger a refresh storm.
+    LaunchedEffect(readerState?.chapterCurrentPage, readerState?.selectedChapterId) {
+        if (!eink.optimizeRefresh) return@LaunchedEffect
+        if (readerState?.chapterCurrentPage == null) return@LaunchedEffect
+        EinkDisplay.fullQualityRefresh(webView)
+    }
+
+    LaunchedEffect(isOrientationLocked) {
+        val activity = context.findActivity() ?: return@LaunchedEffect
+        activity.requestedOrientation = if (isOrientationLocked) {
+            ActivityInfo.SCREEN_ORIENTATION_LOCKED
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            context.findActivity()?.requestedOrientation =
+                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
+    val coverBitmap by produceState<ImageBitmap?>(
+        initialValue = cachedCover(book, false)?.asImageBitmap(),
+        book.id,
+        coverRevision,
+    ) {
+        cover(book, false, 240, 240)?.let { value = it.asImageBitmap() }
+    }
+
     val toggleCount = readerState?.overlayToggleCount ?: 0
     LaunchedEffect(toggleCount) {
         if (toggleCount > lastToggleCount) {
@@ -182,35 +236,116 @@ internal fun ReaderScreen(
 
     val overlayOptions = readerState?.overlay ?: ReaderOverlayOptions()
     val hasAudioNarration = readerState?.hasAudioNarration == true
+    val miniConfig = readerState?.miniPlayer ?: MiniPlayerCustomization()
+    val dockConfig = readerState?.dock ?: DockCustomization()
+    val menuBarConfig = readerState?.menuBar ?: MenuBarCustomization()
+    val playbackModes = readerState?.playbackModes ?: PlaybackModes()
+
     // An always-visible mini player owns the bottom, so the stats move up.
     val statsAtTop = hasAudioNarration && overlayOptions.alwaysShowMiniPlayer
     val miniPlayerVisible = hasAudioNarration &&
         (chromeVisible || overlayOptions.alwaysShowMiniPlayer)
-    val overlayItemsEnabled = overlayOptions.showProgress || overlayOptions.showPageNumber ||
-        (
-            hasAudioNarration && (
-                overlayOptions.showTimeRemainingInBook ||
-                    overlayOptions.showTimeRemainingInChapter ||
-                    overlayOptions.showSkipBackward ||
-                    overlayOptions.showPlayPause ||
-                    overlayOptions.showSkipForward
-                )
-            )
-    val overlayControlsEnabled = hasAudioNarration && (
-        overlayOptions.showSkipBackward ||
-            overlayOptions.showPlayPause ||
-            overlayOptions.showSkipForward
-        )
+    fun dockSlotsActive(slots: List<PlayerComplication>): Boolean = slots.any {
+        it != PlayerComplication.NONE && (hasAudioNarration || !it.requiresAudio)
+    }
+    val hasEnabledDockItems = dockSlotsActive(
+        dockConfig.leadingSlots + dockConfig.trailingSlots + dockConfig.centerSlots,
+    )
+    // Sizing must ignore transient visibility so the band height stays stable.
+    val dockControlsEnabled = dockSlotsActive(dockConfig.centerSlots)
+    val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val reservedBottomInset = when {
         statsAtTop -> readerAudioCardCompactHeight(
-            showStats = overlayOptions.showMiniPlayerStats,
-            navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+            config = miniConfig,
+            hasAudioNarration = hasAudioNarration,
+            navInset = navInset,
         )
-        overlayItemsEnabled -> readerOverlayReservedInset(
-            withPlaybackControls = overlayControlsEnabled,
+        hasEnabledDockItems -> DockMetrics.reservedBottomInset(
+            withPlaybackControls = dockControlsEnabled,
         )
         else -> 0.dp
     }
+
+    val tocIndex = selectedTocIndex(
+        readerState?.toc.orEmpty(),
+        readerState?.selectedChapterId,
+    )
+    val chapterLabel = tocIndex?.let { readerState?.toc?.getOrNull(it)?.label }
+    val displayModel = readerDisplayModel(
+        book = book,
+        readerState = readerState,
+        chapterLabel = chapterLabel,
+        cover = coverBitmap,
+        sessionStartMillis = sessionStartMillis,
+        scrollingMode = displaySettings.scrollingMode,
+    )
+
+    fun sendCustomization(
+        miniPlayer: MiniPlayerCustomization? = null,
+        dock: DockCustomization? = null,
+        menuBar: MenuBarCustomization? = null,
+        modes: PlaybackModes? = null,
+    ) {
+        readerControl(
+            "updateCustomization",
+            0.0,
+            customizationUpdateJson(miniPlayer, dock, menuBar, modes),
+        )
+    }
+
+    fun toggleScrollingMode() {
+        val updated = displaySettings.copy(scrollingMode = !displaySettings.scrollingMode)
+        displaySettings = updated
+        readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
+    }
+
+    // "always" is only reachable through the freeBrowseLock complication.
+    fun toggleFreeBrowse() {
+        sendCustomization(
+            modes = playbackModes.copy(
+                freeBrowseMode = if (playbackModes.freeBrowseMode == "always") {
+                    "never"
+                } else {
+                    "always"
+                },
+            ),
+        )
+    }
+
+    val playerActions = PlayerActions(
+        onPlayPause = { readerControl("togglePlayPause", 0.0, "") },
+        onSkipBackward = { readerControl("prevSentence", 0.0, "") },
+        onSkipForward = { readerControl("nextSentence", 0.0, "") },
+        onRateChange = { readerControl("setRate", it, "") },
+        onSeek = { readerControl("seekToFraction", it, "") },
+        onLeadingTap = {
+            sendCustomization(
+                miniPlayer = miniConfig.copy(cycleShowingSecond = !miniConfig.cycleShowingSecond),
+            )
+        },
+        onOpenChapters = { showToc = true },
+        onOpenBookmarks = { showBookmarks = true },
+        onOpenSearch = { showSearch = true },
+        onOpenTextSettings = { customizeCard = CustomizeCard.TEXT_LAYOUT },
+        onOpenSleepTimer = { showSleepTimer = true },
+        onToggleMirror = {
+            sendCustomization(miniPlayer = miniConfig.copy(mirrored = !miniConfig.mirrored))
+        },
+        onToggleScrollingMode = { toggleScrollingMode() },
+        onToggleFreeBrowse = { toggleFreeBrowse() },
+        onToggleOrientationLock = { isOrientationLocked = !isOrientationLocked },
+    )
+    // Port of the EbookPlayerMenuBar override: an active timer cancels
+    // instead of reopening the picker.
+    val menuBarActions = playerActions.copy(
+        onOpenSleepTimer = {
+            if (readerState?.sleepTimerActive == true) {
+                readerControl("cancelSleepTimer", 0.0, "")
+            } else {
+                showSleepTimer = true
+            }
+        },
+    )
 
     Box(modifier = modifier.fillMaxSize().background(chromeBg)) {
         AndroidView(
@@ -226,62 +361,84 @@ internal fun ReaderScreen(
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
-        if (overlayItemsEnabled) {
-            ReaderBottomOverlay(
-                statsVisible = !chromeVisible,
-                hasAudioNarration = hasAudioNarration,
-                isPlaying = readerState?.isPlaying == true,
-                options = overlayOptions,
-                positionAtTop = statsAtTop,
-                miniPlayerVisible = miniPlayerVisible,
-                bookFraction = readerState?.bookFraction,
-                currentPage = readerState?.chapterCurrentPage,
-                totalPages = readerState?.chapterTotalPages,
-                bookTimeRemaining = readerState?.bookTimeRemaining,
-                chapterTimeRemaining = readerState?.chapterTimeRemaining,
+        // The dock and top bar toggle together, like the iOS overlay showing
+        // only while the top bar is hidden.
+        if (hasEnabledDockItems && !chromeVisible) {
+            ReaderDock(
+                leadingSlots = dockConfig.leadingSlots,
+                trailingSlots = dockConfig.trailingSlots,
+                centerSlots = dockConfig.centerSlots,
+                transparency = dockConfig.transparency,
+                display = displayModel,
+                actions = playerActions,
                 backgroundColor = chromeBg,
-                readerControl = readerControl,
+                contentColor = chromeFg,
+                positionAtTop = statsAtTop,
+                mirrored = miniConfig.mirrored,
+                isOrientationLocked = isOrientationLocked,
                 modifier = Modifier.align(
                     if (statsAtTop) Alignment.TopCenter else Alignment.BottomCenter
                 ),
             )
         }
 
-        ReaderProgressHairline(
-            fraction = readerState?.chapterFraction ?: 0.0,
-            isDark = isDark,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
-
-        AnimatedVisibility(
-            visible = chromeVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter),
-        ) {
-            ReaderTopBar(
-                backgroundColor = chromeBg,
-                contentColor = chromeFg,
-                onBack = navigateBack,
-                onShowSearch = { showSearch = true },
-                onShowBookmarks = { showBookmarks = true },
-                onShowToc = { showToc = true },
-                onShowSettings = { showSettings = true },
-                onShowDisplayOptions = { showDisplayOptions = true },
+        // Port of EbookPlayerView.playbackProgressBar: the visible chrome's
+        // trio decides enablement, scope, and thickness.
+        val progressOnMiniPlayer = miniPlayerVisible
+        val progressEnabled = if (progressOnMiniPlayer) {
+            miniConfig.progressIndicator
+        } else {
+            dockConfig.progressIndicator
+        }
+        if (progressEnabled) {
+            val progressScope = if (progressOnMiniPlayer) {
+                miniConfig.progressScope
+            } else {
+                dockConfig.progressScope
+            }
+            val progressThickness = if (progressOnMiniPlayer) {
+                miniConfig.progressThickness
+            } else {
+                dockConfig.progressThickness
+            }
+            DockProgressLine(
+                progress = if (progressScope == MiniPlayerProgressScope.BOOK) {
+                    readerState?.bookFraction ?: 0.0
+                } else {
+                    readerState?.chapterFraction ?: 0.0
+                },
+                thickness = progressThickness.dp,
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
 
-        val tocIndex = selectedTocIndex(
-            readerState?.toc.orEmpty(),
-            readerState?.selectedChapterId,
-        )
+        AnimatedVisibility(
+            visible = chromeVisible,
+            enter = if (eink.reduceAnimations) EnterTransition.None else fadeIn(),
+            exit = if (eink.reduceAnimations) ExitTransition.None else fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
+            ReaderMenuBar(
+                backgroundColor = chromeBg,
+                contentColor = chromeFg,
+                menuBarSlots = menuBarConfig.slots,
+                display = displayModel,
+                actions = menuBarActions,
+                isOrientationLocked = isOrientationLocked,
+                onBack = navigateBack,
+                onShowCustomize = { customizeCard = it },
+            )
+        }
+
         ReaderAudioCard(
-            visible = hasAudioNarration &&
-                (chromeVisible || overlayOptions.alwaysShowMiniPlayer),
+            visible = miniPlayerVisible,
             book = book,
             readerState = readerState,
-            chapterLabel = tocIndex?.let { readerState?.toc?.getOrNull(it)?.label },
-            showStats = overlayOptions.showMiniPlayerStats,
+            chapterLabel = chapterLabel,
+            config = miniConfig,
+            display = displayModel,
+            actions = playerActions,
+            isOrientationLocked = isOrientationLocked,
             backgroundColor = chromeBg,
             contentColor = chromeFg,
             readerControl = readerControl,
@@ -415,43 +572,187 @@ internal fun ReaderScreen(
         )
     }
 
-    if (showSettings) {
-        ReaderSettingsSheet(
-            settings = displaySettings,
-            themes = readerState?.themes.orEmpty(),
-            selectedLightThemeId = readerState?.selectedLightThemeId,
-            selectedDarkThemeId = readerState?.selectedDarkThemeId,
-            onChange = { updated, commit ->
-                displaySettings = updated
-                if (commit) {
-                    readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
-                }
+    if (showSleepTimer) {
+        SleepTimerDialog(
+            dismiss = { showSleepTimer = false },
+            selectDuration = {
+                showSleepTimer = false
+                readerControl("startSleepTimer", it, "duration")
             },
-            onReset = {
-                readerControl("resetReaderSettings", 0.0, "")
-                settingsInitialized = false
+            selectEndOfChapter = {
+                showSleepTimer = false
+                readerControl("startSleepTimer", 0.0, "endOfChapter")
             },
-            onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
-            onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
-            onShowManageThemes = { showManageThemes = true },
-            onDismiss = { showSettings = false },
         )
     }
 
-    if (showDisplayOptions) {
-        ReaderDisplayOptionsSheet(
-            options = readerState?.overlay ?: ReaderOverlayOptions(),
-            lockViewToAudio = displaySettings.lockViewToAudio,
-            hasAudioNarration = readerState?.hasAudioNarration == true,
-            onChangeOptions = {
-                readerControl("updateOverlayOptions", 0.0, it.toUpdateJson())
-            },
-            onChangeLockViewToAudio = { locked ->
-                displaySettings = displaySettings.copy(lockViewToAudio = locked)
-                readerControl("updateReaderSettings", 0.0, displaySettings.toUpdateJson())
-            },
-            onDismiss = { showDisplayOptions = false },
-        )
+    val state = readerState
+    if (state != null) {
+        val activeTheme = state.themes.firstOrNull { it.id == state.activeThemeId }
+            ?: state.themes.firstOrNull()
+        when (customizeCard) {
+            CustomizeCard.TEXT_LAYOUT -> TextLayoutCustomizeCard(
+                settings = displaySettings,
+                themes = state.themes,
+                selectedLightThemeId = state.selectedLightThemeId,
+                selectedDarkThemeId = state.selectedDarkThemeId,
+                onPreview = { displaySettings = it },
+                onCommit = {
+                    displaySettings = it
+                    readerControl("updateReaderSettings", 0.0, it.toUpdateJson())
+                },
+                onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
+                onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
+                onManageThemes = { showManageThemes = true },
+                onReset = {
+                    readerControl("resetReaderSettings", 0.0, "")
+                    settingsInitialized = false
+                },
+                onDone = { customizeCard = null },
+                activeThemeBackground = chromeBg,
+                activeThemeForeground = chromeFg,
+            )
+            CustomizeCard.READALOUD -> if (activeTheme != null) {
+                ReadaloudHighlightCard(
+                    hasAudioNarration = hasAudioNarration,
+                    experimentalSettings = state.experimentalSettings,
+                    activeTheme = activeTheme,
+                    dimOthers = displaySettings.readaloudDimOthers,
+                    dimAmount = displaySettings.readaloudDimAmount,
+                    highlightVisibility = playbackModes.readaloudHighlightVisibility,
+                    doubleTapPlay = playbackModes.doubleTapPlay,
+                    freeBrowseMode = playbackModes.freeBrowseMode,
+                    playbackSpeed = state.playbackRate,
+                    onUpdateFocus = { dimOthers, dimAmount ->
+                        val updated = displaySettings.copy(
+                            readaloudDimOthers = dimOthers,
+                            readaloudDimAmount = dimAmount,
+                        )
+                        displaySettings = updated
+                        readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
+                    },
+                    onUpdateModes = { visibility, doubleTap, freeBrowse ->
+                        sendCustomization(
+                            modes = PlaybackModes(
+                                freeBrowseMode = freeBrowse,
+                                readaloudHighlightVisibility = visibility,
+                                doubleTapPlay = doubleTap,
+                            ),
+                        )
+                    },
+                    onUpdatePlaybackSpeed = { readerControl("setRate", it, "") },
+                    onEditThemeReadaloud = { showReadaloudThemeEditor = true },
+                    onReset = {
+                        val updated = displaySettings.copy(
+                            readaloudDimOthers = false,
+                            readaloudDimAmount = 0.5,
+                        )
+                        displaySettings = updated
+                        readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
+                        sendCustomization(modes = PlaybackModes())
+                        readerControl("setRate", 1.0, "")
+                    },
+                    onDone = { customizeCard = null },
+                )
+            }
+            CustomizeCard.MENU_BAR -> MenuBarCustomizeCard(
+                menuBar = state.menuBar,
+                hasAudioNarration = hasAudioNarration,
+                backgroundColor = chromeBg,
+                foregroundColor = chromeFg,
+                onUpdateMenuBar = { sendCustomization(menuBar = it) },
+                onReset = { sendCustomization(menuBar = MenuBarCustomization()) },
+                onDone = { customizeCard = null },
+            )
+            CustomizeCard.MINIPLAYER -> MiniPlayerCustomizeCard(
+                miniPlayer = state.miniPlayer,
+                dock = state.dock,
+                alwaysShowMiniPlayer = overlayOptions.alwaysShowMiniPlayer,
+                hasAudioNarration = hasAudioNarration,
+                isScrollingMode = displaySettings.scrollingMode,
+                freeBrowseMode = playbackModes.freeBrowseMode,
+                isOrientationLocked = isOrientationLocked,
+                backgroundColor = chromeBg,
+                foregroundColor = chromeFg,
+                onUpdateMiniPlayer = { sendCustomization(miniPlayer = it) },
+                onUpdateAlwaysShow = {
+                    readerControl(
+                        "updateOverlayOptions",
+                        0.0,
+                        overlayOptions.copy(alwaysShowMiniPlayer = it).toUpdateJson(),
+                    )
+                },
+                onToggleScrollingMode = { toggleScrollingMode() },
+                onToggleFreeBrowse = { toggleFreeBrowse() },
+                onToggleOrientationLock = { isOrientationLocked = !isOrientationLocked },
+                onReset = {
+                    // iOS reset also restores kDefaultAlwaysShowMiniPlayer.
+                    sendCustomization(miniPlayer = MiniPlayerCustomization())
+                    readerControl(
+                        "updateOverlayOptions",
+                        0.0,
+                        overlayOptions.copy(alwaysShowMiniPlayer = false).toUpdateJson(),
+                    )
+                },
+                onDone = { customizeCard = null },
+            )
+            CustomizeCard.DOCK -> DockCustomizeCard(
+                dock = state.dock,
+                miniPlayer = state.miniPlayer,
+                alwaysShowMiniPlayer = overlayOptions.alwaysShowMiniPlayer,
+                hasAudioNarration = hasAudioNarration,
+                isScrollingMode = displaySettings.scrollingMode,
+                freeBrowseMode = playbackModes.freeBrowseMode,
+                isOrientationLocked = isOrientationLocked,
+                backgroundColor = chromeBg,
+                foregroundColor = chromeFg,
+                onUpdateDock = { sendCustomization(dock = it) },
+                onToggleCycleShowingSecond = {
+                    sendCustomization(
+                        miniPlayer = state.miniPlayer.copy(
+                            cycleShowingSecond = !state.miniPlayer.cycleShowingSecond,
+                        ),
+                    )
+                },
+                onToggleMirror = {
+                    sendCustomization(
+                        miniPlayer = state.miniPlayer.copy(
+                            mirrored = !state.miniPlayer.mirrored,
+                        ),
+                    )
+                },
+                onToggleScrollingMode = { toggleScrollingMode() },
+                onToggleFreeBrowse = { toggleFreeBrowse() },
+                onToggleOrientationLock = { isOrientationLocked = !isOrientationLocked },
+                onReset = { sendCustomization(dock = DockCustomization()) },
+                onDone = { customizeCard = null },
+            )
+            CustomizeCard.THEME -> ThemeCustomizeCard(
+                themes = state.themes,
+                selectedLightThemeId = state.selectedLightThemeId,
+                selectedDarkThemeId = state.selectedDarkThemeId,
+                onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
+                onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
+                onSaveTheme = { readerControl("saveTheme", 0.0, it) },
+                onDeleteTheme = { readerControl("deleteTheme", 0.0, it) },
+                onResetTheme = { readerControl("resetTheme", 0.0, it) },
+                onDone = { customizeCard = null },
+            )
+            null -> {}
+        }
+        if (showReadaloudThemeEditor && activeTheme != null) {
+            ThemeEditorDialog(
+                initial = activeTheme,
+                existingId = activeTheme.id,
+                initialTab = 1,
+                onSave = {
+                    readerControl("saveTheme", 0.0, it)
+                    showReadaloudThemeEditor = false
+                },
+                onDelete = null,
+                onDismiss = { showReadaloudThemeEditor = false },
+            )
+        }
     }
 
     if (showManageThemes) {
@@ -468,6 +769,43 @@ internal fun ReaderScreen(
         )
     }
 }
+
+// Single adapter from published reader state to the complication display
+// snapshot, mirroring playerDisplayModel in EbookPlayerView.swift.
+private fun readerDisplayModel(
+    book: Book,
+    readerState: ReaderState?,
+    chapterLabel: String?,
+    cover: ImageBitmap?,
+    sessionStartMillis: Long,
+    scrollingMode: Boolean,
+): PlayerDisplayModel = PlayerDisplayModel(
+    bookTitle = readerState?.title?.takeIf(String::isNotBlank) ?: book.title,
+    chapterTitle = chapterLabel,
+    authorName = readerState?.author?.takeIf(String::isNotBlank) ?: book.authors,
+    cover = cover,
+    isPlaying = readerState?.isPlaying == true,
+    playbackRate = readerState?.playbackRate ?: 1.0,
+    chapterProgress = readerState?.chapterFraction ?: 0.0,
+    chapterElapsedSeconds = readerState?.chapterElapsedSeconds,
+    chapterTotalSeconds = readerState?.chapterTotalSeconds,
+    bookTimeRemaining = readerState?.bookTimeRemaining,
+    bookFraction = readerState?.bookFraction,
+    currentPage = readerState?.chapterCurrentPage,
+    totalPages = readerState?.chapterTotalPages,
+    chapterIndex = readerState?.selectedChapterId,
+    chapterCount = readerState?.chapterCount,
+    sleepTimerRemaining = if (readerState?.sleepTimerActive == true) {
+        readerState.sleepTimerRemaining
+    } else {
+        null
+    },
+    sleepTimerEndOfChapter = readerState?.sleepTimerEndOfChapter == true,
+    sessionStartMillis = sessionStartMillis,
+    hasAudioNarration = readerState?.hasAudioNarration == true,
+    isScrollingMode = scrollingMode,
+    freeBrowseMode = readerState?.playbackModes?.freeBrowseMode ?: "never",
+)
 
 @Composable
 private fun SystemBarsVisibility(visible: Boolean) {

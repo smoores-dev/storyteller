@@ -18,6 +18,7 @@ public func bootstrapApplePlatformDefaultsIfNeeded() {
         folderWatcher: applePlatformFolderWatcher(),
         applicationStorage: AppleApplicationStorageProvider(),
         liveSyncDiscovery: liveSyncDiscovery(),
+        audioRoute: AppleAudioRouteQuery(),
     )
 }
 

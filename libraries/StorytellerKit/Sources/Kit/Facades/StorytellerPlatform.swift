@@ -18,6 +18,7 @@ public enum StorytellerPlatform {
         (any ApplicationStorageProviding)?
     public private(set) nonisolated(unsafe) static var liveSyncDiscovery:
         (any LiveSyncPeerDiscovering)?
+    public private(set) nonisolated(unsafe) static var audioRoute: (any AudioRouteQuerying)?
     /// True once bootstrap has run. Entry points use this to install platform
     /// defaults only when the app shell has not already chosen its own.
     public private(set) nonisolated(unsafe) static var isBootstrapped = false
@@ -31,6 +32,7 @@ public enum StorytellerPlatform {
         folderWatcher: (any FolderWatching)? = nil,
         applicationStorage: (any ApplicationStorageProviding)? = nil,
         liveSyncDiscovery: (any LiveSyncPeerDiscovering)? = nil,
+        audioRoute: (any AudioRouteQuerying)? = nil,
     ) {
         Self.audioPlayerFactory = audioPlayerFactory
         Self.nowPlaying = nowPlaying
@@ -40,6 +42,7 @@ public enum StorytellerPlatform {
         Self.folderWatcher = folderWatcher
         Self.applicationStorage = applicationStorage
         Self.liveSyncDiscovery = liveSyncDiscovery
+        Self.audioRoute = audioRoute
         Self.isBootstrapped = true
     }
 }

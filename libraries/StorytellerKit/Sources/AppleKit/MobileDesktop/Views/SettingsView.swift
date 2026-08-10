@@ -168,9 +168,12 @@ public struct SettingsView: View {
                     fontFamily: newValue.reading.fontFamily,
                     lineSpacing: newValue.reading.lineSpacing,
                     marginLeftRight: newValue.reading.marginLeftRight,
-                    marginTopBottom: newValue.reading.marginTopBottom,
+                    marginTop: newValue.reading.marginTop,
+                    marginBottom: newValue.reading.marginBottom,
                     wordSpacing: newValue.reading.wordSpacing,
                     letterSpacing: newValue.reading.letterSpacing,
+                    paragraphSpacing: newValue.reading.paragraphSpacing,
+                    firstLineIndent: newValue.reading.firstLineIndent,
                     textAlignment: newValue.reading.textAlignment,
                     highlightColor: .some(newValue.reading.highlightColor),
                     highlightThickness: newValue.reading.highlightThickness,
@@ -188,7 +191,7 @@ public struct SettingsView: View {
                     showTimeRemainingInBook: newValue.readingBar.showTimeRemainingInBook,
                     showTimeRemainingInChapter: newValue.readingBar.showTimeRemainingInChapter,
                     showPageNumber: newValue.readingBar.showPageNumber,
-                    overlayTransparency: newValue.readingBar.overlayTransparency,
+                    dockTransparency: newValue.readingBar.dockTransparency,
                     alwaysShowMiniPlayer: newValue.readingBar.alwaysShowMiniPlayer,
                     progressSyncIntervalSeconds: newValue.sync.progressSyncIntervalSeconds,
                     metadataRefreshIntervalSeconds: newValue.sync.metadataRefreshIntervalSeconds,
@@ -200,6 +203,7 @@ public struct SettingsView: View {
                     colorMode: newValue.library.colorMode,
                     colorIntensity: newValue.library.colorIntensity,
                     doubleCoverAlignment: newValue.library.doubleCoverAlignment,
+                    experimentalSettings: newValue.library.experimentalSettings,
                     userHighlightColor1: newValue.reading.userHighlightColor1,
                     userHighlightColor2: newValue.reading.userHighlightColor2,
                     userHighlightColor3: newValue.reading.userHighlightColor3,
@@ -258,7 +262,7 @@ extension SettingsView {
 
                 MacReadingBarSettingsView(readingBar: $config.readingBar)
                     .tabItem {
-                        Label("Overlay Stats", systemImage: "chart.bar")
+                        Label("Dock Stats", systemImage: "chart.bar")
                     }
                     .tag(SettingsTab.readingBar)
 
@@ -300,9 +304,12 @@ extension SettingsView {
         config.reading.fontFamily = kDefaultFontFamily
         config.reading.lineSpacing = kDefaultLineSpacing
         config.reading.marginLeftRight = kDefaultMarginLeftRightMac
-        config.reading.marginTopBottom = kDefaultMarginTopBottom
+        config.reading.marginTop = kDefaultMarginTop
+        config.reading.marginBottom = kDefaultMarginBottom
         config.reading.wordSpacing = kDefaultWordSpacing
         config.reading.letterSpacing = kDefaultLetterSpacing
+        config.reading.paragraphSpacing = kDefaultParagraphSpacing
+        config.reading.firstLineIndent = kDefaultFirstLineIndent
         config.reading.textAlignment = kDefaultTextAlignment
         config.reading.highlightColor = nil
         config.reading.highlightThickness = kDefaultHighlightThickness
@@ -426,6 +433,10 @@ extension SettingsView {
                         Label("Debug Log", systemImage: "doc.text")
                     }
                 }
+
+                Section {
+                    Toggle("Enable Experimental Settings", isOn: $config.library.experimentalSettings)
+                }
             }
             .navigationTitle("Settings")
         }
@@ -546,7 +557,6 @@ private struct MacGeneralSettingsView: View {
                                         let index = indexForInterval(
                                             sync.progressSyncIntervalSeconds
                                         )
-                                        //debugLog(.settingsView, "Progress Sync GET - current value: \(sync.progressSyncIntervalSeconds)s, index: \(index)")
                                         return index
                                     },
                                     set: { newIndex in
@@ -577,7 +587,6 @@ private struct MacGeneralSettingsView: View {
                                         let index = indexForInterval(
                                             sync.metadataRefreshIntervalSeconds
                                         )
-                                        //debugLog(.settingsView, "Metadata Refresh GET - current value: \(sync.metadataRefreshIntervalSeconds)s, index: \(index)")
                                         return index
                                     },
                                     set: { newIndex in
@@ -720,11 +729,11 @@ private struct MacReaderSettingsView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private func isCustomFont(_ fontFamily: String) -> Bool {
-        !["System Default", "serif", "sans-serif", "monospace"].contains(fontFamily)
+        !builtInFonts.contains(fontFamily)
     }
 
     private var builtInFonts: [String] {
-        ["System Default", "serif", "sans-serif", "monospace"]
+        CustomFontsActor.bundledFamilies
     }
 
     var body: some View {
@@ -766,10 +775,9 @@ private struct MacReaderSettingsView: View {
                     label("Font")
                     HStack(spacing: 12) {
                         Picker("", selection: $reading.fontFamily) {
-                            Text("System Default").tag("System Default")
-                            Text("Serif").tag("serif")
-                            Text("Sans-Serif").tag("sans-serif")
-                            Text("Monospace").tag("monospace")
+                            ForEach(CustomFontsActor.bundledFamilies, id: \.self) { family in
+                                Text(family).tag(family)
+                            }
 
                             if !customFamilies.isEmpty {
                                 Divider()
@@ -822,9 +830,19 @@ private struct MacReaderSettingsView: View {
                 }
 
                 GridRow {
-                    label("Margin (Top/Bottom)")
+                    label("Margin (Top)")
                     MacSliderControl(
-                        value: $reading.marginTopBottom,
+                        value: $reading.marginTop,
+                        range: 0...30,
+                        step: 1,
+                        formatter: { String(format: "%.0f%%", $0) },
+                    )
+                }
+
+                GridRow {
+                    label("Margin (Bottom)")
+                    MacSliderControl(
+                        value: $reading.marginBottom,
                         range: 0...30,
                         step: 1,
                         formatter: { String(format: "%.0f%%", $0) },
@@ -1204,6 +1222,10 @@ private struct MacManageThemesView: View {
             highlightColor: source.highlightColor,
             highlightThickness: source.highlightThickness,
             readaloudHighlightMode: source.readaloudHighlightMode,
+            readaloudHighlightFade: source.readaloudHighlightFade,
+            readaloudTextItalic: source.readaloudTextItalic,
+            readaloudTextBold: source.readaloudTextBold,
+            readaloudUnderlineStyle: source.readaloudUnderlineStyle,
             userHighlightColor1: source.userHighlightColor1,
             userHighlightColor2: source.userHighlightColor2,
             userHighlightColor3: source.userHighlightColor3,
@@ -1669,7 +1691,7 @@ private struct CustomFontManagerView: View {
     private func deleteFamily(_ family: CustomFontFamily) {
         Task {
             if selectedFont == family.name {
-                selectedFont = "System Default"
+                selectedFont = kDefaultFontFamily
             }
             try? await CustomFontsActor.shared.deleteFamily(family)
             await MainActor.run {
@@ -1686,7 +1708,7 @@ private struct CustomFontManagerView: View {
                     customFamilies[familyIndex].variants.removeAll { $0.id == variant.id }
                     if customFamilies[familyIndex].variants.isEmpty {
                         if selectedFont == family.name {
-                            selectedFont = "System Default"
+                            selectedFont = kDefaultFontFamily
                         }
                         customFamilies.remove(at: familyIndex)
                     }
@@ -1702,13 +1724,13 @@ private struct MacReadingBarSettingsView: View {
     var body: some View {
         MacSettingsContainer(tab: .readingBar) {
             VStack(alignment: .leading, spacing: 18) {
-                Toggle("Enable Overlay Stats", isOn: $readingBar.enabled)
+                Toggle("Enable Dock Stats", isOn: $readingBar.enabled)
                     .font(.headline)
 
                 Divider()
 
                 Group {
-                    DebouncedOpacitySlider(value: $readingBar.overlayTransparency)
+                    DebouncedOpacitySlider(value: $readingBar.dockTransparency)
 
                     Toggle("Show Player Controls", isOn: $readingBar.showPlayerControls)
                     Toggle("Show Progress Bar", isOn: $readingBar.showProgressBar)

@@ -5,39 +5,48 @@ import UniformTypeIdentifiers
 #if os(iOS)
 struct EbookPlayerSettings: View {
     @Bindable var settingsVM: SettingsViewModel
-    let hasAudioNarration: Bool
     @Environment(\.colorScheme) private var colorScheme
-
-    let onDismiss: (() -> Void)?
 
     @State private var fontSizeInput: String = "20"
     @State private var customFamilies: [CustomFontFamily] = []
     @State private var showFontManager = false
 
     var body: some View {
-        iOSBody
+        CustomizeCardContainer(title: "Text & Layout", onReset: resetToDefaults) {
+            VStack(spacing: 0) {
+                CustomizePreviewLabel()
+
+                TextSettingsPreviewPane(settingsVM: settingsVM)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+
+                List {
+                    fontSection
+                    alignmentAndSpacingSection
+                    pageAnimationsSection
+                }
+            }
+        }
+        .onAppear {
+            fontSizeInput = String(Int(settingsVM.fontSize))
+            Task {
+                await loadCustomFonts()
+            }
+        }
+        .sheet(isPresented: $showFontManager) {
+            IOSFontManagerView(
+                customFamilies: $customFamilies,
+                selectedFont: $settingsVM.fontFamily,
+                onSave: { settingsVM.save() },
+            )
+        }
     }
 
-    private var iOSBody: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Button {
-                    resetToDefaults()
-                } label: {
-                    Label("Reset to Defaults", systemImage: "arrow.counterclockwise")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-
-            Divider()
-
-            Text("Reader")
-                .font(.headline)
-                .foregroundStyle(.primary)
-
+    private var fontSection: some View {
+        Section {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Font Size")
+                Text("Font Size: \(Int(settingsVM.fontSize))pt")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack(spacing: 8) {
@@ -50,6 +59,7 @@ struct EbookPlayerSettings: View {
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 50)
                         .multilineTextAlignment(.trailing)
+                        .keyboardType(.numberPad)
                         .onSubmit {
                             if let val = Double(fontSizeInput), val >= 8, val <= 60 {
                                 settingsVM.fontSize = val
@@ -61,75 +71,53 @@ struct EbookPlayerSettings: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Font")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker("Font", selection: $settingsVM.fontFamily) {
-                    Text("System Default").tag("System Default")
-                    Text("Serif").tag("serif")
-                    Text("Sans-Serif").tag("sans-serif")
-                    Text("Monospace").tag("monospace")
+            Picker(selection: $settingsVM.fontFamily) {
+                ForEach(CustomFontsActor.bundledFamilies, id: \.self) { family in
+                    Text(family).tag(family)
+                }
 
-                    if !customFamilies.isEmpty {
-                        Divider()
-                        ForEach(customFamilies) { family in
-                            Text(family.name).tag(family.name)
-                        }
-                    }
-
-                    if isCustomFont(settingsVM.fontFamily)
-                        && !customFamilies.contains(where: { $0.name == settingsVM.fontFamily })
-                    {
-                        Text(settingsVM.fontFamily).tag(settingsVM.fontFamily)
+                if !customFamilies.isEmpty {
+                    Divider()
+                    ForEach(customFamilies) { family in
+                        Text(family.name).tag(family.name)
                     }
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .onChange(of: settingsVM.fontFamily) { _, _ in
-                    settingsVM.save()
-                }
 
-                Button("Manage Fonts...") {
-                    showFontManager = true
+                if isCustomFont(settingsVM.fontFamily)
+                    && !customFamilies.contains(where: { $0.name == settingsVM.fontFamily })
+                {
+                    Text(settingsVM.fontFamily).tag(settingsVM.fontFamily)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.blue)
-                .font(.caption)
-                .sheet(isPresented: $showFontManager) {
-                    IOSFontManagerView(
-                        customFamilies: $customFamilies,
-                        selectedFont: $settingsVM.fontFamily,
-                        onSave: { settingsVM.save() },
-                    )
-                }
+            } label: {
+                Label("Font", systemImage: "textformat")
+            }
+            .pickerStyle(.menu)
+            .onChange(of: settingsVM.fontFamily) { _, _ in
+                settingsVM.save()
             }
 
-            Toggle("Single Column", isOn: singleColumnBinding)
-                .onChange(of: settingsVM.singleColumnMode) { _, _ in
-                    settingsVM.save()
+            Button {
+                showFontManager = true
+            } label: {
+                HStack {
+                    Label("Manage Fonts...", systemImage: "plus.circle")
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
-                .disabled(settingsVM.scrollingMode)
+            }
+        } header: {
+            Text("Font")
+        } footer: {
+            Text("Fonts you import with Manage Fonts show up in the Font menu.")
+        }
+    }
 
-            Toggle("Scrolling Mode", isOn: $settingsVM.scrollingMode)
-                .onChange(of: settingsVM.scrollingMode) { _, _ in
-                    settingsVM.save()
-                }
-
-            Toggle("Margin Tap to Turn Pages", isOn: $settingsVM.enableMarginClickNavigation)
-                .onChange(of: settingsVM.enableMarginClickNavigation) { _, _ in
-                    settingsVM.save()
-                }
-
-            labeledSlider(
-                label: "Line Spacing",
-                value: $settingsVM.lineSpacing,
-                range: 1.0...2.5,
-                step: 0.1,
-                formatter: { String(format: "%.1f", $0) },
-            )
-
-            VStack(alignment: .leading, spacing: 4) {
+    private var alignmentAndSpacingSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Text Alignment")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -145,8 +133,6 @@ struct EbookPlayerSettings: View {
                 }
             }
 
-            Divider()
-
             labeledSlider(
                 label: "Margins (Left/Right)",
                 value: $settingsVM.marginLeftRight,
@@ -156,14 +142,43 @@ struct EbookPlayerSettings: View {
             )
 
             labeledSlider(
-                label: "Margins (Top/Bottom)",
-                value: $settingsVM.marginTopBottom,
+                label: "Margin (Top)",
+                value: $settingsVM.marginTop,
                 range: 0...30,
                 step: 1,
                 formatter: { "\(Int($0))%" },
             )
 
-            Divider()
+            labeledSlider(
+                label: "Margin (Bottom)",
+                value: $settingsVM.marginBottom,
+                range: 0...30,
+                step: 1,
+                formatter: { "\(Int($0))%" },
+            )
+
+            labeledSlider(
+                label: "Paragraph Spacing",
+                value: $settingsVM.paragraphSpacing,
+                range: 0...2.0,
+                step: 0.1,
+                formatter: { $0 == 0 ? "Book Default" : String(format: "%.1fem", $0) },
+                systemImage: "paragraphsign",
+            )
+
+            Toggle("First Line Indent", isOn: $settingsVM.firstLineIndent)
+                .onChange(of: settingsVM.firstLineIndent) { _, _ in
+                    settingsVM.save()
+                }
+
+            labeledSlider(
+                label: "Line Spacing",
+                value: $settingsVM.lineSpacing,
+                range: 1.0...2.5,
+                step: 0.1,
+                formatter: { String(format: "%.1f", $0) },
+                systemImage: "arrow.up.and.down.text.horizontal",
+            )
 
             labeledSlider(
                 label: "Word Spacing",
@@ -171,6 +186,7 @@ struct EbookPlayerSettings: View {
                 range: -0.5...2.0,
                 step: 0.1,
                 formatter: { String(format: "%.1fem", $0) },
+                systemImage: "arrow.left.and.right.text.vertical",
             )
 
             labeledSlider(
@@ -179,57 +195,47 @@ struct EbookPlayerSettings: View {
                 range: -0.1...0.5,
                 step: 0.01,
                 formatter: { String(format: "%.2fem", $0) },
+                systemImage: "textformat.abc",
             )
-
-            Divider()
-
-            Text("Themes")
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Light Mode Theme")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker("Light Mode Theme", selection: $settingsVM.selectedLightThemeId) {
-                    ForEach(settingsVM.lightThemes) { theme in
-                        Text(theme.name).tag(theme.id)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .onChange(of: settingsVM.selectedLightThemeId) { _, _ in
-                    settingsVM.applyActiveTheme(for: colorScheme)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Dark Mode Theme")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker("Dark Mode Theme", selection: $settingsVM.selectedDarkThemeId) {
-                    ForEach(settingsVM.darkThemes) { theme in
-                        Text(theme.name).tag(theme.id)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .onChange(of: settingsVM.selectedDarkThemeId) { _, _ in
-                    settingsVM.applyActiveTheme(for: colorScheme)
-                }
-            }
-
-            NavigationLink {
-                ManageThemesView(settingsVM: settingsVM)
-            } label: {
-                Label("Manage Themes...", systemImage: "paintpalette")
-            }
+        } header: {
+            Text("Alignment and Spacing")
+        } footer: {
+            Text(
+                "Margins are how far the text sits from the edges of the screen. "
+                    + "Raise the bottom margin to keep text clear of a tall miniplayer. "
+                    + "Word and letter spacing add extra room on top of what the font "
+                    + "provides. Paragraph spacing above zero replaces the book's own "
+                    + "paragraph gaps."
+            )
         }
-        .onAppear {
-            fontSizeInput = String(Int(settingsVM.fontSize))
-            Task {
-                await loadCustomFonts()
-            }
+    }
+
+    private var pageAnimationsSection: some View {
+        Section {
+            Toggle("Scrolling Mode", isOn: $settingsVM.scrollingMode)
+                .onChange(of: settingsVM.scrollingMode) { _, _ in
+                    settingsVM.save()
+                }
+
+            Toggle("Single Column", isOn: singleColumnBinding)
+                .onChange(of: settingsVM.singleColumnMode) { _, _ in
+                    settingsVM.save()
+                }
+                .disabled(settingsVM.scrollingMode)
+
+            Toggle("Margin Tap to Turn Pages", isOn: $settingsVM.enableMarginClickNavigation)
+                .onChange(of: settingsVM.enableMarginClickNavigation) { _, _ in
+                    settingsVM.save()
+                }
+        } header: {
+            Text("Page Animations")
+        } footer: {
+            Text(
+                "Scrolling Mode reads the book as one continuous scroll instead of "
+                    + "pages, always in a single column. Single Column keeps one column "
+                    + "of text on screens wide enough for two. Margin Tap turns the page "
+                    + "when you tap near the left or right edge of the screen."
+            )
         }
     }
 
@@ -245,11 +251,19 @@ struct EbookPlayerSettings: View {
         range: ClosedRange<Double>,
         step: Double,
         formatter: (Double) -> String,
+        systemImage: String? = nil,
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("\(label): \(formatter(value.wrappedValue))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("\(label): \(formatter(value.wrappedValue))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Slider(value: value, in: range, step: step)
                 .onChange(of: value.wrappedValue) { _, _ in
                     settingsVM.save()
@@ -262,31 +276,22 @@ struct EbookPlayerSettings: View {
         settingsVM.fontFamily = kDefaultFontFamily
         settingsVM.lineSpacing = kDefaultLineSpacing
         settingsVM.marginLeftRight = kDefaultMarginLeftRightIOS
-        settingsVM.marginTopBottom = kDefaultMarginTopBottom
+        settingsVM.marginTop = kDefaultMarginTop
+        settingsVM.marginBottom = kDefaultMarginBottom
         settingsVM.wordSpacing = kDefaultWordSpacing
         settingsVM.letterSpacing = kDefaultLetterSpacing
+        settingsVM.paragraphSpacing = kDefaultParagraphSpacing
+        settingsVM.firstLineIndent = kDefaultFirstLineIndent
         settingsVM.textAlignment = kDefaultTextAlignment
         settingsVM.enableMarginClickNavigation = kDefaultEnableMarginClickNavigation
         settingsVM.scrollingMode = kDefaultScrollingMode
-        settingsVM.enableReadingBar = kDefaultReadingBarEnabled
-        settingsVM.showProgressBar = kDefaultShowProgressBar
-        settingsVM.showProgress = kDefaultShowProgress
-        settingsVM.showTimeRemainingInBook = kDefaultShowTimeRemainingInBook
-        settingsVM.showTimeRemainingInChapter = kDefaultShowTimeRemainingInChapter
-        settingsVM.showPageNumber = kDefaultShowPageNumber
-        settingsVM.overlayTransparency = kDefaultOverlayTransparency
         settingsVM.singleColumnMode = kDefaultSingleColumnMode
-        settingsVM.showPlayerControls = kDefaultShowPlayerControlsIOS
-        settingsVM.showOverlaySkipBackward = kDefaultShowOverlaySkipBackward
-        settingsVM.showOverlaySkipForward = kDefaultShowOverlaySkipForward
-        settingsVM.showOverlayPlayPause = kDefaultShowOverlayPlayPause
-        settingsVM.lockViewToAudio = kDefaultLockViewToAudio
-
+        fontSizeInput = String(Int(kDefaultFontSize))
         settingsVM.save()
     }
 
     private func isCustomFont(_ fontFamily: String) -> Bool {
-        !["System Default", "serif", "sans-serif", "monospace"].contains(fontFamily)
+        !CustomFontsActor.bundledFamilies.contains(fontFamily)
     }
 
     private var singleColumnBinding: Binding<Bool> {
@@ -295,6 +300,115 @@ struct EbookPlayerSettings: View {
             set: { settingsVM.singleColumnMode = $0 },
         )
     }
+}
+
+/// Fixed-height sample page rendering the current text settings: font, size,
+/// spacing, alignment, and margins, on the active theme's page colors. Sized in
+/// screen points, so it slightly overstates the reader's CSS-pixel sizing but
+/// tracks every change proportionally.
+private struct TextSettingsPreviewPane: View {
+    let settingsVM: SettingsViewModel
+    @Environment(\.colorScheme) private var colorScheme
+
+    private static let sample =
+        "The Mole had been working very hard all the morning, spring-cleaning "
+        + "his little home. Spring was moving in the air above and in the earth "
+        + "below, calling him imperiously; and small wonder that he suddenly "
+        + "flung down his brush and said \"Bother!\""
+
+    private static let sampleContinuation =
+        "Something up above was calling him imperiously, and he made for the "
+        + "steep little tunnel which answered in his case to the gravelled "
+        + "carriage-drive owned by animals whose residences are nearer to the "
+        + "sun and air."
+
+    var body: some View {
+        GeometryReader { geometry in
+            VStack(
+                alignment: settingsVM.textAlignment == "right" ? .trailing : .leading,
+                spacing: paragraphGap,
+            ) {
+                Text(attributed(Self.sample))
+                Text(attributed(Self.sampleContinuation))
+            }
+            .font(previewFont)
+            .lineSpacing(extraLineSpacing)
+            .multilineTextAlignment(settingsVM.textAlignment == "right" ? .trailing : .leading)
+            .foregroundStyle(pageForeground)
+            .frame(
+                maxWidth: .infinity,
+                alignment: settingsVM.textAlignment == "right" ? .trailing : .leading,
+            )
+            .padding(.horizontal, geometry.size.width * settingsVM.marginLeftRight / 100)
+            .padding(.top, 10 + geometry.size.height * settingsVM.marginTop / 100)
+        }
+        .frame(height: 170)
+        .background(pageBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.secondary.opacity(0.4), lineWidth: 1)
+        )
+    }
+
+    private var previewFont: Font {
+        let size = settingsVM.fontSize
+        switch settingsVM.fontFamily {
+            case "System Default", "serif":
+                return .system(size: size, design: .serif)
+            case "sans-serif":
+                return .system(size: size)
+            case "monospace":
+                return .system(size: size, design: .monospaced)
+            default:
+                let family = settingsVM.fontFamily
+                if UIFont(name: family, size: size) != nil
+                    || !UIFont.fontNames(forFamilyName: family).isEmpty
+                {
+                    return .custom(family, size: size)
+                }
+                return .system(size: size, design: .serif)
+        }
+    }
+
+    // SwiftUI lineSpacing adds to the natural line height (~1.2em); the
+    // reader's setting is a CSS line-height multiplier of the font size.
+    private var extraLineSpacing: CGFloat {
+        max(0, (settingsVM.lineSpacing - 1.2) * settingsVM.fontSize)
+    }
+
+    private var paragraphGap: CGFloat {
+        (settingsVM.paragraphSpacing > 0 ? settingsVM.paragraphSpacing : 1.0)
+            * settingsVM.fontSize
+    }
+
+    private func attributed(_ text: String) -> AttributedString {
+        var sample = AttributedString(text)
+        let letterKern = settingsVM.letterSpacing * settingsVM.fontSize
+        let wordKern = settingsVM.wordSpacing * settingsVM.fontSize
+        sample.kern = letterKern
+        if wordKern != 0 {
+            var index = sample.startIndex
+            while index < sample.endIndex {
+                let next = sample.index(afterCharacter: index)
+                if sample.characters[index] == " " {
+                    sample[index..<next].kern = letterKern + wordKern
+                }
+                index = next
+            }
+        }
+        if settingsVM.firstLineIndent {
+            // SwiftUI Text ignores NSParagraphStyle and CoreText drops
+            // zero-width glyphs with their kern; the space is ~0.25em itself.
+            var indent = AttributedString(" ")
+            indent.kern = 1.15 * settingsVM.fontSize
+            sample.insert(indent, at: sample.startIndex)
+        }
+        return sample
+    }
+
+    private var pageBackground: Color { settingsVM.pageBackground(for: colorScheme) }
+    private var pageForeground: Color { settingsVM.pageForeground(for: colorScheme) }
 }
 
 private struct IOSFontManagerView: View {
@@ -409,7 +523,7 @@ private struct IOSFontManagerView: View {
     private func deleteFamily(_ family: CustomFontFamily) {
         Task {
             if selectedFont == family.name {
-                selectedFont = "System Default"
+                selectedFont = kDefaultFontFamily
                 onSave()
             }
             try? await CustomFontsActor.shared.deleteFamily(family)
@@ -427,7 +541,7 @@ private struct IOSFontManagerView: View {
                     customFamilies[familyIndex].variants.removeAll { $0.id == variant.id }
                     if customFamilies[familyIndex].variants.isEmpty {
                         if selectedFont == family.name {
-                            selectedFont = "System Default"
+                            selectedFont = kDefaultFontFamily
                             onSave()
                         }
                         customFamilies.remove(at: familyIndex)

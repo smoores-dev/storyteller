@@ -591,14 +591,13 @@ public actor AppleWatchActor: NSObject {
             let bookID = smilState.bookID
         else { return nil }
 
-        let chapters = await SMILPlayerActor.shared.getBookStructure()
-            .filter { !$0.mediaOverlay.isEmpty }
+        let chapters = await SMILPlayerActor.shared.getChapterSummaries()
             .enumerated()
-            .map { index, section in
+            .map { index, chapter in
                 RemoteChapter(
                     index: index,
-                    title: section.label ?? "Chapter \(index + 1)",
-                    sectionIndex: section.index,
+                    title: chapter.title,
+                    sectionIndex: chapter.sectionIndex,
                 )
             }
         let currentChapterIndex =

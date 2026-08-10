@@ -1,45 +1,24 @@
-#if os(iOS) || os(macOS)
+#if os(iOS)
 import SwiftUI
 
 struct ManageThemesView: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dismiss) private var dismiss
     @State private var editingTheme: ReaderTheme? = nil
     @State private var renamingThemeId: String? = nil
     @State private var renameText: String = ""
     @State private var deleteConfirmThemeId: String? = nil
 
     var body: some View {
-        #if os(iOS)
         themeListContent
-            .navigationTitle("Manage Themes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    newThemeMenu
-                }
-            }
             .fullScreenCover(item: $editingTheme) { theme in
                 ThemeEditorView(settingsVM: settingsVM, theme: theme)
             }
-        #else
-        VStack(spacing: 0) {
-            themeListContent
-                .frame(minWidth: 500, minHeight: 400)
-            Divider()
-            HStack {
-                newThemeMenu
-                Spacer()
-                Button("Done") { dismiss() }
-                    .keyboardShortcut(.defaultAction)
-            }
-            .padding(12)
-        }
-        .sheet(item: $editingTheme) { theme in
-            ThemeEditorView(settingsVM: settingsVM, theme: theme)
-        }
-        #endif
+    }
+
+    private var activeTheme: ReaderTheme {
+        settingsVM.resolveTheme(id: settingsVM.activeThemeId(for: colorScheme))
+            ?? (colorScheme == .dark ? .builtInDark : .builtInLight)
     }
 
     private var newThemeMenu: some View {
@@ -52,14 +31,35 @@ struct ManageThemesView: View {
             }
         } label: {
             Label("New Theme", systemImage: "plus")
+                .font(.caption)
         }
+        .textCase(nil)
     }
 
     private var themeListContent: some View {
         List {
-            Section("Built-in Themes") {
+            Section {
+                ThemePreviewCard(
+                    theme: activeTheme,
+                    previewUserColor: activeTheme.userHighlightColor1,
+                )
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            } header: {
+                Text("Preview")
+            } footer: {
+                Text("Showing \"\(activeTheme.name)\", the active theme right now.")
+            }
+
+            Section {
                 ForEach(settingsVM.effectiveBuiltInThemes) { theme in
                     themeRow(theme)
+                }
+            } header: {
+                HStack {
+                    Text("Built-in Themes")
+                    Spacer()
+                    newThemeMenu
                 }
             }
 
@@ -69,7 +69,7 @@ struct ManageThemesView: View {
                         themeRow(theme)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
-                                    settingsVM.deleteCustomTheme(id: theme.id)
+                                    deleteTheme(id: theme.id)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -78,9 +78,6 @@ struct ManageThemesView: View {
                 }
             }
         }
-        #if os(macOS)
-        .listStyle(.inset(alternatesRowBackgrounds: true))
-        #endif
         .alert(
             "Delete Theme?",
             isPresented: Binding(
@@ -91,7 +88,7 @@ struct ManageThemesView: View {
             Button("Cancel", role: .cancel) { deleteConfirmThemeId = nil }
             Button("Delete", role: .destructive) {
                 if let id = deleteConfirmThemeId {
-                    settingsVM.deleteCustomTheme(id: id)
+                    deleteTheme(id: id)
                 }
                 deleteConfirmThemeId = nil
             }
@@ -146,12 +143,12 @@ struct ManageThemesView: View {
                     }
 
                     Spacer()
-
-                    statusBadges(for: theme)
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+
+            statusBadges(for: theme)
 
             themeContextMenu(theme)
         }
@@ -160,18 +157,73 @@ struct ManageThemesView: View {
 
     @ViewBuilder
     private func statusBadges(for theme: ReaderTheme) -> some View {
-        if settingsVM.selectedLightThemeId == theme.id {
-            Image(systemName: "sun.max.fill")
-                .font(.caption)
-                .foregroundStyle(.orange)
-                .help("Active light mode theme")
+        let activeLight = settingsVM.selectedLightThemeId == theme.id
+        let activeDark = settingsVM.selectedDarkThemeId == theme.id
+        if activeLight {
+            activeBadge("Light", icon: "sun.max.fill", tint: .orange)
         }
-        if settingsVM.selectedDarkThemeId == theme.id {
-            Image(systemName: "moon.fill")
-                .font(.caption)
-                .foregroundStyle(.indigo)
-                .help("Active dark mode theme")
+        if activeDark {
+            activeBadge("Dark", icon: "moon.fill", tint: .indigo)
         }
+        if !activeLight && !activeDark {
+            useThemeControl(theme)
+        }
+    }
+
+    @ViewBuilder
+    private func useThemeControl(_ theme: ReaderTheme) -> some View {
+        let light = theme.availableFor(colorScheme: "light")
+        let dark = theme.availableFor(colorScheme: "dark")
+        if light && dark {
+            Menu {
+                Button {
+                    settingsVM.selectTheme(id: theme.id, for: .light)
+                } label: {
+                    Label("Use for Light Mode", systemImage: "sun.max")
+                }
+                Button {
+                    settingsVM.selectTheme(id: theme.id, for: .dark)
+                } label: {
+                    Label("Use for Dark Mode", systemImage: "moon")
+                }
+            } label: {
+                useThemeLabel
+            }
+            .fixedSize()
+        } else {
+            Button {
+                settingsVM.selectTheme(id: theme.id, for: light ? .light : .dark)
+            } label: {
+                useThemeLabel
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var useThemeLabel: some View {
+        Text("Use Theme")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .overlay(
+                Capsule()
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 2.5]))
+                    .foregroundStyle(.secondary)
+            )
+            .contentShape(Capsule())
+    }
+
+    private func activeBadge(_ label: String, icon: String, tint: Color) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+            Text(label)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(tint)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(tint.opacity(0.15)))
     }
 
     private func themePreviewSwatch(_ theme: ReaderTheme) -> some View {
@@ -240,9 +292,6 @@ struct ManageThemesView: View {
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
-        #if os(macOS)
-        .menuStyle(.borderlessButton)
-        #endif
         .fixedSize()
     }
 
@@ -252,6 +301,14 @@ struct ManageThemesView: View {
             case .dark: return "Dark only"
             case .any: return "Both"
         }
+    }
+
+    // Deleting the active theme falls the selection back to a built-in; the
+    // reader renders from the flat mirror values, so they must be re-applied
+    // or it keeps drawing with the deleted theme's styling.
+    private func deleteTheme(id: String) {
+        settingsVM.deleteCustomTheme(id: id)
+        settingsVM.applyActiveTheme(for: colorScheme)
     }
 
     private func commitRename(_ theme: ReaderTheme) {

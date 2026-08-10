@@ -17,6 +17,7 @@ import dev.smoores.storyteller.model.SessionState
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookDetails
 import dev.smoores.storyteller.model.BookID
+import dev.smoores.storyteller.model.DebugLogState
 import dev.smoores.storyteller.model.DownloadOperation
 import dev.smoores.storyteller.model.DownloadUpdate
 import dev.smoores.storyteller.model.HomeSection
@@ -183,6 +184,14 @@ class StorytellerViewModel private constructor(
 
     suspend fun liveSyncStatus(): LiveSyncStatus = client.liveSyncStatus()
 
+    suspend fun debugLog(): DebugLogState = client.debugLog()
+
+    suspend fun clearDebugLog() = client.clearDebugLog()
+
+    fun setVerboseLogging(enabled: Boolean) {
+        viewModelScope.launch { client.setVerboseLogging(enabled) }
+    }
+
     suspend fun alignmentReport(book: Book): BookAlignmentReport = client.alignmentReport(book)
 
     suspend fun saveAlignmentOverrides(book: Book, state: AlignmentOverrideState): Boolean =
@@ -244,6 +253,7 @@ class StorytellerViewModel private constructor(
         colorMode: String? = null,
         colorIntensity: Double? = null,
         doubleCoverAlignment: String? = null,
+        experimentalSettings: Boolean? = null,
     ) {
         viewModelScope.launch {
             runCatching {
@@ -255,6 +265,7 @@ class StorytellerViewModel private constructor(
                     colorMode = colorMode,
                     colorIntensity = colorIntensity,
                     doubleCoverAlignment = doubleCoverAlignment,
+                    experimentalSettings = experimentalSettings,
                 )
             }
                 .onSuccess { saved ->

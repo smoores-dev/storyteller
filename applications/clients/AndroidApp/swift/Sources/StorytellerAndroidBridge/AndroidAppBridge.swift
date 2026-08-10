@@ -38,6 +38,38 @@ private struct AndroidLiveSyncStatus: Encodable {
     let lastError: String?
 }
 
+// The log buffer is static state, deliberately reachable before bootstrap so
+// startup failures stay inspectable.
+public func debugLogJSON(requestID: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try encodeJSON(
+            AndroidDebugLog(
+                verbose: DebugLogBuffer.shared.isVerbose,
+                messages: DebugLogBuffer.shared.getMessages(),
+            )
+        )
+    }
+}
+
+public func clearDebugLog(requestID: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        DebugLogBuffer.shared.clear()
+        return "{}"
+    }
+}
+
+public func setVerboseLogging(requestID: String, enabled: Bool) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        DebugLogBuffer.shared.setVerbose(enabled)
+        return "{}"
+    }
+}
+
+private struct AndroidDebugLog: Encodable {
+    let verbose: Bool
+    let messages: [String]
+}
+
 public func liveSyncPeerFound(instanceID: String, host: String, port: Int32) async {
     AndroidNsdPeerDiscovery.shared.handlePeerFound(
         id: instanceID,
@@ -179,6 +211,7 @@ public func saveAppSettings(requestID: String, json: String) async throws {
             colorMode: update.colorMode,
             colorIntensity: update.colorIntensity,
             doubleCoverAlignment: update.doubleCoverAlignment,
+            experimentalSettings: update.experimentalSettings,
         )
         await LiveReadingSyncActor.shared.reconcileWithSettings()
         return try await encodeAppSettings()
@@ -193,6 +226,7 @@ private struct AndroidAppSettingsUpdate: Decodable {
     var colorMode: String?
     var colorIntensity: Double?
     var doubleCoverAlignment: String?
+    var experimentalSettings: Bool?
 }
 
 private struct AndroidAppSettings: Encodable {
@@ -203,6 +237,7 @@ private struct AndroidAppSettings: Encodable {
     let colorMode: String
     let colorIntensity: Double
     let doubleCoverAlignment: String
+    let experimentalSettings: Bool
 }
 
 private func encodeAppSettings() async throws -> String {
@@ -218,6 +253,7 @@ private func encodeAppSettings() async throws -> String {
             colorMode: library.colorMode,
             colorIntensity: library.colorIntensity,
             doubleCoverAlignment: library.doubleCoverAlignment,
+            experimentalSettings: library.experimentalSettings,
         )
     )
 }

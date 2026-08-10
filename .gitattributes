@@ -8,3 +8,5 @@ libraries/align/prebuilds/** filter=lfs diff=lfs merge=lfs -text
 *.flac filter=lfs diff=lfs merge=lfs -text
 *.aar filter=lfs diff=lfs merge=lfs -text
 libraries/epub/vendors/** filter=lfs diff=lfs merge=lfs -text
+libraries/StorytellerKit/Sources/Kit/Resources/assets/fonts/*.ttf filter=lfs diff=lfs merge=lfs -text
+libraries/StorytellerKit/Sources/Kit/Resources/assets/fonts/*.otf filter=lfs diff=lfs merge=lfs -text

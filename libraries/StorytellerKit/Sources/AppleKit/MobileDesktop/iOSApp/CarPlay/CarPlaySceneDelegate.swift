@@ -3,8 +3,14 @@ import CarPlay
 import StorytellerKit
 import UIKit
 
+private struct ChapterButtonAvailability: Equatable {
+    let hasPrevious: Bool
+    let hasNext: Bool
+}
+
 class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private var interfaceController: CPInterfaceController?
+    private var lastChapterButtonAvailability: ChapterButtonAvailability?
     private var isLoadingBook = false
     private var readaloudListTemplate: CPListTemplate?
     private var audiobookListTemplate: CPListTemplate?
@@ -24,7 +30,9 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             await setupAndShowRootTemplate()
         }
 
-        configureNowPlayingTemplate()
+        Task { @MainActor in
+            self.configureNowPlayingTemplate()
+        }
 
         Task {
             guard await StorytellerRuntime.start() else { return }
@@ -42,6 +50,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             CarPlayCoordinator.shared.isCarPlayConnected = false
             CarPlayCoordinator.shared.onLibraryUpdated = nil
             CarPlayCoordinator.shared.onChaptersUpdated = nil
+            CarPlayCoordinator.shared.onPlaybackStateChanged = nil
         }
         Task {
             guard await StorytellerRuntime.start() else { return }
@@ -63,6 +72,13 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         coordinator.onPlaybackStateChanged = { [weak self] in
             Task { @MainActor in
                 await self?.refreshListTemplatesIfNeeded()
+                self?.refreshNowPlayingButtonsIfNeeded()
+            }
+        }
+
+        coordinator.onChaptersUpdated = { [weak self] in
+            Task { @MainActor in
+                self?.refreshNowPlayingButtonsIfNeeded()
             }
         }
 
@@ -97,10 +113,38 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         }
     }
 
+    @MainActor
+    private func refreshNowPlayingButtonsIfNeeded() {
+        let coordinator = CarPlayCoordinator.shared
+        let availability = ChapterButtonAvailability(
+            hasPrevious: coordinator.hasPreviousChapter,
+            hasNext: coordinator.hasNextChapter,
+        )
+        guard availability != lastChapterButtonAvailability else { return }
+        configureNowPlayingTemplate()
+    }
+
+    @MainActor
     private func configureNowPlayingTemplate() {
         let nowPlaying = CPNowPlayingTemplate.shared
+        let coordinator = CarPlayCoordinator.shared
+
+        let availability = ChapterButtonAvailability(
+            hasPrevious: coordinator.hasPreviousChapter,
+            hasNext: coordinator.hasNextChapter,
+        )
+        lastChapterButtonAvailability = availability
 
         var buttons: [CPNowPlayingButton] = []
+
+        if availability.hasPrevious, let previousImage = UIImage(systemName: "backward.end.fill") {
+            let previousButton = CPNowPlayingImageButton(image: previousImage) { _ in
+                Task { @MainActor in
+                    CarPlayCoordinator.shared.goToPreviousChapter()
+                }
+            }
+            buttons.append(previousButton)
+        }
 
         if let listImage = UIImage(systemName: "list.bullet") {
             let chaptersButton = CPNowPlayingImageButton(image: listImage) { [weak self] _ in
@@ -116,13 +160,22 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             buttons.append(speedButton)
         }
 
+        if availability.hasNext, let nextImage = UIImage(systemName: "forward.end.fill") {
+            let nextButton = CPNowPlayingImageButton(image: nextImage) { _ in
+                Task { @MainActor in
+                    CarPlayCoordinator.shared.goToNextChapter()
+                }
+            }
+            buttons.append(nextButton)
+        }
+
         nowPlaying.updateNowPlayingButtons(buttons)
     }
 
     private func showChaptersList() {
         Task { @MainActor in
             let chapters = CarPlayCoordinator.shared.chapters
-            let currentSectionIndex = CarPlayCoordinator.shared.currentChapterSectionIndex
+            let currentChapterID = CarPlayCoordinator.shared.currentChapterID
 
             guard !chapters.isEmpty else {
                 debugLog("[CarPlay] No chapters available")
@@ -130,7 +183,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             }
 
             let activePosition =
-                chapters.firstIndex { $0.sectionIndex == currentSectionIndex } ?? 0
+                chapters.firstIndex { $0.chapterID == currentChapterID } ?? 0
             let folderCount = max(activePosition - 1, 0)
             let previousChapters = Array(chapters.prefix(folderCount))
             let visibleChapters = Array(chapters.dropFirst(folderCount))
@@ -150,7 +203,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                     }
                     let section = CPListSection(
                         items: previousChapters.map {
-                            self.chapterListItem(for: $0, currentSectionIndex: currentSectionIndex)
+                            self.chapterListItem(for: $0, currentChapterID: currentChapterID)
                         }
                     )
                     let template = CPListTemplate(title: "Previous Chapters", sections: [section])
@@ -165,7 +218,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             }
             items.append(
                 contentsOf: visibleChapters.map {
-                    chapterListItem(for: $0, currentSectionIndex: currentSectionIndex)
+                    chapterListItem(for: $0, currentChapterID: currentChapterID)
                 }
             )
 
@@ -177,9 +230,9 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     private func chapterListItem(
         for chapter: CarPlayChapter,
-        currentSectionIndex: Int?,
+        currentChapterID: String?,
     ) -> CPListItem {
-        let isCurrent = chapter.sectionIndex == currentSectionIndex
+        let isCurrent = chapter.chapterID == currentChapterID
         let item = CPListItem(
             text: chapter.label,
             detailText: isCurrent ? "Now Playing" : nil,
@@ -187,10 +240,10 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         item.isPlaying = isCurrent
         item.handler = { [weak self] _, completion in
             debugLog(
-                "[CarPlay] Chapter selected: \(chapter.label), sectionIndex: \(chapter.sectionIndex)"
+                "[CarPlay] Chapter selected: \(chapter.label) (\(chapter.chapterID))"
             )
             Task { @MainActor in
-                CarPlayCoordinator.shared.selectChapter(sectionIndex: chapter.sectionIndex)
+                CarPlayCoordinator.shared.selectChapter(id: chapter.chapterID)
             }
             self?.interfaceController?.pop(
                 to: CPNowPlayingTemplate.shared,

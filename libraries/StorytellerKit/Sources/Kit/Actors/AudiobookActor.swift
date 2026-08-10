@@ -554,12 +554,6 @@ public actor AudiobookActor {
         await notifyStateChange()
     }
 
-    public func seekToFraction(_ fraction: Double) async {
-        guard let duration = metadata?.totalDuration else { return }
-        let targetTime = duration * fraction
-        await seek(to: targetTime)
-    }
-
     public func skipForward(_ seconds: TimeInterval = 15) async {
         let state = await getCurrentState()
         let newTime = min((state?.currentTime ?? 0) + seconds, metadata?.totalDuration ?? 0)
@@ -728,53 +722,10 @@ public actor AudiobookActor {
         }
     }
 
-    public func getTotalProgressFraction() async -> Double {
-        guard let duration = metadata?.totalDuration, duration > 0 else { return 0.0 }
-        return await currentGlobalTime() / duration
-    }
-
     public func seekToTotalProgressFraction(_ fraction: Double) async {
         guard let duration = metadata?.totalDuration else { return }
         let targetTime = duration * fraction
         await seek(to: targetTime)
-    }
-
-    public func seekWithinCurrentChapter(to timeInChapter: TimeInterval) async {
-        guard let chapters = metadata?.chapters,
-            let currentIndex = await getCurrentChapterIndex(),
-            currentIndex < chapters.count
-        else {
-            debugLog("[AudiobookActor] seekWithinCurrentChapter - no valid chapter")
-            return
-        }
-
-        let chapter = chapters[currentIndex]
-        // Clamp to stay strictly within chapter bounds
-        let minTime = 0.1
-        let maxTime = max(0.1, chapter.duration - 0.5)
-        let clampedTime = max(minTime, min(timeInChapter, maxTime))
-        let absoluteTime = chapter.startTime + clampedTime
-
-        debugLog(
-            "[AudiobookActor] seekWithinCurrentChapter: \(timeInChapter)s in chapter \(currentIndex) (\(chapter.title)) -> \(absoluteTime)s absolute"
-        )
-        await seek(to: absoluteTime)
-    }
-
-    public func skipToNextChapter() async {
-        guard let chapters = metadata?.chapters,
-            let currentIndex = await getCurrentChapterIndex(),
-            currentIndex < chapters.count - 1
-        else { return }
-        await seekToChapter(href: chapters[currentIndex + 1].id)
-    }
-
-    public func skipToPreviousChapter() async {
-        guard let chapters = metadata?.chapters,
-            let currentIndex = await getCurrentChapterIndex(),
-            currentIndex > 0
-        else { return }
-        await seekToChapter(href: chapters[currentIndex - 1].id)
     }
 
     public func cleanup() async {
@@ -785,7 +736,6 @@ public actor AudiobookActor {
         currentPackageRootURL = nil
         currentTrackIndex = 0
         isPlaying = false
-        stateObservers.removeAll()
 
         if await SMILPlayerActor.shared.activeAudioPlayer == .audiobook {
             await SMILPlayerActor.shared.setActiveAudioPlayer(.none)

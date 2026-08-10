@@ -8,7 +8,6 @@ public final class ReaderStyleManager {
     private var settingsVM: any ReaderSettingsReading
     private var isDarkMode = false
     private var styleUpdateTask: Task<Void, Never>?
-    private var fontFaceCSS: String = ""
     private var hasAudioNarration = false
     @ObservationIgnored private var fontObserverID: UUID?
 
@@ -26,7 +25,6 @@ public final class ReaderStyleManager {
         fontObserverID = await CustomFontsActor.shared.addObserver { @StorytellerUIActor [weak self] in
             guard let self else { return }
             Task { @StorytellerUIActor in
-                self.fontFaceCSS = await CustomFontsActor.shared.fontFaceCSS
                 await self.sendStyleUpdate()
             }
         }
@@ -34,7 +32,6 @@ public final class ReaderStyleManager {
 
     public func refreshFontFaceCSS() async {
         await CustomFontsActor.shared.refreshFonts()
-        fontFaceCSS = await CustomFontsActor.shared.fontFaceCSS
         await sendStyleUpdate()
     }
 
@@ -61,9 +58,12 @@ public final class ReaderStyleManager {
             _ = settingsVM.fontFamily
             _ = settingsVM.lineSpacing
             _ = settingsVM.marginLeftRight
-            _ = settingsVM.marginTopBottom
+            _ = settingsVM.marginTop
+            _ = settingsVM.marginBottom
             _ = settingsVM.wordSpacing
             _ = settingsVM.letterSpacing
+            _ = settingsVM.paragraphSpacing
+            _ = settingsVM.firstLineIndent
             _ = settingsVM.textAlignment
             _ = settingsVM.highlightColor
             _ = settingsVM.highlightThickness
@@ -75,6 +75,12 @@ public final class ReaderStyleManager {
             _ = settingsVM.enableMarginClickNavigation
             _ = settingsVM.userHighlightMode
             _ = settingsVM.readaloudHighlightMode
+            _ = settingsVM.readaloudDimOthers
+            _ = settingsVM.readaloudDimAmount
+            _ = settingsVM.readaloudHighlightFade
+            _ = settingsVM.readaloudTextItalic
+            _ = settingsVM.readaloudTextBold
+            _ = settingsVM.readaloudUnderlineStyle
         } onChange: {
             Task { @StorytellerUIActor in
                 self.scheduleStyleUpdate()
@@ -116,7 +122,8 @@ public final class ReaderStyleManager {
             (foregroundColorRaw?.isEmpty == false ? foregroundColorRaw : nil)
             ?? (isDarkMode ? kDefaultForegroundColorDark : kDefaultForegroundColorLight)
 
-        var effectiveCustomCSS = fontFaceCSS
+        var effectiveCustomCSS = await CustomFontsActor.shared.fontFaceCSS(
+            bundledFamily: settingsVM.fontFamily)
         if let userCSS = settingsVM.customCSS, !userCSS.isEmpty {
             effectiveCustomCSS += "\n" + userCSS
         }
@@ -127,9 +134,12 @@ public final class ReaderStyleManager {
             lineSpacing: settingsVM.lineSpacing,
             isDarkMode: isDarkMode,
             marginLeftRight: settingsVM.marginLeftRight,
-            marginTopBottom: settingsVM.marginTopBottom,
+            marginTop: settingsVM.marginTop,
+            marginBottom: settingsVM.marginBottom,
             wordSpacing: settingsVM.wordSpacing,
             letterSpacing: settingsVM.letterSpacing,
+            paragraphSpacing: settingsVM.paragraphSpacing,
+            firstLineIndent: settingsVM.firstLineIndent,
             textAlignment: settingsVM.textAlignment,
             highlightColor: effectiveHighlightColor,
             highlightThickness: settingsVM.highlightThickness,
@@ -142,6 +152,12 @@ public final class ReaderStyleManager {
             enableMarginClickNavigation: settingsVM.enableMarginClickNavigation,
             userHighlightMode: settingsVM.userHighlightMode,
             readaloudHighlightMode: settingsVM.readaloudHighlightMode,
+            readaloudDimOthers: settingsVM.readaloudDimOthers,
+            readaloudDimAmount: settingsVM.readaloudDimAmount,
+            readaloudHighlightFade: settingsVM.readaloudHighlightFade,
+            readaloudTextItalic: settingsVM.readaloudTextItalic,
+            readaloudTextBold: settingsVM.readaloudTextBold,
+            readaloudUnderlineStyle: settingsVM.readaloudUnderlineStyle,
         )
     }
 }

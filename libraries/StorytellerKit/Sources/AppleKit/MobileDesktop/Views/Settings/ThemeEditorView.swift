@@ -12,10 +12,15 @@ struct ThemeEditorView: View {
     @State private var previewUserIndex = 0
     @State private var expandedPicker: String? = nil
 
-    init(settingsVM: SettingsViewModel, theme: ReaderTheme) {
+    init(
+        settingsVM: SettingsViewModel,
+        theme: ReaderTheme,
+        initialTab: ThemeEditorTab = .theme,
+    ) {
         self.settingsVM = settingsVM
         self.theme = theme
         self._draft = State(initialValue: theme)
+        self._tab = State(initialValue: initialTab)
     }
 
     private var isBuiltInEdit: Bool { theme.isBuiltIn }
@@ -165,16 +170,57 @@ struct ThemeEditorView: View {
                 .font(.headline)
             InlineColorPicker(hex: $draft.highlightColor)
 
-            if draft.readaloudHighlightMode == "background" {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Highlight Height: \(String(format: "%.1fx", draft.highlightThickness))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Slider(value: $draft.highlightThickness, in: 0.6...4.0, step: 0.1)
+            switch draft.readaloudHighlightMode {
+                case "text":
+                    Toggle("Italic", isOn: $draft.readaloudTextItalic)
                         #if os(macOS)
                     .frame(maxWidth: 300)
                         #endif
-                }
+                    Toggle("Bold", isOn: $draft.readaloudTextBold)
+                        #if os(macOS)
+                    .frame(maxWidth: 300)
+                        #endif
+                case "underline":
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Underline Style")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Picker("Underline Style", selection: $draft.readaloudUnderlineStyle) {
+                            Text("Single").tag("solid")
+                            Text("Double").tag("double")
+                            Text("Squiggle").tag("squiggle")
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        #if os(macOS)
+                        .frame(maxWidth: 300)
+                        #endif
+                    }
+                default:
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(
+                            "Highlight Transparency: \(Int(draft.readaloudHighlightFade * 100))%"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        Slider(value: $draft.readaloudHighlightFade, in: 0...0.9, step: 0.05)
+                            #if os(macOS)
+                        .frame(maxWidth: 300)
+                            #endif
+                        Text("Fades the highlight block into the page.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Line Height: \(String(format: "%.1fx", draft.highlightThickness))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Slider(value: $draft.highlightThickness, in: 0.6...4.0, step: 0.1)
+                            #if os(macOS)
+                        .frame(maxWidth: 300)
+                            #endif
+                    }
             }
         }
     }
@@ -239,6 +285,31 @@ struct ThemeEditorView: View {
         .onChange(of: draft.userHighlightColor6) { _, _ in previewUserIndex = 5 }
     }
 
+    private static let cssExamples: [(title: String, css: String)] = [
+        (
+            "Paragraph indents",
+            "p {\n    text-indent: 1.5em !important;\n}"
+        ),
+        (
+            "Space between paragraphs",
+            "p {\n    margin-bottom: 0.75em !important;\n}"
+        ),
+        (
+            "Uppercase headings",
+            "h1, h2, h3 {\n    text-transform: uppercase !important;\n"
+                + "    letter-spacing: 0.08em !important;\n}"
+        ),
+        (
+            "Grayscale images",
+            "img {\n    filter: grayscale(1);\n}"
+        ),
+        (
+            "Extra top and bottom padding",
+            "body {\n    padding-top: 1em !important;\n"
+                + "    padding-bottom: 1em !important;\n}"
+        ),
+    ]
+
     private var customCSSSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Custom CSS")
@@ -261,6 +332,45 @@ struct ThemeEditorView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(Color.secondary.opacity(0.4), lineWidth: 1)
             )
+            Text(
+                "Styles the book itself. Most book styles carry !important, "
+                    + "so your overrides usually need it too."
+            )
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+
+            Text("Examples")
+                .font(.headline)
+                .padding(.top, 8)
+            ForEach(Self.cssExamples, id: \.title) { example in
+                Button {
+                    let existing = draft.customCSS ?? ""
+                    draft.customCSS =
+                        existing.isEmpty ? example.css : existing + "\n\n" + example.css
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(example.title)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "plus.circle")
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        Text(example.css)
+                            .font(.system(.caption2, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -349,6 +459,10 @@ struct ThemeEditorView: View {
             highlightColor: settingsVM.highlightColor,
             highlightThickness: settingsVM.highlightThickness,
             readaloudHighlightMode: settingsVM.readaloudHighlightMode,
+            readaloudHighlightFade: settingsVM.readaloudHighlightFade,
+            readaloudTextItalic: settingsVM.readaloudTextItalic,
+            readaloudTextBold: settingsVM.readaloudTextBold,
+            readaloudUnderlineStyle: settingsVM.readaloudUnderlineStyle,
             userHighlightColor1: settingsVM.userHighlightColor1,
             userHighlightColor2: settingsVM.userHighlightColor2,
             userHighlightColor3: settingsVM.userHighlightColor3,
@@ -376,6 +490,10 @@ struct ThemeEditorView: View {
         settingsVM.highlightColor = theme.highlightColor
         settingsVM.highlightThickness = theme.highlightThickness
         settingsVM.readaloudHighlightMode = theme.readaloudHighlightMode
+        settingsVM.readaloudHighlightFade = theme.readaloudHighlightFade
+        settingsVM.readaloudTextItalic = theme.readaloudTextItalic
+        settingsVM.readaloudTextBold = theme.readaloudTextBold
+        settingsVM.readaloudUnderlineStyle = theme.readaloudUnderlineStyle
         settingsVM.userHighlightColor1 = theme.userHighlightColor1
         settingsVM.userHighlightColor2 = theme.userHighlightColor2
         settingsVM.userHighlightColor3 = theme.userHighlightColor3
@@ -399,10 +517,10 @@ struct ThemeEditorView: View {
         } else {
             settingsVM.updateCustomTheme(draft)
         }
-        let isActive = settingsVM.activeThemeId(for: colorScheme) == draft.id
-        if isActive {
-            settingsVM.applyThemeValues(draft)
-        }
+        // Re-resolve rather than applying the draft: saving an appearance
+        // change can bump this theme off the current mode, and the flat
+        // values must follow whichever theme is active now.
+        settingsVM.applyActiveTheme(for: colorScheme)
         dismiss()
     }
 
@@ -413,6 +531,10 @@ struct ThemeEditorView: View {
             settingsVM.highlightColor = snap.highlightColor
             settingsVM.highlightThickness = snap.highlightThickness
             settingsVM.readaloudHighlightMode = snap.readaloudHighlightMode
+            settingsVM.readaloudHighlightFade = snap.readaloudHighlightFade
+            settingsVM.readaloudTextItalic = snap.readaloudTextItalic
+            settingsVM.readaloudTextBold = snap.readaloudTextBold
+            settingsVM.readaloudUnderlineStyle = snap.readaloudUnderlineStyle
             settingsVM.userHighlightColor1 = snap.userHighlightColor1
             settingsVM.userHighlightColor2 = snap.userHighlightColor2
             settingsVM.userHighlightColor3 = snap.userHighlightColor3
@@ -439,6 +561,10 @@ private struct FlatColorSnapshot {
     let highlightColor: String?
     let highlightThickness: Double
     let readaloudHighlightMode: String
+    let readaloudHighlightFade: Double
+    let readaloudTextItalic: Bool
+    let readaloudTextBold: Bool
+    let readaloudUnderlineStyle: String
     let userHighlightColor1: String
     let userHighlightColor2: String
     let userHighlightColor3: String

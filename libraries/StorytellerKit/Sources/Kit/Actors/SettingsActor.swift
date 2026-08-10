@@ -9,6 +9,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
     public var reading: Reading
     public var playback: Playback
     public var readingBar: ReadingBar
+    public var miniPlayer: MiniPlayer
     public var sync: Sync
     public var library: Library
     public var themes: Themes
@@ -17,6 +18,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         reading: Reading = Reading(),
         playback: Playback = Playback(),
         readingBar: ReadingBar = ReadingBar(),
+        miniPlayer: MiniPlayer = MiniPlayer(),
         sync: Sync = Sync(),
         library: Library = Library(),
         themes: Themes = Themes(),
@@ -24,6 +26,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         self.reading = reading
         self.playback = playback
         self.readingBar = readingBar
+        self.miniPlayer = miniPlayer
         self.sync = sync
         self.library = library
         self.themes = themes
@@ -34,13 +37,22 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         reading = (try? container.decode(Reading.self, forKey: .reading)) ?? Reading()
         playback = (try? container.decode(Playback.self, forKey: .playback)) ?? Playback()
         readingBar = (try? container.decode(ReadingBar.self, forKey: .readingBar)) ?? ReadingBar()
+        if let stored = try? container.decode(MiniPlayer.self, forKey: .miniPlayer) {
+            miniPlayer = stored
+        } else {
+            var migrated = MiniPlayer()
+            if readingBar.showMiniPlayerStats {
+                migrated.statSlots = [.statTimeInBook, .statTimeInChapter]
+            }
+            miniPlayer = migrated
+        }
         sync = (try? container.decode(Sync.self, forKey: .sync)) ?? Sync()
         library = (try? container.decode(Library.self, forKey: .library)) ?? Library()
         themes = (try? container.decode(Themes.self, forKey: .themes)) ?? Themes()
     }
 
     private enum TopLevelCodingKeys: String, CodingKey {
-        case reading, playback, readingBar, sync, library, themes
+        case reading, playback, readingBar, miniPlayer, sync, library, themes
     }
 
     public struct Reading: Codable, Equatable, Sendable {
@@ -48,9 +60,12 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var fontFamily: String
         public var lineSpacing: Double
         public var marginLeftRight: Double
-        public var marginTopBottom: Double
+        public var marginTop: Double
+        public var marginBottom: Double
         public var wordSpacing: Double
         public var letterSpacing: Double
+        public var paragraphSpacing: Double
+        public var firstLineIndent: Bool
         public var textAlignment: String
         public var highlightColor: String?
         public var highlightThickness: Double
@@ -74,6 +89,12 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var userHighlightLabel6: String
         public var userHighlightMode: String
         public var readaloudHighlightMode: String
+        public var readaloudDimOthers: Bool
+        public var readaloudDimAmount: Double
+        public var readaloudHighlightFade: Double
+        public var readaloudTextItalic: Bool
+        public var readaloudTextBold: Bool
+        public var readaloudUnderlineStyle: String
         public var tvSubtitleFontSize: Double
         public var tvReaderAppearance: TVReaderAppearance
 
@@ -82,9 +103,12 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             fontFamily: String = kDefaultFontFamily,
             lineSpacing: Double = kDefaultLineSpacing,
             marginLeftRight: Double? = nil,
-            marginTopBottom: Double = kDefaultMarginTopBottom,
+            marginTop: Double = kDefaultMarginTop,
+            marginBottom: Double = kDefaultMarginBottom,
             wordSpacing: Double = kDefaultWordSpacing,
             letterSpacing: Double = kDefaultLetterSpacing,
+            paragraphSpacing: Double = kDefaultParagraphSpacing,
+            firstLineIndent: Bool = kDefaultFirstLineIndent,
             textAlignment: String = kDefaultTextAlignment,
             highlightColor: String? = nil,
             highlightThickness: Double = kDefaultHighlightThickness,
@@ -108,6 +132,12 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             userHighlightLabel6: String = kDefaultUserHighlightLabel6,
             userHighlightMode: String = kDefaultUserHighlightMode,
             readaloudHighlightMode: String = kDefaultReadaloudHighlightMode,
+            readaloudDimOthers: Bool = kDefaultReadaloudDimOthers,
+            readaloudDimAmount: Double = kDefaultReadaloudDimAmount,
+            readaloudHighlightFade: Double = kDefaultReadaloudHighlightFade,
+            readaloudTextItalic: Bool = kDefaultReadaloudTextItalic,
+            readaloudTextBold: Bool = kDefaultReadaloudTextBold,
+            readaloudUnderlineStyle: String = kDefaultReadaloudUnderlineStyle,
             tvSubtitleFontSize: Double = kDefaultTVSubtitleFontSize,
             tvReaderAppearance: TVReaderAppearance = TVReaderAppearance(),
         ) {
@@ -119,9 +149,12 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             #else
             self.marginLeftRight = marginLeftRight ?? kDefaultMarginLeftRightMac
             #endif
-            self.marginTopBottom = marginTopBottom
+            self.marginTop = marginTop
+            self.marginBottom = marginBottom
             self.wordSpacing = wordSpacing
             self.letterSpacing = letterSpacing
+            self.paragraphSpacing = paragraphSpacing
+            self.firstLineIndent = firstLineIndent
             self.textAlignment = Self.normalizedTextAlignment(textAlignment)
             self.highlightColor = highlightColor
             self.highlightThickness = highlightThickness
@@ -145,6 +178,12 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             self.userHighlightLabel6 = userHighlightLabel6
             self.userHighlightMode = userHighlightMode
             self.readaloudHighlightMode = readaloudHighlightMode
+            self.readaloudDimOthers = readaloudDimOthers
+            self.readaloudDimAmount = readaloudDimAmount
+            self.readaloudHighlightFade = readaloudHighlightFade
+            self.readaloudTextItalic = readaloudTextItalic
+            self.readaloudTextBold = readaloudTextBold
+            self.readaloudUnderlineStyle = readaloudUnderlineStyle
             self.tvSubtitleFontSize = tvSubtitleFontSize
             self.tvReaderAppearance = tvReaderAppearance
         }
@@ -153,8 +192,9 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             let container = try? decoder.container(keyedBy: CodingKeys.self)
             let legacyContainer = try? decoder.container(keyedBy: LegacyCodingKeys.self)
             fontSize = (try? container?.decode(Double.self, forKey: .fontSize)) ?? kDefaultFontSize
-            fontFamily =
+            let storedFontFamily =
                 (try? container?.decode(String.self, forKey: .fontFamily)) ?? kDefaultFontFamily
+            fontFamily = storedFontFamily == "Charis SIL" ? "Charis" : storedFontFamily
             lineSpacing =
                 (try? container?.decode(Double.self, forKey: .lineSpacing)) ?? kDefaultLineSpacing
             #if os(iOS)
@@ -166,14 +206,29 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
                 (try? container?.decode(Double.self, forKey: .marginLeftRight))
                 ?? kDefaultMarginLeftRightMac
             #endif
-            marginTopBottom =
-                (try? container?.decode(Double.self, forKey: .marginTopBottom))
-                ?? kDefaultMarginTopBottom
+            let legacyMarginTopBottom = try? legacyContainer?.decode(
+                Double.self,
+                forKey: .marginTopBottom,
+            )
+            marginTop =
+                (try? container?.decode(Double.self, forKey: .marginTop))
+                ?? legacyMarginTopBottom
+                ?? kDefaultMarginTop
+            marginBottom =
+                (try? container?.decode(Double.self, forKey: .marginBottom))
+                ?? legacyMarginTopBottom
+                ?? kDefaultMarginBottom
             wordSpacing =
                 (try? container?.decode(Double.self, forKey: .wordSpacing)) ?? kDefaultWordSpacing
             letterSpacing =
                 (try? container?.decode(Double.self, forKey: .letterSpacing))
                 ?? kDefaultLetterSpacing
+            paragraphSpacing =
+                (try? container?.decode(Double.self, forKey: .paragraphSpacing))
+                ?? kDefaultParagraphSpacing
+            firstLineIndent =
+                (try? container?.decode(Bool.self, forKey: .firstLineIndent))
+                ?? kDefaultFirstLineIndent
             if let storedAlignment = try? container?.decode(String.self, forKey: .textAlignment) {
                 textAlignment = Self.normalizedTextAlignment(storedAlignment)
             } else if let legacyJustify = try? legacyContainer?.decode(
@@ -253,6 +308,24 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             } else {
                 readaloudHighlightMode = storedMode
             }
+            readaloudDimOthers =
+                (try? container?.decode(Bool.self, forKey: .readaloudDimOthers))
+                ?? kDefaultReadaloudDimOthers
+            readaloudDimAmount =
+                (try? container?.decode(Double.self, forKey: .readaloudDimAmount))
+                ?? kDefaultReadaloudDimAmount
+            readaloudHighlightFade =
+                (try? container?.decode(Double.self, forKey: .readaloudHighlightFade))
+                ?? kDefaultReadaloudHighlightFade
+            readaloudTextItalic =
+                (try? container?.decode(Bool.self, forKey: .readaloudTextItalic))
+                ?? kDefaultReadaloudTextItalic
+            readaloudTextBold =
+                (try? container?.decode(Bool.self, forKey: .readaloudTextBold))
+                ?? kDefaultReadaloudTextBold
+            readaloudUnderlineStyle =
+                (try? container?.decode(String.self, forKey: .readaloudUnderlineStyle))
+                ?? kDefaultReadaloudUnderlineStyle
             tvSubtitleFontSize =
                 (try? container?.decode(Double.self, forKey: .tvSubtitleFontSize))
                 ?? kDefaultTVSubtitleFontSize
@@ -268,8 +341,9 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         }
 
         private enum CodingKeys: String, CodingKey {
-            case fontSize, fontFamily, lineSpacing, marginLeftRight, marginTopBottom
-            case wordSpacing, letterSpacing, textAlignment, highlightColor, highlightThickness
+            case fontSize, fontFamily, lineSpacing, marginLeftRight, marginTop, marginBottom
+            case wordSpacing, letterSpacing, paragraphSpacing, firstLineIndent
+            case textAlignment, highlightColor, highlightThickness
             case backgroundColor, foregroundColor
             case customCSS, enableMarginClickNavigation, singleColumnMode
             case scrollingMode
@@ -278,12 +352,14 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             case userHighlightLabel1, userHighlightLabel2, userHighlightLabel3
             case userHighlightLabel4, userHighlightLabel5, userHighlightLabel6
             case userHighlightMode, readaloudHighlightMode, tvSubtitleFontSize
+            case readaloudDimOthers, readaloudDimAmount, readaloudHighlightFade
+            case readaloudTextItalic, readaloudTextBold, readaloudUnderlineStyle
             case tvReaderAppearance
         }
 
         private enum LegacyCodingKeys: String, CodingKey {
             case readaloudHighlightUnderline, tvBackgroundStyle, readaloudScrollingMode
-            case justifyText
+            case justifyText, marginTopBottom
         }
 
         static func normalizedTextAlignment(_ value: String) -> String {
@@ -383,18 +459,209 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var defaultPlaybackSpeed: Double
         public var defaultVolume: Double
         public var statsExpanded: Bool
-        public var lockViewToAudio: Bool
+        public var freeBrowseMode: String
+        public var readaloudHighlightVisibility: String
+        public var doubleTapPlay: String
+
+        public var lockViewToAudio: Bool { freeBrowseMode == "never" }
 
         public init(
             defaultPlaybackSpeed: Double = kDefaultPlaybackSpeed,
             defaultVolume: Double = kDefaultVolume,
             statsExpanded: Bool = kDefaultStatsExpanded,
-            lockViewToAudio: Bool = kDefaultLockViewToAudio,
+            freeBrowseMode: String = kDefaultFreeBrowseMode,
+            readaloudHighlightVisibility: String = kDefaultReadaloudHighlightVisibility,
+            doubleTapPlay: String = kDefaultDoubleTapPlay,
         ) {
             self.defaultPlaybackSpeed = defaultPlaybackSpeed
             self.defaultVolume = defaultVolume
             self.statsExpanded = statsExpanded
-            self.lockViewToAudio = lockViewToAudio
+            self.freeBrowseMode = Self.normalizedFreeBrowseMode(freeBrowseMode)
+            self.readaloudHighlightVisibility =
+                Self.normalizedHighlightVisibility(readaloudHighlightVisibility)
+            self.doubleTapPlay = Self.normalizedDoubleTapPlay(doubleTapPlay)
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try? decoder.container(keyedBy: CodingKeys.self)
+            let legacyContainer = try? decoder.container(keyedBy: LegacyCodingKeys.self)
+            defaultPlaybackSpeed =
+                (try? container?.decode(Double.self, forKey: .defaultPlaybackSpeed))
+                ?? kDefaultPlaybackSpeed
+            defaultVolume =
+                (try? container?.decode(Double.self, forKey: .defaultVolume)) ?? kDefaultVolume
+            statsExpanded =
+                (try? container?.decode(Bool.self, forKey: .statsExpanded))
+                ?? kDefaultStatsExpanded
+            if let stored = try? container?.decode(String.self, forKey: .freeBrowseMode) {
+                freeBrowseMode = Self.normalizedFreeBrowseMode(stored)
+            } else if let legacyLock = try? legacyContainer?.decode(
+                Bool.self,
+                forKey: .lockViewToAudio,
+            ) {
+                freeBrowseMode = legacyLock ? "never" : "paused"
+            } else {
+                freeBrowseMode = kDefaultFreeBrowseMode
+            }
+            readaloudHighlightVisibility =
+                Self.normalizedHighlightVisibility(
+                    (try? container?.decode(String.self, forKey: .readaloudHighlightVisibility))
+                        ?? kDefaultReadaloudHighlightVisibility
+                )
+            doubleTapPlay =
+                Self.normalizedDoubleTapPlay(
+                    (try? container?.decode(String.self, forKey: .doubleTapPlay))
+                        ?? kDefaultDoubleTapPlay
+                )
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case defaultPlaybackSpeed, defaultVolume, statsExpanded
+            case freeBrowseMode, readaloudHighlightVisibility, doubleTapPlay
+        }
+
+        private enum LegacyCodingKeys: String, CodingKey {
+            case lockViewToAudio
+        }
+
+        static func normalizedFreeBrowseMode(_ value: String) -> String {
+            kFreeBrowseModeValues.contains(value) ? value : kDefaultFreeBrowseMode
+        }
+
+        static func normalizedHighlightVisibility(_ value: String) -> String {
+            kReadaloudHighlightVisibilityValues.contains(value)
+                ? value : kDefaultReadaloudHighlightVisibility
+        }
+
+        static func normalizedDoubleTapPlay(_ value: String) -> String {
+            kDoubleTapPlayValues.contains(value) ? value : kDefaultDoubleTapPlay
+        }
+    }
+
+    public struct MiniPlayer: Codable, Equatable, Sendable {
+        public var size: MiniPlayerSize
+        public var leadingStyle: MiniPlayerLeadingStyle
+        public var cycleFirst: MiniPlayerCycleBlock
+        public var cycleSecond: MiniPlayerCycleBlock
+        public var cycleShowingSecond: Bool
+        public var progressScope: MiniPlayerProgressScope
+        public var mirrored: Bool
+        public var contentRowSlots: [PlayerComplication]
+        public var statSlots: [PlayerComplication]
+        public var scrubRowSlots: [PlayerComplication]
+        public var extraSlots: [PlayerComplication]
+
+        public init(
+            size: MiniPlayerSize = .compact,
+            leadingStyle: MiniPlayerLeadingStyle = .single,
+            cycleFirst: MiniPlayerCycleBlock = MiniPlayerCycleBlock(
+                showCover: true, line1: .bookTitle, line2: .chapterTitle,
+            ),
+            cycleSecond: MiniPlayerCycleBlock = MiniPlayerCycleBlock(
+                showCover: true, line1: .statPage, line2: .statPercent,
+            ),
+            cycleShowingSecond: Bool = false,
+            progressScope: MiniPlayerProgressScope = .chapter,
+            mirrored: Bool = false,
+            contentRowSlots: [PlayerComplication] = [
+                .titleBlock, .playbackSpeed, .none, .none, .playPause,
+            ],
+            statSlots: [PlayerComplication] = [],
+            scrubRowSlots: [PlayerComplication] = [
+                .scrubBar, .skipBackward, .playPause, .skipForward,
+            ],
+            extraSlots: [PlayerComplication] = [
+                .statPercent, .statPage, .statTimeInBook, .statTimeInChapter,
+            ],
+        ) {
+            self.size = size
+            self.leadingStyle = leadingStyle
+            self.cycleFirst = cycleFirst
+            self.cycleSecond = cycleSecond
+            self.cycleShowingSecond = cycleShowingSecond
+            self.progressScope = progressScope
+            self.mirrored = mirrored
+            self.contentRowSlots = contentRowSlots
+            self.statSlots = statSlots
+            self.scrubRowSlots = scrubRowSlots
+            self.extraSlots = extraSlots
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try? decoder.container(keyedBy: CodingKeys.self)
+            let legacy = try? decoder.container(keyedBy: LegacyCodingKeys.self)
+            let defaults = MiniPlayer()
+            size = (try? container?.decode(MiniPlayerSize.self, forKey: .size)) ?? defaults.size
+            let rawLeading = try? container?.decode(String.self, forKey: .leadingStyle)
+            leadingStyle =
+                (try? container?.decode(MiniPlayerLeadingStyle.self, forKey: .leadingStyle))
+                ?? defaults.leadingStyle
+            // Legacy coverTitle configs never showed the cycle block, so give
+            // the single view the classic cover-and-title layout.
+            if rawLeading == "coverTitle" {
+                cycleFirst = MiniPlayerCycleBlock(
+                    showCover: true, line1: .bookTitle, line2: .chapterTitle,
+                )
+            } else {
+                cycleFirst =
+                    (try? container?.decode(MiniPlayerCycleBlock.self, forKey: .cycleFirst))
+                    ?? defaults.cycleFirst
+            }
+            cycleSecond =
+                (try? container?.decode(MiniPlayerCycleBlock.self, forKey: .cycleSecond))
+                ?? defaults.cycleSecond
+            cycleShowingSecond =
+                (try? container?.decode(Bool.self, forKey: .cycleShowingSecond))
+                ?? defaults.cycleShowingSecond
+            progressScope =
+                (try? container?.decode(MiniPlayerProgressScope.self, forKey: .progressScope))
+                ?? defaults.progressScope
+            mirrored = (try? container?.decode(Bool.self, forKey: .mirrored)) ?? defaults.mirrored
+            // The title block used to be a fixed element to the left of a
+            // 4-slot trailing row; it is now just another slot in one row.
+            if let decodedContentRow = try? container?.decode(
+                [PlayerComplication].self, forKey: .contentRowSlots,
+            ) {
+                contentRowSlots = decodedContentRow
+            } else if let legacyTrailing = try? legacy?.decode(
+                [PlayerComplication].self, forKey: .trailingSlots,
+            ) {
+                contentRowSlots = [.titleBlock] + legacyTrailing
+            } else {
+                contentRowSlots = defaults.contentRowSlots
+            }
+            statSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .statSlots))
+                ?? defaults.statSlots
+            // Older configs stored the scrub bar as its own single-slot array
+            // next to a 3-slot transport row; fold both into the 4-slot row.
+            let decodedScrubRow = try? container?.decode(
+                [PlayerComplication].self, forKey: .scrubRowSlots,
+            )
+            if let decodedScrubRow, decodedScrubRow.count >= 4 {
+                scrubRowSlots = decodedScrubRow
+            } else if let decodedScrubRow {
+                let legacyScrub =
+                    (try? legacy?.decode([PlayerComplication].self, forKey: .scrubSlots))
+                    ?? [.scrubBar]
+                let lead: PlayerComplication = legacyScrub.first == .scrubBar ? .scrubBar : .none
+                scrubRowSlots = [lead] + decodedScrubRow
+            } else {
+                scrubRowSlots = defaults.scrubRowSlots
+            }
+            extraSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .extraSlots))
+                ?? defaults.extraSlots
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case size, leadingStyle, cycleFirst, cycleSecond, cycleShowingSecond
+            case progressScope, mirrored, contentRowSlots, statSlots
+            case scrubRowSlots, extraSlots
+        }
+
+        private enum LegacyCodingKeys: String, CodingKey {
+            case scrubSlots, trailingSlots
         }
     }
 
@@ -406,12 +673,51 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var showTimeRemainingInBook: Bool
         public var showTimeRemainingInChapter: Bool
         public var showPageNumber: Bool
-        public var overlayTransparency: Double
+        public var dockTransparency: Double
         public var alwaysShowMiniPlayer: Bool
         public var showOverlaySkipBackward: Bool
         public var showOverlaySkipForward: Bool
         public var showOverlayPlayPause: Bool
         public var showMiniPlayerStats: Bool
+        public var progressIndicatorMiniPlayer: Bool
+        public var progressIndicatorDock: Bool
+        public var progressIndicatorThickness: Double
+        public var progressIndicatorThicknessDock: Double
+        public var progressIndicatorScopeDock: MiniPlayerProgressScope
+        public var dockLeadingSlots: [PlayerComplication]
+        public var dockTrailingSlots: [PlayerComplication]
+        public var dockCenterSlots: [PlayerComplication]
+        public var menuBarSlots: [PlayerComplication]
+
+        public static let defaultMenuBarSlots: [PlayerComplication] = [
+            .sleepTimer, .chapters, .bookmarks, .search, .none, .none,
+        ]
+
+        static func leadingSlots(showProgress: Bool, showPageNumber: Bool) -> [PlayerComplication] {
+            var slots: [PlayerComplication] = []
+            if showProgress { slots.append(.statPercent) }
+            if showPageNumber { slots.append(.statPage) }
+            return slots
+        }
+
+        static func trailingSlots(showBook: Bool, showChapter: Bool) -> [PlayerComplication] {
+            var slots: [PlayerComplication] = []
+            if showBook { slots.append(.statTimeInBook) }
+            if showChapter { slots.append(.statTimeInChapter) }
+            return slots
+        }
+
+        static func centerSlots(
+            skipBackward: Bool,
+            playPause: Bool,
+            skipForward: Bool,
+        ) -> [PlayerComplication] {
+            var slots: [PlayerComplication] = []
+            if skipBackward { slots.append(.skipBackward) }
+            if playPause { slots.append(.playPause) }
+            if skipForward { slots.append(.skipForward) }
+            return slots
+        }
 
         public init(
             enabled: Bool = kDefaultReadingBarEnabled,
@@ -421,12 +727,21 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             showTimeRemainingInBook: Bool = kDefaultShowTimeRemainingInBook,
             showTimeRemainingInChapter: Bool = kDefaultShowTimeRemainingInChapter,
             showPageNumber: Bool = kDefaultShowPageNumber,
-            overlayTransparency: Double = kDefaultOverlayTransparency,
+            dockTransparency: Double = kDefaultDockTransparency,
             alwaysShowMiniPlayer: Bool = kDefaultAlwaysShowMiniPlayer,
             showOverlaySkipBackward: Bool = kDefaultShowOverlaySkipBackward,
             showOverlaySkipForward: Bool = kDefaultShowOverlaySkipForward,
             showOverlayPlayPause: Bool = kDefaultShowOverlayPlayPause,
             showMiniPlayerStats: Bool = kDefaultShowMiniPlayerStats,
+            progressIndicatorMiniPlayer: Bool = kDefaultProgressIndicatorMiniPlayer,
+            progressIndicatorDock: Bool = kDefaultProgressIndicatorDock,
+            progressIndicatorThickness: Double = kDefaultProgressIndicatorThickness,
+            progressIndicatorThicknessDock: Double = kDefaultProgressIndicatorThickness,
+            progressIndicatorScopeDock: MiniPlayerProgressScope = .chapter,
+            dockLeadingSlots: [PlayerComplication]? = nil,
+            dockTrailingSlots: [PlayerComplication]? = nil,
+            dockCenterSlots: [PlayerComplication]? = nil,
+            menuBarSlots: [PlayerComplication] = ReadingBar.defaultMenuBarSlots,
         ) {
             self.enabled = enabled
             #if os(iOS)
@@ -439,16 +754,39 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             self.showTimeRemainingInBook = showTimeRemainingInBook
             self.showTimeRemainingInChapter = showTimeRemainingInChapter
             self.showPageNumber = showPageNumber
-            self.overlayTransparency = overlayTransparency
+            self.dockTransparency = dockTransparency
             self.alwaysShowMiniPlayer = alwaysShowMiniPlayer
             self.showOverlaySkipBackward = showOverlaySkipBackward
             self.showOverlaySkipForward = showOverlaySkipForward
             self.showOverlayPlayPause = showOverlayPlayPause
             self.showMiniPlayerStats = showMiniPlayerStats
+            self.progressIndicatorMiniPlayer = progressIndicatorMiniPlayer
+            self.progressIndicatorDock = progressIndicatorDock
+            self.progressIndicatorThickness = progressIndicatorThickness
+            self.progressIndicatorThicknessDock = progressIndicatorThicknessDock
+            self.progressIndicatorScopeDock = progressIndicatorScopeDock
+            self.dockLeadingSlots =
+                dockLeadingSlots
+                ?? Self.leadingSlots(showProgress: showProgress, showPageNumber: showPageNumber)
+            self.dockTrailingSlots =
+                dockTrailingSlots
+                ?? Self.trailingSlots(
+                    showBook: showTimeRemainingInBook,
+                    showChapter: showTimeRemainingInChapter,
+                )
+            self.dockCenterSlots =
+                dockCenterSlots
+                ?? Self.centerSlots(
+                    skipBackward: showOverlaySkipBackward,
+                    playPause: showOverlayPlayPause,
+                    skipForward: showOverlaySkipForward,
+                )
+            self.menuBarSlots = menuBarSlots
         }
 
         public init(from decoder: Decoder) throws {
             let container = try? decoder.container(keyedBy: CodingKeys.self)
+            let legacyContainer = try? decoder.container(keyedBy: LegacyCodingKeys.self)
             enabled =
                 (try? container?.decode(Bool.self, forKey: .enabled)) ?? kDefaultReadingBarEnabled
             #if os(iOS)
@@ -474,9 +812,10 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             showPageNumber =
                 (try? container?.decode(Bool.self, forKey: .showPageNumber))
                 ?? kDefaultShowPageNumber
-            overlayTransparency =
-                (try? container?.decode(Double.self, forKey: .overlayTransparency))
-                ?? kDefaultOverlayTransparency
+            dockTransparency =
+                (try? container?.decode(Double.self, forKey: .dockTransparency))
+                ?? (try? legacyContainer?.decode(Double.self, forKey: .overlayTransparency))
+                ?? kDefaultDockTransparency
             alwaysShowMiniPlayer =
                 (try? container?.decode(Bool.self, forKey: .alwaysShowMiniPlayer))
                 ?? kDefaultAlwaysShowMiniPlayer
@@ -492,14 +831,75 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             showMiniPlayerStats =
                 (try? container?.decode(Bool.self, forKey: .showMiniPlayerStats))
                 ?? kDefaultShowMiniPlayerStats
+            progressIndicatorMiniPlayer =
+                (try? container?.decode(Bool.self, forKey: .progressIndicatorMiniPlayer))
+                ?? kDefaultProgressIndicatorMiniPlayer
+            progressIndicatorDock =
+                (try? container?.decode(Bool.self, forKey: .progressIndicatorDock))
+                ?? (try? legacyContainer?.decode(Bool.self, forKey: .progressIndicatorOverlay))
+                ?? kDefaultProgressIndicatorDock
+            progressIndicatorThickness =
+                (try? container?.decode(Double.self, forKey: .progressIndicatorThickness))
+                ?? kDefaultProgressIndicatorThickness
+            progressIndicatorThicknessDock =
+                (try? container?.decode(Double.self, forKey: .progressIndicatorThicknessDock))
+                ?? (try? legacyContainer?.decode(
+                    Double.self, forKey: .progressIndicatorThicknessOverlay))
+                ?? kDefaultProgressIndicatorThickness
+            progressIndicatorScopeDock =
+                (try? container?.decode(
+                    MiniPlayerProgressScope.self, forKey: .progressIndicatorScopeDock))
+                ?? (try? legacyContainer?.decode(
+                    MiniPlayerProgressScope.self, forKey: .progressIndicatorScopeOverlay))
+                ?? .chapter
+            dockLeadingSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .dockLeadingSlots))
+                ?? (try? legacyContainer?.decode(
+                    [PlayerComplication].self, forKey: .overlayLeadingSlots))
+                ?? Self.leadingSlots(showProgress: showProgress, showPageNumber: showPageNumber)
+            dockTrailingSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .dockTrailingSlots))
+                ?? (try? legacyContainer?.decode(
+                    [PlayerComplication].self, forKey: .overlayTrailingSlots))
+                ?? Self.trailingSlots(
+                    showBook: showTimeRemainingInBook,
+                    showChapter: showTimeRemainingInChapter,
+                )
+            dockCenterSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .dockCenterSlots))
+                ?? (try? legacyContainer?.decode(
+                    [PlayerComplication].self, forKey: .overlayCenterSlots))
+                ?? Self.centerSlots(
+                    skipBackward: showOverlaySkipBackward,
+                    playPause: showOverlayPlayPause,
+                    skipForward: showOverlaySkipForward,
+                )
+            menuBarSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .menuBarSlots))
+                ?? (try? legacyContainer?.decode([PlayerComplication].self, forKey: .topBarSlots))
+                ?? Self.defaultMenuBarSlots
         }
 
         private enum CodingKeys: String, CodingKey {
             case enabled, showPlayerControls, showProgressBar, showProgress
             case showTimeRemainingInBook, showTimeRemainingInChapter, showPageNumber
-            case overlayTransparency, alwaysShowMiniPlayer
+            case dockTransparency, alwaysShowMiniPlayer
             case showOverlaySkipBackward, showOverlaySkipForward, showOverlayPlayPause
             case showMiniPlayerStats
+            case progressIndicatorMiniPlayer, progressIndicatorDock
+            case progressIndicatorThickness
+            case progressIndicatorThicknessDock, progressIndicatorScopeDock
+            case dockLeadingSlots, dockTrailingSlots, dockCenterSlots
+            case menuBarSlots
+        }
+
+        // Keys written by builds that predate the dock/menu bar rename.
+        private enum LegacyCodingKeys: String, CodingKey {
+            case overlayTransparency
+            case progressIndicatorOverlay
+            case progressIndicatorThicknessOverlay, progressIndicatorScopeOverlay
+            case overlayLeadingSlots, overlayTrailingSlots, overlayCenterSlots
+            case topBarSlots
         }
     }
 
@@ -599,6 +999,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var colorMode: String
         public var colorIntensity: Double
         public var doubleCoverAlignment: String
+        public var experimentalSettings: Bool
 
         public init(
             showAudioIndicator: Bool = kDefaultShowAudioIndicator,
@@ -610,6 +1011,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             colorMode: String = kDefaultColorMode,
             colorIntensity: Double = kDefaultColorIntensity,
             doubleCoverAlignment: String = kDefaultDoubleCoverAlignment,
+            experimentalSettings: Bool = kDefaultExperimentalSettings,
         ) {
             self.showAudioIndicator = showAudioIndicator
             self.tabBarSlot1 = tabBarSlot1
@@ -620,6 +1022,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             self.colorMode = colorMode
             self.colorIntensity = colorIntensity
             self.doubleCoverAlignment = doubleCoverAlignment
+            self.experimentalSettings = experimentalSettings
         }
 
         public init(from decoder: Decoder) throws {
@@ -648,12 +1051,15 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             doubleCoverAlignment =
                 (try? container?.decode(String.self, forKey: .doubleCoverAlignment))
                 ?? kDefaultDoubleCoverAlignment
+            experimentalSettings =
+                (try? container?.decode(Bool.self, forKey: .experimentalSettings))
+                ?? kDefaultExperimentalSettings
         }
 
         private enum CodingKeys: String, CodingKey {
             case showAudioIndicator, tabBarSlot1, tabBarSlot2, tapToPlayPreferredPlayer,
                 preferAudioOverEbook, accentColorHex, colorMode, colorIntensity,
-                doubleCoverAlignment
+                doubleCoverAlignment, experimentalSettings
         }
     }
 }
@@ -701,9 +1107,12 @@ public actor SettingsActor {
         fontFamily: String? = nil,
         lineSpacing: Double? = nil,
         marginLeftRight: Double? = nil,
-        marginTopBottom: Double? = nil,
+        marginTop: Double? = nil,
+        marginBottom: Double? = nil,
         wordSpacing: Double? = nil,
         letterSpacing: Double? = nil,
+        paragraphSpacing: Double? = nil,
+        firstLineIndent: Bool? = nil,
         textAlignment: String? = nil,
         highlightColor: String?? = nil,
         highlightThickness: Double? = nil,
@@ -717,6 +1126,30 @@ public actor SettingsActor {
         defaultVolume: Double? = nil,
         statsExpanded: Bool? = nil,
         lockViewToAudio: Bool? = nil,
+        freeBrowseMode: String? = nil,
+        readaloudHighlightVisibility: String? = nil,
+        doubleTapPlay: String? = nil,
+        readaloudDimOthers: Bool? = nil,
+        readaloudDimAmount: Double? = nil,
+        readaloudHighlightFade: Double? = nil,
+        readaloudTextItalic: Bool? = nil,
+        readaloudTextBold: Bool? = nil,
+        readaloudUnderlineStyle: String? = nil,
+        miniPlayerSize: MiniPlayerSize? = nil,
+        miniPlayerLeadingStyle: MiniPlayerLeadingStyle? = nil,
+        miniPlayerCycleFirst: MiniPlayerCycleBlock? = nil,
+        miniPlayerCycleSecond: MiniPlayerCycleBlock? = nil,
+        miniPlayerCycleShowingSecond: Bool? = nil,
+        miniPlayerProgressScope: MiniPlayerProgressScope? = nil,
+        miniPlayerMirrored: Bool? = nil,
+        miniPlayerContentRowSlots: [PlayerComplication]? = nil,
+        miniPlayerStatSlots: [PlayerComplication]? = nil,
+        miniPlayerScrubRowSlots: [PlayerComplication]? = nil,
+        miniPlayerExtraSlots: [PlayerComplication]? = nil,
+        dockLeadingSlots: [PlayerComplication]? = nil,
+        dockTrailingSlots: [PlayerComplication]? = nil,
+        dockCenterSlots: [PlayerComplication]? = nil,
+        menuBarSlots: [PlayerComplication]? = nil,
         enableReadingBar: Bool? = nil,
         showPlayerControls: Bool? = nil,
         showProgressBar: Bool? = nil,
@@ -724,12 +1157,17 @@ public actor SettingsActor {
         showTimeRemainingInBook: Bool? = nil,
         showTimeRemainingInChapter: Bool? = nil,
         showPageNumber: Bool? = nil,
-        overlayTransparency: Double? = nil,
+        dockTransparency: Double? = nil,
         alwaysShowMiniPlayer: Bool? = nil,
         showOverlaySkipBackward: Bool? = nil,
         showOverlaySkipForward: Bool? = nil,
         showOverlayPlayPause: Bool? = nil,
         showMiniPlayerStats: Bool? = nil,
+        progressIndicatorMiniPlayer: Bool? = nil,
+        progressIndicatorDock: Bool? = nil,
+        progressIndicatorThickness: Double? = nil,
+        progressIndicatorThicknessDock: Double? = nil,
+        progressIndicatorScopeDock: MiniPlayerProgressScope? = nil,
         progressSyncIntervalSeconds: Double? = nil,
         metadataRefreshIntervalSeconds: Double? = nil,
         autoSyncToNewerServerPosition: Bool? = nil,
@@ -741,6 +1179,7 @@ public actor SettingsActor {
         colorMode: String? = nil,
         colorIntensity: Double? = nil,
         doubleCoverAlignment: String? = nil,
+        experimentalSettings: Bool? = nil,
         userHighlightColor1: String? = nil,
         userHighlightColor2: String? = nil,
         userHighlightColor3: String? = nil,
@@ -771,9 +1210,12 @@ public actor SettingsActor {
         if let fontFamily { updated.reading.fontFamily = fontFamily }
         if let lineSpacing { updated.reading.lineSpacing = lineSpacing }
         if let marginLeftRight { updated.reading.marginLeftRight = marginLeftRight }
-        if let marginTopBottom { updated.reading.marginTopBottom = marginTopBottom }
+        if let marginTop { updated.reading.marginTop = marginTop }
+        if let marginBottom { updated.reading.marginBottom = marginBottom }
         if let wordSpacing { updated.reading.wordSpacing = wordSpacing }
         if let letterSpacing { updated.reading.letterSpacing = letterSpacing }
+        if let paragraphSpacing { updated.reading.paragraphSpacing = paragraphSpacing }
+        if let firstLineIndent { updated.reading.firstLineIndent = firstLineIndent }
         if let textAlignment {
             updated.reading.textAlignment = StorytellerGlobalConfig.Reading.normalizedTextAlignment(
                 textAlignment
@@ -794,7 +1236,76 @@ public actor SettingsActor {
         if let defaultPlaybackSpeed { updated.playback.defaultPlaybackSpeed = defaultPlaybackSpeed }
         if let defaultVolume { updated.playback.defaultVolume = defaultVolume }
         if let statsExpanded { updated.playback.statsExpanded = statsExpanded }
-        if let lockViewToAudio { updated.playback.lockViewToAudio = lockViewToAudio }
+        if let lockViewToAudio {
+            updated.playback.freeBrowseMode = lockViewToAudio ? "never" : "paused"
+        }
+        if let freeBrowseMode {
+            updated.playback.freeBrowseMode =
+                StorytellerGlobalConfig.Playback.normalizedFreeBrowseMode(freeBrowseMode)
+        }
+        if let readaloudHighlightVisibility {
+            updated.playback.readaloudHighlightVisibility =
+                StorytellerGlobalConfig.Playback.normalizedHighlightVisibility(
+                    readaloudHighlightVisibility
+                )
+        }
+        if let doubleTapPlay {
+            updated.playback.doubleTapPlay =
+                StorytellerGlobalConfig.Playback.normalizedDoubleTapPlay(doubleTapPlay)
+        }
+        if let readaloudDimOthers { updated.reading.readaloudDimOthers = readaloudDimOthers }
+        if let readaloudDimAmount { updated.reading.readaloudDimAmount = readaloudDimAmount }
+        if let readaloudHighlightFade {
+            updated.reading.readaloudHighlightFade = readaloudHighlightFade
+        }
+        if let readaloudTextItalic { updated.reading.readaloudTextItalic = readaloudTextItalic }
+        if let readaloudTextBold { updated.reading.readaloudTextBold = readaloudTextBold }
+        if let readaloudUnderlineStyle {
+            updated.reading.readaloudUnderlineStyle = readaloudUnderlineStyle
+        }
+        if let miniPlayerSize { updated.miniPlayer.size = miniPlayerSize }
+        if let miniPlayerLeadingStyle { updated.miniPlayer.leadingStyle = miniPlayerLeadingStyle }
+        if let miniPlayerCycleFirst { updated.miniPlayer.cycleFirst = miniPlayerCycleFirst }
+        if let miniPlayerCycleSecond { updated.miniPlayer.cycleSecond = miniPlayerCycleSecond }
+        if let miniPlayerCycleShowingSecond {
+            updated.miniPlayer.cycleShowingSecond = miniPlayerCycleShowingSecond
+        }
+        if let miniPlayerProgressScope {
+            updated.miniPlayer.progressScope = miniPlayerProgressScope
+        }
+        if let miniPlayerMirrored { updated.miniPlayer.mirrored = miniPlayerMirrored }
+        if let miniPlayerContentRowSlots {
+            updated.miniPlayer.contentRowSlots = miniPlayerContentRowSlots
+        }
+        if let miniPlayerStatSlots {
+            updated.miniPlayer.statSlots = miniPlayerStatSlots
+            updated.readingBar.showMiniPlayerStats = miniPlayerStatSlots.hasActiveComplication
+        }
+        if let miniPlayerScrubRowSlots {
+            updated.miniPlayer.scrubRowSlots = miniPlayerScrubRowSlots
+        }
+        if let miniPlayerExtraSlots { updated.miniPlayer.extraSlots = miniPlayerExtraSlots }
+        if let dockLeadingSlots {
+            updated.readingBar.dockLeadingSlots = dockLeadingSlots
+            updated.readingBar.showProgress = dockLeadingSlots.contains(.statPercent)
+            updated.readingBar.showPageNumber = dockLeadingSlots.contains(.statPage)
+        }
+        if let dockTrailingSlots {
+            updated.readingBar.dockTrailingSlots = dockTrailingSlots
+            updated.readingBar.showTimeRemainingInBook =
+                dockTrailingSlots.contains(.statTimeInBook)
+            updated.readingBar.showTimeRemainingInChapter =
+                dockTrailingSlots.contains(.statTimeInChapter)
+        }
+        if let dockCenterSlots {
+            updated.readingBar.dockCenterSlots = dockCenterSlots
+            updated.readingBar.showOverlaySkipBackward = dockCenterSlots.contains(.skipBackward)
+            updated.readingBar.showOverlayPlayPause = dockCenterSlots.contains(.playPause)
+            updated.readingBar.showOverlaySkipForward = dockCenterSlots.contains(.skipForward)
+        }
+        if let menuBarSlots {
+            updated.readingBar.menuBarSlots = menuBarSlots
+        }
         if let enableReadingBar { updated.readingBar.enabled = enableReadingBar }
         if let showPlayerControls { updated.readingBar.showPlayerControls = showPlayerControls }
         if let showProgressBar { updated.readingBar.showProgressBar = showProgressBar }
@@ -806,7 +1317,7 @@ public actor SettingsActor {
             updated.readingBar.showTimeRemainingInChapter = showTimeRemainingInChapter
         }
         if let showPageNumber { updated.readingBar.showPageNumber = showPageNumber }
-        if let overlayTransparency { updated.readingBar.overlayTransparency = overlayTransparency }
+        if let dockTransparency { updated.readingBar.dockTransparency = dockTransparency }
         if let alwaysShowMiniPlayer {
             updated.readingBar.alwaysShowMiniPlayer = alwaysShowMiniPlayer
         }
@@ -821,6 +1332,22 @@ public actor SettingsActor {
         }
         if let showMiniPlayerStats {
             updated.readingBar.showMiniPlayerStats = showMiniPlayerStats
+        }
+        if let progressIndicatorMiniPlayer {
+            updated.readingBar.progressIndicatorMiniPlayer = progressIndicatorMiniPlayer
+        }
+        if let progressIndicatorDock {
+            updated.readingBar.progressIndicatorDock = progressIndicatorDock
+        }
+        if let progressIndicatorThickness {
+            updated.readingBar.progressIndicatorThickness = progressIndicatorThickness
+        }
+        if let progressIndicatorThicknessDock {
+            updated.readingBar.progressIndicatorThicknessDock =
+                progressIndicatorThicknessDock
+        }
+        if let progressIndicatorScopeDock {
+            updated.readingBar.progressIndicatorScopeDock = progressIndicatorScopeDock
         }
         if let progressSyncIntervalSeconds {
             debugLog(
@@ -860,6 +1387,9 @@ public actor SettingsActor {
         }
         if let doubleCoverAlignment {
             updated.library.doubleCoverAlignment = doubleCoverAlignment
+        }
+        if let experimentalSettings {
+            updated.library.experimentalSettings = experimentalSettings
         }
         if let tabBarSlot1 {
             updated.library.tabBarSlot1 = tabBarSlot1

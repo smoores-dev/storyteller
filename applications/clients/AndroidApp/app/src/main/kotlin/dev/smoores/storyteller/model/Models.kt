@@ -116,6 +116,7 @@ data class AppSettings(
     val colorMode: String = "full",
     val colorIntensity: Double = 0.65,
     val doubleCoverAlignment: String = "auto",
+    val experimentalSettings: Boolean = false,
 )
 
 data class StorytellerSettings(
@@ -191,6 +192,11 @@ data class LiveSyncStatus(
     val packetsReceived: Int,
     val peerCount: Int,
     val lastError: String?,
+)
+
+data class DebugLogState(
+    val verbose: Boolean,
+    val messages: List<String>,
 )
 
 data class AlignmentSummary(
@@ -385,6 +391,10 @@ data class ReaderTheme(
     val userHighlightColors: List<String>,
     val userHighlightLabels: List<String>,
     val customCSS: String?,
+    val readaloudHighlightFade: Double = 0.0,
+    val readaloudTextItalic: Boolean = false,
+    val readaloudTextBold: Boolean = false,
+    val readaloudUnderlineStyle: String = "solid",
 ) {
     fun availableForLight(): Boolean = appearance != "dark"
 
@@ -403,6 +413,10 @@ data class ReaderTheme(
         put("userHighlightColors", JSONArray(userHighlightColors))
         put("userHighlightLabels", JSONArray(userHighlightLabels))
         put("customCSS", customCSS.orEmpty())
+        put("readaloudHighlightFade", readaloudHighlightFade)
+        put("readaloudTextItalic", readaloudTextItalic)
+        put("readaloudTextBold", readaloudTextBold)
+        put("readaloudUnderlineStyle", readaloudUnderlineStyle)
     }.toString()
 }
 
@@ -413,13 +427,19 @@ data class ReaderDisplaySettings(
     val lineSpacing: Double = 1.4,
     val marginLeftRight: Double = 2.0,
     val marginTopBottom: Double = 2.0,
+    val marginTop: Double = 6.0,
+    val marginBottom: Double = 4.0,
     val wordSpacing: Double = 0.0,
     val letterSpacing: Double = 0.0,
+    val paragraphSpacing: Double = 0.0,
+    val firstLineIndent: Boolean = false,
     val textAlignment: String = "justify",
     val singleColumnMode: Boolean = true,
     val scrollingMode: Boolean = false,
     val enableMarginClickNavigation: Boolean = true,
     val lockViewToAudio: Boolean = true,
+    val readaloudDimOthers: Boolean = false,
+    val readaloudDimAmount: Double = 0.5,
 ) {
     fun toUpdateJson(): String = JSONObject().apply {
         put("fontSize", fontSize)
@@ -427,13 +447,19 @@ data class ReaderDisplaySettings(
         put("lineSpacing", lineSpacing)
         put("marginLeftRight", marginLeftRight)
         put("marginTopBottom", marginTopBottom)
+        put("marginTop", marginTop)
+        put("marginBottom", marginBottom)
         put("wordSpacing", wordSpacing)
         put("letterSpacing", letterSpacing)
+        put("paragraphSpacing", paragraphSpacing)
+        put("firstLineIndent", firstLineIndent)
         put("textAlignment", textAlignment)
         put("singleColumnMode", singleColumnMode)
         put("scrollingMode", scrollingMode)
         put("enableMarginClickNavigation", enableMarginClickNavigation)
         put("lockViewToAudio", lockViewToAudio)
+        put("readaloudDimOthers", readaloudDimOthers)
+        put("readaloudDimAmount", readaloudDimAmount)
     }.toString()
 }
 
@@ -510,6 +536,7 @@ data class ReaderState(
     val hasAudioNarration: Boolean,
     val toc: List<ReaderTocEntry>,
     val selectedChapterId: Int?,
+    val chapterCount: Int?,
     val bookFraction: Double?,
     val chapterFraction: Double?,
     val chapterCurrentPage: Int?,
@@ -524,6 +551,7 @@ data class ReaderState(
     val sleepTimerActive: Boolean,
     val sleepTimerRemaining: Double?,
     val sleepTimerType: String?,
+    val sleepTimerEndOfChapter: Boolean,
     val overlayToggleCount: Int,
     val keepScreenOn: Boolean,
     val backgroundColor: String?,
@@ -534,6 +562,11 @@ data class ReaderState(
     val themes: List<ReaderTheme>,
     val settings: ReaderDisplaySettings?,
     val overlay: ReaderOverlayOptions,
+    val miniPlayer: MiniPlayerCustomization = MiniPlayerCustomization(),
+    val dock: DockCustomization = DockCustomization(),
+    val menuBar: MenuBarCustomization = MenuBarCustomization(),
+    val playbackModes: PlaybackModes = PlaybackModes(),
+    val experimentalSettings: Boolean = false,
     val search: ReaderSearchState,
     val highlights: List<ReaderHighlight>,
     val highlightPalette: List<ReaderHighlightPaletteEntry>,

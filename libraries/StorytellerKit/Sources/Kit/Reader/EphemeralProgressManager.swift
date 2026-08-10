@@ -53,8 +53,8 @@ public final class EphemeralProgressManager {
     public weak var mediaOverlayManager: MediaOverlayManager?
     private let settingsVM: any ReaderSettingsReading
 
-    /// When true, user is browsing freely without syncing progress (lockViewToAudio == false)
-    private var isFreeBrowseMode: Bool { !settingsVM.lockViewToAudio }
+    /// When true, user is browsing freely without syncing progress.
+    private var isFreeBrowseMode: Bool { settingsVM.freeBrowseMode != "never" }
     private var isScrollingMode: Bool { settingsVM.scrollingMode }
 
     /// Initial reading position (typ. from server sync)
@@ -573,7 +573,8 @@ public final class EphemeralProgressManager {
 
         let isUserNav = shouldNotifyUserNav || shouldNotifyUserNavForChapterTransition
 
-        if isUserNav, let reason = pendingUserNavSyncReason {
+        if isUserNav {
+            let reason = pendingUserNavSyncReason
             pendingUserNavSyncReason = nil
 
             if let section = message.sectionIndex,
@@ -587,10 +588,12 @@ public final class EphemeralProgressManager {
                         page: page,
                         totalPages: total,
                     )
-                    self.recordActivity()
-                    self.scheduleDebouncedSync(reason: reason, useFragment: foundSMILMatch)
+                    if let reason {
+                        self.recordActivity()
+                        self.scheduleDebouncedSync(reason: reason, useFragment: foundSMILMatch)
+                    }
                 }
-            } else {
+            } else if let reason {
                 recordActivity()
                 scheduleDebouncedSync(reason: reason, useFragment: false)
             }
@@ -775,21 +778,22 @@ public final class EphemeralProgressManager {
             pendingSeekNav = nil
             pendingSwiftCommandFlipEchoes = 0
 
-            if let reason = pendingUserNavSyncReason {
-                pendingUserNavSyncReason = nil
+            let reason = pendingUserNavSyncReason
+            pendingUserNavSyncReason = nil
 
-                if let mom = mediaOverlayManager {
-                    let foundSMILMatch = await mom.handleUserNavEvent(
-                        section: section,
-                        page: page,
-                        totalPages: total,
-                    )
+            if let mom = mediaOverlayManager {
+                let foundSMILMatch = await mom.handleUserNavEvent(
+                    section: section,
+                    page: page,
+                    totalPages: total,
+                )
+                if let reason {
                     recordActivity()
                     scheduleDebouncedSync(reason: reason, useFragment: foundSMILMatch)
-                } else {
-                    recordActivity()
-                    scheduleDebouncedSync(reason: reason, useFragment: false)
                 }
+            } else if let reason {
+                recordActivity()
+                scheduleDebouncedSync(reason: reason, useFragment: false)
             }
         }
     }

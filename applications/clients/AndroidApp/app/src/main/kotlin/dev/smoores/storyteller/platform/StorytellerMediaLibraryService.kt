@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.KeyEvent
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -216,6 +217,87 @@ class StorytellerMediaLibraryService : MediaLibraryService() {
                 )
             }
 
+        // Hardware track keys skip by interval; chapter jumps stay on the
+        // explicit chapter controls.
+        override fun onMediaButtonEvent(
+            session: MediaSession,
+            controllerInfo: MediaSession.ControllerInfo,
+            intent: Intent,
+        ): Boolean {
+            @Suppress("DEPRECATION")
+            val event = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+                ?: return false
+            // Media3 filters neither the key-up nor the auto-repeat of a held
+            // key before this callback, and both would skip a second time.
+            if (event.action != KeyEvent.ACTION_DOWN || event.repeatCount != 0) return false
+
+            val player = session.player
+            // Notification buttons arrive as key events from the media
+            // notification controller and are drawn with chapter semantics.
+            if (session.isMediaNotificationController(controllerInfo)) {
+                return when (event.keyCode) {
+                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                        if (!player.isCommandAvailable(Player.COMMAND_SEEK_TO_NEXT)) return false
+                        player.seekToNext()
+                        true
+                    }
+                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                        if (!player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS)) {
+                            return false
+                        }
+                        player.seekToPrevious()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            return when (event.keyCode) {
+                KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD -> {
+                    if (!player.isCommandAvailable(Player.COMMAND_SEEK_FORWARD)) return false
+                    player.seekForward()
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD -> {
+                    if (!player.isCommandAvailable(Player.COMMAND_SEEK_BACK)) return false
+                    player.seekBack()
+                    true
+                }
+                else -> false
+            }
+        }
+
+        // A bluetooth double tap never reaches onMediaButtonEvent: Media3
+        // detects it internally and calls seekToNext as the media notification
+        // controller. Android Auto uses its own controller and is left alone.
+        // Deprecated upstream, but nothing non-deprecated can remap a command.
+        @Suppress("OVERRIDE_DEPRECATION")
+        override fun onPlayerCommandRequest(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            playerCommand: Int,
+        ): Int {
+            if (!session.isMediaNotificationController(controller)) {
+                return SessionResult.RESULT_SUCCESS
+            }
+            val player = session.player
+            when (playerCommand) {
+                Player.COMMAND_SEEK_TO_NEXT -> {
+                    if (!player.isCommandAvailable(Player.COMMAND_SEEK_FORWARD)) {
+                        return SessionResult.RESULT_SUCCESS
+                    }
+                    player.seekForward()
+                }
+                Player.COMMAND_SEEK_TO_PREVIOUS -> {
+                    if (!player.isCommandAvailable(Player.COMMAND_SEEK_BACK)) {
+                        return SessionResult.RESULT_SUCCESS
+                    }
+                    player.seekBack()
+                }
+                else -> return SessionResult.RESULT_SUCCESS
+            }
+            return SessionResult.RESULT_ERROR_NOT_SUPPORTED
+        }
+
         override fun onCustomCommand(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -357,11 +439,32 @@ class StorytellerMediaLibraryService : MediaLibraryService() {
                 .setPlayerCommand(Player.COMMAND_SEEK_FORWARD)
                 .build(),
         )
+        // Android Auto keeps the first two buttons beside play/pause, draws the
+        // third to their left, and hides the rest behind an overflow menu. Speed
+        // comes before the chapter buttons so it stays on the visible row.
         if (player.isCommandAvailable(Player.COMMAND_PLAY_PAUSE)) {
             add(
                 speedIconButton(player.playbackParameters.speed.toDouble())
                     .setDisplayName("Playback speed")
                     .setSessionCommand(cyclePlaybackRateCommand)
+                    .setSlots(CommandButton.SLOT_OVERFLOW)
+                    .build(),
+            )
+        }
+        if (player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS)) {
+            add(
+                CommandButton.Builder(CommandButton.ICON_PREVIOUS)
+                    .setDisplayName("Previous chapter")
+                    .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS)
+                    .setSlots(CommandButton.SLOT_OVERFLOW)
+                    .build(),
+            )
+        }
+        if (player.isCommandAvailable(Player.COMMAND_SEEK_TO_NEXT)) {
+            add(
+                CommandButton.Builder(CommandButton.ICON_NEXT)
+                    .setDisplayName("Next chapter")
+                    .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT)
                     .setSlots(CommandButton.SLOT_OVERFLOW)
                     .build(),
             )

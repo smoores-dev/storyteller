@@ -59,6 +59,7 @@ public actor CustomFontsActor {
 
     private var cachedFamilies: [CustomFontFamily] = []
     private var cachedFontFaceCSS: String = ""
+    private var bundledCSSByFamily: [String: String] = [:]
     private var observers: [UUID: @Sendable @StorytellerUIActor () -> Void] = [:]
 
     public init(fileManager: FileManager = .default) {
@@ -76,8 +77,16 @@ public actor CustomFontsActor {
         cachedFamilies
     }
 
-    public var fontFaceCSS: String {
-        cachedFontFaceCSS
+    // Bundled fonts are injected only for the selected family; encoding every
+    // bundled face would add several MB of base64 to each style update.
+    public func fontFaceCSS(bundledFamily: String?) -> String {
+        guard let family = bundledFamily, Self.bundledFamilies.contains(family) else {
+            return cachedFontFaceCSS
+        }
+        if bundledCSSByFamily[family] == nil {
+            bundledCSSByFamily[family] = generateBundledFontFaceCSS(family: family)
+        }
+        return (bundledCSSByFamily[family] ?? "") + cachedFontFaceCSS
     }
 
     @discardableResult
@@ -192,32 +201,81 @@ public actor CustomFontsActor {
             ?? FontFileTraits(familyName: nil, weight: 400, isItalic: false)
     }
 
-    private func generateFontFaceCSS() -> String {
+    // Reader fonts shipped in the app bundle, all SIL OFL 1.1 (license texts
+    // in Resources/assets/fonts/licenses). Variable fonts declare their full
+    // weight range; static families ship one file per style.
+    private static let bundledReaderFonts:
+        [(file: String, family: String, weight: String, italic: Bool)] = [
+            ("Literata.ttf", "Literata", "200 900", false),
+            ("Literata-Italic.ttf", "Literata", "200 900", true),
+            ("Charis-Regular.ttf", "Charis", "400", false),
+            ("Charis-Bold.ttf", "Charis", "700", false),
+            ("Charis-Italic.ttf", "Charis", "400", true),
+            ("Charis-BoldItalic.ttf", "Charis", "700", true),
+            ("YsabeauInfant.ttf", "Ysabeau Infant", "1 1000", false),
+            ("YsabeauInfant-Italic.ttf", "Ysabeau Infant", "1 1000", true),
+            ("OpenSans.ttf", "Open Sans", "300 800", false),
+            ("OpenSans-Italic.ttf", "Open Sans", "300 800", true),
+            ("AtkinsonHyperlegible-Regular.ttf", "Atkinson Hyperlegible", "400", false),
+            ("AtkinsonHyperlegible-Bold.ttf", "Atkinson Hyperlegible", "700", false),
+            ("AtkinsonHyperlegible-Italic.ttf", "Atkinson Hyperlegible", "400", true),
+            ("AtkinsonHyperlegible-BoldItalic.ttf", "Atkinson Hyperlegible", "700", true),
+            ("OpenDyslexic-Regular.otf", "OpenDyslexic", "400", false),
+            ("OpenDyslexic-Bold.otf", "OpenDyslexic", "700", false),
+            ("OpenDyslexic-Italic.otf", "OpenDyslexic", "400", true),
+            ("OpenDyslexic-Bold-Italic.otf", "OpenDyslexic", "700", true),
+        ]
+
+    public static let bundledFamilies: [String] = {
+        let unique = bundledReaderFonts.reduce(into: [String]()) { families, font in
+            if !families.contains(font.family) { families.append(font.family) }
+        }
+        let rest = unique.filter { $0 != kDefaultFontFamily }
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        return unique.contains(kDefaultFontFamily) ? [kDefaultFontFamily] + rest : rest
+    }()
+
+    private func fontFaceBlock(family: String, url: URL, weight: String, italic: Bool) -> String? {
+        guard let fontData = try? Data(contentsOf: url) else { return nil }
+        let ext = url.pathExtension
+        return """
+            @font-face {
+                font-family: '\(family)';
+                src: url('data:\(mimeTypeForFont(ext));base64,\(fontData.base64EncodedString())') \
+            format('\(formatForExtension(ext))');
+                font-weight: \(weight);
+                font-style: \(italic ? "italic" : "normal");
+            }
+
+            """
+    }
+
+    private func generateBundledFontFaceCSS(family: String) -> String {
+        guard let dir = KitResources.fontsDirectory() else { return "" }
         var css = ""
-
-        for family in cachedFamilies {
-            for variant in family.variants {
-                guard let fontData = try? Data(contentsOf: variant.fileURL) else {
-                    continue
-                }
-
-                let base64 = fontData.base64EncodedString()
-                let mimeType = mimeTypeForFont(variant.fileURL.pathExtension)
-                let fontStyle = variant.isItalic ? "italic" : "normal"
-
-                css += """
-                    @font-face {
-                        font-family: '\(family.name)';
-                        src: url('data:\(mimeType);base64,\(base64)') \
-                    format('\(formatForExtension(variant.fileURL.pathExtension))');
-                        font-weight: \(variant.weight);
-                        font-style: \(fontStyle);
-                    }
-
-                    """
+        for font in Self.bundledReaderFonts where font.family == family {
+            let url = dir.appendingPathComponent(font.file)
+            if let block = fontFaceBlock(
+                family: font.family, url: url, weight: font.weight, italic: font.italic)
+            {
+                css += block
             }
         }
+        return css
+    }
 
+    private func generateFontFaceCSS() -> String {
+        var css = ""
+        for family in cachedFamilies {
+            for variant in family.variants {
+                if let block = fontFaceBlock(
+                    family: family.name, url: variant.fileURL, weight: "\(variant.weight)",
+                    italic: variant.isItalic)
+                {
+                    css += block
+                }
+            }
+        }
         return css
     }
 

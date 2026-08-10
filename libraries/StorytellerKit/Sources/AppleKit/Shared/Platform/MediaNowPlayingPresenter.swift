@@ -31,7 +31,8 @@ public final class MediaNowPlayingPresenter: NowPlayingPresenting {
             nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsedTime
         }
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] =
-            info.isPlaying ? info.playbackRate : 0.0
+            info.isPlaying ? 1.0 : 0.0
+        nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
 
         #if os(iOS)
         if let artwork = artwork(for: info.artwork) {
@@ -43,6 +44,10 @@ public final class MediaNowPlayingPresenter: NowPlayingPresenting {
         center.nowPlayingInfo = nowPlayingInfo
         center.playbackState = info.isPlaying ? .playing : .paused
     }
+
+    /// MPNowPlayingInfoCenter has no chapter list; CarPlay builds its own from
+    /// AudioSessionActor instead.
+    public func updateChapters(_ chapters: NowPlayingChapters?) {}
 
     public func clear() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
@@ -59,8 +64,19 @@ public final class MediaNowPlayingPresenter: NowPlayingPresenting {
 
         removeAllTargets(from: commandCenter)
 
-        commandCenter.nextTrackCommand.isEnabled = false
-        commandCenter.previousTrackCommand.isEnabled = false
+        // AirPods double/triple press only ever arrives as next/previous track;
+        // iOS does not fall back to the skip commands when these are disabled.
+        commandCenter.nextTrackCommand.isEnabled = true
+        commandCenter.nextTrackCommand.addTarget { _ in
+            handler(.nextTrack)
+            return .success
+        }
+
+        commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.previousTrackCommand.addTarget { _ in
+            handler(.previousTrack)
+            return .success
+        }
 
         commandCenter.playCommand.isEnabled = true
         commandCenter.playCommand.addTarget { _ in
@@ -165,6 +181,8 @@ public final class MediaNowPlayingPresenter: NowPlayingPresenting {
     #endif
     #else
     public func update(_ info: NowPlayingInfo) {}
+
+    public func updateChapters(_ chapters: NowPlayingChapters?) {}
 
     public func clear() {}
 

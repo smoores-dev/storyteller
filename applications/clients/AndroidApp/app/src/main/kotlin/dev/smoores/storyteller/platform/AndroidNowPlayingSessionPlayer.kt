@@ -165,19 +165,30 @@ internal class AndroidNowPlayingSessionPlayer(
         seekCommand: Int,
     ): ListenableFuture<Any> {
         val configuration = commandConfiguration ?: return immediateVoidFuture()
-        if (seekCommand == Player.COMMAND_SEEK_TO_MEDIA_ITEM) {
-            val state = audiobookState ?: return immediateVoidFuture()
-            val chapter = presentedChapterIndices(state)
-                .getOrNull(mediaItemIndex)
-                ?.let(state.chapters::getOrNull)
-                ?: return immediateVoidFuture()
-            commandSink.send(
-                configuration.token,
-                COMMAND_SELECT_CHAPTER,
-                0.0,
-                chapter.id,
-            )
-            return immediateVoidFuture()
+        // BasePlayer's local next/previous resolution runs against a snapshot
+        // that lags the engine, so the gesture travels unresolved.
+        when (seekCommand) {
+            Player.COMMAND_SEEK_TO_NEXT -> {
+                commandSink.send(configuration.token, COMMAND_NEXT_CHAPTER, 0.0, "")
+                return immediateVoidFuture()
+            }
+            Player.COMMAND_SEEK_TO_PREVIOUS -> {
+                commandSink.send(configuration.token, COMMAND_PREVIOUS_CHAPTER, 0.0, "")
+                return immediateVoidFuture()
+            }
+            Player.COMMAND_SEEK_TO_MEDIA_ITEM -> {
+                val state = audiobookState ?: return immediateVoidFuture()
+                val target = presentedChapterIndices(state).getOrNull(mediaItemIndex)
+                    ?: return immediateVoidFuture()
+                val chapter = state.chapters.getOrNull(target) ?: return immediateVoidFuture()
+                commandSink.send(
+                    configuration.token,
+                    COMMAND_SELECT_CHAPTER,
+                    0.0,
+                    chapter.id,
+                )
+                return immediateVoidFuture()
+            }
         }
         snapshot = snapshot?.copy(elapsedSeconds = positionMs.coerceAtLeast(0L) / 1_000.0)
 
@@ -243,7 +254,7 @@ internal class AndroidNowPlayingSessionPlayer(
                 commands.add(Player.COMMAND_SET_SPEED_AND_PITCH)
             }
             if ((audiobookState?.chapters?.size ?: 0) > 1) {
-                commands.add(Player.COMMAND_SEEK_TO_MEDIA_ITEM)
+                chapterSeekCommands.forEach(commands::add)
             }
         }
         return commands.build()
@@ -331,6 +342,12 @@ internal class AndroidNowPlayingSessionPlayer(
         private const val NOW_PLAYING_MEDIA_ID = "storyteller-now-playing"
         private const val NOW_PLAYING_CHAPTER_PREFIX = "storyteller-now-playing-chapter-"
 
+        val chapterSeekCommands = listOf(
+            Player.COMMAND_SEEK_TO_MEDIA_ITEM,
+            Player.COMMAND_SEEK_TO_NEXT,
+            Player.COMMAND_SEEK_TO_PREVIOUS,
+        )
+
         const val COMMAND_PLAY = "play"
         const val COMMAND_PAUSE = "pause"
         const val COMMAND_SKIP_FORWARD = "skipForward"
@@ -338,6 +355,8 @@ internal class AndroidNowPlayingSessionPlayer(
         const val COMMAND_CHANGE_POSITION = "changePlaybackPosition"
         const val COMMAND_CHANGE_RATE = "changePlaybackRate"
         const val COMMAND_SELECT_CHAPTER = "selectChapter"
+        const val COMMAND_NEXT_CHAPTER = "nextChapter"
+        const val COMMAND_PREVIOUS_CHAPTER = "previousChapter"
     }
 }
 

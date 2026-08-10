@@ -295,6 +295,15 @@ public final class ReaderCommsBridge {
         )
     }
 
+    public func sendJsSetPlaybackActive(_ active: Bool) async throws {
+        guard let js else {
+            throw ReaderCommsBridgeError.jsNotAvailable
+        }
+
+        debugLog("[ReaderCommsBridge] sendJsSetPlaybackActive(\(active))")
+        _ = try await js.evaluate("window.foliateManager.setPlaybackActive(\(active))")
+    }
+
     /// Swift commands JS to clear any active highlight
     public func sendJsClearHighlight() async throws {
         guard let js else {
@@ -312,9 +321,12 @@ public final class ReaderCommsBridge {
         lineSpacing: Double,
         isDarkMode: Bool,
         marginLeftRight: Double,
-        marginTopBottom: Double,
+        marginTop: Double,
+        marginBottom: Double,
         wordSpacing: Double,
         letterSpacing: Double,
+        paragraphSpacing: Double,
+        firstLineIndent: Bool,
         textAlignment: String,
         highlightColor: String,
         highlightThickness: Double,
@@ -327,6 +339,12 @@ public final class ReaderCommsBridge {
         enableMarginClickNavigation: Bool,
         userHighlightMode: String,
         readaloudHighlightMode: String,
+        readaloudDimOthers: Bool = false,
+        readaloudDimAmount: Double = 0,
+        readaloudHighlightFade: Double = 0,
+        readaloudTextItalic: Bool = false,
+        readaloudTextBold: Bool = false,
+        readaloudUnderlineStyle: String = "solid",
     ) async throws {
         guard let js else {
             throw ReaderCommsBridgeError.jsNotAvailable
@@ -338,9 +356,12 @@ public final class ReaderCommsBridge {
             "lineSpacing": lineSpacing,
             "isDarkMode": isDarkMode,
             "marginLeftRight": marginLeftRight,
-            "marginTopBottom": marginTopBottom,
+            "marginTop": marginTop,
+            "marginBottom": marginBottom,
             "wordSpacing": wordSpacing,
             "letterSpacing": letterSpacing,
+            "paragraphSpacing": paragraphSpacing,
+            "firstLineIndent": firstLineIndent,
             "textAlign": textAlignment,
             "highlightColor": highlightColor,
             "highlightThickness": highlightThickness,
@@ -350,6 +371,12 @@ public final class ReaderCommsBridge {
             "enableMarginClickNavigation": enableMarginClickNavigation,
             "userHighlightMode": userHighlightMode,
             "readaloudHighlightMode": readaloudHighlightMode,
+            "readaloudDimOthers": readaloudDimOthers,
+            "readaloudDimAmount": readaloudDimAmount,
+            "readaloudHighlightFade": readaloudHighlightFade,
+            "readaloudTextItalic": readaloudTextItalic,
+            "readaloudTextBold": readaloudTextBold,
+            "readaloudUnderlineStyle": readaloudUnderlineStyle,
         ]
 
         styles["backgroundColor"] = backgroundColor ?? NSNull()

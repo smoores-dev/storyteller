@@ -6,7 +6,7 @@ import android.util.Base64
 import androidx.annotation.Keep
 import androidx.media3.common.Player
 import dev.smoores.storyteller.bridge.StorytellerAndroidBridge
-import dev.smoores.storyteller.bridge.parseAudiobookState
+import org.json.JSONObject
 
 /** Static primitive-only surface consumed by AndroidNowPlayingPresenter in Swift. */
 @Keep
@@ -60,22 +60,37 @@ object AndroidNowPlayingBridge {
         player().clear()
     }
 
-    internal fun updateAudiobookState(payload: String) {
-        val state = payload.takeIf(String::isNotEmpty)?.let(::parseAudiobookState)
-        val nowPlayingState = state?.let {
-            AndroidNowPlayingAudiobookState(
-                currentChapterID = it.currentChapterID,
-                currentChapterIndex = it.currentChapterIndex,
-                chapters = it.chapters.map { chapter ->
-                    AndroidNowPlayingChapter(
-                        id = chapter.id,
-                        title = chapter.title,
-                        durationSeconds = chapter.duration,
-                    )
-                },
+    @JvmStatic
+    fun updateChapters(payload: String) = onMain {
+        player().updateAudiobookState(payload.takeIf(String::isNotEmpty)?.let(::parseChapters))
+    }
+
+    internal fun parseChapters(payload: String): AndroidNowPlayingAudiobookState? {
+        val json = runCatching { JSONObject(payload) }.getOrNull() ?: return null
+        val entries = json.optJSONArray("chapters") ?: return null
+        // Dropping an entry would shift every later index out of step with the
+        // currentChapterIndex the sender computed, so a bad entry voids the lot.
+        val chapters = (0 until entries.length()).map { index ->
+            val entry = entries.optJSONObject(index) ?: return null
+            val id = entry.stringOrNull("id") ?: return null
+            AndroidNowPlayingChapter(
+                id = id,
+                title = entry.stringOrNull("title").orEmpty(),
+                durationSeconds = entry.optDouble("duration", 0.0).takeIf(Double::isFinite) ?: 0.0,
             )
         }
-        onMain { player().updateAudiobookState(nowPlayingState) }
+        if (chapters.isEmpty()) return null
+        return AndroidNowPlayingAudiobookState(
+            currentChapterID = json.stringOrNull("currentChapterID"),
+            currentChapterIndex = if (json.has("currentChapterIndex") &&
+                !json.isNull("currentChapterIndex")
+            ) {
+                json.optInt("currentChapterIndex")
+            } else {
+                null
+            },
+            chapters = chapters,
+        )
     }
 
     @JvmStatic
@@ -120,3 +135,8 @@ object AndroidNowPlayingBridge {
 
 private fun Double.nonnegativeOrZero(): Double =
     takeIf { it.isFinite() }?.coerceAtLeast(0.0) ?: 0.0
+
+private fun JSONObject.stringOrNull(name: String): String? {
+    if (!has(name) || isNull(name)) return null
+    return optString(name).takeIf(String::isNotEmpty)
+}

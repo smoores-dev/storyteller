@@ -81,9 +81,12 @@ final class AndroidReaderSettings: ReaderSettingsReading {
     var fontFamily: String = kDefaultFontFamily
     var lineSpacing: Double = kDefaultLineSpacing
     var marginLeftRight: Double = kDefaultMarginLeftRightIOS
-    var marginTopBottom: Double = kDefaultMarginTopBottom
+    var marginTop: Double = kDefaultMarginTop
+    var marginBottom: Double = kDefaultMarginBottom
     var wordSpacing: Double = kDefaultWordSpacing
     var letterSpacing: Double = kDefaultLetterSpacing
+    var paragraphSpacing: Double = kDefaultParagraphSpacing
+    var firstLineIndent: Bool = kDefaultFirstLineIndent
     var textAlignment: String = kDefaultTextAlignment
     var highlightColor: String? = nil
     var highlightThickness: Double = kDefaultHighlightThickness
@@ -95,7 +98,16 @@ final class AndroidReaderSettings: ReaderSettingsReading {
     var enableMarginClickNavigation: Bool = kDefaultEnableMarginClickNavigation
     var userHighlightMode: String = kDefaultUserHighlightMode
     var readaloudHighlightMode: String = kDefaultReadaloudHighlightMode
-    var lockViewToAudio: Bool = kDefaultLockViewToAudio
+    var freeBrowseMode: String = kDefaultFreeBrowseMode
+    var lockViewToAudio: Bool { freeBrowseMode == "never" }
+    var readaloudDimOthers: Bool = kDefaultReadaloudDimOthers
+    var readaloudDimAmount: Double = kDefaultReadaloudDimAmount
+    var readaloudHighlightFade: Double = kDefaultReadaloudHighlightFade
+    var readaloudTextItalic: Bool = kDefaultReadaloudTextItalic
+    var readaloudTextBold: Bool = kDefaultReadaloudTextBold
+    var readaloudUnderlineStyle: String = kDefaultReadaloudUnderlineStyle
+    var readaloudHighlightVisibility: String = kDefaultReadaloudHighlightVisibility
+    var doubleTapPlay: String = kDefaultDoubleTapPlay
 
     nonisolated init() {}
 
@@ -105,8 +117,12 @@ final class AndroidReaderSettings: ReaderSettingsReading {
         var lineSpacing: Double?
         var marginLeftRight: Double?
         var marginTopBottom: Double?
+        var marginTop: Double?
+        var marginBottom: Double?
         var wordSpacing: Double?
         var letterSpacing: Double?
+        var paragraphSpacing: Double?
+        var firstLineIndent: Bool?
         var textAlignment: String?
         var highlightColor: String?
         var highlightThickness: Double?
@@ -119,6 +135,8 @@ final class AndroidReaderSettings: ReaderSettingsReading {
         var userHighlightMode: String?
         var readaloudHighlightMode: String?
         var lockViewToAudio: Bool?
+        var readaloudDimOthers: Bool?
+        var readaloudDimAmount: Double?
     }
 
     func apply(json: String) throws {
@@ -127,9 +145,16 @@ final class AndroidReaderSettings: ReaderSettingsReading {
         if let value = update.fontFamily { fontFamily = value }
         if let value = update.lineSpacing { lineSpacing = value }
         if let value = update.marginLeftRight { marginLeftRight = value }
-        if let value = update.marginTopBottom { marginTopBottom = value }
+        if let value = update.marginTopBottom {
+            marginTop = value
+            marginBottom = value
+        }
+        if let value = update.marginTop { marginTop = value }
+        if let value = update.marginBottom { marginBottom = value }
         if let value = update.wordSpacing { wordSpacing = value }
         if let value = update.letterSpacing { letterSpacing = value }
+        if let value = update.paragraphSpacing { paragraphSpacing = value }
+        if let value = update.firstLineIndent { firstLineIndent = value }
         if let value = update.textAlignment { textAlignment = value }
         if let value = update.highlightColor { highlightColor = value.isEmpty ? nil : value }
         if let value = update.highlightThickness { highlightThickness = value }
@@ -141,7 +166,9 @@ final class AndroidReaderSettings: ReaderSettingsReading {
         if let value = update.enableMarginClickNavigation { enableMarginClickNavigation = value }
         if let value = update.userHighlightMode { userHighlightMode = value }
         if let value = update.readaloudHighlightMode { readaloudHighlightMode = value }
-        if let value = update.lockViewToAudio { lockViewToAudio = value }
+        if let value = update.lockViewToAudio { freeBrowseMode = value ? "never" : "paused" }
+        if let value = update.readaloudDimOthers { readaloudDimOthers = value }
+        if let value = update.readaloudDimAmount { readaloudDimAmount = value }
     }
 }
 
@@ -177,6 +204,12 @@ final class AndroidReaderSession {
     private var translateAvailable = false
     private var lastChapterRestart: Date?
     private var overlayOptions = OverlayOptions()
+    private var miniPlayerConfig = StorytellerGlobalConfig.MiniPlayer()
+    private var miniProgressIndicator = kDefaultProgressIndicatorMiniPlayer
+    private var miniProgressThickness = kDefaultProgressIndicatorThickness
+    private var dockOptions = DockOptions()
+    private var menuBarSlots = StorytellerGlobalConfig.ReadingBar.defaultMenuBarSlots
+    private var experimentalSettings = kDefaultExperimentalSettings
     private var pendingServerPosition: IncomingServerPosition?
 
     private struct OverlayOptions: Encodable {
@@ -203,6 +236,59 @@ final class AndroidReaderSession {
         var showMiniPlayerStats: Bool?
     }
 
+    private struct DockOptions {
+        var leadingSlots: [PlayerComplication] = []
+        var trailingSlots: [PlayerComplication] = []
+        var centerSlots: [PlayerComplication] = []
+        var transparency = kDefaultDockTransparency
+        var progressIndicator = kDefaultProgressIndicatorDock
+        var progressThickness = kDefaultProgressIndicatorThickness
+        var progressScope = MiniPlayerProgressScope.chapter
+    }
+
+    private struct CustomizationUpdate: Decodable {
+        struct MiniPlayerUpdate: Decodable {
+            var size: MiniPlayerSize?
+            var leadingStyle: MiniPlayerLeadingStyle?
+            var cycleFirst: MiniPlayerCycleBlock?
+            var cycleSecond: MiniPlayerCycleBlock?
+            var cycleShowingSecond: Bool?
+            var progressScope: MiniPlayerProgressScope?
+            var mirrored: Bool?
+            var contentRowSlots: [PlayerComplication]?
+            var statSlots: [PlayerComplication]?
+            var scrubRowSlots: [PlayerComplication]?
+            var extraSlots: [PlayerComplication]?
+            var progressIndicator: Bool?
+            var progressThickness: Double?
+        }
+
+        struct DockUpdate: Decodable {
+            var leadingSlots: [PlayerComplication]?
+            var trailingSlots: [PlayerComplication]?
+            var centerSlots: [PlayerComplication]?
+            var transparency: Double?
+            var progressIndicator: Bool?
+            var progressThickness: Double?
+            var progressScope: MiniPlayerProgressScope?
+        }
+
+        struct MenuBarUpdate: Decodable {
+            var slots: [PlayerComplication]?
+        }
+
+        struct PlaybackModesUpdate: Decodable {
+            var freeBrowseMode: String?
+            var readaloudHighlightVisibility: String?
+            var doubleTapPlay: String?
+        }
+
+        var miniPlayer: MiniPlayerUpdate?
+        var dock: DockUpdate?
+        var menuBar: MenuBarUpdate?
+        var playbackModes: PlaybackModesUpdate?
+    }
+
     nonisolated private init() {}
 
     private struct OpenResult: Encodable {
@@ -218,14 +304,24 @@ final class AndroidReaderSession {
         settings.fontFamily = config.reading.fontFamily
         settings.lineSpacing = config.reading.lineSpacing
         settings.marginLeftRight = config.reading.marginLeftRight
-        settings.marginTopBottom = config.reading.marginTopBottom
+        settings.marginTop = config.reading.marginTop
+        settings.marginBottom = config.reading.marginBottom
         settings.wordSpacing = config.reading.wordSpacing
         settings.letterSpacing = config.reading.letterSpacing
+        settings.paragraphSpacing = config.reading.paragraphSpacing
+        settings.firstLineIndent = config.reading.firstLineIndent
         settings.textAlignment = config.reading.textAlignment
         settings.singleColumnMode = config.reading.singleColumnMode
         settings.scrollingMode = config.reading.scrollingMode
         settings.enableMarginClickNavigation = config.reading.enableMarginClickNavigation
-        settings.lockViewToAudio = config.playback.lockViewToAudio
+        settings.readaloudDimOthers = config.reading.readaloudDimOthers
+        settings.readaloudDimAmount = config.reading.readaloudDimAmount
+        settings.freeBrowseMode = config.playback.freeBrowseMode
+        settings.doubleTapPlay = config.playback.doubleTapPlay
+        experimentalSettings = config.library.experimentalSettings
+        // Highlight visibility is experimental-gated (ReadaloudHighlightCard.onAppear on iOS).
+        settings.readaloudHighlightVisibility =
+            experimentalSettings ? config.playback.readaloudHighlightVisibility : "paused"
         overlayOptions.showProgress = config.readingBar.showProgress
         overlayOptions.showPageNumber = config.readingBar.showPageNumber
         overlayOptions.showTimeRemainingInBook = config.readingBar.showTimeRemainingInBook
@@ -235,6 +331,31 @@ final class AndroidReaderSession {
         overlayOptions.showSkipForward = config.readingBar.showOverlaySkipForward
         overlayOptions.alwaysShowMiniPlayer = config.readingBar.alwaysShowMiniPlayer
         overlayOptions.showMiniPlayerStats = config.readingBar.showMiniPlayerStats
+        var mini = config.miniPlayer
+        mini.contentRowSlots = SlotLayout.sanitized(mini.contentRowSlots, for: .miniContentRow)
+        mini.statSlots = SlotLayout.sanitized(mini.statSlots, for: .miniStatBand)
+        mini.scrubRowSlots = SlotLayout.sanitized(mini.scrubRowSlots, for: .miniScrubRow)
+        mini.extraSlots = SlotLayout.sanitized(mini.extraSlots, for: .miniExtraRow)
+        miniPlayerConfig = mini
+        miniProgressIndicator = config.readingBar.progressIndicatorMiniPlayer
+        miniProgressThickness = config.readingBar.progressIndicatorThickness
+        dockOptions.leadingSlots = SlotLayout.sanitized(
+            config.readingBar.dockLeadingSlots,
+            for: .dockLeading,
+        )
+        dockOptions.trailingSlots = SlotLayout.sanitized(
+            config.readingBar.dockTrailingSlots,
+            for: .dockTrailing,
+        )
+        dockOptions.centerSlots = SlotLayout.sanitized(
+            config.readingBar.dockCenterSlots,
+            for: .dockCenter,
+        )
+        dockOptions.transparency = config.readingBar.dockTransparency
+        dockOptions.progressIndicator = config.readingBar.progressIndicatorDock
+        dockOptions.progressThickness = config.readingBar.progressIndicatorThicknessDock
+        dockOptions.progressScope = config.readingBar.progressIndicatorScopeDock
+        menuBarSlots = SlotLayout.sanitized(config.readingBar.menuBarSlots, for: .menuBar)
         defaultPlaybackSpeed = config.playback.defaultPlaybackSpeed
         customThemes = config.themes.customThemes
         builtInThemeOverrides = config.themes.builtInThemeOverrides
@@ -265,6 +386,10 @@ final class AndroidReaderSession {
         settings.highlightColor = theme.highlightColor
         settings.highlightThickness = theme.highlightThickness
         settings.readaloudHighlightMode = theme.readaloudHighlightMode
+        settings.readaloudHighlightFade = theme.readaloudHighlightFade
+        settings.readaloudTextItalic = theme.readaloudTextItalic
+        settings.readaloudTextBold = theme.readaloudTextBold
+        settings.readaloudUnderlineStyle = theme.readaloudUnderlineStyle
         settings.userHighlightMode = theme.userHighlightMode
         settings.customCSS = theme.customCSS
     }
@@ -534,6 +659,9 @@ final class AndroidReaderSession {
                 try await persistDisplaySettings()
             case "updateOverlayOptions":
                 try await applyOverlayOptions(json: text)
+            case "updateCustomization":
+                try await applyCustomization(json: text)
+                publishState(session)
             case "acceptServerPosition":
                 if let position = pendingServerPosition {
                     pendingServerPosition = nil
@@ -586,25 +714,22 @@ final class AndroidReaderSession {
         }
     }
 
-    // Matches EbookPlayerViewModel.handlePrevChapter: the first press restarts
-    // the current chapter, a second press within the grace window steps back.
     private func prevChapter(_ session: ReadingSession) {
         guard let progressManager = session.progressManager,
             let currentIndex = progressManager.selectedChapterId
         else { return }
 
-        let now = Date()
-        let justRestarted = lastChapterRestart.map { now.timeIntervalSince($0) < 2.0 } ?? false
+        let restarts = previousChapterRestarts(
+            progressInChapter: progressManager.chapterSeekBarValue,
+            lastRestartAt: lastChapterRestart,
+        )
 
-        if progressManager.chapterSeekBarValue > 0.01 && !justRestarted {
-            progressManager.handleUserProgressSeek(0)
-            lastChapterRestart = now
-        } else if currentIndex > 0 {
+        if !restarts && currentIndex > 0 {
             progressManager.handleUserChapterSelected(currentIndex - 1)
             lastChapterRestart = nil
         } else {
             progressManager.handleUserProgressSeek(0)
-            lastChapterRestart = now
+            lastChapterRestart = Date()
         }
     }
 
@@ -868,9 +993,12 @@ final class AndroidReaderSession {
         settings.fontFamily = kDefaultFontFamily
         settings.lineSpacing = kDefaultLineSpacing
         settings.marginLeftRight = kDefaultMarginLeftRightIOS
-        settings.marginTopBottom = kDefaultMarginTopBottom
+        settings.marginTop = kDefaultMarginTop
+        settings.marginBottom = kDefaultMarginBottom
         settings.wordSpacing = kDefaultWordSpacing
         settings.letterSpacing = kDefaultLetterSpacing
+        settings.paragraphSpacing = kDefaultParagraphSpacing
+        settings.firstLineIndent = kDefaultFirstLineIndent
         settings.textAlignment = kDefaultTextAlignment
         settings.singleColumnMode = kDefaultSingleColumnMode
         settings.scrollingMode = kDefaultScrollingMode
@@ -906,20 +1034,153 @@ final class AndroidReaderSession {
         )
     }
 
+    private func applyCustomization(json: String) async throws {
+        let update = try JSONDecoder().decode(CustomizationUpdate.self, from: Data(json.utf8))
+
+        if let mini = update.miniPlayer {
+            if let value = mini.size { miniPlayerConfig.size = value }
+            if let value = mini.leadingStyle { miniPlayerConfig.leadingStyle = value }
+            if let value = mini.cycleFirst { miniPlayerConfig.cycleFirst = value }
+            if let value = mini.cycleSecond { miniPlayerConfig.cycleSecond = value }
+            if let value = mini.cycleShowingSecond { miniPlayerConfig.cycleShowingSecond = value }
+            if let value = mini.progressScope { miniPlayerConfig.progressScope = value }
+            if let value = mini.mirrored { miniPlayerConfig.mirrored = value }
+            if let value = mini.contentRowSlots {
+                miniPlayerConfig.contentRowSlots = SlotLayout.sanitized(
+                    value,
+                    for: .miniContentRow,
+                )
+            }
+            if let value = mini.statSlots {
+                miniPlayerConfig.statSlots = SlotLayout.sanitized(value, for: .miniStatBand)
+            }
+            if let value = mini.scrubRowSlots {
+                miniPlayerConfig.scrubRowSlots = SlotLayout.sanitized(value, for: .miniScrubRow)
+            }
+            if let value = mini.extraSlots {
+                miniPlayerConfig.extraSlots = SlotLayout.sanitized(value, for: .miniExtraRow)
+            }
+            if let value = mini.progressIndicator { miniProgressIndicator = value }
+            if let value = mini.progressThickness { miniProgressThickness = value }
+        }
+
+        if let dock = update.dock {
+            if let value = dock.leadingSlots {
+                dockOptions.leadingSlots = SlotLayout.sanitized(value, for: .dockLeading)
+            }
+            if let value = dock.trailingSlots {
+                dockOptions.trailingSlots = SlotLayout.sanitized(value, for: .dockTrailing)
+            }
+            if let value = dock.centerSlots {
+                dockOptions.centerSlots = SlotLayout.sanitized(value, for: .dockCenter)
+            }
+            if let value = dock.transparency { dockOptions.transparency = value }
+            if let value = dock.progressIndicator { dockOptions.progressIndicator = value }
+            if let value = dock.progressThickness { dockOptions.progressThickness = value }
+            if let value = dock.progressScope { dockOptions.progressScope = value }
+        }
+
+        if let slots = update.menuBar?.slots {
+            menuBarSlots = SlotLayout.sanitized(slots, for: .menuBar)
+        }
+
+        if let modes = update.playbackModes {
+            if let value = modes.freeBrowseMode, kFreeBrowseModeValues.contains(value) {
+                settings.freeBrowseMode = value
+            }
+            if let value = modes.readaloudHighlightVisibility,
+                kReadaloudHighlightVisibilityValues.contains(value)
+            {
+                settings.readaloudHighlightVisibility = experimentalSettings ? value : "paused"
+            }
+            if let value = modes.doubleTapPlay, kDoubleTapPlayValues.contains(value) {
+                settings.doubleTapPlay = value
+            }
+        }
+
+        let miniChanged = update.miniPlayer != nil
+        let dockChanged = update.dock != nil
+
+        // Legacy booleans stay derived from the slot arrays so macOS/tvOS and
+        // older clients keep working, mirroring SettingsViewModel.swift.
+        if dockChanged {
+            overlayOptions.showProgress = dockOptions.leadingSlots.contains(.statPercent)
+            overlayOptions.showPageNumber = dockOptions.leadingSlots.contains(.statPage)
+            overlayOptions.showTimeRemainingInBook =
+                dockOptions.trailingSlots.contains(.statTimeInBook)
+            overlayOptions.showTimeRemainingInChapter =
+                dockOptions.trailingSlots.contains(.statTimeInChapter)
+            overlayOptions.showSkipBackward = dockOptions.centerSlots.contains(.skipBackward)
+            overlayOptions.showPlayPause = dockOptions.centerSlots.contains(.playPause)
+            overlayOptions.showSkipForward = dockOptions.centerSlots.contains(.skipForward)
+        }
+        if miniChanged {
+            overlayOptions.showMiniPlayerStats = miniPlayerConfig.statSlots.hasActiveComplication
+        }
+
+        try await SettingsActor.shared.updateConfig(
+            freeBrowseMode: update.playbackModes?.freeBrowseMode.map { _ in
+                settings.freeBrowseMode
+            },
+            readaloudHighlightVisibility: update.playbackModes?.readaloudHighlightVisibility.map {
+                _ in settings.readaloudHighlightVisibility
+            },
+            doubleTapPlay: update.playbackModes?.doubleTapPlay.map { _ in settings.doubleTapPlay },
+            miniPlayerSize: miniChanged ? miniPlayerConfig.size : nil,
+            miniPlayerLeadingStyle: miniChanged ? miniPlayerConfig.leadingStyle : nil,
+            miniPlayerCycleFirst: miniChanged ? miniPlayerConfig.cycleFirst : nil,
+            miniPlayerCycleSecond: miniChanged ? miniPlayerConfig.cycleSecond : nil,
+            miniPlayerCycleShowingSecond: miniChanged
+                ? miniPlayerConfig.cycleShowingSecond : nil,
+            miniPlayerProgressScope: miniChanged ? miniPlayerConfig.progressScope : nil,
+            miniPlayerMirrored: miniChanged ? miniPlayerConfig.mirrored : nil,
+            miniPlayerContentRowSlots: miniChanged ? miniPlayerConfig.contentRowSlots : nil,
+            miniPlayerStatSlots: miniChanged ? miniPlayerConfig.statSlots : nil,
+            miniPlayerScrubRowSlots: miniChanged ? miniPlayerConfig.scrubRowSlots : nil,
+            miniPlayerExtraSlots: miniChanged ? miniPlayerConfig.extraSlots : nil,
+            dockLeadingSlots: dockChanged ? dockOptions.leadingSlots : nil,
+            dockTrailingSlots: dockChanged ? dockOptions.trailingSlots : nil,
+            dockCenterSlots: dockChanged ? dockOptions.centerSlots : nil,
+            menuBarSlots: update.menuBar?.slots != nil ? menuBarSlots : nil,
+            showProgress: dockChanged ? overlayOptions.showProgress : nil,
+            showTimeRemainingInBook: dockChanged
+                ? overlayOptions.showTimeRemainingInBook : nil,
+            showTimeRemainingInChapter: dockChanged
+                ? overlayOptions.showTimeRemainingInChapter : nil,
+            showPageNumber: dockChanged ? overlayOptions.showPageNumber : nil,
+            dockTransparency: dockChanged ? dockOptions.transparency : nil,
+            showOverlaySkipBackward: dockChanged ? overlayOptions.showSkipBackward : nil,
+            showOverlaySkipForward: dockChanged ? overlayOptions.showSkipForward : nil,
+            showOverlayPlayPause: dockChanged ? overlayOptions.showPlayPause : nil,
+            showMiniPlayerStats: miniChanged ? overlayOptions.showMiniPlayerStats : nil,
+            progressIndicatorMiniPlayer: miniChanged ? miniProgressIndicator : nil,
+            progressIndicatorDock: dockChanged ? dockOptions.progressIndicator : nil,
+            progressIndicatorThickness: miniChanged ? miniProgressThickness : nil,
+            progressIndicatorThicknessDock: dockChanged
+                ? dockOptions.progressThickness : nil,
+            progressIndicatorScopeDock: dockChanged ? dockOptions.progressScope : nil,
+        )
+    }
+
     private func persistDisplaySettings() async throws {
         try await SettingsActor.shared.updateConfig(
             fontSize: settings.fontSize,
             fontFamily: settings.fontFamily,
             lineSpacing: settings.lineSpacing,
             marginLeftRight: settings.marginLeftRight,
-            marginTopBottom: settings.marginTopBottom,
+            marginTop: settings.marginTop,
+            marginBottom: settings.marginBottom,
             wordSpacing: settings.wordSpacing,
             letterSpacing: settings.letterSpacing,
+            paragraphSpacing: settings.paragraphSpacing,
+            firstLineIndent: settings.firstLineIndent,
             textAlignment: settings.textAlignment,
             enableMarginClickNavigation: settings.enableMarginClickNavigation,
             singleColumnMode: settings.singleColumnMode,
             scrollingMode: settings.scrollingMode,
-            lockViewToAudio: settings.lockViewToAudio,
+            freeBrowseMode: settings.freeBrowseMode,
+            readaloudDimOthers: settings.readaloudDimOthers,
+            readaloudDimAmount: settings.readaloudDimAmount,
         )
     }
 
@@ -947,6 +1208,10 @@ final class AndroidReaderSession {
         var highlightColor: String?
         var highlightThickness: Double?
         var readaloudHighlightMode: String?
+        var readaloudHighlightFade: Double?
+        var readaloudTextItalic: Bool?
+        var readaloudTextBold: Bool?
+        var readaloudUnderlineStyle: String?
         var userHighlightMode: String?
         var userHighlightColors: [String]?
         var userHighlightLabels: [String]?
@@ -1011,6 +1276,10 @@ final class AndroidReaderSession {
         if let value = edit.highlightColor { theme.highlightColor = value }
         if let value = edit.highlightThickness { theme.highlightThickness = value }
         if let value = edit.readaloudHighlightMode { theme.readaloudHighlightMode = value }
+        if let value = edit.readaloudHighlightFade { theme.readaloudHighlightFade = value }
+        if let value = edit.readaloudTextItalic { theme.readaloudTextItalic = value }
+        if let value = edit.readaloudTextBold { theme.readaloudTextBold = value }
+        if let value = edit.readaloudUnderlineStyle { theme.readaloudUnderlineStyle = value }
         if let value = edit.userHighlightMode { theme.userHighlightMode = value }
         if let colors = edit.userHighlightColors, colors.count == 6 {
             theme.userHighlightColor1 = colors[0]
@@ -1076,6 +1345,10 @@ final class AndroidReaderSession {
             let highlightColor: String
             let highlightThickness: Double
             let readaloudHighlightMode: String
+            let readaloudHighlightFade: Double
+            let readaloudTextItalic: Bool
+            let readaloudTextBold: Bool
+            let readaloudUnderlineStyle: String
             let userHighlightMode: String
             let userHighlightColors: [String]
             let userHighlightLabels: [String]
@@ -1129,13 +1402,55 @@ final class AndroidReaderSession {
             let lineSpacing: Double
             let marginLeftRight: Double
             let marginTopBottom: Double
+            let marginTop: Double
+            let marginBottom: Double
             let wordSpacing: Double
             let letterSpacing: Double
+            let paragraphSpacing: Double
+            let firstLineIndent: Bool
             let textAlignment: String
             let singleColumnMode: Bool
             let scrollingMode: Bool
             let enableMarginClickNavigation: Bool
             let lockViewToAudio: Bool
+            let readaloudDimOthers: Bool
+            let readaloudDimAmount: Double
+        }
+
+        struct MiniPlayerState: Encodable {
+            let size: MiniPlayerSize
+            let leadingStyle: MiniPlayerLeadingStyle
+            let cycleFirst: MiniPlayerCycleBlock
+            let cycleSecond: MiniPlayerCycleBlock
+            let cycleShowingSecond: Bool
+            let progressScope: MiniPlayerProgressScope
+            let mirrored: Bool
+            let contentRowSlots: [PlayerComplication]
+            let statSlots: [PlayerComplication]
+            let scrubRowSlots: [PlayerComplication]
+            let extraSlots: [PlayerComplication]
+            let progressIndicator: Bool
+            let progressThickness: Double
+        }
+
+        struct DockState: Encodable {
+            let leadingSlots: [PlayerComplication]
+            let trailingSlots: [PlayerComplication]
+            let centerSlots: [PlayerComplication]
+            let transparency: Double
+            let progressIndicator: Bool
+            let progressThickness: Double
+            let progressScope: MiniPlayerProgressScope
+        }
+
+        struct MenuBarState: Encodable {
+            let slots: [PlayerComplication]
+        }
+
+        struct PlaybackModes: Encodable {
+            let freeBrowseMode: String
+            let readaloudHighlightVisibility: String
+            let doubleTapPlay: String
         }
 
         let title: String
@@ -1143,6 +1458,7 @@ final class AndroidReaderSession {
         let hasAudioNarration: Bool
         let toc: [Toc]
         let selectedChapterId: Int?
+        let chapterCount: Int
         let bookFraction: Double?
         let chapterFraction: Double?
         let chapterCurrentPage: Int?
@@ -1157,6 +1473,7 @@ final class AndroidReaderSession {
         let sleepTimerActive: Bool
         let sleepTimerRemaining: Double?
         let sleepTimerType: String?
+        let sleepTimerEndOfChapter: Bool
         let overlayToggleCount: Int
         let keepScreenOn: Bool
         let backgroundColor: String
@@ -1167,6 +1484,11 @@ final class AndroidReaderSession {
         let themes: [Theme]
         let settings: DisplaySettings
         let overlay: OverlayOptions
+        let miniPlayer: MiniPlayerState
+        let dock: DockState
+        let menuBar: MenuBarState
+        let playbackModes: PlaybackModes
+        let experimentalSettings: Bool
         let search: Search
         let highlights: [HighlightItem]
         let highlightPalette: [PaletteEntry]
@@ -1205,6 +1527,7 @@ final class AndroidReaderSession {
                 )
             },
             selectedChapterId: progressManager?.uiSelectedChapterId,
+            chapterCount: session.bookStructure.count,
             bookFraction: progressManager?.bookFraction,
             chapterFraction: progressManager?.chapterSeekBarValue,
             chapterCurrentPage: progressManager?.chapterCurrentPage,
@@ -1219,6 +1542,8 @@ final class AndroidReaderSession {
             sleepTimerActive: overlayManager?.sleepTimerActive ?? false,
             sleepTimerRemaining: overlayManager?.sleepTimerRemaining?.rounded(),
             sleepTimerType: overlayManager?.sleepTimerType?.rawValue,
+            sleepTimerEndOfChapter: (overlayManager?.sleepTimerActive ?? false)
+                && overlayManager?.sleepTimerType == .endOfChapter,
             overlayToggleCount: overlayToggleCount,
             keepScreenOn: keepScreenOn,
             backgroundColor: settings.backgroundColor
@@ -1241,6 +1566,10 @@ final class AndroidReaderSession {
                     highlightColor: theme.highlightColor,
                     highlightThickness: theme.highlightThickness,
                     readaloudHighlightMode: theme.readaloudHighlightMode,
+                    readaloudHighlightFade: theme.readaloudHighlightFade,
+                    readaloudTextItalic: theme.readaloudTextItalic,
+                    readaloudTextBold: theme.readaloudTextBold,
+                    readaloudUnderlineStyle: theme.readaloudUnderlineStyle,
                     userHighlightMode: theme.userHighlightMode,
                     userHighlightColors: [
                         theme.userHighlightColor1, theme.userHighlightColor2,
@@ -1260,16 +1589,53 @@ final class AndroidReaderSession {
                 fontFamily: settings.fontFamily,
                 lineSpacing: settings.lineSpacing,
                 marginLeftRight: settings.marginLeftRight,
-                marginTopBottom: settings.marginTopBottom,
+                marginTopBottom: settings.marginTop,
+                marginTop: settings.marginTop,
+                marginBottom: settings.marginBottom,
                 wordSpacing: settings.wordSpacing,
                 letterSpacing: settings.letterSpacing,
+                paragraphSpacing: settings.paragraphSpacing,
+                firstLineIndent: settings.firstLineIndent,
                 textAlignment: settings.textAlignment,
                 singleColumnMode: settings.singleColumnMode,
                 scrollingMode: settings.scrollingMode,
                 enableMarginClickNavigation: settings.enableMarginClickNavigation,
                 lockViewToAudio: settings.lockViewToAudio,
+                readaloudDimOthers: settings.readaloudDimOthers,
+                readaloudDimAmount: settings.readaloudDimAmount,
             ),
             overlay: overlayOptions,
+            miniPlayer: ReaderState.MiniPlayerState(
+                size: miniPlayerConfig.size,
+                leadingStyle: miniPlayerConfig.leadingStyle,
+                cycleFirst: miniPlayerConfig.cycleFirst,
+                cycleSecond: miniPlayerConfig.cycleSecond,
+                cycleShowingSecond: miniPlayerConfig.cycleShowingSecond,
+                progressScope: miniPlayerConfig.progressScope,
+                mirrored: miniPlayerConfig.mirrored,
+                contentRowSlots: miniPlayerConfig.contentRowSlots,
+                statSlots: miniPlayerConfig.statSlots,
+                scrubRowSlots: miniPlayerConfig.scrubRowSlots,
+                extraSlots: miniPlayerConfig.extraSlots,
+                progressIndicator: miniProgressIndicator,
+                progressThickness: miniProgressThickness,
+            ),
+            dock: ReaderState.DockState(
+                leadingSlots: dockOptions.leadingSlots,
+                trailingSlots: dockOptions.trailingSlots,
+                centerSlots: dockOptions.centerSlots,
+                transparency: dockOptions.transparency,
+                progressIndicator: dockOptions.progressIndicator,
+                progressThickness: dockOptions.progressThickness,
+                progressScope: dockOptions.progressScope,
+            ),
+            menuBar: ReaderState.MenuBarState(slots: menuBarSlots),
+            playbackModes: ReaderState.PlaybackModes(
+                freeBrowseMode: settings.freeBrowseMode,
+                readaloudHighlightVisibility: settings.readaloudHighlightVisibility,
+                doubleTapPlay: settings.doubleTapPlay,
+            ),
+            experimentalSettings: experimentalSettings,
             search: ReaderState.Search(
                 query: searchQuery,
                 isSearching: isSearching,
@@ -1321,6 +1687,101 @@ final class AndroidReaderSession {
         }
         lastStatePayload = payload
         notifyAndroidReaderStateDidChange(payload)
+    }
+}
+
+// Mirrors SlotLayout in AppleKit Customize/ComplicationPickerSheet.swift (iOS-only module).
+private enum SlotRegion {
+    case miniContentRow, miniStatBand, miniScrubRow, miniExtraRow
+    case dockLeading, dockTrailing, dockCenter, menuBar
+}
+
+private enum SlotLayout {
+    static func slotCount(for region: SlotRegion) -> Int {
+        switch region {
+            case .miniContentRow: return 5
+            case .miniStatBand: return 4
+            case .miniScrubRow: return 4
+            case .miniExtraRow: return 4
+            case .dockLeading: return 2
+            case .dockTrailing: return 2
+            case .dockCenter: return 3
+            case .menuBar: return 6
+        }
+    }
+
+    static func isMiniRow(_ region: SlotRegion) -> Bool {
+        switch region {
+            case .miniContentRow, .miniStatBand, .miniScrubRow, .miniExtraRow: return true
+            case .dockLeading, .dockTrailing, .dockCenter, .menuBar: return false
+        }
+    }
+
+    static let stats: [PlayerComplication] = [
+        .statPercent, .statPage, .statPagesLeft, .statChapterOf, .statChapterPercent,
+        .statTimeInBook, .statTimeInChapter, .statChapterElapsed, .statChapterLength,
+        .statFinishTime, .statSessionTime, .statSleepTimer,
+    ]
+
+    static let dockOnlyStats: [PlayerComplication] = [.statClock, .statBattery]
+
+    static func isTextOnly(_ region: SlotRegion) -> Bool {
+        region == .miniStatBand
+    }
+
+    static func readerControls(for region: SlotRegion) -> [PlayerComplication] {
+        if isTextOnly(region) { return [] }
+        return [
+            .chapters, .bookmarks, .search, .textSettings, .sleepTimer, .mirror,
+            .scrollMode, .freeBrowseLock, .orientationLock,
+        ]
+    }
+
+    static func playbackControls(for region: SlotRegion) -> [PlayerComplication] {
+        if isTextOnly(region) { return [] }
+        if isMiniRow(region) {
+            return [
+                .titleBlock, .scrubBar, .skipBackward, .playPause, .skipForward, .playbackSpeed,
+            ]
+        }
+        switch region {
+            case .dockCenter, .menuBar:
+                return [.playPause, .skipBackward, .skipForward, .playbackSpeed]
+            default:
+                return []
+        }
+    }
+
+    static func statComplications(for region: SlotRegion) -> [PlayerComplication] {
+        switch region {
+            case .dockLeading, .dockTrailing:
+                return stats + dockOnlyStats
+            default:
+                return stats
+        }
+    }
+
+    static func allowedComplications(for region: SlotRegion) -> [PlayerComplication] {
+        [.none] + playbackControls(for: region) + readerControls(for: region)
+            + statComplications(for: region)
+    }
+
+    static func sanitized(
+        _ slots: [PlayerComplication],
+        for region: SlotRegion,
+    ) -> [PlayerComplication] {
+        let allowed = allowedComplications(for: region)
+        return padded(slots, for: region).map { allowed.contains($0) ? $0 : .none }
+    }
+
+    static func padded(
+        _ slots: [PlayerComplication],
+        for region: SlotRegion,
+    ) -> [PlayerComplication] {
+        let count = slotCount(for: region)
+        var result = Array(slots.prefix(count))
+        while result.count < count { result.append(.none) }
+        return result
     }
 }
 

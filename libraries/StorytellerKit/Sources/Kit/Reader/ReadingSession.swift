@@ -13,9 +13,12 @@ final class HeadlessReaderSettings: ReaderSettingsReading {
     var fontFamily: String { "system" }
     var lineSpacing: Double { 1.5 }
     var marginLeftRight: Double { 0 }
-    var marginTopBottom: Double { 0 }
+    var marginTop: Double { 0 }
+    var marginBottom: Double { 0 }
     var wordSpacing: Double { 0 }
     var letterSpacing: Double { 0 }
+    var paragraphSpacing: Double { 0 }
+    var firstLineIndent: Bool { false }
     var textAlignment: String { "left" }
     var highlightColor: String? { nil }
     var highlightThickness: Double { 1 }
@@ -27,7 +30,15 @@ final class HeadlessReaderSettings: ReaderSettingsReading {
     var enableMarginClickNavigation: Bool { false }
     var userHighlightMode: String { "underline" }
     var readaloudHighlightMode: String { "underline" }
-    var lockViewToAudio: Bool { true }
+    var readaloudDimOthers: Bool { false }
+    var readaloudDimAmount: Double { kDefaultReadaloudDimAmount }
+    var readaloudHighlightFade: Double { kDefaultReadaloudHighlightFade }
+    var readaloudTextItalic: Bool { kDefaultReadaloudTextItalic }
+    var readaloudTextBold: Bool { kDefaultReadaloudTextBold }
+    var readaloudUnderlineStyle: String { kDefaultReadaloudUnderlineStyle }
+    var freeBrowseMode: String { "never" }
+    var readaloudHighlightVisibility: String { "paused" }
+    var doubleTapPlay: String { "never" }
 }
 
 /// Live reading sessions keyed by book; opening an already-open book joins
@@ -319,7 +330,9 @@ public final class ReadingSession {
                         "[ReadingSession] Restored SMIL position to section \(sectionIndex), fragment: \(fragment)"
                     )
                 }
-            } else if let totalProg = locator.locations?.totalProgression, totalProg > 0 {
+            } else if let totalProg = locator.locations?.totalProgression, totalProg > 0,
+                totalProg <= 1
+            {
                 let success = await SMILPlayerActor.shared.seekToTotalProgression(totalProg)
                 debugLog(
                     "[ReadingSession] Restored SMIL position using totalProgression \(totalProg): \(success ? "success" : "failed")"
@@ -488,6 +501,7 @@ public final class ReadingSession {
                     sectionIndex: message.sectionIndex,
                     anchor: message.anchor,
                     takeover: true,
+                    source: .doubleTap,
                 )
             }
         }
@@ -677,6 +691,9 @@ public final class ReadingSession {
     public func handleSceneBecameActive() async {
         mediaOverlayManager?.isInBackground = false
         let audioPlayedWhileBackgrounded = mediaOverlayManager?.backgroundAudioPlayed ?? false
+        debugLog(
+            "[ReadingSession] Scene active (backgroundAudioPlayed=\(audioPlayedWhileBackgrounded))"
+        )
         if audioPlayedWhileBackgrounded {
             await SMILPlayerActor.shared.reconcilePositionFromPlayer()
             if let syncData = await SMILPlayerActor.shared.getBackgroundSyncData() {
@@ -692,6 +709,7 @@ public final class ReadingSession {
     public func handleSceneEnteredBackground() async {
         mediaOverlayManager?.isInBackground = true
         let wasPlaying = await SMILPlayerActor.shared.getCurrentState()?.isPlaying ?? false
+        debugLog("[ReadingSession] Scene background (playing=\(wasPlaying))")
         if wasPlaying {
             mediaOverlayManager?.backgroundAudioPlayed = true
         }

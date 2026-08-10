@@ -12,6 +12,7 @@ public struct PlaybackRateButton: View {
     private let showBackground: Bool
     private let compactLabel: Bool
     private let iconFont: Font
+    private let textButton: Bool
 
     @State private var showSpeedPicker = false
     @State private var sliderValue: Double = 1.0
@@ -29,6 +30,7 @@ public struct PlaybackRateButton: View {
         showBackground: Bool = true,
         compactLabel: Bool = false,
         iconFont: Font = .callout.weight(.semibold),
+        textButton: Bool = false,
     ) {
         self.currentRate = currentRate
         self.onRateChange = onRateChange
@@ -40,6 +42,33 @@ public struct PlaybackRateButton: View {
         self.showBackground = showBackground
         self.compactLabel = compactLabel
         self.iconFont = iconFont
+        self.textButton = textButton
+    }
+
+    @ViewBuilder
+    private var buttonLabel: some View {
+        Group {
+            if textButton {
+                Text(playbackRateDescription)
+                    .font(iconFont)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            } else {
+                Image(systemName: "speedometer")
+                    .font(iconFont)
+            }
+        }
+        .foregroundStyle(foregroundColor.opacity(transparency))
+        .frame(width: buttonSize, height: buttonSize)
+        .background(
+            Group {
+                if showBackground {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(backgroundColor.opacity(0.12 * transparency))
+                }
+            }
+        )
     }
 
     public var body: some View {
@@ -50,18 +79,7 @@ public struct PlaybackRateButton: View {
                 textFieldValue = formatRate(currentRate)
                 showSpeedPicker = true
             }) {
-                Image(systemName: "speedometer")
-                    .font(iconFont)
-                    .foregroundStyle(foregroundColor.opacity(transparency))
-                    .frame(width: buttonSize, height: buttonSize)
-                    .background(
-                        Group {
-                            if showBackground {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(backgroundColor.opacity(0.12 * transparency))
-                            }
-                        }
-                    )
+                buttonLabel
             }
             .buttonStyle(.plain)
             .sheet(isPresented: $showSpeedPicker) {
@@ -73,18 +91,7 @@ public struct PlaybackRateButton: View {
                 textFieldValue = formatRate(currentRate)
                 showSpeedPicker = true
             }) {
-                Image(systemName: "speedometer")
-                    .font(iconFont)
-                    .foregroundStyle(foregroundColor.opacity(transparency))
-                    .frame(width: buttonSize, height: buttonSize)
-                    .background(
-                        Group {
-                            if showBackground {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(backgroundColor.opacity(0.12 * transparency))
-                            }
-                        }
-                    )
+                buttonLabel
             }
             .buttonStyle(.plain)
             .popover(isPresented: $showSpeedPicker) {

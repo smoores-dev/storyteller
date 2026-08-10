@@ -34,6 +34,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,14 +45,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import dev.smoores.storyteller.data.AUTO_UI_SCALE
+import dev.smoores.storyteller.data.DisplayOptions
+import dev.smoores.storyteller.data.DisplayOptionsStore
+import dev.smoores.storyteller.data.EinkOptionsStore
 import dev.smoores.storyteller.data.ViewOptionsStore
+import dev.smoores.storyteller.platform.BooxScreensaver
+import dev.smoores.storyteller.platform.EinkDisplay
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookDetails
 import dev.smoores.storyteller.model.BookID
 import dev.smoores.storyteller.model.SessionKind
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private enum class Screen {
     Library,
@@ -89,6 +100,19 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
         )
     }
     var showViewOptions by remember { mutableStateOf(false) }
+    val einkStore = remember { EinkOptionsStore(appContext) }
+    var einkOptions by remember { mutableStateOf(einkStore.load()) }
+    val einkUiState = remember(einkOptions) {
+        EinkUiState(
+            optimizeRefresh = EinkDisplay.supportsRefreshControl && einkOptions.optimizeRefresh,
+            reduceAnimations = EinkDisplay.isBoox && einkOptions.reduceAnimations,
+        )
+    }
+    val displayStore = remember { DisplayOptionsStore(appContext) }
+    var displayOptions by remember { mutableStateOf(displayStore.load()) }
+    val automaticUiScale = remember { UiScale.automatic(appContext) }
+    val activity = LocalActivity.current
+    val rootView = LocalView.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val drawerScope = rememberCoroutineScope()
     val screen = Screen.valueOf(screenName)
@@ -198,10 +222,39 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
             screenName = Screen.Library.name
         }
     }
+    LaunchedEffect(
+        screen,
+        readerMode,
+        selectedBookSummary?.id,
+        selectedBookSummary?.coverVersion,
+        einkOptions.coverScreensaver,
+    ) {
+        if (screen != Screen.Reader || !einkOptions.coverScreensaver || !EinkDisplay.isBoox) {
+            return@LaunchedEffect
+        }
+        val book = selectedBook ?: return@LaunchedEffect
+        val size = BooxScreensaver.displaySize(appContext)
+        val audio = readerMode == "audio"
+        val cover = viewModel.cover(book, audio, size.width, size.height)
+            ?: return@LaunchedEffect
+        val key = "${book.id}:${book.coverVersion}:$audio"
+        withContext(Dispatchers.IO) { BooxScreensaver.setToCover(appContext, cover, key) }
+    }
+    // Leaving the reader drops its per-refresh eink control, so clear the
+    // ghosting it leaves behind with one quality refresh of the new screen.
+    var einkWasReader by remember { mutableStateOf(false) }
+    LaunchedEffect(screen) {
+        val isReader = screen == Screen.Reader
+        if (einkWasReader && !isReader && einkUiState.optimizeRefresh) {
+            EinkDisplay.fullQualityRefresh(rootView)
+        }
+        einkWasReader = isReader
+    }
     BackHandler(enabled = canNavigateBack, onBack = navigateBack)
 
     KeepPlaybackServiceConnected(active = state.session != null)
 
+    CompositionLocalProvider(LocalEink provides einkUiState) {
     MaterialTheme(
         colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
     ) {
@@ -362,10 +415,41 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                             doubleCoverAlignment = doubleCoverAlignment,
                         )
                     },
+                    updateExperimentalSettings = { enabled ->
+                        viewModel.updateAppSettings(experimentalSettings = enabled)
+                    },
                     setLiveSyncEnabled = { enabled ->
                         viewModel.updateAppSettings(liveReadingSyncEnabled = enabled)
                     },
                     loadLiveSyncStatus = viewModel::liveSyncStatus,
+                    loadDebugLog = viewModel::debugLog,
+                    clearDebugLog = viewModel::clearDebugLog,
+                    setVerboseLogging = viewModel::setVerboseLogging,
+                    einkOptions = if (EinkDisplay.isBoox) einkOptions else null,
+                    updateEinkOptions = { updated ->
+                        val turningOff =
+                            einkOptions.coverScreensaver && !updated.coverScreensaver
+                        einkOptions = updated
+                        einkStore.save(updated)
+                        if (turningOff) {
+                            drawerScope.launch(Dispatchers.IO) {
+                                BooxScreensaver.clear(appContext)
+                            }
+                        }
+                    },
+                    displayOptions = displayOptions,
+                    automaticUiScale = automaticUiScale,
+                    updateDisplayOptions = { updated ->
+                        fun resolved(options: DisplayOptions): Float =
+                            if (options.uiScale == AUTO_UI_SCALE) automaticUiScale
+                            else options.uiScale
+                        val changed = resolved(updated) != resolved(displayOptions)
+                        displayOptions = updated
+                        displayStore.save(updated)
+                        // The density override lives on the activity's base
+                        // context, so a new scale needs the activity rebuilt.
+                        if (changed) activity?.recreate()
+                    },
                 )
                 Screen.BookReports -> BookReportsScreen(
                     books = state.books,
@@ -504,6 +588,7 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
             }
         }
         }
+    }
     }
 }
 

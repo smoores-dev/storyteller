@@ -39,6 +39,8 @@ public final class MediaOverlayManager {
     /// Suppress actor-driven highlights briefly after user-initiated navigation
     private var suppressActorHighlightsUntil: Date? = nil
 
+    private var lastObservedUserSeekCount: Int? = nil
+
     public var isPlaying: Bool = false
     public var isInBackground: Bool = false
     public var backgroundAudioPlayed: Bool = false
@@ -63,10 +65,30 @@ public final class MediaOverlayManager {
         return Date().timeIntervalSince(last) < 30
     }
 
-    /// Whether audio always syncs to view navigation (true) or only when playing (false)
-    /// When true: Audio follows all navigation events (page flips, chapter changes) - default behavior
-    /// When false: Audio only follows navigation when playing; paused navigation is independent
-    private var syncEnabled: Bool { settingsVM.lockViewToAudio }
+    public enum SeekSource {
+        case userNav
+        case doubleTap
+        case system
+    }
+
+    /// True once the user has browsed away from the playhead without audio following.
+    public private(set) var playheadDiverged = false
+
+    private var freeBrowse: FreeBrowseMode {
+        FreeBrowseMode(rawValue: settingsVM.freeBrowseMode) ?? .never
+    }
+
+    private var highlightVisibility: ReadaloudHighlightVisibility {
+        ReadaloudHighlightVisibility(rawValue: settingsVM.readaloudHighlightVisibility) ?? .paused
+    }
+
+    private var audioFollowsUserNav: Bool {
+        switch freeBrowse {
+            case .never: return true
+            case .paused: return isPlaying
+            case .always: return false
+        }
+    }
 
     public var playbackRate: Double = 1.0
     public var volume: Double = 1.0
@@ -218,12 +240,18 @@ public final class MediaOverlayManager {
 
         let wasPlaying = isPlaying
         isPlaying = state.isPlaying
+        if wasPlaying != isPlaying {
+            syncPlaybackActiveToJS()
+        }
         playbackRate = state.playbackRate
         if state.isPlaying {
             liveSyncFollowRate = nil
             lastLiveSyncApplyTime = nil
         }
         if isInBackground && state.isPlaying {
+            if !backgroundAudioPlayed {
+                debugLog("[MOM] Audio playing while backgrounded")
+            }
             backgroundAudioPlayed = true
         }
         chapterElapsedSeconds = state.chapterElapsed
@@ -237,7 +265,12 @@ public final class MediaOverlayManager {
                 || state.currentEntryIndex != previousEntryIndex)
         let fragmentChanged = state.currentFragment != previousFragment
 
-        if entryChanged && fragmentChanged && state.isPlaying {
+        // A paused reader must still follow a deliberate seek, from the media
+        // notification or anywhere else, but not the narration running on.
+        let userSeeked = lastObservedUserSeekCount.map { $0 != state.userSeekCount } ?? false
+        lastObservedUserSeekCount = state.userSeekCount
+
+        if entryChanged && fragmentChanged && (state.isPlaying || userSeeked) {
             handleEntryAdvancement(
                 sectionIndex: state.currentSectionIndex,
                 entryIndex: state.currentEntryIndex,
@@ -274,6 +307,7 @@ public final class MediaOverlayManager {
 
         debugLog("[MOM] Engine taken by another book - degrading to idle")
         isPlaying = false
+        syncPlaybackActiveToJS()
         pageFlipTask?.cancel()
         pageFlipTask = nil
         disableScreenWakeLock()
@@ -297,12 +331,14 @@ public final class MediaOverlayManager {
             "[MOM] Actor advanced to: section=\(sectionIndex), entry=\(entryIndex), textId=\(entry.textId)"
         )
 
-        Task {
-            await sendHighlightCommand(
-                sectionIndex: sectionIndex,
-                textId: entry.textId,
-                seekToLocation: true,
-            )
+        if !playheadDiverged {
+            Task {
+                await sendHighlightCommand(
+                    sectionIndex: sectionIndex,
+                    textId: entry.textId,
+                    seekToLocation: true,
+                )
+            }
         }
 
         Task {
@@ -363,10 +399,11 @@ public final class MediaOverlayManager {
     public func handleUserChapterNavigation(sectionIndex: Int) async {
         debugLog("[MOM] User chapter nav → Section.\(sectionIndex)")
 
-        guard syncEnabled || isPlaying else {
-            debugLog(
-                "[MOM] Not playing and sync disabled - audio will not follow chapter navigation"
-            )
+        guard audioFollowsUserNav else {
+            debugLog("[MOM] Free browse - audio will not follow chapter navigation")
+            if hasMediaOverlay && sectionIndex != cachedSectionIndex {
+                playheadDiverged = true
+            }
             return
         }
 
@@ -382,7 +419,7 @@ public final class MediaOverlayManager {
 
         let firstEntry = sectionInfo.mediaOverlay[0]
         debugLog("[MOM] Chapter has audio - seeking to first fragment: \(firstEntry.textId)")
-        await handleSeekEvent(sectionIndex: sectionIndex, anchor: firstEntry.textId)
+        await handleSeekEvent(sectionIndex: sectionIndex, anchor: firstEntry.textId, source: .userNav)
     }
 
     /// Called when user initiates navigation (arrow keys, swipe, progress seek)
@@ -399,8 +436,9 @@ public final class MediaOverlayManager {
             return false
         }
 
-        guard syncEnabled || isPlaying else {
-            debugLog("[MOM] Not playing and sync disabled - audio will not follow page navigation")
+        guard audioFollowsUserNav else {
+            debugLog("[MOM] Free browse - audio will not follow page navigation")
+            await updateDivergence(section: section)
             return false
         }
 
@@ -423,6 +461,7 @@ public final class MediaOverlayManager {
             await handleSeekEvent(
                 sectionIndex: section,
                 anchor: sectionInfo.mediaOverlay[0].textId,
+                source: .userNav,
             )
             return true
         }
@@ -459,7 +498,7 @@ public final class MediaOverlayManager {
 
         if let textId = bestTextId {
             debugLog("[MOM] Syncing audio to first visible SMIL element: \(textId)")
-            await handleSeekEvent(sectionIndex: section, anchor: textId)
+            await handleSeekEvent(sectionIndex: section, anchor: textId, source: .userNav)
             return true
         }
 
@@ -479,7 +518,12 @@ public final class MediaOverlayManager {
     /// - User double-clicks on a sentence in the reader
     /// - Book opens at last reading position (future)
     /// Only seeks if the exact fragment exists in bookStructure for the requested section
-    public func handleSeekEvent(sectionIndex: Int, anchor: String, takeover: Bool = false) async {
+    public func handleSeekEvent(
+        sectionIndex: Int,
+        anchor: String,
+        takeover: Bool = false,
+        source: SeekSource = .system,
+    ) async {
         debugLog("[MOM] handleSeekEvent - section: \(sectionIndex), anchor: \(anchor)")
 
         guard let section = getSection(at: sectionIndex) else {
@@ -512,20 +556,108 @@ public final class MediaOverlayManager {
 
         let wasPlaying = isPlaying
 
+        // This seek is the reader's own; its echo through the actor's state must
+        // not re-drive the view, which already moved.
+        suppressActorHighlightsUntil = Date().addingTimeInterval(0.5)
+
         let success = await SMILPlayerActor.shared.seekToFragment(
             sectionIndex: sectionIndex,
             textId: anchor,
         )
         if success {
             debugLog("[MOM] handleSeekEvent - seek successful")
-            await sendHighlightCommand(sectionIndex: sectionIndex, textId: anchor)
+            playheadDiverged = false
 
             if wasPlaying {
+                await sendHighlightCommand(sectionIndex: sectionIndex, textId: anchor)
                 debugLog("[MOM] handleSeekEvent - resuming playback")
                 try? await SMILPlayerActor.shared.play()
+            } else if shouldHighlightPausedSeek(source: source) {
+                await sendHighlightCommand(sectionIndex: sectionIndex, textId: anchor)
+            } else {
+                try? await commsBridge?.sendJsClearHighlight()
+            }
+
+            if !wasPlaying && source == .doubleTap {
+                await autoPlayAfterDoubleTapIfEnabled()
             }
         } else {
             debugLog("[MOM] handleSeekEvent - seek failed")
+        }
+    }
+
+    /// Kindle-style paused behavior: a page flip moves the playhead silently;
+    /// only deliberate seeks (double tap) draw the highlight while paused.
+    private func shouldHighlightPausedSeek(source: SeekSource) -> Bool {
+        switch highlightVisibility {
+            case .playing: return false
+            case .paused: return source != .userNav
+            case .always: return true
+        }
+    }
+
+    private func autoPlayAfterDoubleTapIfEnabled() async {
+        switch DoubleTapPlayMode(rawValue: settingsVM.doubleTapPlay) ?? .never {
+            case .never:
+                return
+            case .always:
+                await startPlaying()
+            case .headphones:
+                if StorytellerPlatform.audioRoute?.isHeadphoneRouteActive == true {
+                    await startPlaying()
+                }
+        }
+    }
+
+    private func updateDivergence(section: Int) async {
+        guard hasMediaOverlay,
+            let currentSection = getSection(at: cachedSectionIndex),
+            cachedEntryIndex < currentSection.mediaOverlay.count
+        else { return }
+
+        guard section == cachedSectionIndex else {
+            playheadDiverged = true
+            return
+        }
+
+        guard let visibleIds = try? await commsBridge?.sendJsGetFullyVisibleElementIds(),
+            !visibleIds.isEmpty,
+            let indexMap = textIdIndexBySection[section]
+        else { return }
+
+        let visibleIndices = visibleIds.compactMap { indexMap[$0] }
+        guard let minIndex = visibleIndices.min(), let maxIndex = visibleIndices.max() else {
+            playheadDiverged = true
+            return
+        }
+        // Tolerate boundary sentences that straddle the page break.
+        playheadDiverged = !(cachedEntryIndex >= minIndex - 1 && cachedEntryIndex <= maxIndex + 1)
+    }
+
+    /// Snap the view back to the current playhead position without moving audio.
+    public func returnToPlayhead() async {
+        guard let section = getSection(at: cachedSectionIndex),
+            cachedEntryIndex < section.mediaOverlay.count
+        else { return }
+
+        let entry = section.mediaOverlay[cachedEntryIndex]
+        if isPlaying || highlightVisibility != .playing {
+            await sendHighlightCommand(
+                sectionIndex: cachedSectionIndex,
+                textId: entry.textId,
+                seekToLocation: true,
+            )
+        } else {
+            try? await commsBridge?.sendJsClearHighlight()
+            try? await commsBridge?.sendJsGoToHrefCommand(href: "\(entry.textHref)#\(entry.textId)")
+        }
+        playheadDiverged = false
+    }
+
+    private func syncPlaybackActiveToJS() {
+        let active = isPlaying
+        Task {
+            try? await commsBridge?.sendJsSetPlaybackActive(active)
         }
     }
 
@@ -557,6 +689,8 @@ public final class MediaOverlayManager {
 
             try await SMILPlayerActor.shared.play()
             isPlaying = true
+            syncPlaybackActiveToJS()
+            playheadDiverged = false
 
             if let entry = await SMILPlayerActor.shared.getCurrentEntry() {
                 let (currentSectionIndex, _) = await SMILPlayerActor.shared.getCurrentPosition()
@@ -583,12 +717,14 @@ public final class MediaOverlayManager {
         disableScreenWakeLock()
         await SMILPlayerActor.shared.pause()
         isPlaying = false
+        syncPlaybackActiveToJS()
         pageFlipTask?.cancel()
         pageFlipTask = nil
+        if highlightVisibility == .playing {
+            try? await commsBridge?.sendJsClearHighlight()
+        }
         debugLog("[MOM] stopPlaying() - paused")
     }
-
-    // These are kept for backward compatibility but can be removed once fully migrated
 
     public func nextSentence() {
         guard hasMediaOverlay else {
@@ -815,7 +951,7 @@ public final class MediaOverlayManager {
 
     /// Internal: Update sleep timer countdown
     private func updateSleepTimer() async {
-        guard sleepTimerActive, isPlaying else { return }
+        guard sleepTimerActive else { return }
 
         if sleepTimerType == .endOfChapter {
             return
@@ -831,8 +967,11 @@ public final class MediaOverlayManager {
 
         if remaining <= 0 {
             debugLog("[MOM] Sleep timer expired - pausing playback")
+            let wasPlaying = isPlaying
             cancelSleepTimer()
-            await progressManager?.togglePlaying()
+            if wasPlaying {
+                await progressManager?.togglePlaying()
+            }
         }
     }
 
@@ -1002,7 +1141,7 @@ public final class MediaOverlayManager {
         pageFlipTask?.cancel()
         pageFlipTask = nil
 
-        guard isPlaying || isFollowingLiveSync else { return }
+        guard (isPlaying || isFollowingLiveSync) && !playheadDiverged else { return }
 
         debugLog(
             "[MOM] Element visibility: textId=\(message.textId), visible=\(message.visibleRatio), offScreen=\(message.offScreenRatio)"
@@ -1051,7 +1190,7 @@ public final class MediaOverlayManager {
     }
 
     private func flipPageIfNotDebounced() async {
-        guard isPlaying || isFollowingLiveSync else { return }
+        guard (isPlaying || isFollowingLiveSync) && !playheadDiverged else { return }
 
         if let last = lastFlipTime, Date().timeIntervalSince(last) < 0.3 {
             debugLog("[MOM] Debouncing page flip")

@@ -1,13 +1,16 @@
 import Foundation
 
 public let kDefaultFontSize: Double = 24
-public let kDefaultFontFamily = "System Default"
+public let kDefaultFontFamily = "Literata"
 public let kDefaultLineSpacing: Double = 1.4
 public let kDefaultMarginLeftRightIOS: Double = 2
 public let kDefaultMarginLeftRightMac: Double = 5
-public let kDefaultMarginTopBottom: Double = 2
+public let kDefaultMarginTop: Double = 6
+public let kDefaultMarginBottom: Double = 4
 public let kDefaultWordSpacing: Double = 0
 public let kDefaultLetterSpacing: Double = 0
+public let kDefaultParagraphSpacing: Double = 0
+public let kDefaultFirstLineIndent = false
 public let kDefaultJustifyText = true
 public let kDefaultTextAlignment = "justify"
 public let kTextAlignmentValues = ["left", "justify", "right"]
@@ -48,6 +51,19 @@ public let kDefaultPlaybackSpeed: Double = 1.0
 public let kDefaultVolume: Double = 1.0
 public let kDefaultStatsExpanded = false
 public let kDefaultLockViewToAudio = true
+public let kDefaultFreeBrowseMode = "never"
+public let kFreeBrowseModeValues = ["never", "paused", "always"]
+public let kDefaultReadaloudHighlightVisibility = "paused"
+public let kReadaloudHighlightVisibilityValues = ["playing", "paused", "always"]
+public let kDefaultDoubleTapPlay = "headphones"
+public let kDoubleTapPlayValues = ["never", "always", "headphones"]
+public let kDefaultReadaloudDimOthers = false
+public let kDefaultReadaloudDimAmount: Double = 0.5
+public let kDefaultReadaloudHighlightFade: Double = 0
+public let kDefaultReadaloudTextItalic = false
+public let kDefaultReadaloudTextBold = false
+public let kDefaultReadaloudUnderlineStyle = "solid"
+public let kReadaloudUnderlineStyleValues = ["solid", "double", "squiggle"]
 
 public let kDefaultReadingBarEnabled = true
 public let kDefaultShowPlayerControlsIOS = true
@@ -57,12 +73,15 @@ public let kDefaultShowProgress = true
 public let kDefaultShowTimeRemainingInBook = true
 public let kDefaultShowTimeRemainingInChapter = true
 public let kDefaultShowPageNumber = true
-public let kDefaultOverlayTransparency: Double = 0.8
+public let kDefaultDockTransparency: Double = 0.8
 public let kDefaultAlwaysShowMiniPlayer = false
 public let kDefaultShowOverlaySkipBackward = true
 public let kDefaultShowOverlaySkipForward = true
 public let kDefaultShowOverlayPlayPause = true
 public let kDefaultShowMiniPlayerStats = false
+public let kDefaultProgressIndicatorMiniPlayer = true
+public let kDefaultProgressIndicatorDock = true
+public let kDefaultProgressIndicatorThickness: Double = 3
 
 public let kDefaultProgressSyncIntervalSeconds: Double = 30
 public let kDefaultMetadataRefreshIntervalSeconds: Double = 300
@@ -79,6 +98,7 @@ public let kDefaultAccentColorHex = "#EB722F"
 public let kDefaultColorMode = "full"
 public let kDefaultColorIntensity: Double = 0.65
 public let kDefaultDoubleCoverAlignment = "auto"
+public let kDefaultExperimentalSettings = false
 
 public let kDefaultTVSubtitleFontSize: Double = 48
 public let kDefaultTVFontFamily = "serif"

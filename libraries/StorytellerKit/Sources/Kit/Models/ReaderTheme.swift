@@ -16,6 +16,10 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
     public var highlightColor: String
     public var highlightThickness: Double
     public var readaloudHighlightMode: String
+    public var readaloudHighlightFade: Double
+    public var readaloudTextItalic: Bool
+    public var readaloudTextBold: Bool
+    public var readaloudUnderlineStyle: String
     public var userHighlightColor1: String
     public var userHighlightColor2: String
     public var userHighlightColor3: String
@@ -41,6 +45,10 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
         highlightColor: String,
         highlightThickness: Double = kDefaultHighlightThickness,
         readaloudHighlightMode: String = kDefaultReadaloudHighlightMode,
+        readaloudHighlightFade: Double = kDefaultReadaloudHighlightFade,
+        readaloudTextItalic: Bool = kDefaultReadaloudTextItalic,
+        readaloudTextBold: Bool = kDefaultReadaloudTextBold,
+        readaloudUnderlineStyle: String = kDefaultReadaloudUnderlineStyle,
         userHighlightColor1: String = kDefaultUserHighlightColor1,
         userHighlightColor2: String = kDefaultUserHighlightColor2,
         userHighlightColor3: String = kDefaultUserHighlightColor3,
@@ -65,6 +73,10 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
         self.highlightColor = highlightColor
         self.highlightThickness = highlightThickness
         self.readaloudHighlightMode = readaloudHighlightMode
+        self.readaloudHighlightFade = readaloudHighlightFade
+        self.readaloudTextItalic = readaloudTextItalic
+        self.readaloudTextBold = readaloudTextBold
+        self.readaloudUnderlineStyle = readaloudUnderlineStyle
         self.userHighlightColor1 = userHighlightColor1
         self.userHighlightColor2 = userHighlightColor2
         self.userHighlightColor3 = userHighlightColor3
@@ -92,6 +104,18 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
         highlightColor = try container.decode(String.self, forKey: .highlightColor)
         highlightThickness = try container.decode(Double.self, forKey: .highlightThickness)
         readaloudHighlightMode = try container.decode(String.self, forKey: .readaloudHighlightMode)
+        readaloudHighlightFade =
+            (try? container.decode(Double.self, forKey: .readaloudHighlightFade))
+            ?? kDefaultReadaloudHighlightFade
+        readaloudTextItalic =
+            (try? container.decode(Bool.self, forKey: .readaloudTextItalic))
+            ?? kDefaultReadaloudTextItalic
+        readaloudTextBold =
+            (try? container.decode(Bool.self, forKey: .readaloudTextBold))
+            ?? kDefaultReadaloudTextBold
+        readaloudUnderlineStyle =
+            (try? container.decode(String.self, forKey: .readaloudUnderlineStyle))
+            ?? kDefaultReadaloudUnderlineStyle
         userHighlightColor1 = try container.decode(String.self, forKey: .userHighlightColor1)
         userHighlightColor2 = try container.decode(String.self, forKey: .userHighlightColor2)
         userHighlightColor3 = try container.decode(String.self, forKey: .userHighlightColor3)

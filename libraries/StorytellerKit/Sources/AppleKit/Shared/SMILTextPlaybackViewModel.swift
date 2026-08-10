@@ -42,6 +42,7 @@ public final class SMILTextPlaybackViewModel: NSObject {
     private let syncDebounceInterval: TimeInterval = 10
     private var hasRestoredPosition = false
     private var hasUserProgress = false
+    private var lastChapterRestart: Date?
     private var periodicSyncTask: Task<Void, Never>?
     private var sentenceNavigationTask: Task<Void, Never>?
     private static let periodicSyncInterval: TimeInterval = 60
@@ -68,16 +69,11 @@ public final class SMILTextPlaybackViewModel: NSObject {
         public var id: Int { index }
     }
 
+    /// Cached because this view model is synchronous and cannot await the actor.
+    private var chapterSummaries: [SMILChapterSummary] = []
+
     public var chapters: [ChapterInfo] {
-        bookStructure
-            .filter { !$0.mediaOverlay.isEmpty }
-            .enumerated()
-            .map { chapterNum, section in
-                ChapterInfo(
-                    index: section.index,
-                    label: section.label ?? "Chapter \(chapterNum + 1)",
-                )
-            }
+        chapterSummaries.map { ChapterInfo(index: $0.sectionIndex, label: $0.title) }
     }
 
     public var hasChapters: Bool {
@@ -85,16 +81,7 @@ public final class SMILTextPlaybackViewModel: NSObject {
     }
 
     private func chapterLabel(forSectionIndex sectionIndex: Int) -> String {
-        guard sectionIndex < bookStructure.count else { return "Chapter" }
-        if let label = bookStructure[sectionIndex].label {
-            return label
-        }
-        let chapterNum =
-            bookStructure
-            .prefix(sectionIndex + 1)
-            .filter { !$0.mediaOverlay.isEmpty }
-            .count
-        return "Chapter \(chapterNum)"
+        chapterSummaries.first { $0.sectionIndex == sectionIndex }?.title ?? "Chapter"
     }
 
     public var chapterProgress: Double {
@@ -222,6 +209,7 @@ public final class SMILTextPlaybackViewModel: NSObject {
             )
 
             bookStructure = await SMILPlayerActor.shared.getBookStructure()
+            chapterSummaries = await SMILPlayerActor.shared.getChapterSummaries()
             debugLog("[\(logPrefix)] Loaded book with \(bookStructure.count) sections")
 
             stateObserverId = await SMILPlayerActor.shared.addStateObserver { [weak self] state in
@@ -461,6 +449,7 @@ public final class SMILTextPlaybackViewModel: NSObject {
         guard targetIndex < bookStructure.count else { return }
 
         hasUserProgress = true
+        lastChapterRestart = nil
         Task {
             await jumpToChapter(targetIndex)
         }
@@ -468,39 +457,24 @@ public final class SMILTextPlaybackViewModel: NSObject {
 
     public func previousChapter() {
         guard !isLoadingPosition else { return }
-        let restartThreshold = 3.0
-        if currentTime > restartThreshold {
-            hasUserProgress = true
-            Task {
-                await jumpToChapter(currentSectionIndex)
-            }
-            return
+        let restarts = previousChapterRestarts(
+            progressInChapter: chapterDuration > 0 ? currentTime / chapterDuration : 0,
+            lastRestartAt: lastChapterRestart,
+        )
+        var target = currentSectionIndex
+        if !restarts,
+            let position = chapterSummaries.firstIndex(where: {
+                $0.sectionIndex == currentSectionIndex
+            }),
+            position > 0
+        {
+            target = chapterSummaries[position - 1].sectionIndex
         }
-
-        let prevIndex = currentSectionIndex - 1
-        guard prevIndex >= 0 else {
-            hasUserProgress = true
-            Task {
-                await jumpToChapter(currentSectionIndex)
-            }
-            return
-        }
-
-        var targetIndex = prevIndex
-        while targetIndex >= 0 && bookStructure[targetIndex].mediaOverlay.isEmpty {
-            targetIndex -= 1
-        }
-        guard targetIndex >= 0 else {
-            hasUserProgress = true
-            Task {
-                await jumpToChapter(currentSectionIndex)
-            }
-            return
-        }
+        lastChapterRestart = target == currentSectionIndex ? Date() : nil
 
         hasUserProgress = true
         Task {
-            await jumpToChapter(targetIndex)
+            await jumpToChapter(target)
         }
     }
 
@@ -512,11 +486,7 @@ public final class SMILTextPlaybackViewModel: NSObject {
 
         hasUserProgress = true
         do {
-            let wasPlaying = isPlaying
             try await SMILPlayerActor.shared.seekToEntry(sectionIndex: sectionIndex, entryIndex: 0)
-            if wasPlaying {
-                try? await SMILPlayerActor.shared.play()
-            }
         } catch {
             debugLog("[\(logPrefix)] Failed to jump to chapter: \(error)")
         }

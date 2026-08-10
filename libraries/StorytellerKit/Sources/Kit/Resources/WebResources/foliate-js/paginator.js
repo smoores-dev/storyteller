@@ -379,7 +379,7 @@ class View {
     this.expand()
   }
   setImageSize() {
-    const { width, height, margin } = this.#layout
+    const { width, height, margin, marginBottom = margin } = this.#layout
     const vertical = this.#vertical
     const doc = this.document
     for (const el of doc.body.querySelectorAll("img, svg, video")) {
@@ -390,9 +390,9 @@ class View {
           ? maxHeight !== "none" && maxHeight !== "0px"
             ? maxHeight
             : "100%"
-          : `${height - margin * 2}px`,
+          : `${height - margin - marginBottom}px`,
         "max-width": vertical
-          ? `${width - margin * 2}px`
+          ? `${width - margin - marginBottom}px`
           : maxWidth !== "none" && maxWidth !== "0px"
             ? maxWidth
             : "100%",
@@ -446,8 +446,10 @@ class View {
       const otherSide = this.#vertical ? "height" : "width"
       const contentSize = documentElement.getBoundingClientRect()[side]
       const expandedSize = contentSize
-      const { margin } = this.#layout
-      const padding = this.#vertical ? `0 ${margin}px` : `${margin}px 0`
+      const { margin, marginBottom = margin } = this.#layout
+      const padding = this.#vertical
+        ? `0 ${margin}px`
+        : `${margin}px 0 ${marginBottom}px`
       this.#element.style.padding = padding
       this.#iframe.style[side] = `${expandedSize}px`
       this.#element.style[side] = `${expandedSize}px`
@@ -481,6 +483,7 @@ export class Paginator extends HTMLElement {
     "flow",
     "gap",
     "margin",
+    "margin-bottom",
     "max-inline-size",
     "max-block-size",
     "max-column-count",
@@ -496,6 +499,7 @@ export class Paginator extends HTMLElement {
   #vertical = false
   #rtl = false
   #margin = 0
+  #marginBottom = 0
   #index = -1
   #anchor = 0 // anchor view to a fraction (0-1), Range, or Element
   #justAnchored = false
@@ -527,6 +531,7 @@ export class Paginator extends HTMLElement {
         #top {
             --_gap: 7%;
             --_margin: 48px;
+            --_margin-bottom: var(--_margin);
             --_max-inline-size: 720px;
             --_max-block-size: 1440px;
             --_max-column-count: 2;
@@ -545,7 +550,7 @@ export class Paginator extends HTMLElement {
             grid-template-rows:
                 minmax(var(--_margin), 1fr)
                 minmax(0, var(--_max-height))
-                minmax(var(--_margin), 1fr);
+                minmax(var(--_margin-bottom), 1fr);
             &.vertical {
                 --_max-column-count-spread: var(--_max-column-count-portrait);
                 --_max-width: var(--_max-block-size);
@@ -585,7 +590,12 @@ export class Paginator extends HTMLElement {
         }
         #header, #footer {
             display: grid;
+        }
+        #header {
             height: var(--_margin);
+        }
+        #footer {
+            height: var(--_margin-bottom);
         }
         :is(#header, #footer) > * {
             display: flex;
@@ -707,6 +717,7 @@ export class Paginator extends HTMLElement {
         break
       case "gap":
       case "margin":
+      case "margin-bottom":
       case "max-block-size":
       case "max-column-count":
         this.#top.style.setProperty("--_" + name, value)
@@ -782,7 +793,14 @@ export class Paginator extends HTMLElement {
       style.getPropertyValue("--_max-column-count-spread"),
     )
     const margin = parseFloat(style.getPropertyValue("--_margin"))
+    const parsedMarginBottom = parseFloat(
+      style.getPropertyValue("--_margin-bottom"),
+    )
+    const marginBottom = Number.isFinite(parsedMarginBottom)
+      ? parsedMarginBottom
+      : margin
     this.#margin = margin
+    this.#marginBottom = marginBottom
 
     const g = parseFloat(style.getPropertyValue("--_gap")) / 100
     // The gap will be a percentage of the #container, not the whole view.
@@ -816,7 +834,7 @@ export class Paginator extends HTMLElement {
       this.#header.replaceChildren()
       this.#footer.replaceChildren()
 
-      return { flow, margin, gap, columnWidth }
+      return { flow, margin, marginBottom, gap, columnWidth }
     }
 
     const divisor = Math.min(maxColumnCount, Math.ceil(size / maxInlineSize))
@@ -840,7 +858,7 @@ export class Paginator extends HTMLElement {
     this.#header.replaceChildren(...heads)
     this.#footer.replaceChildren(...feet)
 
-    return { height, width, margin, gap, columnWidth }
+    return { height, width, margin, marginBottom, gap, columnWidth }
   }
   render() {
     if (!this.#view) return
@@ -1091,7 +1109,7 @@ export class Paginator extends HTMLElement {
       return getVisibleRange(
         this.#view.document,
         this.start + this.#margin,
-        this.end - this.#margin,
+        this.end - this.#marginBottom,
         this.#getRectMapper(),
       )
     const size = this.#rtl ? -this.size : this.size
