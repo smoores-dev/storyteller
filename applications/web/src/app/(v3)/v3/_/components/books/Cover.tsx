@@ -115,7 +115,8 @@ export const Tile = memo(function Tile({
   // latch: once we've been allowed to load, stay loaded so a later scroll (which
   // flips canLoad back off) never yanks the src and forces a re-decode.
   const [load, setLoad] = useState(canLoad)
-  const [errored, setErrored] = useState(false)
+  // which image failed, so a different image isn't stuck on the fallback
+  const [errored, setErrored] = useState<string | null>(null)
 
   useEffect(() => {
     if (canLoad) setLoad(true)
@@ -126,7 +127,7 @@ export const Tile = memo(function Tile({
       ? undefined
       : coverBoxStyle(coverBoxAspect(fit, type, image), slotAspect, extent)
 
-  if (errored || !image) {
+  if (!image || errored === image.sha256) {
     return (
       <FallbackCover
         title={alt}
@@ -145,6 +146,7 @@ export const Tile = memo(function Tile({
     >
       {load && (
         <img
+          key={image.sha256}
           src={getImageUrl(image.sha256, size)}
           alt=""
           aria-hidden
@@ -152,7 +154,7 @@ export const Tile = memo(function Tile({
           decoding="async"
           fetchPriority="low"
           onError={() => {
-            setErrored(true)
+            setErrored(image.sha256)
           }}
           className={cn(
             "h-full w-full",
