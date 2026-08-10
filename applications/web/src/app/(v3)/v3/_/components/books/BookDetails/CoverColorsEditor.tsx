@@ -37,9 +37,9 @@ function samePalette(a: JsColor[], b: JsColor[]): boolean {
 function resolvedPalette(book: BookWithRelations): JsColor[] {
   return (
     book.coverColorsOverride ??
-    book.ebook?.coverColors ??
-    book.audiobook?.coverColors ??
-    book.readaloud?.coverColors ??
+    book.ebook?.coverImage?.colors ??
+    book.audiobook?.coverImage?.colors ??
+    book.readaloud?.coverImage?.colors ??
     []
   )
 }
@@ -49,16 +49,16 @@ function formatPalettes(
 ): { key: string; label: string; colors: JsColor[] }[] {
   return (
     [
-      { key: "ebook", label: "E-book", colors: book.ebook?.coverColors },
+      { key: "ebook", label: "E-book", colors: book.ebook?.coverImage?.colors },
       {
         key: "audiobook",
         label: "Audiobook",
-        colors: book.audiobook?.coverColors,
+        colors: book.audiobook?.coverImage?.colors,
       },
       {
         key: "readaloud",
         label: "Read-along",
-        colors: book.readaloud?.coverColors,
+        colors: book.readaloud?.coverImage?.colors,
       },
     ] as const
   )
@@ -72,9 +72,9 @@ export function CoverColorsEditor({ book }: { book: BookWithRelations }) {
 
   const persistedKey = JSON.stringify([
     book.coverColorsOverride ?? null,
-    book.ebook?.coverColors ?? null,
-    book.audiobook?.coverColors ?? null,
-    book.readaloud?.coverColors ?? null,
+    book.ebook?.coverImage?.colors ?? null,
+    book.audiobook?.coverImage?.colors ?? null,
+    book.readaloud?.coverImage?.colors ?? null,
   ])
   useEffect(() => {
     setDraft(resolvedPalette(book))

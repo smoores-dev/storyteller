@@ -4,11 +4,15 @@ import { type Audiobook, type Ebook, type Readaloud } from "@/database/books"
 
 export type CoverType = "ebook" | "audiobook" | "readaloud"
 
+type WithCoverImage<Relation> = Relation & {
+  coverImage: { colors: JsColor[] | null } | null
+}
+
 export type CoverColorsBook = {
   coverColorsOverride: JsColor[] | null
-  readaloud: Pick<Readaloud, "coverColors" | "status"> | null
-  ebook: Pick<Ebook, "coverColors" | "updatedAt"> | null
-  audiobook: Pick<Audiobook, "coverColors" | "updatedAt"> | null
+  readaloud: WithCoverImage<Pick<Readaloud, "status">> | null
+  ebook: WithCoverImage<Pick<Ebook, "updatedAt">> | null
+  audiobook: WithCoverImage<Pick<Audiobook, "updatedAt">> | null
 }
 
 export type Swatch = {
@@ -71,12 +75,12 @@ export function resolveCoverColors(
   type?: CoverType,
 ): JsColor[] {
   if (Array.isArray(bookOrColors)) return bookOrColors
-  if (type) return bookOrColors[type]?.coverColors ?? []
+  if (type) return bookOrColors[type]?.coverImage?.colors ?? []
   return (
     bookOrColors.coverColorsOverride ??
-    bookOrColors.ebook?.coverColors ??
-    bookOrColors.audiobook?.coverColors ??
-    bookOrColors.readaloud?.coverColors ??
+    bookOrColors.ebook?.coverImage?.colors ??
+    bookOrColors.audiobook?.coverImage?.colors ??
+    bookOrColors.readaloud?.coverImage?.colors ??
     []
   )
 }

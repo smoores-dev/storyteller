@@ -1,18 +1,7 @@
 import { createHash } from "node:crypto"
-import { type Stats } from "node:fs"
-import {
-  cp,
-  link,
-  mkdir,
-  readFile,
-  readdir,
-  rm,
-  stat,
-  writeFile,
-} from "node:fs/promises"
+import { cp, link, mkdir, readdir, rm, stat } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
-import { AsyncMutex } from "@esfx/async-mutex"
 import { reflinkFile } from "@reflink/reflink"
 
 import { getFileChunks } from "@storyteller-platform/fs"
@@ -35,7 +24,6 @@ import {
   unsuppressPrefix,
 } from "./library/scanner/write-intent"
 import {
-  getCachedCoverImageDirectory,
   getCoverImageCacheDirectory,
   getDefaultSuffix,
   getInternalAudioDirectory,
@@ -751,77 +739,8 @@ export async function deleteAssets(book: BookWithRelations) {
   await deleteCachedCoverImages(book.uuid)
 }
 
-const cachedCoverImageLocks = new Map<string, AsyncMutex>()
-
-export async function getCachedCoverImage(
-  uuid: UUID,
-  kind: "text" | "audio",
-  height: number,
-  width: number,
-) {
-  try {
-    const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
-    const lock = cachedCoverImageLocks.get(dir) ?? new AsyncMutex()
-    cachedCoverImageLocks.set(dir, lock)
-
-    await using stack = new AsyncDisposableStack()
-    stack.defer(() => {
-      lock.unlock()
-    })
-
-    await lock.lock()
-    const infoJSON = await readFile(join(dir, "info.json"), {
-      encoding: "utf-8",
-    })
-    const { filename, mimeType, stats } = JSON.parse(infoJSON) as {
-      filename: string
-      mimeType: string
-      stats: Stats
-    }
-    const data = await readFile(join(dir, filename))
-    return { filename, stats, mimeType, data }
-  } catch {
-    return null
-  }
-}
-
-export async function writeCachedCoverImage(
-  uuid: UUID,
-  kind: "text" | "audio",
-  height: number,
-  width: number,
-  image: { filename: string; mimeType: string; stats: Stats; data: Buffer },
-) {
-  const infoJSON = JSON.stringify({
-    filename: image.filename,
-    mimeType: image.mimeType,
-    stats: image.stats,
-  })
-  const dir = getCachedCoverImageDirectory(uuid, kind, height, width)
-  const lock = cachedCoverImageLocks.get(dir) ?? new AsyncMutex()
-  cachedCoverImageLocks.set(dir, lock)
-
-  await using stack = new AsyncDisposableStack()
-  stack.defer(() => {
-    lock.unlock()
-  })
-
-  await lock.lock()
-  await mkdir(join(dir), { recursive: true })
-  await writeFile(join(dir, "info.json"), infoJSON, { encoding: "utf-8" })
-  await writeFile(join(dir, image.filename), image.data)
-}
-
 export async function deleteCachedCoverImages(uuid: UUID) {
   const dir = getCoverImageCacheDirectory(uuid)
-  await rm(dir, { recursive: true, force: true })
-}
-
-export async function deleteCachedCoverImagesByKind(
-  uuid: UUID,
-  kind: "text" | "audio",
-) {
-  const dir = join(getCoverImageCacheDirectory(uuid), kind)
   await rm(dir, { recursive: true, force: true })
 }
 

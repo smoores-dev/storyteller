@@ -10,8 +10,9 @@ type EbookRelationPatch = Partial<
     | "pageCount"
     | "fileSize"
     | "fingerprint"
-    | "coverColors"
-    | "coverBlurhash"
+    | "coverImageUuid"
+    | "coverOrigin"
+    | "coverExtractedFrom"
   >
 >
 
@@ -23,8 +24,9 @@ type AudiobookRelationPatch = Partial<
     | "duration"
     | "fileSize"
     | "fingerprint"
-    | "coverColors"
-    | "coverBlurhash"
+    | "coverImageUuid"
+    | "coverOrigin"
+    | "coverExtractedFrom"
   >
 >
 
@@ -40,8 +42,9 @@ type ReadaloudRelationPatch = Partial<
     | "fingerprint"
     | "status"
     | "currentStage"
-    | "coverColors"
-    | "coverBlurhash"
+    | "coverImageUuid"
+    | "coverOrigin"
+    | "coverExtractedFrom"
   >
 >
 

@@ -18,7 +18,7 @@ import * as icon from "@/icons"
 import { type StyledIcon } from "@/icons"
 import { api } from "@/store/api"
 
-import { BookCover } from "./books/BookCover"
+import { Cover } from "./books/Cover"
 import { CreateCollectionDialog } from "./books/CreateCollectionDialog"
 import {
   BUILTIN_SIDEBAR_ITEMS,
@@ -121,7 +121,7 @@ function BookRow({
       className={rowClassName}
     >
       <div className="flex h-12 w-9 shrink-0 items-center justify-center">
-        <BookCover book={book} width={36} disableHover />
+        <Cover book={book} width={36} interactive={false} />
       </div>
 
       <div className="min-w-0 flex-1">

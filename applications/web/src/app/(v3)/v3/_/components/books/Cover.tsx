@@ -17,17 +17,27 @@ import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-
 import { useIsMobile } from "@/app/(v3)/v3/_/hooks/use-mobile"
 import { cn } from "@/cn"
 import { type BookWithRelations } from "@/database/books"
+import {
+  type CoverFit,
+  type GridCoverDisplay,
+} from "@/database/userPreferencesTypes"
 import * as icon from "@/icons"
-import { getCoverUrl } from "@/store/api"
+import { getImageUrl } from "@/store/api"
 
 import { getBlurhashDataUri } from "./blurhash-data-uri"
+import {
+  type BookCoverImage,
+  type CoverType,
+  DEFAULT_SLOT_ASPECT,
+  coverBoxAspect,
+  coverBoxStyle,
+  coverObjectFitClass,
+  coverSize,
+} from "./coverFit"
 import { coverSwatches } from "./coverSwatches"
 
 // potential target for user-configurable override
 const ROUNDED_CLASS = "rounded-cover"
-
-const DPR =
-  typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 1
 
 export type CoverSettings = {
   deferWhileScrolling: boolean
@@ -72,23 +82,34 @@ function blurhashStyle(
 }
 
 type TileProps = {
-  src: string
+  image: BookCoverImage | null | undefined
+  // longest edge to request, in real pixels
+  size: number
   // used only for the FallbackCover title; the <img> itself is decorative
   // (alt="") because the card renders the title alongside it.
   alt: string
-  blurhash: string | null | undefined
-  colors: JsColor[] | null | undefined
-  type: "audiobook" | "ebook"
+  type: CoverType
+  fit: CoverFit
+  // aspect of the space this tile has to fit inside. omit when the caller has
+  // already given the tile a box, and it will just fill it.
+  slotAspect?: number
+  extent?: { width: string; height: string }
+  fallbackColors?: JsColor[] | null
   className?: string
+  imgClassName?: string
 }
 
 export const Tile = memo(function Tile({
-  src,
+  image,
+  size,
   alt,
-  blurhash,
-  colors,
   type,
+  fit,
+  slotAspect,
+  extent,
+  fallbackColors,
   className,
+  imgClassName,
 }: TileProps) {
   const canLoad = useContext(CoverLoadContext)
   // latch: once we've been allowed to load, stay loaded so a later scroll (which
@@ -100,12 +121,18 @@ export const Tile = memo(function Tile({
     if (canLoad) setLoad(true)
   }, [canLoad])
 
-  if (errored) {
+  const boxStyle =
+    slotAspect === undefined
+      ? undefined
+      : coverBoxStyle(coverBoxAspect(fit, type, image), slotAspect, extent)
+
+  if (errored || !image) {
     return (
       <FallbackCover
         title={alt}
         type={type}
-        colors={colors}
+        colors={image?.colors ?? fallbackColors}
+        style={boxStyle}
         className={cn(ROUNDED_CLASS, className)}
       />
     )
@@ -114,11 +141,11 @@ export const Tile = memo(function Tile({
   return (
     <div
       className={cn("relative overflow-hidden", ROUNDED_CLASS, className)}
-      style={blurhashStyle(blurhash)}
+      style={{ ...blurhashStyle(image.blurhash), ...boxStyle }}
     >
       {load && (
         <img
-          src={src}
+          src={getImageUrl(image.sha256, size)}
           alt=""
           aria-hidden
           loading="lazy"
@@ -127,7 +154,12 @@ export const Tile = memo(function Tile({
           onError={() => {
             setErrored(true)
           }}
-          className={cn("h-full w-full", ROUNDED_CLASS, "object-contain")}
+          className={cn(
+            "h-full w-full",
+            ROUNDED_CLASS,
+            coverObjectFitClass(fit),
+            imgClassName,
+          )}
         />
       )}
     </div>
@@ -138,70 +170,78 @@ export const Cover = memo(function Cover({
   book,
   width = 150,
   interactive = true,
+  fit,
+  displayMode = "auto",
+  slotAspect = DEFAULT_SLOT_ASPECT,
   className,
 }: {
   book: BookWithRelations
   width?: number
   // when false, the double cover renders static (no hover spread)
   interactive?: boolean
+  // overrides the user's cover fit preference
+  fit?: CoverFit
+  // "auto" keeps the double-cover behavior; "ebook"/"audiobook" force a single
+  // cover (falling back to whatever format exists if the chosen one is missing)
+  displayMode?: GridCoverDisplay
+  slotAspect?: number
   className?: string
 }) {
-  const w = Math.round(width * DPR)
-  const h = Math.round(width * 1.5 * DPR)
-  const { doubleCoverAlignment } = useUserPreferences()
+  const { doubleCoverAlignment, coverFit } = useUserPreferences()
+  const resolvedFit = fit ?? coverFit
+
+  const hoverClass =
+    "shadow-sm transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-[-2deg]"
+
+  const audiobookTile = () => {
+    const image = book.audiobook?.coverImage
+    return (
+      <Tile
+        image={image}
+        size={coverSize(width, coverBoxAspect(resolvedFit, "audiobook", image))}
+        alt={book.title}
+        type="audiobook"
+        fit={resolvedFit}
+        slotAspect={slotAspect}
+        className={cn(hoverClass, className)}
+      />
+    )
+  }
+
+  const ebookTile = () => {
+    const image = book.ebook?.coverImage ?? book.readaloud?.coverImage
+    return (
+      <Tile
+        image={image}
+        size={coverSize(width, coverBoxAspect(resolvedFit, "ebook", image))}
+        alt={book.title}
+        type="ebook"
+        fit={resolvedFit}
+        slotAspect={slotAspect}
+        className={cn(hoverClass, className)}
+      />
+    )
+  }
+
+  if (displayMode === "ebook" && book.ebook) return ebookTile()
+  if (displayMode === "audiobook" && book.audiobook) return audiobookTile()
 
   if (isDual(book)) {
     return (
       <BookDoubleCover
         book={book}
         width={width}
+        fit={resolvedFit}
+        slotAspect={slotAspect}
         forceAligned={doubleCoverAlignment === "straight"}
         disableHover={!interactive}
       />
     )
   }
 
-  if (book.audiobook && !book.ebook) {
-    const audiobookUrl = getCoverUrl(book.uuid, {
-      width: w,
-      height: w,
-      audio: true,
-      updatedAt: book.audiobook.updatedAt,
-    })
-    return (
-      <Tile
-        src={audiobookUrl}
-        alt={book.title}
-        blurhash={book.audiobook.coverBlurhash}
-        colors={book.audiobook.coverColors}
-        type="audiobook"
-        className={cn(
-          "aspect-square shadow-sm transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-[-2deg]",
-          className,
-        )}
-      />
-    )
-  }
+  if (book.audiobook && !book.ebook) return audiobookTile()
 
-  const ebookUrl = getCoverUrl(book.uuid, {
-    width: w,
-    height: h,
-    audio: false,
-    updatedAt: book.ebook?.updatedAt ?? book.updatedAt,
-  })
-  return (
-    <Tile
-      src={ebookUrl}
-      alt={book.title}
-      blurhash={book.ebook?.coverBlurhash}
-      colors={book.ebook?.coverColors}
-      type="ebook"
-      className={cn(
-        "aspect-2/3 h-full shadow-sm transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-[-2deg]",
-        className,
-      )}
-    />
-  )
+  return ebookTile()
 })
 
 // old double cover
@@ -235,12 +275,16 @@ function transformKeyframes(
 export function BookDoubleCover({
   book,
   width = 300,
+  fit = "true-size",
+  slotAspect = DEFAULT_SLOT_ASPECT,
   disableHover = false,
   forceAligned,
   onLoadingChange,
 }: {
   book: BookWithRelations
   width?: number
+  fit?: CoverFit
+  slotAspect?: number
   disableHover?: boolean
   forceAligned?: boolean
   onLoadingChange?: (loading: boolean) => void
@@ -367,24 +411,15 @@ export function BookDoubleCover({
     }
   }, [])
 
-  const scaledWidth = Math.round(width * DPR)
-  const scaledHeight = Math.round(width * 1.5 * DPR)
+  const textImage = book.ebook?.coverImage ?? book.readaloud?.coverImage
+  const audioImage = book.audiobook?.coverImage
 
-  const ebookUrl = getCoverUrl(book.uuid, {
-    width: scaledWidth,
-    height: scaledHeight,
-    audio: false,
-    updatedAt: book.ebook?.updatedAt ?? book.updatedAt,
-  })
+  const textAspect = coverBoxAspect(fit, "ebook", textImage)
+  const audioAspect = coverBoxAspect(fit, "audiobook", audioImage)
 
-  const audiobookUrl = getCoverUrl(book.uuid, {
-    width: scaledWidth,
-    height: scaledWidth,
-    audio: true,
-    updatedAt: book.audiobook?.updatedAt ?? book.updatedAt,
-  })
-
-  const _fallbackColors = book.ebook?.coverColors ?? book.readaloud?.coverColors
+  // the stack is inset from the card, so a tile pins to 82% of the width or
+  // the full height, whichever it runs out of first
+  const stackExtent = { width: "82%", height: "100%" }
 
   return (
     <div
@@ -401,7 +436,7 @@ export function BookDoubleCover({
       <div
         ref={audiobookRef}
         className={TILE_CLASS}
-        style={{ width: "82%", aspectRatio: "1 / 1" }}
+        style={coverBoxStyle(audioAspect, slotAspect, stackExtent)}
         onPointerEnter={() => {
           if (hoverDisabled) return
           transitionTo("audiobook-front")
@@ -416,26 +451,26 @@ export function BookDoubleCover({
         }}
       >
         <Tile
-          src={audiobookUrl}
+          image={audioImage}
+          size={coverSize(width, audioAspect)}
           alt={book.title}
-          blurhash={book.audiobook?.coverBlurhash}
           type="audiobook"
+          fit={fit}
           className={cn("h-full w-full", ROUNDED_CLASS)}
-          colors={book.audiobook?.coverColors}
         />
       </div>
       <div
         ref={ebookRef}
         className={TILE_CLASS}
-        style={{ width: "82%", aspectRatio: "2 / 3" }}
+        style={coverBoxStyle(textAspect, slotAspect, stackExtent)}
       >
         <Tile
-          src={ebookUrl}
+          image={textImage}
+          size={coverSize(width, textAspect)}
           alt={book.title}
-          blurhash={book.ebook?.coverBlurhash}
           type="ebook"
+          fit={fit}
           className={cn("h-full w-full", ROUNDED_CLASS)}
-          colors={book.ebook?.coverColors}
         />
       </div>
     </div>
@@ -447,10 +482,12 @@ export function FallbackCover({
   type,
   colors,
   className,
+  style,
 }: {
   title: string
-  type: "audiobook" | "ebook"
+  type: CoverType
   className?: string
+  style?: React.CSSProperties
   colors?: JsColor[] | null
 }) {
   const { primary, hasColors } = coverSwatches(colors ?? [])
@@ -462,17 +499,18 @@ export function FallbackCover({
   return (
     <div
       className={cn(
-        "from-primary/10 to-primary/5 relative flex w-full flex-col items-center justify-center gap-2 overflow-clip bg-linear-to-br p-4 text-center before:absolute before:inset-0 before:-z-10 before:bg-white before:content-['']",
+        "from-primary/10 to-primary/5 relative flex h-full w-full flex-col items-center justify-center gap-2 overflow-clip bg-linear-to-br p-4 text-center before:absolute before:inset-0 before:-z-10 before:bg-white before:content-['']",
         className,
       )}
       style={{
         background: bg,
+        ...style,
       }}
     >
       {type === "audiobook" ? (
-        <icon.HeadphonesFilled className="h-12 w-12" style={{ color: fg }} />
+        <icon.HeadphonesFilled className="size-[20%]" style={{ color: fg }} />
       ) : (
-        <icon.BookFilled className="h-12 w-12" style={{ color: fg }} />
+        <icon.BookFilled className="size-[20%]" style={{ color: fg }} />
       )}
       <h3
         className="line-clamp-2 max-w-full text-center text-sm font-medium"

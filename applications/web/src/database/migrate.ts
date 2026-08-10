@@ -24,9 +24,6 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "39_reorganize_library.sql": (
     await import("./migrations/39_reorganize_library.sql")
   ).default,
-  "45_generate_image_thumbnails.sql": (
-    await import("./migrations/45_generate_image_thumbnails.sql")
-  ).default,
   "47_restructure_creators.sql": (
     await import("./migrations/47_restructure_creators.sql")
   ).default,
@@ -88,6 +85,7 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "107_unify_format_filter.sql": (
     await import("./migrations/107_unify_format_filter.sql")
   ).default,
+  "110_images.sql": (await import("./migrations/110_images.sql")).default,
 }
 
 async function isFirstStartup() {

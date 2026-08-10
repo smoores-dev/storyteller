@@ -19,6 +19,7 @@ import { useTranslation } from "@/app/(v3)/v3/_/hooks/use-translation"
 import {
   type ColorMode,
   ColorModes,
+  type CoverFit,
   defaultUserPreferences,
 } from "@/database/userPreferencesTypes"
 import { getFieldDef } from "@/fields"
@@ -69,7 +70,7 @@ export function DisplayControl({
   const tLabels = useTranslation("Common.fields.label")
   const t = useTranslation("BooksPage")
 
-  const { gridCoverDisplay, colorMode } = useUserPreferences()
+  const { gridCoverDisplay, coverFit, colorMode } = useUserPreferences()
   const [updateSetting] = useSetUserSettingMutation()
 
   const dispatch = useAppDispatch()
@@ -459,6 +460,26 @@ export function DisplayControl({
 
               <FilterableMenuSub>
                 <FilterableMenuSubTrigger
+                  icon={<icon.Image className="size-4" />}
+                  textValue={t.plain("displayOptions.coverFit.title")}
+                >
+                  {t.plain("displayOptions.coverFit.title")}
+                </FilterableMenuSubTrigger>
+                <FilterableMenuSubContent>
+                  <CoverFitSubMenu
+                    value={coverFit}
+                    onChange={(v) => {
+                      void updateSetting({
+                        name: "coverFit",
+                        value: v as typeof coverFit,
+                      })
+                    }}
+                  />
+                </FilterableMenuSubContent>
+              </FilterableMenuSub>
+
+              <FilterableMenuSub>
+                <FilterableMenuSubTrigger
                   icon={<icon.Maximize className="size-4" />}
                   textValue={t("displayOptions.cardSize.title")}
                 >
@@ -700,6 +721,41 @@ function CoverTypeSubmenu({
           closeOnClick={false}
           textValue={opt.label}
           icon={opt.icon}
+          onSelect={() => {
+            onChange(opt.id)
+          }}
+        >
+          {opt.label}
+          {value === opt.id && <icon.Check className="ml-auto" />}
+        </FilterableMenuItem>
+      ))}
+    </>
+  )
+}
+
+function CoverFitSubMenu({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  const t = useTranslation("PreferencesPage.tabs.books.sections")
+
+  const options = [
+    { id: "true-size", label: t("gridDisplay.fitOptions.true-size") },
+    { id: "stretch", label: t("gridDisplay.fitOptions.stretch") },
+    { id: "cover", label: t("gridDisplay.fitOptions.cover") },
+    { id: "contain", label: t("gridDisplay.fitOptions.contain") },
+  ] as const satisfies { id: CoverFit; label: string }[]
+
+  return (
+    <>
+      {options.map((opt) => (
+        <FilterableMenuItem
+          key={opt.id}
+          closeOnClick={false}
+          textValue={opt.label}
           onSelect={() => {
             onChange(opt.id)
           }}

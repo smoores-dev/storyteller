@@ -186,6 +186,9 @@
         "large": "Large",
         "extraLarge": "Extra groot"
       },
+      "coverFit": {
+        "title": "Cover vulling"
+      },
       "coverType": {
         "title": "Coversoort",
         "doubleCover": "Dubbele cover",
@@ -1140,6 +1143,14 @@
               "medium": "Middel",
               "large": "Groot",
               "largest": "Grootst"
+            },
+            "fitLabel": "Omslagen met afwijkende vorm",
+            "fitHint": "Hoe een omslag wordt getoond als de afbeelding niet de gebruikelijke boekvorm heeft.",
+            "fitOptions": {
+              "true-size": "Ware grootte",
+              "stretch": "Uitrekken",
+              "cover": "Inzoomen",
+              "contain": "Passend met achtergrond"
             }
           },
           "opening": {
@@ -1308,7 +1319,8 @@
       "uploadAudiobook": "Audioboek-cover uploaden",
       "setDefaultPosition": "Als standaardpositie instellen",
       "savedDefaultPosition": "Standaardpositie opgeslagen",
-      "resize": "Sleep om de omslag te vergroten, dubbelklik om te herstellen"
+      "resize": "Sleep om de omslag te vergroten, dubbelklik om te herstellen",
+      "oddShapeWarning": "Die afbeelding is {width}x{height} en wijkt verder af van een normale omslagvorm dan we kunnen tonen. Hij wordt overal bijgesneden of met balken getoond."
     },
     "narratedBy": "verteld door",
     "writtenBy": "door",

@@ -33,6 +33,11 @@ function buildFormatRelation(
     fingerprint: input.fingerprint,
     missing: false,
     fileSize: input.fileSize,
+    ...(input.coverImageUuid && {
+      coverImageUuid: input.coverImageUuid,
+      coverOrigin: "extracted" as const,
+      coverExtractedFrom: input.coverExtractedFrom ?? null,
+    }),
   }
 
   if (input.format === "ebook") {
@@ -40,10 +45,6 @@ function buildFormatRelation(
       ...shared,
       isEpub2: input.isEpub2,
       pageCount: input.pageCount,
-      ...(input.coverColors && {
-        coverColors: JSON.stringify(input.coverColors),
-      }),
-      ...(input.coverBlurhash && { coverBlurhash: input.coverBlurhash }),
     })
   }
 
@@ -51,10 +52,6 @@ function buildFormatRelation(
     return getFormatRelationPatch(input, {
       ...shared,
       duration: input.duration,
-      ...(input.coverColors && {
-        coverColors: JSON.stringify(input.coverColors),
-      }),
-      ...(input.coverBlurhash && { coverBlurhash: input.coverBlurhash }),
     })
   }
 
@@ -64,10 +61,6 @@ function buildFormatRelation(
     isEpub2: input.isEpub2,
     pageCount: input.pageCount,
     duration: input.duration,
-    ...(input.coverColors && {
-      coverColors: JSON.stringify(input.coverColors),
-    }),
-    ...(input.coverBlurhash && { coverBlurhash: input.coverBlurhash }),
     ...(isNewReadaloudRow && {
       status: "ALIGNED" as const,
       currentStage: "SPLIT_TRACKS" as const,

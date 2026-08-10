@@ -10,7 +10,12 @@ import {
   BookFullscreenButton,
   type SpineInfo,
 } from "@v3/_/components/books/Book3D"
-import { BookCover } from "@v3/_/components/books/BookCover"
+import { Cover } from "@v3/_/components/books/Cover"
+import {
+  type CoverType,
+  WIDTH_BOUND_SLOT,
+  aspectOvershoot,
+} from "@v3/_/components/books/coverFit"
 import { useUserPreferences } from "@v3/_/components/user-preferences-provider"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
@@ -140,6 +145,34 @@ function useFilePreview(file: File | null): string | null {
   return url
 }
 
+// covers far outside the shape we can display get cropped or letterboxed
+// wherever they appear, so say so at upload time instead of letting it be a
+// surprise. it is a warning, not a rule: the file is still accepted.
+const SHAPE_TOLERANCE = 1.05
+
+function warnAboutCoverShape(
+  file: File,
+  type: CoverType,
+  warn: (dimensions: { width: number; height: number }) => void,
+) {
+  const url = URL.createObjectURL(file)
+  const probe = new Image()
+
+  probe.onload = () => {
+    URL.revokeObjectURL(url)
+    const dimensions = {
+      width: probe.naturalWidth,
+      height: probe.naturalHeight,
+    }
+    if (aspectOvershoot(dimensions, type) > SHAPE_TOLERANCE) warn(dimensions)
+  }
+  probe.onerror = () => {
+    URL.revokeObjectURL(url)
+  }
+
+  probe.src = url
+}
+
 function CoverSlot({
   label,
   file,
@@ -156,6 +189,7 @@ function CoverSlot({
   onFileChange: (file: File | null) => void
 }) {
   const c = useCommon()
+  const t = useTranslation("BookDetailsPage")
   const previewUrl = useFilePreview(file)
 
   return (
@@ -177,7 +211,21 @@ function CoverSlot({
           className="sr-only"
           onChange={(e) => {
             const selected = e.target.files?.[0]
-            if (selected) onFileChange(selected)
+            if (!selected) return
+
+            onFileChange(selected)
+            warnAboutCoverShape(
+              selected,
+              square ? "audiobook" : "ebook",
+              (dimensions) => {
+                toast.warning(
+                  t.plain("cover.oddShapeWarning", {
+                    width: dimensions.width,
+                    height: dimensions.height,
+                  }),
+                )
+              },
+            )
           }}
         />
         <span className="sr-only">{label}</span>
@@ -317,10 +365,11 @@ export function CoverEditor({ compact }: { compact: boolean }) {
       return (
         <div className="group group/cover-size relative flex min-h-50 w-fit shrink-0 items-center justify-center select-none">
           <div style={{ width: coverWidth }}>
-            <BookCover
+            <Cover
               book={book}
               width={coverWidth}
               displayMode={gridCoverDisplay}
+              slotAspect={WIDTH_BOUND_SLOT}
             />
           </div>
           {editAction && (

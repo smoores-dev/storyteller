@@ -124,7 +124,7 @@ export function ResizeHandle({
       data-slot="resize-handle"
       {...props}
       className={cn(
-        "group hover:border-primary/50 relative z-60 flex w-0 items-stretch border-l transition-colors",
+        "group hover:border-primary/50 relative z-50 flex w-0 items-stretch border-l transition-colors",
         className,
       )}
     >

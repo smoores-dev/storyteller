@@ -3,15 +3,81 @@
 import { cn } from "@v3/_/lib/utils"
 
 import { Book3D, VIEWS } from "@/app/(v3)/v3/_/components/books/Book3D"
+import { type BookCoverImage } from "@/app/(v3)/v3/_/components/books/coverFit"
 import { useTranslation } from "@/app/(v3)/v3/_/hooks/use-translation"
 import {
+  type CoverFit,
   type DoubleCoverAlignment,
   type GridCoverDisplay,
 } from "@/database/userPreferencesTypes"
 import { type UUID } from "@/uuid"
 
+// the preview has no real art, so it points at an image that will not resolve
+// and lets the fallback cover render these colors instead
+function previewCoverImage(
+  aspect: number,
+  colors: BookCoverImage["colors"],
+): BookCoverImage {
+  return {
+    uuid: "00000000-0000-0000-0000-000000000000" as UUID,
+    sha256: "preview",
+    mimeType: "image/webp",
+    width: Math.round(600 * aspect),
+    height: 600,
+    blurhash: null,
+    colors,
+  }
+}
+
 const ebookGradient = "linear-gradient(150deg, #2563eb, #60a5fa)"
 const audioGradient = "linear-gradient(150deg, #7c3aed, #c084fc)"
+
+// a square cover standing in for art that is not the usual book shape. the
+// ring makes each mode's distortion or cropping obvious at a glance.
+const OFF_RATIO_ART = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient></defs>
+    <rect width="100" height="100" fill="url(#g)"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#fff" stroke-width="9"/>
+  </svg>`,
+)}`
+
+export function CoverFitPreview({ fit }: { fit: CoverFit }) {
+  const trueSize = fit === "true-size"
+
+  return (
+    <div className="bg-muted flex aspect-11/16 w-28 shrink-0 items-center justify-center rounded-lg p-2">
+      <div
+        className="relative overflow-hidden rounded shadow-md"
+        style={
+          trueSize
+            ? { aspectRatio: "1", width: "100%" }
+            : { aspectRatio: "2 / 3", height: "100%" }
+        }
+      >
+        {fit === "contain" && (
+          <div
+            className="absolute inset-0 scale-125 blur-md"
+            style={{ background: ebookGradient }}
+          />
+        )}
+        <img
+          src={OFF_RATIO_ART}
+          alt=""
+          aria-hidden
+          className={cn(
+            "relative h-full w-full",
+            fit === "stretch" && "object-fill",
+            fit === "contain" && "object-contain",
+            (fit === "cover" || trueSize) && "object-cover",
+          )}
+        />
+      </div>
+    </div>
+  )
+}
 
 function MiniCover({
   variant,
@@ -119,35 +185,32 @@ export function Book3DPositionPreview({
         publicationDate: new Date().toISOString(),
         authors: [],
         readaloud: {
-          coverBlurhash: null,
           duration: 24 * 60 * 60,
           fileSize: null,
           pageCount: 500,
-          coverColors: [
+          status: "ALIGNED",
+          coverImage: previewCoverImage(2 / 3, [
             { r: 94, g: 33, b: 182 },
             { r: 192, g: 132, b: 252 },
-          ],
-          status: "ALIGNED",
+          ]),
         },
         ebook: {
-          coverBlurhash: null,
           fileSize: null,
           updatedAt: new Date().toISOString(),
           pageCount: 500,
-          coverColors: [
+          coverImage: previewCoverImage(2 / 3, [
             { r: 30, g: 64, b: 175 },
             { r: 96, g: 165, b: 250 },
-          ],
+          ]),
         },
         audiobook: {
-          coverBlurhash: null,
           duration: 24 * 60 * 60,
           fileSize: null,
           updatedAt: new Date().toISOString(),
-          coverColors: [
+          coverImage: previewCoverImage(1, [
             { r: 94, g: 33, b: 182 },
             { r: 192, g: 132, b: 252 },
-          ],
+          ]),
         },
       }}
       width={200}

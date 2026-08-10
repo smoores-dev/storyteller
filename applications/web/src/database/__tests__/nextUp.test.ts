@@ -78,6 +78,8 @@ void describe("getNextUpInSeries", () => {
     ])
     setStatus(ctx, b1, "Read")
     setStatus(ctx, b2, "Read")
+    setStatus(ctx, b3, "To read")
+    setStatus(ctx, b4, "To read")
 
     const books = await getNextUpInSeries(userId)
     assert.deepStrictEqual(
@@ -102,6 +104,7 @@ void describe("getNextUpInSeries", () => {
     ])
     setStatus(ctx, b1, "Read")
     setStatus(ctx, b2, "Reading")
+    setStatus(ctx, b3, "To read")
 
     const books = await getNextUpInSeries(userId)
     assert.deepStrictEqual(
@@ -128,6 +131,8 @@ void describe("getNextUpInSeries", () => {
       [b3, 1],
       [b4, 2],
     ])
+    setStatus(ctx, b1, "To read")
+    setStatus(ctx, b2, "To read")
     setStatus(ctx, b3, "Read")
     setStatus(ctx, b4, "Read")
 
@@ -163,6 +168,32 @@ void describe("getNextUpInSeries", () => {
     )
   })
 
+  void it("ignores a book with no status of its own", async () => {
+    using ctx = setupTestDb()
+    seedUser(ctx.sqlite)
+
+    const [b1, b2, b3] = seedBooks(ctx, [
+      { title: "one" },
+      { title: "two" },
+      { title: "three" },
+    ]) as [string, string, string]
+    seedSeries(ctx, "saga", [
+      [b1, 1],
+      [b2, 2],
+      [b3, 3],
+    ])
+    setStatus(ctx, b1, "Read")
+    // b2 has no status row at all, so it is not up next even though it is the
+    // lowest unread position. only an explicit To read counts.
+    setStatus(ctx, b3, "To read")
+
+    const books = await getNextUpInSeries(userId)
+    assert.deepStrictEqual(
+      books.map((b) => b.title),
+      ["three"],
+    )
+  })
+
   void it("orders series by most recent reading activity", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
@@ -182,7 +213,9 @@ void describe("getNextUpInSeries", () => {
       [c2, 2],
     ])
     setStatus(ctx, a1, "Read")
+    setStatus(ctx, a2, "To read")
     setStatus(ctx, c1, "Read")
+    setStatus(ctx, c2, "To read")
     setPosition(ctx, a1, 1_000)
     setPosition(ctx, c1, 2_000)
 
@@ -212,6 +245,7 @@ void describe("getNextUpInSeries", () => {
     ])
     setStatus(ctx, b1, "Read")
     setStatus(ctx, b2, "Read")
+    setStatus(ctx, shared, "To read")
 
     const books = await getNextUpInSeries(userId)
     assert.deepStrictEqual(

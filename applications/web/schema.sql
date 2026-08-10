@@ -703,7 +703,10 @@ CREATE TABLE "readaloud" (
   is_epub2 BOOLEAN NOT NULL DEFAULT FALSE,
   "duration" real,
   "file_size" integer,
-  "fingerprint" text
+  "fingerprint" text,
+  cover_image_uuid TEXT REFERENCES image (uuid) ON DELETE SET NULL,
+  cover_origin TEXT NOT NULL DEFAULT 'unset',
+  cover_extracted_from TEXT
 );
 
 CREATE TRIGGER aligned_book_update_trigger AFTER
@@ -731,7 +734,10 @@ CREATE TABLE ebook (
   "page_count" integer,
   is_epub2 BOOLEAN NOT NULL DEFAULT FALSE,
   "file_size" integer,
-  "fingerprint" text
+  "fingerprint" text,
+  cover_image_uuid TEXT REFERENCES image (uuid) ON DELETE SET NULL,
+  cover_origin TEXT NOT NULL DEFAULT 'unset',
+  cover_extracted_from TEXT
 );
 
 CREATE TRIGGER ebook_update_trigger AFTER
@@ -758,7 +764,10 @@ CREATE TABLE audiobook (
   "manifest" jsonb,
   "duration" real,
   "file_size" integer,
-  "fingerprint" text
+  "fingerprint" text,
+  cover_image_uuid TEXT REFERENCES image (uuid) ON DELETE SET NULL,
+  cover_origin TEXT NOT NULL DEFAULT 'unset',
+  cover_extracted_from TEXT
 );
 
 CREATE TRIGGER audiobook_update_trigger AFTER
@@ -1020,3 +1029,33 @@ CREATE INDEX idx_identifier_book ON identifier (book_uuid);
 CREATE INDEX idx_job_book_created ON job (book_uuid, created_at DESC);
 
 CREATE INDEX idx_book_created_at ON book (created_at DESC);
+
+CREATE TABLE image (
+  uuid TEXT PRIMARY KEY NOT NULL DEFAULT (uuid ()),
+  sha256 TEXT NOT NULL UNIQUE,
+  mime_type TEXT NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  byte_size INTEGER NOT NULL,
+  blurhash TEXT,
+  colors TEXT,
+  source_name TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER image_update_trigger AFTER
+UPDATE ON image FOR EACH ROW BEGIN
+UPDATE image
+SET
+  updated_at = CURRENT_TIMESTAMP
+WHERE
+  uuid = OLD.uuid;
+
+END;
+
+CREATE INDEX idx_ebook_cover_image ON ebook (cover_image_uuid);
+
+CREATE INDEX idx_audiobook_cover_image ON audiobook (cover_image_uuid);
+
+CREATE INDEX idx_readaloud_cover_image ON readaloud (cover_image_uuid);

@@ -28,6 +28,7 @@ import { statusDisplayLabel } from "@/database/statusKinds"
 import {
   BookDetailDisplays,
   BookOpenTargets,
+  CoverFits,
   DoubleCoverAlignments,
   GridCoverDisplays,
   RatingIcons,
@@ -37,6 +38,7 @@ import { useListStatusesQuery } from "@/store/api"
 
 import {
   Book3DPositionPreview,
+  CoverFitPreview,
   FlatDetailPreview,
   GridCoverPreview,
 } from "./cover-style-preview"
@@ -66,6 +68,11 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
     label: t(`gridDisplay.alignmentOptions.${key}`),
   }))
 
+  const coverFitOptions = CoverFits.map((key) => ({
+    value: key,
+    label: t(`gridDisplay.fitOptions.${key}`),
+  }))
+
   const detailDisplayOptions = BookDetailDisplays.map((key) => ({
     value: key,
     label: t(`detail.display.options.${key}`),
@@ -83,6 +90,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
 
   const gridCoverDisplayDefault = useResolvedDefault("gridCoverDisplay")
   const doubleCoverAlignmentDefault = useResolvedDefault("doubleCoverAlignment")
+  const coverFitDefault = useResolvedDefault("coverFit")
   const bookDetailDisplayDefault = useResolvedDefault("bookDetailDisplay")
   const ratingIconDefault = useResolvedDefault("ratingIcon")
   const bookOpenTargetDefault = useResolvedDefault("bookOpenTarget")
@@ -96,6 +104,9 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
   const doubleCoverAlignment =
     useWatch({ control: form.control, name: "doubleCoverAlignment" }) ??
     doubleCoverAlignmentDefault
+
+  const coverFit =
+    useWatch({ control: form.control, name: "coverFit" }) ?? coverFitDefault
 
   const bookDetailDisplay =
     useWatch({ control: form.control, name: "bookDetailDisplay" }) ??
@@ -184,6 +195,34 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                 display={gridCoverDisplay}
                 alignment={doubleCoverAlignment}
               />
+            </div>
+
+            <div className="flex gap-6">
+              <div className="flex-1">
+                <Controller
+                  name="coverFit"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Field>
+                      <SettingLabel field="coverFit">
+                        {t("gridDisplay.fitLabel")}
+                      </SettingLabel>
+                      <FieldDescription>
+                        {t("gridDisplay.fitHint")}
+                      </FieldDescription>
+                      <SegmentedControl
+                        value={field.value ?? coverFitDefault}
+                        onChange={(value) => {
+                          field.onChange(value)
+                        }}
+                        options={coverFitOptions}
+                      />
+                    </Field>
+                  )}
+                />
+              </div>
+
+              <CoverFitPreview fit={coverFit} />
             </div>
           </CardContent>
         </Card>

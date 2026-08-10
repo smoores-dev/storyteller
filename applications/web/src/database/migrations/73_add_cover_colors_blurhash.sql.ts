@@ -65,7 +65,7 @@ export default async function migrate() {
       }
 
       try {
-        const blurhash = await generateBlurhash(ebookCover.data, "ebook")
+        const blurhash = await generateBlurhash(ebookCover.data)
         if (blurhash) {
           await db
             .updateTable("ebook")
@@ -106,10 +106,7 @@ export default async function migrate() {
       }
 
       try {
-        const blurhash = await generateBlurhash(
-          audiobookCover.data,
-          "audiobook",
-        )
+        const blurhash = await generateBlurhash(audiobookCover.data)
         if (blurhash) {
           await db
             .updateTable("audiobook")

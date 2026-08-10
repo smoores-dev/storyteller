@@ -100,6 +100,7 @@ import {
   IconMoon,
   IconPalette,
   IconPencil,
+  IconPhoto,
   IconPin,
   IconPinFilled,
   IconPlayerPause,
@@ -231,6 +232,7 @@ export const Volume = /*#__PURE__*/ styled(IconVolume)
 export const Volume3 = /*#__PURE__*/ styled(IconVolume3)
 export const VolumeOff = /*#__PURE__*/ styled(IconVolumeOff)
 export const Readaloud = /*#__PURE__*/ styled(IconReadaloud)
+export const Image = /*#__PURE__*/ styled(IconPhoto)
 
 // files & data
 export const File = /*#__PURE__*/ styled(IconFile)

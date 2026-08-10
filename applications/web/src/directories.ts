@@ -18,6 +18,8 @@ export const AUDIO_DIR = join(ASSETS_DIR, "audio")
 
 export const TEXT_DIR = join(ASSETS_DIR, "text")
 
+export const IMAGES_DIR = join(DATA_DIR, "images")
+
 export const IMAGE_CACHE_DIR = join(DATA_DIR, "image-cache")
 
 export const CACHE_DIR = join(DATA_DIR, "cache")

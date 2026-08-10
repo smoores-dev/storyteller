@@ -204,6 +204,9 @@
         "large": "Large",
         "extraLarge": "Extra large"
       },
+      "coverFit": {
+        "title": "Cover fit"
+      },
       "coverType": {
         "title": "Cover type",
         "doubleCover": "Double cover",
@@ -1183,6 +1186,14 @@
               "medium": "Medium",
               "large": "Large",
               "largest": "Largest"
+            },
+            "fitLabel": "Odd-shaped covers",
+            "fitHint": "How a cover whose art is not the usual book shape is displayed.",
+            "fitOptions": {
+              "true-size": "True size",
+              "stretch": "Stretch",
+              "cover": "Zoom to fill",
+              "contain": "Fit with backdrop"
             }
           },
           "opening": {
@@ -1348,7 +1359,8 @@
       "uploadAudiobook": "Upload audiobook cover",
       "setDefaultPosition": "Set as default position",
       "savedDefaultPosition": "Saved default position",
-      "resize": "Drag to resize the cover, double-click to reset"
+      "resize": "Drag to resize the cover, double-click to reset",
+      "oddShapeWarning": "That image is {width}x{height}, which is further from a normal cover shape than we can display. It will be cropped or letterboxed wherever it appears."
     },
     "narratedBy": "narrated by",
     "writtenBy": "by",

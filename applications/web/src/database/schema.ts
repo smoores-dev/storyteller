@@ -57,6 +57,9 @@ export interface Audiobook {
         string
       >
     | null
+  coverExtractedFrom: string | null
+  coverImageUuid: import("@/uuid").UUID | null
+  coverOrigin: Generated<import("@/database/images").CoverOrigin>
   createdAt: Generated<string>
   duration: number | null
   filepath: string
@@ -200,6 +203,9 @@ export interface Ebook {
         string
       >
     | null
+  coverExtractedFrom: string | null
+  coverImageUuid: import("@/uuid").UUID | null
+  coverOrigin: Generated<import("@/database/images").CoverOrigin>
   createdAt: Generated<string>
   filepath: string
   fileSize: number | null
@@ -279,6 +285,26 @@ export interface IdentifierType {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface Image {
+  blurhash: string | null
+  byteSize: number
+  colors:
+    | import("kysely").ColumnType<
+        import("@/database/coverColors").StoredCoverColor[],
+        string,
+        string
+      >
+    | null
+  createdAt: Generated<string>
+  height: number
+  mimeType: string
+  sha256: string
+  sourceName: string | null
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+  width: number
+}
+
 export interface ImportRule {
   bookUuid: import("@/uuid").UUID | null
   createdAt: Generated<string>
@@ -354,6 +380,9 @@ export interface Readaloud {
         string
       >
     | null
+  coverExtractedFrom: string | null
+  coverImageUuid: import("@/uuid").UUID | null
+  coverOrigin: Generated<import("@/database/images").CoverOrigin>
   createdAt: Generated<string>
   currentStage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
   duration: number | null
@@ -579,6 +608,7 @@ export interface DB {
   homeSection: HomeSection
   identifier: Identifier
   identifierType: IdentifierType
+  image: Image
   importRule: ImportRule
   importRuleToCollection: ImportRuleToCollection
   job: Job

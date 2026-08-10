@@ -2560,6 +2560,13 @@ export function getDownloadUrl(
   return `/api/v2/books/${bookUuid}/files?${searchParams.toString()}`
 }
 
+export function getImageUrl(sha256: string, size?: number | null) {
+  if (!size || !Number.isFinite(size) || size <= 0) {
+    return `/api/v2/images/${sha256}`
+  }
+  return `/api/v2/images/${sha256}?s=${Math.round(size)}`
+}
+
 export function getCoverUrl(
   bookUuid: string,
   {

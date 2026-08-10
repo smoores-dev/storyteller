@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 
 import { type JsColor } from "@storyteller-platform/okmain"
 
-import { type CoverData, type CoverKind, persistCover } from "@/assets/covers"
 import { deleteAssets } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -13,11 +12,16 @@ import {
   deleteBook,
   getBook,
   getBookUuid,
-  setFormatCoverData,
   updateBook,
 } from "@/database/books"
 import { toIsoDateString } from "@/dates"
-import { generateBlurhash, getCoverColors } from "@/images"
+import { ingestImage } from "@/images"
+import {
+  attachCover,
+  audioCoverTargets,
+  textCoverTargets,
+} from "@/images/covers"
+import { sweepUnreferencedImages } from "@/images/gc"
 import { type UUID } from "@/uuid"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 
@@ -230,22 +234,19 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const textCover = formData.get("textCover")?.valueOf() as File | undefined
   const audioCover = formData.get("audioCover")?.valueOf() as File | undefined
 
+  // the text cover backs both the ebook and the readaloud display
   if (textCover) {
-    const cover = await coverDataFromFile(textCover)
-    await persistCover(updated, "ebook", cover)
-    const derived = await coverDerivedData(cover, "ebook")
-    // the text cover backs both the ebook and the readaloud display
-    await setFormatCoverData(updated.uuid, "ebook", derived)
-    if (updated.readaloud) {
-      await setFormatCoverData(updated.uuid, "readaloud", derived)
+    const image = await ingestCoverFile(textCover)
+    if (image) {
+      await attachCover(updated.uuid, textCoverTargets(updated), image, "user")
     }
   }
 
   if (audioCover) {
-    const cover = await coverDataFromFile(audioCover)
-    await persistCover(updated, "audiobook", cover)
-    const derived = await coverDerivedData(cover, "audiobook")
-    await setFormatCoverData(updated.uuid, "audiobook", derived)
+    const image = await ingestCoverFile(audioCover)
+    if (image) {
+      await attachCover(updated.uuid, audioCoverTargets(updated), image, "user")
+    }
   }
 
   void queueWritesToFiles(book.uuid, textCover, audioCover)
@@ -253,22 +254,10 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   return NextResponse.json(updated)
 })
 
-async function coverDataFromFile(file: File): Promise<CoverData> {
-  return {
-    filename: file.name,
-    mimeType: file.type || "image/jpeg",
-    data: await file.bytes(),
-  }
-}
-
-// blurhash + dominant colors for the placeholder / theme, mirroring what the
-// library scanner computes on ingest (see scanner/steps/extract-covers.ts).
-async function coverDerivedData(cover: CoverData, kind: CoverKind) {
-  const buffer = Buffer.from(cover.data)
-  return {
-    coverColors: getCoverColors(buffer),
-    coverBlurhash: await generateBlurhash(buffer, kind),
-  }
+async function ingestCoverFile(file: File) {
+  return await ingestImage(Buffer.from(await file.arrayBuffer()), {
+    sourceName: file.name,
+  })
 }
 
 /**
@@ -315,6 +304,7 @@ export const DELETE = withHasPermission<Params>("bookDelete")(async (
 
   await deleteBook(book.uuid, { preventReImport })
   await deleteAssets(book)
+  await sweepUnreferencedImages()
 
   return new Response(null, { status: 204 })
 })

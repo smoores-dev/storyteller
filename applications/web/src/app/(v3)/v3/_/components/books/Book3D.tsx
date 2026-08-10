@@ -26,15 +26,11 @@ import {
   type Readaloud,
 } from "@/database/books"
 import * as icon from "@/icons"
-import { getCoverUrl } from "@/store/api"
 import { type UUID } from "@/uuid"
 
-import { isDualFormat } from "./BookCover"
-import { CoverImage } from "./CoverImage"
+import { Tile, isDual } from "./Cover"
+import { type BookCoverImage, coverBoxAspect, coverSize } from "./coverFit"
 import { type Swatch, bookCoverSwatches } from "./coverSwatches"
-
-const DPR =
-  typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 2
 
 const THICK_MIN_RATIO = 0.07
 const THICK_MAX_RATIO = 0.32
@@ -206,23 +202,15 @@ function CoverFace({
   height: number
 }) {
   const format = audio ? book.audiobook : book.ebook
-  const url = getCoverUrl(book.uuid, {
-    width: Math.round(width * DPR),
-    height: Math.round(height * DPR),
-    audio,
-    updatedAt: format?.updatedAt ?? book.updatedAt,
-  })
 
   return (
-    <CoverImage
-      src={url}
+    <Tile
+      image={format?.coverImage}
+      size={coverSize(width, width / height)}
       alt={book.title}
-      ariaHidden
-      blurhash={format?.coverBlurhash}
       type={audio ? "audiobook" : "ebook"}
-      fallbackColors={format?.coverColors}
-      className="h-full w-full"
-      imgClassName="h-full w-full object-cover"
+      fit="true-size"
+      className="h-full w-full rounded-none"
     />
   )
 }
@@ -683,7 +671,15 @@ function SingleBookStage({
   const audiobookOnly = !!book.audiobook && !book.ebook
   const format: Book3DFormat = audiobookOnly ? "audiobook" : "ebook"
 
-  const height = audiobookOnly ? width : Math.round(width * 1.5)
+  // the slab takes the shape of its own art, so nothing is cropped or stretched
+  const height = Math.round(
+    width /
+      coverBoxAspect(
+        "true-size",
+        format,
+        (audiobookOnly ? book.audiobook : book.ebook)?.coverImage,
+      ),
+  )
   const discs = audiobookOnly ? discCount(book) : 0
   const thickness = audiobookOnly
     ? cdThickness(discs, width)
@@ -749,6 +745,13 @@ function DualStage({
   const discs = discCount(book)
   const audioThickness = cdThickness(discs, w)
 
+  const ebookHeight = Math.round(
+    w / coverBoxAspect("true-size", "ebook", book.ebook?.coverImage),
+  )
+  const audioHeight = Math.round(
+    w / coverBoxAspect("true-size", "audiobook", book.audiobook?.coverImage),
+  )
+
   const slabWrap = (id: Book3DFormat, node: ReactNode) => {
     const actions = slabActions?.(id)
     return (
@@ -774,7 +777,7 @@ function DualStage({
         <Slab
           book={book}
           width={w}
-          height={Math.round(w * 1.5)}
+          height={ebookHeight}
           thickness={ebookThickness}
           primary={ebookColors.primary}
           accent={ebookColors.secondary}
@@ -788,7 +791,7 @@ function DualStage({
               book={book}
               audio={false}
               width={w}
-              height={Math.round(w * 1.5)}
+              height={ebookHeight}
             />
           }
         />,
@@ -799,7 +802,7 @@ function DualStage({
         <Slab
           book={book}
           width={w}
-          height={w}
+          height={audioHeight}
           thickness={audioThickness}
           primary={audioColors.primary}
           accent={audioColors.secondary}
@@ -809,7 +812,7 @@ function DualStage({
           discs={discs}
           initialView={initialViews?.audiobook}
           onViewChange={(view) => onViewChange?.(view, "audiobook")}
-          front={<CoverFace book={book} audio width={w} height={w} />}
+          front={<CoverFace book={book} audio width={w} height={audioHeight} />}
         />,
       )}
     </div>
@@ -831,7 +834,7 @@ function BookStage({
   onViewChange?: (view: number, format: Book3DFormat) => void
   slabActions?: (format: Book3DFormat) => ReactNode
 }) {
-  if (isDualFormat(book as BookWithRelations)) {
+  if (isDual(book as BookWithRelations)) {
     return (
       <DualStage
         book={book}
@@ -863,23 +866,21 @@ export type Book3DBook = {
   authors: Author[]
   pageCount: number | null
   duration: number | null
-  readaloud: Pick<
-    Readaloud,
-    | "coverColors"
-    | "status"
-    | "coverBlurhash"
-    | "pageCount"
-    | "duration"
-    | "fileSize"
-  > | null
-  ebook: Pick<
-    Ebook,
-    "coverColors" | "coverBlurhash" | "pageCount" | "fileSize" | "updatedAt"
-  > | null
-  audiobook: Pick<
-    Audiobook,
-    "coverColors" | "coverBlurhash" | "duration" | "fileSize" | "updatedAt"
-  > | null
+  readaloud:
+    | (Pick<Readaloud, "status" | "pageCount" | "duration" | "fileSize"> & {
+        coverImage: BookCoverImage | null
+      })
+    | null
+  ebook:
+    | (Pick<Ebook, "pageCount" | "fileSize" | "updatedAt"> & {
+        coverImage: BookCoverImage | null
+      })
+    | null
+  audiobook:
+    | (Pick<Audiobook, "duration" | "fileSize" | "updatedAt"> & {
+        coverImage: BookCoverImage | null
+      })
+    | null
   updatedAt: string
   publicationDate: string | null
 }

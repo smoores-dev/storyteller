@@ -29,6 +29,11 @@ export type BookDetailDisplay = (typeof BookDetailDisplays)[number]
 export const DoubleCoverAlignments = ["auto", "straight"] as const
 export type DoubleCoverAlignment = (typeof DoubleCoverAlignments)[number]
 
+// how a cover whose art is not the nominal shape (2:3 for books, square for
+// audiobooks) is displayed
+export const CoverFits = ["true-size", "stretch", "cover", "contain"] as const
+export type CoverFit = (typeof CoverFits)[number]
+
 export const RatingIcons = ["star", "heart"] as const
 export type RatingIcon = (typeof RatingIcons)[number]
 
@@ -45,6 +50,7 @@ export const UserPreferencesSchema = z.object({
   gridCoverDisplay: z.enum(GridCoverDisplays),
   gridCardSize: z.enum(GridCardSizes),
   doubleCoverAlignment: z.enum(DoubleCoverAlignments),
+  coverFit: z.enum(CoverFits),
   bookDetailDisplay: z.enum(BookDetailDisplays),
   bookDetail3dView: z.number().int().min(0).nullable(),
   bookDetail3dViewAudio: z.number().int().min(0).nullable(),
@@ -71,6 +77,7 @@ export const UserPreferencesFormSchema = UserPreferencesSchema.extend({
   gridCardSize: UserPreferencesSchema.shape.gridCardSize.nullable(),
   doubleCoverAlignment:
     UserPreferencesSchema.shape.doubleCoverAlignment.nullable(),
+  coverFit: UserPreferencesSchema.shape.coverFit.nullable(),
   bookDetailDisplay: UserPreferencesSchema.shape.bookDetailDisplay.nullable(),
   ratingIcon: UserPreferencesSchema.shape.ratingIcon.nullable(),
   bookOpenTarget: UserPreferencesSchema.shape.bookOpenTarget.nullable(),
@@ -114,6 +121,7 @@ export const defaultUserPreferences: UserPreferences = {
   gridCoverDisplay: "auto",
   gridCardSize: "medium",
   doubleCoverAlignment: "auto",
+  coverFit: "true-size",
   bookDetailDisplay: "3d",
   bookDetail3dView: null,
   bookDetail3dViewAudio: null,

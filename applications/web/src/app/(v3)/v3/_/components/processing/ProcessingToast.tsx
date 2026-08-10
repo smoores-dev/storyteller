@@ -24,7 +24,7 @@ import { useVersionBasePath } from "@v3/_/components/version-context"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import { BookCover } from "@/app/(v3)/v3/_/components/books/BookCover"
+import { Cover } from "@/app/(v3)/v3/_/components/books/Cover"
 import { type PublicJob } from "@/database/jobs"
 import * as icon from "@/icons"
 import {
@@ -114,7 +114,7 @@ export function ProcessingToast() {
       >
         {!minimized && (
           <ItemMedia variant="image" className="h-18! w-10! object-contain!">
-            {book && <BookCover disableHover book={book} width={96} />}
+            {book && <Cover interactive={false} book={book} width={96} />}
           </ItemMedia>
         )}
 
