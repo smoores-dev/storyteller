@@ -8,7 +8,7 @@ class Serializer {
   constructor(private doc: Root) {}
 
   serialize() {
-    return this.doc.children.map((child) => this.serializeDomNode(child))
+    return this.serializeDomNodes(this.doc.children)
   }
 
   serializeDomNode(node: Node | TextNode): XmlNode {

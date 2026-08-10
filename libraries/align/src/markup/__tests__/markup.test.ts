@@ -561,4 +561,27 @@ void describe("markupChapter", () => {
 
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
+
+  void it("preserves top level svgs", async (t) => {
+    const input = Epub.xhtmlParser.parse(`
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+<title>c0</title>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1274 1920" height="100%" width="100%"><image xlink:href="image_rsrc8SD.jpg" height="1920" width="1274"/></svg></body>
+</html>
+`) as ParsedXml
+
+    const { markedUp: output } = await markupChapter(
+      "chapter_one",
+      input,
+      "sentence",
+      new Intl.Locale("en-US"),
+    )
+
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+  })
 })
