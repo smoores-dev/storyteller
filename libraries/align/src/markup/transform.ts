@@ -5,8 +5,6 @@ import {
   type Mark,
   Node,
   type Root,
-  RubyParenthesisNode,
-  RubyTextNode,
   TextNode,
   descendants,
 } from "./model.ts"
@@ -73,10 +71,12 @@ export function liftText(root: Root) {
       ) {
         text += "\n"
       }
-      return !(
-        node instanceof RubyTextNode || node instanceof RubyParenthesisNode
-      )
+      return true
     }
+    if (node.marks.some((m) => m.tagName === "rp" || m.tagName === "rt")) {
+      return false
+    }
+
     if (pos - lastTextEnd) {
       mapping.insertMap(lastTextEnd, pos - lastTextEnd, 0)
     }

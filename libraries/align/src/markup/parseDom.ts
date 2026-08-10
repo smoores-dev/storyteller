@@ -6,9 +6,6 @@ import {
   Node,
   NoterefNode,
   Root,
-  RubyNode,
-  RubyParenthesisNode,
-  RubyTextNode,
   TextNode,
   descendants,
 } from "./model.ts"
@@ -87,18 +84,6 @@ class Parser {
       )
 
       return footnoteNode
-    }
-
-    if (tagName === "ruby") {
-      return new RubyNode(tagName, attrs, blockChildren, marks)
-    }
-
-    if (tagName === "rt") {
-      return new RubyTextNode(tagName, attrs, blockChildren, marks)
-    }
-
-    if (tagName === "rp") {
-      return new RubyParenthesisNode(tagName, attrs, blockChildren, marks)
     }
 
     if (BLOCKS.includes(tagName)) {

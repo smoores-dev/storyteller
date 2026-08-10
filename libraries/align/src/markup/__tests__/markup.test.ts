@@ -584,4 +584,30 @@ void describe("markupChapter", () => {
 
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
+
+  void it("correctly marks up ruby tags", async (t) => {
+    const input = Epub.xhtmlParser.parse(`
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+<title>c0</title>
+</head>
+<body>
+<p>
+  Some <ruby> 明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp> </ruby> ruby tags.
+</p>
+</body>
+</html>
+`) as ParsedXml
+
+    const { markedUp: output } = await markupChapter(
+      "chapter_one",
+      input,
+      "sentence",
+      new Intl.Locale("en-US"),
+    )
+
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+  })
 })

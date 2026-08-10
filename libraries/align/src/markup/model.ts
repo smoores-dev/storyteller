@@ -257,12 +257,6 @@ export class NoterefNode extends Node {}
 
 export class FootnoteNode extends Node {}
 
-export class RubyParenthesisNode extends Node {}
-
-export class RubyTextNode extends Node {}
-
-export class RubyNode extends Node {}
-
 export class Mark {
   constructor(
     public tagName: ElementName,
