@@ -845,7 +845,7 @@ publish-okmain:
     - yarn workspaces focus @storyteller-platform/okmain
     - ls -lah libraries/okmain/*.node
     - mkdir -p libraries/okmain/artifacts
-    - mv okmain/*.node libraries/okmain/artifacts/
+    - mv libraries/okmain/*.node libraries/okmain/artifacts/
     - yarn workspace @storyteller-platform/okmain napi create-npm-dirs # creates the npm dirs
     - yarn workspace @storyteller-platform/okmain napi artifacts # moves all the artifacts to the correct npm dir
     - ls -latR libraries/okmain/npm
