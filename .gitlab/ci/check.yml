@@ -15,11 +15,13 @@ check:
 check-versions:
   image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main
   stage: check
+  variables:
+    GIT_DEPTH: "0"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - apt update && apt install -y --no-install-recommends git-lfs
-    - git fetch origin main --depth 1
+    - git fetch origin main:refs/remotes/origin/main
     - yarn workspaces focus storyteller
     - yarn node ./scripts/checkVersions.mts
 
