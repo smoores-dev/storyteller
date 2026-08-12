@@ -30,6 +30,7 @@ in
     git-lfs
     vtsls
     google-cloud-sdk
+    gcc
   ] ++ [
     # https://github.com/NixOS/nixpkgs/pull/546525
     (pkgs.buildGoModule (finalAttrs: {
