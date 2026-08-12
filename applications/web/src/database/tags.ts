@@ -275,6 +275,7 @@ export async function deleteTag(uuid: UUID) {
         bookUuid: book.uuid,
         payload: { tags: book.tags },
       })
+      void queueWritesToFiles(book.uuid)
     })
   }
 }
@@ -344,6 +345,7 @@ export async function mergeTags(targetUuid: UUID, sourceUuids: UUID[]) {
         bookUuid: book.uuid,
         payload: { tags: book.tags },
       })
+      void queueWritesToFiles(book.uuid)
     })
   }
 }
