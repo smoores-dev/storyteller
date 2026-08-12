@@ -40,6 +40,7 @@ import { defaultMetadataFieldOverrides } from "@/database/settingsTypes"
 import { usePermission } from "@/hooks/usePermission"
 import * as icon from "@/icons"
 import {
+  getDownloadUrl,
   useRemoveBookAssetMutation,
   useReplaceBookAssetMutation,
 } from "@/store/api"
@@ -162,6 +163,7 @@ function FormatFileRow({
   const fmt = book[format]
 
   const canEdit = usePermission("bookUpdate")
+  const canDownload = usePermission("bookDownload")
   const { isEditing } = useBookForm()
 
   const t = useTranslation("BookDetailsPage")
@@ -234,96 +236,122 @@ function FormatFileRow({
             </Badge>
           )}
 
-          {canEdit && (
+          {(canEdit || canDownload) && (
             <div className="flex grow items-center justify-end gap-1">
-              {isTauri ? (
+              {/* downloading is a file action, so it lives on the file rather
+                  than in the hero. a missing file has nothing to send. */}
+              {canDownload && !!filepath && !fmt.missing && (
                 <TooltipButton
                   variant="ghost"
                   size="icon-sm"
-                  tooltip={c.plain("actions.replace")}
+                  nativeButton={false}
+                  tooltip={t.plain("downloads.download")}
                   className={cn(
                     "text-muted-foreground font-thin opacity-0 transition-opacity",
                     "group-hover/file:opacity-100",
                     isEditing && "opacity-100",
                   )}
-                  aria-label={`Replace ${format} file`}
-                  onClick={onReplace}
-                >
-                  <icon.Replace className="h-3.5 w-3.5 stroke-[1.5]" />
-                </TooltipButton>
-              ) : (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <TooltipButton
-                        variant="ghost"
-                        size="icon-sm"
-                        tooltip={c.plain("actions.replace")}
-                        className={cn(
-                          "text-muted-foreground font-thin opacity-0 transition-opacity",
-                          "group-hover/file:opacity-100",
-                          isEditing && "opacity-100",
-                        )}
-                        aria-label={`Replace ${format} file`}
-                      >
-                        <icon.Replace className="h-3.5 w-3.5 stroke-[1.5]" />
-                      </TooltipButton>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="w-fit">
-                    <DropdownMenuItem
-                      onClick={onReplaceServer}
-                      className="whitespace-nowrap"
-                    >
-                      <icon.Server className="mr-2 h-4 w-4" />
-                      {c("actions.import")}
-                    </DropdownMenuItem>
+                  aria-label={`Download ${FORMAT_LABELS[format]}`}
+                  render={
+                    <a href={getDownloadUrl(book.uuid, format)} download>
+                      <icon.Download className="h-3.5 w-3.5 stroke-[1.5]" />
+                    </a>
+                  }
+                />
+              )}
 
-                    <DropdownMenuItem
-                      onClick={onReplaceUpload}
-                      className="whitespace-nowrap"
+              {canEdit && (
+                <>
+                  {isTauri ? (
+                    <TooltipButton
+                      variant="ghost"
+                      size="icon-sm"
+                      tooltip={c.plain("actions.replace")}
+                      className={cn(
+                        "text-muted-foreground font-thin opacity-0 transition-opacity",
+                        "group-hover/file:opacity-100",
+                        isEditing && "opacity-100",
+                      )}
+                      aria-label={`Replace ${format} file`}
+                      onClick={onReplace}
                     >
-                      <icon.Upload className="mr-2 h-4 w-4" />
-                      {c("actions.upload")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              {identifiers.length === 0 && (
-                <TooltipButton
-                  variant="ghost"
-                  onClick={() => {
-                    setEditingIdentifiers(true)
-                  }}
-                  size="xs"
-                  className={cn(
-                    "text-muted-foreground/60 relative font-sans text-xs tracking-wide uppercase transition-colors",
-                    "font-normal opacity-0 transition-opacity",
-                    "group-hover/file:opacity-100",
-                    isEditing && "opacity-100",
+                      <icon.Replace className="h-3.5 w-3.5 stroke-[1.5]" />
+                    </TooltipButton>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <TooltipButton
+                            variant="ghost"
+                            size="icon-sm"
+                            tooltip={c.plain("actions.replace")}
+                            className={cn(
+                              "text-muted-foreground font-thin opacity-0 transition-opacity",
+                              "group-hover/file:opacity-100",
+                              isEditing && "opacity-100",
+                            )}
+                            aria-label={`Replace ${format} file`}
+                          >
+                            <icon.Replace className="h-3.5 w-3.5 stroke-[1.5]" />
+                          </TooltipButton>
+                        }
+                      />
+                      <DropdownMenuContent align="end" className="w-fit">
+                        <DropdownMenuItem
+                          onClick={onReplaceServer}
+                          className="whitespace-nowrap"
+                        >
+                          <icon.Server className="mr-2 h-4 w-4" />
+                          {c("actions.import")}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={onReplaceUpload}
+                          className="whitespace-nowrap"
+                        >
+                          <icon.Upload className="mr-2 h-4 w-4" />
+                          {c("actions.upload")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  tooltip={t("identifiers.add")}
-                  aria-label={t("identifiers.add")}
-                >
-                  <span>ID</span>
-                  <icon.Plus className="absolute -top-0.5 -right-0.5 size-2.5" />
-                </TooltipButton>
-              )}
-              {canRemove && (
-                <TooltipButton
-                  variant="ghost"
-                  size="icon-sm"
-                  tooltip={c.plain("actions.remove")}
-                  className={cn(
-                    "text-muted-foreground/60 hover:text-foreground opacity-0 transition-opacity",
-                    "group-hover/file:opacity-100",
-                    isEditing && "opacity-100",
+                  {identifiers.length === 0 && (
+                    <TooltipButton
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingIdentifiers(true)
+                      }}
+                      size="xs"
+                      className={cn(
+                        "text-muted-foreground/60 relative font-sans text-xs tracking-wide uppercase transition-colors",
+                        "font-normal opacity-0 transition-opacity",
+                        "group-hover/file:opacity-100",
+                        isEditing && "opacity-100",
+                      )}
+                      tooltip={t("identifiers.add")}
+                      aria-label={t("identifiers.add")}
+                    >
+                      <span>ID</span>
+                      <icon.Plus className="absolute -top-0.5 -right-0.5 size-2.5" />
+                    </TooltipButton>
                   )}
-                  aria-label={c.plain("actions.remove")}
-                  onClick={onRemove}
-                >
-                  <icon.Trash className="h-3.5 w-3.5" />
-                </TooltipButton>
+                  {canRemove && (
+                    <TooltipButton
+                      variant="ghost"
+                      size="icon-sm"
+                      tooltip={c.plain("actions.remove")}
+                      className={cn(
+                        "text-muted-foreground/60 hover:text-foreground opacity-0 transition-opacity",
+                        "group-hover/file:opacity-100",
+                        isEditing && "opacity-100",
+                      )}
+                      aria-label={c.plain("actions.remove")}
+                      onClick={onRemove}
+                    >
+                      <icon.Trash className="h-3.5 w-3.5" />
+                    </TooltipButton>
+                  )}
+                </>
               )}
             </div>
           )}
