@@ -18,6 +18,10 @@ import {
 } from "react-hook-form"
 import { toast } from "sonner"
 
+import {
+  coverSwatches,
+  resolveCoverColors,
+} from "@v3/_/components/books/coverSwatches"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { apiErrorMessage } from "@v3/_/lib/api-error"
 
@@ -28,6 +32,18 @@ import { useUpdateBookMutation } from "@/store/api"
 import { type UUID } from "@/uuid"
 
 import { type BookFormValues, bookFormSchema } from "./schema"
+
+/**
+ * only two colors are ever consumed (--cover-1 and --cover-2), so a stored
+ * override of any length collapses to the pair the app actually renders.
+ */
+export function coverColorPair(
+  book: BookWithRelations,
+): BookFormValues["coverColorsOverride"] {
+  const swatches = coverSwatches(resolveCoverColors(book))
+  if (!swatches.hasColors) return null
+  return [swatches.primary.rgb, swatches.secondary.rgb]
+}
 
 function bookToFormValues(book: BookWithRelations): BookFormValues {
   return {
@@ -53,6 +69,9 @@ function bookToFormValues(book: BookWithRelations): BookFormValues {
     })),
     textCover: null,
     audioCover: null,
+    coverColorsOverride: book.coverColorsOverride?.length
+      ? coverColorPair(book)
+      : null,
   }
 }
 
@@ -162,6 +181,10 @@ export function BookFormProvider({
             position: s.position,
             featured: s.featured,
           })),
+          // null clears the override, so the colors are reread from the cover
+          coverColorsOverride: values.coverColorsOverride
+            ? [...values.coverColorsOverride]
+            : null,
           // rating is per-user and submitted separately via setBookRating
         },
         textCover: values.textCover,
@@ -260,6 +283,7 @@ export function BookFormProvider({
   const discardCovers = useCallback(() => {
     form.resetField("textCover")
     form.resetField("audioCover")
+    form.resetField("coverColorsOverride")
     setEditingCoversState(false)
   }, [form])
 

@@ -84,7 +84,7 @@ function blurhashStyle(
 
 type TileProps = {
   image: BookCoverImage | null | undefined
-  // longest edge to request, in real pixels
+  // longest edge the tile occupies, in css pixels
   size: number
   // used only for the FallbackCover title; the <img> itself is decorative
   // (alt="") because the card renders the title alongside it.
@@ -149,6 +149,8 @@ export const Tile = memo(function Tile({
         <img
           key={image.sha256}
           src={getImageUrl(image.sha256, size)}
+          // the browser picks the density, so both renders emit the same markup
+          srcSet={`${getImageUrl(image.sha256, size)} 1x, ${getImageUrl(image.sha256, size * 2)} 2x`}
           alt=""
           aria-hidden
           loading="lazy"

@@ -17,8 +17,6 @@ import {
 } from "@/database/userPreferencesTypes"
 import { type UUID } from "@/uuid"
 
-// the preview has no real art, so it points at an image that will not resolve
-// and lets the fallback cover render these colors instead
 function previewCoverImage(
   aspect: number,
   colors: BookCoverImage["colors"],
@@ -37,11 +35,6 @@ function previewCoverImage(
 const ebookGradient = "linear-gradient(150deg, #2563eb, #60a5fa)"
 const audioGradient = "linear-gradient(150deg, #7c3aed, #c084fc)"
 
-// landscape art standing in for a cover that is not the usual book shape. the
-// ring and the off-centre bar make each mode's distortion or cropping obvious
-// at a glance. preserveAspectRatio="none" is what makes stretch actually read
-// as a stretch: without it the svg re-fits itself inside the stretched viewport
-// and the ring stays a perfect circle no matter the object-fit.
 const ART = { width: 125, height: 100 }
 const OFF_RATIO_ART = `data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="${ART.width}" height="${ART.height}" viewBox="0 0 ${ART.width} ${ART.height}" preserveAspectRatio="none">
@@ -54,7 +47,6 @@ const OFF_RATIO_ART = `data:image/svg+xml,${encodeURIComponent(
   </svg>`,
 )}`
 
-// the slot the preview art sits in, matching the aspect-11/16 frame below
 const PREVIEW_SLOT_ASPECT = 11 / 16
 
 export function CoverFitPreview({
@@ -62,7 +54,6 @@ export function CoverFitPreview({
   fill = false,
 }: {
   fit: CoverFit
-  // a card pinned to one format has no inset box: the art is the whole card
   fill?: boolean
 }) {
   return (

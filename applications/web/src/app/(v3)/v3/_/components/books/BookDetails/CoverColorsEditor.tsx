@@ -1,295 +1,211 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import { useState } from "react"
+import { useWatch } from "react-hook-form"
 
 import { type JsColor } from "@storyteller-platform/okmain"
 
-import { Button } from "@v3/_/components/ui/button"
+import { Cover } from "@v3/_/components/books/Cover"
+import {
+  type ColorPair,
+  ColorSourceRow,
+  ColorSwatch,
+  PaletteStrip,
+  coverPalettes,
+  sameColor,
+} from "@v3/_/components/books/coverColorPicker"
+import { WIDTH_BOUND_SLOT } from "@v3/_/components/books/coverFit"
+import {
+  coverSwatches,
+  resolveCoverColors,
+} from "@v3/_/components/books/coverSwatches"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@v3/_/components/ui/popover"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { cn } from "@/cn"
 import { type BookWithRelations } from "@/database/books"
 import * as icon from "@/icons"
-import { useUpdateBookMutation } from "@/store/api"
 
-function rgbToHex({ r, g, b }: JsColor): string {
-  const h = (n: number) =>
-    Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0")
-  return `#${h(r)}${h(g)}${h(b)}`
-}
+import { useBookForm } from "./BookFormProvider"
 
-function hexToRgb(hex: string): JsColor | null {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
-  if (!m?.[1]) return null
-  const int = parseInt(m[1], 16)
-  return { r: (int >> 16) & 255, g: (int >> 8) & 255, b: int & 255 }
-}
+type Slot = 0 | 1
 
-function samePalette(a: JsColor[], b: JsColor[]): boolean {
-  if (a.length !== b.length) return false
-  return a.every((c, i) => {
-    const o = b[i]
-    return !!o && c.r === o.r && c.g === o.g && c.b === o.b
-  })
-}
-
-function resolvedPalette(book: BookWithRelations): JsColor[] {
-  return (
-    book.coverColorsOverride ??
-    book.ebook?.coverImage?.colors ??
-    book.audiobook?.coverImage?.colors ??
-    book.readaloud?.coverImage?.colors ??
-    []
+// the pair the book falls back to with no override: what okmain read off the art
+function coverDerivedPair(book: BookWithRelations): ColorPair | null {
+  const swatches = coverSwatches(
+    resolveCoverColors({ ...book, coverColorsOverride: null }),
   )
+  if (!swatches.hasColors) return null
+  return [swatches.primary.rgb, swatches.secondary.rgb]
 }
 
-function formatPalettes(
-  book: BookWithRelations,
-): { key: string; label: string; colors: JsColor[] }[] {
+function PalettePicker({
+  book,
+  slot,
+  value,
+  onPick,
+  onSlotChange,
+}: {
+  book: BookWithRelations
+  slot: Slot
+  value: ColorPair
+  onPick: (color: JsColor) => void
+  onSlotChange: (slot: Slot) => void
+}) {
+  const t = useTranslation("BookDetailsPage.coverColors")
+  const palettes = coverPalettes(book, (type) => t.plain(`formats.${type}`))
+
   return (
-    [
-      { key: "ebook", label: "E-book", colors: book.ebook?.coverImage?.colors },
-      {
-        key: "audiobook",
-        label: "Audiobook",
-        colors: book.audiobook?.coverImage?.colors,
-      },
-      {
-        key: "readaloud",
-        label: "Read-along",
-        colors: book.readaloud?.coverImage?.colors,
-      },
-    ] as const
+    <div className="flex w-72 flex-col gap-3">
+      <div className="bg-cover-well flex items-center justify-center rounded-md p-3">
+        <div style={{ width: 132 }}>
+          <Cover
+            book={book}
+            width={132}
+            interactive={false}
+            slotAspect={WIDTH_BOUND_SLOT}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <ColorSwatch
+          color={value[0]}
+          label={t("primary")}
+          active={slot === 0}
+          onClick={() => {
+            onSlotChange(0)
+          }}
+        />
+        <ColorSwatch
+          color={value[1]}
+          label={t("secondary")}
+          active={slot === 1}
+          onClick={() => {
+            onSlotChange(1)
+          }}
+        />
+      </div>
+
+      {palettes.map((palette) => (
+        <PaletteStrip
+          key={palette.type}
+          label={palette.label}
+          colors={palette.colors}
+          current={value[slot]}
+          onPick={onPick}
+        />
+      ))}
+
+      <ColorSourceRow
+        value={value[slot]}
+        onPick={onPick}
+        dropperLabel={t.plain("pickFromCover")}
+      />
+    </div>
   )
-    .filter((f): f is typeof f & { colors: JsColor[] } => !!f.colors?.length)
-    .map((f) => ({ key: f.key, label: f.label, colors: f.colors }))
 }
 
 export function CoverColorsEditor({ book }: { book: BookWithRelations }) {
-  const [updateBook, { isLoading }] = useUpdateBookMutation()
-  const [draft, setDraft] = useState<JsColor[]>(() => resolvedPalette(book))
+  const { form, canEdit } = useBookForm()
+  const t = useTranslation("BookDetailsPage.coverColors")
 
-  const persistedKey = JSON.stringify([
-    book.coverColorsOverride ?? null,
-    book.ebook?.coverImage?.colors ?? null,
-    book.audiobook?.coverImage?.colors ?? null,
-    book.readaloud?.coverImage?.colors ?? null,
-  ])
-  useEffect(() => {
-    setDraft(resolvedPalette(book))
-  }, [book, persistedKey])
+  const override = useWatch({
+    control: form.control,
+    name: "coverColorsOverride",
+  })
 
-  const hasOverride = book.coverColorsOverride != null
-  const dirty = !samePalette(draft, resolvedPalette(book))
-  const formats = formatPalettes(book)
+  const [slot, setSlot] = useState<Slot>(0)
+  const [open, setOpen] = useState(false)
 
-  const recolor = (index: number, hex: string) => {
-    const rgb = hexToRgb(hex)
-    if (!rgb) return
-    setDraft((d) => d.map((c, i) => (i === index ? rgb : c)))
-  }
-  const remove = (index: number) => {
-    setDraft((d) => d.filter((_, i) => i !== index))
-  }
-  const move = (index: number, dir: -1 | 1) => {
-    setDraft((d) => {
-      const next = index + dir
-      const a = d[index]
-      const b = d[next]
-      if (!a || !b) return d
-      const copy = [...d]
-      copy[index] = b
-      copy[next] = a
-      return copy
-    })
-  }
-  const makePrimary = (index: number) => {
-    setDraft((d) => {
-      if (index === 0) return d
-      const copy = [...d]
-      const [picked] = copy.splice(index, 1)
-      if (!picked) return d
-      copy.unshift(picked)
-      return copy
-    })
-  }
-  const add = () => {
-    setDraft((d) => [...d, d[0] ?? { r: 136, g: 136, b: 136 }])
+  const derived = coverDerivedPair(book)
+  const pair = override ?? derived
+  if (!pair) return null
+
+  const setColor = (index: Slot, color: JsColor) => {
+    form.setValue(
+      "coverColorsOverride",
+      index === 0 ? [color, pair[1]] : [pair[0], color],
+      { shouldDirty: true },
+    )
   }
 
-  const save = async () => {
-    const res = await updateBook({
-      update: { uuid: book.uuid, coverColorsOverride: draft },
-    })
-    if ("error" in res && res.error) {
-      toast.error("Could not save cover colors")
-    } else {
-      toast.success("Cover colors saved")
-    }
-  }
-
-  const reread = async () => {
-    const res = await updateBook({
-      update: { uuid: book.uuid, coverColorsOverride: null },
-    })
-    if ("error" in res && res.error) {
-      toast.error("Could not reset cover colors")
-    } else {
-      toast.success("Reread colors from cover")
-    }
-  }
+  const slots: { slot: Slot; label: string }[] = [
+    { slot: 0, label: t("primary") },
+    { slot: 1, label: t("secondary") },
+  ]
 
   return (
     <div className="w-full max-w-md">
-      <div className="section-label mb-2">
+      <div className="section-label mb-2 flex items-center gap-1.5">
         <icon.Palette className="size-3.5 stroke-[1.5]" />
-        Cover colors
-      </div>
+        {t("title")}
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {draft.map((color, index) => (
-          <div
-            key={index}
-            className="group/swatch relative flex flex-col items-center"
+        {override && (
+          <TooltipButton
+            type="button"
+            variant="real-ghost"
+            size="icon-xs"
+            className="text-muted-foreground hover:text-foreground ml-auto"
+            tooltip={t.plain("resetHint")}
+            aria-label={t.plain("reset")}
+            onClick={() => {
+              form.setValue("coverColorsOverride", null, { shouldDirty: true })
+            }}
           >
-            <label
-              className={cn(
-                "relative block size-9 cursor-pointer rounded-md ring-1 ring-black/10 ring-inset dark:ring-white/15",
-                index === 0 && "ring-cover-accent ring-2",
-              )}
-              style={{ background: rgbToHex(color) }}
-              title={index === 0 ? "Primary" : "Click to recolor"}
-            >
-              <input
-                type="color"
-                value={rgbToHex(color)}
-                onChange={(e) => {
-                  recolor(index, e.target.value)
-                }}
-                className="absolute inset-0 cursor-pointer opacity-0"
-              />
-              {index === 0 && (
-                <icon.Star className="fill-cover-accent text-cover-accent absolute -top-1.5 -right-1.5 size-3.5" />
-              )}
-            </label>
-
-            <div className="mt-0.5 flex items-center opacity-0 transition-opacity group-hover/swatch:opacity-100">
-              <button
-                type="button"
-                aria-label="Move earlier"
-                disabled={index === 0}
-                onClick={() => {
-                  move(index, -1)
-                }}
-                className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <icon.ChevronLeft className="size-3.5" />
-              </button>
-              {index !== 0 && (
-                <button
-                  type="button"
-                  aria-label="Make primary"
-                  onClick={() => {
-                    makePrimary(index)
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <icon.Star className="size-3" />
-                </button>
-              )}
-              <button
-                type="button"
-                aria-label="Remove"
-                onClick={() => {
-                  remove(index)
-                }}
-                className="text-muted-foreground hover:text-bad"
-              >
-                <icon.Close className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                aria-label="Move later"
-                disabled={index === draft.length - 1}
-                onClick={() => {
-                  move(index, 1)
-                }}
-                className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <icon.ChevronRight className="size-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
-
-        <TooltipButton
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          className="size-9 rounded-md border-dashed"
-          onClick={add}
-          aria-label="Add color"
-          tooltip="Add color"
-        >
-          <icon.Plus className="size-4" />
-        </TooltipButton>
+            <icon.Refresh className="size-3.5" />
+          </TooltipButton>
+        )}
       </div>
 
-      {formats.length > 0 && (
-        <div className="mt-3 flex flex-col gap-1.5">
-          {formats.map((f) => (
-            <div key={f.key} className="flex items-center gap-2">
-              <span className="text-muted-foreground w-20 shrink-0 text-xs">
-                {f.label}
-              </span>
-              <div className="flex flex-wrap gap-1">
-                {f.colors.map((c, i) => (
-                  <span
-                    key={i}
-                    className="size-4 rounded-sm ring-1 ring-black/10 ring-inset dark:ring-white/15"
-                    style={{ background: rgbToHex(c) }}
-                  />
-                ))}
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="ml-auto h-6 px-2 text-xs"
-                onClick={() => {
-                  setDraft(f.colors)
-                }}
-              >
-                Use
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* one popover per slot, so the panel anchors to the swatch the user
+          reached for and a click is what makes that slot the active one */}
+      <div className="grid grid-cols-2 gap-2">
+        {slots.map((entry) => (
+          <Popover
+            key={entry.slot}
+            open={open && slot === entry.slot}
+            onOpenChange={(next) => {
+              if (!canEdit) return
+              setOpen(next)
+              if (next) setSlot(entry.slot)
+            }}
+          >
+            <PopoverTrigger
+              render={
+                <ColorSwatch
+                  color={pair[entry.slot]}
+                  label={entry.label}
+                  active={open && slot === entry.slot}
+                  marked={
+                    !!override &&
+                    (!derived ||
+                      !sameColor(override[entry.slot], derived[entry.slot]))
+                  }
+                  onClick={() => {
+                    setSlot(entry.slot)
+                  }}
+                />
+              }
+            />
 
-      <div className="mt-3 flex items-center gap-2">
-        <Button
-          type="button"
-          variant="cover"
-          size="sm"
-          onClick={() => void save()}
-          disabled={isLoading || !dirty || draft.length === 0}
-        >
-          Save colors
-        </Button>
-        <TooltipButton
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => void reread()}
-          disabled={isLoading || !hasOverride}
-          aria-label="Reread colors from cover"
-          tooltip="Discard the override and re-derive colors from the covers"
-        >
-          <icon.Refresh className="mr-1 size-3.5" />
-          Reread from cover
-        </TooltipButton>
+            <PopoverContent align="start" className="w-auto p-3">
+              <PalettePicker
+                book={book}
+                slot={entry.slot}
+                value={pair}
+                onPick={(color) => {
+                  setColor(entry.slot, color)
+                }}
+                onSlotChange={setSlot}
+              />
+            </PopoverContent>
+          </Popover>
+        ))}
       </div>
     </div>
   )

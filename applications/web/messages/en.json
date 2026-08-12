@@ -396,6 +396,16 @@
     "cancelSelection": "Stop selecting"
   },
   "BookActions": {
+    "bulkCoverColors": {
+      "title": "Set cover colors",
+      "description": "Give all {count, plural, one {# selected book} other {# selected books}} the same pair of cover colors.",
+      "copyFrom": "Copy the colors from",
+      "fromSelection": "Colors already in the selection",
+      "apply": "Apply to all",
+      "resetAll": "Reset all to default",
+      "applied": "Cover colors set on {count, plural, one {# book} other {# books}}",
+      "failed": "Could not set cover colors"
+    },
     "openFullPage": "Open full page",
     "search": "Search...",
     "addToCollection": "Add to collection",
@@ -1353,6 +1363,19 @@
     "noDescriptionAvailable": "No description available",
     "showMore": "Show more",
     "showLess": "Show less",
+    "coverColors": {
+      "title": "Cover colors",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "reset": "Reread from cover",
+      "resetHint": "Drop the override and take both colors from the cover art again",
+      "pickFromCover": "Pick a color from anywhere on screen",
+      "formats": {
+        "ebook": "From the ebook cover",
+        "audiobook": "From the audiobook cover",
+        "readaloud": "From the read-along cover"
+      }
+    },
     "cover": {
       "edit": "Edit cover",
       "uploadEbook": "Upload ebook cover",

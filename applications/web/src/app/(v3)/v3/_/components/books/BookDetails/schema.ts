@@ -33,6 +33,12 @@ function isValidLanguage(code: string): boolean {
   }
 }
 
+const jsColorSchema = z.object({
+  r: z.number().int().min(0).max(255),
+  g: z.number().int().min(0).max(255),
+  b: z.number().int().min(0).max(255),
+})
+
 export const bookFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   subtitle: z.string().nullable(),
@@ -54,6 +60,8 @@ export const bookFormSchema = z.object({
   series: z.array(editableSeriesSchema),
   textCover: z.instanceof(File).nullable(),
   audioCover: z.instanceof(File).nullable(),
+  // [primary, secondary]. null means "no override": derive from the cover art.
+  coverColorsOverride: z.tuple([jsColorSchema, jsColorSchema]).nullable(),
 })
 
 export type BookFormValues = z.infer<typeof bookFormSchema>

@@ -108,13 +108,10 @@ export function coverObjectFitClass(fit: CoverFit) {
   }
 }
 
-export function getDevicePixelRatio() {
-  return typeof window === "undefined"
-    ? 1
-    : Math.min(window.devicePixelRatio, 2)
-}
-
+/**
+ * the longest edge the cover occupies, in pixels
+ */
 export function coverSize(cssWidth: number, aspect: number) {
   const longestEdge = Math.max(cssWidth, cssWidth / aspect)
-  return Math.round(longestEdge * getDevicePixelRatio())
+  return Math.round(longestEdge)
 }

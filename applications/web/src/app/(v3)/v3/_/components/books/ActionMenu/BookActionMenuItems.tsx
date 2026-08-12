@@ -22,6 +22,10 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { AddToShelfList } from "@/app/(v3)/v3/_/components/books/ActionMenu/AddToShelfList"
 import { SetStatusList } from "@/app/(v3)/v3/_/components/books/ActionMenu/SetStatusList"
 import { useProcessingRun } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
+import {
+  BulkCoverColorsDialog,
+  selectionHasColors,
+} from "@/app/(v3)/v3/_/components/books/BulkCoverColorsDialog"
 import { CreateCollectionDialog } from "@/app/(v3)/v3/_/components/books/CreateCollectionDialog"
 import { CreateSeriesDialog } from "@/app/(v3)/v3/_/components/books/CreateSeriesDialog"
 import { CreateTagDialog } from "@/app/(v3)/v3/_/components/books/CreateTagDialog"
@@ -162,6 +166,7 @@ export function useBookActionItems({
   const [createShelfOpen, setCreateShelfOpen] = useState(false)
   const [createShelfName, setCreateShelfName] = useState("")
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [coverColorsOpen, setCoverColorsOpen] = useState(false)
 
   const epubBooks = books.filter((b) => b.ebook)
 
@@ -496,6 +501,17 @@ export function useBookActionItems({
       submenu: () => <SetStatusList books={books} bookUuids={bookUuids} />,
     })
 
+    if (canUpdate && selectionHasColors(books)) {
+      entries.push({
+        key: "coverColors",
+        label: t.plain("bulkCoverColors.title"),
+        icon: <icon.Palette className="size-4" />,
+        onSelect: () => {
+          setCoverColorsOpen(true)
+        },
+      })
+    }
+
     if (canMerge) {
       entries.push({
         key: "merge",
@@ -624,6 +640,11 @@ export function useBookActionItems({
         books={books}
         onConfirm={handleDelete}
         isLoading={isDeleting}
+      />
+      <BulkCoverColorsDialog
+        open={coverColorsOpen}
+        onOpenChange={setCoverColorsOpen}
+        books={books}
       />
       <ConfirmDialog {...clearCacheAction.dialogProps} />
       <ConfirmDialog {...upgradeAction.dialogProps} />

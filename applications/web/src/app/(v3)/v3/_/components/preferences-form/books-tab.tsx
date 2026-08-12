@@ -68,7 +68,6 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
     label: t(`gridDisplay.alignmentOptions.${key}`),
   }))
 
-
   const detailDisplayOptions = BookDetailDisplays.map((key) => ({
     value: key,
     label: t(`detail.display.options.${key}`),

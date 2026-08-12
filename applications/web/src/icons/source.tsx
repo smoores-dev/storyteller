@@ -41,6 +41,7 @@ import {
   IconCircleCheck,
   IconClick,
   IconClock,
+  IconColorPicker,
   IconColumns3,
   IconColumns,
   IconCopy,
@@ -329,6 +330,7 @@ export const SortNumericDescending = /*#__PURE__*/ styled(
 export const Settings = /*#__PURE__*/ styled(IconSettings)
 export const Settings2 = /*#__PURE__*/ styled(IconSettings2)
 export const Palette = /*#__PURE__*/ styled(IconPalette)
+export const Dropper = /*#__PURE__*/ styled(IconColorPicker)
 
 // communication
 export const Mail = /*#__PURE__*/ styled(IconMail)
