@@ -1166,7 +1166,7 @@
             "title": "Grid display",
             "description": "How books are shown in the library grid.",
             "coverLabel": "Cover display",
-            "coverHint": "Both shows the ebook and audiobook covers when a book has them.",
+            "coverHint": "Both arranges the ebook and audiobook covers inside the card, and centres the one cover a single-format book has. Pinning a format instead fills the whole card with that cover.",
             "coverOptions": {
               "auto": "Both covers",
               "ebook": "Ebook only",
@@ -1188,7 +1188,7 @@
               "largest": "Largest"
             },
             "fitLabel": "Odd-shaped covers",
-            "fitHint": "How a cover whose art is not the usual book shape is displayed.",
+            "fitHint": "How a cover whose art is not the usual book shape is displayed. True size keeps the art's own shape, so it only applies when covers sit inside the card.",
             "fitOptions": {
               "true-size": "True size",
               "stretch": "Stretch",

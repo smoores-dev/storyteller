@@ -357,6 +357,10 @@ export const BookCard = memo(function BookCard({
       book.readaloud?.status === "QUEUED") &&
     showProcessingBadge
   const isMissing = showMissingBadge && hasMissingMedia(book)
+  const { gridCoverDisplay } = useUserPreferences()
+  // pinning the card to one format leaves nothing to arrange, so the cover
+  // takes the whole card instead of sitting in the inset stack box
+  const fillCover = gridCoverDisplay !== "auto"
   const hasDualFormat = isDual(book)
 
   const displayRows = useMemo(
@@ -377,7 +381,12 @@ export const BookCard = memo(function BookCard({
           )}
         >
           {progress !== null && progress > 0 && (
-            <ProgressDisplayBar progress={progress} book={book} />
+            <ProgressDisplayBar
+              progress={progress}
+              book={book}
+              // a cover that fills the card would otherwise paint over it
+              className="relative z-10"
+            />
           )}
 
           {isProcessing && (
@@ -391,11 +400,20 @@ export const BookCard = memo(function BookCard({
 
         <div
           className={cn(
-            "absolute inset-0 flex items-center justify-center p-2",
-            hasDualFormat ? "overflow-visible" : "rounded-card",
+            "absolute inset-0 flex items-center justify-center",
+            fillCover
+              ? "rounded-card overflow-hidden"
+              : cn("p-2", hasDualFormat ? "overflow-visible" : "rounded-card"),
           )}
         >
-          <Cover book={book} width={coverWidth} interactive={!isSelecting} />
+          <Cover
+            book={book}
+            width={coverWidth}
+            interactive={!isSelecting}
+            displayMode={gridCoverDisplay}
+            fill={fillCover}
+            className={fillCover ? "rounded-card" : undefined}
+          />
         </div>
 
         {onToggleSelection && (

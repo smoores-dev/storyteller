@@ -29,6 +29,7 @@ import {
   type BookCoverImage,
   type CoverType,
   DEFAULT_SLOT_ASPECT,
+  WIDTH_BOUND_SLOT,
   coverBoxAspect,
   coverBoxStyle,
   coverObjectFitClass,
@@ -175,6 +176,7 @@ export const Cover = memo(function Cover({
   fit,
   displayMode = "auto",
   slotAspect = DEFAULT_SLOT_ASPECT,
+  fill = false,
   className,
 }: {
   book: BookWithRelations
@@ -187,46 +189,47 @@ export const Cover = memo(function Cover({
   // cover (falling back to whatever format exists if the chosen one is missing)
   displayMode?: GridCoverDisplay
   slotAspect?: number
+  // fill the container edge to edge with a single cover instead of sizing a box
+  // to the art's own shape. true-size has no meaning here, so it reads as
+  // "cover": there is no box left to be true to.
+  fill?: boolean
   className?: string
 }) {
   const { doubleCoverAlignment, coverFit } = useUserPreferences()
-  const resolvedFit = fit ?? coverFit
+  const requestedFit = fit ?? coverFit
+  const resolvedFit =
+    fill && requestedFit === "true-size" ? "cover" : requestedFit
 
   const hoverClass =
     "shadow-sm transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-[-2deg]"
 
-  const audiobookTile = () => {
-    const image = book.audiobook?.coverImage
+  const textImage = book.ebook?.coverImage ?? book.readaloud?.coverImage
+  const audioImage = book.audiobook?.coverImage
+
+  const tile = (type: CoverType) => {
+    const image = type === "audiobook" ? audioImage : textImage
     return (
       <Tile
         image={image}
-        size={coverSize(width, coverBoxAspect(resolvedFit, "audiobook", image))}
+        size={coverSize(width, coverBoxAspect(resolvedFit, type, image))}
         alt={book.title}
-        type="audiobook"
+        type={type}
         fit={resolvedFit}
-        slotAspect={slotAspect}
-        className={cn(hoverClass, className)}
+        slotAspect={fill ? undefined : slotAspect}
+        className={cn(fill ? "h-full w-full" : hoverClass, className)}
+        // the art is clipped by the tile, so its own corners have to match
+        imgClassName={fill ? className : undefined}
       />
     )
   }
 
-  const ebookTile = () => {
-    const image = book.ebook?.coverImage ?? book.readaloud?.coverImage
-    return (
-      <Tile
-        image={image}
-        size={coverSize(width, coverBoxAspect(resolvedFit, "ebook", image))}
-        alt={book.title}
-        type="ebook"
-        fit={resolvedFit}
-        slotAspect={slotAspect}
-        className={cn(hoverClass, className)}
-      />
-    )
-  }
+  // the format the user pinned, when it has art of its own to show
+  if (displayMode === "ebook" && textImage) return tile("ebook")
+  if (displayMode === "audiobook" && audioImage) return tile("audiobook")
 
-  if (displayMode === "ebook" && book.ebook) return ebookTile()
-  if (displayMode === "audiobook" && book.audiobook) return audiobookTile()
+  // a filled card is always one tile: falling back to the stack here would make
+  // the odd book with a missing cover look like a different display mode
+  if (fill) return tile(audioImage && !textImage ? "audiobook" : "ebook")
 
   if (isDual(book)) {
     return (
@@ -241,15 +244,19 @@ export const Cover = memo(function Cover({
     )
   }
 
-  if (book.audiobook && !book.ebook) return audiobookTile()
+  if (book.audiobook && !book.ebook) return tile("audiobook")
 
-  return ebookTile()
+  return tile("ebook")
 })
 
 // old double cover
 
 const TILE_CLASS =
   "absolute inset-0 m-auto  shadow-md group-hover/covers:overflow-hidden  "
+
+// fraction of the stack's width a single tile is allowed to take, leaving room
+// for the two of them to sit side by side
+const STACK_WIDTH = 0.82
 
 type Pos = { x: string; scale: number; z: number; rotateX?: number } & Variant
 type CoverState = "idle" | "separated" | "audiobook-front"
@@ -421,11 +428,24 @@ export function BookDoubleCover({
 
   // the stack is inset from the card, so a tile pins to 82% of the width or
   // the full height, whichever it runs out of first
-  const stackExtent = { width: "82%", height: "100%" }
+  const stackExtent = { width: `${STACK_WIDTH * 100}%`, height: "100%" }
+
+  // every tile is absolutely positioned, so a caller that only bounds our width
+  // gets a zero-height box unless we work out the height ourselves: the tallest
+  // tile is the narrowest one, pinned to STACK_WIDTH of the container.
+  const selfSized = slotAspect === WIDTH_BOUND_SLOT
 
   return (
     <div
       className="group/covers relative h-full w-full"
+      style={
+        selfSized
+          ? {
+              height: "auto",
+              aspectRatio: `${Math.min(textAspect, audioAspect) / STACK_WIDTH}`,
+            }
+          : undefined
+      }
       onPointerEnter={() => {
         if (hoverDisabled) return
         if (stateRef.current === "idle") transitionTo("separated")

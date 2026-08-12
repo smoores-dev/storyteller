@@ -467,7 +467,12 @@ export function DisplayControl({
                 </FilterableMenuSubTrigger>
                 <FilterableMenuSubContent>
                   <CoverFitSubMenu
-                    value={coverFit}
+                    value={
+                      gridCoverDisplay !== "auto" && coverFit === "true-size"
+                        ? "cover"
+                        : coverFit
+                    }
+                    fillsCard={gridCoverDisplay !== "auto"}
                     onChange={(v) => {
                       void updateSetting({
                         name: "coverFit",
@@ -736,18 +741,24 @@ function CoverTypeSubmenu({
 function CoverFitSubMenu({
   value,
   onChange,
+  // a card pinned to one format is filled edge to edge, leaving no box for a
+  // cover to be true to
+  fillsCard,
 }: {
   value: string
   onChange: (v: string) => void
+  fillsCard: boolean
 }) {
   const t = useTranslation("PreferencesPage.tabs.books.sections")
 
-  const options = [
-    { id: "true-size", label: t("gridDisplay.fitOptions.true-size") },
-    { id: "stretch", label: t("gridDisplay.fitOptions.stretch") },
-    { id: "cover", label: t("gridDisplay.fitOptions.cover") },
-    { id: "contain", label: t("gridDisplay.fitOptions.contain") },
-  ] as const satisfies { id: CoverFit; label: string }[]
+  const options = (
+    [
+      { id: "true-size", label: t("gridDisplay.fitOptions.true-size") },
+      { id: "stretch", label: t("gridDisplay.fitOptions.stretch") },
+      { id: "cover", label: t("gridDisplay.fitOptions.cover") },
+      { id: "contain", label: t("gridDisplay.fitOptions.contain") },
+    ] as const satisfies { id: CoverFit; label: string }[]
+  ).filter((opt) => !(fillsCard && opt.id === "true-size"))
 
   return (
     <>

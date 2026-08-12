@@ -68,10 +68,6 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
     label: t(`gridDisplay.alignmentOptions.${key}`),
   }))
 
-  const coverFitOptions = CoverFits.map((key) => ({
-    value: key,
-    label: t(`gridDisplay.fitOptions.${key}`),
-  }))
 
   const detailDisplayOptions = BookDetailDisplays.map((key) => ({
     value: key,
@@ -105,8 +101,22 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
     useWatch({ control: form.control, name: "doubleCoverAlignment" }) ??
     doubleCoverAlignmentDefault
 
-  const coverFit =
+  // a card pinned to one format is filled edge to edge, so there is no box left
+  // for a cover to be true to
+  const fillsCard = gridCoverDisplay !== "auto"
+
+  const coverFitOptions = CoverFits.filter(
+    (key) => !(fillsCard && key === "true-size"),
+  ).map((key) => ({
+    value: key,
+    label: t(`gridDisplay.fitOptions.${key}`),
+  }))
+
+  const storedCoverFit =
     useWatch({ control: form.control, name: "coverFit" }) ?? coverFitDefault
+
+  const coverFit =
+    fillsCard && storedCoverFit === "true-size" ? "cover" : storedCoverFit
 
   const bookDetailDisplay =
     useWatch({ control: form.control, name: "bookDetailDisplay" }) ??
@@ -211,7 +221,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                         {t("gridDisplay.fitHint")}
                       </FieldDescription>
                       <SegmentedControl
-                        value={field.value ?? coverFitDefault}
+                        value={coverFit}
                         onChange={(value) => {
                           field.onChange(value)
                         }}
@@ -222,7 +232,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                 />
               </div>
 
-              <CoverFitPreview fit={coverFit} />
+              <CoverFitPreview fit={coverFit} fill={fillsCard} />
             </div>
           </CardContent>
         </Card>

@@ -49,11 +49,16 @@ export const GET = withHasPermission<Params>("bookRead", {
     Number.isNaN(width) ? 0 : width,
   )
 
-  const target = new URL(
-    `/api/v2/images/${image.sha256}`,
-    request.nextUrl.origin,
-  )
-  if (size > 0) target.searchParams.set("s", size.toString())
+  // a relative Location keeps the client on whatever host it actually dialed.
+  // an absolute one built from nextUrl.origin leaks the server's own bind
+  // address (localhost:8756) whenever a reverse proxy fronts us.
+  const location =
+    size > 0
+      ? `/api/v2/images/${image.sha256}?s=${size.toString()}`
+      : `/api/v2/images/${image.sha256}`
 
-  return Response.redirect(target, 307)
+  return new Response(null, {
+    status: 307,
+    headers: { Location: location },
+  })
 })

@@ -363,7 +363,7 @@ export function CoverEditor({ compact }: { compact: boolean }) {
 
     if (bookDetailDisplay === "cover") {
       return (
-        <div className="group group/cover-size relative flex min-h-50 w-fit shrink-0 items-center justify-center select-none">
+        <div className="group group/cover-size relative flex w-fit shrink-0 items-center justify-center select-none">
           <div style={{ width: coverWidth }}>
             <Cover
               book={book}

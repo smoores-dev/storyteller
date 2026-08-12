@@ -3,7 +3,12 @@
 import { cn } from "@v3/_/lib/utils"
 
 import { Book3D, VIEWS } from "@/app/(v3)/v3/_/components/books/Book3D"
-import { type BookCoverImage } from "@/app/(v3)/v3/_/components/books/coverFit"
+import {
+  type BookCoverImage,
+  coverBoxAspect,
+  coverBoxStyle,
+  coverObjectFitClass,
+} from "@/app/(v3)/v3/_/components/books/coverFit"
 import { useTranslation } from "@/app/(v3)/v3/_/hooks/use-translation"
 import {
   type CoverFit,
@@ -32,47 +37,68 @@ function previewCoverImage(
 const ebookGradient = "linear-gradient(150deg, #2563eb, #60a5fa)"
 const audioGradient = "linear-gradient(150deg, #7c3aed, #c084fc)"
 
-// a square cover standing in for art that is not the usual book shape. the
-// ring makes each mode's distortion or cropping obvious at a glance.
+// landscape art standing in for a cover that is not the usual book shape. the
+// ring and the off-centre bar make each mode's distortion or cropping obvious
+// at a glance. preserveAspectRatio="none" is what makes stretch actually read
+// as a stretch: without it the svg re-fits itself inside the stretched viewport
+// and the ring stays a perfect circle no matter the object-fit.
+const ART = { width: 125, height: 100 }
 const OFF_RATIO_ART = `data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${ART.width}" height="${ART.height}" viewBox="0 0 ${ART.width} ${ART.height}" preserveAspectRatio="none">
     <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#60a5fa"/>
     </linearGradient></defs>
-    <rect width="100" height="100" fill="url(#g)"/>
-    <circle cx="50" cy="50" r="31" fill="none" stroke="#fff" stroke-width="9"/>
+    <rect width="${ART.width}" height="${ART.height}" fill="url(#g)"/>
+    <circle cx="62.5" cy="46" r="27" fill="none" stroke="#fff" stroke-width="8"/>
+    <rect x="34" y="84" width="57" height="7" rx="3.5" fill="#fff" opacity="0.85"/>
   </svg>`,
 )}`
 
-export function CoverFitPreview({ fit }: { fit: CoverFit }) {
-  const trueSize = fit === "true-size"
+// the slot the preview art sits in, matching the aspect-11/16 frame below
+const PREVIEW_SLOT_ASPECT = 11 / 16
 
+export function CoverFitPreview({
+  fit,
+  fill = false,
+}: {
+  fit: CoverFit
+  // a card pinned to one format has no inset box: the art is the whole card
+  fill?: boolean
+}) {
   return (
-    <div className="bg-muted flex aspect-11/16 w-28 shrink-0 items-center justify-center rounded-lg p-2">
+    <div
+      className={cn(
+        "bg-muted flex aspect-11/16 w-28 shrink-0 items-center justify-center rounded-lg",
+        !fill && "p-2",
+      )}
+    >
       <div
-        className="relative overflow-hidden rounded shadow-md"
+        className={cn(
+          "relative overflow-hidden shadow-md",
+          fill ? "h-full w-full rounded-lg" : "rounded",
+        )}
         style={
-          trueSize
-            ? { aspectRatio: "1", width: "100%" }
-            : { aspectRatio: "2 / 3", height: "100%" }
+          fill
+            ? undefined
+            : coverBoxStyle(
+                coverBoxAspect(fit, "ebook", ART),
+                PREVIEW_SLOT_ASPECT,
+              )
         }
       >
         {fit === "contain" && (
-          <div
-            className="absolute inset-0 scale-125 blur-md"
-            style={{ background: ebookGradient }}
+          <img
+            src={OFF_RATIO_ART}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full scale-125 object-cover blur-md"
           />
         )}
         <img
           src={OFF_RATIO_ART}
           alt=""
           aria-hidden
-          className={cn(
-            "relative h-full w-full",
-            fit === "stretch" && "object-fill",
-            fit === "contain" && "object-contain",
-            (fit === "cover" || trueSize) && "object-cover",
-          )}
+          className={cn("relative h-full w-full", coverObjectFitClass(fit))}
         />
       </div>
     </div>
@@ -129,12 +155,11 @@ export function GridCoverPreview({
         </div>
       )}
 
-      {display === "ebook" && (
-        <MiniCover variant="ebook" className="h-full w-3/4" />
-      )}
-
-      {display === "audiobook" && (
-        <MiniCover variant="audiobook" className="aspect-square w-full" />
+      {display !== "auto" && (
+        <MiniCover
+          variant={display}
+          className="-m-2 h-[calc(100%+1rem)] w-[calc(100%+1rem)] rounded-lg"
+        />
       )}
     </div>
   )
