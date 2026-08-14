@@ -34,6 +34,7 @@ import {
   IconX,
 } from "@tabler/icons-react"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { v4 as uuidv4 } from "uuid"
 
 import type { Settings } from "@/apiModels"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
@@ -773,7 +774,7 @@ function ImportRulesSection({
 
   function handleAddRule(rule: ImportRuleInput) {
     const full: ImportRuleWithCollections = {
-      uuid: crypto.randomUUID() as UUID,
+      uuid: uuidv4() as UUID,
       kind: rule.kind,
       path: rule.path,
       importMode: rule.importMode ?? null,
