@@ -1,7 +1,9 @@
 package dev.smoores.storyteller.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -20,6 +23,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -41,6 +47,19 @@ internal fun GlobalMiniPlayerBar(
     cachedCover: (Book, Boolean) -> Bitmap?,
     modifier: Modifier = Modifier,
 ) {
+    val darkTheme = isSystemInDarkTheme()
+    val coverSource by produceState<Bitmap?>(
+        initialValue = book?.let { cachedCover(it, true) ?: cachedCover(it, false) },
+        book?.id,
+        coverRevision,
+    ) {
+        val target = book ?: return@produceState
+        value = cover(target, true, 240, 240) ?: cover(target, false, 240, 240)
+    }
+    val palette = remember(coverSource, darkTheme, CoverColorSettings.key) {
+        coverBackgroundPalette(coverSource, darkTheme)
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -49,7 +68,7 @@ internal fun GlobalMiniPlayerBar(
             .padding(bottom = 8.dp),
     ) {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = palette.surface.copy(alpha = 0.92f),
             tonalElevation = 4.dp,
             shadowElevation = 8.dp,
             shape = RoundedCornerShape(20.dp),
@@ -83,7 +102,7 @@ internal fun GlobalMiniPlayerBar(
             ) {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = editorialTitle(15),
                     maxLines = 1,
                 )
                 subtitle?.takeIf { it.isNotBlank() }?.let {
@@ -96,10 +115,16 @@ internal fun GlobalMiniPlayerBar(
                 }
             }
             IconButton(onClick = onTogglePlay) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                )
+                Box(
+                    Modifier.size(40.dp).background(palette.ratingAccent, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = palette.contentBackground,
+                    )
+                }
             }
             IconButton(onClick = onClose) {
                 Icon(Icons.Filled.Close, contentDescription = "Stop and close")

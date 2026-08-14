@@ -355,8 +355,8 @@ private fun TitleBlockSlot(
     }
     val line1Style = when {
         compactBlock -> MaterialTheme.typography.labelSmall
-        !editing -> MaterialTheme.typography.titleSmall
-        else -> MaterialTheme.typography.bodySmall
+        !editing -> editorialTitle(16)
+        else -> editorialTitle(14)
     }
     val line2Style = (
         when {

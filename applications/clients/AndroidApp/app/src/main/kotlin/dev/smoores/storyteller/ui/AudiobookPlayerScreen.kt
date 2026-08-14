@@ -1,7 +1,10 @@
 package dev.smoores.storyteller.ui
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,13 +46,13 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +76,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.media3.common.MediaMetadata
@@ -209,7 +213,18 @@ internal fun AudiobookPlayerScreen(
         )
     }
 
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    val darkTheme = isSystemInDarkTheme()
+    val coverBitmap = remember(artwork) {
+        artwork?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+    }
+    val palette = remember(coverBitmap, darkTheme, CoverColorSettings.key) {
+        coverBackgroundPalette(coverBitmap, darkTheme)
+    }
+
+    Box(
+        modifier.fillMaxSize().background(palette.contentBackground),
+        contentAlignment = Alignment.TopCenter,
+    ) {
         Column(
             Modifier
                 .widthIn(max = 600.dp)
@@ -218,24 +233,13 @@ internal fun AudiobookPlayerScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            CoverArtwork(artwork, book.title)
+            CoverArtwork(coverBitmap, book.title)
             Spacer(Modifier.height(20.dp))
             Text(
                 state?.title ?: book.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+                style = editorialTitle(26),
                 textAlign = TextAlign.Center,
             )
-            val author = state?.author?.takeIf(String::isNotBlank) ?: book.authors
-            if (author.isNotBlank()) {
-                Text(
-                    author,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
 
             if (loading || state == null) {
                 CircularProgressIndicator(Modifier.padding(top = 32.dp))
@@ -243,6 +247,7 @@ internal fun AudiobookPlayerScreen(
             } else {
                 PlayerControls(
                     state = state,
+                    palette = palette,
                     scrubbedProgress = scrubbedProgress ?: pendingSeekProgress,
                     updateScrubbedProgress = { scrubbedProgress = it },
                     finishScrubbing = {
@@ -269,6 +274,7 @@ internal fun AudiobookPlayerScreen(
                         label = formatPlaybackRate(state.playbackRate),
                         contentDescription = "Playback speed",
                         onClick = { showSpeed = true },
+                        palette = palette,
                         modifier = Modifier.weight(1f),
                     )
                     SecondaryControl(
@@ -276,6 +282,7 @@ internal fun AudiobookPlayerScreen(
                         label = "Chapters",
                         contentDescription = "Chapters",
                         onClick = { showChapters = true },
+                        palette = palette,
                         modifier = Modifier.weight(1f),
                     )
                     SecondaryControl(
@@ -283,6 +290,7 @@ internal fun AudiobookPlayerScreen(
                         label = "${(state.volume * 100).roundToInt()}%",
                         contentDescription = "Volume",
                         onClick = { showVolume = true },
+                        palette = palette,
                         modifier = Modifier.weight(1f),
                     )
                     SecondaryControl(
@@ -296,6 +304,8 @@ internal fun AudiobookPlayerScreen(
                                 cancelSleepTimer()
                             }
                         },
+                        palette = palette,
+                        active = state.sleepTimerMode != null,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -305,10 +315,8 @@ internal fun AudiobookPlayerScreen(
 }
 
 @Composable
-private fun CoverArtwork(artwork: ByteArray?, title: String) {
-    val image = remember(artwork) {
-        artwork?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }?.asImageBitmap()
-    }
+private fun CoverArtwork(artwork: Bitmap?, title: String) {
+    val image = remember(artwork) { artwork?.asImageBitmap() }
     Surface(
         modifier = Modifier.size(280.dp).aspectRatio(1f),
         shape = RoundedCornerShape(16.dp),
@@ -338,6 +346,7 @@ private fun CoverArtwork(artwork: ByteArray?, title: String) {
 @Composable
 private fun PlayerControls(
     state: AudiobookPlayerState,
+    palette: CoverBackgroundPalette,
     scrubbedProgress: Double?,
     updateScrubbedProgress: (Double) -> Unit,
     finishScrubbing: () -> Unit,
@@ -362,6 +371,11 @@ private fun PlayerControls(
         onValueChange = { updateScrubbedProgress(it.toDouble()) },
         onValueChangeFinished = finishScrubbing,
         valueRange = 0f..1f,
+        colors = SliderDefaults.colors(
+            thumbColor = palette.ratingAccent,
+            activeTrackColor = palette.ratingAccent,
+            inactiveTrackColor = palette.accentTrack,
+        ),
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
     )
     val displayedElapsed = if (scrubbedProgress == null) {
@@ -391,65 +405,48 @@ private fun PlayerControls(
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedIconButton(
+        TransportButton(
+            icon = Icons.Filled.SkipPrevious,
+            contentDescription = "Restart or previous chapter",
+            size = 44.dp,
+            iconSize = 22.dp,
+            palette = palette,
             onClick = previousChapter,
-            modifier = Modifier.size(44.dp),
-            shape = CircleShape,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.SkipPrevious,
-                contentDescription = "Restart or previous chapter",
-                modifier = Modifier.size(22.dp),
-            )
-        }
-        OutlinedIconButton(
+        )
+        TransportButton(
+            icon = Icons.Filled.Replay,
+            contentDescription = "Back 15 seconds",
+            size = 54.dp,
+            iconSize = 30.dp,
+            palette = palette,
             onClick = skipBackward,
-            modifier = Modifier.size(54.dp),
-            shape = CircleShape,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Replay,
-                contentDescription = "Back 15 seconds",
-                modifier = Modifier.size(30.dp),
-            )
-        }
-        FilledIconButton(
+        )
+        TransportButton(
+            icon = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = if (state.isPlaying) "Pause" else "Play",
+            size = 72.dp,
+            iconSize = 34.dp,
+            palette = palette,
             onClick = togglePlayPause,
-            modifier = Modifier.size(72.dp),
-            shape = CircleShape,
-        ) {
-            Icon(
-                imageVector = if (state.isPlaying) {
-                    Icons.Filled.Pause
-                } else {
-                    Icons.Filled.PlayArrow
-                },
-                contentDescription = if (state.isPlaying) "Pause" else "Play",
-                modifier = Modifier.size(34.dp),
-            )
-        }
-        OutlinedIconButton(
+            primary = true,
+        )
+        TransportButton(
+            icon = Icons.Filled.Replay,
+            contentDescription = "Forward 15 seconds",
+            size = 54.dp,
+            iconSize = 30.dp,
+            palette = palette,
             onClick = skipForward,
-            modifier = Modifier.size(54.dp),
-            shape = CircleShape,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Replay,
-                contentDescription = "Forward 15 seconds",
-                modifier = Modifier.size(30.dp).graphicsLayer { scaleX = -1f },
-            )
-        }
-        OutlinedIconButton(
+            mirrored = true,
+        )
+        TransportButton(
+            icon = Icons.Filled.SkipNext,
+            contentDescription = "Next chapter",
+            size = 44.dp,
+            iconSize = 22.dp,
+            palette = palette,
             onClick = nextChapter,
-            modifier = Modifier.size(44.dp),
-            shape = CircleShape,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Next chapter",
-                modifier = Modifier.size(22.dp),
-            )
-        }
+        )
     }
 
     Row(
@@ -492,8 +489,11 @@ internal fun SecondaryControl(
     label: String,
     contentDescription: String,
     onClick: () -> Unit,
+    palette: CoverBackgroundPalette,
     modifier: Modifier = Modifier,
+    active: Boolean = false,
 ) {
+    val accent = palette.ratingAccent
     Column(
         modifier = modifier
             .clickable(role = Role.Button, onClick = onClick)
@@ -504,18 +504,50 @@ internal fun SecondaryControl(
         Surface(
             modifier = Modifier.size(52.dp),
             shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer,
+            color = accent.copy(alpha = if (active) 0.3f else 0.15f),
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription, modifier = Modifier.size(26.dp))
+                Icon(icon, contentDescription, tint = accent, modifier = Modifier.size(26.dp))
             }
         }
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = accent.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+@Composable
+internal fun TransportButton(
+    icon: ImageVector,
+    contentDescription: String,
+    size: Dp,
+    iconSize: Dp,
+    palette: CoverBackgroundPalette,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    primary: Boolean = false,
+    mirrored: Boolean = false,
+) {
+    val accent = palette.ratingAccent
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(size),
+        shape = CircleShape,
+        color = if (primary) accent else accent.copy(alpha = 0.15f),
+        contentColor = if (primary) palette.contentBackground else accent,
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(
+                icon,
+                contentDescription,
+                modifier = Modifier
+                    .size(iconSize)
+                    .graphicsLayer { if (mirrored) scaleX = -1f },
+            )
+        }
     }
 }
 

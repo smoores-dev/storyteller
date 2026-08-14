@@ -107,6 +107,11 @@ struct HomeView: View {
     private let horizontalPadding: CGFloat = 24
     private let sectionSpacing: CGFloat = 36
     private let headerBottomPadding: CGFloat = 12
+    #if os(macOS)
+    private let headerTopPadding: CGFloat = 52
+    #else
+    private let headerTopPadding: CGFloat = 0
+    #endif
 
     #if os(iOS)
     private var hasConnectionError: Bool {
@@ -189,6 +194,7 @@ struct HomeView: View {
                 sectionFilterView(for: filter)
             }
         }
+        .ignoresSafeArea(.container, edges: .top)
         #endif
     }
 
@@ -218,6 +224,7 @@ struct HomeView: View {
                                 .trailing,
                                 trailingContentPadding,
                             )
+                            .padding(.top, headerTopPadding)
                             .padding(.bottom, headerBottomPadding)
 
                             if allowEmptyStateDisplay && sections.allSatisfy({ $0.items.isEmpty }) {
@@ -290,6 +297,8 @@ struct HomeView: View {
                             }
                         }
                     }
+                    .scrollClipDisabled(true)
+                    .modifier(SoftScrollEdgeModifier())
                     .contentShape(Rectangle())
                     .onTapGesture {
                         #if os(macOS)

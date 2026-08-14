@@ -2,7 +2,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-#if os(iOS)
 struct EbookPlayerSettings: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
@@ -35,11 +34,14 @@ struct EbookPlayerSettings: View {
             }
         }
         .sheet(isPresented: $showFontManager) {
-            IOSFontManagerView(
+            FontManagerView(
                 customFamilies: $customFamilies,
                 selectedFont: $settingsVM.fontFamily,
                 onSave: { settingsVM.save() },
             )
+            #if os(macOS)
+            .frame(width: 420, height: 480)
+            #endif
         }
     }
 
@@ -59,7 +61,9 @@ struct EbookPlayerSettings: View {
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 50)
                         .multilineTextAlignment(.trailing)
+                        #if os(iOS)
                         .keyboardType(.numberPad)
+                        #endif
                         .onSubmit {
                             if let val = Double(fontSizeInput), val >= 8, val <= 60 {
                                 settingsVM.fontSize = val
@@ -275,7 +279,11 @@ struct EbookPlayerSettings: View {
         settingsVM.fontSize = kDefaultFontSize
         settingsVM.fontFamily = kDefaultFontFamily
         settingsVM.lineSpacing = kDefaultLineSpacing
+        #if os(iOS)
         settingsVM.marginLeftRight = kDefaultMarginLeftRightIOS
+        #else
+        settingsVM.marginLeftRight = kDefaultMarginLeftRightMac
+        #endif
         settingsVM.marginTop = kDefaultMarginTop
         settingsVM.marginBottom = kDefaultMarginBottom
         settingsVM.wordSpacing = kDefaultWordSpacing
@@ -362,9 +370,17 @@ private struct TextSettingsPreviewPane: View {
                 return .system(size: size, design: .monospaced)
             default:
                 let family = settingsVM.fontFamily
-                if UIFont(name: family, size: size) != nil
+                #if os(iOS)
+                let familyExists =
+                    UIFont(name: family, size: size) != nil
                     || !UIFont.fontNames(forFamilyName: family).isEmpty
-                {
+                #else
+                let familyExists =
+                    NSFont(name: family, size: size) != nil
+                    || NSFontManager.shared.availableMembers(ofFontFamily: family)?.isEmpty
+                        == false
+                #endif
+                if familyExists {
                     return .custom(family, size: size)
                 }
                 return .system(size: size, design: .serif)
@@ -411,7 +427,7 @@ private struct TextSettingsPreviewPane: View {
     private var pageForeground: Color { settingsVM.pageForeground(for: colorScheme) }
 }
 
-private struct IOSFontManagerView: View {
+private struct FontManagerView: View {
     @Binding var customFamilies: [CustomFontFamily]
     @Binding var selectedFont: String
     let onSave: () -> Void
@@ -471,6 +487,15 @@ private struct IOSFontManagerView: View {
                                             Label("Delete", systemImage: "trash")
                                         }
                                     }
+                                    #if os(macOS)
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            deleteVariant(variant, from: family)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
+                                    #endif
                                 }
                             } label: {
                                 HStack {
@@ -496,12 +521,23 @@ private struct IOSFontManagerView: View {
                                     Label("Delete All", systemImage: "trash")
                                 }
                             }
+                            #if os(macOS)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    deleteFamily(family)
+                                } label: {
+                                    Label("Delete All", systemImage: "trash")
+                                }
+                            }
+                            #endif
                         }
                     }
                 }
             }
             .navigationTitle("Manage Fonts")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -551,7 +587,5 @@ private struct IOSFontManagerView: View {
         }
     }
 }
-
-#endif
 
 #endif

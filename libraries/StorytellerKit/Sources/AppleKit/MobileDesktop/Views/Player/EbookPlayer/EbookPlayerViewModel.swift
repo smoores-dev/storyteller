@@ -194,6 +194,11 @@ class EbookPlayerViewModel {
     var showTranslation = false
     var translationText = ""
     var showBookmarksPanel = false
+    var showReadingTimeline = false
+    var timelineBackLocator: BookLocator? = nil
+    var timelineBackDescription = ""
+    var timelineForwardLocator: BookLocator? = nil
+    var timelineForwardDescription = ""
     var showSleepTimerSheet = false
     var bookmarksPanelInitialTab: BookmarksPanel.Tab = .bookmarks
     var highlights: [Highlight] = []
@@ -550,6 +555,83 @@ class EbookPlayerViewModel {
     func navigateToServerPosition(_ locator: BookLocator) async {
         debugLog("[EbookPlayerViewModel] Navigating to server position: \(locator.href)")
         progressManager?.handleServerPositionUpdate(locator)
+    }
+
+    private func currentPositionLocator() async -> BookLocator? {
+        if let live = progressManager?.currentLocator() {
+            return live
+        }
+        if let bookID = bookData?.metadata.id,
+            let synced = await ProgressSyncActor.shared.getBookProgress(for: bookID)?.locator
+        {
+            return synced
+        }
+        guard let fraction = progressManager?.bookFraction else { return nil }
+        return ReadingTimelineSheet.fractionLocator(fraction)
+    }
+
+    func currentPositionDescription() -> String {
+        guard let pm = progressManager else { return "" }
+        if let chapterIdx = pm.selectedChapterId,
+            let chapterName = bookStructure[safe: chapterIdx]?.label
+        {
+            return chapterName
+        }
+        if let fraction = pm.bookFraction {
+            return "\(Int((fraction * 100).rounded()))% of book"
+        }
+        return ""
+    }
+
+    func jumpFromTimeline(to locator: BookLocator, description: String) async {
+        if let origin = await currentPositionLocator() {
+            timelineBackLocator = origin
+            timelineBackDescription = currentPositionDescription()
+        }
+        timelineForwardLocator = nil
+        timelineForwardDescription = ""
+        showReadingTimeline = false
+        await navigateToServerPosition(locator)
+        await recordTimelineJump(to: locator, description: description)
+    }
+
+    func timelineGoBack() async {
+        guard let target = timelineBackLocator else { return }
+        let description = timelineBackDescription
+        timelineForwardLocator = await currentPositionLocator()
+        timelineForwardDescription = currentPositionDescription()
+        timelineBackLocator = nil
+        timelineBackDescription = ""
+        await navigateToServerPosition(target)
+        await recordTimelineJump(to: target, description: description)
+    }
+
+    func timelineGoForward() async {
+        guard let target = timelineForwardLocator else { return }
+        let description = timelineForwardDescription
+        timelineBackLocator = await currentPositionLocator()
+        timelineBackDescription = currentPositionDescription()
+        timelineForwardLocator = nil
+        timelineForwardDescription = ""
+        await navigateToServerPosition(target)
+        await recordTimelineJump(to: target, description: description)
+    }
+
+    // Server-position navigation alone never syncs the new position.
+    private func recordTimelineJump(to locator: BookLocator, description: String) async {
+        guard let bookID = bookData?.metadata.id else { return }
+        _ = await ProgressSyncActor.shared.restorePosition(
+            bookID: bookID,
+            locator: locator,
+            locationDescription: description,
+        )
+    }
+
+    func dismissTimelineBreadcrumbs() {
+        timelineBackLocator = nil
+        timelineBackDescription = ""
+        timelineForwardLocator = nil
+        timelineForwardDescription = ""
     }
 
     func acceptServerPosition() {

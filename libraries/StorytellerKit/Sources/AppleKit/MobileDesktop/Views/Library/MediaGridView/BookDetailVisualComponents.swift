@@ -70,8 +70,7 @@ struct BookDetailCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label(title, systemImage: systemImage)
-                .font(.headline)
+            EditorialEyebrow(title, icon: systemImage, prominent: true)
                 .foregroundStyle(.secondary)
 
             content
@@ -725,13 +724,12 @@ struct BookDetailDisclosureCard<Content: View>: View {
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Label(title, systemImage: systemImage)
+                    EditorialEyebrow(title, icon: systemImage, prominent: true)
                     Spacer()
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
                         .rotationEffect(.degrees(isExpanded ? 0 : -90))
                 }
-                .font(.headline)
                 .foregroundStyle(.secondary)
                 .contentShape(Rectangle())
             }

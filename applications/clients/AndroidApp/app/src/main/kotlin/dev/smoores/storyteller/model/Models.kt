@@ -351,6 +351,21 @@ data class AudiobookPlayerState(
     val pendingServerPosition: ServerPosition?,
 )
 
+data class ReadingVisit(
+    val id: String,
+    val startedAt: Double,
+    val endedAt: Double,
+    val startDescription: String,
+    val endDescription: String,
+    val startProgression: Double?,
+    val endProgression: Double?,
+    val source: String,
+    val endText: String?,
+    val chapterTitle: String?,
+) {
+    val durationSeconds: Double get() = maxOf(0.0, (endedAt - startedAt) / 1000)
+}
+
 data class ReaderOpenResult(
     val readerPath: String,
     val originalPath: String,
@@ -573,4 +588,6 @@ data class ReaderState(
     val pendingSelectionText: String?,
     val pendingEdit: ReaderPendingEdit?,
     val pendingServerPosition: ServerPosition?,
+    val timelineBackDescription: String? = null,
+    val timelineForwardDescription: String? = null,
 )

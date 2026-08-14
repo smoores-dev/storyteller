@@ -2,11 +2,13 @@ package dev.smoores.storyteller.ui
 
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,7 +30,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,13 +54,12 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,14 +68,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.smoores.storyteller.model.Book
@@ -84,9 +85,13 @@ import dev.smoores.storyteller.model.PlayerComplication
 import dev.smoores.storyteller.model.ReaderState
 import dev.smoores.storyteller.model.hasActiveComplication
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
-private val DragThreshold = 40.dp
-private const val FlingVelocity = 500f
+private val MenuBarHeight = 48.dp
+private val SettleSpring = spring<Float>(
+    dampingRatio = 0.86f,
+    stiffness = Spring.StiffnessMediumLow,
+)
 
 // Single source of truth with ReaderScreen's webview inset arithmetic; heights
 // come from MiniPlayerMetrics so the drawn card and the reserved space agree.
@@ -105,11 +110,7 @@ internal fun readerAudioCardCompactHeight(
         )
 }
 
-/**
- * Reader playback card with the two detents of the iOS DraggableAudioCard: a
- * compact bar pinned above the navigation bar, and a full-screen player that a
- * drag up (or a tap on the bar) reveals.
- */
+/** Reader playback card, the Compose port of the iOS DraggableAudioCard. */
 @Composable
 internal fun ReaderAudioCard(
     visible: Boolean,
@@ -122,6 +123,7 @@ internal fun ReaderAudioCard(
     isOrientationLocked: Boolean,
     backgroundColor: Color,
     contentColor: Color,
+    palette: CoverBackgroundPalette,
     readerControl: (String, Double, String) -> Unit,
     onShowChapters: () -> Unit,
     coverRevision: Int,
@@ -129,90 +131,92 @@ internal fun ReaderAudioCard(
     cachedCover: (Book, Boolean) -> Bitmap?,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember(book.id) { mutableStateOf(false) }
-    var dragOffsetPx by remember(book.id) { mutableFloatStateOf(0f) }
-    var dragging by remember(book.id) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val dragThresholdPx = with(density) { DragThreshold.toPx() }
+    val decay = rememberSplineBasedDecay<Float>()
+    val expansion = remember(book.id) { Animatable(0f) }
+    var rawExpansion by remember(book.id) { mutableFloatStateOf(0f) }
+    var dragBase by remember(book.id) { mutableFloatStateOf(0f) }
 
-    fun settleDrag(velocity: Float) {
-        dragging = false
-        val up = dragOffsetPx < -dragThresholdPx || velocity < -FlingVelocity
-        val down = dragOffsetPx > dragThresholdPx || velocity > FlingVelocity
-        expanded = when {
-            expanded && down -> false
-            !expanded && up -> true
-            else -> expanded
-        }
-        dragOffsetPx = 0f
+    fun damped(raw: Float): Float = when {
+        raw < 0f -> raw * 0.15f
+        raw > 1f -> 1f + (raw - 1f) * 0.15f
+        else -> raw
     }
 
-    // Collapses the card with whatever downward drag the inner scroll leaves
-    // unconsumed, so a swipe down works anywhere, not just on the handle.
-    val nestedScrollConnection = remember(book.id) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (!expanded || source != NestedScrollSource.UserInput) return Offset.Zero
-                if (dragOffsetPx > 0f && available.y < 0f) {
-                    val take = maxOf(available.y, -dragOffsetPx)
-                    dragOffsetPx += take
-                    return Offset(0f, take)
-                }
-                return Offset.Zero
-            }
-
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource,
-            ): Offset {
-                if (!expanded || source != NestedScrollSource.UserInput) return Offset.Zero
-                if (available.y > 0f) {
-                    dragging = true
-                    dragOffsetPx += available.y
-                    return Offset(0f, available.y)
-                }
-                return Offset.Zero
-            }
-
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                if (expanded && (dragging || dragOffsetPx != 0f)) {
-                    val velocity = available.y
-                    settleDrag(velocity)
-                    return available
-                }
-                return Velocity.Zero
-            }
-        }
+    suspend fun settle(expanded: Boolean) {
+        rawExpansion = if (expanded) 1f else 0f
+        expansion.animateTo(rawExpansion, SettleSpring)
     }
 
     LaunchedEffect(visible) {
         if (!visible) {
-            expanded = false
-            dragOffsetPx = 0f
+            rawExpansion = 0f
+            expansion.snapTo(0f)
         }
     }
 
     BoxWithConstraints(modifier) {
-        val fullHeight = maxHeight
+        val screenHeight = maxHeight
         val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val compactHeight = readerAudioCardCompactHeight(
+        val statusInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val compactTotal = readerAudioCardCompactHeight(
             config,
             display.hasAudioNarration,
             navInset,
         )
         val hasStatBand = display.hasAudioNarration && config.statSlots.hasActiveComplication
-        val target = if (expanded) fullHeight else compactHeight
-        val settled by animateDpAsState(
-            targetValue = target,
-            animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow),
-            label = "readerAudioCardHeight",
-        )
-        val height = if (dragging) {
-            (target - with(density) { dragOffsetPx.toDp() })
-                .coerceIn(compactHeight, fullHeight)
-        } else {
-            settled
+        val expandedTarget =
+            (screenHeight - statusInset - MenuBarHeight).coerceAtLeast(compactTotal + 1.dp)
+        val span = expandedTarget - compactTotal
+        val spanPx = with(density) { span.toPx() }
+
+        val progress = expansion.value
+        val currentHeight = compactTotal + span * progress.coerceIn(-0.05f, 1.15f)
+        val compactOpacity = 1f - (progress / 0.35f).coerceIn(0f, 1f)
+        val fullOpacity = ((progress - 0.1f) / 0.5f).coerceIn(0f, 1f)
+
+        fun dragTo(delta: Float) {
+            rawExpansion -= delta / spanPx
+            scope.launch { expansion.snapTo(damped(rawExpansion)) }
+        }
+
+        // Collapses the card with whatever downward drag the inner scroll leaves
+        // unconsumed, so a swipe down works anywhere, not just on the handle.
+        val nestedScrollConnection = remember(spanPx) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (source != NestedScrollSource.UserInput) return Offset.Zero
+                    if (expansion.value < 1f && available.y < 0f) {
+                        val take = maxOf(available.y, -(1f - expansion.value) * spanPx)
+                        dragTo(take)
+                        return Offset(0f, take)
+                    }
+                    return Offset.Zero
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (source != NestedScrollSource.UserInput) return Offset.Zero
+                    if (available.y > 0f && expansion.value > 0f) {
+                        dragBase = 1f
+                        dragTo(available.y)
+                        return Offset(0f, available.y)
+                    }
+                    return Offset.Zero
+                }
+
+                override suspend fun onPreFling(available: Velocity): Velocity {
+                    if (expansion.value >= 1f) return Velocity.Zero
+                    val projected = expansion.value -
+                        decay.calculateTargetValue(0f, available.y) / spanPx
+                    settle(projected > 0.75f)
+                    return available
+                }
+            }
         }
 
         AnimatedVisibility(
@@ -222,74 +226,99 @@ internal fun ReaderAudioCard(
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Surface(
-                color = contentColor.copy(alpha = 0.08f).compositeOver(backgroundColor),
+                color = palette.surface,
                 contentColor = contentColor,
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                tonalElevation = 3.dp,
                 shadowElevation = 6.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(height)
+                    .height(currentHeight)
                     .nestedScroll(nestedScrollConnection)
                     .draggable(
                         orientation = Orientation.Vertical,
-                        state = rememberDraggableState { dragOffsetPx += it },
-                        onDragStarted = { dragging = true },
-                        onDragStopped = { velocity -> settleDrag(velocity) },
+                        state = rememberDraggableState { dragTo(it) },
+                        onDragStarted = {
+                            rawExpansion = expansion.value.coerceIn(0f, 1f)
+                            dragBase = rawExpansion
+                        },
+                        onDragStopped = { velocity ->
+                            val projected = expansion.value -
+                                decay.calculateTargetValue(0f, velocity) / spanPx
+                            settle(
+                                if (dragBase > 0.5f) projected > 0.75f else projected > 0.25f,
+                            )
+                        },
                     ),
             ) {
                 Box(Modifier.fillMaxSize()) {
-                    if (expanded) {
-                        ExpandedPlayer(
-                            book = book,
-                            readerState = readerState,
-                            chapterLabel = chapterLabel,
-                            readerControl = readerControl,
-                            onCollapse = { expanded = false },
-                            onShowChapters = onShowChapters,
-                            coverRevision = coverRevision,
-                            cover = cover,
-                            cachedCover = cachedCover,
-                        )
-                    } else {
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) { expanded = true },
-                        )
-                        Column(Modifier.fillMaxSize()) {
-                            MiniPlayerCardContent(
-                                config = config,
-                                display = display,
-                                actions = actions,
-                                onExpandTap = { expanded = true },
-                                contentColor = contentColor,
-                                backgroundColor = backgroundColor,
-                                isOrientationLocked = isOrientationLocked,
-                            )
-                            Box(Modifier.fillMaxWidth().weight(1f)) {
-                                if (hasStatBand) {
-                                    MiniPlayerStatBand(
-                                        config = config,
-                                        display = display,
-                                        actions = actions,
-                                        contentColor = contentColor,
-                                        isOrientationLocked = isOrientationLocked,
-                                        modifier = Modifier.align(Alignment.BottomCenter),
-                                    )
-                                }
-                            }
-                        }
+                    if (progress > 0.02f) {
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(top = MiniPlayerMetrics.grabberTopPadding),
-                            contentAlignment = Alignment.TopCenter,
+                                .height(expandedTarget)
+                                .alpha(fullOpacity),
                         ) {
-                            DragHandle()
+                            ExpandedPlayer(
+                                book = book,
+                                readerState = readerState,
+                                chapterLabel = chapterLabel,
+                                palette = palette,
+                                readerControl = readerControl,
+                                onCollapse = { scope.launch { settle(false) } },
+                                onShowChapters = onShowChapters,
+                                coverRevision = coverRevision,
+                                cover = cover,
+                                cachedCover = cachedCover,
+                            )
+                        }
+                    }
+
+                    if (progress < 0.985f) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(compactTotal)
+                                .alpha(compactOpacity),
+                        ) {
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                    ) { scope.launch { settle(true) } },
+                            )
+                            Column(Modifier.fillMaxSize()) {
+                                MiniPlayerCardContent(
+                                    config = config,
+                                    display = display,
+                                    actions = actions,
+                                    onExpandTap = { scope.launch { settle(true) } },
+                                    contentColor = contentColor,
+                                    backgroundColor = backgroundColor,
+                                    isOrientationLocked = isOrientationLocked,
+                                )
+                                Box(Modifier.fillMaxWidth().weight(1f)) {
+                                    if (hasStatBand) {
+                                        MiniPlayerStatBand(
+                                            config = config,
+                                            display = display,
+                                            actions = actions,
+                                            contentColor = contentColor,
+                                            isOrientationLocked = isOrientationLocked,
+                                            modifier = Modifier.align(Alignment.BottomCenter),
+                                        )
+                                    }
+                                }
+                            }
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = MiniPlayerMetrics.grabberTopPadding),
+                                contentAlignment = Alignment.TopCenter,
+                            ) {
+                                DragHandle()
+                            }
                         }
                     }
                 }
@@ -312,6 +341,7 @@ private fun ExpandedPlayer(
     book: Book,
     readerState: ReaderState?,
     chapterLabel: String?,
+    palette: CoverBackgroundPalette,
     readerControl: (String, Double, String) -> Unit,
     onCollapse: () -> Unit,
     onShowChapters: () -> Unit,
@@ -330,11 +360,13 @@ private fun ExpandedPlayer(
     val elapsed = scrubbed?.let { chapterTotal * it }
         ?: readerState?.chapterElapsedSeconds
         ?: 0.0
+    val accent = palette.ratingAccent
+    val ink = MaterialTheme.colorScheme.onSurface
+    val subtleInk = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         Modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -342,7 +374,11 @@ private fun ExpandedPlayer(
         Box(Modifier.fillMaxWidth().padding(top = 8.dp, start = 24.dp, end = 24.dp)) {
             DragHandle(Modifier.align(Alignment.Center))
             IconButton(onClick = onCollapse, modifier = Modifier.align(Alignment.CenterEnd)) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse player")
+                Icon(
+                    Icons.Filled.KeyboardArrowDown,
+                    contentDescription = "Collapse player",
+                    tint = subtleInk,
+                )
             }
         }
 
@@ -376,25 +412,16 @@ private fun ExpandedPlayer(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             readerState?.title?.takeIf(String::isNotBlank) ?: book.title,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold,
+                            style = editorialTitle(26),
+                            color = ink,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
                         )
-                        val author = readerState?.author?.takeIf(String::isNotBlank) ?: book.authors
-                        if (author.isNotBlank()) {
-                            Text(
-                                author,
-                                style = MaterialTheme.typography.titleMedium,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
                         chapterLabel?.takeIf { it.isNotBlank() }?.let {
                             Text(
                                 it,
                                 style = MaterialTheme.typography.titleSmall,
+                                color = subtleInk,
                                 textAlign = TextAlign.Center,
                                 maxLines = 2,
                                 modifier = Modifier.padding(top = 12.dp),
@@ -412,20 +439,31 @@ private fun ExpandedPlayer(
                                 scrubbed = null
                             },
                             valueRange = 0f..1f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = accent,
+                                activeTrackColor = accent,
+                                inactiveTrackColor = palette.accentTrack,
+                            ),
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
                             Text(
                                 formatPlaybackTime(elapsed / rate),
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = subtleInk,
                             )
                             Text(
-                                "\u2212${formatPlaybackTime((chapterTotal - elapsed) / rate)}",
+                                "−${formatPlaybackTime((chapterTotal - elapsed) / rate)}",
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = subtleInk,
                             )
                             Text(
                                 formatPlaybackTime(chapterTotal / rate),
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = subtleInk,
                             )
                         }
                     }
@@ -438,72 +476,58 @@ private fun ExpandedPlayer(
                         ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        OutlinedIconButton(
+                        TransportButton(
+                            icon = Icons.Filled.SkipPrevious,
+                            contentDescription = "Restart or previous chapter",
+                            size = 44.dp,
+                            iconSize = 22.dp,
+                            palette = palette,
                             onClick = { readerControl("prevChapter", 0.0, "") },
-                            modifier = Modifier.size(44.dp),
-                            shape = CircleShape,
-                        ) {
-                            Icon(
-                                Icons.Filled.SkipPrevious,
-                                contentDescription = "Restart or previous chapter",
-                                modifier = Modifier.size(22.dp),
-                            )
-                        }
-                        OutlinedIconButton(
+                        )
+                        TransportButton(
+                            icon = Icons.AutoMirrored.Filled.RotateLeft,
+                            contentDescription = "Previous sentence",
+                            size = 54.dp,
+                            iconSize = 28.dp,
+                            palette = palette,
                             onClick = { readerControl("prevSentence", 0.0, "") },
-                            modifier = Modifier.size(54.dp),
-                            shape = CircleShape,
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.RotateLeft,
-                                contentDescription = "Previous sentence",
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                        FilledIconButton(
+                        )
+                        TransportButton(
+                            icon = if (readerState?.isPlaying == true) {
+                                Icons.Filled.Pause
+                            } else {
+                                Icons.Filled.PlayArrow
+                            },
+                            contentDescription = if (readerState?.isPlaying == true) {
+                                "Pause"
+                            } else {
+                                "Play"
+                            },
+                            size = 72.dp,
+                            iconSize = 34.dp,
+                            palette = palette,
+                            primary = true,
                             onClick = { readerControl("togglePlayPause", 0.0, "") },
-                            modifier = Modifier.size(72.dp),
-                            shape = CircleShape,
-                        ) {
-                            Icon(
-                                imageVector = if (readerState?.isPlaying == true) {
-                                    Icons.Filled.Pause
-                                } else {
-                                    Icons.Filled.PlayArrow
-                                },
-                                contentDescription = if (readerState?.isPlaying == true) {
-                                    "Pause"
-                                } else {
-                                    "Play"
-                                },
-                                modifier = Modifier.size(34.dp),
-                            )
-                        }
-                        OutlinedIconButton(
+                        )
+                        TransportButton(
+                            icon = Icons.AutoMirrored.Filled.RotateRight,
+                            contentDescription = "Next sentence",
+                            size = 54.dp,
+                            iconSize = 28.dp,
+                            palette = palette,
                             onClick = { readerControl("nextSentence", 0.0, "") },
-                            modifier = Modifier.size(54.dp),
-                            shape = CircleShape,
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.RotateRight,
-                                contentDescription = "Next sentence",
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                        OutlinedIconButton(
+                        )
+                        TransportButton(
+                            icon = Icons.Filled.SkipNext,
+                            contentDescription = "Next chapter",
+                            size = 44.dp,
+                            iconSize = 22.dp,
+                            palette = palette,
                             onClick = { readerControl("nextChapter", 0.0, "") },
-                            modifier = Modifier.size(44.dp),
-                            shape = CircleShape,
-                        ) {
-                            Icon(
-                                Icons.Filled.SkipNext,
-                                contentDescription = "Next chapter",
-                                modifier = Modifier.size(22.dp),
-                            )
-                        }
+                        )
                     }
 
-                    ExpandedStats(readerState)
+                    ExpandedStats(readerState, subtleInk)
                 }
             }
         }
@@ -518,6 +542,7 @@ private fun ExpandedPlayer(
                 label = formatPlaybackRate(rate),
                 contentDescription = "Playback speed",
                 onClick = { showSpeed = true },
+                palette = palette,
                 modifier = Modifier.weight(1f),
             )
             SecondaryControl(
@@ -525,6 +550,7 @@ private fun ExpandedPlayer(
                 label = "Chapters",
                 contentDescription = "Chapters",
                 onClick = onShowChapters,
+                palette = palette,
                 modifier = Modifier.weight(1f),
             )
             SecondaryControl(
@@ -532,6 +558,7 @@ private fun ExpandedPlayer(
                 label = "${(volume * 100).roundToInt()}%",
                 contentDescription = "Volume",
                 onClick = { showVolume = true },
+                palette = palette,
                 modifier = Modifier.weight(1f),
             )
             SecondaryControl(
@@ -545,6 +572,8 @@ private fun ExpandedPlayer(
                         showSleepTimer = true
                     }
                 },
+                palette = palette,
+                active = readerState?.sleepTimerActive == true,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -586,7 +615,7 @@ private fun ExpandedPlayer(
 }
 
 @Composable
-private fun ExpandedStats(readerState: ReaderState?) {
+private fun ExpandedStats(readerState: ReaderState?, color: Color) {
     val bookFraction = readerState?.bookFraction
     val currentPage = readerState?.chapterCurrentPage
     val totalPages = readerState?.chapterTotalPages
@@ -601,6 +630,7 @@ private fun ExpandedStats(readerState: ReaderState?) {
                     text = "${(bookFraction.coerceIn(0.0, 1.0) * 100).roundToInt()}%",
                     icon = Icons.AutoMirrored.Filled.MenuBook,
                     iconLeading = true,
+                    color = color,
                 )
             }
             if (currentPage != null && totalPages != null && totalPages > 0) {
@@ -608,6 +638,7 @@ private fun ExpandedStats(readerState: ReaderState?) {
                     text = "Page $currentPage of $totalPages",
                     icon = Icons.Filled.Bookmark,
                     iconLeading = true,
+                    color = color,
                 )
             }
         }
@@ -619,28 +650,35 @@ private fun ExpandedStats(readerState: ReaderState?) {
                 text = formatTimeHoursMinutes(readerState?.bookTimeRemaining),
                 icon = Icons.AutoMirrored.Filled.MenuBook,
                 iconLeading = false,
+                color = color,
             )
             ExpandedStat(
                 text = formatTimeMinutesSeconds(readerState?.chapterTimeRemaining),
                 icon = Icons.Filled.Bookmark,
                 iconLeading = false,
+                color = color,
             )
         }
     }
 }
 
 @Composable
-private fun ExpandedStat(text: String, icon: ImageVector, iconLeading: Boolean) {
+private fun ExpandedStat(
+    text: String,
+    icon: ImageVector,
+    iconLeading: Boolean,
+    color: Color,
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (iconLeading) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
         }
-        Text(text, style = MaterialTheme.typography.bodyMedium)
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = color)
         if (!iconLeading) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
         }
     }
 }

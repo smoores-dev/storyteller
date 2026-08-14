@@ -1310,6 +1310,7 @@ public func coverPaletteJSON(
             surface: argb(dark ? palette.surface : palette.lightSurface),
             accent: argb(palette.accent),
             brightAccent: argb(palette.brightAccent),
+            deepAccent: argb(palette.deepAccent),
             mutedAccent: argb(palette.mutedAccent),
             accentBackground: argb(palette.accentBackground),
             contentBackground: argb(
@@ -1317,6 +1318,7 @@ public func coverPaletteJSON(
             ),
             cardBackground: argb(dark ? palette.cardBackground : palette.lightCardBackground),
             cardBorder: argb(dark ? palette.cardBorder : palette.lightCardBorder),
+            ratingAccent: argb(dark ? palette.brightAccent : palette.deepAccent),
         )
     )
 }
@@ -1486,6 +1488,22 @@ public func readerJSResult(requestID: String, result: String, error: String) asy
     )
 }
 
+public func readingTimelineJSON(requestID: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        return try await AndroidReaderSession.shared.readingTimelineJSON()
+    }
+}
+
+public func clearReadingTimeline(requestID: String, visitIDsJSON: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        let ids = (try? JSONDecoder().decode([String].self, from: Data(visitIDsJSON.utf8))) ?? []
+        await AndroidReaderSession.shared.clearReadingTimeline(visitIDs: ids)
+        return "{}"
+    }
+}
+
 public func readerControl(command: String, value: Double, text: String) async throws {
     try requireAndroidBootstrap()
     try await AndroidReaderSession.shared.control(command: command, value: value, text: text)
@@ -1643,11 +1661,13 @@ private struct AndroidCoverPalette: Encodable {
     let surface: UInt32
     let accent: UInt32
     let brightAccent: UInt32
+    let deepAccent: UInt32
     let mutedAccent: UInt32
     let accentBackground: UInt32
     let contentBackground: UInt32
     let cardBackground: UInt32
     let cardBorder: UInt32
+    let ratingAccent: UInt32
 }
 
 private struct AndroidHomeSection: Encodable {

@@ -17,29 +17,23 @@ const getReadaloudCSS = ({
   const rules = []
   const root = "html.storyteller-readaloud-active"
   const block = ":is(p, li, blockquote, dd, h1, h2, h3, h4, h5, h6)"
-  if (dimOthers) {
+  if (dimOthers && foregroundColor) {
     const keep = Math.max(0.05, 1 - dimAmount)
-    const unspokenBlocks = `${root} ${block}:not(.${activeClass}):not(:has(.${activeClass}))`
-    const spokenBlock = `${root} ${block}:has(.${activeClass})`
     const spokenWords = `${root} .${activeClass}`
+    const dimmedColor = `color-mix(in srgb, ${foregroundColor} ${(keep * 100).toFixed(0)}%, ${backgroundColor || "transparent"})`
+    // Only the active rule carries the transition, so a sentence losing the
+    // class dims on the same frame its highlight is pulled rather than sitting
+    // at full brightness behind nothing.
     rules.push(`
-    ${unspokenBlocks} {
-        opacity: ${keep.toFixed(2)} !important;
-        transition: opacity 0.25s ease;
-    }`)
-    if (foregroundColor) {
-      const dimmedColor = `color-mix(in srgb, ${foregroundColor} ${(keep * 100).toFixed(0)}%, ${backgroundColor || "transparent"})`
-      rules.push(`
-    ${spokenBlock},
-    ${spokenBlock} *:not(.${activeClass}):not(.${activeClass} *) {
+    ${root} ${block}:not(.${activeClass}),
+    ${root} ${block} *:not(.${activeClass}):not(.${activeClass} *) {
         color: ${dimmedColor} !important;
-        transition: color 0.25s ease;
     }
     ${spokenWords},
     ${spokenWords} * {
         color: ${foregroundColor} !important;
+        transition: color 0.25s ease;
     }`)
-    }
   }
   if (highlightMode === "text" && (textItalic || textBold)) {
     rules.push(`

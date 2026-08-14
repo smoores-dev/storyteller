@@ -257,14 +257,13 @@ struct MediaGridInfoSidebar: View {
                             model: inlineEdit,
                             field: .title,
                             placeholder: "Title",
-                            font: .title3.weight(.semibold),
+                            font: .editorialTitle(21),
                             autofocus: true,
                         )
                     } else {
                         hoverEditable(.title, help: "Edit title") {
                             Text(currentItem.title)
-                                .font(.title3)
-                                .fontWeight(.semibold)
+                                .font(.editorialTitle(21))
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
@@ -743,7 +742,7 @@ struct MediaGridInfoSidebar: View {
                             model: inlineEdit,
                             field: .title,
                             placeholder: "Title",
-                            font: .title2.weight(.bold),
+                            font: .editorialTitle(25),
                         )
                         InlineMetadataFieldRow(
                             model: inlineEdit,
@@ -754,7 +753,7 @@ struct MediaGridInfoSidebar: View {
                         inlineCreatorAndSeriesEditors
                     } else {
                         Text(currentItem.title)
-                            .font(.title2.weight(.bold))
+                            .font(.editorialTitle(25))
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                             .textSelection(.enabled)

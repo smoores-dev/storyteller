@@ -1,7 +1,7 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
-/// iOS stats dock drawn over the webview, composed from three complication
+/// Stats dock drawn over the webview, composed from three complication
 /// regions: leading stack, centered controls, trailing stack.
 /// Supports both bottom position (default) and top position (when mini player covers bottom)
 struct EbookDockIos: View {

@@ -72,6 +72,11 @@ class MainActivity : ComponentActivity() {
         viewModel.appDidBecomeActive()
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.appDidResume()
+    }
+
     override fun onStop() {
         super.onStop()
         viewModel.appDidEnterBackground()

@@ -23,6 +23,7 @@ public enum PlayerComplication: String, Codable, CaseIterable, Equatable, Sendab
     case statBattery
     case chapters
     case bookmarks
+    case readingTimeline
     case search
     case textSettings
     case sleepTimer
@@ -40,8 +41,8 @@ public enum PlayerComplication: String, Codable, CaseIterable, Equatable, Sendab
                 return true
             case .none, .statPercent, .statPage, .statPagesLeft, .statChapterOf,
                 .statChapterPercent, .statSessionTime, .statClock, .statBattery,
-                .chapters, .bookmarks, .search, .textSettings, .titleBlock, .mirror,
-                .scrollMode, .orientationLock:
+                .chapters, .bookmarks, .readingTimeline, .search, .textSettings, .titleBlock,
+                .mirror, .scrollMode, .orientationLock:
                 return false
         }
     }
@@ -76,6 +77,7 @@ public enum PlayerComplication: String, Codable, CaseIterable, Equatable, Sendab
             case .statBattery: return "Battery"
             case .chapters: return "Chapters"
             case .bookmarks: return "Bookmarks"
+            case .readingTimeline: return "Reading Timeline"
             case .search: return "Search"
             case .textSettings: return "Text Settings"
             case .sleepTimer: return "Sleep Timer Button"

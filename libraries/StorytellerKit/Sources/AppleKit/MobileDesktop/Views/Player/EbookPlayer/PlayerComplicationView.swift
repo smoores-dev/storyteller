@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
 struct MiniPlayerDisplayModel {
@@ -71,6 +71,7 @@ struct MiniPlayerActions {
     var onLeadingTap: () -> Void = {}
     var onChapterSelected: (ChapterItem) -> Void = { _ in }
     var onOpenBookmarks: () -> Void = {}
+    var onOpenReadingTimeline: () -> Void = {}
     var onOpenSearch: () -> Void = {}
     var onOpenTextSettings: () -> Void = {}
     var onOpenSleepTimer: () -> Void = {}
@@ -134,6 +135,7 @@ extension View {
     }
 }
 
+#if os(iOS)
 /// Battery monitoring is off by default and the level only updates while it is
 /// enabled, so the complication owns turning it on for as long as it is shown.
 private struct BatteryStat<Content: View>: View {
@@ -166,6 +168,7 @@ private struct BatteryStat<Content: View>: View {
             || UIDevice.current.batteryState == .full
     }
 }
+#endif
 
 enum PlayerComplicationStyle {
     case miniRow(compact: Bool)
@@ -174,6 +177,9 @@ enum PlayerComplicationStyle {
     case dock(transparency: Double)
     case pickerThumb
     case menuBar(tint: Color)
+    // Native macOS toolbar items: no explicit frames, fonts, or button styles,
+    // so AppKit gives them the same treatment as system toolbar buttons.
+    case macToolbar
 }
 
 struct PlayerComplicationView: View {
@@ -247,16 +253,25 @@ struct PlayerComplicationView: View {
                     now.formatted(date: .omitted, time: .shortened)
                 }
             case .statBattery:
+                #if os(iOS)
                 BatteryStat { level, charging in
                     statView(
                         icon: batteryIcon(level: level, charging: charging),
                         text: batteryText(level: level),
                     )
                 }
+                #else
+                EmptyView()
+                #endif
             case .chapters:
                 chaptersControl
             case .bookmarks:
                 controlButton(systemName: "bookmark", action: actions.onOpenBookmarks)
+            case .readingTimeline:
+                controlButton(
+                    systemName: "clock.arrow.circlepath",
+                    action: actions.onOpenReadingTimeline,
+                )
             case .search:
                 controlButton(systemName: "magnifyingglass", action: actions.onOpenSearch)
             case .textSettings:
@@ -264,10 +279,14 @@ struct PlayerComplicationView: View {
             case .sleepTimer:
                 sleepTimerControl
             case .mirror:
+                #if os(iOS)
                 controlButton(
                     systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right",
                     action: actions.onToggleMirror,
                 )
+                #else
+                EmptyView()
+                #endif
             case .titleBlock:
                 titleBlockThumb
             case .scrollMode:
@@ -275,7 +294,11 @@ struct PlayerComplicationView: View {
             case .freeBrowseLock:
                 freeBrowseLockButton
             case .orientationLock:
+                #if os(iOS)
                 orientationLockButton
+                #else
+                EmptyView()
+                #endif
         }
     }
 
@@ -288,26 +311,44 @@ struct PlayerComplicationView: View {
 
     private var freeBrowseLockButton: some View {
         let browsing = display.freeBrowseMode == "always"
-        return Button(action: actions.onToggleFreeBrowse) {
-            Image(systemName: "link")
-                .font(.system(size: controlGlyphSize))
-                .foregroundStyle(
-                    browsing ? AnyShapeStyle(Color.accentColor) : controlStyle
-                )
-                .overlay {
-                    if browsing {
-                        Capsule()
-                            .fill(Color.accentColor)
-                            .frame(width: controlGlyphSize + 6, height: 1.8)
-                            .rotationEffect(.degrees(-45))
-                    }
+        return complicationButtonStyle(
+            Button(action: actions.onToggleFreeBrowse) {
+                if isNativeToolbar {
+                    Image(systemName: "link")
+                        .foregroundStyle(
+                            browsing
+                                ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary)
+                        )
+                        .overlay {
+                            if browsing {
+                                Capsule()
+                                    .fill(Color.accentColor)
+                                    .frame(width: controlGlyphSize + 6, height: 1.8)
+                                    .rotationEffect(.degrees(-45))
+                            }
+                        }
+                } else {
+                    Image(systemName: "link")
+                        .font(.system(size: controlGlyphSize))
+                        .foregroundStyle(
+                            browsing ? AnyShapeStyle(Color.accentColor) : controlStyle
+                        )
+                        .overlay {
+                            if browsing {
+                                Capsule()
+                                    .fill(Color.accentColor)
+                                    .frame(width: controlGlyphSize + 6, height: 1.8)
+                                    .rotationEffect(.degrees(-45))
+                            }
+                        }
+                        .frame(width: controlSize, height: controlSize)
+                        .contentShape(Rectangle())
                 }
-                .frame(width: controlSize, height: controlSize)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+            }
+        )
     }
 
+    #if os(iOS)
     private var orientationLockButton: some View {
         let locked = OrientationLock.shared.isLocked
         return Button(action: actions.onToggleOrientationLock) {
@@ -321,6 +362,7 @@ struct PlayerComplicationView: View {
         }
         .buttonStyle(.plain)
     }
+    #endif
 
     // The real card draws the title block itself; this stands in for it in the
     // picker, where only a swatch is needed.
@@ -347,6 +389,7 @@ struct PlayerComplicationView: View {
             showLabel: false,
             buttonSize: controlSize,
             showBackground: false,
+            nativeToolbar: isNativeToolbar,
         )
     }
 
@@ -355,34 +398,62 @@ struct PlayerComplicationView: View {
     @ViewBuilder
     private var sleepTimerControl: some View {
         let running = display.sleepTimerRemaining != nil || display.sleepTimerEndOfChapter
-        Button(action: actions.onOpenSleepTimer) {
-            HStack(spacing: 3) {
-                Image(systemName: running ? "moon.zzz.fill" : "moon.zzz")
-                    .font(.system(size: controlGlyphSize))
-                if let remaining = display.sleepTimerRemaining {
-                    Text(formatTimeMinutesSeconds(remaining))
-                        .font(.caption2.monospacedDigit())
-                } else if display.sleepTimerEndOfChapter {
-                    Text("End Ch.")
-                        .font(.caption2)
+        complicationButtonStyle(
+            Button(action: actions.onOpenSleepTimer) {
+                HStack(spacing: 3) {
+                    Image(systemName: running ? "moon.zzz.fill" : "moon.zzz")
+                        .font(isNativeToolbar ? nil : .system(size: controlGlyphSize))
+                    if let remaining = display.sleepTimerRemaining {
+                        Text(formatTimeMinutesSeconds(remaining))
+                            .font(isNativeToolbar ? nil : .caption2)
+                            .monospacedDigit()
+                    } else if display.sleepTimerEndOfChapter {
+                        Text("End Ch.")
+                            .font(isNativeToolbar ? nil : .caption2)
+                    }
                 }
+                .foregroundStyle(
+                    running
+                        ? AnyShapeStyle(Color.accentColor)
+                        : (isNativeToolbar ? AnyShapeStyle(.primary) : controlStyle)
+                )
+                .frame(
+                    minWidth: isNativeToolbar ? nil : controlSize,
+                    minHeight: isNativeToolbar ? nil : controlSize,
+                )
+                .contentShape(Rectangle())
             }
-            .foregroundStyle(running ? AnyShapeStyle(Color.accentColor) : controlStyle)
-            .frame(minWidth: controlSize, minHeight: controlSize)
-            .contentShape(Rectangle())
+        )
+    }
+
+    private var isNativeToolbar: Bool {
+        if case .macToolbar = style { return true }
+        return false
+    }
+
+    @ViewBuilder
+    private func complicationButtonStyle<V: View>(_ button: V) -> some View {
+        if isNativeToolbar {
+            button
+        } else {
+            button.buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     private func controlButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: controlGlyphSize))
-                .foregroundStyle(controlStyle)
-                .frame(width: controlSize, height: controlSize)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        complicationButtonStyle(
+            Button(action: action) {
+                if isNativeToolbar {
+                    Image(systemName: systemName)
+                } else {
+                    Image(systemName: systemName)
+                        .font(.system(size: controlGlyphSize))
+                        .foregroundStyle(controlStyle)
+                        .frame(width: controlSize, height: controlSize)
+                        .contentShape(Rectangle())
+                }
+            }
+        )
     }
 
     private var controlSize: CGFloat {
@@ -518,76 +589,102 @@ struct PlayerComplicationView: View {
     }
 
     private var playPauseButton: some View {
-        Button(action: actions.onPlayPause) {
-            switch style {
-                case .miniRow(let compact):
-                    // The editing preview is narrower than the real card, so
-                    // the full-size circle would spill out of its slot box.
-                    let diameter: CGFloat = editingPreview ? 36 : (compact ? 48 : 54)
-                    Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
-                        .font(editingPreview ? .title3 : (compact ? .title2 : .title))
-                        .frame(width: diameter, height: diameter)
-                        .background(Circle().fill(Color.primary.opacity(0.1)))
-                case .scrubRow:
-                    Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.body)
-                        .frame(width: 34, height: 34)
-                        .contentShape(Rectangle())
-                case .dock(let transparency):
-                    Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(.gray.opacity(transparency))
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                case .menuBar(let tint):
-                    Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(tint)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                case .statBand, .pickerThumb:
-                    Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.callout)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(Color.primary.opacity(0.1)))
+        complicationButtonStyle(
+            Button(action: actions.onPlayPause) {
+                playPauseLabel
             }
+        )
+    }
+
+    @ViewBuilder
+    private var playPauseLabel: some View {
+        switch style {
+            case .macToolbar:
+                Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
+            case .miniRow(let compact):
+                // The editing preview is narrower than the real card, so
+                // the full-size circle would spill out of its slot box.
+                let diameter: CGFloat = editingPreview ? 36 : (compact ? 48 : 54)
+                Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
+                    .font(editingPreview ? .title3 : (compact ? .title2 : .title))
+                    .frame(width: diameter, height: diameter)
+                    .background(Circle().fill(Color.primary.opacity(0.1)))
+            case .scrubRow:
+                Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.body)
+                    .frame(width: 34, height: 34)
+                    .contentShape(Rectangle())
+            case .dock(let transparency):
+                Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(.gray.opacity(transparency))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            case .menuBar(let tint):
+                Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(tint)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            case .statBand, .pickerThumb:
+                Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.callout)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Color.primary.opacity(0.1)))
         }
-        .buttonStyle(.plain)
     }
 
     private func skipButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            switch style {
-                case .miniRow, .scrubRow:
-                    Image(systemName: systemName)
-                        .font(.body.weight(.medium))
-                        .frame(width: 34, height: 34)
-                        .contentShape(Rectangle())
-                case .dock(let transparency):
-                    Image(systemName: systemName)
-                        .font(.system(size: 16))
-                        .foregroundStyle(.gray.opacity(transparency))
-                        .frame(width: 36, height: 36)
-                        .contentShape(Rectangle())
-                case .menuBar(let tint):
-                    Image(systemName: systemName)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(tint)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                case .statBand, .pickerThumb:
-                    Image(systemName: systemName)
-                        .font(.callout)
-                        .frame(width: 30, height: 30)
-                        .contentShape(Rectangle())
+        complicationButtonStyle(
+            Button(action: action) {
+                skipLabel(systemName: systemName)
             }
+        )
+    }
+
+    @ViewBuilder
+    private func skipLabel(systemName: String) -> some View {
+        switch style {
+            case .macToolbar:
+                Image(systemName: systemName)
+            case .miniRow, .scrubRow:
+                Image(systemName: systemName)
+                    .font(.body.weight(.medium))
+                    .frame(width: 34, height: 34)
+                    .contentShape(Rectangle())
+            case .dock(let transparency):
+                Image(systemName: systemName)
+                    .font(.system(size: 16))
+                    .foregroundStyle(.gray.opacity(transparency))
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
+            case .menuBar(let tint):
+                Image(systemName: systemName)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(tint)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            case .statBand, .pickerThumb:
+                Image(systemName: systemName)
+                    .font(.callout)
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder
     private var speedControl: some View {
         switch style {
+            case .macToolbar:
+                PlaybackRateButton(
+                    currentRate: display.playbackRate,
+                    onRateChange: actions.onRateChange,
+                    showLabel: false,
+                    showBackground: false,
+                    compactLabel: true,
+                    textButton: true,
+                    nativeToolbar: true,
+                )
             case .miniRow(let compact):
                 PlaybackRateButton(
                     currentRate: display.playbackRate,
@@ -661,6 +758,7 @@ struct PlayerComplicationView: View {
     private var statFont: Font {
         switch style {
             case .miniRow: return .caption
+            case .macToolbar: return .callout
             default: return .caption2
         }
     }

@@ -34,6 +34,7 @@ import dev.smoores.storyteller.model.RatingDraft
 import dev.smoores.storyteller.model.RatingSaveResult
 import dev.smoores.storyteller.model.ReaderOpenResult
 import dev.smoores.storyteller.model.ReaderState
+import dev.smoores.storyteller.model.ReadingVisit
 import dev.smoores.storyteller.model.SourceStatusUpdate
 import dev.smoores.storyteller.model.StorytellerSettings
 import kotlinx.coroutines.channels.Channel
@@ -397,6 +398,13 @@ class StorytellerViewModel private constructor(
         }
     }
 
+    suspend fun readingTimeline(): List<ReadingVisit> =
+        runCatching { client.readingTimeline() }.getOrDefault(emptyList())
+
+    suspend fun clearReadingTimeline(visitIDs: List<String>) {
+        runCatching { client.clearReadingTimeline(visitIDs) }.onFailure(::showError)
+    }
+
     fun readerMessageFromJS(name: String, body: String) = client.readerMessageFromJS(name, body)
 
     fun registerReaderWebView(owner: Any, webView: android.webkit.WebView) =
@@ -464,6 +472,11 @@ class StorytellerViewModel private constructor(
 
     fun appDidBecomeActive() {
         client.appDidBecomeActive()
+    }
+
+    // sceneActive waits for onResume so the webview is resumed before any
+    // re-anchor navigation is attempted.
+    fun appDidResume() {
         if (mutableState.value.readerOpen != null) readerControl("sceneActive")
     }
 

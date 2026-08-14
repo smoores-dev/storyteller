@@ -690,20 +690,19 @@ public final class ReadingSession {
 
     public func handleSceneBecameActive() async {
         mediaOverlayManager?.isInBackground = false
-        let audioPlayedWhileBackgrounded = mediaOverlayManager?.backgroundAudioPlayed ?? false
-        debugLog(
-            "[ReadingSession] Scene active (backgroundAudioPlayed=\(audioPlayedWhileBackgrounded))"
-        )
-        if audioPlayedWhileBackgrounded {
-            await SMILPlayerActor.shared.reconcilePositionFromPlayer()
-            if let syncData = await SMILPlayerActor.shared.getBackgroundSyncData() {
-                debugLog(
-                    "[ReadingSession] Resuming from background - syncing view to audio position"
-                )
-                await progressManager?.handleBackgroundSyncHandoff(syncData)
+        let viewDirty = mediaOverlayManager?.viewPositionDirty ?? false
+        debugLog("[ReadingSession] Scene active (viewPositionDirty=\(viewDirty))")
+
+        guard viewDirty, isViewAttached else { return }
+        guard await SMILPlayerActor.shared.getLoadedBookID() == bookID else { return }
+        await SMILPlayerActor.shared.reconcilePositionFromPlayer()
+        if let syncData = await SMILPlayerActor.shared.getBackgroundSyncData() {
+            debugLog("[ReadingSession] Scene active - re-anchoring view to audio position")
+            let navigated = await progressManager?.reanchorView(to: syncData) ?? false
+            if navigated {
+                mediaOverlayManager?.viewPositionDirty = false
             }
         }
-        mediaOverlayManager?.backgroundAudioPlayed = false
     }
 
     public func handleSceneEnteredBackground() async {
@@ -711,7 +710,7 @@ public final class ReadingSession {
         let wasPlaying = await SMILPlayerActor.shared.getCurrentState()?.isPlaying ?? false
         debugLog("[ReadingSession] Scene background (playing=\(wasPlaying))")
         if wasPlaying {
-            mediaOverlayManager?.backgroundAudioPlayed = true
+            mediaOverlayManager?.viewPositionDirty = true
         }
     }
 

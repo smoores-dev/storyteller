@@ -11,6 +11,40 @@ struct SoftScrollEdgeModifier: ViewModifier {
     }
 }
 
+struct GlassEffectModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    private let shape = UnevenRoundedRectangle(
+        topLeadingRadius: 16,
+        bottomLeadingRadius: 0,
+        bottomTrailingRadius: 0,
+        topTrailingRadius: 16,
+        style: .continuous,
+    )
+
+    private var fallbackFill: Color {
+        #if os(iOS)
+        Color(uiColor: .systemBackground)
+        #else
+        Color(nsColor: .windowBackgroundColor)
+        #endif
+    }
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            content.glassEffect(.regular.interactive(), in: shape)
+        } else {
+            content
+                .background(
+                    shape
+                        .fill(fallbackFill)
+                )
+                .clipShape(shape)
+                .shadow(color: .black.opacity(0.15), radius: 8, y: -2)
+        }
+    }
+}
+
 #if os(macOS)
 import AppKit
 

@@ -27,6 +27,7 @@ enum class PlayerComplication(val rawValue: String) {
     STAT_BATTERY("statBattery"),
     CHAPTERS("chapters"),
     BOOKMARKS("bookmarks"),
+    READING_TIMELINE("readingTimeline"),
     SEARCH("search"),
     TEXT_SETTINGS("textSettings"),
     SLEEP_TIMER("sleepTimer"),
@@ -74,6 +75,7 @@ enum class PlayerComplication(val rawValue: String) {
             STAT_BATTERY -> "Battery"
             CHAPTERS -> "Chapters"
             BOOKMARKS -> "Bookmarks"
+            READING_TIMELINE -> "Reading Timeline"
             SEARCH -> "Search"
             TEXT_SETTINGS -> "Text Settings"
             SLEEP_TIMER -> "Sleep Timer Button"
@@ -258,6 +260,7 @@ object SlotLayout {
         return listOf(
             PlayerComplication.CHAPTERS,
             PlayerComplication.BOOKMARKS,
+            PlayerComplication.READING_TIMELINE,
             PlayerComplication.SEARCH,
             PlayerComplication.TEXT_SETTINGS,
             PlayerComplication.SLEEP_TIMER,

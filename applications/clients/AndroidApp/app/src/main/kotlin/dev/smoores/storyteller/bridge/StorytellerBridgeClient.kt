@@ -59,6 +59,7 @@ import dev.smoores.storyteller.model.ReaderSearchSection
 import dev.smoores.storyteller.model.ReaderSearchState
 import dev.smoores.storyteller.model.ReaderState
 import dev.smoores.storyteller.model.ReaderTheme
+import dev.smoores.storyteller.model.ReadingVisit
 import dev.smoores.storyteller.model.ReaderTocEntry
 import dev.smoores.storyteller.model.ServerPosition
 import dev.smoores.storyteller.model.SourceStatusUpdate
@@ -355,6 +356,40 @@ class StorytellerBridgeClient(context: Context) {
         AndroidBridgeCallbacks.unregisterReaderWebView(owner)
     }
 
+    suspend fun readingTimeline(): List<ReadingVisit> {
+        val payload = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.readingTimelineJSON(requestID)
+        }
+        val visits = JSONObject(payload).optJSONArray("visits") ?: return emptyList()
+        return buildList {
+            for (index in 0 until visits.length()) {
+                val item = visits.getJSONObject(index)
+                add(
+                    ReadingVisit(
+                        id = item.getString("id"),
+                        startedAt = item.optDouble("startedAt"),
+                        endedAt = item.optDouble("endedAt"),
+                        startDescription = item.optString("startDescription"),
+                        endDescription = item.optString("endDescription"),
+                        startProgression = item.optionalDouble("startProgression"),
+                        endProgression = item.optionalDouble("endProgression"),
+                        source = item.optString("source"),
+                        endText = item.optionalString("endText"),
+                        chapterTitle = item.optionalString("chapterTitle"),
+                    )
+                )
+            }
+        }
+    }
+
+    suspend fun clearReadingTimeline(visitIDs: List<String>) {
+        val array = JSONArray()
+        visitIDs.forEach(array::put)
+        AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.clearReadingTimeline(requestID, array.toString())
+        }
+    }
+
     fun observeReaderState(onChange: (ReaderState) -> Unit) {
         AndroidBridgeCallbacks.observeReaderState(this) { payload ->
             runCatching { parseReaderState(payload) }
@@ -485,6 +520,8 @@ class StorytellerBridgeClient(context: Context) {
                     totalProgression = position.optionalDouble("totalProgression"),
                 )
             },
+            timelineBackDescription = obj.optionalString("timelineBackDescription"),
+            timelineForwardDescription = obj.optionalString("timelineForwardDescription"),
         )
     }
 

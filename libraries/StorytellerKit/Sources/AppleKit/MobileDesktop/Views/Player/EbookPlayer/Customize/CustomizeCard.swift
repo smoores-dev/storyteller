@@ -1,11 +1,13 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
 enum CustomizeCard: String, Identifiable {
     case textLayout
     case readaloud
     case menuBar
+    #if os(iOS)
     case miniplayer
+    #endif
     case dock
     case theme
 
@@ -77,13 +79,36 @@ struct CustomizeCardContainer<Content: View>: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var confirmingReset = false
+    #if os(macOS)
+    @State private var openingConfig: StorytellerGlobalConfig?
+    #endif
 
     var body: some View {
         NavigationStack {
             content()
                 .navigationTitle(title)
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
+                #if os(macOS)
+                .task {
+                    openingConfig = await SettingsActor.shared.config
+                }
+                #endif
                 .toolbar {
+                    #if os(macOS)
+                    if onReset != nil {
+                        ToolbarItem(placement: .destructiveAction) {
+                            Button("Reset") { confirmingReset = true }
+                        }
+                    }
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { cancelChanges() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") { dismiss() }
+                    }
+                    #else
                     if onReset != nil {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Reset") { confirmingReset = true }
@@ -92,6 +117,7 @@ struct CustomizeCardContainer<Content: View>: View {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Done") { dismiss() }
                     }
+                    #endif
                 }
                 .confirmationDialog(
                     "Reset \(title) to defaults?",
@@ -104,6 +130,22 @@ struct CustomizeCardContainer<Content: View>: View {
                     Text("Only the settings on this page change.")
                 }
         }
+        #if os(macOS)
+        .frame(minWidth: 520, idealWidth: 560, minHeight: 600, idealHeight: 680)
+        #endif
     }
+
+    #if os(macOS)
+    private func cancelChanges() {
+        guard let openingConfig else {
+            dismiss()
+            return
+        }
+        Task {
+            try? await SettingsActor.shared.resetConfig(openingConfig)
+            await MainActor.run { dismiss() }
+        }
+    }
+    #endif
 }
 #endif

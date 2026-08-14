@@ -544,6 +544,8 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                             coverRevision = state.coverRevision,
                             cover = viewModel::cover,
                             cachedCover = viewModel::cachedCover,
+                            loadReadingTimeline = viewModel::readingTimeline,
+                            clearReadingTimeline = viewModel::clearReadingTimeline,
                             modifier = Modifier,
                         )
                     }

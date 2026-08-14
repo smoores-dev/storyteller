@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
 struct ReadaloudHighlightCard: View {
@@ -35,6 +35,7 @@ struct ReadaloudHighlightCard: View {
             settingsVM.readaloudHighlightVisibility = "paused"
             settingsVM.save()
         }
+        #if os(iOS)
         .fullScreenCover(isPresented: $showThemeEditor) {
             ThemeEditorView(
                 settingsVM: settingsVM,
@@ -42,6 +43,15 @@ struct ReadaloudHighlightCard: View {
                 initialTab: .readaloud,
             )
         }
+        #else
+        .sheet(isPresented: $showThemeEditor) {
+            ThemeEditorView(
+                settingsVM: settingsVM,
+                theme: activeTheme,
+                initialTab: .readaloud,
+            )
+        }
+        #endif
     }
 
     private var activeTheme: ReaderTheme {

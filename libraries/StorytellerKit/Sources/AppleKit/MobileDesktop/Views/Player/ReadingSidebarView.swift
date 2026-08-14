@@ -62,6 +62,8 @@ public struct ReadingSidebarView: View {
     private let model: Model
     private let mode: ReadingMode
     private let foregroundColor: Color?
+    private var palette: CoverDerivedPalette? = nil
+    @Environment(\.colorScheme) private var colorScheme
     private let progressData: ProgressData?
     @Binding private var chapterProgress: Double
     private let chapters: [ChapterItem]
@@ -129,6 +131,12 @@ public struct ReadingSidebarView: View {
         self.seekWhileDragging = seekWhileDragging
     }
 
+    func coverPalette(_ palette: CoverDerivedPalette?) -> ReadingSidebarView {
+        var copy = self
+        copy.palette = palette
+        return copy
+    }
+
     public var body: some View {
         VStack(spacing: 28) {
             metadataSection
@@ -139,7 +147,7 @@ public struct ReadingSidebarView: View {
             statsSection
             secondaryControls
         }
-        .padding(.top, 2)
+        .padding(.top, 25)
         .padding(.bottom, 25)
         .frame(minHeight: 400)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -240,15 +248,10 @@ public struct ReadingSidebarView: View {
 
             VStack(spacing: 8) {
                 Text(model.title)
-                    .font(.title2.weight(.semibold))
+                    .font(.editorialTitle(26))
                     .foregroundStyle(primaryColor)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-
-                Text(model.author)
-                    .font(.headline)
-                    .foregroundStyle(secondaryColor)
-                    .multilineTextAlignment(.center)
 
                 Text(model.chapterTitle)
                     .font(.subheadline)
@@ -315,7 +318,7 @@ public struct ReadingSidebarView: View {
                     }
                 },
             )
-            .tint(primaryColor)
+            .tint(accentColor)
 
             HStack {
                 Text(formatOptionalTime(chapterElapsed))
@@ -341,23 +344,17 @@ public struct ReadingSidebarView: View {
                     .font(.title3)
                     .frame(width: 44, height: 44)
                     .contentShape(Circle())
-                    .background(
-                        Circle()
-                            .stroke(secondaryColor.opacity(0.3), lineWidth: 1)
-                    )
+                    .background(Circle().fill(controlFill))
             }
             .buttonStyle(.plain)
             .help("Restart chapter / Previous chapter")
 
             Button(action: onSkipBackward) {
-                Image(systemName: "arrow.counterclockwise.circle")
-                    .font(.largeTitle)
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.title2.weight(.medium))
                     .frame(width: 54, height: 54)
                     .contentShape(Circle())
-                    .background(
-                        Circle()
-                            .stroke(secondaryColor.opacity(0.3), lineWidth: 1)
-                    )
+                    .background(Circle().fill(controlFill))
             }
             .buttonStyle(.plain)
             .help("Previous sentence")
@@ -365,23 +362,20 @@ public struct ReadingSidebarView: View {
             Button(action: onPlayPause) {
                 Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
                     .font(.title)
-                    .foregroundStyle(primaryColor)
+                    .foregroundStyle(playIcon)
                     .frame(width: 72, height: 72)
                     .contentShape(Circle())
-                    .background(Circle().fill(secondaryColor.opacity(0.2)))
+                    .background(Circle().fill(playFill))
             }
             .buttonStyle(.plain)
             .help("Play/pause")
 
             Button(action: onSkipForward) {
-                Image(systemName: "arrow.clockwise.circle")
-                    .font(.largeTitle)
+                Image(systemName: "arrow.clockwise")
+                    .font(.title2.weight(.medium))
                     .frame(width: 54, height: 54)
                     .contentShape(Circle())
-                    .background(
-                        Circle()
-                            .stroke(secondaryColor.opacity(0.3), lineWidth: 1)
-                    )
+                    .background(Circle().fill(controlFill))
             }
             .buttonStyle(.plain)
             .help("Next sentence")
@@ -391,15 +385,12 @@ public struct ReadingSidebarView: View {
                     .font(.title3)
                     .frame(width: 44, height: 44)
                     .contentShape(Circle())
-                    .background(
-                        Circle()
-                            .stroke(secondaryColor.opacity(0.3), lineWidth: 1)
-                    )
+                    .background(Circle().fill(controlFill))
             }
             .buttonStyle(.plain)
             .help("Next chapter")
         }
-        .foregroundStyle(primaryColor)
+        .foregroundStyle(controlIcon)
         .padding(.horizontal, 20)
     }
 
@@ -409,8 +400,8 @@ public struct ReadingSidebarView: View {
                 PlaybackRateButton(
                     currentRate: model.playbackRate,
                     onRateChange: onPlaybackRateChange,
-                    backgroundColor: secondaryColor,
-                    foregroundColor: primaryColor,
+                    backgroundColor: controlWash,
+                    foregroundColor: controlIcon,
                     transparency: 1.0,
                     showLabel: true,
                 )
@@ -423,8 +414,8 @@ public struct ReadingSidebarView: View {
                         chapters.first(where: { $0.label == label })?.id
                     },
                 onChapterSelected: onChapterSelected,
-                backgroundColor: secondaryColor,
-                foregroundColor: primaryColor,
+                backgroundColor: controlWash,
+                foregroundColor: controlIcon,
                 transparency: 1.0,
                 showLabel: true,
             )
@@ -435,11 +426,11 @@ public struct ReadingSidebarView: View {
                     Button(action: { showVolumePopover = true }) {
                         Image(systemName: volumeIcon)
                             .font(.callout.weight(.semibold))
-                            .foregroundStyle(primaryColor)
+                            .foregroundStyle(controlIcon)
                             .frame(width: 38, height: 38)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(secondaryColor.opacity(0.12))
+                                    .fill(controlFill)
                             )
                     }
                     .buttonStyle(.plain)
@@ -450,7 +441,7 @@ public struct ReadingSidebarView: View {
 
                     Text("\(Int(model.volume * 100))%")
                         .font(.footnote)
-                        .foregroundStyle(secondaryColor)
+                        .foregroundStyle(controlIcon.opacity(0.7))
                 }
                 #endif
 
@@ -597,14 +588,14 @@ public struct ReadingSidebarView: View {
             }) {
                 Image(systemName: model.sleepTimerActive ? "moon.zzz.fill" : "moon.zzz")
                     .font(.callout.weight(.semibold))
-                    .foregroundStyle(primaryColor)
+                    .foregroundStyle(controlIcon)
                     .frame(width: 38, height: 38)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(
                                 model.sleepTimerActive
-                                    ? Color.accentColor.opacity(0.2)
-                                    : secondaryColor.opacity(0.12)
+                                    ? sleepAccent.opacity(0.3)
+                                    : controlFill
                             )
                     )
             }
@@ -618,16 +609,16 @@ public struct ReadingSidebarView: View {
                 if model.sleepTimerType == .endOfChapter {
                     Text("End Ch.")
                         .font(.footnote)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(sleepAccent)
                 } else {
                     Text(formatSleepTimerRemaining(remaining))
                         .font(.footnote)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(sleepAccent)
                 }
             } else {
                 Text("Sleep")
                     .font(.footnote)
-                    .foregroundStyle(secondaryColor)
+                    .foregroundStyle(controlIcon.opacity(0.7))
             }
         }
     }
@@ -720,6 +711,38 @@ public struct ReadingSidebarView: View {
 
     private var secondaryColor: Color {
         foregroundColor?.opacity(0.6) ?? .secondary
+    }
+
+    private var resolvedPalette: CoverDerivedPalette? {
+        palette?.resolved(for: colorScheme)
+    }
+
+    private var accentColor: Color {
+        palette?.ratingAccent(for: colorScheme) ?? primaryColor
+    }
+
+    private var controlFill: Color {
+        accentColor.opacity(0.15)
+    }
+
+    private var controlIcon: Color {
+        accentColor
+    }
+
+    private var playFill: Color {
+        palette != nil ? accentColor : secondaryColor.opacity(0.2)
+    }
+
+    private var playIcon: Color {
+        resolvedPalette?.contentBackground ?? primaryColor
+    }
+
+    private var controlWash: Color {
+        palette != nil ? accentColor : secondaryColor
+    }
+
+    private var sleepAccent: Color {
+        palette != nil ? accentColor : Color.accentColor
     }
 
     private var playbackRateDescription: String {

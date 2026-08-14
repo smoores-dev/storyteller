@@ -690,7 +690,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var menuBarSlots: [PlayerComplication]
 
         public static let defaultMenuBarSlots: [PlayerComplication] = [
-            .sleepTimer, .chapters, .bookmarks, .search, .none, .none,
+            .sleepTimer, .chapters, .bookmarks, .readingTimeline, .search, .none,
         ]
 
         static func leadingSlots(showProgress: Bool, showPageNumber: Bool) -> [PlayerComplication] {
@@ -856,24 +856,30 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
                 (try? container?.decode([PlayerComplication].self, forKey: .dockLeadingSlots))
                 ?? (try? legacyContainer?.decode(
                     [PlayerComplication].self, forKey: .overlayLeadingSlots))
-                ?? Self.leadingSlots(showProgress: showProgress, showPageNumber: showPageNumber)
+                ?? (enabled
+                    ? Self.leadingSlots(showProgress: showProgress, showPageNumber: showPageNumber)
+                    : [])
             dockTrailingSlots =
                 (try? container?.decode([PlayerComplication].self, forKey: .dockTrailingSlots))
                 ?? (try? legacyContainer?.decode(
                     [PlayerComplication].self, forKey: .overlayTrailingSlots))
-                ?? Self.trailingSlots(
-                    showBook: showTimeRemainingInBook,
-                    showChapter: showTimeRemainingInChapter,
-                )
+                ?? (enabled
+                    ? Self.trailingSlots(
+                        showBook: showTimeRemainingInBook,
+                        showChapter: showTimeRemainingInChapter,
+                    )
+                    : [])
             dockCenterSlots =
                 (try? container?.decode([PlayerComplication].self, forKey: .dockCenterSlots))
                 ?? (try? legacyContainer?.decode(
                     [PlayerComplication].self, forKey: .overlayCenterSlots))
-                ?? Self.centerSlots(
-                    skipBackward: showOverlaySkipBackward,
-                    playPause: showOverlayPlayPause,
-                    skipForward: showOverlaySkipForward,
-                )
+                ?? (enabled
+                    ? Self.centerSlots(
+                        skipBackward: showOverlaySkipBackward,
+                        playPause: showOverlayPlayPause,
+                        skipForward: showOverlaySkipForward,
+                    )
+                    : [])
             menuBarSlots =
                 (try? container?.decode([PlayerComplication].self, forKey: .menuBarSlots))
                 ?? (try? legacyContainer?.decode([PlayerComplication].self, forKey: .topBarSlots))
@@ -1471,6 +1477,18 @@ public actor SettingsActor {
             "[SettingsActor] Config updated and persisted - Progress: \(config.sync.progressSyncIntervalSeconds)s, Metadata: \(config.sync.metadataRefreshIntervalSeconds)s"
         )
 
+        let observersList = Array(observers.values)
+        Task { @StorytellerUIActor in
+            for observer in observersList {
+                observer()
+            }
+        }
+    }
+
+    public func resetConfig(_ newConfig: StorytellerGlobalConfig = StorytellerGlobalConfig()) throws
+    {
+        config = newConfig
+        try persistCurrentConfig()
         let observersList = Array(observers.values)
         Task { @StorytellerUIActor in
             for observer in observersList {

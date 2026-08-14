@@ -109,24 +109,6 @@ struct MiniPlayerCardContent: View {
     }
 }
 
-/// Mirrors a row, except skip back/forward keep their relative order when
-/// both land in the same row.
-func mirroredRowEntries<T>(
-    _ entries: [T],
-    comp: (T) -> PlayerComplication,
-) -> [T] {
-    var reversed = Array(entries.reversed())
-    guard let origBack = entries.firstIndex(where: { comp($0) == .skipBackward }),
-        let origForward = entries.firstIndex(where: { comp($0) == .skipForward }),
-        let newBack = reversed.firstIndex(where: { comp($0) == .skipBackward }),
-        let newForward = reversed.firstIndex(where: { comp($0) == .skipForward })
-    else { return reversed }
-    if (origBack < origForward) != (newBack < newForward) {
-        reversed.swapAt(newBack, newForward)
-    }
-    return reversed
-}
-
 /// One row of the card. Every slot holds any complication; the scrub bar and
 /// the title block take whatever width is left over and push the fixed-size
 /// controls to the edges, and mirroring just walks the row backwards.
@@ -304,7 +286,7 @@ struct MiniPlayerSlotRow: View {
 
     private var line1Font: Font {
         if compactBlock { return .caption2.weight(.medium) }
-        return editing == nil ? .subheadline.weight(.medium) : .footnote.weight(.medium)
+        return editing == nil ? .editorialTitle(16) : .editorialTitle(14)
     }
 
     private var line2Font: Font {

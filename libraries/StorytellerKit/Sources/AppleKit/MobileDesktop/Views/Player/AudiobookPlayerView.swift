@@ -6,7 +6,10 @@ public struct AudiobookPlayerView: View {
     private let onClose: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
 
+    @State private var settingsVM = SettingsViewModel()
+    @State private var coverPalette: CoverDerivedPalette?
     @State private var sessionState: AudiobookSessionState?
     @State private var chapterProgress = 0.0
     @State private var errorMessage: String?
@@ -22,6 +25,7 @@ public struct AudiobookPlayerView: View {
     public var body: some View {
         readingSidebarView
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(playerBackground.ignoresSafeArea())
             #if os(iOS)
         .toolbar(.hidden, for: .tabBar)
             #endif
@@ -53,6 +57,10 @@ public struct AudiobookPlayerView: View {
                 Task { @MainActor in
                     await openSession()
                 }
+            }
+            .task(id: colorfulnessKey) {
+                guard let bookID = bookData?.metadata.id else { return }
+                coverPalette = await CoverDerivedPalette.load(for: bookID)
             }
             .onDisappear {
                 #if os(iOS)
@@ -201,6 +209,15 @@ public struct AudiobookPlayerView: View {
             },
             seekWhileDragging: false,
         )
+        .coverPalette(coverPalette)
+    }
+
+    private var colorfulnessKey: String {
+        "\(settingsVM.colorMode)-\(settingsVM.colorIntensity)"
+    }
+
+    private var playerBackground: Color {
+        coverPalette?.resolved(for: colorScheme).contentBackground ?? .clear
     }
 
     @MainActor

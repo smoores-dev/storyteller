@@ -52,6 +52,8 @@ public struct EbookPlayerView: View {
     @State private var viewModel: EbookPlayerViewModel
     @State private var isComicScrubberVisible = false
     @State private var sessionStart = Date()
+    @State private var customizeCard: CustomizeCard?
+    @State private var coverPalette = CoverDerivedPalette.fallback()
     private let onClose: (() -> Void)?
 
     public init(bookData: PlayerBookData?, onClose: (() -> Void)? = nil) {
@@ -101,6 +103,7 @@ public struct EbookPlayerView: View {
             }
         }
         #else
+        .ignoresSafeArea(.container, edges: .top)
         .onKeyPress(.leftArrow) {
             viewModel.progressManager?.handleUserNavLeft()
             return .handled
@@ -122,8 +125,64 @@ public struct EbookPlayerView: View {
             return .handled
         }
         .toolbar {
-            EbookPlayerToolbar(viewModel: viewModel)
+            EbookPlayerToolbar(
+                viewModel: viewModel,
+                display: playerDisplayModel,
+                actions: macToolbarActions,
+                customizeCard: $customizeCard,
+            )
         }
+        .sheet(item: $customizeCard) { card in
+            CustomizeCardView(
+                card: card,
+                settingsVM: viewModel.settingsVM,
+                hasAudioNarration: viewModel.hasAudioNarration,
+            )
+        }
+        .sheet(isPresented: $viewModel.showCustomizePopover) {
+            EbookPlayerSettings(settingsVM: viewModel.settingsVM)
+        }
+        .sheet(isPresented: $viewModel.showSleepTimerSheet) {
+            SleepTimerSheet(
+                sleepTimerActive: viewModel.mediaOverlayManager?.sleepTimerActive ?? false,
+                sleepTimerType: viewModel.mediaOverlayManager?.sleepTimerType,
+                onStart: viewModel.handleSleepTimerStart,
+                onDone: { viewModel.showSleepTimerSheet = false },
+            )
+        }
+        .sheet(isPresented: $viewModel.showSearchPanel) {
+            NavigationStack {
+                if let manager = viewModel.searchManager {
+                    EbookSearchPanel(
+                        searchManager: manager,
+                        onDismiss: { viewModel.showSearchPanel = false },
+                        onResultSelected: { result in
+                            viewModel.handleSearchResultNavigation(result)
+                            viewModel.showSearchPanel = false
+                        },
+                    )
+                    .navigationTitle("Search")
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                viewModel.showSearchPanel = false
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(width: 420, height: 520)
+        }
+        .sheet(isPresented: $viewModel.showKeybindingsPopover) {
+            VStack(spacing: 16) {
+                EbookKeybindingsHelp()
+                Button("Done") { viewModel.showKeybindingsPopover = false }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding()
+            .frame(width: 300)
+        }
+        .background(macShortcutButtons)
         .background(
             TitleBarHoverMonitor(threshold: 60) { hovering in
                 if viewModel.isTitleBarHovered != hovering {
@@ -142,6 +201,12 @@ public struct EbookPlayerView: View {
         #endif
         .onAppear {
             viewModel.handleOnAppear()
+        }
+        .task(id: colorfulnessKey) {
+            guard let bookID = viewModel.bookData?.metadata.id else { return }
+            if let palette = await CoverDerivedPalette.load(for: bookID) {
+                coverPalette = palette
+            }
         }
         .onDisappear {
             #if os(iOS)
@@ -164,10 +229,14 @@ public struct EbookPlayerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             viewModel.handleScenePhaseChange(newPhase)
         }
+        .onChange(of: isAudioPlaying) { _, playing in
+            if playing {
+                viewModel.dismissTimelineBreadcrumbs()
+            }
+        }
         .onChange(of: viewModel.settingsVM.highlightColorsHash) { _, _ in
             Task { await viewModel.refreshHighlightColors() }
         }
-        #if os(iOS)
         .sheet(isPresented: $viewModel.showBookmarksPanel) {
             NavigationStack {
                 BookmarksPanel(
@@ -194,15 +263,29 @@ public struct EbookPlayerView: View {
                     initialTab: viewModel.bookmarksPanelInitialTab,
                 )
                 .navigationTitle("Bookmarks & Highlights")
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItem(placement: .confirmationAction) {
                         Button("Done") {
                             viewModel.showBookmarksPanel = false
                         }
                     }
                 }
             }
+            #if os(macOS)
+            .frame(width: 440, height: 540)
+            #endif
+        }
+        #if os(iOS)
+        .fullScreenCover(isPresented: $viewModel.showReadingTimeline) {
+            readingTimelineSheet
+        }
+        #else
+        .sheet(isPresented: $viewModel.showReadingTimeline) {
+            readingTimelineSheet
+                .frame(minWidth: 520, minHeight: 680)
         }
         #endif
         .sheet(
@@ -276,6 +359,7 @@ public struct EbookPlayerView: View {
         viewModel.isTitleBarHovered || viewModel.showCustomizePopover
             || viewModel.showKeybindingsPopover || viewModel.showSearchPanel
             || viewModel.showBookmarksPanel || viewModel.pendingSearchReveal
+            || viewModel.showSleepTimerSheet || customizeCard != nil
     }
 
     private var mainLayout: some View {
@@ -309,8 +393,9 @@ public struct EbookPlayerView: View {
                         Rectangle()
                             .fill(separatorColor)
                             .frame(width: 1)
-                        audiobookSidebar(foregroundColor: readerForegroundColor)
+                        audiobookSidebar(palette: coverPalette)
                             .frame(width: 360)
+                            .background(sidebarPaper)
                     }
                     .compositingGroup()
                     .transition(.offset(x: -361))
@@ -357,6 +442,10 @@ public struct EbookPlayerView: View {
         )
     }
 
+    private var sidebarPaper: Color {
+        coverPalette.resolved(for: colorScheme).contentBackground
+    }
+
     private var chapterSidebar: some View {
         EbookChapterSidebar(
             chapters: viewModel.chapterList,
@@ -390,6 +479,11 @@ public struct EbookPlayerView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
+    }
+
+    private var colorfulnessKey: String {
+        let settings = viewModel.settingsVM
+        return "\(settings.colorMode)-\(settings.colorIntensity)"
     }
 
     private var readerBackgroundColor: Color {
@@ -499,6 +593,7 @@ public struct EbookPlayerView: View {
                             },
                         )
                     )
+                    .padding(.bottom, webViewBottomInset)
                     #endif
                 } else {
                     ProgressView("Loading book...")
@@ -550,6 +645,7 @@ public struct EbookPlayerView: View {
                     onSleepTimerStart: viewModel.handleSleepTimerStart,
                     onSleepTimerCancel: viewModel.handleSleepTimerCancel,
                     settingsVM: viewModel.settingsVM,
+                    customizeCard: $customizeCard,
                 )
                 .transition(.opacity)
             }
@@ -568,49 +664,33 @@ public struct EbookPlayerView: View {
                 returnToPlayheadButton
                     .transition(.opacity)
             }
+
+            if viewModel.timelineBackLocator != nil || viewModel.timelineForwardLocator != nil {
+                timelineBreadcrumbPills
+                    .transition(.opacity)
+            }
             #else
-            let shouldShowBar = viewModel.settingsVM.enableReadingBar && !viewModel.showAudioSidebar
-
-            if shouldShowBar {
-                let pm = viewModel.progressManager
-                let mom = viewModel.mediaOverlayManager
-                let progressData = ProgressData(
-                    chapterLabel: pm?.selectedChapterId.flatMap { index in
-                        viewModel.bookStructure[safe: index]?.label
-                    },
-                    chapterCurrentPage: pm?.chapterCurrentPage,
-                    chapterTotalPages: pm?.chapterTotalPages,
-                    chapterCurrentSecondsAudio: mom?.chapterElapsedSeconds,
-                    chapterTotalSecondsAudio: mom?.chapterTotalSeconds,
-                    bookCurrentSecondsAudio: mom?.bookElapsedSeconds,
-                    bookTotalSecondsAudio: mom?.bookTotalSeconds,
-                    bookCurrentFraction: pm?.bookFraction,
-                )
-                let bgHex =
-                    viewModel.settingsVM.backgroundColor
-                    ?? (colorScheme == .dark
-                        ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight)
-                let isLight = isLightColor(hex: bgHex)
-
-                EbookOverlayMac(
-                    readingBarConfig: viewModel.settingsVM.readingBarConfig,
-                    progressData: progressData,
-                    isPlaying: mom?.isPlaying ?? false,
-                    playbackRate: mom?.playbackRate ?? viewModel.settingsVM.defaultPlaybackSpeed,
-                    isLightBackground: isLight,
+            if !viewModel.showAudioSidebar && hasEnabledDockItems {
+                EbookDockIos(
+                    leadingSlots: viewModel.settingsVM.dockLeadingSlots,
+                    trailingSlots: viewModel.settingsVM.dockTrailingSlots,
+                    centerSlots: viewModel.settingsVM.dockCenterSlots,
+                    dockTransparency: viewModel.settingsVM.dockTransparency,
+                    display: playerDisplayModel,
                     backgroundColor: readerBackgroundColor,
-                    chapterProgress: viewModel.chapterProgressBinding,
-                    onPrevChapter: viewModel.handlePrevChapter,
-                    onSkipBackward: viewModel.handlePrevSentence,
-                    onPlayPause: {
-                        Task { await pm?.togglePlaying() }
-                    },
-                    onSkipForward: viewModel.handleNextSentence,
-                    onNextChapter: viewModel.handleNextChapter,
-                    onProgressSeek: viewModel.handleProgressSeek,
+                    positionAtTop: false,
+                    actions: dockActions,
                 )
-                .ignoresSafeArea(edges: .bottom)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(.opacity)
+            }
+
+            if progressIndicatorEnabled {
+                playbackProgressBar
+            }
+
+            if viewModel.timelineBackLocator != nil || viewModel.timelineForwardLocator != nil {
+                timelineBreadcrumbPills
+                    .transition(.opacity)
             }
             #endif
         }
@@ -620,7 +700,67 @@ public struct EbookPlayerView: View {
     private var isPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
     }
+    #endif
 
+    private var timelineBreadcrumbPills: some View {
+        HStack(spacing: 8) {
+            if viewModel.timelineBackLocator != nil {
+                breadcrumbPill(
+                    icon: "arrow.uturn.backward",
+                    text: viewModel.timelineBackDescription.isEmpty
+                        ? "Back" : "Back to \(viewModel.timelineBackDescription)",
+                ) {
+                    Task { await viewModel.timelineGoBack() }
+                }
+            }
+            if viewModel.timelineForwardLocator != nil {
+                breadcrumbPill(
+                    icon: "arrow.uturn.forward",
+                    text: viewModel.timelineForwardDescription.isEmpty
+                        ? "Forward" : "Forward to \(viewModel.timelineForwardDescription)",
+                ) {
+                    Task { await viewModel.timelineGoForward() }
+                }
+            }
+            Spacer()
+        }
+        .padding(.leading, 16)
+        .padding(.bottom, webViewBottomInset + 70)
+    }
+
+    private func breadcrumbPill(
+        icon: String,
+        text: String,
+        action: @escaping () -> Void,
+    ) -> some View {
+        HStack(spacing: 0) {
+            Button(action: action) {
+                Label(text, systemImage: icon)
+                    .font(.footnote.weight(.medium))
+                    .lineLimit(1)
+                    .padding(.leading, 12)
+                    .padding(.trailing, 6)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                viewModel.dismissTimelineBreadcrumbs()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 4)
+                    .padding(.trailing, 10)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+        }
+        .background(.regularMaterial, in: Capsule())
+        .frame(maxWidth: 240, alignment: .leading)
+    }
+
+    #if os(iOS)
     private var returnToPlayheadButton: some View {
         HStack {
             Spacer()
@@ -639,6 +779,40 @@ public struct EbookPlayerView: View {
         .padding(.bottom, webViewBottomInset + 70)
     }
 
+
+    #endif
+
+    @ViewBuilder
+    private var readingTimelineSheet: some View {
+        if let bookID = viewModel.bookData?.metadata.id {
+            ReadingTimelineSheet(
+                bookId: bookID,
+                bookTitle: viewModel.bookData?.metadata.title ?? "",
+                currentFraction: viewModel.progressManager?.bookFraction,
+                currentDescription: viewModel.currentPositionDescription(),
+                onJump: { locator, description in
+                    Task {
+                        await viewModel.jumpFromTimeline(to: locator, description: description)
+                    }
+                },
+                sessionStart: sessionStart,
+                chapterTitle: { locator in
+                    guard !locator.href.isEmpty,
+                        let index = findSectionIndex(
+                            for: locator.href,
+                            in: viewModel.bookStructure,
+                        )
+                    else { return nil }
+                    return viewModel.bookStructure[safe: index]?.label
+                },
+            )
+        }
+    }
+
+    private var isAudioPlaying: Bool {
+        viewModel.mediaOverlayManager?.isPlaying ?? false
+    }
+
     private var hasEnabledDockItems: Bool {
         let settings = viewModel.settingsVM
         let audio = viewModel.hasAudioNarration
@@ -646,6 +820,11 @@ public struct EbookPlayerView: View {
             settings.dockLeadingSlots + settings.dockTrailingSlots
             + settings.dockCenterSlots
         return allSlots.contains { $0 != .none && (audio || !$0.requiresAudio) }
+    }
+
+    private var hasEnabledDockControls: Bool {
+        viewModel.hasAudioNarration
+            && viewModel.settingsVM.dockCenterSlots.hasActiveComplication
     }
 
     private var playerDisplayModel: MiniPlayerDisplayModel {
@@ -696,10 +875,17 @@ public struct EbookPlayerView: View {
             onRateChange: viewModel.handlePlaybackRateChange,
             onChapterSelected: viewModel.handleChapterSelection,
             onOpenBookmarks: { viewModel.showBookmarksPanel = true },
+            onOpenReadingTimeline: { viewModel.showReadingTimeline = true },
             onOpenSearch: { viewModel.showSearchPanel = true },
             onOpenTextSettings: { viewModel.showCustomizePopover = true },
             onOpenSleepTimer: { viewModel.showSleepTimerSheet = true },
-            onToggleMirror: toggleMirror,
+            onToggleMirror: {
+                #if os(iOS)
+                let settings = viewModel.settingsVM
+                settings.miniPlayerMirrored.toggle()
+                settings.save()
+                #endif
+            },
             onToggleScrollingMode: {
                 let settings = viewModel.settingsVM
                 settings.scrollingMode.toggle()
@@ -711,27 +897,21 @@ public struct EbookPlayerView: View {
                     settings.freeBrowseMode == "always" ? "never" : "always"
                 settings.save()
             },
-            onToggleOrientationLock: { OrientationLock.shared.toggle() },
+            onToggleOrientationLock: {
+                #if os(iOS)
+                OrientationLock.shared.toggle()
+                #endif
+            },
         )
     }
 
-    private func toggleMirror() {
-        let settings = viewModel.settingsVM
-        settings.miniPlayerMirrored.toggle()
-        settings.save()
-    }
-
+    #if os(iOS)
     private var dockBandReserved: Bool {
         hasEnabledDockItems && !viewModel.settingsVM.alwaysShowMiniPlayer
     }
 
     private var bottomEdgeReserved: Bool {
         dockBandReserved || viewModel.settingsVM.alwaysShowMiniPlayer
-    }
-
-    private var hasEnabledDockControls: Bool {
-        viewModel.hasAudioNarration
-            && viewModel.settingsVM.dockCenterSlots.hasActiveComplication
     }
 
     // The band is measured from the physical screen bottom but the padded
@@ -811,8 +991,9 @@ public struct EbookPlayerView: View {
             onComicScrubberVisibilityChange: { visible in
                 isComicScrubberVisible = visible
             },
+            palette: coverPalette,
             fullContent: {
-                audiobookSidebar()
+                audiobookSidebar(palette: coverPalette)
             },
         )
     }
@@ -848,6 +1029,58 @@ public struct EbookPlayerView: View {
     #endif
 
     #if os(macOS)
+    private var macShortcutButtons: some View {
+        Group {
+            Button("") {
+                viewModel.bookmarksPanelInitialTab = .bookmarks
+                viewModel.showBookmarksPanel = true
+            }
+            .keyboardShortcut("b", modifiers: .command)
+            Button("") { viewModel.showSearchPanel = true }
+                .keyboardShortcut("f", modifiers: .command)
+            Button("") { customizeCard = .textLayout }
+                .keyboardShortcut(",", modifiers: [.command, .shift])
+        }
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
+    }
+
+    private var macToolbarActions: MiniPlayerActions {
+        var overridden = dockActions
+        overridden.onOpenSleepTimer = {
+            if viewModel.mediaOverlayManager?.sleepTimerActive == true {
+                viewModel.handleSleepTimerCancel()
+            } else {
+                viewModel.showSleepTimerSheet = true
+            }
+        }
+        return overridden
+    }
+
+    private var progressIndicatorEnabled: Bool {
+        viewModel.settingsVM.progressIndicatorDock
+    }
+
+    private var playbackProgressBar: some View {
+        let scope = viewModel.settingsVM.progressIndicatorScopeDock
+        let progress =
+            scope == .book
+            ? (viewModel.progressManager?.bookFraction ?? 0)
+            : viewModel.chapterProgressBinding.wrappedValue
+        return ProgressIndicatorLine(
+            progress: progress,
+            thickness: viewModel.settingsVM.progressIndicatorThicknessDock,
+        )
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .ignoresSafeArea()
+    }
+
+    private var webViewBottomInset: CGFloat {
+        guard hasEnabledDockItems else { return 0 }
+        return EbookDockIos.reservedBottomInset(withPlaybackControls: hasEnabledDockControls)
+    }
+
     private func isLightColor(hex: String) -> Bool {
         guard let color = Color(hex: hex) else {
             return colorScheme == .light
@@ -863,7 +1096,10 @@ public struct EbookPlayerView: View {
     }
     #endif
 
-    private func audiobookSidebar(foregroundColor: Color? = nil) -> some View {
+    private func audiobookSidebar(
+        foregroundColor: Color? = nil,
+        palette: CoverDerivedPalette? = nil,
+    ) -> some View {
         let pm = viewModel.progressManager
         let mom = viewModel.mediaOverlayManager
         let currentChapterTitle = pm?.selectedChapterId.flatMap { index in
@@ -946,6 +1182,7 @@ public struct EbookPlayerView: View {
                 viewModel.handleProgressSeek(fraction)
             },
         )
+        .coverPalette(palette)
     }
 }
 

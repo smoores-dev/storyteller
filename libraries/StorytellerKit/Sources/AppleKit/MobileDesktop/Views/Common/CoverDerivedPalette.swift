@@ -85,6 +85,25 @@ struct CoverDerivedPalette {
         makePalette(hue: 0.56, saturation: 0.34, brightness: 0.28)
     }
 
+    static func load(for bookID: BookID) async -> CoverDerivedPalette? {
+        var coverData = await BookServiceActor.shared.cachedCoverData(for: bookID, audio: false)
+        if coverData == nil {
+            coverData = await BookServiceActor.shared.cachedCoverData(for: bookID, audio: true)
+        }
+        guard let coverData else { return nil }
+        #if os(macOS)
+        guard let image = NSImage(data: coverData), let derived = make(from: image) else {
+            return nil
+        }
+        #else
+        guard let image = UIImage(data: coverData), let derived = make(from: image) else {
+            return nil
+        }
+        #endif
+        let library = await SettingsActor.shared.config.library
+        return derived.adjusted(for: library)
+    }
+
     static func make(from cgImage: CGImage) -> CoverDerivedPalette? {
         guard
             let rgbaPixels = sampledRGBA(of: cgImage),
@@ -179,7 +198,7 @@ struct CoverDerivedPalette {
                 )
             else { return false }
 
-            context.interpolationQuality = .medium
+            context.interpolationQuality = .none
             context.draw(image, in: CGRect(x: 0, y: 0, width: sampleWidth, height: sampleHeight))
             return true
         }

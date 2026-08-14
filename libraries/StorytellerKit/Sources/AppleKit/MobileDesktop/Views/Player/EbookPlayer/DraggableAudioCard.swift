@@ -16,19 +16,33 @@ struct DraggableAudioCard<FullContent: View>: View {
     let onPrevChapter: () -> Void
     let onNextChapter: () -> Void
     let onComicScrubberVisibilityChange: (Bool) -> Void
+    let palette: CoverDerivedPalette
     @ViewBuilder let fullContent: () -> FullContent
 
-    enum CardState {
-        case compact
-        case scrubber
-        case expanded
-    }
-
-    @State private var cardState: CardState = .compact
-    @State private var dragOffset: CGFloat = 0
+    @Environment(\.colorScheme) private var colorScheme
+    // 0 is the compact card, 1 is the expanded card (or the comic scrubber);
+    // the drag writes fractional values so height and cross-fade track the finger.
+    @State private var expansion: CGFloat = 0
+    @State private var expandedSettled = false
+    @State private var dragBase: CGFloat?
+    @State private var dismissOffset: CGFloat = 0
     @GestureState private var isDragging = false
     @State private var sliderValue: Double = 0
     @AppStorage("showEbookCoverInAudioView") private var showEbookCover = false
+
+    private let settleSpring = Animation.spring(response: 0.38, dampingFraction: 0.86)
+
+    // Clearance from the top of the screen, not the card: the card already
+    // extends past the bottom inset, so only the remainder comes off its height.
+    private let menuBarClearance: CGFloat = 50
+
+    private let cardShape = UnevenRoundedRectangle(
+        topLeadingRadius: 16,
+        bottomLeadingRadius: 0,
+        bottomTrailingRadius: 0,
+        topTrailingRadius: 16,
+        style: .continuous,
+    )
 
     private var effectiveSize: MiniPlayerSize {
         display.hasAudioNarration ? miniPlayerConfig.size : .compact
@@ -47,173 +61,229 @@ struct DraggableAudioCard<FullContent: View>: View {
         model.cover = displayedCover
         return model
     }
-    private let expandedFraction: CGFloat = 1.0
-    private let scrubberFraction: CGFloat = 0.28
-    private let dragThreshold: CGFloat = 40
+
+    private var clampedExpansion: CGFloat {
+        min(max(expansion, 0), 1)
+    }
+
+    private var compactOpacity: CGFloat {
+        1 - min(max(clampedExpansion / 0.35, 0), 1)
+    }
+
+    private var fullOpacity: CGFloat {
+        min(max((clampedExpansion - 0.1) / 0.5, 0), 1)
+    }
+
+    private var paper: Color {
+        palette.resolved(for: colorScheme).surface
+    }
+
+    private var accent: Color {
+        palette.ratingAccent(for: colorScheme)
+    }
 
     var body: some View {
         GeometryReader { geometry in
             let screenHeight = geometry.size.height
             let safeAreaBottom = geometry.safeAreaInsets.bottom
-            let expandedHeight = screenHeight * expandedFraction
-            let scrubberHeight = max(screenHeight * scrubberFraction, 170)
-
-            let targetHeight: CGFloat =
-                switch cardState {
-                    case .compact:
-                        compactHeight
-                            + MiniPlayerMetrics.bottomBandHeight(
-                                showStats: hasStatBand,
-                                safeAreaBottom: safeAreaBottom,
-                            )
-                    case .scrubber: scrubberHeight
-                    case .expanded: expandedHeight
-                }
-
-            let currentHeight =
-                isDragging
-                ? max(0, min(expandedHeight, targetHeight - dragOffset))
-                : targetHeight
-            let cardContentAlignment: Alignment = cardState == .scrubber ? .top : .center
+            let compactTotal =
+                compactHeight
+                + MiniPlayerMetrics.bottomBandHeight(
+                    showStats: hasStatBand,
+                    safeAreaBottom: safeAreaBottom,
+                )
+            let expandedTarget =
+                supportsComicScrubber
+                ? max(screenHeight * 0.28, 170)
+                : screenHeight - max(0, menuBarClearance - safeAreaBottom)
+            let span = max(expandedTarget - compactTotal, 1)
+            let currentHeight = compactTotal + span * min(max(expansion, -0.05), 1.15)
 
             ZStack(alignment: .bottom) {
                 if isPresented {
-                    VStack(spacing: 0) {
-                        if cardState != .compact {
-                            dragHandleView
-                        }
+                    ZStack(alignment: .top) {
+                        fullLayer(
+                            expandedTarget: expandedTarget,
+                            safeAreaBottom: safeAreaBottom,
+                        )
+                        .frame(height: expandedTarget, alignment: .top)
+                        .opacity(fullOpacity)
+                        .allowsHitTesting(expansion > 0.7)
 
-                        switch cardState {
-                            case .compact:
-                                MiniPlayerCardContent(
-                                    config: miniPlayerConfig,
-                                    display: displayModel,
-                                    actions: actions,
-                                    onExpandTap: {
-                                        withAnimation(
-                                            .spring(response: 0.35, dampingFraction: 0.85)
-                                        ) {
-                                            cardState =
-                                                supportsComicScrubber ? .scrubber : .expanded
-                                        }
-                                    },
-                                )
-                                .transition(.opacity)
-                            case .scrubber:
-                                comicScrubberContent
-                                    .transition(.opacity)
-                            case .expanded:
-                                fullContent()
-                                    .transition(.opacity)
-                        }
-
-                        if cardState == .compact && hasStatBand {
-                            MiniPlayerStatBand(
-                                config: miniPlayerConfig,
-                                display: displayModel,
-                                actions: actions,
-                            )
-                            .frame(
-                                height: MiniPlayerMetrics.bottomBandHeight(
-                                    showStats: true,
-                                    safeAreaBottom: safeAreaBottom,
-                                )
-                            )
-                        } else if cardState == .scrubber {
-                            Color.clear
-                                .frame(height: safeAreaBottom)
-                        } else {
-                            Spacer(minLength: safeAreaBottom)
-                        }
+                        compactLayer(safeAreaBottom: safeAreaBottom)
+                            .frame(height: compactTotal, alignment: .top)
+                            .opacity(compactOpacity)
+                            .allowsHitTesting(expansion < 0.3)
                     }
-                    .overlay(alignment: .top) {
-                        if cardState == .compact {
-                            RoundedRectangle(cornerRadius: 2.5)
-                                .fill(Color.secondary.opacity(0.5))
-                                .frame(width: 36, height: 5)
-                                .padding(.top, MiniPlayerMetrics.grabberTopPadding)
-                        }
-                    }
-                    .overlay(alignment: .topTrailing) {
-                        if cardState != .compact {
-                            Button(action: {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                                    cardState = .compact
-                                }
-                            }) {
-                                Image(systemName: "chevron.down")
-                                    .font(.title3.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.top, 12)
-                            .padding(.trailing, 16)
-                        }
-                    }
-                    .frame(height: currentHeight, alignment: cardContentAlignment)
+                    .frame(height: currentHeight, alignment: .top)
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
+                    .background(cardShape.fill(paper))
+                    .clipShape(cardShape)
                     .modifier(GlassEffectModifier())
-                    .gesture(
-                        DragGesture()
-                            .updating($isDragging) { _, state, _ in
-                                state = true
-                            }
-                            .onChanged { value in
-                                dragOffset = value.translation.height
-                            }
-                            .onEnded { value in
-                                handleDragEnd(
-                                    translation: value.translation.height,
-                                    velocity: value.predictedEndTranslation.height
-                                        - value.translation.height,
-                                    screenHeight: screenHeight,
-                                )
-                            }
-                    )
+                    .offset(y: dismissOffset)
+                    .gesture(dragGesture(span: span, compactTotal: compactTotal))
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .ignoresSafeArea(edges: .bottom)
         }
+        .tint(accent)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isPresented)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: cardState)
-        .animation(.interactiveSpring(), value: dragOffset)
-        .onChange(of: isDragging) { _, newValue in
-            if !newValue && dragOffset != 0 {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                    dragOffset = 0
-                }
+        .onChange(of: isDragging) { _, dragging in
+            guard !dragging, dragBase != nil else { return }
+            dragBase = nil
+            withAnimation(settleSpring) {
+                dismissOffset = 0
             }
+            setExpanded(expansion > 0.5)
         }
         .onChange(of: display.chapterProgress) { _, newValue in
             sliderValue = newValue
         }
         .onChange(of: collapseTrigger) { _, _ in
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                cardState = .compact
-            }
-        }
-        .onChange(of: cardState) { _, newValue in
-            onComicScrubberVisibilityChange(
-                isPresented && supportsComicScrubber && newValue == .scrubber
-            )
+            setExpanded(false)
         }
         .onChange(of: isPresented) { _, newValue in
-            onComicScrubberVisibilityChange(
-                newValue && supportsComicScrubber && cardState == .scrubber
-            )
+            if newValue {
+                dismissOffset = 0
+                expansion = 0
+                expandedSettled = false
+            }
+            notifyScrubberVisibility()
         }
         .onAppear {
             sliderValue = display.chapterProgress
-            onComicScrubberVisibilityChange(
-                isPresented && supportsComicScrubber && cardState == .scrubber
-            )
+            notifyScrubberVisibility()
         }
         .onDisappear {
             onComicScrubberVisibilityChange(false)
         }
+    }
+
+    private func fullLayer(expandedTarget: CGFloat, safeAreaBottom: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            dragHandleView
+            if supportsComicScrubber {
+                comicScrubberContent
+                Spacer(minLength: 0)
+                Color.clear
+                    .frame(height: safeAreaBottom)
+            } else {
+                fullContent()
+                Spacer(minLength: safeAreaBottom)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(action: { setExpanded(false) }) {
+                Image(systemName: "chevron.down")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+            .padding(.trailing, 16)
+        }
+    }
+
+    private func compactLayer(safeAreaBottom: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            MiniPlayerCardContent(
+                config: miniPlayerConfig,
+                display: displayModel,
+                actions: actions,
+                onExpandTap: { setExpanded(true) },
+            )
+
+            if hasStatBand {
+                MiniPlayerStatBand(
+                    config: miniPlayerConfig,
+                    display: displayModel,
+                    actions: actions,
+                )
+                .frame(
+                    height: MiniPlayerMetrics.bottomBandHeight(
+                        showStats: true,
+                        safeAreaBottom: safeAreaBottom,
+                    )
+                )
+            } else {
+                Spacer(minLength: safeAreaBottom)
+            }
+        }
+        .overlay(alignment: .top) {
+            RoundedRectangle(cornerRadius: 2.5)
+                .fill(Color.secondary.opacity(0.5))
+                .frame(width: 36, height: 5)
+                .padding(.top, MiniPlayerMetrics.grabberTopPadding)
+        }
+    }
+
+    // Global space: the drag resizes the card, so a local-space translation would
+    // shift with the card's own bounds and feed back into itself as flicker.
+    private func dragGesture(span: CGFloat, compactTotal: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .global)
+            .updating($isDragging) { _, state, _ in
+                state = true
+            }
+            .onChanged { value in
+                let base = dragBase ?? clampedExpansion
+                if dragBase == nil { dragBase = base }
+                let raw = base - value.translation.height / span
+                if raw < 0 {
+                    if !alwaysShow && base == 0 {
+                        dismissOffset = max(0, value.translation.height)
+                        expansion = 0
+                    } else {
+                        expansion = raw * 0.15
+                        dismissOffset = 0
+                    }
+                } else if raw > 1 {
+                    expansion = 1 + (raw - 1) * 0.15
+                    dismissOffset = 0
+                } else {
+                    expansion = raw
+                    dismissOffset = 0
+                }
+            }
+            .onEnded { value in
+                let base = dragBase ?? clampedExpansion
+                dragBase = nil
+
+                if dismissOffset > 0 {
+                    if value.predictedEndTranslation.height > compactTotal * 0.6
+                        || value.translation.height > 72
+                    {
+                        isPresented = false
+                    } else {
+                        withAnimation(settleSpring) {
+                            dismissOffset = 0
+                        }
+                    }
+                    return
+                }
+
+                // Projection folds velocity into where the drag was headed, so a
+                // committed flick resolves even when the travel itself was short.
+                let projected = base - value.predictedEndTranslation.height / span
+                let target = base > 0.5 ? projected > 0.75 : projected > 0.25
+                setExpanded(target)
+            }
+    }
+
+    private func setExpanded(_ expanded: Bool) {
+        withAnimation(settleSpring) {
+            expansion = expanded ? 1 : 0
+        }
+        if expandedSettled != expanded {
+            expandedSettled = expanded
+            notifyScrubberVisibility()
+        }
+    }
+
+    private func notifyScrubberVisibility() {
+        onComicScrubberVisibilityChange(isPresented && supportsComicScrubber && expandedSettled)
     }
 
     private var dragHandleView: some View {
@@ -312,64 +382,8 @@ struct DraggableAudioCard<FullContent: View>: View {
             }
         return "Page \(page) of \(chapters.count)"
     }
-
-    private func handleDragEnd(translation: CGFloat, velocity: CGFloat, screenHeight: CGFloat) {
-        let velocityThreshold: CGFloat = 500
-
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-            dragOffset = 0
-
-            switch cardState {
-                case .compact:
-                    let isSwipeUp = translation < -dragThreshold || velocity < -velocityThreshold
-                    let isSwipeDown = translation > dragThreshold || velocity > velocityThreshold
-                    if isSwipeUp {
-                        cardState = supportsComicScrubber ? .scrubber : .expanded
-                    } else if isSwipeDown && !alwaysShow {
-                        isPresented = false
-                    }
-
-                case .scrubber:
-                    let isSwipeDown = translation > dragThreshold || velocity > velocityThreshold
-                    if isSwipeDown {
-                        cardState = .compact
-                    }
-
-                case .expanded:
-                    let isSwipeDown = translation > dragThreshold || velocity > velocityThreshold
-                    if isSwipeDown {
-                        cardState = .compact
-                    }
-            }
-        }
-    }
 }
 
-struct GlassEffectModifier: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-
-    private let shape = UnevenRoundedRectangle(
-        topLeadingRadius: 16,
-        bottomLeadingRadius: 0,
-        bottomTrailingRadius: 0,
-        topTrailingRadius: 16,
-        style: .continuous,
-    )
-
-    func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.glassEffect(.regular.interactive(), in: shape)
-        } else {
-            content
-                .background(
-                    shape
-                        .fill(Color(uiColor: .systemBackground))
-                )
-                .clipShape(shape)
-                .shadow(color: .black.opacity(0.15), radius: 8, y: -2)
-        }
-    }
-}
 #endif
 
 #endif

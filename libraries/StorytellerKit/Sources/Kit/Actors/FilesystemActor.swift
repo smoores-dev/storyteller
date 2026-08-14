@@ -26,6 +26,15 @@ func decodePersistedSyncHistory(_ data: Data) throws -> [BookID: [SyncHistoryEnt
     }
 }
 
+struct PersistedReadingTimeline: Codable, Sendable {
+    struct Book: Codable, Sendable {
+        let bookID: BookID
+        let visits: [ReadingVisit]
+    }
+
+    let books: [Book]
+}
+
 /// Handles filesystem storage for local media, including directory management and metadata persistence.
 public actor FilesystemActor {
     public static let shared = FilesystemActor()
@@ -34,6 +43,8 @@ public actor FilesystemActor {
     private var pendingQueueWriteId: Int = 0
     private var pendingHistoryWriteTask: Task<Void, Error>?
     private var pendingHistoryWriteId: Int = 0
+    private var pendingTimelineWriteTask: Task<Void, Error>?
+    private var pendingTimelineWriteId: Int = 0
 
     public init() {}
 
@@ -610,6 +621,84 @@ public actor FilesystemActor {
             let currentId = pendingHistoryWriteId
             _ = try? await task.value
             if pendingHistoryWriteId == currentId {
+                break
+            }
+        }
+    }
+
+    public func loadReadingTimeline() async throws -> [BookID: [ReadingVisit]] {
+        await waitForPendingTimelineWrite()
+        let timelineURL = readingTimelineURL()
+
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: timelineURL.path) else {
+            return [:]
+        }
+
+        let data = try Data(contentsOf: timelineURL)
+        let store = try JSONDecoder().decode(PersistedReadingTimeline.self, from: data)
+        return store.books.reduce(into: [:]) { timeline, book in
+            timeline[book.bookID] = book.visits
+        }
+    }
+
+    func readingTimelineURL() -> URL {
+        getConfigDirectory().appendingPathComponent(
+            "reading_timeline_v1.json",
+            isDirectory: false,
+        )
+    }
+
+    public func saveReadingTimeline(_ timeline: [BookID: [ReadingVisit]]) async throws {
+        let configDir = getConfigDirectory()
+        try ensureDirectoryExists(at: configDir)
+
+        let timelineURL = readingTimelineURL()
+        let snapshot = timeline
+        let writeId = pendingTimelineWriteId + 1
+        pendingTimelineWriteId = writeId
+        let task = Task {
+            try await withCheckedThrowingContinuation { continuation in
+                ioQueue.async {
+                    do {
+                        let encoder = JSONEncoder()
+                        encoder.outputFormatting = [.sortedKeys]
+                        let store = PersistedReadingTimeline(
+                            books:
+                                snapshot
+                                .map {
+                                    PersistedReadingTimeline.Book(
+                                        bookID: $0.key,
+                                        visits: $0.value,
+                                    )
+                                }
+                                .sorted { $0.bookID < $1.bookID }
+                        )
+                        let data = try encoder.encode(store)
+                        try data.write(to: timelineURL, options: .atomic)
+                        continuation.resume()
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+        }
+        pendingTimelineWriteTask = task
+
+        defer {
+            if pendingTimelineWriteId == writeId {
+                pendingTimelineWriteTask = nil
+            }
+        }
+
+        try await task.value
+    }
+
+    private func waitForPendingTimelineWrite() async {
+        while let task = pendingTimelineWriteTask {
+            let currentId = pendingTimelineWriteId
+            _ = try? await task.value
+            if pendingTimelineWriteId == currentId {
                 break
             }
         }

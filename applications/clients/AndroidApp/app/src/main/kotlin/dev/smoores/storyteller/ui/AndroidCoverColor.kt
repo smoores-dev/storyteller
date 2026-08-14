@@ -35,12 +35,16 @@ internal data class CoverBackgroundPalette(
     val surface: Color,
     val accent: Color,
     val brightAccent: Color,
+    val deepAccent: Color,
     val mutedAccent: Color,
     val accentBackground: Color,
     val contentBackground: Color,
     val cardBackground: Color,
     val cardBorder: Color,
-)
+    val ratingAccent: Color,
+) {
+    val accentTrack: Color get() = ratingAccent.copy(alpha = 0.3f)
+}
 
 internal fun coverBackgroundColor(bitmap: Bitmap?, darkTheme: Boolean): Color {
     return Color(
@@ -66,11 +70,13 @@ internal fun coverBackgroundPalette(bitmap: Bitmap?, darkTheme: Boolean): CoverB
         surface = palette.color("surface"),
         accent = palette.color("accent"),
         brightAccent = palette.color("brightAccent"),
+        deepAccent = palette.color("deepAccent"),
         mutedAccent = palette.color("mutedAccent"),
         accentBackground = palette.color("accentBackground"),
         contentBackground = palette.color("contentBackground"),
         cardBackground = palette.color("cardBackground"),
         cardBorder = palette.color("cardBorder"),
+        ratingAccent = palette.color("ratingAccent"),
     )
 }
 

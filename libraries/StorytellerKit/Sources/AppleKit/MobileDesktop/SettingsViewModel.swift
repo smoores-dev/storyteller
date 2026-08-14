@@ -86,15 +86,6 @@ public final class SettingsViewModel {
     public var miniPlayerExtraSlots: [PlayerComplication] = [
         .statPercent, .statPage, .statTimeInBook, .statTimeInChapter,
     ]
-    public var dockLeadingSlots: [PlayerComplication] = [.statPercent, .statPage]
-    public var dockTrailingSlots: [PlayerComplication] = [
-        .statTimeInBook, .statTimeInChapter,
-    ]
-    public var dockCenterSlots: [PlayerComplication] = [
-        .skipBackward, .playPause, .skipForward,
-    ]
-    public var menuBarSlots: [PlayerComplication] =
-        StorytellerGlobalConfig.ReadingBar.defaultMenuBarSlots
 
     public var miniPlayerConfig: StorytellerGlobalConfig.MiniPlayer {
         StorytellerGlobalConfig.MiniPlayer(
@@ -112,6 +103,16 @@ public final class SettingsViewModel {
         )
     }
     #endif
+
+    public var dockLeadingSlots: [PlayerComplication] = [.statPercent, .statPage]
+    public var dockTrailingSlots: [PlayerComplication] = [
+        .statTimeInBook, .statTimeInChapter,
+    ]
+    public var dockCenterSlots: [PlayerComplication] = [
+        .skipBackward, .playPause, .skipForward,
+    ]
+    public var menuBarSlots: [PlayerComplication] =
+        StorytellerGlobalConfig.ReadingBar.defaultMenuBarSlots
 
     public var progressSyncIntervalSeconds: Double = kDefaultProgressSyncIntervalSeconds
     public var metadataRefreshIntervalSeconds: Double = kDefaultMetadataRefreshIntervalSeconds
@@ -161,19 +162,6 @@ public final class SettingsViewModel {
 
     @ObservationIgnored private var observerID: UUID?
     @ObservationIgnored private var saveTask: Task<Void, Never>?
-
-    public var readingBarConfig: StorytellerGlobalConfig.ReadingBar {
-        StorytellerGlobalConfig.ReadingBar(
-            enabled: enableReadingBar,
-            showPlayerControls: showPlayerControls,
-            showProgressBar: showProgressBar,
-            showProgress: showProgress,
-            showTimeRemainingInBook: showTimeRemainingInBook,
-            showTimeRemainingInChapter: showTimeRemainingInChapter,
-            showPageNumber: showPageNumber,
-            dockTransparency: dockTransparency,
-        )
-    }
 
     private var userHighlightColors: [String] {
         [
@@ -276,11 +264,11 @@ public final class SettingsViewModel {
         miniPlayerStatSlots = config.miniPlayer.statSlots
         miniPlayerScrubRowSlots = config.miniPlayer.scrubRowSlots
         miniPlayerExtraSlots = config.miniPlayer.extraSlots
+        #endif
         dockLeadingSlots = config.readingBar.dockLeadingSlots
         dockTrailingSlots = config.readingBar.dockTrailingSlots
         dockCenterSlots = config.readingBar.dockCenterSlots
         menuBarSlots = config.readingBar.menuBarSlots
-        #endif
 
         progressSyncIntervalSeconds = config.sync.progressSyncIntervalSeconds
         metadataRefreshIntervalSeconds = config.sync.metadataRefreshIntervalSeconds
@@ -618,8 +606,6 @@ public final class SettingsViewModel {
         )
     }
 
-    #if os(iOS)
-    private var alwaysShowMiniPlayerValue: Bool { alwaysShowMiniPlayer }
     private var showProgressValue: Bool { dockLeadingSlots.contains(.statPercent) }
     private var showPageNumberValue: Bool { dockLeadingSlots.contains(.statPage) }
     private var showTimeRemainingInBookValue: Bool {
@@ -631,6 +617,13 @@ public final class SettingsViewModel {
     private var showOverlaySkipBackwardValue: Bool { dockCenterSlots.contains(.skipBackward) }
     private var showOverlaySkipForwardValue: Bool { dockCenterSlots.contains(.skipForward) }
     private var showOverlayPlayPauseValue: Bool { dockCenterSlots.contains(.playPause) }
+    private var dockLeadingSlotsValue: [PlayerComplication]? { dockLeadingSlots }
+    private var dockTrailingSlotsValue: [PlayerComplication]? { dockTrailingSlots }
+    private var dockCenterSlotsValue: [PlayerComplication]? { dockCenterSlots }
+    private var menuBarSlotsValue: [PlayerComplication]? { menuBarSlots }
+
+    #if os(iOS)
+    private var alwaysShowMiniPlayerValue: Bool { alwaysShowMiniPlayer }
     private var showMiniPlayerStatsValue: Bool { miniPlayerStatSlots.hasActiveComplication }
     private var miniPlayerSizeValue: MiniPlayerSize? { miniPlayerSize }
     private var miniPlayerLeadingStyleValue: MiniPlayerLeadingStyle? { miniPlayerLeadingStyle }
@@ -643,23 +636,12 @@ public final class SettingsViewModel {
     private var miniPlayerStatSlotsValue: [PlayerComplication]? { miniPlayerStatSlots }
     private var miniPlayerScrubRowSlotsValue: [PlayerComplication]? { miniPlayerScrubRowSlots }
     private var miniPlayerExtraSlotsValue: [PlayerComplication]? { miniPlayerExtraSlots }
-    private var dockLeadingSlotsValue: [PlayerComplication]? { dockLeadingSlots }
-    private var dockTrailingSlotsValue: [PlayerComplication]? { dockTrailingSlots }
-    private var dockCenterSlotsValue: [PlayerComplication]? { dockCenterSlots }
-    private var menuBarSlotsValue: [PlayerComplication]? { menuBarSlots }
     private var tabBarSlot1Value: String { tabBarSlot1 }
     private var tabBarSlot2Value: String { tabBarSlot2 }
     private var tapToPlayPreferredPlayerValue: Bool { tapToPlayPreferredPlayer }
     private var preferAudioOverEbookValue: Bool { preferAudioOverEbook }
     #else
     private var alwaysShowMiniPlayerValue: Bool { kDefaultAlwaysShowMiniPlayer }
-    private var showProgressValue: Bool { showProgress }
-    private var showPageNumberValue: Bool { showPageNumber }
-    private var showTimeRemainingInBookValue: Bool { showTimeRemainingInBook }
-    private var showTimeRemainingInChapterValue: Bool { showTimeRemainingInChapter }
-    private var showOverlaySkipBackwardValue: Bool { kDefaultShowOverlaySkipBackward }
-    private var showOverlaySkipForwardValue: Bool { kDefaultShowOverlaySkipForward }
-    private var showOverlayPlayPauseValue: Bool { kDefaultShowOverlayPlayPause }
     private var showMiniPlayerStatsValue: Bool { kDefaultShowMiniPlayerStats }
     private var miniPlayerSizeValue: MiniPlayerSize? { nil }
     private var miniPlayerLeadingStyleValue: MiniPlayerLeadingStyle? { nil }
@@ -672,10 +654,6 @@ public final class SettingsViewModel {
     private var miniPlayerStatSlotsValue: [PlayerComplication]? { nil }
     private var miniPlayerScrubRowSlotsValue: [PlayerComplication]? { nil }
     private var miniPlayerExtraSlotsValue: [PlayerComplication]? { nil }
-    private var dockLeadingSlotsValue: [PlayerComplication]? { nil }
-    private var dockTrailingSlotsValue: [PlayerComplication]? { nil }
-    private var dockCenterSlotsValue: [PlayerComplication]? { nil }
-    private var menuBarSlotsValue: [PlayerComplication]? { nil }
     private var tabBarSlot1Value: String { kDefaultTabBarSlot1 }
     private var tabBarSlot2Value: String { kDefaultTabBarSlot2 }
     private var tapToPlayPreferredPlayerValue: Bool { kDefaultTapToPlayPreferredPlayer }

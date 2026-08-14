@@ -12,6 +12,7 @@ final class AudioSessionMonitor {
 
     private(set) var snapshot: AudioSessionSnapshot?
     private(set) var coverImage: UIImage?
+    private(set) var coverPalette: CoverDerivedPalette?
     @ObservationIgnored private var started = false
     @ObservationIgnored private var coverBookID: BookID?
 
@@ -34,11 +35,13 @@ final class AudioSessionMonitor {
         guard let bookID = snapshot?.kind.bookID else {
             coverBookID = nil
             coverImage = nil
+            coverPalette = nil
             return
         }
         guard bookID != coverBookID else { return }
         coverBookID = bookID
         coverImage = nil
+        coverPalette = nil
         Task { @MainActor in
             var data = await BookServiceActor.shared.cachedCoverData(for: bookID, audio: true)
             if data == nil {
@@ -46,6 +49,12 @@ final class AudioSessionMonitor {
             }
             guard self.coverBookID == bookID else { return }
             self.coverImage = data.flatMap(UIImage.init(data:))
+            guard let image = self.coverImage,
+                let derived = CoverDerivedPalette.make(from: image)
+            else { return }
+            let library = await SettingsActor.shared.config.library
+            guard self.coverBookID == bookID else { return }
+            self.coverPalette = derived.adjusted(for: library)
         }
     }
 }
@@ -53,10 +62,19 @@ final class AudioSessionMonitor {
 struct GlobalMiniPlayerBar: View {
     private var monitor = AudioSessionMonitor.shared
     private var presenter = PlayerPresenter.shared
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         content
             .onAppear { monitor.start() }
+    }
+
+    private var resolvedPalette: CoverDerivedPalette? {
+        monitor.coverPalette?.resolved(for: colorScheme)
+    }
+
+    private var accent: Color? {
+        monitor.coverPalette?.ratingAccent(for: colorScheme)
     }
 
     @ViewBuilder
@@ -90,7 +108,7 @@ struct GlobalMiniPlayerBar: View {
                 VStack(alignment: .leading, spacing: 2) {
                     if let title = snapshot.title {
                         Text(title)
-                            .font(.subheadline.weight(.medium))
+                            .font(.editorialTitle(15))
                             .lineLimit(1)
                     }
                     if let chapter = snapshot.chapterLabel {
@@ -113,8 +131,11 @@ struct GlobalMiniPlayerBar: View {
             } label: {
                 Image(systemName: snapshot.isPlaying ? "pause.fill" : "play.fill")
                     .font(.title3)
+                    .foregroundStyle(
+                        accent != nil ? (resolvedPalette?.contentBackground ?? .primary) : .primary
+                    )
                     .frame(width: 40, height: 40)
-                    .background(Circle().fill(Color.primary.opacity(0.1)))
+                    .background(Circle().fill(accent ?? Color.primary.opacity(0.1)))
             }
             .buttonStyle(.plain)
 
@@ -131,7 +152,7 @@ struct GlobalMiniPlayerBar: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .modifier(MiniPlayerGlassModifier())
+        .modifier(MiniPlayerGlassModifier(tint: resolvedPalette?.surface))
         .padding(.horizontal, 8)
         .padding(.bottom, 4)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: snapshot.isPlaying)
@@ -139,13 +160,17 @@ struct GlobalMiniPlayerBar: View {
 }
 
 private struct MiniPlayerGlassModifier: ViewModifier {
+    var tint: Color?
     private let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
 
     func body(content: Content) -> some View {
+        let washed = content.background(
+            shape.fill((tint ?? Color.clear).opacity(tint == nil ? 0 : 0.92))
+        )
         if #available(iOS 26.0, *) {
-            content.glassEffect(.regular.interactive(), in: shape)
+            washed.glassEffect(.regular.interactive(), in: shape)
         } else {
-            content
+            washed
                 .background(shape.fill(.regularMaterial))
                 .clipShape(shape)
                 .shadow(color: .black.opacity(0.15), radius: 8, y: 2)

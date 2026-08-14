@@ -11,6 +11,7 @@ public struct ChaptersButton: View {
     private let showLabel: Bool
     private let buttonSize: CGFloat
     private let showBackground: Bool
+    private let nativeToolbar: Bool
 
     @State private var showSheet = false
 
@@ -24,6 +25,7 @@ public struct ChaptersButton: View {
         showLabel: Bool = true,
         buttonSize: CGFloat = 38,
         showBackground: Bool = true,
+        nativeToolbar: Bool = false,
     ) {
         self.chapters = chapters
         self.selectedChapterId = selectedChapterId
@@ -34,6 +36,7 @@ public struct ChaptersButton: View {
         self.showLabel = showLabel
         self.buttonSize = buttonSize
         self.showBackground = showBackground
+        self.nativeToolbar = nativeToolbar
     }
 
     public var body: some View {
@@ -47,10 +50,18 @@ public struct ChaptersButton: View {
                 chaptersSheet
             }
             #else
-            Button(action: { showSheet = true }) {
-                buttonLabel
+            Group {
+                if nativeToolbar {
+                    Button(action: { showSheet = true }) {
+                        Image(systemName: "list.bullet")
+                    }
+                } else {
+                    Button(action: { showSheet = true }) {
+                        buttonLabel
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .buttonStyle(.plain)
             .popover(isPresented: $showSheet, arrowEdge: .bottom) {
                 chapterSelectionList
                     .frame(width: 360, height: 420)

@@ -112,6 +112,7 @@ public actor ProgressSyncActor {
         reason: SyncReason,
         sourceIdentifier: String = "Unknown",
         locationDescription: String = "",
+        contextText: String? = nil,
     ) async -> SyncResult {
         debugLog(
             "[PSA] syncProgress: bookID=\(bookID), reason=\(reason.rawValue), timestamp=\(timestamp), source=\(sourceIdentifier)"
@@ -169,6 +170,16 @@ public actor ProgressSyncActor {
             result: .queued,
             locatorSummary: locatorSummary,
             locator: locator,
+        )
+
+        await ReadingTimelineActor.shared.record(
+            bookID: bookID,
+            locator: locator,
+            timestamp: timestamp,
+            reason: reason,
+            sourceIdentifier: sourceIdentifier,
+            locationDescription: locationDescription,
+            contextText: contextText,
         )
 
         await notifyObservers()
@@ -406,6 +417,14 @@ public actor ProgressSyncActor {
                     )
 
                     if let locator = incomingPosition.locator {
+                        await ReadingTimelineActor.shared.record(
+                            bookID: bookID,
+                            locator: locator,
+                            timestamp: incomingTimestamp,
+                            reason: .connectionRestored,
+                            sourceIdentifier: "Server",
+                            locationDescription: locationDesc,
+                        )
                         await notifyIncomingPositionObservers(
                             bookID: bookID,
                             locator: locator,
@@ -448,6 +467,14 @@ public actor ProgressSyncActor {
                         )
 
                         if let locator = incomingPosition.locator {
+                            await ReadingTimelineActor.shared.record(
+                                bookID: bookID,
+                                locator: locator,
+                                timestamp: incomingTimestamp,
+                                reason: .connectionRestored,
+                                sourceIdentifier: "Server",
+                                locationDescription: locationDesc,
+                            )
                             await notifyIncomingPositionObservers(
                                 bookID: bookID,
                                 locator: locator,
@@ -480,6 +507,9 @@ public actor ProgressSyncActor {
                 return "\(title), \(Int(prog * 100))%"
             }
             return title
+        }
+        if let prog = locator.locations?.totalProgression {
+            return "\(Int(prog * 100))% of book"
         }
         return "Unknown Chapter"
     }

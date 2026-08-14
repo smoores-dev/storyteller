@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Pause
@@ -173,6 +174,7 @@ internal data class PlayerActions(
     val onLeadingTap: () -> Unit = {},
     val onOpenChapters: () -> Unit = {},
     val onOpenBookmarks: () -> Unit = {},
+    val onOpenReadingTimeline: () -> Unit = {},
     val onOpenSearch: () -> Unit = {},
     val onOpenTextSettings: () -> Unit = {},
     val onOpenSleepTimer: () -> Unit = {},
@@ -372,6 +374,10 @@ internal fun PlayerComplicationView(
         )
         PlayerComplication.BOOKMARKS -> ControlButton(
             Icons.Filled.BookmarkBorder, "Bookmarks", style, actions.onOpenBookmarks, contentColor,
+        )
+        PlayerComplication.READING_TIMELINE -> ControlButton(
+            Icons.Filled.History, "Reading timeline", style,
+            actions.onOpenReadingTimeline, contentColor,
         )
         PlayerComplication.SEARCH -> ControlButton(
             Icons.Filled.Search, "Search", style, actions.onOpenSearch, contentColor,

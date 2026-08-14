@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
 struct ManageThemesView: View {
@@ -11,9 +11,15 @@ struct ManageThemesView: View {
 
     var body: some View {
         themeListContent
+            #if os(iOS)
             .fullScreenCover(item: $editingTheme) { theme in
                 ThemeEditorView(settingsVM: settingsVM, theme: theme)
             }
+            #else
+            .sheet(item: $editingTheme) { theme in
+                ThemeEditorView(settingsVM: settingsVM, theme: theme)
+            }
+            #endif
     }
 
     private var activeTheme: ReaderTheme {
@@ -67,6 +73,7 @@ struct ManageThemesView: View {
                 Section("Custom Themes") {
                     ForEach(settingsVM.customThemes) { theme in
                         themeRow(theme)
+                            #if os(iOS)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
                                     deleteTheme(id: theme.id)
@@ -74,6 +81,15 @@ struct ManageThemesView: View {
                                     Label("Delete", systemImage: "trash")
                                 }
                             }
+                            #else
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    deleteConfirmThemeId = theme.id
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            #endif
                     }
                 }
             }

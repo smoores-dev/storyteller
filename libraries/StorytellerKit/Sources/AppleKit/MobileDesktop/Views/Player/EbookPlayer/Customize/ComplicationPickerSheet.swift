@@ -1,158 +1,5 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
-
-extension SlotRef: Identifiable {
-    var id: String { "\(region)-\(index)" }
-}
-
-enum SlotLayout {
-    static func slotCount(for region: SlotRegion) -> Int {
-        switch region {
-            case .miniContentRow: return 5
-            case .miniStatBand: return 4
-            case .miniScrubRow: return 4
-            case .miniExtraRow: return 4
-            case .dockLeading: return 2
-            case .dockTrailing: return 2
-            case .dockCenter: return 3
-            case .menuBar: return 6
-        }
-    }
-
-    static func isMiniRow(_ region: SlotRegion) -> Bool {
-        switch region {
-            case .miniContentRow, .miniStatBand, .miniScrubRow, .miniExtraRow: return true
-            case .dockLeading, .dockTrailing, .dockCenter, .menuBar: return false
-        }
-    }
-
-    static let stats: [PlayerComplication] = [
-        .statPercent, .statPage, .statPagesLeft, .statChapterOf, .statChapterPercent,
-        .statTimeInBook, .statTimeInChapter, .statChapterElapsed, .statChapterLength,
-        .statFinishTime, .statSessionTime, .statSleepTimer,
-    ]
-
-    // The dock stands in for the hidden status bar, so it alone carries the
-    // stats the system would otherwise be showing.
-    static let dockOnlyStats: [PlayerComplication] = [.statClock, .statBattery]
-
-    // The stat band sits in the home-indicator strip, too close to the edge of
-    // the screen to aim at, so it carries readouts only.
-    static func isTextOnly(_ region: SlotRegion) -> Bool {
-        region == .miniStatBand
-    }
-
-    static func readerControls(for region: SlotRegion) -> [PlayerComplication] {
-        if isTextOnly(region) { return [] }
-        return [
-            .chapters, .bookmarks, .search, .textSettings, .sleepTimer, .mirror,
-            .scrollMode, .freeBrowseLock, .orientationLock,
-        ]
-    }
-
-    // Every mini row takes every widget: the scrub bar and the title block are
-    // just complications that expand to fill whatever room is left.
-    static func playbackControls(for region: SlotRegion) -> [PlayerComplication] {
-        if isTextOnly(region) { return [] }
-        if isMiniRow(region) {
-            return [
-                .titleBlock, .scrubBar, .skipBackward, .playPause, .skipForward, .playbackSpeed,
-            ]
-        }
-        switch region {
-            case .dockCenter, .menuBar:
-                return [.playPause, .skipBackward, .skipForward, .playbackSpeed]
-            default:
-                return []
-        }
-    }
-
-    static func statComplications(for region: SlotRegion) -> [PlayerComplication] {
-        switch region {
-            case .dockLeading, .dockTrailing:
-                return stats + dockOnlyStats
-            default:
-                return stats
-        }
-    }
-
-    static func allowedComplications(for region: SlotRegion) -> [PlayerComplication] {
-        [.none] + playbackControls(for: region) + readerControls(for: region)
-            + statComplications(for: region)
-    }
-
-    static func sanitized(
-        _ slots: [PlayerComplication],
-        for region: SlotRegion,
-    ) -> [PlayerComplication] {
-        let allowed = allowedComplications(for: region)
-        return padded(slots, for: region).map { allowed.contains($0) ? $0 : .none }
-    }
-
-    static func padded(
-        _ slots: [PlayerComplication],
-        for region: SlotRegion,
-    ) -> [PlayerComplication] {
-        let count = slotCount(for: region)
-        var result = Array(slots.prefix(count))
-        while result.count < count { result.append(.none) }
-        return result
-    }
-}
-
-extension SettingsViewModel {
-    func normalizeSlotArrays() {
-        miniPlayerContentRowSlots = SlotLayout.sanitized(
-            miniPlayerContentRowSlots, for: .miniContentRow)
-        miniPlayerStatSlots = SlotLayout.sanitized(miniPlayerStatSlots, for: .miniStatBand)
-        miniPlayerScrubRowSlots = SlotLayout.sanitized(miniPlayerScrubRowSlots, for: .miniScrubRow)
-        miniPlayerExtraSlots = SlotLayout.sanitized(miniPlayerExtraSlots, for: .miniExtraRow)
-        dockLeadingSlots = SlotLayout.sanitized(dockLeadingSlots, for: .dockLeading)
-        dockTrailingSlots = SlotLayout.sanitized(dockTrailingSlots, for: .dockTrailing)
-        dockCenterSlots = SlotLayout.sanitized(dockCenterSlots, for: .dockCenter)
-        menuBarSlots = SlotLayout.sanitized(menuBarSlots, for: .menuBar)
-    }
-
-    func slotComplication(_ slot: SlotRef) -> PlayerComplication {
-        let slots = slotArray(for: slot.region)
-        guard slot.index >= 0 && slot.index < slots.count else { return .none }
-        return slots[slot.index]
-    }
-
-    func setSlotComplication(_ comp: PlayerComplication, at slot: SlotRef) {
-        var slots = SlotLayout.padded(slotArray(for: slot.region), for: slot.region)
-        guard slot.index >= 0 && slot.index < slots.count else { return }
-        slots[slot.index] = comp
-        setSlotArray(slots, for: slot.region)
-        save()
-    }
-
-    private func slotArray(for region: SlotRegion) -> [PlayerComplication] {
-        switch region {
-            case .miniContentRow: return miniPlayerContentRowSlots
-            case .miniStatBand: return miniPlayerStatSlots
-            case .miniScrubRow: return miniPlayerScrubRowSlots
-            case .miniExtraRow: return miniPlayerExtraSlots
-            case .dockLeading: return dockLeadingSlots
-            case .dockTrailing: return dockTrailingSlots
-            case .dockCenter: return dockCenterSlots
-            case .menuBar: return menuBarSlots
-        }
-    }
-
-    private func setSlotArray(_ slots: [PlayerComplication], for region: SlotRegion) {
-        switch region {
-            case .miniContentRow: miniPlayerContentRowSlots = slots
-            case .miniStatBand: miniPlayerStatSlots = slots
-            case .miniScrubRow: miniPlayerScrubRowSlots = slots
-            case .miniExtraRow: miniPlayerExtraSlots = slots
-            case .dockLeading: dockLeadingSlots = slots
-            case .dockTrailing: dockTrailingSlots = slots
-            case .dockCenter: dockCenterSlots = slots
-            case .menuBar: menuBarSlots = slots
-        }
-    }
-}
 
 struct ComplicationPickerSheet: View {
     let slot: SlotRef
@@ -190,14 +37,20 @@ struct ComplicationPickerSheet: View {
                 section("Stats", SlotLayout.statComplications(for: slot.region))
             }
             .navigationTitle("Complication")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
             }
         }
+        #if os(iOS)
         .presentationDetents([.medium])
+        #else
+        .frame(width: 380, height: 460)
+        #endif
     }
 
     @ViewBuilder
@@ -255,6 +108,7 @@ struct ComplicationPickerSheet: View {
     }
 }
 
+#if os(iOS)
 struct LeadingStylePickerSheet: View {
     @Bindable var settingsVM: SettingsViewModel
     let display: MiniPlayerDisplayModel
@@ -429,4 +283,5 @@ struct LeadingStylePickerSheet: View {
         }
     }
 }
+#endif
 #endif

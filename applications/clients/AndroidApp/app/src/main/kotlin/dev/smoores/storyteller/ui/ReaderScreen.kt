@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -86,8 +87,10 @@ import dev.smoores.storyteller.model.ReaderOpenResult
 import dev.smoores.storyteller.model.ReaderOverlayOptions
 import dev.smoores.storyteller.model.ReaderSearchState
 import dev.smoores.storyteller.model.ReaderState
+import dev.smoores.storyteller.model.ReadingVisit
 import java.io.File
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 private const val READER_ORIGIN = "https://appassets.androidplatform.net"
@@ -107,6 +110,8 @@ internal fun ReaderScreen(
     coverRevision: Int,
     cover: suspend (Book, Boolean, Int, Int) -> android.graphics.Bitmap?,
     cachedCover: (Book, Boolean) -> android.graphics.Bitmap?,
+    loadReadingTimeline: suspend () -> List<ReadingVisit>,
+    clearReadingTimeline: suspend (List<String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -126,12 +131,16 @@ internal fun ReaderScreen(
     var showManageThemes by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var showBookmarks by remember { mutableStateOf(false) }
+    var showReadingTimeline by remember { mutableStateOf(false) }
+    var timelineVisits by remember(book.id) { mutableStateOf(emptyList<ReadingVisit>()) }
+    var timelineLoading by remember(book.id) { mutableStateOf(false) }
     var showSleepTimer by remember { mutableStateOf(false) }
     var showReadaloudThemeEditor by remember { mutableStateOf(false) }
     var customizeCard by rememberSaveable { mutableStateOf<CustomizeCard?>(null) }
     // Session-only, like OrientationLock.shared on iOS.
     var isOrientationLocked by rememberSaveable(book.id, mode) { mutableStateOf(false) }
     val sessionStartMillis = remember(book.id, mode) { System.currentTimeMillis() }
+    val scope = rememberCoroutineScope()
 
     DisposableEffect(webView) {
         registerWebView(webView, webView)
@@ -201,12 +210,16 @@ internal fun ReaderScreen(
         }
     }
 
-    val coverBitmap by produceState<ImageBitmap?>(
-        initialValue = cachedCover(book, false)?.asImageBitmap(),
+    val coverSource by produceState<Bitmap?>(
+        initialValue = cachedCover(book, false),
         book.id,
         coverRevision,
     ) {
-        cover(book, false, 240, 240)?.let { value = it.asImageBitmap() }
+        cover(book, false, 240, 240)?.let { value = it }
+    }
+    val coverBitmap: ImageBitmap? = remember(coverSource) { coverSource?.asImageBitmap() }
+    val coverPalette = remember(coverSource, isDark, CoverColorSettings.key) {
+        coverBackgroundPalette(coverSource, isDark)
     }
 
     val toggleCount = readerState?.overlayToggleCount ?: 0
@@ -325,6 +338,7 @@ internal fun ReaderScreen(
         },
         onOpenChapters = { showToc = true },
         onOpenBookmarks = { showBookmarks = true },
+        onOpenReadingTimeline = { showReadingTimeline = true },
         onOpenSearch = { showSearch = true },
         onOpenTextSettings = { customizeCard = CustomizeCard.TEXT_LAYOUT },
         onOpenSleepTimer = { showSleepTimer = true },
@@ -412,6 +426,23 @@ internal fun ReaderScreen(
             )
         }
 
+        if (readerState?.timelineBackDescription != null ||
+            readerState?.timelineForwardDescription != null
+        ) {
+            TimelineBreadcrumbs(
+                backDescription = readerState.timelineBackDescription,
+                forwardDescription = readerState.timelineForwardDescription,
+                contentColor = chromeFg,
+                backgroundColor = chromeBg,
+                onBack = { readerControl("timelineGoBack", 0.0, "") },
+                onForward = { readerControl("timelineGoForward", 0.0, "") },
+                onDismiss = { readerControl("dismissTimelineBreadcrumbs", 0.0, "") },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, bottom = reservedBottomInset + 70.dp),
+            )
+        }
+
         AnimatedVisibility(
             visible = chromeVisible,
             enter = if (eink.reduceAnimations) EnterTransition.None else fadeIn(),
@@ -441,6 +472,7 @@ internal fun ReaderScreen(
             isOrientationLocked = isOrientationLocked,
             backgroundColor = chromeBg,
             contentColor = chromeFg,
+            palette = coverPalette,
             readerControl = readerControl,
             onShowChapters = { showToc = true },
             coverRevision = coverRevision,
@@ -474,6 +506,31 @@ internal fun ReaderScreen(
                     Text("Stay Here")
                 }
             },
+        )
+    }
+
+    if (showReadingTimeline) {
+        LaunchedEffect(showReadingTimeline) {
+            timelineLoading = true
+            timelineVisits = loadReadingTimeline()
+            timelineLoading = false
+        }
+        ReadingTimelineScreen(
+            visits = timelineVisits,
+            loading = timelineLoading,
+            palette = coverPalette,
+            sessionStartMillis = sessionStartMillis,
+            onResume = { visit ->
+                showReadingTimeline = false
+                readerControl("goToTimelineVisit", 0.0, visit.id)
+            },
+            onClear = { ids ->
+                scope.launch {
+                    clearReadingTimeline(ids)
+                    timelineVisits = loadReadingTimeline()
+                }
+            },
+            onDismiss = { showReadingTimeline = false },
         )
     }
 

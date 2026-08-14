@@ -1049,29 +1049,30 @@ public final class EphemeralProgressManager {
         }
     }
 
-    /// Handle position handoff from SMILPlayerActor after returning from background
-    /// Syncs the view to current audio position and updates server
-    public func handleBackgroundSyncHandoff(_ syncData: AudioPositionSyncData) async {
+    /// Navigates the view to the actor position after returning from
+    /// background. Purely visual: no activity is recorded and no progress is
+    /// synced. Returns false when the bridge is missing or the eval throws.
+    public func reanchorView(to syncData: AudioPositionSyncData) async -> Bool {
         debugLog(
-            "[EPM] Background sync handoff: section=\(syncData.sectionIndex), fragment=\(syncData.fragment)"
+            "[EPM] Re-anchor view: section=\(syncData.sectionIndex), fragment=\(syncData.fragment)"
         )
 
         selectedChapterId = syncData.sectionIndex
-        recordActivity()
 
         let fullHref =
             syncData.fragment.isEmpty
             ? syncData.href
             : "\(syncData.href)#\(syncData.fragment)"
 
+        guard let commsBridge else { return false }
         do {
-            try await commsBridge?.sendJsGoToHrefCommand(href: fullHref)
-            debugLog("[EPM] Navigated view to background sync position: \(fullHref)")
+            try await commsBridge.sendJsGoToHrefCommand(href: fullHref)
+            debugLog("[EPM] Re-anchored view to \(fullHref)")
+            return true
         } catch {
-            debugLog("[EPM] Failed to navigate to background sync position: \(error)")
+            debugLog("[EPM] Failed to re-anchor view: \(error)")
+            return false
         }
-
-        await syncProgressToServer(reason: .periodicDuringActivePlayback)
     }
 
     /// Toggle audio playback (records activity and delegates to MOM)
@@ -1241,6 +1242,8 @@ public final class EphemeralProgressManager {
             locationDescription = ""
         }
 
+        let contextText = await captureVisibleText()
+
         let result = await ProgressSyncActor.shared.syncProgress(
             bookID: bookID,
             locator: finalLocator,
@@ -1248,6 +1251,7 @@ public final class EphemeralProgressManager {
             reason: reason,
             sourceIdentifier: sourceIdentifier,
             locationDescription: locationDescription,
+            contextText: contextText,
         )
 
         debugLog("[EPM] Sync result: \(result)")
@@ -1291,6 +1295,25 @@ public final class EphemeralProgressManager {
             ),
             text: nil as BookLocator.Text?,
         )
+    }
+
+    public func currentLocator() -> BookLocator? {
+        guard let fraction = bookFraction else { return nil }
+        return buildLocatorFromFraction(fraction)
+    }
+
+    private func captureVisibleText() async -> String? {
+        guard let bridge = commsBridge,
+            let position = try? await bridge.sendJsGetFirstVisiblePosition()
+        else { return nil }
+        let collapsed = position.text
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+        guard !collapsed.isEmpty else { return nil }
+        guard collapsed.count > 220 else { return collapsed }
+        let clipped = String(collapsed.prefix(220))
+        let wordBounded = clipped.lastIndex(of: " ").map { String(clipped[..<$0]) } ?? clipped
+        return "\(wordBounded)\u{2026}"
     }
 
     private func buildLocatorFromFraction(_ fraction: Double) -> BookLocator? {

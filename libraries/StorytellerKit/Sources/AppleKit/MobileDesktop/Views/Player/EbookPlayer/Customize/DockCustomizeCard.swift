@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
 struct DockCustomizeCard: View {
@@ -24,7 +24,6 @@ struct DockCustomizeCard: View {
                         backgroundColor: pageBackground,
                         positionAtTop: false,
                         actions: .noop,
-                        mirrored: settingsVM.miniPlayerMirrored,
                         editing: $selectedSlot,
                     )
                 }

@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
 /// Bottom half of a fake phone: a page of placeholder text with the supplied
@@ -75,7 +75,15 @@ struct CustomizePreviewLabel: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 5)
         .frame(maxWidth: .infinity)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(groupedBackground)
+    }
+
+    private var groupedBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGroupedBackground)
+        #else
+        Color(nsColor: .windowBackgroundColor)
+        #endif
     }
 }
 
@@ -96,9 +104,11 @@ struct CustomizePreviewDock: View {
     @State private var demoRate = 1.0
     @State private var demoProgress = 0.42
 
+    #if os(iOS)
     private var hasStatBand: Bool {
         settingsVM.miniPlayerStatSlots.hasActiveComplication
     }
+    #endif
 
     private var hasDockContent: Bool {
         (settingsVM.dockLeadingSlots + settingsVM.dockTrailingSlots
@@ -110,6 +120,7 @@ struct CustomizePreviewDock: View {
         settingsVM.dockCenterSlots.hasActiveComplication
     }
 
+    #if os(iOS)
     private var cardBandHeight: CGFloat {
         MiniPlayerMetrics.bottomBandHeight(
             showStats: hasStatBand,
@@ -123,6 +134,7 @@ struct CustomizePreviewDock: View {
             showStats: hasStatBand,
         ) + cardBandHeight
     }
+    #endif
 
     private var dockInset: CGFloat {
         hasDockContent
@@ -133,7 +145,11 @@ struct CustomizePreviewDock: View {
     // No blank page above the widget: in dark mode the page colour reads as a
     // second tone stacked under the header rather than as the reader's page.
     private var dockHeight: CGFloat {
+        #if os(iOS)
         max(widget == .miniPlayer ? cardInset : dockInset, 48)
+        #else
+        max(dockInset, 48)
+        #endif
     }
 
     private var demoDisplay: MiniPlayerDisplayModel {
@@ -155,14 +171,12 @@ struct CustomizePreviewDock: View {
             onRateChange: { demoRate = $0 },
             onSeek: { demoProgress = $0 },
             onLeadingTap: {
+                #if os(iOS)
                 if settingsVM.miniPlayerLeadingStyle == .cycle {
                     settingsVM.miniPlayerCycleShowingSecond.toggle()
                     settingsVM.save()
                 }
-            },
-            onToggleMirror: {
-                settingsVM.miniPlayerMirrored.toggle()
-                settingsVM.save()
+                #endif
             },
             onToggleScrollingMode: {
                 settingsVM.scrollingMode.toggle()
@@ -173,7 +187,11 @@ struct CustomizePreviewDock: View {
                     settingsVM.freeBrowseMode == "always" ? "never" : "always"
                 settingsVM.save()
             },
-            onToggleOrientationLock: { OrientationLock.shared.toggle() },
+            onToggleOrientationLock: {
+                #if os(iOS)
+                OrientationLock.shared.toggle()
+                #endif
+            },
         )
     }
 
@@ -186,7 +204,11 @@ struct CustomizePreviewDock: View {
 
                 switch widget {
                     case .miniPlayer:
+                        #if os(iOS)
                         liveCard
+                        #else
+                        EmptyView()
+                        #endif
                     case .dock:
                         if hasDockContent {
                             EbookDockIos(
@@ -198,7 +220,6 @@ struct CustomizePreviewDock: View {
                                 backgroundColor: backgroundColor,
                                 positionAtTop: false,
                                 actions: demoActions,
-                                mirrored: settingsVM.miniPlayerMirrored,
                             )
                         }
                 }
@@ -223,20 +244,26 @@ struct CustomizePreviewDock: View {
     }
 
     private var progressLine: some View {
+        #if os(iOS)
         let scope =
             widget == .miniPlayer
             ? settingsVM.miniPlayerProgressScope
             : settingsVM.progressIndicatorScopeDock
-        let progress =
-            scope == .book
-            ? (demoDisplay.bookFraction ?? 0) : demoProgress
         let thickness =
             widget == .miniPlayer
             ? settingsVM.progressIndicatorThickness
             : settingsVM.progressIndicatorThicknessDock
+        #else
+        let scope = settingsVM.progressIndicatorScopeDock
+        let thickness = settingsVM.progressIndicatorThicknessDock
+        #endif
+        let progress =
+            scope == .book
+            ? (demoDisplay.bookFraction ?? 0) : demoProgress
         return ProgressIndicatorLine(progress: progress, thickness: thickness)
     }
 
+    #if os(iOS)
     private var liveCard: some View {
         VStack(spacing: 0) {
             MiniPlayerCardContent(
@@ -275,5 +302,6 @@ struct CustomizePreviewDock: View {
         }
         return window.safeAreaInsets.bottom
     }
+    #endif
 }
 #endif

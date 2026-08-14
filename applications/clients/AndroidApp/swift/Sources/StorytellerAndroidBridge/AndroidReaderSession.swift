@@ -211,6 +211,10 @@ final class AndroidReaderSession {
     private var menuBarSlots = StorytellerGlobalConfig.ReadingBar.defaultMenuBarSlots
     private var experimentalSettings = kDefaultExperimentalSettings
     private var pendingServerPosition: IncomingServerPosition?
+    private var timelineBackLocator: BookLocator?
+    private var timelineBackDescription = ""
+    private var timelineForwardLocator: BookLocator?
+    private var timelineForwardDescription = ""
 
     private struct OverlayOptions: Encodable {
         var showProgress = kDefaultShowProgress
@@ -705,6 +709,30 @@ final class AndroidReaderSession {
                 applyActiveTheme()
                 styleManager?.handleDarkModeChange(isDarkMode)
                 await sendHighlightsToJS()
+            case "goToTimelineVisit":
+                try await goToTimelineVisit(session, id: text, useStart: value != 0)
+            case "timelineGoBack":
+                guard let target = timelineBackLocator else { break }
+                let description = timelineBackDescription
+                timelineForwardLocator = currentPositionLocator(session)
+                timelineForwardDescription = currentPositionDescription(session)
+                timelineBackLocator = nil
+                timelineBackDescription = ""
+                await navigateTimeline(session, to: target, description: description)
+            case "timelineGoForward":
+                guard let target = timelineForwardLocator else { break }
+                let description = timelineForwardDescription
+                timelineBackLocator = currentPositionLocator(session)
+                timelineBackDescription = currentPositionDescription(session)
+                timelineForwardLocator = nil
+                timelineForwardDescription = ""
+                await navigateTimeline(session, to: target, description: description)
+            case "dismissTimelineBreadcrumbs":
+                timelineBackLocator = nil
+                timelineBackDescription = ""
+                timelineForwardLocator = nil
+                timelineForwardDescription = ""
+                publishState(session)
             case "sceneActive":
                 await session.handleSceneBecameActive()
             case "sceneBackground":
@@ -712,6 +740,102 @@ final class AndroidReaderSession {
             default:
                 throw AndroidBridgeError.invalidReaderCommand(command)
         }
+    }
+
+    func readingTimelineJSON() async throws -> String {
+        guard let bookID = currentBookID else {
+            throw AndroidBridgeError.readerNotOpen
+        }
+        let structure = session?.bookStructure ?? []
+        let visits = await ReadingTimelineActor.shared.getVisits(for: bookID)
+        return try encodeReaderJSON(
+            AndroidReadingTimeline(
+                visits: visits.map { visit in
+                    AndroidReadingVisit(
+                        id: visit.id.uuidString,
+                        startedAt: visit.startedAt,
+                        endedAt: visit.endedAt,
+                        startDescription: visit.startDescription,
+                        endDescription: visit.endDescription,
+                        startProgression: visit.startProgression,
+                        endProgression: visit.endProgression,
+                        source: visit.source.rawValue,
+                        endText: visit.endText,
+                        chapterTitle: findSectionIndex(
+                            for: visit.endLocator.href,
+                            in: structure,
+                        ).flatMap { structure[safe: $0]?.label },
+                    )
+                }
+            )
+        )
+    }
+
+    func clearReadingTimeline(visitIDs: [String]) async {
+        guard let bookID = currentBookID else { return }
+        if visitIDs.isEmpty {
+            await ReadingTimelineActor.shared.clearVisits(for: bookID)
+        } else {
+            await ReadingTimelineActor.shared.removeVisits(
+                ids: Set(visitIDs.compactMap(UUID.init(uuidString:))),
+                for: bookID,
+            )
+        }
+    }
+
+    private func goToTimelineVisit(
+        _ session: ReadingSession,
+        id: String,
+        useStart: Bool,
+    ) async throws {
+        guard let bookID = currentBookID, let visitID = UUID(uuidString: id) else {
+            throw AndroidBridgeError.invalidReaderCommand("goToTimelineVisit \(id)")
+        }
+        let visits = await ReadingTimelineActor.shared.getVisits(for: bookID)
+        guard let visit = visits.first(where: { $0.id == visitID }) else {
+            throw AndroidBridgeError.invalidReaderCommand("goToTimelineVisit \(id)")
+        }
+        timelineBackLocator = currentPositionLocator(session)
+        timelineBackDescription = currentPositionDescription(session)
+        timelineForwardLocator = nil
+        timelineForwardDescription = ""
+        await navigateTimeline(
+            session,
+            to: useStart ? visit.startLocator : visit.endLocator,
+            description: useStart ? visit.startDescription : visit.endDescription,
+        )
+    }
+
+    private func navigateTimeline(
+        _ session: ReadingSession,
+        to locator: BookLocator,
+        description: String,
+    ) async {
+        session.progressManager?.handleServerPositionUpdate(locator)
+        publishState(session)
+        guard let bookID = currentBookID else { return }
+        _ = await ProgressSyncActor.shared.restorePosition(
+            bookID: bookID,
+            locator: locator,
+            locationDescription: description,
+        )
+    }
+
+    private func currentPositionLocator(_ session: ReadingSession) -> BookLocator? {
+        session.progressManager?.currentLocator()
+    }
+
+    private func currentPositionDescription(_ session: ReadingSession) -> String {
+        guard let progressManager = session.progressManager else { return "" }
+        if let chapterIndex = progressManager.selectedChapterId,
+            let label = session.bookStructure[safe: chapterIndex]?.label
+        {
+            return label
+        }
+        if let fraction = progressManager.bookFraction {
+            return "\(Int((fraction * 100).rounded()))% of book"
+        }
+        return ""
     }
 
     private func prevChapter(_ session: ReadingSession) {
@@ -1495,6 +1619,8 @@ final class AndroidReaderSession {
         let pendingSelectionText: String?
         let pendingEdit: PendingEdit?
         let pendingServerPosition: ServerPosition?
+        let timelineBackDescription: String?
+        let timelineForwardDescription: String?
     }
 
     // The reader state lives across several @Observable objects whose
@@ -1680,6 +1806,9 @@ final class AndroidReaderSession {
                     totalProgression: $0.locator.locations?.totalProgression,
                 )
             },
+            timelineBackDescription: timelineBackLocator != nil ? timelineBackDescription : nil,
+            timelineForwardDescription: timelineForwardLocator != nil
+                ? timelineForwardDescription : nil,
         )
 
         guard let payload = try? encodeReaderJSON(state), payload != lastStatePayload else {
@@ -1732,8 +1861,8 @@ private enum SlotLayout {
     static func readerControls(for region: SlotRegion) -> [PlayerComplication] {
         if isTextOnly(region) { return [] }
         return [
-            .chapters, .bookmarks, .search, .textSettings, .sleepTimer, .mirror,
-            .scrollMode, .freeBrowseLock, .orientationLock,
+            .chapters, .bookmarks, .readingTimeline, .search, .textSettings, .sleepTimer,
+            .mirror, .scrollMode, .freeBrowseLock, .orientationLock,
         ]
     }
 
@@ -1789,4 +1918,21 @@ private func encodeReaderJSON<T: Encodable>(_ value: T) throws -> String {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys]
     return String(decoding: try encoder.encode(value), as: UTF8.self)
+}
+
+private struct AndroidReadingTimeline: Encodable {
+    let visits: [AndroidReadingVisit]
+}
+
+private struct AndroidReadingVisit: Encodable {
+    let id: String
+    let startedAt: Double
+    let endedAt: Double
+    let startDescription: String
+    let endDescription: String
+    let startProgression: Double?
+    let endProgression: Double?
+    let source: String
+    let endText: String?
+    let chapterTitle: String?
 }

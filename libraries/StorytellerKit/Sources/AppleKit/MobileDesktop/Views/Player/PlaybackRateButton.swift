@@ -13,6 +13,7 @@ public struct PlaybackRateButton: View {
     private let compactLabel: Bool
     private let iconFont: Font
     private let textButton: Bool
+    private let nativeToolbar: Bool
 
     @State private var showSpeedPicker = false
     @State private var sliderValue: Double = 1.0
@@ -31,6 +32,7 @@ public struct PlaybackRateButton: View {
         compactLabel: Bool = false,
         iconFont: Font = .callout.weight(.semibold),
         textButton: Bool = false,
+        nativeToolbar: Bool = false,
     ) {
         self.currentRate = currentRate
         self.onRateChange = onRateChange
@@ -43,6 +45,7 @@ public struct PlaybackRateButton: View {
         self.compactLabel = compactLabel
         self.iconFont = iconFont
         self.textButton = textButton
+        self.nativeToolbar = nativeToolbar
     }
 
     @ViewBuilder
@@ -86,14 +89,31 @@ public struct PlaybackRateButton: View {
                 speedSheet
             }
             #else
-            Button(action: {
-                sliderValue = currentRate
-                textFieldValue = formatRate(currentRate)
-                showSpeedPicker = true
-            }) {
-                buttonLabel
+            Group {
+                if nativeToolbar {
+                    Button(action: {
+                        sliderValue = currentRate
+                        textFieldValue = formatRate(currentRate)
+                        showSpeedPicker = true
+                    }) {
+                        if textButton {
+                            Text(playbackRateDescription)
+                                .monospacedDigit()
+                        } else {
+                            Image(systemName: "speedometer")
+                        }
+                    }
+                } else {
+                    Button(action: {
+                        sliderValue = currentRate
+                        textFieldValue = formatRate(currentRate)
+                        showSpeedPicker = true
+                    }) {
+                        buttonLabel
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .buttonStyle(.plain)
             .popover(isPresented: $showSpeedPicker) {
                 speedPickerContent
                     .frame(width: 340)
