@@ -239,6 +239,9 @@ public actor ProgressUploadManager {
         }
     }
 
+    #if os(Windows)
+    @_optimize(none)
+    #endif
     private func outstandingTasks() async -> [URLSessionTask] {
         await withCheckedContinuation {
             (continuation: CheckedContinuation<[URLSessionTask], Never>) in

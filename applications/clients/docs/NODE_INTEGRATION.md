@@ -1,6 +1,6 @@
 # Node Integration
 
-`StorytellerNode` is a [Node-API](https://nodejs.org/api/n-api.html) addon: a
+`StorytellerNodeKit` is a [Node-API](https://nodejs.org/api/n-api.html) addon: a
 Node process can `require()` it and search book metadata (Audnexus, Hardcover)
 and cover art (Apple, Hardcover) through one API, without knowing anything about
 the providers behind it.
@@ -11,15 +11,15 @@ the providers behind it.
 scripts/nodebuild
 ```
 
-That builds the addon and writes it to `.build/StorytellerNode.node`. It builds
-release by default; pass `--debug` for a faster iteration loop, and anything
-after the flags goes to `swift build`. The equivalent by hand is
-`swift build -c release --product StorytellerNode`, on macOS or Linux.
+That builds the addon and writes it to `.build/StorytellerNodeKit.node`. It
+builds release by default; pass `--debug` for a faster iteration loop, and
+anything after the flags goes to `swift build`. The equivalent by hand is
+`swift build -c release --product StorytellerNodeKit`, on macOS or Linux.
 
 Check a build with:
 
 ```sh
-node -e 'require("./.build/StorytellerNode.node").coverSearch(JSON.stringify({title:"project hail mary"})).then(r => console.log(JSON.parse(r).length, "covers"))'
+node -e 'require("./.build/StorytellerNodeKit.node").coverSearch(JSON.stringify({title:"project hail mary"})).then(r => console.log(JSON.parse(r).length, "covers"))'
 ```
 
 ## Usage Overview
@@ -28,7 +28,7 @@ Start by `require`ing the built file, then (optionally) hand it your provider
 keys once at startup:
 
 ```js
-const storyteller = require("./.build/StorytellerNode.node")
+const storyteller = require("./.build/StorytellerNodeKit.node")
 
 await storyteller.configure(
   JSON.stringify({ tokens: { hardcover: process.env.HARDCOVER_TOKEN } }),

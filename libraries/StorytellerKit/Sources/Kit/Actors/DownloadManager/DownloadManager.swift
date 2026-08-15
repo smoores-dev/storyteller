@@ -73,6 +73,9 @@ public actor DownloadManager {
         startRetryLoop()
     }
 
+    #if os(Windows)
+    @_optimize(none)
+    #endif
     private func reconnectOutstandingTasks() async {
         let tasks = await withCheckedContinuation {
             (continuation: CheckedContinuation<[URLSessionDownloadTask], Never>) in
@@ -198,6 +201,9 @@ public actor DownloadManager {
         await beginDownloadTask(for: record, book: book)
     }
 
+    #if os(Windows)
+    @_optimize(none)
+    #endif
     public func pauseDownload(for bookID: BookID, category: LocalMediaCategory) async {
         await ensureInitialized()
 

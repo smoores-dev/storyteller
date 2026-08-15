@@ -23,6 +23,7 @@ COPY libraries/path/package.json ./libraries/path/package.json
 COPY libraries/audiobook/package.json ./libraries/audiobook/package.json
 COPY libraries/ghost-story/package.json ./libraries/ghost-story/package.json
 COPY libraries/opds/package.json ./libraries/opds/package.json
+COPY libraries/nodekit/package.json ./libraries/nodekit/package.json
 COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 
@@ -70,7 +71,7 @@ FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BAS
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu \
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN  (userdel -r ubuntu || true) \
@@ -115,6 +116,7 @@ COPY --from=builder /app/node_modules/@parcel ./.next/standalone/node_modules/@p
 # require.resolve("kuromoji") at runtime to locate its dict/ directory, so the
 # package must exist on disk in a location reachable from web/work-dist/.
 COPY --from=builder /app/node_modules/kuromoji ./.next/standalone/node_modules/kuromoji
+
 
 # Copy pre-installed whisper binaries and models from builder
 COPY --from=builder --chown=storyteller:storyteller /root/.local/share/ghost-story /home/storyteller/.local/share/ghost-story

@@ -524,11 +524,11 @@ public actor StorytellerActor {
 
         let task = Task {
             defer { authenticationTask = nil }
-            let authStart = CFAbsoluteTimeGetCurrent()
+            let authStart = Date().timeIntervalSinceReferenceDate
             let authHost = apiBaseURL.host ?? "?"
             debugLog("[ConnDiag] authenticate start host=\(authHost)")
             defer {
-                let authElapsed = (CFAbsoluteTimeGetCurrent() - authStart) * 1000
+                let authElapsed = (Date().timeIntervalSinceReferenceDate - authStart) * 1000
                 debugLog(
                     "[ConnDiag] authenticate finished host=\(authHost) elapsed=\(String(format: "%.0f", authElapsed))ms"
                 )
@@ -4375,7 +4375,7 @@ private final class StorytellerDownloadDelegate: NSObject, URLSessionDownloadDel
         var contentType: String?
         var etag: String?
         var lastModified: String?
-        var lastProgressTime: CFAbsoluteTime = 0
+        var lastProgressTime: TimeInterval = 0
     }
 
     private let stateQueue = DispatchQueue(
@@ -4490,7 +4490,7 @@ private final class StorytellerDownloadDelegate: NSObject, URLSessionDownloadDel
         totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64,
     ) {
-        let now = CFAbsoluteTimeGetCurrent()
+        let now = Date().timeIntervalSinceReferenceDate
         let updateResult = mutateState(for: downloadTask) { state -> (Int64?, String, Bool) in
             if state.expectedBytes == nil, totalBytesExpectedToWrite > 0 {
                 state.expectedBytes = totalBytesExpectedToWrite

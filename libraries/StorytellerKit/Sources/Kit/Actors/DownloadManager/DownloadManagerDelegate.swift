@@ -10,7 +10,7 @@ import FoundationNetworking
 final class DownloadManagerDelegate: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let queue = DispatchQueue(label: "dev.smoores.storyteller.download-manager-delegate")
     private var taskToDownloadId: [Int: String] = [:]
-    private var lastProgressTime: [Int: CFAbsoluteTime] = [:]
+    private var lastProgressTime: [Int: TimeInterval] = [:]
 
     func registerTask(_ task: URLSessionDownloadTask, downloadId: String) {
         queue.sync {
@@ -40,7 +40,7 @@ final class DownloadManagerDelegate: NSObject, URLSessionDownloadDelegate, @unch
     ) {
         guard let id = downloadId(for: downloadTask) else { return }
 
-        let now = CFAbsoluteTimeGetCurrent()
+        let now = Date().timeIntervalSinceReferenceDate
         let shouldEmit: Bool = queue.sync {
             let last = lastProgressTime[downloadTask.taskIdentifier] ?? 0
             if now - last >= 0.1 {

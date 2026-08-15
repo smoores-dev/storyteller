@@ -48,6 +48,8 @@ const nextConfig = {
     "@storyteller-platform/fs",
     "@storyteller-platform/path",
     "@storyteller-platform/audiobook",
+    // TODO: re-enable when nodekit is published
+    // "@storyteller-platform/nodekit",
     "@t3-oss/env-nextjs",
     "@t3-oss/env-core",
   ],

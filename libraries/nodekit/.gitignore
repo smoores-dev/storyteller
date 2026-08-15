@@ -1,0 +1,8 @@
+*.node
+npm/
+artifacts/
+node_modules/
+dist/*
+.pack-local/
+
+gen/README.md

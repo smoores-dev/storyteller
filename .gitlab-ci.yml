@@ -16,3 +16,4 @@ include:
   - local: ".gitlab/ci/publish-mobile.yml"
   - local: ".gitlab/ci/whisper-build.yml"
   - local: ".gitlab/ci/clients.yml"
+  - local: ".gitlab/ci/nodekit.yml"

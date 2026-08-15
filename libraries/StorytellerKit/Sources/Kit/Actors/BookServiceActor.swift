@@ -561,7 +561,7 @@ public actor BookServiceActor {
         var metadata: [BookMetadata] = []
         var sawSource = false
 
-        let loopStart = CFAbsoluteTimeGetCurrent()
+        let loopStart = Date().timeIntervalSinceReferenceDate
         debugLog(
             "[ConnDiag] fetchLibraryInformation: serial loop over \(sourceRecords.count) sources start"
         )
@@ -569,9 +569,9 @@ public actor BookServiceActor {
             guard let source = sourcesByID[record.id] else { continue }
             sawSource = true
 
-            let sourceStart = CFAbsoluteTimeGetCurrent()
+            let sourceStart = Date().timeIntervalSinceReferenceDate
             let sourceMetadataOptional = await source.fetchLibraryInformation()
-            let sourceElapsed = (CFAbsoluteTimeGetCurrent() - sourceStart) * 1000
+            let sourceElapsed = (Date().timeIntervalSinceReferenceDate - sourceStart) * 1000
             debugLog(
                 "[ConnDiag] fetchLibraryInformation: source='\(record.name)' kind=\(record.kind) elapsed=\(String(format: "%.0f", sourceElapsed))ms books=\(sourceMetadataOptional?.count ?? -1)"
             )
@@ -593,7 +593,7 @@ public actor BookServiceActor {
             }
         }
 
-        let loopElapsed = (CFAbsoluteTimeGetCurrent() - loopStart) * 1000
+        let loopElapsed = (Date().timeIntervalSinceReferenceDate - loopStart) * 1000
         debugLog(
             "[ConnDiag] fetchLibraryInformation: serial loop done total=\(String(format: "%.0f", loopElapsed))ms books=\(metadata.count)"
         )

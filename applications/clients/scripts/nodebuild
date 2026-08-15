@@ -10,8 +10,14 @@ usage() {
     cat <<'EOF'
 Usage: scripts/nodebuild [--debug] [swift build options]
 
-Builds the StorytellerNode addon and copies it to .build/StorytellerNode.node, the
-form Node's require() expects.
+Builds the StorytellerNodeKit product and copies it to
+libraries/nodekit/nodekit.<platform>.node, the form the nodekit loader expects.
+
+Also creates a .build/StorytellerNodeKit.node symlink, one of the fallback
+paths resolveAddonPath() checks.
+
+Verify the result with:
+  NAPI_TARGET=<target> node libraries/nodekit/scripts/load-test.mjs
 
 Options:
   -h, --help     Show this help.
@@ -37,16 +43,55 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-swift build -c "${CONFIGURATION}" --product StorytellerNode "$@"
+if [[ "$(uname -s)" == "Darwin" && "${DEVELOPER_DIR:-}" == /nix/store/* ]]; then
+    SYSTEM_DEVELOPER_DIR="$(env -u DEVELOPER_DIR xcode-select -p 2>/dev/null || true)"
+    if [[ -n "${SYSTEM_DEVELOPER_DIR}" && -d "${SYSTEM_DEVELOPER_DIR}" ]]; then
+        echo "Ignoring nix DEVELOPER_DIR, using ${SYSTEM_DEVELOPER_DIR}"
+        export DEVELOPER_DIR="${SYSTEM_DEVELOPER_DIR}"
+        unset SDKROOT
+    else
+        echo "warning: DEVELOPER_DIR points at a nix SDK and no Xcode was found;" >&2
+        echo "         swift build may fail on missing Sendable annotations" >&2
+    fi
+fi
+
+swift build -c "${CONFIGURATION}" --product StorytellerNodeKit "$@"
+
+# determine the napi-rs platform suffix
+ARCH="$(uname -m)"
+case "${ARCH}" in
+    arm64 | aarch64) NAPI_ARCH="arm64" ;;
+    x86_64) NAPI_ARCH="x64" ;;
+    *) echo "Unknown architecture: ${ARCH}" >&2; exit 1 ;;
+esac
+
+case "$(uname -s)" in
+    Darwin) NAPI_PLATFORM="darwin-${NAPI_ARCH}" ;;
+    Linux) NAPI_PLATFORM="linux-${NAPI_ARCH}-gnu" ;;
+    *) echo "Unknown OS: $(uname -s)" >&2; exit 1 ;;
+esac
 
 BUILT="$(swift build -c "${CONFIGURATION}" --show-bin-path)"
-for candidate in libStorytellerNode.dylib libStorytellerNode.so; do
+DEST="libraries/nodekit/nodekit.${NAPI_PLATFORM}.node"
+
+for candidate in libStorytellerNodeKit.dylib libStorytellerNodeKit.so; do
     if [[ -f "${BUILT}/${candidate}" ]]; then
-        cp "${BUILT}/${candidate}" .build/StorytellerNode.node
-        echo "Wrote .build/StorytellerNode.node"
+        cp "${BUILT}/${candidate}" "${DEST}"
+
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            codesign -f -s - "${DEST}" >/dev/null 2>&1 ||
+                echo "warning: could not re-sign ${DEST}" >&2
+        fi
+
+        echo "Wrote ${DEST}"
+
+        # legacy path for the load test and backwards compat
+        mkdir -p .build
+        ln -sf "$(pwd)/${DEST}" .build/StorytellerNodeKit.node
+
         exit 0
     fi
 done
 
-echo "No StorytellerNode library found in ${BUILT}" >&2
+echo "No StorytellerNodeKit library found in ${BUILT}" >&2
 exit 1

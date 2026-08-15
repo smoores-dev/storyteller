@@ -133,9 +133,9 @@ Optional products sit beside the core and Apple package:
   implements the local content-server integration.
 - [`StorytellerReadaloud`](../../libraries/StorytellerKit/Sources/Readaloud)
   implements readaloud alignment.
-- [`StorytellerNode`](../../libraries/StorytellerKit/Sources/Node) is a dynamic
-  library that exposes the metadata and cover lookups to Node.js as a Node-API
-  addon. See [`docs/NODE_INTEGRATION.md`](./docs/NODE_INTEGRATION.md).
+- [`StorytellerNodeKit`](../../libraries/StorytellerKit/Sources/NodeKit) is a
+  dynamic library that exposes the metadata and cover lookups to Node.js as a
+  Node-API addon. See [`docs/NODE_INTEGRATION.md`](./docs/NODE_INTEGRATION.md).
 
 ## Apps
 

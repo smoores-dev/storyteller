@@ -1,0 +1,18 @@
+{
+  "extends": ["@tsconfig/strictest/tsconfig.json"],
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "incremental": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "lib": ["esnext"],
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts"]
+}

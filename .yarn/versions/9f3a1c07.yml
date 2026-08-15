@@ -1,0 +1,5 @@
+releases:
+  "@storyteller-platform/nodekit": minor
+
+declined:
+  - "@storyteller-platform/web"

@@ -36,6 +36,9 @@
     },
     {
       "path": "libraries/mapping"
+    },
+    {
+      "path": "libraries/nodekit"
     }
   ]
 }

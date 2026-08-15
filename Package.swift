@@ -15,7 +15,7 @@ let package = Package(
         .library(name: "StorytellerContentServer", targets: ["StorytellerContentServer"]),
         .library(name: "StorytellerAppleWidgets", targets: ["StorytellerAppleWidgets"]),
         .library(name: "StorytellerReadaloud", targets: ["StorytellerReadaloud"]),
-        .library(name: "StorytellerNode", type: .dynamic, targets: ["StorytellerNode"]),
+        .library(name: "StorytellerNodeKit", type: .dynamic, targets: ["StorytellerNodeKit"]),
     ],
     dependencies: [
         // Fork pinned past 0.9.20: upstream's development branch gained Android
@@ -88,13 +88,13 @@ let package = Package(
             path: "libraries/StorytellerKit/Sources/Readaloud",
         ),
         .target(
-            name: "StorytellerNode",
+            name: "StorytellerNodeKit",
             dependencies: [
                 "StorytellerKit",
                 .product(name: "NodeAPI", package: "node-swift"),
                 .product(name: "NodeModuleSupport", package: "node-swift"),
             ],
-            path: "libraries/StorytellerKit/Sources/Node",
+            path: "libraries/StorytellerKit/Sources/NodeKit",
             linkerSettings: [
                 // The napi_* symbols are supplied by the host node binary at dlopen time, so
                 // they stay undefined in the addon. Mach-O rejects that unless told otherwise;

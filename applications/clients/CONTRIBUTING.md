@@ -52,7 +52,7 @@ client codebase.
 
 ## Building the Node Addon
 
-`scripts/nodebuild` builds the `StorytellerNode` addon on macOS or Linux. See
+`scripts/nodebuild` builds the `StorytellerNodeKit` addon on macOS or Linux. See
 [docs/NODE_INTEGRATION.md](docs/NODE_INTEGRATION.md) for the exports it provides
 and what a consumer needs at runtime.
 

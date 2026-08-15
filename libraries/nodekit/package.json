@@ -1,0 +1,89 @@
+{
+  "name": "@storyteller-platform/nodekit",
+  "version": "0.1.0",
+  "description": "Cross-platform native loader and typed wrapper for StorytellerNodeKit",
+  "license": "MIT",
+  "type": "module",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "default": "./src/types.ts"
+    }
+  },
+  "napi": {
+    "binaryName": "nodekit",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
+  },
+  "files": [
+    "dist/"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      },
+      "./types": {
+        "import": {
+          "types": "./dist/types.d.ts",
+          "default": "./dist/types.js"
+        },
+        "require": {
+          "types": "./dist/types.d.cts",
+          "default": "./dist/types.cjs"
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.2.0",
+    "@storyteller-platform/eslint": "workspace:*",
+    "@storyteller-platform/tsup": "workspace:^",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/node": "^24.0.0",
+    "eslint": "^8.0.0",
+    "markdown-toc": "^1.2.0",
+    "remark-toc": "^9.0.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.2",
+    "typedoc": "^0.28.13",
+    "typedoc-plugin-markdown": "^4.6.3",
+    "typedoc-plugin-remark": "^1.2.0",
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "tsup",
+    "build:native": "../../applications/clients/scripts/nodebuild",
+    "build:native:debug": "../../applications/clients/scripts/nodebuild --debug",
+    "load-test": "node scripts/load-test.mjs",
+    "pack-local": "node scripts/pack-local.mjs",
+    "prepack": "yarn build",
+    "prepublish": "napi prepublish -t npm",
+    "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
+    "readme:api": "typedoc",
+    "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
+    "test": "tsx -C @storyteller --test \"src/**/*.test.ts\"",
+    "test:watch": "tsx -C @storyteller --test --watch \"src/**/*.test.ts\""
+  }
+}
