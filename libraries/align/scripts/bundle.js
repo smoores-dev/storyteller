@@ -99,14 +99,15 @@ module.exports = function requireBinding() {
           }
         })
 
-        build.onLoad(
-          { filter: /\.node$/, namespace: "native-addon" },
-          (args) => {
-            const assetName = `${basename(args.path, ".node")}-${randomUUID()}.node`
-            discoveredAssets.set(assetName, args.path)
-            return {
-              loader: "js",
-              contents: `
+        const handleNodeFile = (args) => {
+          const absPath = isAbsolute(args.path)
+            ? args.path
+            : resolve(args.resolveDir || process.cwd(), args.path)
+          const assetName = `${basename(absPath, ".node")}-${randomUUID()}.node`
+          discoveredAssets.set(assetName, absPath)
+          return {
+            loader: "js",
+            contents: `
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -122,9 +123,19 @@ const mod = { exports: {} };
 process.dlopen(mod, tmpPath);
 module.exports = mod.exports;
             `,
-            }
-          },
+          }
+        }
+
+        build.onLoad(
+          { filter: /\.node$/, namespace: "native-addon" },
+          handleNodeFile,
         )
+
+        // Catch .node files that esbuild resolves dynamically (e.g. from
+        // template-literal requires in onnxruntime-node). These bypass
+        // onResolve entirely and are routed straight to onLoad with the
+        // default namespace, so we register a namespace-free handler.
+        build.onLoad({ filter: /\.node$/ }, handleNodeFile)
       },
     },
   ],
