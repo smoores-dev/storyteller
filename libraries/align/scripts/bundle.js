@@ -159,6 +159,15 @@ for (const [assetName, fileName] of siblingLibs) {
   }
 }
 
+// Add the temp directory to the dynamic linker search path so that
+// shared library dependencies (e.g. libvips-cpp.dylib, libonnxruntime.so)
+// can be found at dlopen time.
+const sep = process.platform === 'win32' ? ';' : ':';
+const ldPath = process.platform === 'win32' ? 'PATH' :
+  process.platform === 'darwin' ? 'DYLD_LIBRARY_PATH' : 'LD_LIBRARY_PATH';
+const existing = process.env[ldPath] || '';
+process.env[ldPath] = existing ? existing + sep + tmpDir : tmpDir;
+
 const mod = { exports: {} };
 process.dlopen(mod, tmpPath);
 module.exports = mod.exports;
@@ -288,6 +297,15 @@ for (const [assetName, fileName] of siblingLibs) {
     fs.writeFileSync(libPath, new Uint8Array(getRawAsset(assetName)));
   }
 }
+
+// Add the temp directory to the dynamic linker search path so that
+// shared library dependencies (e.g. libvips-cpp.dylib) can be found
+// at dlopen time.
+const sep = process.platform === 'win32' ? ';' : ':';
+const ldPath = process.platform === 'win32' ? 'PATH' :
+  process.platform === 'darwin' ? 'DYLD_LIBRARY_PATH' : 'LD_LIBRARY_PATH';
+const existing = process.env[ldPath] || '';
+process.env[ldPath] = existing ? existing + sep + tmpDir : tmpDir;
 
 const mod = { exports: {} };
 process.dlopen(mod, tmpPath);
