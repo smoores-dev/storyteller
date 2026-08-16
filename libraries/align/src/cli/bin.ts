@@ -7,6 +7,7 @@ import { basename, join } from "node:path"
 
 import {
   constant,
+  flag,
   group,
   integer,
   merge,
@@ -25,6 +26,7 @@ import { Epub } from "@storyteller-platform/epub"
 
 import packageJson from "../../package.json" with { type: "json" }
 import { align } from "../align/align.ts"
+import { ctcAlign } from "../align/ctc/align.ts"
 import { alignCommand, alignParser } from "../align/parse.ts"
 import { createLogger } from "../common/logging.ts"
 import {
@@ -34,10 +36,13 @@ import {
   loggingParser,
   removeNcxParser,
 } from "../common/parse.ts"
+import { emit } from "../emit/emit.ts"
+import { emitCommand, emitParser } from "../emit/parse.ts"
 import { markup } from "../markup/markup.ts"
 import { markupCommand } from "../markup/parse.ts"
 import { processCommand, processParser } from "../process/parse.ts"
 import { processAudiobook } from "../process/processAudiobook.ts"
+import { snapshotCtcAlignment } from "../snapshot/ctc/snapshot.ts"
 import { snapshotCommand } from "../snapshot/parse.ts"
 import { snapshotAlignment } from "../snapshot/snapshot.ts"
 import { transcribeCommand, transcribeParser } from "../transcribe/parse.ts"
@@ -50,9 +55,6 @@ const pipelineCommand = merge(
     action: constant("pipeline"),
     processedAudio: optional(
       option("--processed-audio", path({ type: "directory" })),
-    ),
-    transcriptions: optional(
-      option("--transcriptions", path({ type: "directory" })),
     ),
     markedup: optional(
       option("--markedup", path({ type: "file", extensions: [".epub"] })),
@@ -68,7 +70,25 @@ const pipelineCommand = merge(
     output: option("--output", path({ type: "file", extensions: [".epub"] })),
   }),
   processParser,
-  group("Transcription", transcribeParser),
+  or(
+    merge(
+      object({
+        ctc: flag("--ctc", {
+          description: message`Use CTC emissions instead of transcriptions for alignment`,
+        }),
+        emissions: optional(option("--emissions", path({ type: "directory" }))),
+      }),
+      emitParser,
+    ),
+    merge(
+      group("Transcription", transcribeParser),
+      object({
+        transcriptions: optional(
+          option("--transcriptions", path({ type: "directory" })),
+        ),
+      }),
+    ),
+  ),
   autoUpgradeParser,
   removeNcxParser,
   granularityParser,
@@ -80,6 +100,7 @@ const pipelineCommand = merge(
 const parser = or(
   processCommand,
   transcribeCommand,
+  emitCommand,
   upgradeEpubCommand,
   markupCommand,
   alignCommand,
@@ -185,6 +206,11 @@ async function main() {
       break
     }
 
+    case "emit": {
+      await emit(parsed.input, parsed.output, parsed)
+      break
+    }
+
     case "upgrade-epub": {
       await upgradeEpub(parsed.input, parsed.output, {
         removeNcx: parsed.removeNcx,
@@ -235,29 +261,56 @@ async function main() {
         await upgradeEpub(parsed.epub, input, { removeNcx: parsed.removeNcx })
       }
 
-      const timing = await align(
-        input,
-        parsed.output,
-        parsed.transcriptions,
-        parsed.audiobook,
-        {
-          granularity: parsed.granularity,
-          textRef: parsed.textRef,
-          outFormat: parsed.outFormat,
-          primaryLocale: parsed.language,
-          reportsPath: parsed.reports,
-          logger,
-          ...(!parsed.noProgress &&
-            parsed.logLevel === "silent" && {
-              onProgress: (progress) => {
-                progressBar.update(Math.floor(progress * 100))
-              },
-            }),
-        },
-      )
+      if ("ctc" in parsed) {
+        const timing = await ctcAlign(
+          input,
+          parsed.output,
+          parsed.emissions,
+          parsed.audiobook,
+          {
+            granularity: parsed.granularity,
+            textRef: parsed.textRef,
+            outFormat: parsed.outFormat,
+            primaryLocale: parsed.language,
+            reportsPath: parsed.reports,
+            logger,
+            ...(!parsed.noProgress &&
+              parsed.logLevel === "silent" && {
+                onProgress: (progress) => {
+                  progressBar.update(Math.floor(progress * 100))
+                },
+              }),
+          },
+        )
 
-      if (parsed.time) {
-        timing.print("Align EPUB and audiobook")
+        if (parsed.time) {
+          timing.print("Align EPUB and audiobook")
+        }
+      } else {
+        const timing = await align(
+          input,
+          parsed.output,
+          parsed.transcriptions,
+          parsed.audiobook,
+          {
+            granularity: parsed.granularity,
+            textRef: parsed.textRef,
+            outFormat: parsed.outFormat,
+            primaryLocale: parsed.language,
+            reportsPath: parsed.reports,
+            logger,
+            ...(!parsed.noProgress &&
+              parsed.logLevel === "silent" && {
+                onProgress: (progress) => {
+                  progressBar.update(Math.floor(progress * 100))
+                },
+              }),
+          },
+        )
+
+        if (parsed.time) {
+          timing.print("Align EPUB and audiobook")
+        }
       }
 
       break
@@ -328,23 +381,21 @@ async function main() {
 
       startProgressBar()
 
-      const transcriptions =
-        parsed.transcriptions ??
-        join(os.tmpdir(), `stalign-transcriptions-${randomUUID()}`)
+      let emissions!: string
+      let transcriptions!: string
+      if ("ctc" in parsed) {
+        emissions =
+          parsed.emissions ??
+          join(os.tmpdir(), `stalign-emissions-${randomUUID()}`)
 
-      if (!parsed.transcriptions) {
-        stack.defer(() => {
-          rmSync(transcriptions, { recursive: true, force: true })
-        })
-      }
+        if (!parsed.emissions) {
+          stack.defer(() => {
+            rmSync(emissions, { recursive: true, force: true })
+          })
+        }
 
-      const transcribeTiming = await transcribe(
-        processedAudio,
-        transcriptions,
-        primaryLocale,
-        {
+        const transcribeTiming = await emit(processedAudio, emissions, {
           ...parsed,
-          parallelism: parsed.parallelTranscribes,
           signal: controller.signal,
           logger,
           ...(!parsed.noProgress &&
@@ -353,17 +404,55 @@ async function main() {
                 progressBar.update(Math.floor(progress * 100))
               },
             }),
-        },
-      )
+        })
 
-      resetProgressBar()
+        resetProgressBar()
 
-      logger.info(
-        `Transcribing audiobook complete, transcriptions saved to ${transcriptions}.`,
-      )
+        logger.info(
+          `Generating emissions for audiobook complete, emissions saved to ${emissions}.`,
+        )
 
-      if (parsed.time) {
-        transcribeTiming.print()
+        if (parsed.time) {
+          transcribeTiming.print()
+        }
+      } else {
+        transcriptions =
+          parsed.transcriptions ??
+          join(os.tmpdir(), `stalign-transcriptions-${randomUUID()}`)
+
+        if (!parsed.transcriptions) {
+          stack.defer(() => {
+            rmSync(transcriptions, { recursive: true, force: true })
+          })
+        }
+
+        const transcribeTiming = await transcribe(
+          processedAudio,
+          transcriptions,
+          primaryLocale,
+          {
+            ...parsed,
+            parallelism: parsed.parallelTranscribes,
+            signal: controller.signal,
+            logger,
+            ...(!parsed.noProgress &&
+              parsed.logLevel === "silent" && {
+                onProgress: (progress) => {
+                  progressBar.update(Math.floor(progress * 100))
+                },
+              }),
+          },
+        )
+
+        resetProgressBar()
+
+        logger.info(
+          `Transcribing audiobook complete, transcriptions saved to ${transcriptions}.`,
+        )
+
+        if (parsed.time) {
+          transcribeTiming.print()
+        }
       }
 
       const markedup =
@@ -410,39 +499,82 @@ async function main() {
 
       startProgressBar()
 
-      const alignTiming = await align(
-        markedup,
-        parsed.output,
-        transcriptions,
-        processedAudio,
-        {
-          granularity: parsed.granularity,
-          textRef: parsed.textRef,
-          outFormat: parsed.outFormat,
-          primaryLocale,
-          reportsPath: parsed.reports,
-          logger,
-          ...(!parsed.noProgress &&
-            parsed.logLevel === "silent" && {
-              onProgress: (progress) => {
-                progressBar.update(Math.floor(progress * 100))
-              },
-            }),
-        },
-      )
+      if ("ctc" in parsed) {
+        const timing = await ctcAlign(
+          input,
+          parsed.output,
+          emissions,
+          parsed.audiobook,
+          {
+            granularity: parsed.granularity,
+            textRef: parsed.textRef,
+            outFormat: parsed.outFormat,
+            primaryLocale: parsed.language,
+            reportsPath: parsed.reports,
+            logger,
+            ...(!parsed.noProgress &&
+              parsed.logLevel === "silent" && {
+                onProgress: (progress) => {
+                  progressBar.update(Math.floor(progress * 100))
+                },
+              }),
+          },
+        )
 
-      resetProgressBar()
+        resetProgressBar()
 
-      logger.info(`Alignment complete, aligned EPUB saved to ${parsed.output}`)
+        logger.info(
+          `Alignment complete, aligned EPUB saved to ${parsed.output}`,
+        )
 
-      if (parsed.time) {
-        alignTiming.print()
+        if (parsed.time) {
+          timing.print("Align EPUB and audiobook")
+        }
+      } else {
+        const alignTiming = await align(
+          markedup,
+          parsed.output,
+          transcriptions,
+          processedAudio,
+          {
+            granularity: parsed.granularity,
+            textRef: parsed.textRef,
+            outFormat: parsed.outFormat,
+            primaryLocale,
+            reportsPath: parsed.reports,
+            logger,
+            ...(!parsed.noProgress &&
+              parsed.logLevel === "silent" && {
+                onProgress: (progress) => {
+                  progressBar.update(Math.floor(progress * 100))
+                },
+              }),
+          },
+        )
+
+        resetProgressBar()
+
+        logger.info(
+          `Alignment complete, aligned EPUB saved to ${parsed.output}`,
+        )
+
+        if (parsed.time) {
+          alignTiming.print()
+        }
       }
       break
     }
 
     case "snapshot": {
-      await snapshotAlignment(parsed.epub, parsed.transcriptions, parsed.output)
+      if ("ctc" in parsed) {
+        await snapshotCtcAlignment(parsed.epub, parsed.emissions, parsed.output)
+      } else {
+        await snapshotAlignment(
+          parsed.epub,
+          parsed.transcriptions,
+          parsed.output,
+        )
+      }
     }
   }
 }

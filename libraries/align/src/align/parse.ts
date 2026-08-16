@@ -2,11 +2,13 @@ import {
   choice,
   command,
   constant,
+  flag,
   merge,
   message,
   object,
   option,
   optional,
+  or,
   withDefault,
 } from "@optique/core"
 import { path } from "@optique/run/valueparser"
@@ -50,10 +52,6 @@ export const alignCommand = command(
   merge(
     object({
       action: constant("align"),
-      transcriptions: option(
-        "--transcriptions",
-        path({ mustExist: true, type: "directory" }),
-      ),
       output: option(
         "--output",
         // TODO: I think it should be possible to pick the correct
@@ -61,6 +59,23 @@ export const alignCommand = command(
         path({ type: "file", extensions: [".epub", ".gnp"] }),
       ),
     }),
+    or(
+      object({
+        ctc: flag("--ctc", {
+          description: message`Use CTC emissions instead of transcriptions for alignment`,
+        }),
+        emissions: option(
+          "--emissions",
+          path({ mustExist: true, type: "directory" }),
+        ),
+      }),
+      object({
+        transcriptions: option(
+          "--transcriptions",
+          path({ mustExist: true, type: "directory" }),
+        ),
+      }),
+    ),
     alignParser,
     autoUpgradeParser,
     removeNcxParser,
