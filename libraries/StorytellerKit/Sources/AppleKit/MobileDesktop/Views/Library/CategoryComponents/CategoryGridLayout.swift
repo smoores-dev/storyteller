@@ -13,8 +13,15 @@ struct CategoryGridLayout<Header: View, StickyHeader: View, ContextMenu: View>: 
     let contextMenuBuilder: ((CategoryGroup) -> ContextMenu)?
 
     @State private var showStickyControls: Bool = false
+    @State private var filterText: String = ""
 
     private let horizontalPadding: CGFloat = 24
+
+    private var filteredGroups: [CategoryGroup] {
+        let query = filterText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !query.isEmpty else { return groups }
+        return groups.filter { $0.name.lowercased().contains(query) }
+    }
 
     init(
         groups: [CategoryGroup],
@@ -39,6 +46,7 @@ struct CategoryGridLayout<Header: View, StickyHeader: View, ContextMenu: View>: 
     }
 
     private var sortedGroups: [CategoryGroup] {
+        let groups = filteredGroups
         guard sortByCount else { return groups }
         return groups.sorted { lhs, rhs in
             if lhs.books.count != rhs.books.count {
@@ -68,10 +76,22 @@ struct CategoryGridLayout<Header: View, StickyHeader: View, ContextMenu: View>: 
     }
 
     @ViewBuilder
+    private var headerRow: some View {
+        #if os(macOS)
+        ZStack(alignment: .bottomTrailing) {
+            header()
+            CollapsibleSearchField(placeholder: "Filter", searchText: $filterText)
+        }
+        #else
+        header()
+        #endif
+    }
+
+    @ViewBuilder
     private func scrollContent(contentWidth: CGFloat) -> some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 24) {
-                header()
+                headerRow
                     .padding(.horizontal, horizontalPadding)
 
                 let columns = [

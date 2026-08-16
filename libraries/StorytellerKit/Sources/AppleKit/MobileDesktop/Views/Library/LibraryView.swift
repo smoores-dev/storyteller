@@ -24,6 +24,9 @@ public struct LibraryView: View {
 
     // TODO: wire up search
     @State private var searchText: String = ""
+    #if os(macOS)
+    @State private var sidebarFilter: String = ""
+    #endif
     @State private var isSearchFocused: Bool = false
     @State private var selectedItem: SidebarItemDescription? = SidebarItemDescription(
         name: "Dashboard",
@@ -49,12 +52,22 @@ public struct LibraryView: View {
     public var body: some View {
         ZStack {
             NavigationSplitView(columnVisibility: $navigationColumnVisibility) {
+                #if os(macOS)
+                SidebarView(
+                    sections: sections,
+                    selectedItem: $selectedItem,
+                    searchText: $searchText,
+                    isSearchFocused: $isSearchFocused,
+                    sidebarFilter: $sidebarFilter,
+                )
+                #else
                 SidebarView(
                     sections: sections,
                     selectedItem: $selectedItem,
                     searchText: $searchText,
                     isSearchFocused: $isSearchFocused,
                 )
+                #endif
             } detail: {
                 Group {
                     if let selected = selectedItem {
@@ -68,6 +81,8 @@ public struct LibraryView: View {
                     }
                 }
                 #if os(macOS)
+                .environment(\.contentSearchText, $searchText)
+                .environment(\.contentSearchFocus, $isSearchFocused)
                 .tint(
                     Color(hex: mediaViewModel.cachedConfig.library.accentColorHex)
                         ?? .storytellerOrange
@@ -79,7 +94,9 @@ public struct LibraryView: View {
                 )
             }
             #if os(macOS)
-            .onChange(of: mediaViewModel.cachedConfig.library.accentColorHex) { _, newHex in
+            .onChange(of: mediaViewModel.cachedConfig.library.accentColorHex, initial: true) {
+                _,
+                newHex in
                 SidebarSelectionColor.updateColor(hex: newHex)
             }
             .onAppear {

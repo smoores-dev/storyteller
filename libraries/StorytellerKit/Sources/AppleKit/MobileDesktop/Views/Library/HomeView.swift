@@ -74,7 +74,12 @@ struct HomeView: View {
     @AppStorage("coverSize.home") private var coverSizeValue: Double = CoverSizeRange.defaultValue
     @AppStorage("gridSpacing.home") private var gridSpacingRaw: String = GridSpacing
         .defaultValue.rawValue
-    @AppStorage("showAudioIndicator.home") private var showAudioIndicator: Bool = true
+    @AppStorage("showAudioIndicator.home") private var showAudioIndicator: Bool =
+        kDefaultShowAudioIndicator
+    #if os(macOS)
+    @Environment(\.contentSearchText) private var contentSearchText
+    @Environment(\.contentSearchFocus) private var contentSearchFocus
+    #endif
     @AppStorage("showSourceBadge.home") private var showSourceBadge: Bool = false
     @AppStorage("showSeriesPositionBadge.home") private var showSeriesPositionBadge: Bool = false
     @AppStorage("progressStyle.home") private var progressStyleRaw: String = ProgressIndicatorStyle
@@ -217,6 +222,11 @@ struct HomeView: View {
                                 Spacer()
                                 #if os(macOS)
                                 viewOptionsButton
+                                CollapsibleSearchField(
+                                    placeholder: "Search Library",
+                                    searchText: contentSearchText,
+                                    focusRequest: contentSearchFocus,
+                                )
                                 #endif
                             }
                             .padding(.leading, horizontalPadding)
@@ -908,12 +918,19 @@ struct HomeView: View {
         let button = Button {
             showViewOptions.toggle()
         } label: {
+            #if os(macOS)
+            Label("View Options", systemImage: LibraryBarIcon.viewOptions)
+            #else
             Label("View Options", systemImage: "ellipsis.circle")
+            #endif
         }
         #if os(macOS)
-        button.popover(isPresented: $showViewOptions) {
-            viewOptionsPopoverContent
-        }
+        button
+            .libraryBarButton()
+            .help("View options")
+            .popover(isPresented: $showViewOptions) {
+                viewOptionsPopoverContent
+            }
         #else
         if isPad {
             button.popover(isPresented: $showViewOptions) {

@@ -133,7 +133,7 @@ public enum SMILParser {
         return Double(trimmed)
     }
 
-    private static func findOPFPath(in archive: Archive) throws -> String {
+    static func findOPFPath(in archive: Archive) throws -> String {
         let containerPath = "META-INF/container.xml"
         let containerData = try extractFile(from: archive, path: containerPath)
 
@@ -147,7 +147,7 @@ public enum SMILParser {
         return opfPath
     }
 
-    private static func extractFile(from archive: Archive, path: String) throws -> Data {
+    static func extractFile(from archive: Archive, path: String) throws -> Data {
         guard let entry = archive[path] else {
             throw SMILParserError.fileNotFoundInArchive(path)
         }
@@ -172,7 +172,7 @@ public enum SMILParser {
         let mediaOverlay: String?
     }
 
-    private static func parseOPF(_ data: Data) throws -> (
+    static func parseOPF(_ data: Data) throws -> (
         manifest: [String: ManifestItem], spine: [SpineItem]
     ) {
         let delegate = OPFXMLDelegate()
@@ -297,7 +297,7 @@ public enum SMILParser {
         }
     }
 
-    private static func resolvePath(_ path: String, relativeTo base: String) -> String {
+    static func resolvePath(_ path: String, relativeTo base: String) -> String {
         if path.hasPrefix("/") || path.hasPrefix("http") {
             return path
         }
@@ -308,7 +308,7 @@ public enum SMILParser {
         return normalizePath(combined)
     }
 
-    private static func normalizePath(_ path: String) -> String {
+    static func normalizePath(_ path: String) -> String {
         var components: [String] = []
         for component in path.components(separatedBy: "/") {
             if component == ".." {

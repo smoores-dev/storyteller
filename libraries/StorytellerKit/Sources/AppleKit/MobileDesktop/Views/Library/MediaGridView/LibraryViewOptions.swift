@@ -62,7 +62,7 @@ struct LibraryViewOptions<Header: View, Footer: View>: View {
                 coverPrefRaw = CoverPreference.storytellerDouble.rawValue
                 coverSizeValue = CoverSizeRange.defaultValue
                 gridSpacingRaw = GridSpacing.defaultValue.rawValue
-                showAudioIndicator = true
+                showAudioIndicator = kDefaultShowAudioIndicator
                 showSourceBadge = false
                 showSeriesPositionBadge = false
                 progressStyleRaw = ProgressIndicatorStyle.circle.rawValue

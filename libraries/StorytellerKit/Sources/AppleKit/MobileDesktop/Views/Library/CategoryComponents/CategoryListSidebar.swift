@@ -19,6 +19,8 @@ struct CategoryListSidebar<
     let headerAccessory: AnyView?
     let contextMenuBuilder: ((CategoryGroup) -> ContextMenu)?
 
+    @State private var filterText: String = ""
+
     init(
         sidebarTitle: String,
         groups: [CategoryGroup],
@@ -68,6 +70,11 @@ struct CategoryListSidebar<
             .frame(maxWidth: .infinity, alignment: .leading)
             .font(.callout)
 
+            DebouncedSearchField(
+                placeholder: "Filter \(sidebarTitle)",
+                searchText: $filterText,
+            )
+
             if let headerAccessory {
                 headerAccessory
                     .font(.callout)
@@ -78,7 +85,14 @@ struct CategoryListSidebar<
         .padding(.bottom, 16)
     }
 
+    private var filteredGroups: [CategoryGroup] {
+        let query = filterText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !query.isEmpty else { return groups }
+        return groups.filter { $0.name.lowercased().contains(query) }
+    }
+
     private var sortedGroups: [CategoryGroup] {
+        let groups = filteredGroups
         guard sortByCount else { return groups }
         return groups.sorted { lhs, rhs in
             if lhs.books.count != rhs.books.count {

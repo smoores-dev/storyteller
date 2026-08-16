@@ -18,11 +18,11 @@ struct EbookPlayerToolbar: ToolbarContent {
             Button {
                 withAnimation(.easeInOut) { viewModel.showChapterSidebar.toggle() }
             } label: {
-                Label("Toggle chapters", systemImage: "sidebar.leading")
+                Label("Toggle sidebar", systemImage: "sidebar.leading")
                     .labelStyle(.iconOnly)
                     .symbolVariant(viewModel.showChapterSidebar ? .fill : .none)
             }
-            .help("Toggle chapters")
+            .help("Toggle sidebar")
         }
         ToolbarItem {
             Spacer()

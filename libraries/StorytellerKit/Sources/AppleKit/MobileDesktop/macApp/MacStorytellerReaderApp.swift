@@ -50,6 +50,9 @@ struct StorytellerReaderApp: App {
         #if os(macOS)
         audiobookScene
         ebookScene
+        imageViewerScene
+        chapterReferenceScene
+        highlightEditorScene
         settingsScene
         debugLogScene
         readaloudGeneratorScene
@@ -190,11 +193,51 @@ struct StorytellerReaderApp: App {
 
     private var ebookScene: some Scene {
         WindowGroup("Ebook Reader", id: "EbookPlayer", for: PlayerBookData.self) { bookData in
-            EbookPlayerView(bookData: bookData.wrappedValue)
-                .environment(AppLaunchContext.environment)
+            EbookPlayerView(
+                bookData: bookData.wrappedValue,
+                onSwitchBook: { newData in
+                    bookData.wrappedValue = newData
+                },
+            )
+            .environment(AppLaunchContext.environment)
+            .environment(mediaViewModel)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1228, height: 768)
+        .disableWindowRestoration()
+    }
+
+    private var imageViewerScene: some Scene {
+        WindowGroup("Image", id: "EbookImageViewer", for: ImageViewerRequest.self) { request in
+            ImageViewerWindow(request: request.wrappedValue)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 560, height: 640)
+        .disableWindowRestoration()
+    }
+
+    private var chapterReferenceScene: some Scene {
+        WindowGroup(
+            "Reference",
+            id: "EbookChapterReference",
+            for: ChapterReferenceRequest.self,
+        ) { request in
+            ChapterReferenceWindow(request: request.wrappedValue)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 520, height: 700)
+        .disableWindowRestoration()
+    }
+
+    private var highlightEditorScene: some Scene {
+        WindowGroup(
+            "Highlight",
+            id: "EbookHighlightEditor",
+            for: HighlightEditorRequest.self,
+        ) { request in
+            HighlightEditorWindow(request: request.wrappedValue)
+        }
+        .windowResizability(.contentSize)
         .disableWindowRestoration()
     }
 

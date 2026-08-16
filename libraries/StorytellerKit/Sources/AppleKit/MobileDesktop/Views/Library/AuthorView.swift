@@ -8,6 +8,12 @@ struct AuthorView: View {
     #else
     let searchText: String
     #endif
+
+    #if os(macOS)
+    private var groupFilterText: String { "" }
+    #else
+    private var groupFilterText: String { searchText }
+    #endif
     @Binding var sidebarSections: [SidebarSectionDescription]
     @Binding var selectedSidebarItem: SidebarItemDescription?
     @Binding var showSettings: Bool
@@ -74,8 +80,8 @@ struct AuthorView: View {
     private func filterGroups(_ groups: [(author: BookCreator?, books: [BookMetadata])]) -> [(
         author: BookCreator?, books: [BookMetadata]
     )] {
-        guard !searchText.isEmpty else { return groups }
-        let searchLower = searchText.lowercased()
+        guard !groupFilterText.isEmpty else { return groups }
+        let searchLower = groupFilterText.lowercased()
         return groups.compactMap { group in
             let authorNameMatches = group.author?.name?.lowercased().contains(searchLower) ?? false
             let filteredBooks = group.books.filter { book in

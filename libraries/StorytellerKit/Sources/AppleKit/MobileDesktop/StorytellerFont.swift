@@ -69,6 +69,22 @@ public enum SidebarSelectionColor {
     public static func updateColor(hex: String) {
         let swiftColor = Color(hex: hex) ?? .storytellerOrange
         color = NSColor(swiftColor).withAlphaComponent(0.85)
+        Task { @MainActor in
+            for window in NSApplication.shared.windows {
+                guard let root = window.contentView else { continue }
+                redrawSelectedRows(in: root)
+            }
+        }
+    }
+
+    @MainActor
+    private static func redrawSelectedRows(in view: NSView) {
+        if let row = view as? NSTableRowView, row.isSelected {
+            row.needsDisplay = true
+        }
+        for subview in view.subviews {
+            redrawSelectedRows(in: subview)
+        }
     }
 }
 

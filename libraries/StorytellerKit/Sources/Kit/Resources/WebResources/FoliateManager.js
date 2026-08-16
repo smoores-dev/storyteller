@@ -687,6 +687,32 @@ class FoliateManager {
     this.#view.goTo(href)
   }
 
+  async goToImage(sectionIndex, filename) {
+    debugLog("FoliateManager", `goToImage(${sectionIndex}, ${filename})`)
+    if (!this.#view) {
+      console.warn("[FM2] goToImage() called but view not initialized")
+      return
+    }
+    await this.#view.goToFractionInSection(sectionIndex, 0)
+    const contents = this.#view.renderer?.getContents?.() || []
+    for (const { doc, index } of contents) {
+      if (index !== sectionIndex || !doc) continue
+      for (const img of doc.querySelectorAll("img, image")) {
+        const src =
+          img.getAttribute("src") ||
+          img.getAttribute("xlink:href") ||
+          img.getAttribute("href") ||
+          ""
+        if (src.split("#")[0].split("/").pop() !== filename) continue
+        const range = doc.createRange()
+        range.selectNode(img)
+        const cfi = this.#view.getCFI(index, range)
+        if (cfi) this.#view.goTo(cfi)
+        return
+      }
+    }
+  }
+
   async goToFractionInSection(sectionIndex, fraction) {
     debugLog(
       "FoliateManager",

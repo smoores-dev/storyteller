@@ -89,7 +89,7 @@ public let kDefaultIsManuallyOffline = false
 public let kDefaultAutoSyncToNewerServerPosition = false
 public let kDefaultLiveReadingSyncEnabled = false
 
-public let kDefaultShowAudioIndicator = true
+public let kDefaultShowAudioIndicator = false
 public let kDefaultTabBarSlot1 = "books"
 public let kDefaultTabBarSlot2 = "series"
 public let kDefaultTapToPlayPreferredPlayer = false

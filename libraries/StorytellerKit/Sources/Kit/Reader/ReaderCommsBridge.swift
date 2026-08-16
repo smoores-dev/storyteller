@@ -175,6 +175,22 @@ public final class ReaderCommsBridge {
         _ = try await js.evaluate("window.foliateManager.goTo('\(escapedHref)')")
     }
 
+    /// Swift commands JS to locate an image by filename within a section and navigate to it
+    public func sendJsGoToImageCommand(sectionIndex: Int, filename: String) async throws {
+        guard let js else {
+            throw ReaderCommsBridgeError.jsNotAvailable
+        }
+
+        let escaped = filename.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        debugLog(
+            "[ReaderCommsBridge] sendJsGoToImageCommand(section: \(sectionIndex), filename: \(filename))"
+        )
+        _ = try await js.evaluate(
+            "(function() { window.foliateManager.goToImage(\(sectionIndex), '\(escaped)'); })()"
+        )
+    }
+
     /// Swift commands JS to navigate to a Readium locator (href + optional fragment)
     /// Audio locators (type contains "audio") skip fragment navigation and use totalProgression
     public func sendJsGoToLocatorCommand(locator: BookLocator) async throws {

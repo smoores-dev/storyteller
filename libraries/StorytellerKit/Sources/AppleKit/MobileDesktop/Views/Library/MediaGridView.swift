@@ -358,7 +358,7 @@ struct MediaGridView: View {
             "gridSpacing.\(viewOptionsKey)",
         )
         _showAudioIndicator = AppStorage(
-            wrappedValue: true,
+            wrappedValue: kDefaultShowAudioIndicator,
             "showAudioIndicator.\(viewOptionsKey)",
         )
         _showSourceBadge = AppStorage(wrappedValue: false, "showSourceBadge.\(viewOptionsKey)")
@@ -1088,6 +1088,7 @@ struct MediaGridView: View {
                 availableStatuses: cachedAvailableStatuses,
                 availableSources: mediaViewModel.bookSources,
                 filtersSummaryText: cachedFiltersSummary,
+                searchScopeTitle: title,
                 showLayoutOption: true,
                 showSortOption: false,
                 onAddBook: addBookAction,
@@ -1168,6 +1169,7 @@ struct MediaGridView: View {
             availableStatuses: cachedAvailableStatuses,
             availableSources: mediaViewModel.bookSources,
             filtersSummaryText: cachedFiltersSummary,
+            searchScopeTitle: title,
             showLayoutOption: true,
             onAddBook: addBookAction,
             isSelectModeActive: bulkSelection.isSelecting,

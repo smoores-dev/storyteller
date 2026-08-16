@@ -43,6 +43,7 @@ public struct EbookPlayerView: View {
     @Environment(\.scenePhase) private var scenePhase
     #if os(macOS)
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     @State private var baseContentWidth: CGFloat?
     @State private var isAnimatingRightSidebar = false
     @State private var isAnimatingLeftSidebar = false
@@ -54,11 +55,25 @@ public struct EbookPlayerView: View {
     @State private var sessionStart = Date()
     @State private var customizeCard: CustomizeCard?
     @State private var coverPalette = CoverDerivedPalette.fallback()
+    #if os(macOS)
+    @State private var sidebarModel: EbookSidebarModel
+    #endif
+    private let bookData: PlayerBookData?
     private let onClose: (() -> Void)?
+    private let onSwitchBook: ((PlayerBookData) -> Void)?
 
-    public init(bookData: PlayerBookData?, onClose: (() -> Void)? = nil) {
+    public init(
+        bookData: PlayerBookData?,
+        onClose: (() -> Void)? = nil,
+        onSwitchBook: ((PlayerBookData) -> Void)? = nil,
+    ) {
+        self.bookData = bookData
         self.viewModel = EbookPlayerViewModel(bookData: bookData)
+        #if os(macOS)
+        self._sidebarModel = State(initialValue: EbookSidebarModel(bookID: bookData?.metadata.id))
+        #endif
         self.onClose = onClose
+        self.onSwitchBook = onSwitchBook
     }
 
     public var body: some View {
@@ -202,7 +217,7 @@ public struct EbookPlayerView: View {
         .onAppear {
             viewModel.handleOnAppear()
         }
-        .task(id: colorfulnessKey) {
+        .task(id: "\(colorfulnessKey)-\(viewModel.bookData?.metadata.uuid ?? "")") {
             guard let bookID = viewModel.bookData?.metadata.id else { return }
             if let palette = await CoverDerivedPalette.load(for: bookID) {
                 coverPalette = palette
@@ -288,6 +303,7 @@ public struct EbookPlayerView: View {
                 .frame(minWidth: 520, minHeight: 680)
         }
         #endif
+        #if os(iOS)
         .sheet(
             item: Binding(
                 get: { viewModel.pendingSelection.map { PendingSelectionWrapper(selection: $0) } },
@@ -333,6 +349,36 @@ public struct EbookPlayerView: View {
                 initialNote: highlight.note ?? "",
             )
         }
+        #else
+        .onChange(of: viewModel.pendingSelection?.cfi) { _, cfi in
+            guard let cfi, let bookID = viewModel.bookData?.metadata.id else { return }
+            openWindow(
+                id: "EbookHighlightEditor",
+                value: HighlightEditorRequest(
+                    bookID: bookID,
+                    highlightID: nil,
+                    selectionCfi: cfi,
+                ),
+            )
+        }
+        .onChange(of: viewModel.pendingEditHighlight) { _, highlight in
+            guard let highlight, let bookID = viewModel.bookData?.metadata.id else { return }
+            openWindow(
+                id: "EbookHighlightEditor",
+                value: HighlightEditorRequest(
+                    bookID: bookID,
+                    highlightID: highlight.id,
+                    selectionCfi: nil,
+                ),
+            )
+        }
+        .onChange(of: bookData) { _, newData in
+            switchBook(to: newData)
+        }
+        .task(id: viewModel.session?.originalEbookURL) {
+            await viewModel.buildImageIndexIfNeeded()
+        }
+        #endif
         .alert(
             "Server Has Newer Position",
             isPresented: $viewModel.showServerPositionDialog,
@@ -349,8 +395,8 @@ public struct EbookPlayerView: View {
     }
 
     #if os(macOS)
-    private let leftSidebarWidth: CGFloat = 260
-    private let leftSidebarTotalWidth: CGFloat = 261
+    private let leftSidebarWidth: CGFloat = 300
+    private let leftSidebarTotalWidth: CGFloat = 301
     // Measured title-bar inset: the full-bleed webview otherwise paginates into the
     // 32px hidden behind the title bar, clipping the top line of every page.
     private let readerTopInset: CGFloat = 32
@@ -446,13 +492,45 @@ public struct EbookPlayerView: View {
         coverPalette.resolved(for: colorScheme).contentBackground
     }
 
+    @State private var isSwitchingBook = false
+
+    // In-place swap; re-keying the view deinits WindowFrameAdjuster and jolts the window.
+    private func switchBook(to newData: PlayerBookData?) {
+        guard newData?.metadata.id != viewModel.bookData?.metadata.id else { return }
+        guard !isSwitchingBook else { return }
+        isSwitchingBook = true
+        let oldViewModel = viewModel
+        Task { @MainActor in
+            await oldViewModel.closeForSwitch()
+            sessionStart = Date()
+            coverPalette = CoverDerivedPalette.fallback()
+            sidebarModel.stopObservingVisits()
+            sidebarModel = EbookSidebarModel(bookID: newData?.metadata.id)
+            viewModel = EbookPlayerViewModel(bookData: newData)
+            viewModel.handleOnAppear()
+            isSwitchingBook = false
+        }
+    }
+
     private var chapterSidebar: some View {
-        EbookChapterSidebar(
-            chapters: viewModel.chapterList,
-            selectedChapterId: viewModel.selectedChapterHref,
-            backgroundColor: readerBackgroundColor,
-            onChapterSelected: { chapter in
-                viewModel.handleChapterSelection(chapter)
+        let theme = EbookSidebarTheme(
+            background: readerBackgroundColor,
+            foreground: readerForegroundColor,
+            accent: coverPalette.resolved(for: colorScheme).accent,
+        )
+        return EbookSidebarView(
+            viewModel: viewModel,
+            sidebarModel: sidebarModel,
+            theme: theme,
+            topInset: readerTopInset + 16,
+            quickBookSwitcher: onSwitchBook.map { onSwitch in
+                AnyView(
+                    QuickBookSwitcherStrip(
+                        currentBookID: viewModel.bookData?.metadata.id,
+                        theme: theme,
+                        onSelect: onSwitch,
+                    )
+                )
             },
         )
     }
@@ -585,8 +663,8 @@ public struct EbookPlayerView: View {
                         EbookPlayerWebView(
                             ebookPath: ebookPath,
                             commsBridge: $viewModel.commsBridge,
-                            onBridgeReady: { bridge in
-                                viewModel.installBridgeHandlers(
+                            onBridgeReady: { [weak viewModel] bridge in
+                                viewModel?.installBridgeHandlers(
                                     bridge,
                                     initialColorScheme: colorScheme,
                                 )
@@ -594,6 +672,7 @@ public struct EbookPlayerView: View {
                         )
                     )
                     .padding(.bottom, webViewBottomInset)
+                    .id(viewModel.bookData?.metadata.uuid)
                     #endif
                 } else {
                     ProgressView("Loading book...")

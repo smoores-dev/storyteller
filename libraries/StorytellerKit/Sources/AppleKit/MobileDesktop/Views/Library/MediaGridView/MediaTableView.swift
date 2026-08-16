@@ -2952,10 +2952,11 @@ private struct MediaIndicatorCellContent: View {
     @State private var hoveredType: MediaType?
     @State private var showConnectionAlert = false
 
-    private let iconSize: CGFloat = 20
-    private let smallIconSize: CGFloat = 16
-    private let readaloudSize: CGFloat = 18
-    private let buttonSize: CGFloat = 28
+    private let iconSize: CGFloat = 14
+    private let smallIconSize: CGFloat = 13
+    private let readaloudSize: CGFloat = 15
+    private let buttonSize: CGFloat = 24
+    private let chipRadius: CGFloat = 6
 
     private var hasConnectionError: Bool {
         mediaViewModel.hasConnectionError(forSourceID: item.sourceID)
@@ -3001,12 +3002,19 @@ private struct MediaIndicatorCellContent: View {
         case downloaded
         case downloading(progress: Double?)
 
-        var color: Color {
+        var foreground: Color {
             switch self {
-                case .unavailable: return .gray.opacity(0.3)
-                case .availableNotDownloaded: return .blue
-                case .downloaded: return .green
-                case .downloading: return .blue
+                case .unavailable: return .primary.opacity(0.18)
+                case .availableNotDownloaded: return .secondary
+                case .downloaded, .downloading: return .accentColor
+            }
+        }
+
+        var chipFill: Color {
+            switch self {
+                case .unavailable: return .clear
+                case .availableNotDownloaded: return .primary.opacity(0.06)
+                case .downloaded, .downloading: return .accentColor.opacity(0.14)
             }
         }
     }
@@ -3042,38 +3050,52 @@ private struct MediaIndicatorCellContent: View {
             handleTap(for: type, status: status)
         } label: {
             ZStack {
+                RoundedRectangle(cornerRadius: chipRadius, style: .continuous)
+                    .fill(status.chipFill)
+                    .overlay {
+                        if isHovered && status != .unavailable {
+                            RoundedRectangle(cornerRadius: chipRadius, style: .continuous)
+                                .strokeBorder(status.foreground.opacity(0.35), lineWidth: 1)
+                        }
+                    }
+
                 if case .downloading(let progress) = status {
                     DownloadCancelProgressIcon(
                         progress: progress,
-                        color: status.color,
+                        color: status.foreground,
                         size: iconSize,
-                        lineWidth: 2.5,
+                        lineWidth: 2,
                         showsCancel: isHovered,
                     )
                 } else if isHovered && status == .availableNotDownloaded {
                     if hasConnectionError {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: smallIconSize))
+                            .font(.system(size: smallIconSize, weight: .semibold))
                             .foregroundStyle(.red)
                     } else {
-                        Image(systemName: "arrow.down.circle.fill")
-                            .font(.system(size: iconSize))
+                        Image(systemName: "arrow.down")
+                            .font(.system(size: smallIconSize, weight: .semibold))
+                            .foregroundStyle(status.foreground)
                     }
                 } else if isHovered && status == .downloaded {
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: iconSize))
+                    Image(systemName: "play.fill")
+                        .font(.system(size: smallIconSize, weight: .semibold))
+                        .foregroundStyle(status.foreground)
                 } else {
-                    if type == .synced {
-                        ReadaloudIcon(size: readaloudSize)
-                    } else {
-                        Image(systemName: type.iconName)
-                            .font(.system(size: smallIconSize))
+                    Group {
+                        if type == .synced {
+                            ReadaloudIcon(size: readaloudSize)
+                        } else {
+                            Image(systemName: type.iconName)
+                                .font(.system(size: smallIconSize, weight: .medium))
+                        }
                     }
+                    .foregroundStyle(status.foreground)
                 }
             }
-            .foregroundStyle(status.color)
             .frame(width: buttonSize, height: buttonSize)
             .contentShape(Rectangle())
+            .animation(.easeOut(duration: 0.12), value: isHovered)
         }
         .buttonStyle(.plain)
         .disabled(status == .unavailable)

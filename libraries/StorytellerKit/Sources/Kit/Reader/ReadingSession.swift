@@ -125,6 +125,7 @@ public final class ReadingSession {
     public var tocEntries: [TocEntry] = []
     public var hasAudioNarration = false
     public var extractedEbookPath: URL?
+    public var originalEbookURL: URL?
     public var ebookFileFormat: EbookFileFormat = .epub
     public var isJoiningExistingSession = false
     public private(set) var lastPrepareError: Error?
@@ -183,6 +184,7 @@ public final class ReadingSession {
                 )
                 self.ebookFileFormat = EbookFileFormat(fileURL: prepared.originalURL)
                 self.extractedEbookPath = prepared.readerURL
+                self.originalEbookURL = prepared.originalURL
                 debugLog(
                     "[ReadingSession] EPUB prepared for loading: \(prepared.readerURL.path)"
                 )

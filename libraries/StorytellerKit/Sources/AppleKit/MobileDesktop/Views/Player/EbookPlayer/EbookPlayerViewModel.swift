@@ -87,6 +87,10 @@ class EbookPlayerViewModel {
         ebookFileFormat == .cbz
     }
 
+    var currentSectionIndex: Int? {
+        progressManager?.selectedChapterId
+    }
+
     private var _sidebarInitialized = false
     #if os(macOS)
     var showChapterSidebar: Bool = false {
@@ -440,6 +444,9 @@ class EbookPlayerViewModel {
             self.session = session
             configureSessionHooks(session)
             session.prepare()
+            #if os(macOS)
+            EbookWindowRouter.shared.register(self, for: data.metadata.id)
+            #endif
         }
     }
 
@@ -648,8 +655,30 @@ class EbookPlayerViewModel {
         showServerPositionDialog = false
     }
 
+    #if os(macOS)
+    // Awaited so the incoming book cannot race this one for the shared audio actors.
+    func closeForSwitch() async {
+        if let bookID = bookData?.metadata.id,
+            EbookWindowRouter.shared.viewModel(for: bookID) === self
+        {
+            EbookWindowRouter.shared.unregister(for: bookID)
+        }
+        session?.removeIncomingPositionObserver()
+        await comicProgressManager?.cleanup()
+        await session?.close(.endSession)
+    }
+    #endif
+
     func handleOnDisappear(close policy: ReadingSessionClosePolicy? = .endSession) {
         debugLog("[EbookPlayerViewModel] View disappearing (policy: \(String(describing: policy)))")
+
+        #if os(macOS)
+        if let bookID = bookData?.metadata.id,
+            EbookWindowRouter.shared.viewModel(for: bookID) === self
+        {
+            EbookWindowRouter.shared.unregister(for: bookID)
+        }
+        #endif
 
         session?.removeIncomingPositionObserver()
 
@@ -888,6 +917,56 @@ class EbookPlayerViewModel {
 
         debugLog("[EbookPlayerViewModel] Deleted highlight: \(highlight.id)")
     }
+
+    #if os(macOS)
+    enum ImageIndexState {
+        case idle
+        case loading
+        case ready
+        case failed
+    }
+
+    var imageItems: [BookImageItem] = []
+    var imageIndexState: ImageIndexState = .idle
+    private(set) var imageProvider: BookImageDataProvider?
+
+    func buildImageIndexIfNeeded() async {
+        guard imageIndexState == .idle, !isComicBook else { return }
+        guard let epubURL = session?.originalEbookURL else { return }
+        imageIndexState = .loading
+        do {
+            let items = try await Task.detached(priority: .utility) {
+                try BookImageIndexer.buildIndex(epubURL: epubURL)
+            }.value
+            // Must exist before items publish; cells load thumbnails on appear.
+            imageProvider = BookImageDataProvider(
+                extractedRoot: extractedEbookPath,
+                archiveURL: epubURL,
+            )
+            imageItems = items
+            imageIndexState = .ready
+        } catch {
+            debugLog("[EbookPlayerViewModel] Image index failed: \(error)")
+            imageIndexState = .failed
+        }
+    }
+
+    func navigateToImage(_ item: BookImageItem) async {
+        guard let bridge = commsBridge else { return }
+        do {
+            if let elementId = item.elementId {
+                try await bridge.sendJsGoToHrefCommand(href: "\(item.sectionId)#\(elementId)")
+            } else {
+                try await bridge.sendJsGoToImageCommand(
+                    sectionIndex: item.sectionIndex,
+                    filename: (item.imagePath as NSString).lastPathComponent,
+                )
+            }
+        } catch {
+            debugLog("[EbookPlayerViewModel] Failed to navigate to image: \(error)")
+        }
+    }
+    #endif
 
     func navigateToHighlight(_ highlight: Highlight) async {
         guard let bridge = commsBridge else { return }

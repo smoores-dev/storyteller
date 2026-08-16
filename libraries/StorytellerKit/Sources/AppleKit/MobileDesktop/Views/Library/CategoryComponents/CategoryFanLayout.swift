@@ -12,9 +12,16 @@ struct CategoryFanLayout<Header: View, StickyHeader: View, ContextMenu: View>: V
     let contextMenuBuilder: ((CategoryGroup) -> ContextMenu)?
 
     @State private var showStickyControls: Bool = false
+    @State private var filterText: String = ""
 
     private let sectionSpacing: CGFloat = 32
     private let horizontalPadding: CGFloat = 24
+
+    private var filteredGroups: [CategoryGroup] {
+        let query = filterText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !query.isEmpty else { return groups }
+        return groups.filter { $0.name.lowercased().contains(query) }
+    }
 
     init(
         groups: [CategoryGroup],
@@ -37,6 +44,7 @@ struct CategoryFanLayout<Header: View, StickyHeader: View, ContextMenu: View>: V
     }
 
     private var sortedGroups: [CategoryGroup] {
+        let groups = filteredGroups
         guard sortByCount else { return groups }
         return groups.sorted { lhs, rhs in
             if lhs.books.count != rhs.books.count {
@@ -67,10 +75,22 @@ struct CategoryFanLayout<Header: View, StickyHeader: View, ContextMenu: View>: V
     }
 
     @ViewBuilder
+    private var headerRow: some View {
+        #if os(macOS)
+        ZStack(alignment: .bottomTrailing) {
+            header()
+            CollapsibleSearchField(placeholder: "Filter", searchText: $filterText)
+        }
+        #else
+        header()
+        #endif
+    }
+
+    @ViewBuilder
     private func scrollContent(contentWidth: CGFloat, stackWidth: CGFloat) -> some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: sectionSpacing) {
-                header()
+                headerRow
                     .padding(.horizontal, horizontalPadding)
 
                 LazyVStack(alignment: .leading, spacing: sectionSpacing) {

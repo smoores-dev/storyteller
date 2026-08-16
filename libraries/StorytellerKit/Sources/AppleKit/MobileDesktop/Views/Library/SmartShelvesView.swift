@@ -21,6 +21,12 @@ struct SmartShelvesView: View {
     #else
     let searchText: String
     #endif
+
+    #if os(macOS)
+    private var groupFilterText: String { "" }
+    #else
+    private var groupFilterText: String { searchText }
+    #endif
     @Binding var sidebarSections: [SidebarSectionDescription]
     @Binding var selectedSidebarItem: SidebarItemDescription?
     @Binding var showSettings: Bool
@@ -404,8 +410,8 @@ extension SmartShelvesView {
     }
 
     fileprivate func filteredShelves() -> [SmartShelf] {
-        guard !searchText.isEmpty else { return mediaViewModel.smartShelves }
-        let searchLower = searchText.lowercased()
+        guard !groupFilterText.isEmpty else { return mediaViewModel.smartShelves }
+        let searchLower = groupFilterText.lowercased()
         return mediaViewModel.smartShelves.filter { shelf in
             shelf.name.lowercased().contains(searchLower)
         }

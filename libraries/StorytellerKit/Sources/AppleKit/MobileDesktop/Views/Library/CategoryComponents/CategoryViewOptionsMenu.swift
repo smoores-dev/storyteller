@@ -59,10 +59,14 @@ struct CategoryViewOptionsMenu: View {
                 }
             }
         } label: {
+            #if os(macOS)
+            Label("View Options", systemImage: LibraryBarIcon.viewOptions)
+            #else
             Label("View Options", systemImage: "ellipsis.circle")
+            #endif
         }
         #if os(macOS)
-        .menuStyle(.borderlessButton)
+        .libraryBarMenu()
         #endif
     }
 }

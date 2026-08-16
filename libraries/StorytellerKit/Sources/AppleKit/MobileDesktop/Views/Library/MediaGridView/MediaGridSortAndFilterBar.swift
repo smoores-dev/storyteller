@@ -36,6 +36,7 @@ struct MediaGridSortAndFilterBar: View {
     let availableStatuses: [String]
     let availableSources: [BookSourceRecord]
     let filtersSummaryText: String
+    var searchScopeTitle: String = ""
     let showLayoutOption: Bool
     var showSortOption: Bool = true
     var onAddBook: (() -> Void)? = nil
@@ -51,8 +52,14 @@ struct MediaGridSortAndFilterBar: View {
 
     @State private var showViewOptions = false
 
+    #if os(macOS)
+    private let barSpacing: CGFloat = 8
+    #else
+    private let barSpacing: CGFloat = 12
+    #endif
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: barSpacing) {
             if showSortOption {
                 sortMenu
             }
@@ -68,9 +75,25 @@ struct MediaGridSortAndFilterBar: View {
             }
             #endif
             viewOptionsButton
+            #if os(macOS)
+            contentSearchField
+            #endif
         }
         .font(.callout)
     }
+
+    #if os(macOS)
+    @Environment(\.contentSearchText) private var contentSearchText
+    @Environment(\.contentSearchFocus) private var contentSearchFocus
+
+    private var contentSearchField: some View {
+        CollapsibleSearchField(
+            placeholder: searchScopeTitle.isEmpty ? "Search" : "Search \(searchScopeTitle)",
+            searchText: contentSearchText,
+            focusRequest: contentSearchFocus,
+        )
+    }
+    #endif
 
     @ViewBuilder
     private var addBookButton: some View {
@@ -86,7 +109,7 @@ struct MediaGridSortAndFilterBar: View {
                 #endif
             }
             #if os(macOS)
-            .buttonStyle(.borderless)
+            .libraryBarButton()
             #endif
             .help("Add book")
         }
@@ -115,31 +138,42 @@ struct MediaGridSortAndFilterBar: View {
 
     @ViewBuilder
     private var sortMenu: some View {
-        HStack(spacing: 2) {
+        #if os(macOS)
+        HStack(spacing: 4) {
             Menu {
                 sortMenuContent
             } label: {
-                #if os(iOS)
-                Label("Sort", systemImage: "arrow.up.arrow.down")
-                #else
-                Text("Sort: \(selectedSortOption.sortField.label)")
-                #endif
+                Label(
+                    "Sort: \(selectedSortOption.sortField.label)",
+                    systemImage: "arrow.up.arrow.down",
+                )
             }
-            #if os(macOS)
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            #endif
+            .libraryBarMenu()
 
             Button {
                 selectedSortOption = selectedSortOption.toggled
             } label: {
                 Image(systemName: selectedSortOption.isAscending ? "arrow.up" : "arrow.down")
             }
-            #if os(macOS)
-            .buttonStyle(.borderless)
-            #endif
+            .libraryBarButton()
             .help("Reverse sort direction")
         }
+        #else
+        HStack(spacing: 2) {
+            Menu {
+                sortMenuContent
+            } label: {
+                Label("Sort", systemImage: "arrow.up.arrow.down")
+            }
+
+            Button {
+                selectedSortOption = selectedSortOption.toggled
+            } label: {
+                Image(systemName: selectedSortOption.isAscending ? "arrow.up" : "arrow.down")
+            }
+            .help("Reverse sort direction")
+        }
+        #endif
     }
 
     private func handleSortFieldTap(_ field: MediaGridView.SortOption.SortField) {
@@ -207,7 +241,7 @@ struct MediaGridSortAndFilterBar: View {
             #endif
         }
         #if os(macOS)
-        .menuStyle(.borderlessButton)
+        .libraryBarMenu()
         #endif
     }
 
@@ -618,10 +652,15 @@ struct MediaGridSortAndFilterBar: View {
         Button {
             showViewOptions.toggle()
         } label: {
+            #if os(macOS)
+            Label("View Options", systemImage: LibraryBarIcon.viewOptions)
+            #else
             Label("View Options", systemImage: "ellipsis.circle")
+            #endif
         }
         #if os(macOS)
-        .buttonStyle(.borderless)
+        .libraryBarButton()
+        .help("View options")
         .popover(isPresented: $showViewOptions) {
             viewOptionsPopoverContent
         }
@@ -743,7 +782,7 @@ struct MediaGridSortAndFilterBar: View {
         } label: {
             Label("Columns", systemImage: "rectangle.split.3x1")
         }
-        .menuStyle(.borderlessButton)
+        .libraryBarMenu()
     }
 
     @ViewBuilder

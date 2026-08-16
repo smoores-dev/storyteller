@@ -5,56 +5,14 @@ import SwiftUI
 import AppKit
 #endif
 
-#if os(macOS)
-private struct DebouncedSearchField: View {
-    @Binding var searchText: String
-    @State private var localText: String = ""
-    @State private var debounceTask: Task<Void, Never>?
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .font(.system(size: 12))
-            TextField("Search", text: $localText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .onChange(of: localText) { _, newValue in
-                    debounceTask?.cancel()
-                    debounceTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(250))
-                        guard !Task.isCancelled else { return }
-                        searchText = newValue
-                    }
-                }
-            if !localText.isEmpty {
-                Button {
-                    localText = ""
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: 11))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 7)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.secondary.opacity(0.12))
-        )
-        .onAppear { localText = searchText }
-    }
-}
-#endif
-
 struct SidebarView: View {
     let sections: [SidebarSectionDescription]
     @Binding var selectedItem: SidebarItemDescription?
     @Binding var searchText: String
     @Binding var isSearchFocused: Bool
+    #if os(macOS)
+    @Binding var sidebarFilter: String
+    #endif
     @Environment(MediaViewModel.self) private var mediaViewModel
     @State private var selectedId: String?
     @State private var isRefreshing: Bool = false
@@ -365,7 +323,7 @@ struct SidebarView: View {
                 .padding(.bottom, 6)
             }
 
-            DebouncedSearchField(searchText: $searchText)
+            DebouncedSearchField(placeholder: "Filter Sidebar", searchText: $sidebarFilter)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
 
@@ -550,7 +508,7 @@ struct SidebarView: View {
         let resolvedItems = resolvedItems(for: group)
         let isPinGroup = group.items.contains { $0.id == SidebarConfigHelper.newPinLocationMarker }
 
-        if isPinGroup && resolvedItems.isEmpty {
+        if isPinGroup && resolvedItems.isEmpty && !isFiltering {
             Section(isExpanded: expandedBinding(for: group.id, config: config)) {
                 Text("Right-click any series or category to pin it here.")
                     .font(.caption)
@@ -562,7 +520,10 @@ struct SidebarView: View {
                 sectionHeader(for: group, config: config)
             }
         } else if !resolvedItems.isEmpty {
-            Section(isExpanded: expandedBinding(for: group.id, config: config)) {
+            Section(
+                isExpanded: isFiltering
+                    ? .constant(true) : expandedBinding(for: group.id, config: config)
+            ) {
                 ForEach(resolvedItems) { item in
                     sidebarRow(for: item, isPinned: item.id.hasPrefix("pin."))
                 }
@@ -574,12 +535,30 @@ struct SidebarView: View {
 
     private func resolvedItems(for group: SidebarConfigGroup) -> [SidebarItemDescription] {
         let configuredItems = group.items.compactMap { resolveConfigItem($0) }
-        guard group.name == "Media Sources" else { return configuredItems }
+        guard group.name == "Media Sources" else { return applyFilter(configuredItems) }
         let configuredSourceIDs = configuredBookSourceIDs(in: sidebarConfig)
         let missingSourceItems = mediaViewModel.bookSources
             .filter { !configuredSourceIDs.contains($0.id) }
             .map { Self.sidebarItem(for: $0) }
-        return configuredItems + missingSourceItems
+        return applyFilter(configuredItems + missingSourceItems)
+    }
+
+    private func applyFilter(_ items: [SidebarItemDescription]) -> [SidebarItemDescription] {
+        #if os(macOS)
+        let query = sidebarFilter.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !query.isEmpty else { return items }
+        return items.filter { $0.name.lowercased().contains(query) }
+        #else
+        return items
+        #endif
+    }
+
+    private var isFiltering: Bool {
+        #if os(macOS)
+        return !sidebarFilter.trimmingCharacters(in: .whitespaces).isEmpty
+        #else
+        return false
+        #endif
     }
 
     @ViewBuilder

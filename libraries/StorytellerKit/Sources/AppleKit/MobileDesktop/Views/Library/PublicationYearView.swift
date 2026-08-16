@@ -8,6 +8,12 @@ struct PublicationYearView: View {
     #else
     let searchText: String
     #endif
+
+    #if os(macOS)
+    private var groupFilterText: String { "" }
+    #else
+    private var groupFilterText: String { searchText }
+    #endif
     @Binding var sidebarSections: [SidebarSectionDescription]
     @Binding var selectedSidebarItem: SidebarItemDescription?
     @Binding var showSettings: Bool
@@ -67,8 +73,8 @@ struct PublicationYearView: View {
     private func filterGroups(_ groups: [(year: String, books: [BookMetadata])]) -> [(
         year: String, books: [BookMetadata]
     )] {
-        guard !searchText.isEmpty else { return groups }
-        let searchLower = searchText.lowercased()
+        guard !groupFilterText.isEmpty else { return groups }
+        let searchLower = groupFilterText.lowercased()
         return groups.compactMap { group in
             let yearMatches = group.year.lowercased().contains(searchLower)
             let filteredBooks = group.books.filter { $0.title.lowercased().contains(searchLower) }
