@@ -2,8 +2,8 @@
 
 import { build } from "esbuild"
 import { builtinModules } from "node:module"
-import { basename, isAbsolute, join, resolve, sep } from "node:path"
-import { copyFileSync, writeFileSync } from "node:fs"
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path"
+import { copyFileSync, readdirSync, writeFileSync } from "node:fs"
 import nodeGypBuild from "node-gyp-build"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { randomUUID } from "node:crypto"
@@ -105,6 +105,33 @@ module.exports = function requireBinding() {
             : resolve(args.resolveDir || process.cwd(), args.path)
           const assetName = `${basename(absPath, ".node")}-${randomUUID()}.node`
           discoveredAssets.set(assetName, absPath)
+
+          // Discover sibling shared libraries that the .node file depends on
+          // (e.g. libonnxruntime.so.1, libonnxruntime.1.24.3.dylib,
+          // onnxruntime.dll). These must be extracted to the same temp
+          // directory at runtime so the dynamic linker can find them.
+          const siblingLibs = []
+          const libDir = dirname(absPath)
+          try {
+            for (const file of readdirSync(libDir)) {
+              if (
+                file.endsWith(".dylib") ||
+                file.endsWith(".dll") ||
+                /\.so(?:\.\d+)*$/.test(file)
+              ) {
+                const libPath = join(libDir, file)
+                const libAssetName = `${file}-${randomUUID()}`
+                discoveredAssets.set(libAssetName, libPath)
+                siblingLibs.push({ name: libAssetName, file })
+              }
+            }
+          } catch {}
+
+          const tmpDirName = `${basename(absPath, ".node")}-${randomUUID().slice(0, 8)}`
+          const siblingLibEntries = JSON.stringify(
+            siblingLibs.map((l) => [l.name, l.file]),
+          )
+
           return {
             loader: "js",
             contents: `
@@ -113,10 +140,21 @@ const os = require('node:os');
 const path = require('node:path');
 const { getRawAsset } = require('node:sea');
 
-const tmpPath = path.join(os.tmpdir(), ${JSON.stringify(assetName)});
+const tmpDir = path.join(os.tmpdir(), ${JSON.stringify(tmpDirName)});
+fs.mkdirSync(tmpDir, { recursive: true });
+
+const tmpPath = path.join(tmpDir, ${JSON.stringify(basename(absPath))});
 
 if (!fs.existsSync(tmpPath)) {
   fs.writeFileSync(tmpPath, new Uint8Array(getRawAsset(${JSON.stringify(assetName)})));
+}
+
+const siblingLibs = ${siblingLibEntries};
+for (const [assetName, fileName] of siblingLibs) {
+  const libPath = path.join(tmpDir, fileName);
+  if (!fs.existsSync(libPath)) {
+    fs.writeFileSync(libPath, new Uint8Array(getRawAsset(assetName)));
+  }
 }
 
 const mod = { exports: {} };
