@@ -101,7 +101,7 @@ export async function emit(
       const model = await Wav2Vec2ForCTC.from_pretrained(opts.model, {
         cache_dir: modelDir,
         device: "webgpu",
-        dtype: "fp32",
+        dtype: "fp16",
       })
 
       if (signal?.aborted) {
@@ -167,7 +167,7 @@ export async function emit(
 
         opts.onCheckpoint?.(emissions)
 
-        opts.onProgress?.((i / audio.length) * 100)
+        opts.onProgress?.(i / audio.length)
       }
 
       const stride = model.config.conv_stride?.reduce((a, b) => a * b, 1)

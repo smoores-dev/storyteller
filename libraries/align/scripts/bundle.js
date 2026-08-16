@@ -4,6 +4,7 @@ import { build } from "esbuild"
 import { builtinModules } from "node:module"
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path"
 import { copyFileSync, readdirSync, writeFileSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import nodeGypBuild from "node-gyp-build"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { randomUUID } from "node:crypto"
@@ -324,6 +325,26 @@ for (const [assetName, sourcePath] of discoveredAssets) {
   const destPath = join("bundle", assetName)
   try {
     copyFileSync(sourcePath, destPath)
+
+    // On macOS, add @loader_path as an rpath to .node files so that
+    // shared library dependencies (e.g. libvips-cpp.dylib,
+    // libonnxruntime.1.24.3.dylib) can be found at dlopen time when
+    // extracted to a temp directory. This is necessary because:
+    //   1. DYLD_LIBRARY_PATH set via process.env at runtime is not
+    //      read by dyld (it's captured at process startup)
+    //   2. The @rpath entries baked into the .node binaries point to
+    //      relative paths that don't exist in the temp extraction dir
+    // @loader_path resolves to the directory containing the .node file,
+    // which is the same temp dir where sibling .dylib/.so files are
+    // extracted
+    if (process.platform === "darwin" && destPath.endsWith(".node")) {
+      try {
+        execFileSync("install_name_tool", ["-add_rpath", "@loader_path", destPath], {
+          stdio: ["ignore", "ignore", "ignore"],
+        })
+      } catch {}
+    }
+
     assets[assetName] = destPath
   } catch {}
 }

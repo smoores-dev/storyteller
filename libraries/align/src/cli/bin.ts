@@ -207,7 +207,18 @@ async function main() {
     }
 
     case "emit": {
-      await emit(parsed.input, parsed.output, parsed)
+      await emit(parsed.input, parsed.output, {
+        ...parsed,
+        ...(!parsed.noProgress &&
+          parsed.logLevel === "silent" && {
+            onProgress: (progress) => {
+              if (Math.floor(progress * 100) === progressBar.getProgress()) {
+                return
+              }
+              progressBar.update(Math.floor(progress * 100))
+            },
+          }),
+      })
       break
     }
 
