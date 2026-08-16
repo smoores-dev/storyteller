@@ -7,7 +7,9 @@ import { copyFileSync, readdirSync, writeFileSync } from "node:fs"
 import nodeGypBuild from "node-gyp-build"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { randomUUID } from "node:crypto"
+import { createRequire } from "node:module"
 
+const require = createRequire(import.meta.url)
 const nodePrefix = new Set(builtinModules)
 const discoveredAssets = new Map()
 
@@ -174,6 +176,126 @@ module.exports = mod.exports;
         // onResolve entirely and are routed straight to onLoad with the
         // default namespace, so we register a namespace-free handler.
         build.onLoad({ filter: /\.node$/ }, handleNodeFile)
+
+        // sharp uses dynamic require() with template literals to load
+        // platform-specific @img/sharp-${platform}/sharp.node, which esbuild
+        // can't resolve statically. We intercept sharp's lib/sharp.js module
+        // and replace it with code that loads the .node file from SEA assets.
+        build.onResolve({ filter: /^\.\/sharp$/ }, (args) => {
+          if (!args.resolveDir) return
+          const libDir = resolve(args.resolveDir)
+          if (!libDir.includes("sharp/lib")) return
+          return { path: join(libDir, "sharp.js"), namespace: "sharp-binding" }
+        })
+
+        build.onLoad(
+          { filter: /\.js$/, namespace: "sharp-binding" },
+          (args) => {
+            const resolveDir = dirname(args.path)
+
+            // Determine the runtime platform (same logic as sharp's libvips.js)
+            const { runtimePlatformArch } = require(
+              join(resolveDir, "libvips.js"),
+            )
+            const runtimePlatform = runtimePlatformArch()
+
+            // Resolve the @img/sharp-${platform}/sharp.node path
+            const sharpNodePath = fileURLToPath(
+              import.meta.resolve(
+                `@img/sharp-${runtimePlatform}/sharp.node`,
+                pathToFileURL(resolveDir + sep).href,
+              ),
+            )
+
+            // Resolve the @img/sharp-libvips-${platform}/lib directory
+            let libvipsDir
+            try {
+              const libvipsLibUrl = fileURLToPath(
+                import.meta.resolve(
+                  `@img/sharp-libvips-${runtimePlatform}/lib`,
+                  pathToFileURL(resolveDir + sep).href,
+                ),
+              )
+              libvipsDir = dirname(libvipsLibUrl)
+            } catch {}
+
+            // Discover sibling shared libraries from the libvips package
+            const siblingLibs = []
+            if (libvipsDir) {
+              try {
+                for (const file of readdirSync(libvipsDir)) {
+                  if (
+                    file.endsWith(".dylib") ||
+                    file.endsWith(".dll") ||
+                    /\.so(?:\.\d+)*$/.test(file)
+                  ) {
+                    const libPath = join(libvipsDir, file)
+                    const libAssetName = `${file}-${randomUUID()}`
+                    discoveredAssets.set(libAssetName, libPath)
+                    siblingLibs.push({ name: libAssetName, file })
+                  }
+                }
+              } catch {}
+            }
+
+            // Also discover sibling libs in the sharp .node's own directory
+            const sharpLibDir = dirname(sharpNodePath)
+            try {
+              for (const file of readdirSync(sharpLibDir)) {
+                if (
+                  file.endsWith(".dylib") ||
+                  file.endsWith(".dll") ||
+                  /\.so(?:\.\d+)*$/.test(file)
+                ) {
+                  const libPath = join(sharpLibDir, file)
+                  const libAssetName = `${file}-${randomUUID()}`
+                  discoveredAssets.set(libAssetName, libPath)
+                  siblingLibs.push({ name: libAssetName, file })
+                }
+              }
+            } catch {}
+
+            // Register the .node file as a SEA asset
+            const assetName = `sharp-${runtimePlatform}-${randomUUID()}.node`
+            discoveredAssets.set(assetName, sharpNodePath)
+
+            const tmpDirName = `sharp-${runtimePlatform}-${randomUUID().slice(0, 8)}`
+            const siblingLibEntries = JSON.stringify(
+              siblingLibs.map((l) => [l.name, l.file]),
+            )
+
+            return {
+              loader: "js",
+              contents: `
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { getRawAsset } = require('node:sea');
+
+const tmpDir = path.join(os.tmpdir(), ${JSON.stringify(tmpDirName)});
+fs.mkdirSync(tmpDir, { recursive: true });
+
+const tmpPath = path.join(tmpDir, 'sharp.node');
+
+if (!fs.existsSync(tmpPath)) {
+  fs.writeFileSync(tmpPath, new Uint8Array(getRawAsset(${JSON.stringify(assetName)})));
+}
+
+const siblingLibs = ${siblingLibEntries};
+for (const [assetName, fileName] of siblingLibs) {
+  const libPath = path.join(tmpDir, fileName);
+  if (!fs.existsSync(libPath)) {
+    fs.writeFileSync(libPath, new Uint8Array(getRawAsset(assetName)));
+  }
+}
+
+const mod = { exports: {} };
+process.dlopen(mod, tmpPath);
+module.exports = mod.exports;
+              `,
+            }
+          },
+        )
       },
     },
   ],
