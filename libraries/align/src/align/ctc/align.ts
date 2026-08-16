@@ -991,10 +991,12 @@ export class Aligner {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const cursor = chapterMappings[i]!.cursor()
         return sent.words.entries.map<[number, number]>((word) => [
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          cursor.map(word.startOffset) + slugifiedChapterRanges[i]![0],
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          cursor.map(word.endOffset - 1) + slugifiedChapterRanges[i]![0],
+          cursor.map(word.startOffset - sent.charRange.start) +
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            slugifiedChapterRanges[i]![0],
+          cursor.map(word.endOffset - 1 - sent.charRange.start) +
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            slugifiedChapterRanges[i]![0],
         ])
       })
 
