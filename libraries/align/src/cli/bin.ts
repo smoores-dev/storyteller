@@ -140,6 +140,20 @@ async function main() {
     }
   }
 
+  function updateProgressBar(progress: number) {
+    if (parsed.action === "upgrade-epub") return
+    if (parsed.noProgress || parsed.logLevel !== "silent") {
+      return
+    }
+
+    const floored = Math.floor(progress * 100)
+    if (floored === Math.floor(progressBar.getProgress() * 100)) {
+      return
+    }
+
+    progressBar.update(floored)
+  }
+
   resetProgressBar()
 
   process.on("SIGINT", () => {
@@ -166,12 +180,7 @@ async function main() {
         parallelism: parsed.parallelism,
         signal: controller.signal,
         logger,
-        ...(!parsed.noProgress &&
-          parsed.logLevel === "silent" && {
-            onProgress: (progress) => {
-              progressBar.update(Math.floor(progress * 100))
-            },
-          }),
+        onProgress: updateProgressBar,
       })
 
       if (parsed.time) {
@@ -190,12 +199,7 @@ async function main() {
           ...parsed,
           signal: controller.signal,
           logger,
-          ...(!parsed.noProgress &&
-            parsed.logLevel === "silent" && {
-              onProgress: (progress) => {
-                progressBar.update(Math.floor(progress * 100))
-              },
-            }),
+          onProgress: updateProgressBar,
         },
       )
 
@@ -209,15 +213,7 @@ async function main() {
     case "emit": {
       await emit(parsed.input, parsed.output, {
         ...parsed,
-        ...(!parsed.noProgress &&
-          parsed.logLevel === "silent" && {
-            onProgress: (progress) => {
-              if (Math.floor(progress * 100) === progressBar.getProgress()) {
-                return
-              }
-              progressBar.update(Math.floor(progress * 100))
-            },
-          }),
+        onProgress: updateProgressBar,
       })
       break
     }
@@ -245,12 +241,7 @@ async function main() {
         primaryLocale: parsed.language ?? new Intl.Locale("en-US"),
         granularity: parsed.granularity,
         logger,
-        ...(!parsed.noProgress &&
-          parsed.logLevel === "silent" && {
-            onProgress: (progress) => {
-              progressBar.update(Math.floor(progress * 100))
-            },
-          }),
+        onProgress: updateProgressBar,
       })
 
       if (parsed.time) {
@@ -285,12 +276,7 @@ async function main() {
             primaryLocale: parsed.language,
             reportsPath: parsed.reports,
             logger,
-            ...(!parsed.noProgress &&
-              parsed.logLevel === "silent" && {
-                onProgress: (progress) => {
-                  progressBar.update(Math.floor(progress * 100))
-                },
-              }),
+            onProgress: updateProgressBar,
           },
         )
 
@@ -310,12 +296,7 @@ async function main() {
             primaryLocale: parsed.language,
             reportsPath: parsed.reports,
             logger,
-            ...(!parsed.noProgress &&
-              parsed.logLevel === "silent" && {
-                onProgress: (progress) => {
-                  progressBar.update(Math.floor(progress * 100))
-                },
-              }),
+            onProgress: updateProgressBar,
           },
         )
 
@@ -369,12 +350,7 @@ async function main() {
           maxLength: parsed.maxLength / 60,
           parallelism: parsed.parallelTranscodes,
           signal: controller.signal,
-          ...(!parsed.noProgress &&
-            parsed.logLevel === "silent" && {
-              onProgress: (progress) => {
-                progressBar.update(Math.floor(progress * 100))
-              },
-            }),
+          onProgress: updateProgressBar,
         },
       )
 
@@ -409,12 +385,7 @@ async function main() {
           ...parsed,
           signal: controller.signal,
           logger,
-          ...(!parsed.noProgress &&
-            parsed.logLevel === "silent" && {
-              onProgress: (progress) => {
-                progressBar.update(Math.floor(progress * 100))
-              },
-            }),
+          onProgress: updateProgressBar,
         })
 
         resetProgressBar()
@@ -446,12 +417,7 @@ async function main() {
             parallelism: parsed.parallelTranscribes,
             signal: controller.signal,
             logger,
-            ...(!parsed.noProgress &&
-              parsed.logLevel === "silent" && {
-                onProgress: (progress) => {
-                  progressBar.update(Math.floor(progress * 100))
-                },
-              }),
+            onProgress: updateProgressBar,
           },
         )
 
@@ -487,12 +453,7 @@ async function main() {
           granularity: parsed.granularity,
           primaryLocale,
           logger,
-          ...(!parsed.noProgress &&
-            parsed.logLevel === "silent" && {
-              onProgress: (progress) => {
-                progressBar.update(Math.floor(progress * 100))
-              },
-            }),
+          onProgress: updateProgressBar,
         })
 
         resetProgressBar()
@@ -523,12 +484,7 @@ async function main() {
             primaryLocale: parsed.language,
             reportsPath: parsed.reports,
             logger,
-            ...(!parsed.noProgress &&
-              parsed.logLevel === "silent" && {
-                onProgress: (progress) => {
-                  progressBar.update(Math.floor(progress * 100))
-                },
-              }),
+            onProgress: updateProgressBar,
           },
         )
 
@@ -554,12 +510,7 @@ async function main() {
             primaryLocale,
             reportsPath: parsed.reports,
             logger,
-            ...(!parsed.noProgress &&
-              parsed.logLevel === "silent" && {
-                onProgress: (progress) => {
-                  progressBar.update(Math.floor(progress * 100))
-                },
-              }),
+            onProgress: updateProgressBar,
           },
         )
 
