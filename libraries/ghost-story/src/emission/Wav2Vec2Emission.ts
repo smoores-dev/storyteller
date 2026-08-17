@@ -27,6 +27,7 @@ import { type Timing } from "../utilities/Timing.ts"
 declare module "@huggingface/transformers" {
   export interface PretrainedConfig {
     conv_stride?: number[]
+    conv_kernel?: number[]
   }
 }
 
@@ -136,12 +137,40 @@ export async function emit(
       const SECONDS_PER_CHUNK = 25
       const CHUNK_SIZE_SAMPLES = SAMPLE_RATE * SECONDS_PER_CHUNK
 
+      const strides = model.config.conv_stride
+
+      if (strides === undefined) {
+        throw new Error(
+          `Failed to read conv_stride from model config for model ${opts.model}`,
+        )
+      }
+
+      const kernels = model.config.conv_kernel
+      if (kernels === undefined) {
+        throw new Error(
+          `Failed to read conv_kernel from model config for model ${opts.model}`,
+        )
+      }
+
+      let minChunkSamples = 1
+      let jump = 1
+      for (let i = 0; i < kernels.length; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        minChunkSamples += (kernels[i]! - 1) * jump
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        jump *= strides[i]!
+      }
+
       const emissions: number[][] = []
       let framesPerChunk: null | number = null
       let secondsPerChunk: null | number = null
 
       for (let i = 0; i < audio.length; i += CHUNK_SIZE_SAMPLES) {
         const chunk = audio.slice(i, i + CHUNK_SIZE_SAMPLES)
+
+        // Skip audio with too few samples to fill one frame, which causes
+        // a crash
+        if (chunk.length < minChunkSamples) continue
 
         const inputs = (await featureExtractor(chunk)) as unknown
 
@@ -172,12 +201,7 @@ export async function emit(
         opts.onProgress?.(i / audio.length)
       }
 
-      const stride = model.config.conv_stride?.reduce((a, b) => a * b, 1)
-      if (stride === undefined) {
-        throw new Error(
-          `Failed to read conv_stride from model config for model ${opts.model}`,
-        )
-      }
+      const stride = strides.reduce((a, b) => a * b, 1)
       const secondsPerFrame = stride / SAMPLE_RATE
 
       const vocab = tokenizer.get_vocab()
