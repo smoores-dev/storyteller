@@ -1011,7 +1011,11 @@ export class Aligner {
       const chapterMappings: Mapping[] = []
 
       for (const chapterSentence of chapterSentences) {
-        const { result, mapping } = await slugify(chapterSentence.text, locale)
+        const { result, mapping } = await slugify(
+          chapterSentence.text,
+          locale,
+          "",
+        )
         slugifiedChapterSentences.push(result)
         chapterMappings.push(mapping)
       }
