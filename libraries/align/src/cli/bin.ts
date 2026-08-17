@@ -109,6 +109,14 @@ const parser = or(
 )
 
 async function main() {
+  process.on("SIGINT", () => {
+    try {
+      progressBar.stop()
+    } finally {
+      process.exit(130)
+    }
+  })
+
   const parsed = run(parser, {
     showChoices: true,
     showDefault: true,
