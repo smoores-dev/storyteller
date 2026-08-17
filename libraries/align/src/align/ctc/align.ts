@@ -200,6 +200,7 @@ export async function ctcAlign(
   const audiobookFiles = await readdir(audiobookDir).then((filenames) =>
     filenames
       .filter((f) => isAudioFile(f))
+      .toSorted()
       .map((f) => autoJoin(audiobookDir, f)),
   )
 
@@ -209,6 +210,7 @@ export async function ctcAlign(
     .then((filenames) =>
       filenames
         .filter((f) => f.endsWith(".json"))
+        .toSorted()
         .map((f) => autoJoin(emissionsDir, f)),
     )
     .then((filepaths) =>

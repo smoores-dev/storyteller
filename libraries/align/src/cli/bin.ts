@@ -481,10 +481,10 @@ async function main() {
 
       if ("ctc" in parsed) {
         const timing = await ctcAlign(
-          input,
+          markedup,
           parsed.output,
           emissions,
-          parsed.audiobook,
+          processedAudio,
           {
             granularity: parsed.granularity,
             textRef: parsed.textRef,
