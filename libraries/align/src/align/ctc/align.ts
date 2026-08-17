@@ -694,6 +694,10 @@ export class Aligner {
     anchors: Match[],
   ) {
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
+    // TODO: We should probably compute these with the emissionTimings
+    const SENTENCE_PAD = 25
+    const WORD_PAD = 8
+
     const frameToAudioPosition = (frame: number) => {
       const globalFrame = frame + emissionsStart
 
@@ -712,6 +716,18 @@ export class Aligner {
       throw new Error(`Frame ${globalFrame} is beyond the end of the emissions`)
     }
 
+    const refineStartFrame = (
+      startFrame: number,
+      prevEndFrame: number,
+      padFrames: number,
+    ) => {
+      const { audiofile } = frameToAudioPosition(startFrame)
+      const [start] = this.audiofileFrames.get(audiofile)!
+      const windowFloor = start - emissionsStart
+
+      return Math.max(prevEndFrame + 1, startFrame - padFrames, windowFloor)
+    }
+
     const alignments = ctcForcedAlign(
       slugifiedChapter,
       this.emissions.slice(emissionsStart, emissionsEnd),
@@ -727,6 +743,7 @@ export class Aligner {
 
     let firstFoundSentence: null | number = null
     let lastFoundSentence = 0
+    let lastFoundSentenceEnd = 0
 
     for (const [i, [startOffset, endOffset]] of enumerate(sentenceStarts)) {
       if (endOffset < startOffset) {
@@ -755,12 +772,17 @@ export class Aligner {
         continue
       }
 
+      const startFrame = refineStartFrame(
+        alignments[startOffset]!.startFrame,
+        lastFoundSentenceEnd,
+        SENTENCE_PAD,
+      )
+
       firstFoundSentence ??= i
       lastFoundSentence = i
+      lastFoundSentenceEnd = alignments[endOffset]!.endFrame
 
-      const { position: start, audiofile } = frameToAudioPosition(
-        alignments[startOffset]!.startFrame,
-      )
+      const { position: start, audiofile } = frameToAudioPosition(startFrame)
       const { position: end } = frameToAudioPosition(
         alignments[endOffset]!.endFrame,
       )
@@ -775,6 +797,7 @@ export class Aligner {
     }
 
     const wordRanges: WordRange[][] = []
+    let lastFoundWordEnd = 0
 
     for (const [i, ws] of enumerate(wordStarts)) {
       if (skippedSentences.has(i)) continue
@@ -790,9 +813,16 @@ export class Aligner {
         if (goodChars / (endOffset + 1 - startOffset) < 0.5) {
           continue
         }
-        const { position: start, audiofile } = frameToAudioPosition(
+
+        const startFrame = refineStartFrame(
           alignments[startOffset]!.startFrame,
+          lastFoundWordEnd,
+          WORD_PAD,
         )
+
+        lastFoundWordEnd = alignments[endOffset]!.endFrame
+
+        const { position: start, audiofile } = frameToAudioPosition(startFrame)
 
         const { position: end } = frameToAudioPosition(
           alignments[endOffset]!.endFrame,
