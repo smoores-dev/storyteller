@@ -34,7 +34,7 @@ export async function emit(
   await mkdir(output, { recursive: true })
 
   const allFiles = await readdir(input, { recursive: true })
-  const filenames = allFiles.filter((f) => isAudioFile(f))
+  const filenames = allFiles.toSorted().filter((f) => isAudioFile(f))
 
   if (!filenames.length) {
     throw new Error(
