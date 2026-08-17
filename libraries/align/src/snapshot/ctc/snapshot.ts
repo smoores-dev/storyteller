@@ -109,8 +109,9 @@ export async function createAlignmentSnapshot(
   }
 
   const locale = (await epub.getLanguage()) ?? new Intl.Locale("en-US")
+  const spine = await epub.getSpineItems()
   const manifest = await epub.getManifest()
-  const mediaOverlayItems = Object.values(manifest)
+  const mediaOverlayItems = spine
     .map((item) => item.mediaOverlay)
     .filter((mediaOverlayId): mediaOverlayId is string => !!mediaOverlayId)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
