@@ -138,6 +138,7 @@ export async function emit(
 
       const emissions: number[][] = []
       let framesPerChunk: null | number = null
+      let secondsPerChunk: null | number = null
 
       for (let i = 0; i < audio.length; i += CHUNK_SIZE_SAMPLES) {
         const chunk = audio.slice(i, i + CHUNK_SIZE_SAMPLES)
@@ -164,6 +165,7 @@ export async function emit(
         emissions.push(...logProbs)
 
         framesPerChunk ??= logProbs.length
+        secondsPerChunk ??= chunk.length / SAMPLE_RATE
 
         opts.onCheckpoint?.(emissions)
 
@@ -181,7 +183,7 @@ export async function emit(
       const vocab = tokenizer.get_vocab()
       const blankIndex = vocab.get("<blank>") ?? tokenizer.pad_token_id
 
-      if (!framesPerChunk) {
+      if (!framesPerChunk || !secondsPerChunk) {
         throw new Error("Failed to process empty audio source")
       }
 
@@ -189,7 +191,7 @@ export async function emit(
         emissions,
         vocab,
         blankIndex,
-        secondsPerChunk: SECONDS_PER_CHUNK,
+        secondsPerChunk,
         framesPerChunk,
         secondsPerFrame,
       }

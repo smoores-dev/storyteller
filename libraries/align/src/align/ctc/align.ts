@@ -333,13 +333,13 @@ function framesToSeconds(frames: number, emissionTimings: EmissionTimings) {
 export class Aligner {
   private emissions: number[][]
 
-  private emissionTimings: EmissionTimings
-
   private vocab: Map<string, number>
 
   private blankId: number
 
   private audiofileFrames: Map<string, [number, number]>
+
+  private audiofileEmissionTimings: Map<string, EmissionTimings>
 
   private totalDuration = 0
 
@@ -374,10 +374,9 @@ export class Aligner {
     this.vocab = emissions[0]!.vocab
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     this.blankId = emissions[0]!.blankIndex
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    this.emissionTimings = emissions[0]!
 
     this.audiofileFrames = new Map()
+    this.audiofileEmissionTimings = new Map()
     let lastFrame = 0
     for (const [i, audiofile] of enumerate(audiofiles)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -389,6 +388,11 @@ export class Aligner {
         emissionsResult.emissions.length,
         emissionsResult,
       )
+      this.audiofileEmissionTimings.set(audiofile, {
+        secondsPerChunk: emissionsResult.secondsPerChunk,
+        secondsPerFrame: emissionsResult.secondsPerFrame,
+        framesPerChunk: emissionsResult.framesPerChunk,
+      })
 
       lastFrame = endFrame
     }
@@ -698,7 +702,7 @@ export class Aligner {
           return {
             position: framesToSeconds(
               globalFrame - fileStart,
-              this.emissionTimings,
+              this.audiofileEmissionTimings.get(audiofile)!,
             ),
             audiofile,
           }
