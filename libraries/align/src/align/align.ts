@@ -85,6 +85,8 @@ interface AudioFileContext {
 
 interface ChapterReport {
   href: string
+  score: number
+  spineIndex: number
 
   transcriptionOffset: number
   endTranscriptionOffset: number
@@ -121,12 +123,16 @@ type UnalignedChapterReason = "too-short" | "not-found" | "is-nav" | "no-text"
 
 interface UnalignedChapterReport {
   href: string
+  spineIndex: number
 
   reason: Exclude<UnalignedChapterReason, "not-found">
 }
 
 interface UnalignedNotFoundChapterReport {
   href: string
+  spineIndex: number
+  chapterSentenceCount: number
+  score: number
 
   reason: "not-found"
 
@@ -576,6 +582,7 @@ export class Aligner {
   }
 
   private addChapterReport(
+    spineIndex: number,
     chapter: ManifestItem,
     chapterSentences: SegmentationResult["sentences"],
     sentenceRanges: SentenceRange[],
@@ -584,6 +591,7 @@ export class Aligner {
     mapping: Mapping,
     transcriptionOffset: number,
     endTranscriptionOffset: number,
+    score: number,
   ) {
     const audioFiles = sentenceRanges.reduce<AudioFileContext[]>(
       (acc, range) => {
@@ -611,6 +619,8 @@ export class Aligner {
 
     this.report.chapters.push({
       href: chapter.href,
+      score: score,
+      spineIndex,
       transcriptionOffset: mappedTranscriptionOffset,
       endTranscriptionOffset: mappedEndTranscriptionOffset,
       transcriptionContext: {
@@ -681,6 +691,7 @@ export class Aligner {
   }
 
   private async alignChapter(
+    spineIndex: number,
     chapterId: string,
     transcriptionText: string,
     transcriptionOffset: number,
@@ -712,6 +723,7 @@ export class Aligner {
       transcriptionOffset: endTranscriptionOffset,
       firstFoundSentence,
       lastFoundSentence,
+      score,
     } = await getSentenceRanges(
       transcriptionText,
       mappedTimeline,
@@ -745,6 +757,7 @@ export class Aligner {
     })
 
     this.addChapterReport(
+      spineIndex,
       chapter,
       chapterSentences,
       sentenceRanges,
@@ -753,6 +766,7 @@ export class Aligner {
       mapping,
       transcriptionOffset,
       endTranscriptionOffset,
+      score,
     )
 
     return {
@@ -830,6 +844,7 @@ export class Aligner {
         this.report.unalignedChapters.push({
           href: spineItem.href,
           reason: "is-nav",
+          spineIndex: index,
         })
         continue
       }
@@ -845,6 +860,7 @@ export class Aligner {
         this.report.unalignedChapters.push({
           href: spineItem.href,
           reason: "no-text",
+          spineIndex: index,
         })
         continue
       }
@@ -859,6 +875,7 @@ export class Aligner {
         this.report.unalignedChapters.push({
           href: spineItem.href,
           reason: "too-short",
+          spineIndex: index,
         })
         continue
       }
@@ -875,6 +892,9 @@ export class Aligner {
         this.report.unalignedChapters.push({
           href: spineItem.href,
           reason: "not-found",
+          spineIndex: index,
+          chapterSentenceCount: chapterSentences.length,
+          score: 0,
           start: chapterSentences
             .slice(0, 3)
             .map((s) => s.text)
@@ -895,6 +915,7 @@ export class Aligner {
       }
 
       const result = await this.alignChapter(
+        index,
         chapterId,
         transcriptionText,
         Math.max(start, 0),

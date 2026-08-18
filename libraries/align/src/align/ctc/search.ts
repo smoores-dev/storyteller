@@ -18,6 +18,8 @@ const REFINE_COUNT = 25
 
 const ANCHOR_SPACING = 2000
 
+const BOUNDARY_PAD_FRAMES = 500
+
 /**
  * A searchable document. `text` holds the matchable characters, and
  * `positions[i]` is the position of `text[i]` in whatever units the caller
@@ -312,8 +314,6 @@ export function findBoundariesInDocument(
     anchors,
   }
 }
-
-const BOUNDARY_PAD_FRAMES = 500
 
 export function findCtcBoundaries(
   query: string,
