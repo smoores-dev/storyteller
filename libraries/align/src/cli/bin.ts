@@ -26,7 +26,7 @@ import { Epub } from "@storyteller-platform/epub"
 
 import packageJson from "../../package.json" with { type: "json" }
 import { align } from "../align/align.ts"
-import { ctcAlign } from "../align/ctc/align.ts"
+import { ctcAlign } from "../align/ctc/ctcAlign.ts"
 import { alignCommand, alignParser } from "../align/parse.ts"
 import { createLogger } from "../common/logging.ts"
 import {
