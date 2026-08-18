@@ -271,7 +271,9 @@ export class Aligner {
   }
 
   private addChapterReport(
+    spineIndex: number,
     chapter: ManifestItem,
+    score: number,
     chapterSentences: SegmentationResult["sentences"],
     sentenceRanges: SentenceRange[],
     startSentence: number,
@@ -283,6 +285,8 @@ export class Aligner {
 
     this.report.chapters.push({
       href: chapter.href,
+      spineIndex,
+      score,
       transcriptionOffset: alignedEmissionsStart,
       endTranscriptionOffset: alignedEmissionsEnd,
       firstMatchedSentenceId: startSentence,
@@ -331,6 +335,11 @@ export class Aligner {
       this.blankId,
     )
 
+    const unscaledScore =
+      alignments.reduce((acc, { score }) => acc + score, 0) / alignments.length
+
+    const score = Math.max((unscaledScore + 10) * 10, 0)
+
     const {
       sentenceRanges,
       skippedSentences,
@@ -357,6 +366,7 @@ export class Aligner {
 
     if (firstFoundSentence === null) {
       return {
+        score,
         sentenceRanges: [],
         wordRanges: [],
         alignedEmissionsStart: emissionsStart,
@@ -367,6 +377,7 @@ export class Aligner {
     }
 
     return {
+      score,
       sentenceRanges,
       wordRanges,
       alignedEmissionsStart:
@@ -562,6 +573,7 @@ export class Aligner {
   }
 
   private async alignChapter(
+    spineIndex: number,
     chapterId: string,
     chapterSentences: SegmentationResult["sentences"],
     slugifiedChapter: string,
@@ -584,6 +596,7 @@ export class Aligner {
 
     timing.start("align sentences")
     const {
+      score,
       sentenceRanges,
       wordRanges,
       alignedEmissionsStart,
@@ -622,7 +635,9 @@ export class Aligner {
     })
 
     this.addChapterReport(
+      spineIndex,
       chapter,
+      score,
       chapterSentences,
       sentenceRanges,
       firstFoundSentence,
@@ -799,6 +814,9 @@ export class Aligner {
       this.report.unalignedChapters.push({
         href: spineItem.href,
         reason: "not-found",
+        spineIndex: index,
+        score: 0,
+        chapterSentenceCount: chapterSentences.length,
         start: chapterSentences
           .slice(0, 3)
           .map((s) => s.text)
@@ -819,6 +837,7 @@ export class Aligner {
     }
 
     const result = await this.alignChapter(
+      index,
       chapterId,
       chapterSentences,
       slugifiedChapter,
