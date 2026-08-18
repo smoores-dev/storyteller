@@ -19,6 +19,8 @@ export interface AudioFileContext {
 
 export interface ChapterReport {
   href: string
+  spineIndex: number
+  score: number
 
   transcriptionOffset: number
   endTranscriptionOffset: number
@@ -65,6 +67,9 @@ export interface UnalignedChapterReport {
 
 export interface UnalignedNotFoundChapterReport {
   href: string
+  spineIndex: number
+  score: number
+  chapterSentenceCount: number
 
   reason: "not-found"
 
