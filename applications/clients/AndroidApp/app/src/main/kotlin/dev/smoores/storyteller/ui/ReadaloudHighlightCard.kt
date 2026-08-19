@@ -67,8 +67,12 @@ internal fun ReadaloudHighlightCard(
     doubleTapPlay: String,
     freeBrowseMode: String,
     playbackSpeed: Double,
+    automaticRewindEnabled: Boolean,
+    automaticRewindAfterInterruption: Double,
+    automaticRewindAfterBreak: Double,
     onUpdateFocus: (Boolean, Double) -> Unit,
     onUpdateModes: (String, String, String) -> Unit,
+    onUpdateRewind: (Boolean, Double, Double) -> Unit,
     onUpdatePlaybackSpeed: (Double) -> Unit,
     onEditThemeReadaloud: () -> Unit,
     onReset: () -> Unit,
@@ -205,6 +209,68 @@ internal fun ReadaloudHighlightCard(
                     format = { String.format("%.2fx", it) },
                     onPreview = { onUpdatePlaybackSpeed(roundTo(it, 2)) },
                     onCommit = { onUpdatePlaybackSpeed(roundTo(it, 2)) },
+                )
+
+                HorizontalDivider()
+                SettingsSectionHeader("Automatic Rewind")
+                SettingSwitch(
+                    label = "Automatic Rewind",
+                    checked = automaticRewindEnabled,
+                    onToggle = {
+                        onUpdateRewind(
+                            it,
+                            automaticRewindAfterInterruption,
+                            automaticRewindAfterBreak,
+                        )
+                    },
+                )
+                if (automaticRewindEnabled) {
+                    SettingSlider(
+                        label = "After Interruption",
+                        value = automaticRewindAfterInterruption,
+                        range = 0f..30f,
+                        format = { "${it.roundToInt()}s" },
+                        onPreview = {
+                            onUpdateRewind(
+                                automaticRewindEnabled,
+                                it.roundToInt().toDouble(),
+                                automaticRewindAfterBreak,
+                            )
+                        },
+                        onCommit = {
+                            onUpdateRewind(
+                                automaticRewindEnabled,
+                                it.roundToInt().toDouble(),
+                                automaticRewindAfterBreak,
+                            )
+                        },
+                    )
+                    SettingSlider(
+                        label = "After Long Break",
+                        value = automaticRewindAfterBreak,
+                        range = 0f..30f,
+                        format = { "${it.roundToInt()}s" },
+                        onPreview = {
+                            onUpdateRewind(
+                                automaticRewindEnabled,
+                                automaticRewindAfterInterruption,
+                                it.roundToInt().toDouble(),
+                            )
+                        },
+                        onCommit = {
+                            onUpdateRewind(
+                                automaticRewindEnabled,
+                                automaticRewindAfterInterruption,
+                                it.roundToInt().toDouble(),
+                            )
+                        },
+                    )
+                }
+                CardFooterText(
+                    "Resuming steps back a few seconds. A pause longer than five minutes " +
+                        "counts as a break; shorter pauses and interruptions (calls, " +
+                        "navigation, voice assistants) use the other amount. Applies to " +
+                        "readaloud and audiobooks, including Android Auto.",
                 )
             }
         }

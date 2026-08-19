@@ -5,14 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -20,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,7 +47,6 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -73,7 +67,6 @@ internal fun SettingsScreen(
     saving: Boolean,
     appSettings: AppSettings?,
     modifier: Modifier,
-    save: (String, String, String) -> Unit,
     startBrowserLogin: (String) -> Unit = {},
     signOutBrowserLogin: () -> Unit = {},
     updateAppSettings: (Double?, Double?, Boolean?) -> Unit,
@@ -91,8 +84,6 @@ internal fun SettingsScreen(
     updateDisplayOptions: (DisplayOptions) -> Unit = {},
 ) {
     var serverURL by rememberSaveable { mutableStateOf("") }
-    var username by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
     var loadedSourceID by rememberSaveable { mutableStateOf<String?>(null) }
     var showSignOutConfirmation by rememberSaveable { mutableStateOf(false) }
 
@@ -101,19 +92,10 @@ internal fun SettingsScreen(
         val sourceKey = settings.sourceID ?: "new"
         if (loadedSourceID != sourceKey) {
             serverURL = settings.serverURL
-            username = settings.username
-            password = ""
             loadedSourceID = sourceKey
         }
     }
 
-    val canSave = !saving && serverURL.isNotBlank() && username.isNotBlank() &&
-        (settings.configured || password.isNotBlank()) && !settings.usesBrowserLogin
-    val submit = {
-        val submittedPassword = password
-        password = ""
-        save(serverURL, username, submittedPassword)
-    }
     Column(
         modifier
             .fillMaxSize()
@@ -122,8 +104,8 @@ internal fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "Add the Storyteller server used by this device. The source registry and " +
-                "credentials are persisted through the Android platform providers.",
+            "Add the Storyteller server used by this device. Sign in through your " +
+                "server's web login, including any single sign-on providers.",
             style = MaterialTheme.typography.bodyMedium,
         )
         OutlinedTextField(
@@ -154,50 +136,6 @@ internal fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Sign Out")
-            }
-        } else {
-            HorizontalDivider(Modifier.padding(vertical = 4.dp))
-            Text(
-                "Or sign in with a username and password:",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username or email") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                supportingText = {
-                    if (settings.configured) Text("Leave blank to keep the saved password")
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    if (canSave) submit()
-                }),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Button(
-                onClick = submit,
-                enabled = canSave,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (saving) {
-                    CircularProgressIndicator(
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.width(18.dp).height(18.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text(if (saving) "Connecting" else "Save & Connect")
             }
         }
         if (settings.configured) {

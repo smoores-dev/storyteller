@@ -218,7 +218,6 @@ struct BookSourceEditorView: View {
     @State private var name = ""
     @State private var serverURL = ""
     @State private var username = ""
-    @State private var password = ""
     @State private var folderPath = ""
     @State private var folderBookmarkData: Data?
     @State private var originalFolderPath = ""
@@ -229,7 +228,6 @@ struct BookSourceEditorView: View {
     @State private var hasSavedCredentials = false
     @State private var isLoading = false
     @State private var isSaving = false
-    @State private var isPasswordVisible = false
     @State private var showingFolderImporter = false
     @State private var connectionStatus: ConnectionTestStatus = .notTested
     @State private var showRemoveDataConfirmation = false
@@ -271,8 +269,7 @@ struct BookSourceEditorView: View {
         switch kind {
             case .storyteller:
                 return !serverURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    && !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    && (!password.isEmpty || sessionToken != nil)
+                    && sessionToken != nil
             case .localFolder:
                 return !folderPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
@@ -318,37 +315,6 @@ struct BookSourceEditorView: View {
 
                         if sessionToken != nil {
                             LabeledContent("Signed in as", value: username)
-                        } else {
-                            Text("Or sign in with a username and password:")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            TextField("Username", text: $username)
-                                .textContentType(.username)
-                                .autocorrectionDisabled()
-                                #if os(iOS)
-                            .textInputAutocapitalization(.never)
-                                #endif
-
-                            HStack {
-                                if isPasswordVisible {
-                                    TextField("Password", text: $password)
-                                        .textContentType(.password)
-                                        .autocorrectionDisabled()
-                                } else {
-                                    SecureField("Password", text: $password)
-                                        .textContentType(.password)
-                                }
-
-                                Button {
-                                    isPasswordVisible.toggle()
-                                } label: {
-                                    Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
-                                        .foregroundStyle(.secondary)
-                                }
-                                .buttonStyle(.plain)
-                                .help(isPasswordVisible ? "Hide password" : "Show password")
-                            }
                         }
                     case .localFolder:
                         HStack {
@@ -611,7 +577,6 @@ struct BookSourceEditorView: View {
             await MainActor.run {
                 serverURL = result.serverURL
                 username = result.username
-                password = ""
                 sessionToken = result.sessionToken
                 isBrowserSigningIn = false
             }
@@ -766,7 +731,7 @@ struct BookSourceEditorView: View {
     @ViewBuilder
     private func failureMessage(_ message: String) -> some View {
         if message.lowercased().contains("credentials") {
-            Text("Invalid username or password. Please check your credentials and try again.")
+            Text("This sign in is no longer valid. Sign in with your browser again.")
                 .font(.body)
         } else {
             VStack(alignment: .leading, spacing: 8) {
@@ -800,7 +765,6 @@ struct BookSourceEditorView: View {
             await MainActor.run {
                 serverURL = credentials.url
                 username = credentials.username
-                password = credentials.password
                 sessionToken = savedSessionToken
                 hasSavedCredentials = true
             }
@@ -828,7 +792,7 @@ struct BookSourceEditorView: View {
             name: name,
             serverURL: serverURL,
             username: username,
-            password: password,
+            password: nil,
             sessionToken: sessionToken,
             storagePath: folderPath,
             storageBookmarkData: folderBookmarkData,
@@ -899,44 +863,21 @@ struct BookSourceEditorView: View {
             connectionStatus = .testing
         }
 
-        if sessionToken != nil {
-            guard let sourceID else {
-                await MainActor.run {
-                    isLoading = false
-                    connectionStatus = .failure("Save this server before testing the connection.")
-                }
-                return
-            }
-            let connected = await BookServiceActor.shared.testBookSourceConnection(
-                sourceID: sourceID
-            )
-            let message = connected ? nil : await connectFailureMessage(sourceID: sourceID)
+        guard let sourceID else {
             await MainActor.run {
                 isLoading = false
-                connectionStatus =
-                    connected ? .success : .failure(message ?? "Could not connect to this server.")
+                connectionStatus = .failure("Save this server before testing the connection.")
             }
             return
         }
-
-        let result = await StorytellerActor.validateCredentials(
-            baseURL: serverURL,
-            username: username,
-            password: password,
+        let connected = await BookServiceActor.shared.testBookSourceConnection(
+            sourceID: sourceID
         )
-
+        let message = connected ? nil : await connectFailureMessage(sourceID: sourceID)
         await MainActor.run {
             isLoading = false
-            switch result {
-                case .success:
-                    connectionStatus = .success
-                case .invalidCredentials:
-                    connectionStatus = .failure(
-                        "Invalid username or password. Please check your credentials."
-                    )
-                case .failure(let message):
-                    connectionStatus = .failure(message)
-            }
+            connectionStatus =
+                connected ? .success : .failure(message ?? "Could not connect to this server.")
         }
     }
 

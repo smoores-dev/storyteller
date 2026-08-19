@@ -73,6 +73,7 @@ import androidx.webkit.WebViewClientCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.BookImage
 import dev.smoores.storyteller.model.DockCustomization
 import dev.smoores.storyteller.model.MenuBarCustomization
 import dev.smoores.storyteller.model.MiniPlayerCustomization
@@ -112,10 +113,12 @@ internal fun ReaderScreen(
     cachedCover: (Book, Boolean) -> android.graphics.Bitmap?,
     loadReadingTimeline: suspend () -> List<ReadingVisit>,
     clearReadingTimeline: suspend (List<String>) -> Unit,
+    loadBookImages: suspend () -> List<BookImage>,
+    loadImageThumbnail: suspend (String, Int) -> android.graphics.Bitmap?,
+    loadFullImage: suspend (String, Int, Int) -> android.graphics.Bitmap?,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val view = LocalView.current
     val isDark = isSystemInDarkTheme()
     val eink = LocalEink.current
 
@@ -134,6 +137,9 @@ internal fun ReaderScreen(
     var showReadingTimeline by remember { mutableStateOf(false) }
     var timelineVisits by remember(book.id) { mutableStateOf(emptyList<ReadingVisit>()) }
     var timelineLoading by remember(book.id) { mutableStateOf(false) }
+    var showImageGallery by remember { mutableStateOf(false) }
+    var bookImages by remember(book.id) { mutableStateOf(emptyList<BookImage>()) }
+    var imagesLoading by remember(book.id) { mutableStateOf(false) }
     var showSleepTimer by remember { mutableStateOf(false) }
     var showReadaloudThemeEditor by remember { mutableStateOf(false) }
     var customizeCard by rememberSaveable { mutableStateOf<CustomizeCard?>(null) }
@@ -181,9 +187,6 @@ internal fun ReaderScreen(
         webView.loadUrl(READER_PAGE_URL)
     }
 
-    LaunchedEffect(readerState?.keepScreenOn) {
-        view.keepScreenOn = readerState?.keepScreenOn == true
-    }
 
     // Page turns leave ghosting in the system's default fast mode; ask the
     // firmware for a full-quality waveform after the WebView repaints. Keyed
@@ -339,6 +342,7 @@ internal fun ReaderScreen(
         onOpenChapters = { showToc = true },
         onOpenBookmarks = { showBookmarks = true },
         onOpenReadingTimeline = { showReadingTimeline = true },
+        onOpenImageGallery = { showImageGallery = true },
         onOpenSearch = { showSearch = true },
         onOpenTextSettings = { customizeCard = CustomizeCard.TEXT_LAYOUT },
         onOpenSleepTimer = { showSleepTimer = true },
@@ -534,6 +538,23 @@ internal fun ReaderScreen(
         )
     }
 
+    if (showImageGallery) {
+        LaunchedEffect(showImageGallery) {
+            imagesLoading = bookImages.isEmpty()
+            bookImages = loadBookImages()
+            imagesLoading = false
+        }
+        ImageGalleryScreen(
+            images = bookImages,
+            loading = imagesLoading,
+            palette = coverPalette,
+            loadThumbnail = loadImageThumbnail,
+            loadFull = loadFullImage,
+            onGoTo = { image -> readerControl("goToImage", 0.0, image.id) },
+            onDismiss = { showImageGallery = false },
+        )
+    }
+
     if (showBookmarks) {
         ReaderBookmarksSheet(
             highlights = readerState?.highlights.orEmpty(),
@@ -680,6 +701,10 @@ internal fun ReaderScreen(
                     doubleTapPlay = playbackModes.doubleTapPlay,
                     freeBrowseMode = playbackModes.freeBrowseMode,
                     playbackSpeed = state.playbackRate,
+                    automaticRewindEnabled = playbackModes.automaticRewindEnabled,
+                    automaticRewindAfterInterruption =
+                        playbackModes.automaticRewindAfterInterruption,
+                    automaticRewindAfterBreak = playbackModes.automaticRewindAfterBreak,
                     onUpdateFocus = { dimOthers, dimAmount ->
                         val updated = displaySettings.copy(
                             readaloudDimOthers = dimOthers,
@@ -690,10 +715,19 @@ internal fun ReaderScreen(
                     },
                     onUpdateModes = { visibility, doubleTap, freeBrowse ->
                         sendCustomization(
-                            modes = PlaybackModes(
+                            modes = playbackModes.copy(
                                 freeBrowseMode = freeBrowse,
                                 readaloudHighlightVisibility = visibility,
                                 doubleTapPlay = doubleTap,
+                            ),
+                        )
+                    },
+                    onUpdateRewind = { enabled, afterInterruption, afterBreak ->
+                        sendCustomization(
+                            modes = playbackModes.copy(
+                                automaticRewindEnabled = enabled,
+                                automaticRewindAfterInterruption = afterInterruption,
+                                automaticRewindAfterBreak = afterBreak,
                             ),
                         )
                     },

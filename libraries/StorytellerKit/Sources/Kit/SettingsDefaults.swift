@@ -55,6 +55,12 @@ public let kDefaultFreeBrowseMode = "never"
 public let kFreeBrowseModeValues = ["never", "paused", "always"]
 public let kDefaultReadaloudHighlightVisibility = "paused"
 public let kReadaloudHighlightVisibilityValues = ["playing", "paused", "always"]
+public let kDefaultAutomaticRewindEnabled = true
+public let kDefaultAutomaticRewindAfterInterruption: Double = 3
+public let kDefaultAutomaticRewindAfterBreak: Double = 10
+public let kAutomaticRewindMaxSeconds: Double = 60
+// A pause longer than this counts as a break rather than an interruption.
+public let kAutomaticRewindBreakThreshold: Double = 5 * 60
 public let kDefaultDoubleTapPlay = "headphones"
 public let kDoubleTapPlayValues = ["never", "always", "headphones"]
 public let kDefaultReadaloudDimOthers = false
@@ -99,6 +105,7 @@ public let kDefaultColorMode = "full"
 public let kDefaultColorIntensity: Double = 0.65
 public let kDefaultDoubleCoverAlignment = "auto"
 public let kDefaultExperimentalSettings = false
+public let kDefaultProgressBadgeBackground = true
 
 public let kDefaultTVSubtitleFontSize: Double = 48
 public let kDefaultTVFontFamily = "serif"

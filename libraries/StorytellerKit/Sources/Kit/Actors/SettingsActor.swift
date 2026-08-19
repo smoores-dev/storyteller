@@ -462,6 +462,9 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var freeBrowseMode: String
         public var readaloudHighlightVisibility: String
         public var doubleTapPlay: String
+        public var automaticRewindEnabled: Bool
+        public var automaticRewindAfterInterruption: Double
+        public var automaticRewindAfterBreak: Double
 
         public var lockViewToAudio: Bool { freeBrowseMode == "never" }
 
@@ -472,7 +475,14 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             freeBrowseMode: String = kDefaultFreeBrowseMode,
             readaloudHighlightVisibility: String = kDefaultReadaloudHighlightVisibility,
             doubleTapPlay: String = kDefaultDoubleTapPlay,
+            automaticRewindEnabled: Bool = kDefaultAutomaticRewindEnabled,
+            automaticRewindAfterInterruption: Double = kDefaultAutomaticRewindAfterInterruption,
+            automaticRewindAfterBreak: Double = kDefaultAutomaticRewindAfterBreak,
         ) {
+            self.automaticRewindEnabled = automaticRewindEnabled
+            self.automaticRewindAfterInterruption =
+                Self.normalizedRewindSeconds(automaticRewindAfterInterruption)
+            self.automaticRewindAfterBreak = Self.normalizedRewindSeconds(automaticRewindAfterBreak)
             self.defaultPlaybackSpeed = defaultPlaybackSpeed
             self.defaultVolume = defaultVolume
             self.statsExpanded = statsExpanded
@@ -513,11 +523,24 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
                     (try? container?.decode(String.self, forKey: .doubleTapPlay))
                         ?? kDefaultDoubleTapPlay
                 )
+            automaticRewindEnabled =
+                (try? container?.decode(Bool.self, forKey: .automaticRewindEnabled))
+                ?? kDefaultAutomaticRewindEnabled
+            automaticRewindAfterInterruption = Self.normalizedRewindSeconds(
+                (try? container?.decode(Double.self, forKey: .automaticRewindAfterInterruption))
+                    ?? kDefaultAutomaticRewindAfterInterruption
+            )
+            automaticRewindAfterBreak = Self.normalizedRewindSeconds(
+                (try? container?.decode(Double.self, forKey: .automaticRewindAfterBreak))
+                    ?? kDefaultAutomaticRewindAfterBreak
+            )
         }
 
         private enum CodingKeys: String, CodingKey {
             case defaultPlaybackSpeed, defaultVolume, statsExpanded
             case freeBrowseMode, readaloudHighlightVisibility, doubleTapPlay
+            case automaticRewindEnabled, automaticRewindAfterInterruption
+            case automaticRewindAfterBreak
         }
 
         private enum LegacyCodingKeys: String, CodingKey {
@@ -535,6 +558,10 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
 
         static func normalizedDoubleTapPlay(_ value: String) -> String {
             kDoubleTapPlayValues.contains(value) ? value : kDefaultDoubleTapPlay
+        }
+
+        static func normalizedRewindSeconds(_ value: Double) -> Double {
+            value.isFinite ? min(max(value, 0), kAutomaticRewindMaxSeconds) : 0
         }
     }
 
@@ -690,7 +717,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var menuBarSlots: [PlayerComplication]
 
         public static let defaultMenuBarSlots: [PlayerComplication] = [
-            .sleepTimer, .chapters, .bookmarks, .readingTimeline, .search, .none,
+            .sleepTimer, .chapters, .bookmarks, .readingTimeline, .search, .imageGallery,
         ]
 
         static func leadingSlots(showProgress: Bool, showPageNumber: Bool) -> [PlayerComplication] {
@@ -1006,6 +1033,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var colorIntensity: Double
         public var doubleCoverAlignment: String
         public var experimentalSettings: Bool
+        public var progressBadgeBackground: Bool
 
         public init(
             showAudioIndicator: Bool = kDefaultShowAudioIndicator,
@@ -1018,6 +1046,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             colorIntensity: Double = kDefaultColorIntensity,
             doubleCoverAlignment: String = kDefaultDoubleCoverAlignment,
             experimentalSettings: Bool = kDefaultExperimentalSettings,
+            progressBadgeBackground: Bool = kDefaultProgressBadgeBackground,
         ) {
             self.showAudioIndicator = showAudioIndicator
             self.tabBarSlot1 = tabBarSlot1
@@ -1029,6 +1058,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             self.colorIntensity = colorIntensity
             self.doubleCoverAlignment = doubleCoverAlignment
             self.experimentalSettings = experimentalSettings
+            self.progressBadgeBackground = progressBadgeBackground
         }
 
         public init(from decoder: Decoder) throws {
@@ -1060,12 +1090,15 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             experimentalSettings =
                 (try? container?.decode(Bool.self, forKey: .experimentalSettings))
                 ?? kDefaultExperimentalSettings
+            progressBadgeBackground =
+                (try? container?.decode(Bool.self, forKey: .progressBadgeBackground))
+                ?? kDefaultProgressBadgeBackground
         }
 
         private enum CodingKeys: String, CodingKey {
             case showAudioIndicator, tabBarSlot1, tabBarSlot2, tapToPlayPreferredPlayer,
                 preferAudioOverEbook, accentColorHex, colorMode, colorIntensity,
-                doubleCoverAlignment, experimentalSettings
+                doubleCoverAlignment, experimentalSettings, progressBadgeBackground
         }
     }
 }
@@ -1135,6 +1168,9 @@ public actor SettingsActor {
         freeBrowseMode: String? = nil,
         readaloudHighlightVisibility: String? = nil,
         doubleTapPlay: String? = nil,
+        automaticRewindEnabled: Bool? = nil,
+        automaticRewindAfterInterruption: Double? = nil,
+        automaticRewindAfterBreak: Double? = nil,
         readaloudDimOthers: Bool? = nil,
         readaloudDimAmount: Double? = nil,
         readaloudHighlightFade: Double? = nil,
@@ -1186,6 +1222,7 @@ public actor SettingsActor {
         colorIntensity: Double? = nil,
         doubleCoverAlignment: String? = nil,
         experimentalSettings: Bool? = nil,
+        progressBadgeBackground: Bool? = nil,
         userHighlightColor1: String? = nil,
         userHighlightColor2: String? = nil,
         userHighlightColor3: String? = nil,
@@ -1258,6 +1295,19 @@ public actor SettingsActor {
         if let doubleTapPlay {
             updated.playback.doubleTapPlay =
                 StorytellerGlobalConfig.Playback.normalizedDoubleTapPlay(doubleTapPlay)
+        }
+        if let automaticRewindEnabled {
+            updated.playback.automaticRewindEnabled = automaticRewindEnabled
+        }
+        if let automaticRewindAfterInterruption {
+            updated.playback.automaticRewindAfterInterruption =
+                StorytellerGlobalConfig.Playback.normalizedRewindSeconds(
+                    automaticRewindAfterInterruption
+                )
+        }
+        if let automaticRewindAfterBreak {
+            updated.playback.automaticRewindAfterBreak =
+                StorytellerGlobalConfig.Playback.normalizedRewindSeconds(automaticRewindAfterBreak)
         }
         if let readaloudDimOthers { updated.reading.readaloudDimOthers = readaloudDimOthers }
         if let readaloudDimAmount { updated.reading.readaloudDimAmount = readaloudDimAmount }
@@ -1393,6 +1443,9 @@ public actor SettingsActor {
         }
         if let doubleCoverAlignment {
             updated.library.doubleCoverAlignment = doubleCoverAlignment
+        }
+        if let progressBadgeBackground {
+            updated.library.progressBadgeBackground = progressBadgeBackground
         }
         if let experimentalSettings {
             updated.library.experimentalSettings = experimentalSettings

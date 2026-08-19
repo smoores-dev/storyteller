@@ -232,6 +232,10 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
     LaunchedEffect(screen, selectedBookSummary?.id, selectedBookSummary?.coverVersion) {
         if (screen == Screen.Details) selectedBookSummary?.let(viewModel::loadBookDetails)
     }
+    LaunchedEffect(screen, readerMode, state.downloadsActive) {
+        val readingEbook = screen == Screen.Reader && readerMode != "audio"
+        rootView.keepScreenOn = readingEbook || state.downloadsActive
+    }
     var handledSettingsSaves by rememberSaveable { mutableIntStateOf(state.successfulSettingsSaves) }
     LaunchedEffect(state.successfulSettingsSaves) {
         if (state.successfulSettingsSaves == handledSettingsSaves) return@LaunchedEffect
@@ -413,9 +417,6 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                     saving = state.savingSettings,
                     appSettings = state.appSettings,
                     modifier = Modifier.padding(padding),
-                    save = { serverURL, username, password ->
-                        viewModel.saveSettings(serverURL, username, password)
-                    },
                     startBrowserLogin = { serverURL ->
                         drawerScope.launch {
                             runCatching { viewModel.browserLoginURL(serverURL) }
@@ -569,6 +570,9 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                             cachedCover = viewModel::cachedCover,
                             loadReadingTimeline = viewModel::readingTimeline,
                             clearReadingTimeline = viewModel::clearReadingTimeline,
+                            loadBookImages = viewModel::bookImages,
+                            loadImageThumbnail = viewModel::bookImageThumbnail,
+                            loadFullImage = viewModel::bookImageFull,
                             modifier = Modifier,
                         )
                     }

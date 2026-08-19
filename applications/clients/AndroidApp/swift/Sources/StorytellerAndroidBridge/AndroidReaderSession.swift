@@ -108,6 +108,9 @@ final class AndroidReaderSettings: ReaderSettingsReading {
     var readaloudUnderlineStyle: String = kDefaultReadaloudUnderlineStyle
     var readaloudHighlightVisibility: String = kDefaultReadaloudHighlightVisibility
     var doubleTapPlay: String = kDefaultDoubleTapPlay
+    var automaticRewindEnabled: Bool = kDefaultAutomaticRewindEnabled
+    var automaticRewindAfterInterruption: Double = kDefaultAutomaticRewindAfterInterruption
+    var automaticRewindAfterBreak: Double = kDefaultAutomaticRewindAfterBreak
 
     nonisolated init() {}
 
@@ -211,6 +214,8 @@ final class AndroidReaderSession {
     private var menuBarSlots = StorytellerGlobalConfig.ReadingBar.defaultMenuBarSlots
     private var experimentalSettings = kDefaultExperimentalSettings
     private var pendingServerPosition: IncomingServerPosition?
+    private var imageItems: [BookImageItem] = []
+    private var imageIndexBuilt = false
     private var timelineBackLocator: BookLocator?
     private var timelineBackDescription = ""
     private var timelineForwardLocator: BookLocator?
@@ -285,6 +290,9 @@ final class AndroidReaderSession {
             var freeBrowseMode: String?
             var readaloudHighlightVisibility: String?
             var doubleTapPlay: String?
+            var automaticRewindEnabled: Bool?
+            var automaticRewindAfterInterruption: Double?
+            var automaticRewindAfterBreak: Double?
         }
 
         var miniPlayer: MiniPlayerUpdate?
@@ -322,6 +330,9 @@ final class AndroidReaderSession {
         settings.readaloudDimAmount = config.reading.readaloudDimAmount
         settings.freeBrowseMode = config.playback.freeBrowseMode
         settings.doubleTapPlay = config.playback.doubleTapPlay
+        settings.automaticRewindEnabled = config.playback.automaticRewindEnabled
+        settings.automaticRewindAfterInterruption = config.playback.automaticRewindAfterInterruption
+        settings.automaticRewindAfterBreak = config.playback.automaticRewindAfterBreak
         experimentalSettings = config.library.experimentalSettings
         // Highlight visibility is experimental-gated (ReadaloudHighlightCard.onAppear on iOS).
         settings.readaloudHighlightVisibility =
@@ -439,6 +450,8 @@ final class AndroidReaderSession {
         pendingSelection = nil
         pendingEditHighlightID = nil
         pendingServerPosition = nil
+        imageItems = []
+        imageIndexBuilt = false
         await loadPersistedConfig()
         applyActiveTheme()
 
@@ -709,6 +722,8 @@ final class AndroidReaderSession {
                 applyActiveTheme()
                 styleManager?.handleDarkModeChange(isDarkMode)
                 await sendHighlightsToJS()
+            case "goToImage":
+                try await goToImage(id: text)
             case "goToTimelineVisit":
                 try await goToTimelineVisit(session, id: text, useStart: value != 0)
             case "timelineGoBack":
@@ -739,6 +754,60 @@ final class AndroidReaderSession {
                 await session.handleSceneEnteredBackground()
             default:
                 throw AndroidBridgeError.invalidReaderCommand(command)
+        }
+    }
+
+    func bookImageIndexJSON() async throws -> String {
+        guard let session else {
+            throw AndroidBridgeError.readerNotOpen
+        }
+        if !imageIndexBuilt {
+            guard let epubURL = session.originalEbookURL else {
+                throw AndroidBridgeError.readerNotOpen
+            }
+            imageItems = try await Task.detached(priority: .utility) {
+                try BookImageIndexer.buildIndex(epubURL: epubURL)
+            }.value
+            imageIndexBuilt = true
+        }
+
+        let structure = session.bookStructure
+        return try encodeReaderJSON(
+            AndroidBookImageIndex(
+                images: imageItems.map { item in
+                    AndroidBookImage(
+                        id: item.id,
+                        title: item.displayTitle,
+                        kind: item.kind.rawValue,
+                        caption: item.caption ?? item.altText,
+                        pageLabel: item.pageLabel,
+                        sectionIndex: item.sectionIndex,
+                        chapterTitle: structure[safe: item.sectionIndex]?.label,
+                    )
+                }
+            )
+        )
+    }
+
+    // The reader only opens once the epub is extracted, so image bytes always
+    // come off disk rather than back out of the archive.
+    func bookImageData(id: String) throws -> Data {
+        guard let session, let item = imageItems.first(where: { $0.id == id }) else {
+            throw AndroidBridgeError.readerNotOpen
+        }
+        guard let root = session.extractedEbookPath else { return Data() }
+        return (try? Data(contentsOf: root.appendingPathComponent(item.imagePath))) ?? Data()
+    }
+
+    private func goToImage(id: String) async throws {
+        guard let item = imageItems.first(where: { $0.id == id }) else { return }
+        if let elementId = item.elementId {
+            try await bridge?.sendJsGoToHrefCommand(href: "\(item.sectionId)#\(elementId)")
+        } else {
+            try await bridge?.sendJsGoToImageCommand(
+                sectionIndex: item.sectionIndex,
+                filename: (item.imagePath as NSString).lastPathComponent,
+            )
         }
     }
 
@@ -1220,6 +1289,15 @@ final class AndroidReaderSession {
             if let value = modes.doubleTapPlay, kDoubleTapPlayValues.contains(value) {
                 settings.doubleTapPlay = value
             }
+            if let value = modes.automaticRewindEnabled {
+                settings.automaticRewindEnabled = value
+            }
+            if let value = modes.automaticRewindAfterInterruption {
+                settings.automaticRewindAfterInterruption = value
+            }
+            if let value = modes.automaticRewindAfterBreak {
+                settings.automaticRewindAfterBreak = value
+            }
         }
 
         let miniChanged = update.miniPlayer != nil
@@ -1250,6 +1328,14 @@ final class AndroidReaderSession {
                 _ in settings.readaloudHighlightVisibility
             },
             doubleTapPlay: update.playbackModes?.doubleTapPlay.map { _ in settings.doubleTapPlay },
+            automaticRewindEnabled: update.playbackModes?.automaticRewindEnabled.map { _ in
+                settings.automaticRewindEnabled
+            },
+            automaticRewindAfterInterruption: update.playbackModes?.automaticRewindAfterInterruption
+                .map { _ in settings.automaticRewindAfterInterruption },
+            automaticRewindAfterBreak: update.playbackModes?.automaticRewindAfterBreak.map { _ in
+                settings.automaticRewindAfterBreak
+            },
             miniPlayerSize: miniChanged ? miniPlayerConfig.size : nil,
             miniPlayerLeadingStyle: miniChanged ? miniPlayerConfig.leadingStyle : nil,
             miniPlayerCycleFirst: miniChanged ? miniPlayerConfig.cycleFirst : nil,
@@ -1575,6 +1661,9 @@ final class AndroidReaderSession {
             let freeBrowseMode: String
             let readaloudHighlightVisibility: String
             let doubleTapPlay: String
+            let automaticRewindEnabled: Bool
+            let automaticRewindAfterInterruption: Double
+            let automaticRewindAfterBreak: Double
         }
 
         let title: String
@@ -1760,6 +1849,9 @@ final class AndroidReaderSession {
                 freeBrowseMode: settings.freeBrowseMode,
                 readaloudHighlightVisibility: settings.readaloudHighlightVisibility,
                 doubleTapPlay: settings.doubleTapPlay,
+                automaticRewindEnabled: settings.automaticRewindEnabled,
+                automaticRewindAfterInterruption: settings.automaticRewindAfterInterruption,
+                automaticRewindAfterBreak: settings.automaticRewindAfterBreak,
             ),
             experimentalSettings: experimentalSettings,
             search: ReaderState.Search(
@@ -1861,8 +1953,8 @@ private enum SlotLayout {
     static func readerControls(for region: SlotRegion) -> [PlayerComplication] {
         if isTextOnly(region) { return [] }
         return [
-            .chapters, .bookmarks, .readingTimeline, .search, .textSettings, .sleepTimer,
-            .mirror, .scrollMode, .freeBrowseLock, .orientationLock,
+            .chapters, .bookmarks, .readingTimeline, .imageGallery, .search, .textSettings,
+            .sleepTimer, .mirror, .scrollMode, .freeBrowseLock, .orientationLock,
         ]
     }
 
@@ -1918,6 +2010,20 @@ private func encodeReaderJSON<T: Encodable>(_ value: T) throws -> String {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys]
     return String(decoding: try encoder.encode(value), as: UTF8.self)
+}
+
+private struct AndroidBookImageIndex: Encodable {
+    let images: [AndroidBookImage]
+}
+
+private struct AndroidBookImage: Encodable {
+    let id: String
+    let title: String
+    let kind: String
+    let caption: String?
+    let pageLabel: String?
+    let sectionIndex: Int
+    let chapterTitle: String?
 }
 
 private struct AndroidReadingTimeline: Encodable {

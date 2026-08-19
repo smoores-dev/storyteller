@@ -2,6 +2,7 @@ import "./foliate-js/view.js"
 import { Overlayer } from "./foliate-js/overlayer.js"
 import { SpanHighlighter } from "./SpanHighlighter.js"
 import { debugLog } from "./DebugConfig.js"
+import { getIntersectingElements } from "./VisibilityDetection.js"
 import BookmarkManager from "./BookmarkManager.js"
 
 const getReadaloudCSS = ({
@@ -1158,6 +1159,18 @@ class FoliateManager {
     }
 
     return ids
+  }
+
+  getPartiallyVisibleElementIds() {
+    const range = this.#lastRelocateRange
+    if (!range) return []
+
+    const doc =
+      range.startContainer?.ownerDocument ||
+      range.commonAncestorContainer?.ownerDocument
+    if (!doc) return []
+
+    return getIntersectingElements(doc, range)
   }
 
   getFirstVisiblePosition() {

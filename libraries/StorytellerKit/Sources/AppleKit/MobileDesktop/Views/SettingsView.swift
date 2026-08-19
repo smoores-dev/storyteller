@@ -166,6 +166,7 @@ public struct SettingsView: View {
                     colorIntensity: newValue.library.colorIntensity,
                     doubleCoverAlignment: newValue.library.doubleCoverAlignment,
                     experimentalSettings: newValue.library.experimentalSettings,
+                    progressBadgeBackground: newValue.library.progressBadgeBackground,
                 )
                 #else
                 try await SettingsActor.shared.updateConfig(
@@ -213,6 +214,7 @@ public struct SettingsView: View {
                     colorIntensity: newValue.library.colorIntensity,
                     doubleCoverAlignment: newValue.library.doubleCoverAlignment,
                     experimentalSettings: newValue.library.experimentalSettings,
+                    progressBadgeBackground: newValue.library.progressBadgeBackground,
                     userHighlightColor1: newValue.reading.userHighlightColor1,
                     userHighlightColor2: newValue.reading.userHighlightColor2,
                     userHighlightColor3: newValue.reading.userHighlightColor3,
@@ -412,6 +414,13 @@ extension SettingsView {
 
                 Section {
                     Toggle("Enable Experimental Settings", isOn: $config.library.experimentalSettings)
+
+                    if config.library.experimentalSettings {
+                        Toggle(
+                            "Progress Badge Backdrop",
+                            isOn: $config.library.progressBadgeBackground,
+                        )
+                    }
                 }
             }
             .navigationTitle("Settings")
@@ -652,6 +661,16 @@ private struct MacGeneralSettingsView: View {
                     "Enable Experimental Settings",
                     isOn: $library.experimentalSettings,
                 )
+
+                if library.experimentalSettings {
+                    Toggle(
+                        "Progress Badge Backdrop",
+                        isOn: $library.progressBadgeBackground,
+                    )
+                    .help(
+                        "Draw a shaded disc behind the circular progress badge on library covers."
+                    )
+                }
 
             }
 

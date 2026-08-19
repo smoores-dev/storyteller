@@ -1563,6 +1563,23 @@ public func readingTimelineJSON(requestID: String) async throws {
     }
 }
 
+public func bookImageIndexJSON(requestID: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        return try await AndroidReaderSession.shared.bookImageIndexJSON()
+    }
+}
+
+public func bookImageBytes(requestID: String, imageID: String) async {
+    do {
+        try requireAndroidBootstrap()
+        let data = try await AndroidReaderSession.shared.bookImageData(id: imageID)
+        deliverAndroidBytesPayload(requestID: requestID, data: data)
+    } catch {
+        deliverAndroidBytesError(requestID: requestID, error: error)
+    }
+}
+
 public func clearReadingTimeline(requestID: String, visitIDsJSON: String) async throws {
     try await deliverAndroidBridgePayload(requestID: requestID) {
         try requireAndroidBootstrap()

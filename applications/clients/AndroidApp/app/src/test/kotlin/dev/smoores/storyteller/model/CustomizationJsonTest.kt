@@ -176,6 +176,24 @@ class CustomizationJsonTest {
     }
 
     @Test
+    fun playbackModesParseHandlesAutomaticRewind() {
+        val defaults = PlaybackModes.parse(JSONObject("{}"))
+        assertEquals(true, defaults.automaticRewindEnabled)
+        assertEquals(3.0, defaults.automaticRewindAfterInterruption, 0.0)
+        assertEquals(10.0, defaults.automaticRewindAfterBreak, 0.0)
+
+        val parsed = PlaybackModes.parse(
+            JSONObject(
+                """{"automaticRewindEnabled":false,"automaticRewindAfterInterruption":-5,
+                    "automaticRewindAfterBreak":900}""",
+            ),
+        )
+        assertEquals(false, parsed.automaticRewindEnabled)
+        assertEquals(0.0, parsed.automaticRewindAfterInterruption, 0.0)
+        assertEquals(60.0, parsed.automaticRewindAfterBreak, 0.0)
+    }
+
+    @Test
     fun customizationUpdateJsonIsSparse() {
         val empty = JSONObject(customizationUpdateJson())
         assertEquals(0, empty.length())

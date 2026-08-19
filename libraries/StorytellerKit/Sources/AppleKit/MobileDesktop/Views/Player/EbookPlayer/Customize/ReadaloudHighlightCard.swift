@@ -25,6 +25,7 @@ struct ReadaloudHighlightCard: View {
                         visibilitySection
                     }
                     playbackSection
+                    rewindSection
                 }
             }
         }
@@ -66,6 +67,9 @@ struct ReadaloudHighlightCard: View {
         settingsVM.doubleTapPlay = kDefaultDoubleTapPlay
         settingsVM.freeBrowseMode = kDefaultFreeBrowseMode
         settingsVM.defaultPlaybackSpeed = kDefaultPlaybackSpeed
+        settingsVM.automaticRewindEnabled = kDefaultAutomaticRewindEnabled
+        settingsVM.automaticRewindAfterInterruption = kDefaultAutomaticRewindAfterInterruption
+        settingsVM.automaticRewindAfterBreak = kDefaultAutomaticRewindAfterBreak
         settingsVM.save()
     }
 
@@ -255,6 +259,54 @@ struct ReadaloudHighlightCard: View {
             }
         } header: {
             Text("Playback")
+        }
+    }
+
+    private var rewindSection: some View {
+        Section {
+            Toggle(
+                isOn: setting(
+                    get: { settingsVM.automaticRewindEnabled },
+                    set: { settingsVM.automaticRewindEnabled = $0 },
+                )
+            ) {
+                Label("Automatic Rewind", systemImage: "gobackward")
+            }
+
+            if settingsVM.automaticRewindEnabled {
+                rewindSlider(
+                    caption: "After Interruption",
+                    value: setting(
+                        get: { settingsVM.automaticRewindAfterInterruption },
+                        set: { settingsVM.automaticRewindAfterInterruption = $0 },
+                    ),
+                )
+                rewindSlider(
+                    caption: "After Long Break",
+                    value: setting(
+                        get: { settingsVM.automaticRewindAfterBreak },
+                        set: { settingsVM.automaticRewindAfterBreak = $0 },
+                    ),
+                )
+            }
+        } header: {
+            Text("Automatic Rewind")
+        } footer: {
+            Text(
+                "Resuming steps back a few seconds. A pause longer than five "
+                    + "minutes counts as a break; shorter pauses and interruptions "
+                    + "(calls, navigation, voice assistants) use the other amount. "
+                    + "Applies to readaloud and audiobooks, including CarPlay."
+            )
+        }
+    }
+
+    private func rewindSlider(caption: String, value: Binding<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(caption): \(Int(value.wrappedValue.rounded()))s")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Slider(value: value, in: 0...30, step: 1)
         }
     }
 }

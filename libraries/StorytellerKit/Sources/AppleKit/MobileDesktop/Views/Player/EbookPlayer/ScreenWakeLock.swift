@@ -5,9 +5,17 @@ import Foundation
 import UIKit
 #endif
 
+enum ScreenWakeLockReason: String, Sendable {
+    case playback
+    case bookOpen
+    case downloading
+}
+
 @MainActor
 final class ScreenWakeLock {
     static let shared = ScreenWakeLock()
+
+    private var reasons: Set<ScreenWakeLockReason> = []
 
     #if os(macOS)
     private var displaySleepActivity: NSObjectProtocol?
@@ -15,11 +23,22 @@ final class ScreenWakeLock {
 
     private init() {}
 
-    func set(_ enabled: Bool) {
+    func set(_ enabled: Bool, reason: ScreenWakeLockReason = .playback) {
+        let before = reasons
+        if enabled {
+            reasons.insert(reason)
+        } else {
+            reasons.remove(reason)
+        }
+        guard reasons.isEmpty != before.isEmpty else { return }
+        apply(!reasons.isEmpty)
+    }
+
+    private func apply(_ enabled: Bool) {
         #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = enabled
         debugLog(
-            "[ScreenWakeLock] iOS idle timer \(enabled ? "disabled" : "enabled")"
+            "[ScreenWakeLock] iOS idle timer \(enabled ? "disabled" : "enabled") reasons=\(reasons.map(\.rawValue).sorted().joined(separator: ","))"
         )
         #elseif os(macOS)
         if enabled {

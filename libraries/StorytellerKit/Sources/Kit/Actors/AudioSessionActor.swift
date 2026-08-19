@@ -366,7 +366,7 @@ public actor AudioSessionActor {
             case .audiobook:
                 switch command {
                     case .play:
-                        try await AudiobookActor.shared.play()
+                        try await AudiobookActor.shared.play(automaticRewind: true)
                     case .pause:
                         await AudiobookActor.shared.pause()
                     case .togglePlayPause:
@@ -375,7 +375,7 @@ public actor AudioSessionActor {
             case .readaloud:
                 switch command {
                     case .play:
-                        try await SMILPlayerActor.shared.play()
+                        try await SMILPlayerActor.shared.play(automaticRewind: true)
                     case .pause:
                         await SMILPlayerActor.shared.pause()
                     case .togglePlayPause:

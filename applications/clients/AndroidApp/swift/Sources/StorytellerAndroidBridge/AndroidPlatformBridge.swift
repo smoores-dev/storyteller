@@ -103,6 +103,13 @@ extension JavaClass<JavaAndroidBridgeCallbacks> {
     )
 
     @JavaStaticMethod
+    func bytesRequestDidComplete(
+        _ requestID: String,
+        _ data: [UInt8],
+        _ error: String,
+    )
+
+    @JavaStaticMethod
     func evaluateReaderJS(_ requestID: String, _ script: String)
 
     @JavaStaticMethod
@@ -224,6 +231,22 @@ func deliverAndroidCoverError(requestID: String, error: Error) {
         requestID,
         [],
         false,
+        String(describing: error),
+    )
+}
+
+func deliverAndroidBytesPayload(requestID: String, data: Data) {
+    try? JavaClass<JavaAndroidBridgeCallbacks>().bytesRequestDidComplete(
+        requestID,
+        [UInt8](data),
+        "",
+    )
+}
+
+func deliverAndroidBytesError(requestID: String, error: Error) {
+    try? JavaClass<JavaAndroidBridgeCallbacks>().bytesRequestDidComplete(
+        requestID,
+        [],
         String(describing: error),
     )
 }

@@ -50,13 +50,13 @@ enum SlotLayout {
         if isTextOnly(region) { return [] }
         #if os(iOS)
         return [
-            .chapters, .bookmarks, .readingTimeline, .search, .textSettings, .sleepTimer,
-            .mirror, .scrollMode, .freeBrowseLock, .orientationLock,
+            .chapters, .bookmarks, .readingTimeline, .imageGallery, .search, .textSettings,
+            .sleepTimer, .mirror, .scrollMode, .freeBrowseLock, .orientationLock,
         ]
         #else
         return [
-            .chapters, .bookmarks, .readingTimeline, .search, .textSettings, .sleepTimer,
-            .scrollMode, .freeBrowseLock,
+            .chapters, .bookmarks, .readingTimeline, .imageGallery, .search, .textSettings,
+            .sleepTimer, .scrollMode, .freeBrowseLock,
         ]
         #endif
     }

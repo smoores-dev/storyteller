@@ -143,6 +143,7 @@ public actor AudiobookActor {
     // AudioPlaying has no isPlaying accessor; the actor is the source of truth
     // for play/pause intent (players only emit events, never auto-pause).
     private var isPlaying = false
+    private var rewind = AutomaticRewind()
     private var stateObservers: [UUID: @Sendable (AudiobookPlaybackState) -> Void] = [:]
 
     private init() {}
@@ -499,11 +500,20 @@ public actor AudiobookActor {
         await SMILPlayerActor.shared.setActiveAudioPlayer(.audiobook)
     }
 
-    public func play() async throws {
+    public func play(automaticRewind: Bool = false) async throws {
         if player == nil {
             try await preparePlayer()
             guard player != nil else {
                 throw AudiobookError.playbackFailed("Player not initialized")
+            }
+        }
+
+        if automaticRewind {
+            let seconds = rewind.secondsOnResume(
+                config: await SettingsActor.shared.config.playback
+            )
+            if seconds > 0 {
+                await skipBackward(seconds)
             }
         }
 
@@ -517,19 +527,21 @@ public actor AudiobookActor {
         debugLog("[AudiobookActor] pause() called")
         await player?.pause()
         isPlaying = false
+        rewind.recordPause()
         await notifyStateChange()
     }
 
-    public func togglePlayPause() async throws {
+    public func togglePlayPause(automaticRewind: Bool = true) async throws {
         if isPlaying {
             await pause()
         } else {
-            try await play()
+            try await play(automaticRewind: automaticRewind)
         }
     }
 
     public func seek(to time: TimeInterval) async {
         guard let metadata, !metadata.tracks.isEmpty else { return }
+        rewind.reset()
         let clampedTime = min(max(time, 0), metadata.totalDuration)
         let trackIndex = trackIndex(for: clampedTime, in: metadata.tracks)
         let requiresReload = player == nil || trackIndex != currentTrackIndex
@@ -686,7 +698,7 @@ public actor AudiobookActor {
                 if shouldResume {
                     debugLog("[AudiobookActor] Audio session interruption ended - resuming")
                     do {
-                        try await play()
+                        try await play(automaticRewind: true)
                     } catch {
                         debugLog("[AudiobookActor] Failed to resume after interruption: \(error)")
                     }

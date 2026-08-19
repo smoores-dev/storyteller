@@ -157,12 +157,6 @@ private struct SidebarImageCell: View {
     }
 }
 
-enum BookImageFormatting {
-    static func dimensions(_ size: CGSize) -> String {
-        "\(Int(size.width))\u{00D7}\(Int(size.height))"
-    }
-}
-
 struct SidebarImageThumbnail: View {
     let item: BookImageItem
     let provider: BookImageDataProvider?

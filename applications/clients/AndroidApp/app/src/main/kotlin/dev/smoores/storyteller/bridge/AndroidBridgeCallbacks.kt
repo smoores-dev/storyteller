@@ -32,6 +32,7 @@ object AndroidBridgeCallbacks {
     private var readerWebView: Registration<WebView>? = null
     private val payloadRequests = ConcurrentHashMap<String, CompletableDeferred<String>>()
     private val coverRequests = ConcurrentHashMap<String, CompletableDeferred<CoverPayload>>()
+    private val bytesRequests = ConcurrentHashMap<String, CompletableDeferred<ByteArray>>()
     private val mainHandler = Handler(Looper.getMainLooper())
 
     fun observe(owner: Any, onChange: () -> Unit) {
@@ -143,6 +144,28 @@ object AndroidBridgeCallbacks {
             result.await()
         } finally {
             coverRequests.remove(requestID, result)
+        }
+    }
+
+    internal suspend fun requestBytes(start: (String) -> CompletableFuture<Void>): ByteArray {
+        val requestID = UUID.randomUUID().toString()
+        val result = CompletableDeferred<ByteArray>()
+        check(bytesRequests.putIfAbsent(requestID, result) == null)
+        return try {
+            start(requestID).awaitResult()
+            result.await()
+        } finally {
+            bytesRequests.remove(requestID, result)
+        }
+    }
+
+    @JvmStatic
+    fun bytesRequestDidComplete(requestID: String, data: ByteArray, error: String) {
+        val request = bytesRequests.remove(requestID) ?: return
+        if (error.isEmpty()) {
+            request.complete(data)
+        } else {
+            request.completeExceptionally(IllegalStateException(error))
         }
     }
 

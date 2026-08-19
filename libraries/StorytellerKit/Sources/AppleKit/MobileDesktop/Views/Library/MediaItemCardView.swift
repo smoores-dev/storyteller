@@ -746,11 +746,16 @@ struct MediaItemCardView: View {
 }
 
 struct CircularProgressBadge: View {
+    @Environment(MediaViewModel.self) private var mediaViewModel: MediaViewModel?
     let progress: Double
     var showsBackground: Bool = false
     var backgroundColor: Color = .black.opacity(0.78)
     var ringDiameter: CGFloat = 18
     var backgroundDiameter: CGFloat = 24
+
+    private var showsBackdrop: Bool {
+        showsBackground && (mediaViewModel?.cachedConfig.library.progressBadgeBackground ?? true)
+    }
 
     var body: some View {
         let clamped = min(max(progress, 0), 1)
@@ -766,7 +771,7 @@ struct CircularProgressBadge: View {
         // Background sits behind without affecting the ring's layout, so the ring stays the
         // same size whether or not the backing disc is shown.
         .background {
-            if showsBackground {
+            if showsBackdrop {
                 Circle()
                     .fill(backgroundColor)
                     .frame(width: backgroundDiameter, height: backgroundDiameter)

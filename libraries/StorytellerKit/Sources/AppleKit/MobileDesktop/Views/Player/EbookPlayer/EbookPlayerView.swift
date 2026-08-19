@@ -294,6 +294,9 @@ public struct EbookPlayerView: View {
             #endif
         }
         #if os(iOS)
+        .fullScreenCover(isPresented: $viewModel.showImageGallery) {
+            imageGallerySheet
+        }
         .fullScreenCover(isPresented: $viewModel.showReadingTimeline) {
             readingTimelineSheet
         }
@@ -888,6 +891,30 @@ public struct EbookPlayerView: View {
         }
     }
 
+    #if os(iOS)
+    private var imageGallerySheet: some View {
+        ImageGallerySheet(
+            items: viewModel.imageItems,
+            state: viewModel.imageIndexState,
+            provider: viewModel.imageProvider,
+            positionLabel: { item in
+                if let page = item.pageLabel {
+                    return "p. \(page)"
+                }
+                return viewModel.bookStructure[safe: item.sectionIndex]?.label
+                    ?? "Section \(item.sectionIndex + 1)"
+            },
+            onNavigate: { item in
+                Task { await viewModel.navigateToImage(item) }
+            },
+        )
+        // URL-keyed so a nil at first appear retries once the session prepares.
+        .task(id: viewModel.session?.originalEbookURL) {
+            await viewModel.buildImageIndexIfNeeded()
+        }
+    }
+    #endif
+
     private var isAudioPlaying: Bool {
         viewModel.mediaOverlayManager?.isPlaying ?? false
     }
@@ -955,6 +982,19 @@ public struct EbookPlayerView: View {
             onChapterSelected: viewModel.handleChapterSelection,
             onOpenBookmarks: { viewModel.showBookmarksPanel = true },
             onOpenReadingTimeline: { viewModel.showReadingTimeline = true },
+            onOpenImageGallery: {
+                #if os(macOS)
+                // The mac reader browses images in the sidebar, so the
+                // complication just steers the sidebar to that tab.
+                UserDefaults.standard.set(
+                    EbookSidebarNavTab.images.rawValue,
+                    forKey: "EbookPlayerSidebarNavTab",
+                )
+                viewModel.showChapterSidebar = true
+                #else
+                viewModel.showImageGallery = true
+                #endif
+            },
             onOpenSearch: { viewModel.showSearchPanel = true },
             onOpenTextSettings: { viewModel.showCustomizePopover = true },
             onOpenSleepTimer: { viewModel.showSleepTimerSheet = true },

@@ -199,6 +199,7 @@ class EbookPlayerViewModel {
     var translationText = ""
     var showBookmarksPanel = false
     var showReadingTimeline = false
+    var showImageGallery = false
     var timelineBackLocator: BookLocator? = nil
     var timelineBackDescription = ""
     var timelineForwardLocator: BookLocator? = nil
@@ -432,6 +433,7 @@ class EbookPlayerViewModel {
     func handleOnAppear() {
         #if os(iOS)
         recoveryManager = WebViewRecoveryManager(viewModel: self)
+        ScreenWakeLock.shared.set(true, reason: .bookOpen)
         #endif
 
         if let data = bookData {
@@ -671,6 +673,10 @@ class EbookPlayerViewModel {
 
     func handleOnDisappear(close policy: ReadingSessionClosePolicy? = .endSession) {
         debugLog("[EbookPlayerViewModel] View disappearing (policy: \(String(describing: policy)))")
+
+        #if os(iOS)
+        ScreenWakeLock.shared.set(false, reason: .bookOpen)
+        #endif
 
         #if os(macOS)
         if let bookID = bookData?.metadata.id,
@@ -918,7 +924,7 @@ class EbookPlayerViewModel {
         debugLog("[EbookPlayerViewModel] Deleted highlight: \(highlight.id)")
     }
 
-    #if os(macOS)
+    #if os(iOS) || os(macOS)
     enum ImageIndexState {
         case idle
         case loading

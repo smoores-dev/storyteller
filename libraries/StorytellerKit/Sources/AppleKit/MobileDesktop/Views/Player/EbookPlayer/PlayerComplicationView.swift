@@ -72,6 +72,7 @@ struct MiniPlayerActions {
     var onChapterSelected: (ChapterItem) -> Void = { _ in }
     var onOpenBookmarks: () -> Void = {}
     var onOpenReadingTimeline: () -> Void = {}
+    var onOpenImageGallery: () -> Void = {}
     var onOpenSearch: () -> Void = {}
     var onOpenTextSettings: () -> Void = {}
     var onOpenSleepTimer: () -> Void = {}
@@ -271,6 +272,11 @@ struct PlayerComplicationView: View {
                 controlButton(
                     systemName: "clock.arrow.circlepath",
                     action: actions.onOpenReadingTimeline,
+                )
+            case .imageGallery:
+                controlButton(
+                    systemName: "photo.on.rectangle",
+                    action: actions.onOpenImageGallery,
                 )
             case .search:
                 controlButton(systemName: "magnifyingglass", action: actions.onOpenSearch)

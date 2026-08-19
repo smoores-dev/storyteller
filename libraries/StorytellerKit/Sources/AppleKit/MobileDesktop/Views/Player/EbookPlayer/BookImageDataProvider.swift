@@ -1,14 +1,22 @@
-#if os(macOS)
-import AppKit
+#if os(iOS) || os(macOS)
+import CoreGraphics
 import Foundation
 import ImageIO
 import ZIPFoundation
 
+#if os(macOS)
+import AppKit
+typealias BookPlatformImage = NSImage
+#else
+import UIKit
+typealias BookPlatformImage = UIImage
+#endif
+
 final class BookImageDataProvider: @unchecked Sendable {
     private let extractedRoot: URL?
     private let archiveURL: URL?
-    private let thumbnailCache = NSCache<NSString, NSImage>()
-    private let imageCache = NSCache<NSString, NSImage>()
+    private let thumbnailCache = NSCache<NSString, BookPlatformImage>()
+    private let imageCache = NSCache<NSString, BookPlatformImage>()
     private let pixelSizeCache = NSCache<NSString, NSValue>()
 
     init(extractedRoot: URL?, archiveURL: URL?) {
@@ -36,14 +44,14 @@ final class BookImageDataProvider: @unchecked Sendable {
         return data.isEmpty ? nil : data
     }
 
-    func fullImage(for item: BookImageItem) -> NSImage? {
+    func fullImage(for item: BookImageItem) -> BookPlatformImage? {
         let key = item.id as NSString
         if let cached = imageCache.object(forKey: key) {
             return cached
         }
-        guard let data = imageData(for: item), let image = NSImage(data: data) else {
-            return nil
-        }
+        guard let data = imageData(for: item),
+            let image = BookPlatformImage(data: data)
+        else { return nil }
         imageCache.setObject(image, forKey: key)
         return image
     }
@@ -52,7 +60,7 @@ final class BookImageDataProvider: @unchecked Sendable {
     func pixelSize(for item: BookImageItem) -> CGSize? {
         let key = item.id as NSString
         if let cached = pixelSizeCache.object(forKey: key) {
-            return cached.sizeValue
+            return cached.bookSizeValue
         }
         guard let data = imageData(for: item),
             let source = CGImageSourceCreateWithData(data as CFData, nil),
@@ -62,11 +70,11 @@ final class BookImageDataProvider: @unchecked Sendable {
             let height = properties[kCGImagePropertyPixelHeight] as? Int
         else { return nil }
         let size = CGSize(width: width, height: height)
-        pixelSizeCache.setObject(NSValue(size: size), forKey: key)
+        pixelSizeCache.setObject(NSValue(bookSize: size), forKey: key)
         return size
     }
 
-    func thumbnail(for item: BookImageItem, maxPixelSize: CGFloat) -> NSImage? {
+    func thumbnail(for item: BookImageItem, maxPixelSize: CGFloat) -> BookPlatformImage? {
         let key = item.id as NSString
         if let cached = thumbnailCache.object(forKey: key) {
             return cached
@@ -86,12 +94,40 @@ final class BookImageDataProvider: @unchecked Sendable {
                 options as CFDictionary,
             )
         else { return nil }
+        #if os(macOS)
         let image = NSImage(
             cgImage: cgImage,
             size: NSSize(width: cgImage.width, height: cgImage.height),
         )
+        #else
+        let image = UIImage(cgImage: cgImage)
+        #endif
         thumbnailCache.setObject(image, forKey: key)
         return image
+    }
+}
+
+enum BookImageFormatting {
+    static func dimensions(_ size: CGSize) -> String {
+        "\(Int(size.width))\u{00D7}\(Int(size.height))"
+    }
+}
+
+extension NSValue {
+    fileprivate convenience init(bookSize: CGSize) {
+        #if os(macOS)
+        self.init(size: bookSize)
+        #else
+        self.init(cgSize: bookSize)
+        #endif
+    }
+
+    fileprivate var bookSizeValue: CGSize {
+        #if os(macOS)
+        return sizeValue
+        #else
+        return cgSizeValue
+        #endif
     }
 }
 #endif

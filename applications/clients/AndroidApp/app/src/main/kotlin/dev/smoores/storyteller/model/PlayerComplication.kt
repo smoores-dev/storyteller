@@ -28,6 +28,7 @@ enum class PlayerComplication(val rawValue: String) {
     CHAPTERS("chapters"),
     BOOKMARKS("bookmarks"),
     READING_TIMELINE("readingTimeline"),
+    IMAGE_GALLERY("imageGallery"),
     SEARCH("search"),
     TEXT_SETTINGS("textSettings"),
     SLEEP_TIMER("sleepTimer"),
@@ -76,6 +77,7 @@ enum class PlayerComplication(val rawValue: String) {
             CHAPTERS -> "Chapters"
             BOOKMARKS -> "Bookmarks"
             READING_TIMELINE -> "Reading Timeline"
+            IMAGE_GALLERY -> "Images"
             SEARCH -> "Search"
             TEXT_SETTINGS -> "Text Settings"
             SLEEP_TIMER -> "Sleep Timer Button"
@@ -261,6 +263,7 @@ object SlotLayout {
             PlayerComplication.CHAPTERS,
             PlayerComplication.BOOKMARKS,
             PlayerComplication.READING_TIMELINE,
+            PlayerComplication.IMAGE_GALLERY,
             PlayerComplication.SEARCH,
             PlayerComplication.TEXT_SETTINGS,
             PlayerComplication.SLEEP_TIMER,
@@ -543,9 +546,9 @@ data class MenuBarCustomization(
         PlayerComplication.SLEEP_TIMER,
         PlayerComplication.CHAPTERS,
         PlayerComplication.BOOKMARKS,
+        PlayerComplication.READING_TIMELINE,
         PlayerComplication.SEARCH,
-        PlayerComplication.NONE,
-        PlayerComplication.NONE,
+        PlayerComplication.IMAGE_GALLERY,
     ),
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
@@ -567,16 +570,23 @@ data class MenuBarCustomization(
     }
 }
 
-// Defaults mirror kDefaultFreeBrowseMode / kDefaultReadaloudHighlightVisibility / kDefaultDoubleTapPlay.
+// Defaults mirror kDefaultFreeBrowseMode / kDefaultReadaloudHighlightVisibility /
+// kDefaultDoubleTapPlay / kDefaultAutomaticRewind*.
 data class PlaybackModes(
     val freeBrowseMode: String = "never",
     val readaloudHighlightVisibility: String = "paused",
     val doubleTapPlay: String = "headphones",
+    val automaticRewindEnabled: Boolean = true,
+    val automaticRewindAfterInterruption: Double = 3.0,
+    val automaticRewindAfterBreak: Double = 10.0,
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("freeBrowseMode", freeBrowseMode)
         put("readaloudHighlightVisibility", readaloudHighlightVisibility)
         put("doubleTapPlay", doubleTapPlay)
+        put("automaticRewindEnabled", automaticRewindEnabled)
+        put("automaticRewindAfterInterruption", automaticRewindAfterInterruption)
+        put("automaticRewindAfterBreak", automaticRewindAfterBreak)
     }
 
     fun toUpdateJson(): String = toJson().toString()
@@ -598,8 +608,26 @@ data class PlaybackModes(
                     ?: defaults.readaloudHighlightVisibility,
                 doubleTapPlay = obj.optString("doubleTapPlay", defaults.doubleTapPlay)
                     .takeIf { it in doubleTapPlayValues } ?: defaults.doubleTapPlay,
+                automaticRewindEnabled = obj.optBoolean(
+                    "automaticRewindEnabled",
+                    defaults.automaticRewindEnabled,
+                ),
+                automaticRewindAfterInterruption = rewindSeconds(
+                    obj.optDouble(
+                        "automaticRewindAfterInterruption",
+                        defaults.automaticRewindAfterInterruption,
+                    ),
+                    defaults.automaticRewindAfterInterruption,
+                ),
+                automaticRewindAfterBreak = rewindSeconds(
+                    obj.optDouble("automaticRewindAfterBreak", defaults.automaticRewindAfterBreak),
+                    defaults.automaticRewindAfterBreak,
+                ),
             )
         }
+
+        private fun rewindSeconds(value: Double, fallback: Double): Double =
+            if (value.isNaN()) fallback else value.coerceIn(0.0, 60.0)
     }
 }
 

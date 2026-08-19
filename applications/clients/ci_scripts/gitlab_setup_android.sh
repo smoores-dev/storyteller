@@ -48,15 +48,11 @@ sdkmanager --sdk_root="${ANDROID_HOME}" \
     "platforms;android-36"
 
 mkdir -p "${DOWNLOAD_CACHE}"
-if [[ ! -f "${SWIFT_TOOLCHAIN_PACKAGE}" ]]; then
-    curl -fL "${SWIFT_TOOLCHAIN_URL}" -o "${SWIFT_TOOLCHAIN_PACKAGE}"
-fi
+curl -fL --retry 3 --retry-delay 5 "${SWIFT_TOOLCHAIN_URL}" -o "${SWIFT_TOOLCHAIN_PACKAGE}"
 sudo installer -pkg "${SWIFT_TOOLCHAIN_PACKAGE}" -target /
 export PATH="${SWIFT_TOOLCHAIN_PATH}/usr/bin:${PATH}"
 
-if [[ ! -f "${SWIFT_ANDROID_ARCHIVE}" ]]; then
-    curl -fL "${SWIFT_ANDROID_URL}" -o "${SWIFT_ANDROID_ARCHIVE}"
-fi
+curl -fL --retry 3 --retry-delay 5 "${SWIFT_ANDROID_URL}" -o "${SWIFT_ANDROID_ARCHIVE}"
 swift sdk install "${SWIFT_ANDROID_ARCHIVE}" --checksum "${SWIFT_ANDROID_CHECKSUM}"
 ANDROID_NDK_HOME="${ANDROID_NDK_HOME}" \
     "${STORYTELLER_SWIFT_ANDROID_SDK_BUNDLE}/swift-android/scripts/setup-android-sdk.sh"

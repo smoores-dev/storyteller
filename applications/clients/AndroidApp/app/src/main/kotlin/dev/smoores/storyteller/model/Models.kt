@@ -352,6 +352,19 @@ data class AudiobookPlayerState(
     val pendingServerPosition: ServerPosition?,
 )
 
+data class BookImage(
+    val id: String,
+    val title: String,
+    val kind: String,
+    val caption: String?,
+    val pageLabel: String?,
+    val sectionIndex: Int,
+    val chapterTitle: String?,
+) {
+    val positionLabel: String
+        get() = pageLabel?.let { "p. $it" } ?: chapterTitle ?: "Section ${sectionIndex + 1}"
+}
+
 data class ReadingVisit(
     val id: String,
     val startedAt: Double,

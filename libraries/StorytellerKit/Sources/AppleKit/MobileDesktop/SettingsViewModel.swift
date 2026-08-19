@@ -36,6 +36,9 @@ public final class SettingsViewModel {
     public var freeBrowseMode: String = kDefaultFreeBrowseMode
     public var readaloudHighlightVisibility: String = kDefaultReadaloudHighlightVisibility
     public var doubleTapPlay: String = kDefaultDoubleTapPlay
+    public var automaticRewindEnabled: Bool = kDefaultAutomaticRewindEnabled
+    public var automaticRewindAfterInterruption: Double = kDefaultAutomaticRewindAfterInterruption
+    public var automaticRewindAfterBreak: Double = kDefaultAutomaticRewindAfterBreak
 
     public var lockViewToAudio: Bool {
         get { freeBrowseMode == "never" }
@@ -131,6 +134,7 @@ public final class SettingsViewModel {
     public var colorIntensity: Double = kDefaultColorIntensity
     public var doubleCoverAlignment: String = kDefaultDoubleCoverAlignment
     public var experimentalSettings: Bool = kDefaultExperimentalSettings
+    public var progressBadgeBackground: Bool = kDefaultProgressBadgeBackground
 
     public var userHighlightColor1: String = kDefaultUserHighlightColor1
     public var userHighlightColor2: String = kDefaultUserHighlightColor2
@@ -233,6 +237,9 @@ public final class SettingsViewModel {
         freeBrowseMode = config.playback.freeBrowseMode
         readaloudHighlightVisibility = config.playback.readaloudHighlightVisibility
         doubleTapPlay = config.playback.doubleTapPlay
+        automaticRewindEnabled = config.playback.automaticRewindEnabled
+        automaticRewindAfterInterruption = config.playback.automaticRewindAfterInterruption
+        automaticRewindAfterBreak = config.playback.automaticRewindAfterBreak
 
         enableReadingBar = config.readingBar.enabled
         showPlayerControls = config.readingBar.showPlayerControls
@@ -287,6 +294,7 @@ public final class SettingsViewModel {
         colorIntensity = config.library.colorIntensity
         doubleCoverAlignment = config.library.doubleCoverAlignment
         experimentalSettings = config.library.experimentalSettings
+        progressBadgeBackground = config.library.progressBadgeBackground
 
         userHighlightColor1 = config.reading.userHighlightColor1
         userHighlightColor2 = config.reading.userHighlightColor2
@@ -544,6 +552,9 @@ public final class SettingsViewModel {
             freeBrowseMode: freeBrowseMode,
             readaloudHighlightVisibility: readaloudHighlightVisibility,
             doubleTapPlay: doubleTapPlay,
+            automaticRewindEnabled: automaticRewindEnabled,
+            automaticRewindAfterInterruption: automaticRewindAfterInterruption,
+            automaticRewindAfterBreak: automaticRewindAfterBreak,
             readaloudDimOthers: readaloudDimOthers,
             readaloudDimAmount: readaloudDimAmount,
             readaloudHighlightFade: readaloudHighlightFade,
@@ -595,6 +606,7 @@ public final class SettingsViewModel {
             colorIntensity: colorIntensity,
             doubleCoverAlignment: doubleCoverAlignment,
             experimentalSettings: experimentalSettings,
+            progressBadgeBackground: progressBadgeBackground,
             userHighlightMode: userHighlightMode,
             readaloudHighlightMode: readaloudHighlightMode,
             tabBarSlot1: tabBarSlot1Value,

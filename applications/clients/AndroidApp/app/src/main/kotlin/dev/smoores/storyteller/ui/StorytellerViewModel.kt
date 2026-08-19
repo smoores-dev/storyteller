@@ -18,6 +18,7 @@ import dev.smoores.storyteller.model.SessionState
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookDetails
 import dev.smoores.storyteller.model.BookID
+import dev.smoores.storyteller.model.BookImage
 import dev.smoores.storyteller.model.DebugLogState
 import dev.smoores.storyteller.model.DownloadOperation
 import dev.smoores.storyteller.model.DownloadUpdate
@@ -70,6 +71,7 @@ data class StorytellerUiState(
     val readerBookID: BookID? = null,
     val readerModeName: String? = null,
     val successfulSettingsSaves: Int = 0,
+    val downloadsActive: Boolean = false,
     val error: String? = null,
 )
 
@@ -224,30 +226,6 @@ class StorytellerViewModel private constructor(
         client.saveBookRating(book, draft)
 
     suspend fun removeRating(book: Book): RatingSaveResult = client.deleteBookRating(book)
-
-    fun saveSettings(serverURL: String, username: String, password: String) {
-        mutableState.value = mutableState.value.copy(savingSettings = true, error = null)
-        viewModelScope.launch {
-            runCatching {
-                val settings = client.saveAndConnectStorytellerSettings(serverURL, username, password)
-                val connected = settings.connected == true
-                mutableState.value = mutableState.value.copy(
-                    settingsLoaded = true,
-                    settings = settings,
-                    savingSettings = false,
-                    // Credentials that fail to connect keep the screen open showing the
-                    // server's error instead of dismissing.
-                    successfulSettingsSaves = mutableState.value.successfulSettingsSaves +
-                        if (connected) 1 else 0,
-                )
-                // The connect bridge has already fetched the library.
-                if (connected) refreshLibraryNow(refresh = false)
-            }.onFailure { error ->
-                mutableState.value = mutableState.value.copy(savingSettings = false)
-                showError(error)
-            }
-        }
-    }
 
     suspend fun browserLoginURL(serverURL: String): String {
         val url = client.browserLoginURL(serverURL)
@@ -463,6 +441,15 @@ class StorytellerViewModel private constructor(
         }
     }
 
+    suspend fun bookImages(): List<BookImage> =
+        runCatching { client.bookImages() }.getOrDefault(emptyList())
+
+    suspend fun bookImageThumbnail(imageID: String, size: Int): Bitmap? =
+        runCatching { client.bookImageThumbnail(imageID, size) }.getOrNull()
+
+    suspend fun bookImageFull(imageID: String, width: Int, height: Int): Bitmap? =
+        runCatching { client.bookImageFull(imageID, width, height) }.getOrNull()
+
     suspend fun readingTimeline(): List<ReadingVisit> =
         runCatching { client.readingTimeline() }.getOrDefault(emptyList())
 
@@ -631,6 +618,7 @@ class StorytellerViewModel private constructor(
         val current = mutableState.value
         mutableState.value = current.copy(
             books = updateDownloadStates(current.books, next, affected),
+            downloadsActive = next.values.any { it.state == "downloading" || it.state == "importing" },
         )
     }
 

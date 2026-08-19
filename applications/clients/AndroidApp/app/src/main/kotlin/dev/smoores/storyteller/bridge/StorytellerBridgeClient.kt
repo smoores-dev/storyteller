@@ -19,6 +19,7 @@ import dev.smoores.storyteller.model.BookAlignmentReport
 import dev.smoores.storyteller.model.AudiobookPlayerState
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookDetails
+import dev.smoores.storyteller.model.BookImage
 import dev.smoores.storyteller.model.BookID
 import dev.smoores.storyteller.model.BookMedia
 import dev.smoores.storyteller.model.DownloadOperation
@@ -91,6 +92,13 @@ class StorytellerBridgeClient(context: Context) {
             maxOf(1, value.allocationByteCount / 1024)
     }
     private val missingCovers = ConcurrentHashMap.newKeySet<MissingCoverKey>()
+    // Keyed by image id, which is only unique within the open book.
+    private val bookImageThumbnails = object : LruCache<String, Bitmap>(
+        bitmapCacheSizeKilobytes() / 2,
+    ) {
+        override fun sizeOf(key: String, value: Bitmap): Int =
+            maxOf(1, value.allocationByteCount / 1024)
+    }
     private val coverRequests = Semaphore(4)
 
     @Volatile
@@ -319,6 +327,7 @@ class StorytellerBridgeClient(context: Context) {
     }
 
     suspend fun closeReader() {
+        bookImageThumbnails.evictAll()
         StorytellerAndroidBridge.closeReader().awaitResult()
     }
 
@@ -380,6 +389,50 @@ class StorytellerBridgeClient(context: Context) {
                 )
             }
         }
+    }
+
+    suspend fun bookImages(): List<BookImage> {
+        val payload = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.bookImageIndexJSON(requestID)
+        }
+        val images = JSONObject(payload).optJSONArray("images") ?: return emptyList()
+        return buildList {
+            for (index in 0 until images.length()) {
+                val item = images.getJSONObject(index)
+                add(
+                    BookImage(
+                        id = item.getString("id"),
+                        title = item.optString("title"),
+                        kind = item.optString("kind"),
+                        caption = item.optionalString("caption"),
+                        pageLabel = item.optionalString("pageLabel"),
+                        sectionIndex = item.optInt("sectionIndex"),
+                        chapterTitle = item.optionalString("chapterTitle"),
+                    )
+                )
+            }
+        }
+    }
+
+    private suspend fun bookImageBytes(imageID: String): ByteArray =
+        AndroidBridgeCallbacks.requestBytes { requestID ->
+            StorytellerAndroidBridge.bookImageBytes(requestID, imageID)
+        }
+
+    suspend fun bookImageThumbnail(imageID: String, size: Int): Bitmap? {
+        bookImageThumbnails.get(imageID)?.let { return it }
+        val bitmap = decodeBookImage(imageID, size, size) ?: return null
+        bookImageThumbnails.put(imageID, bitmap)
+        return bitmap
+    }
+
+    suspend fun bookImageFull(imageID: String, width: Int, height: Int): Bitmap? =
+        decodeBookImage(imageID, width, height)
+
+    private suspend fun decodeBookImage(imageID: String, width: Int, height: Int): Bitmap? {
+        val bytes = runCatching { bookImageBytes(imageID) }.getOrDefault(ByteArray(0))
+        if (bytes.isEmpty()) return null
+        return withContext(Dispatchers.Default) { decodeSampledBitmap(bytes, width, height) }
     }
 
     suspend fun clearReadingTimeline(visitIDs: List<String>) {

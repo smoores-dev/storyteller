@@ -264,6 +264,24 @@ public final class ReaderCommsBridge {
         return decoded
     }
 
+    public func sendJsGetPartiallyVisibleElementIds() async throws -> [String]? {
+        guard let js else {
+            throw ReaderCommsBridgeError.jsNotAvailable
+        }
+
+        let result = try await js.evaluate(
+            "JSON.stringify(window.foliateManager.getPartiallyVisibleElementIds())"
+        )
+
+        guard let jsonString = result,
+            let jsonData = jsonString.data(using: .utf8)
+        else {
+            return nil
+        }
+
+        return try? JSONDecoder().decode([String].self, from: jsonData)
+    }
+
     /// Swift is requesting the first visible position from JS for bookmarks
     /// Returns: Position data including sectionIndex, CFI, text, href, title
     public func sendJsGetFirstVisiblePosition() async throws -> FirstVisiblePosition? {

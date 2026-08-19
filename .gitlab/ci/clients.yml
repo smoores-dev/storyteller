@@ -150,17 +150,6 @@ android_app:
   variables:
     GRADLE_USER_HOME: $CI_PROJECT_DIR/applications/clients/.ci-cache/gradle
     JAVA_HOME: /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
-  cache:
-    key:
-      files:
-        - Package.resolved
-        - applications/clients/AndroidApp/app/build.gradle.kts
-      prefix: android
-    paths:
-      - applications/clients/.ci-cache/android-sdk/
-      - applications/clients/.ci-cache/downloads/
-      - applications/clients/.ci-cache/gradle/
-      - applications/clients/AndroidApp/swift/.build/
   before_script:
     - cd applications/clients
     - source ci_scripts/gitlab_setup_android.sh

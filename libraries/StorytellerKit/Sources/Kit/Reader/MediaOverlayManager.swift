@@ -458,6 +458,11 @@ public final class MediaOverlayManager {
             return false
         }
 
+        if await activeSentenceStraddlesInto(section: section) {
+            debugLog("[MOM] Active sentence continues onto this page, leaving playhead alone")
+            return false
+        }
+
         suppressActorHighlightsUntil = Date().addingTimeInterval(0.5)
 
         if page == 1 {
@@ -510,6 +515,19 @@ public final class MediaOverlayManager {
 
         debugLog("[MOM] No SMIL match found on page, audio position unchanged")
         return false
+    }
+
+    private func activeSentenceStraddlesInto(section: Int) async -> Bool {
+        guard hasMediaOverlay, section == cachedSectionIndex,
+            let currentSection = getSection(at: cachedSectionIndex),
+            cachedEntryIndex < currentSection.mediaOverlay.count
+        else { return false }
+
+        let activeTextId = currentSection.mediaOverlay[cachedEntryIndex].textId
+        guard let overlappingIds = try? await commsBridge?.sendJsGetPartiallyVisibleElementIds()
+        else { return false }
+
+        return overlappingIds.contains(activeTextId)
     }
 
     /// Called when navigation occurs naturally (media overlay auto-progression, resize events)
@@ -607,10 +625,10 @@ public final class MediaOverlayManager {
             case .never:
                 return
             case .always:
-                await startPlaying()
+                await startPlaying(automaticRewind: false)
             case .headphones:
                 if StorytellerPlatform.audioRoute?.isHeadphoneRouteActive == true {
-                    await startPlaying()
+                    await startPlaying(automaticRewind: false)
                 }
         }
     }
@@ -675,7 +693,7 @@ public final class MediaOverlayManager {
         }
     }
 
-    public func startPlaying() async {
+    public func startPlaying(automaticRewind: Bool = true) async {
         guard !isPlaying else {
             debugLog("[MOM] startPlaying() - already playing, ignoring")
             return
@@ -693,7 +711,7 @@ public final class MediaOverlayManager {
                 await reloadBookIntoActor()
             }
 
-            try await SMILPlayerActor.shared.play()
+            try await SMILPlayerActor.shared.play(automaticRewind: automaticRewind)
             isPlaying = true
             syncPlaybackActiveToJS()
             playheadDiverged = false

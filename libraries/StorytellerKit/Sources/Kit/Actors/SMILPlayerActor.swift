@@ -129,6 +129,7 @@ public actor SMILPlayerActor {
     private var currentEntryEndTime: Double = 0
 
     private var isPlaying: Bool = false
+    private var rewind = AutomaticRewind()
     private var playbackRate: Double = 1.0
     private var volume: Double = 1.0
 
@@ -245,13 +246,22 @@ public actor SMILPlayerActor {
         return bookTitle
     }
 
-    public func play() async throws {
+    public func play(automaticRewind: Bool = false) async throws {
         guard !bookStructure.isEmpty else {
             throw SMILPlayerError.bookNotLoaded
         }
 
         if player == nil {
             try await loadCurrentEntry()
+        }
+
+        if automaticRewind {
+            let seconds = rewind.secondsOnResume(
+                config: await SettingsActor.shared.config.playback
+            )
+            if seconds > 0 {
+                await skipBackward(seconds: seconds)
+            }
         }
 
         guard let player = player else {
@@ -276,17 +286,18 @@ public actor SMILPlayerActor {
 
         await player.pause()
         isPlaying = false
+        rewind.recordPause()
         stopUpdateTimer()
 
         debugLog("[SMILPlayerActor] Paused")
         await notifyStateChange()
     }
 
-    public func togglePlayPause() async throws {
+    public func togglePlayPause(automaticRewind: Bool = true) async throws {
         if isPlaying {
             await pause()
         } else {
-            try await play()
+            try await play(automaticRewind: automaticRewind)
         }
     }
 
@@ -302,6 +313,7 @@ public actor SMILPlayerActor {
 
         let entry = section.mediaOverlay[entryIndex]
         userSeekCount += 1
+        rewind.reset()
         await setCurrentEntry(
             sectionIndex: sectionIndex,
             entryIndex: entryIndex,
@@ -326,6 +338,7 @@ public actor SMILPlayerActor {
 
         let entry = section.mediaOverlay[entryIndex]
         userSeekCount += 1
+        rewind.reset()
         await setCurrentEntry(
             sectionIndex: sectionIndex,
             entryIndex: entryIndex,
@@ -344,6 +357,7 @@ public actor SMILPlayerActor {
         }
 
         userSeekCount += 1
+        rewind.reset()
         await setCurrentEntry(
             sectionIndex: sectionIndex,
             entryIndex: entryIndex,
@@ -701,7 +715,7 @@ public actor SMILPlayerActor {
             case .interruptionEnded(let shouldResume):
                 if shouldResume {
                     debugLog("[SMILPlayerActor] Audio interruption ended - resuming")
-                    try? await play()
+                    try? await play(automaticRewind: true)
                 }
             case .routeChanged(let shouldPause):
                 if shouldPause {

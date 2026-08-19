@@ -478,6 +478,17 @@ public final class MediaViewModel {
             statuses[record.bookID] = state
         }
         downloadStatuses = statuses
+
+        #if os(iOS)
+        let transferring = records.contains { record in
+            switch record.state {
+                case .downloading, .importing: return true
+                default: return false
+            }
+        }
+        ScreenWakeLock.shared.set(transferring, reason: .downloading)
+        #endif
+
         let count = records.filter(\.isIncomplete).count
         if incompleteDownloadCount != count {
             incompleteDownloadCount = count
