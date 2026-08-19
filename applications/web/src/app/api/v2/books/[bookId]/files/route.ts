@@ -3,8 +3,8 @@ import { createWriteStream } from "node:fs"
 import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, extname, join } from "node:path"
-import { Readable } from "node:stream"
 
+import { createReadableStreamFromReadable } from "@remix-run/node"
 import contentDisposition from "content-disposition"
 import { lookup } from "mime-types"
 import { after } from "next/server"
@@ -242,9 +242,10 @@ export const GET = withHasPermission<Params>("bookRead", {
     )
   }
 
+  await using stack = new AsyncDisposableStack()
   let file: FileHandle
   try {
-    file = await open(filepath)
+    file = stack.use(await open(filepath))
   } catch {
     after(() => markFormatMissing(bookUuid, format as BookFormat))
 
@@ -299,16 +300,26 @@ export const GET = withHasPermission<Params>("bookRead", {
     })
   }
 
-  const readStream = file.createReadStream({ start, end })
-  readStream.on("error", (e) => {
-    logger.error(e)
-  })
-
   const hash = await computeFileHash(filepath)
 
-  const readableStream = Readable.toWeb(readStream)
+  // dont make this `using`, we want to dispose of it manually
+  const owned = stack.move()
+  const readStream = file.createReadStream({ start, end })
+  readStream.on("error", (error) => {
+    const clientAbort =
+      error.name === "ResponseAborted" ||
+      error.message === "aborted" ||
+      ("code" in error && error.code === "ERR_STREAM_PREMATURE_CLOSE")
 
-  return new Response(readableStream as ReadableStream, {
+    if (clientAbort) {
+      logger.debug({ msg: "download aborted by client", err: error })
+      return
+    }
+    logger.error({ msg: "download stream error", err: error })
+  })
+  readStream.once("close", () => void owned.disposeAsync())
+
+  return new Response(createReadableStreamFromReadable(readStream), {
     status: partialResponse ? 206 : 200,
     headers: {
       "Content-Disposition": contentDisposition(
