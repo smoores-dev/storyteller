@@ -127,6 +127,7 @@ data class StorytellerSettings(
     val connectionStatus: String = "notConfigured",
     val connectionMessage: String? = null,
     val connected: Boolean? = null,
+    val usesBrowserLogin: Boolean = false,
 )
 
 data class RatingDimensionInfo(

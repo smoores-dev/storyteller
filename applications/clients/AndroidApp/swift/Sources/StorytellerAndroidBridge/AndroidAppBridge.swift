@@ -140,10 +140,75 @@ public func saveAndConnectStorytellerSettings(
     }
 }
 
+public func storytellerBrowserLoginURL(requestID: String, serverURL: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        let normalizedServerURL = try normalizeServerURL(serverURL)
+        let url = try StorytellerBrowserLogin.authorizationURL(serverURL: normalizedServerURL)
+        return try encodeJSON(
+            AndroidBrowserLoginURL(url: url.absoluteString, serverURL: normalizedServerURL)
+        )
+    }
+}
+
+public func completeStorytellerBrowserLogin(
+    requestID: String,
+    serverURL: String,
+    callbackURL: String,
+) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        let normalizedServerURL = try normalizeServerURL(serverURL)
+        guard let callback = URL(string: callbackURL) else {
+            throw AndroidBridgeError.invalidServerURL(callbackURL)
+        }
+
+        let result = try await StorytellerBrowserLogin.completeLogin(
+            serverURL: normalizedServerURL,
+            callbackURL: callback,
+        )
+        try await saveStorytellerCredentials(
+            serverURL: result.serverURL,
+            username: result.username,
+            password: "",
+            sessionToken: result.sessionToken,
+        )
+
+        var connected = false
+        if let source = await BookServiceActor.shared.bookSources.first(where: {
+            $0.kind == .storyteller
+        }) {
+            connected = await BookServiceActor.shared.connectBookSource(sourceID: source.id)
+        }
+        return try await encodeStorytellerSettings(connected: connected)
+    }
+}
+
+public func signOutStorytellerSource(requestID: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        if let source = await BookServiceActor.shared.bookSources.first(where: {
+            $0.kind == .storyteller
+        }) {
+            guard await BookServiceActor.shared.removeBookSource(id: source.id) else {
+                throw AndroidBridgeError.couldNotSaveStorytellerSettings
+            }
+        }
+        _ = await BookServiceActor.shared.librarySnapshot(policy: .refresh)
+        return try await encodeStorytellerSettings()
+    }
+}
+
+private struct AndroidBrowserLoginURL: Encodable {
+    let url: String
+    let serverURL: String
+}
+
 private func saveStorytellerCredentials(
     serverURL: String,
     username: String,
     password: String,
+    sessionToken: String? = nil,
 ) async throws {
     try requireAndroidBootstrap()
 
@@ -156,7 +221,9 @@ private func saveStorytellerCredentials(
         $0.kind == .storyteller
     }
     let resolvedPassword: String
-    if !password.isEmpty {
+    if sessionToken != nil {
+        resolvedPassword = ""
+    } else if !password.isEmpty {
         resolvedPassword = password
     } else if let existing,
         let credentials = await BookServiceActor.shared.credentials(for: existing.id)
@@ -171,6 +238,7 @@ private func saveStorytellerCredentials(
         serverURL: normalizedServerURL,
         username: trimmedUsername,
         password: resolvedPassword,
+        sessionToken: sessionToken,
     )
 
     let saved: Bool
@@ -1691,6 +1759,7 @@ private struct AndroidStorytellerSettings: Encodable {
     let connectionStatus: String
     let connectionMessage: String?
     let connected: Bool?
+    let usesBrowserLogin: Bool
 }
 
 private final class AndroidObserverStore: @unchecked Sendable {
@@ -1739,13 +1808,16 @@ private func encodeStorytellerSettings(connected: Bool? = nil) async throws -> S
     }
     let credentials: (url: String, username: String, password: String)?
     let connection: ConnectionStatus
+    let usesBrowserLogin: Bool
 
     if let source {
         credentials = await BookServiceActor.shared.credentials(for: source.id)
         connection = await BookServiceActor.shared.connectionStatus(sourceID: source.id)
+        usesBrowserLogin = await BookServiceActor.shared.sessionToken(for: source.id) != nil
     } else {
         credentials = nil
         connection = .disconnected
+        usesBrowserLogin = false
     }
 
     let status = connectionFields(connection)
@@ -1758,6 +1830,7 @@ private func encodeStorytellerSettings(connected: Bool? = nil) async throws -> S
             connectionStatus: status.status,
             connectionMessage: status.message,
             connected: connected,
+            usesBrowserLogin: usesBrowserLogin,
         )
     )
 }

@@ -90,6 +90,7 @@ public struct BookSourceConfiguration: Sendable, Hashable {
     public var serverURL: String?
     public var username: String?
     public var password: String?
+    public var sessionToken: String?
     public var storagePath: String?
     public var storageBookmarkData: Data?
 
@@ -99,6 +100,7 @@ public struct BookSourceConfiguration: Sendable, Hashable {
         serverURL: String? = nil,
         username: String? = nil,
         password: String? = nil,
+        sessionToken: String? = nil,
         storagePath: String? = nil,
         storageBookmarkData: Data? = nil,
     ) {
@@ -107,6 +109,7 @@ public struct BookSourceConfiguration: Sendable, Hashable {
         self.serverURL = serverURL
         self.username = username
         self.password = password
+        self.sessionToken = sessionToken
         self.storagePath = storagePath
         self.storageBookmarkData = storageBookmarkData
     }

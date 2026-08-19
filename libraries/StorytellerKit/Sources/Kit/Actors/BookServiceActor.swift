@@ -266,7 +266,9 @@ public actor BookServiceActor {
                 guard
                     let serverURL = configuration.serverURL,
                     let username = configuration.username,
-                    let password = configuration.password
+                    let password = configuration.password ?? (
+                        configuration.sessionToken != nil ? "" : nil
+                    )
                 else {
                     return nil
                 }
@@ -278,6 +280,7 @@ public actor BookServiceActor {
                         baseURL: serverURL,
                         username: username,
                         password: password,
+                        sessionToken: configuration.sessionToken,
                     )
                 else {
                     sourcesByID[record.id] = nil
@@ -291,6 +294,12 @@ public actor BookServiceActor {
                         password: password,
                         sourceID: record.id,
                     )
+                    if let sessionToken = configuration.sessionToken {
+                        try await AuthenticationActor.shared.saveSessionToken(
+                            sessionToken,
+                            sourceID: record.id,
+                        )
+                    }
                 } catch {
                     sourcesByID[record.id] = nil
                     return nil
@@ -353,7 +362,9 @@ public actor BookServiceActor {
                 guard
                     let serverURL = configuration.serverURL,
                     let username = configuration.username,
-                    let password = configuration.password
+                    let password = configuration.password ?? (
+                        configuration.sessionToken != nil ? "" : nil
+                    )
                 else {
                     return false
                 }
@@ -372,6 +383,7 @@ public actor BookServiceActor {
                         baseURL: serverURL,
                         username: username,
                         password: password,
+                        sessionToken: configuration.sessionToken,
                     )
                 else {
                     return false
@@ -384,6 +396,12 @@ public actor BookServiceActor {
                         password: password,
                         sourceID: sourceID,
                     )
+                    if let sessionToken = configuration.sessionToken {
+                        try await AuthenticationActor.shared.saveSessionToken(
+                            sessionToken,
+                            sourceID: sourceID,
+                        )
+                    }
                 } catch {
                     return false
                 }
@@ -428,6 +446,9 @@ public actor BookServiceActor {
             baseURL: credentials.url,
             username: credentials.username,
             password: credentials.password,
+            sessionToken: try? await AuthenticationActor.shared.loadSessionToken(
+                sourceID: sourceID
+            ),
         )
     }
 
@@ -475,6 +496,10 @@ public actor BookServiceActor {
         -> (url: String, username: String, password: String)?
     {
         try? await AuthenticationActor.shared.loadCredentials(sourceID: sourceID)
+    }
+
+    public func sessionToken(for sourceID: BookSourceID) async -> String? {
+        try? await AuthenticationActor.shared.loadSessionToken(sourceID: sourceID)
     }
 
     public func checkBookUpdatePermission(
@@ -1475,6 +1500,9 @@ public actor BookServiceActor {
                             baseURL: credentials.url,
                             username: credentials.username,
                             password: credentials.password,
+                            sessionToken: try? await AuthenticationActor.shared.loadSessionToken(
+                                sourceID: record.id
+                            ),
                         )
                     }
 

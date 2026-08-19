@@ -1,6 +1,9 @@
 package dev.smoores.storyteller.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +41,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -88,9 +92,21 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
     var libraryFiltersJson by rememberSaveable { mutableStateOf("") }
     var categoryKindName by rememberSaveable { mutableStateOf("") }
     var categoryGroup by rememberSaveable { mutableStateOf("") }
-    var settingsSavePending by remember { mutableStateOf(false) }
     var restoreAttempted by rememberSaveable { mutableStateOf(false) }
     val appContext = LocalContext.current.applicationContext
+    val activityContext = LocalContext.current
+    val browserLauncher: (String) -> Unit = remember(activityContext) {
+        { url ->
+            val tab = CustomTabsIntent.Builder().setShowTitle(true).build()
+            tab.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { tab.launchUrl(activityContext, Uri.parse(url)) }.onFailure {
+                appContext.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+        }
+    }
     val viewOptionsStore = remember { ViewOptionsStore(appContext) }
     var viewOptionsByKey by remember {
         mutableStateOf(
@@ -216,11 +232,11 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
     LaunchedEffect(screen, selectedBookSummary?.id, selectedBookSummary?.coverVersion) {
         if (screen == Screen.Details) selectedBookSummary?.let(viewModel::loadBookDetails)
     }
+    var handledSettingsSaves by rememberSaveable { mutableIntStateOf(state.successfulSettingsSaves) }
     LaunchedEffect(state.successfulSettingsSaves) {
-        if (settingsSavePending) {
-            settingsSavePending = false
-            screenName = Screen.Library.name
-        }
+        if (state.successfulSettingsSaves == handledSettingsSaves) return@LaunchedEffect
+        handledSettingsSaves = state.successfulSettingsSaves
+        if (screen == Screen.Settings) screenName = Screen.Library.name
     }
     LaunchedEffect(
         screen,
@@ -398,9 +414,16 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                     appSettings = state.appSettings,
                     modifier = Modifier.padding(padding),
                     save = { serverURL, username, password ->
-                        settingsSavePending = true
                         viewModel.saveSettings(serverURL, username, password)
                     },
+                    startBrowserLogin = { serverURL ->
+                        drawerScope.launch {
+                            runCatching { viewModel.browserLoginURL(serverURL) }
+                                .onSuccess { url -> browserLauncher(url) }
+                                .onFailure { viewModel.cancelBrowserLogin() }
+                        }
+                    },
+                    signOutBrowserLogin = viewModel::signOutBrowserLogin,
                     updateAppSettings = { progress, metadata, autoNavigate ->
                         viewModel.updateAppSettings(
                             progressSyncIntervalSeconds = progress,

@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -73,6 +74,8 @@ internal fun SettingsScreen(
     appSettings: AppSettings?,
     modifier: Modifier,
     save: (String, String, String) -> Unit,
+    startBrowserLogin: (String) -> Unit = {},
+    signOutBrowserLogin: () -> Unit = {},
     updateAppSettings: (Double?, Double?, Boolean?) -> Unit,
     updateLibrarySettings: (String?, Double?, String?) -> Unit,
     updateExperimentalSettings: (Boolean) -> Unit = {},
@@ -91,6 +94,7 @@ internal fun SettingsScreen(
     var username by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var loadedSourceID by rememberSaveable { mutableStateOf<String?>(null) }
+    var showSignOutConfirmation by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(settingsLoaded, settings.sourceID) {
         if (!settingsLoaded) return@LaunchedEffect
@@ -104,7 +108,7 @@ internal fun SettingsScreen(
     }
 
     val canSave = !saving && serverURL.isNotBlank() && username.isNotBlank() &&
-        (settings.configured || password.isNotBlank())
+        (settings.configured || password.isNotBlank()) && !settings.usesBrowserLogin
     val submit = {
         val submittedPassword = password
         password = ""
@@ -130,42 +134,71 @@ internal fun SettingsScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("Username or email") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            supportingText = {
-                if (settings.configured) Text("Leave blank to keep the saved password")
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = {
-                if (canSave) submit()
-            }),
-            modifier = Modifier.fillMaxWidth(),
-        )
         Button(
-            onClick = submit,
-            enabled = canSave,
+            onClick = { startBrowserLogin(serverURL) },
+            enabled = !saving && serverURL.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (saving) {
-                CircularProgressIndicator(
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.width(18.dp).height(18.dp),
-                )
-                Spacer(Modifier.width(8.dp))
+            Text(
+                if (settings.usesBrowserLogin) "Sign In Again with Browser" else "Sign In with Browser"
+            )
+        }
+        if (settings.usesBrowserLogin) {
+            Text(
+                "Signed in as ${settings.username} through the browser.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            TextButton(
+                onClick = { showSignOutConfirmation = true },
+                enabled = !saving,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Sign Out")
             }
-            Text(if (saving) "Connecting" else "Save & Connect")
+        } else {
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            Text(
+                "Or sign in with a username and password:",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Username or email") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                supportingText = {
+                    if (settings.configured) Text("Leave blank to keep the saved password")
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    if (canSave) submit()
+                }),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(
+                onClick = submit,
+                enabled = canSave,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (saving) {
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.width(18.dp).height(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(if (saving) "Connecting" else "Save & Connect")
+            }
         }
         if (settings.configured) {
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
@@ -296,6 +329,28 @@ internal fun SettingsScreen(
                 setVerboseLogging = setVerboseLogging,
             )
         }
+    }
+
+    if (showSignOutConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirmation = false },
+            title = { Text("Sign out of this server?") },
+            text = {
+                Text(
+                    "The browser sign-in and any downloaded books for this server are " +
+                        "removed from this device.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSignOutConfirmation = false
+                    signOutBrowserLogin()
+                }) { Text("Sign Out", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutConfirmation = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 

@@ -46,6 +46,8 @@ public actor StorytellerActor {
 
     private var username: String?
     private var password: String?
+    private var sessionToken: String?
+    private var sessionTokenRejected = false
     private var apiBaseURL: URL?
     private var accessToken: AccessToken?
     private(set) public var libraryMetadata: [BookMetadata] = []
@@ -56,8 +58,19 @@ public actor StorytellerActor {
     private var cachedBookUpdatePermission: Bool?
 
     public var isConfigured: Bool {
-        apiBaseURL != nil && username != nil && password != nil
+        apiBaseURL != nil && username != nil && (hasUsablePassword || sessionToken != nil)
     }
+
+    private var hasUsablePassword: Bool {
+        guard let password else { return false }
+        return !password.isEmpty
+    }
+
+    public var needsBrowserSignIn: Bool {
+        sessionToken != nil && sessionTokenRejected
+    }
+
+    static let browserSignInExpiredMessage = "Session expired, sign in with your browser again"
 
     public var currentApiBaseURL: URL? {
         apiBaseURL
@@ -255,9 +268,13 @@ public actor StorytellerActor {
 
             if response.statusCode == 401 || response.statusCode == 403 {
                 debugLog("[StorytellerActor] verifyConnection: token expired/invalid, clearing")
-                accessToken = nil
                 lastNetworkOpSucceeded = false
-                await updateConnectionStatus(.error("Session expired"))
+                await updateConnectionStatus(
+                    markUnauthorized(
+                        statusCode: response.statusCode,
+                        fallbackStatus: .error("Session expired"),
+                    )
+                )
             } else {
                 debugLog("[StorytellerActor] verifyConnection: connection verified")
                 await recordNetworkSuccess()
@@ -270,6 +287,16 @@ public actor StorytellerActor {
             lastNetworkOpSucceeded = false
             await updateConnectionStatus(.error("Connection lost"))
         }
+    }
+
+    private func markUnauthorized(
+        statusCode: Int,
+        fallbackStatus: ConnectionStatus,
+    ) -> ConnectionStatus {
+        accessToken = nil
+        guard sessionToken != nil, statusCode == 401 else { return fallbackStatus }
+        sessionTokenRejected = true
+        return .error(Self.browserSignInExpiredMessage)
     }
 
     private func canAttemptReconnect() -> Bool {
@@ -292,7 +319,7 @@ public actor StorytellerActor {
 
     @discardableResult
     private func attemptReconnect() async -> Bool {
-        guard username != nil, password != nil, apiBaseURL != nil else {
+        guard username != nil, hasUsablePassword || sessionToken != nil, apiBaseURL != nil else {
             return false
         }
         guard canAttemptReconnect() else { return false }
@@ -403,12 +430,14 @@ public actor StorytellerActor {
         baseURL baseURLString: String,
         username: String,
         password: String,
+        sessionToken: String? = nil,
     ) async -> Bool {
         guard
             await configureCredentials(
                 baseURL: baseURLString,
                 username: username,
                 password: password,
+                sessionToken: sessionToken,
             )
         else {
             return false
@@ -487,10 +516,14 @@ public actor StorytellerActor {
         baseURL baseURLString: String,
         username: String,
         password: String,
+        sessionToken: String? = nil,
     ) async -> Bool {
         self.username = username
         self.password = password
+        self.sessionToken = sessionToken
+        self.sessionTokenRejected = false
         self.accessToken = nil
+        resetReconnectBackoff()
         guard let baseURL = URL(string: baseURLString) else {
             debugLog("[StorytellerActor] Invalid base URL: \(baseURLString)")
             await updateConnectionStatus(.error("Invalid server URL"))
@@ -505,10 +538,28 @@ public actor StorytellerActor {
     /// If successful, token will be stored on instance for future methods.
     @discardableResult
     func authenticate() async -> Bool {
-        guard let apiBaseURL = apiBaseURL,
-            let password = password,
-            let username = username
-        else {
+        guard let apiBaseURL = apiBaseURL, username != nil else {
+            return false
+        }
+
+        if let sessionToken {
+            guard !sessionTokenRejected else {
+                await updateConnectionStatus(.error(Self.browserSignInExpiredMessage))
+                scheduleReconnectBackoff()
+                return false
+            }
+            guard canAttemptReconnect() else {
+                return false
+            }
+            accessToken = AccessToken(
+                accessToken: sessionToken,
+                tokenType: "bearer",
+                expiresIn: nil,
+            )
+            return true
+        }
+
+        guard let password = password, !password.isEmpty, let username = username else {
             return false
         }
         /// Don't duplicate auth requests to server if one is already pending
@@ -590,7 +641,7 @@ public actor StorytellerActor {
             return (apiBaseURL, accessToken)
         }
 
-        guard username != nil, password != nil, apiBaseURL != nil else {
+        guard username != nil, hasUsablePassword || sessionToken != nil, apiBaseURL != nil else {
             debugLog("[StorytellerActor] ensureAuthentication: not configured")
             return nil
         }
@@ -2490,6 +2541,8 @@ public actor StorytellerActor {
         accessToken = nil
         username = nil
         password = nil
+        sessionToken = nil
+        sessionTokenRejected = false
         self.apiBaseURL = nil
         libraryMetadata.removeAll()
         await updateConnectionStatus(.disconnected)
@@ -2526,8 +2579,11 @@ public actor StorytellerActor {
                 debugLog(
                     "[StorytellerActor] \(methodName) \(context) unauthorized (\(statusCode))."
                 )
-                accessToken = nil
-                Task { await self.updateConnectionStatus(.error("Unauthorized")) }
+                let status = markUnauthorized(
+                    statusCode: statusCode,
+                    fallbackStatus: .error("Unauthorized"),
+                )
+                Task { await self.updateConnectionStatus(status) }
                 return .unauthorized
             case 404:
                 debugLog("[StorytellerActor] \(methodName) \(context) not found.")

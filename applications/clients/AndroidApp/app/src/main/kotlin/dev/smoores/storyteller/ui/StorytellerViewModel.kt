@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.smoores.storyteller.bridge.StorytellerBridgeClient
+import dev.smoores.storyteller.data.BrowserLoginStore
 import dev.smoores.storyteller.data.LastOpenBookRoute
 import dev.smoores.storyteller.data.LastOpenBookStore
 import dev.smoores.storyteller.model.AlignmentOverrideState
@@ -41,6 +42,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -74,6 +76,7 @@ data class StorytellerUiState(
 class StorytellerViewModel private constructor(
     private val client: StorytellerBridgeClient,
     private val lastOpenBooks: LastOpenBookStore,
+    private val browserLogins: BrowserLoginStore,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(StorytellerUiState())
     val state: StateFlow<StorytellerUiState> = mutableState.asStateFlow()
@@ -239,6 +242,68 @@ class StorytellerViewModel private constructor(
                 )
                 // The connect bridge has already fetched the library.
                 if (connected) refreshLibraryNow(refresh = false)
+            }.onFailure { error ->
+                mutableState.value = mutableState.value.copy(savingSettings = false)
+                showError(error)
+            }
+        }
+    }
+
+    suspend fun browserLoginURL(serverURL: String): String {
+        val url = client.browserLoginURL(serverURL)
+        browserLogins.save(serverURL)
+        return url
+    }
+
+    fun cancelBrowserLogin() {
+        browserLogins.clear()
+    }
+
+    fun completeBrowserLogin(callbackURL: String) {
+        mutableState.value = mutableState.value.copy(savingSettings = true, error = null)
+        viewModelScope.launch {
+            runCatching {
+                val serverURL = pendingBrowserLoginServerURL()
+                    ?: throw IllegalStateException(
+                        "Could not tell which server this sign-in belongs to. " +
+                            "Enter the server address and try again.",
+                    )
+                val settings = client.completeBrowserLogin(serverURL, callbackURL)
+                browserLogins.clear()
+                val connected = settings.connected == true
+                mutableState.value = mutableState.value.copy(
+                    settingsLoaded = true,
+                    settings = settings,
+                    savingSettings = false,
+                    successfulSettingsSaves = mutableState.value.successfulSettingsSaves +
+                        if (connected) 1 else 0,
+                )
+                if (connected) refreshLibraryNow(refresh = false)
+            }.onFailure { error ->
+                mutableState.value = mutableState.value.copy(savingSettings = false)
+                showError(error)
+            }
+        }
+    }
+
+    private suspend fun pendingBrowserLoginServerURL(): String? {
+        browserLogins.load()?.takeIf { it.isNotBlank() }?.let { return it }
+        state.first { it.settingsLoaded }
+        return mutableState.value.settings.serverURL.takeIf { it.isNotBlank() }
+    }
+
+    fun signOutBrowserLogin() {
+        browserLogins.clear()
+        mutableState.value = mutableState.value.copy(savingSettings = true, error = null)
+        viewModelScope.launch {
+            runCatching {
+                val settings = client.signOutStorytellerSource()
+                mutableState.value = mutableState.value.copy(
+                    settingsLoaded = true,
+                    settings = settings,
+                    savingSettings = false,
+                )
+                refreshLibraryNow(refresh = false)
             }.onFailure { error ->
                 mutableState.value = mutableState.value.copy(savingSettings = false)
                 showError(error)
@@ -638,6 +703,7 @@ class StorytellerViewModel private constructor(
                     StorytellerViewModel(
                         StorytellerBridgeClient(context.applicationContext),
                         LastOpenBookStore(context.applicationContext),
+                        BrowserLoginStore(context.applicationContext),
                     ) as T
             }
     }

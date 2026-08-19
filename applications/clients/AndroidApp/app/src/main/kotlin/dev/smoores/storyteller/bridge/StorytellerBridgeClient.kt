@@ -817,6 +817,34 @@ class StorytellerBridgeClient(context: Context) {
         return withContext(Dispatchers.Default) { parseSettings(json) }
     }
 
+    suspend fun browserLoginURL(serverURL: String): String {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.storytellerBrowserLoginURL(requestID, serverURL)
+        }
+        return withContext(Dispatchers.Default) { JSONObject(json).getString("url") }
+    }
+
+    suspend fun completeBrowserLogin(
+        serverURL: String,
+        callbackURL: String,
+    ): StorytellerSettings {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.completeStorytellerBrowserLogin(
+                requestID,
+                serverURL,
+                callbackURL,
+            )
+        }
+        return withContext(Dispatchers.Default) { parseSettings(json) }
+    }
+
+    suspend fun signOutStorytellerSource(): StorytellerSettings {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.signOutStorytellerSource(requestID)
+        }
+        return withContext(Dispatchers.Default) { parseSettings(json) }
+    }
+
     suspend fun liveSyncStatus(): LiveSyncStatus {
         val json = AndroidBridgeCallbacks.requestPayload { requestID ->
             StorytellerAndroidBridge.liveSyncStatusJSON(requestID)
@@ -1322,6 +1350,7 @@ class StorytellerBridgeClient(context: Context) {
             } else {
                 null
             },
+            usesBrowserLogin = root.optBoolean("usesBrowserLogin", false),
         )
     }
 

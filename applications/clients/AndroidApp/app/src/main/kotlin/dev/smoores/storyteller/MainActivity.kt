@@ -1,6 +1,7 @@
 package dev.smoores.storyteller
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -39,6 +40,22 @@ class MainActivity : ComponentActivity() {
         )[StorytellerViewModel::class.java]
 
         setContent { StorytellerApp(viewModel) }
+        handleBrowserLoginRedirect(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleBrowserLoginRedirect(intent)
+    }
+
+    private fun handleBrowserLoginRedirect(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (uri.scheme != "storyteller") return
+        if (!::viewModel.isInitialized) return
+        intent.data = null
+        setIntent(intent)
+        viewModel.completeBrowserLogin(uri.toString())
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {

@@ -7,6 +7,7 @@ public actor AuthenticationActor {
     private let serverURLKey = "serverURL"
     private let usernameKey = "username"
     private let passwordKey = "password"
+    private let sessionTokenKey = "sessionToken"
     private let hardcoverTokenKey = "hardcoverToken"
 
     private init() {}
@@ -65,9 +66,21 @@ public actor AuthenticationActor {
     }
 
     public func deleteCredentials(sourceID: BookSourceID) async throws {
-        for key in [serverURLKey, usernameKey, passwordKey] {
+        for key in [serverURLKey, usernameKey, passwordKey, sessionTokenKey] {
             try await keychain.removeItem(account: accountKey(key, sourceID: sourceID))
         }
+    }
+
+    public func saveSessionToken(_ token: String, sourceID: BookSourceID) async throws {
+        try await saveString(token, for: accountKey(sessionTokenKey, sourceID: sourceID))
+    }
+
+    public func loadSessionToken(sourceID: BookSourceID) async throws -> String? {
+        try await loadString(for: accountKey(sessionTokenKey, sourceID: sourceID))
+    }
+
+    public func deleteSessionToken(sourceID: BookSourceID) async throws {
+        try await keychain.removeItem(account: accountKey(sessionTokenKey, sourceID: sourceID))
     }
 
     public func hasCredentials(sourceID: BookSourceID) async -> Bool {
