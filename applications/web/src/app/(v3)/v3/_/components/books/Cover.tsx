@@ -168,8 +168,8 @@ export const Cover = memo(function Cover({
   const hoverClass =
     "shadow-sm transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-[-2deg]"
 
-  const textImage = book.ebook?.coverImage ?? book.readaloud?.coverImage
-  const audioImage = book.audiobook?.coverImage
+  const textImage = book.ebook?.cover ?? book.readaloud?.cover
+  const audioImage = book.audiobook?.cover
 
   const tile = (type: CoverType) => {
     const image = type === "audiobook" ? audioImage : textImage
@@ -371,8 +371,8 @@ export function BookDoubleCover({
     }
   }, [])
 
-  const textImage = book.ebook?.coverImage ?? book.readaloud?.coverImage
-  const audioImage = book.audiobook?.coverImage
+  const textImage = book.ebook?.cover ?? book.readaloud?.cover
+  const audioImage = book.audiobook?.cover
 
   const textAspect = coverBoxAspect(fit, "ebook", textImage)
   const audioAspect = coverBoxAspect(fit, "audiobook", audioImage)

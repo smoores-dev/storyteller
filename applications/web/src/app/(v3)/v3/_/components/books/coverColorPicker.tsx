@@ -41,7 +41,7 @@ export function coverPalettes(
     .map((type) => ({
       type,
       label: label(type),
-      colors: book[type]?.coverImage?.colors ?? [],
+      colors: book[type]?.cover?.colors ?? [],
     }))
     .filter((entry) => entry.colors.length > 0)
 }

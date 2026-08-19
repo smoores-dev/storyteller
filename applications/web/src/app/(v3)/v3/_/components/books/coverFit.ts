@@ -4,7 +4,7 @@ import { type BookWithRelations } from "@/database/books"
 import { type CoverFit } from "@/database/userPreferencesTypes"
 
 export type BookCoverImage = NonNullable<
-  NonNullable<BookWithRelations["ebook"]>["coverImage"]
+  NonNullable<BookWithRelations["ebook"]>["cover"]
 >
 
 export type CoverType = "ebook" | "audiobook"

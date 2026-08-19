@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import z from "zod"
 
 import { type JsColor } from "@storyteller-platform/okmain"
 
@@ -14,7 +15,6 @@ import {
   getBookUuid,
   updateBook,
 } from "@/database/books"
-import { toIsoDateString } from "@/dates"
 import { ingestImage } from "@/images"
 import {
   attachCover,
@@ -22,6 +22,8 @@ import {
   textCoverTargets,
 } from "@/images/covers"
 import { sweepUnreferencedImages } from "@/images/gc"
+import { logger } from "@/logging"
+import { BookSchemaV2, BookUpdateRequestSchemaV2 } from "@/schemas/v2/book"
 import { type UUID } from "@/uuid"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 
@@ -36,216 +38,132 @@ function getField<Value>(formData: FormData, field: string) {
 export const dynamic = "force-dynamic"
 
 type Params = Promise<{
-  bookId: string
+  bookId: UUID
 }>
 
+function parseFormDataFields(formData: FormData) {
+  return {
+    fields: Array.from(
+      new Set(
+        formData.getAll("fields").map((entry) => entry.valueOf() as string),
+      ),
+    ),
+    title: getField<string>(formData, "title"),
+    language: getField<string | null>(formData, "language"),
+    subtitle: getField<string | null>(formData, "subtitle"),
+    description: getField<string | null>(formData, "description"),
+    pageCount: getField<number | null>(formData, "pageCount"),
+    duration: getField<number | null>(formData, "duration"),
+    coverColorsOverride: getField<JsColor[] | null>(
+      formData,
+      "coverColorsOverride",
+    ),
+    publicationDate: getField<string | null>(formData, "publicationDate"),
+    status: getField<UUID>(formData, "status"),
+    userBookRating: getField<UserBookRatingRelation | null>(
+      formData,
+      "userBookRating",
+    ),
+    tags: formData
+      .getAll("tags")
+      .map((entry) => JSON.parse(entry.valueOf() as string) as string),
+    creators: formData
+      .getAll("creators")
+      .map((entry) => JSON.parse(entry.valueOf() as string) as CreatorRelation),
+    narrators: formData
+      .getAll("narrators")
+      .map((entry) => JSON.parse(entry.valueOf() as string) as string),
+    authors: formData
+      .getAll("authors")
+      .map((entry) => JSON.parse(entry.valueOf() as string) as string),
+    series: formData
+      .getAll("series")
+      .map((entry) => JSON.parse(entry.valueOf() as string) as SeriesRelation),
+    collections: formData
+      .getAll("collections")
+      .map((entry) => entry.valueOf() as UUID),
+    identifiers: formData
+      .getAll("identifiers")
+      .map(
+        (entry) => JSON.parse(entry.valueOf() as string) as IdentifierRelation,
+      ),
+    textCover: formData.get("textCover")?.valueOf() as File | undefined,
+    audioCover: formData.get("audioCover")?.valueOf() as File | undefined,
+  }
+}
+
 /**
- * @summary Update a book's metadata
- * @desc Any new metadata will also be encoded in the aligned EPUB file
- *       itself.
+ * @description Update a book's metadata
+ * @pathParams BookIdParamsSchemaV2
+ * @body BookUpdateRequestSchemaV2
+ * @response BookSchemaV2
+ * @contentType multipart/form-data
+ * @auth bearer
+ * @openapi
  */
 export const PUT = withHasPermission<Params>("bookUpdate")(async (
   request,
   context,
 ) => {
-  const { bookId } = await context.params
-  const bookUuid = await getBookUuid(bookId)
+  const { bookId: bookUuid } = await context.params
   const formData = await request.formData()
-  const fields = new Set(
-    formData.getAll("fields").map((entry) => entry.valueOf() as string),
-  )
-  const title = getField<string>(formData, "title")
+  const values = parseFormDataFields(formData)
 
-  if (!title && fields.has("title")) {
+  const parsed = BookUpdateRequestSchemaV2.safeParse({
+    ...values,
+    userId: request.auth.user.id,
+  })
+
+  if (!parsed.success) {
     return NextResponse.json(
-      { message: "Title must be a non-empty string" },
-      { status: 405 },
+      { message: z.treeifyError(parsed.error) },
+      { status: 400 },
     )
   }
-
-  const language = getField<string | null>(formData, "language") ?? null
-  const subtitle = getField<string | null>(formData, "subtitle") ?? null
-  const description = getField<string | null>(formData, "description") ?? null
-  const pageCount = getField<number | null>(formData, "pageCount") ?? null
-  const duration = getField<number | null>(formData, "duration") ?? null
-
-  // null means delete the rating
-  const userBookRating = getField<UserBookRatingRelation | null>(
-    formData,
-    "userBookRating",
-  )
-  if (
-    userBookRating &&
-    userBookRating.rating == null &&
-    userBookRating.review == null
-  ) {
-    return NextResponse.json(
-      {
-        message:
-          "Either rating or review, or both must be provided when updating a rating",
-      },
-      { status: 405 },
-    )
-  }
-
-  // zod where are you i need you
-  if (
-    userBookRating &&
-    userBookRating.rating != null &&
-    !isNaN(userBookRating.rating) &&
-    (userBookRating.rating < 0 || userBookRating.rating > 5)
-  ) {
-    return NextResponse.json(
-      {
-        message: "Rating must be a number between 0 and 5",
-      },
-      { status: 405 },
-    )
-  }
-
-  const coverColorsOverride = getField<JsColor[] | null>(
-    formData,
-    "coverColorsOverride",
-  )
-
-  const publicationDateInput =
-    getField<string | null>(formData, "publicationDate") ?? null
-
-  const publicationDate = publicationDateInput
-    ? toIsoDateString(publicationDateInput)
-    : null
-
-  if (
-    publicationDateInput &&
-    fields.has("publicationDate") &&
-    !publicationDate
-  ) {
-    return NextResponse.json(
-      {
-        message: `"${publicationDateInput}" is not a valid publication date. Use a year, YYYY-MM-DD, or a full ISO timestamp.`,
-      },
-      { status: 405 },
-    )
-  }
-
-  const status = getField<UUID>(formData, "status")
-  if (!status && fields.has("status")) {
-    return NextResponse.json(
-      { message: "Status must not be undefined" },
-      { status: 405 },
-    )
-  }
-
-  const tags = formData
-    .getAll("tags")
-    .map((entry) => JSON.parse(entry.valueOf() as string) as string)
-
-  const creators = formData
-    .getAll("creators")
-    .map((entry) => JSON.parse(entry.valueOf() as string) as CreatorRelation)
-
-  const narrators = formData
-    .getAll("narrators")
-    .map((entry) => JSON.parse(entry.valueOf() as string) as string)
-
-  if (fields.has("narrators")) {
-    creators.push(
-      ...narrators.map((name) => ({
-        name,
-        fileAs: name,
-        role: "nrt" as const,
-      })),
-    )
-  }
-
-  const authors = formData
-    .getAll("authors")
-    .map((entry) => JSON.parse(entry.valueOf() as string) as string)
-
-  if (fields.has("authors")) {
-    creators.push(
-      ...authors.map((name) => ({
-        name,
-        fileAs: name,
-        role: "aut" as const,
-      })),
-    )
-  }
-
-  const series = formData
-    .getAll("series")
-    .map((entry) => JSON.parse(entry.valueOf() as string) as SeriesRelation)
-
-  const collections = formData
-    .getAll("collections")
-    .map((entry) => entry.valueOf() as UUID)
-
-  const identifiers = formData
-    .getAll("identifiers")
-    .map((entry) => JSON.parse(entry.valueOf() as string) as IdentifierRelation)
 
   const book = await getBook(bookUuid, request.auth.user.id)
   if (!book) {
-    return Response.json({ message: `Could not find book with id ${bookUuid}` })
+    return NextResponse.json(
+      {
+        message: `Could not find book with id ${bookUuid}`,
+      },
+      { status: 404 },
+    )
   }
+
+  const { updates, relations, files } = parsed.data
 
   const updated = await updateBook(
     bookUuid,
-    {
-      // We already confirmed that these are non-null above, if they're in
-      // the fields array
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      ...(fields.has("title") && { title: title! }),
-      ...(fields.has("subtitle") && { subtitle: subtitle }),
-      ...(fields.has("language") && { language }),
-      ...(fields.has("description") && { description }),
-      ...(fields.has("publicationDate") && { publicationDate }),
-      ...(fields.has("pageCount") && { pageCount }),
-      ...(fields.has("duration") && { duration }),
-      ...(fields.has("coverColorsOverride") && {
-        coverColorsOverride:
-          coverColorsOverride && coverColorsOverride.length > 0
-            ? JSON.stringify(coverColorsOverride)
-            : null,
-      }),
-    },
-    {
-      ...(fields.has("creators") && { creators }),
-      ...(fields.has("series") && { series }),
-      ...(fields.has("collections") && { collections }),
-      ...(fields.has("tags") && { tags }),
-      ...(fields.has("status") && {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        status: { statusUuid: status!, userId: request.auth.user.id },
-      }),
-      ...(fields.has("userBookRating") && {
-        userBookRating: userBookRating
-          ? { ...userBookRating, userId: request.auth.user.id }
-          : { userId: request.auth.user.id },
-      }),
-      ...(fields.has("identifiers") && { identifiers }),
-    },
+    updates,
+    relations,
     request.auth.user.id,
   )
 
-  const textCover = formData.get("textCover")?.valueOf() as File | undefined
-  const audioCover = formData.get("audioCover")?.valueOf() as File | undefined
-
-  if (textCover) {
-    const image = await ingestCoverFile(textCover)
+  // the text cover backs both the ebook and the readaloud display
+  if (files.textCover) {
+    const image = await ingestCoverFile(files.textCover)
     if (image) {
       await attachCover(updated.uuid, textCoverTargets(updated), image, "user")
     }
   }
 
-  if (audioCover) {
-    const image = await ingestCoverFile(audioCover)
+  if (files.audioCover) {
+    const image = await ingestCoverFile(files.audioCover)
     if (image) {
       await attachCover(updated.uuid, audioCoverTargets(updated), image, "user")
     }
   }
 
-  void queueWritesToFiles(book.uuid, textCover, audioCover)
+  void queueWritesToFiles(book.uuid, files.textCover, files.audioCover)
+
+  if (process.env["NODE_ENV"] === "development") {
+    try {
+      BookSchemaV2.parse(updated)
+    } catch (e) {
+      logger.error({ msg: `Dev only parsing failed`, err: e })
+    }
+  }
 
   return NextResponse.json(updated)
 })
@@ -257,8 +175,12 @@ async function ingestCoverFile(file: File) {
 }
 
 /**
- * @summary Get metadata for a book
- * @desc '
+ * @description Read a book's metadata
+ * @pathParams BookIdParamsSchemaV2
+ * @response BookSchemaV2
+ * @auth bearer
+ * @auth basic
+ * @openapi
  */
 export const GET = withHasPermission<Params>("bookRead")(async (
   request,
@@ -274,12 +196,22 @@ export const GET = withHasPermission<Params>("bookRead")(async (
     )
   }
 
+  if (process.env["NODE_ENV"] === "development") {
+    try {
+      BookSchemaV2.parse(book)
+    } catch (e) {
+      logger.error({ msg: `Dev only parsing failed`, err: e })
+    }
+  }
+
   return NextResponse.json(book)
 })
 
 /**
- * @summary Delete a book
- * @desc Will also delete all files associated with the book from disk.
+ * @description Delete a book
+ * @pathParams BookIdParamsSchemaV2
+ * @auth bearer
+ * @openapi
  */
 export const DELETE = withHasPermission<Params>("bookDelete")(async (
   request,

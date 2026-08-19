@@ -807,8 +807,9 @@ export const api = createApi({
       }
     >({
       query: ({ update, textCover, audioCover }) => {
+        const { uuid, ...rest } = update
         const updatedFields = Object.entries({
-          ...update,
+          ...rest,
           textCover,
           audioCover,
         }).reduce<string[]>(

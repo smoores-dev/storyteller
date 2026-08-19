@@ -12,6 +12,7 @@ import { type BookWithRelations, touchBook } from "@/database/books"
 import {
   type CoverFormat,
   type CoverOrigin,
+  type FormatCover,
   type Image,
   setFormatCover,
 } from "@/database/images"
@@ -124,14 +125,9 @@ export async function attachCover(
   await touchBook(bookUuid)
 }
 
-export type CoverDecision = {
-  coverOrigin: CoverOrigin
-  coverExtractedFrom: string | null
-}
-
 export function shouldExtractCover(
   mode: "skip" | "merge" | "always",
-  current: CoverDecision | null | undefined,
+  current: FormatCover | null | undefined,
   fingerprint: string | null,
 ): boolean {
   if (mode === "skip") return false

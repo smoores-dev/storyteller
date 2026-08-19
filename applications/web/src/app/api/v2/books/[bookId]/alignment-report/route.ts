@@ -18,6 +18,13 @@ type ManifestLike = {
   toc?: { href?: string; title?: string }[]
 }
 
+/**
+ * @description Get a book's enriched alignment report
+ * @pathParams BookIdParamsSchemaV2
+ * @response AlignmentReportViewSchemaV2
+ * @auth bearer
+ * @openapi
+ */
 export const GET = withHasPermission<Params>("bookProcess")(async (
   request,
   context,
@@ -58,6 +65,13 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
   return Response.json(view)
 })
 
+/**
+ * @description Replace the overrides on a book's latest alignment report
+ * @pathParams BookIdParamsSchemaV2
+ * @request AlignmentOverridesSchemaV2
+ * @auth bearer
+ * @openapi
+ */
 export const PATCH = withHasPermission<Params>("bookProcess")(async (
   request,
   context,

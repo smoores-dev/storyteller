@@ -1,7 +1,11 @@
 import { type ScanCtx } from "@/assets/library/scanner/ctx"
 import { defineStep } from "@/assets/library/scanner/step"
 import { type BookWithRelations } from "@/database/books"
-import { type CoverFormat, setFormatCover } from "@/database/images"
+import {
+  type CoverFormat,
+  getFormatCover,
+  setFormatCover,
+} from "@/database/images"
 import { getSetting } from "@/database/settings"
 import { type MetadataFieldMode } from "@/database/settingsTypes"
 import {
@@ -51,7 +55,7 @@ export const extractTextCoverStep = defineStep(
   "extract-text-cover",
   async (input: ExtractedEpubMetadata, ctx) => {
     const mode = await getCoverMode(ctx)
-    const current = input.book[input.format]
+    const current = await getFormatCover(input.format, input.book.uuid)
 
     if (!shouldExtractCover(mode, current, input.fingerprint)) {
       ctx.report.skipped({
@@ -114,8 +118,9 @@ export const extractAudiobookCoverStep = defineStep(
   "extract-audiobook-cover",
   async (input: ExtractedAudiobookMetadata, ctx) => {
     const mode = await getCoverMode(ctx)
+    const current = await getFormatCover("audiobook", input.book.uuid)
 
-    if (!shouldExtractCover(mode, input.book.audiobook, input.fingerprint)) {
+    if (!shouldExtractCover(mode, current, input.fingerprint)) {
       ctx.report.skipped({
         step: STEP,
         book: input.book,

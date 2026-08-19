@@ -17,13 +17,16 @@ import { type DB } from "./schema"
 
 export type JobType = "book_align"
 
-export type JobStatus =
-  | "QUEUED"
-  | "RUNNING"
-  | "PAUSED"
-  | "DONE"
-  | "ERROR"
-  | "CANCELED"
+export const JOB_STATUSES = [
+  "QUEUED",
+  "RUNNING",
+  "PAUSED",
+  "DONE",
+  "ERROR",
+  "CANCELED",
+] as const
+
+export type JobStatus = (typeof JOB_STATUSES)[number]
 
 export const ACTIVE_JOB_STATUSES = [
   "QUEUED",

@@ -22,9 +22,7 @@ function previewCoverImage(
   colors: BookCoverImage["colors"],
 ): BookCoverImage {
   return {
-    uuid: "00000000-0000-0000-0000-000000000000" as UUID,
     sha256: "preview",
-    mimeType: "image/webp",
     width: Math.round(600 * aspect),
     height: 600,
     blurhash: null,
@@ -203,7 +201,7 @@ export function Book3DPositionPreview({
           fileSize: null,
           pageCount: 500,
           status: "ALIGNED",
-          coverImage: previewCoverImage(2 / 3, [
+          cover: previewCoverImage(2 / 3, [
             { r: 94, g: 33, b: 182 },
             { r: 192, g: 132, b: 252 },
           ]),
@@ -212,7 +210,7 @@ export function Book3DPositionPreview({
           fileSize: null,
           updatedAt: new Date().toISOString(),
           pageCount: 500,
-          coverImage: previewCoverImage(2 / 3, [
+          cover: previewCoverImage(2 / 3, [
             { r: 30, g: 64, b: 175 },
             { r: 96, g: 165, b: 250 },
           ]),
@@ -221,7 +219,7 @@ export function Book3DPositionPreview({
           duration: 24 * 60 * 60,
           fileSize: null,
           updatedAt: new Date().toISOString(),
-          coverImage: previewCoverImage(1, [
+          cover: previewCoverImage(1, [
             { r: 94, g: 33, b: 182 },
             { r: 192, g: 132, b: 252 },
           ]),

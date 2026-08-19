@@ -1,3 +1,5 @@
+import type z from "zod"
+
 import { type Report } from "@storyteller-platform/align"
 
 import {
@@ -6,63 +8,27 @@ import {
 } from "@/database/alignmentReports"
 import { type UUID } from "@/uuid"
 
-interface SentenceContext {
-  prevSentence: string | null
-  matchedSentence: string
-  nextSentence: string | null
-}
+import {
+  type AlignmentReportViewSchemaV2,
+  type ReportAudioFileSchemaV2,
+  type ReportChapterRowSchemaV2,
+  type ReportFlagSchemaV2,
+  type ReportUnalignedAudioSchemaV2,
+  type ReportUnalignedChapterSchemaV2,
+} from "./schemas/v2/alignmentReport"
 
-export type FlagTone = "poor" | "moderate" | "good" | "info"
-export interface ReportFlag {
-  label: string
-  tone: FlagTone
-}
+export type FlagTone = z.infer<(typeof ReportFlagSchemaV2)["shape"]["tone"]>
+export type ReportFlag = z.infer<typeof ReportFlagSchemaV2>
 
-export interface ReportAudioFile {
-  filepath: string
-  title: string | null
-  duration: number | null
-  start: number
-  end: number
-}
+export type ReportAudioFile = z.infer<typeof ReportAudioFileSchemaV2>
 
-export interface ReportChapterRow {
-  href: string
-  label: string
-  title: string | null
-  audioFiles: ReportAudioFile[]
-  chapterSentenceCount: number
-  alignedSentenceCount: number
-  coverage: number | null
-  delta: number
-  deltaPct: number
-  flagged: boolean
-  flags: ReportFlag[]
-  firstMatchedSentenceId: number
-  lastMatchedSentenceId: number
-  firstMatchedSentenceContext: SentenceContext
-  lastMatchedSentenceContext: SentenceContext
-  transcriptionContext: { before: string; after: string }
-  endTranscriptionContext: { before: string; after: string }
-  markedOk: boolean
-  excludedFromScore: boolean
-}
+export type ReportChapterRow = z.infer<typeof ReportChapterRowSchemaV2>
 
-export interface ReportUnalignedChapter {
-  href: string
-  label: string
-  reason: string
-  preview: string | null
-  intended: boolean
-}
+export type ReportUnalignedChapter = z.infer<
+  typeof ReportUnalignedChapterSchemaV2
+>
 
-export interface ReportUnalignedAudio {
-  filepath: string
-  title: string | null
-  duration: number | null
-  transcription: string | null
-  excluded: boolean
-}
+export type ReportUnalignedAudio = z.infer<typeof ReportUnalignedAudioSchemaV2>
 
 export interface AlignmentFacets {
   grades: Record<string, number>
@@ -70,22 +36,9 @@ export interface AlignmentFacets {
   muted: number
 }
 
-export interface BookAlignmentReportView {
-  bookUuid: UUID
-  bookTitle: string | null
-  reportUuid: UUID
-  jobUuid: UUID | null
-  createdAt: string
-  summary: AlignmentSummary
-  totalAudioDuration: number
-  alignedAudioDuration: number
-  totalSentences: number
-  alignedSentences: number
-  significantChapters: number
-  chapters: ReportChapterRow[]
-  unalignedChapters: ReportUnalignedChapter[]
-  unalignedAudioFiles: ReportUnalignedAudio[]
-}
+export type BookAlignmentReportView = z.infer<
+  typeof AlignmentReportViewSchemaV2
+>
 
 type ManifestLike = {
   readingOrder?: { href?: string; title?: string; duration?: number }[]

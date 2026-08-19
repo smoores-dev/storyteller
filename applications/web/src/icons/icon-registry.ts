@@ -6,7 +6,7 @@ export type IconEntry = {
   tags: string[]
 }
 
-export const ICON_REGISTRY: IconEntry[] = [
+export const ICON_REGISTRY = [
   // books & reading
   {
     id: "book",
@@ -413,7 +413,9 @@ export const ICON_REGISTRY: IconEntry[] = [
     lucide: "calendar",
     tags: ["calendar", "date", "schedule", "event"],
   },
-]
+] as const satisfies IconEntry[]
+
+export const ICON_IDS = ICON_REGISTRY.map(({ id }) => id)
 
 export const ICON_MAP = Object.fromEntries(
   ICON_REGISTRY.map((entry) => [entry.id, entry]),

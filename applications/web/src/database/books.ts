@@ -37,6 +37,7 @@ import {
   type NewIdentifier,
   linkExtractedIdentifiers,
 } from "./identifiers"
+import { IMAGE_COLUMNS } from "./images"
 import type { DB } from "./schema"
 import type { NewSeries } from "./series"
 import {
@@ -748,23 +749,13 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "ebook.uuid",
             "ebook.filepath",
             "ebook.missing",
-            "ebook.coverImageUuid",
             "ebook.coverOrigin",
-            "ebook.coverExtractedFrom",
             jsonObjectFrom(
               eb
                 .selectFrom("image")
-                .select([
-                  "image.uuid",
-                  "image.sha256",
-                  "image.mimeType",
-                  "image.width",
-                  "image.height",
-                  "image.blurhash",
-                  "image.colors",
-                ])
+                .select(IMAGE_COLUMNS)
                 .whereRef("image.uuid", "=", "ebook.coverImageUuid"),
-            ).as("coverImage"),
+            ).as("cover"),
             "ebook.isEpub2",
             "ebook.createdAt",
             "ebook.updatedAt",
@@ -783,23 +774,13 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "audiobook.uuid",
             "audiobook.filepath",
             "audiobook.missing",
-            "audiobook.coverImageUuid",
             "audiobook.coverOrigin",
-            "audiobook.coverExtractedFrom",
             jsonObjectFrom(
               eb
                 .selectFrom("image")
-                .select([
-                  "image.uuid",
-                  "image.sha256",
-                  "image.mimeType",
-                  "image.width",
-                  "image.height",
-                  "image.blurhash",
-                  "image.colors",
-                ])
+                .select(IMAGE_COLUMNS)
                 .whereRef("image.uuid", "=", "audiobook.coverImageUuid"),
-            ).as("coverImage"),
+            ).as("cover"),
             "audiobook.createdAt",
             "audiobook.updatedAt",
             "audiobook.fingerprint",
@@ -817,23 +798,13 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "readaloud.uuid",
             "readaloud.filepath",
             "readaloud.missing",
-            "readaloud.coverImageUuid",
             "readaloud.coverOrigin",
-            "readaloud.coverExtractedFrom",
             jsonObjectFrom(
               eb
                 .selectFrom("image")
-                .select([
-                  "image.uuid",
-                  "image.sha256",
-                  "image.mimeType",
-                  "image.width",
-                  "image.height",
-                  "image.blurhash",
-                  "image.colors",
-                ])
+                .select(IMAGE_COLUMNS)
                 .whereRef("image.uuid", "=", "readaloud.coverImageUuid"),
-            ).as("coverImage"),
+            ).as("cover"),
             "readaloud.isEpub2",
             "readaloud.status",
             "readaloud.currentStage",

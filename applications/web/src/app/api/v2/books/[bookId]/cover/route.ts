@@ -9,6 +9,7 @@ type Params = Promise<{
 
 /**
  * @summary Get the cover image for a book
+ * @deprecated
  * @desc Superseded by `/api/v2/images/{sha256}`, which addresses images by
  *       content instead of by book. This redirects there so existing clients
  *       and OPDS feeds keep working. Use the `audio` search param to get the
@@ -26,8 +27,8 @@ export const GET = withHasPermission<Params>("bookRead", {
   const audio = typeof request.nextUrl.searchParams.get("audio") === "string"
 
   const image = audio
-    ? book.audiobook?.coverImage
-    : book.ebook?.coverImage ?? book.readaloud?.coverImage
+    ? book.audiobook?.cover
+    : book.ebook?.cover ?? book.readaloud?.cover
 
   if (!image) {
     return new Response(null, {

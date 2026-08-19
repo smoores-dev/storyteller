@@ -8,9 +8,22 @@ import { type DB } from "./schema"
 
 export type Image = Selectable<DB["image"]>
 
-export type CoverOrigin = "unset" | "extracted" | "user" | "cleared"
+export const COVER_ORIGINS = ["unset", "extracted", "user", "cleared"] as const
+
+export type CoverOrigin = (typeof COVER_ORIGINS)[number]
 
 export type CoverFormat = "ebook" | "audiobook" | "readaloud"
+
+/**
+ * to exclude uuid,mimeType byteSize from the public shape of an image
+ */
+export const IMAGE_COLUMNS = [
+  "image.sha256",
+  "image.width",
+  "image.height",
+  "image.blurhash",
+  "image.colors",
+] as const satisfies `image.${keyof DB["image"]}`[]
 
 export type NewImage = {
   sha256: string
@@ -99,6 +112,54 @@ export async function setFormatCover(
         .execute()
       return
   }
+}
+
+export type FormatCover = {
+  coverOrigin: CoverOrigin
+  coverExtractedFrom: string | null
+}
+
+/**
+ * scanner bookkeeping for a format's cover. kept off the book response, so
+ * read it here when deciding whether to re-extract.
+ */
+export async function getFormatCover(
+  format: CoverFormat,
+  bookUuid: UUID,
+): Promise<FormatCover | null> {
+  const columns = ["coverOrigin", "coverExtractedFrom"] as const
+
+  switch (format) {
+    case "ebook":
+      return (
+        (await db
+          .selectFrom("ebook")
+          .select(columns)
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst()) ?? null
+      )
+    case "audiobook":
+      return (
+        (await db
+          .selectFrom("audiobook")
+          .select(columns)
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst()) ?? null
+      )
+    case "readaloud":
+      return (
+        (await db
+          .selectFrom("readaloud")
+          .select(columns)
+          .where("bookUuid", "=", bookUuid)
+          .executeTakeFirst()) ?? null
+      )
+  }
+}
+
+export type ImageReference = {
+  format: CoverFormat
+  bookUuid: UUID
 }
 
 export async function getUnreferencedImages(): Promise<

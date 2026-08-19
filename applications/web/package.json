@@ -161,7 +161,6 @@
     "eslint": "^8.0.0",
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "kysely-codegen": "^0.18.5",
-    "next-openapi-gen": "^0.1.2",
     "playwright": "^1.61.1",
     "postcss": "^8.4.49",
     "postcss-preset-mantine": "^1.17.0",

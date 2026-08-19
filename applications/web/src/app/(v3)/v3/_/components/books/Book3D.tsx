@@ -200,7 +200,7 @@ function CoverFace({
 
   return (
     <Tile
-      image={format?.coverImage}
+      image={format?.cover}
       size={coverSize(width, width / height)}
       alt={book.title}
       type={audio ? "audiobook" : "ebook"}
@@ -649,7 +649,7 @@ function SingleBookStage({
       coverBoxAspect(
         "true-size",
         format,
-        (audiobookOnly ? book.audiobook : book.ebook)?.coverImage,
+        (audiobookOnly ? book.audiobook : book.ebook)?.cover,
       ),
   )
   const discs = audiobookOnly ? discCount(book) : 0
@@ -716,10 +716,10 @@ function DualStage({
   const audioThickness = cdThickness(discs, w)
 
   const ebookHeight = Math.round(
-    w / coverBoxAspect("true-size", "ebook", book.ebook?.coverImage),
+    w / coverBoxAspect("true-size", "ebook", book.ebook?.cover),
   )
   const audioHeight = Math.round(
-    w / coverBoxAspect("true-size", "audiobook", book.audiobook?.coverImage),
+    w / coverBoxAspect("true-size", "audiobook", book.audiobook?.cover),
   )
 
   const slabWrap = (id: Book3DFormat, node: ReactNode) => {
@@ -838,17 +838,17 @@ export type Book3DBook = {
   duration: number | null
   readaloud:
     | (Pick<Readaloud, "status" | "pageCount" | "duration" | "fileSize"> & {
-        coverImage: BookCoverImage | null
+        cover: BookCoverImage | null
       })
     | null
   ebook:
     | (Pick<Ebook, "pageCount" | "fileSize" | "updatedAt"> & {
-        coverImage: BookCoverImage | null
+        cover: BookCoverImage | null
       })
     | null
   audiobook:
     | (Pick<Audiobook, "duration" | "fileSize" | "updatedAt"> & {
-        coverImage: BookCoverImage | null
+        cover: BookCoverImage | null
       })
     | null
   updatedAt: string
